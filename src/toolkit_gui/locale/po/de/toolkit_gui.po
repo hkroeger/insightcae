@@ -1,0 +1,26 @@
+# German translations for toolkit_gui package.
+# Copyright (C) 2024 hkroeger
+# This file is distributed under the same license as the toolkit_gui package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolkit_gui \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-04-22 22:30+0200\n"
+"PO-Revision-Date: 2024-03-11 11:31+0100\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: iqparameters/iqlabeledarrayelementparameter.cpp:140
+msgid "Change Item Label"
+msgstr ""
+
+#: iqparameters/iqlabeledarrayelementparameter.cpp:140
+msgid "New label:"
+msgstr ""

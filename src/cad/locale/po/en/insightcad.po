@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-02 09:29+0100\n"
+"POT-Creation-Date: 2024-04-26 09:12+0200\n"
 "PO-Revision-Date: 2023-10-25 10:57+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -54,25 +54,47 @@ msgstr ""
 "line are specified by vector L. The normal direction of the foil section, i."
 "e. spanwise direction of the wing, is given by vector ez."
 
-#: cadfeatures/bar.cpp:116
+#: cadfeatures/bar.cpp:119
 msgid "Bar: length of vertical direction is zero!"
 msgstr "Bar: length of vertical direction is zero!"
 
-#: cadfeatures/bar.cpp:125
+#: cadfeatures/bar.cpp:128
 msgid "Bar: invalid definition of bar end points!"
 msgstr "Bar: invalid definition of bar end points!"
 
-#: cadfeatures/bar.cpp:131
+#: cadfeatures/bar.cpp:134
 msgid "the bar length must not be zero!"
 msgstr "the bar length must not be zero!"
 
-#: cadfeatures/bar.cpp:155
+#: cadfeatures/bar.cpp:158
 msgid "Bar: invalid definition of vertical direction!"
 msgstr "Bar: invalid definition of vertical direction!"
 
-#: cadfeatures/bar.cpp:495
+#: cadfeatures/bar.cpp:599
 msgid ""
 "This command creates a straight extruded volume from a planar section.\n"
+"The location of the bar is specified by its start point p0 and end point p1. "
+"Also needed is a face feature xsec defining the cross section. For orienting "
+"the cross section an upward direction up has to be given.\n"
+"The end points can optionally be shifted along the bar axis by offsets ext0 "
+"and ext1. Furthermore, the bar ends can be mitered around the vertical axis "
+"(vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
+msgstr ""
+"This command creates a straight extruded volume from a planar section.\n"
+"The location of the bar is specified by its start point p0 and end point p1. "
+"Also needed is a face feature xsec defining the cross section. For orienting "
+"the cross section an upward direction up has to be given.\n"
+"The end points can optionally be shifted along the bar axis by offsets ext0 "
+"and ext1. Furthermore, the bar ends can be mitered around the vertical axis "
+"(vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
+
+#: cadfeatures/bar.cpp:617
+#, fuzzy
+msgid ""
+"This command creates a straight extruded volume from a planar section.The "
+"section is expected comprise only of lines and the resulting bar will be of "
+"sheets with some added thicknes.The sheets are accessible as subshapes for "
+"possible use in e.g. FEM models.\n"
 "The location of the bar is specified by its start point p0 and end point p1. "
 "Also needed is a face feature xsec defining the cross section. For orienting "
 "the cross section an upward direction up has to be given.\n"
@@ -116,7 +138,7 @@ msgstr "Boolean subtract: invalid base shape"
 msgid "Boolean subtract: invalid tool shape"
 msgstr "Boolean subtract: invalid tool shape"
 
-#: cadfeatures/booleansubtract.cpp:89
+#: cadfeatures/booleansubtract.cpp:89 cadfeatures/cone.cpp:112
 msgid "could not perform cut operation."
 msgstr "could not perform cut operation."
 
@@ -286,7 +308,7 @@ msgstr ""
 "Di is given, a hollow cylinder is created. The cylinder is centered with "
 "respect to p0, if the keyword centered is supplied."
 
-#: cadfeatures/cone.cpp:127
+#: cadfeatures/cone.cpp:157
 msgid ""
 "Creates a cone between point p0 and p1. At point p0, the diameter is D0 and "
 "at p1 it is D1."
@@ -304,7 +326,7 @@ msgstr ""
 "direction of axisTimesD and the torus diameter by its magnitude. The tube "
 "diameter is d."
 
-#: cadfeatures/extrusion.cpp:162
+#: cadfeatures/extrusion.cpp:168
 msgid ""
 "Creates an extrusion of the planar feature sec. The direction and length of "
 "the extrusion is given by the vector L. If the keyword centered is given, "
@@ -472,24 +494,24 @@ msgstr ""
 msgid "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
 msgstr "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
 
-#: cadfeatures/quad.cpp:105
+#: cadfeatures/quad.cpp:106
 #, c-format
 msgid "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
 msgstr "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
 
-#: cadfeatures/quad.cpp:108
+#: cadfeatures/quad.cpp:109
 #, c-format
 msgid "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
 msgstr "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
 
-#: cadfeatures/quad.cpp:155
+#: cadfeatures/quad.cpp:156
 #, c-format
 msgid ""
 "Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 "Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
 
-#: cadfeatures/quad.cpp:158
+#: cadfeatures/quad.cpp:159
 #, c-format
 msgid ""
 "Invalid parameter: Wall thickness of quad is larger than half width or half "
@@ -498,7 +520,7 @@ msgstr ""
 "Invalid parameter: Wall thickness of quad is larger than half width or half "
 "height (%g > %g)!"
 
-#: cadfeatures/quad.cpp:248
+#: cadfeatures/quad.cpp:274
 msgid ""
 "Creates a quad face. The quad is located at point p0 and direction and edge "
 "lengths are defined by the vector Lx, Ly.\n"
@@ -522,9 +544,17 @@ msgstr ""
 "vector is n. The number of edges is ne. Radius of the outer circle is a. The "
 "direction from p0 to the first edge center is ez."
 
-#: cadfeatures/polygon.cpp:102
+#: cadfeatures/polygon.cpp:124
 msgid ""
 "Creates a polygon wire from a number of corners, connected by straight edges."
+msgstr ""
+"Creates a polygon wire from a number of corners, connected by straight edges."
+
+#: cadfeatures/polygon.cpp:130
+#, fuzzy
+msgid ""
+"Creates a polyline wire from a number of corners, connected by straight "
+"edges."
 msgstr ""
 "Creates a polygon wire from a number of corners, connected by straight edges."
 
@@ -578,19 +608,19 @@ msgstr ""
 msgid "Create stitched shell from selected faces."
 msgstr "Create stitched shell from selected faces."
 
-#: cadfeatures/stitchedsolid.cpp:85
+#: cadfeatures/stitchedsolid.cpp:87
 msgid "Could not create a closed shell (B)!"
 msgstr "Could not create a closed shell (B)!"
 
-#: cadfeatures/stitchedsolid.cpp:88
+#: cadfeatures/stitchedsolid.cpp:90
 msgid "Orientation Error!"
 msgstr "Orientation Error!"
 
-#: cadfeatures/stitchedsolid.cpp:93 cadfeatures/pyramid.cpp:101
+#: cadfeatures/stitchedsolid.cpp:95 cadfeatures/pyramid.cpp:101
 msgid "Creation of solid failed!"
 msgstr "Creation of solid failed!"
 
-#: cadfeatures/stitchedsolid.cpp:124
+#: cadfeatures/stitchedsolid.cpp:138
 msgid "Create stitched solid from all faces of the provided features."
 msgstr "Create stitched solid from all faces of the provided features."
 
@@ -650,7 +680,7 @@ msgstr "Incompatible section shape for Sweep!"
 msgid "Interpolates a solid through the planar sections xsec0 to xsecn."
 msgstr "Interpolates a solid through the planar sections xsec0 to xsecn."
 
-#: cadfeatures/thicken.cpp:152
+#: cadfeatures/sheet.cpp:143
 msgid "Creates a solid from a shell feature by adding thickness t."
 msgstr "Creates a solid from a shell feature by adding thickness t."
 
@@ -715,17 +745,17 @@ msgstr "datum direction %s already present!"
 msgid "datum %s already present!"
 msgstr "datum %s already present!"
 
-#: cadfeatures/modelfeature.cpp:167
+#: cadfeatures/modelfeature.cpp:178
 #, c-format
 msgid "building model %s"
 msgstr "building model %s"
 
-#: cadfeatures/modelfeature.cpp:184 cadfeatures/modelfeature.cpp:236
-#: cadfeatures/modelfeature.cpp:254
+#: cadfeatures/modelfeature.cpp:195 cadfeatures/modelfeature.cpp:248
+#: cadfeatures/modelfeature.cpp:266
 msgid "ModelFeature: Model input unspecified!"
 msgstr "ModelFeature: Model input unspecified!"
 
-#: cadfeatures/modelfeature.cpp:314
+#: cadfeatures/modelfeature.cpp:342
 msgid ""
 "Imports a submodel. It is read from the file modelname.iscad. The file is "
 "searched first in the directory of the current model and then throughout the "

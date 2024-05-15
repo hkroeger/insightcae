@@ -24,14 +24,22 @@ IQVTKCADModel3DViewer::ClippingPlanes::ClippingPlanes(
         {
             if (auto* actor = vtkActor::SafeDownCast(act))
             {
-                for (const auto& pl: *this)
-                {
-                    actor->GetMapper()->AddClippingPlane(pl);
-                }
+                addToActor(actor);
             }
         }
     }
     viewer_.scheduleRedraw();
+}
+
+void IQVTKCADModel3DViewer::ClippingPlanes::addToActor(vtkProp* act) const
+{
+    if (auto* actor = vtkActor::SafeDownCast(act))
+    {
+        for (const auto& pl: *this)
+        {
+            actor->GetMapper()->AddClippingPlane(pl);
+        }
+    }
 }
 
 IQVTKCADModel3DViewer::ClippingPlanes::~ClippingPlanes()

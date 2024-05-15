@@ -180,6 +180,8 @@ public:
                 const arma::mat& p0,
                 const arma::mat& n );
         ~ClippingPlanes();
+
+        void addToActor(vtkProp* act) const;
     };
 
     friend class ClippingPlanes;

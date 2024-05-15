@@ -749,6 +749,7 @@ void IQVTKCADModel3DViewer::addModelEntity(
         for (const auto& a: actors)
         {
             ren_->AddActor(a);
+            if (clipping_) clipping_->addToActor(a);
         }
         displayedData_[pidx]={lbl, entity, actors};
         resetVisibility(pidx);

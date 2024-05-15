@@ -161,6 +161,7 @@ public:
 };
 
 
+std::string yRangeExpression(double mi, double ma, double boundaryBySpan=0.2);
 
 
 insight::ResultElement& addPlot

@@ -18,6 +18,7 @@
  *
  */
 
+#include "TopAbs_State.hxx"
 #include "geotest.h"
 
 #include <memory>
@@ -775,7 +776,9 @@ Feature& Feature::operator=(const Feature& o)
   if (o.valid())
   {
     if (o.volprops_)
-      volprops_.reset(new GProp_GProps(*o.volprops_));
+        volprops_.reset(new GProp_GProps(*o.volprops_));
+    else
+        volprops_.reset();
 
     idx_.reset(new SubshapeNumbering(*o.idx_));
     setValid();
@@ -932,14 +935,14 @@ double Feature::minDist(const arma::mat& p) const
 {
   BRepExtrema_DistShapeShape dss
   (
-    BRepBuilderAPI_MakeVertex(to_Pnt(p)).Vertex(), 
-    shape()
+    shape(),
+    BRepBuilderAPI_MakeVertex(to_Pnt(p)).Vertex(),
+    Precision::Confusion()
   );
   
   if (!dss.Perform())
     throw insight::Exception("determination of minimum distance to point failed!");
   auto dist= dss.Value();
-  std::cout<<"dist="<<dist<<std::endl;
   return dist;
 }
 
@@ -1335,7 +1338,7 @@ FeatureSetData Feature::query_vertices_subset(const FeatureSetData& fs, FilterPt
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  cout<<"QUERY_VERTICES RESULT = "<<res<<endl;
+  // cout<<"QUERY_VERTICES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1375,7 +1378,7 @@ FeatureSetData Feature::query_edges_subset(const FeatureSetData& fs, FilterPtr f
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  cout<<"QUERY_EDGES RESULT = "<<res<<endl;
+  // cout<<"QUERY_EDGES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -2505,11 +2508,26 @@ Feature::TopologicalProperties Feature::topologicalProperties() const
 
 
 
-bool Feature::pointIsInsideVolume(const arma::mat& p) const
+bool Feature::pointIsInsideVolume(const arma::mat& p, bool onBoundary) const
 {
     BRepClass3d_SolidClassifier sc(
         shape(), to_Pnt(p), Precision::Confusion() );
-    return sc.State() == TopAbs_IN;
+
+    bool result = sc.State() == TopAbs_IN;
+    if (onBoundary)
+    {
+        result = result || /*(minDist(p)<LSMALL)*/(sc.State() == TopAbs_ON);
+    }
+    return result;
+
+    // BRepExtrema_DistShapeShape dist(
+    //     shape(),
+    //     BRepBuilderAPI_MakeVertex(to_Pnt(p)).Shape(),
+    //     Precision::Confusion());
+    // dist.Perform();
+    // double dv=dist.Value();
+    // insight::dbg(2) << "distance = "<<dv<<std::endl;
+    //return (minDist(p) < LSMALL); // minDist seems to return only the distance to the boundary
 }
 
 

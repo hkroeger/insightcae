@@ -518,7 +518,7 @@ public:
   TopologicalProperties topologicalProperties() const;
 
 
-  bool pointIsInsideVolume(const arma::mat& p) const;
+  bool pointIsInsideVolume(const arma::mat& p, bool onBoundary=false) const;
 
 };
 

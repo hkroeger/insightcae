@@ -60,7 +60,7 @@ void compressibleTwoPhaseThermophysicalProperties::addIntoDictionaries ( OFdicts
             tt["energy"]="sensibleInternalEnergy";
             break;
         default:
-            throw insight::Exception("unhandled selection!");
+            throw insight::UnhandledSelection();
         }
         tt["equationOfState"]=sd.equationOfStateType();
         tt["specie"]="specie";

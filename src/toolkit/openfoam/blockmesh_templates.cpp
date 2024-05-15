@@ -122,10 +122,7 @@ void blockMeshDict_Cylinder::create_bmd()
       nr=std::max(1, int(std::ceil(L_r/delta)));
       nu=std::max(1, int(std::ceil(L_u/delta)));
     }
-    else
-    {
-      throw insight::Exception("Internal error: unhandled selection!");
-    }
+    else throw insight::UnhandledSelection();
 
     arma::mat p0=p_.geometry.p0;
     arma::mat ex=p_.geometry.ex;
@@ -354,10 +351,7 @@ void blockMeshDict_Box::create_bmd()
         ny=ind->ny;
         nz=ind->nz;
       }
-    else
-      {
-        throw insight::Exception("Internal error: unhandled selection.");
-      }
+    else throw insight::UnhandledSelection();
 
 
     Block& bl = this->addBlock

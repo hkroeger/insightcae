@@ -56,8 +56,7 @@ void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
         rmc["amplitude"]=OFDictData::vector3(ro->amplitude);
         sbc["oscillatingRotatingMotionCoeffs"]=rmc;
     }
-    else
-      throw insight::Exception("Internal error: Unhandled selection!");
+    else throw insight::UnhandledSelection();
 
     dynamicMeshDict["solidBodyCoeffs"]=sbc;
 }

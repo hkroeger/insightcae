@@ -154,10 +154,7 @@ void PIMPLESettings::addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dict
     }
 
   }
-  else
-  {
-    throw insight::Exception("Internal error: unhandled selection!");
-  }
+  else throw insight::UnhandledSelection();
 
 }
 

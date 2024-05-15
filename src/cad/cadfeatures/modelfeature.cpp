@@ -282,7 +282,7 @@ boost::filesystem::path ModelFeature::modelfile() const
 //     case Solid:
 //         return model_->solidFeatureSymbols();
 //     }
-//     throw insight::Exception("internal error: unhandled selection!");
+//     throw insight::UnhandledSelection();
 // }
 
 void ModelFeature::executeEditor()

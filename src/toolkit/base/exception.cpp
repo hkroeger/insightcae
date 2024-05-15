@@ -607,6 +607,15 @@ UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
 
 
 
+UnhandledSelection::UnhandledSelection(const std::string &contextMsg)
+    : Exception(
+        "internal error: unhandled selection" +
+        ((!contextMsg.empty())?(" in "+contextMsg):std::string())
+    )
+{}
+
+
+
 
 
 

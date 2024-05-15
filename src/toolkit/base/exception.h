@@ -167,6 +167,13 @@ public:
 };
 
 
+class UnhandledSelection
+: public Exception
+{
+public:
+    UnhandledSelection(const std::string& contextMsg = "");
+};
+
 
 
 void assertion(bool condition, std::string context_message, ...);

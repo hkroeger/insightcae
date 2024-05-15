@@ -39,8 +39,7 @@ void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
       d["point3"]=OFDictData::vector3(pt->p2);
       mmd["embeddedPointsDict"]=d;
     }
-  else
-    throw insight::Exception("Internal error: Unhandled selection!");
+  else throw insight::UnhandledSelection();
 }
 
 bool mirrorMesh::isUnique() const

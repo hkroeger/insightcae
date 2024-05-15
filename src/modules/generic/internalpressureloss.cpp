@@ -487,10 +487,8 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
         }
 
     }
-    else
-    {
-        throw insight::Exception("unhandled selection for thermal solution");
-    }
+    else throw insight::UnhandledSelection("thermal solution option");
+
     auto num = cm.insert(numeric.release());
 
     if (num->isCompressible())

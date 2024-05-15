@@ -1233,7 +1233,7 @@ FeatureSetPtr Feature::allOf(EntityType et) const
     case Solid:
         return allSolids();
     default:
-        throw insight::Exception("internal error: unhandled selection");
+        throw insight::UnhandledSelection();
     }
 }
 

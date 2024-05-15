@@ -35,8 +35,7 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
         {
           dfvs.push_back(boost::str(boost::format("volVectorFieldValue %s %s\n") % vdfv->name % OFDictData::to_OF(vdfv->value)));
         }
-      else
-        throw insight::Exception("Internal error: Unhandled selection!");
+      else throw insight::UnhandledSelection();
     }
     sFD["defaultFieldValues"]=dfvs;
 
@@ -56,8 +55,7 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
               {
                 vl.push_back(boost::str(boost::format("volVectorFieldValue %s %s\n") % v->name % OFDictData::to_OF(v->value)));
               }
-            else
-              throw insight::Exception("Internal error: Unhandled type selection!");
+            else throw insight::UnhandledSelection();
 
             OFDictData::dict fs;
             fs["box"]=boost::str(boost::format("%s %s") % OFDictData::to_OF(box->p0) % OFDictData::to_OF(box->p1) );

@@ -1462,10 +1462,7 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
     {
       scripts.push_back("\"<system>/"+sg->name+".py\"");
     }
-    else
-    {
-      throw insight::Exception("Internal error: unhandled selection");
-    }
+    else throw insight::UnhandledSelection();
   }
 
   fod["scripts"]=scripts;
@@ -1561,10 +1558,7 @@ void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::
 
     }
 
-    else
-    {
-      throw insight::Exception("Internal error: unhandled selection");
-    }
+    else throw insight::UnhandledSelection();
 
   }
 }

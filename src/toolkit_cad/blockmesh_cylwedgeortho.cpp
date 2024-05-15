@@ -1348,10 +1348,7 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
       nuBy2 = std::max(1, m->nu/2);
       deltax = Lx/double(m->nx);
     }
-    else
-    {
-      throw insight::Exception("Internal error: unhandled selection for mesh resolution");
-    }
+    else throw insight::UnhandledSelection();
 
 
     spine = BRep_Tool::Curve(e, t0, t1);

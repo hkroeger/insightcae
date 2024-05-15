@@ -27,6 +27,7 @@ namespace insight
 
 arma::mat vec3(const QColor& s);
 
+std::string visPath(const std::vector<std::string>& path);
 
 class TOOLKIT_GUI_EXPORT CADParameterSetVisualizer
 : public IQISCADModelGenerator,
@@ -35,8 +36,8 @@ class TOOLKIT_GUI_EXPORT CADParameterSetVisualizer
 
   Q_OBJECT
 
-  QThread asyncRebuildThread_;
-  std::mutex vis_mtx_;
+protected:
+  std::unique_ptr<boost::thread> asyncRebuildThread_;
   IQCADItemModel *model_;
   IQParameterSetModel *psmodel_;
 
@@ -44,6 +45,8 @@ public:
 
   CADParameterSetVisualizer();
   ~CADParameterSetVisualizer();
+
+  void stopVisualizationComputation();
 
   void setModel(IQCADItemModel *model);
   IQCADItemModel *model();

@@ -1,6 +1,9 @@
 #include <QDebug>
 
 #include "cadparametersetvisualizer.h"
+#include "base/exception.h"
+#include "boost/thread/exceptions.hpp"
+#include "boost/thread.hpp"
 #include "qmodeltree.h"
 
 #include "iqiscadmodelrebuilder.h"
@@ -16,6 +19,7 @@ arma::mat vec3(const QColor &c)
 {
     return vec3(c.redF(), c.greenF(), c.blueF());
 }
+
 
 
 
@@ -86,8 +90,12 @@ void CADParameterSetVisualizer::addVectorBasePoint(
 
 void CADParameterSetVisualizer::update(const ParameterSet& ps)
 {
-  ParameterSetVisualizer::update(ps);
-  Q_EMIT launchVisualizationCalculation(); // executed in dedicated thread
+    ParameterSetVisualizer::update(ps);
+
+    // need to launch visualization recomputation through signal,
+    // because we want to be able to join multiple visualizers
+    // into a single CADModel in another class
+    Q_EMIT launchVisualizationCalculation();
 }
 
 
@@ -114,8 +122,8 @@ CADParameterSetVisualizer::CADParameterSetVisualizer()
     : model_(nullptr),
       psmodel_(nullptr)
 {
-  moveToThread(&asyncRebuildThread_);
-  asyncRebuildThread_.start();
+  // moveToThread(&asyncRebuildThread_);
+  // asyncRebuildThread_.start();
 
   connect(
         this,
@@ -129,9 +137,27 @@ CADParameterSetVisualizer::CADParameterSetVisualizer()
 
 CADParameterSetVisualizer::~CADParameterSetVisualizer()
 {
-  asyncRebuildThread_.quit();
-  dbg()<<"waiting for visualizer thread to finish..."<<std::endl;
-  asyncRebuildThread_.wait();
+    stopVisualizationComputation();
+}
+
+
+
+void CADParameterSetVisualizer::stopVisualizationComputation()
+{
+    if (asyncRebuildThread_)
+    {
+        asyncRebuildThread_->interrupt();
+
+        dbg()<<"waiting for visualizer thread to finish..."<<std::endl;
+
+        asyncRebuildThread_->join();
+
+        asyncRebuildThread_.reset();
+    }
+
+    insight::assertion(
+        asyncRebuildThread_==nullptr,
+        "internal error: visualization computation could not be cancelled!");
 }
 
 
@@ -171,37 +197,44 @@ IQParameterSetModel* CADParameterSetVisualizer::parameterSetModel() const
 
 void CADParameterSetVisualizer::visualizeScheduledParameters()
 {
-  std::unique_lock<std::mutex> lck(vis_mtx_, std::defer_lock);
 
+    stopVisualizationComputation();
 
-  insight::assertion(
-              model_!=nullptr,
-              "internal error: the output CAD model is unset!" );
+    asyncRebuildThread_=std::make_unique<boost::thread>(
+        [&]()
+        {
+            insight::assertion(
+                model_!=nullptr,
+                "internal error: the output CAD model is unset!" );
 
-  if (lck.try_lock())
-  {
-    if (selectScheduledParameters())
-    {
-      CurrentExceptionContext ex("computing visualization of scheduled parameter set");
+            if (selectScheduledParameters())
+            {
+                CurrentExceptionContext ex("computing visualization of scheduled parameter set");
 
-      try
-      {
-        CurrentExceptionContext ex("recreate visualization elements");
+                try
+                {
+                    CurrentExceptionContext ex("recreate visualization elements");
 
-        IQISCADModelRebuilder rb(model_, {this});
-        recreateVisualizationElements();
-      }
-      catch (insight::Exception& e)
-      {
-        cerr<<"Warning: could not rebuild visualization."
-              " Error was:"<<e
-           <<endl;
-      }
+                    IQISCADModelRebuilder rb(model_, {this});
+                    recreateVisualizationElements();
 
-      clearScheduledParameters();
-    }
-    Q_EMIT visualizationCalculationFinished();
-  }
+                }
+                catch (insight::Exception& e)
+                {
+                    cerr<<"Warning: could not rebuild visualization."
+                            " Error was:"<<e
+                         <<endl;
+                }
+                // catch (boost::thread_interrupted& ie)
+                // {
+                //     cout<<"computation of visualization was cancelled"<<endl;
+                // }
+
+                clearScheduledParameters();
+            }
+            Q_EMIT visualizationCalculationFinished();
+        }
+        );
 
 }
 
@@ -281,34 +314,44 @@ int MultiCADParameterSetVisualizer::size() const
 
 void MultiCADParameterSetVisualizer::visualizeScheduledParameters()
 {
-  CurrentExceptionContext ex("re-creating all visualization elements");
+    stopVisualizationComputation();
+    insight::assertion(
+        asyncRebuildThread_==nullptr,
+        "internal error: visualization computation could not be cancelled!");
 
-  insight::assertion(
-              model()!=nullptr,
-              "internal error: the output CAD model is unset!" );
+    asyncRebuildThread_=std::make_unique<boost::thread>(
+        [&]()
+        {
+            CurrentExceptionContext ex("re-creating all visualization elements");
 
-  finishedVisualizers_.clear();
+            insight::assertion(
+                model()!=nullptr,
+                "internal error: the output CAD model is unset!" );
 
-  QList<IQISCADModelGenerator*> gens;
-  for (auto& vis: visualizers_)
-  {
-    if (vis->hasCurrentParameters() && vis->hasScheduledParameters())
-        vis->clearScheduledParameters();
+            finishedVisualizers_.clear();
 
-    vis->selectScheduledParameters();
+            QList<IQISCADModelGenerator*> gens;
+            for (auto& vis: visualizers_)
+            {
+                if (vis->hasCurrentParameters() && vis->hasScheduledParameters())
+                    vis->clearScheduledParameters();
 
-    if ( vis->hasCurrentParameters() )
-    {
-        gens.append(vis);
-    }
-  }
+                vis->selectScheduledParameters();
 
-  IQISCADModelRebuilder rb(model(), gens);
-  for (auto& vis: visualizers_)
-  {
-    if (gens.contains(vis))
-        vis->recreateVisualizationElements();
-  }
+                if ( vis->hasCurrentParameters() )
+                {
+                    gens.append(vis);
+                }
+            }
+
+            IQISCADModelRebuilder rb(model(), gens);
+            for (auto& vis: visualizers_)
+            {
+                if (gens.contains(vis))
+                    vis->recreateVisualizationElements();
+            }
+        }
+        );
 }
 
 bool MultiCADParameterSetVisualizer::hasScheduledParameters() const
@@ -350,6 +393,11 @@ void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished()
   {
     Q_EMIT visualizationCalculationFinished();
   }
+}
+
+std::string visPath(const std::vector<std::string> &path)
+{
+    return boost::join(path, "/");
 }
 
 

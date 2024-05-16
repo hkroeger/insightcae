@@ -103,20 +103,20 @@ public:
     PropertyLibrary(const std::string& libraryName = "")
         : MapPropertyLibrary<PropertyLibraryEntry>(libraryName)
     {
-        CurrentExceptionContext ex("reading property library %s", libraryName.c_str());
+        CurrentExceptionContext ex("reading property library %s", this->libraryName_.c_str());
 
-        if (libraryName.empty())
+        if (this->libraryName_.empty())
         {
-            libraryName = value_type::typeName;
+            this->libraryName_ = value_type::typeName;
             insight::assertion(
-                        !libraryName.empty(),
+                        !this->libraryName_.empty(),
                         "the property library entry must not have empty type names!" );
         }
 
         boost::filesystem::path subDirectory;
         if (subDir) subDirectory = *subDir;
 
-        auto sp=subDirectory / (libraryName+"Library.xml");
+        auto sp=subDirectory / (this->libraryName_+"Library.xml");
 
         bool found;
         auto fp =  SharedPathList::global().getSharedFilePath(

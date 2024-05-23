@@ -1,7 +1,13 @@
 #include "iqiscadmodelrebuilder.h"
 
+#include <QThread>
+#include <mutex>
+
+#include "boost/thread/lock_guard.hpp"
+#include "boost/thread/pthread/condition_variable_fwd.hpp"
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelgenerator.h"
+#include "qnamespace.h"
 
 
 
@@ -13,10 +19,15 @@ IQISCADModelRebuilder::IQISCADModelRebuilder(
       model_(model),
       generators_(gens)
 {
+    insight::assertion(
+        bool(model_),
+        "the CAD model must be valid" );
+
     for( const auto& gen: generators_)
     {
         connectGenerator(gen);
     }
+
     storeSymbolSnapshot();
 }
 
@@ -129,36 +140,30 @@ void IQISCADModelRebuilder::onAddDataset(const QString& name, vtkSmartPointer<vt
 
 void IQISCADModelRebuilder::storeSymbolSnapshot()
 {
-    QMetaObject::invokeMethod(
-        qApp,
-        [this]()
-        {
-          SymbolsSnapshot sysn;
+    SymbolsSnapshot sysn;
 
-          auto scalars = model_->scalars();
-          for (const auto& s: scalars) { sysn.scalars_.insert(s.first); }
+    auto scalars = model_->scalars();
+    for (const auto& s: scalars) { sysn.scalars_.insert(s.first); }
 
-          auto points = model_->points();
-          for (const auto& p: points) { sysn.points_.insert(p.first); }
+    auto points = model_->points();
+    for (const auto& p: points) { sysn.points_.insert(p.first); }
 
-          auto directions = model_->directions();
-          for (const auto& d: directions) { sysn.directions_.insert(d.first); }
+    auto directions = model_->directions();
+    for (const auto& d: directions) { sysn.directions_.insert(d.first); }
 
-          auto modelsteps = model_->modelsteps();
-          for (const auto& m: modelsteps) { sysn.features_.insert(m.first); }
+    auto modelsteps = model_->modelsteps();
+    for (const auto& m: modelsteps) { sysn.features_.insert(m.first); }
 
-          auto datums = model_->datums();
-          for (const auto& d: datums) { sysn.datums_.insert(d.first); }
+    auto datums = model_->datums();
+    for (const auto& d: datums) { sysn.datums_.insert(d.first); }
 
-          auto ppa = model_->postprocActions();
-          for (const auto& p: ppa) { sysn.postprocactions_.insert(p.first); }
+    auto ppa = model_->postprocActions();
+    for (const auto& p: ppa) { sysn.postprocactions_.insert(p.first); }
 
-          auto ds = model_->datasets();
-          for (const auto& d: ds) { sysn.datasets_.insert(d.first); }
+    auto ds = model_->datasets();
+    for (const auto& d: ds) { sysn.datasets_.insert(d.first); }
 
-          symbolsSnapshot_=sysn;
-        }
-    );
+    symbolsSnapshot_=sysn;
 }
 
 
@@ -184,89 +189,73 @@ void IQISCADModelRebuilder::connectGenerator(IQISCADModelGenerator *gen)
 
 
 
-std::mutex m;
-std::condition_variable cv;
 
 void IQISCADModelRebuilder::removeNonRecreatedSymbols()
 {
-    std::condition_variable cv;
-    std::mutex cv_m;
+    auto sysn = symbolsSnapshot_;
 
-    QMetaObject::invokeMethod(
-        qApp,
-        [this,&cv]()
+    auto scalars = model_->scalars();
+    for (const auto& s: scalars)
+    {
+        if (sysn.scalars_.find(s.first)!=sysn.scalars_.end())
         {
-            auto sysn = symbolsSnapshot_;
-
-            auto scalars = model_->scalars();
-            for (const auto& s: scalars)
-            {
-                if (sysn.scalars_.find(s.first)!=sysn.scalars_.end())
-                {
-                    model_->removeScalar(s.first);
-                }
-            }
-
-            auto points = model_->points();
-            for (const auto& p: points)
-            {
-                if (sysn.points_.find(p.first)!=sysn.points_.end())
-                {
-                    model_->removePoint(p.first);
-                }
-            }
-
-            auto directions = model_->directions();
-            for (const auto& d: directions)
-            {
-                if (sysn.directions_.find(d.first)!=sysn.directions_.end())
-                {
-                    model_->removeDirection(d.first);
-                }
-            }
-
-            auto modelsteps = model_->modelsteps();
-            for (const auto& m: modelsteps)
-            {
-                if (sysn.features_.find(m.first)!=sysn.features_.end()
-                        && !model_->isStaticModelStep(m.first) )
-                {
-                    model_->removeModelstep(m.first);
-                }
-            }
-
-            auto datums = model_->datums();
-            for (const auto& d: datums)
-            {
-                if (sysn.datums_.find(d.first)!=sysn.datums_.end())
-                {
-                    model_->removeDatum(d.first);
-                }
-            }
-
-            auto ppa = model_->postprocActions();
-            for (const auto& p: ppa)
-            {
-                if (sysn.postprocactions_.find(p.first)!=sysn.postprocactions_.end())
-                {
-                    model_->removePostprocAction(p.first);
-                }
-            }
-
-            auto ds = model_->datasets();
-            for (const auto& d: ds)
-            {
-                if (sysn.datasets_.find(d.first)!=sysn.datasets_.end())
-                {
-                    model_->removeDataset(d.first);
-                }
-            }
-
-            cv.notify_all();
+            model_->removeScalar(s.first);
         }
-    );
+    }
 
-    std::unique_lock<std::mutex> lk(cv_m);
-    cv.wait( lk );
+    auto points = model_->points();
+    for (const auto& p: points)
+    {
+        if (sysn.points_.find(p.first)!=sysn.points_.end())
+        {
+            model_->removePoint(p.first);
+        }
+    }
+
+    auto directions = model_->directions();
+    for (const auto& d: directions)
+    {
+        if (sysn.directions_.find(d.first)!=sysn.directions_.end())
+        {
+            model_->removeDirection(d.first);
+        }
+    }
+
+    auto modelsteps = model_->modelsteps();
+    for (const auto& m: modelsteps)
+    {
+        if (sysn.features_.find(m.first)!=sysn.features_.end()
+                && !model_->isStaticModelStep(m.first) )
+        {
+            model_->removeModelstep(m.first);
+        }
+    }
+
+    auto datums = model_->datums();
+    for (const auto& d: datums)
+    {
+        if (sysn.datums_.find(d.first)!=sysn.datums_.end())
+        {
+            model_->removeDatum(d.first);
+        }
+    }
+
+    auto ppa = model_->postprocActions();
+    for (const auto& p: ppa)
+    {
+        if (sysn.postprocactions_.find(p.first)!=sysn.postprocactions_.end())
+        {
+            model_->removePostprocAction(p.first);
+        }
+    }
+
+    auto ds = model_->datasets();
+    for (const auto& d: ds)
+    {
+        if (sysn.datasets_.find(d.first)!=sysn.datasets_.end())
+        {
+            model_->removeDataset(d.first);
+        }
+    }
 }
 

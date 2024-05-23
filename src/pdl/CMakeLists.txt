@@ -26,6 +26,8 @@ set(pdl_SOURCES
     cadgeometryparameterparser.h cadgeometryparameterparser.cpp
     labeledarrayparameterparser.h labeledarrayparameterparser.cpp
     cadsketchparameterparser.h cadsketchparameterparser.cpp
+    dateparameterparser.h dateparameterparser.cpp
+    datetimeparameterparser.h datetimeparameterparser.cpp
 )
 
 add_executable(pdl ${pdl_SOURCES})

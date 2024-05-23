@@ -23,6 +23,10 @@
 
 #include "base/parameter.h"
 
+#include "boost/date_time/gregorian/gregorian.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/date_time/posix_time/ptime.hpp"
+
 namespace insight {
 
 
@@ -182,6 +186,8 @@ extern char IntName[];
 extern char BoolName[];
 extern char VectorName[];
 extern char StringName[];
+extern char DateName[];
+extern char DateTimeName[];
 
 
 
@@ -191,6 +197,8 @@ typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
 typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
+typedef SimpleParameter<boost::gregorian::date, DateName> DateParameter;
+typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParameter;
 
 
 
@@ -201,6 +209,8 @@ typedef SimpleParameter<std::string, StringName> StringParameter;
 %template(BoolParameter) SimpleParameter<bool, BoolName>;
 %template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
 %template(StringParameter) SimpleParameter<std::string, StringName>;
+%template(DateParameter) SimpleParameter<boost::gregorian::date, DateName>;
+%template(DateTimeParameter) SimpleParameter<boost::posix_time::ptime, DateTimeName>;
 #endif
 
 

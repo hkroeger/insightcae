@@ -145,6 +145,8 @@ set(toolkit_gui_SRCS
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
     iqparameters/iqlabeledarrayparameter.h iqparameters/iqlabeledarrayparameter.cpp
     iqparameters/iqlabeledarrayelementparameter.h iqparameters/iqlabeledarrayelementparameter.cpp
+    iqparameters/iqdateparameter.h iqparameters/iqdateparameter.cpp
+    iqparameters/iqdatetimeparameter.h iqparameters/iqdatetimeparameter.cpp
     #iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
     iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 

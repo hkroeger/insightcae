@@ -22,6 +22,7 @@
 #ifndef INSIGHT_PARAMETER_H
 #define INSIGHT_PARAMETER_H
 
+#include "boost/date_time/posix_time/ptime.hpp"
 #include "factory.h"
 #include "base/latextools.h"
 #include "base/linearalgebra.h"
@@ -389,6 +390,8 @@ std::string valueToString(const V& value)
 
 
 std::string valueToString(const arma::mat& value);
+std::string valueToString(const boost::gregorian::date& value);
+std::string valueToString(const boost::posix_time::ptime& value);
 
 
 
@@ -402,7 +405,8 @@ void stringToValue(const std::string& s, V& v)
 
 
 void stringToValue(const std::string& s, arma::mat& v);
-  
+void stringToValue(const std::string& s, boost::gregorian::date& date);
+void stringToValue(const std::string& s, boost::posix_time::ptime& date);
 
 
 inline Parameter* new_clone(const Parameter& p)

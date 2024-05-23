@@ -32,6 +32,8 @@
 #include "base/rapidxml.h"
 #include "base/cppextensions.h"
 
+#include "boost/date_time/gregorian/parsers.hpp"
+#include "boost/date_time/posix_time/time_formatters.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
 using namespace std;
@@ -695,7 +697,7 @@ void Parameter::setUpdateValueSignalBlockage(bool block)
 
 
 
-std::string valueToString(const arma::mat& value)
+std::string valueToString(const arma::mat&value)
 {
   std::string s;
   for (arma::uword i=0; i<value.n_elem; i++)
@@ -707,6 +709,19 @@ std::string valueToString(const arma::mat& value)
 }
 
 
+
+
+std::string valueToString(const boost::gregorian::date &date)
+{
+    return boost::gregorian::to_simple_string(date);
+}
+
+
+
+std::string valueToString(const boost::posix_time::ptime &datetime)
+{
+    return boost::posix_time::to_simple_string(datetime);
+}
 
 
 void stringToValue(const std::string& s, arma::mat& v)
@@ -731,9 +746,15 @@ void stringToValue(const std::string& s, arma::mat& v)
 }
 
 
+void stringToValue(const std::string& s, boost::gregorian::date& date)
+{
+    date=boost::gregorian::from_simple_string(s);
+}
 
-
-
+void stringToValue(const std::string& s, boost::posix_time::ptime& datetime)
+{
+    datetime=boost::posix_time::time_from_string(s);
+}
 
  
 

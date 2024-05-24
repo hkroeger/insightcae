@@ -45,12 +45,22 @@ class IsofPlotTabularWindow : public QMainWindow
 
     void readFiles();
 
+    mutable std::set<int> completedAverage_;
+
 public:
     IsofPlotTabularWindow(const std::vector<boost::filesystem::path>& files);
 
+    void resetAllAvgFractions(double f);
+
 public Q_SLOTS:
     void onUpdate(bool checked=false);
+    void onSaveFinalValues(QString outFile = QString());
     void onTabChanged(int);
+
+    void averageValueReady(int i);
+
+Q_SIGNALS:
+    void allAverageValuesReady();
 };
 
 #endif // ISOFPLOTTABULARWINDOW_H

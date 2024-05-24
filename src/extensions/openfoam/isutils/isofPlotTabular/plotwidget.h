@@ -44,6 +44,7 @@ class MeanComputer : public QThread
 public:
   MeanComputer(QObject *parent, const arma::mat& rawdata, double frac);
   virtual void run();
+  double fraction() const;
 Q_SIGNALS:
   void resultReady(arma::mat meandata);
 };
@@ -62,6 +63,7 @@ public:
   ~PlotWidget();
 
   void setData(const arma::mat& x, const arma::mat& y);
+  void changeAvgFraction(double f);
 
 public Q_SLOT:
   void onShow();
@@ -69,6 +71,12 @@ public Q_SLOT:
   void onMeanDataReady(arma::mat meandata);
   void onChangeXRange(const QString& x0="", const QString& x1="");
   void onToggleY0(bool);
+
+  double finalRawValue() const;
+  double finalMeanValue() const;
+
+Q_SIGNALS:
+  void averageValueReady();
 
 private:
   Ui::PlotWidget *ui;

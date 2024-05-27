@@ -217,6 +217,7 @@ void CADParameterSetVisualizer::visualizeScheduledParameters()
                 model_!=nullptr,
                 "internal error: the output CAD model is unset!" );
 
+            bool success=false;
             if (selectScheduledParameters())
             {
                 CurrentExceptionContext ex("computing visualization of scheduled parameter set");
@@ -227,13 +228,14 @@ void CADParameterSetVisualizer::visualizeScheduledParameters()
 
                     IQISCADModelRebuilder rb(model_, {this});
                     recreateVisualizationElements();
-
+                    success=true;
                 }
                 catch (insight::Exception& e)
                 {
-                    cerr<<"Warning: could not rebuild visualization."
-                            " Error was:"<<e
-                         <<endl;
+                    insight::dbg()
+                        << "Could not rebuild visualization.\n"
+                        << " Error was:\n" << e <<endl;
+                    Q_EMIT visualizationComputationError(e);
                 }
                 // catch (boost::thread_interrupted& ie)
                 // {
@@ -242,7 +244,7 @@ void CADParameterSetVisualizer::visualizeScheduledParameters()
 
                 clearScheduledParameters();
             }
-            Q_EMIT visualizationCalculationFinished();
+            Q_EMIT visualizationCalculationFinished(success);
         }
         );
 
@@ -395,13 +397,16 @@ void MultiCADParameterSetVisualizer::clearScheduledParameters()
 }
 
 
-void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished()
+void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished(bool s)
 {
-  finishedVisualizers_.insert(
-        qobject_cast<CADParameterSetVisualizer*>(sender()) );
+  finishedVisualizers_.insert({
+        qobject_cast<CADParameterSetVisualizer*>(sender()), s });
   if (finishedVisualizers_.size()==visualizers_.size())
   {
-    Q_EMIT visualizationCalculationFinished();
+      bool alls=true;
+      for (const auto& fv: finishedVisualizers_)
+          alls=alls&&fv.second;
+    Q_EMIT visualizationCalculationFinished(alls);
   }
 }
 

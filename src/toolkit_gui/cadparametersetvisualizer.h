@@ -101,8 +101,9 @@ public Q_SLOTS:
 
 Q_SIGNALS:
   void launchVisualizationCalculation();
-  void visualizationCalculationFinished();
+  void visualizationCalculationFinished(bool success);
   void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
+  void visualizationComputationError(insight::Exception ex);
 };
 
 
@@ -114,7 +115,7 @@ class TOOLKIT_GUI_EXPORT MultiCADParameterSetVisualizer
   Q_OBJECT
 
   std::set<CADParameterSetVisualizer*> visualizers_;
-  mutable std::set<CADParameterSetVisualizer*> finishedVisualizers_;
+  mutable std::map<CADParameterSetVisualizer*, bool> finishedVisualizers_;
 
 public:
   bool hasScheduledParameters() const override;
@@ -131,7 +132,7 @@ public:
 
 
 public Q_SLOTS:
-  void onSubVisualizationCalculationFinished();
+  void onSubVisualizationCalculationFinished(bool success);
 
 };
 

@@ -24,11 +24,14 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 
+#include "base/exception.h"
+#include "boost/algorithm/string/replace.hpp"
 #include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"
 
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqvtkparametersetdisplay.h"
+#include "qnamespace.h"
 
 using namespace std;
 
@@ -173,6 +176,17 @@ void ParameterEditorWidget::showEvent(QShowEvent *event)
 }
 
 
+class MLabel : public QLabel
+{
+public:
+    MLabel(QWidget *parent) : QLabel(parent) {};
+
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        QLabel::mousePressEvent(event);
+        hide();
+    }
+};
 
 
 ParameterEditorWidget::ParameterEditorWidget
@@ -240,9 +254,57 @@ ParameterEditorWidget::ParameterEditorWidget
     }
 
     setup(display);
+
+    QPalette semiTransparent(QColor(255,0,0,128));
+    semiTransparent.setBrush(QPalette::Text, Qt::white);
+    semiTransparent.setBrush(QPalette::WindowText, Qt::white);
+
+
+    overlayText_ = new MLabel(viewer_);
+    overlayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    overlayText_->setAutoFillBackground(true);
+    overlayText_->setPalette(semiTransparent);
+    QFont f = font();
+    f.setPixelSize(QFontInfo(f).pixelSize()*2);
+    // f.setWeight(QFont::Bold);
+    overlayText_->setFont(f);
+    overlayText_->hide();
+
+    connect(
+        viz_.get(), &insight::CADParameterSetVisualizer::visualizationCalculationFinished, viz_.get(),
+        [this](bool success)
+        { if (success) overlayText_->hide(); } );
+
+    if (viz_)
+    {
+        connect(
+            viz_.get(), &insight::CADParameterSetVisualizer::visualizationComputationError, viz_.get(),
+            [this](insight::Exception ex)
+            {
+                overlayText_->setTextFormat(Qt::MarkdownText);
+                overlayText_->setText(QString::fromStdString(
+                    "**"+ex.description()+"**\n\n"+
+                    boost::replace_all_copy(ex.context(), "\n", "\n\n")
+                    ));
+                overlayText_->show();
+            }
+        );
+    }
 }
 
+void ParameterEditorWidget::resizeEvent(QResizeEvent*e)
+{
+    QSplitter::resizeEvent(e);
 
+    auto w = viewer_->centralWidget()->width();
+    auto h = viewer_->centralWidget()->height();
+
+    int m = w / 10;
+    overlayText_->setGeometry(
+        m, m,
+        w - 2 * m,
+        h - 2 * m );
+}
 
 ParameterEditorWidget::ParameterEditorWidget
 (
@@ -262,20 +324,6 @@ ParameterEditorWidget::ParameterEditorWidget
     setup(nullptr);
 }
 
-
-//ParameterEditorWidget::ParameterEditorWidget
-//(
-//  insight::ParameterSet& pset,
-//  const insight::ParameterSet& default_pset,
-//  QWidget *parent,
-//  insight::ParameterSetVisualizerPtr viz,
-//  insight::ParameterSet_ValidatorPtr vali,
-//  ParameterSetDisplay* display
-//)
-//: ParameterEditorWidget(parent, viz, vali, display)
-//{
-//  resetParameterSet(pset, default_pset);
-//}
 
 
 bool ParameterEditorWidget::hasVisualizer() const

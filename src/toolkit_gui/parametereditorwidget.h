@@ -40,6 +40,7 @@
 #include <QSplitter>
 #include <QThread>
 #include <QTreeView>
+#include <QLabel>
 
 #include <set>
 #include <memory>
@@ -75,6 +76,8 @@ protected:
     CADViewer *viewer_;
     ParameterSetDisplay* display_;
 
+    QLabel* overlayText_;
+
     insight::ParameterSet_ValidatorPtr vali_;
     std::shared_ptr<insight::CADParameterSetVisualizer> viz_;
 
@@ -84,6 +87,8 @@ protected:
 
     bool firstShowOccurred_;
     void showEvent(QShowEvent *event) override;
+
+    void resizeEvent(QResizeEvent*) override;
 
 public:
 

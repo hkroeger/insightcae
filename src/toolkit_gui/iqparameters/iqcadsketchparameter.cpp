@@ -165,13 +165,14 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                     auto& tp = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
 
                     {
-                        auto blocker = parameterRef().blockUpdateValueSignal();
+                        auto blocker{parameterRef().blockUpdateValueSignal()};
                         *sk = *accSk;
 
                         std::ostringstream os;
                         sk->generateScript(os);
 
                         tp.setScript(os.str());
+                        tp.featureGeometry(); //trigger rebuild
                     }
 
                     tp.triggerValueChanged();

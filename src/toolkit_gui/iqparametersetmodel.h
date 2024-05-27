@@ -170,12 +170,7 @@ public:
 public Q_SLOTS:
   void clearParameters();
   void resetParameters(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps);
-//  void handleClick(const QModelIndex &index, QWidget* editControlsContainer,
-//                   IQCADModel3DViewer *vri=nullptr,
-//                   insight::CADParameterSetVisualizer *viz = nullptr);
 
-// Q_SIGNALS:
-//  void parameterSetChanged();
 };
 
 IQParameterSetModel *parameterSetModel(QAbstractItemModel* model);

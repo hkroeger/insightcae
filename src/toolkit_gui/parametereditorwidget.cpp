@@ -313,45 +313,6 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 }
 
 
-//void ParameterEditorWidget::clearParameterSet()
-//{
-//  if (model_)
-//  {
-//    parameterTreeView_->setModel(nullptr);
-////    disconnect(model_, &IQParameterSetModel::parameterSetChanged, this, 0);
-//    disconnectParameterSetChanged(model_, this);
-//    model_->deleteLater();
-//    model_=nullptr;
-//    display_->model()->setAssociatedParameterSetModel(nullptr);
-//  }
-//}
-
-
-//void ParameterEditorWidget::resetParameterSet(
-//        insight::ParameterSet& pset,
-//        const insight::ParameterSet& default_pset
-//        )
-//{
-//  clearParameterSet();
-
-//  model_ = new IQParameterSetModel(pset, default_pset, this);
-//  defaultParameters_=default_pset;
-
-////  connect(model_, &IQParameterSetModel::parameterSetChanged,
-////          this, &ParameterEditorWidget::onParameterSetChanged );
-//  connectParameterSetChanged(
-//      model_,
-//      this, &ParameterEditorWidget::onParameterSetChanged );
-
-//  parameterTreeView_->setModel(model_);
-//  if (viz_)
-//  {
-//    if (auto *psm = dynamic_cast<IQParameterSetModel*>(model_))
-//        viz_->setParameterSetModel(psm);
-//  }
-//  display_->model()->setAssociatedParameterSetModel(model_);
-//}
-
 ParameterEditorWidget::CADViewer *ParameterEditorWidget::viewer() const
 {
   return viewer_;

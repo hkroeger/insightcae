@@ -69,7 +69,6 @@ QVBoxLayout* IQStringParameter::populateEditControls(
       p.valueChanged.connect(
           [=]()
           {
-              auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
               QSignalBlocker sb(lineEdit);
               lineEdit->setText(valueText());
           }

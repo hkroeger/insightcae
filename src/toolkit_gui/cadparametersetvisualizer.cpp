@@ -92,10 +92,10 @@ void CADParameterSetVisualizer::update(const ParameterSet& ps)
 {
     ParameterSetVisualizer::update(ps);
 
-    // need to launch visualization recomputation through signal,
-    // because we want to be able to join multiple visualizers
-    // into a single CADModel in another class
-    Q_EMIT launchVisualizationCalculation();
+    // wait a little until starting potentially expensive viz update,
+    // other updates might follow immediately
+    timerToUpdate_.stop();
+    timerToUpdate_.start(100);
 }
 
 
@@ -130,6 +130,16 @@ CADParameterSetVisualizer::CADParameterSetVisualizer()
         &CADParameterSetVisualizer::launchVisualizationCalculation,
         this,
         &CADParameterSetVisualizer::visualizeScheduledParameters );
+
+  timerToUpdate_.setSingleShot(true);
+
+  timerToUpdate_.callOnTimeout(
+      [this]{
+          // need to launch visualization recomputation through signal,
+          // because we want to be able to join multiple visualizers
+          // into a single CADModel in another class
+          Q_EMIT launchVisualizationCalculation();
+      });
 }
 
 

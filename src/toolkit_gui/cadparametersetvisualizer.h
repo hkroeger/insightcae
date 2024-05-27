@@ -8,6 +8,7 @@
 #include <QThread>
 #include <QIcon>
 #include <QColor>
+#include <QTimer>
 
 #include "base/parametersetvisualizer.h"
 #include "base/supplementedinputdata.h"
@@ -40,6 +41,8 @@ protected:
   std::unique_ptr<boost::thread> asyncRebuildThread_;
   IQCADItemModel *model_;
   IQParameterSetModel *psmodel_;
+
+  QTimer timerToUpdate_;
 
 public:
 

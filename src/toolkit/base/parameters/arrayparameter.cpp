@@ -235,6 +235,18 @@ const Parameter& ArrayParameter::childParameter( int i ) const
 
 int ArrayParameter::childParameterIndex(const std::string &name) const
 {
+    if (name=="default")
+    {
+        return nChildren();
+    }
+    else if (name=="first")
+    {
+        if (size()>0) return 0;
+    }
+    else if (name=="last")
+    {
+        if (size()>0) return size()-1;
+    }
     try
     {
         int i = boost::lexical_cast<int>( boost::algorithm::trim_copy(name) );
@@ -245,20 +257,7 @@ int ArrayParameter::childParameterIndex(const std::string &name) const
         }
     }
     catch (const boost::bad_lexical_cast& e)
-    {
-        if (name=="default")
-        {
-            return nChildren();
-        }
-        else if (name=="first")
-        {
-            if (size()>0) return 0;
-        }
-        else if (name=="last")
-        {
-            if (size()>0) return size()-1;
-        }
-    }
+    {}
     return -1;
 }
 

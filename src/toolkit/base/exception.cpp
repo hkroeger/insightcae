@@ -153,12 +153,11 @@ void Exception::saveContext(bool strace)
 
   if (context_list.size()>0)
   {
-    string context="\nThe problem occurred";
+    context_="The problem occurred";
     for (const std::string& c: context_list)
       {
-        context+= "\nwhile "+c;
+        context_+= "\nwhile "+c;
       }
-    message_ += "\n" + context;
   }
 
   if (strace)
@@ -192,8 +191,9 @@ Exception::Exception(std::string fmt, ...)
     int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
 
     message_=str;
-    dbg(2)<<message_<<std::endl;
     saveContext(true);
+
+    dbg(2)<<message_<<"\n"<<context_<<std::endl;
 }
 
 
@@ -214,11 +214,21 @@ Exception::operator std::string() const
 }
 
 
+const std::string& Exception::description() const
+{
+    return message_;
+}
+
+const std::string& Exception::context() const
+{
+    return context_;
+}
+
 
 
 string Exception::message() const
 {
-   return message_;
+   return message_+"\n"+context_;
 }
 
 

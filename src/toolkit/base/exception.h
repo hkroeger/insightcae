@@ -95,7 +95,7 @@ class Exception
 : public std::exception
 {
 
-  std::string message_;
+  std::string message_, context_;
   std::string strace_;
 
   void saveContext(bool strace);
@@ -106,6 +106,8 @@ public:
   Exception();
   Exception(std::string msgfmt, ...);
 
+  const std::string& description() const;
+  const std::string& context() const;
 
   virtual std::string message() const;
   inline std::string& messageRef() { return message_; }

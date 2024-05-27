@@ -264,9 +264,9 @@ ParameterEditorWidget::ParameterEditorWidget
     overlayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     overlayText_->setAutoFillBackground(true);
     overlayText_->setPalette(semiTransparent);
+    overlayText_->setMargin(10);
     QFont f = font();
-    f.setPixelSize(QFontInfo(f).pixelSize()*2);
-    // f.setWeight(QFont::Bold);
+    f.setPixelSize(QFontInfo(f).pixelSize()*1.5);
     overlayText_->setFont(f);
     overlayText_->hide();
 
@@ -283,6 +283,8 @@ ParameterEditorWidget::ParameterEditorWidget
             {
                 overlayText_->setTextFormat(Qt::MarkdownText);
                 overlayText_->setText(QString::fromStdString(
+                    "The visualization could not be generated.\n\n"
+                    "Reason:\n\n"
                     "**"+ex.description()+"**\n\n"+
                     boost::replace_all_copy(ex.context(), "\n", "\n\n")
                     ));

@@ -3,8 +3,6 @@
 #include <QThread>
 #include <mutex>
 
-#include "boost/thread/lock_guard.hpp"
-#include "boost/thread/pthread/condition_variable_fwd.hpp"
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelgenerator.h"
 #include "qnamespace.h"

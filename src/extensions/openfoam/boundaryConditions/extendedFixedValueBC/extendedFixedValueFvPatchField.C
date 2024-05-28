@@ -88,11 +88,19 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
             Info<<"["<<this->patch().name()<<"] Rescaling to volume flow "<<vf.volumeFlow<<"."<<endl;
             rescaleMode_=vf;
         }
+        else if (rescaleMode=="average")
+        {
+            auto af = RescaleToAverage{
+                pTraits<Type>(dict.lookup("average"))
+            };
+            Info<<"["<<this->patch().name()<<"] Rescaling to average value "<<af.average<<"."<<endl;
+            rescaleMode_=af;
+        }
         else
         {
             FatalErrorIn("extendedFixedValueFvPatchField")
                 <<"unrecognized rescale mode: "<<rescaleMode<<". "
-                "Expected \"massFlow\" or \"volumeFlow\""
+                "Expected \"massFlow\", \"volumeFlow\" or \"average\""
                 <<abort(FatalError);
         }
     }
@@ -182,6 +190,28 @@ void extendedFixedValueFvPatchField<Type>::updateCoeffs()
     }
     fvPatchField<Type>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );
 
+    Type sf=pTraits<Type>::one;
+
+    if (boost::get<boost::blank>(&rescaleMode_))
+    {
+        // leave sf=1
+    }
+    else if (const auto* av = boost::get<RescaleToAverage>(&rescaleMode_))
+    {
+        sf = cmptDivide(
+            av->average,
+            gSum( (*this) * (this->patch().magSf()) )/gSum(this->patch().magSf()) );
+
+    }
+    else
+        FatalErrorIn("update") << "unhandled selection!" << abort(FatalError);
+
+    if (!boost::get<boost::blank>(&rescaleMode_))
+        Info<<"["<<this->patch().name()<<"] rescale factor = "<<sf<<endl;
+
+    fvPatchField<Type>::operator==
+        (cmptMultiply( sf, static_cast<fvPatchField<Type>&>(*this) ));
+
     fixedValueFvPatchField<Type>::updateCoeffs();
 }
 
@@ -194,28 +224,42 @@ void extendedFixedValueFvPatchField<vector>::updateCoeffs()
     }
     fvPatchField<vector>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );
 
-    scalar sf=1.;
-    if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
+    vector sf=vector::one;
+    if (boost::get<boost::blank>(&rescaleMode_))
+    {
+        // leave sf=1
+    }
+    else if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
     {
         auto& rho =
             patch().lookupPatchField<volScalarField, scalar>(
                 rm->densityFieldName );
-        sf =
+        sf = (
             rm->massFlow
             /
-             gSum( rho * (*this) & (-this->patch().Sf()) );
+              gSum( rho * (*this) & (-this->patch().Sf()) ) ) * vector::one;
     }
     else if (const auto* vm = boost::get<RescaleToVolumeFlow>(&rescaleMode_))
     {
-        sf =
+        sf = (
             vm->volumeFlow
             /
-             gSum( (*this) & (-this->patch().Sf()) );
+              gSum( (*this) & (-this->patch().Sf()) ) ) * vector::one;
     }
+    else if (const auto* av = boost::get<RescaleToAverage>(&rescaleMode_))
+    {
+        sf = cmptDivide (
+            av->average,
+            gSum( (*this) * (this->patch().magSf()) )/gSum(this->patch().magSf()) );
+    }
+    else
+        FatalErrorIn("update") << "unhandled selection!" << abort(FatalError);
 
-    Info<<"["<<this->patch().name()<<"] Velocity rescale factor = "<<sf<<endl;
+    if (!boost::get<boost::blank>(&rescaleMode_))
+        Info<<"["<<this->patch().name()<<"] Velocity rescale factor = "<<sf<<endl;
 
-    fvPatchField<vector>::operator*=(sf);
+    fvPatchField<vector>::operator==
+        (cmptMultiply( sf, static_cast<fvPatchField<vector>&>(*this) ));
     
     fixedValueFvPatchField<vector>::updateCoeffs();
 }
@@ -257,7 +301,11 @@ void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const
 {
     fvPatchField<Type>::write(os);
     vp_().writeEntry("source", os);
-    if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
+    if (boost::get<boost::blank>(&rescaleMode_))
+    {
+        // leave sf=1
+    }
+    else if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
     {
         os << "rescale massFlow" << token::END_STATEMENT;
         os << "massFlow" << token::SPACE << rm->massFlow << token::END_STATEMENT;
@@ -268,6 +316,14 @@ void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const
         os << "rescale volumeFlow" << token::END_STATEMENT;
         os << "volumeFlow" << token::SPACE << vm->volumeFlow << token::END_STATEMENT;
     }
+    else if (const auto* am = boost::get<RescaleToAverage>(&rescaleMode_))
+    {
+        os << "rescale average" << token::END_STATEMENT;
+        os << "average" << token::SPACE << am->average << token::END_STATEMENT;
+    }
+    else
+        FatalErrorIn("write") << "unhandled selection!" << abort(FatalError);
+
     this->writeEntry("value", os);
 }
 

@@ -53,10 +53,15 @@ class extendedFixedValueFvPatchField
         scalar volumeFlow;
     };
 
+    struct RescaleToAverage {
+        Type average;
+    };
+
     boost::variant<
         boost::blank,
         RescaleToMassFlow,
-        RescaleToVolumeFlow
+        RescaleToVolumeFlow,
+        RescaleToAverage
         >
         rescaleMode_;
 

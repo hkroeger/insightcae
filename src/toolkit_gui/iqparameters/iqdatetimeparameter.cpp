@@ -53,6 +53,7 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
     layout2->addWidget(promptLabel);
 
     auto*de = new QDateTimeEdit(editControlsContainer);
+    de->setCalendarPopup(true);
     de->setDateTime(QDateTime::fromString(
         QString::fromStdString(boost::posix_time::to_iso_extended_string(dp())),
         Qt::ISODate

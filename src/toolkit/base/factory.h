@@ -344,6 +344,12 @@ template <typename... T> \
         return std::shared_ptr<DerivedClass>(ptr); \
 }
 
+#define REUSE_CTOR(BaseClass, DerivedClass) \
+template<class ...Args> \
+DerivedClass(Args&&... addArgs) \
+    : BaseClass( std::forward<Args>(addArgs)... ) \
+{}
+
 }
 
 #endif // INSIGHT_FACTORY_H

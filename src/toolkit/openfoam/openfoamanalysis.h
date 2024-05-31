@@ -80,6 +80,7 @@ run = set
  mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done" *hidden
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
+ preprocessonly	= 	bool 	false 	"Whether to only prepare the case and stop before launching the solver"
 } "Execution parameters"
 
 mesh = set
@@ -660,19 +661,32 @@ public:
             ofprg.message(_("Initializing solver run"));
             initializeSolverRun(iniprogdisp, runCase);
             ++ofprg;
+        }
 
+        if (!p_.run.evaluateonly && !p_.run.preprocessonly)
+        {
             ofprg.message(_("Running solver"));
             runSolver(ofprg, runCase);
             ++ofprg;
         }
 
-        ofprg.message(_("Finalizing solver run"));
-        finalizeSolverRun(runCase, ofprg);
-        ++ofprg;
+        ResultSetPtr results;
+        if (!p_.run.preprocessonly)
+        {
+            ofprg.message(_("Finalizing solver run"));
+            finalizeSolverRun(runCase, ofprg);
+            ++ofprg;
 
-        ofprg.message(_("Evaluating results"));
-        auto results = evaluateResults(runCase, ofprg);
-        ++ofprg;
+            ofprg.message(_("Evaluating results"));
+            results = evaluateResults(runCase, ofprg);
+            ++ofprg;
+        }
+        else
+        {
+            // empty report containing only the input parameters
+            results = std::make_shared<ResultSet>(
+                this->parameters(), this->name_, "Result Report");
+        }
 
         return results;
     }

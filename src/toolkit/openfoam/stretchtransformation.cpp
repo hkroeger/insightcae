@@ -84,7 +84,27 @@ arma::mat stretchTransformation::toWedge(const arma::mat& ps) const
   }
   else if ( (y>=x1s_) && (y<x2s_) )
   {
-    x=-(x1_-s_*x2_+sqrt((x1_-x2_)*(2.*(x1s_-y)+s_*(s_*x1_-2.*x1s_-s_*x2_+2.*y))))/(s_-1.);
+      double radi=
+          (x1_-x2_)
+            *
+          (
+            2.*(x1s_-y)
+            +
+            s_*( s_*x1_ - 2.*x1s_ - s_*x2_ + 2.*y)
+          );
+
+      double nom=-(
+        x1_
+        - s_*x2_
+        + sqrt(radi)
+        );
+
+      double denom=s_-1.;
+
+      if (fabs(nom)<SMALL && fabs(denom)<SMALL)
+        x = 0.;
+      else
+        x = nom / denom;
   }
   else
   {

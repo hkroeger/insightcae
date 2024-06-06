@@ -40,12 +40,17 @@ SpatialTransformation::SpatialTransformation(double scale)
     setScale(scale);
 }
 
-SpatialTransformation::SpatialTransformation(const arma::mat& ex, const arma::mat& ey, const arma::mat& ez)
+SpatialTransformation::SpatialTransformation(
+    const arma::mat& ex,
+    const arma::mat& ey,
+    const arma::mat& ez,
+    const arma::mat& O )
 {
     setIdentity();
-    R_.col(0)=ex;
-    R_.col(1)=ey;
-    R_.col(2)=ez;
+    R_.row(0)=ex.t();
+    R_.row(1)=ey.t();
+    R_.row(2)=ez.t();
+    translate_ = arma::inv(R_)*O;
 }
 
 SpatialTransformation::SpatialTransformation(vtkTransform *t)

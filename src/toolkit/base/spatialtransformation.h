@@ -53,14 +53,23 @@ class SpatialTransformation
 
 protected:
     // apply in this order:
+
+    /**
+     * @brief translate_
+     * First transformation step: translate point
+     */
     arma::mat translate_;
 
     /**
      * @brief R_
-     * rotation matrix
+     * Second transformation step: rotation matrix to apply
      */
     arma::mat R_;
 
+    /**
+     * @brief scale_
+     * Last transformation step: scale
+     */
     double scale_;
 
 public:
@@ -80,26 +89,75 @@ public:
      */
     SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw=vec3(0,0,0), double scale=1.);
 
-    SpatialTransformation(const arma::mat& ex, const arma::mat& ey, const arma::mat& ez);
+    /**
+     * @brief SpatialTransformation
+     * transformation from global into local CS spanned by ex, ey, ez and with origin at O
+     * @param ex
+     * @param ey
+     * @param ez
+     * @param O
+     */
+    SpatialTransformation(
+        const arma::mat& ex,
+        const arma::mat& ey,
+        const arma::mat& ez,
+        const arma::mat& O = vec3Zero()
+        );
 
+    /**
+     * @brief SpatialTransformation
+     * scaled transformation
+     * @param scale
+     */
     SpatialTransformation(double scale);
 
+    /**
+     * @brief SpatialTransformation
+     * create a transformation from vtkTransform
+     * @param trsf
+     */
     SpatialTransformation(vtkTransform* trsf);
 
+    /**
+     * @brief setIdentity
+     * reset transformation to identy transform
+     */
     void setIdentity();
 
+    /**
+     * @brief setTranslation
+     * change translation part. Rotation and scale remain unchanged.
+     * @param translate
+     */
     void setTranslation(const arma::mat& translate);
 
+    /**
+     * @brief setRotationMatrix
+     * change rotation part. Translation and scale remain unchanged.
+     * @param R
+     */
     void setRotationMatrix(const arma::mat& R);
 
     /**
      * @brief setRollPitchYaw
+     * change rotation part to Euler rotation (order rotation x > y > z). Translation and scale remain unchanged.
      * @param rollPitchYaw
      * angles in degrees!
      */
     void setRollPitchYaw(const arma::mat& rollPitchYaw);
+
+    /**
+     * @brief setScale
+     * change the scale only. Translation and rotation remain unchanged.
+     * @param scale
+     */
     void setScale(double scale);
 
+    /**
+     * @brief translate
+     * return translation part.
+     * @return
+     */
     const arma::mat& translate() const;
 
     /**
@@ -114,9 +172,19 @@ public:
      * @return Euler angles in degrees.
      */
     arma::mat rollPitchYaw() const;
+
+    /**
+     * @brief scale
+     * return the scale factor
+     * @return
+     */
     double scale() const;
 
-
+    /**
+     * @brief rotationMatrix
+     * return the rotation matrix.
+     * @return
+     */
     arma::mat rotationMatrix() const;
 
     /**
@@ -129,7 +197,7 @@ public:
 
     /**
      * @brief operator ()
-     * transform point
+     * transform a point
      * @param p
      * @return
      */

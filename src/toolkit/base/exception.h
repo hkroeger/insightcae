@@ -122,6 +122,14 @@ public:
 };
 
 
+class IntendedBreak
+    : public Exception
+{
+public:
+    IntendedBreak(const std::string& msg="deliberate stop encountered");
+};
+
+
 
 
 class CADException

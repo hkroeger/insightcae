@@ -241,6 +241,10 @@ const char* Exception::what() const noexcept
 }
 
 
+IntendedBreak::IntendedBreak(const std::string& msg)
+    : Exception(msg)
+{}
+
 
 
 const std::map<string, cad::FeaturePtr> &CADException::contextGeometry() const
@@ -623,6 +627,11 @@ UnhandledSelection::UnhandledSelection(const std::string &contextMsg)
         ((!contextMsg.empty())?(" in "+contextMsg):std::string())
     )
 {}
+
+
+
+
+
 
 
 

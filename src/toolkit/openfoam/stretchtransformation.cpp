@@ -36,7 +36,7 @@ stretchTransformation::stretchTransformation
 )
 : s_((x1+compression)/x1), x1_(x1), x2_(x2), x1s_(x1_+compression), xw_(xw)
 {
-  x2s_=0.5*(s_*x2_+x2_+2.*x1s_-(1.+s_)*x1_);
+  x2s_ = 0.5*(s_*x2_ +x2_ +2.*x1s_ -(1.+s_)*x1_);
 
   std::cout<<"s="<<s_<<", x1="<<x1_<<", x2="<<x2_<<", x1s="<<x1s_<<", x2s="<<x2s_<<", xw="<<xw_<<endl;
 }
@@ -93,25 +93,29 @@ arma::mat stretchTransformation::toWedge(const arma::mat& ps) const
             s_*( s_*x1_ - 2.*x1s_ - s_*x2_ + 2.*y)
           );
 
-      double nom=-(
+      double nom = -(
         x1_
         - s_*x2_
         + sqrt(radi)
         );
 
-      double denom=s_-1.;
+      double denom = s_-1.;
 
-      if (fabs(nom)<SMALL && fabs(denom)<SMALL)
-        x = 0.;
+      if (fabs(s_-1.)<SMALL)
+      {
+          x = y -x1s_ +x1_;
+      }
       else
-        x = nom / denom;
+      {
+          x = nom / denom;
+      }
   }
   else
   {
-    x=0.5*(x1_+s_*x1_-2.*x1s_+x2_-s_*x2_)+y;
+      x = 0.5*(x1_ +s_*x1_ -2.*x1s_ +x2_ -s_*x2_) + y;
   }
-  x *= s;
-  p(2) = x + xw_;
+
+  p(2) = s*x + xw_;
 
   return p;
 }

@@ -340,7 +340,7 @@ endif()
 if (WIN32)
     list(APPEND toolkit_LINK_LIBS vtkOnscreen)
 endif()
-target_link_libraries(toolkit ${toolkit_LINK_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(toolkit ${toolkit_LINK_LIBS})
 # --export-all-symbols is not sufficient for signal/slots to work across DLLs
 include(GenerateExportHeader)
 generate_export_header(toolkit)

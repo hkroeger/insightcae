@@ -21,7 +21,7 @@
 #define INSIGHT_NUMERICALWINDTUNNEL_H
 
 #include "openfoam/openfoamanalysis.h"
-#include "cadparametersetvisualizer.h"
+
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters_headers.h"
 
 #include "gp_Trsf.hxx"
@@ -156,16 +156,6 @@ public:
 
 
 
-
-class NumericalWindtunnel_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
-{
-public:
-    typedef NumericalWindtunnel::Parameters Parameters;
-
-public:
-    void recreateVisualizationElements() override;
-};
 
 }
 

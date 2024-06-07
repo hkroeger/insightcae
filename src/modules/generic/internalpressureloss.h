@@ -23,7 +23,6 @@
 #include "base/exception.h"
 #include "base/units.h"
 #include "openfoam/openfoamanalysis.h"
-#include "cadparametersetvisualizer.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamparameterstudy.h"
 
@@ -238,16 +237,6 @@ public:
 
 
 
-
-class InternalPressureLoss_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
-{
-public:
-    typedef InternalPressureLoss::Parameters Parameters;
-
-public:
-    void recreateVisualizationElements() override;
-};
 
 }
 

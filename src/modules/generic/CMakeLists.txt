@@ -8,8 +8,7 @@ set(genericmodules_SOURCES
 )
 
 set(genericmodules_LIBS
-  toolkit
-  toolkit_gui
+  toolkit insightcad
 )
 
 if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)
@@ -37,5 +36,15 @@ else()
 endif()
 
 install_shared_file(genericmodules_module_cfg genericmodules.module modules.d)
+
+set(genericmodulesgui_SOURCES
+    numericalwindtunnel_gui.cpp
+    internalpressureloss_gui.cpp
+)
+add_library(genericmodulesgui SHARED ${genericmodulesgui_SOURCES})
+target_link_libraries(genericmodulesgui genericmodules toolkit_gui)
+
+install(TARGETS genericmodulesgui LIBRARY DESTINATION lib COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+
 
 add_pybindings(GenericModules "genericmodules.i" genericmodules)

@@ -19,10 +19,14 @@ void forceSourceCombination::interpretDefinition()
     IStringStream is(definition_);
 
     auto* lastSource = parseSource(is);
+
     while (!is.eof())
     {
         token operand(is);
+        if (operand.error()) break;
+
         ASSERTION(operand.isWord(), "expected operand!");
+
         if (operand.wordToken()=="minus")
         {
             auto ns = std::make_shared<subtractedForceSource>(
@@ -61,6 +65,7 @@ void forceSourceCombination::interpretDefinition()
         {
             ERROR("unknown operand: "+operand.wordToken());
         }
+        is.fatalCheck("forceSourceCombination::interpretDefinition");
     }
     value_=lastSource;
 }
@@ -71,6 +76,7 @@ void forceSourceCombination::interpretDefinition()
 forceSource* forceSourceCombination::parseSource(Istream &is)
 {
     token typeToken(is);
+    // Pout<<typeToken<<endl;
     ASSERTION(typeToken.isWord(), "expected type identifier!");
 
     if (typeToken.wordToken()=="constant")

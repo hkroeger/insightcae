@@ -80,7 +80,7 @@ run = set
  mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done" *hidden
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
- preprocessonly	= 	bool 	false 	"Whether to only prepare the case and stop before launching the solver"
+ preprocessonly	= 	bool 	false 	"Whether to only prepare the case and stop before launching the solver" *hidden
 } "Execution parameters"
 
 mesh = set

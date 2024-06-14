@@ -393,6 +393,9 @@ public:
    * returns a single y-value from column col
    */
   double y(double x, int col=0, OutOfBounds* outOfBounds=NULL) const;
+
+  double maxY(int col=0) const;
+
   /**
    * returns a single dy/dx-value from column col
    */

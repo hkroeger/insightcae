@@ -1200,6 +1200,11 @@ double Interpolator::y(double x, int col, OutOfBounds* outOfBounds) const
   return v;
 }
 
+double Interpolator::maxY(int col) const
+{
+    return xy_.col(col+1).max();
+}
+
 double Interpolator::dydx(double x, int col, OutOfBounds* outOfBounds) const
 {
   if (col>=spline.size())

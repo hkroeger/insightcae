@@ -468,8 +468,10 @@ void AnalysisForm::saveParameters(bool *cancelled)
 
     p.saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
 
-    auto& vs = insight::appendNode(doc, *rootNode, "viewerState");
-    peditor_->viewer()->writeViewerState(doc, vs);
+    {
+     auto vs = insight::appendNode(doc, *rootNode, "viewerState");
+     peditor_->viewer()->writeViewerState(doc, vs);
+    }
 
     std::ofstream f(ist_file_.c_str());
     f << doc;

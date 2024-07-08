@@ -1,5 +1,6 @@
 #include "openfoamcasewithcylindermesh.h"
 
+#include "openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.h"
 #include "openfoam/caseelements/numerics/buoyantpimplefoamnumerics.h"
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
 #include "openfoam/caseelements/basic/gravity.h"

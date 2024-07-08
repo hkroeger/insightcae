@@ -2085,7 +2085,7 @@ void IQVTKCADModel3DViewer::writeViewerState(
 
     for (const auto& bgi: backgroundImages_)
     {
-        auto &bgin = insight::appendNode(doc, node, bgiNodeName);
+        auto bgin = insight::appendNode(doc, node, bgiNodeName);
         bgi->write(doc, bgin);
     }
 }

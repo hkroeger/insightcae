@@ -1,5 +1,6 @@
 #include "openfoamcasewithcylindermesh.h"
 
+#include "openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.h"
 #include "openfoam/caseelements/numerics/unsteadycompressiblenumerics.h"
 
 using namespace insight;

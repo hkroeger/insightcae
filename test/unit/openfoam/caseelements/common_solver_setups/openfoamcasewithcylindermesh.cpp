@@ -1,6 +1,6 @@
 #include "openfoamcasewithcylindermesh.h"
 #include "openfoam/createpatch.h"
-
+#include "openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.h"
 
 
 OpenFOAMCaseWithMesh::OpenFOAMCaseWithMesh(const string &OFEname)

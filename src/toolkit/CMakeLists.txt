@@ -274,7 +274,12 @@ set(toolkit_SOURCES
     openfoam/caseelements/turbulencemodels/lrr_rasmodel.cpp openfoam/caseelements/turbulencemodels/lrr_rasmodel.h
     openfoam/caseelements/turbulencemodels/wale_lesmodel.cpp openfoam/caseelements/turbulencemodels/wale_lesmodel.h
     openfoam/caseelements/analysiscaseelements.cpp openfoam/caseelements/analysiscaseelements.h
+
+
+    openfoam/caseelements/thermodynamics/speciesdata.h openfoam/caseelements/thermodynamics/speciesdata.cpp
+    openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.h openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.cpp
     openfoam/caseelements/thermophysicalcaseelements.cpp openfoam/caseelements/thermophysicalcaseelements.h
+
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
 
@@ -284,6 +289,10 @@ set(toolkit_SOURCES
     code_aster/codeastermeshfile.h code_aster/codeastermeshfile.cpp
     code_aster/casolveroutputanalyzer.cpp code_aster/casolveroutputanalyzer.h
     code_aster/coordinatesystems.h code_aster/coordinatesystems.cpp
+    code_aster/codeastercase.h code_aster/codeastercase.cpp
+    code_aster/codeastercaseelement.h code_aster/codeastercaseelement.cpp
+    code_aster/caseelements/shellpart.h code_aster/caseelements/shellpart.cpp
+    code_aster/caseelements/gluedconnection.h code_aster/caseelements/gluedconnection.cpp
 
     lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
     lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp
@@ -453,7 +462,7 @@ endmacro()
 
 
 
-install_shared_file(gri_species openfoam/caseelements/gri.species thermophysical)
+install_shared_file(gri_species openfoam/caseelements/thermodynamics/gri.species thermophysical)
 
 add_PDL(toolkit "${toolkit_SOURCES}")
 

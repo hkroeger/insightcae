@@ -69,7 +69,7 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir, const 
             {
               auto td = itr->path();
               std::string fn=td.filename().string();
-              try
+              if (isNumber(fn))
               {
                   double time = toNumber<double>(fn);
                   if (!fta.empty())
@@ -79,9 +79,6 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir, const 
                   }
                   else
                     list[time]=td;
-              }
-              catch (...)
-              {
               }
             }
         }

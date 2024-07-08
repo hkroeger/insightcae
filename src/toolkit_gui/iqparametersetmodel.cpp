@@ -12,7 +12,9 @@
 #include "iqparameters/iqarrayelementparameter.h"
 #include "iqparameters/iqlabeledarrayparameter.h"
 #include "iqparameters/iqlabeledarrayelementparameter.h"
+
 #include "base/parameters/simpleparameter.h"
+#include "base/parameters/selectionparameter.h"
 
 #include "cadparametersetvisualizer.h"
 
@@ -332,7 +334,9 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
         }
         else if (index.column()==valueCol) // data
         {
-          if (auto *dp = dynamic_cast<const insight::DoubleParameter*>(&p->parameter()))
+          if (auto *sp = dynamic_cast<const insight::SelectionParameter*>(&p->parameter()))
+                return QString::fromStdString(sp->selection());
+          else if (auto *dp = dynamic_cast<const insight::DoubleParameter*>(&p->parameter()))
                 return dp->operator()();
           else if (auto *ip = dynamic_cast<const insight::IntParameter*>(&p->parameter()))
                 return ip->operator()();

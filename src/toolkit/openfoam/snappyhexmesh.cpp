@@ -603,10 +603,10 @@ RefinementLevel::RefinementLevel(
         delta=Ld->delta;
         insight::assertion(
             delta>SMALL,
-            "target mesh size must be larger than zero");
+            "refinement level target mesh size must be larger than zero");
         insight::assertion(
             L>SMALL,
-            "target length must be larger than zero");
+            "refinement level target length must be larger than zero");
         level=log(L/delta)/log(2.);
     }
     else if (const auto * Ll = boost::get<L_level>(&input))

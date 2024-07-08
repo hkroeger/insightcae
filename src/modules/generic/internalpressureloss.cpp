@@ -50,6 +50,7 @@
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
 #include "openfoam/caseelements/boundaryconditions/wallbc.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
+#include "openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.h"
 
 #include "cadfeatures.h"
 #include "cadfeatures/stl.h"

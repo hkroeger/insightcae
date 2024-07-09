@@ -58,8 +58,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                 parameterTreeView_->indexAt(p),
                 p );
         }
-    );
-
+        );
 
     if (viz_)
     {
@@ -75,11 +74,21 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         {
             insight::CurrentExceptionContext ex("building parameter set displayer");
 
-            display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer_, modeltree_);
+            auto viewer=new CADViewer;
+            viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+            addWidget(viewer);
+
+            insight::dbg()<<"create model tree"<<std::endl;
+            auto modeltree = new QTreeView(this);
+
+            display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
+
+            display_->viewer()->commonToolBox()->addItem(modeltree, "Model structure");
 
             // after ParameterSetDisplay constructor!
-            modeltree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
-            connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
+            modeltree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+            connect(modeltree->model(), &QAbstractItemModel::dataChanged,
                     this, &ParameterEditorWidget::onCADModelDataChanged );
         }
         else
@@ -88,6 +97,17 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
             display_=display;
         }
         viz_->setModel(display_->model());
+
+        // {
+        //     QList<int> l;
+        //     l << 3300 << 6600;
+        //     if (viz_ && !display_)
+        //     {
+        //         l.append(6600);
+        //         l.append(0);
+        //     }
+        //     setSizes(l);
+        // }
     }
     else
     {
@@ -148,14 +168,6 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                             }
                      }
                      );
-
-    if (modeltree_)
-    {
-        if (display_)
-            display_->viewer()->commonToolBox()->addItem(modeltree_, "Model structure");
-        else
-            addWidget(modeltree_);
-    }
 
 }
 
@@ -228,30 +240,6 @@ ParameterEditorWidget::ParameterEditorWidget
     addWidget(spv);
 
 
-    // no existing displayer supplied; create one
-    viewer_=nullptr;
-    {
-        insight::CurrentExceptionContext ex("creating CAD viewer");
-        viewer_=new CADViewer;
-        viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-        addWidget(viewer_);
-    }
-
-    insight::dbg()<<"create model tree"<<std::endl;
-    modeltree_ = new QTreeView(this);
-    // addWidget(modeltree_);
-
-    {
-        QList<int> l;
-        l << 3300 << 6600;
-        if (viz_ && !display_)
-        {
-            l.append(6600);
-            l.append(0);
-        }
-        setSizes(l);
-    }
 
     setup(display);
 
@@ -260,37 +248,40 @@ ParameterEditorWidget::ParameterEditorWidget
     semiTransparent.setBrush(QPalette::WindowText, Qt::white);
 
 
-    overlayText_ = new MLabel(viewer_);
-    overlayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    overlayText_->setAutoFillBackground(true);
-    overlayText_->setPalette(semiTransparent);
-    overlayText_->setMargin(10);
-    QFont f = font();
-    f.setPixelSize(QFontInfo(f).pixelSize()*1.5);
-    overlayText_->setFont(f);
-    overlayText_->hide();
-
-    connect(
-        viz_.get(), &insight::CADParameterSetVisualizer::visualizationCalculationFinished, viz_.get(),
-        [this](bool success)
-        { if (success) overlayText_->hide(); } );
-
-    if (viz_)
+    if (display_)
     {
+        overlayText_ = new MLabel(viewer());
+        overlayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        overlayText_->setAutoFillBackground(true);
+        overlayText_->setPalette(semiTransparent);
+        overlayText_->setMargin(10);
+        QFont f = font();
+        f.setPixelSize(QFontInfo(f).pixelSize()*1.5);
+        overlayText_->setFont(f);
+        overlayText_->hide();
+
         connect(
-            viz_.get(), &insight::CADParameterSetVisualizer::visualizationComputationError, viz_.get(),
-            [this](insight::Exception ex)
-            {
-                overlayText_->setTextFormat(Qt::MarkdownText);
-                overlayText_->setText(QString::fromStdString(
-                    "The visualization could not be generated.\n\n"
-                    "Reason:\n\n"
-                    "**"+ex.description()+"**\n\n"+
-                    boost::replace_all_copy(ex.context(), "\n", "\n\n")
-                    ));
-                overlayText_->show();
-            }
-        );
+            viz_.get(), &insight::CADParameterSetVisualizer::visualizationCalculationFinished, viz_.get(),
+            [this](bool success)
+            { if (success) overlayText_->hide(); } );
+
+        if (viz_)
+        {
+            connect(
+                viz_.get(), &insight::CADParameterSetVisualizer::visualizationComputationError, viz_.get(),
+                [this](insight::Exception ex)
+                {
+                    overlayText_->setTextFormat(Qt::MarkdownText);
+                    overlayText_->setText(QString::fromStdString(
+                        "The visualization could not be generated.\n\n"
+                        "Reason:\n\n"
+                        "**"+ex.description()+"**\n\n"+
+                        boost::replace_all_copy(ex.context(), "\n", "\n\n")
+                        ));
+                    overlayText_->show();
+                }
+            );
+        }
     }
 }
 
@@ -298,14 +289,17 @@ void ParameterEditorWidget::resizeEvent(QResizeEvent*e)
 {
     QSplitter::resizeEvent(e);
 
-    auto w = viewer_->centralWidget()->width();
-    auto h = viewer_->centralWidget()->height();
+    if (display_)
+    {
+        auto w = viewer()->centralWidget()->width();
+        auto h = viewer()->centralWidget()->height();
 
-    int m = w / 10;
-    overlayText_->setGeometry(
-        m, m,
-        w - 2 * m,
-        h - 2 * m );
+        int m = w / 10;
+        overlayText_->setGeometry(
+            m, m,
+            w - 2 * m,
+            h - 2 * m );
+    }
 }
 
 ParameterEditorWidget::ParameterEditorWidget
@@ -320,7 +314,6 @@ ParameterEditorWidget::ParameterEditorWidget
     viz_(nullptr),
     parameterTreeView_(parameterTreeView),
     inputContents_(contentEditorFrame),
-    modeltree_(nullptr),
     firstShowOccurred_(false)
 {
     setup(nullptr);
@@ -365,7 +358,10 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 
 ParameterEditorWidget::CADViewer *ParameterEditorWidget::viewer() const
 {
-  return viewer_;
+    auto *v = dynamic_cast<CADViewer*>(display_->viewer());
+    insight::assertion(
+        bool(v), "unexpected viewer type" );
+    return v;
 }
 
 
@@ -387,27 +383,32 @@ void ParameterEditorWidget::onCADModelDataChanged
       const QModelIndex &bottomRight,
       const QVector<int> &roles )
 {
-  if (roles.contains(Qt::CheckStateRole))
-  {
-      disconnect(modeltree_->model(), &QAbstractItemModel::dataChanged,
-              this, &ParameterEditorWidget::onCADModelDataChanged );
+    if (roles.contains(Qt::CheckStateRole))
+    {
+        if (display_)
+        {
+            auto modeltree=display_->modeltree();
 
-      auto checkstate = topLeft.data(Qt::CheckStateRole);
-      auto indices = modeltree_->selectionModel()->selectedIndexes();
-      for (const auto& idx: indices)
-      {
-          if (idx.column()==topLeft.column())
-          {
-              modeltree_->model()->setData(
-                      idx,
-                      checkstate,
-                      Qt::CheckStateRole );
-          }
-      }
+            disconnect(modeltree->model(), &QAbstractItemModel::dataChanged,
+                       this, &ParameterEditorWidget::onCADModelDataChanged );
 
-      connect(modeltree_->model(), &QAbstractItemModel::dataChanged,
-              this, &ParameterEditorWidget::onCADModelDataChanged );
-  }
+            auto checkstate = topLeft.data(Qt::CheckStateRole);
+            auto indices = modeltree->selectionModel()->selectedIndexes();
+            for (const auto& idx: indices)
+            {
+                if (idx.column()==topLeft.column())
+                {
+                    modeltree->model()->setData(
+                        idx,
+                        checkstate,
+                        Qt::CheckStateRole );
+                }
+            }
+
+            connect(modeltree->model(), &QAbstractItemModel::dataChanged,
+                    this, &ParameterEditorWidget::onCADModelDataChanged );
+        }
+    }
 }
 
 

@@ -72,8 +72,6 @@ protected:
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
-    QTreeView *modeltree_;
-    CADViewer *viewer_;
     ParameterSetDisplay* display_;
 
     QLabel* overlayText_;

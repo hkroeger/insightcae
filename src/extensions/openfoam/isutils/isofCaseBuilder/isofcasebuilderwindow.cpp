@@ -445,9 +445,11 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
   onOFVersionChanged(ui->OFversion->currentText());
 
   // global splitter
-//  ui->splitter_5->setStretchFactor(0, 3);
-//  ui->splitter_5->setStretchFactor(1, 0);
-//  ui->splitter_5->setStretchFactor(2, 1);
+  ui->mainSplitter->setStretchFactor(0, 3);
+  ui->mainSplitter->setStretchFactor(1, 1);
+  ui->mainSplitter->setStretchFactor(2, 1);
+  ui->mainSplitter->setStretchFactor(3, 0);
+  ui->mainSplitter->setSizes({1000,300,300,50});
 
 
   // BC tab splitter
@@ -553,6 +555,7 @@ void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
     QSettings settings("silentdynamics", "isofCaseBuilder");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
+    settings.setValue("mainsplitter", ui->mainSplitter->saveState());
     settings.setValue("windowState_PE", ui->splitter_2->saveState());
     settings.setValue("windowState_BC_PE", ui->splitter_4->saveState());
     settings.setValue("PE_state", last_pe_state_);
@@ -566,6 +569,7 @@ void isofCaseBuilderWindow::readSettings()
     QSettings settings("silentdynamics", "isofCaseBuilder");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
+    ui->mainSplitter->restoreState(settings.value("mainsplitter").toByteArray());
     ui->splitter_2->restoreState(settings.value("windowState_PE").toByteArray());
     ui->splitter_4->restoreState(settings.value("windowState_BC_PE").toByteArray());
     last_pe_state_=settings.value("PE_state").toByteArray();

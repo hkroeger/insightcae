@@ -23,7 +23,6 @@
 
 #include <base/exception.h>
 
-
 #include "boost/python.hpp"
 #if (BOOST_VERSION>=106500)
 #include "boost/python/numpy.hpp"

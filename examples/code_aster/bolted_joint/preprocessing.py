@@ -3,6 +3,7 @@
 from OCC.BRepAlgoAPI import *
 from OCC.BRepPrimAPI import *
 from OCC.BRepBuilderAPI import *
+import Insight.vtkPyOffscreen
 from Insight.Aster.geometry import *
 import pprint
     

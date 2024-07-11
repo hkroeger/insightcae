@@ -1,9 +1,19 @@
 
 #include "openfoam/fielddata.h"
+#include "base/exception.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcase.h"
 
 #include "base/boost_include.h"
+
+#include "vtkXMLMultiBlockDataReader.h"
+#include "vtkGenericDataObjectReader.h"
+#include "vtkUnstructuredGrid.h"
+#include "vtkCompositeDataSet.h"
+#include "vtkPointData.h"
+#include "base/vtktools.h"
+#include <string>
+
 
 using namespace std;
 using namespace boost;
@@ -41,11 +51,6 @@ FieldData::Parameters FieldData::uniformSteady(double uniformSteadyValue)
 FieldData::FieldData(double uniformSteadyValue)
 : p_(Parameters::makeDefault())
 {
-//   Parameters::fielddata_uniform_type data;
-//   data.values.resize(1);
-//   data.values[0].time=0;
-//   data.values[0].value=arma::ones(1)*uniformSteadyValue;
-//   p_.fielddata=data;
     p_=uniformSteady(uniformSteadyValue);
     calcValues();
 }
@@ -76,11 +81,6 @@ FieldData::Parameters FieldData::uniformSteady(const arma::mat& uniformSteadyVal
 FieldData::FieldData(const arma::mat& uniformSteadyValue)
 : p_(Parameters::makeDefault())
 {
-//   Parameters::fielddata_uniform_type data;
-//   data.values.resize(1);
-//   data.values[0].time=0;
-//   data.values[0].value=uniformSteadyValue;
-//   p_.fielddata=data;
     p_=uniformSteady(uniformSteadyValue);
     calcValues();
 }
@@ -101,24 +101,27 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 {
     std::ostringstream os;
 
-    if (const Parameters::fielddata_uniformSteady_type *fd =
-        boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
+    if (const auto *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(
+            &p_.fielddata ) ) //(type=="uniform")
     {
         os <<" uniform unsteady 0.0 " << OFDictData::to_OF(fd->value);
     }
 
-    else if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) ) //(type=="uniform")
+    else if (const auto *fd =
+             boost::get<Parameters::fielddata_uniform_type>(
+                 &p_.fielddata ) ) //(type=="uniform")
     {
         os<<" uniform unsteady";
 
-        for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
+        for (const auto& inst: fd->values)
         {
             os << " " << inst.time << " " << OFDictData::to_OF(inst.value);
         }
     }
-
-    else if
-    (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
+    else if ( const auto *fd =
+             boost::get<Parameters::fielddata_linearProfile_type>(
+                 &p_.fielddata ) )
     {
         os<<" linearProfile "
           <<OFDictData::to_OF(fd->p0)
@@ -129,14 +132,14 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
         os<<" "
           <<"unsteady";
 
-        for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
+        for (const auto& inst: fd->values)
         {
             os << " " << inst.time << " " << dictionaries.insertAdditionalInputFile(inst.profile);
         }
     }
-
-    else if
-    (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
+    else if ( const auto *fd =
+             boost::get<Parameters::fielddata_radialProfile_type>(
+                 &p_.fielddata) )
     {
         os<<" radialProfile "
           <<OFDictData::to_OF(fd->p0)
@@ -147,31 +150,27 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
         os<<" "
           <<"unsteady";
 
-        for (const Parameters::fielddata_radialProfile_type::values_default_type& inst: fd->values)
+        for (const auto& inst: fd->values)
         {
             os << " " << inst.time << " " << dictionaries.insertAdditionalInputFile(inst.profile);
         }
     }
-
-    else if
-    (const Parameters::fielddata_fittedProfile_type *fd = boost::get<Parameters::fielddata_fittedProfile_type>(&p_.fielddata) )
+    else if ( const auto *fp =
+             boost::get<Parameters::fielddata_fittedProfile_type>(
+                 &p_.fielddata ) )
     {
         os<<" fittedProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::to_OF(fp->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::to_OF(fp->ep)
           <<" "
           <<"unsteady";
 
-        for (const Parameters::fielddata_fittedProfile_type::values_default_type& inst: fd->values)
+        for (const auto& inst: fp->values)
         {
             os << " " << inst.time;
 
-            for
-            (
-                const Parameters::fielddata_fittedProfile_type::values_default_type::component_coeffs_default_type& coeffs:
-                inst.component_coeffs
-            )
+            for (const auto& coeffs: inst.component_coeffs)
             {
                 os << " [";
                 for (size_t cc=0; cc<coeffs.n_elem; cc++)
@@ -180,10 +179,47 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
             }
         }
     }
-    else
+    else if (const auto *fd =
+               boost::get<Parameters::fielddata_fittedProfile_type>(
+                   &p_.fielddata ) )
     {
-        throw insight::Exception("Unknown field data description type!");
+        os<<" fittedProfile "
+          <<OFDictData::to_OF(fd->p0)
+          <<" "
+          <<OFDictData::to_OF(fd->ep)
+          <<" "
+          <<"unsteady";
+
+        for (const auto& inst: fd->values)
+        {
+            os << " " << inst.time;
+
+            for (const auto& coeffs: inst.component_coeffs)
+            {
+                os << " [";
+                for (size_t cc=0; cc<coeffs.n_elem; cc++)
+                    os<<" "<< str( format("%g") % coeffs[cc] );
+                os<<" ]";
+            }
+        }
     }
+    else if (const auto *fd =
+               boost::get<Parameters::fielddata_vtkField_type>(
+                   &p_.fielddata ) )
+    {
+        os<<" vtkField"
+          <<" unsteady";
+
+        for (const auto& inst: fd->values)
+        {
+            os
+                << " " << inst.time
+                << " \"" << inst.file->filePath().string()<<"\""
+                << " \"" << inst.fieldname<<"\""
+                ;
+        }
+    }
+    else throw insight::UnhandledSelection();
 
     return os.str();
 }
@@ -209,25 +245,92 @@ void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) cons
 }
 
 
-//boost::filesystem::path completed_path(const boost::filesystem::path& basepath, const insight::PathParameter* filename)
-//{
-//    if (filename.is_absolute())
-//        return filename->filePath(basepath);
-//    else
-//        return basepath/filename->filePath(basepath);
-//}
+// avg, max
+std::pair<arma::mat,arma::mat>
+readVTKData(
+    const boost::filesystem::path& fn,
+    const std::string& fieldName )
+{
+    vtkSmartPointer<vtkDataObject> data;
+
+    insight::assertion(
+        exists(fn),
+        "file %s does not exist!", fn.string().c_str());
+
+    if (fn.extension()==".vtm")
+    {
+        auto r = vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
+        r->SetFileName(fn.c_str());
+        r->Update();
+        data = multiBlockDataSetToUnstructuredGrid(r->GetOutput());
+    }
+    else
+    {
+        auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+        r->SetFileName(fn.c_str());
+        r->Update();
+        data = r->GetOutput();
+    }
+
+    arma::mat magavg, maxmag;
+
+    auto evalPointData = [&](vtkPointData* pd)
+    {
+        if (!pd->HasArray(fieldName.c_str()))
+        {
+            throw insight::Exception(
+                "file %s does not contain field %s!",
+                fn.c_str(), fieldName.c_str() );
+        }
+        else
+        {
+            auto *arr = pd->GetArray(fieldName.c_str());
+            magavg=maxmag=arma::zeros(arr->GetNumberOfComponents());
+            for (size_t c=0; c<arr->GetNumberOfComponents(); ++c)
+            {
+                for (size_t j=0; j<arr->GetNumberOfTuples(); ++j)
+                {
+                    double e=pow(pow(arr->GetTuple(j)[c], 2), 2);
+                    magavg(c)+=e;
+                    maxmag(c)=std::max(maxmag(c), e);
+                }
+            }
+            magavg/=double(arr->GetNumberOfTuples());
+        }
+    };
+
+    if (auto *uds = vtkUnstructuredGrid::SafeDownCast(data))
+    {
+        evalPointData(uds->GetPointData());
+    }
+    else if (auto *pd = vtkPolyData::SafeDownCast(data))
+    {
+        evalPointData(pd->GetPointData());
+    }
+    else
+        throw insight::Exception(
+            "not implemented: handling of VTK data set type %s",
+            data->GetClassName() );
+
+    return {magavg, maxmag};
+}
+
 
 double FieldData::calcRepresentativeValueMag() const
 {
-  if (const auto *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
+  if (const auto *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(
+            &p_.fielddata ) )
   {
     return norm(fd->value, 2);
   }
-  else if (const auto *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
+  else if (const auto *fd =
+             boost::get<Parameters::fielddata_uniform_type>(
+                 &p_.fielddata ) )
   {
     double meanv=0.0;
     int s=0;
-    for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
+    for (const auto& inst: fd->values)
     {
       meanv+=pow(norm(inst.value, 2), 2);
       s++;
@@ -237,29 +340,9 @@ double FieldData::calcRepresentativeValueMag() const
     meanv/=double(s);
     return sqrt(meanv);
   }
-  else if (const auto *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
-  {
-    double avg=0.0;
-    int s=0;
-    for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
-    {
-      arma::mat xy;
-      xy.load( inst.profile->stream(), arma::raw_ascii);
-      arma::mat I=integrate(xy);
-      double avg_inst=0.0;
-      for (arma::uword c=0; c<I.n_cols-1; c++)
-      {
-        avg_inst+=pow(I(/*cm.column*/c),2);
-      }
-      avg+=avg_inst;
-      s++;
-    }
-    if (s==0)
-      throw insight::Exception("Invalid data: no time instants prescribed!");
-    avg/=double(s);
-    return sqrt(avg);
-  }
-  else if (const auto *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
+  else if (const auto *fd =
+             boost::get<Parameters::fielddata_linearProfile_type>(
+                 &p_.fielddata ) )
   {
     double avg=0.0;
     int s=0;
@@ -271,7 +354,7 @@ double FieldData::calcRepresentativeValueMag() const
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
       {
-        avg_inst+=pow(I(/*cm.column*/c),2);
+        avg_inst+=pow(I(c),2);
       }
       avg+=avg_inst;
       s++;
@@ -280,6 +363,46 @@ double FieldData::calcRepresentativeValueMag() const
       throw insight::Exception("Invalid data: no time instants prescribed!");
     avg/=double(s);
     return sqrt(avg);
+  }
+  else if (const auto *fd =
+             boost::get<Parameters::fielddata_radialProfile_type>(
+                 &p_.fielddata ) )
+  {
+    double avg=0.0;
+    int s=0;
+    for (const auto& inst: fd->values)
+    {
+      arma::mat xy;
+      xy.load( inst.profile->stream(), arma::raw_ascii);
+      arma::mat I=integrate(xy);
+      double avg_inst=0.0;
+      for (arma::uword c=0; c<I.n_cols-1; c++)
+      {
+        avg_inst+=pow(I(c),2);
+      }
+      avg+=avg_inst;
+      s++;
+    }
+    if (s==0)
+      throw insight::Exception("Invalid data: no time instants prescribed!");
+    avg/=double(s);
+    return sqrt(avg);
+  }
+  else if (const auto *fd =
+           boost::get<Parameters::fielddata_vtkField_type>(
+               &p_.fielddata ) )
+  {
+      arma::mat avg;
+      for (const auto& inst: fd->values)
+      {
+          auto d=readVTKData(inst.file->filePath(), inst.fieldname);
+          if (avg.n_elem==0)
+              avg=d.first;
+          else
+              avg+=d.first;
+      }
+      avg/=double(fd->values.size());
+      return sqrt(arma::as_scalar(arma::sum(avg)));
   }
   else
   {
@@ -293,18 +416,24 @@ double FieldData::calcRepresentativeValueMag() const
 double FieldData::calcMaxValueMag() const
 {
     double maxv=-DBL_MAX;
-    if (const auto *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
+    if (const auto *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(
+            &p_.fielddata) )
     {
         maxv=std::max(maxv, norm(fd->value, 2));
     }
-    else if (const auto *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
+    else if (const auto *fd =
+               boost::get<Parameters::fielddata_uniform_type>(
+                   &p_.fielddata) )
     {
         for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
         {
             maxv=std::max(maxv, norm(inst.value, 2));
         }
     }
-    else if (const auto *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
+    else if (const auto *fd =
+               boost::get<Parameters::fielddata_linearProfile_type>(
+                   &p_.fielddata) )
     {
         for (const auto& inst: fd->values)
         {
@@ -314,13 +443,15 @@ double FieldData::calcMaxValueMag() const
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
             {
-                mag_inst(i) += pow(xy(i, 1+c/*cm.column*/),2);
+                mag_inst(i) += pow(xy(i, 1+c),2);
                 i++;
             }
             maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
         }
     }
-    else if (const auto *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
+    else if (const auto *fd =
+               boost::get<Parameters::fielddata_radialProfile_type>(
+                   &p_.fielddata) )
     {
         for (const auto& inst: fd->values)
         {
@@ -330,10 +461,24 @@ double FieldData::calcMaxValueMag() const
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
             {
-                mag_inst(i) += pow(xy(i, 1+c/*cm.column*/),2);
+                mag_inst(i) += pow(xy(i, 1+c),2);
                 i++;
             }
             maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
+        }
+    }
+    else if (const auto *fd =
+             boost::get<Parameters::fielddata_vtkField_type>(
+                 &p_.fielddata ) )
+    {
+        for (const auto& inst: fd->values)
+        {
+            auto d=readVTKData(inst.file->filePath(), inst.fieldname);
+
+            maxv=std::max(
+                maxv,
+                arma::as_scalar(arma::max(sqrt(d.second)))
+                );
         }
     }
     else
@@ -363,9 +508,11 @@ Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::stri
 
 void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const
 {
-    if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
+    if (const auto *fd =
+        boost::get<Parameters::fielddata_linearProfile_type>(
+            &p_.fielddata) )
     {
-        for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
+        for (const auto& inst: fd->values)
         {
             arma::mat xy;
             xy.load( inst.profile->stream(), arma::raw_ascii);
@@ -392,15 +539,22 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
 
 }
 
+
+
+
 bool FieldData::isAConstantValue(arma::mat &value) const
 {
-    if (const Parameters::fielddata_uniformSteady_type *fd =
-        boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) ) //(type=="uniform")
+    if (const auto *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(
+            &p_.fielddata ) ) //(type=="uniform")
     {
         value = fd->value;
         return true;
     }
     return false;
 }
+
+
+
 
 }

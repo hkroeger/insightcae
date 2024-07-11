@@ -67,7 +67,7 @@ fielddata=selectablesubset {{
    values=array
    [
     set {
-     time=double 0 "Time instant"
+     time = double 0 "Time instant"
      profile=path "profile.dat" "Path to file with tabulated profile for this time instant. Needs to contain one column per component."
     } "Time instant data"
    ] * 1  "Array of time instants"
@@ -81,7 +81,7 @@ fielddata=selectablesubset {{
    values=array
    [
     set {
-     time=double 0 "Time instant"
+     time = double 0 "Time instant"
      component_coeffs=array
       [
        vector (1 1) "Coefficients of profile polynomial"
@@ -93,7 +93,19 @@ fielddata=selectablesubset {{
    ep=vector (1 0 0) "Direction of sampling axis"
  }
 
-}} uniformSteady "Specification of field value"
+  vtkField
+  set {
+   values=array
+   [
+    set {
+     time = double 0 "Time instant"
+     file = path "data.vtk" "Name of VTK file containing the source mesh and data"
+     fieldname = string "U" "Name of field inside the VTK file"
+    } "Time instant data"
+   ] * 1 "Array of time instants"
+  }
+
+}} uniformSteady "Specification of field value. If steady input is desired, specify only a single time instant e.g. at t=0."
 <<<PARAMETERSET
 */
 

@@ -260,14 +260,14 @@ readVTKData(
     if (fn.extension()==".vtm")
     {
         auto r = vtkSmartPointer<vtkXMLMultiBlockDataReader>::New();
-        r->SetFileName(fn.c_str());
+        r->SetFileName(fn.string().c_str());
         r->Update();
         data = multiBlockDataSetToUnstructuredGrid(r->GetOutput());
     }
     else
     {
         auto r = vtkSmartPointer<vtkGenericDataObjectReader>::New();
-        r->SetFileName(fn.c_str());
+        r->SetFileName(fn.string().c_str());
         r->Update();
         data = r->GetOutput();
     }

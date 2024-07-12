@@ -25,124 +25,124 @@ double sutherland_mu(double As, double Ts)
 
 
 const std::map<std::string, SpeciesData::ElementData> SpeciesData::elements = {
-    { "H", {1, "Hydrogen", 1.008 } },
-    { "He", {2, "Helium", 4.002602 } },
-    { "Li", {3, "Lithium", 6.94 } },
-    { "Be", {4, "Beryllium", 9.0121831 } },
-    { "B", {5, "Boron", 10.81 } },
-    { "C", {6, "Carbon", 12.011 } },
-    { "N", {7, "Nitrogen", 14.007 } },
-    { "O", {8, "Oxygen", 15.999 } },
-    { "F", {9, "Fluorine", 18.998403163 } },
-    { "Ne", {10, "Neon", 20.1797 } },
-    { "Na", {11, "Sodium", 22.989769 } },
-    { "Mg", {12, "Magnesium", 24.305 } },
-    { "Al", {13, "Aluminium", 26.981538 } },
-    { "Si", {14, "Silicon", 28.085 } },
-    { "P", {15, "Phosphorus", 30.973761998 } },
-    { "S", {16, "Sulfur", 32.06 } },
-    { "Cl", {17, "Chlorine", 35.45 } },
-    { "Ar", {18, "Argon", 39.948 } },
-    { "K", {19, "Potassium", 39.0983 } },
-    { "Ca", {20, "Calcium", 40.078 } },
-    { "Sc", {21, "Scandium", 44.955908 } },
-    { "Ti", {22, "Titanium", 47.867 } },
-    { "V", {23, "Vanadium", 50.9415 } },
-    { "Cr", {24, "Chromium", 51.9961 } },
-    { "Mn", {25, "Manganese", 54.938043 } },
-    { "Fe", {26, "Iron", 55.845 } },
-    { "Co", {27, "Cobalt", 58.933194 } },
-    { "Ni", {28, "Nickel", 58.6934 } },
-    { "Cu", {29, "Copper", 63.546 } },
-    { "Zn", {30, "Zinc", 65.38 } },
-    { "Ga", {31, "Gallium", 69.723 } },
-    { "Ge", {32, "Germanium", 72.63 } },
-    { "As", {33, "Arsenic", 74.921595 } },
-    { "Se", {34, "Selenium", 78.971 } },
-    { "Br", {35, "Bromine", 79.904 } },
-    { "Kr", {36, "Krypton", 83.798 } },
-    { "Rb", {37, "Rubidium", 85.4678 } },
-    { "Sr", {38, "Strontium", 87.62 } },
-    { "Y", {39, "Yttrium", 88.90584 } },
-    { "Zr", {40, "Zirconium", 91.224 } },
-    { "Nb", {41, "Niobium", 92.90637 } },
-    { "Mo", {42, "Molybdenum", 95.95 } },
-    { "Tc", {43, "Technetium", 97 } },
-    { "Ru", {44, "Ruthenium", 101.07 } },
-    { "Rh", {45, "Rhodium", 102.90549 } },
-    { "Pd", {46, "Palladium", 106.42 } },
-    { "Ag", {47, "Silver", 107.8682 } },
-    { "Cd", {48, "Cadmium", 112.414 } },
-    { "In", {49, "Indium", 114.818 } },
-    { "Sn", {50, "Tin", 118.71 } },
-    { "Sb", {51, "Antimony", 121.76 } },
-    { "Te", {52, "Tellurium", 127.6 } },
-    { "I", {53, "Iodine", 126.90447 } },
-    { "Xe", {54, "Xenon", 131.293 } },
-    { "Cs", {55, "Caesium", 132.90545196 } },
-    { "Ba", {56, "Barium", 137.327 } },
-    { "La", {57, "Lanthanum", 138.90547 } },
-    { "Ce", {58, "Cerium", 140.116 } },
+    { "H",  {1, "Hydrogen",     1.008 } },
+    { "He", {2, "Helium",       4.002602 } },
+    { "Li", {3, "Lithium",      6.94 } },
+    { "Be", {4, "Beryllium",    9.0121831 } },
+    { "B",  {5, "Boron",        10.81 } },
+    { "C",  {6, "Carbon",       12.011 } },
+    { "N",  {7, "Nitrogen",     14.007 } },
+    { "O",  {8, "Oxygen",       15.999 } },
+    { "F",  {9, "Fluorine",     18.998403163 } },
+    { "Ne", {10, "Neon",        20.1797 } },
+    { "Na", {11, "Sodium",      22.989769 } },
+    { "Mg", {12, "Magnesium",   24.305 } },
+    { "Al", {13, "Aluminium",   26.981538 } },
+    { "Si", {14, "Silicon",     28.085 } },
+    { "P",  {15, "Phosphorus",  30.973761998 } },
+    { "S",  {16, "Sulfur",      32.06 } },
+    { "Cl", {17, "Chlorine",    35.45 } },
+    { "Ar", {18, "Argon",       39.948 } },
+    { "K",  {19, "Potassium",   39.0983 } },
+    { "Ca", {20, "Calcium",     40.078 } },
+    { "Sc", {21, "Scandium",    44.955908 } },
+    { "Ti", {22, "Titanium",    47.867 } },
+    { "V",  {23, "Vanadium",    50.9415 } },
+    { "Cr", {24, "Chromium",    51.9961 } },
+    { "Mn", {25, "Manganese",   54.938043 } },
+    { "Fe", {26, "Iron",        55.845 } },
+    { "Co", {27, "Cobalt",      58.933194 } },
+    { "Ni", {28, "Nickel",      58.6934 } },
+    { "Cu", {29, "Copper",      63.546 } },
+    { "Zn", {30, "Zinc",        65.38 } },
+    { "Ga", {31, "Gallium",     69.723 } },
+    { "Ge", {32, "Germanium",   72.63 } },
+    { "As", {33, "Arsenic",     74.921595 } },
+    { "Se", {34, "Selenium",    78.971 } },
+    { "Br", {35, "Bromine",     79.904 } },
+    { "Kr", {36, "Krypton",     83.798 } },
+    { "Rb", {37, "Rubidium",    85.4678 } },
+    { "Sr", {38, "Strontium",   87.62 } },
+    { "Y",  {39, "Yttrium",     88.90584 } },
+    { "Zr", {40, "Zirconium",   91.224 } },
+    { "Nb", {41, "Niobium",     92.90637 } },
+    { "Mo", {42, "Molybdenum",  95.95 } },
+    { "Tc", {43, "Technetium",  97. } },
+    { "Ru", {44, "Ruthenium",   101.07 } },
+    { "Rh", {45, "Rhodium",     102.90549 } },
+    { "Pd", {46, "Palladium",   106.42 } },
+    { "Ag", {47, "Silver",      107.8682 } },
+    { "Cd", {48, "Cadmium",     112.414 } },
+    { "In", {49, "Indium",      114.818 } },
+    { "Sn", {50, "Tin",         118.71 } },
+    { "Sb", {51, "Antimony",    121.76 } },
+    { "Te", {52, "Tellurium",   127.6 } },
+    { "I",  {53, "Iodine",      126.90447 } },
+    { "Xe", {54, "Xenon",       131.293 } },
+    { "Cs", {55, "Caesium",     132.90545196 } },
+    { "Ba", {56, "Barium",      137.327 } },
+    { "La", {57, "Lanthanum",   138.90547 } },
+    { "Ce", {58, "Cerium",      140.116 } },
     { "Pr", {59, "Praseodymium", 140.90766 } },
-    { "Nd", {60, "Neodymium", 144.242 } },
-    { "Pm", {61, "Promethium", 145 } },
-    { "Sm", {62, "Samarium", 150.36 } },
-    { "Eu", {63, "Europium", 151.964 } },
-    { "Gd", {64, "Gadolinium", 157.25 } },
-    { "Tb", {65, "Terbium", 158.925354 } },
-    { "Dy", {66, "Dysprosium", 162.5 } },
-    { "Ho", {67, "Holmium", 164.930328 } },
-    { "Er", {68, "Erbium", 167.259 } },
-    { "Tm", {69, "Thulium", 168.934218 } },
-    { "Yb", {70, "Ytterbium", 173.045 } },
-    { "Lu", {71, "Lutetium", 174.9668 } },
-    { "Hf", {72, "Hafnium", 178.486 } },
-    { "Ta", {73, "Tantalum", 180.94788 } },
-    { "W", {74, "Tungsten", 183.84 } },
-    { "Re", {75, "Rhenium", 186.207 } },
-    { "Os", {76, "Osmium", 190.23 } },
-    { "Ir", {77, "Iridium", 192.217 } },
-    { "Pt", {78, "Platinum", 195.084 } },
-    { "Au", {79, "Gold", 196.96657 } },
-    { "Hg", {80, "Mercury", 200.592 } },
-    { "Tl", {81, "Thallium", 204.38 } },
-    { "Pb", {82, "Lead", 207.2 } },
-    { "Bi", {83, "Bismuth", 208.9804 } },
-    { "Po", {84, "Polonium", 209 } },
-    { "At", {85, "Astatine", 210 } },
-    { "Rn", {86, "Radon", 222 } },
-    { "Fr", {87, "Francium", 223 } },
-    { "Ra", {88, "Radium", 226 } },
-    { "Ac", {89, "Actinium", 227 } },
-    { "Th", {90, "Thorium", 232.0377 } },
+    { "Nd", {60, "Neodymium",   144.242 } },
+    { "Pm", {61, "Promethium",  145. } },
+    { "Sm", {62, "Samarium",    150.36 } },
+    { "Eu", {63, "Europium",    151.964 } },
+    { "Gd", {64, "Gadolinium",  157.25 } },
+    { "Tb", {65, "Terbium",     158.925354 } },
+    { "Dy", {66, "Dysprosium",  162.5 } },
+    { "Ho", {67, "Holmium",     164.930328 } },
+    { "Er", {68, "Erbium",      167.259 } },
+    { "Tm", {69, "Thulium",     168.934218 } },
+    { "Yb", {70, "Ytterbium",   173.045 } },
+    { "Lu", {71, "Lutetium",    174.9668 } },
+    { "Hf", {72, "Hafnium",     178.486 } },
+    { "Ta", {73, "Tantalum",    180.94788 } },
+    { "W",  {74, "Tungsten",    183.84 } },
+    { "Re", {75, "Rhenium",     186.207 } },
+    { "Os", {76, "Osmium",      190.23 } },
+    { "Ir", {77, "Iridium",     192.217 } },
+    { "Pt", {78, "Platinum",    195.084 } },
+    { "Au", {79, "Gold",        196.96657 } },
+    { "Hg", {80, "Mercury",     200.592 } },
+    { "Tl", {81, "Thallium",    204.38 } },
+    { "Pb", {82, "Lead",        207.2 } },
+    { "Bi", {83, "Bismuth",     208.9804 } },
+    { "Po", {84, "Polonium",    209. } },
+    { "At", {85, "Astatine",    210. } },
+    { "Rn", {86, "Radon",       222. } },
+    { "Fr", {87, "Francium",    223. } },
+    { "Ra", {88, "Radium",      226. } },
+    { "Ac", {89, "Actinium",    227. } },
+    { "Th", {90, "Thorium",     232.0377 } },
     { "Pa", {91, "Protactinium", 231.03588 } },
-    { "U", {92, "Uranium", 238.02891 } },
-    { "Np", {93, "Neptunium", 237 } },
-    { "Pu", {94, "Plutonium", 244 } },
-    { "Am", {95, "Americium", 243 } },
-    { "Cm", {96, "Curium", 247 } },
-    { "Bk", {97, "Berkelium", 247 } },
-    { "Cf", {98, "Californium", 251 } },
-    { "Es", {99, "Einsteinium", 252 } },
-    { "Fm", {100, "Fermium", 257 } },
-    { "Md", {101, "Mendelevium", 258 } },
-    { "No", {102, "Nobelium", 259 } },
-    { "Lr", {103, "Lawrencium", 262 } },
-    { "Rf", {104, "Rutherfordium", 267 } },
-    { "Db", {105, "Dubnium", 270 } },
-    { "Sg", {106, "Seaborgium", 269 } },
-    { "Bh", {107, "Bohrium", 270 } },
-    { "Hs", {108, "Hassium", 270 } },
-    { "Mt", {109, "Meitnerium", 278 } },
-    { "Ds", {110, "Darmstadtium", 281 } },
-    { "Rg", {111, "Roentgenium", 281 } },
-    { "Cn", {112, "Copernicium", 285 } },
-    { "Nh", {113, "Nihonium", 286 } },
-    { "Fl", {114, "Flerovium", 289 } },
-    { "Mc", {115, "Moscovium", 289 } },
-    { "Lv", {116, "Livermorium", 293 } },
-    { "Ts", {117, "Tennessine", 293 } },
-    { "Og", {118, "Oganesson", 294 } }
+    { "U",  {92, "Uranium",     238.02891 } },
+    { "Np", {93, "Neptunium",   237. } },
+    { "Pu", {94, "Plutonium",   244. } },
+    { "Am", {95, "Americium",   243. } },
+    { "Cm", {96, "Curium",      247. } },
+    { "Bk", {97, "Berkelium",   247. } },
+    { "Cf", {98, "Californium", 251. } },
+    { "Es", {99, "Einsteinium", 252. } },
+    { "Fm", {100, "Fermium",    257. } },
+    { "Md", {101, "Mendelevium", 258. } },
+    { "No", {102, "Nobelium",   259. } },
+    { "Lr", {103, "Lawrencium", 262. } },
+    { "Rf", {104, "Rutherfordium", 267. } },
+    { "Db", {105, "Dubnium",    270. } },
+    { "Sg", {106, "Seaborgium", 269. } },
+    { "Bh", {107, "Bohrium",    270. } },
+    { "Hs", {108, "Hassium",    270. } },
+    { "Mt", {109, "Meitnerium", 278. } },
+    { "Ds", {110, "Darmstadtium", 281. } },
+    { "Rg", {111, "Roentgenium", 281. } },
+    { "Cn", {112, "Copernicium", 285. } },
+    { "Nh", {113, "Nihonium",   286. } },
+    { "Fl", {114, "Flerovium",  289. } },
+    { "Mc", {115, "Moscovium",  289. } },
+    { "Lv", {116, "Livermorium", 293. } },
+    { "Ts", {117, "Tennessine", 293. } },
+    { "Og", {118, "Oganesson",  294. } }
 };
 
 
@@ -221,13 +221,21 @@ SpeciesData::SpeciesData(
 
     Parameters::properties_custom_type::elements_type elements;
 
-    double wtotal=0.0;
+    double wtotal=0.0, Mq=0.;
+    for (auto s=mixture.begin(); s!=mixture.end(); ++s)
+    {
+        Mq+=s->first / s->second.M();
+    }
+    Mq=1./Mq;
 
     for (auto s=mixture.begin(); s!=mixture.end(); ++s)
     {
         auto sp=s->second.p_;
 
-        wtotal += s->first;
+        double wi = s->first;
+        wtotal += wi;
+        double xi = wi*Mq/s->second.M();
+
 
         if (const auto *jt = boost::get<Parameters::properties_custom_type::thermo_janaf_type>(&sp.thermo))
         {
@@ -253,8 +261,8 @@ SpeciesData::SpeciesData(
 
             for (size_t i=0; i<mixthermo.coeffs_lo.size(); i++)
             {
-                mixthermo.coeffs_lo[i] += s->first * jt->coeffs_lo[i];
-                mixthermo.coeffs_hi[i] += s->first * jt->coeffs_hi[i];
+                mixthermo.coeffs_lo[i] += wi * jt->coeffs_lo[i];
+                mixthermo.coeffs_hi[i] += wi * jt->coeffs_hi[i];
             }
         }
         else
@@ -264,8 +272,8 @@ SpeciesData::SpeciesData(
 
         if (const auto *st = boost::get<Parameters::properties_custom_type::transport_sutherland_type>(&sp.transport))
         {
-            mix_st_A += s->first * sutherland_As(st->mu, st->Tref);
-            mixtrans.Tref += s->first * st->Tref;
+            mix_st_A += wi * sutherland_As(st->mu, st->Tref);
+            mixtrans.Tref += wi * st->Tref;
         }
         else
         {
@@ -274,7 +282,7 @@ SpeciesData::SpeciesData(
 
         for (const auto& e: sp.elements)
         {
-            double nj=e.number/s->first;
+            double nj=e.number*xi;
 
             bool wasPresent=false;
             for (auto& ee: elements)

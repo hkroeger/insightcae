@@ -102,26 +102,29 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
         boost::get<Parameters::composition_staticSpeciesMixture_type>(&p_.composition))
     {
         SpeciesData::SpeciesMixture mix;
-        double M=0.;
+        double Mq=0.;
 
         for (auto& part: mixdesc->components)
         {
             double w;
-
             SpeciesData sd(part.specie);
+
             if (const auto* wd =
                 boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_massFraction_type>(
                     &part.fraction))
             {
-                w=wd->value;
+                w = wd->value;
             }
-            else if (const auto* wd =
+            else if (const auto* mf =
                 boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_moleFraction_type>(
                     &part.fraction))
             {
-                auto Mi=sd.M();
-                M+=wd->value*Mi;
-                w=wd->value*Mi;
+                double
+                    xi = mf->value,
+                    Mi = sd.M();
+
+                Mq += xi*Mi;
+                w = xi*Mi;
             }
             else throw UnhandledSelection();
 
@@ -133,11 +136,11 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
             if (boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_moleFraction_type>(
                     &part.value().fraction))
             {
-                mix[part.index()].first/=M;
+                mix[part.index()].first /= Mq;
             }
         }
 
-        sd.reset(new SpeciesData(/*"mix", */mix));
+        sd.reset(new SpeciesData(mix));
     }
     else throw UnhandledSelection();
 

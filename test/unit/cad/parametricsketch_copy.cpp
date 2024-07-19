@@ -7,9 +7,9 @@
 #include "cadpostprocactions/pointdistance.h"
 #include "cadpostprocactions/angle.h"
 
-#include "iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h"
-#include "iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h"
-#include "iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h"
+#include "constrainedsketchentities/iqvtkfixedpoint.h"
+#include "constrainedsketchentities/iqvtkhorizontalconstraint.h"
+#include "constrainedsketchentities/iqvtkverticalconstraint.h"
 #include <ostream>
 
 using namespace insight;

@@ -31,10 +31,10 @@
 #include <QComboBox>
 #include <QTableView>
 
-#include "iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h"
-#include "iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h"
-#include "iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h"
-#include "iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.h"
+#include "constrainedsketchentities/iqvtkfixedpoint.h"
+#include "constrainedsketchentities/iqvtkhorizontalconstraint.h"
+#include "constrainedsketchentities/iqvtkverticalconstraint.h"
+#include "constrainedsketchentities/iqvtkpointoncurveconstraint.h"
 #include "iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h"
 
 #include "base/qt5_helper.h"

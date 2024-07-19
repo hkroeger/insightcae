@@ -28,6 +28,12 @@ set(insightcad_SOURCES
   sketch.h sketch.cpp
   sketchpoint.h sketchpoint.cpp
   constrainedsketch.h constrainedsketch.cpp
+  constrainedsketchentities/iqvtkconstrainedsketchentity.h constrainedsketchentities/iqvtkconstrainedsketchentity.cpp
+  constrainedsketchentities/iqvtkfixedpoint.h constrainedsketchentities/iqvtkfixedpoint.cpp
+  constrainedsketchentities/iqvtkhorizontalconstraint.h constrainedsketchentities/iqvtkhorizontalconstraint.cpp
+  constrainedsketchentities/iqvtkverticalconstraint.h constrainedsketchentities/iqvtkverticalconstraint.cpp
+  constrainedsketchentities/iqvtkpointoncurveconstraint.h constrainedsketchentities/iqvtkpointoncurveconstraint.cpp
+
   constrainedsketchgrammar.h constrainedsketchgrammar.cpp
   externalreference.h externalreference.cpp
   geotest.cpp 

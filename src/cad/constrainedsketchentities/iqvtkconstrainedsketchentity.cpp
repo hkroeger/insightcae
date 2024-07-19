@@ -1,5 +1,5 @@
 
-#include "iqvtkconstrainedsketcheditor/iqvtkconstrainedsketchentity.h"
+#include "constrainedsketchentities/iqvtkconstrainedsketchentity.h"
 
 IQVTKConstrainedSketchEntity::IQVTKConstrainedSketchEntity(
     const std::string& layerName )

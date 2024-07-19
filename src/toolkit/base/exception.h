@@ -186,7 +186,7 @@ public:
 
 
 
-void assertion(bool condition, std::string context_message, ...);
+void assertion(bool condition, std::string context_message = "internal error", ...);
 
 
 //std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);

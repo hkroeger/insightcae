@@ -126,6 +126,20 @@ std::shared_ptr<T> make_shared_aggr(Args&&... args)
     return std::make_shared<T>(T{ std::forward<Args>(args)... });
 }
 
+
+
+template<class Map>
+typename Map::const_iterator find_mapped_value(const Map& m, const typename Map::mapped_type& value)
+{
+    return std::find_if(
+        m.begin(), m.end(),
+        [&](const typename Map::value_type& entry) {
+            return entry.second==value;
+        });
+}
+
+
+
 }
 
 

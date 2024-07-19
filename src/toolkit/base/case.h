@@ -128,6 +128,8 @@ public:
       }
     }
 
+    void remove(const CaseElement& e);
+
 
     template<class T>
     std::set<T *> findElements()

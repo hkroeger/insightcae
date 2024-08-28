@@ -1619,6 +1619,7 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     auto p = widgetCoordsToVTK(clickPos);
 
     {
+        // look for text (2D actors)
         auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
         picker2d->Pick(p.x(), p.y(), 0, ren_);
         if (auto act2 = picker2d->GetActor2D())
@@ -1636,19 +1637,22 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     //    picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
 
+        insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
         auto pi = picker3d->GetProp3Ds();
         auto pp = picker3d->GetPickedPositions();
         int nsel = pi->GetNumberOfItems();
 
         auto cp = insight::vec3FromComponents(ren_->GetActiveCamera()->GetPosition());
-        std::map<double, vtkProp*> aa3d;
+        std::multimap<double, vtkProp*> aa3d;
         for (int i=0; i<nsel; ++i)
         {
             auto prop = vtkProp::SafeDownCast(pi->GetItemAsObject(i));
             if (actorsExcludedFromPicking_.count(prop)<1)
             {
-                double dist=arma::norm(insight::vec3FromComponents(pp->GetPoint(i))-cp, 2);
-                aa3d[dist]=prop;
+                arma::mat x=insight::vec3FromComponents(pp->GetPoint(i));
+                double dist=arma::norm(x-cp, 2);
+                aa3d.insert({dist, prop});
+                insight::dbg()<<"hit #"<<i<<" "<<x.t()<<" "<<prop->GetClassName()<<std::endl;
             }
         }
         std::transform(

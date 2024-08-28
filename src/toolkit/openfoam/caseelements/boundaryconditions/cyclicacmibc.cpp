@@ -83,7 +83,11 @@ void CyclicACMIBC::addIntoFieldDictionaries(OFdicts &dictionaries) const
 
 
 void CyclicACMIBC::modifyMeshOnDisk(const OpenFOAMCase &cm, const boost::filesystem::path &location) const
-{}
+{
+    // produces error, if boundaryDict entry is already present
+    // if (p_.modifyMesh)
+    //     modifyMesh(cm, location, {{patchName_, p_}});
+}
 
 
 
@@ -91,8 +95,8 @@ void CyclicACMIBC::modifyMesh(
         const OpenFOAMCase &cm,
         const boost::filesystem::path &location,
         const std::vector<std::pair<
-            const std::string&,
-            const Parameters&> >& patchNames_Parameters )
+            std::string,
+            Parameters> >& patchNames_Parameters )
 {
     if (cm.OFversion()>=230)
     {
@@ -168,6 +172,25 @@ void CyclicACMIBC::modifyMesh(
       cm.executeCommand(location, "createBaffles",
                         { "-overwrite" } );
     }
+}
+
+void CyclicACMIBC::modifyMesh(
+    const OpenFOAMCase &cm,
+    const boost::filesystem::path &location,
+    const std::map<std::string, std::string> &patchNames_shadowPatchNames )
+{
+    std::vector<std::pair<
+        std::string,
+        Parameters> > pp;
+    for (auto ps: patchNames_shadowPatchNames)
+    {
+        Parameters p;
+        p.zone=ps.first;
+        p.shadowPatch=ps.second;
+        p.bridgeOverlap=true;
+        pp.push_back({ps.first, p});
+    }
+    modifyMesh(cm, location, pp);
 }
 
 

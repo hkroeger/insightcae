@@ -554,7 +554,9 @@ Feature::Feature(const TopoDS_Shape& shape)
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes),
   featureSymbolName_(/*"subshapesOf_"+creashapes->model()->featureSymbolName()*/)
-{}
+{
+    hash_=calcShapeHash();
+}
 
 Feature::~Feature()
 {

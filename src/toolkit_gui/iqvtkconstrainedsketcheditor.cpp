@@ -36,6 +36,7 @@
 #include "constrainedsketchentities/iqvtkverticalconstraint.h"
 #include "constrainedsketchentities/iqvtkpointoncurveconstraint.h"
 #include "iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h"
+#include "iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.h"
 
 #include "base/qt5_helper.h"
 #include "datum.h"
@@ -942,6 +943,53 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         l->addRow("Layers", layerlist);
     }
 
+
+    {
+        auto  geolist = new QTableView;
+        auto *model=new IQConstrainedSketchEntityListModel(this, this);
+        model->update();
+        connect(this, &IQVTKConstrainedSketchEditor::sketchChanged,
+                model, &IQConstrainedSketchEntityListModel::update);
+        // connect(model, &IQConstrainedSketchLayerListModel::hideLayer,
+        //         this, &IQVTKConstrainedSketchEditor::hideLayer);
+        // connect(model, &IQConstrainedSketchLayerListModel::showLayer,
+        //         this, &IQVTKConstrainedSketchEditor::showLayer);
+        // connect(model, &IQConstrainedSketchLayerListModel::renameLayer,
+        //         this, &IQVTKConstrainedSketchEditor::renameLayer);
+        geolist->setModel(model);
+
+        connect(
+            geolist->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            geolist,
+            [this,model](
+                const QItemSelection &selected,
+                const QItemSelection &deselected )
+            {
+                if (auto*selection = runningAction<IQVTKSelectConstrainedSketchEntity>())
+                {
+                    for (auto desel: deselected.indexes())
+                    {
+                        std::weak_ptr<insight::cad::ConstrainedSketchEntity> e
+                            = (*this)->get<insight::cad::ConstrainedSketchEntity>(
+                                desel.siblingAtColumn(0).data().toInt());
+                        selection->externallyUnselect(e);
+                    }
+                    for (auto sel: selected.indexes())
+                    {
+                        std::weak_ptr<insight::cad::ConstrainedSketchEntity> e
+                            = (*this)->get<insight::cad::ConstrainedSketchEntity>(
+                                sel.siblingAtColumn(0).data().toInt());
+                        selection->externallySelect(e);
+                    }
+                }
+            }
+            );
+
+
+        l->addRow("Entities", geolist);
+    }
+
     setLayout(l);
 
     viewer.commonToolBox()->addItem(this, "Sketch");
@@ -1021,6 +1069,7 @@ void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::Cons
     auto gptr=td.lock();
     remove(gptr);
     (*this)->eraseGeometry(gptr);
+    Q_EMIT sketchChanged();
 }
 
 

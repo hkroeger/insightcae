@@ -52,6 +52,8 @@ arma::mat IQVTKViewer::pointInPlane3D(
     const arma::mat &p0,
     const QPoint &screenPos) const
 {
+    insight::CurrentExceptionContext ex("mapping screen position to 3D position in plane (point and normal)");
+
     using namespace insight;
 
     auto *renderer = const_cast<IQVTKViewer*>(this)->renderer();

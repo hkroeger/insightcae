@@ -375,6 +375,36 @@ public:
         highlights_.clear();
     }
 
+    void externallySelect(SelectedEntity entity)
+    {
+        if (!currentSelection_)
+        {
+            currentSelection_ =
+                multiSelectionContainerFactory_();
+        }
+
+        currentSelection_->insert(entity);
+        this->userPrompt(QString("Added to selection. Now %1 entities selected.").arg(currentSelection_->size()));
+
+        if (highlights_.count(entity)<1)
+            highlights_[entity]=highlightEntity(entity, selectionColor);
+
+        entitySelected(entity);
+    }
+
+    void externallyUnselect(SelectedEntity entity)
+    {
+        if (currentSelection_)
+        {
+            if (currentSelection_->count(entity)>0)
+            {
+                currentSelection_->erase(entity);
+                this->userPrompt(QString("Removed from selection. Now %1 entities selected.").arg(currentSelection_->size()));
+                highlights_.erase(entity);
+            }
+        }
+    }
+
 };
 
 

@@ -1804,6 +1804,8 @@ IQVTKCADModel3DViewer::pointInPlane3D(
     const gp_Ax3& plane,
     const QPoint &screenPos ) const
 {
+    insight::CurrentExceptionContext ex("mapping screen position to 3D position in plane (gp_Ax3)");
+
     auto *renderer = const_cast<IQVTKCADModel3DViewer*>(this)->renderer();
     auto v = widgetCoordsToVTK(screenPos);
 

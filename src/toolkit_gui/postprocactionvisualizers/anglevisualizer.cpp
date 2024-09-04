@@ -27,6 +27,8 @@ namespace cad {
 
 PostProcActionVisualizers::VTKActorList Angle_createVTKRepr(PostprocActionPtr ppa)
 {
+    insight::CurrentExceptionContext ex("creating angle dimension lines");
+
     auto angleDim = std::dynamic_pointer_cast<Angle>(ppa);
     insight::assertion( bool(angleDim), "internal error: expected distance object") ;
 

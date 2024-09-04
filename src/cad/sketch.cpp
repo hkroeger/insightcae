@@ -25,6 +25,7 @@
 #include "base/tools.h"
 
 #include "datum.h"
+#include "cadfeatures/importsolidmodel.h"
 
 #include "TColStd_Array1OfInteger.hxx"
 #include "GC_MakeArcOfCircle.hxx"
@@ -225,7 +226,7 @@ void Sketch::build()
         auto ws = DXFReader(filename, ".*").Wires(tol_);
         if (ws->Length()==1)
         {
-            providedSubshapes_["OuterWire"]=Feature::create(ws->Value(1));
+            providedSubshapes_["OuterWire"]=Import::create(ws->Value(1));
         }
         else
         {
@@ -233,7 +234,7 @@ void Sketch::build()
             {
                 providedSubshapes_[
                         str(format("OuterWire%d")%(i+1))]=
-                        Feature::create(ws->Value(i+1));
+                        Import::create(ws->Value(i+1));
             }
         }
 

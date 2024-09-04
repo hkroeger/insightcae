@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadfeatures/importsolidmodel.h"
 
 #ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"
@@ -92,7 +93,7 @@ void Ellipse::build()
   BRepBuilderAPI_MakeEdge e(crv);
   BRepBuilderAPI_MakeWire w;
   w.Add(e.Edge());
-  providedSubshapes_["OuterWire"]=Feature::create(e.Edge());
+  providedSubshapes_["OuterWire"]=Import::create(e.Edge());
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 

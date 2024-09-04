@@ -22,6 +22,7 @@
 #include "cadfeature.h"
 
 #include "cadfeatures/compound.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace insight 
 {
@@ -114,7 +115,7 @@ void OCCException::saveInvolvedShapes(const boost::filesystem::path& outFile) co
                 std::inserter(m, m.begin()),
                 [&](const InvolvedShapesList::value_type& iv)
                 {
-                    return CompoundFeatureMap::value_type(iv.first, Feature::create(iv.second));
+                    return CompoundFeatureMap::value_type(iv.first, Import::create(iv.second));
                 }
     );
     auto cc=Compound::create(m);

@@ -83,21 +83,30 @@ template<> struct hash<gp_Trsf>
   std::size_t operator()(const gp_Trsf& v) const;
 };
 
-template<> struct hash<insight::cad::Datum>
+template<> struct hash<insight::cad::ASTBase>
 {
-  std::size_t operator()(const insight::cad::Datum& m) const;
+  std::size_t operator()(const insight::cad::ASTBase& m) const;
 };
 
 template<> struct hash<insight::cad::Feature>
 {
-  std::size_t operator()(const insight::cad::Feature& m) const;
+    std::size_t operator()(const insight::cad::Feature& m) const;
 };
 
 template<> struct hash<insight::cad::FeatureSet>
 {
-  std::size_t operator()(const insight::cad::FeatureSet& m) const;
+    std::size_t operator()(const insight::cad::FeatureSet& m) const;
 };
 
+template<> struct hash<insight::cad::DeferredFeatureSet>
+{
+    std::size_t operator()(const insight::cad::DeferredFeatureSet& m) const;
+};
+
+template<> struct hash<insight::cad::Datum>
+{
+    std::size_t operator()(const insight::cad::Datum& m) const;
+};
 
 
 
@@ -187,13 +196,9 @@ class Feature
   
   friend class ParameterListHash;
 
-  static std::mutex step_read_mutex_;
-  
-public:
-//  declareFactoryTableNoArgs(Feature);
 
   
-//   typedef std::shared_ptr<Feature> Ptr;
+public:
   
   struct View
   {
@@ -229,8 +234,6 @@ private:
   // shall only be accessed via the shape() function, which triggers the build function if needed
   TopoDS_Shape shape_;
   
-  FeatureSetPtr creashapes_;
-  
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
   std::unique_ptr<SubshapeNumbering> idx_;
@@ -256,29 +259,13 @@ protected:
   void updateVolProps() const;
   virtual void setShape(const TopoDS_Shape& shape);
   
-  /**
-   * @brief calcShapeHash
-   * @return
-   * computes the hash from the shape geometry.
-   */
-  size_t calcShapeHash() const;
   
-  /**
-   * shall set the hash from input parameters
-   * (not the shape)
-   * has to be computed before build!
-   */
-  virtual size_t calcHash() const;
-  
-  void loadShapeFromFile(const boost::filesystem::path& filepath);
-  
-  virtual void build();
+  static std::mutex step_read_mutex_;
+  void setShapeFromFile(const boost::filesystem::path& filepath);
 
   Feature();
   Feature(const Feature& o);
-  Feature(const TopoDS_Shape& shape);
-  //   Feature(const boost::filesystem::path& filepath);
-  Feature(FeatureSetPtr creashapes);
+
 
 public:
   declareType("Feature");
@@ -294,12 +281,6 @@ public:
     FeatureCmdInfoList );
 
   virtual ~Feature();
-  
-//  static FeaturePtr CreateFromShape(const TopoDS_Shape& shape);
-//  static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
-//  static FeaturePtr CreateFromFeaturesSet(FeatureSetPtr shapes);
-  static FeaturePtr create(const boost::filesystem::path& filepath);
-  CREATE_FUNCTION(Feature);
 
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
@@ -497,10 +478,6 @@ public:
   virtual gp_Trsf transformation() const;
 
 
-  static void insertrule(parser::ISCADParser& ruleset);
-  static FeatureCmdInfoList ruleDocumentation();
-
-
   /**
    * @brief generateScriptCommand
    * This API needs is conceptually incomplete.
@@ -534,10 +511,7 @@ arma::mat transTrsf(const gp_Trsf& tr);
 template<class T>
 void ParameterListHash::addParameter(const T& p)
 {
-  boost::hash_combine(hash_, p);
-  
-  // update
-//  if (model_) model_->hash_=hash_;
+  boost::hash_combine<T>(hash_, p);
 }
 
 class SingleFaceFeature

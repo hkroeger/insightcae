@@ -48,7 +48,7 @@ size_t Compound::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  for (const CompoundFeatureMap::value_type& comp: components_)
+  for (auto& comp: components_)
   {
     h+=comp.first;
     h+=*comp.second;
@@ -125,7 +125,7 @@ void Compound::build()
         FeaturePtr p=c.second;
 
         // delayed evaluation: will be evaluated upon first use
-        auto f = std::make_shared<FeatureSet>(
+        auto f = DeferredFeatureSet::create(
                     shared_from_this(), Face,
                     "isSame(%0)",
                     FeatureSetParserArgList{

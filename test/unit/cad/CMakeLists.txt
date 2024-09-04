@@ -21,6 +21,7 @@ if (INSIGHT_BUILD_CAD)
     add_cad_test(gmshLSDynaExport)
     add_cad_test(sketchsolver)
     add_cad_test(parametricsketch_io)
+    add_cad_test(hash_and_cache)
     add_cad_gui_test(parametricsketch_copy)
 
 endif()

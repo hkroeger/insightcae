@@ -38,8 +38,8 @@ class CurvePattern
 
     CurvePattern ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "CurvePattern" );

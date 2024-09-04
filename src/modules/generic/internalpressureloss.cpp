@@ -126,7 +126,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
       else
       {
           // CAD exchange format
-          return cad::Feature::create(fp);
+          return cad::Import::create(fp);
       }
   };
 

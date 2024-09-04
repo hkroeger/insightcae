@@ -24,6 +24,7 @@
 #include "base/linearalgebra.h"
 #include "base/translations.h"
 #include "feature.h"
+#include "cadfeatures/importsolidmodel.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -141,7 +142,7 @@ void Quad::build()
               matconst(insight::Vector(p4)),
               true
         );
-        providedSubshapes_["OuterWire"]=Feature::create( w.Wire() );
+        providedSubshapes_["OuterWire"]=Import::create( w.Wire() );
 
         TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
         

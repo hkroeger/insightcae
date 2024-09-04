@@ -20,6 +20,7 @@
 #ifndef INSIGHT_CAD_IMPORT_H
 #define INSIGHT_CAD_IMPORT_H
 
+#include "boost/blank.hpp"
 #include "cadfeature.h"
 
 namespace insight {
@@ -31,13 +32,26 @@ namespace cad {
 class Import
     : public Feature
 {
-    boost::filesystem::path filepath_;
-//   ScalarPtr scale_;
+    boost::variant<
+        boost::blank,
+        TopoDS_Shape,
+        boost::filesystem::path,
+        FeatureSetPtr
+        > importSource_;
 
-    Import ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ );
+
+
+
+    Import ( const TopoDS_Shape& shape );
+    Import ( const boost::filesystem::path& filepath );
+    Import ( FeatureSetPtr creashapes );
 
     size_t calcHash() const override;
+
     void build() override;
+
+protected:
+    Import ();
 
 public:
     declareType ( "Import" );

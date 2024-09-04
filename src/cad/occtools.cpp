@@ -23,7 +23,7 @@
 #include "base/linearalgebra.h"
 #include "base/units.h"
 
-#include "cadfeature.h"
+#include "cadfeatures/importsolidmodel.h"
 #include <algorithm>
 
 namespace insight {
@@ -97,7 +97,7 @@ TopoDS_Face asSingleFace(const TopoDS_Shape &shape)
     {
         throw insight::CADException(
             {
-                { "geometry", cad::Feature::create(shape) }
+                { "geometry", cad::Import::create(shape) }
             },
             "Shape contains more than a single face!"
         );

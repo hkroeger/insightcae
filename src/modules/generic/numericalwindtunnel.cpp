@@ -122,7 +122,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     boost::mutex::scoped_lock lock(mtx);
 
     auto obj = cad::Transform::create(
-          cad::Feature::create(p().geometry.objectfile->filePath()), rot);
+          cad::Import::create(p().geometry.objectfile->filePath()), rot);
     bb = p().geometryscale * obj->modelBndBox(bbdefl);
   }
 
@@ -392,7 +392,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
     boost::mutex::scoped_lock lock(mtx);
 
     auto obj = cad::Transform::create(
-          cad::Feature::create(p().geometry.objectfile->filePath()),
+          cad::Import::create(p().geometry.objectfile->filePath()),
           sp().cad_to_cfd_
           );
     obj->saveAs(objectSTLFile);

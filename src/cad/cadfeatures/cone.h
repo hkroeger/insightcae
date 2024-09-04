@@ -39,8 +39,8 @@ class Cone
 
     Cone ( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di = ScalarPtr() );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Cone" );

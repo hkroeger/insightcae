@@ -12,6 +12,8 @@
 
 #include "dialogs/defineplanedialog.h"
 
+#include "cadfeatures/importsolidmodel.h"
+
 using namespace insight;
 
 void IQCADItemModel::addPlane()
@@ -39,7 +41,7 @@ void IQCADItemModel::addImportedFeature()
     if (!fn.isEmpty())
     {
         boost::filesystem::path fp(fn.toStdString());
-        auto m = cad::Feature::create(fp);
+        auto m = cad::Import::create(fp);
         this->addModelstep(
                     fp.filename().stem().string(),
                     m, false );

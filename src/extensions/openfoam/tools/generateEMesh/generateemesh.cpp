@@ -1,6 +1,6 @@
 #include "uniof.h"
 
-#include "cadfeature.h"
+#include "cadfeatures/importsolidmodel.h"
 #include "cademesh.h"
 
 #include "argList.H"
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 
     Info<< "Reading geometry from " << inFileName << " ..." << endl;
     auto feat =
-           insight::cad::Feature::create(
+           insight::cad::Import::create(
             boost::filesystem::path(inFileName) );
     auto bb=feat->modelBndBox();
     Info<<"bounding box:"<<nl

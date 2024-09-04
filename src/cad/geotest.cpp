@@ -22,7 +22,7 @@
 #include "base/exception.h"
 
 #include "BRepClass_FaceClassifier.hxx"
-#include "cadfeature.h"
+#include "cadfeatures/importsolidmodel.h"
 
 #include <algorithm>
 
@@ -653,8 +653,8 @@ bool isGeometricallyIdentical(const TopoDS_Shape &s1, const TopoDS_Shape &s2)
     {
         throw insight::CADException(
             {
-             { "shape 1", cad::Feature::create(s1) },
-             { "shape 2", cad::Feature::create(s2) }
+             { "shape 1", cad::Import::create(s1) },
+             { "shape 2", cad::Import::create(s2) }
             },
             "could not perform cut operation."
             );

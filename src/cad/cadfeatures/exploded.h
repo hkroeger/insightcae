@@ -49,8 +49,8 @@ protected:
     Exploded ( DatumPtr axis, const ExplosionComponentList& m1 );
     Exploded ( DatumPtr axis, FeaturePtr assy );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Exploded" );

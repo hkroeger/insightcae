@@ -29,6 +29,7 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include "cadfeatures/singleedgefeature.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -251,7 +252,7 @@ void Bar::build()
         if (thickness_)
         {
 
-            auto sf=Feature::create(result);
+            auto sf=Import::create(result);
             providedSubshapes_["shell"]=sf;
 
             auto longedgs=cad::makeEdgeFeatureSet(

@@ -21,6 +21,7 @@
 #ifndef INSIGHT_CAD_FEATURE_H
 #define INSIGHT_CAD_FEATURE_H
 
+#include "base/factory.h"
 #include "cadtypes.h"
 #include "astbase.h"
 
@@ -141,12 +142,13 @@ typedef std::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
 
 
 
-
 std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 std::ostream& operator<<(std::ostream& os, const FeatureSetData& fs);
 
+
+
+
 class FeatureSet
-: public ASTBase
 {
 // #warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
   
@@ -154,76 +156,133 @@ class FeatureSet
    * feature which shall be queried
    */
   ConstFeaturePtr model_;
-  
-  /**
-   * basis for subset query
-   */
-  ConstFeatureSetPtr base_set_;
-  
+    
   EntityType shape_;
-  std::string filterexpr_;
-  FeatureSetParserArgList refs_;
   
   FeatureSetData data_;
-
-  virtual size_t calcHash() const;
-  virtual void build();
 
 public:
   FeatureSet(const FeatureSet& o);
   FeatureSet(ConstFeaturePtr m, EntityType shape);
-
   FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id);
   FeatureSet(ConstFeaturePtr m, EntityType shape, const FeatureSetData& ids);
   FeatureSet(ConstFeaturePtr m, EntityType shape, const std::vector<FeatureID>& ids);
 
-  /**
-   * query an entire feature
-   */
-  FeatureSet
-  (
-    ConstFeaturePtr  m, 
-    EntityType shape, 
-    const std::string& filterexpr, 
-    const FeatureSetParserArgList& refs = FeatureSetParserArgList() 
-  );
-  
-  /**
-   * query based on the result of a previous query
-   */
-  FeatureSet
-  (
-    ConstFeatureSetPtr q, 
-    const std::string& filterexpr, 
-    const FeatureSetParserArgList& refs = FeatureSetParserArgList() 
-  );
-  
+  virtual ~FeatureSet();
+
+  inline ConstFeaturePtr model() const { return model_; }
+  inline EntityType shape() const { return shape_; }
+
   size_t size() const;
   
   void safe_union(const FeatureSet& o);
   void safe_union(ConstFeatureSetPtr o);
   
-  const FeatureSetData& data() const;
+  virtual const FeatureSetData& data() const;
   void setData(const FeatureSetData& d);
   void add(const FeatureID& e);
   
   operator const FeatureSetData& () const;
   operator TopAbs_ShapeEnum () const;
-
-  inline ConstFeaturePtr model() const { return model_; }
-  inline EntityType shape() const { return shape_; }
   
-  FeatureSetPtr clone() const;
+  virtual FeatureSetPtr clone() const;
   
   void write() const;
+
+
+  virtual size_t calcFeatureSetHash() const;
 
 };
 
 
-FeatureSetPtr makeVertexFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
-FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
-FeatureSetPtr makeFaceFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
-FeatureSetPtr makeSolidFeatureSet( ConstFeaturePtr feat, const std::string& expression="", const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
+
+
+class DeferredFeatureSet
+    : public ASTBase,
+      public FeatureSet
+{
+  /**
+   * basis for subset query
+   */
+    ConstFeatureSetPtr baseSet_;
+
+    std::string filterexpr_;
+    FeatureSetParserArgList refs_;
+
+
+    size_t calcHash() const override;
+    void build() override;
+
+  /**
+   * query an entire feature
+   */
+    DeferredFeatureSet
+    (
+        ConstFeaturePtr  m,
+        EntityType shape,
+        const std::string& filterexpr = "",
+        const FeatureSetParserArgList& refs = FeatureSetParserArgList()
+    );
+
+  /**
+   * query based on the result of a previous query
+   */
+    DeferredFeatureSet
+    (
+        ConstFeatureSetPtr q,
+        const std::string& filterexpr = "",
+        const FeatureSetParserArgList& refs = FeatureSetParserArgList()
+    );
+
+
+public:
+    CREATE_FUNCTION(DeferredFeatureSet);
+
+    inline ConstFeatureSetPtr baseSet() const { return baseSet_; }
+
+    const FeatureSetData& data() const override;
+
+    size_t calcFeatureSetHash() const override;
+    FeatureSetPtr clone() const override;
+};
+
+
+template<EntityType ET>
+FeatureSetPtr makeFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    )
+{
+    return DeferredFeatureSet::create(
+        feat, ET,
+        expression, refs
+        );
+}
+
+FeatureSetPtr makeVertexFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
+
+FeatureSetPtr makeEdgeFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
+
+FeatureSetPtr makeFaceFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
+
+FeatureSetPtr makeSolidFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
 
 
 }

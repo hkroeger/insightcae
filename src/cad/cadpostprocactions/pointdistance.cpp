@@ -53,14 +53,22 @@ size_t Distance::calcHash() const
 
 arma::mat Distance::measureDirection() const
 {
+    insight::CurrentExceptionContext ex("determining direction of distance measurement");
+
+    arma::mat delta=vec3Zero();
     if (distanceAlong_)
     {
-        return normalized( distanceAlong_->value() );
+        delta= distanceAlong_->value();
     }
     else
     {
-        return normalized( p2_->value() - p1_->value() );
+        delta= p2_->value() - p1_->value();
     }
+
+    if (arma::norm(delta, 2)<insight::SMALL)
+        return vec3X(1);
+    else
+        return normalized( delta );
 }
 
 
@@ -112,6 +120,8 @@ void Distance::operator=(const Distance &other)
 
 arma::mat Distance::dimLineOffset() const
 {
+  insight::CurrentExceptionContext ex("determining dimension line offset direction");
+
   arma::mat dir = measureDirection();
   arma::mat n = arma::cross(dir, vec3(0,0,1));
   if (arma::norm(n,2)<SMALL)

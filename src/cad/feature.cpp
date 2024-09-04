@@ -50,30 +50,11 @@ void Filter::firstPass(FeatureID feature)
 {
 }
 
-size_t FeatureSet::calcHash() const
-{
-  size_t h=0;
-  boost::hash_combine(h, *model_);
-  if (base_set_) boost::hash_combine(h, *base_set_);
-  boost::hash_combine(h, int(shape_));
-  boost::hash_combine(h, filterexpr_);
-  for (const FeatureSetParserArg& arg: refs_)
-  {
-      if (const FeatureSetPtr *fp = boost::get<FeatureSetPtr>(&arg))
-      {
-          boost::hash_combine(h, **fp);
-      }
-  }
-  return h;
-}
+
 
 FeatureSet::FeatureSet(const FeatureSet& o)
-: ASTBase(o),
-  model_(o.model_),
-  base_set_(o.base_set_),
-  shape_(o.shape_),
-  filterexpr_(o.filterexpr_),
-  refs_(o.refs_)
+: model_(o.model_),
+  shape_(o.shape_)
 {
   data_.insert( o.data().begin(), o.data().end() );
 }
@@ -96,44 +77,15 @@ FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, const FeatureSetData
 : model_(m),
   shape_(shape),
   data_(ids)
-{
-    setValid();
-}
+{}
 
 FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, const std::vector<FeatureID>& ids)
 : model_(m),
   shape_(shape),
   data_(ids.begin(), ids.end())
-{
-  setValid();
-}
-
-
-FeatureSet::FeatureSet
-(
-  ConstFeaturePtr m, 
-  EntityType shape, 
-  const string& filterexpr, 
-  const FeatureSetParserArgList& refs
-)
-: model_(m),
-  shape_(shape),
-  filterexpr_(filterexpr),
-  refs_(refs)
 {}
 
-
-FeatureSet::FeatureSet
-(
-  ConstFeatureSetPtr q, 
-  const string& filterexpr, 
-  const FeatureSetParserArgList& refs
-)
-: model_(q->model()),
-  base_set_(q),
-  shape_(q->shape()),
-  filterexpr_(filterexpr),
-  refs_(refs)
+FeatureSet::~FeatureSet()
 {}
 
 
@@ -149,20 +101,17 @@ FeatureSet::operator TopAbs_ShapeEnum () const
 
 const FeatureSetData& FeatureSet::data() const
 {
-  checkForBuildDuringAccess();
   return data_;
 }
 
 void FeatureSet::setData(const FeatureSetData& d)
 {
   data_=d;
-  setValid();
 }
 
 void FeatureSet::add(const FeatureID& e)
 {
   data_.insert(e);
-  setValid();
 }
 
 
@@ -175,15 +124,14 @@ FeatureSet::operator const FeatureSetData& () const
 
 void FeatureSet::safe_union(const FeatureSet& o)
 {
-  if (o.shape_!=shape_)
-    throw insight::Exception("incompatible shape type between feature sets!");
-  else if (!(o.model_==model_))
-    throw insight::Exception("feature sets belong to different models!");
-  else
-  {
-    checkForBuildDuringAccess();
-    data_.insert(o.data().begin(), o.data().end());
-  }
+    if (o.shape()!=shape())
+        throw insight::Exception("incompatible shape type between feature sets!");
+    else if (!(o.model()==model()))
+        throw insight::Exception("feature sets belong to different models!");
+    else
+    {
+        data_.insert(o.data().begin(), o.data().end());
+    }
 }
 
 void FeatureSet::safe_union(ConstFeatureSetPtr o)
@@ -191,125 +139,44 @@ void FeatureSet::safe_union(ConstFeatureSetPtr o)
   safe_union(*o);
 }
 
-void FeatureSet::build()
-{
-    switch (shape_)
-    {
-    case Vertex:
-        if (!filterexpr_.empty())
-        {
-            if (base_set_)
-                data_=model_->query_vertices_subset(base_set_->data(), filterexpr_, refs_);
-            else
-                data_=model_->query_vertices(filterexpr_, refs_);
-        }
-        else
-            data_=model_->allVerticesSet();
-        break;
-    case Edge:
-        if (!filterexpr_.empty())
-        {
-            if (base_set_)
-                data_=model_->query_edges_subset(base_set_->data(), filterexpr_, refs_);
-            else
-                data_=model_->query_edges(filterexpr_, refs_);
-        }
-        else
-            data_=model_->allEdgesSet();
-        break;
-    case Face:
-        if (!filterexpr_.empty())
-        {
-            if (base_set_)
-                data_=model_->query_faces_subset(base_set_->data(), filterexpr_, refs_);
-            else
-                data_=model_->query_faces(filterexpr_, refs_);
-        }
-        else
-            data_=model_->allFacesSet();
-        break;
-    case Solid:
-        if (!filterexpr_.empty())
-        {
-            if (base_set_)
-                data_=model_->query_solids_subset(base_set_->data(), filterexpr_, refs_);
-            else
-                data_=model_->query_solids(filterexpr_, refs_);
-        }
-        else
-            data_=model_->allSolidsSet();
-        break;
-    default:
-        throw insight::Exception("Unknown feature type");
-    }
-}
+
 
 size_t FeatureSet::size() const
 {
-  checkForBuildDuringAccess();
   return data().size();
 }
 
 
-// FeatureSet FeatureSet::query(const FilterPtr& f) const
-// {
-//   switch (shape_)
-//   {
-//     case Vertex:
-//       return model_.query_vertices_subset(*this, f);
-//       break;
-//     case Edge:
-//       return model_.query_edges_subset(*this, f);
-//       break;
-//     case Face:
-//       return model_.query_faces_subset(*this, f);
-//       break;
-//     case Solid:
-//       return model_.query_solids_subset(*this, f);
-//       break;
-//     default:
-//       throw insight::Exception("Unknown feature type");
-//   }
-// }
-// 
-// FeatureSet FeatureSet::query(const std::string& queryexpr) const
-// {
-//   std::istringstream is(queryexpr);
-//   switch (shape_)
-//   {
-//     case Vertex:
-//       return model_.query_vertices_subset(*this, parseVertexFilterExpr(is));
-//       break;
-//     case Edge:
-//       return model_.query_edges_subset(*this, parseEdgeFilterExpr(is));
-//       break;
-//     case Face:
-//       return model_.query_faces_subset(*this, parseFaceFilterExpr(is));
-//       break;
-//     case Solid:
-//       return model_.query_solids_subset(*this, parseSolidFilterExpr(is));
-//       break;
-//     default:
-//       throw insight::Exception("Unknown feature type");
-//   }
-// }
-
 
 FeatureSetPtr FeatureSet::clone() const
 {
-//checkForBuildDuringAccess();
-  FeatureSetPtr nfs(new FeatureSet(*this));
-  return nfs;
+  return std::make_shared<FeatureSet>(*this);
 }
 
 void FeatureSet::write() const
 {
   std::cout<<'[';
-  for (FeatureID i: data_)
+    for (FeatureID i: data())
   {
     std::cout<<" "<<i;
   }
   std::cout<<" ]"<<std::endl;
+}
+
+
+size_t FeatureSet::calcFeatureSetHash() const
+{
+    ParameterListHash h;
+
+    h += *model();
+    h += int(shape());
+
+    for (auto i: data())
+    {
+        h += i;
+    }
+
+    return h.getHash();
 }
 
 
@@ -330,54 +197,169 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
   return os;
 }
 
-FeatureSetPtr makeVertexFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+
+size_t DeferredFeatureSet::calcHash() const
 {
-  auto data=expression.empty() ? feat->allVertices()->data() : feat->query_vertices(expression, refs);
-  std::vector<FeatureID> data2;
-  std::copy(data.begin(), data.end(), std::back_inserter(data2));
-  return std::make_shared<FeatureSet>(
-      feat,
-      EntityType::Vertex,
-      data2
-      );
+    return calcFeatureSetHash();
+}
+
+size_t DeferredFeatureSet::calcFeatureSetHash() const
+{
+    ParameterListHash h;
+
+    h += *model();
+    if (baseSet_)
+        h += *baseSet_;
+    h += int(shape());
+    h += filterexpr_;
+
+    for (const FeatureSetParserArg& arg: refs_)
+    {
+        if (auto *fp = boost::get<FeatureSetPtr>(&arg))
+        {
+            h += **fp;
+        }
+    }
+
+    return h.getHash();
 }
 
 
-FeatureSetPtr makeEdgeFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+void DeferredFeatureSet::build()
 {
-  auto data=expression.empty() ? feat->allEdges()->data() : feat->query_edges(expression, refs);
-  std::vector<FeatureID> data2;
-  std::copy(data.begin(), data.end(), std::back_inserter(data2));
-  return std::make_shared<FeatureSet>(
-        feat,
-        EntityType::Edge,
-        data2
-  );
+    switch (shape())
+    {
+    case Vertex:
+        if (!filterexpr_.empty())
+        {
+            if (baseSet_)
+                setData(model()->query_vertices_subset(baseSet_->data(), filterexpr_, refs_));
+            else
+                setData(model()->query_vertices(filterexpr_, refs_));
+        }
+        else
+            setData(model()->allVerticesSet());
+        break;
+    case Edge:
+        if (!filterexpr_.empty())
+        {
+            if (baseSet_)
+                setData(model()->query_edges_subset(baseSet_->data(), filterexpr_, refs_));
+            else
+                setData(model()->query_edges(filterexpr_, refs_));
+        }
+        else
+            setData(model()->allEdgesSet());
+        break;
+    case Face:
+        if (!filterexpr_.empty())
+        {
+            if (baseSet_)
+                setData(model()->query_faces_subset(baseSet_->data(), filterexpr_, refs_));
+            else
+                setData(model()->query_faces(filterexpr_, refs_));
+        }
+        else
+            setData(model()->allFacesSet());
+        break;
+    case Solid:
+        if (!filterexpr_.empty())
+        {
+            if (baseSet_)
+                setData(model()->query_solids_subset(baseSet_->data(), filterexpr_, refs_));
+            else
+                setData(model()->query_solids(filterexpr_, refs_));
+        }
+        else
+            setData(model()->allSolidsSet());
+        break;
+    default:
+        throw insight::Exception("Unknown feature type");
+    }
 }
 
-FeatureSetPtr makeFaceFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+
+DeferredFeatureSet::DeferredFeatureSet
+    (
+        ConstFeaturePtr m,
+        EntityType shape,
+        const string& filterexpr,
+        const FeatureSetParserArgList& refs
+        )
+    : FeatureSet(m, shape),
+    filterexpr_(filterexpr),
+    refs_(refs)
+{}
+
+
+DeferredFeatureSet::DeferredFeatureSet
+    (
+        ConstFeatureSetPtr q,
+        const string& filterexpr,
+        const FeatureSetParserArgList& refs
+        )
+    : FeatureSet(q->model(), q->shape()),
+    baseSet_(q),
+    filterexpr_(filterexpr),
+    refs_(refs)
+{}
+
+
+const FeatureSetData &DeferredFeatureSet::data() const
 {
-  auto data=expression.empty() ? feat->allFaces()->data() : feat->query_faces(expression, refs);
-  std::vector<FeatureID> data2;
-  std::copy(data.begin(), data.end(), std::back_inserter(data2));
-  return std::make_shared<FeatureSet>(
-        feat,
-        EntityType::Face,
-        data2
-  );
+    checkForBuildDuringAccess();
+    return FeatureSet::data();
 }
 
-FeatureSetPtr makeSolidFeatureSet( ConstFeaturePtr feat, const std::string& expression, const FeatureSetParserArgList& refs)
+FeatureSetPtr DeferredFeatureSet::clone() const
 {
-  auto data=expression.empty() ? feat->allSolids()->data() : feat->query_solids(expression, refs);
-  std::vector<FeatureID> data2;
-  std::copy(data.begin(), data.end(), std::back_inserter(data2));
-  return std::make_shared<FeatureSet>(
-        feat,
-        EntityType::Solid,
-        data2
-  );
+    if (baseSet_)
+        return DeferredFeatureSet::create(baseSet_, filterexpr_, refs_);
+    else
+        return DeferredFeatureSet::create(model(), shape(), filterexpr_, refs_);
 }
+
+
+
+
+FeatureSetPtr makeVertexFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Vertex>(feat, expression, refs);
+}
+
+FeatureSetPtr makeEdgeFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Edge>(feat, expression, refs);
+}
+
+
+FeatureSetPtr makeFaceFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Face>(feat, expression, refs);
+}
+
+
+FeatureSetPtr makeSolidFeatureSet(
+    ConstFeaturePtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Solid>(feat, expression, refs);
+}
+
 
 }
 }

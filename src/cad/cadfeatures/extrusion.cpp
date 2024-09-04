@@ -22,6 +22,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -103,8 +104,8 @@ void Extrusion::build()
     if ( !centered_ )
     {
         BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec(L ) );
-        providedSubshapes_["front"+suffix]=Feature::create ( mkp.FirstShape() );
-        providedSubshapes_["back"+suffix]=Feature::create ( mkp.LastShape() );
+        providedSubshapes_["front"+suffix]=Import::create ( mkp.FirstShape() );
+        providedSubshapes_["back"+suffix]=Import::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
     }
     else
@@ -116,8 +117,8 @@ void Extrusion::build()
             BRepBuilderAPI_Transform ( sk_->shape(), trsf ).Shape(),
             to_Vec(L)
         );
-        providedSubshapes_["front"+suffix]=Feature::create ( mkp.FirstShape() );
-        providedSubshapes_["back"+suffix]=Feature::create ( mkp.LastShape() );
+        providedSubshapes_["front"+suffix]=Import::create ( mkp.FirstShape() );
+        providedSubshapes_["back"+suffix]=Import::create ( mkp.LastShape() );
         setShape ( mkp.Shape() );
     }
 

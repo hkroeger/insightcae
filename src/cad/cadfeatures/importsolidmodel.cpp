@@ -20,8 +20,39 @@
 #include "importsolidmodel.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/exception.h"
 #include "base/tools.h"
 #include "base/translations.h"
+
+#include "TDocStd_Document.hxx"
+//#include "XCAFApp_Application.hxx"
+//#include "XCAFDoc.hxx"
+//#include "XCAFDoc_DocumentTool.hxx"
+//#include "XCAFDoc_ShapeTool.hxx"
+//#include "XSControl_WorkSession.hxx"
+//#include "XSControl_TransferReader.hxx"
+//#include "XSControl_TransferWriter.hxx"
+#include "StepData_StepModel.hxx"
+#include "TDF_LabelSequence.hxx"
+#if (OCC_VERSION_MAJOR>=7)
+#else
+#include "Handle_StepRepr_RepresentationItem.hxx"
+#endif
+#include "STEPConstruct.hxx"
+#include "STEPCAFControl_Writer.hxx"
+//#include "STEPCAFControl_Reader.hxx"
+#include "StepRepr_RepresentationItem.hxx"
+#include "StepShape_AdvancedFace.hxx"
+#include "XSControl_WorkSession.hxx"
+#include "XSControl_TransferReader.hxx"
+#include "APIHeaderSection_MakeHeader.hxx"
+#include "TDataStd_Name.hxx"
+#include "TDF_ChildIterator.hxx"
+#include "TDF_ChildIDIterator.hxx"
+#include "TransferBRep.hxx"
+#include "Transfer_Binder.hxx"
+#include "Transfer_TransientProcess.hxx"
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -43,29 +74,50 @@ addToStaticFunctionTable(Feature, Import, ruleDocumentation);
 
 
 
+
+Import::Import ( const TopoDS_Shape& shape )
+: importSource_(shape)
+{}
+
+
+
+
+Import::Import(const filesystem::path& filepath)
+: importSource_(filepath)
+{}
+
+
+
+
+Import::Import ( FeatureSetPtr creashapes )
+: importSource_(creashapes)
+{}
+
+
+
+
 size_t Import::calcHash() const
 {
-  ParameterListHash h;
-  h+=this->type();
-  h+=filepath_;
-  return h.getHash();
+    ParameterListHash h;
+    h+=this->type();
+
+    if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
+    {
+        h+=*f;
+    }
+    else if (auto *s=boost::get<TopoDS_Shape>(&importSource_))
+    {
+        h+=*s;
+    }
+    else if (auto *fs=boost::get<FeatureSetPtr>(&importSource_))
+    {
+        h+=**fs;
+    }
+    else
+        throw insight::UnhandledSelection();
+
+    return h.getHash();
 }
-
-
-
-
-
-
-
-Import::Import(const filesystem::path& filepath/*, ScalarPtr scale*/)
-: filepath_(filepath)/*,
-  scale_(scale)*/
-{
-}
-
-
-
-
 
 
 void Import::build()
@@ -74,21 +126,83 @@ void Import::build()
 
   if (!cache.contains(hash()))
   {
-    boost::filesystem::path fp = filepath_;
-    if (!boost::filesystem::exists(fp))
-    {
-      fp=sharedModelFilePath(filepath_.string());
-      if (!boost::filesystem::exists(fp))
-      {
-          throw insight::Exception(_("File not found: %s"), filepath_.string().c_str());
-      }
-    }
-    loadShapeFromFile(fp);
 
-    for (FeatureID i: allSolidsSet())
-    {
-      providedSubshapes_[boost::str(boost::format("solid%d")%i)]=Feature::create(subsolid(i));
-    }
+      if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
+      {
+          boost::filesystem::path fp = *f;
+          if (!boost::filesystem::exists(fp))
+          {
+              fp=sharedModelFilePath(f->string());
+              if (!boost::filesystem::exists(fp))
+              {
+                  throw insight::Exception(_("File not found: %s"), f->string().c_str());
+              }
+          }
+          setShapeFromFile(fp);
+
+          for (FeatureID i: allSolidsSet())
+          {
+              providedSubshapes_[boost::str(boost::format("solid%d")%i)]=Import::create(subsolid(i));
+          }
+
+          setFeatureSymbolName("importedFrom_"+fp.string());
+      }
+      else if (auto *s=boost::get<TopoDS_Shape>(&importSource_))
+      {
+          setShape(*s);
+      }
+      else if (auto *fs=boost::get<FeatureSetPtr>(&importSource_))
+      {
+          auto& featSet=*fs;
+
+          std::vector<TopoDS_Shape> shapes;
+          for (const FeatureID& id: featSet->data())
+          {
+              if (featSet->shape()==Vertex)
+              {
+                  shapes.push_back(featSet->model()->vertex(id));
+              }
+              else if (featSet->shape()==Edge)
+              {
+                  shapes.push_back(featSet->model()->edge(id));
+              }
+              else if (featSet->shape()==Face)
+              {
+                  shapes.push_back(featSet->model()->face(id));
+              }
+              else if (featSet->shape()==Solid)
+              {
+                  shapes.push_back(featSet->model()->subsolid(id));
+              }
+              else
+                  throw insight::UnhandledSelection();
+          }
+
+          TopoDS_Shape result;
+
+          if (shapes.size()==1)
+          {
+              result=shapes.front();
+          }
+          else
+          {
+              TopoDS_Compound comp;
+              BRep_Builder builder;
+              builder.MakeCompound( comp );
+
+              for (auto ss: shapes)
+              {
+                  builder.Add(comp, ss);
+              }
+
+              result=comp;
+          }
+
+          setShape(result);
+      }
+      else
+          throw insight::UnhandledSelection();
+
 
     cache.insert(shared_from_this());
   }
@@ -97,14 +211,6 @@ void Import::build()
       this->operator=(*cache.markAsUsed<Import>(hash()));
   }
 
-//   if (scale_)
-//   {
-//     gp_Trsf tr0;
-//     tr0.SetScaleFactor(scale_->value());
-//     s=BRepBuilderAPI_Transform(s, tr0).Shape();
-//   }
-//   setShape(s);
-//   setShapeHash(); // not possible to use in build...
 }
 
 
@@ -121,9 +227,21 @@ void Import::insertrule(parser::ISCADParser& ruleset)
             >> ')' )
        [ qi::_val = phx::bind(
                        &Import::create<const filesystem::path&>,
-                       qi::_1/*, qi::_2*/) ]
+                       qi::_1) ]
     )
   );
+
+  ruleset.modelstepFunctionRules.add
+    (
+        "asModel",
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
+
+            ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' )
+                [ qi::_val = phx::bind(Import::create<FeatureSetPtr>, qi::_1) ]
+
+            )
+        );
+
 }
 
 
@@ -134,11 +252,15 @@ FeatureCmdInfoList Import::ruleDocumentation()
     return {
         FeatureCmdInfo
         (
-            "import",
-         
-            "( <path> )",
-
-          _("Imports a feature from a file. The format is recognized from the filename extension. Supported formats are IGS, STP, BREP.")
+            "import", "( <path> )",
+            _("Imports a feature from a file. "
+              "The format is recognized from the filename extension. "
+              "Supported formats are IGS, STP, BREP.")
+        ),
+        FeatureCmdInfo
+        (
+            "asModel", "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
+            "Creates a new feature from selected entities of an existing feature."
         )
     };
 }

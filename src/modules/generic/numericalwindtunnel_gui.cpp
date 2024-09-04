@@ -4,6 +4,7 @@
 #include "cadfeatures/stl.h"
 #include "cadfeatures/box.h"
 #include "cadfeatures/transform.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace insight
 {
@@ -53,7 +54,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
     else
     {
         org_geom = cad::Transform::create(
-            cad::Feature::create(p.geometry.objectfile->filePath()),
+            cad::Import::create(p.geometry.objectfile->filePath()),
             sp.cad_to_cfd_
             );
     }

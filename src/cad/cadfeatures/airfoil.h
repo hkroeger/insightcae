@@ -106,8 +106,8 @@ class Airfoil
         bool doEdgeThickening
     ) const;
     
-    virtual size_t calcHash() const;;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Airfoil" );

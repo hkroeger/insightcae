@@ -21,7 +21,7 @@
 #include "base/translations.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
-
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -234,7 +234,7 @@ void NacaFourDigit::build()
       throw insight::Exception(_("Failed to generate planar face!"));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_["OuterWire"]=Feature::create(w.Wire());
+  providedSubshapes_["OuterWire"]=Import::create(w.Wire());
   
   refvalues_["L"]=L;
   

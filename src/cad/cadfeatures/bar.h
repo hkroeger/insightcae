@@ -58,8 +58,8 @@ private:
   ScalarPtr miterangle1_hor_;
   VectorPtr attractPt_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
  /**
    * crate bar between p0 and p1. Cross section's xsec (single face) y-axis will be aligned with vertical direction vert.

@@ -100,7 +100,7 @@ bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
   double tol=tol_->evaluate(feature);
   
   TopoDS_Edge e1=model_->edge(feature);
-  auto se1=Feature::create(e1);
+  auto se1=Import::create(e1);
   auto po=ProjectedOutline::create(se1, pln);
   TopoDS_Shape pe=po->shape();
   

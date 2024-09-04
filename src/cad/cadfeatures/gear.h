@@ -39,8 +39,8 @@ class SpurGear
 
     SpurGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "SpurGear" );
@@ -66,8 +66,8 @@ class BevelGear
 
     BevelGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "BevelGear" );

@@ -78,10 +78,10 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
               {
                   std::ifstream f(fn.toStdString());
                   insight::Table tab(f);
-                  insight::assertion(
-                              tab.nCols()==2,
-                              str(boost::format("A table with 2 columns was expected! Got: %dx%d matrix.") % tab.nRows() % tab.nCols()) );
-                  lineEdit->setText(mat2Str(tab.xy(0, 1)));
+                  // insight::assertion(
+                  //             tab.nCols()==2,
+                  //             str(boost::format("A table with 2 columns was expected! Got: %dx%d matrix.") % tab.nRows() % tab.nCols()) );
+                  lineEdit->setText(mat2Str(tab.mat()));
                   applyFunction();
               }
           }

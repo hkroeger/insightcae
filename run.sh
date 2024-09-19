@@ -77,6 +77,7 @@ if [ "$ACTION" == "build" ]; then
  CMAKE=${CMAKE:-cmake}
  
  #export VERBOSE=99 
+ touch $(find $SRC_PATH -iname "*.i") # changes in i-files dependencies are not detected properly, always enforce py wrapper rebuild
  $CMAKE $SRC_PATH -DINSIGHT_BRANCH=${BRANCH} -DINSIGHT_SUPERBUILD=${INSIGHT_THIRDPARTY_DIR} -GNinja ${CMAKE_OPTS[@]}
  
  ninja

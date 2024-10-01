@@ -19,6 +19,7 @@ class AnalyzeRESTServer
 {
   insight::AnalysisThread* analysisThread_;
   insight::Analysis* analysis_;
+  boost::filesystem::path inputFileParentPath_;
 
   boost::mutex mx_;
   std::deque<insight::ProgressState> recordedStates_;
@@ -40,7 +41,7 @@ class AnalyzeRESTServer
 
   std::shared_ptr<insight::Exception> exception_;
   insight::ResultSetPtr results_;
-  std::string* inputFileContents_;
+  // std::string* inputFileContents_;
 
   boost::condition_variable wait_cv_;
 
@@ -55,7 +56,7 @@ public:
       );
 
 
-  void setAnalysis(insight::Analysis* a);
+  void setAnalysis(insight::Analysis* a, const boost::filesystem::path& inputFileParentPath);
   void setSolverThread(insight::AnalysisThread* at);
   void setResults(insight::ResultSetPtr results);
   void setException(const insight::Exception& ex);
@@ -69,8 +70,8 @@ public:
   bool hasResultsDelivered() const;
   bool waitForResultDelivery();
 
-  bool hasInputFileReceived() const;
-  bool waitForInputFile(std::string& inputFileContents_);
+  // bool hasInputFileReceived() const;
+  // bool waitForInputFile(std::string& inputFileContents_);
 
 protected:
 

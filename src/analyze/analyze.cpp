@@ -234,22 +234,22 @@ int main(int argc, char *argv[])
 
         if (!vm.count("input-file"))
         {
-#ifdef HAVE_WT
-          if (server)
-          {
-            cout<<_("Running in server mode without explicitly specified input file: "
-                          "waiting for input transmission")<<endl;
-            if (!server->waitForInputFile(contents))
-            {
-                throw insight::Exception(_("Received interruption!"));
-            }
-          }
-          else
-#endif
-          {
+// #ifdef HAVE_WT
+//           if (server)
+//           {
+//             cout<<_("Running in server mode without explicitly specified input file: "
+//                           "waiting for input transmission")<<endl;
+//             if (!server->waitForInputFile(contents))
+//             {
+//                 throw insight::Exception(_("Received interruption!"));
+//             }
+//           }
+//           else
+// #endif
+          // {
             cerr<<_("input file has to be specified!")<<endl;
             exit(-1);
-          }
+          // }
         }
         else
         {
@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_WT
           if (server)
           {
-            server->setAnalysis( analysis.get() );
+            server->setAnalysis( analysis.get(), inputFileParentPath );
           }
 #endif
 

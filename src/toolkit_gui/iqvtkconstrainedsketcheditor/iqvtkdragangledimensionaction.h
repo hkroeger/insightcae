@@ -3,7 +3,7 @@
 
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor.h"
-#include "cadpostprocactions/angle.h"
+#include "constrainedsketchentities/angleconstraint.h"
 
 class IQVTKCADModel3DViewer;
 

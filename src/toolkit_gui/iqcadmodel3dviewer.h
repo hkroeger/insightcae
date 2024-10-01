@@ -12,13 +12,40 @@
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
 
+
+
+class TOOLKIT_GUI_EXPORT CADModel3DViewer
+{
+public:
+
+    typedef boost::variant<
+        insight::cad::VectorPtr,
+        insight::cad::DatumPtr,
+        insight::cad::FeaturePtr,
+        insight::cad::PostprocActionPtr,
+        vtkSmartPointer<vtkDataObject>
+        > CADEntity;
+
+    struct SubshapeData {
+        insight::cad::FeaturePtr feat;
+        insight::cad::EntityType subshapeType_;
+        insight::cad::FeatureID id_;
+
+        bool operator==(const SubshapeData& o) const;
+        bool operator<(const SubshapeData& o) const;
+    };
+};
+
+
+
+
 class QItemSelectionModel;
 
 class IQVTKViewerState;
 
-
 class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
-        : public QMainWindow //for toolbars to work //QWidget
+    : public QMainWindow, //for toolbars to work //QWidget
+      public CADModel3DViewer
 {
 public:
     typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
@@ -31,22 +58,6 @@ public:
     {
         uint operator()(const QPersistentModelIndex& idx) const;
     };
-
-    typedef boost::variant<
-        insight::cad::VectorPtr,
-        insight::cad::DatumPtr,
-        insight::cad::FeaturePtr,
-        insight::cad::PostprocActionPtr,
-        vtkSmartPointer<vtkDataObject>
-        > CADEntity;
-
-    // typedef boost::variant<
-    //     std::weak_ptr<insight::cad::Vector>,
-    //     std::weak_ptr<insight::cad::Datum>,
-    //     std::weak_ptr<insight::cad::Feature>,
-    //     std::weak_ptr<insight::cad::PostprocAction>,
-    //     vtkWeakPointer<vtkDataObject>
-    //     > CADEntityWeakPtr;
 
 
 private:

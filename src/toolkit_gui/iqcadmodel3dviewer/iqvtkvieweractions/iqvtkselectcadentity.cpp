@@ -28,20 +28,6 @@ void CADEntityMultiSelection::showParameterEditor()
     lo->addWidget(editControls);
     pe_ = new ParameterEditorWidget(pew_, tree, editControls);
 
-
-//    connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
-//            [this]()
-//            {
-//                for (auto& ee: *this)
-//                {
-//                    auto e = ee.lock();
-//                    e->parametersRef().merge(
-//                        pe_->model()->getParameterSet(),
-//                        false
-//                        );
-//                }
-//            }
-//            );
 }
 
 void CADEntityMultiSelection::removeParameterEditor()
@@ -57,9 +43,9 @@ void CADEntityMultiSelection::removeParameterEditor()
 
 
 
-CADEntityMultiSelection::CADEntityMultiSelection
-    ( IQVTKCADModel3DViewer& viewer )
-    : viewer_(viewer),
+CADEntityMultiSelection::CADEntityMultiSelection(
+    IQVTKCADModel3DViewer& viewer )
+  : viewer_(viewer),
     pew_(nullptr),
     pe_(nullptr)
 {
@@ -81,64 +67,40 @@ void CADEntityMultiSelection::insert(
 {
     if (count(entity)<1) // don't add multiple times
     {
+        std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
 
-//        auto i = editor_.sketchGeometryActors_.find(
-//            entity.lock() );
+        auto featPtr = boost::get<insight::cad::FeaturePtr>(&entity);
+        IQFilteredParameterSetModel *spm=nullptr;
 
-//        if (i!=editor_.sketchGeometryActors_.end())
-//        {
-
-            std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
-
-//            auto lentity=entity.lock();
-
-//            if (size()==1)
-//            {
-//                commonParameters_=
-//                    lentity->parameters();
-//                defaultCommonParameters_=
-//                    lentity->defaultParameters();
-//            }
-//            else if (size()>1)
-//            {
-//                commonParameters_=
-//                    commonParameters_.intersection(lentity->parameters());
-//                defaultCommonParameters_=
-//                    defaultCommonParameters_.intersection(lentity->defaultParameters());
-//            }
-
-            auto featPtr = boost::get<insight::cad::FeaturePtr>(&entity);
-            IQFilteredParameterSetModel *spm=nullptr;
-
-            if ( (size() == 1) && featPtr )
+        if ( (size() == 1) && featPtr )
+        {
+            if (auto apsm = viewer_.cadmodel()->associatedParameterSetModel())
             {
-                if (auto apsm = viewer_.cadmodel()->associatedParameterSetModel())
+                auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
+                std::vector<std::string> paramList;
+                std::string assocPs=
+                    index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
+                                          .data()
+                                          .toString()
+                                          .toStdString();
+                boost::split(
+                    paramList, assocPs,
+                    boost::is_any_of(":") );
+
+                if (paramList.size())
                 {
-                    auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
-                    std::vector<std::string> paramList;
-                    std::string assocPs=
-                        index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
-                                              .data()
-                                              .toString()
-                                              .toStdString();
-                    boost::split(
-                        paramList, assocPs,
-                        boost::is_any_of(":") );
-                    if (paramList.size())
-                    {
-                        if (!pe_) showParameterEditor();
-                        spm=new IQFilteredParameterSetModel(paramList, pe_);
-                        spm->setSourceModel(apsm);
-                        pe_->setModel(spm);
-                    }
+                    if (!pe_) showParameterEditor();
+                    spm=new IQFilteredParameterSetModel(paramList, pe_);
+                    spm->setSourceModel(apsm);
+                    pe_->setModel(spm);
                 }
             }
+        }
 
-            if (!spm && pe_)
-            {
-                removeParameterEditor();
-            }
-//        }
+        if (!spm && pe_)
+        {
+            removeParameterEditor();
+        }
     }
 }
 
@@ -200,7 +162,6 @@ IQVTKCADModel3DViewer::HighlightingHandleSet IQVTKSelectCADEntity::highlightEnti
 
 IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
     : IQVTKCADModel3DViewerSelectionLogic(
-        //[]() { return std::make_shared<MultiSelectionContainer>(); },
         [&viewer]()
         { return std::make_shared<CADEntityMultiSelection>(viewer); },
         viewer )

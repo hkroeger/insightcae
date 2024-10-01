@@ -23,7 +23,6 @@ class CADEntityMultiSelection
 
     QWidget *pew_;
     ParameterEditorWidget* pe_;
-    //QTreeView* pe_;
 
     void showParameterEditor();
     void removeParameterEditor();

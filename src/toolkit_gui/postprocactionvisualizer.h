@@ -6,9 +6,6 @@
 
 #include "base/factory.h"
 
-#include "vtkProp.h"
-#include "vtkSmartPointer.h"
-
 namespace insight {
 namespace cad {
 
@@ -24,20 +21,10 @@ public:
       LIST(insight::cad::PostprocActionPtr ppa)
       );
 
-  typedef std::vector<vtkSmartPointer<vtkProp> > VTKActorList;
-  declareStaticFunctionTableWithArgs(
-      createVTKReprByTypeName,
-      VTKActorList,
-      LIST(insight::cad::PostprocActionPtr ppa),
-      LIST(insight::cad::PostprocActionPtr ppa)
-      );
-
 public:
   Handle_AIS_InteractiveObject createAISRepr( insight::cad::PostprocActionPtr ppa );
-  VTKActorList createVTKRepr( insight::cad::PostprocActionPtr ppa );
 
   static Handle_AIS_InteractiveObject createAISReprByTypeName(insight::cad::PostprocActionPtr ppa);
-  static VTKActorList createVTKReprByTypeName(insight::cad::PostprocActionPtr ppa);
 };
 
 extern PostProcActionVisualizers postProcActionVisualizers;

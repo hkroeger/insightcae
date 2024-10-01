@@ -3,7 +3,7 @@
 
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor.h"
-#include "cadpostprocactions/pointdistance.h"
+#include "constrainedsketchentities/distanceconstraint.h"
 
 class IQVTKCADModel3DViewer;
 

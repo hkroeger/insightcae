@@ -1,8 +1,8 @@
 #include "iqvtkcadmodel3dviewerplanepointbasedaction.h"
 
 #include "datum.h"
-#include "cadpostprocactions/angle.h"
-#include "cadpostprocactions/pointdistance.h"
+#include "constrainedsketchentities/angleconstraint.h"
+#include "constrainedsketchentities/distanceconstraint.h"
 
 using namespace insight;
 using namespace insight::cad;

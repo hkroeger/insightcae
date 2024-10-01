@@ -1,4 +1,4 @@
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 #include "constrainedsketch.h"
 
 #include "base/exception.h"

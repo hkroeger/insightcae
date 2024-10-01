@@ -1,22 +1,27 @@
-#ifndef IQVTKFIXEDPOINT_H
-#define IQVTKFIXEDPOINT_H
+#ifndef FIXEDPOINTCONSTRAINT_H
+#define FIXEDPOINTCONSTRAINT_H
 
-#include "iqvtkconstrainedsketchentity.h"
+#include "constrainedsketchentity.h"
 #include "constrainedsketch.h"
 
-class IQVTKFixedPoint
-    : public IQVTKConstrainedSketchEntity
+namespace insight
+{
+namespace cad
 {
 
-    insight::cad::SketchPointPtr p_;
+class FixedPointConstraint
+    : public ConstrainedSketchEntity
+{
 
-    IQVTKFixedPoint(
-        insight::cad::SketchPointPtr p, const std::string& layerName=std::string()  );
+    SketchPointPtr p_;
+
+    FixedPointConstraint(
+        SketchPointPtr p, const std::string& layerName=std::string()  );
 
 public:
     declareType("FixedPoint");
 
-    CREATE_FUNCTION(IQVTKFixedPoint);
+    CREATE_FUNCTION(FixedPointConstraint);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 
@@ -26,12 +31,12 @@ public:
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
     static void addParserRule(
-        insight::cad::ConstrainedSketchGrammar& ruleset,
-        insight::cad::MakeDefaultGeometryParametersFunction mdpf );
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
 
@@ -40,10 +45,12 @@ public:
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
-    void operator=(const IQVTKFixedPoint& other);
+    void operator=(const FixedPointConstraint& other);
 
-    insight::cad::ConstrainedSketchEntityPtr clone() const override;
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
+}
+}
 
-#endif // IQVTKFIXEDPOINT_H
+#endif // FIXEDPOINTCONSTRAINT_H

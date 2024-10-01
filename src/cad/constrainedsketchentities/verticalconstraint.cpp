@@ -1,4 +1,4 @@
-#include "iqvtkverticalconstraint.h"
+#include "verticalconstraint.h"
 
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
@@ -7,19 +7,34 @@
 #include "vtkTextActor.h"
 #include "vtkTextProperty.h"
 
-using namespace insight::cad;
 
-defineType(IQVTKVerticalConstraint);
 
-IQVTKVerticalConstraint::IQVTKVerticalConstraint(
+
+namespace insight
+{
+namespace cad
+{
+
+
+
+
+defineType(VerticalConstraint);
+
+
+
+
+VerticalConstraint::VerticalConstraint(
     std::shared_ptr<insight::cad::Line> line,
     const std::string& layerName )
-  : IQVTKConstrainedSketchEntity(layerName),
+  : ConstrainedSketchEntity(layerName),
     line_(line)
 {}
 
+
+
+
 std::vector<vtkSmartPointer<vtkProp> >
-IQVTKVerticalConstraint::createActor() const
+VerticalConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("V");
@@ -38,12 +53,18 @@ IQVTKVerticalConstraint::createActor() const
     return {caption};
 
 }
-int IQVTKVerticalConstraint::nConstraints() const
+
+
+
+int VerticalConstraint::nConstraints() const
 {
     return 1;
 }
 
-double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) const
+
+
+
+double VerticalConstraint::getConstraintError(unsigned int iConstraint) const
 {
     auto p0 = std::dynamic_pointer_cast<SketchPoint>(line_->start());
     auto p1 = std::dynamic_pointer_cast<SketchPoint>(line_->end());
@@ -55,10 +76,10 @@ double IQVTKVerticalConstraint::getConstraintError(unsigned int iConstraint) con
     return d2(0);
 }
 
-void IQVTKVerticalConstraint::scaleSketch(double scaleFactor)
+void VerticalConstraint::scaleSketch(double scaleFactor)
 {}
 
-void IQVTKVerticalConstraint::generateScriptCommand(
+void VerticalConstraint::generateScriptCommand(
     insight::cad::ConstrainedSketchScriptBuffer &script,
     const std::map<const ConstrainedSketchEntity *, int> &entityLabels ) const
 {
@@ -78,12 +99,12 @@ void IQVTKVerticalConstraint::generateScriptCommand(
 }
 
 namespace insight { namespace cad {
-addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKVerticalConstraint, addParserRule);
+addToStaticFunctionTable(ConstrainedSketchEntity, VerticalConstraint, addParserRule);
 }}
 
-void IQVTKVerticalConstraint::addParserRule(
-    insight::cad::ConstrainedSketchGrammar &ruleset,
-    insight::cad::MakeDefaultGeometryParametersFunction )
+void VerticalConstraint::addParserRule(
+    ConstrainedSketchGrammar &ruleset,
+    MakeDefaultGeometryParametersFunction )
 {
     using namespace insight::cad;
     namespace qi=boost::spirit::qi;
@@ -99,23 +120,30 @@ void IQVTKVerticalConstraint::addParserRule(
              ')'
          )
           [ qi::_a = phx::bind(
-                 &IQVTKVerticalConstraint::create<std::shared_ptr<Line>, const std::string& >,
+                 &VerticalConstraint::create<std::shared_ptr<Line>, const std::string& >,
                  phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_3 ),
             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
             qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }
 
-std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKVerticalConstraint::dependencies() const
+
+
+
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
+VerticalConstraint::dependencies() const
 {
     return { line_ };
 }
 
-void IQVTKVerticalConstraint::replaceDependency(
+
+
+
+void VerticalConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
     const std::shared_ptr<ConstrainedSketchEntity> &newEntity)
 {
-    if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(newEntity))
+    if (auto l = std::dynamic_pointer_cast<Line>(newEntity))
     {
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(line_) == entity)
         {
@@ -126,17 +154,17 @@ void IQVTKVerticalConstraint::replaceDependency(
 
 
 
-void IQVTKVerticalConstraint::operator=(const ConstrainedSketchEntity& other)
+void VerticalConstraint::operator=(const ConstrainedSketchEntity& other)
 {
-    operator=(dynamic_cast<const IQVTKVerticalConstraint&>(other));
+    operator=(dynamic_cast<const VerticalConstraint&>(other));
 }
 
 
 
 
-ConstrainedSketchEntityPtr IQVTKVerticalConstraint::clone() const
+ConstrainedSketchEntityPtr VerticalConstraint::clone() const
 {
-    auto cl=IQVTKVerticalConstraint::create( line_, layerName() );
+    auto cl=VerticalConstraint::create( line_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef() = parameters();
@@ -146,9 +174,11 @@ ConstrainedSketchEntityPtr IQVTKVerticalConstraint::clone() const
 
 
 
-void IQVTKVerticalConstraint::operator=(const IQVTKVerticalConstraint& other)
+void VerticalConstraint::operator=(const VerticalConstraint& other)
 {
     line_=other.line_;
-    IQVTKConstrainedSketchEntity::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
 }
 
+}
+}

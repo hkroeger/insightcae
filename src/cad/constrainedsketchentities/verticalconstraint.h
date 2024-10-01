@@ -1,23 +1,27 @@
-#ifndef IQVTKVERTICALCONSTRAINT_H
-#define IQVTKVERTICALCONSTRAINT_H
+#ifndef VERTICALCONSTRAINT_H
+#define VERTICALCONSTRAINT_H
 
-#include "iqvtkconstrainedsketchentity.h"
+#include "constrainedsketchentity.h"
 #include "cadfeatures/line.h"
 
-
-class IQVTKVerticalConstraint
-    : public IQVTKConstrainedSketchEntity
+namespace insight
 {
-    std::shared_ptr<insight::cad::Line> line_;
+namespace cad
+{
 
-    IQVTKVerticalConstraint(
-        std::shared_ptr<insight::cad::Line> line,
+class VerticalConstraint
+    : public ConstrainedSketchEntity
+{
+    std::shared_ptr<Line> line_;
+
+    VerticalConstraint(
+        std::shared_ptr<Line> line,
         const std::string& layerName = std::string() );
 
 public:
     declareType("VerticalConstraint");
 
-    CREATE_FUNCTION(IQVTKVerticalConstraint);
+    CREATE_FUNCTION(VerticalConstraint);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 
@@ -26,12 +30,12 @@ public:
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
     static void addParserRule(
-        insight::cad::ConstrainedSketchGrammar& ruleset,
-        insight::cad::MakeDefaultGeometryParametersFunction mdpf );
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
 
@@ -40,9 +44,12 @@ public:
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
-    void operator=(const IQVTKVerticalConstraint& other);
+    void operator=(const VerticalConstraint& other);
 
-    insight::cad::ConstrainedSketchEntityPtr clone() const override;
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
-#endif // IQVTKVERTICALCONSTRAINT_H
+}
+}
+
+#endif // VERTICALCONSTRAINT_H

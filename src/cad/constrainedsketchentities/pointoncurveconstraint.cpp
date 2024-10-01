@@ -1,4 +1,4 @@
-#include "iqvtkpointoncurveconstraint.h"
+#include "pointoncurveconstraint.h"
 
 #include "cadfeatures/line.h"
 
@@ -8,17 +8,22 @@
 
 
 
+namespace insight
+{
+namespace cad
+{
 
-defineType(IQVTKPointOnCurveConstraint);
+
+defineType(PointOnCurveConstraint);
 
 
 
 
-IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
+PointOnCurveConstraint::PointOnCurveConstraint(
     std::shared_ptr<insight::cad::SketchPoint> p,
     std::shared_ptr<insight::cad::Feature> curve,
     const std::string& layerName )
-    : IQVTKConstrainedSketchEntity(layerName),
+    : ConstrainedSketchEntity(layerName),
     p_(p),
     curve_(curve)
 {}
@@ -27,7 +32,7 @@ IQVTKPointOnCurveConstraint::IQVTKPointOnCurveConstraint(
 
 
 std::vector<vtkSmartPointer<vtkProp> >
-IQVTKPointOnCurveConstraint::createActor() const
+PointOnCurveConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("C");
@@ -50,7 +55,7 @@ IQVTKPointOnCurveConstraint::createActor() const
 
 
 
-int IQVTKPointOnCurveConstraint::nConstraints() const
+int PointOnCurveConstraint::nConstraints() const
 {
     return 1;
 }
@@ -58,7 +63,7 @@ int IQVTKPointOnCurveConstraint::nConstraints() const
 
 
 
-double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint) const
+double PointOnCurveConstraint::getConstraintError(unsigned int iConstraint) const
 {
     insight::assertion(
         iConstraint==0,
@@ -85,13 +90,13 @@ double IQVTKPointOnCurveConstraint::getConstraintError(unsigned int iConstraint)
 
 
 
-void IQVTKPointOnCurveConstraint::scaleSketch(double scaleFactor)
+void PointOnCurveConstraint::scaleSketch(double scaleFactor)
 {}
 
 
 
 
-void IQVTKPointOnCurveConstraint::generateScriptCommand(
+void PointOnCurveConstraint::generateScriptCommand(
     insight::cad::ConstrainedSketchScriptBuffer &script,
     const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
 {
@@ -119,17 +124,16 @@ void IQVTKPointOnCurveConstraint::generateScriptCommand(
 
 
 namespace insight { namespace cad {
-addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKPointOnCurveConstraint, addParserRule);
+addToStaticFunctionTable(ConstrainedSketchEntity, PointOnCurveConstraint, addParserRule);
 }}
 
 
 
 
-void IQVTKPointOnCurveConstraint::addParserRule(
-    insight::cad::ConstrainedSketchGrammar &ruleset,
-    insight::cad::MakeDefaultGeometryParametersFunction )
+void PointOnCurveConstraint::addParserRule(
+    ConstrainedSketchGrammar &ruleset,
+    MakeDefaultGeometryParametersFunction )
 {
-    using namespace insight::cad;
     namespace qi=boost::spirit::qi;
     namespace phx=boost::phoenix;
     ruleset.entityRules.add
@@ -144,7 +148,7 @@ void IQVTKPointOnCurveConstraint::addParserRule(
              ')'
          )
          [ qi::_a = phx::bind(
-                 &IQVTKPointOnCurveConstraint::create<SketchPointPtr, FeaturePtr, const std::string&>,
+                 &PointOnCurveConstraint::create<SketchPointPtr, FeaturePtr, const std::string&>,
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_3),
                  phx::bind(&ConstrainedSketch::get<Feature>, ruleset.sketch, qi::_2), qi::_4 ),
              phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
@@ -155,13 +159,13 @@ void IQVTKPointOnCurveConstraint::addParserRule(
 
 
 
-std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> >
-IQVTKPointOnCurveConstraint::dependencies() const
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
+PointOnCurveConstraint::dependencies() const
 {
-    std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > ret
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret
         { p_ };
 
-    if (auto l = std::dynamic_pointer_cast<insight::cad::ConstrainedSketchEntity>(curve_))
+    if (auto l = std::dynamic_pointer_cast<ConstrainedSketchEntity>(curve_))
         ret.insert(l);
 
     return ret;
@@ -170,18 +174,18 @@ IQVTKPointOnCurveConstraint::dependencies() const
 
 
 
-void IQVTKPointOnCurveConstraint::replaceDependency(
+void PointOnCurveConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
     const std::shared_ptr<ConstrainedSketchEntity> &newEntity)
 {
-    if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(newEntity))
+    if (auto p = std::dynamic_pointer_cast<SketchPoint>(newEntity))
     {
         if ( std::dynamic_pointer_cast<ConstrainedSketchEntity>(p_) == entity )
         {
             p_ = p;
         }
     }
-    if (auto c = std::dynamic_pointer_cast<insight::cad::Feature>(newEntity))
+    if (auto c = std::dynamic_pointer_cast<Feature>(newEntity))
     {
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(curve_) == entity)
         {
@@ -193,16 +197,16 @@ void IQVTKPointOnCurveConstraint::replaceDependency(
 
 
 
-void IQVTKPointOnCurveConstraint::operator=(const ConstrainedSketchEntity& other)
+void PointOnCurveConstraint::operator=(const ConstrainedSketchEntity& other)
 {
-    operator=(dynamic_cast<const IQVTKPointOnCurveConstraint&>(other));
+    operator=(dynamic_cast<const PointOnCurveConstraint&>(other));
 }
 
 
 
-insight::cad::ConstrainedSketchEntityPtr IQVTKPointOnCurveConstraint::clone() const
+ConstrainedSketchEntityPtr PointOnCurveConstraint::clone() const
 {
-    auto cl=IQVTKPointOnCurveConstraint::create( p_, curve_, layerName() );
+    auto cl=PointOnCurveConstraint::create( p_, curve_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef() = parameters();
@@ -212,9 +216,12 @@ insight::cad::ConstrainedSketchEntityPtr IQVTKPointOnCurveConstraint::clone() co
 
 
 
-void IQVTKPointOnCurveConstraint::operator=(const IQVTKPointOnCurveConstraint& other)
+void PointOnCurveConstraint::operator=(const PointOnCurveConstraint& other)
 {
     p_=other.p_;
     curve_=other.curve_;
-    IQVTKConstrainedSketchEntity::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
+}
+
+}
 }

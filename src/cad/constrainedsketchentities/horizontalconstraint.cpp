@@ -1,4 +1,4 @@
-#include "iqvtkhorizontalconstraint.h"
+#include "horizontalconstraint.h"
 
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
@@ -8,25 +8,28 @@
 #include "vtkTextProperty.h"
 
 
-using namespace insight::cad;
+namespace insight
+{
+namespace cad
+{
 
 
-defineType(IQVTKHorizontalConstraint);
+defineType(HorizontalConstraint);
 
 
 
 
-IQVTKHorizontalConstraint::IQVTKHorizontalConstraint(
+HorizontalConstraint::HorizontalConstraint(
     std::shared_ptr<insight::cad::Line> line,
     const std::string& layerName )
-    : IQVTKConstrainedSketchEntity(layerName), line_(line)
+    : ConstrainedSketchEntity(layerName), line_(line)
 {}
 
 
 
 
 std::vector<vtkSmartPointer<vtkProp> >
-IQVTKHorizontalConstraint::createActor() const
+HorizontalConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("H");
@@ -48,7 +51,7 @@ IQVTKHorizontalConstraint::createActor() const
 
 
 
-int IQVTKHorizontalConstraint::nConstraints() const
+int HorizontalConstraint::nConstraints() const
 {
     return 1;
 }
@@ -56,7 +59,7 @@ int IQVTKHorizontalConstraint::nConstraints() const
 
 
 
-double IQVTKHorizontalConstraint::getConstraintError(
+double HorizontalConstraint::getConstraintError(
     unsigned int iConstraint) const
 {
     auto p0 = std::dynamic_pointer_cast<SketchPoint>(line_->start());
@@ -72,13 +75,13 @@ double IQVTKHorizontalConstraint::getConstraintError(
 
 
 
-void IQVTKHorizontalConstraint::scaleSketch(double scaleFactor)
+void HorizontalConstraint::scaleSketch(double scaleFactor)
 {}
 
 
 
 
-void IQVTKHorizontalConstraint::generateScriptCommand(
+void HorizontalConstraint::generateScriptCommand(
     insight::cad::ConstrainedSketchScriptBuffer &script,
     const std::map<const ConstrainedSketchEntity *, int> &entityLabels
     ) const
@@ -102,15 +105,15 @@ void IQVTKHorizontalConstraint::generateScriptCommand(
 
 
 namespace insight { namespace cad {
-addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKHorizontalConstraint, addParserRule);
+addToStaticFunctionTable(ConstrainedSketchEntity, HorizontalConstraint, addParserRule);
 }}
 
 
 
 
-void IQVTKHorizontalConstraint::addParserRule(
-    insight::cad::ConstrainedSketchGrammar &ruleset,
-    insight::cad::MakeDefaultGeometryParametersFunction )
+void HorizontalConstraint::addParserRule(
+    ConstrainedSketchGrammar &ruleset,
+    MakeDefaultGeometryParametersFunction )
 {
     using namespace insight::cad;
     namespace qi=boost::spirit::qi;
@@ -126,7 +129,7 @@ void IQVTKHorizontalConstraint::addParserRule(
              ')'
          )
             [ qi::_a = phx::bind(
-                 &IQVTKHorizontalConstraint::create<std::shared_ptr<insight::cad::Line>, const std::string& >,
+                 &HorizontalConstraint::create<std::shared_ptr<Line>, const std::string& >,
                  phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_3 ),
               phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
               qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
@@ -136,7 +139,8 @@ void IQVTKHorizontalConstraint::addParserRule(
 
 
 
-std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKHorizontalConstraint::dependencies() const
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
+HorizontalConstraint::dependencies() const
 {
     return { line_ };
 }
@@ -144,11 +148,11 @@ std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTK
 
 
 
-void IQVTKHorizontalConstraint::replaceDependency(
+void HorizontalConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
     const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
 {
-    if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(newEntity))
+    if (auto l = std::dynamic_pointer_cast<Line>(newEntity))
     {
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(line_) == entity)
         {
@@ -160,17 +164,17 @@ void IQVTKHorizontalConstraint::replaceDependency(
 
 
 
-void IQVTKHorizontalConstraint::operator=(const ConstrainedSketchEntity& other)
+void HorizontalConstraint::operator=(const ConstrainedSketchEntity& other)
 {
-    operator=(dynamic_cast<const IQVTKHorizontalConstraint&>(other));
+    operator=(dynamic_cast<const HorizontalConstraint&>(other));
 }
 
 
 
 
-ConstrainedSketchEntityPtr IQVTKHorizontalConstraint::clone() const
+ConstrainedSketchEntityPtr HorizontalConstraint::clone() const
 {
-    auto cl=IQVTKHorizontalConstraint::create( line_, layerName() );
+    auto cl=HorizontalConstraint::create( line_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef() = parameters();
@@ -180,8 +184,11 @@ ConstrainedSketchEntityPtr IQVTKHorizontalConstraint::clone() const
 
 
 
-void IQVTKHorizontalConstraint::operator=(const IQVTKHorizontalConstraint& other)
+void HorizontalConstraint::operator=(const HorizontalConstraint& other)
 {
     line_=other.line_;
-    IQVTKConstrainedSketchEntity::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
+}
+
+}
 }

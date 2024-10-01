@@ -67,5 +67,10 @@ void ExternalReference::operator=(const ExternalReference& other)
     extRef_=other.extRef_;
 }
 
+std::vector<vtkSmartPointer<vtkProp> > ExternalReference::createActor() const
+{
+    return extRef_->createVTKActors();
+}
+
 } // namespace cad
 } // namespace insight

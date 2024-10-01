@@ -295,6 +295,12 @@ ConstrainedSketchEntityPtr Line::clone() const
 
 
 
+std::vector<vtkSmartPointer<vtkProp> > Line::createActor() const
+{
+    return Feature::createVTKActors();
+}
+
+
 
 void Line::operator=(const Line& other)
 {

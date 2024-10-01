@@ -1,28 +1,32 @@
-#ifndef IQVTKPOINTONCURVECONSTRAINT_H
-#define IQVTKPOINTONCURVECONSTRAINT_H
+#ifndef POINTONCURVECONSTRAINT_H
+#define POINTONCURVECONSTRAINT_H
 
 
-#include "iqvtkconstrainedsketchentity.h"
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 
 #include "constrainedsketch.h"
 #include "cadfeature.h"
 
-class IQVTKPointOnCurveConstraint
-    : public IQVTKConstrainedSketchEntity
+namespace insight
 {
-    std::shared_ptr<insight::cad::SketchPoint> p_;
-    std::shared_ptr<insight::cad::Feature> curve_;
+namespace cad
+{
 
-    IQVTKPointOnCurveConstraint(
-        std::shared_ptr<insight::cad::SketchPoint> p,
-        std::shared_ptr<insight::cad::Feature> curve,
+class PointOnCurveConstraint
+    : public ConstrainedSketchEntity
+{
+    std::shared_ptr<SketchPoint> p_;
+    std::shared_ptr<Feature> curve_;
+
+    PointOnCurveConstraint(
+        std::shared_ptr<SketchPoint> p,
+        std::shared_ptr<Feature> curve,
         const std::string& layerName = std::string() );
 
 public:
     declareType("PointOnCurveConstraint");
 
-    CREATE_FUNCTION(IQVTKPointOnCurveConstraint);
+    CREATE_FUNCTION(PointOnCurveConstraint);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 
@@ -31,10 +35,12 @@ public:
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
-    static void addParserRule(insight::cad::ConstrainedSketchGrammar& ruleset, insight::cad::MakeDefaultGeometryParametersFunction mdpf);
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
 
@@ -43,10 +49,12 @@ public:
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
-    void operator=(const IQVTKPointOnCurveConstraint& other);
+    void operator=(const PointOnCurveConstraint& other);
 
-    insight::cad::ConstrainedSketchEntityPtr clone() const override;
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
+}
+}
 
-#endif // IQVTKPOINTONCURVECONSTRAINT_H
+#endif // POINTONCURVECONSTRAINT_H

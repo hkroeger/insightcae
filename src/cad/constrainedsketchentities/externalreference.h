@@ -2,7 +2,7 @@
 #define INSIGHT_CAD_EXTERNALREFERENCE_H
 
 #include "cadfeature.h"
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 
 namespace insight {
 namespace cad {
@@ -40,6 +40,8 @@ public:
     void operator=(const ExternalReference& other);
 
     ConstrainedSketchEntityPtr clone() const override;
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 };
 
 } // namespace cad

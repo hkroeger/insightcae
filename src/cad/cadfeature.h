@@ -185,6 +185,8 @@ public:
 };
 
 
+
+typedef std::vector<vtkSmartPointer<vtkProp> >  VTKActorList;
  
 /**
  * Base class of all CAD modelling features
@@ -496,6 +498,8 @@ public:
 
 
   bool pointIsInsideVolume(const arma::mat& p, bool onBoundary=false) const;
+
+  virtual VTKActorList createVTKActors() const;
 
 };
 

@@ -1,4 +1,4 @@
-#include "iqvtkfixedpoint.h"
+#include "fixedpointconstraint.h"
 
 
 #include "vtkCaptionActor2D.h"
@@ -8,11 +8,16 @@
 
 #include "base/parameters.h"
 
-defineType(IQVTKFixedPoint);
+namespace insight
+{
+namespace cad
+{
 
-IQVTKFixedPoint::IQVTKFixedPoint(
+defineType(FixedPointConstraint);
+
+FixedPointConstraint::FixedPointConstraint(
     insight::cad::SketchPointPtr p, const std::string& layerName )
-    : IQVTKConstrainedSketchEntity(layerName),
+    : ConstrainedSketchEntity(layerName),
       p_(p)
 {
     auto c=p->coords2D();
@@ -25,7 +30,7 @@ IQVTKFixedPoint::IQVTKFixedPoint(
 }
 
 std::vector<vtkSmartPointer<vtkProp> >
-IQVTKFixedPoint::createActor() const
+FixedPointConstraint::createActor() const
 {
     auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
     caption->SetCaption("F");
@@ -41,12 +46,12 @@ IQVTKFixedPoint::createActor() const
     return {caption};
 }
 
-int IQVTKFixedPoint::nConstraints() const
+int FixedPointConstraint::nConstraints() const
 {
     return 2;
 }
 
-double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
+double FixedPointConstraint::getConstraintError(unsigned int iConstraint) const
 {
     auto p = p_->coords2D();
     switch (iConstraint)
@@ -64,7 +69,7 @@ double IQVTKFixedPoint::getConstraintError(unsigned int iConstraint) const
     return std::nan("NAN");
 }
 
-void IQVTKFixedPoint::scaleSketch(double scaleFactor)
+void FixedPointConstraint::scaleSketch(double scaleFactor)
 {
     auto& x = parametersRef().get<insight::DoubleParameter>("x");
     x.set(x() * scaleFactor);
@@ -72,7 +77,7 @@ void IQVTKFixedPoint::scaleSketch(double scaleFactor)
     y.set(y() * scaleFactor);
 }
 
-void IQVTKFixedPoint::generateScriptCommand(
+void FixedPointConstraint::generateScriptCommand(
     insight::cad::ConstrainedSketchScriptBuffer &script,
     const std::map<const ConstrainedSketchEntity *, int> &entityLabels
     ) const
@@ -91,12 +96,12 @@ void IQVTKFixedPoint::generateScriptCommand(
 }
 
 namespace insight { namespace cad {
-addToStaticFunctionTable(ConstrainedSketchEntity, IQVTKFixedPoint, addParserRule);
+addToStaticFunctionTable(ConstrainedSketchEntity, FixedPointConstraint, addParserRule);
 }}
 
-void IQVTKFixedPoint::addParserRule(
-    insight::cad::ConstrainedSketchGrammar &ruleset,
-    insight::cad::MakeDefaultGeometryParametersFunction )
+void FixedPointConstraint::addParserRule(
+    ConstrainedSketchGrammar &ruleset,
+    MakeDefaultGeometryParametersFunction )
 {
     using namespace insight::cad;
     namespace qi=boost::spirit::qi;
@@ -112,7 +117,7 @@ void IQVTKFixedPoint::addParserRule(
              ')' )
             [
                 qi::_a = phx::bind(
-                 &IQVTKFixedPoint::create<insight::cad::SketchPointPtr, const std::string&>,
+                 &FixedPointConstraint::create<SketchPointPtr, const std::string&>,
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2), qi::_3
                  ),
                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
@@ -120,16 +125,17 @@ void IQVTKFixedPoint::addParserRule(
             );
 }
 
-std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > IQVTKFixedPoint::dependencies() const
+std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
+FixedPointConstraint::dependencies() const
 {
     return { p_ };
 }
 
-void IQVTKFixedPoint::replaceDependency(
+void FixedPointConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity> &entity,
     const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
 {
-    if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(newEntity))
+    if (auto p = std::dynamic_pointer_cast<SketchPoint>(newEntity))
     {
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p_) == entity)
         {
@@ -139,22 +145,25 @@ void IQVTKFixedPoint::replaceDependency(
 }
 
 
-void IQVTKFixedPoint::operator=(const ConstrainedSketchEntity& other)
+void FixedPointConstraint::operator=(const ConstrainedSketchEntity& other)
 {
-    operator=(dynamic_cast<const IQVTKFixedPoint&>(other));
+    operator=(dynamic_cast<const FixedPointConstraint&>(other));
 }
 
-insight::cad::ConstrainedSketchEntityPtr IQVTKFixedPoint::clone() const
+ConstrainedSketchEntityPtr FixedPointConstraint::clone() const
 {
-    auto cl=IQVTKFixedPoint::create( p_, layerName() );
+    auto cl=FixedPointConstraint::create( p_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef() = parameters();
     return cl;
 }
 
-void IQVTKFixedPoint::operator=(const IQVTKFixedPoint& other)
+void FixedPointConstraint::operator=(const FixedPointConstraint& other)
 {
     p_=other.p_;
-    IQVTKConstrainedSketchEntity::operator=(other);
+    ConstrainedSketchEntity::operator=(other);
+}
+
+}
 }

@@ -7,7 +7,7 @@
 
 #include "cadgeometryparameter.h"
 #include "constrainedsketch.h"
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 
 namespace insight {
 
@@ -19,10 +19,15 @@ class CADSketchParameter
 : public CADGeometryParameter
 {
 
+public:
+    typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
+        SketchEntityAppearanceCallback;
+
 
 protected:
     cad::MakeDefaultGeometryParametersFunction makeDefaultGeometryParameters;
     cad::MakeDefaultLayerParametersFunction makeDefaultLayerParameters;
+    SketchEntityAppearanceCallback sketchAppearance;
     std::map<int, std::string> references_;
 
     mutable std::unique_ptr<std::string> script_;
@@ -53,6 +58,7 @@ public:
         const std::string& script,
         cad::MakeDefaultGeometryParametersFunction defaultGeometryParameters,
         cad::MakeDefaultLayerParametersFunction defaultLayerParameters,
+        SketchEntityAppearanceCallback sketchAppearance,
         const std::map<int, std::string>& references,
         const std::string& description,
         bool isHidden=false,
@@ -65,6 +71,7 @@ public:
 
     insight::ParameterSet defaultGeometryParameters() const;
     insight::ParameterSet defaultLayerParameters() const;
+    SketchEntityAppearanceCallback sketchAppearanceFunction() const;
 
     std::string script() const;
     void setScript(const std::string& script);

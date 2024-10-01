@@ -25,6 +25,9 @@
 
 #include "base/factory.h"
 
+#include "vtkSmartPointer.h"
+#include "vtkProp.h"
+
 namespace insight 
 {
 namespace cad 
@@ -40,6 +43,8 @@ public:
   
   virtual void write(std::ostream&) const =0;
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const =0;
+
+  virtual std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const;
 };
 
 }

@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_LINE_H
 
 #include "singleedgefeature.h"
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 
 namespace insight {
 namespace cad {
@@ -76,6 +76,8 @@ public:
     void operator=(const Line& other);
 
     ConstrainedSketchEntityPtr clone() const override;
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 };
 
 

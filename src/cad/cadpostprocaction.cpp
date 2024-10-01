@@ -29,5 +29,10 @@ void PostprocAction::execute()
   if (!valid()) build();
 }
 
+std::vector<vtkSmartPointer<vtkProp> > PostprocAction::createVTKRepr() const
+{
+    return {};
+}
+
 }
 }

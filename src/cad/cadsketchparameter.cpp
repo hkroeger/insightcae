@@ -97,6 +97,7 @@ CADSketchParameter::CADSketchParameter(
    const std::string& script,
     cad::MakeDefaultGeometryParametersFunction mdpf,
     cad::MakeDefaultLayerParametersFunction deflp,
+    SketchEntityAppearanceCallback sac,
     const std::map<int, std::string>& references,
    const std::string& description,
    bool isHidden, bool isExpert, bool isNecessary, int order
@@ -104,6 +105,7 @@ CADSketchParameter::CADSketchParameter(
     : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order),
     makeDefaultGeometryParameters(mdpf),
     makeDefaultLayerParameters(deflp),
+    sketchAppearance(sac),
     references_(references)
 {
     setScript(script);
@@ -127,6 +129,11 @@ ParameterSet CADSketchParameter::defaultLayerParameters() const
     return makeDefaultLayerParameters();
 }
 
+CADSketchParameter::SketchEntityAppearanceCallback
+CADSketchParameter::sketchAppearanceFunction() const
+{
+    return sketchAppearance;
+}
 
 
 std::string CADSketchParameter::script() const
@@ -256,6 +263,7 @@ CADSketchParameter::cloneCADSketchParameter(
         script(),
         makeDefaultGeometryParameters,
         makeDefaultLayerParameters,
+        sketchAppearance,
         references_,
         description_.simpleLatex(),
         isHidden_, isExpert_, isNecessary_, order_ );
@@ -287,6 +295,7 @@ void CADSketchParameter::operator=(const CADSketchParameter &op)
 
     makeDefaultGeometryParameters = op.makeDefaultGeometryParameters;
     makeDefaultLayerParameters = op.makeDefaultLayerParameters;
+    sketchAppearance = op.sketchAppearance;
     references_ = op.references_;
 
     if (op.script_)

@@ -3,6 +3,12 @@
 #include "datum.h"
 #include "constrainedsketch.h"
 
+#include <vtkSmartPointer.h>
+#include <vtkActor.h>
+#include <vtkSmartPointer.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkPointSource.h>
+
 namespace insight {
 namespace cad {
 
@@ -155,6 +161,25 @@ ConstrainedSketchEntityPtr SketchPoint::clone() const
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef() = parameters();
     return cl;
+}
+
+std::vector<vtkSmartPointer<vtkProp> > SketchPoint::createActor() const
+{
+    auto actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+
+    auto point = vtkSmartPointer<vtkPointSource>::New();
+    auto p = value();
+    point->SetCenter(p[0], p[1], p[2]);
+    point->SetNumberOfPoints(1);
+    point->SetRadius(0);
+    actor->GetMapper()->SetInputConnection(point->GetOutputPort());
+    auto prop=actor->GetProperty();
+    prop->SetRepresentationToPoints();
+    prop->SetPointSize(8);
+    prop->SetColor(0, 0, 0);
+
+    return {actor};
 }
 
 

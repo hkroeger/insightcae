@@ -1,24 +1,28 @@
-#ifndef IQVTKHORIZONTALCONSTRAINT_H
-#define IQVTKHORIZONTALCONSTRAINT_H
+#ifndef HORIZONTALCONSTRAINT_H
+#define HORIZONTALCONSTRAINT_H
 
-#include "iqvtkconstrainedsketchentity.h"
-
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 #include "cadfeatures/line.h"
 
-class IQVTKHorizontalConstraint
-    : public IQVTKConstrainedSketchEntity
-{
-    std::shared_ptr<insight::cad::Line> line_;
 
-    IQVTKHorizontalConstraint(
-        std::shared_ptr<insight::cad::Line> line,
+namespace insight
+{
+namespace cad
+{
+
+class HorizontalConstraint
+    : public ConstrainedSketchEntity
+{
+    std::shared_ptr<Line> line_;
+
+    HorizontalConstraint(
+        std::shared_ptr<Line> line,
         const std::string& layerName = std::string());
 
 public:
     declareType("HorizontalConstraint");
 
-    CREATE_FUNCTION(IQVTKHorizontalConstraint);
+    CREATE_FUNCTION(HorizontalConstraint);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 
@@ -27,12 +31,12 @@ public:
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(
-        insight::cad::ConstrainedSketchScriptBuffer& script,
-        const std::map<const insight::cad::ConstrainedSketchEntity*, int>& entityLabels) const override;
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
     static void addParserRule(
-        insight::cad::ConstrainedSketchGrammar& ruleset,
-        insight::cad::MakeDefaultGeometryParametersFunction mdpf );
+        ConstrainedSketchGrammar& ruleset,
+        MakeDefaultGeometryParametersFunction mdpf );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
 
@@ -41,10 +45,12 @@ public:
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
-    void operator=(const IQVTKHorizontalConstraint& other);
+    void operator=(const HorizontalConstraint& other);
 
-    insight::cad::ConstrainedSketchEntityPtr clone() const override;
+    ConstrainedSketchEntityPtr clone() const override;
 };
 
+}
+}
 
-#endif // IQVTKHORIZONTALCONSTRAINT_H
+#endif // HORIZONTALCONSTRAINT_H

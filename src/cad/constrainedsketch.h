@@ -2,11 +2,11 @@
 #define INSIGHT_CAD_CONSTRAINEDSKETCH_H
 
 
+#include "sketch.h"
 #include "base/exception.h"
 #include "base/parameterset.h"
-#include "sketch.h"
-#include "sketchpoint.h"
-#include "externalreference.h"
+#include "constrainedsketchentities/sketchpoint.h"
+#include "constrainedsketchentities/externalreference.h"
 
 namespace insight {
 namespace cad {

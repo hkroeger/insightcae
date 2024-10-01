@@ -84,6 +84,7 @@ public:
 
     virtual void operator=(const ConstrainedSketchEntity& other);
 
+    virtual std::vector<vtkSmartPointer<vtkProp> > createActor() const =0;
 
     virtual ConstrainedSketchEntityPtr clone() const =0;
 

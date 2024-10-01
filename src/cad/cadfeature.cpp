@@ -76,6 +76,13 @@
 
 #include "cadfeatures/importsolidmodel.h"
 
+#include "ivtkoccshape.h"
+
+#include <vtkSmartPointer.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkMapper.h>
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -2342,6 +2349,44 @@ bool Feature::pointIsInsideVolume(const arma::mat& p, bool onBoundary) const
         result = result || (sc.State() == TopAbs_ON);
     }
     return result;
+}
+
+
+
+
+VTKActorList Feature::createVTKActors() const
+{
+    if (topologicalProperties().onlyEdges())
+    {
+        // if shape consists only of edges,
+        // create a set of actors for each edge
+        // to be able to pick locations inside of
+        // a possible edge loop without
+        // triggering a selection
+        std::vector<vtkSmartPointer<vtkProp> > actors;
+        for (TopExp_Explorer ex(shape(),TopAbs_EDGE); ex.More(); ex.Next())
+        {
+            auto shape = vtkSmartPointer<ivtkOCCShape>::New();
+            shape->SetShape( ex.Current() );
+
+            auto actor = vtkSmartPointer<vtkActor>::New();
+            actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+            actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+
+            actors.push_back(actor);
+        }
+        return actors;
+    }
+    else
+    {
+        auto shape = vtkSmartPointer<ivtkOCCShape>::New();
+        shape->SetShape( this->shape() );
+
+        auto actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+        actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+        return {actor};
+    }
 }
 
 

@@ -2,7 +2,7 @@
 #define INSIGHT_CAD_SKETCHPOINT_H
 
 
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 
 
 
@@ -51,6 +51,8 @@ public:
     void operator=(const SketchPoint& other);
 
     ConstrainedSketchEntityPtr clone() const override;
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 };
 
 

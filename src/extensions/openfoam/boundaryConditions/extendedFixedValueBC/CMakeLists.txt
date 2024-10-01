@@ -17,7 +17,8 @@ set(INCLUDE_DIRS
   ${CMAKE_CURRENT_LIST_DIR}
 )
 
-set(LIBS 
+set(LIBS
+  ${Boost_LIBRARIES}
 )
 
 set(IS_OF_LIBS 

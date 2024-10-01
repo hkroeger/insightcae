@@ -87,7 +87,9 @@ PDLParserRuleset::PDLParserRuleset()
       >> -( qi::lit("description") >> r_string )
       >> ( ( qi::lit("skipDefaultParametersMember") >> qi::attr(true) ) | qi::attr(false) )
       >> (r_addcode | qi::attr(std::string()))
-      >> r_parameterset;
+      >> r_parameterset
+      >> ( ( qi::lit("createGetter") >> qi::attr(true) ) | qi::attr(false) )
+      ;
 
 
 }
@@ -193,6 +195,8 @@ int main ( int argc, char *argv[] )
       std::string addTo_makeDefault = boost::fusion::get<4>(result_all);
 
       ParameterSetData result = boost::fusion::get<5>(result_all);
+
+      bool createGetter = boost::fusion::get<6>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -347,6 +351,17 @@ int main ( int argc, char *argv[] )
 
           if (!skipDefaultParamMember)
             f << "static insight::ParameterSet defaultParameters() { return "<<name<<"::makeDefault(); }" << endl;
+
+          if (createGetter)
+          {
+              f<<"public:\n";
+              if (base_type_name==default_base_type_name)
+              {
+                  f<<"std::unique_ptr<insight::ParametersBase> p_;\n";
+              }
+              f << "const "<<name<<"& p() const { return dynamic_cast<const "<<name<<"&>(*p_); }\n" << endl;
+              f << name<<"& p() { return dynamic_cast<"<<name<<"&>(*p_); }\n" << endl;
+          }
         }
       }
     }

@@ -226,7 +226,15 @@ typedef std::vector< ParameterSetEntry > ParameterSetData;
 
 
 
-typedef boost::fusion::vector5<boost::optional<std::string>, boost::optional<std::string>, boost::optional<std::string>, bool, std::string, ParameterSetData> PDLParserResult;
+typedef boost::fusion::vector5<
+    boost::optional<std::string>,
+    boost::optional<std::string>,
+    boost::optional<std::string>,
+    bool,
+    std::string,
+    ParameterSetData,
+    bool
+    > PDLParserResult;
 
 
 struct PDLParserRuleset

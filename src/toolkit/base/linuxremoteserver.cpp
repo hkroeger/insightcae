@@ -1,10 +1,76 @@
 #include "linuxremoteserver.h"
 #include "base/tools.h"
+#include "boost/regex/v4/regex_fwd.hpp"
+#include "base/cppextensions.h"
+#include <cstdio>
+
 
 using namespace std;
 
 
 namespace insight {
+
+
+LinuxRemoteServer::Config::Config(const boost::filesystem::path &bp, int np)
+    : RemoteServer::Config(bp, np)
+{}
+
+bool LinuxRemoteServer::Config::isRunning() const
+{
+    return executeCommand("exit") == 0;
+}
+
+int LinuxRemoteServer::Config::occupiedProcessors(int* nProcAvail) const
+{
+    boost::process::ipstream out;
+
+    int ret = executeCommand(
+        "LC_ALL=C mpstat -P all 1 1",
+        boost::process::std_out > out,
+        boost::process::std_err > stderr,
+        boost::process::std_in < boost::process::null
+        );
+
+    if (ret==0)
+    {
+        string line1, line4;
+
+        getline(out, line1);
+        getline(out, line4); //discard
+        getline(out, line4); //discard
+        getline(out, line4);
+
+        boost::regex re1("(.*) \\((.*)\\) *(.*) *_(.*)_	\\(([0-9]*) CPU\\)");
+        boost::regex re4(".* ([^ ]*)$");
+
+        boost::smatch m1, m4;
+        insight::assertion(
+            boost::regex_match(line1, m1, re1),
+            "unexpected output line 1 from mpstat on %s", c_str());
+        insight::assertion(
+            boost::regex_match(line4, m4, re4),
+            "unexpected output line 4 from mpstat on %s", c_str());
+
+        double frac=1.-insight::toNumber<double>(m4[1])/100.;
+        insight::assertion(
+            (frac>=0.) && (frac<=1.),
+            "expected to be utilization fraction between 0 and 1. Got %g", frac);
+
+        int np=insight::toNumber<int>(m1[5]);
+        if (nProcAvail) *nProcAvail=np;
+
+        return std::ceil(frac*double(np));
+    }
+    else
+    {
+        insight::Warning("Could not execute mpstat on %s!", c_str());
+    }
+
+    return np_;
+}
+
+
+
 
 std::string toUnixPath(const boost::filesystem::path& wp)
 {
@@ -12,6 +78,39 @@ std::string toUnixPath(const boost::filesystem::path& wp)
   if (wp.is_absolute() || ( (wpl.size()>0) && (wp.string()[0]=='/' || wp.string()[0]=='\\')) )
     wpl="/"+wpl;
   return wpl;
+}
+
+
+LinuxRemoteServer::SSHRemoteStream::~SSHRemoteStream()
+{
+    s_<<std::flush;
+    s_.pipe().close();
+    child_->wait();
+}
+
+std::ostream &LinuxRemoteServer::SSHRemoteStream::stream()
+{
+    return s_;
+}
+
+
+std::unique_ptr<RemoteServer::RemoteStream> LinuxRemoteServer::remoteOFStream(
+    const boost::filesystem::path &remoteFilePath,
+    int totalBytes,
+    std::function<void (int, const std::string &)> progress_callback
+    )
+{
+    auto rs=std::make_unique<SSHRemoteStream>();
+
+    rs->child_ = launchCommand(
+        "cat - > \""+toUnixPath(remoteFilePath)+"\"",
+            boost::process::std_in < rs->s_ );
+
+    insight::assertion(
+        rs->child_->running(),
+        "remote cat process not running" );
+
+    return rs;
 }
 
 bool LinuxRemoteServer::checkIfDirectoryExists(const boost::filesystem::path& dir)
@@ -27,6 +126,7 @@ bool LinuxRemoteServer::checkIfDirectoryExists(const boost::filesystem::path& di
 
 boost::filesystem::path LinuxRemoteServer::getTemporaryDirectoryName(const boost::filesystem::path& templatePath)
 {
+    assertRunning();
   boost::process::ipstream out;
 
   int ret = executeCommand(
@@ -166,11 +266,6 @@ int LinuxRemoteServer::findFreeRemotePort() const
 
 
 
-bool LinuxRemoteServer::hostIsAvailable()
-{
-  setRunning(executeCommand("exit", false) == 0);
-  return isRunning();
-}
 
 
 } // namespace insight

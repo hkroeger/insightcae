@@ -264,8 +264,8 @@ void IQExecutionWorkspace::removeRemoteWorkspace()
       auto answer = QMessageBox::question(
             af_, "Decision required",
             QString("The directory %1 on server %2 and its contents will be deleted!\nContinue?")
-             .arg(QString::fromStdString(remoteExecutionConfiguration_->location().remoteDir().string()))
-             .arg(QString::fromStdString( *(remoteExecutionConfiguration_->location().serverConfig()) ))
+             .arg(QString::fromStdString( remoteExecutionConfiguration_->location().remoteDir().string()))
+             .arg(QString::fromStdString( remoteExecutionConfiguration_->location().serverConfig() ))
             );
       if (answer==QMessageBox::Yes)
       {

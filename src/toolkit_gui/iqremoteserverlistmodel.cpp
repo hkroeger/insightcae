@@ -1,13 +1,32 @@
 #include "iqremoteserverlistmodel.h"
 
+#include "base/exception.h"
+#include "base/remoteserver.h"
 #include "base/tools.h"
+#include "base/cppextensions.h"
 
 #include <QFont>
+#include <QIcon>
+#include <qnamespace.h>
 
 IQRemoteServerListModel::IQRemoteServerListModel(QObject *parent)
-  : QAbstractItemModel(parent),
-    remoteServers_(insight::remoteServers)
+  : QAbstractItemModel(parent)
 {
+    for (auto &rs: insight::remoteServers)
+    {
+        if (!rs->wasExpanded())
+        {
+            auto crs=rs->clone();
+            remoteServers_.push_back(crs);
+            if (rs==insight::remoteServers.getPreferredServer())
+                preferredServer_=crs;
+        }
+    }
+
+    for (auto &rsp: insight::remoteServers.serverPools())
+    {
+        remoteServers_.push_back(rsp);
+    }
 }
 
 QVariant IQRemoteServerListModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -58,17 +77,39 @@ QVariant IQRemoteServerListModel::data(const QModelIndex &index, int role) const
 
         if (role==Qt::DisplayRole)
         {
-            return QString::fromStdString( *(*i) );
+            if (auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&*i))
+            {
+                return QString::fromStdString( **rsc );
+            }
+            else if (auto rspc = boost::get<insight::RemoteServerPoolConfig>(&*i))
+            {
+                return QString::fromStdString( *rspc->configTemplate_ );
+            }
+
         }
         else if (role==Qt::FontRole)
         {
             QFont f;
-            if (auto ps = remoteServers_.getPreferredServer())
+            if (auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&*i))
             {
-                if (*i == ps)
-                    f.setBold(true);
+                if (!preferredServer_.expired())
+                {
+                    if (*rsc == preferredServer_.lock())
+                        f.setBold(true);
+                }
             }
             return f;
+        }
+        else if (role==Qt::DecorationRole)
+        {
+            if (boost::get<insight::RemoteServer::ConfigPtr>(&*i))
+            {
+                return QIcon(":/icons/icon_remoteserver.svg");
+            }
+            else if (boost::get<insight::RemoteServerPoolConfig>(&*i))
+            {
+                return QIcon(":/icons/icon_remoteserverpool.svg");
+            }
         }
     }
 
@@ -80,14 +121,19 @@ QVariant IQRemoteServerListModel::data(const QModelIndex &index, int role) const
 
 QModelIndex IQRemoteServerListModel::preferredServer() const
 {
-    if (auto rs = remoteServers_.getPreferredServer())
+    if (!preferredServer_.expired())
     {
+        auto prs = preferredServer_.lock();
+
         for ( auto i=remoteServers_.begin();
               i!=remoteServers_.end();
               ++i)
         {
-            if (*i==rs)
-                return index(std::distance(remoteServers_.begin(), i), 0);
+            if (auto rs = boost::get<insight::RemoteServer::ConfigPtr>(&*i))
+            {
+                if (*rs==prs)
+                    return index(std::distance(remoteServers_.begin(), i), 0);
+            }
         }
     }
 
@@ -98,38 +144,78 @@ void IQRemoteServerListModel::setPreferredServer(const QModelIndex& index)
 {
     auto ch1=preferredServer();
     auto ns=getRemoteServer(index);
-    remoteServers_.setPreferredServer(*(*ns));
+    preferredServer_=ns;
     auto ch2=preferredServer();
 
     Q_EMIT dataChanged(ch1, ch1);
     Q_EMIT dataChanged(ch2, ch2);
 }
 
-insight::RemoteServerList &IQRemoteServerListModel::remoteServers()
+const insight::RemoteServerList &IQRemoteServerListModel::remoteServers() const
 {
-  return remoteServers_;
+
+  // split list
+  std::set<insight::RemoteServer::ConfigPtr> servers;
+  std::set<insight::RemoteServerPoolConfig> pools;
+  std::string preferredServerLabel;
+
+  for (auto& i: remoteServers_)
+  {
+      if (auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&i))
+      {
+          servers.insert(*rsc);
+      }
+      else if (auto rspc = boost::get<insight::RemoteServerPoolConfig>(&i))
+      {
+          pools.insert(*rspc);
+      }
+  }
+
+  if (auto ps = preferredServer_.lock())
+  {
+      preferredServerLabel=*ps;
+  }
+
+  newRemoteServerList_=
+      std::make_unique<insight::RemoteServerList>(
+       servers, pools, preferredServerLabel
+      );
+
+  return *newRemoteServerList_;
 }
 
-insight::RemoteServerList::iterator IQRemoteServerListModel::getRemoteServer(const QModelIndex &index)
+insight::RemoteServer::ConfigPtr IQRemoteServerListModel::getRemoteServer(const QModelIndex &index)
 {
   auto i=remoteServers_.begin();
   std::advance(i, index.row());
-  return i;
+  if (auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&*i))
+  {
+      return *rsc;
+  }
+  else if (auto rspc = boost::get<insight::RemoteServerPoolConfig>(&*i))
+  {
+      return rspc->configTemplate_;
+  }
+  else
+      throw insight::UnhandledSelection();
+
+  return nullptr;
 }
 
 void IQRemoteServerListModel::addRemoteServer(insight::RemoteServer::ConfigPtr newRemoteServer)
 {
-  int inew=insight::predictSetInsertionLocation(remoteServers_, newRemoteServer);
-  insight::dbg()<<"inew="<<inew<<std::endl;
+  int inew=remoteServers_.size();
+
   beginInsertRows(QModelIndex(), inew, inew);
-  remoteServers_.insert(newRemoteServer);
+  remoteServers_.push_back(newRemoteServer);
   endInsertRows();
 }
 
-void IQRemoteServerListModel::removeRemoteServer(insight::RemoteServerList::iterator rsi)
+void IQRemoteServerListModel::removeRemoteServer(const QModelIndex &index)
 {
-  int i=std::distance(remoteServers_.begin(), rsi);
-  beginRemoveRows(QModelIndex(), i, i);
-  remoteServers_.erase(rsi);
-  endRemoveRows();
+    auto i=remoteServers_.begin();
+    std::advance(i, index.row());
+    beginRemoveRows(QModelIndex(), index.row(), index.row());
+    remoteServers_.erase(i);
+    endRemoveRows();
 }

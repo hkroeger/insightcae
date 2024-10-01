@@ -71,7 +71,7 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
           ui->lblRemoteDirectory->setText(_("(none)"));
       }
 
-      if (std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rlc_->serverConfig()))
+      if (dynamic_cast<const insight::WSLLinuxServer::Config*>(&rlc_->serverConfig()))
       {
         ui->btnDisconnect->setEnabled(false);
         ui->btnResume->setEnabled(false);

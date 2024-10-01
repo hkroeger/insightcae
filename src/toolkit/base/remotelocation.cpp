@@ -185,23 +185,23 @@ RemoteServerPtr RemoteLocation::server() const
 
 
 
-RemoteServer::ConfigPtr RemoteLocation::serverConfig() const
+const RemoteServer::Config& RemoteLocation::serverConfig() const
 {
-  return serverConfig_;
+  return *serverConfig_;
 }
 
 
 string RemoteLocation::serverLabel() const
 {
-  return *serverConfig();
+  return serverConfig();
 }
 
 
 string RemoteLocation::hostName() const
 {
   if ( auto scfg =
-       std::dynamic_pointer_cast<SSHLinuxServer::Config>(
-         serverConfig()) )
+       dynamic_cast<const SSHLinuxServer::Config*>(
+         &serverConfig()) )
   {
     return scfg->hostName_;
   }
@@ -233,7 +233,7 @@ void RemoteLocation::cleanup(bool forceRemoval)
 
 bool RemoteLocation::serverIsAvailable() const
 {
-    return server() && server()->hostIsAvailable();
+    return server() && server()->config().isRunning();
 }
 
 
@@ -281,7 +281,7 @@ void RemoteLocation::initialize(bool findFreeRemotePort)
     CurrentExceptionContext ex( "initializing remote location" );
 
     if (!serverInstance_)
-      serverInstance_ = serverConfig_->instance();
+      serverInstance_ = serverConfig_->instance(); // launch
 
     if (remoteDir_.empty())
     {
@@ -289,7 +289,7 @@ void RemoteLocation::initialize(bool findFreeRemotePort)
       isTemporaryStorage_=true;
 
       remoteDir_ = serverInstance_->getTemporaryDirectoryName(
-              serverConfig()->defaultDirectory_/"irXXXXXX" );
+              serverConfig().defaultDirectory_/"irXXXXXX" );
     }
 
     if (autoCreateRemoteDir_)
@@ -321,7 +321,7 @@ void RemoteLocation::validate()
   isValidated_=false;
   if (server() && !remoteDir_.empty())
   {
-    if (server()->hostIsAvailable())
+      if (server()->config().isRunning())
     {
       if (remoteDirExists())
         isValidated_=true;
@@ -530,7 +530,7 @@ void RemoteLocation::writeConfigFile(
 
   rootnode->append_attribute(doc.allocate_attribute
                                ("server",
-                                 doc.allocate_string(serverConfig()->c_str())
+                                 doc.allocate_string(serverConfig().c_str())
                                  )
                                );
   rootnode->append_attribute(doc.allocate_attribute

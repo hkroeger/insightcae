@@ -2,6 +2,7 @@
 #define SSHLINUXSERVER_H
 
 #include "base/linuxremoteserver.h"
+#include <string>
 
 
 namespace insight
@@ -16,26 +17,43 @@ class SSHLinuxServer
     : public LinuxRemoteServer
 {
 public:
-  struct Config : public RemoteServer::Config
+  struct Config : public LinuxRemoteServer::Config
   {
     std::string hostName_;
+    std::string creationCommand_, destructionCommand_;
 
     Config(
         const boost::filesystem::path& bp,
-        const std::string hostName );
+        int np,
+        const std::string hostName,
+        const std::string& creationCommand=std::string(),
+        const std::string& destructionCommand=std::string()
+        );
 
     Config(rapidxml::xml_node<> *e);
 
-    std::shared_ptr<RemoteServer> getInstanceIfRunning() override;
-    std::shared_ptr<RemoteServer> instance() override;
+    std::shared_ptr<RemoteServer> instance() const override;
+
+    //  int executeCommand(const std::string& command, bool throwOnFail) override;
+    std::pair<boost::filesystem::path,std::vector<std::string> >
+    commandAndArgs(const std::string& command) const override;
 
     bool isDynamicallyAllocated() const override;
 
     void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const override;
+
+    ConfigPtr clone() const override;
+
+    bool isExpandable() const override;
+    ConfigPtr expanded(int id) const override;
+
+    bool isDynamicallyCreatable() const override;
+    bool isDynamicallyDestructable() const override;
   };
 
 
 protected:
+  Config serverConfig_;
   int bwlimit_;
 
   void runRsync
@@ -46,15 +64,15 @@ protected:
 
 
 public:
-  SSHLinuxServer(ConfigPtr serverConfig);
+  SSHLinuxServer(const Config& serverConfig);
 
-  Config* serverConfig() const;
+
+  void destroyIfPossible() override;
+
+  const RemoteServer::Config& config() const override;
+  const Config& SSHServerConfig() const;
   std::string hostName() const;
 
-
-//  int executeCommand(const std::string& command, bool throwOnFail) override;
-  std::pair<boost::filesystem::path,std::vector<std::string> >
-  commandAndArgs(const std::string& command) const override;
 
   struct BackgroundJob : public RemoteServer::BackgroundJob
   {

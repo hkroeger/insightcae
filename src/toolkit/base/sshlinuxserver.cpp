@@ -4,7 +4,9 @@
 #include <regex>
 
 #include "base/exception.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
+#include "boost/format/format_fwd.hpp"
 #include "openfoam/openfoamcase.h"
 
 #include "rapidxml/rapidxml_print.hpp"
@@ -17,38 +19,69 @@ namespace insight
 
 
 SSHLinuxServer::Config::Config(
-        const boost::filesystem::path& bp,
-        const std::string hostName )
-  : RemoteServer::Config(bp),
-    hostName_(hostName)
+    const boost::filesystem::path& bp,
+    int np,
+    const std::string hostName,
+    const std::string& creationCommand,
+    const std::string& destructionCommand )
+  : LinuxRemoteServer::Config(bp, np),
+    hostName_(hostName),
+    creationCommand_(creationCommand),
+    destructionCommand_(destructionCommand)
 {}
 
-SSHLinuxServer::Config::Config(rapidxml::xml_node<> *e)
-  :RemoteServer::Config(
-     boost::filesystem::path(e->first_attribute("baseDirectory")->value())
+SSHLinuxServer::Config::Config(
+    rapidxml::xml_node<> *e
+    )
+  :LinuxRemoteServer::Config(
+     boost::filesystem::path(e->first_attribute("baseDirectory")->value()),
+     ( e->first_attribute("np")?
+               insight::toNumber<int>(e->first_attribute("np")->value())
+               : 1 )
      )
 {
-  auto* ha = e->first_attribute("host");
-  hostName_=ha->value();
-}
+  hostName_=e->first_attribute("host")->value();
 
-std::shared_ptr<RemoteServer> SSHLinuxServer::Config::getInstanceIfRunning()
-{
-  auto srv = std::make_shared<SSHLinuxServer>( std::make_shared<Config>(*this) );
-  if (srv->hostIsAvailable())
+  if (auto ac = e->first_attribute("creationCommand"))
   {
-    return srv;
+      creationCommand_=ac->value();
   }
-  else
-    return nullptr;
+  if (auto dc = e->first_attribute("destructionCommand"))
+  {
+      destructionCommand_=dc->value();
+  }
+  if (creationCommand_.empty() != destructionCommand_.empty())
+  {
+      throw insight::Exception(
+          "allocation and deallocation commands must be both specified!"
+          );
+  }
 }
 
-std::shared_ptr<RemoteServer> SSHLinuxServer::Config::instance()
+std::shared_ptr<RemoteServer> SSHLinuxServer::Config::instance() const
 {
-  auto srv = std::make_shared<SSHLinuxServer>( std::make_shared<Config>(*this) );
-  if (!srv->hostIsAvailable())
-    srv->launch();
-  return srv;
+  return std::make_shared<SSHLinuxServer>( *this );
+}
+
+
+std::pair<boost::filesystem::path,std::vector<std::string> >
+SSHLinuxServer::Config::commandAndArgs(const std::string& command) const
+{
+    std::string expr // = "bash -lc '"+command+"'";
+        = command;
+
+    SSHCommand ssh(hostName_, { expr });
+
+    {
+        auto& os = insight::dbg();
+        os << ssh.command() << " ";
+        for (const auto& a: ssh.arguments())
+            os << " \"" + a + "\"";
+        os << std::endl;
+    }
+
+    return { ssh.command(),
+            ssh.arguments() };
 }
 
 bool SSHLinuxServer::Config::isDynamicallyAllocated() const
@@ -58,20 +91,74 @@ bool SSHLinuxServer::Config::isDynamicallyAllocated() const
 
 void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const
 {
-  e->append_attribute( doc.allocate_attribute( "label", this->c_str() ) );
-  e->append_attribute( doc.allocate_attribute( "type", "SSHLinux" ) );
-  e->append_attribute( doc.allocate_attribute( "host",
-                                               hostName_.c_str() ) );
-  e->append_attribute( doc.allocate_attribute( "baseDirectory", doc.allocate_string(
-                                               defaultDirectory_.string().c_str() ) ) );
+  appendAttribute(doc, *e, "label", *this );
+  appendAttribute(doc, *e, "type", "SSHLinux" );
+  appendAttribute(doc, *e, "host", hostName_ );
+  appendAttribute(doc, *e, "baseDirectory", defaultDirectory_.string() );
+  if (!creationCommand_.empty())
+      appendAttribute(doc, *e, "creationCommand", creationCommand_ );
+  if (!destructionCommand_.empty())
+      appendAttribute(doc, *e, "destructionCommand", destructionCommand_ );
+}
+
+RemoteServer::ConfigPtr SSHLinuxServer::Config::clone() const
+{
+    return std::make_shared<Config>(*this);
 }
 
 
 
+bool SSHLinuxServer::Config::isExpandable() const
+{
+    return
+        (hostName_.find("%d")!=std::string::npos)
+        || (creationCommand_.find("%d")!=std::string::npos)
+        || (destructionCommand_.find("%d")!=std::string::npos)
+        ;
+}
+
+RemoteServer::ConfigPtr SSHLinuxServer::Config::expanded(int id) const
+{
+    auto cp = std::make_shared<SSHLinuxServer::Config>(*this);
+    cp->originatedFromExpansion_=true;
+
+    if (cp->hostName_.find("%d")
+        != std::string::npos)
+    {
+        cp->hostName_=
+            str(boost::format(cp->hostName_)%id);
+    }
+
+    cp->std::string::operator=(
+        *cp+"/"+cp->hostName_ );
+
+    if (cp->creationCommand_.find("%d")
+        != std::string::npos)
+    {
+        cp->creationCommand_=
+            str(boost::format(cp->creationCommand_)%id);
+    }
+
+    if (cp->destructionCommand_.find("%d")
+        != std::string::npos)
+    {
+        cp->destructionCommand_=
+            str(boost::format(cp->destructionCommand_)%id);
+    }
+
+    return cp;
+}
 
 
+bool SSHLinuxServer::Config::isDynamicallyCreatable() const
+{
+    return !creationCommand_.empty();
+}
 
-
+bool SSHLinuxServer::Config::isDynamicallyDestructable() const
+{
+    return !destructionCommand_.empty();
+}
 
 
 void SSHLinuxServer::runRsync
@@ -95,51 +182,74 @@ void SSHLinuxServer::runRsync
 
 
 
-SSHLinuxServer::SSHLinuxServer(ConfigPtr serverConfig)
-    : bwlimit_(-1)
+SSHLinuxServer::SSHLinuxServer(const Config& serverConfig)
+    : serverConfig_(serverConfig),
+    bwlimit_(-1)
 {
-  serverConfig_=serverConfig;
+    if (
+        !serverConfig_.creationCommand_.empty()
+         &&
+        !config().isRunning() )
+    {
+        CurrentExceptionContext ex("launching server %s", serverLabel().c_str());
+
+        auto job= Job::forkExternalProcess("bash", {"-lc", serverConfig_.creationCommand_});
+
+        job->runAndTransferOutput();
+
+        auto retcode = job->process().exit_code();
+        if (retcode!=0)
+        {
+            throw insight::Exception(
+                "failed to launch execution server"
+                );
+        }
+    }
+}
+
+void SSHLinuxServer::destroyIfPossible()
+{
+    if (serverConfig_.isDynamicallyDestructable())
+    {
+        CurrentExceptionContext ex("stopping server %s", serverLabel().c_str());
+
+        auto job= Job::forkExternalProcess("bash", {"-lc", serverConfig_.destructionCommand_});
+
+        job->runAndTransferOutput();
+
+        auto retcode = job->process().exit_code();
+        if (retcode!=0)
+        {
+            insight::Warning(
+                "failed to deallocate execution server"
+                );
+        }
+    }
 }
 
 
 
 
-SSHLinuxServer::Config *SSHLinuxServer::serverConfig() const
+const SSHLinuxServer::Config& SSHLinuxServer::SSHServerConfig() const
 {
-  return std::dynamic_pointer_cast<Config>(serverConfig_).get();
+  return serverConfig_;
 }
 
+
+const RemoteServer::Config &SSHLinuxServer::config() const
+{
+    return SSHServerConfig();
+}
 
 
 
 string SSHLinuxServer::hostName() const
 {
-  return serverConfig()->hostName_;
+  return SSHServerConfig().hostName_;
 }
 
 
 
-
-
-std::pair<boost::filesystem::path,std::vector<std::string> >
-SSHLinuxServer::commandAndArgs(const std::string& command) const
-{
-  std::string expr //= "bash -lc '"+command+"'";
-          = command;
-
-  SSHCommand ssh(hostName(), { expr });
-
-  {
-      auto& os = insight::dbg();
-      os << ssh.command() << " ";
-      for (const auto& a: ssh.arguments())
-          os << " \"" + a + "\"";
-      os << std::endl;
-  }
-
-  return { ssh.command(),
-        ssh.arguments() };
-}
 
 
 
@@ -344,7 +454,7 @@ RemoteServer::PortMappingPtr SSHLinuxServer::makePortsAccessible(
   insight::CurrentExceptionContext ex("create port tunnels via SSH");
 
   return std::make_shared<SSHTunnelPortMapping>(
-        *serverConfig(),
+        SSHServerConfig(),
         remoteListenerPorts,
         localListenerPorts
         );

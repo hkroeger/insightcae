@@ -22,8 +22,9 @@ namespace insight {
 
 WSLLinuxServer::Config::Config(
         const boost::filesystem::path& bp,
+        int np,
         const std::string& distributionLabel )
-  : RemoteServer::Config(bp),
+  : LinuxRemoteServer::Config(bp, np),
     distributionLabel_(distributionLabel)
 {}
 
@@ -31,8 +32,11 @@ WSLLinuxServer::Config::Config(
 
 
 WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
-  :RemoteServer::Config(
-     boost::filesystem::path(e->first_attribute("baseDirectory")->value())
+  :LinuxRemoteServer::Config(
+     boost::filesystem::path(e->first_attribute("baseDirectory")->value()),
+      ( e->first_attribute("np")?
+           insight::toNumber<int>(e->first_attribute("np")->value())
+                                : 1 )
      )
 {
   auto* ha = e->first_attribute("distributionLabel");
@@ -43,23 +47,23 @@ WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
 
 
 
-std::shared_ptr<RemoteServer> WSLLinuxServer::Config::getInstanceIfRunning()
+
+
+std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance() const
 {
-  return instance();
+  return std::make_shared<WSLLinuxServer>( *this );
 }
 
 
-
-
-std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance()
+std::pair<boost::filesystem::path,std::vector<std::string> >
+WSLLinuxServer::Config::commandAndArgs(const std::string& command) const
 {
-  auto srv = std::make_shared<WSLLinuxServer>( std::make_shared<Config>(*this) );
-  if (!srv->hostIsAvailable())
-    throw insight::Exception("The WSL distribution "+distributionLabel_+" does not work!");
-  return srv;
+    return {
+        WSLcommand(),
+        { "-d", distributionLabel_,
+         "--", "bash", "-lc", command }
+    };
 }
-
-
 
 
 bool WSLLinuxServer::Config::isDynamicallyAllocated() const
@@ -80,20 +84,39 @@ void WSLLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_documen
                                                defaultDirectory_.string().c_str() ) ) );
 }
 
-
-
-
-WSLLinuxServer::WSLLinuxServer(ConfigPtr serverConfig)
+RemoteServer::ConfigPtr WSLLinuxServer::Config::clone() const
 {
-  serverConfig_=serverConfig;
+    return std::make_shared<WSLLinuxServer::Config>(*this);
+}
+
+
+bool WSLLinuxServer::Config::isDynamicallyCreatable() const
+{
+    return false;
+}
+
+
+bool WSLLinuxServer::Config::isDynamicallyDestructable() const
+{
+    return false;
 }
 
 
 
-
-WSLLinuxServer::Config *WSLLinuxServer::serverConfig() const
+WSLLinuxServer::WSLLinuxServer(const Config& serverConfig)
+  : serverConfig_(serverConfig)
 {
-  return std::dynamic_pointer_cast<Config>(serverConfig_).get();
+}
+
+
+const RemoteServer::Config& WSLLinuxServer::config() const
+{
+    return serverConfig_;
+}
+
+const WSLLinuxServer::Config& WSLLinuxServer::WSLServerConfig() const
+{
+  return dynamic_cast<const Config&>(config());
 }
 
 
@@ -111,15 +134,7 @@ boost::filesystem::path WSLLinuxServer::WSLcommand()
 }
 
 
-std::pair<boost::filesystem::path,std::vector<std::string> >
-WSLLinuxServer::commandAndArgs(const std::string& command) const
-{
-    return {
-      WSLcommand(),
-      { "-d", serverConfig()->distributionLabel_,
-        "--", "bash", "-lc", command }
-    };
-}
+
 
 
 WSLLinuxServer::BackgroundJob::BackgroundJob(
@@ -149,6 +164,12 @@ RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(
         const std::string &cmd,
         const std::vector<ExpectedOutput>& pattern )
 {
+    insight::assertion(
+        pattern.size()==0,
+        "Not implemented: cannot look for pattern in WSL process");
+
+    //  lookForPattern(is, pattern);
+
 //  boost::process::ipstream is;
   auto process = launchCommand(
               cmd/*,
@@ -160,11 +181,6 @@ RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(
               process->running(),
               "could not start background process");
 
-  insight::assertion(
-              pattern.size()==0,
-              "Not implemented: cannot look for pattern in WSL process");
-
-//  lookForPattern(is, pattern);
 
   return std::make_shared<BackgroundJob>(*this, std::move(process));
 }
@@ -189,7 +205,7 @@ void WSLLinuxServer::runRsync
   {
     joinedArgs+=" "+escapeShellSymbols(a);
   }
-  auto ca = commandAndArgs(joinedArgs);
+  auto ca = config().commandAndArgs(joinedArgs);
 
   RSyncOutputAnalyzer rpa(pf);
   auto job = std::make_shared<Job>(ca);

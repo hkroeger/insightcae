@@ -103,6 +103,7 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
           {
               auto wslcfg = std::make_shared<insight::WSLLinuxServer::Config>(
                     wizdlg.baseDirectory().toStdString(),
+                    std::thread::hardware_concurrency(),
                     wizdlg.distributionLabel().toStdString()
                     );
               auto lbl = insight::findUnusedLabel(

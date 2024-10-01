@@ -26,7 +26,11 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
   connect(ui->btnAdd, &QPushButton::clicked, this,
           [&]()
           {
-            IQSelectRemoteHostTypeDialog dlg(serverListModel_.remoteServers(), insight::RemoteServer::ConfigPtr(), this);
+            IQSelectRemoteHostTypeDialog dlg(
+                serverListModel_.remoteServers(),
+                insight::RemoteServer::ConfigPtr(),
+                this );
+
             if (dlg.exec()==QDialog::Accepted)
             {
               serverListModel_.addRemoteServer(dlg.result_);
@@ -41,10 +45,10 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
             if (index.isValid())
             {
               auto rsc = serverListModel_.getRemoteServer(index);
-              IQSelectRemoteHostTypeDialog dlg(serverListModel_.remoteServers(), *rsc, this);
+              IQSelectRemoteHostTypeDialog dlg(serverListModel_.remoteServers(), rsc, this);
               if (dlg.exec()==QDialog::Accepted)
               {
-                serverListModel_.removeRemoteServer(rsc);
+                serverListModel_.removeRemoteServer(index);
                 serverListModel_.addRemoteServer(dlg.result_);
               }
             }
@@ -61,10 +65,10 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
               if (QMessageBox::question(
                     this,
                     "Confirm",
-                    "Really delete server configuration "+QString::fromStdString(**rsc)+"?")
+                    "Really delete server configuration "+QString::fromStdString(*rsc)+"?")
                   ==QMessageBox::Yes)
               {
-                serverListModel_.removeRemoteServer(rsc);
+                serverListModel_.removeRemoteServer(index);
               }
             }
           }

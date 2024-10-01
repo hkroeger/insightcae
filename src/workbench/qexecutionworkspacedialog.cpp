@@ -288,19 +288,17 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   connect(ui->btnSelectRemoteDirectory, &QPushButton::clicked, this,
           [&]()
           {
-            insight::dbg()<<"1"<<std::endl;
             if (remoteLocation_)
             {
-              insight::dbg()<<"2"<<std::endl;
-              if (auto server = remoteLocation_->serverConfig()->getInstanceIfRunning())
+              if (auto server = remoteLocation_->serverConfig().getInstanceIfRunning())
               {
-                insight::dbg()<<"3"<<std::endl;
                 RemoteDirSelector dlg(this, server);
+
                 if (dlg.exec()==QDialog::Accepted)
                 {
                   auto dir=dlg.selectedRemoteDir().generic_path();
-                  insight::dbg()<<dir<<std::endl;
-                  checkAndChangeRemoteConfig(
+
+                 checkAndChangeRemoteConfig(
                         ui->cbHost->currentText(),
                         QString::fromStdString(dir.string()) );
                   displayCurrentRemoteWorkingDir();
@@ -334,7 +332,10 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   // set initial values
   if (localDirectory)
   {
-    ui->leLocalWorkingDirectory->setText( QString::fromStdString(localDirectory->string()) ); // remoteLocation_ will be set by signal handler above
+    // remoteLocation_ will be set by signal handler above
+    ui->leLocalWorkingDirectory->setText(
+          QString::fromStdString(
+              localDirectory->string() ) );
   }
   lastValidLocalWorkDirSetting_ = ui->leLocalWorkingDirectory->text();
 

@@ -6,13 +6,23 @@
 #include "base/remoteserverlist.h"
 
 #include <QAbstractItemModel>
+#include <memory>
 
 class TOOLKIT_GUI_EXPORT IQRemoteServerListModel
     : public QAbstractItemModel
 {
   Q_OBJECT
 
-  insight::RemoteServerList remoteServers_;
+  std::vector<
+      boost::variant<
+          insight::RemoteServer::ConfigPtr,
+          insight::RemoteServerPoolConfig
+          >
+      > remoteServers_;
+
+  std::weak_ptr<insight::RemoteServer::Config> preferredServer_;
+
+  mutable std::unique_ptr<insight::RemoteServerList> newRemoteServerList_;
 
 public:
   explicit IQRemoteServerListModel(QObject *parent = nullptr);
@@ -33,12 +43,12 @@ public:
   QModelIndex preferredServer() const;
   void setPreferredServer(const QModelIndex& index);
 
-  insight::RemoteServerList& remoteServers();
+  const insight::RemoteServerList& remoteServers() const;
 
-  insight::RemoteServerList::iterator getRemoteServer(const QModelIndex &index);
+  insight::RemoteServer::ConfigPtr getRemoteServer(const QModelIndex &index);
 
   void addRemoteServer(insight::RemoteServer::ConfigPtr newRemoteServer);
-  void removeRemoteServer(insight::RemoteServerList::iterator rsi);
+  void removeRemoteServer(const QModelIndex &index);
 
 private:
 };

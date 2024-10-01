@@ -410,7 +410,16 @@ int main(int argc, char *argv[])
 
       if(vm.count("clean"))
       {
-        re->cleanup(true);
+          if (re->serverConfig().isDynamicallyDestructable())
+          {
+              boost::filesystem::remove(re->metaFile());
+              re->server()->destroyIfPossible();
+              re.reset();
+          }
+          else
+          {
+              re->cleanup(true);
+          }
         return 0; // configuration is invalidated, exit here
       }
 

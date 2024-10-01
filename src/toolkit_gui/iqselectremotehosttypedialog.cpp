@@ -16,7 +16,9 @@ const int RST_SSHLINUX=0;
 const int RST_WSLLINUX=1;
 
 
-ServerSetup::ServerSetup(QWidget* parent, IQSelectRemoteHostTypeDialog *dlg)
+ServerSetup::ServerSetup(
+    QWidget* parent,
+    IQSelectRemoteHostTypeDialog *dlg )
   : parent_(parent), dlg_(dlg)
 {}
 
@@ -37,10 +39,16 @@ Ui::IQSelectRemoteHostTypeDialog *ServerSetup::dlgui()
 
 
 
-SSHLinuxSetup::SSHLinuxSetup(QWidget *parent, IQSelectRemoteHostTypeDialog *dlg, insight::RemoteServer::ConfigPtr initialcfg)
+SSHLinuxSetup::SSHLinuxSetup(
+    QWidget *parent,
+    IQSelectRemoteHostTypeDialog *dlg,
+    insight::RemoteServer::ConfigPtr initialcfg )
   : ServerSetup(parent, dlg)
 {
-  auto ini = std::dynamic_pointer_cast<insight::SSHLinuxServer::Config>(initialcfg);
+  auto ini =
+        std::dynamic_pointer_cast
+         <insight::SSHLinuxServer::Config>(
+          initialcfg);
 
   auto* vl = new QVBoxLayout(parent);
   parent->setLayout(vl);
@@ -53,6 +61,17 @@ SSHLinuxSetup::SSHLinuxSetup(QWidget *parent, IQSelectRemoteHostTypeDialog *dlg,
       leHostName_->setText( QString::fromStdString(ini->hostName_) );
     l->addWidget(leHostName_);
     vl->addLayout(l);
+  }
+
+  {
+      auto *l = new QHBoxLayout;
+      l->addWidget(new QLabel("Number of processors:"));
+      sbNp_ = new QSpinBox;
+      sbNp_->setMinimum(1);
+      if (ini)
+          sbNp_->setValue( ini->np_ );
+      l->addWidget(sbNp_);
+      vl->addLayout(l);
   }
 
   {
@@ -71,6 +90,7 @@ insight::RemoteServer::ConfigPtr SSHLinuxSetup::result()
 {
   return std::make_shared<insight::SSHLinuxServer::Config>(
         leBaseDir_->text().toStdString(),
+        sbNp_->value(),
         leHostName_->text().toStdString()
         );
 }
@@ -79,10 +99,16 @@ insight::RemoteServer::ConfigPtr SSHLinuxSetup::result()
 
 
 
-WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, IQSelectRemoteHostTypeDialog *dlg, insight::RemoteServer::ConfigPtr initialcfg)
+WSLLinuxSetup::WSLLinuxSetup(
+    QWidget *parent,
+    IQSelectRemoteHostTypeDialog *dlg,
+    insight::RemoteServer::ConfigPtr initialcfg )
   : ServerSetup(parent, dlg)
 {
-  auto ini = std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(initialcfg);
+  auto ini =
+        std::dynamic_pointer_cast
+         <insight::WSLLinuxServer::Config>(
+          initialcfg);
 
   auto* vl = new QVBoxLayout(parent);
   parent->setLayout(vl);
@@ -158,6 +184,17 @@ WSLLinuxSetup::WSLLinuxSetup(QWidget *parent, IQSelectRemoteHostTypeDialog *dlg,
   }
 
   {
+      auto *l = new QHBoxLayout;
+      l->addWidget(new QLabel("Number of processors:"));
+      sbNp_ = new QSpinBox;
+      sbNp_->setMinimum(1);
+      if (ini)
+          sbNp_->setValue( ini->np_ );
+      l->addWidget(sbNp_);
+      vl->addLayout(l);
+  }
+
+  {
     auto *l = new QHBoxLayout;
     l->addWidget(new QLabel("Base directory:"));
     leBaseDir_ = new QLineEdit;
@@ -175,6 +212,7 @@ insight::RemoteServer::ConfigPtr WSLLinuxSetup::result()
 {
   return std::make_shared<insight::WSLLinuxServer::Config>(
         leBaseDir_->text().toStdString(),
+        sbNp_->value(),
         leDistributionLabel_->currentText().toStdString()
         );
 }
@@ -183,7 +221,7 @@ insight::RemoteServer::ConfigPtr WSLLinuxSetup::result()
 
 
 IQSelectRemoteHostTypeDialog::IQSelectRemoteHostTypeDialog(
-    insight::RemoteServerList& remoteServers,
+    const insight::RemoteServerList& remoteServers,
     insight::RemoteServer::ConfigPtr cfgToEdit,
     QWidget *parent )
   :

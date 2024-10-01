@@ -14,25 +14,36 @@ class WSLLinuxServer
     : public LinuxRemoteServer
 {
 public:
-  struct Config : public RemoteServer::Config
+  struct Config : public LinuxRemoteServer::Config
   {
     std::string distributionLabel_;
 
     Config(
         const boost::filesystem::path& bp,
+        int np,
         const std::string& distributionLabel );
 
     Config(rapidxml::xml_node<> *e);
 
-    std::shared_ptr<RemoteServer> getInstanceIfRunning() override;
-    std::shared_ptr<RemoteServer> instance() override;
+    std::shared_ptr<RemoteServer> instance() const override;
+
+    std::pair<boost::filesystem::path,std::vector<std::string> >
+    commandAndArgs(const std::string& command) const override;
 
     bool isDynamicallyAllocated() const override;
 
     void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const override;
+
+    ConfigPtr clone() const override;
+
+    bool isDynamicallyCreatable() const override;
+    bool isDynamicallyDestructable() const override;
+
   };
 
 protected:
+  Config serverConfig_;
+
   void runRsync
   (
       const std::vector<std::string>& args,
@@ -41,15 +52,13 @@ protected:
 
 
 public:
-  WSLLinuxServer(ConfigPtr serverConfig);
+  WSLLinuxServer(const Config& serverConfig);
 
-  Config* serverConfig() const;
+  const RemoteServer::Config& config() const override;
+  const Config& WSLServerConfig() const;
 
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
   static boost::filesystem::path WSLcommand();
-
-  std::pair<boost::filesystem::path,std::vector<std::string> >
-  commandAndArgs(const std::string& command) const override;
 
   struct BackgroundJob : public RemoteServer::BackgroundJob
   {

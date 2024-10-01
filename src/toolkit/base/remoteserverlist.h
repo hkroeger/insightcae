@@ -12,10 +12,59 @@ class RemoteServerList
     : public std::set<RemoteServer::ConfigPtr>
 {
   RemoteServer::ConfigPtr preferredServer_;
+  std::set<RemoteServerPoolConfig> serverPools_;
 
 public:
   RemoteServerList();
+
+  template<class SContainer, class PContainer>
+  RemoteServerList(
+        const SContainer& remoteServerConfigs,
+        const PContainer& remoteServerPoolConfigs,
+        const std::string& preferredServerLabel
+        )
+  {
+      reset(
+          remoteServerConfigs,
+          remoteServerPoolConfigs,
+          preferredServerLabel );
+  }
+
   RemoteServerList(const RemoteServerList& o);
+
+  template<class SContainer, class PContainer>
+  void reset(
+      const SContainer& remoteServerConfigs,
+      const PContainer& remoteServerPoolConfigs,
+      const std::string& preferredServerLabel
+      )
+  {
+      clear();
+      preferredServer_.reset();
+      serverPools_.clear();
+
+      std::copy(
+            remoteServerConfigs.begin(), remoteServerConfigs.end(),
+            std::inserter(*this, begin())
+          );
+
+      for (auto& rspc: remoteServerPoolConfigs)
+      {
+          for (int id=1; id<=rspc.maxSize_; ++id)
+          {
+              insert(
+                  rspc.configTemplate_
+                      ->expanded(id) );
+          }
+          serverPools_.insert(rspc);
+      }
+
+      setPreferredServer(preferredServerLabel);
+  }
+
+
+  const std::set<RemoteServerPoolConfig>& serverPools() const;
+  const RemoteServerPoolConfig& serverPool(const std::string& label) const;
 
   boost::filesystem::path firstWritableLocation() const;
   void writeConfiguration(const boost::filesystem::path& file);
@@ -56,6 +105,22 @@ public:
 
   void setPreferredServer(const std::string& label);
   RemoteServer::ConfigPtr getPreferredServer() const;
+
+  /**
+   * @brief requestUnoccupiedServer
+   * find a server with the best matching number of processors.
+   * Unoccupied means the server is not running.
+   * @param np
+   * number of procs needed. A server with a larger number may be returned, but not with less.
+   * @param poolLabel
+   * if not empty, restrict to the given pool.
+   * Otherwise, all known servers come into question.
+   * @return
+   */
+  RemoteServer::ConfigPtr requestUnoccupiedServer(
+      int np,
+      const std::string& poolLabel = std::string()
+      ) const;
 };
 
 

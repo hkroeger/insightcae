@@ -13,37 +13,79 @@
 namespace insight {
 
 
+
+
+
+/**
+ * @brief The RemoteServer class
+ * represents a running server.
+ * Server is brought up, if needed, when an object of this class is created.
+ * If destructable (e.g. containers), this is not done upon
+ * object destruction but has to be executed explicitly.
+ */
 class RemoteServer
 {
-  bool isRunning_;
-
-protected:
-  bool isRunning() const;
-  void setRunning(bool isRunning);
-  void assertRunning() const;
-
 public:
 
   /**
    * @brief The Config class
    * stores server info, the base class stores the label
+   * Represents all the information that can be provided without the server actually running
    */
+
+  struct Config;
+  typedef std::shared_ptr<Config> ConfigPtr;
+
   struct Config : public std::string
   {
     boost::filesystem::path defaultDirectory_;
+    int np_;
+    bool originatedFromExpansion_;
 
-    Config(const boost::filesystem::path& bp);
+    Config(const boost::filesystem::path& bp, int np);
 
     virtual bool isDynamicallyAllocated() const =0;
 
+    /**
+     * @brief create
+     * read configuration
+     * @param e
+     * @return
+     */
     static std::shared_ptr<Config> create(rapidxml::xml_node<> *e);
+
     /**
      * @brief getInstanceIfRunning
      * attempt to connect
      * @return
      * nullptr, if not running
      */
-    virtual std::shared_ptr<RemoteServer> getInstanceIfRunning() =0;
+    virtual std::shared_ptr<RemoteServer> getInstanceIfRunning() const;
+
+    // some query functions
+
+    /**
+     * @brief checkIfRunning
+     * check, if the server is actually running
+     * @return
+     */
+    virtual bool isRunning() const =0;
+
+    /**
+     * @brief occupiedProcessors
+     * check, how many processors on the machine are occupied by processes
+     * @return
+     */
+    virtual int occupiedProcessors(int* nProcAvail=nullptr) const =0;
+
+    /**
+     * @brief unoccupiedProcessors
+     * return, how many processors are free on the machine
+     * @return
+     */
+    int unoccupiedProcessors() const;
+
+    bool isUnoccupied() const;
 
     /**
      * @brief instance
@@ -51,45 +93,80 @@ public:
      * @return
      * instance or exception, if instance could not be launched
      */
-    virtual std::shared_ptr<RemoteServer> instance() =0;
+    virtual std::shared_ptr<RemoteServer> instance() const =0;
+
+
+    virtual std::pair<boost::filesystem::path,std::vector<std::string> >
+    commandAndArgs(const std::string& command) const =0;
+
+    template<typename ...Args>
+    int executeCommand(const std::string& command, Args&&... addArgs) const
+    {
+        insight::CurrentExceptionContext ex(
+            "executing command \"%s\" on remote server %s",
+            command.c_str(), c_str() );
+
+        auto c_and_a = commandAndArgs(command);
+        int ret = boost::process::system(
+            c_and_a.first, boost::process::args(c_and_a.second),
+            std::forward<Args>(addArgs)...
+            );
+        return ret;
+    }
 
     virtual void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const =0;
+
+    virtual ConfigPtr clone() const =0;
+
+    virtual bool isExpandable() const;
+    virtual ConfigPtr expanded(int id) const;
+    inline bool wasExpanded() const { return originatedFromExpansion_; }
+
+    virtual bool isDynamicallyCreatable() const =0;
+    virtual bool isDynamicallyDestructable() const =0;
   };
 
-  typedef std::shared_ptr<Config> ConfigPtr;
-
-protected:
-  ConfigPtr serverConfig_;
 
 public:
 
   RemoteServer();
+  virtual ~RemoteServer();
 
-  Config* genericServerConfig() const;
+  virtual void destroyIfPossible();
+
+  virtual const Config& config() const =0;
   std::string serverLabel() const;
 
-
-  virtual std::pair<boost::filesystem::path,std::vector<std::string> >
-  commandAndArgs(const std::string& command) const =0;
+  /**
+   * @brief assertRunning
+   * check if the server is actually really running.
+   * Throw an exception, if not.
+   */
+  void assertRunning() const
+  {
+      insight::assertion(
+          config().isRunning(),
+          "the remote machine %s was expected to be running but is not",
+          serverLabel().c_str()
+          );
+  }
 
   template<typename ...Args>
   int executeCommand(const std::string& command, bool throwOnFail, Args&&... addArgs) const
   {
-    insight::CurrentExceptionContext ex("executing command \""+command+"\" on remote server");
-    if (throwOnFail) assertRunning();
+      if (throwOnFail) assertRunning();
 
-    auto c_and_a = commandAndArgs(command);
-    int ret = boost::process::system(
-                c_and_a.first, boost::process::args(c_and_a.second),
-                std::forward<Args>(addArgs)...
-          );
+      auto ret = config().executeCommand(
+          command, std::forward<Args>(addArgs)...);
 
-    if ( throwOnFail && (ret != 0) )
-    {
-        throw insight::Exception("Could not execute command on server "+(*serverConfig_)+": \""+command+"\"");
-    }
+      if ( throwOnFail && (ret != 0) )
+      {
+          throw insight::Exception(
+              "Could not execute command on server %s: \"%s\"",
+              serverLabel().c_str(), command.c_str() );
+      }
 
-    return ret;
+      return ret;
   }
 
   template<class ...Args>
@@ -99,7 +176,7 @@ public:
     insight::CurrentExceptionContext ex("executing command on remote host: "+command);
     assertRunning();
 
-    auto c_and_a = commandAndArgs(command);
+    auto c_and_a = config().commandAndArgs(command);
     return std::unique_ptr<boost::process::child>(new boost::process::child(
                 c_and_a.first, boost::process::args(c_and_a.second),
                 std::forward<Args>(addArgs)...
@@ -141,6 +218,21 @@ public:
       std::function<void(int progress,const std::string& status_text)> progress_callback =
                           std::function<void(int,const std::string&)>()
   ) =0;
+
+
+  struct RemoteStream {
+      virtual ~RemoteStream();
+      inline std::ostream& operator()() { return stream(); };
+      virtual std::ostream& stream() =0;
+  };
+
+  virtual std::unique_ptr<RemoteStream> remoteOFStream
+      (
+          const boost::filesystem::path& remoteFilePath,
+          int totalBytes,
+          std::function<void(int progress,const std::string& status_text)> progress_callback =
+          std::function<void(int,const std::string&)>()
+          ) =0;
 
   /**
    * @brief setTransferBandWidthLimit
@@ -202,15 +294,27 @@ public:
       const std::set<int>& localListenerPorts
       );
 
-
-  virtual void launch();
-  virtual bool hostIsAvailable() =0;
-  virtual void stop();
 };
 
 
 typedef std::shared_ptr<RemoteServer> RemoteServerPtr;
 
+
+class RemoteServerPoolConfig
+{
+public:
+    RemoteServerPoolConfig(rapidxml::xml_node<> *e);
+
+    RemoteServer::ConfigPtr configTemplate_;
+    int maxSize_;
+    int np_;
+
+    void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const;
+};
+
+bool operator<(
+    const RemoteServerPoolConfig& p1,
+    const RemoteServerPoolConfig& p2 );
 
 } // namespace insight
 

@@ -7,6 +7,7 @@
 #include "base/tools.h"
 #include "base/sshlinuxserver.h"
 #include "base/wsllinuxserver.h"
+#include "base/rapidxml.h"
 #include "openfoam/openfoamcase.h"
 
 #include "rapidxml/rapidxml_print.hpp"
@@ -17,8 +18,8 @@ using namespace boost;
 namespace insight {
 
 
-RemoteServer::Config::Config(const boost::filesystem::path& bp)
-  : defaultDirectory_(bp)
+RemoteServer::Config::Config(const boost::filesystem::path& bp, int np)
+    : defaultDirectory_(bp), np_(np), originatedFromExpansion_(false)
 {}
 
 std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml_node<> *e)
@@ -49,37 +50,68 @@ std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml
   return result;
 }
 
-
-bool RemoteServer::isRunning() const
+std::shared_ptr<RemoteServer> RemoteServer::Config::getInstanceIfRunning() const
 {
-  return isRunning_;
+    if (isRunning())
+    {
+        return instance();
+    }
+    else
+        return nullptr;
 }
 
-void RemoteServer::setRunning(bool isRunning)
+int RemoteServer::Config::unoccupiedProcessors() const
 {
-  isRunning_=isRunning;
+    if (isRunning())
+    {
+        int npTotal;
+        int nu=occupiedProcessors(&npTotal);
+        return npTotal-nu;
+    }
+    else
+        return np_;
 }
 
-void RemoteServer::assertRunning() const
+
+bool RemoteServer::Config::isUnoccupied() const
 {
-  insight::assertion(
-              isRunning_,
-              "the remote machine is not yet started!"
-              );
+    if (isRunning())
+    {
+        if (unoccupiedProcessors()>=np_)
+            return true;
+        else
+            return false;
+    }
+    else
+        return true;
 }
+
+bool RemoteServer::Config::isExpandable() const
+{
+    return false;
+}
+
+RemoteServer::ConfigPtr RemoteServer::Config::expanded(int id) const
+{
+    return nullptr;
+}
+
+
 
 RemoteServer::RemoteServer()
-  : isRunning_(false)
 {}
 
-RemoteServer::Config *RemoteServer::genericServerConfig() const
-{
-  return serverConfig_.get();
-}
 
-std::string RemoteServer::serverLabel() const
+RemoteServer::~RemoteServer()
+{}
+
+void RemoteServer::destroyIfPossible()
+{}
+
+
+string RemoteServer::serverLabel() const
 {
-    return static_cast<std::string>(*serverConfig_);
+    return config();
 }
 
 
@@ -131,6 +163,9 @@ void RemoteServer::lookForPattern(
 }
 
 
+RemoteServer::RemoteStream::~RemoteStream()
+{}
+
 
 
 void RemoteServer::setTransferBandWidthLimit(int kBPerSecond)
@@ -141,18 +176,6 @@ int RemoteServer::transferBandWidthLimit() const
     return -1;
 }
 
-
-
-
-void RemoteServer::launch()
-{
-  isRunning_=true;
-}
-
-void RemoteServer::stop()
-{
-  isRunning_=false;
-}
 
 
 RemoteServer::PortMapping::~PortMapping()
@@ -180,6 +203,49 @@ RemoteServer::BackgroundJob::BackgroundJob(RemoteServer &server)
   : server_(server)
 {}
 
+
+RemoteServerPoolConfig::RemoteServerPoolConfig(rapidxml::xml_node<> *e)
+{
+    if (auto rst = configTemplate_=RemoteServer::Config::create(e))
+    {
+        if (auto *a = e->first_attribute("maxSize"))
+            maxSize_=insight::toNumber<int>(a->value());
+        else
+            throw insight::Exception(
+                "no maximum server pool size specified for pool %s",
+                rst->c_str() );
+
+        if (auto *a = e->first_attribute("np"))
+            np_=insight::toNumber<int>(a->value());
+        else
+            throw insight::Exception(
+                "no processor count specified for pool %s",
+                rst->c_str() );
+    }
+    else
+    {
+        std::string label("(unlabelled)");
+        if (auto *le=e->first_attribute("label"))
+            label=std::string(le->value());
+        throw insight::Exception(
+            "ignored invalid remote machine pool configuration: %s",
+            label.c_str());
+    }
+}
+
+void RemoteServerPoolConfig::save(
+    rapidxml::xml_node<> *e,
+    rapidxml::xml_document<>& doc ) const
+{
+    configTemplate_->save(e, doc);
+    appendAttribute(doc, *e, "maxSize", maxSize_);
+    appendAttribute(doc, *e, "np", np_);
+}
+
+bool operator<(const RemoteServerPoolConfig& p1, const RemoteServerPoolConfig& p2)
+{
+    return p1.configTemplate_<p2.configTemplate_;
+}
 
 
 } // namespace insight

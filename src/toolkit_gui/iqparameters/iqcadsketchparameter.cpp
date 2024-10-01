@@ -108,57 +108,58 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
                 *sk,
                 p.defaultGeometryParameters(),
 
-    #warning replace!!
-                [](
-                    const insight::ParameterSet& seps,
-                    vtkProperty* actprops)
-                {
-                    if ( (seps.size()>0) && seps.contains("type") )
-                    {
-                        auto &selp = seps.get<insight::SelectableSubsetParameter>("type");
-                        if (selp.selection()=="wall")
-                        {
-                            auto c = QColorConstants::Black;
-                            actprops->SetColor(
-                                c.redF(),
-                                c.greenF(),
-                                c.blueF() );
-                            actprops->SetLineWidth(3);
-                        }
-                        else if (selp.selection()=="window")
-                        {
-                            auto c = QColorConstants::DarkYellow;
-                            actprops->SetColor(
-                                c.redF(),
-                                c.greenF(),
-                                c.blueF() );
-                            actprops->SetLineWidth(4);
-                        }
-                        else if (selp.selection()=="door")
-                        {
-                            auto c = QColorConstants::DarkMagenta;
-                            actprops->SetColor(
-                                c.redF(),
-                                c.greenF(),
-                                c.blueF() );
-                            actprops->SetLineWidth(4);
-                        }
-                        else if (selp.selection()=="floorCutout")
-                        {
-                            actprops->SetColor(41./255., 128./255., 185./255.); // blueish
-                            actprops->SetLineWidth(4);
-                        }
-                    }
-                    else
-                    {
-                        auto c = QColorConstants::DarkCyan;
-                        actprops->SetColor(
-                            c.redF(),
-                            c.greenF(),
-                            c.blueF() );
-                        actprops->SetLineWidth(2);
-                    }
-                },
+                p.sketchAppearanceFunction(),
+// #warning replace!!
+//                 [](
+//                     const insight::ParameterSet& seps,
+//                     vtkProperty* actprops)
+//                 {
+//                     if ( (seps.size()>0) && seps.contains("type") )
+//                     {
+//                         auto &selp = seps.get<insight::SelectableSubsetParameter>("type");
+//                         if (selp.selection()=="wall")
+//                         {
+//                             auto c = QColorConstants::Black;
+//                             actprops->SetColor(
+//                                 c.redF(),
+//                                 c.greenF(),
+//                                 c.blueF() );
+//                             actprops->SetLineWidth(3);
+//                         }
+//                         else if (selp.selection()=="window")
+//                         {
+//                             auto c = QColorConstants::DarkYellow;
+//                             actprops->SetColor(
+//                                 c.redF(),
+//                                 c.greenF(),
+//                                 c.blueF() );
+//                             actprops->SetLineWidth(4);
+//                         }
+//                         else if (selp.selection()=="door")
+//                         {
+//                             auto c = QColorConstants::DarkMagenta;
+//                             actprops->SetColor(
+//                                 c.redF(),
+//                                 c.greenF(),
+//                                 c.blueF() );
+//                             actprops->SetLineWidth(4);
+//                         }
+//                         else if (selp.selection()=="floorCutout")
+//                         {
+//                             actprops->SetColor(41./255., 128./255., 185./255.); // blueish
+//                             actprops->SetLineWidth(4);
+//                         }
+//                     }
+//                     else
+//                     {
+//                         auto c = QColorConstants::DarkCyan;
+//                         actprops->SetColor(
+//                             c.redF(),
+//                             c.greenF(),
+//                             c.blueF() );
+//                         actprops->SetLineWidth(2);
+//                     }
+//                 },
 
                 [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
                 {

@@ -577,44 +577,12 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
     else if (const auto *featurePtr =
              boost::get<insight::cad::FeaturePtr>(&entity))
     {
-        auto feat = *featurePtr;
-        if (feat->topologicalProperties().onlyEdges())
-        {
-            // if shape consists only of edges,
-            // create a set of actors for each edge
-            // to be able to pick locations inside of
-            // a possible edge loop without
-            // triggering a selection
-            std::vector<vtkSmartPointer<vtkProp> > actors;
-            for (TopExp_Explorer ex(feat->shape(),TopAbs_EDGE); ex.More(); ex.Next())
-            {
-                auto shape = vtkSmartPointer<ivtkOCCShape>::New();
-                shape->SetShape( ex.Current() );
-
-                auto actor = vtkSmartPointer<vtkActor>::New();
-                actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-                actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
-
-                actors.push_back(actor);
-            }
-            return actors;
-        }
-        else
-        {
-            auto shape = vtkSmartPointer<ivtkOCCShape>::New();
-            shape->SetShape( feat->shape() );
-
-            auto actor = vtkSmartPointer<vtkActor>::New();
-            actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-            actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
-            return {actor};
-        }
-
+        return (*featurePtr)->createVTKActors();
     }
     else if (const auto *ppPtr =
              boost::get<insight::cad::PostprocActionPtr>(&entity))
     {
-        return insight::cad::postProcActionVisualizers.createVTKRepr(*ppPtr);
+        (*ppPtr)->createVTKRepr();
     }
     else if (const auto *dsPtr =
              boost::get<vtkSmartPointer<vtkDataObject> >(&entity))

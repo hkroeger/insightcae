@@ -139,15 +139,6 @@ public:
         std::owner_less<HighlightingHandle> > HighlightingHandleSet;
 
 
-    struct SubshapeData {
-        insight::cad::FeaturePtr feat;
-        insight::cad::EntityType subshapeType_;
-        insight::cad::FeatureID id_;
-
-        bool operator==(const SubshapeData& o) const;
-        bool operator<(const SubshapeData& o) const;
-    };
-
     typedef std::map<
         vtkSmartPointer<vtkProp>,
         SubshapeData > DisplayedSubshapeData;

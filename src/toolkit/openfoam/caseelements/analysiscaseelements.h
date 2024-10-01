@@ -523,6 +523,7 @@ PARAMETERSET>>> extendedForces Parameters
 inherits insight::forces::Parameters
 
 maskField = string "" "Optional: name of field which masks the force evaluation. The local force density is multiplied by this field."
+maskThreshold = double 0.5 "Threshold value for masking"
 
 <<<PARAMETERSET
 */

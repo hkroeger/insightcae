@@ -1417,7 +1417,10 @@ OFDictData::dict extendedForces::functionObjectDict() const
   fod["rhoInf"]=p_.rhoInf;
   
   if (p_.maskField!="")
+  {
       fod["maskField"]=p_.maskField;
+      fod["maskThreshold"]=p_.maskThreshold;
+  }
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);
   return fod;

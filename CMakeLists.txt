@@ -36,6 +36,7 @@ OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit a
 OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF)
 OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration (already during build)" OFF)
 OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
+OPTION(INSIGHT_DEVELOPMENT_FILES "create CMake package files to build other projects with CMake and InsightCAE as a dependency" ON)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 

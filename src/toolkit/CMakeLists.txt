@@ -333,23 +333,32 @@ PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
-set(toolkit_LINK_LIBS
-    ${Boost_LIBRARIES}
-    ${Intl_LIBRARY}
-    ${ARMADILLO_LIBRARY}
-    PkgConfig::poppler-cpp
-    PkgConfig::minizip
-    GSL::gsl GSL::gslcblas
-    OpenSSL::SSL
-    vtkHeaders
-)
+#set(toolkit_LINK_LIBS
+#    ${Boost_LIBRARIES}
+#    ${Intl_LIBRARY}
+#    ${ARMADILLO_LIBRARY}
+#    PkgConfig::poppler-cpp
+#    PkgConfig::minizip
+#    GSL::gsl GSL::gslcblas
+#    OpenSSL::SSL
+#)
+target_link_libraries(toolkit PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(toolkit PUBLIC ${Intl_LIBRARY})
+target_link_libraries(toolkit PUBLIC ${ARMADILLO_LIBRARY})
+target_link_libraries(toolkit PUBLIC PkgConfig::poppler-cpp)
+target_link_libraries(toolkit PUBLIC PkgConfig::minizip)
+target_link_libraries(toolkit PUBLIC GSL::gsl GSL::gslcblas)
+target_link_libraries(toolkit PUBLIC OpenSSL::SSL)
+target_link_libraries(toolkit PUBLIC vtkHeaders)
 if (PYTHONLIBS_FOUND)
-    list(APPEND toolkit_LINK_LIBS ${PYTHON_LIBRARIES})
+  target_link_libraries(toolkit PUBLIC ${PYTHON_LIBRARIES})
+    #list(APPEND toolkit_LINK_LIBS ${PYTHON_LIBRARIES})
 endif()
 if (WIN32)
-    list(APPEND toolkit_LINK_LIBS vtkOnscreen)
+  target_link_libraries(toolkit PUBLIC vtkOnscreen)
+    #list(APPEND toolkit_LINK_LIBS vtkOnscreen)
 endif()
-target_link_libraries(toolkit ${toolkit_LINK_LIBS})
+#target_link_libraries(toolkit ${toolkit_LINK_LIBS})
 # --export-all-symbols is not sufficient for signal/slots to work across DLLs
 include(GenerateExportHeader)
 generate_export_header(toolkit)

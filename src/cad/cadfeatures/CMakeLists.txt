@@ -80,6 +80,8 @@ add_sources(insightcad_SOURCES
  exploded.cpp exploded.h
  partition.cpp partition.h
  offset.cpp offset.h
+
+ alignwithboundingbox.h alignwithboundingbox.cpp
  
   GEOMAlgo_Splitter.cxx
   

@@ -2,7 +2,7 @@
 #define INSIGHT_RAPIDXML_H
 
 #include <string>
-#include "boost/lexical_cast.hpp"
+#include "base/boost_include.h"
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -49,6 +49,13 @@ appendNode(
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& parent,
         const std::string& label );
+
+
+struct XMLDocument
+    : public rapidxml::xml_document<>
+{
+    XMLDocument(const boost::filesystem::path& file);
+};
 
 
 } // namespace insight

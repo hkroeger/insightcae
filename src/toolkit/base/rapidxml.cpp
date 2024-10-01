@@ -1,4 +1,6 @@
 #include "rapidxml.h"
+#include "base/exception.h"
+#include "base/tools.h"
 
 namespace insight {
 
@@ -39,6 +41,26 @@ appendNode(
                 doc.allocate_string(label.c_str()) );
     parent.append_node ( newnode );
     return {*newnode};
+}
+
+
+XMLDocument::XMLDocument(const boost::filesystem::path &file)
+{
+    insight::CurrentExceptionContext ex(
+        "parsing XML from file %s", file.c_str() );
+
+    std::string content;
+    readFileIntoString(file, content);
+
+    try {
+        parse<0>(&content[0]);
+    }
+    catch (...)
+    {
+        throw insight::Exception(
+            "Failed to parse XML from file %s",
+            file.string().c_str() );
+    }
 }
 
 

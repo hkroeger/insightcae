@@ -111,19 +111,46 @@ extendedForces::extendedForces
     , readFields
 #endif
   ),
-  forceSource(name),
-  maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
+  forceSource(name)
 #if OF_VERSION>=060500
   , phaseName_(dict.lookupOrDefault<word>("phase", word::null))
 #endif
 {
+    if (dict.found("maskField"))
+    {
+        masking_=Mask(name, dict);
+    }
   createFields();
-  if (maskFieldName_!="")
-   Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
 }
 #endif
 
 
+tmp<volScalarField> extendedForces::Mask::operator()(const fvMesh& mesh) const
+{
+    tmp<volScalarField> mask(
+        new volScalarField(
+            mesh.lookupObject<volScalarField>(maskFieldName_)
+            ) );
+
+    if (maskThreshold_.has_value())
+    {
+        UNIOF_TMP_NONCONST(mask) = pos(mask() - maskThreshold_.value());
+    }
+
+    return mask;
+}
+
+extendedForces::Mask::Mask(const word& name, const dictionary& dict)
+{
+    maskFieldName_=dict.lookupOrDefault<word>("maskField", "");
+    Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
+    if (dict.found("maskThreshold"))
+    {
+        auto thr=readScalar(dict.lookup("maskThreshold"));
+        Info<<name<<": sharpening mask at threshold thr= "<<thr<<endl;
+        maskThreshold_=thr;
+    }
+}
 
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
@@ -153,16 +180,18 @@ extendedForces::extendedForces
 	  , readFields
 #endif
 	),
-  forceSource(name),
-  maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
+  forceSource(name)
 #if OF_VERSION>=060500
     , phaseName_(dict.lookupOrDefault<word>("phase", word::null))
 #endif
 
 {
-  if (maskFieldName_!="")
-   Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
-  createFields();
+    if (dict.found("maskField"))
+    {
+        masking_=Mask(name, dict);
+    }
+
+    createFields();
 }
 
 
@@ -184,8 +213,7 @@ extendedForces::extendedForces
     const coordinateSystem& coordSys
 )
 : forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys),
-  forceSource(name),
-  maskFieldName_("")
+  forceSource(name)
 {
   createFields();
 }
@@ -449,17 +477,23 @@ extendedForces::execute()
     vi_moment_ = vector::zero;
     po_moment_ = vector::zero;
 
+    volScalarField mask(
+        IOobject(
+            "mask", mesh
+            ),
+        mesh,
+        dimensionedScalar("1", dimless, 1.));
+    if (masking_.has_value())
+    {
+        mask=masking_.value()(mesh);
+    }
+
     //forAllConstIter(labelHashSet, patchSet_, iter)
     forAll(mesh.boundaryMesh(), patchI)
     {
       if (isA<wallFvPatch>(mesh.boundary()[patchI]))
       {
-        scalarField mask(mesh.boundary()[patchI].size(), 1.0);
-        if (maskFieldName_!="")
-        {
-            const volScalarField& vmask = obr_.lookupObject<volScalarField>(maskFieldName_);
-            mask = vmask.boundaryField()[patchI];
-        }
+        scalarField bmask = mask.boundaryField()[patchI];
 
         const vectorField& Sfb = mesh.Sf().boundaryField()[patchI];
         const vectorField nfb ( Sfb / mesh.magSf().boundaryField()[patchI] );
@@ -487,7 +521,7 @@ extendedForces::execute()
             nfb & devRhoReffb
         );
         
-        if ( (maskFieldName_!="") && (patchSet_.found(patchI)) )
+        if ( masking_.has_value() && (patchSet_.found(patchI)) )
         {
             vectorField Md
             (
@@ -503,10 +537,10 @@ extendedForces::execute()
 
             vectorField fN
             (
-                mask*rho(p)*Sfb*(p.boundaryField()[patchI] - pRef)
+                bmask*rho(p)*Sfb*(p.boundaryField()[patchI] - pRef)
             );
 
-            vectorField fT(mask*(Sfb & devRhoReffb));
+            vectorField fT(bmask*(Sfb & devRhoReffb));
 
             vectorField fP(Md.size(), vector::zero);
             
@@ -581,12 +615,12 @@ extendedForces::write()
   }
 #endif
 
-  if (maskFieldName_!="")
+  if (masking_.has_value())
   {
     const volVectorField& U = obr_.lookupObject<volVectorField>(UName_);
     const fvMesh& mesh = U.mesh();
     
-    if (!maskedForceFile_.valid())
+    if (!masking_.value().maskedForceFile_.valid())
     {
         if (Pstream::master())
         {
@@ -611,37 +645,37 @@ extendedForces::write()
 
             // Open new file at start up
 #if OF_VERSION>=040000
-            maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
-            maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
+            masking_.value().maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
+            masking_.value().maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
 #else
-            maskedForceFile_.reset(new OFstream(outdir/"forces.dat"));
+            masking_.value().maskedForceFile_.reset(new OFstream(outdir/"forces.dat"));
 #endif
         }
     }
     
     if (Pstream::master()) {
 #if OF_VERSION>=040000
-    maskedForceFile_() << obr_.time().value()
+    masking_.value().maskedForceFile_() << obr_.time().value()
             << tab << (pr_force_+vi_force_)
             << tab << pr_force_
             << tab << vi_force_;
     if (porosity_)
     {
-        maskedForceFile_()  << tab << po_force_;
+        masking_.value().maskedForceFile_()  << tab << po_force_;
     }
-    maskedForceFile_()  << endl;
+    masking_.value().maskedForceFile_()  << endl;
 
-    maskedForceFile2_() << obr_.time().value()
+    masking_.value().maskedForceFile2_() << obr_.time().value()
             << tab << (pr_moment_+vi_moment_)
             << tab << pr_moment_
             << tab << vi_moment_;
     if (porosity_)
     {
-        maskedForceFile2_()  << tab << po_moment_;
+        masking_.value().maskedForceFile2_()  << tab << po_moment_;
     }
-    maskedForceFile2_()  << endl;
+    masking_.value().maskedForceFile2_()  << endl;
 #else
-    maskedForceFile_() << obr_.time().value() << tab << '('
+    masking_.value().maskedForceFile_() << obr_.time().value() << tab << '('
         << (pr_force_) << ' '
         << (vi_force_) << ' '
         << (po_force_) << ") ("

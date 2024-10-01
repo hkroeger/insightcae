@@ -25,6 +25,8 @@
 
 #include "forcesources.h"
 
+#include <boost/optional.hpp>
+
 namespace Foam
 {
 
@@ -44,8 +46,21 @@ protected:
   volVectorField* pressureForce_;
   volVectorField* viscousForce_;
   
-  word maskFieldName_;
-  autoPtr<OFstream> maskedForceFile_, maskedForceFile2_;
+  class Mask
+  {
+  public:
+    word maskFieldName_;
+    boost::optional<scalar> maskThreshold_;
+    autoPtr<OFstream> maskedForceFile_, maskedForceFile2_;
+
+    tmp<volScalarField> operator()(const fvMesh& mesh) const;
+
+    Mask(const word& name, const dictionary& dict);
+
+  };
+
+  boost::optional<Mask> masking_;
+
   vector pr_force_;
   vector vi_force_;
   vector po_force_;

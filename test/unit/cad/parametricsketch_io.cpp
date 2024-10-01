@@ -3,8 +3,8 @@
 #include "datum.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"
-#include "cadpostprocactions/pointdistance.h"
-#include "cadpostprocactions/angle.h"
+#include "constrainedsketchentities/distanceconstraint.h"
+#include "constrainedsketchentities/angleconstraint.h"
 
 using namespace insight;
 using namespace insight::cad;

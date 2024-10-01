@@ -4,12 +4,12 @@
 #include "datum.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"
-#include "cadpostprocactions/pointdistance.h"
-#include "cadpostprocactions/angle.h"
 
-#include "constrainedsketchentities/iqvtkfixedpoint.h"
-#include "constrainedsketchentities/iqvtkhorizontalconstraint.h"
-#include "constrainedsketchentities/iqvtkverticalconstraint.h"
+#include "constrainedsketchentities/distanceconstraint.h"
+#include "constrainedsketchentities/angleconstraint.h"
+#include "constrainedsketchentities/fixedpointconstraint.h"
+#include "constrainedsketchentities/horizontalconstraint.h"
+#include "constrainedsketchentities/verticalconstraint.h"
 #include <ostream>
 
 using namespace insight;
@@ -117,11 +117,11 @@ int main(int argc, char* argv[])
             sk1->insertGeometry(l1);
 
             sk1->insertGeometry(
-                IQVTKFixedPoint::create(p1) );
+                insight::cad::FixedPointConstraint::create(p1) );
             sk1->insertGeometry(
-                IQVTKHorizontalConstraint::create(l1) );
+                insight::cad::HorizontalConstraint::create(l1) );
             sk1->insertGeometry(
-                FixedDistanceConstraint::create( p1, p2, sk1->sketchPlaneNormal()));
+                insight::cad::FixedDistanceConstraint::create( p1, p2, sk1->sketchPlaneNormal()));
 
             sk1->resolveConstraints();
 
@@ -173,9 +173,9 @@ int main(int argc, char* argv[])
             sk->insertGeometry(l3);
 
             sk->insertGeometry(
-                IQVTKVerticalConstraint::create(l2) );
+                insight::cad::VerticalConstraint::create(l2) );
 
-            auto ac = FixedAngleConstraint::create(
+            auto ac = insight::cad::FixedAngleConstraint::create(
                 l3->start(), nullptr, l3->end() );
             ac->setTargetValue( 45.*M_PI/180. );
             sk->insertGeometry(ac);

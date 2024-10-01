@@ -10,6 +10,7 @@ int main(int /*argc*/, char* /*argv*/[])
 
     RemoteServer::ConfigPtr reccfg = std::make_shared<SSHLinuxServer::Config>(
           "/home/hannes/tmp/analyses_basedir", //boost::filesystem::current_path(),
+					  1,
           "localhost"
           );
 

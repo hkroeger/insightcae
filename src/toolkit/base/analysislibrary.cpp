@@ -144,17 +144,28 @@ AnalysisLibraryLoader& AnalysisLibraryLoader::analysisLibraries()
 
 
 
-std::set<std::string> Analysis::availableAnalysisTypes()
+std::set<std::string> Analysis::availableAnalysisTypes(
+    const std::set<std::string>& restrictToCategories )
 {
     AnalysisLibraryLoader::analysisLibraries();
     std::set<std::string> al;
-    std::transform(
-                insight::Analysis::factories_->begin(),
-                insight::Analysis::factories_->end(),
-                std::inserter(al, al.begin()),
-                [](const insight::Analysis::FactoryTable::value_type &f)
-                { return f.first; }
-    );
+    for (auto &f: *insight::Analysis::factories_)
+    {
+        if (restrictToCategories.size())
+        {
+            if (restrictToCategories.count(
+                    Analysis::categoryFor(f.first))<1)
+                continue;
+        }
+        al.insert(f.first);
+    }
+    // std::transform(
+    //             insight::Analysis::factories_->begin(),
+    //             insight::Analysis::factories_->end(),
+    //             std::inserter(al, al.begin()),
+    //             [](const insight::Analysis::FactoryTable::value_type &f)
+    //             { return f.first; }
+    // );
     return al;
 }
 

@@ -90,7 +90,8 @@ public:
      * get the list of defined analyses
      * @return
      */
-    static std::set<std::string> availableAnalysisTypes();
+    static std::set<std::string> availableAnalysisTypes(
+        const std::set<std::string>& restrictToCategories = {} );
 
 
 #include "analysis__Analysis__Parameters.h"

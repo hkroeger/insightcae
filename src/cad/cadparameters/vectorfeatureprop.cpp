@@ -321,3 +321,33 @@ arma::mat insight::cad::SurfaceInertiaAxis::value() const
   return model_->surfaceInertia(axis_);
 }
 
+
+insight::cad::PointInFeatureCS::PointInFeatureCS(
+    FeaturePtr model,
+    VectorPtr locP )
+    : model_(model),
+    locP_(locP)
+{}
+
+arma::mat insight::cad::PointInFeatureCS::value() const
+{
+    arma::mat locP=locP_->value();
+    auto& dp=model_->getDatumPoints();
+    auto& dv=model_->getDatumVectors();
+
+    if (dp.count("O") &&
+        dv.count("EX") &&
+        dv.count("EY") &&
+        dv.count("EZ") )
+    {
+        return
+            dp.at("O")
+               +dv.at("EX")*locP(0)
+               +dv.at("EY")*locP(1)
+               +dv.at("EZ")*locP(2);
+    }
+    else
+    {
+        return locP;
+    }
+}

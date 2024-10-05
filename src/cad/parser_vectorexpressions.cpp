@@ -68,6 +68,9 @@ void ISCADParser::createVectorExpressions()
             |
             ( '-' >> r_vector_term [_val=phx::construct<VectorPtr>(phx::new_<SubtractedVector>(qi::_val, qi::_1)) ] )
         )
+
+        >> -( lit("in") > r_solidmodel_expression
+                [ _val = phx::construct<VectorPtr>(phx::new_<PointInFeatureCS>(qi::_1, qi::_val)) ] )
         ;
     r_vectorExpression.name("vector expression");
 

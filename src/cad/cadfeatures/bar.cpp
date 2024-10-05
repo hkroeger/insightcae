@@ -161,6 +161,8 @@ void Bar::build()
 
         arma::mat ey=arma::cross(baraxis, ex);
 
+        setLocalCoordinateSystem(p0, baraxis, arma::cross(baraxis,ey));
+
         gp_Trsf tr;
         tr.SetTransformation
         (

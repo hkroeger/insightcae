@@ -268,6 +268,10 @@ protected:
   Feature();
   Feature(const Feature& o);
 
+  void setLocalCoordinateSystem(
+        const arma::mat& O,
+        const arma::mat& ex,
+      const arma::mat& ez=vec3(0,0,1) );
 
 public:
   declareType("Feature");

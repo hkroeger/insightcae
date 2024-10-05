@@ -19,6 +19,7 @@
  */
 
 #include "TopAbs_State.hxx"
+#include "base/linearalgebra.h"
 #include "geotest.h"
 
 #include <memory>
@@ -528,7 +529,26 @@ Feature::Feature(const Feature& o)
 }
 
 
-
+void Feature::setLocalCoordinateSystem(
+    const arma::mat& O,
+    const arma::mat& ex,
+    const arma::mat& ez )
+{
+    insight::CoordinateSystem cs(O, ex, ez);
+    refpoints_["O"]=cs.origin;
+    refvectors_["EX"]=cs.ex;
+    refvectors_["EY"]=cs.ey;
+    refvectors_["EZ"]=cs.ez;
+    providedDatums_["XY"]=std::make_shared<DatumPlane>(
+        cad::matconst(cs.origin), cad::matconst(cs.ez), cad::matconst(cs.ey)
+        );
+    providedDatums_["XZ"]=std::make_shared<DatumPlane>(
+        cad::matconst(cs.origin), cad::matconst(cs.ey), cad::matconst(cs.ex)
+        );
+    providedDatums_["YZ"]=std::make_shared<DatumPlane>(
+        cad::matconst(cs.origin), cad::matconst(cs.ex), cad::matconst(cs.ey)
+        );
+}
 
 
 

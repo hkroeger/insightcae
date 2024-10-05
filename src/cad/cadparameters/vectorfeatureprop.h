@@ -200,6 +200,19 @@ public:
 
 
 
+class PointInFeatureCS
+    : public insight::cad::Vector
+{
+    FeaturePtr model_;
+    VectorPtr locP_;
+
+public:
+    PointInFeatureCS(FeaturePtr model, VectorPtr locP);
+    virtual arma::mat value() const;
+};
+
+
+
 }
 }
 

@@ -10,13 +10,29 @@ namespace cad {
 class AlignWithBoundingBox
     : public DerivedFeature
 {
+public:
+    enum AlignLocation {
+        Max=1, Center=2, Min=3
+    };
 
-    FeaturePtr m1_, other_;
-    VectorPtr direction_;
+    struct Alignment {
+        FeaturePtr other_;
+        VectorPtr direction_;
+        AlignLocation atOther_, atThis_;
+    };
 
-    std::shared_ptr<gp_Trsf> trsf_;
+private:
+    FeaturePtr m1_;
 
-    AlignWithBoundingBox ( FeaturePtr m1, FeaturePtr other, VectorPtr direction );
+    std::vector<Alignment> alignments_;
+
+    gp_Trsf trsf_;
+
+    AlignWithBoundingBox (
+        FeaturePtr m1,
+        const std::vector<boost::fusion::vector<
+            FeaturePtr, VectorPtr, AlignLocation, AlignLocation> >&
+                other_direction_atOther_atThis );
 
     size_t calcHash() const override;
     void build() override;
@@ -31,6 +47,7 @@ public:
     bool isTransformationFeature() const override;
     gp_Trsf transformation() const override;
 };
+
 
 } // namespace cad
 } // namespace insight

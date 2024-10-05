@@ -1,6 +1,8 @@
 #include "alignwithboundingbox.h"
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadfeatures/transform.h"
+#include "cadtypes.h"
 
 namespace insight {
 namespace cad {
@@ -11,18 +13,36 @@ addToStaticFunctionTable(Feature, AlignWithBoundingBox, ruleDocumentation);
 
 
 AlignWithBoundingBox::AlignWithBoundingBox (
-    FeaturePtr m1, FeaturePtr other, VectorPtr direction )
+    FeaturePtr m1,
+    const std::vector<boost::fusion::vector<
+        FeaturePtr, VectorPtr, AlignLocation, AlignLocation> >& other_direction_atOther_atThis    )
 : DerivedFeature(m1),
-  m1_(m1), other_(other), direction_(direction)
-{}
+  m1_(m1)
+{
+    for (auto& odot: other_direction_atOther_atThis)
+    {
+        alignments_.push_back({
+            boost::fusion::get<0>(odot),
+            boost::fusion::get<1>(odot),
+            boost::fusion::get<2>(odot),
+            boost::fusion::get<3>(odot)
+        });
+    }
+}
 
 size_t AlignWithBoundingBox::calcHash() const
 {
     ParameterListHash h;
     h+=this->type();
     h+=*m1_;
-    h+=*other_;
-    h+=direction_->value();
+    h+=alignments_.size();
+    for (auto& a: alignments_)
+    {
+        h+=*a.other_;
+        h+=a.direction_->value();
+        h+=int(a.atOther_);
+        h+=int(a.atThis_);
+    }
     return h.getHash();
 }
 
@@ -32,58 +52,62 @@ void AlignWithBoundingBox::build()
 
     if (!cache.contains(hash()))
     {
+        FeaturePtr org = m1_;
 
-        gp_Trsf toWorkCS;
-        Bnd_Box bbOrg, bbOther;
+        for (auto& a: alignments_)
+        {
+            gp_Trsf toWorkCS;
+            Bnd_Box bbOrg, bbOther;
 
-        gp_Ax3 from(gp::Origin(), to_Vec(direction_->value()));
-        gp_Ax3 to(gp::Origin(), gp_Dir(0,0,1));
+            gp_Ax3 from(gp::Origin(), to_Vec(a.direction_->value()));
+            gp_Ax3 to(gp::Origin(), gp_Dir(0,0,1));
 
-        // std::cout<<"from\n";
-        // from.DumpJson(std::cout);
 
-        // std::cout<<"to\n";
-        // to.DumpJson(std::cout);
+            toWorkCS.SetTransformation( from, to );
+            toWorkCS.Invert(); // http://opencascade.wikidot.com/occrefdoc
 
-        toWorkCS.SetTransformation( from, to );
-        toWorkCS.Invert(); // http://opencascade.wikidot.com/occrefdoc
 
-        // std::cout<<"tWorkCS\n";
-        // toWorkCS.DumpJson(std::cout);
+            BRepMesh_IncrementalMesh Inc1(*org, 0.0001);
+            BRepBndLib::Add(BRepBuilderAPI_Transform(*org, toWorkCS).Shape(), bbOrg);
+            BRepMesh_IncrementalMesh Inc2(*a.other_, 0.0001);
+            BRepBndLib::Add(BRepBuilderAPI_Transform(*a.other_, toWorkCS).Shape(), bbOther);
 
-        BRepMesh_IncrementalMesh Inc1(*m1_, 0.0001);
-        BRepBndLib::Add(BRepBuilderAPI_Transform(*m1_, toWorkCS).Shape(), bbOrg);
-        BRepMesh_IncrementalMesh Inc2(*other_, 0.0001);
-        BRepBndLib::Add(BRepBuilderAPI_Transform(*other_, toWorkCS).Shape(), bbOther);
+            gp_Trsf t;
 
-        // std::cout<<"bbOrg\n";
-        // bbOrg.Dump();
-        // std::cout<<"bbOther\n";
-        // bbOther.Dump();
+            auto z = [](const Bnd_Box& bb, AlignLocation at) {
+                switch (at)
+                {
+                case Max: return bb.CornerMax().Z();
+                case Center: return 0.5*(bb.CornerMax().Z()+bb.CornerMin().Z());
+                case Min: return bb.CornerMin().Z();
+                };
+                throw UnhandledSelection();
+                return 0.;
+            };
 
-        gp_Trsf t;
-        t.SetTranslation(gp_Vec(0,0, bbOther.CornerMax().Z() - bbOrg.CornerMax().Z()));
+            t.SetTranslation(gp_Vec(0,0,
+                    z(bbOther, a.atOther_)
+                    -
+                    z(bbOrg, a.atThis_) ));
 
-        // std::cout<<"t\n";
-        // t.DumpJson(std::cout);
+            t.Multiply(toWorkCS);
+            t.PreMultiply(toWorkCS.Inverted());
 
-        t.Multiply(toWorkCS);
-        t.PreMultiply(toWorkCS.Inverted());
+            org = cad::Transform::create(org, t);
+    //         setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
 
-        trsf_=std::make_shared<gp_Trsf>(t);
+    //         // Transform all ref points and ref vectors
+    //         copyDatumsTransformed(
+    //             *m1_, *trsf_, "",
+    //             { "scaleFactor", "translation", "rotationOrigin", "rotation" }
+    //             );
+        }
 
-        // std::cout<<"trsf\n";
-        // trsf_->DumpJson(std::cout);
+        // providedSubshapes_["basefeat"]=m1_; // overwrite existing basefeat, if there
 
-        setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
-
-        // Transform all ref points and ref vectors
-        copyDatumsTransformed(
-            *m1_, *trsf_, "",
-            { "scaleFactor", "translation", "rotationOrigin", "rotation" }
-            );
-
-        providedSubshapes_["basefeat"]=m1_; // overwrite existing basefeat, if there
+        setShape(org->shape());
+        copyDatums(*org);
+        trsf_=org->transformation();
 
         cache.insert(shared_from_this());
     }
@@ -96,6 +120,11 @@ void AlignWithBoundingBox::build()
 
 void AlignWithBoundingBox::insertrule ( parser::ISCADParser& ruleset )
 {
+    static boost::spirit::qi::symbols<char, AlignLocation> alignLocation{
+        std::vector<std::string>{"max", "center", "min"},
+        std::vector<AlignLocation>{AlignLocation::Max, AlignLocation::Center, AlignLocation::Min},
+        "align location"
+    };
     ruleset.modelstepFunctionRules.add
         (
             typeName,
@@ -103,12 +132,16 @@ void AlignWithBoundingBox::insertrule ( parser::ISCADParser& ruleset )
 
                 ( '('
                  > ruleset.r_solidmodel_expression > ','
-                 > ruleset.r_solidmodel_expression > ','
-                 > ruleset.r_vectorExpression
+                 > ( ruleset.r_solidmodel_expression > ','
+                     > ruleset.r_vectorExpression > ','
+                     > alignLocation > ','
+                     > alignLocation ) % ','
                  > ')' )
                     [ qi::_val = phx::bind(
-                         &AlignWithBoundingBox::create<FeaturePtr, FeaturePtr, VectorPtr>,
-                         qi::_1, qi::_2, qi::_3) ]
+                         &AlignWithBoundingBox::create<
+                           FeaturePtr, const std::vector<boost::fusion::vector<
+                             FeaturePtr, VectorPtr, AlignLocation, AlignLocation> >& >,
+                         qi::_1, qi::_2 ) ]
 
                 )
             );
@@ -134,8 +167,10 @@ bool AlignWithBoundingBox::isTransformationFeature() const
 gp_Trsf AlignWithBoundingBox::transformation() const
 {
     checkForBuildDuringAccess();
-    return *trsf_;
+    return trsf_;
 }
+
+
 
 } // namespace cad
 } // namespace insight

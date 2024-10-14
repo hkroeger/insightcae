@@ -27,6 +27,7 @@ supplementedInputDataBase::supplementedInputDataBase(std::unique_ptr<ParametersB
 supplementedInputDataBase::~supplementedInputDataBase()
 {}
 
+
 void supplementedInputDataBase::reportSupplementQuantity(
     const std::string &name,
     ReportedSupplementQuantityValue value,

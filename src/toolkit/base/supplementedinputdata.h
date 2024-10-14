@@ -4,9 +4,9 @@
 
 #include <memory>
 
+#include "base/units.h"
 #include "base/parameterset.h"
 #include "base/cppextensions.h"
-
 
 
 
@@ -64,6 +64,21 @@ public:
       ReportedSupplementQuantityValue value,
       const std::string& description,
       const std::string& unit = "" );
+
+  template<class Dimension, class Type, class Unit>
+  void reportSupplementQuantity(
+      const std::string& name,
+      const boost::units::quantity<Dimension,Type>& q,
+      const std::string& description,
+      const Unit& u )
+  {
+      reportSupplementQuantity(
+          name,
+          toValue(q, u),
+          description,
+          boost::lexical_cast<std::string>(u)
+          );
+  }
 
   const ReportedSupplementQuantitiesTable& reportedSupplementQuantities() const;
 

@@ -35,6 +35,7 @@
 
 #include "gsl/gsl_multiroots.h"
 
+#include <vtkMatrix4x4.h>
 
 
 using namespace arma;
@@ -1406,6 +1407,39 @@ CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, cons
 
     ez=arma::cross(ex,ey);
     ez/=arma::norm(ez,2);
+}
+
+void CoordinateSystem::rotate(double angle, const arma::mat& axis)
+{
+    arma::mat rot=rotMatrix(angle, axis);
+    ex=rot*ex;
+    ey=rot*ey;
+    ez=rot*ez;
+}
+
+arma::mat CoordinateSystem::operator()(double x, double y, double z) const
+{
+    return origin +ex*x +ey*y +ez*z;
+}
+
+arma::mat CoordinateSystem::operator()(const arma::mat& pLoc) const
+{
+    insight::assertion(
+        pLoc.n_elem==3,
+        "expected vector with 3 components");
+    return operator()(pLoc(0), pLoc(1), pLoc(2));
+}
+
+void CoordinateSystem::setVTKMatrix(vtkMatrix4x4 *m)
+{
+    m->Identity();
+    for (int i=0; i<3; ++i)
+    {
+        m->SetElement(i, 0, ex(i));
+        m->SetElement(i, 1, ey(i));
+        m->SetElement(i, 2, ez(i));
+        m->SetElement(i, 3, origin(i));
+    }
 }
 
 

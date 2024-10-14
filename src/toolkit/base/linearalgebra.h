@@ -54,6 +54,8 @@ bool operator<(const arma::mat& v1, const arma::mat& v2);
 
 }
 
+class vtkMatrix4x4;
+
 namespace insight 
 {
 
@@ -545,6 +547,13 @@ struct CoordinateSystem
           const arma::mat& p0,
           const arma::mat& ex,
           const arma::mat& ez );
+
+  void rotate(double angle, const arma::mat& axis);
+
+  arma::mat operator()(double x, double y, double z) const;
+  arma::mat operator()(const arma::mat& pLoc) const;
+
+  void setVTKMatrix(vtkMatrix4x4* m);
 };
 
 

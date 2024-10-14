@@ -40,6 +40,11 @@ enum trimmedMesher {sHM, cfM};
 ExternalGeometryFile::ExternalGeometryFile(const ParameterSet& ps)
 : p_(ps)
 {
+    auto fname=p_.fileName->originalFilePath().filename().string();
+    insight::assertion(
+        std::isalpha(fname[0]),
+        "filename must not start with a number or special char (got %s)",
+        fname.c_str() );
 //  std::cout<<"added \""<<p_.fileName<<"\""<<std::endl;
 }
 

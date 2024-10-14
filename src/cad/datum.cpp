@@ -388,6 +388,13 @@ arma::mat DatumPlaneData::ey() const
     return vec3(plane().YDirection());
 }
 
+CoordinateSystem DatumPlaneData::coordinateSystem() const
+{
+    return CoordinateSystem(
+        origin(), ex(), arma::cross(ex(), ey())
+        );
+}
+
 
 
 //// DatumPlane::operator const Handle_AIS_InteractiveObject () const

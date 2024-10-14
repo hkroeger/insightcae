@@ -161,6 +161,8 @@ public:
   arma::mat ex() const;
   arma::mat ey() const;
 
+  CoordinateSystem coordinateSystem() const;
+
 //  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 

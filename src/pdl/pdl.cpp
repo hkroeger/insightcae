@@ -348,17 +348,20 @@ int main ( int argc, char *argv[] )
 
           f<<"};"<<endl;
 
+          // ============================================================
+          // some additions to the enclosing (user) class
 
           if (!skipDefaultParamMember)
             f << "static insight::ParameterSet defaultParameters() { return "<<name<<"::makeDefault(); }" << endl;
 
           if (createGetter)
           {
-              f<<"public:\n";
               if (base_type_name==default_base_type_name)
               {
+                  f<<"protected:\n";
                   f<<"std::unique_ptr<insight::ParametersBase> p_;\n";
               }
+              f<<"public:\n";
               f << "const "<<name<<"& p() const { return dynamic_cast<const "<<name<<"&>(*p_); }\n" << endl;
               f << name<<"& p() { return dynamic_cast<"<<name<<"&>(*p_); }\n" << endl;
           }

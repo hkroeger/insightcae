@@ -49,6 +49,7 @@
 #include <boost/units/systems/cgs/volume.hpp>
 #include <boost/units/systems/cgs/mass_density.hpp>
 
+#include "boost/units/cmath.hpp"
 #include "base/linearalgebra.h"
 
 namespace insight {
@@ -87,6 +88,7 @@ namespace si {
  static const auto millimeters = milli*meters;
  static const auto millimeter = milli*meter;
  static const auto mps = meter/second;
+ static const auto bar = 1e5*si::pascals;
 
  static const auto dimless = dimensionless();
 

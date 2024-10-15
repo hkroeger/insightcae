@@ -16,7 +16,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
- uniof
+ uniof Boost::headers
 )
 
 set(OFesi2112_OF_LIBS

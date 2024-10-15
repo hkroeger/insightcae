@@ -132,7 +132,7 @@ tmp<volScalarField> extendedForces::Mask::operator()(const fvMesh& mesh) const
             mesh.lookupObject<volScalarField>(maskFieldName_)
             ) );
 
-    if (maskThreshold_.has_value())
+    if (maskThreshold_!=boost::none)
     {
         UNIOF_TMP_NONCONST(mask) = pos(mask() - maskThreshold_.value());
     }
@@ -483,7 +483,7 @@ extendedForces::execute()
             ),
         mesh,
         dimensionedScalar("1", dimless, 1.));
-    if (masking_.has_value())
+    if (masking_!=boost::none)
     {
         mask=masking_.value()(mesh);
     }
@@ -521,7 +521,7 @@ extendedForces::execute()
             nfb & devRhoReffb
         );
         
-        if ( masking_.has_value() && (patchSet_.found(patchI)) )
+        if ( masking_!=boost::none && (patchSet_.found(patchI)) )
         {
             vectorField Md
             (
@@ -615,7 +615,7 @@ extendedForces::write()
   }
 #endif
 
-  if (masking_.has_value())
+  if (masking_!=boost::none)
   {
     const volVectorField& U = obr_.lookupObject<volVectorField>(UName_);
     const fvMesh& mesh = U.mesh();

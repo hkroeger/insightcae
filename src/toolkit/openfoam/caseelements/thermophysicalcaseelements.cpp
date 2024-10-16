@@ -125,7 +125,7 @@ compressibleMixtureThermophysicalProperties::defaultComposition() const
 {
   SpeciesMassFractionList defaultComposition;
   auto sns=speciesNames();
-  for (const auto specie: sns)
+  for (const auto &specie: sns)
   {
     double v=0.0;
     if (specie==p_.inertSpecie) v=1.0;

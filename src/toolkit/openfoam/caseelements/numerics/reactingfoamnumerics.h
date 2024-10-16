@@ -26,6 +26,10 @@ forceLES = bool false "Whether to enforce LES numerics"
 
 buoyancy = bool false "Whether to use a buoyancy formulation"
 
+pinternal = double 1e5 "[Pa] initial pressure in domain"
+Tinternal = double 300. "[K] initial temperature in domain"
+Uinternal = vector (0 0 0) "[m/s] initial velocity in domain"
+
 <<<PARAMETERSET
 */
 

@@ -212,7 +212,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
 
   cm.createOnDisk(dir);
   
-  path targ_path(dir/"constant"/"triSurface"/"foil.stl");
+  path targ_path(ExternalGeometryFile::geometryDir(cm, dir)/"foil.stl");
   create_directories(targ_path.parent_path());
   STLExtruder(sp().contour_, 0, z0+2.0, targ_path);
   

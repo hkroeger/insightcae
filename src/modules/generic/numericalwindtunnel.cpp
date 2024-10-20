@@ -191,8 +191,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
 {
   path dir = executionPath();
   
-  boost::filesystem::path objectSTLFile = executionPath()/
-   "constant"/"triSurface"/
+  boost::filesystem::path objectSTLFile =
+   ExternalGeometryFile::geometryDir(cm, executionPath())/
    (p().geometry.objectfile->fileName().stem().string()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()

@@ -26,9 +26,11 @@
 
 #include "base/boost_include.h"
 
+#include "boost/filesystem/path.hpp"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "base/progressdisplayer.h"
 
+#include "openfoam/ofenvironment.h"
 #include "snappyhexmesh__ExternalGeometryFile__Parameters_headers.h"
 
 namespace insight {
@@ -63,6 +65,12 @@ public:
       const OpenFOAMCase& ofc,
       const boost::filesystem::path& location
       ) const;
+
+  static boost::filesystem::path
+  geometryDir(const OFEnvironment& ofe, const boost::filesystem::path& caseDir);
+
+  static boost::filesystem::path
+  geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir);
 };
 
 

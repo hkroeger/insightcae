@@ -105,7 +105,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
   auto& p=this->p();
 
 
-  stldir_=boost::filesystem::path("constant")/"triSurface";
+  stldir_=ExternalGeometryFile::geometryDir(OFEs::get(p.run.OFEname), executionPath);
   fn_inlet_="inlet";
   fn_outlet_="outlet";
 

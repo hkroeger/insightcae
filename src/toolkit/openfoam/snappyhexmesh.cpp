@@ -57,19 +57,37 @@ std::string ExternalGeometryFile::fileName() const
 void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
 {
   boost::filesystem::path from( p_.fileName->filePath(location) );
-  boost::filesystem::path to( location/"constant"/"triSurface"/from.filename() );
+  boost::filesystem::path to( ExternalGeometryFile::geometryDir(ofc, location)/from.filename() );
   
   if (!exists(to.parent_path()))
     create_directories(to.parent_path());
 
   ofc.executeCommand(location, "surfaceTransformPoints",
-    list_of<std::string>
-    (absolute(from).string())
-    (absolute(to).string())
-    ("-scale")(OFDictData::to_OF(p_.scale))
-    ("-translate")(OFDictData::to_OF(p_.translate))
-    ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw))
+    {
+     absolute(from).string(),
+     absolute(to).string(),
+     "-scale", OFDictData::to_OF(p_.scale),
+     "-translate", OFDictData::to_OF(p_.translate),
+     "-rollPitchYaw", OFDictData::to_OF(p_.rollPitchYaw)
+    }
   );
+}
+
+
+boost::filesystem::path
+ExternalGeometryFile::geometryDir(
+    const OFEnvironment& /*ofe*/,
+    const boost::filesystem::path& caseDir )
+{
+    return caseDir/"constant"/"triSurface";
+}
+
+boost::filesystem::path
+ExternalGeometryFile::geometryDir(
+    const OpenFOAMCase &cm, // to be able to check version
+    const boost::filesystem::path &caseDir )
+{
+    return geometryDir(cm.ofe(), caseDir);
 }
 
   
@@ -221,30 +239,29 @@ void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
   boost::filesystem::path from(p_.fileName->filePath(location));
+
   if (!exists(from))
   {
-    boost::filesystem::path alt_from=from; alt_from.replace_extension(".eMesh.gz");
-    if (!exists(alt_from)) //from=alt_from;
-//     else
-      throw insight::Exception("feature edge file does not exist: neither "+from.string()+" nor "+alt_from.string());
+    boost::filesystem::path alt_from=from;
+    alt_from.replace_extension(".eMesh.gz");
+    if (!exists(alt_from))
+      throw insight::Exception(
+            "feature edge file does not exist: neither %s nor %s",
+            from.string().c_str(), alt_from.string().c_str() );
   }
-  boost::filesystem::path to(location/"constant"/"triSurface"/from.filename());
+
+  boost::filesystem::path to(
+      ExternalGeometryFile::geometryDir(ofc, location)
+      / from.filename() );
   
-//   if (to!=from) // might occur, if file path in target location is specified (e.g. after surfaceFeatureExtract)
-//   {
-//     if (!exists(to.parent_path()))
-//       create_directories(to.parent_path());
-//     
-//     std::cout<<"copy from "<<from<<" to "<<to<<std::endl;
-//     copy_file(from, to, copy_option::overwrite_if_exists);
-//   }
   ofc.executeCommand(location, "eMeshTransformPoints",
-    list_of<std::string>
-    (absolute(from).string())
-    (absolute(to).string())
-    ("-scale")(OFDictData::to_OF(p_.scale))
-    ("-translate")(OFDictData::to_OF(p_.translate))
-    ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw))
+    {
+     absolute(from).string(),
+     absolute(to).string(),
+     "-scale", OFDictData::to_OF(p_.scale),
+     "-translate", OFDictData::to_OF(p_.translate),
+     "-rollPitchYaw", OFDictData::to_OF(p_.rollPitchYaw)
+    }
   );
 }
 

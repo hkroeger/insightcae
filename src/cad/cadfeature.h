@@ -505,6 +505,9 @@ public:
 
   virtual VTKActorList createVTKActors() const;
 
+  Handle_Poly_Triangulation triangulation(double tol=1e-3) const;
+  vtkSmartPointer<vtkPolyData> triangulationToVTK(double tol=1e-3) const;
+
 };
 
 

@@ -56,8 +56,10 @@
 
 #include "TColStd_SequenceOfTransient.hxx"
 #include "TColStd_HSequenceOfTransient.hxx"
+#include "StdPrs_ToolTriangulatedShape.hxx"
 
 #include "BRepBuilderAPI_Copy.hxx"
+#include "vtkCellArray.h"
 
 #if (OCC_VERSION_MAJOR<7)
 #include "compat/Bnd_OBB.hxx"
@@ -83,6 +85,8 @@
 #include <vtkPolyDataMapper.h>
 #include <vtkMapper.h>
 
+#include "Poly.hxx"
+#include "Poly_ListOfTriangulation.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -2407,6 +2411,152 @@ VTKActorList Feature::createVTKActors() const
         actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
         return {actor};
     }
+}
+
+
+
+Handle_Poly_Triangulation Feature::triangulation(double tol) const
+{
+    Poly_ListOfTriangulation triangulations;
+
+    double  maxsize=1e300;
+
+    Bnd_Box aBndBox;
+    BRepBndLib::Add (shape(), aBndBox, Standard_False);
+    if (!aBndBox.IsVoid())
+    {
+#define MAX2(X, Y)    (Abs(X) > Abs(Y) ? Abs(X) : Abs(Y))
+#define MAX3(X, Y, Z) (MAX2 (MAX2 (X, Y), Z))
+        Standard_Real aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
+        aBndBox.Get (aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
+        maxsize = MAX3 (aXmax-aXmin, aYmax-aYmin, aZmax-aZmin);
+        tol=maxsize * tol /*theDrawer->DeviationCoefficient()*/;
+        // we store computed relative deflection of shape as absolute deviation coefficient
+        // in case relative type to use it later on for sub-shapes.
+        // theDrawer->SetMaximalChordialDeviation (aDeflection);
+#undef MAX2
+#undef MAX3
+    }
+    // }
+
+    std::cout<<"maxsize="<<maxsize<<", defl="<<tol<<std::endl;
+
+
+    for (TopExp_Explorer ex(shape(), TopAbs_FACE); ex.More(); ex.Next())
+    {
+        auto f=TopoDS::Face(ex.Current());
+
+        TopLoc_Location loc;
+        const int maxRefineAttempts=4;
+        const double refine=0.25;
+
+        auto mesh = BRep_Tool::Triangulation(f,loc);
+        if (!mesh)
+        {
+            double curtol=tol;
+
+            // if (theDrawer->TypeOfDeflection() == Aspect_TOD_RELATIVE)
+            // {
+
+
+            int attempt=0;
+            // double curtol=aDeflection;
+
+            do
+            {
+                if (attempt>0)
+                {
+                    std::cout<<"doing another attempt ("<<attempt<<") to mesh face"<<std::endl;
+                }
+
+                Bnd_Box box;
+
+                double angtol = 20. * M_PI / 180.;
+                bool relative = false;
+
+#if (OCC_VERSION_MAJOR>=7 && OCC_VERSION_MINOR>=4)
+                IMeshTools_Parameters p;
+                p.Angle=angtol;
+                p.Deflection=curtol;
+                p.Relative=relative;
+                BRepMesh_IncrementalMesh  m(f, p);
+#else
+# if (OCC_VERSION_MAJOR>=7)
+                BRepMesh_FastDiscret::Parameters p;
+                p.Angle=angtol;
+                p.Deflection=curtol;
+                p.Relative=relative;
+                BRepMesh_FastDiscret m(box, p);
+# else
+                BRepMesh_FastDiscret m(curtol, angtol, box, true, false, relative, false);
+# endif
+                m.Perform(f);
+#endif
+                attempt++;
+                curtol *= refine;
+
+                mesh = BRep_Tool::Triangulation(f,loc);
+            }
+            while (!mesh && (attempt<maxRefineAttempts));
+
+        }
+
+
+        if (mesh.IsNull())
+        {
+            throw insight::CADException(
+                {
+                    {"face to triangulate", cad::Import::create(f)},
+                    {"parent shape", shared_from_this()}
+                },
+                "face has no triangulation!" );
+        }
+        mesh=mesh->Copy();
+
+        for (int i=1; i<=mesh->NbNodes(); ++i)
+        {
+            mesh->ChangeNodes().ChangeValue(i)=
+                mesh->Nodes().Value(i).Transformed(loc);
+        }
+
+        triangulations.Append(mesh);
+    }
+
+    insight::assertion(
+        triangulations.Extent()>=1,
+        "there are no triangulations!" );
+
+    return Poly::Catenate(triangulations);
+}
+
+
+
+
+vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
+{
+    auto mesh = triangulation(tol);
+
+    auto pts = vtkSmartPointer<vtkPoints>::New();
+    pts->SetNumberOfPoints(mesh->NbNodes());
+
+    for (int i=1; i<=mesh->NbNodes(); ++i)
+    {
+        auto p=mesh->Node(i).XYZ();
+        pts->SetPoint(i-1, p.X(), p.Y(), p.Z());
+    }
+
+
+    auto cells = vtkSmartPointer<vtkCellArray>::New();
+    for (int i=1; i<=mesh->NbTriangles(); ++i)
+    {
+        auto t=mesh->Triangle(i);
+        cells->InsertNextCell({t.Value(1)-1, t.Value(2)-1, t.Value(3)-1});
+    }
+
+    auto vmesh = vtkSmartPointer<vtkPolyData>::New();
+    vmesh->SetPoints(pts);
+    vmesh->SetPolys(cells);
+    return vmesh;
 }
 
 

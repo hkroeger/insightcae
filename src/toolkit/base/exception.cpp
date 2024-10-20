@@ -247,7 +247,7 @@ IntendedBreak::IntendedBreak(const std::string& msg)
 
 
 
-const std::map<string, cad::FeaturePtr> &CADException::contextGeometry() const
+const std::map<string, cad::ConstFeaturePtr> &CADException::contextGeometry() const
 {
   return contextGeometry_;
 }

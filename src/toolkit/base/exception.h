@@ -86,6 +86,7 @@ namespace cad
 {
 class Feature;
 typedef std::shared_ptr<Feature> FeaturePtr;
+typedef std::shared_ptr<const Feature> ConstFeaturePtr;
 }
 
 
@@ -136,18 +137,18 @@ class CADException
     : public Exception
 {
 
-    std::map<std::string, cad::FeaturePtr> contextGeometry_;
+    std::map<std::string, cad::ConstFeaturePtr> contextGeometry_;
 
 public:
     template<class ...Args>
     CADException(
-        const std::map<std::string, cad::FeaturePtr>& contextGeometry,
+        const std::map<std::string, cad::ConstFeaturePtr>& contextGeometry,
         Args&&... addArgs )
       : Exception( std::forward<Args>(addArgs)... ),
         contextGeometry_(contextGeometry)
     {}
 
-    const std::map<std::string, cad::FeaturePtr>& contextGeometry() const;
+    const std::map<std::string, cad::ConstFeaturePtr>& contextGeometry() const;
 };
 
 

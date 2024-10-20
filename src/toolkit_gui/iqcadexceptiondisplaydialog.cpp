@@ -9,6 +9,7 @@
 #include <QTreeView>
 #include <QHBoxLayout>
 #include <QSplitter>
+#include <memory>
 
 //#include "base/translations.h"
 
@@ -51,7 +52,7 @@ void IQCADExceptionDisplayDialog::displayException(
     for (const auto& cg: e.contextGeometry())
     {
         display_->model()->addModelstep(
-            cg.first, cg.second, true
+            cg.first, std::const_pointer_cast<insight::cad::Feature>(cg.second), true
             );
     }
 }

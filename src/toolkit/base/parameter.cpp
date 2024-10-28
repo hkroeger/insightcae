@@ -373,7 +373,7 @@ void Parameter::saveToNode(
     std::string analysisName ) const
 {
     CurrentExceptionContext ex(
-        2,
+        3,
         "writing parameter %s content into XML node"
         " (parent path %s, analysis name %s",
         type().c_str(), parent_path.string().c_str(), analysisName.c_str());
@@ -403,7 +403,7 @@ void Parameter::saveToStream(
     const boost::filesystem::path& parent_path,
     std::string analysisName ) const
 {
-  CurrentExceptionContext ex(2,
+  CurrentExceptionContext ex(3,
       "writing parameter %s content into output stream (parent path %s, analysis name %s",
       type().c_str(), parent_path.string().c_str(), analysisName.c_str());
 
@@ -423,7 +423,7 @@ void Parameter::saveToStream(
 
 void Parameter::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
-  CurrentExceptionContext ex("writing parameter set to file "+file.string());
+  CurrentExceptionContext ex(3, "writing parameter set to file "+file.string());
   std::ofstream f(file.c_str());
   saveToStream( f, file.parent_path(), analysisName );
   f << std::endl;

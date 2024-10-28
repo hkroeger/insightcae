@@ -442,7 +442,7 @@ rapidxml::xml_node<>* LabeledArrayParameter::appendToNode (
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath ) const
 {
-    insight::CurrentExceptionContext ex(2, "appending labeled array "+name+" to node "+node.name());
+    insight::CurrentExceptionContext ex(3, "appending labeled array "+name+" to node "+node.name());
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
     // defaultValue_->appendToNode("default", doc, *child, inputfilepath);

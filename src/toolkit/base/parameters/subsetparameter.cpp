@@ -260,7 +260,7 @@ rapidxml::xml_node<>* SubsetParameter::appendToNode(
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath ) const
 {
-  insight::CurrentExceptionContext ex(2, "appending subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(3, "appending subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
   xml_node<>*  child = Parameter::appendToNode(name, doc, node, inputfilepath);

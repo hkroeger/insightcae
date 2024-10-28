@@ -223,7 +223,7 @@ void SelectableSubsetParameter::clearPackedData()
 rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
-  insight::CurrentExceptionContext ex(2, "appending selectable subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(3, "appending selectable subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
 

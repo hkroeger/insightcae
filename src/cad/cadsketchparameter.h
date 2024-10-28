@@ -1,6 +1,7 @@
 #ifndef INSIGHT_CADSKETCHPARAMETER_H
 #define INSIGHT_CADSKETCHPARAMETER_H
 
+#include "boost/signals2/connection.hpp"
 #include "cadtypes.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
@@ -32,6 +33,9 @@ protected:
 
     mutable std::unique_ptr<std::string> script_;
     mutable std::shared_ptr<insight::cad::ConstrainedSketch> CADGeometry_;
+
+    boost::signals2::scoped_connection
+        addSlotConn_, removeSlotConn_, changeSlotConn_;
 
     void regenerateScript();
     void resetCADGeometry();
@@ -65,6 +69,8 @@ public:
         bool isExpert=false,
         bool isNecessary=false,
         int order=0 );
+
+    ~CADSketchParameter();
 
 
     void setReferences(const std::map<int, std::string>& references);

@@ -33,27 +33,27 @@ void CADSketchParameter::resetCADGeometry()
         cad::ConstrainedSketch::LayerProperties(
             makeDefaultLayerParameters() ) );
 
-    CADGeometry_->geometryAdded.connect(
-        cad::ConstrainedSketch::GeometryEditSignal::slot_type(
-            [this](int) {
-                if (!valueChangeSignalBlocked_) childValueChanged();
-            }
-            ).track_foreign(CADGeometry_)
-        );
-    CADGeometry_->geometryRemoved.connect(
-        cad::ConstrainedSketch::GeometryEditSignal::slot_type(
-            [this](int) {
-                if (!valueChangeSignalBlocked_) childValueChanged();
-            }
-            ).track_foreign(CADGeometry_)
-        );
-    CADGeometry_->geometryChanged.connect(
-        cad::ConstrainedSketch::GeometryEditSignal::slot_type(
-            [this](int) {
-                if (!valueChangeSignalBlocked_) childValueChanged();
-            }
-            ).track_foreign(CADGeometry_)
-        );
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
+    [this](int) {
+        if (!valueChangeSignalBlocked_) childValueChanged();
+    };
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
+    [this](int) {
+        if (!valueChangeSignalBlocked_) childValueChanged();
+    };
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
+    [this](int) {
+        if (!valueChangeSignalBlocked_) childValueChanged();
+    };
+
+    addSlot_.track_foreign(CADGeometry_);
+    addSlotConn_=CADGeometry_->geometryAdded.connect(addSlot_);
+
+    removeSlot_.track_foreign(CADGeometry_);
+    removeSlotConn_=CADGeometry_->geometryRemoved.connect(removeSlot_);
+
+    changeSlot_.track_foreign(CADGeometry_);
+    changeSlotConn_=CADGeometry_->geometryChanged.connect(changeSlot_);
 
     for (auto& ref: references_)
     {
@@ -110,6 +110,16 @@ CADSketchParameter::CADSketchParameter(
 {
     setScript(script);
 }
+
+
+
+
+CADSketchParameter::~CADSketchParameter()
+{
+}
+
+
+
 
 void CADSketchParameter::setReferences(
     const std::map<int, std::string> &references )

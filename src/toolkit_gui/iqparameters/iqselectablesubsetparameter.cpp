@@ -112,7 +112,7 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
                            auto &iqp = dynamic_cast<const insight::SelectableSubsetParameter&>(
                                this->parameter() );
 
-                           insight::CurrentExceptionContext ex("writing parameter set to file "+file.string());
+                           insight::CurrentExceptionContext ex(3, "writing parameter set to file "+file.string());
                            std::ofstream f(file.c_str());
 
                            // prepare XML document

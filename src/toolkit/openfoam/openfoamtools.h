@@ -742,6 +742,8 @@ bool checkIfAnyFileIsNewerOrNonexistent
 
 class ParallelTimeDirectories
 {
+  const OpenFOAMCase& cm_;
+  boost::filesystem::path location_;
   TimeDirectoryList serTimes_;
   TimeDirectoryList proc0Times_;
   std::set<boost::filesystem::path> procDirs_;
@@ -771,6 +773,13 @@ public:
   bool latestTimeNeedsReconst() const;
 
   bool isParallelTimeDirInconsistent(const boost::filesystem::path& timeDirName) const;
+
+  /**
+   * @brief reconstructNewTimeDirs
+   * reconstructs all time directories in processors directories
+   * which are not yet reconstructed
+   */
+  void reconstructNewTimeDirs() const;
 
 };
 

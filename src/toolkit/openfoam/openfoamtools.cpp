@@ -2935,6 +2935,7 @@ ParallelTimeDirectories::ParallelTimeDirectories(
     const OpenFOAMCase& cm,
     const boost::filesystem::path& location
     )
+    : cm_(cm), location_(location)
 {
     serTimes_ = listTimeDirectories(location);
 
@@ -3057,6 +3058,25 @@ bool ParallelTimeDirectories::isParallelTimeDirInconsistent(
         }
     }
     return false;
+}
+
+void ParallelTimeDirectories::reconstructNewTimeDirs() const
+{
+    auto rtds = newParallelTimes();
+    rtds.erase(boost::filesystem::path("0"));
+
+    std::vector<std::string> tdbns;
+    std::transform(rtds.begin(), rtds.end(), std::back_inserter(tdbns),
+                   [&](const decltype(rtds)::value_type& path) { return path.string(); } );
+
+    if (rtds.size())
+    {
+        cm_.executeCommand(
+            location_,
+            "reconstructPar",
+            { "-time", boost::join(tdbns, ",") }
+            );
+    }
 }
 
 

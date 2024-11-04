@@ -184,8 +184,12 @@ bool IQParameter::isModified() const
       }
       else
       {
-        const auto& dp = defaultParameterSet_.get<insight::Parameter>(path(true).toStdString());
-        cmodified = parameter().isDifferent(dp);
+          auto pp=path(true).toStdString();
+          if (defaultParameterSet_.hasParameter(pp))
+          {
+            const auto& dp = defaultParameterSet_.get<insight::Parameter>(pp);
+            cmodified = parameter().isDifferent(dp);
+          }
       }
     }
     catch (...)

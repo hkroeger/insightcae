@@ -4,6 +4,8 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QClipboard>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <iterator>
 
 #include "iqparametersetmodel.h"
@@ -970,17 +972,24 @@ void IQFilteredParameterSetModel::searchRootSourceIndices(
         bool searchDown=false;
         for (const auto& sourceParam: qAsConst(sourceRootParameterPaths_))
         {
-          if (boost::starts_with(sourceParam, curPath)) // sourceParam starts with curPath?
-          {
-              if (curPath.size()==sourceParam.size())
-              {
-                  rootSourceIndices.append(i.siblingAtColumn(0));
-              }
-              else if (curPath.size()<sourceParam.size())
-              {
-                  searchDown=true;
-              }
-          }
+            if (boost::ends_with(sourceParam, "/*") // support wildcard to select all below
+                &&  boost::starts_with(curPath, sourceParam.substr(0, sourceParam.size()-2))
+                &&  curPath.size()>sourceParam.size()-2 )
+            {
+                rootSourceIndices.append(i.siblingAtColumn(0));
+                searchDown=true;
+            }
+            else if (boost::starts_with(sourceParam, curPath)) // sourceParam starts with curPath?
+            {
+                if (curPath.size()==sourceParam.size())
+                {
+                    rootSourceIndices.append(i.siblingAtColumn(0));
+                }
+                else if (curPath.size()<sourceParam.size())
+                {
+                    searchDown=true;
+                }
+            }
         }
 
         if (searchDown)

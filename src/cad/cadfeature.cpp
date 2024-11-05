@@ -56,7 +56,7 @@
 
 #include "TColStd_SequenceOfTransient.hxx"
 #include "TColStd_HSequenceOfTransient.hxx"
-#include "StdPrs_ToolTriangulatedShape.hxx"
+
 
 #include "BRepBuilderAPI_Copy.hxx"
 #include "vtkCellArray.h"
@@ -64,7 +64,9 @@
 #if (OCC_VERSION_MAJOR<7)
 #include "compat/Bnd_OBB.hxx"
 #include "compat/BRepBndLib.hxx"
+#include "Poly_Triangulation.hxx"
 #else
+#include "StdPrs_ToolTriangulatedShape.hxx"
 #include "Bnd_OBB.hxx"
 #include "BRepBndLib.hxx"
 #endif
@@ -2541,7 +2543,13 @@ vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
 
     for (int i=1; i<=mesh->NbNodes(); ++i)
     {
-        auto p=mesh->Node(i).XYZ();
+        auto p=mesh->
+#if OCC_VERSION_MAJOR<7
+                 Nodes().Value(i)
+#else
+                 Node(i)
+#endif
+                     .XYZ();
         pts->SetPoint(i-1, p.X(), p.Y(), p.Z());
     }
 
@@ -2549,8 +2557,15 @@ vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
     auto cells = vtkSmartPointer<vtkCellArray>::New();
     for (int i=1; i<=mesh->NbTriangles(); ++i)
     {
-        auto t=mesh->Triangle(i);
-        cells->InsertNextCell({t.Value(1)-1, t.Value(2)-1, t.Value(3)-1});
+        auto t=mesh->
+#if OCC_VERSION_MAJOR<7
+                 Triangles().Value(i)
+#else
+                 Triangle(i)
+#endif
+            ;
+        vtkIdType vtx[]={t.Value(1)-1, t.Value(2)-1, t.Value(3)-1};
+        cells->InsertNextCell(3, vtx);
     }
 
     auto vmesh = vtkSmartPointer<vtkPolyData>::New();

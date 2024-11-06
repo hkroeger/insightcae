@@ -146,9 +146,23 @@ IF (WIN32)
     add_dependencies(vtkOffscreen vtkdicom-onscreen)
 
     add_library(vtkHeaders INTERFACE)
-    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS} ${VTKDICOMONSCREEN_INCLUDE_DIR})
+    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS} $<BUILD_INTERFACE:${VTKDICOMONSCREEN_INCLUDE_DIR}>)
     target_link_libraries(vtkHeaders INTERFACE ${VTK_LIBRARIES} ${VTKDICOMONSCREEN_LIBRARY})
 
+    install(
+        TARGETS vtkHeaders EXPORT vtkHeaders_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+    export(EXPORT vtkHeaders_targets
+      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEvtkHeadersTarget.cmake"
+      NAMESPACE insight::
+    )
+    install(EXPORT vtkHeaders_targets
+      FILE InsightCAEvtkHeadersTarget.cmake
+      NAMESPACE insight::
+      DESTINATION ${INSIGHT_ConfigPackageLocation}
+    )
 else()
 
     set(LIBS "")

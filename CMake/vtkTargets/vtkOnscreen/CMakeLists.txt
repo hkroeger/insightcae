@@ -163,6 +163,21 @@ IF (WIN32)
       NAMESPACE insight::
       DESTINATION ${INSIGHT_ConfigPackageLocation}
     )
+
+    install(
+        TARGETS vtkOnscreen EXPORT vtkOnscreen_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+    export(EXPORT vtkOnscreen_targets
+      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEvtkOnscreenTarget.cmake"
+      NAMESPACE insight::
+    )
+    install(EXPORT vtkOnscreen_targets
+      FILE InsightCAEvtkOnscreenTarget.cmake
+      NAMESPACE insight::
+      DESTINATION ${INSIGHT_ConfigPackageLocation}
+    )
 else()
 
     set(LIBS "")

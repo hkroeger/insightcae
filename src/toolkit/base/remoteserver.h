@@ -219,7 +219,7 @@ public:
                           std::function<void(int,const std::string&)>()
   ) =0;
 
-
+#ifndef SWIG
   struct RemoteStream {
       virtual ~RemoteStream();
       inline std::ostream& operator()() { return stream(); };
@@ -234,6 +234,7 @@ public:
         std::function<void(int progress,const std::string& status_text)> progress_callback =
             std::function<void(int,const std::string&)>()
     ) =0;
+#endif
 
   /**
    * @brief setTransferBandWidthLimit

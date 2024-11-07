@@ -22,6 +22,7 @@ public:
         int occupiedProcessors(int* nProcAvail=nullptr) const override;
     };
 
+#ifndef SWIG
     struct SSHRemoteStream : public RemoteStream {
         std::unique_ptr<boost::process::child> child_;
         boost::process::opstream s_;
@@ -37,6 +38,7 @@ public:
             std::function<void(int progress,const std::string& status_text)> progress_callback =
             std::function<void(int,const std::string&)>()
             ) override;
+#endif
 
   bool checkIfDirectoryExists(const boost::filesystem::path& dir) override;
   boost::filesystem::path getTemporaryDirectoryName(const boost::filesystem::path& templatePath) override;

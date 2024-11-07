@@ -11,6 +11,7 @@
 
 #include "parser.h"
 #include "datum.h"
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -168,6 +169,56 @@ ConstrainedSketch::findUnusedID(
         else
             return std::min<int>(0,geometry_.begin()->first)-1;
     }
+}
+
+std::set<ConstrainedSketchEntityPtr>
+ConstrainedSketch::findConnected(
+    ConstrainedSketchEntityPtr theEntity ) const
+{
+    std::set<ConstrainedSketchEntityPtr> conn;
+
+    auto filterPoints = [](const std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >& deps)
+    {
+        std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > fdeps;
+        std::copy_if(
+            deps.begin(), deps.end(),
+            std::inserter(fdeps, fdeps.begin()),
+            [](const std::comparable_weak_ptr<ConstrainedSketchEntity>& d)
+        {
+                return bool(std::dynamic_pointer_cast<insight::cad::SketchPoint>(d.lock()));
+        });
+        return fdeps;
+    };
+
+    auto pts=filterPoints(theEntity->dependencies());
+
+    size_t conn_s;
+    do
+    {
+        conn_s=conn.size();
+        for (auto& e: *this)
+        {
+            auto cpts=filterPoints(e.second->dependencies());
+
+            decltype(pts) common;
+            std::set_intersection(
+                pts.begin(), pts.end(),
+                cpts.begin(), cpts.end(),
+                std::inserter(common, common.begin())
+                );
+
+            if (common.size())
+            {
+                if (std::dynamic_pointer_cast<cad::Feature>(e.second))
+                {
+                    conn.insert(e.second);
+                    pts.insert(cpts.begin(), cpts.end());
+                }
+            }
+        }
+    } while (conn_s!=conn.size());
+
+    return conn;
 }
 
 

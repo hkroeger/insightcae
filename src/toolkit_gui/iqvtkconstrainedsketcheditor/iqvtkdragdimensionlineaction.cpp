@@ -46,7 +46,8 @@ bool IQVTKDragDimensionlineAction::onMouseMove
 
 bool IQVTKDragDimensionlineAction::onLeftButtonUp(
     Qt::KeyboardModifiers nFlags,
-    const QPoint point )
+    const QPoint point,
+    bool lastClickWasDoubleClick )
 {
     finishAction();
     return true;

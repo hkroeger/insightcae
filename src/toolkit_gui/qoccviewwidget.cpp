@@ -119,7 +119,8 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
     myPrecision		( 0.0001 ),
     myViewPrecision     ( 0.0 ),
     myButtonFlags	( Qt::NoButton ),
-    showGrid            ( false )/*,
+    showGrid            ( false ),
+    lastClickWasDoubleClick_(false)/*,
     cimode_             ( CIM_Normal )*/
 {
   insight::CurrentExceptionContext ex("construct QoccViewWidget");
@@ -308,9 +309,9 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
   {
     if ( e->button() & Qt::LeftButton )
       {
-        navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
+        navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), lastClickWasDoubleClick_);
         if (currentUserActivity_)
-          currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos() );
+          currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos(), lastClickWasDoubleClick_ );
       }
     else if ( e->button() & Qt::RightButton )
       {
@@ -341,9 +342,9 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
   {
     if ( e->button() & Qt::LeftButton )
       {
-        navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
+        navigationManager_->onLeftButtonUp( e->modifiers(), e->pos(), lastClickWasDoubleClick_ );
         if (currentUserActivity_)
-          currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos() );
+          currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos(), lastClickWasDoubleClick_ );
       }
     else if ( e->button() & Qt::RightButton )
       {

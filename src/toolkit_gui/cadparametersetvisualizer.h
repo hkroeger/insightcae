@@ -30,6 +30,16 @@ arma::mat vec3(const QColor& s);
 
 std::string visPath(const std::vector<std::string>& path);
 
+std::string visPath();
+
+template<typename T, typename... Args>
+std::string visPath(T t, Args... args) // recursive variadic function
+{
+    std::string head = t;
+    std::string tail = visPath(args...);
+    return head + ((head.size()&&tail.size())?"/":"") + tail;
+}
+
 class TOOLKIT_GUI_EXPORT CADParameterSetVisualizer
 : public IQISCADModelGenerator,
   public ParameterSetVisualizer

@@ -415,5 +415,9 @@ std::string visPath(const std::vector<std::string> &path)
     return boost::join(path, "/");
 }
 
+std::string visPath()
+{
+    return std::string();
+}
 
 }

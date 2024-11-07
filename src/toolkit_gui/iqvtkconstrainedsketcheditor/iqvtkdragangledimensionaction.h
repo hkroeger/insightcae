@@ -30,7 +30,8 @@ public:
 
     bool onLeftButtonUp(
         Qt::KeyboardModifiers nFlags,
-        const QPoint point ) override;
+        const QPoint point,
+        bool lastClickWasDoubleClick ) override;
 };
 
 #endif // IQVTKDRAGANGLEDIMENSIONACTION_H

@@ -70,7 +70,7 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
         auto editControls = new QWidget;
         lo->addWidget(editControls);
 
-        pe_ = new ParameterEditorWidget(pew_, tree, editControls);
+        pe_ = new ParameterEditorWidget(pew_, tree, editControls, &editor_.viewer());
         connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
                 [this]()
                 {

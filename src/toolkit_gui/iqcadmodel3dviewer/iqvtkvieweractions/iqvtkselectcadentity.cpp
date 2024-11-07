@@ -26,7 +26,7 @@ void CADEntityMultiSelection::showParameterEditor()
     lo->addWidget(tree);
     auto editControls = new QWidget;
     lo->addWidget(editControls);
-    pe_ = new ParameterEditorWidget(pew_, tree, editControls);
+    pe_ = new ParameterEditorWidget(pew_, tree, editControls, &viewer_);
 
 }
 

@@ -60,7 +60,7 @@ void IQVTKConstrainedSketchEditor::showLayerParameterEditor()
         auto editControls = new QWidget;
         lo->addWidget(editControls);
 
-        layerPropertiesEditor_ = new ParameterEditorWidget(pew, tree, editControls);
+        layerPropertiesEditor_ = new ParameterEditorWidget(pew, tree, editControls, &viewer());
 
         QWidget *w=nullptr;
         for (int i=0; i<viewer().commonToolBox()->count(); ++i)
@@ -1143,6 +1143,18 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonDoubleClick(
                     dc->targetValue(),
                     std::bind(&FixedDistanceConstraint::setTargetValue, dc, std::placeholders::_1)
                     );
+                return true;
+            }
+            else
+            {
+                std::set<insight::cad::ConstrainedSketchEntityPtr> tobeadded;
+                auto con=sketch().findConnected(selitem);
+                std::copy(con.begin(), con.end(),
+                          std::inserter(tobeadded, tobeadded.begin()));
+                for (auto& tba: tobeadded)
+                {
+                    selact->externallySelect(tba);
+                }
                 return true;
             }
         }

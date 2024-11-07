@@ -128,11 +128,11 @@ public:
       return false;
   }
 
-  virtual bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  virtual bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick )
   {
       for (auto&c: childReceivers_)
       {
-          if (c->onLeftButtonDown(nFlags, point)) return true;
+          if (c->onLeftButtonDown(nFlags, point, afterDoubleClick)) return true;
       }
       return false;
   }
@@ -155,11 +155,11 @@ public:
       return false;
   }
 
-  virtual bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point )
+  virtual bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick )
   {
       for (auto&c: childReceivers_)
       {
-          if (c->onLeftButtonUp(nFlags, point)) return true;
+          if (c->onLeftButtonUp(nFlags, point, afterDoubleClick)) return true;
       }
       return false;
   }
@@ -401,7 +401,8 @@ public:
 
   void start() override;
 
-  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point,
+                      bool lastClickWasDoubleClick ) override;
 };
 
 

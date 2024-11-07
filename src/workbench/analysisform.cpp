@@ -215,6 +215,12 @@ AnalysisForm::AnalysisForm(
     }
     psmodel_->setAnalysisName(analysisName_);
 
+    if (viz)
+    {
+        peditor_->viewer()->setCameraState(
+            viz->defaultCameraState() );
+    }
+
     sidtab_ = new QTableView;
     sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     sidtab_->setAlternatingRowColors(true);

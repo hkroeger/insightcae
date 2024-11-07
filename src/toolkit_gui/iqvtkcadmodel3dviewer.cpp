@@ -1,4 +1,6 @@
 #include "iqvtkcadmodel3dviewer.h"
+#include "base/exception.h"
+#include "base/linearalgebra.h"
 #include "constrainedsketch.h"
 #include "iqcaditemmodel.h"
 #include "iscadmetatyperegistrator.h"
@@ -48,6 +50,7 @@
 #include "vtkCaptionActor2D.h"
 #include "vtkInteractorStyleUser.h"
 #include "vtkProp3DCollection.h"
+#include "vtkRendererCollection.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -165,7 +168,21 @@ BackgroundImage::BackgroundImage(
     imageReader.TakeReference(ir);
     imageReader->SetFileName(imageFileName_.string().c_str());
     imageReader->Update();
+
     auto imageData = imageReader->GetOutput();
+
+    {
+        int na=imageData->GetPointData()->GetNumberOfArrays();
+        insight::assertion(
+            na==1,
+            "expected a single image array! Got %d arrays.", na);
+
+        int nc=imageData->GetPointData()->GetArray(0)->GetNumberOfComponents();
+        insight::assertion(
+            (nc==3)||(nc==1),
+            "expected image array with three or one components! Got %d.", nc);
+    }
+
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
 
@@ -1215,6 +1232,28 @@ void IQVTKCADModel3DViewer::redrawNow(bool force)
 {
     if (redrawRequestedWithinWaitPeriod_ || force)
     {
+        auto cam = renderer()->GetActiveCamera();
+        if (cam->GetParallelProjection())
+        {
+            // push cam along axis to boundary of scene
+            auto p0=vec3FromComponents(cam->GetFocalPoint());
+            auto pc=vec3FromComponents(cam->GetPosition());
+            arma::mat dir=normalized(pc-p0);
+            double bounds[6];
+            ren_->ComputeVisiblePropBounds(bounds);
+            auto L=vec3(
+                bounds[1]-bounds[0],
+                bounds[3]-bounds[2],
+                bounds[5]-bounds[4]);
+
+            std::cout<<p0.t()<<pc.t()<<L.t()<<std::endl;
+            cam->SetPosition(
+                arma::mat(
+                    p0+std::max(insight::LSMALL,L.max())*dir
+                    ).memptr()
+                );
+            ren_->ResetCameraClippingRange();
+        }
         renWin()->Render();
         redrawRequestedWithinWaitPeriod_=false;
     }
@@ -1293,7 +1332,8 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
           > >(*this) ),
       viewState_(*this),
     defaultSelectionModel_(nullptr),
-    customSelectionModel_(nullptr)
+    customSelectionModel_(nullptr),
+    afterDoubleClick_(false)
 {
     setCentralWidget(&vtkWidget_);
 
@@ -1319,7 +1359,6 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     renWin()->AddRenderer(ren_);
 
     backgroundRen_->SetBackground(1., 1., 1.);
-
 
     auto btntb = this->addToolBar("View setup");
 
@@ -1544,7 +1583,9 @@ void IQVTKCADModel3DViewer::deactivateSubshapeSelectionAll()
 
 
 
-vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) const
+vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
+    const QPoint& clickPos,
+    const std::set<vtkProp*>& restrictPicking ) const
 {
     auto p = widgetCoordsToVTK(clickPos);
 
@@ -1563,6 +1604,13 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
 //    else
     {
         auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        if (restrictPicking.size())
+        {
+            picker3d->InitializePickList();
+            for (auto i: restrictPicking)
+                picker3d->AddPickList(i);
+            picker3d->SetPickFromList(true);
+        }
         picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
         auto pi = picker3d->GetProp3Ds();
@@ -2056,6 +2104,27 @@ void IQVTKCADModel3DViewer::writeViewerState(
 {
     auto* camera = ren_->GetActiveCamera();
 
+    appendAttribute(
+        doc, node,
+        "parallelProjection", camera->GetParallelProjection());
+
+    appendAttribute(
+        doc, node,
+        "position",
+        insight::valueToString(vec3FromComponents(
+            camera->GetPosition() )) );
+
+    appendAttribute(
+        doc, node,
+        "focalPoint",
+        insight::valueToString(vec3FromComponents(
+            camera->GetFocalPoint() )) );
+
+    appendAttribute(
+        doc, node,
+        "viewUp",
+        insight::valueToString(vec3FromComponents(
+            camera->GetViewUp() )) );
 
     for (const auto& bgi: backgroundImages_)
     {
@@ -2068,6 +2137,35 @@ void IQVTKCADModel3DViewer::writeViewerState(
 void IQVTKCADModel3DViewer::restoreViewerState(
     rapidxml::xml_node<>& node )
 {
+    auto* camera = ren_->GetActiveCamera();
+    if (auto *camNode = node.first_node("camera"))
+    {
+        if (auto *pp = camNode->first_attribute("parallelProjection"))
+            camera->SetParallelProjection(
+                boost::lexical_cast<bool>(pp->value()) );
+
+        if (auto *pos = camNode->first_attribute("position"))
+        {
+            arma::mat p;
+            insight::stringToValue(pos->value(), p);
+            camera->SetPosition(p.memptr());
+        }
+
+        if (auto *fp = camNode->first_attribute("focalPoint"))
+        {
+            arma::mat p;
+            insight::stringToValue(fp->value(), p);
+            camera->SetFocalPoint(p.memptr());
+        }
+
+        if (auto *vu = camNode->first_attribute("viewUp"))
+        {
+            arma::mat v;
+            insight::stringToValue(vu->value(), v);
+            camera->SetViewUp(v.memptr());
+        }
+    }
+
     backgroundImages_.clear();
     for (auto *n=node.first_node(bgiNodeName); n; n=n->next_sibling(bgiNodeName))
     {
@@ -2075,6 +2173,40 @@ void IQVTKCADModel3DViewer::restoreViewerState(
         backgroundImages_.append(bgi);
         connectBackgroundImageCommands(bgi);
     }
+
+    ren_->ResetCameraClippingRange();
+
+    if (interactor()->GetLightFollowCamera())
+    {
+        ren_->UpdateLightsGeometryToFollowCamera();
+    }
+
+    scheduleRedraw();
+
+}
+
+
+void IQVTKCADModel3DViewer::setCameraState(
+    const insight::CameraState &camState )
+{
+    auto* camera = ren_->GetActiveCamera();
+
+    camera->SetParallelProjection(
+        camState.isParallelProjection );
+    camera->SetParallelScale(
+        camState.parallelScale );
+    camera->SetPosition(camState.cameraPosition.memptr());
+    camera->SetFocalPoint(camState.focalPosition.memptr());
+    camera->SetViewUp(camState.viewUp.memptr());
+
+    ren_->ResetCameraClippingRange();
+
+    if (interactor()->GetLightFollowCamera())
+    {
+        ren_->UpdateLightsGeometryToFollowCamera();
+    }
+
+    scheduleRedraw();
 }
 
 
@@ -2140,29 +2272,30 @@ void IQVTKCADModel3DViewer::setBackgroundColor(QColor c)
 
 void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    IQCADModel3DViewer::mouseDoubleClickEvent(e);
+    dbg(3)<<">>> mouse double click"<<std::endl;
 
     if ( e->button() & Qt::LeftButton )
     {
+        afterDoubleClick_=true;
         bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
       if (!ret && currentAction_)
             ret=currentAction_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
     }
+
+    IQCADModel3DViewer::mouseDoubleClickEvent(e);
 }
 
 void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 {
-    dbg(3)<<"mouse press"<<std::endl;
-
-    IQCADModel3DViewer::mousePressEvent(e);
+    dbg(3)<<">>> mouse press, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
     if ( e->button() & Qt::LeftButton )
     {
-        bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
         if (!ret)
-            ret = this->onLeftButtonDown(e->modifiers(), e->pos() );
+            ret = this->onLeftButtonDown(e->modifiers(), e->pos(), afterDoubleClick_ );
         if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonDown( e->modifiers(), e->pos() );
+            ret=currentAction_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
     }
     else if ( e->button() & Qt::RightButton )
     {
@@ -2176,6 +2309,8 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
         if (!ret && currentAction_)
             ret=currentAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
     }
+
+    IQCADModel3DViewer::mousePressEvent(e);
 }
 
 
@@ -2183,17 +2318,17 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 
 void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 {
-    dbg(3)<<"mouse release"<<std::endl;
+    dbg(3)<<">>> mouse release, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
     IQCADModel3DViewer::mouseReleaseEvent(e);
 
     if ( e->button() & Qt::LeftButton )
     {
-        bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
+        bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
         if (!ret)
-            ret = this->onLeftButtonUp(e->modifiers(), e->pos() );
+            ret = this->onLeftButtonUp(e->modifiers(), e->pos(), afterDoubleClick_ );
         if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonUp( e->modifiers(), e->pos() );
+            ret=currentAction_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
     }
     else if ( e->button() & Qt::RightButton )
     {
@@ -2212,6 +2347,8 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
         if (!ret && currentAction_)
             ret=currentAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
     }
+
+    afterDoubleClick_=false; // reset
 }
 
 
@@ -2219,7 +2356,9 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
 
 void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
 {
-    dbg(3)<<"mouse move"<<std::endl;
+    dbg(3)<<">>> mouse move"<<std::endl;
+
+    if (!hasFocus()) setFocus();
 
     IQCADModel3DViewer::mouseMoveEvent(e);
 

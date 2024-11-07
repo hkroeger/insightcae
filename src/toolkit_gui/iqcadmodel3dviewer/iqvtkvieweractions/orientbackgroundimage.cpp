@@ -48,7 +48,10 @@ void IQVTKOrientBackgroundImage::selectedNextPoint(const arma::mat &p)
     }
 }
 
-IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(IQVTKCADModel3DViewer &viewWidget, vtkImageActor* imageActor)
+IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(
+    IQVTKCADModel3DViewer &viewWidget,
+    vtkImageActor* imageActor
+    )
   : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget),
     imageActor_(imageActor)
 {}
@@ -69,11 +72,18 @@ void IQVTKOrientBackgroundImage::start()
 }
 
 
-bool IQVTKOrientBackgroundImage::onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point )
+bool IQVTKOrientBackgroundImage::onLeftButtonUp(
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    bool lastClickWasDoubleClick
+    )
 {
     auto picker = vtkSmartPointer<vtkPropPicker>::New();
+    picker->AddPickList(imageActor_);
+    picker->SetPickFromList(true);
+
     auto p = viewer().widgetCoordsToVTK(point);
-    picker->Pick(p.x(), p.y(), 0, viewer().renderer());
+    int np = picker->PickProp(p.x(), p.y(), viewer().renderer());
 
     // There could be other props assigned to this picker, so
     // make sure we picked the image actor.
@@ -109,6 +119,6 @@ bool IQVTKOrientBackgroundImage::onLeftButtonUp( Qt::KeyboardModifiers nFlags, c
         return true;
     }
 
-    return ViewWidgetAction<IQVTKCADModel3DViewer>::onLeftButtonDown(nFlags, point);
+    return ViewWidgetAction<IQVTKCADModel3DViewer>::onLeftButtonDown(nFlags, point, lastClickWasDoubleClick);
 }
 

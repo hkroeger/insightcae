@@ -2,7 +2,7 @@
 #define IQCADMODEL3DVIEWER_H
 
 #include "toolkit_gui_export.h"
-#include "cadtypes.h"
+#include "cadmodel3dviewer.h"
 
 #include <QAbstractItemModel>
 #include <QTextEdit>
@@ -11,30 +11,6 @@
 
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
-
-
-
-class TOOLKIT_GUI_EXPORT CADModel3DViewer
-{
-public:
-
-    typedef boost::variant<
-        insight::cad::VectorPtr,
-        insight::cad::DatumPtr,
-        insight::cad::FeaturePtr,
-        insight::cad::PostprocActionPtr,
-        vtkSmartPointer<vtkDataObject>
-        > CADEntity;
-
-    struct SubshapeData {
-        insight::cad::FeaturePtr feat;
-        insight::cad::EntityType subshapeType_;
-        insight::cad::FeatureID id_;
-
-        bool operator==(const SubshapeData& o) const;
-        bool operator<(const SubshapeData& o) const;
-    };
-};
 
 
 
@@ -101,13 +77,14 @@ public Q_SLOT:
 
     virtual bool onLeftButtonDown(
         Qt::KeyboardModifiers nFlags,
-        const QPoint point );
+        const QPoint point, bool afterDoubleClick );
     virtual bool onKeyPress(
         Qt::KeyboardModifiers modifiers,
         int key );
     virtual bool onLeftButtonUp(
         Qt::KeyboardModifiers nFlags,
-        const QPoint point );
+        const QPoint point,
+        bool lastClickWasDoubleClick );
 
     virtual void onMeasureDistance() =0;
     virtual void onMeasureDiameter() =0;

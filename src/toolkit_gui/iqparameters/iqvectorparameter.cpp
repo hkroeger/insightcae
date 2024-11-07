@@ -2,13 +2,16 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <memory>
 
 #include "iqvectorparameter.h"
+#include "base/linearalgebra.h"
 #include "iqparametersetmodel.h"
 
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqvectordirectioncommand.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.h"
 
 defineType(IQVectorParameter);
 addToFactoryTable(IQParameter, IQVectorParameter);
@@ -86,34 +89,48 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
             if (auto bp =
                 model()->getVectorBasePoint(path()))
             {
-                auto curMod =
-                      new IQVectorDirectionCommand(
-                            v->interactor(),
-                            (*bp), p() );
+                // auto curMod =
+                //       new IQVectorDirectionCommand(
+                //             v->interactor(),
+                //             (*bp), p() );
 
-                connect( apply, &QPushButton::pressed,
-                         curMod, &QObject::deleteLater );
+                // connect( apply, &QPushButton::pressed,
+                //          curMod, &QObject::deleteLater );
 
-                connect( curMod, &IQVectorDirectionCommand::dataChanged, curMod,
-                         [this,curMod]()
-                         {
-                           lineEdit->setText(
-                                       QString::fromStdString(
-                                           insight::valueToString(
-                                               curMod->getVector()
-                                               ) ) );
-                         } );
+                // connect( curMod, &IQVectorDirectionCommand::dataChanged, curMod,
+                //          [this,curMod]()
+                //          {
+                //            lineEdit->setText(
+                //                        QString::fromStdString(
+                //                            insight::valueToString(
+                //                                curMod->getVector()
+                //                                ) ) );
+                //          } );
+                auto mani = std::make_shared<IQVTKManipulateCoordinateSystem>(
+                    *v, insight::CoordinateSystem((*bp), p()), true );
+                connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
+                        [this,applyFunction](const insight::CoordinateSystem& cs)
+                        {
+                            auto& p = dynamic_cast<insight::VectorParameter&>(
+                                this->parameterRef());
+                            p.set(cs.ex);
+                        }
+                        );
+                v->launchAction(mani);
             }
             else
             {
               auto ppc = std::make_shared<IQVTKCADModel3DViewerPickPoint>(*v);
               connect(ppc.get(), &IQVTKCADModel3DViewerPickPoint::pickedPoint,
-                        [this,applyFunction](const arma::mat& p)
+                        [this,applyFunction](const arma::mat& pt)
                         {
-                          lineEdit->setText(
-                              QString::fromStdString(
-                                  insight::valueToString(p) ) );
-                          applyFunction();
+                          auto& p = dynamic_cast<insight::VectorParameter&>(
+                              this->parameterRef());
+                          p.set(pt);
+                          // lineEdit->setText(
+                          //     QString::fromStdString(
+                          //         insight::valueToString(p) ) );
+                          // applyFunction();
                         }
                       );
               v->launchAction(ppc);

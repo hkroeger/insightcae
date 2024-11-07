@@ -83,8 +83,9 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
             auto modeltree = new QTreeView(this);
 
             display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
+            viewer_ = display_->viewer();
 
-            display_->viewer()->commonToolBox()->addItem(modeltree, "Model structure");
+            viewer_->commonToolBox()->addItem(modeltree, "Model structure");
 
             // after ParameterSetDisplay constructor!
             modeltree->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -95,7 +96,9 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         {
             // use supplied displayer
             display_=display;
+            viewer_=display_->viewer();
         }
+
         viz_->setModel(display_->model());
 
         // {
@@ -112,6 +115,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
     else
     {
         display_ = nullptr;
+        viewer_=nullptr;
     }
 
     QObject::connect( parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
@@ -143,16 +147,16 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                                     // create new controls
                                     auto l = p->populateEditControls(
                                         inputContents_,
-                                        display_ ? display_->viewer() : nullptr );
+                                        viewer_ );
 
 
-                                    if (display_)
+                                    if (viz_ && viewer_)
                                     {
                                         auto cmdl=new QHBoxLayout;
                                         auto acts = viz_->createGUIActions(
                                             p->path().toStdString(),
                                             inputContents_,
-                                            display_->viewer());
+                                            viewer_);
                                         for (auto& act: acts)
                                         {
                                             auto btn = new QPushButton(act.icon, act.label);
@@ -306,7 +310,8 @@ ParameterEditorWidget::ParameterEditorWidget
 (
     QWidget *parent,
     QTreeView* parameterTreeView,
-    QWidget* contentEditorFrame
+    QWidget* contentEditorFrame,
+    IQCADModel3DViewer* viewer
 )
     : QSplitter(Qt::Horizontal, parent),
     model_(nullptr),
@@ -314,9 +319,11 @@ ParameterEditorWidget::ParameterEditorWidget
     viz_(nullptr),
     parameterTreeView_(parameterTreeView),
     inputContents_(contentEditorFrame),
-    firstShowOccurred_(false)
+    firstShowOccurred_(false),
+    viewer_(nullptr)
 {
     setup(nullptr);
+    viewer_=viewer; // would be nullified in setup
 }
 
 
@@ -358,7 +365,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 
 ParameterEditorWidget::CADViewer *ParameterEditorWidget::viewer() const
 {
-    auto *v = dynamic_cast<CADViewer*>(display_->viewer());
+    auto *v = dynamic_cast<CADViewer*>(viewer_);
     insight::assertion(
         bool(v), "unexpected viewer type" );
     return v;

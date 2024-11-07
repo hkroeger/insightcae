@@ -23,7 +23,7 @@ void IQVTKCADModel3DViewerPickPoint::start()
 
 
 
-bool IQVTKCADModel3DViewerPickPoint::onLeftButtonDown(Qt::KeyboardModifiers nFlags, const QPoint screenPos)
+bool IQVTKCADModel3DViewerPickPoint::onLeftButtonDown(Qt::KeyboardModifiers nFlags, const QPoint screenPos, bool afterDoubleClick)
 {
     auto picker = vtkSmartPointer<vtkWorldPointPicker>::New();
 

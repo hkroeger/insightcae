@@ -93,9 +93,9 @@ IQVTKCADModel3DViewerPlanePointBasedAction
 
 bool IQVTKCADModel3DViewerPlanePointBasedAction::onLeftButtonDown(
     Qt::KeyboardModifiers nFlags,
-    const QPoint point )
+    const QPoint point, bool afterDoubleClick )
 {
-    auto ret = IQVTKSelectConstrainedSketchEntity::onLeftButtonDown(nFlags, point);
+    auto ret = IQVTKSelectConstrainedSketchEntity::onLeftButtonDown(nFlags, point, afterDoubleClick);
     if (!ret)
     {
         pointSelected(

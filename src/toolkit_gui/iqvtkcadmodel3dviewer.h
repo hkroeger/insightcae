@@ -200,6 +200,8 @@ public:
     static const char bgiNodeName[];
 
 private:
+    mutable bool afterDoubleClick_;
+
     /*VTKWidget*/MyVTKWidget vtkWidget_;
     vtkSmartPointer<vtkRenderer> ren_, backgroundRen_;
 
@@ -399,6 +401,7 @@ public:
     void writeViewerState(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const override;
     void restoreViewerState(rapidxml::xml_node<>& node) override;
 
+    void setCameraState(const insight::CameraState& camState) override;
 
 public:
     void exposeItem( insight::cad::FeaturePtr feat ) override;
@@ -434,7 +437,10 @@ public:
     void activateSelectionAll(insight::cad::EntityType subshapeType);
     void deactivateSubshapeSelectionAll();
 
-    vtkProp* findActorUnderCursorAt(const QPoint& clickPos) const;
+    vtkProp* findActorUnderCursorAt(
+        const QPoint& clickPos,
+        const std::set<vtkProp*>& restrictPicking = {}
+        ) const;
     std::vector<vtkProp*> findAllActorsUnderCursorAt(const QPoint& clickPos) const;
 
     typedef boost::variant<

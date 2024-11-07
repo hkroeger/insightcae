@@ -3,9 +3,18 @@
 
 #include "base/progressdisplayer/textprogressdisplayer.h"
 
+#include <armadillo>
+
 class QIcon;
 
 namespace insight {
+
+struct CameraState
+{
+    bool isParallelProjection;
+    double parallelScale;
+    arma::mat cameraPosition, focalPosition, viewUp;
+};
 
 class ParameterSet;
 
@@ -43,6 +52,8 @@ public:
     virtual void setIcon(QIcon* icon);
 
     void setProgressDisplayer(ProgressDisplayer* pd);
+
+    virtual CameraState defaultCameraState() const;
 };
 
 typedef std::shared_ptr<ParameterSetVisualizer> ParameterSetVisualizerPtr;

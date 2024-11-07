@@ -78,6 +78,14 @@ void ParameterSetVisualizer::setProgressDisplayer(ProgressDisplayer* pd)
     progress_=&defaultProgressDisplayer_;
 }
 
+CameraState ParameterSetVisualizer::defaultCameraState() const
+{
+    return CameraState{
+        true, 1.,
+        vec3(1,1,1), vec3Zero(), vec3Z(1)
+    };
+}
+
 
 
 } // namespace insight

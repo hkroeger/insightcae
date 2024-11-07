@@ -73,6 +73,7 @@ protected:
     QWidget *inputContents_;
 
     ParameterSetDisplay* display_;
+    IQCADModel3DViewer* viewer_;
 
     QLabel* overlayText_;
 
@@ -102,7 +103,8 @@ public:
     (
         QWidget* parent,
         QTreeView* parameterTreeView,
-        QWidget* contentEditorFrame
+        QWidget* contentEditorFrame,
+        IQCADModel3DViewer* viewer
     );
 
     /**

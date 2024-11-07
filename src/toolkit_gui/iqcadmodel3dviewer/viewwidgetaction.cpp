@@ -155,7 +155,8 @@ void OCCViewWidgetMeasurePoints::start()
   userPrompt("Please select first point!");
 }
 
-bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
+bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/,
+                                                bool lastClickWasDoubleClick)
 {
   viewer().getContext()->InitSelected();
   if (viewer().getContext()->MoreSelected())
@@ -190,5 +191,6 @@ bool OCCViewWidgetMeasurePoints::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/
         return true;
       }
   }
+  return false;
 }
 

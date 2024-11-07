@@ -70,6 +70,8 @@ class TOOLKIT_GUI_EXPORT QoccViewWidget
 private:
   std::vector<Handle_V3d_Light> lights_;
 
+    mutable bool lastClickWasDoubleClick_;
+
   void addLights();
 
 //  InputReceiver<QoccViewWidget>::Ptr currentNavigationAction_;

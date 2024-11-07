@@ -37,7 +37,8 @@ public:
 
     void start() override;
 
-    bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point,
+                        bool lastClickWasDoubleClick ) override;
 };
 
 

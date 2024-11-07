@@ -977,7 +977,7 @@ void IQFilteredParameterSetModel::searchRootSourceIndices(
                 &&  curPath.size()>sourceParam.size()-2 )
             {
                 rootSourceIndices.append(i.siblingAtColumn(0));
-                searchDown=true;
+                searchDown=false;
             }
             else if (boost::starts_with(sourceParam, curPath)) // sourceParam starts with curPath?
             {

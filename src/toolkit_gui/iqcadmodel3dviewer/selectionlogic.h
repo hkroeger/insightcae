@@ -184,9 +184,9 @@ public:
 
     bool onLeftButtonDown(
         Qt::KeyboardModifiers nFlags,
-        const QPoint point ) override
+        const QPoint point, bool afterDoubleClick ) override
     {
-        if (!nextSelectionCandidates_)
+        if (!nextSelectionCandidates_ && !afterDoubleClick)
         {
             auto selectedEntities = findEntitiesUnderCursorFiltered(point);
 
@@ -204,7 +204,7 @@ public:
             }
         }
 
-        return Base::onLeftButtonDown(nFlags, point);
+        return Base::onLeftButtonDown(nFlags, point, afterDoubleClick);
     }
 
 
@@ -229,51 +229,60 @@ public:
 
     bool onLeftButtonUp(
         Qt::KeyboardModifiers nFlags,
-        const QPoint point ) override
+        const QPoint point,
+        bool lastClickWasDoubleClick ) override
     {
-        if (nextSelectionCandidates_)
+        if (!lastClickWasDoubleClick)
         {
-            if (!(nFlags&Qt::ShiftModifier))
+            if (nextSelectionCandidates_)
+            {
+                if (!(nFlags&Qt::ShiftModifier))
+                {
+                    clearSelection();
+                }
+
+                // apply sel candidate
+                if (!currentSelection_)
+                {
+                    currentSelection_ =
+                        multiSelectionContainerFactory_();
+                }
+
+                auto selcand = nextSelectionCandidates_->selected(true);
+                nextSelectionCandidates_.reset();
+
+                if (currentSelection_->count(selcand)<1)
+                {
+                    currentSelection_->insert(selcand);
+                    this->userPrompt(
+                        QString("Added to selection. Now %1 entities selected.")
+                            .arg(currentSelection_->size()));
+
+                    if (highlights_.count(selcand)<1)
+                        highlights_[selcand]=highlightEntity(selcand, selectionColor);
+
+                    this->updateLastMouseLocation(point);
+                    entitySelected(selcand); // last, because current obj might be deleted
+                }
+                else // remove from sel
+                {
+                    currentSelection_->erase(selcand);
+                    this->userPrompt(
+                        QString("Removed from selection. Now %1 entities selected.")
+                            .arg(currentSelection_->size()));
+                    highlights_.erase(selcand);
+                }
+
+                return true;
+            }
+            else // nothing was under cursor
             {
                 clearSelection();
+                this->userPrompt("Nothing picked. Selection cleared.");
             }
-
-            // apply sel candidate
-            if (!currentSelection_)
-            {
-                currentSelection_ =
-                    multiSelectionContainerFactory_();
-            }
-
-            auto selcand = nextSelectionCandidates_->selected(true);
-            nextSelectionCandidates_.reset();
-
-            if (currentSelection_->count(selcand)<1)
-            {
-                currentSelection_->insert(selcand);
-                this->userPrompt(QString("Added to selection. Now %1 entities selected.").arg(currentSelection_->size()));
-
-                if (highlights_.count(selcand)<1)
-                    highlights_[selcand]=highlightEntity(selcand, selectionColor);
-
-                this->updateLastMouseLocation(point);
-                entitySelected(selcand); // last, because current obj might be deleted
-            }
-            else // remove from sel
-            {
-                currentSelection_->erase(selcand);
-                this->userPrompt(QString("Removed from selection. Now %1 entities selected.").arg(currentSelection_->size()));
-                highlights_.erase(selcand);
-            }
-
-            return true;
         }
-        else // nothing was under cursor
-        {
-            clearSelection();
-            this->userPrompt("Nothing picked. Selection cleared.");
-        }
-        return Base::onLeftButtonUp(nFlags, point);
+        return Base::onLeftButtonUp(nFlags, point,
+                                    lastClickWasDoubleClick);
     }
 
 
@@ -384,7 +393,9 @@ public:
         }
 
         currentSelection_->insert(entity);
-        this->userPrompt(QString("Added to selection. Now %1 entities selected.").arg(currentSelection_->size()));
+        this->userPrompt(
+            QString("Added to selection. Now %1 entities selected.")
+                .arg(currentSelection_->size()));
 
         if (highlights_.count(entity)<1)
             highlights_[entity]=highlightEntity(entity, selectionColor);
@@ -399,7 +410,9 @@ public:
             if (currentSelection_->count(entity)>0)
             {
                 currentSelection_->erase(entity);
-                this->userPrompt(QString("Removed from selection. Now %1 entities selected.").arg(currentSelection_->size()));
+                this->userPrompt(
+                    QString("Removed from selection. Now %1 entities selected.")
+                        .arg(currentSelection_->size()));
                 highlights_.erase(entity);
             }
         }

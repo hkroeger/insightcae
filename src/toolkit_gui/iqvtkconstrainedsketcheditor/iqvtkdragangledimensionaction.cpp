@@ -47,7 +47,8 @@ bool IQVTKDragAngleDimensionAction::onMouseMove
 
 bool IQVTKDragAngleDimensionAction::onLeftButtonUp(
     Qt::KeyboardModifiers nFlags,
-    const QPoint point )
+    const QPoint point,
+    bool lastClickWasDoubleClick )
 {
     finishAction();
     return true;

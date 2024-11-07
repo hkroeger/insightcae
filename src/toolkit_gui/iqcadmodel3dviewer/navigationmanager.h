@@ -76,14 +76,14 @@ public:
     return InputReceiver<Viewer>::onMouseWheel(angleDeltaX, angleDeltaY);
   }
 
-  bool onLeftButtonDown( Qt::KeyboardModifiers modifiers, const QPoint point ) override
+  bool onLeftButtonDown( Qt::KeyboardModifiers modifiers, const QPoint point, bool afterDoubleClick ) override
   {
     if ( this->viewer().pickAtCursor( modifiers&Qt::ControlModifier ) )
     {
       this->viewer().emitGraphicalSelectionChanged();
       return true;
     }
-    return InputReceiver<Viewer>::onLeftButtonDown(modifiers, point);
+    return InputReceiver<Viewer>::onLeftButtonDown(modifiers, point, afterDoubleClick);
   }
 
   bool onKeyPress( Qt::KeyboardModifiers modifiers, int key ) override

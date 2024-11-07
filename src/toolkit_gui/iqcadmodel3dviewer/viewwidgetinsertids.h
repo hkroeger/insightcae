@@ -40,7 +40,8 @@ public:
     userPrompt("Please select "+QString(selectionName)+" and finish with right click!");
   }
 
-  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override
+  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point,
+                      bool lastClickWasDoubleClick ) override
   {
     auto context = viewer().getContext();
 

@@ -30,6 +30,9 @@ set(toolkit_gui_SRCS
 
  dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp dialogs/defineplanedialog.ui
 
+
+ cadmodel3dviewer.h cadmodel3dviewer.cpp
+
  iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
  iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
  iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
@@ -62,6 +65,7 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.cpp iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.ui
 
 

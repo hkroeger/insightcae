@@ -42,7 +42,7 @@ public:
 
     bool onLeftButtonDown(
         Qt::KeyboardModifiers nFlags,
-        const QPoint point ) override;
+        const QPoint point, bool afterDoubleClick ) override;
 };
 
 #endif // IQVTKCADMODEL3DVIEWERPLANEPOINTBASEDACTION_H

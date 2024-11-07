@@ -13,7 +13,8 @@
 //  insight::cad::DeactivateAll(viewWidget_->getContext(), shapeToSelect().first);
 //}
 
-//void ViewWidgetInsertIDs::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/)
+//void ViewWidgetInsertIDs::onLeftButtonUp(Qt::KeyboardModifiers /*nFlags*/, const QPoint /*point*/,
+//        bool lastClickWasDoubleClick)
 //{
 //  auto context = viewWidget_->getContext();
 

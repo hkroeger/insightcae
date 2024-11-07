@@ -266,9 +266,7 @@ void assertion(bool condition, std::string fmt, ...)
       va_end(args);
       int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
 
-      throw insight::Exception(
-                  std::string("Internal error: condition violated: ")
-                  + str );
+      throw insight::Exception( str );
   }
 }
 

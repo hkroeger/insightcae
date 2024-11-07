@@ -223,16 +223,17 @@ public:
   struct RemoteStream {
       virtual ~RemoteStream();
       inline std::ostream& operator()() { return stream(); };
+      inline operator std::ostream& () { return stream(); };
       virtual std::ostream& stream() =0;
   };
 
   virtual std::unique_ptr<RemoteStream> remoteOFStream
-      (
-          const boost::filesystem::path& remoteFilePath,
-          int totalBytes,
-          std::function<void(int progress,const std::string& status_text)> progress_callback =
-          std::function<void(int,const std::string&)>()
-          ) =0;
+    (
+        const boost::filesystem::path& remoteFilePath,
+        int totalBytes,
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+            std::function<void(int,const std::string&)>()
+    ) =0;
 
   /**
    * @brief setTransferBandWidthLimit

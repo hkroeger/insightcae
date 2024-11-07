@@ -92,6 +92,15 @@ public:
                             std::function<void(int,const std::string&)>()
     ) override;
 
+
+    std::unique_ptr<RemoteServer::RemoteStream> remoteOFStream
+    (
+        const boost::filesystem::path& relativeRemoteFilePath,
+        int totalBytes,
+        std::function<void(int progress,const std::string& status_text)> progress_callback =
+            std::function<void(int,const std::string&)>()
+    );
+
     virtual void syncToRemote
     (
         bool includeProcessorDirectories,

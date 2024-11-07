@@ -31,6 +31,7 @@
 #include <QToolButton>
 #include <QStatusBar>
 
+#include <boost/lexical_cast.hpp>
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
@@ -2104,24 +2105,30 @@ void IQVTKCADModel3DViewer::writeViewerState(
 {
     auto* camera = ren_->GetActiveCamera();
 
+    auto camNode = appendNode(doc, node, "camera");
+
     appendAttribute(
-        doc, node,
+        doc, camNode,
         "parallelProjection", camera->GetParallelProjection());
 
     appendAttribute(
-        doc, node,
+        doc, camNode,
+        "parallelScale", camera->GetParallelScale());
+
+    appendAttribute(
+        doc, camNode,
         "position",
         insight::valueToString(vec3FromComponents(
             camera->GetPosition() )) );
 
     appendAttribute(
-        doc, node,
+        doc, camNode,
         "focalPoint",
         insight::valueToString(vec3FromComponents(
             camera->GetFocalPoint() )) );
 
     appendAttribute(
-        doc, node,
+        doc, camNode,
         "viewUp",
         insight::valueToString(vec3FromComponents(
             camera->GetViewUp() )) );
@@ -2143,6 +2150,10 @@ void IQVTKCADModel3DViewer::restoreViewerState(
         if (auto *pp = camNode->first_attribute("parallelProjection"))
             camera->SetParallelProjection(
                 boost::lexical_cast<bool>(pp->value()) );
+
+        if (auto *pp = camNode->first_attribute("parallelScale"))
+            camera->SetParallelScale(
+                boost::lexical_cast<double>(pp->value()) );
 
         if (auto *pos = camNode->first_attribute("position"))
         {

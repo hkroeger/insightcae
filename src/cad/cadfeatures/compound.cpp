@@ -129,7 +129,7 @@ void Compound::build()
                     shared_from_this(), Face,
                     "isSame(%0)",
                     FeatureSetParserArgList{
-                        std::make_shared<FeatureSet>(p, Face)
+                        makeFaceFeatureSet(p)
                     } );
 //        auto f = find( p->allFaces() ); // find not usable during rebuild!
 

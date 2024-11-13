@@ -215,6 +215,7 @@ void ResultReportTemplates::readConfiguration()
                     "\\documentclass[a4paper,10pt]{scrartcl}\n"
                     "\\usepackage{hyperref}\n"
                     "\\usepackage{fancyhdr}\n"
+                    "\\usepackage{longtable}\n"
                     "\\pagestyle{fancy}\n"
                     "###HEADER###\n"
                     "\\begin{document}\n"

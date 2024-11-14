@@ -10,12 +10,12 @@ defineType(wallHeatFlux);
 addToOpenFOAMCaseElementFactoryTable(wallHeatFlux);
 
 wallHeatFlux::wallHeatFlux ( OpenFOAMCase& c, const ParameterSet& ps )
-  : OpenFOAMCaseElement(c, Parameters(ps).name+"FunctionObject", ps),
+  : outputFilterFunctionObject(c, ps),
     p_(ps)
 {
 }
 
-void wallHeatFlux::addIntoDictionaries ( OFdicts& dictionaries ) const
+OFDictData::dict wallHeatFlux::functionObjectDict() const
 {
   OFDictData::dict fod;
 
@@ -26,15 +26,13 @@ void wallHeatFlux::addIntoDictionaries ( OFdicts& dictionaries ) const
   OFDictData::list p;
   std::copy(p_.patches.begin(), p_.patches.end(), std::back_inserter(p));
   fod["patches"]=p;
-  fod["writeControl"]="outputTime";
 
   if (const auto* qr = boost::get<Parameters::qr_field_type>(&p_.qr))
   {
     fod["qr"] = qr->fieldName;
   }
 
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.subDict("functions")[p_.name]=fod;
+  return fod;
 }
 
 

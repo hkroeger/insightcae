@@ -1,4 +1,5 @@
 #include "iqresultsetdisplayerwidget.h"
+#include "base/exception.h"
 #include "ui_iqresultsetdisplayerwidget.h"
 
 #include "iqaddfilterdialog.h"
@@ -185,9 +186,10 @@ void IQResultSetDisplayerWidget::renderReport()
         QFileDialog fd(this);
         fd.setOption(QFileDialog::DontUseNativeDialog, true);
         fd.setWindowTitle("Render Report");
-        QStringList filters;
-        filters << "PDF document (*.pdf)";
-        fd.setNameFilters(filters);
+
+        QString PDF("PDF document (*.pdf)");
+        QString TEX("LaTeX input file (*.tex)");
+        fd.setNameFilters(QStringList{PDF, TEX});
 
         QCheckBox* cb = new QCheckBox;
         cb->setText("Save filtered result set");
@@ -199,19 +201,40 @@ void IQResultSetDisplayerWidget::renderReport()
 
         if ( fd.exec() == QDialog::Accepted )
         {
-          boost::filesystem::path outf =
-                  insight::ensureFileExtension(
-                      fd.selectedFiles()[0].toStdString(),
-                      ".pdf"
-                  );
-          if (cb->isChecked())
-          {
-              filteredResultsModel_->filteredResultSet()->generatePDF(outf);
-          }
-          else
-          {
-              resultsModel_->resultSet()->generatePDF(outf);
-          }
+            if (fd.selectedNameFilter()==PDF)
+            {
+                  boost::filesystem::path outf =
+                          insight::ensureFileExtension(
+                              fd.selectedFiles()[0].toStdString(),
+                              ".pdf"
+                          );
+                  if (cb->isChecked())
+                  {
+                      filteredResultsModel_->filteredResultSet()->generatePDF(outf);
+                  }
+                  else
+                  {
+                      resultsModel_->resultSet()->generatePDF(outf);
+                  }
+            }
+            else if (fd.selectedNameFilter()==TEX)
+            {
+                boost::filesystem::path outf =
+                    insight::ensureFileExtension(
+                        fd.selectedFiles()[0].toStdString(),
+                        ".tex"
+                        );
+                if (cb->isChecked())
+                {
+                    filteredResultsModel_->filteredResultSet()->writeLatexFile(outf);
+                }
+                else
+                {
+                    resultsModel_->resultSet()->writeLatexFile(outf);
+                }
+            }
+            else
+                throw insight::UnhandledSelection();
         }
     }
 }

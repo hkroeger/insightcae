@@ -155,7 +155,7 @@ File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"
 
 putty=MSIDependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0.76-installer.msi")
 gnuplot=Dependency("http://downloads.silentdynamics.de/thirdparty/gp528-win64-mingw.exe")
-miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-21.6-x64.exe")
+miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-24.1-x64.exe")
 python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe", 
                   note="Please choose the following options in the upcoming Python installer:$\\r$\\n$\\r$\\n* check the option 'Add python.exe to PATH'$\\r$\\n$\\r$\\n* perform a custom installation and install for all users!$\\r$\\n$\\r$\\n(If this is omitted, the InsightCAE executables will not run.)")
 paraview=Dependency("http://downloads.silentdynamics.de/thirdparty/ParaView-5.8.1-Windows-Python3.7-msvc2015-64bit.exe")

@@ -16,11 +16,13 @@ class compressibleSinglePhaseThermophysicalProperties
     : public thermodynamicModel
 {
 
+    static void modifyDefaults(ParameterSet& ps);
+
 public:
 #include "compressiblesinglephasethermophysicalproperties__compressibleSinglePhaseThermophysicalProperties__Parameters.h"
 /*
 PARAMETERSET>>> compressibleSinglePhaseThermophysicalProperties Parameters
-
+addTo_makeDefault { modifyDefaults(p); }
 
 composition = selectablesubset {{
 
@@ -54,6 +56,8 @@ public:
     compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
     std::string requiredThermoType() const;
+    std::unique_ptr<SpeciesData> speciesData() const;
+
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }

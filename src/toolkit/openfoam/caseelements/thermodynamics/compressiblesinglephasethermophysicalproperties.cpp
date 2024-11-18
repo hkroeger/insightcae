@@ -19,6 +19,13 @@ addToOpenFOAMCaseElementFactoryTable(compressibleSinglePhaseThermophysicalProper
 
 
 
+void compressibleSinglePhaseThermophysicalProperties::modifyDefaults(ParameterSet &ps)
+{
+    //auto& specie = ps.get<SelectionParameter>("composition/singleSpecie/properties/fromLibrary/specie");
+    auto& specie = ps.get<SelectionParameter>("composition/properties/specie");
+    specie.setSelection("N2");
+}
+
 compressibleSinglePhaseThermophysicalProperties::compressibleSinglePhaseThermophysicalProperties(
     OpenFOAMCase& c, const ParameterSet& ps )
     : thermodynamicModel(c, ps),
@@ -84,22 +91,16 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
 }
 
 
-
-
-void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
+std::unique_ptr<SpeciesData>
+compressibleSinglePhaseThermophysicalProperties::speciesData() const
 {
-
-    OFDictData::dict& thermophysicalProperties =
-        dictionaries.lookupDict("constant/thermophysicalProperties");
-
-    std::unique_ptr<SpeciesData> sd;
     if (const auto *ss =
         boost::get<Parameters::composition_singleSpecie_type>(&p_.composition))
     {
-        sd.reset(new SpeciesData(*ss));
+        return std::make_unique<SpeciesData>(*ss);
     }
     else if (const auto *mixdesc=
-        boost::get<Parameters::composition_staticSpeciesMixture_type>(&p_.composition))
+             boost::get<Parameters::composition_staticSpeciesMixture_type>(&p_.composition))
     {
         SpeciesData::SpeciesMixture mix;
         double Mq=0.;
@@ -116,8 +117,8 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
                 w = wd->value;
             }
             else if (const auto* mf =
-                boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_moleFraction_type>(
-                    &part.fraction))
+                     boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_moleFraction_type>(
+                         &part.fraction))
             {
                 double
                     xi = mf->value,
@@ -140,9 +141,21 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
             }
         }
 
-        sd.reset(new SpeciesData(mix));
+        return std::make_unique<SpeciesData>(mix);
     }
     else throw UnhandledSelection();
+
+    return nullptr;
+}
+
+
+void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
+{
+
+    OFDictData::dict& thermophysicalProperties =
+        dictionaries.lookupDict("constant/thermophysicalProperties");
+
+    auto sd = speciesData();
 
     if (OFversion()<200)
     {

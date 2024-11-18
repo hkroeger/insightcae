@@ -18,6 +18,7 @@ public:
 PARAMETERSET>>> buoyantSimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
+boussinesqApproach = bool false "Use boussinesq approach"
 checkResiduals = bool false "Enable solver stop on residual goal"
 nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
 

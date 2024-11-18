@@ -877,6 +877,32 @@ arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
   return bbm;
 }
 
+void writeSTL
+(
+    vtkSmartPointer<vtkPolyData> stl,
+    const boost::filesystem::path& outfile
+)
+{
+    CurrentExceptionContext ec("Writing STL mesh to file "+outfile.string());
+
+    std::string file_ext = outfile.filename().extension().string();
+    boost::to_lower(file_ext);
+
+    vtkSmartPointer<vtkSTLWriter> sw = vtkSmartPointer<vtkSTLWriter>::New();
+    sw->SetInputData(stl);
+    sw->SetFileName(outfile.string().c_str());
+    if (file_ext==".stlb")
+    {
+        sw->SetFileTypeToBinary();
+    }
+    else
+    {
+        sw->SetFileTypeToASCII();
+    }
+    sw->Update();
+}
+
+
 
 void writeSTL
 (

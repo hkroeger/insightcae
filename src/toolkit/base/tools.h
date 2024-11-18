@@ -373,6 +373,12 @@ arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);
 
 void writeSTL
 (
+    vtkSmartPointer<vtkPolyData> stl,
+    const boost::filesystem::path& outfile
+);
+
+void writeSTL
+(
    vtkSmartPointer<vtkPolyDataAlgorithm> stl,
    const boost::filesystem::path& outfile
 );

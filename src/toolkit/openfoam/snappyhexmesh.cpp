@@ -629,19 +629,20 @@ RefinementLevel::RefinementLevel(
         insight::assertion(
             L>SMALL,
             "refinement level target length must be larger than zero");
-        level=log(L/delta)/log(2.);
+        double dlevel=log(L/delta)/log(2.);
+        level=std::max<int>(0, std::ceil(dlevel));
     }
     else if (const auto * Ll = boost::get<L_level>(&input))
     {
         L=Ll->L;
         level=Ll->level;
-        delta=L/pow(2., level);
+        delta=std::max(0., L/pow(2., level));
     }
     else if (const auto * ld = boost::get<level_delta>(&input))
     {
         level=ld->level;
         delta=ld->delta;
-        L=delta*pow(2,level);
+        L=std::max(0., delta*pow(2,level));
     }
     else
         throw insight::Exception("unhandled input");

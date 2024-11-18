@@ -4,7 +4,7 @@
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "openfoam/caseelements/basic/fvoption.h"
 
-#include "porouszone__porousZone__Parameters_headers.h"
+#include "porouszone__porousZoneConfig__Parameters_headers.h"
 
 namespace insight {
 

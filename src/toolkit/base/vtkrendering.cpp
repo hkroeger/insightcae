@@ -1675,7 +1675,10 @@ void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 
 //vtkStandardNewMacro(ModifiedPOpenFOAMReader);
 
-OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np)
+OpenFOAMCaseScene::OpenFOAMCaseScene(
+    const boost::filesystem::path& casepath,
+    bool readZones,
+    int np)
   : VTKOffscreenScene()
 {
 #if VTK_MODULE_ENABLE_VTK_ParallelMPI
@@ -1710,7 +1713,14 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, in
   ofcase_->CacheMeshOn();
   ofcase_->DecomposePolyhedraOn();
   ofcase_->ListTimeStepsByControlDictOff();
-  ofcase_->ReadZonesOff();
+  if (readZones)
+  {
+      ofcase_->ReadZonesOn();
+  }
+  else
+  {
+      ofcase_->ReadZonesOff();
+  }
 
   ofcase_->Update();
 

@@ -438,7 +438,7 @@ class OpenFOAMCaseScene
   std::vector<double> times_;
 
 public:
-  OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np=1);
+  OpenFOAMCaseScene(const boost::filesystem::path& casepath, bool readZones=false, int np=1);
 
   vtkMultiBlockDataSet* GetOutput();
 

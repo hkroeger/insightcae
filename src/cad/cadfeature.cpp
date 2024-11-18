@@ -994,6 +994,13 @@ arma::mat Feature::modelBndBox(double deflection) const
   return x;
 }
 
+
+arma::mat Feature::modelBndBoxSize(double deflection) const
+{
+    arma::mat bb=modelBndBox(deflection);
+    return bb.col(1)-bb.col(0);
+}
+
 std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double deflection) const
 {
     checkForBuildDuringAccess();
@@ -1050,6 +1057,9 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
                 dr=insight::Vector(boundingBox.ZDirection());
                 sz=boundingBox.ZHSize();
                 break;
+            default:
+                sz=-1;
+                throw insight::UnhandledSelection();
             };
 
             switch (i)
@@ -1063,7 +1073,11 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
             case 2:
                 cs.ez=dr;
                 break;
+            default:
+                throw insight::UnhandledSelection();
             };
+
+
             x(i,0)=-sz;
             x(i,1)=sz;
         }

@@ -376,6 +376,14 @@ public:
    */
   arma::mat modelBndBox(double deflection=-1) const;
 
+  /**
+   * @brief modelBndBoxSize
+   * @param deflection
+   * @return
+   * max point-min point, i.e. vector across diagonal
+   */
+  arma::mat modelBndBoxSize(double deflection=-1) const;
+
   std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;

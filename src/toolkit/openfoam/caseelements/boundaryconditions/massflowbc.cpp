@@ -69,7 +69,8 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
-            BC["type"]=OFDictData::data ( "fixedValue" );
+            BC["type"]=OFDictData::data ( "inletOutlet" );
+            BC["inletValue"]="uniform "+boost::lexical_cast<std::string> ( p.T );
             BC["value"]="uniform "+boost::lexical_cast<std::string> ( p.T );
         } else if (isPrghPressureField(field)) {
             if ( OFversion() >=210 ) {

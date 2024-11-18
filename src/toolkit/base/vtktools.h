@@ -38,6 +38,10 @@ class vtkUnstructuredGrid;
 class vtkMultiBlockDataSet;
 
 namespace insight {
+
+
+arma::mat vec3(vtkPointSet* pts, int i);
+arma::mat vec3(vtkPoints* pts, int i);
   
 namespace vtk {
   

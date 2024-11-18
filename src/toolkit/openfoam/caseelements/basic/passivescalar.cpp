@@ -4,6 +4,8 @@
 #include "openfoam/openfoamdict.h"
 #include "openfoam/openfoamcase.h"
 
+#include "openfoam/caseelements/basic/fvoption.h"
+
 namespace insight {
 
 defineType(PassiveScalar);
@@ -11,6 +13,7 @@ addToOpenFOAMCaseElementFactoryTable(PassiveScalar);
 
 PassiveScalar::PassiveScalar( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, "PassiveScalar", ps),
+  OpenFOAMCase(c.ofe()),
   p_(ps)
 {
 }
@@ -28,7 +31,14 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
     Fd["field"]=p_.fieldname;
     Fd["resetOnStartUp"]=false;
     Fd["autoSchemes"]=false;
-    Fd["fvOptions"]=OFDictData::dict();
+
+    OFDictData::dict fvo;
+    auto opts = findElements<fvOption>();
+    for (auto& o: opts)
+    {
+        o->addIntoCustomFvOptionDictionary(fvo, dictionaries);
+    }
+    Fd["fvOptions"]=fvo;
 
     OFDictData::list fol;
     fol.push_back("\"libutilityFunctionObjects.so\"");
@@ -70,7 +80,7 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
     solvers[p_.fieldname]=OFcase().smoothSolverSetup(1e-6, 0.);
 
     OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-    if (OFversion()<210)
+    if (OpenFOAMCaseElement::OFversion()<210)
     {
       relax[p_.fieldname]=p_.underrelax;
     }

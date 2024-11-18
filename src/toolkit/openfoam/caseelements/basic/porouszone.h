@@ -2,19 +2,19 @@
 #define INSIGHT_POROUSZONE_H
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/caseelements/basic/fvoption.h"
 
 #include "porouszone__porousZone__Parameters_headers.h"
 
 namespace insight {
 
-class porousZone
-    : public OpenFOAMCaseElement
+class porousZoneConfig
 {
 
 public:
-#include "porouszone__porousZone__Parameters.h"
+#include "porouszone__porousZoneConfig__Parameters.h"
 /*
-PARAMETERSET>>> porousZone Parameters
+PARAMETERSET>>> porousZoneConfig Parameters
 
 name = string "porosity" "Name of the porous cell zone. It needs to exist for this configuration to work."
 d = vector (1 1 1) "Darcy coefficients for each direction"
@@ -29,12 +29,48 @@ protected:
     Parameters p_;
 
 public:
+    porousZoneConfig ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    void addIntoDict ( OFDictData::dict& dict) const;
+};
+
+
+
+
+class porousZone
+    : public OpenFOAMCaseElement,
+      public porousZoneConfig
+{
+
+public:
     declareType ( "porousZone" );
     porousZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }
 };
+
+
+
+
+class porousZoneOption
+    : public cellSetFvOption,
+      public porousZoneConfig
+{
+public:
+    typedef porousZoneConfig::Parameters Parameters;
+
+public:
+    declareType ( "porousZoneOption" );
+    porousZoneOption ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    void addIntoFvOptionDictionary ( OFDictData::dict& fvOptionDict, OFdicts& dictionaries ) const override;
+
+    static std::string category() { return "Body Force"; }
+
+    inline static insight::ParameterSet defaultParameters()
+    { return Parameters::makeDefault(); }
+
+};
+
 
 
 } // namespace insight

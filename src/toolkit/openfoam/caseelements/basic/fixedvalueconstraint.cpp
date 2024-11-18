@@ -9,16 +9,15 @@ defineType(fixedValueConstraint);
 addToOpenFOAMCaseElementFactoryTable(fixedValueConstraint);
 
 fixedValueConstraint::fixedValueConstraint( OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "", ps),
+: cellSetFvOption(c, "fixedValueConstraint"+ps.getString("name"), ps),
   p_(ps)
-{
-  name_="fixedValueConstraint"+p_.name;
-}
+{}
 
-void fixedValueConstraint::addIntoDictionaries ( OFdicts& dictionaries ) const
+void fixedValueConstraint::addIntoFvOptionDictionary(
+    OFDictData::dict& fvOptions,
+    OFdicts& dictionaries ) const
 {
   OFDictData::dict cd;
-  cd["active"]=true;
   cd["selectionMode"]="cellZone";
   cd["cellZone"]=p_.zoneName;
   OFDictData::dict fvd;
@@ -36,8 +35,8 @@ void fixedValueConstraint::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   cd["fieldValues"]=fvd;
 
-  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
   fvOptions[p_.name]=cd;
+  cellSetFvOption::addIntoFvOptionDictionary(fvOptions, dictionaries);
 }
 
 

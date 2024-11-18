@@ -59,6 +59,11 @@ void boussinesqSinglePhaseTransportProperties::addIntoDictionaries ( OFdicts& di
   transportProperties["Prt"]=p_.Prt;
 }
 
+double boussinesqSinglePhaseTransportProperties::density(double T) const
+{
+    return 1.-p_.beta*(T-p_.TRef);
+}
+
 
 
 

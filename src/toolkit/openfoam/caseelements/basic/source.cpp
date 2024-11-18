@@ -9,16 +9,15 @@ defineType(source);
 addToOpenFOAMCaseElementFactoryTable(source);
 
 source::source( OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "", ps),
+: cellSetFvOption(c, "source"+ps.getString("name"), ps),
   p_(ps)
-{
-  name_="source"+p_.name;
-}
+{}
 
-void source::addIntoDictionaries ( OFdicts& dictionaries ) const
+void source::addIntoFvOptionDictionary(
+    OFDictData::dict& fvOptions,
+    OFdicts& od) const
 {
   OFDictData::dict cd;
-  cd["active"]=true;
   cd["selectionMode"]="cellZone";
   cd["cellZone"]=p_.zoneName;
   cd["volumeMode"]= p_.volumeMode == Parameters::specific ? "specific" : "absolute";
@@ -43,8 +42,8 @@ void source::addIntoDictionaries ( OFdicts& dictionaries ) const
 
   cd["injectionRateSuSp"]=ijr;
 
-  OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
-  fvOptions[p_.name]=cd;
+  fvOptions[name()]=cd;
+  cellSetFvOption::addIntoFvOptionDictionary(fvOptions, od);
 }
 
 

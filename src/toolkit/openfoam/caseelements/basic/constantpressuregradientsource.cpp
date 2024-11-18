@@ -10,12 +10,14 @@ defineType(ConstantPressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(ConstantPressureGradientSource);
 
 ConstantPressureGradientSource::ConstantPressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "ConstantPressureGradientSource", ps),
+: cellSetFvOption(c, "ConstantPressureGradientSource", ps),
   p_(ps)
 {
 }
 
-void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
+void ConstantPressureGradientSource::addIntoFvOptionDictionary(
+    OFDictData::dict& fvOptions,
+    OFdicts& dictionaries ) const
 {
   if (OFversion()>=230)
   {
@@ -25,7 +27,11 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
     OFDictData::dict coeffs;
     OFDictData::list flds; flds.push_back("U");
     coeffs["fieldNames"]=flds;
-    coeffs["gradP"]=OFDictData::dimensionedData("gradP", OFDictData::dimension(0, 1, -2, 0, 0, 0, 0), OFDictData::vector3(p_.gradp));
+    coeffs["gradP"]=
+        OFDictData::dimensionedData(
+           "gradP",
+           OFDictData::dimension(0, 1, -2, 0, 0, 0, 0),
+           OFDictData::vector3(p_.gradp) );
 
     OFDictData::dict fod;
     fod["type"]="constantPressureGradientExplicitSource";
@@ -40,8 +46,8 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
     }
     fod["constantPressureGradientExplicitSourceCoeffs"]=coeffs;
 
-    OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
     fvOptions[name()]=fod;
+    cellSetFvOption::addIntoFvOptionDictionary(fvOptions, dictionaries);
   }
   else
   {

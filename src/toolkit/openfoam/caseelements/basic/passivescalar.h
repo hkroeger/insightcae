@@ -2,6 +2,7 @@
 #define INSIGHT_PASSIVESCALAR_H
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/openfoamcase.h"
 
 #include "passivescalar__PassiveScalar__Parameters_headers.h"
 
@@ -9,6 +10,9 @@ namespace insight {
 
 class PassiveScalar
     : public OpenFOAMCaseElement
+#ifndef SWIG
+    , public OpenFOAMCase  // may need fvOptions
+#endif
 {
 
 public:

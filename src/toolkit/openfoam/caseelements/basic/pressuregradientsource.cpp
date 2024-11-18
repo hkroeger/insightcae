@@ -10,12 +10,14 @@ defineType(PressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(PressureGradientSource);
 
 PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "PressureGradientSource", ps),
+: cellSetFvOption(c, "PressureGradientSource"+ps.getString("name"), ps),
   p_(ps)
 {
 }
 
-void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
+void PressureGradientSource::addIntoFvOptionDictionary(
+    OFDictData::dict& fvOptions,
+    OFdicts& dictionaries ) const
 {
   if (OFversion()>=220)
   {
@@ -45,10 +47,9 @@ void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
         coeffs["fieldNames"]=flds;
         fod["pressureGradientExplicitSourceCoeffs"]=coeffs;
     }
-    fod["active"]=true;
 
-    OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
     fvOptions[name()]=fod;
+    cellSetFvOption::addIntoFvOptionDictionary(fvOptions, dictionaries);
   }
   else
   {

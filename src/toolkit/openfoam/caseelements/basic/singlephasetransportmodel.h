@@ -66,6 +66,8 @@ public:
     boussinesqSinglePhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
+    double density(double T) const;
+
     static std::string category() { return "Material Properties"; }
 };
 

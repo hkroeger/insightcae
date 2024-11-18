@@ -1,20 +1,21 @@
 #ifndef INSIGHT_SOURCE_H
 #define INSIGHT_SOURCE_H
 
-#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/caseelements/basic/fvoption.h"
 
 #include "source__source__Parameters_headers.h"
 
 namespace insight {
 
 class source
-: public OpenFOAMCaseElement
+: public cellSetFvOption
 {
 
 public:
 #include "source__source__Parameters.h"
 /*
 PARAMETERSET>>> source Parameters
+inherits cellSetFvOption::Parameters
 
 name = string "source" "Name of the volume drag element"
 fieldName = string "T" "Name of the field to which this source shall contribute"
@@ -45,7 +46,9 @@ protected:
 public:
     declareType ( "source" );
     source ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    void addIntoFvOptionDictionary(
+        OFDictData::dict& fvOptionDict,
+        OFdicts& dictionaries) const override;
 
     static std::string category() { return "Body Force"; }
 };

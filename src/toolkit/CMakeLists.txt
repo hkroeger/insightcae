@@ -165,6 +165,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/openfoamcaseelement.cpp openfoam/caseelements/openfoamcaseelement.h
     openfoam/caseelements/turbulencemodel.cpp openfoam/caseelements/turbulencemodel.h
 
+    openfoam/caseelements/basic/fvoption.h openfoam/caseelements/basic/fvoption.cpp
     openfoam/caseelements/basic/thermodynamicmodel.cpp openfoam/caseelements/basic/thermodynamicmodel.h
     openfoam/caseelements/basic/rasmodel.cpp openfoam/caseelements/basic/rasmodel.h
     openfoam/caseelements/basic/lesmodel.cpp openfoam/caseelements/basic/lesmodel.h

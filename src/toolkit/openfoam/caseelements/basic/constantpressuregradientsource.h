@@ -1,20 +1,21 @@
 #ifndef INSIGHT_CONSTANTPRESSUREGRADIENTSOURCE_H
 #define INSIGHT_CONSTANTPRESSUREGRADIENTSOURCE_H
 
-#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/caseelements/basic/fvoption.h"
 
 #include "constantpressuregradientsource__ConstantPressureGradientSource__Parameters_headers.h"
 
 namespace insight {
 
 class ConstantPressureGradientSource
-    : public OpenFOAMCaseElement
+    : public cellSetFvOption
 {
 
 public:
 #include "constantpressuregradientsource__ConstantPressureGradientSource__Parameters.h"
 /*
 PARAMETERSET>>> ConstantPressureGradientSource Parameters
+inherits cellSetFvOption::Parameters
 
 gradp = vector (0 0 0) "Constant pressure gradient"
 
@@ -26,8 +27,13 @@ protected:
 
 public:
     declareType ( "ConstantPressureGradientSource" );
-    ConstantPressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    ConstantPressureGradientSource (
+        OpenFOAMCase& c,
+        const ParameterSet& ps = Parameters::makeDefault() );
+
+    void addIntoFvOptionDictionary(
+        OFDictData::dict& fod,
+        OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }
 };

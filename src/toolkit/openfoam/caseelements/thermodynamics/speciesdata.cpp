@@ -1,5 +1,6 @@
 #include "speciesdata.h"
 
+#include "base/exception.h"
 #include "base/tools.h"
 
 
@@ -333,6 +334,46 @@ double SpeciesData::M() const
     }
 
     return result;
+}
+
+
+double SpeciesData::density(double T, double p) const
+{
+    const double RRjoule = 8314.51; // kJ/kg-mol-K
+
+    if (boost::get<Parameters::properties_custom_type::equationOfState_perfectGas_type>(
+            &p_.equationOfState))
+    {
+        double MM=M();
+        return p/(RRjoule/MM)/T;
+    }
+    else
+        throw insight::Exception("option not implemented");
+
+    return 1.;
+}
+
+double SpeciesData::cp(double T, double p) const
+{
+    auto evalPoly = [](double T, const arma::mat& a)
+    {
+        return ((((a[4]*T + a[3])*T + a[2])*T + a[1])*T + a[0]);
+    };
+
+    if (const auto *ct = boost::get<Parameters::properties_custom_type::thermo_constant_type>(&p_.thermo))
+    {
+        return ct->Cp;
+    }
+    else if (const auto *jt = boost::get<Parameters::properties_custom_type::thermo_janaf_type>(&p_.thermo))
+    {
+        if (T<jt->Tmid)
+            return evalPoly(T, jt->coeffs_lo);
+        else
+            return evalPoly(T, jt->coeffs_hi);
+    }
+    else
+        throw insight::Exception("cp computation not implemented");
+    return 0.;
 }
 
 

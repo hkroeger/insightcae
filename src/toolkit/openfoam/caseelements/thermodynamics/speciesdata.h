@@ -41,7 +41,7 @@ public:
 
 #include "speciesdata__SpeciesData__Parameters.h"
 
-    /*
+/*
 PARAMETERSET>>> SpeciesData Parameters
 addTo_makeDefault { modifyDefaults(p); }
 
@@ -167,6 +167,9 @@ public:
         );
 
     double M() const;
+
+    double density(double T, double p) const;
+    double cp(double T, double p) const;
 
     std::string transportType() const;
     std::string thermoType() const;

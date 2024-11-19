@@ -52,6 +52,27 @@ geometry = set {
  LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden
  forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
+
+ verticalPlacement = selectablesubset {{
+  onFloor set {}
+  centered set {}
+  atHeight set {
+    height = selectablesubset {{
+     relativeToDomain set {
+       hByHdomain = double 0.5 "[-]"
+     }
+     absolute set {
+       h = double 0. "[m] height above floor"
+     }
+    }} relativeToDomain ""
+  }
+ }} onFloor ""
+
+ attitude = set {
+  trim = double 0. "[deg] Trim angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
+  roll = double 0. "[deg] Roll angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
+  yaw = double 0. "[deg] Yaw angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
+ } ""
  
  objectfile     = path "" "Path to object geometry. May be STL, STEP or IGES." *necessary
  
@@ -101,6 +122,8 @@ mesh = set {
 operation = set {
 
  v              = double 1.0 "[m/s] incident velocity" *necessary
+
+ lowerWallIsMoving = bool true "if set, the lower wall moves with the same speed as the inflow. This represents the street in vehicle aerodynamics."
  
 } "Definition of the operation point under consideration"
       
@@ -128,7 +151,7 @@ fluid = set {
     gp_Trsf cad_to_cfd_;
     double Lupstream_;
     double Ldownstream_;
-    double Lup_;
+    double Lup_, Ldown_;
     double Laside_;
     double Lref_, l_, w_, h_;
 

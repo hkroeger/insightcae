@@ -70,7 +70,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
                 cad::Box::create(
                     cad::matconst(vec3( -sp.Lupstream_, 0, 0)),
                     cad::matconst(vec3( sp.Lupstream_+sp.l_+sp.Ldownstream_, 0, 0)),
-                    cad::matconst(vec3( 0, 0, sp.Lup_)),
+                    cad::matconst(vec3( 0, 0, sp.Ldown_+sp.Lup_)),
                     cad::matconst(vec3( 0, sp.Laside_+0.5*sp.w_, 0))
                     ),
                 { insight::Wireframe }
@@ -84,7 +84,7 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
                 cad::Box::create(
                     cad::matconst(vec3( -sp.Lupstream_, -0.5*sp.w_-sp.Laside_, 0)),
                     cad::matconst(vec3( sp.Lupstream_+sp.l_+sp.Ldownstream_, 0, 0)),
-                    cad::matconst(vec3( 0, 0, sp.Lup_)),
+                    cad::matconst(vec3( 0, 0, sp.Ldown_+sp.Lup_)),
                     cad::matconst(vec3( 0, 2.*sp.Laside_+sp.w_, 0))
                     ),
                 { insight::Wireframe }

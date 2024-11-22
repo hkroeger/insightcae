@@ -164,9 +164,9 @@ installConfigStep:
 SetDetailsPrint both
 DetailPrint "Installing the default InsightCAE configuration..."
 IfFileExists "$PROFILE\.insight\share" 0 create
-MessageBox MB_YESNO "The InsightCAE configuration files exist already (report templates, executable paths etc.)$\r$\nDo you want to overwrite them with the defaults?" IDYES yes IDNO end
+MessageBox MB_YESNO "The InsightCAE configuration files exist already (report templates, executable paths etc.)$\\r$\\nDo you want to overwrite them with the defaults?" IDYES yes IDNO end
 yes:
-MessageBox MB_YESNO "Your existing configuration will be overwritten!$\r$\nReally overwrite?" IDYES create IDNO end
+MessageBox MB_YESNO "Your existing configuration will be overwritten!$\\r$\\nReally overwrite?" IDYES create IDNO end
 create:
 CreateDirectory "$PROFILE\\.insight\\share"
 File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"

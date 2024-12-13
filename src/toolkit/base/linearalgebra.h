@@ -533,60 +533,6 @@ double integrate_indef(F f, double a=0)
 
 
 
-struct CoordinateSystem
-{
-  arma::mat origin, ex, ey, ez;
-
-  CoordinateSystem();
-
-  CoordinateSystem(
-          const arma::mat& p0,
-          const arma::mat& ex );
-
-  CoordinateSystem(
-          const arma::mat& p0,
-          const arma::mat& ex,
-          const arma::mat& ez );
-
-  void rotate(double angle, const arma::mat& axis);
-
-  arma::mat operator()(double x, double y, double z) const;
-  arma::mat operator()(const arma::mat& pLoc) const;
-
-  void setVTKMatrix(vtkMatrix4x4* m);
-};
-
-
-
-
-/**
- * @brief The View class
- * Represents the orientation of a view.
- */
-struct View : public CoordinateSystem
-{
-  double cameraDistance;
-  std::string title;
-
-  View(
-      const arma::mat& ctr,
-      const arma::mat& cameraOffset,
-      const arma::mat& up,
-      const std::string& title );
-
-  inline arma::mat cameraLocation() const { return origin + cameraDistance*ex; }
-  inline arma::mat focalPoint() const { return origin; }
-  inline arma::mat upwardDirection() const { return ez; }
-};
-
-
-
-std::map<std::string, View>
-generateStandardViews(
-    const CoordinateSystem& objectOrientation,
-    double cameraDistance );
-
-
 double stabilize(double value, double nonZeroThreshold);
 
 

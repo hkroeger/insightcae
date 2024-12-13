@@ -7,6 +7,7 @@
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
+#include "base/spatialtransformation.h"
 
 #include <limits>
 #include "vtkSmartPointer.h"

@@ -41,6 +41,37 @@ int main(int /*argc*/, char*/*argv*/[])
         }
 
         {
+            auto trans=vec3(1,2,3);
+            CoordinateSystem cs2(trans, vec3(0,1,0), vec3(0, 0, 1));
+            auto t1=cs2.localToGlobal();
+            auto t2=t1.inverted();
+
+            auto org = vec3(1,0,0);
+            auto org2 = t2(t1(org)); // transform forth and back
+
+            arma::mat interm=t1(org).t();
+            std::cout << "inverse forth and back ("<<trans.t()<<") :"
+                      << org.t() << ">>"
+                      << interm << ">>"
+                      << org2.t();
+            insight::assertion(
+                fabs( (interm(0)-trans(0)))<SMALL,
+                "unexpected x component after trsf"
+                );
+            insight::assertion(
+                fabs( (interm(1)-trans(1)) - org(0))<SMALL,
+                "unexpected y component after trsf"
+                );
+            insight::assertion(
+                fabs( (interm(2)-trans(2)))<SMALL,
+                "unexpected z component after trsf"
+                );
+            insight::assertion(
+                arma::norm(org-org2,2)<SMALL,
+                "inverse transform does not transform back");
+        }
+
+        {
             SpatialTransformation t1(vec3(1,2,3), vec3(4,5,6), 3);
             SpatialTransformation t2(vec3(7,8,9), vec3(11,13,17), 5);
             auto t3 = t1.appended(t2);

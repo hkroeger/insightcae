@@ -185,6 +185,7 @@ set(toolkit_gui_SRCS
     sdmdiarea.cpp sdmdiarea.h
     blockmesh_gui.cpp blockmesh_gui.h
     blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
+    blockmeshvisualization.h blockmeshvisualization.cpp
     #blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp metatypes.h
     iqparaviewdialog.h iqparaviewdialog.cpp iqparaviewdialog.ui

@@ -35,7 +35,7 @@ void fixedValueConstraint::addIntoFvOptionDictionary(
 
   cd["fieldValues"]=fvd;
 
-  fvOptions[p_.name]=cd;
+  fvOptions[name()]=cd;
   cellSetFvOption::addIntoFvOptionDictionary(fvOptions, dictionaries);
 }
 

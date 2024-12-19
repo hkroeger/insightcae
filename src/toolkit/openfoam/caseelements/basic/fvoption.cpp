@@ -3,7 +3,13 @@
 
 namespace insight {
 
+
+
+
 defineType(fvOption);
+
+
+
 
 fvOption::fvOption(
     OpenFOAMCase &c,
@@ -20,6 +26,7 @@ void fvOption::addIntoDictionaries(OFdicts& dictionaries) const
     addIntoFvOptionDictionary(fvOptions, dictionaries);
 }
 
+
 void fvOption::addIntoCustomFvOptionDictionary(
     OFDictData::dict& fvOptionDict,
     OFdicts& dictionaries ) const
@@ -28,7 +35,16 @@ void fvOption::addIntoCustomFvOptionDictionary(
 }
 
 
+
+
+
+
+
+
 defineType ( cellSetFvOption );
+
+
+
 
 cellSetFvOption::cellSetFvOption(
     OpenFOAMCase& c,
@@ -37,6 +53,7 @@ cellSetFvOption::cellSetFvOption(
 : fvOption(c, name, ps),
     p_(ps)
 {}
+
 
 void cellSetFvOption::addIntoFvOptionDictionary(
     OFDictData::dict& fvOptions,
@@ -52,5 +69,8 @@ void cellSetFvOption::addIntoFvOptionDictionary(
         d["duration"]=tl->duration;
     }
 }
+
+
+
 
 } // namespace insight

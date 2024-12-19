@@ -45,7 +45,7 @@ public:
 PARAMETERSET>>> SpeciesData Parameters
 addTo_makeDefault { modifyDefaults(p); }
 
-name = string "N2" "Name of specie (i.e. the field name). Has to be unique!" *necessary
+#name = string "N2" "Name of specie (i.e. the field name). Has to be unique!" *necessary
 
 properties = selectablesubset {{
 

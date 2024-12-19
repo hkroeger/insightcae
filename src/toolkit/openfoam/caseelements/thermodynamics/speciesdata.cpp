@@ -166,6 +166,8 @@ void SpeciesData::modifyDefaults(ParameterSet &ps)
                        }
                        );
         sl.resetItems(ni);
+        if (speciesLibrary_.count("N2"))
+            sl.setSelection("N2");
     }
     p.setParametersForSelection("fromLibrary", fl);
 }

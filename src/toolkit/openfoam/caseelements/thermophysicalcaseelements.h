@@ -30,6 +30,7 @@
 #include <map>
 
 #include "thermophysicalcaseelements__cavitatingFoamThermodynamics__Parameters_headers.h"
+#include "thermophysicalcaseelements__compressibleMixtureThermophysicalProperties__Parameters_headers.h"
 
 namespace insight {
 
@@ -66,6 +67,7 @@ public:
 class compressibleMixtureThermophysicalProperties
 : public thermodynamicModel
 {
+    static void modifyDefaults(ParameterSet& ps);
 
 public:
   typedef std::map<std::string, boost::variant<boost::blank,SpeciesData> > SpeciesList;
@@ -86,6 +88,7 @@ public:
 #include "thermophysicalcaseelements__compressibleMixtureThermophysicalProperties__Parameters.h"
 /*
 PARAMETERSET>>> compressibleMixtureThermophysicalProperties Parameters
+addTo_makeDefault { modifyDefaults(p); }
 
 inertSpecie = string "N2" ""
 
@@ -93,12 +96,16 @@ composition = selectablesubset {{
 
   fromFile set {
     foamChemistryThermoFile = path "" "" *necessary
+
+    defaultMassFractions = labeledarray "specie%d" [ double 1.0 "" ] *1
+      "The composition of the mixture which initially fills the entire domain."
   }
 
   fromList set {
-    species = array [
-     includedset "insight::SpeciesData::Parameters"
-    ] *1 "Species in the mixture"
+    species = labeledarray "specie%d" [ set {
+     properties = includedset "insight::SpeciesData::Parameters"
+     defaultMassFraction = double 0. "The mass fraction of this specie in the mixture which initially fills the entire domain."
+    } ] *1 "Species in the mixture"
   }
 
  }} fromList ""

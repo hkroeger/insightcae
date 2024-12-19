@@ -33,7 +33,7 @@ void compressibleTwoPhaseThermophysicalProperties::addIntoDictionaries ( OFdicts
     OFDictData::list phasesList;
     for (const auto& p: p_.phases)
     {
-        phasesList.push_back(p.name);
+        phasesList.push_back(p.first);
     }
     thermophysicalProperties["phases"]=phasesList;
     thermophysicalProperties["pMin"]=p_.pMin;
@@ -41,10 +41,10 @@ void compressibleTwoPhaseThermophysicalProperties::addIntoDictionaries ( OFdicts
 
     for (const auto& p: p_.phases)
     {
-        SpeciesData sd(p);
+        SpeciesData sd(p.second);
 
         OFDictData::dict& td=
-            dictionaries.lookupDict("constant/thermophysicalProperties."+p.name);
+            dictionaries.lookupDict("constant/thermophysicalProperties."+p.first);
 
         OFDictData::dict tt;
         tt["type"]="heRhoThermo";

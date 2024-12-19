@@ -15,7 +15,7 @@ public:
 /*
 PARAMETERSET>>> compressibleTwoPhaseThermophysicalProperties Parameters
 
-phases = array [
+phases = labeledarray "phase%d" [
      includedset "insight::SpeciesData::Parameters"
     ] *2 "Definitions of the phases"
 

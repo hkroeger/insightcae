@@ -216,6 +216,15 @@ void LabeledArrayParameter::appendEmpty()
     appendValue(*defaultValue_);
 }
 
+void LabeledArrayParameter::insertWithDefaults(const std::string &label)
+{
+    auto i=value_.find(label);
+    if (i==value_.end())
+    {
+        insertValue(label, *defaultValue_);
+    }
+}
+
 
 
 

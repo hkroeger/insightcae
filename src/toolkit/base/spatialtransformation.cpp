@@ -162,6 +162,13 @@ arma::mat SpatialTransformation::trsfVec(const arma::mat& p) const
 }
 
 
+arma::mat SpatialTransformation::trsfVec(double x, double y, double z) const
+{
+    return trsfVec(vec3(x,y,z));
+}
+
+
+
 void SpatialTransformation::appendTransformation(const SpatialTransformation &st)
 {
     translate_ += arma::inv(scale_*R_) * st.translate();

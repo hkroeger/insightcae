@@ -211,6 +211,7 @@ public:
      * @return
      */
     arma::mat trsfVec(const arma::mat& p) const;
+    arma::mat trsfVec(double x, double y, double z) const;
 
     /**
      * @brief appendTransformation

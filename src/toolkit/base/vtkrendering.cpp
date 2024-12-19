@@ -2147,6 +2147,20 @@ void forEachUnconnectedPart(
     }
 }
 
+arma::mat average(vtkDataArray *arr)
+{
+    int nc=arr->GetNumberOfComponents();
+    arma::mat avg(nc, 1);
+    for (int i=0; i<arr->GetNumberOfTuples(); ++i)
+    {
+        arma::mat cv(nc, 1);
+        arr->GetTuple(i, cv.memptr());
+        avg += cv;
+    }
+    avg/=double(arr->GetNumberOfTuples());
+    return avg;
+}
+
 
 
 

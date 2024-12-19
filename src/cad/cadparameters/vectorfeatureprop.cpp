@@ -246,7 +246,48 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   return vec3(0,0,0);
 }
 
+insight::cad::DatumPlaneX::DatumPlaneX(insight::cad::ConstDatumPtr pfs)
+    : pfs_(pfs)
+{}
 
+
+
+
+arma::mat insight::cad::DatumPlaneX::value() const
+{
+    //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+    if (pfs_->providesPlanarReference())
+    {
+        return vec3(pfs_->plane().XDirection());
+    }
+    else
+    {
+        throw insight::Exception("supplied datum has to be a plane!");
+    }
+    return vec3(0,0,0);
+}
+
+
+insight::cad::DatumPlaneY::DatumPlaneY(insight::cad::ConstDatumPtr pfs)
+    : pfs_(pfs)
+{}
+
+
+
+
+arma::mat insight::cad::DatumPlaneY::value() const
+{
+    //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+    if (pfs_->providesPlanarReference())
+    {
+        return vec3(pfs_->plane().YDirection());
+    }
+    else
+    {
+        throw insight::Exception("supplied datum has to be a plane!");
+    }
+    return vec3(0,0,0);
+}
 
 
 insight::cad::BBMin::BBMin(FeaturePtr model)

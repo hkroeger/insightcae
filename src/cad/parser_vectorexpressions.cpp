@@ -178,6 +178,12 @@ void ISCADParser::createVectorExpressions()
         ( lit("plnorm") >> '(' >> r_datumExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneNormal>(qi::_1)) ]
         |
+        ( lit("plx") >> '(' >> r_datumExpression >> ')' )
+            [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneX>(qi::_1)) ]
+        |
+        ( lit("ply") >> '(' >> r_datumExpression >> ')' )
+            [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneY>(qi::_1)) ]
+        |
         ( lit("circcenter") >> '(' >> r_edgeFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<CircleEdgeCenterCoords>(qi::_1)) ]
         |

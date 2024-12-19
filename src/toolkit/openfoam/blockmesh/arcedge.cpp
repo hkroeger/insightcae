@@ -20,6 +20,11 @@ ArcEdge::ArcEdge
 {
 }
 
+const Point &ArcEdge::midpoint() const
+{
+    return midpoint_;
+}
+
 
 std::vector<OFDictData::data>
 ArcEdge::bmdEntry(const PointMap& allPoints, int OFversion) const

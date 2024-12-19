@@ -124,6 +124,7 @@ FeatureSet::operator const FeatureSetData& () const
 
 void FeatureSet::safe_union(const FeatureSet& o)
 {
+    data(); // trigger build
     if (o.shape()!=shape())
         throw insight::Exception("incompatible shape type between feature sets!");
     else if (!(o.model()==model()))
@@ -219,6 +220,16 @@ size_t DeferredFeatureSet::calcFeatureSetHash() const
         {
             h += **fp;
         }
+        else if (auto *v = boost::get<VectorPtr>(&arg))
+        {
+            h += (*v)->value();
+        }
+        else if (auto *s = boost::get<ScalarPtr>(&arg))
+        {
+            h += (*s)->value();
+        }
+        else
+            throw insight::UnhandledSelection();
     }
 
     return h.getHash();
@@ -286,7 +297,7 @@ DeferredFeatureSet::DeferredFeatureSet
         const string& filterexpr,
         const FeatureSetParserArgList& refs
         )
-    : FeatureSet(m, shape),
+: FeatureSet(m, shape),
     filterexpr_(filterexpr),
     refs_(refs)
 {}
@@ -298,7 +309,7 @@ DeferredFeatureSet::DeferredFeatureSet
         const string& filterexpr,
         const FeatureSetParserArgList& refs
         )
-    : FeatureSet(q->model(), q->shape()),
+: FeatureSet(q->model(), q->shape()),
     baseSet_(q),
     filterexpr_(filterexpr),
     refs_(refs)
@@ -353,6 +364,47 @@ FeatureSetPtr makeFaceFeatureSet(
 
 FeatureSetPtr makeSolidFeatureSet(
     ConstFeaturePtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Solid>(feat, expression, refs);
+}
+
+
+
+
+FeatureSetPtr makeVertexFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Vertex>(feat, expression, refs);
+}
+
+FeatureSetPtr makeEdgeFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Edge>(feat, expression, refs);
+}
+
+
+FeatureSetPtr makeFaceFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression,
+    const FeatureSetParserArgList& refs
+    )
+{
+    return makeFeatureSet<Face>(feat, expression, refs);
+}
+
+
+FeatureSetPtr makeSolidFeatureSet(
+    ConstFeatureSetPtr feat,
     const std::string& expression,
     const FeatureSetParserArgList& refs
     )

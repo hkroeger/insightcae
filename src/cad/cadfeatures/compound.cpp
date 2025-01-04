@@ -134,6 +134,13 @@ void Compound::build()
 //        auto f = find( p->allFaces() ); // find not usable during rebuild!
 
         providedFeatureSets_[c.first] = f;
+        providedFeatureSets_[c.first+"_edges"] =
+            DeferredFeatureSet::create(
+                shared_from_this(), Edge,
+                "isSame(%0)",
+                FeatureSetParserArgList{
+                    makeEdgeFeatureSet(p)
+                } );
       }
     }
     else

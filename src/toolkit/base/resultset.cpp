@@ -30,6 +30,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <memory>
 
 #include "base/boost_include.h"
 
@@ -93,7 +94,7 @@ ResultSet::ResultSet
     const std::string* author
 )
     : ResultElement ( "", "", "" ),
-      p_ ( p ),
+      p_ ( std::dynamic_unique_ptr_cast<ParameterSet>(p.clone()) ),
       title_ ( title ),
       subtitle_ ( subtitle ),
       introduction_()
@@ -123,7 +124,7 @@ ResultSet::ResultSet
 }
 
 ResultSet::ResultSet ( const std::string& shortdesc, const std::string& longdesc, const std::string& )
-  : ResultSet( ParameterSet(), shortdesc, longdesc )
+    : ResultSet( *ParameterSet::create(), shortdesc, longdesc )
 {}
 
 void ResultSet::readFromNode ( const std::string&, rapidxml::xml_node<>& node )
@@ -164,7 +165,7 @@ void ResultSet::transfer ( const ResultSet& other )
 
 void ResultSet::clearInputParameters()
 {
-    p_.clear();
+    p_.reset();
 }
 
 
@@ -191,10 +192,10 @@ void ResultSet::writeLatexCode ( std::ostream& f, const std::string& name, int l
         f<<introduction_;
     }
 
-    if ( p_.size() >0 ) {
+    if ( p_ && p_->size() >0 ) {
         f << latex_subsection ( level ) << "{Input Parameters}\n";
 
-        f<<p_.latexRepresentation();
+        f<<p_->latexRepresentation();
     }
 
     f << latex_subsection ( level ) << "{Numerical Result Summary}\n";
@@ -268,7 +269,8 @@ void ResultSet::readFromString ( const std::string& contents )
   xml_node<> *rootnode = doc.first_node ( "root" );
 
   auto *pn = rootnode->first_node("parameters");
-  p_.readFromNode( *pn, "/" );
+  if (!p_) p_=ParameterSet::create();
+  p_->readFromNode( std::string(), *pn, "/" );
 
   auto *rn = rootnode->first_node("results");
   title_=rn->first_attribute("title")->value();
@@ -301,9 +303,12 @@ void ResultSet::saveToStream(ostream &os) const
   xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
   doc.append_node ( rootnode );
 
-  xml_node<>* pc = doc.allocate_node ( node_element, doc.allocate_string ( "parameters" ) );
-  p_.appendToNode(doc, *pc, "/");
-  rootnode->append_node ( pc );
+  if (p_)
+  {
+      xml_node<>* pc = doc.allocate_node ( node_element, doc.allocate_string ( "parameters" ) );
+      p_->appendToNode(std::string(), doc, *pc, "/");
+      rootnode->append_node ( pc );
+  }
 
   xml_node<>* rc = doc.allocate_node ( node_element, doc.allocate_string ( "results" ) );
   rc->append_attribute(
@@ -464,25 +469,24 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 
 
 
-ParameterSetPtr ResultSet::convertIntoParameterSet() const
+std::unique_ptr<ParameterSet> ResultSet::convertIntoParameterSet() const
 {
-    ParameterSetPtr ps ( new ParameterSet() );
-    for ( const_iterator::value_type rp: *this ) {
-        ParameterPtr p=rp.second->convertIntoParameter();
-        if ( p )
+    auto ps =ParameterSet::create();
+
+    for ( const_iterator::value_type rp: *this )
+    {
+        if ( auto p=rp.second->convertIntoParameter() )
         {
-            ps->insert ( rp.first, std::unique_ptr<Parameter>(p->clone()) );
+            ps->insert( rp.first, std::move(p) );
         }
     }
     return ps;
 }
 
 
-ParameterPtr ResultSet::convertIntoParameter() const
+std::unique_ptr<Parameter> ResultSet::convertIntoParameter() const
 {
-    auto ps = std::make_shared<SubsetParameter>();
-    ps->extend ( *convertIntoParameterSet() );
-    return ps;
+    return convertIntoParameterSet();
 }
 
 
@@ -493,7 +497,11 @@ ParameterPtr ResultSet::convertIntoParameter() const
 
 ResultElementPtr ResultSet::clone() const
 {
-    std::unique_ptr<ResultSet> nr ( new ResultSet ( p_, title_, subtitle_, &author_, &date_ ) );
+    std::unique_ptr<ResultSet> nr (
+        new ResultSet (
+            p_ ? *p_ : *ParameterSet::create(),
+            title_, subtitle_, &author_, &date_ ) );
+
     for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
 //         cout<<i->first<<endl;
         std::string key ( i->first );

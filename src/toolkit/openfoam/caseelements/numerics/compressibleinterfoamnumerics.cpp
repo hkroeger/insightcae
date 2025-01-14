@@ -12,10 +12,10 @@ addToOpenFOAMCaseElementFactoryTable(compressibleInterFoamNumerics);
 
 compressibleInterFoamNumerics::compressibleInterFoamNumerics(
     OpenFOAMCase& c,
-    const ParameterSet& ps )
-    : interFoamNumerics(c, ps)
+    ParameterSetInput ip )
+    : interFoamNumerics(c, ip.forward<Parameters>())
 {
-    OFcase().addField("T", 	FieldInfo(scalarField, dimTemperature, FieldValue({p_.Tinternal}), volField ) );
+    OFcase().addField("T", 	FieldInfo(scalarField, dimTemperature, FieldValue({p().Tinternal}), volField ) );
 }
 
 

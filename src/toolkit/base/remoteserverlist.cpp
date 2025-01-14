@@ -44,7 +44,7 @@ RemoteServerList::RemoteServerList()
 
             if ( exists(serverListFile) )
             {
-                insight::dbg()<<"reading remote servers from "<<serverListFile<<std::endl;
+                CurrentExceptionContext ex("reading remote servers from %s", serverListFile.c_str());
 
                 XMLDocument doc(serverListFile);
 
@@ -54,44 +54,51 @@ RemoteServerList::RemoteServerList()
 
                 for (auto *e = rootnode->first_node(); e; e = e->next_sibling())
                 {
-                    if (e->name()==string("remoteServer"))
+                    try
                     {
-                        if ( auto rsc = RemoteServer::Config::create(e) )
+                        if (e->name()==string("remoteServer"))
                         {
-                            std::string label = *rsc;
+                            if ( auto rsc = RemoteServer::Config::create(e) )
+                            {
+                                std::string label = *rsc;
 
-                            // replace entries, which were already existing:
-                            // remove, if already present
-                            auto i=findServerIterator(label);
-                            if (i!=end()) erase(i);
+                                // replace entries, which were already existing:
+                                // remove, if already present
+                                auto i=findServerIterator(label);
+                                if (i!=end()) erase(i);
 
-                            servers.insert(rsc);
+                                servers.insert(rsc);
+                            }
+                            else
+                            {
+                                std::string label("(unlabelled)");
+                                if (auto *le=e->first_attribute("label"))
+                                    label=std::string(le->value());
+                                insight::Warning(
+                                    "ignored invalid remote machine configuration: %s",
+                                    label.c_str());
+                            }
                         }
-                        else
+                        else if (e->name()==string("remoteServerPool"))
                         {
-                            std::string label("(unlabelled)");
-                            if (auto *le=e->first_attribute("label"))
-                                label=std::string(le->value());
-                            insight::Warning(
-                                "ignored invalid remote machine configuration: %s",
-                                label.c_str());
+                            try
+                            {
+                                pools.insert(RemoteServerPoolConfig(e));
+                            }
+                            catch (insight::Exception& ex)
+                            {
+                                std::string label("(unlabelled)");
+                                if (auto *le=e->first_attribute("label"))
+                                    label=std::string(le->value());
+                                insight::Warning(
+                                    "ignored invalid remote machine pool configuration: %s (Reason: %s)",
+                                    label.c_str(), ex.message().c_str() );
+                            }
                         }
                     }
-                    else if (e->name()==string("remoteServerPool"))
+                    catch (insight::Exception& ex)
                     {
-                        try
-                        {
-                            pools.insert(RemoteServerPoolConfig(e));
-                        }
-                        catch (insight::Exception& ex)
-                        {
-                            std::string label("(unlabelled)");
-                            if (auto *le=e->first_attribute("label"))
-                                label=std::string(le->value());
-                            insight::Warning(
-                                "ignored invalid remote machine pool configuration: %s (Reason: %s)",
-                                label.c_str(), ex.message().c_str() );
-                        }
+                        insight::Warning(ex);
                     }
                 }
 

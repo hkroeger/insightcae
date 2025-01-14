@@ -3,8 +3,8 @@ project(testcases)
 #find_package(OpenCasCade REQUIRED)
 
 set(testcases_SOURCES 
-  airfoilsection.cpp
-  flatplatebl.cpp
+  airfoilsection.cpp airfoilsection.h
+  flatplatebl.cpp flatplatebl.h
   )
 
 set(testcases_LIBS
@@ -13,8 +13,8 @@ set(testcases_LIBS
 if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_SOURCES
         #decayingturbulence.cpp
-        pipe.cpp
-        channel.cpp
+        pipe.cpp pipe.h
+        channel.cpp channel.h
         #ercoftac_squaresection180degreebend.cpp
         #freeshearflow.cpp
         )

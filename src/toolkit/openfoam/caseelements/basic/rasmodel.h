@@ -12,7 +12,7 @@ class RASModel
 public:
   declareType("RASModel");
 
-  RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
+  RASModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const override;
   AccuracyRequirement minAccuracyRequirement() const override;

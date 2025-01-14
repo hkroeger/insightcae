@@ -7,6 +7,7 @@
 
 #include "datum.h"
 #include "iqvtkcadmodel3dviewer.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 #include <QInputDialog>
 #include <QColorDialog>
@@ -69,17 +70,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                             {
                                 viewer->editSketch(
                                     *psk,
-                                    insight::ParameterSet(),
-
-                                    [](const insight::ParameterSet&, vtkProperty* actprops)
-                                    {
-                                        auto sec = QColorConstants::DarkCyan;
-                                        actprops->SetColor(
-                                            sec.redF(),
-                                            sec.greenF(),
-                                            sec.blueF() );
-                                        actprops->SetLineWidth(2);
-                                    },
+                                    insight::cad::noParametersDelegate,
+                                    defaultGUIConstrainedSketchPresentationDelegate,
 
                                     [this,name](insight::cad::ConstrainedSketchPtr editedSk) // on accept
                                     {
@@ -107,25 +99,29 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     {
                         QList<QAction*> editActions;
 
-                        std::function<void(IQParameter* p)> addEditActions;
-                        addEditActions = [&](IQParameter* p)
+                        std::function<void(IQParameter* ip)> addEditActions;
+                        addEditActions = [&](IQParameter* ip)
                         {
-                            if (!dynamic_cast<const insight::SubsetParameter*>(&p->parameter()))
+                            if (!dynamic_cast<const insight::ParameterSet*>(ip->get()))
                             {
-                                auto a=new QAction(p->name(), &cm);
+                                auto a=new QAction(
+                                    QString::fromStdString(ip->get()->name()),
+                                    &cm);
+
                                 connect(
                                     a, &QAction::triggered, a,
-                                    [p,viewer]()
+                                    [ip,viewer]()
                                     {
                                         QDialog dlg;
-                                        p->populateEditControls(&dlg, viewer);
+                                        ip->populateEditControls(&dlg, viewer);
                                         dlg.exec();
                                     }
                                     );
                                 editActions.append(a);
                             }
 
-                            for (auto& cp: *p)
+                            auto ch=ip->children();
+                            for (auto& cp: ch)
                             {
                                 addEditActions(cp);
                             }
@@ -134,7 +130,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         for (auto& ap: viz->second.assocParamPaths)
                         {
                             auto psm = parameterSetModel(associatedParameterSetModel_);
-                            auto pi = psm->indexFromParameterPath(ap);
+                            auto pi = psm->indexFromParameterPath(ap, 0);
                             auto iqp = psm->parameterFromIndex(pi);
 
                             addEditActions(iqp);

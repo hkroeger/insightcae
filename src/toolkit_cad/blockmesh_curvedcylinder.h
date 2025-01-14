@@ -66,16 +66,15 @@ mesh = set
     topPatchName = string "" "name of patch on top end"
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "blockMeshDict_CurvedCylinder" );
 
-    blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     CoordinateSystem calc_end_CS() const;
 

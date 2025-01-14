@@ -18,15 +18,14 @@ public:
 PARAMETERSET>>> potentialFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "potentialFoamNumerics" );
-    potentialFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    potentialFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

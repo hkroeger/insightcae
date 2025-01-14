@@ -27,15 +27,15 @@ PARAMETERSET>>> setFieldOperator Parameters
 
 fieldValues = array [ string "" "field value specification" ]*0 "list of field value specifications"
 
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
   const OpenFOAMCase& c_;
-  Parameters p_;
 
 public:
-  setFieldOperator(const OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault() );
+  setFieldOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   virtual ~setFieldOperator();
 
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const =0;
@@ -61,14 +61,13 @@ fieldName = string "" "name of the field"
 min = double 0.0 "minimum value"
 max = double 1e10 "maximum value"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
-  fieldToCellOperator(const OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault() );
+  fieldToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
   void addIntoDictionary(OFDictData::dict& setFieldDict) const override;
 };
@@ -89,14 +88,13 @@ fieldName = string "" "name of the field"
 min = vector (-1e10 -1e10 -1e10) "minimum corner"
 max = vector (1e10 1e10 1e10) "maximum corner"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
-  boxToCellOperator(const OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault() );
+  boxToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
   void addIntoDictionary(OFDictData::dict& setFieldDict) const override;
 };
@@ -115,14 +113,13 @@ inherits setFieldOperator::Parameters
 
 cellSet = string "cellSet" "name of the cell set"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
-  cellToCellOperator(const OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault() );
+  cellToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
 };
@@ -141,14 +138,13 @@ inherits setFieldOperator::Parameters
 
 cellZone = string "" "name of the cell zone"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
-  zoneToCellOperator(const OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault() );
+  zoneToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
 };

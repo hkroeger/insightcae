@@ -105,6 +105,7 @@ protected:
   // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
+  insight::supplementedInputDataBasePtr sid_;
 
 //  insight::ResultSetPtr results_;
 //  QPointer<insight::IQResultSetModel> resultsModel_;

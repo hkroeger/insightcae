@@ -3,8 +3,8 @@
 
 namespace insight {
 
-transportModel::transportModel(OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "transportModel", ps)
+transportModel::transportModel(OpenFOAMCase& c, ParameterSetInput ip)
+    : OpenFOAMCaseElement(c, ip.forward<Parameters>()/*.set_name("transportModel")*/)
 {
 }
 

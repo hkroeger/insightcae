@@ -18,6 +18,7 @@ public:
 #include "exptdatainletbc__ExptDataInletBC__Parameters.h"
 /*
 PARAMETERSET>>> ExptDataInletBC Parameters
+inherits BoundaryCondition::Parameters
 
 data = array[ set {
     point = vector (0 0 0) "Point coordinate"
@@ -28,11 +29,9 @@ data = array[ set {
 
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-    ParameterSet ps_;
 
 public:
     declareType("ExptDataInletBC");
@@ -42,7 +41,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& p = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
 
     virtual void addDataDict ( OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data ) const;

@@ -13,7 +13,7 @@ class velocityTetFEMMotionSolver
   tetFemNumerics tetFemNumerics_;
 
 public:
-  velocityTetFEMMotionSolver(OpenFOAMCase& c);
+  velocityTetFEMMotionSolver(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 

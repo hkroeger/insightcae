@@ -9,11 +9,9 @@ namespace insight {
 defineType(decomposeParDict);
 addToOpenFOAMCaseElementFactoryTable(decomposeParDict);
 
-decomposeParDict::decomposeParDict(OpenFOAMCase& c, const ParameterSet& ps)
-  : OpenFOAMCaseElement(c, "decomposeParDict", ps),
-    p_(ps)
-{
-}
+decomposeParDict::decomposeParDict(OpenFOAMCase& c, ParameterSetInput ip)
+  : OpenFOAMCaseElement(c, /*"decomposeParDict", */ip.forward<Parameters>())
+{}
 
 
 
@@ -107,30 +105,30 @@ std::vector<int> combinefactors
 
 void decomposeParDict::addIntoDictionaries ( OFdicts& dictionaries ) const
 {
-  auto pom=p_.decompWeights;
+  auto pom=p().decompWeights;
 
   std::tuple<int,int,int> po(int(pom(0)), int(pom(1)), int(pom(2)));
 
   OFDictData::dict& decomposeParDict=dictionaries.lookupDict("system/decomposeParDict");
 
 // #warning hack for testing
-  std::vector<int> ns=combinefactors(factors(p_.np), po);
-  std::cout<<"decomp "<<p_.np<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<std::endl;
-  decomposeParDict["numberOfSubdomains"]=p_.np;
+  std::vector<int> ns=combinefactors(factors(p().np), po);
+  std::cout<<"decomp "<<p().np<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<std::endl;
+  decomposeParDict["numberOfSubdomains"]=p().np;
 
-  if (p_.decompositionMethod==Parameters::hierarchical)
+  if (p().decompositionMethod==Parameters::hierarchical)
   {
     decomposeParDict["method"]="hierarchical";
   }
-  else if (p_.decompositionMethod==Parameters::simple)
+  else if (p().decompositionMethod==Parameters::simple)
   {
     decomposeParDict["method"]="simple";
   }
-  else if (p_.decompositionMethod==Parameters::scotch)
+  else if (p().decompositionMethod==Parameters::scotch)
   {
     decomposeParDict["method"]="scotch";
   }
-  else if (p_.decompositionMethod==Parameters::metis)
+  else if (p().decompositionMethod==Parameters::metis)
   {
     decomposeParDict["method"]="metis";
   }

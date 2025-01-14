@@ -3,9 +3,9 @@
 namespace insight {
 
 CodeAsterCaseElement::CodeAsterCaseElement(
-    CodeAsterCase& c, const std::string& name, const ParameterSet& ps
+    CodeAsterCase& c, ParameterSetInput ip
     )
-    : CaseElement(c, name, ps)
+    : CaseElement(c, ip.forward<Parameters>())
 {}
 
 } // namespace insight

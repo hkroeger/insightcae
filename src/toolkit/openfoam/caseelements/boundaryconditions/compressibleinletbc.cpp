@@ -18,18 +18,23 @@ CompressibleInletBC::CompressibleInletBC
     OpenFOAMCase& c,
     const std::string& patchName,
     const OFDictData::dict& boundaryDict,
-    const ParameterSet& ps
+    ParameterSetInput ip
 )
-    : VelocityInletBC ( c, patchName, boundaryDict, ps ),
-      ps_ ( ps )
+    : VelocityInletBC (
+          c, patchName, boundaryDict,
+          ip.forward<Parameters>() )
 {
     BCtype_="patch";
 }
 
-void CompressibleInletBC::setField_p ( OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh ) const
+void CompressibleInletBC::setField_p (
+    OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh ) const
 {
     BC["type"]=OFDictData::data ( "fixedValue" );
-    BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( Parameters ( ps_ ).pressure ) );
+    BC["value"]=OFDictData::data (
+        "uniform "
+        +boost::lexical_cast<std::string> (
+            p().pressure ) );
 }
 
 

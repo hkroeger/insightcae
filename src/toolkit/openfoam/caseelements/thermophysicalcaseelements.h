@@ -42,6 +42,7 @@ public:
 #include "thermophysicalcaseelements__cavitatingFoamThermodynamics__Parameters.h"
 /*
 PARAMETERSET>>> cavitatingFoamThermodynamics Parameters
+inherits thermodynamicModel::Parameters
 
 psiv = double 2.5e-6 ""
 psil = double 5e-7 ""
@@ -49,14 +50,12 @@ pSat = double 2000.0 "Cavitation pressure"
 rholSat = double 1025.0 "Liquid density"
 rhoMin = double 0.001 "Lower threshold for density"
 
+createGetters
 <<<PARAMETERSET
 */
-
-protected:
-  Parameters p_;
   
 public:
-  cavitatingFoamThermodynamics(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
+  cavitatingFoamThermodynamics(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 
@@ -86,6 +85,7 @@ public:
 #include "thermophysicalcaseelements__compressibleMixtureThermophysicalProperties__Parameters.h"
 /*
 PARAMETERSET>>> compressibleMixtureThermophysicalProperties Parameters
+inherits thermodynamicModel::Parameters
 
 inertSpecie = string "N2" ""
 
@@ -126,16 +126,16 @@ combustionModel = selectablesubset {{
  }
 }} EDC "The combustion model"
 
+createGetters
 <<<PARAMETERSET
 */
 
 
 protected:
-  Parameters p_;
   SpeciesList species_;
 
 public:
-  compressibleMixtureThermophysicalProperties(OpenFOAMCase& c, ParameterSet const& p = Parameters::makeDefault());
+  compressibleMixtureThermophysicalProperties(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

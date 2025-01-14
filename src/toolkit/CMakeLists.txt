@@ -55,7 +55,6 @@ set(toolkit_SOURCES
     base/parameters/labeledarrayparameter.h base/parameters/labeledarrayparameter.cpp
 
     base/parameterset.cpp base/parameterset.h
-    base/parametersetvisualizer.h base/parametersetvisualizer.cpp
 
     base/exception.cpp base/exception.h
     base/externalprocess.cpp base/externalprocess.h
@@ -133,6 +132,7 @@ set(toolkit_SOURCES
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
     openfoam/openfoamtools.cpp openfoam/openfoamtools.h
+    openfoam/sampling.h openfoam/sampling.cpp
     openfoam/blockmesh/arcedge.cpp openfoam/blockmesh/arcedge.h
     openfoam/blockmesh/block2d.cpp openfoam/blockmesh/block2d.h
     openfoam/blockmesh/block.cpp openfoam/blockmesh/block.h

@@ -56,8 +56,9 @@ addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CylWedgeOrtho );
 
 
 
-blockMeshDict_CylWedgeOrtho::blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ), p_ ( ps )
+blockMeshDict_CylWedgeOrtho::blockMeshDict_CylWedgeOrtho (
+    OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
 {}
 
 
@@ -1280,9 +1281,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
 void blockMeshDict_CylWedgeOrtho::create_bmd()
 {
-    insight::CurrentExceptionContext("creating blockMeshDict from spine "+p_.geometry.wedge_spine_curve->fileName().string());
+    insight::CurrentExceptionContext("creating blockMeshDict from spine "+p().geometry.wedge_spine_curve->fileName().string());
 
-    this->setDefaultPatch(p_.mesh.defaultPatchName);
+    this->setDefaultPatch(p().mesh.defaultPatchName);
 
 
 
@@ -1293,7 +1294,7 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
 
     // load geometry
     insight::cad::FeaturePtr wsc =
-        insight::cad::Import::create( p_.geometry.wedge_spine_curve->filePath() );
+        insight::cad::Import::create( p().geometry.wedge_spine_curve->filePath() );
 
     wsc->checkForBuildDuringAccess(); // force rebuild
     auto el = wsc->allEdgesSet();
@@ -1301,7 +1302,7 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
     if (el.size()!=1)
       throw insight::Exception(
           boost::str(boost::format("CAD file %s should contain only one single edge! (It actually contains %d edges)")
-                     % p_.geometry.wedge_spine_curve->fileName().string() % el.size() )
+                     % p().geometry.wedge_spine_curve->fileName().string() % el.size() )
           );
 
     TopoDS_Edge e= TopoDS::Edge(BRepBuilderAPI_NurbsConvert(wsc->edge(*el.begin())).Shape());
@@ -1319,30 +1320,30 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
             BRep_Tool::Pnt(TopExp::LastVertex(e)).XYZ()
           )
          );
-    gp_XYZ R_midp = midp.XYZ() - to_Pnt(p_.geometry.p0).XYZ();
-    gp_XYZ ez = to_Vec(p_.geometry.ex).XYZ();
+    gp_XYZ R_midp = midp.XYZ() - to_Pnt(p().geometry.p0).XYZ();
+    gp_XYZ ez = to_Vec(p().geometry.ex).XYZ();
     double rmid = ( R_midp - ez.Dot(R_midp)*ez ).Modulus();
-    double Lu = rmid * p_.geometry.wedge_angle*SI::deg;
+    double Lu = rmid * p().geometry.wedge_angle*SI::deg;
 
-    double Lx = p_.geometry.L;
+    double Lx = p().geometry.L;
 
     int nr, nuBy2;
     double deltax;
 
-    if (const auto* m = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+    if (const auto* m = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p().mesh.resolution))
     {
       nr = std::max(1, int(Lr/m->delta));
       nuBy2 = std::max(1, int(0.5*Lu/m->delta));
       deltax = m->delta;
     }
-    else if (const auto* m = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+    else if (const auto* m = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p().mesh.resolution))
     {
       double delta = std::max( Lr, std::max(Lu, Lx) ) / double(m->n_max);
       nr = std::max(1, int(Lr/delta));
       nuBy2 = std::max(1, int(0.5*Lu/delta));
       deltax = delta;
     }
-    else if (const auto* m = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+    else if (const auto* m = boost::get<Parameters::mesh_type::resolution_individual_type>(&p().mesh.resolution))
     {
       nr = m->nr;
       nuBy2 = std::max(1, m->nu/2);
@@ -1354,43 +1355,43 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
     spine = BRep_Tool::Curve(e, t0, t1);
 
     Patches pc;
-    if ( p_.mesh.basePatchName!="" ) {
-        pc.base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
+    if ( p().mesh.basePatchName!="" ) {
+        pc.base=&this->addOrDestroyPatch ( p().mesh.basePatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.topPatchName!="" ) {
-        pc.top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
+    if ( p().mesh.topPatchName!="" ) {
+        pc.top=&this->addOrDestroyPatch ( p().mesh.topPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.outerPatchName!="" ) {
-        pc.outer=&this->addOrDestroyPatch ( p_.mesh.outerPatchName, new bmd::Patch() );
+    if ( p().mesh.outerPatchName!="" ) {
+        pc.outer=&this->addOrDestroyPatch ( p().mesh.outerPatchName, new bmd::Patch() );
     }
-    if ( !p_.mesh.innerPatchName.empty() ) {
-        pc.inner=&this->addOrDestroyPatch ( p_.mesh.innerPatchName, new bmd::Patch() );
+    if ( !p().mesh.innerPatchName.empty() ) {
+        pc.inner=&this->addOrDestroyPatch ( p().mesh.innerPatchName, new bmd::Patch() );
     }
-    if ( !p_.mesh.outerInterfacePatchName.empty() ) {
-        pc.outerif=&this->addOrDestroyPatch ( p_.mesh.outerInterfacePatchName, new bmd::Patch() );
+    if ( !p().mesh.outerInterfacePatchName.empty() ) {
+        pc.outerif=&this->addOrDestroyPatch ( p().mesh.outerInterfacePatchName, new bmd::Patch() );
     }
-    if ( !p_.mesh.innerInterfacePatchName.empty() ) {
-        pc.innerif=&this->addOrDestroyPatch ( p_.mesh.innerInterfacePatchName, new bmd::Patch() );
+    if ( !p().mesh.innerInterfacePatchName.empty() ) {
+        pc.innerif=&this->addOrDestroyPatch ( p().mesh.innerInterfacePatchName, new bmd::Patch() );
     }
-    if ( !p_.mesh.cyclmPatchName.empty() ) {
-        pc.pcyclm=&this->addOrDestroyPatch ( p_.mesh.cyclmPatchName, new bmd::Patch() );
+    if ( !p().mesh.cyclmPatchName.empty() ) {
+        pc.pcyclm=&this->addOrDestroyPatch ( p().mesh.cyclmPatchName, new bmd::Patch() );
     }
-    if ( !p_.mesh.cyclpPatchName.empty() ) {
-        pc.pcyclp=&this->addOrDestroyPatch ( p_.mesh.cyclpPatchName, new bmd::Patch() );
+    if ( !p().mesh.cyclpPatchName.empty() ) {
+        pc.pcyclp=&this->addOrDestroyPatch ( p().mesh.cyclpPatchName, new bmd::Patch() );
     }
 
 
-    std::set<double> zs = {0., p_.geometry.L}; // (ordered) list of z-coordinates
+    std::set<double> zs = {0., p().geometry.L}; // (ordered) list of z-coordinates
 
-    if (const auto* ii = boost::get<Parameters::geometry_type::inner_interface_extend_type>(&p_.geometry.inner_interface))
+    if (const auto* ii = boost::get<Parameters::geometry_type::inner_interface_extend_type>(&p().geometry.inner_interface))
     {
       if (ii->z0 < 0)
         throw insight::Exception(
             boost::str(boost::format("Error in definition of inner interface protrusion: z0 has to be positive (%g)") % ii->z0)
             );
-      if (ii->z1 > p_.geometry.L)
+      if (ii->z1 > p().geometry.L)
         throw insight::Exception(
-            boost::str(boost::format("Error in definition of inner interface protrusion: z1 has to be smaller than L (%g<%g!)") % ii->z1 % p_.geometry.L)
+            boost::str(boost::format("Error in definition of inner interface protrusion: z1 has to be smaller than L (%g<%g!)") % ii->z1 % p().geometry.L)
             );
       if (ii->z0 >= ii->z1)
         throw insight::Exception(
@@ -1400,15 +1401,15 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
       zs.insert(ii->z0);
       zs.insert(ii->z1);
     }
-    if (const auto* ii = boost::get<Parameters::geometry_type::outer_interface_extend_type>(&p_.geometry.outer_interface))
+    if (const auto* ii = boost::get<Parameters::geometry_type::outer_interface_extend_type>(&p().geometry.outer_interface))
     {
       if (ii->z0 < 0)
         throw insight::Exception(
             boost::str(boost::format("Error in definition of outer interface protrusion: z0 has to be positive (%g)") % ii->z0)
             );
-      if (ii->z1 > p_.geometry.L)
+      if (ii->z1 > p().geometry.L)
         throw insight::Exception(
-            boost::str(boost::format("Error in definition of outer interface protrusion: z1 has to be smaller than L (%g<%g!)") % ii->z1 % p_.geometry.L)
+            boost::str(boost::format("Error in definition of outer interface protrusion: z1 has to be smaller than L (%g<%g!)") % ii->z1 % p().geometry.L)
             );
       if (ii->z0 >= ii->z1)
         throw insight::Exception(
@@ -1429,12 +1430,12 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
 
       insertBlocks(
             spine, t0, t1,
-            p_.geometry.wedge_angle*SI::deg,
-            to_Vec(p_.geometry.ex), to_Pnt(p_.geometry.p0),
+            p().geometry.wedge_angle*SI::deg,
+            to_Vec(p().geometry.ex), to_Pnt(p().geometry.p0),
             *i0, *i,
             pc,
-            p_.geometry.inner_interface,
-            p_.geometry.outer_interface,
+            p().geometry.inner_interface,
+            p().geometry.outer_interface,
             i1!=zs.end(),
             i0==zs.begin(),
             nuBy2, nx, nr, deltax

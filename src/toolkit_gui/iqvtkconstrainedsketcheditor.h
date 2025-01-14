@@ -18,6 +18,31 @@
 #include "iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h"
 
 
+
+class DefaultGUIConstrainedSketchPresentationDelegate
+    : public insight::cad::ConstrainedSketchPresentationDelegate
+{
+public:
+    declareType("default");
+
+    IQParameterSetModel*
+    setupSketchEntityParameterSetModel(
+        const insight::cad::ConstrainedSketchEntity& e) const override;
+
+    IQParameterSetModel*
+    setupLayerParameterSetModel(
+        const std::string& layerName, const insight::cad::LayerProperties& e) const override;
+
+    void setEntityAppearance(
+        const insight::cad::ConstrainedSketchEntity& e, vtkProperty* actprops) const override;
+};
+
+
+extern std::string defaultGUIConstrainedSketchPresentationDelegate;
+
+
+
+
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
       : public QWidget, //QObject,
         public ViewWidgetAction<IQVTKCADModel3DViewer>,
@@ -40,11 +65,11 @@ private:
             ActorSet >
         SketchGeometryActorMap;
 
-    IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance_;
 
     SketchGeometryActorMap sketchGeometryActors_;
 
-    insight::ParameterSet defaultGeometryParameters_;
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties_;
+    std::shared_ptr<insight::cad::ConstrainedSketchPresentationDelegate> presentation_;
 
     QToolBar *toolBar_;
 
@@ -59,13 +84,10 @@ private:
     void add(insight::cad::ConstrainedSketchEntityPtr);
     void remove(insight::cad::ConstrainedSketchEntityPtr);
 
-    bool defaultSelectionActionRunning();
 
-protected:
-    void launchChildAction(Ptr childAction) override;
+    ViewWidgetActionPtr setupDefaultAction() override;
 
 private Q_SLOTS:
-    void launchDefaultSelectionAction();
     void drawPoint();
     void drawLine();
     void drawRectangle();
@@ -75,8 +97,8 @@ public:
     IQVTKConstrainedSketchEditor(
             IQVTKCADModel3DViewer& viewer,
             const insight::cad::ConstrainedSketch& sketch,
-            const insight::ParameterSet& defaultGeometryParameters,
-            IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance
+            std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+            const std::string& presentationDelegateKey
             );
     ~IQVTKConstrainedSketchEditor();
 

@@ -150,23 +150,23 @@ int main(int argc, char *argv[])
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
 
-        ParameterSet parameters =
+        auto parameters =
             insight::Analysis::defaultParametersFor(analysisName);
 
-        parameters.readFromNode(
-            *rootnode,
+        parameters->readFromNode(
+            std::string(), *rootnode,
             boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
 
         if (vm.count("unpackexternals"))
         {
             std::cout<<"Unpacking external files..."<<std::endl;
-            parameters.unpackAllExternalFiles(".");
+            parameters->unpack(".");
         }
 
         if (vm.count("stripexternals"))
         {
             std::cout<<"Removing packed external files..."<<std::endl;
-            parameters.removePackedData();
+            parameters->clearPackedData();
         }
 
         if (vm.count("merge"))
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
             {
                 std::cout<<"Merging..."<<ist <<std::endl;
                 // ParameterSet to_merge;
-                parameters.readFromFile(ist);
+                parameters->readFromFile(ist);
             }
         }
 
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 bool v=boost::lexical_cast<bool>(pair[1]);
                 cout << "Setting boolean '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.setBool(pair[0], v);
+                parameters->setBool(pair[0], v);
             }
         }
 
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 cout << "Setting string '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
-                parameters.setString(pair[0], pair[1]);
+                parameters->setString(pair[0], pair[1]);
             }
         }
 
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
                 cout << "Setting selection '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
-                parameters.get<SelectionParameter>(pair[0]).setSelection(pair[1]);
+                parameters->get<SelectionParameter>(pair[0]).setSelection(pair[1]);
             }
         }
 
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 cout << "Setting path '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
                 //parameters.getPath(pair[0])=pair[1];
-                parameters.setOriginalFileName(pair[0], pair[1]);
+                parameters->setOriginalFileName(pair[0], pair[1]);
             }
         }
 
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 double v=toNumber<double>(pair[1]);
                 cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.setDouble(pair[0], v);
+                parameters->setDouble(pair[0], v);
             }
         }
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
                 arma::mat v;
                 stringToValue(pair[1], v);
                 cout << "Setting vector '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.setVector(pair[0], v);
+                parameters->setVector(pair[0], v);
             }
         }
 
@@ -266,13 +266,13 @@ int main(int argc, char *argv[])
                 boost::split(pair, s, boost::is_any_of(":"));
                 int v=toNumber<int>(pair[1]);
                 cout << "Setting int '"<<pair[0]<<"' = "<<v<<endl;
-                parameters.setInt(pair[0], v);
+                parameters->setInt(pair[0], v);
             }
         }
 
         boost::filesystem::path outfile = vm["write"].as<std::string>();
         std::cout << "Saving modified input parameters to file "<<outfile<<std::endl;
-        parameters.saveToFile( outfile, analysisName );
+        parameters->saveToFile( outfile, analysisName );
 
     }
     catch (insight::Exception e)

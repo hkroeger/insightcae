@@ -7,8 +7,9 @@ namespace insight
 
 
 QAnalysisThread::QAnalysisThread(
-    AnalysisPtr analysis,
-    ProgressDisplayer* pd,
+    const std::string& analysisName,
+    const ParameterInput& input,
+    ProgressDisplayer *pd,
     std::function<void(void)> preAction,
     std::function<void(void)> postAction,
     std::function<void(std::exception_ptr)> exHdlr
@@ -16,7 +17,7 @@ QAnalysisThread::QAnalysisThread(
   : AnalysisThread
     (
 
-      analysis, pd,
+      analysisName, input, pd,
 
       preAction,
 

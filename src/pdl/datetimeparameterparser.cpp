@@ -2,30 +2,31 @@
 
 using namespace std;
 
-defineType(DateTimeParameterParser);
-addToStaticFunctionTable(ParserDataBase, DateTimeParameterParser, insertrule);
+defineType(DateTimeGenerator);
+addToStaticFunctionTable(ParameterGenerator, DateTimeGenerator, insertrule);
 
-DateTimeParameterParser::Data::Data(boost::posix_time::ptime v, const std::string& d)
-    : ParserDataBase(d), value(v)
+DateTimeGenerator::DateTimeGenerator(boost::posix_time::ptime v, const std::string& d)
+    : ParameterGenerator(d), value(v)
 {}
 
-void DateTimeParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+
+void DateTimeGenerator::cppAddRequiredInclude(std::set<std::string>& headers) const
 {
     headers.insert("\"base/parameters/simpleparameter.h\"");
 }
 
-
-std::string DateTimeParameterParser::Data::cppType(const std::string&) const
-{
-    return "boost::posix_time::ptime";
-}
-
-std::string DateTimeParameterParser::Data::cppParamType(const std::string& ) const
+std::string DateTimeGenerator::cppInsightType() const
 {
     return "insight::DateTimeParameter";
 }
 
-std::string DateTimeParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
+std::string DateTimeGenerator::cppStaticType() const
+{
+    return "boost::posix_time::ptime";
+}
+
+
+std::string DateTimeGenerator::cppDefaultValueExpression() const
 {
     return str(boost::format("boost::posix_time::ptime{ boost::gregorian::date{%d,%d,%d}, boost::posix_time::time_duration{%d, %d, 0, 0} }")
                % value.date().year() % value.date().month().as_number() % value.date().day().as_number()

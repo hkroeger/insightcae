@@ -28,34 +28,33 @@ using namespace std;
 
 namespace insight
 {
-    
-addToAnalysisFactoryTable(ConvergenceAnalysis);
 
-ConvergenceAnalysis::ConvergenceAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
-: Analysis("Convergence Analysis", "", ps, exepath, pd),
-  p_(ps)
-{
-}
 
-ParameterSet ConvergenceAnalysis::parameters() const
-{
-  return p_;
-}
+defineType(ConvergenceAnalysis);
+Analysis::Add<ConvergenceAnalysis> addConvergenceAnalysis;
+
+
+ConvergenceAnalysis::ConvergenceAnalysis(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: AnalysisWithParameters(sp)
+{}
+
 
 
 ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
 {
-  setupExecutionEnvironment();
 
-  if ( p_.solutions.size() !=3 )
+  if ( p().solutions.size() !=3 )
     {
       throw insight::Exception
       (
-        str ( format ( "Error: unsupported number of results for convergence analysis. Has to be 3 but is %d." ) % p_.solutions.size() )
+        str ( format (
+                  "Error: unsupported number of results for convergence analysis. Has to be 3 but is %d."
+                  ) % p().solutions.size() )
       );
     }
 
-  ResultSetPtr results ( new ResultSet ( parameters(), name_, "Result Report" ) );
+  auto results = createResultSet();
 //   std::shared_ptr<ResultSection> section
 //   (
 //     new ResultSection
@@ -72,8 +71,8 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
   Ordering so;
 
   double
-  r1=p_.solutions[1].deltax / p_.solutions[2].deltax,
-  r2=p_.solutions[0].deltax / p_.solutions[1].deltax;
+  r1=p().solutions[1].deltax / p().solutions[2].deltax,
+  r2=p().solutions[0].deltax / p().solutions[1].deltax;
 
 //   if (inv)
 //   {
@@ -85,7 +84,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
 
   results->insert
   (
-    p_.name+"_r",
+    p().name+"_r",
     new ScalarResult (
       r,
       "Averaged refinement ratio",
@@ -100,19 +99,20 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
   ).setOrder ( so.next() );
 
   double
-  S1=p_.solutions[2].S, // finest
-  S2=p_.solutions[1].S, // medium
-  S3=p_.solutions[0].S // coarsest
+  S1=p().solutions[2].S, // finest
+  S2=p().solutions[1].S, // medium
+  S3=p().solutions[0].S // coarsest
      ;
 
   PlotCurveList plotcrvs;
 
   {
-    arma::mat x=vec3 ( p_.solutions[2].deltax, p_.solutions[1].deltax, p_.solutions[0].deltax );
-    arma::mat y=vec3 ( p_.solutions[2].S, p_.solutions[1].S, p_.solutions[0].S );
+    arma::mat x=vec3 ( p().solutions[2].deltax, p().solutions[1].deltax, p().solutions[0].deltax );
+    arma::mat y=vec3 ( p().solutions[2].S, p().solutions[1].S, p().solutions[0].S );
 
     plotcrvs.push_back
-    ( PlotCurve ( arma::mat ( join_rows ( x,y ) ), p_.name, str ( format ( "w lp lt 1 t '%s vs. refinement parameter'" ) %p_.name ) ) );
+    ( PlotCurve ( arma::mat ( join_rows ( x,y ) ), p().name,
+                                 str ( format ( "w lp lt 1 t '%s vs. refinement parameter'" ) % p().name ) ) );
   }
 
   double
@@ -139,7 +139,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
          "$\\epsilon_{i+1,i}$ / \\%"
         },
         tabdata,
-        "The following table repeats the input data for the convergence analysis of the solution quantity "+p_.name+".", "", ""
+        "The following table repeats the input data for the convergence analysis of the solution quantity "+p().name+".", "", ""
       )
     ).setOrder ( so.next() );
   }
@@ -152,7 +152,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
     {
       results->insert
       (
-        p_.name+"_R",
+        p().name+"_R",
         new ScalarResult
         (
           R,
@@ -181,7 +181,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
     {
       results->insert
       (
-        p_.name+"_R",
+        p().name+"_R",
         new ScalarResult
         (
           R,
@@ -209,7 +209,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
       // monotonic convergence
       results->insert
       (
-        p_.name+"_R",
+        p().name+"_R",
         new ScalarResult
         (
           R,
@@ -227,9 +227,9 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
 
       delta=epsilon21 / ( pow ( r, ep )-1. );
 
-      c = ( pow ( r, ep )-1. ) / ( pow ( r, p_.p_est )-1. ); // (16)
+      c = ( pow ( r, ep )-1. ) / ( pow ( r, p().p_est )-1. ); // (16)
 
-      results->insert ( p_.name+"_p", new ScalarResult (
+      results->insert ( p().name+"_p", new ScalarResult (
                           ep,
                           "Order of accuracy",
 
@@ -238,22 +238,22 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
                           "" ) )
       .setOrder ( so.next() );
 
-      results->insert ( p_.name+"_delta", new ScalarResult (
+      results->insert ( p().name+"_delta", new ScalarResult (
                           delta,
                           "Error estimate of Richardson extrapolation",
 
                           "Computed as:\n"
                           " $$ \\delta^* = \\frac{ \\epsilon_{21} } {r^p - 1 } $$\n",
-                          p_.yunit ) )
+                          p().yunit ) )
       .setOrder ( so.next() );
 
-      results->insert ( p_.name+"_C", new ScalarResult (
+      results->insert ( p().name+"_C", new ScalarResult (
                           c,
                           "Correction factor",
 
                           "Computed as:\n"
                           "$$ C = \\frac {r^p -1} {r^{p_{est}}-1} $$\n"
-                          + str ( format ( "The estimated order of convergence $p_{est}=%.2f$ is used here." ) % p_.p_est ),
+                          + str ( format ( "The estimated order of convergence $p_{est}=%.2f$ is used here." ) % p().p_est ),
                           "" ) )
       .setOrder ( so.next() );
 
@@ -273,17 +273,17 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
 
         // too far, no confidence
         double U=fabs ( c*delta )+fabs ( ( 1.-c ) *delta );
-        subsection->insert ( p_.name+"_U", new ScalarResult (
+        subsection->insert ( p().name+"_U", new ScalarResult (
                                U,
                                "Error estimate of the (uncorrected) result",
 
                                "Computed as:\n"
                                "$$ U = |C \\delta^*| + |(1-C) \\delta^* |$$\n",
-                               p_.yunit ) )
+                               p().yunit ) )
         .setOrder ( 1 );
 
         arma::mat xyz;
-        xyz << p_.solutions[2].deltax << p_.solutions[2].S << U << arma::endr;
+        xyz << p().solutions[2].deltax << p().solutions[2].S << U << arma::endr;
         plotcrvs.push_back ( PlotCurve ( xyz, "erroruncorrected", "w errorlines lt 1 lc 3 lw 2 t 'Error estimate (uncorrected)'" ) );
 
         results->insert ( "uncorrected", subsection ) .setOrder ( so.next() );
@@ -312,34 +312,34 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
         double U=fabs ( ( 1.-c ) *delta );
         double qcorr=S1-deltaG;
 
-        subsection->insert ( p_.name+"_UC", new ScalarResult (
+        subsection->insert ( p().name+"_UC", new ScalarResult (
                                U,
                                "Error estimate of the corrected result",
 
                                "Computed as:\n"
                                "$$ U_C = |(1-C) \\delta^*| $$\n",
-                               p_.yunit ) )
+                               p().yunit ) )
         .setOrder ( 1 );
 
-        subsection->insert ( p_.name+"_deltaG", new ScalarResult (
+        subsection->insert ( p().name+"_deltaG", new ScalarResult (
                                deltaG,
                                "Solution correction with sign and value",
 
                                "Computed as:\n"
                                "$$ \\delta_G = C \\delta^* $$\n",
-                               p_.yunit ) )
+                               p().yunit ) )
         .setOrder ( 2 );
 
-        subsection->insert ( p_.name+"_SC", new ScalarResult (
+        subsection->insert ( p().name+"_SC", new ScalarResult (
                                qcorr,
                                "Corrected result",
 
                                "Computed as:\n"
-                               "$$ S_C = S_1-\\delta_G$$\n", p_.yunit ) )
+                               "$$ S_C = S_1-\\delta_G$$\n", p().yunit ) )
         .setOrder ( 3 );
 
         arma::mat xyz;
-        xyz << 1.05*p_.solutions[2].deltax << qcorr << U << arma::endr;
+        xyz << 1.05*p().solutions[2].deltax << qcorr << U << arma::endr;
         plotcrvs.push_back ( PlotCurve ( xyz, "corrected", "w errorlines lt 2 lc 7 lw 2 t 'Corrected solution and error estimate'" ) );
 
         results->insert ( "corrected", subsection ) .setOrder ( so.next() );
@@ -351,11 +351,11 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
   addPlot
   (
     results, executionPath(),
-    "chartConvergence"+p_.name,
-    "Refinement parameter "+p_.xname,
-    p_.name+" ["+p_.yunit+"]",
+    "chartConvergence"+p().name,
+    "Refinement parameter "+p().xname,
+    p().name+" ["+p().yunit+"]",
     plotcrvs,
-    "Convergence of quantity "+p_.name+
+    "Convergence of quantity "+p().name+
     " (X coordinate of corrected solution is shifted by an arbitrary small distance to the right for readability)"
   ).setOrder ( 99 );
 

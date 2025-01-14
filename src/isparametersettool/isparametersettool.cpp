@@ -145,10 +145,10 @@ int main(int argc, char *argv[])
         }
 
 
-        ParameterSet parameters =
+        auto parameters =
             insight::Analysis::defaultParametersFor(analysisName);
 
-        parameters.readFromNode( *rootnode, inputFileParentPath );
+        parameters->readFromNode( std::string(), *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {
@@ -160,11 +160,11 @@ int main(int argc, char *argv[])
                 if (cargs.size()==1)
                 {
                     // 	ParameterSet to_merge;
-                    parameters.readFromFile(ist);
+                    parameters->readFromFile(ist);
                 }
                 else if (cargs.size()==3)
                 {
-                    parameters.getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
+                    parameters->getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
                 }
                 else
                 {
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-bool"].as<StringList>();
             for (const string& s: sets)
             {
-                std::cout<<parameters.getBool(s)<<std::endl;
+                std::cout<<parameters->getBool(s)<<std::endl;
             }
         }
 
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-string"].as<StringList>();
             for (const string& s: sets)
             {
-                std::cout<<parameters.getString(s)<<std::endl;
+                std::cout<<parameters->getString(s)<<std::endl;
             }
         }
 
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-selection"].as<StringList>();
             for (const string& s: sets)
             {
-                std::cout<<parameters.get<SelectionParameter>(s).selection()<<std::endl;
+                std::cout<<parameters->get<SelectionParameter>(s).selection()<<std::endl;
             }
         }
 
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-path"].as<StringList>();
             for (const string& s: sets)
             {
-                std::cout<<parameters.getPath(s)<<std::endl;
+                std::cout<<parameters->getPath(s)<<std::endl;
             }
         }
 
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-double"].as<StringList>();
             for (const string& s: sets)
             {
-                std::cout<<parameters.getDouble(s)<<std::endl;
+                std::cout<<parameters->getDouble(s)<<std::endl;
             }
         }
 
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-vector"].as<StringList>();
             for (const string& s: sets)
             {
-                auto v= parameters.getVector(s);
+                auto v= parameters->getVector(s);
                 for (int i=0; i<v.n_elem; ++i)
                 {
                     if (i>0) std::cout<<" ";
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
             StringList sets=vm["print-int"].as<StringList>();
             for (const string& s: sets)
             {
-                std::cout<<parameters.getInt(s)<<std::endl;
+                std::cout<<parameters->getInt(s)<<std::endl;
             }
         }
 

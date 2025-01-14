@@ -103,11 +103,12 @@ restraints = array [ selectablesubset {{
  }
 }} prescribedVelocity "" ] *0 "restraint to apply"
 
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
-    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
+    // ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
 
     template<class P>
     void insertExtendedMotionParameters(OFDictData::dict& rbmc, const Parameters& p, const P& emp) const
@@ -149,7 +150,8 @@ public:
   declareType ( "SixDOFRigidBodyMotionSolver" );
 
 public:
-    SixDOFRigidBodyMotionSolver(const ParameterSet&ps = Parameters::makeDefault() );
+    SixDOFRigidBodyMotionSolver(
+        ParameterSetInput ip = ParameterSetInput() );
 
     virtual void addIntoDict(OFDictData::dict& dict) const;
 

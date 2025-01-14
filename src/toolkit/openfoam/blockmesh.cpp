@@ -36,8 +36,8 @@ namespace bmd {
 
 
 
-blockMesh::blockMesh(OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "blockMesh", ps),
+blockMesh::blockMesh(OpenFOAMCase& c, ParameterSetInput ip)
+: OpenFOAMCaseElement(c, /*"blockMesh",*/ ip.forward<Parameters>()),
   scaleFactor_(1.0),
   defaultPatchName_("defaultFaces"),
   defaultPatchType_("wall"),

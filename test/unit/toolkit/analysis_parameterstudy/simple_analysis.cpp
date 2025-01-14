@@ -27,15 +27,14 @@ namespace insight
 
 
 
-addToAnalysisFactoryTable(SimpleAnalysis);
+defineType(SimpleAnalysis);
+Analysis::Add<SimpleAnalysis> addSimpleAnalysis;
 
 
 
-SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
-: Analysis("Test", "", ps, exepath, pd),
-  p_(ps)
-{
-}
+SimpleAnalysis::SimpleAnalysis(const std::shared_ptr<supplementedInputDataBase>& sp)
+: AnalysisWithParameters(sp)
+{}
 
 
 
@@ -43,11 +42,11 @@ SimpleAnalysis::SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::
 
 ResultSetPtr SimpleAnalysis::operator()(ProgressDisplayer& /*pd*/)
 {
-    ResultSetPtr results( new ResultSet(p_, "Test", "") );
+    auto results = createResultSet();
     
     results->insert("y", new ScalarResult( 
     
-        3*pow(p_.x,2),
+        3*pow(p().x,2),
         
         "function value", "", ""));
     
@@ -64,10 +63,9 @@ class SimpleParameterStudy
 public:
     declareType("SimpleParameterStudy");
     
-    SimpleParameterStudy(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
-    : ParameterStudy("Test", "", ps, exepath, pd)
-    {
-    }
+    SimpleParameterStudy(const std::shared_ptr<supplementedInputDataBase>& sp)
+    : ParameterStudy(sp)
+    {}
     
     static std::string category() { return "Test"; }
     
@@ -100,6 +98,8 @@ public:
     }
 };
 
-addToAnalysisFactoryTable(SimpleParameterStudy);
+
+defineType(SimpleParameterStudy);
+Analysis::Add<SimpleParameterStudy> addSimpleParameterStudy;
 
 }

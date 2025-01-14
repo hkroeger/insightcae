@@ -9,11 +9,10 @@ namespace insight {
 defineType(ConstantPressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(ConstantPressureGradientSource);
 
-ConstantPressureGradientSource::ConstantPressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: cellSetFvOption(c, "ConstantPressureGradientSource", ps),
-  p_(ps)
-{
-}
+ConstantPressureGradientSource::ConstantPressureGradientSource(
+    OpenFOAMCase& c, ParameterSetInput ip )
+    : cellSetFvOption(c, ip.forward<Parameters>())
+{}
 
 void ConstantPressureGradientSource::addIntoFvOptionDictionary(
     OFDictData::dict& fvOptions,
@@ -31,7 +30,7 @@ void ConstantPressureGradientSource::addIntoFvOptionDictionary(
         OFDictData::dimensionedData(
            "gradP",
            OFDictData::dimension(0, 1, -2, 0, 0, 0, 0),
-           OFDictData::vector3(p_.gradp) );
+           OFDictData::vector3(p().gradp) );
 
     OFDictData::dict fod;
     fod["type"]="constantPressureGradientExplicitSource";

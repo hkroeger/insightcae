@@ -22,6 +22,8 @@ public:
 #include "compressiblesinglephasethermophysicalproperties__compressibleSinglePhaseThermophysicalProperties__Parameters.h"
 /*
 PARAMETERSET>>> compressibleSinglePhaseThermophysicalProperties Parameters
+inherits thermodynamicModel::Parameters
+
 addTo_makeDefault { modifyDefaults(p); }
 
 composition = selectablesubset {{
@@ -45,15 +47,14 @@ composition = selectablesubset {{
 
 }} singleSpecie ""
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "compressibleSinglePhaseThermophysicalProperties" );
-    compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     std::string requiredThermoType() const;
     std::unique_ptr<SpeciesData> speciesData() const;

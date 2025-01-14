@@ -14,6 +14,7 @@ public:
 #include "compressibletwophasethermophysicalproperties__compressibleTwoPhaseThermophysicalProperties__Parameters.h"
 /*
 PARAMETERSET>>> compressibleTwoPhaseThermophysicalProperties Parameters
+inherits transportModel::Parameters
 
 phases = array [
      includedset "insight::SpeciesData::Parameters"
@@ -25,15 +26,14 @@ sigma = double 0.07 "Surface tension"
 
 pMin = double 0 "[Pa] minimum pressure"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "compressibleTwoPhaseThermophysicalProperties" );
-    compressibleTwoPhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    compressibleTwoPhaseThermophysicalProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }

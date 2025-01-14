@@ -10,8 +10,7 @@ class kEpsilon_RASModel
 {
 public:
   declareType("kEpsilon");
-  kEpsilon_RASModel(OpenFOAMCase& ofc, const ParameterSet& ps = ParameterSet());
-  inline static ParameterSet defaultParameters() { return ParameterSet(); }
+  kEpsilon_RASModel(OpenFOAMCase& ofc, ParameterSetInput ip = ParameterSetInput() );
 };
 
 } // namespace insight

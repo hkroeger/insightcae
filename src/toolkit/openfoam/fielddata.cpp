@@ -1,5 +1,6 @@
 
 #include "openfoam/fielddata.h"
+#include "base/cppextensions.h"
 #include "base/exception.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcase.h"
@@ -49,9 +50,8 @@ FieldData::Parameters FieldData::uniformSteady(double uniformSteadyValue)
 
 
 FieldData::FieldData(double uniformSteadyValue)
-: p_(Parameters::makeDefault())
+    : p_(uniformSteady(uniformSteadyValue))
 {
-    p_=uniformSteady(uniformSteadyValue);
     calcValues();
 }
 
@@ -79,21 +79,19 @@ FieldData::Parameters FieldData::uniformSteady(const arma::mat& uniformSteadyVal
 
 
 FieldData::FieldData(const arma::mat& uniformSteadyValue)
-: p_(Parameters::makeDefault())
-{
-    p_=uniformSteady(uniformSteadyValue);
-    calcValues();
-}
-
-
-
-
-FieldData::FieldData(const ParameterSet& p)
-: p_(p)
+    : p_(uniformSteady(uniformSteadyValue))
 {
     calcValues();
 }
 
+
+
+
+FieldData::FieldData(ParameterSetInput ip)
+    : p_(ip.forward<Parameters>())
+{
+    calcValues();
+}
 
 
 
@@ -103,14 +101,14 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
     if (const auto *fd =
         boost::get<Parameters::fielddata_uniformSteady_type>(
-            &p_.fielddata ) ) //(type=="uniform")
+            &p().fielddata ) ) //(type=="uniform")
     {
         os <<" uniform unsteady 0.0 " << OFDictData::to_OF(fd->value);
     }
 
     else if (const auto *fd =
              boost::get<Parameters::fielddata_uniform_type>(
-                 &p_.fielddata ) ) //(type=="uniform")
+                 &p().fielddata ) ) //(type=="uniform")
     {
         os<<" uniform unsteady";
 
@@ -121,7 +119,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
     }
     else if ( const auto *fd =
              boost::get<Parameters::fielddata_linearProfile_type>(
-                 &p_.fielddata ) )
+                 &p().fielddata ) )
     {
         os<<" linearProfile "
           <<OFDictData::to_OF(fd->p0)
@@ -139,7 +137,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
     }
     else if ( const auto *fd =
              boost::get<Parameters::fielddata_radialProfile_type>(
-                 &p_.fielddata) )
+                 &p().fielddata) )
     {
         os<<" radialProfile "
           <<OFDictData::to_OF(fd->p0)
@@ -157,7 +155,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
     }
     else if ( const auto *fp =
              boost::get<Parameters::fielddata_fittedProfile_type>(
-                 &p_.fielddata ) )
+                 &p().fielddata ) )
     {
         os<<" fittedProfile "
           <<OFDictData::to_OF(fp->p0)
@@ -181,7 +179,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
     }
     else if (const auto *fd =
                boost::get<Parameters::fielddata_fittedProfile_type>(
-                   &p_.fielddata ) )
+                   &p().fielddata ) )
     {
         os<<" fittedProfile "
           <<OFDictData::to_OF(fd->p0)
@@ -205,7 +203,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
     }
     else if (const auto *fd =
                boost::get<Parameters::fielddata_vtkField_type>(
-                   &p_.fielddata ) )
+                   &p().fielddata ) )
     {
         os<<" vtkField"
           <<" unsteady";
@@ -229,7 +227,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
 void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
-  if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p_.fielddata) )
+  if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p().fielddata) )
   {
     BC["type"]=OFDictData::data("fixedValue");
     BC["value"]="uniform " + OFDictData::to_OF(fd->value);
@@ -320,13 +318,13 @@ double FieldData::calcRepresentativeValueMag() const
 {
   if (const auto *fd =
         boost::get<Parameters::fielddata_uniformSteady_type>(
-            &p_.fielddata ) )
+            &p().fielddata ) )
   {
     return norm(fd->value, 2);
   }
   else if (const auto *fd =
              boost::get<Parameters::fielddata_uniform_type>(
-                 &p_.fielddata ) )
+                 &p().fielddata ) )
   {
     double meanv=0.0;
     int s=0;
@@ -342,7 +340,7 @@ double FieldData::calcRepresentativeValueMag() const
   }
   else if (const auto *fd =
              boost::get<Parameters::fielddata_linearProfile_type>(
-                 &p_.fielddata ) )
+                 &p().fielddata ) )
   {
     double avg=0.0;
     int s=0;
@@ -366,7 +364,7 @@ double FieldData::calcRepresentativeValueMag() const
   }
   else if (const auto *fd =
              boost::get<Parameters::fielddata_radialProfile_type>(
-                 &p_.fielddata ) )
+                 &p().fielddata ) )
   {
     double avg=0.0;
     int s=0;
@@ -390,7 +388,7 @@ double FieldData::calcRepresentativeValueMag() const
   }
   else if (const auto *fd =
            boost::get<Parameters::fielddata_vtkField_type>(
-               &p_.fielddata ) )
+               &p().fielddata ) )
   {
       arma::mat avg;
       for (const auto& inst: fd->values)
@@ -418,13 +416,13 @@ double FieldData::calcMaxValueMag() const
     double maxv=-DBL_MAX;
     if (const auto *fd =
         boost::get<Parameters::fielddata_uniformSteady_type>(
-            &p_.fielddata) )
+            &p().fielddata) )
     {
         maxv=std::max(maxv, norm(fd->value, 2));
     }
     else if (const auto *fd =
                boost::get<Parameters::fielddata_uniform_type>(
-                   &p_.fielddata) )
+                   &p().fielddata) )
     {
         for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
         {
@@ -433,7 +431,7 @@ double FieldData::calcMaxValueMag() const
     }
     else if (const auto *fd =
                boost::get<Parameters::fielddata_linearProfile_type>(
-                   &p_.fielddata) )
+                   &p().fielddata) )
     {
         for (const auto& inst: fd->values)
         {
@@ -451,7 +449,7 @@ double FieldData::calcMaxValueMag() const
     }
     else if (const auto *fd =
                boost::get<Parameters::fielddata_radialProfile_type>(
-                   &p_.fielddata) )
+                   &p().fielddata) )
     {
         for (const auto& inst: fd->values)
         {
@@ -469,7 +467,7 @@ double FieldData::calcMaxValueMag() const
     }
     else if (const auto *fd =
              boost::get<Parameters::fielddata_vtkField_type>(
-                 &p_.fielddata ) )
+                   &p().fielddata ) )
     {
         for (const auto& inst: fd->values)
         {
@@ -493,12 +491,14 @@ double FieldData::calcMaxValueMag() const
 
 Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::string& )
 {
-  std::unique_ptr<Parameter> p(Parameters::makeDefault().get<SubsetParameter>("fielddata").clone());
+  std::unique_ptr<Parameter> p(
+        Parameters::makeDefault()->get<ParameterSet>("fielddata").clone());
   auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
 
-  ParameterSet cp( opts->getParametersForSelection("uniformSteady") );
-  cp.get<VectorParameter>("value").set( def_val );
-  opts->setParametersForSelection("uniformSteady", cp);
+  auto cp = std::dynamic_unique_ptr_cast<ParameterSet>(
+    opts->getParametersForSelection("uniformSteady").clone());
+  cp->get<VectorParameter>("value").set( def_val );
+  opts->setParametersForSelection("uniformSteady", *cp);
 
   return p.release();
 }
@@ -510,7 +510,7 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
 {
     if (const auto *fd =
         boost::get<Parameters::fielddata_linearProfile_type>(
-            &p_.fielddata) )
+            &p().fielddata) )
     {
         for (const auto& inst: fd->values)
         {
@@ -546,7 +546,7 @@ bool FieldData::isAConstantValue(arma::mat &value) const
 {
     if (const auto *fd =
         boost::get<Parameters::fielddata_uniformSteady_type>(
-            &p_.fielddata ) ) //(type=="uniform")
+            &p().fielddata ) ) //(type=="uniform")
     {
         value = fd->value;
         return true;

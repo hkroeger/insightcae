@@ -9,9 +9,8 @@ namespace insight {
 defineType(wallHeatFlux);
 addToOpenFOAMCaseElementFactoryTable(wallHeatFlux);
 
-wallHeatFlux::wallHeatFlux ( OpenFOAMCase& c, const ParameterSet& ps )
-  : outputFilterFunctionObject(c, ps),
-    p_(ps)
+wallHeatFlux::wallHeatFlux ( OpenFOAMCase& c, ParameterSetInput ip )
+  : outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -20,14 +19,14 @@ OFDictData::dict wallHeatFlux::functionObjectDict() const
   OFDictData::dict fod;
 
   fod["type"]="wallHeatFlux";
-  fod["region"]=p_.region;
+  fod["region"]=p().region;
   fod["libs"]=OFDictData::list({ "\"libfieldFunctionObjects.so\"" });
 
-  OFDictData::list p;
-  std::copy(p_.patches.begin(), p_.patches.end(), std::back_inserter(p));
-  fod["patches"]=p;
+  OFDictData::list pl;
+  std::copy(p().patches.begin(), p().patches.end(), std::back_inserter(pl));
+  fod["patches"]=pl;
 
-  if (const auto* qr = boost::get<Parameters::qr_field_type>(&p_.qr))
+  if (const auto* qr = boost::get<Parameters::qr_field_type>(&p().qr))
   {
     fod["qr"] = qr->fieldName;
   }

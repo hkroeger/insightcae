@@ -55,10 +55,11 @@ defineType ( blockMeshDict_CylWedge );
 addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CylWedge );
 
 blockMeshDict_CylWedge::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
+    ParameterSetInput ip,
     const boost::filesystem::path &workDir,
     ProgressDisplayer &progress )
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
+  : supplementedInputDataDerived<Parameters>(
+          ip.forward<Parameters>(), workDir, progress )
 {
   p0_=p().geometry.p0;
   ex_=p().geometry.ex;
@@ -113,15 +114,9 @@ blockMeshDict_CylWedge::supplementedInputData::supplementedInputData(
 }
 
 
-blockMeshDict_CylWedge::blockMeshDict_CylWedge ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ),
-      parameters_(
-        std::make_unique<supplementedInputData>(
-          std::make_unique<Parameters>(ps), "" )
-        )
-{
-
-}
+blockMeshDict_CylWedge::blockMeshDict_CylWedge ( OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
+{}
 
 
 std::pair<double,double> blockMeshDict_CylWedge::supplementedInputData::limit_angles() const
@@ -260,14 +255,17 @@ void blockMeshDict_CylWedge::create_bmd()
 //      stlwriter.Write(cyclp, "cyclp.stl");
 //    }
 
+    supplementedInputData sp(
+        p(), ".", consoleProgressDisplayer );
 
-    auto phi_lim = sp().limit_angles();
+
+    auto phi_lim = sp.limit_angles();
     double phim=phi_lim.first;
     double phip=phi_lim.second;
     cout<<"phim="<<phim<<", phip="<<phip<<endl;
 
-    arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, sp().ex_ );
-    arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, sp().ex_ );
+    arma::mat rp=rotMatrix ( phip /*0.5*p_.geometry.wedge_angle*SI::deg*/, sp.ex_ );
+    arma::mat rm=rotMatrix ( phim /*-0.5*p_.geometry.wedge_angle*SI::deg*/, sp.ex_ );
 
     int nu1, nu2, nx_tot, nr;
     double
@@ -290,7 +288,7 @@ void blockMeshDict_CylWedge::create_bmd()
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p().mesh.resolution))
     {
-      auto Ls={p().geometry.L, L_r, L_u1, L_u2};
+      std::vector<double> Ls={p().geometry.L, L_r, L_u1, L_u2};
       double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
 
       nx_tot=std::max(1, int(std::ceil(p().geometry.L/delta)));
@@ -335,15 +333,17 @@ void blockMeshDict_CylWedge::create_bmd()
     std::set<zSection> sections ; //({defaultSection});
 
     // no overlap with other section is allowed! => check needed
-#warning should not modify input parameters here
-    for (auto& sec: pRef().mesh.outerPatchSections)
+
+    auto outerPatchSections = p().mesh.outerPatchSections;
+
+    for (auto& sec: outerPatchSections)
     {
       if (sec.x0 > sec.x1)
       {
         std::swap(sec.x0, sec.x1);
         insight::Warning("Corrected section specification: x0 shall be smaller than x1!");
       }
-      sec.x0=std::max(0., sec.x0);
+      sec.x0=std::max<double>(0., sec.x0);
       sec.x1=std::min(p().geometry.L, sec.x1);
     }
 //    for (auto i1 = p().mesh.outerPatchSections.begin(); i1!=p().mesh.outerPatchSections.end(); i1++)
@@ -358,7 +358,7 @@ void blockMeshDict_CylWedge::create_bmd()
 //    }
 
     // insert all sections
-    for (const auto& sec: p().mesh.outerPatchSections)
+    for (const auto& sec: outerPatchSections)
     {
       zSection zs;
       zs.z0=sec.x0;
@@ -434,8 +434,8 @@ void blockMeshDict_CylWedge::create_bmd()
 
     for (auto i=sections.begin(); i!=sections.end(); i++)
     {
-      arma::mat vL0 = i->z0 * sp().ex_;
-      arma::mat vL1 = i->z1 * sp().ex_;
+      arma::mat vL0 = i->z0 * sp.ex_;
+      arma::mat vL1 = i->z1 * sp.ex_;
 
       int nx = std::max(1, int(double(nx_tot)*( (i->z1 - i->z0)/p().geometry.L )) );
 
@@ -444,16 +444,16 @@ void blockMeshDict_CylWedge::create_bmd()
       {
         // build mesh with core block
 
-        p_i=sp().p0_+0.9*rc*sp().er_; //point_on_spine(0.9*rc);
-        p_rc=sp().p0_+rc*sp().er_; //point_on_spine(rc);
+        p_i=sp.p0_+0.9*rc*sp.er_; //point_on_spine(0.9*rc);
+        p_rc=sp.p0_+rc*sp.er_; //point_on_spine(rc);
         // core block
         {
 
             Block& bl = this->addBlock
                         (
                             new Block ( P_8 (
-                                            sp().p0_+vL0, rm*p_i+vL0, p_rc+vL0, rp*p_i+vL0,
-                                            sp().p0_+vL1, rm*p_i+vL1, p_rc+vL1, rp*p_i+vL1
+                                            sp.p0_+vL0, rm*p_i+vL0, p_rc+vL0, rp*p_i+vL0,
+                                            sp.p0_+vL1, rm*p_i+vL1, p_rc+vL1, rp*p_i+vL1
                                         ),
                                         nu1, nu2, nx
                                       )
@@ -470,11 +470,11 @@ void blockMeshDict_CylWedge::create_bmd()
       }
       else
       {
-        p_i=sp().p0_+0.5*p().geometry.d*sp().er_; //point_on_spine(0.5*p().geometry.d);
+        p_i=sp.p0_+0.5*p().geometry.d*sp.er_; //point_on_spine(0.5*p().geometry.d);
         p_rc=p_i;
       }
 
-      p_o=sp().p0_+0.5*p().geometry.D*sp().er_; //point_on_spine(0.5*p_.geometry.D);
+      p_o=sp.p0_+0.5*p().geometry.D*sp.er_; //point_on_spine(0.5*p_.geometry.D);
 
       {
           Block& bl = this->addBlock
@@ -533,13 +533,17 @@ void blockMeshDict_CylWedge::create_bmd()
       if (i->upperEnd) vls.push_back(vL1);
       for (auto vl: vls)
       {
-        this->addEdge ( new ArcEdge ( rm*p_o +vl, p_o +vl, rotMatrix(-0.25*p().geometry.wedge_angle*SI::deg, sp().ex_)*p_o +vl ) );
-        this->addEdge ( new ArcEdge ( p_o +vl, rp*p_o +vl, rotMatrix(0.25*p().geometry.wedge_angle*SI::deg, sp().ex_)*p_o +vl ) );
+        this->addEdge ( new ArcEdge ( rm*p_o +vl, p_o +vl,
+                                    rotMatrix(-0.25*p().geometry.wedge_angle*SI::deg, sp.ex_)*p_o +vl ) );
+        this->addEdge ( new ArcEdge ( p_o +vl, rp*p_o +vl,
+                                  rotMatrix(0.25*p().geometry.wedge_angle*SI::deg, sp.ex_)*p_o +vl ) );
 
         if (! (p().geometry.d < 1e-10))
         {
-          this->addEdge ( new ArcEdge ( rm*p_i +vl, p_i +vl, rotMatrix(-0.25*p().geometry.wedge_angle*SI::deg, sp().ex_)*p_i +vl ) );
-          this->addEdge ( new ArcEdge ( p_i +vl, rp*p_i +vl, rotMatrix(0.25*p().geometry.wedge_angle*SI::deg, sp().ex_)*p_i +vl ) );
+          this->addEdge ( new ArcEdge ( rm*p_i +vl, p_i +vl,
+                                      rotMatrix(-0.25*p().geometry.wedge_angle*SI::deg, sp.ex_)*p_i +vl ) );
+          this->addEdge ( new ArcEdge ( p_i +vl, rp*p_i +vl,
+                                    rotMatrix(0.25*p().geometry.wedge_angle*SI::deg, sp.ex_)*p_i +vl ) );
         }
       }
     }

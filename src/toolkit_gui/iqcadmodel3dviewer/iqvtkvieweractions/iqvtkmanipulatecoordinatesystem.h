@@ -63,7 +63,7 @@ class IQVTKManipulateCoordinateSystem
 
 public:
     IQVTKManipulateCoordinateSystem(
-        IQVTKCADModel3DViewer &viewWidget,
+        ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
         const insight::CoordinateSystem& cs,
         bool showOnlyX=false );
 

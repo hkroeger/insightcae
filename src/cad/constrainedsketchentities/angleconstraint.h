@@ -79,7 +79,7 @@ public:
 
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
-        MakeDefaultGeometryParametersFunction mdpf );
+        const ConstrainedSketchParametersDelegate& pd );
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedAngleConstraint& other);
@@ -115,7 +115,7 @@ public:
 
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
-        MakeDefaultGeometryParametersFunction mdpf );
+        const ConstrainedSketchParametersDelegate& pd );
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const LinkedAngleConstraint& other);

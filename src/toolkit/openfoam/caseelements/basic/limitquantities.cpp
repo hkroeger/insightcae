@@ -9,16 +9,15 @@ namespace insight {
 defineType(limitQuantities);
 addToOpenFOAMCaseElementFactoryTable(limitQuantities);
 
-limitQuantities::limitQuantities( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "", ps),
-  p_(ps)
+limitQuantities::limitQuantities( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {
-    name_="limitQuantities"+p_.name;
+    // name_="limitQuantities"+p().name;
 }
 
 void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  if (p_.limitFields.size()>0)
+  if (p().limitFields.size()>0)
   {
     dictionaries
         .lookupDict("system/controlDict")
@@ -29,9 +28,9 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
 
-  cellSetOption_Selection sel(p_.cells);
+  cellSetOption_Selection sel(p().cells);
 
-  if (const auto* limT = boost::get<Parameters::limitTemperature_limit_type>(&p_.limitTemperature))
+  if (const auto* limT = boost::get<Parameters::limitTemperature_limit_type>(&p().limitTemperature))
     {
       OFDictData::dict cdT;
       cdT["type"]="limitTemperature";
@@ -43,10 +42,10 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
       c["max"]=limT->max;
       cdT["limitTemperatureCoeffs"]=c;
 
-      fvOptions[p_.name+"_temp"]=cdT;
+      fvOptions[p().name+"_temp"]=cdT;
     }
 
-  if (const auto* limU = boost::get<Parameters::limitVelocity_limit_type>(&p_.limitVelocity))
+  if (const auto* limU = boost::get<Parameters::limitVelocity_limit_type>(&p().limitVelocity))
     {
       OFDictData::dict cdU;
       cdU["type"]="limitVelocity";
@@ -57,10 +56,10 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
       c["max"]=limU->max;
       cdU["limitVelocityCoeffs"]=c;
 
-      fvOptions[p_.name+"_vel"]=cdU;
+      fvOptions[p().name+"_vel"]=cdU;
     }
 
-  for (const auto& i: p_.limitFields)
+  for (const auto& i: p().limitFields)
     {
       std::string type;
       switch (i.type)
@@ -81,16 +80,10 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
       c["min"]=i.min;
       cd[type+"Coeffs"]=c;
 
-      fvOptions[p_.name+"_"+i.fieldName]=cd;
+      fvOptions[p().name+"_"+i.fieldName]=cd;
     }
 
 }
-
-limitQuantities::Parameters &limitQuantities::parametersRef()
-{
-    return p_;
-}
-
 
 
 } // namespace insight

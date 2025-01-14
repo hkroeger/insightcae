@@ -1,4 +1,5 @@
 #include "constrainedsketchentity.h"
+#include "base/parameters/subsetparameter.h"
 #include "constrainedsketch.h"
 
 #include "base/exception.h"
@@ -22,8 +23,8 @@ defineStaticFunctionTableWithArgs(
     ConstrainedSketchEntity,
     addParserRule,
     void,
-    LIST(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf),
-    LIST(ruleset, mdpf) );
+    LIST(ConstrainedSketchGrammar& ruleset, const ConstrainedSketchParametersDelegate& pd),
+    LIST(ruleset, pd) );
 
 
 
@@ -33,7 +34,9 @@ ConstrainedSketchEntity::ConstrainedSketchEntity(
     : layerName_(
         layerName.empty() ?
             ConstrainedSketch::defaultLayerName
-            : layerName )
+            : layerName ),
+    defaultParameters_(ParameterSet::create()),
+    parameters_(ParameterSet::create())
 {}
 
 
@@ -116,7 +119,7 @@ size_t ConstrainedSketchEntity::hash() const
 
 const insight::ParameterSet& ConstrainedSketchEntity::parameters() const
 {
-    return parameters_;
+    return *parameters_;
 }
 
 
@@ -124,7 +127,7 @@ const insight::ParameterSet& ConstrainedSketchEntity::parameters() const
 
 insight::ParameterSet& ConstrainedSketchEntity::parametersRef()
 {
-    return parameters_;
+    return *parameters_;
 }
 
 
@@ -132,26 +135,28 @@ insight::ParameterSet& ConstrainedSketchEntity::parametersRef()
 
 const insight::ParameterSet& ConstrainedSketchEntity::defaultParameters() const
 {
-    return defaultParameters_;
+    return *defaultParameters_;
 }
 
 
 
-
-void ConstrainedSketchEntity::changeDefaultParameters(const insight::ParameterSet& ps)
+void ConstrainedSketchEntity::changeDefaultParameters(
+    const insight::ParameterSet& ps )
 {
-    defaultParameters_=ps;
-    ParameterSet oldps=parameters_;
-    parameters_=defaultParameters_;
+    defaultParameters_
+        ->insight::ParameterSet::operator=(
+            ps);
+    // ParameterSet oldps=parameters_;
+    *parameters_=*defaultParameters_;
 
 #warning copy values from old; merge is not the right function
     //parameters_.merge(oldps);
 }
 
 
-
-
-void ConstrainedSketchEntity::parseParameterSet(const std::string &s, const boost::filesystem::path& inputFileParentPath)
+void ConstrainedSketchEntity::parseParameterSet(
+    const std::string &s,
+    const boost::filesystem::path& inputFileParentPath )
 {
     if (!s.empty())
     {
@@ -160,7 +165,7 @@ void ConstrainedSketchEntity::parseParameterSet(const std::string &s, const boos
         doc.parse<0>(const_cast<char*>(&s[0]));
         xml_node<> *rootnode = doc.first_node("root");
 
-        parameters_.readFromNode(*rootnode, inputFileParentPath );
+        parametersRef().readFromNode(std::string(), *rootnode, inputFileParentPath );
 //        std::cout<<parameters_<<std::endl;
     }
 }
@@ -192,10 +197,14 @@ std::string ConstrainedSketchEntity::pointSpec(
 std::string ConstrainedSketchEntity::parameterString() const
 {
     std::string s;
-    if (parameters_.size())
+    if (parameters().size())
     {
         s=", parameters ";
-        parameters_.saveToString(s, boost::filesystem::current_path()/"outfile");
+        parameters().saveToString(
+            s,
+            boost::filesystem::current_path()
+                / "outfile"
+            );
     }
     return s;
 }
@@ -214,8 +223,8 @@ bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEnt
 
 void ConstrainedSketchEntity::operator=(const ConstrainedSketchEntity &other)
 {
-    defaultParameters_ = other.defaultParameters_;
-    parameters_ = other.parameters_;
+    *defaultParameters_ = *other.defaultParameters_;
+    parametersRef() = other.parameters();
 }
 
 

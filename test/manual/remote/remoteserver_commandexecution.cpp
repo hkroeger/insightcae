@@ -6,7 +6,7 @@
 #include "base/sshlinuxserver.h"
 #include "base/remoteserverlist.h"
 
-#include "dummyanalysis.h"
+#include "dummies.h"
 
 
 using namespace std;
@@ -41,15 +41,15 @@ int main()
 
 
             auto params = DummyAnalysis::Parameters::makeDefault();
-            params.pack();
+            params->pack();
 
             std::cout<<"LOCAL\n"<<std::endl;
-            params.saveToStream(std::cout, ".");
+            params->saveToStream(std::cout, ".");
 
             auto remfp=rc.remoteDir()/"input.ist";
             {
                 auto remf=srv.remoteOFStream(remfp, 1);
-                params.saveToStream(remf->stream(), ".");
+                params->saveToStream(remf->stream(), ".");
             }
 
             std::cout<<"REMOTE\n"<<std::endl;

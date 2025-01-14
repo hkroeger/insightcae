@@ -1247,7 +1247,7 @@ void IQVTKCADModel3DViewer::redrawNow(bool force)
                 bounds[3]-bounds[2],
                 bounds[5]-bounds[4]);
 
-            std::cout<<p0.t()<<pc.t()<<L.t()<<std::endl;
+            //std::cout<<p0.t()<<pc.t()<<L.t()<<std::endl;
             cam->SetPosition(
                 arma::mat(
                     p0+std::max(insight::LSMALL,L.max())*dir
@@ -1325,6 +1325,7 @@ void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
 IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         QWidget* parent )
     : IQCADModel3DViewer(parent),
+      ViewWidgetActionHost<IQVTKCADModel3DViewer>(*this, true),
       vtkWidget_(this),
       navigationManager_(
         std::make_shared<
@@ -1342,8 +1343,7 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         [this]()
         {
             navigationManager_->onMouseLeavesViewer();
-            if (currentAction_)
-            currentAction_->onMouseLeavesViewer( );
+            this->onMouseLeavesViewer( );
         }
     );
 
@@ -1462,12 +1462,14 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
 
 IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
 {
+    ViewWidgetActionHost<IQVTKCADModel3DViewer>::aboutToBeDestroyed();
+
     // delete some stuff so that their destructors
     // still have access to viewer before actual viewer is destroyed
     clipping_.reset();
     exposedItem_.reset();
     navigationManager_.reset();
-    currentAction_.reset();
+
     for(auto bg: backgroundImages_)
     {
         delete bg;
@@ -1940,13 +1942,16 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     if (!name.isEmpty())
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
-                    insight::cad::ConstrainedSketch::create(plane));
-        editSketch(*sk, insight::ParameterSet(),
-                   [](const insight::ParameterSet&, vtkProperty* actprops)
-                   {
-                       actprops->SetColor(1,0,0);
-                       actprops->SetLineWidth(2);
-                   },
+                    insight::cad::ConstrainedSketch::create(
+                        plane,
+                        *insight::cad::noParametersDelegate
+                ) );
+        editSketch(
+            *sk,
+
+            insight::cad::noParametersDelegate,
+            defaultGUIConstrainedSketchPresentationDelegate,
+
             [this,name](insight::cad::ConstrainedSketchPtr editedSk) {
                         cadmodel()->addModelstep(name.toStdString(), editedSk, false);
                         cadmodel()->setStaticModelStep(name.toStdString(), true);
@@ -1959,8 +1964,8 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
 
 void IQVTKCADModel3DViewer::editSketch(
     const insight::cad::ConstrainedSketch& psk,
-    const insight::ParameterSet& defaultGeometryParameters,
-    SetSketchEntityAppearanceCallback saac,
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+    const std::string& presentationDelegateKey,
     SketchCompletionCallback onAccept,
     SketchCompletionCallback onCancel )
 {
@@ -1969,8 +1974,7 @@ void IQVTKCADModel3DViewer::editSketch(
         auto ske = std::make_unique<IQVTKConstrainedSketchEditor>(
             *this,
             psk,
-            defaultGeometryParameters,
-            saac );
+            entityProperties, presentationDelegateKey );
 
         insight::cad::ConstrainedSketchPtr skePtr=*ske;
 
@@ -2015,11 +2019,11 @@ QPointF IQVTKCADModel3DViewer::widgetCoordsToVTK(const QPoint &widgetCoords) con
 
 
 
-void IQVTKCADModel3DViewer::setDefaultAction()
+IQVTKCADModel3DViewer::ViewWidgetActionPtr
+IQVTKCADModel3DViewer::setupDefaultAction()
 {
     auto selaction = std::make_shared<IQVTKSelectCADEntity>(*this);
     auto selactionPtr = selaction.get();
-    launchAction(selaction);
     connect(
         this, &IQVTKCADModel3DViewer::contextMenuClick, selactionPtr,
         [this,selactionPtr](const QPoint& pGlob)
@@ -2055,49 +2059,22 @@ void IQVTKCADModel3DViewer::setDefaultAction()
         }
     );
 
-}
-
-bool IQVTKCADModel3DViewer::isDefaultAction()
-{
-    if (currentAction_)
-    {
-        return typeid(*currentAction_) == typeid(IQVTKSelectCADEntity);
-    }
-    return false;
+    return selaction;
 }
 
 
 
-bool IQVTKCADModel3DViewer::launchAction(
-    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force )
-{
-    if (force)
-    {
-        currentAction_.reset();
-    }
-
-    if (!currentAction_)
-    {
-        currentAction_=activity;
-        currentAction_->actionIsFinished.connect(
-            std::bind(&IQVTKCADModel3DViewer::setDefaultAction, this) );        
-        currentAction_->userPrompt.connect(
-            std::bind(&QStatusBar::showMessage, statusBar(), std::placeholders::_1, 0) );
-
-        currentAction_->start();
-
-        return true;
-    }
-    else
-        return false;
-}
 
 const IQVTKCADModel3DViewer::Bounds &IQVTKCADModel3DViewer::sceneBounds() const
 {
     return sceneBounds_;
 }
 
+
+
 const char IQVTKCADModel3DViewer::bgiNodeName[] = "backgroundImage";
+
+
 
 void IQVTKCADModel3DViewer::writeViewerState(
     rapidxml::xml_document<>& doc,
@@ -2289,8 +2266,8 @@ void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
     {
         afterDoubleClick_=true;
         bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-      if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+      if (!ret)
+            ret=this->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
     }
 
     IQCADModel3DViewer::mouseDoubleClickEvent(e);
@@ -2305,20 +2282,20 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
         bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
         if (!ret)
             ret = this->onLeftButtonDown(e->modifiers(), e->pos(), afterDoubleClick_ );
-        if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
+        if (!ret)
+            ret=this->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
     }
     else if ( e->button() & Qt::RightButton )
     {
         bool ret=navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onRightButtonDown( e->modifiers(), e->pos() );
+        if (!ret)
+            ret=this->onRightButtonDown( e->modifiers(), e->pos() );
     }
     else if ( e->button() & Qt::MidButton )
     {
         bool ret=navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
+        if (!ret)
+            ret=this->onMiddleButtonDown( e->modifiers(), e->pos() );
     }
 
     IQCADModel3DViewer::mousePressEvent(e);
@@ -2338,14 +2315,14 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
         bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
         if (!ret)
             ret = this->onLeftButtonUp(e->modifiers(), e->pos(), afterDoubleClick_ );
-        if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
+        if (!ret)
+            ret=this->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
     }
     else if ( e->button() & Qt::RightButton )
     {
         bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onRightButtonUp( e->modifiers(), e->pos() );
+        if (!ret)
+            ret=this->onRightButtonUp( e->modifiers(), e->pos() );
 
         if (!ret)
         {
@@ -2355,8 +2332,8 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
     else if ( e->button() & Qt::MidButton )
     {
         bool ret=navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
+        if (!ret)
+            ret=this->onMiddleButtonUp( e->modifiers(), e->pos() );
     }
 
     afterDoubleClick_=false; // reset
@@ -2374,8 +2351,7 @@ void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
     IQCADModel3DViewer::mouseMoveEvent(e);
 
     bool ret=false;
-    if (currentAction_)
-        if (!ret) ret=currentAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+    if (!ret) ret=this->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
     if (!ret) navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
 }
 
@@ -2389,8 +2365,7 @@ void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
     IQCADModel3DViewer::wheelEvent(e);
 
     bool ret=false;
-    if (currentAction_)
-        if (!ret) ret=currentAction_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+    if (!ret) ret=this->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
     if (!ret) navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
 }
 
@@ -2413,8 +2388,8 @@ void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
     if (!ret)
       ret = this->onKeyPress(e->modifiers(), e->key());
 
-    if (!ret && currentAction_)
-      ret=currentAction_->onKeyPress(e->modifiers(), e->key());
+    if (!ret)
+      ret=this->onKeyPress(e->modifiers(), e->key());
 
     if (!ret) QWidget::keyPressEvent(e);
 }
@@ -2430,8 +2405,8 @@ void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
 
     bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
 
-    if (!ret && currentAction_)
-      ret=currentAction_->onKeyRelease(e->modifiers(), e->key());
+    if (!ret)
+      ret=this->onKeyRelease(e->modifiers(), e->key());
 
     if (!ret) QWidget::keyReleaseEvent(e);
 }

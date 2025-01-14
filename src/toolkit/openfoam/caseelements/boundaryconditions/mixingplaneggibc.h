@@ -23,16 +23,17 @@ stackAxisOrientation = selection ( axial radial ) axial "In which direction are 
 rotationCentre = vector (0 0 0) "Origin of rotation axis"
 rotationAxis = vector (0 0 1) "Direction of rotation axis"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "MixingPlaneGGIBC" );
-    MixingPlaneGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-                       const ParameterSet&ps = Parameters::makeDefault() );
+    MixingPlaneGGIBC (
+        OpenFOAMCase& c, const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = ParameterSetInput() );
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;

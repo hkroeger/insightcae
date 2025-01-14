@@ -11,9 +11,8 @@ addToOpenFOAMCaseElementFactoryTable(potentialFoamNumerics);
 
 
 
-potentialFoamNumerics::potentialFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+potentialFoamNumerics::potentialFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0., 0., 0.}), volField ) );
 }

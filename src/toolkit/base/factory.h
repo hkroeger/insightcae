@@ -26,6 +26,29 @@
  * MUST BE HEADER ONLY! (used in PDL without linking toolkit lib!)
  */
 
+#include <map>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <stdexcept>
+#include <functional>
+#include <memory>
+
+namespace std {
+
+#if __cplusplus <= 201103L
+
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args)
+{
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+#endif
+
+
+}
+
 namespace insight {
 
 
@@ -132,8 +155,141 @@ static std::vector<std::string> factoryToC()
  } \
  baseT::FactoryTable* baseT::factories_=nullptr
 
- 
- 
+
+
+
+template<const std::string* typeName, class FunctionReturnType = void, class ...FunctionArgs>
+class StaticFunctionTable
+    : public std::map<
+          std::string,
+          std::function<
+              FunctionReturnType( FunctionArgs... )
+              >
+          >
+{
+
+
+public:
+    StaticFunctionTable()
+    {}
+
+    typedef std::function<
+        FunctionReturnType( FunctionArgs... )
+        > Function;
+
+
+    // //not working as expected
+    // bool has(const std::string& key) const
+    // {
+    //     return this->count(key)>0;
+    // }
+
+    std::vector<std::string> ToC() const
+    {
+        std::vector<std::string> toc;
+        std::transform(
+            this->begin(), this->end(),
+            std::back_inserter(toc),
+            [](const typename std::map<std::string, Function>::value_type& e)
+            { return e.first; }
+            );
+        return toc;
+    }
+
+    Function lookup(
+        const std::string& key) const
+    {
+        auto i=this->find(key);
+
+        if (i==this->end())
+        {
+            throw std::runtime_error(
+                "Could not lookup type \""
+                + key +
+                "\" in factory table of "
+                + *typeName );
+        }
+
+        return i->second;
+    }
+
+    typename Function::result_type operator()(
+        const std::string& key,
+        FunctionArgs&&... addArgs) const
+    {
+        return std::move(
+            lookup(key)( std::forward<FunctionArgs>(addArgs)... )
+            );
+    }
+
+
+    template<class Instance>
+    struct Add {
+        // std::unique_ptr<> createInstance
+        Add(StaticFunctionTable& table, Function f) {
+            table.emplace(
+                Instance::typeName_(), f
+                );
+        }
+    };
+
+};
+
+
+
+#define declareStaticFunctionTable2(TYPE, NAME)                         \
+static TYPE& NAME##_table();                                            \
+template<class ...FunctionArgs>                                         \
+static TYPE::Function::result_type                                      \
+NAME(const TYPE::key_type& key, FunctionArgs&&... addArgs)              \
+{ return NAME##_table()( key, std::forward<FunctionArgs>(addArgs)...); }
+
+
+#define defineStaticFunctionTable2(BASE, TYPE, NAME)                    \
+BASE::TYPE& BASE::NAME##_table() {                                      \
+ static TYPE theInstance;                                               \
+ return theInstance;                                                    \
+}
+
+
+#define addToStaticFunctionTable2(BASE, TYPE, NAME, DERIVED, OBJECT)    \
+BASE::TYPE::Add<DERIVED>                                                \
+    add##DERIVED##To##NAME##In##BASE(                                             \
+        BASE::NAME##_table(),                                           \
+        OBJECT )
+
+#define addToFactoryTable2(BASE, TYPE, NAME, DERIVED)                   \
+BASE::TYPE::Add<DERIVED>                                                \
+    add##DERIVED##To##NAME##In##BASE(                                   \
+      BASE::NAME##_table() )
+
+
+
+template<const std::string* typeName, class BaseClass, class ...FunctionArgs>
+class Factory
+    : public StaticFunctionTable<typeName, std::unique_ptr<BaseClass>, FunctionArgs...>
+{
+
+public:
+
+    typedef StaticFunctionTable<typeName, std::unique_ptr<BaseClass>, FunctionArgs...> FactoryBase;
+
+    template<class Instance>
+    struct Add
+        : public FactoryBase::template Add<Instance>
+    {
+        Add(Factory& factory)
+        : FactoryBase::template Add<Instance>(
+            factory,
+            &std::make_unique<Instance, FunctionArgs...> )
+        {}
+    };
+};
+
+
+
+
+
  
 #define defineFactoryTableNoArgs(baseT) \
  baseT::Factory::~Factory() {} \
@@ -324,16 +480,20 @@ static struct add##specT##To##baseT##Name##FunctionTable \
  *  * ParameterSet getParameters() // returning the active ParameterSet of an instantiated object
  */
 #define declareDynamicClass(baseT) \
-    declareFactoryTable ( baseT, LIST ( const ParameterSet& p ), LIST ( p ) ); \
-    declareStaticFunctionTable ( defaultParameters, ParameterSet ); \
-    static std::shared_ptr<baseT> create ( const SelectableSubsetParameter& ssp ); \
-    virtual ParameterSet getParameters() const =0
-    
+    declareFactoryTable ( baseT, LIST ( ParameterSetInput&& ip ), LIST ( std::move(ip) ) ); \
+    declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> ); \
+    static std::shared_ptr<baseT> create ( const SelectableSubsetParameter& ssp );
+
+#define declareDynamicClass_implGetParameters(baseT) \
+declareFactoryTable ( baseT, LIST ( ParameterSetInput&& ip ), LIST ( std::move(ip) ) ); \
+    declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> ); \
+    static std::shared_ptr<baseT> create ( const SelectableSubsetParameter& ssp );
+
 #define defineDynamicClass(baseT) \
-    defineFactoryTable(baseT, LIST(const ParameterSet& ps), LIST(ps));\
+    defineFactoryTable(baseT, LIST(ParameterSetInput&& ip), LIST(std::move(ip)));\
     std::shared_ptr<baseT> baseT::create(const SelectableSubsetParameter& ssp) \
     { return std::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); } \
-    defineStaticFunctionTable(baseT, defaultParameters, ParameterSet)
+    defineStaticFunctionTable(baseT, defaultParameters, std::unique_ptr<ParameterSet>)
 
 
 #define CREATE_FUNCTION(DerivedClass) \

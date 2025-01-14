@@ -34,13 +34,12 @@ SSHLinuxServer::Config::Config(
     rapidxml::xml_node<> *e
     )
   :LinuxRemoteServer::Config(
-     boost::filesystem::path(e->first_attribute("baseDirectory")->value()),
+     boost::filesystem::path(getAttribute(*e, "baseDirectory")),
      ( e->first_attribute("np")?
-               insight::toNumber<int>(e->first_attribute("np")->value())
-               : 1 )
+               getAttribute<int>(*e, "np") : 1 )
      )
 {
-  hostName_=e->first_attribute("host")->value();
+  hostName_ = getAttribute(*e, "host");
 
   if (auto ac = e->first_attribute("creationCommand"))
   {

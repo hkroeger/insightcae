@@ -16,9 +16,8 @@ addToOpenFOAMCaseElementFactoryTable(compressibleTwoPhaseThermophysicalPropertie
 
 
 compressibleTwoPhaseThermophysicalProperties::compressibleTwoPhaseThermophysicalProperties
-( OpenFOAMCase& c, const ParameterSet& ps )
-  : transportModel(c, ps),
-    p_(ps)
+( OpenFOAMCase& c, ParameterSetInput ip )
+    : transportModel(c, ip.forward<Parameters>())
 {
 }
 
@@ -31,27 +30,27 @@ void compressibleTwoPhaseThermophysicalProperties::addIntoDictionaries ( OFdicts
         dictionaries.lookupDict("constant/thermophysicalProperties");
 
     OFDictData::list phasesList;
-    for (const auto& p: p_.phases)
+    for (const auto& ph: p().phases)
     {
-        phasesList.push_back(p.name);
+        phasesList.push_back(ph.name);
     }
     thermophysicalProperties["phases"]=phasesList;
-    thermophysicalProperties["pMin"]=p_.pMin;
-    thermophysicalProperties["sigma"]=p_.sigma;
+    thermophysicalProperties["pMin"]=p().pMin;
+    thermophysicalProperties["sigma"]=p().sigma;
 
-    for (const auto& p: p_.phases)
+    for (const auto& ph: p().phases)
     {
-        SpeciesData sd(p);
+        SpeciesData sd(ph);
 
         OFDictData::dict& td=
-            dictionaries.lookupDict("constant/thermophysicalProperties."+p.name);
+            dictionaries.lookupDict("constant/thermophysicalProperties."+ph.name);
 
         OFDictData::dict tt;
         tt["type"]="heRhoThermo";
         tt["mixture"]="pureMixture";
         tt["transport"]=sd.transportType();
         tt["thermo"]=sd.thermoType();
-        switch (p_.energyType)
+        switch (Parameters::energyType_type(p().energyType))
         {
         case Parameters::energyType_type::sensibleInternalEnthalpy:
             tt["energy"]="sensibleInternalEnthalpy";

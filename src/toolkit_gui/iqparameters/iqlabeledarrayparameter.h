@@ -6,7 +6,7 @@
 #include "base/parameters/labeledarrayparameter.h"
 
 class TOOLKIT_GUI_EXPORT IQLabeledArrayParameter
-    : public IQParameter
+    : public IQSpecializedParameter<insight::LabeledArrayParameter>
 {
 public:
     declareType(insight::LabeledArrayParameter::typeName_());
@@ -15,8 +15,7 @@ public:
         (
             QObject* parent,
             IQParameterSetModel* psmodel,
-            const QString& name,
-            insight::Parameter& parameter,
+            insight::Parameter* parameter,
             const insight::ParameterSet& defaultParameterSet
             );
 

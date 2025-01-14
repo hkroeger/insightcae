@@ -14,9 +14,10 @@ addToOpenFOAMCaseElementFactoryTable(dynamicOversetFvMesh);
 
 
 
-dynamicOversetFvMesh::dynamicOversetFvMesh( OpenFOAMCase& c, const ParameterSet& ps )
-: dynamicMesh(c, ps),
-  ps_(ps)
+dynamicOversetFvMesh::dynamicOversetFvMesh(
+    OpenFOAMCase& c,
+    ParameterSetInput ip)
+: dynamicMesh(c, ip.forward<Parameters>())
 {
 }
 
@@ -31,7 +32,6 @@ void dynamicOversetFvMesh::addFields( OpenFOAMCase& c ) const
 
 void dynamicOversetFvMesh::addIntoDictionaries(OFdicts& dictionaries) const
 {
-    Parameters p(ps_);
 
     OFDictData::dict& dynamicMeshDict
       = dictionaries.lookupDict("constant/dynamicMeshDict");
@@ -40,7 +40,7 @@ void dynamicOversetFvMesh::addIntoDictionaries(OFdicts& dictionaries) const
 
     OFDictData::dict solvers;
 
-    SixDOFRigidBodyMotionSolver rbms(p.rigidBodyMotion);
+    SixDOFRigidBodyMotionSolver rbms(p().rigidBodyMotion);
     std::string name = rbms.motionSolverName();
 
     OFDictData::dict rbmc;

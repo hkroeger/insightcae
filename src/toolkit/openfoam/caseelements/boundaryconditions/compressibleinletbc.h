@@ -18,11 +18,10 @@ inherits VelocityInletBC::Parameters
 
 pressure = double 1e5 "Static pressure at the inlet"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    ParameterSet ps_;
 
 public:
     declareType ( "CompressibleInletBC" );
@@ -32,7 +31,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& p = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
     virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh ) const;
 

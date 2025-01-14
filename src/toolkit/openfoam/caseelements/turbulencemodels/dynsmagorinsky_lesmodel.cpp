@@ -18,8 +18,8 @@ void dynSmagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
     c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
 
-dynSmagorinsky_LESModel::dynSmagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps)
-: LESModel(c)
+dynSmagorinsky_LESModel::dynSmagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip)
+: LESModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

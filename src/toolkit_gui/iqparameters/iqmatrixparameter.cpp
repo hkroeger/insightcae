@@ -15,20 +15,22 @@ IQMatrixParameter::IQMatrixParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::MatrixParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {
 }
 
 
 QString IQMatrixParameter::valueText() const
 {
-  const auto& p = dynamic_cast<const insight::MatrixParameter&>(parameter());
-
-  return QString("matrix %1x%2").arg( p().n_rows ).arg( p().n_cols );
+  const auto& p = parameter();
+  return
+      QString("matrix %1x%2")
+      .arg( p().n_rows )
+      .arg( p().n_cols );
 }
 
 
@@ -37,7 +39,6 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  const auto& p = dynamic_cast<const insight::MatrixParameter&>(parameter());
 
   auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
@@ -46,7 +47,7 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
   layout2->addWidget(promptLabel);
   auto *lineEdit = new QLineEdit(editControlsContainer);
 //  connect(le_, &QLineEdit::destroyed, this, &MatrixParameterWrapper::onDestruction);
-  lineEdit->setText(mat2Str(p()));
+  lineEdit->setText(mat2Str(parameter()()));
   layout2->addWidget(lineEdit);
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout2->addWidget(dlgBtn_);
@@ -58,9 +59,7 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::MatrixParameter&>(this->parameterRef());
-    p.set(arma::mat(lineEdit->text().toStdString()));
-//    model->notifyParameterChange(index);
+    parameterRef().set(arma::mat(lineEdit->text().toStdString()));
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

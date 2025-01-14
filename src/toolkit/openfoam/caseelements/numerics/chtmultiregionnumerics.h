@@ -25,17 +25,16 @@ formulation = selectablesubset {{
 fluidRegions = array [ string "" "Name of cell zone" ] *0 "Names of the cell zones comprising the different fluid regions. One region per cell zone is defined."
 solidRegions = array [ string "" "Name of cell zone" ] *0 "Names of the cell zones comprising the different solid regions. One region per cell zone is defined."
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     void init();
 
 public:
     declareType ( "chtMultiRegionNumerics" );
-    chtMultiRegionNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    chtMultiRegionNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };
@@ -64,17 +63,16 @@ pinternal = double 0.0 "Internal pressure field value"
 Tinternal = double 300.0 "Internal temperature field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     void init();
 
 public:
     declareType ( "chtMultiRegionFluidNumerics" );
-    chtMultiRegionFluidNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    chtMultiRegionFluidNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

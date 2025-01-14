@@ -16,6 +16,7 @@ public:
 #include "mirrormesh__mirrorMesh__Parameters.h"
 /*
 PARAMETERSET>>> mirrorMesh Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 plane = selectablesubset {{
  pointAndNormal set {
@@ -33,15 +34,14 @@ plane = selectablesubset {{
 
 planeTolerance = double 1e-3 "plane tolerance"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "mirrorMesh" );
-    mirrorMesh ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    mirrorMesh ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

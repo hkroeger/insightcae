@@ -16,21 +16,21 @@ public:
 
 /*
 PARAMETERSET>>> copyFiles Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 files = array [ set {
  source = path "" "File or directory which shall be copied into the case."
  target = string "constant/polyMesh" "Target location (relative to case directory)"
 } ] *0 "Array of copy file operations"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType("copyFiles");
-  copyFiles(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  copyFiles(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 

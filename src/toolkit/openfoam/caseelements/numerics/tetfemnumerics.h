@@ -13,7 +13,7 @@ class tetFemNumerics
 {
 
 public:
-    tetFemNumerics ( OpenFOAMCase& c );
+    tetFemNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static std::string category() { return "Numerics"; }
     virtual bool isUnique() const;

@@ -19,20 +19,19 @@ IQPathParameter::IQPathParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::PathParameter>(
+          parent, psmodel, parameter, defaultParameterSet )
 {
 }
 
 
 QString IQPathParameter::valueText() const
 {
-  const auto& p = dynamic_cast<const insight::PathParameter&>(parameter());
-
-  return QString::fromStdString( p.originalFilePath().filename().string() );
+  return QString::fromStdString(
+        parameter().originalFilePath().filename().string() );
 }
 
 
@@ -41,8 +40,6 @@ QVBoxLayout* IQPathParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  const auto&p = dynamic_cast<const insight::PathParameter&>(parameter());
-
   auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QHBoxLayout *layout2=new QHBoxLayout;
@@ -51,7 +48,8 @@ QVBoxLayout* IQPathParameter::populateEditControls(
   layout2->addWidget(promptLabel);
   auto *lineEdit = new QLineEdit(editControlsContainer);
 //  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
-  lineEdit->setText(QString::fromStdString(p.originalFilePath().string()));
+  lineEdit->setText(QString::fromStdString(
+      parameter().originalFilePath().string()));
   layout2->addWidget(lineEdit);
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
@@ -68,9 +66,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::PathParameter&>(this->parameterRef());
-    p.setOriginalFilePath( lineEdit->text().toStdString() );
-//    model->notifyParameterChange(index);
+    parameterRef().setOriginalFilePath( lineEdit->text().toStdString() );
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -82,7 +78,10 @@ QVBoxLayout* IQPathParameter::populateEditControls(
   {
     lineEdit->setToolTip
     (
-      QString("(Evaluates to \"")+boost::filesystem::absolute(lineEdit->text().toStdString()).string().c_str()+"\")"
+      QString("(Evaluates to \"%1\"")
+              .arg(QString::fromStdString(
+                boost::filesystem::absolute(
+                      lineEdit->text().toStdString()).string() ))
     );
   }
   );
@@ -140,8 +139,9 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   connect(saveBtn, &QPushButton::clicked, [=]()
   {
-    const auto&p = dynamic_cast<const insight::PathParameter&>(parameter());
-    boost::filesystem::path orgfn( p.originalFilePath() );
+    boost::filesystem::path orgfn(
+          parameter().originalFilePath() );
+
     QString fn = QFileDialog::getSaveFileName(
           editControlsContainer,
           "Please select export path",
@@ -150,7 +150,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
           );
     if (!fn.isEmpty())
     {
-      p.copyTo( fn.toStdString() );
+      parameter().copyTo( fn.toStdString() );
     }
   }
   );

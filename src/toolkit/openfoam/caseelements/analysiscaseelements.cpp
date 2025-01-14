@@ -26,6 +26,7 @@
 
 #include "base/boost_include.h"
 #include "base/translations.h"
+#include <iterator>
 
 using namespace std;
 using namespace boost;
@@ -341,22 +342,23 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 defineType(outputFilterFunctionObject);
 defineFactoryTable
 (
-    outputFilterFunctionObject, 
-    LIST 
-    (  
-        OpenFOAMCase& c, 
-        const ParameterSet& ps
+    outputFilterFunctionObject,
+    LIST
+    (
+        OpenFOAMCase& c,
+        ParameterSetInput&& ip
     ),
-    LIST ( c, ps ) 
+    LIST ( c, std::move(ip) )
 );
-defineStaticFunctionTable(outputFilterFunctionObject, defaultParameters, ParameterSet);
+defineStaticFunctionTable(outputFilterFunctionObject, defaultParameters, std::unique_ptr<ParameterSet>);
 
 
 
 
-outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, Parameters(ps).name+"outputFilterFunctionObject", ps),
-  p_(ps)
+outputFilterFunctionObject::outputFilterFunctionObject(
+    OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, /*Parameters(ps).name+"outputFilterFunctionObject",*/
+                          ip.forward<Parameters>())
 {
 }
 
@@ -371,21 +373,21 @@ std::vector<string> outputFilterFunctionObject::requiredLibraries() const
 void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDict) const
 {
   OFDictData::dict fod=functionObjectDict();
-  fod["region"]=p_.region;
+  fod["region"]=p().region;
   fod["enabled"]=true;
   if (OFversion()>=400)
     {
-      fod["writeControl"]=p_.outputControl;
-      fod["writeInterval"]=p_.outputInterval;
+      fod["writeControl"]=p().outputControl;
+      fod["writeInterval"]=p().outputInterval;
     }
   else
     {
-      fod["outputControl"]=p_.outputControl;
-      fod["outputInterval"]=p_.outputInterval;
+      fod["outputControl"]=p().outputControl;
+      fod["outputInterval"]=p().outputInterval;
     }
-  fod["timeStart"]=p_.timeStart;
+  fod["timeStart"]=p().timeStart;
 
-  controlDict.subDict("functions")[p_.name]=fod;
+  controlDict.subDict("functions")[p().name]=fod;
 
   auto libs=requiredLibraries();
   for (const auto& l: libs)
@@ -423,9 +425,8 @@ addToOpenFOAMCaseElementFactoryTable(fieldAveraging);
 
 
 
-fieldAveraging::fieldAveraging(OpenFOAMCase& c,  const ParameterSet& ps )
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+fieldAveraging::fieldAveraging(OpenFOAMCase& c,  ParameterSetInput ip)
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -441,7 +442,7 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
   fod["enabled"]=true;
   
   OFDictData::list fl;
-  for (const std::string& fln: p_.fields)
+  for (const std::string& fln: p().fields)
   {
     fl.push_back(fln);
     OFDictData::dict cod;
@@ -464,9 +465,8 @@ addToOpenFOAMCaseElementFactoryTable(probes);
 
 
 
-probes::probes(OpenFOAMCase& c,  const ParameterSet& ps )
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+probes::probes(OpenFOAMCase& c,  ParameterSetInput ip )
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -481,14 +481,14 @@ OFDictData::dict probes::functionObjectDict() const
   fod["functionObjectLibs"]=libl;
   
   OFDictData::list pl;
-  for (const arma::mat& lo: p_.probeLocations)
+  for (const arma::mat& lo: p().probeLocations)
   {
     pl.push_back(OFDictData::vector3(lo));
   }
   fod["probeLocations"]=pl;
   
-  OFDictData::list fl; fl.resize(p_.fields.size());
-  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  OFDictData::list fl; fl.resize(p().fields.size());
+  copy(p().fields.begin(), p().fields.end(), fl.begin());
   fod["fields"]=fl;
   
   return fod;
@@ -660,9 +660,8 @@ arma::mat probes::readProbesLocations
 defineType(volumeIntegrate);
 addToOpenFOAMCaseElementFactoryTable(volumeIntegrate);
 
-volumeIntegrate::volumeIntegrate(OpenFOAMCase& c,  const ParameterSet& ps )
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+volumeIntegrate::volumeIntegrate(OpenFOAMCase& c,  ParameterSetInput ip )
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -675,12 +674,12 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
   fod["functionObjectLibs"]=libl;
 
   if ( const Parameters::domain_wholedomain_type* dt =
-       boost::get<Parameters::domain_wholedomain_type>(&p_.domain) )
+       boost::get<Parameters::domain_wholedomain_type>(&p().domain) )
     {
       fod["regionType"]="all";
     }
   else if ( const Parameters::domain_cellZone_type* dcz =
-       boost::get<Parameters::domain_cellZone_type>(&p_.domain) )
+       boost::get<Parameters::domain_cellZone_type>(&p().domain) )
     {
       fod["regionType"]="cellZone";
       fod["name"]=dcz->cellZoneName;
@@ -688,31 +687,31 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
 
   fod["writeFields"]=false;
   string op;
-  if (p_.operation == Parameters::volIntegrate)
+  if (p().operation == Parameters::volIntegrate)
     op="volIntegrate";
-  else if (p_.operation == Parameters::sum)
+  else if (p().operation == Parameters::sum)
     op="sum";
-  else if (p_.operation == Parameters::sumMag)
+  else if (p().operation == Parameters::sumMag)
     op="sumMag";
-  else if (p_.operation == Parameters::average)
+  else if (p().operation == Parameters::average)
     op="average";
-  else if (p_.operation == Parameters::volAverage)
+  else if (p().operation == Parameters::volAverage)
     op="volAverage";
-  else if (p_.operation == Parameters::min)
+  else if (p().operation == Parameters::min)
     op="min";
-  else if (p_.operation == Parameters::max)
+  else if (p().operation == Parameters::max)
     op="max";
-  else if (p_.operation == Parameters::CoV)
+  else if (p().operation == Parameters::CoV)
     op="CoV";
-  else if (p_.operation == Parameters::weightedVolIntegrate)
+  else if (p().operation == Parameters::weightedVolIntegrate)
   {
     op="weightedVolIntegrate";
-    fod["weightField"]=p_.weightFieldName;
+    fod["weightField"]=p().weightFieldName;
   }
   fod["operation"]=op;
 
-  OFDictData::list fl; fl.resize(p_.fields.size());
-  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  OFDictData::list fl; fl.resize(p().fields.size());
+  copy(p().fields.begin(), p().fields.end(), fl.begin());
   fod["fields"]=fl;
 
   return fod;
@@ -737,9 +736,8 @@ arma::mat volumeIntegrate::readVolumeIntegrals
 defineType(surfaceIntegrate);
 addToOpenFOAMCaseElementFactoryTable(surfaceIntegrate);
 
-surfaceIntegrate::surfaceIntegrate(OpenFOAMCase& c,  const ParameterSet& ps )
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+surfaceIntegrate::surfaceIntegrate(OpenFOAMCase& c,  ParameterSetInput ip)
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -750,8 +748,8 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
 
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
-  OFDictData::list fl; fl.resize(p_.fields.size());
-  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  OFDictData::list fl; fl.resize(p().fields.size());
+  copy(p().fields.begin(), p().fields.end(), fl.begin());
   fod["fields"]=fl;
 
   if (OFversion()<170)
@@ -760,27 +758,27 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
     fod["type"]="faceSource";
 
     if ( const Parameters::domain_patch_type* dp =
-         boost::get<Parameters::domain_patch_type>(&p_.domain) )
+         boost::get<Parameters::domain_patch_type>(&p().domain) )
       {
         fod["source"]="patch";
         fod["sourceName"]=dp->patchName;
       }
     else if ( const Parameters::domain_faceZone_type* dcz =
-         boost::get<Parameters::domain_faceZone_type>(&p_.domain) )
+         boost::get<Parameters::domain_faceZone_type>(&p().domain) )
       {
         fod["source"]="faceZone";
         fod["sourceName"]=dcz->faceZoneName;
       }
 
-    if (p_.operation == Parameters::operation_type::areaIntegrate)
+    if (p().operation == Parameters::operation_type::areaIntegrate)
       {
         fod["operation"]="areaIntegrate";
       }
-    else if (p_.operation == Parameters::operation_type::areaAverage)
+    else if (p().operation == Parameters::operation_type::areaAverage)
       {
         fod["operation"]="areaAverage";
       }
-    else if (p_.operation == Parameters::operation_type::sum)
+    else if (p().operation == Parameters::operation_type::sum)
       {
         fod["operation"]="sum";
       }
@@ -793,13 +791,13 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
     fod["type"]="surfaceFieldValue";
 
     if ( const Parameters::domain_patch_type* dp =
-         boost::get<Parameters::domain_patch_type>(&p_.domain) )
+         boost::get<Parameters::domain_patch_type>(&p().domain) )
       {
         fod["regionType"]="patch";
         fod["name"]=dp->patchName;
       }
     else if ( const Parameters::domain_faceZone_type* dcz =
-         boost::get<Parameters::domain_faceZone_type>(&p_.domain) )
+         boost::get<Parameters::domain_faceZone_type>(&p().domain) )
       {
         fod["regionType"]="faceZone";
         fod["name"]=dcz->faceZoneName;
@@ -807,15 +805,15 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
 
     fod["writeFields"]=false;
 
-    if (p_.operation == Parameters::operation_type::areaIntegrate)
+    if (p().operation == Parameters::operation_type::areaIntegrate)
       {
         fod["operation"]="areaIntegrate";
       }
-    else if (p_.operation == Parameters::operation_type::areaAverage)
+    else if (p().operation == Parameters::operation_type::areaAverage)
       {
         fod["operation"]="areaAverage";
       }
-    else if (p_.operation == Parameters::operation_type::sum)
+    else if (p().operation == Parameters::operation_type::sum)
       {
         fod["operation"]="sum";
       }
@@ -894,9 +892,8 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
 defineType(fieldMinMax);
 addToOpenFOAMCaseElementFactoryTable(fieldMinMax);
 
-fieldMinMax::fieldMinMax(OpenFOAMCase& c,  const ParameterSet& ps )
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+fieldMinMax::fieldMinMax(OpenFOAMCase& c,  ParameterSetInput ip )
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -913,8 +910,8 @@ OFDictData::dict fieldMinMax::functionObjectDict() const
   fod["writeFields"]=false;
 
 
-  OFDictData::list fl; fl.resize(p_.fields.size());
-  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  OFDictData::list fl; fl.resize(p().fields.size());
+  copy(p().fields.begin(), p().fields.end(), fl.begin());
   fod["fields"]=fl;
 
   return fod;
@@ -940,9 +937,8 @@ std::map<std::string,arma::mat> fieldMinMax::readOutput
 defineType(cuttingPlane);
 addToOpenFOAMCaseElementFactoryTable(cuttingPlane);
 
-cuttingPlane::cuttingPlane(OpenFOAMCase& c, const ParameterSet& ps)
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+cuttingPlane::cuttingPlane(OpenFOAMCase& c, ParameterSetInput ip)
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -958,8 +954,12 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
 
   fod["surfaceFormat"]="vtk";
 
-        // Fields to be sampled
-  l.assign<string>(p_.fields);
+  // Fields to be sampled
+  std::copy(
+      p().fields.begin(), p().fields.end(),
+      std::back_inserter(l)
+      );
+  // l.assign<string>(p().fields);
   fod["fields"]=l;
 
   OFDictData::dict pd;
@@ -972,7 +972,7 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
   pd["pointAndNormalDict"]=pand;
 
   OFDictData::list sl;
-  sl.push_back(p_.name);
+  sl.push_back(p().name);
   sl.push_back(pd);
   fod["surfaces"]=sl;
   
@@ -985,9 +985,8 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
 defineType(twoPointCorrelation);
 addToOpenFOAMCaseElementFactoryTable(twoPointCorrelation);
 
-twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps)
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
+twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip)
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
 {
 }
 
@@ -1025,15 +1024,15 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
   OFDictData::list libl; libl.push_back("\"libLESFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
   fod["enabled"]=true;
-  fod["outputControl"]=p_.outputControl;
-  fod["outputInterval"]=p_.outputInterval;
-  fod["timeStart"]=p_.timeStart;
+  fod["outputControl"]=p().outputControl;
+  fod["outputInterval"]=p().outputInterval;
+  fod["timeStart"]=p().timeStart;
   
-  fod["p0"]=OFDictData::vector3(p_.p0);
-  fod["directionSpan"]=OFDictData::vector3(p_.directionSpan);
-  fod["np"]=p_.np;
-  fod["homogeneousTranslationUnit"]=OFDictData::vector3(p_.homogeneousTranslationUnit);
-  fod["nph"]=p_.nph;
+  fod["p0"]=OFDictData::vector3(p().p0);
+  fod["directionSpan"]=OFDictData::vector3(p().directionSpan);
+  fod["np"]=p().np;
+  fod["homogeneousTranslationUnit"]=OFDictData::vector3(p().homogeneousTranslationUnit);
+  fod["nph"]=p().nph;
 
   fod["csys"]=csysConfiguration();
   
@@ -1117,22 +1116,21 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations
 defineType(cylindricalTwoPointCorrelation);
 addToOpenFOAMCaseElementFactoryTable(cylindricalTwoPointCorrelation);
 
-cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps )
-: twoPointCorrelation(c, ps),
-  p_(ps)
-{
-}
+cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(
+    OpenFOAMCase& c, ParameterSetInput ip)
+: twoPointCorrelation(c, ip.forward<Parameters>())
+{}
 
 OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
 {
   OFDictData::dict csys;
   csys["type"]="cylindrical";
   csys["origin"]=OFDictData::vector3(0,0,0);
-  csys["degrees"]=p_.degrees;
+  csys["degrees"]=p().degrees;
   
   OFDictData::data 
-    e1=OFDictData::vector3(p_.er), 
-    e3=OFDictData::vector3(p_.ez);
+    e1=OFDictData::vector3(p().er),
+    e3=OFDictData::vector3(p().ez);
     
   if (OFversion()>=230)
   {
@@ -1159,11 +1157,9 @@ OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
 defineType(forces);
 addToOpenFOAMCaseElementFactoryTable(forces);
 
-forces::forces(OpenFOAMCase& c,  const ParameterSet& ps)
-: outputFilterFunctionObject(c, ps),
-  p_(ps)
-{
-}
+forces::forces(OpenFOAMCase& c,  ParameterSetInput ip)
+: outputFilterFunctionObject(c, ip.forward<Parameters>())
+{}
 
 OFDictData::dict forces::functionObjectDict() const
 {
@@ -1173,26 +1169,26 @@ OFDictData::dict forces::functionObjectDict() const
   fod["log"]=true;
   
   OFDictData::list pl;
-  for (const std::string& lo: p_.patches)
+  for (const std::string& lo: p().patches)
   {
     pl.push_back(lo);
   }
   fod["patches"]=pl;
   if (OFversion()>=400)
     {
-      fod["p"]=p_.pName;
-      fod["U"]=p_.UName;
-      fod["rho"]=p_.rhoName;
+      fod["p"]=p().pName;
+      fod["U"]=p().UName;
+      fod["rho"]=p().rhoName;
     }
   else
     {
-      fod["pName"]=p_.pName;
-      fod["UName"]=p_.UName;
-      fod["rhoName"]=p_.rhoName;
+      fod["pName"]=p().pName;
+      fod["UName"]=p().UName;
+      fod["rhoName"]=p().rhoName;
     }
-  fod["rhoInf"]=p_.rhoInf;
+  fod["rhoInf"]=p().rhoInf;
   
-  fod["CofR"]=OFDictData::vector3(p_.CofR);
+  fod["CofR"]=OFDictData::vector3(p().CofR);
   
   return fod;
 }
@@ -1390,9 +1386,8 @@ arma::mat forces::readForces
 defineType(extendedForces);
 addToOpenFOAMCaseElementFactoryTable(extendedForces);
 
-extendedForces::extendedForces(OpenFOAMCase& c, const ParameterSet& ps)
-: forces(c, ps),
-  p_(ps)
+extendedForces::extendedForces(OpenFOAMCase& c, ParameterSetInput ip)
+: forces(c, ip.forward<Parameters>())
 {}
 
 OFDictData::dict extendedForces::functionObjectDict() const
@@ -1403,26 +1398,26 @@ OFDictData::dict extendedForces::functionObjectDict() const
   fod["log"]=true;
   
   OFDictData::list pl;
-  for (const std::string& lo: p_.patches)
+  for (const std::string& lo: p().patches)
   {
     pl.push_back(lo);
   }
   fod["patches"]=pl;
-  fod["pName"]=p_.pName;
-  fod["UName"]=p_.UName;
+  fod["pName"]=p().pName;
+  fod["UName"]=p().UName;
   if (OFversion()>=400)
-    fod["rho"]=p_.rhoName;
+    fod["rho"]=p().rhoName;
   else
-    fod["rhoName"]=p_.rhoName;
-  fod["rhoInf"]=p_.rhoInf;
+    fod["rhoName"]=p().rhoName;
+  fod["rhoInf"]=p().rhoInf;
   
-  if (p_.maskField!="")
+  if (p().maskField!="")
   {
-      fod["maskField"]=p_.maskField;
-      fod["maskThreshold"]=p_.maskThreshold;
+      fod["maskField"]=p().maskField;
+      fod["maskThreshold"]=p().maskThreshold;
   }
   
-  fod["CofR"]=OFDictData::vector3(p_.CofR);
+  fod["CofR"]=OFDictData::vector3(p().CofR);
   return fod;
 }
 
@@ -1437,9 +1432,8 @@ std::vector<string> extendedForces::requiredLibraries() const
 defineType(catalyst);
 addToOpenFOAMCaseElementFactoryTable(catalyst);
 
-catalyst::catalyst(OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "catalyst", ps),
-  p_(ps)
+catalyst::catalyst(OpenFOAMCase& c, ParameterSetInput ip)
+: OpenFOAMCaseElement(c, /*"catalyst", */ip.forward<Parameters>())
 {
 }
 
@@ -1455,7 +1449,7 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::list scripts;
 
-  for (const auto& ss: p_.scripts)
+  for (const auto& ss: p().scripts)
   {
     if (const auto* sc = boost::get<Parameters::scripts_default_copy_type>(&ss))
     {
@@ -1471,11 +1465,11 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
   fod["scripts"]=scripts;
 
   OFDictData::dict& inputs = fod.subDict("inputs");
-  OFDictData::dict& inputregion = inputs.subDict(p_.inputname);
+  OFDictData::dict& inputregion = inputs.subDict(p().inputname);
   inputregion["boundary"]=true;
 
   OFDictData::list fieldlist;
-  std::transform(p_.fields.begin(), p_.fields.end(), std::back_inserter(fieldlist),
+  std::transform(p().fields.begin(), p().fields.end(), std::back_inserter(fieldlist),
                  [](const Parameters::fields_default_type& f) { return f; }
   );
   inputregion["fields"]=fieldlist;
@@ -1488,7 +1482,7 @@ void catalyst::addIntoDictionaries(OFdicts& dictionaries) const
 void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::path& location ) const
 {
 
-  for (const auto& ss: p_.scripts)
+  for (const auto& ss: p().scripts)
   {
 
     if (const auto* sc = boost::get<Parameters::scripts_default_copy_type>(&ss))
@@ -1509,7 +1503,7 @@ void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::
       "  def _CreatePipeline(coprocessor, datadescription):\n"
       "    class Pipeline:\n"
       "      paraview.simple._DisableFirstRenderCameraReset()\n"
-      "      dataset = coprocessor.CreateProducer(datadescription, '"<<p_.inputname<<"')\n";
+      "      dataset = coprocessor.CreateProducer(datadescription, '"<<p().inputname<<"')\n";
 
       if (sg->contour)
         f<<
@@ -1535,7 +1529,7 @@ void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::
       "      self.Pipeline = _CreatePipeline(self, datadescription)\n"
 
       "  coprocessor = CoProcessor()\n"
-      "  freqs = {'"<<p_.inputname<<"': []}\n"
+      "  freqs = {'"<<p().inputname<<"': []}\n"
       "  coprocessor.SetUpdateFrequencies(freqs)\n"
       "  return coprocessor\n"
 
@@ -1556,7 +1550,7 @@ void catalyst::modifyCaseOnDisk ( const OpenFOAMCase&, const boost::filesystem::
       "    coprocessor.UpdateProducers(datadescription)\n"
       "    coprocessor.WriteData(datadescription);\n"
       "    coprocessor.WriteImages(datadescription, rescale_lookuptable=False)\n"
-      "    coprocessor.DoLiveVisualization(datadescription, \""<<p_.paraview_host<<"\", "<<p_.paraview_port<<")\n"
+      "    coprocessor.DoLiveVisualization(datadescription, \""<<p().paraview_host<<"\", "<<p().paraview_port<<")\n"
       ;
 
     }
@@ -1610,26 +1604,23 @@ double CorrelationFunctionModel::lengthScale() const
 }
 
 
-addToAnalysisFactoryTable(ComputeLengthScale);
+// addToAnalysisFactoryTable(ComputeLengthScale);
+defineType(ComputeLengthScale);
+Analysis::Add<ComputeLengthScale> addComputeLengthScale;
 
 ComputeLengthScale::ComputeLengthScale(
-    const ParameterSet& ps,
-    const boost::filesystem::path& exepath,
-    ProgressDisplayer& progress )
-  : Analysis("Length Scale", "Compute the length scale from autocorrelation functions", ps, exepath, progress),
-    p_(ps)
-{
-}
+    const std::shared_ptr<supplementedInputDataBase>& sp  )
+  : AnalysisWithParameters(sp)
+{}
 
 ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
 {
-  setupExecutionEnvironment();
-  ResultSetPtr results(new ResultSet(parameters(), name_, description_));
+  auto results = createResultSet();
 
   CorrelationFunctionModel m;
-  nonlinearRegression(p_.R_vs_x.col(1), p_.R_vs_x.col(0), m);
+  nonlinearRegression(p().R_vs_x.col(1), p().R_vs_x.col(0), m);
 
-  arma::mat x = arma::linspace(0., max(p_.R_vs_x.col(0)), 100);
+  arma::mat x = arma::linspace(0., max(p().R_vs_x.col(0)), 100);
   arma::mat regressiondata
   (
       arma::join_rows ( x, m.evaluateObjective(x) )
@@ -1641,7 +1632,7 @@ ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
       results, executionPath(), "chartACF",
       "x", "$\\langle R \\rangle$",
       {
-        PlotCurve(p_.R_vs_x, "raw", "w p lt 1 t 'ACF'"),
+        PlotCurve(p().R_vs_x, "raw", "w p lt 1 t 'ACF'"),
         PlotCurve(regressiondata, "fit", "w l lt 2 t 'fit'")
       },
       "two-point correlation function"
@@ -1660,42 +1651,33 @@ const char * LinearTPCArray::cmptNames[] =
 
 template<>
 typename twoPointCorrelation::Parameters LinearTPCArray::getTanParameters(int i) const
-{
-  return 
-    typename twoPointCorrelation::Parameters(twoPointCorrelation::Parameters()
-//       .set_p0(vec3(p_.x, r_.back(), p_.z))
-      .set_p0( p_.p0 + r_.back()*p_.e_rad )
-//       .set_directionSpan(vec3(0, 0, p_.tanSpan)) 
-      .set_directionSpan( p_.tanSpan*p_.e_tan ) 
-      .set_np(p_.np)
-//       .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan/double(p_.nph)))
-      .set_homogeneousTranslationUnit( (p_.tanSpan/double(p_.nph))*p_.e_tan )
-      .set_nph( p_.nph )
+{ 
+    typename twoPointCorrelation::Parameters r;
+    r.set_p0( p().p0 + r_.back()*p().e_rad );
+    r.set_directionSpan( p().tanSpan*p().e_tan );
+    r.set_np(p().np);
+    r.set_homogeneousTranslationUnit( (p().tanSpan/double(p().nph))*p().e_tan );
+    r.set_nph( p().nph );
 
-      .set_name(p_.name+"_tan_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart )
-    );
+    r.set_name(p().name+"_tan_"+lexical_cast<std::string>(i));
+    r.set_outputControl("timeStep");
+    r.set_timeStart( p().timeStart );
+    return r;
 }
 
 template<>
 typename twoPointCorrelation::Parameters LinearTPCArray::getAxParameters(int i) const
 {
-  return
-    typename twoPointCorrelation::Parameters(twoPointCorrelation::Parameters()
-//       .set_p0(vec3(p_.x, r_.back(), p_.z))
-      .set_p0( p_.p0 + r_.back()*p_.e_rad )
-//       .set_directionSpan(vec3(p_.axSpan, 0, 0)) 
-      .set_directionSpan( p_.axSpan*p_.e_ax ) 
-      .set_np(p_.np)
-//       .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan/double(p_.nph)))
-      .set_homogeneousTranslationUnit( (p_.tanSpan/double(p_.nph))*p_.e_tan )
-      .set_nph(p_.nph)
-
-      .set_name(p_.name+"_ax_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart )
-    );
+    typename twoPointCorrelation::Parameters r;
+    r.set_p0( p().p0 + r_.back()*p().e_rad );
+    r.set_directionSpan( p().axSpan*p().e_ax );
+    r.set_np(p().np);
+    r.set_homogeneousTranslationUnit( (p().tanSpan/double(p().nph))*p().e_tan );
+    r.set_nph(p().nph);
+    r.set_name(p().name+"_ax_"+lexical_cast<std::string>(i));
+    r.set_outputControl("timeStep");
+    r.set_timeStart( p().timeStart );
+    return r;
 }
 
 template<>
@@ -1720,49 +1702,41 @@ const char * RadialTPCArray::cmptNames[] =
 template<>
 typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getTanParameters(int i) const
 {
-  return 
-    typename cylindricalTwoPointCorrelation::Parameters(cylindricalTwoPointCorrelation::Parameters()
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
+    typename cylindricalTwoPointCorrelation::Parameters r;
+    r.set_er(vec3(0, 1, 0));
+    r.set_ez(vec3(1, 0, 0));
+    r.set_degrees(false);
 
-//       .set_p0(vec3(r_.back(), 0, p_.x))
-      .set_p0( p_.p0 + r_.back()*p_.e_rad )
-//       .set_directionSpan(vec3(0, p_.tanSpan, 0)) 
-      .set_directionSpan( p_.tanSpan*p_.e_tan ) 
-      .set_np(p_.np)
-//       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph), 0))
-      .set_homogeneousTranslationUnit( (2.*M_PI/double(p_.nph))*p_.e_tan )
-      .set_nph( p_.nph )
+    r.set_p0( p().p0 + r_.back()*p().e_rad );
+    r.set_directionSpan( p().tanSpan*p().e_tan );
+    r.set_np(p().np);
+    r.set_homogeneousTranslationUnit( (2.*M_PI/double(p().nph))*p().e_tan );
+    r.set_nph( p().nph );
 
-      .set_name(p_.name+"_tan_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart )
-    );
+    r.set_name(p().name+"_tan_"+lexical_cast<std::string>(i));
+    r.set_outputControl("timeStep");
+    r.set_timeStart( p().timeStart );
+    return r;
 }
 
 template<>
 typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getAxParameters(int i) const
 {
-  return
-    typename cylindricalTwoPointCorrelation::Parameters(cylindricalTwoPointCorrelation::Parameters()
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
+    typename cylindricalTwoPointCorrelation::Parameters r;
+    r.set_er(vec3(0, 1, 0));
+    r.set_ez(vec3(1, 0, 0));
+    r.set_degrees(false);
 
-//       .set_p0(vec3(r_.back(), 0, p_.x))
-      .set_p0( p_.p0 + r_.back()*p_.e_rad )
-//       .set_directionSpan(vec3(0, 0, p_.axSpan)) 
-      .set_directionSpan( p_.axSpan*p_.e_ax ) 
-      .set_np(p_.np)
-//       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph), 0))
-      .set_homogeneousTranslationUnit( (2.*M_PI/double(p_.nph))*p_.e_tan )
-      .set_nph(p_.nph)
+    r.set_p0( p().p0 + r_.back()*p().e_rad );
+    r.set_directionSpan( p().axSpan*p().e_ax );
+    r.set_np(p().np);
+    r.set_homogeneousTranslationUnit( (2.*M_PI/double(p().nph))*p().e_tan );
+    r.set_nph(p().nph);
 
-      .set_name(p_.name+"_ax_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart )
-    );
+    r.set_name(p().name+"_ax_"+lexical_cast<std::string>(i));
+    r.set_outputControl("timeStep");
+    r.set_timeStart( p().timeStart );
+    return r;
 }
 
 template<>

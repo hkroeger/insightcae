@@ -11,9 +11,8 @@ defineType(interPhaseChangeFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(interPhaseChangeFoamNumerics);
 
 
-interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: interFoamNumerics(c, ps),
-  p_(ps)
+interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: interFoamNumerics(c, ip.forward<Parameters>())
 {}
 
 
@@ -24,7 +23,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]=p_.solverName;
+  controlDict["application"]=p().solverName;
 
   // ============ setup controlDict ================================
 
@@ -32,7 +31,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
 //  controlDict["maxCo"]=0.4;
 //  controlDict["maxAlphaCo"]=0.2;
-//  if (p_.implicitPressureCorrection)
+//  if (p().implicitPressureCorrection)
 //  {
 //    controlDict["maxCo"]=5;
 //    controlDict["maxAlphaCo"]=2.5;
@@ -44,7 +43,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
 
-  OFDictData::dict alphasol = stdMULESSolverSetup(p_.cAlpha, p_.icAlpha, 1e-12, 0.0, false);
+  OFDictData::dict alphasol = stdMULESSolverSetup(p().cAlpha, p().icAlpha, 1e-12, 0.0, false);
   solvers["\"alpha.*\""]=alphasol;
 
 }

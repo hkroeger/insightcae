@@ -30,15 +30,14 @@ LESfilteredConvection = bool false "Whether to use filtered linear convection sc
 pinternal = double 0.0 "Internal pressure field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "unsteadyIncompressibleNumerics" );
-    unsteadyIncompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault(), const std::string& pName="p" );
+    unsteadyIncompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip= ParameterSetInput(), const std::string& pName="p" );
 
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;

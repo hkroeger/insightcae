@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
         arma::mat skp1;
 
         auto sk1 = std::dynamic_pointer_cast<ConstrainedSketch>(
-            ConstrainedSketch::create(pl));
+            ConstrainedSketch::create(pl, *noParametersDelegate));
         int idp1, idp2;
         {
             /*

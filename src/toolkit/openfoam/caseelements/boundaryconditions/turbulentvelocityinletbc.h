@@ -25,6 +25,7 @@ public:
 #include "turbulentvelocityinletbc__TurbulentVelocityInletBC__Parameters.h"
 /*
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
+inherits BoundaryCondition::Parameters
 
 umean = includedset "FieldData::Parameters" "Mean velocity specification"
 
@@ -72,13 +73,9 @@ set {
 
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+createGetter
 <<<PARAMETERSET
 */
-
-
-protected:
-    ParameterSet ps_;
-    Parameters p_;
 
 public:
     declareType ( "TurbulentVelocityInletBC" );
@@ -87,7 +84,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& p = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
 
     virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries ) const;

@@ -13,8 +13,7 @@ public:
     declareType ( "fvOption" );
     fvOption(
         OpenFOAMCase& c,
-        const std::string& name,
-        const ParameterSet& ps );
+        ParameterSetInput ip = ParameterSetInput() );
 
     virtual void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptionDict,
@@ -34,6 +33,7 @@ public:
 #include "fvoption__cellSetFvOption__Parameters.h"
 /*
 PARAMETERSET>>> cellSetFvOption Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 execution = selectablesubset {{
  everytime set {}
@@ -43,18 +43,16 @@ execution = selectablesubset {{
  }
 }} everytime ""
 
+createGetter
 <<<PARAMETERSET
 */
 
-private:
-    Parameters p_;
 
 public:
     declareType ( "cellSetFvOption" );
     cellSetFvOption(
         OpenFOAMCase& c,
-        const std::string& name,
-        const ParameterSet& ps );
+        ParameterSetInput ip = ParameterSetInput() );
 
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptionDict,

@@ -42,9 +42,8 @@ namespace insight
 
 
 
-cavitatingFoamThermodynamics::cavitatingFoamThermodynamics(OpenFOAMCase& c, const ParameterSet& ps)
-: thermodynamicModel(c, ps),
-  p_(ps)
+cavitatingFoamThermodynamics::cavitatingFoamThermodynamics(OpenFOAMCase& c, ParameterSetInput ip)
+: thermodynamicModel(c, ip.forward<Parameters>())
 {}
 
 
@@ -56,19 +55,19 @@ void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) co
   thermodynamicProperties["barotropicCompressibilityModel"]="linear";
   thermodynamicProperties["psiv"]=OFDictData::dimensionedData("psiv", 
 							      OFDictData::dimension(0, -2, 2), 
-                                                              p_.psiv);
+                                                              p().psiv);
   thermodynamicProperties["rholSat"]=OFDictData::dimensionedData("rholSat", 
 								 OFDictData::dimension(1, -3), 
-                                                                 p_.rholSat);
+                                                                 p().rholSat);
   thermodynamicProperties["psil"]=OFDictData::dimensionedData("psil", 
 								 OFDictData::dimension(0, -2, 2), 
-                                                                 p_.psil);
+                                                                 p().psil);
   thermodynamicProperties["pSat"]=OFDictData::dimensionedData("pSat", 
 								 OFDictData::dimension(1, -1, -2), 
-                                                                 p_.pSat);
+                                                                 p().pSat);
   thermodynamicProperties["rhoMin"]=OFDictData::dimensionedData("rhoMin", 
 								 OFDictData::dimension(1, -3), 
-                                                                 p_.rhoMin);
+                                                                 p().rhoMin);
 }
 
 
@@ -86,7 +85,7 @@ std::vector<std::string> compressibleMixtureThermophysicalProperties::speciesNam
                   }
   );
 
-//  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+//  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p().composition))
 //  {
 //    std::transform(list->species.begin(), list->species.end(),
 //                   std::back_inserter(sns),
@@ -96,7 +95,7 @@ std::vector<std::string> compressibleMixtureThermophysicalProperties::speciesNam
 //                    }
 //    );
 //  }
-//  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p_.composition))
+//  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p().composition))
 //  {
 //    std::istream& tf = (file->foamChemistryThermoFile)->stream();
 
@@ -128,7 +127,7 @@ compressibleMixtureThermophysicalProperties::defaultComposition() const
   for (const auto &specie: sns)
   {
     double v=0.0;
-    if (specie==p_.inertSpecie) v=1.0;
+    if (specie==p().inertSpecie) v=1.0;
     defaultComposition[specie]=v;
   }
   return defaultComposition;
@@ -155,7 +154,7 @@ void compressibleMixtureThermophysicalProperties::removeSpecie(const std::string
 
 void compressibleMixtureThermophysicalProperties::addSpecie(const std::string& name, const SpeciesData& d)
 {
-  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p().composition))
   {
     species_[name]=d;
   }
@@ -170,7 +169,7 @@ std::string compressibleMixtureThermophysicalProperties::getTransportType() cons
 {
   std::string tn="";
 
-  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p().composition))
   {
     for (const auto& s: list->species)
     {
@@ -196,7 +195,7 @@ std::string compressibleMixtureThermophysicalProperties::getThermoType() const
 {
   std::string tn="";
 
-  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p().composition))
   {
     for (const auto& s: list->species)
     {
@@ -218,19 +217,15 @@ std::string compressibleMixtureThermophysicalProperties::getThermoType() const
   return tn;
 }
 
-compressibleMixtureThermophysicalProperties::compressibleMixtureThermophysicalProperties
-(
-  OpenFOAMCase& c, 
-  const ParameterSet& ps
-)
-: thermodynamicModel(c, ps),
-  p_(ps)
+compressibleMixtureThermophysicalProperties::compressibleMixtureThermophysicalProperties(
+    OpenFOAMCase& c, ParameterSetInput ip)
+: thermodynamicModel(c, ip.forward<Parameters>())
 {
 
   // ====================================================================================
   // ======== sanity check
 
-  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p().composition))
   {
     if (list->species.size()<1)
     {
@@ -241,11 +236,11 @@ compressibleMixtureThermophysicalProperties::compressibleMixtureThermophysicalPr
       bool inertSpecieFound=false;
       for (const auto& s: list->species)
       {
-        if (s.name==p_.inertSpecie)
+        if (s.name==p().inertSpecie)
           inertSpecieFound=true;
       }
       if (!inertSpecieFound)
-        throw insight::Exception("Inert specie "+p_.inertSpecie+" was not in the list of defined species!");
+        throw insight::Exception("Inert specie "+p().inertSpecie+" was not in the list of defined species!");
     }
 
     // these include a check
@@ -256,14 +251,14 @@ compressibleMixtureThermophysicalProperties::compressibleMixtureThermophysicalPr
   // ====================================================================================
   // ======== load composition
 
-  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  if (const auto * list = boost::get<Parameters::composition_fromList_type>(&p().composition))
   {
     for (const auto& l: list->species)
     {
       species_[l.name]=SpeciesData(l);
     }
   }
-  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p_.composition))
+  else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p().composition))
   {
     std::istream& tf = (file->foamChemistryThermoFile)->stream();
 
@@ -300,7 +295,7 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
   std::string ttn;
   if ( const auto *rfn = dynamic_cast<const reactingFoamNumerics*>(nce) )
   {
-    if (rfn->parameters().buoyancy)
+    if (rfn->p().buoyancy)
     {
       ttn="heRhoThermo";
     }
@@ -332,13 +327,13 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
   }
 
   
-  thermodynamicProperties["inertSpecie"]=p_.inertSpecie;
+  thermodynamicProperties["inertSpecie"]=p().inertSpecie;
   thermodynamicProperties["chemistryReader"]="foamChemistryReader";
 
 
 
 
-  if (const auto *file = boost::get<Parameters::reactions_fromFile_type>(&p_.reactions))
+  if (const auto *file = boost::get<Parameters::reactions_fromFile_type>(&p().reactions))
   {
     thermodynamicProperties["foamChemistryFile"]=
         "\""+dictionaries.insertAdditionalInputFile(file->foamChemistryFile).string()+"\"";
@@ -348,7 +343,7 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
     std::string chemfile="constant/reactions";
     auto& cd = dictionaries.lookupDict(chemfile);
 
-    if (const auto *none = boost::get<Parameters::reactions_none_type>(&p_.reactions))
+    if (const auto *none = boost::get<Parameters::reactions_none_type>(&p().reactions))
     {
       OFDictData::list sl;
       auto sns=speciesNames();
@@ -369,7 +364,7 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
   }
 
   
-  if (const auto *list = boost::get<Parameters::composition_fromList_type>(&p_.composition))
+  if (const auto *list = boost::get<Parameters::composition_fromList_type>(&p().composition))
   {
     std::string dictName("constant/thermo.compressibleGas");
     thermodynamicProperties["foamChemistryThermoFile"]="\"$FOAM_CASE/"+dictName+"\"";
@@ -393,7 +388,7 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
     }
 
   }
-  else if (const auto *file = boost::get<Parameters::composition_fromFile_type>(&p_.composition))
+  else if (const auto *file = boost::get<Parameters::composition_fromFile_type>(&p().composition))
   {
     thermodynamicProperties["foamChemistryThermoFile"]=
         "\""+dictionaries.insertAdditionalInputFile(file->foamChemistryThermoFile).string()+"\"";
@@ -404,7 +399,7 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
 
   if (OFversion()<200)
   {
-    if (const auto *pasr = boost::get<Parameters::combustionModel_PaSR_type>(&p_.combustionModel))
+    if (const auto *pasr = boost::get<Parameters::combustionModel_PaSR_type>(&p().combustionModel))
     {
       combustionProperties["combustionModel"]="PaSR<psiChemistryCombustion>";
       combustionProperties["active"]=true;
@@ -436,12 +431,12 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
   }
   else if (OFversion()>=600)
   {
-    if (boost::get<Parameters::combustionModel_none_type>(&p_.combustionModel))
+    if (boost::get<Parameters::combustionModel_none_type>(&p().combustionModel))
     {
       combustionProperties["combustionModel"]="none";
       combustionProperties["active"]=false;
     }
-    else if (const auto *edc = boost::get<Parameters::combustionModel_EDC_type>(&p_.combustionModel))
+    else if (const auto *edc = boost::get<Parameters::combustionModel_EDC_type>(&p().combustionModel))
     {
       combustionProperties["combustionModel"]="EDC";
       OFDictData::dict ec;

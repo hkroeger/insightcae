@@ -27,9 +27,8 @@ void compressibleSinglePhaseThermophysicalProperties::modifyDefaults(ParameterSe
 }
 
 compressibleSinglePhaseThermophysicalProperties::compressibleSinglePhaseThermophysicalProperties(
-    OpenFOAMCase& c, const ParameterSet& ps )
-    : thermodynamicModel(c, ps),
-    p_(ps)
+    OpenFOAMCase& c, ParameterSetInput ip )
+    : thermodynamicModel(c, ip.forward<Parameters>())
 {}
 
 
@@ -71,7 +70,7 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
     {
         if (OFversion()<170)
         {
-            if (unsteadyCompressibleNumerics::Parameters(t->parameters()).formulation ==
+            if (t->p().formulation ==
                 unsteadyCompressibleNumerics::Parameters::sonicFoam)
             {
                 tt="ePsiThermo";
@@ -95,12 +94,12 @@ std::unique_ptr<SpeciesData>
 compressibleSinglePhaseThermophysicalProperties::speciesData() const
 {
     if (const auto *ss =
-        boost::get<Parameters::composition_singleSpecie_type>(&p_.composition))
+        boost::get<Parameters::composition_singleSpecie_type>(&p().composition))
     {
         return std::make_unique<SpeciesData>(*ss);
     }
     else if (const auto *mixdesc=
-             boost::get<Parameters::composition_staticSpeciesMixture_type>(&p_.composition))
+             boost::get<Parameters::composition_staticSpeciesMixture_type>(&p().composition))
     {
         SpeciesData::SpeciesMixture mix;
         double Mq=0.;

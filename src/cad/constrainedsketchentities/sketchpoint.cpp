@@ -113,7 +113,9 @@ void SketchPoint::generateScriptCommand(
         );
 }
 
-void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf)
+void SketchPoint::addParserRule(
+    ConstrainedSketchGrammar& ruleset,
+    const ConstrainedSketchParametersDelegate& pd )
 {
     namespace qi=boost::spirit::qi;
     namespace phx=boost::phoenix;
@@ -129,7 +131,7 @@ void SketchPoint::addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGe
             [ qi::_a = phx::bind(
                  &SketchPoint::create<DatumPtr, double, double, const std::string&>,
                    ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
-                 phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_a, phx::bind(mdpf)),
+                 phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, phx::ref(*qi::_a)),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );

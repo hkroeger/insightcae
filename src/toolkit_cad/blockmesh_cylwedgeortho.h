@@ -121,11 +121,11 @@ mesh = set
     cyclpPatchName = string "" "name of patch on cyclic boundary at +0.5*wedge_angle"
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
 
     struct Patches
     {
@@ -157,7 +157,7 @@ protected:
 public:
     declareType ( "blockMeshDict_CylWedgeOrtho" );
 
-    blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     virtual void create_bmd();
 

@@ -7,6 +7,7 @@
 #include "vtkSTLWriter.h"
 
 #include "base/tools.h"
+#include "base/rapidxml.h"
 
 namespace insight
 {
@@ -207,16 +208,16 @@ void PathParameter::readFromNode
   }
 }
 
-PathParameter *PathParameter::clonePathParameter() const
+std::unique_ptr<PathParameter> PathParameter::clonePathParameter() const
 {
-  return new PathParameter(
+  return std::make_unique<PathParameter>(
         originalFilePath_,
-        description_.simpleLatex(),
-        isHidden_, isExpert_, isNecessary_, order_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order(),
         file_content_);
 }
 
-Parameter* PathParameter::clone() const
+std::unique_ptr<Parameter> PathParameter::clone() const
 {
   return clonePathParameter();
 }
@@ -353,14 +354,17 @@ void DirectoryParameter::operator=(const DirectoryParameter &p)
 
 
 
-Parameter* DirectoryParameter::clone() const
+std::unique_ptr<Parameter> DirectoryParameter::clone() const
 {
   return cloneDirectoryParameter();
 }
 
-DirectoryParameter *DirectoryParameter::cloneDirectoryParameter() const
+std::unique_ptr<DirectoryParameter> DirectoryParameter::cloneDirectoryParameter() const
 {
-  return new DirectoryParameter(originalFilePath_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  return std::make_unique<DirectoryParameter>(
+        originalFilePath_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order() );
 }
 
 

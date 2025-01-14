@@ -23,10 +23,12 @@ VelocityInletBC::VelocityInletBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps
+  ParameterSetInput ip
 )
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps)
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>())
 {
  BCtype_="patch";
 }
@@ -36,8 +38,7 @@ VelocityInletBC::VelocityInletBC
 
 void VelocityInletBC::setField_p(OFDictData::dict& BC, OFdicts&, bool isPrgh) const
 {
-    Parameters p ( ps_ );
-    if (boost::get<Parameters::VoFWave_enabled_type>(&p.VoFWave))
+    if (boost::get<Parameters::VoFWave_enabled_type>(&p().VoFWave))
     {
         BC["type"]=OFDictData::data ( "zeroGradient" );
     }
@@ -63,11 +64,10 @@ void VelocityInletBC::setField_p(OFDictData::dict& BC, OFdicts&, bool isPrgh) co
 
 void VelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
-    Parameters p ( ps_ );
-    if (boost::get<Parameters::VoFWave_enabled_type>(&p.VoFWave))
+    if (boost::get<Parameters::VoFWave_enabled_type>(&p().VoFWave))
         BC["type"]=OFDictData::data ( "zeroGradient" );
     else
-        FieldData(p.velocity).setDirichletBC(BC, dictionaries);
+        FieldData(p().velocity).setDirichletBC(BC, dictionaries);
 //   FieldData(ps_.get<SelectableSubsetParameter>("velocity")()).setDirichletBC(BC);
 }
 
@@ -76,18 +76,16 @@ void VelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& dictionaries) co
 
 void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
 {
-    Parameters p ( ps_ );
-
     turbulenceBC::turbulenceBCPtr turbulence =
-        turbulenceBC::turbulenceBC::create ( ps_.get<SelectableSubsetParameter> ( "turbulence" ) );
+        p().turbulence;
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        p().phasefractions;
 
-    FieldData velocity(ps_.getSubset("velocity")), T(ps_.getSubset("T")), rho(ps_.getSubset("rho"));
+    FieldData velocity(p().velocity), T(p().T), rho(p().rho);
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
 
-    if ( boost::get<Parameters::VoFWave_enabled_type>(&p.VoFWave) )
+    if ( boost::get<Parameters::VoFWave_enabled_type>(&p().VoFWave) )
     {
         phasefractions.reset(); // will trigger "zeroGradient" for alpha
     }
@@ -181,10 +179,8 @@ void VelocityInletBC::addIntoDictionaries(OFdicts &dicts) const
 {
     BoundaryCondition::addIntoDictionaries(dicts);
 
-    Parameters p ( ps_ );
-
     if (const auto* w =
-            boost::get<Parameters::VoFWave_enabled_type>(&p.VoFWave))
+        boost::get<Parameters::VoFWave_enabled_type>(&p().VoFWave))
     {
 
         auto& wp = dicts.lookupDict("constant/waveProperties.input");
@@ -207,7 +203,7 @@ void VelocityInletBC::addIntoDictionaries(OFdicts &dicts) const
         coeffs["height"]=w->height;
 
 
-        FieldData Uf(p.velocity);
+        FieldData Uf(p().velocity);
         if (Uf.maxValueMag()>SMALL)
         {
             throw insight::Exception("waves + convection velocity is not supported!");
@@ -250,10 +246,8 @@ void VelocityInletBC::modifyCaseOnDisk(const OpenFOAMCase &cm, const boost::file
 {
     BoundaryCondition::modifyCaseOnDisk(cm, location);
 
-    Parameters p ( ps_ );
-
     if (const auto* w =
-            boost::get<Parameters::VoFWave_enabled_type>(&p.VoFWave))
+        boost::get<Parameters::VoFWave_enabled_type>(&p().VoFWave))
     {
         cm.executeCommand(location, "setWaveParameters");
 

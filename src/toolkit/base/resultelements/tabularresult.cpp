@@ -1,5 +1,7 @@
 #include "tabularresult.h"
 
+#include "base/rapidxml.h"
+
 
 using namespace std;
 using namespace boost;

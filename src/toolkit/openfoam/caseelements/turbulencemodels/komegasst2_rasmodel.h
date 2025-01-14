@@ -11,11 +11,11 @@ class kOmegaSST2_RASModel
 public:
   declareType("kOmegaSST2");
 
-  kOmegaSST2_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  kOmegaSST2_RASModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 //   virtual void addFields( OpenFOAMCase& c ) const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
-  inline static ParameterSet defaultParameters() { return ParameterSet(); }
+
 };
 
 } // namespace insight

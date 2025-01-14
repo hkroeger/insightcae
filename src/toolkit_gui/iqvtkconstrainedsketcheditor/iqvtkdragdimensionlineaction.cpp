@@ -6,7 +6,7 @@
 IQVTKDragDimensionlineAction::IQVTKDragDimensionlineAction(
     IQVTKConstrainedSketchEditor &editor,
     std::shared_ptr<insight::cad::DistanceConstraint> dc )
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(editor.viewer()),
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(editor.viewer(), true),
     editor_(editor), dc_(dc)
 {
 }

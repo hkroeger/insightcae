@@ -25,6 +25,134 @@ double sutherland_mu(double As, double Ts)
 
 
 
+
+
+const SpeciesLibrary &SpeciesLibrary::library()
+{
+    static SpeciesLibrary speciesLib;
+    return speciesLib;
+}
+
+
+
+
+SpeciesData::Parameters::properties_custom_type
+SpeciesData::specieFromLibrary(const std::string &name)
+{
+    insight::CurrentExceptionContext ex(
+        "getting data for species %s from species library", name.c_str());
+
+    return SpeciesLibrary::library().lookup(name);
+}
+
+
+
+
+
+
+SpeciesLibrary::SpeciesLibrary()
+{
+    using namespace boost::filesystem;
+
+    auto paths = SharedPathList::global();
+    for ( const path& sharedPath: paths )
+    {
+        if ( exists(sharedPath) && is_directory (sharedPath) )
+        {
+            path spd=sharedPath/"thermophysical";
+
+            if ( exists(spd) && is_directory ( spd ) )
+            {
+                directory_iterator end_itr; // default construction yields past-the-end
+
+                for ( directory_iterator itr ( spd ); itr != end_itr; ++itr )
+                {
+                    if ( is_regular_file ( itr->status() ) )
+                    {
+                        if ( itr->path().extension() == ".species" )
+                        {
+                            CurrentExceptionContext ex(2, "reading species data base "+itr->path().string());
+                            std::ifstream fs(itr->path().string());
+                            OFDictData::dict sd;
+                            readOpenFOAMDict(fs, sd);
+
+                            for (const auto& s: sd)
+                            {
+                                CurrentExceptionContext ex2(3, "reading species "+s.first);
+                                auto name=s.first;
+                                auto ssd=sd.subDict(s.first);
+
+                                auto data = std::make_shared<SpeciesData::Parameters::properties_custom_type>();
+                                SpeciesData::Parameters::properties_custom_type::transport_sutherland_type trdata;
+                                SpeciesData::Parameters::properties_custom_type::thermo_janaf_type thdata;
+
+                                {
+                                    auto& ed=ssd.subDict("elements");
+                                    data->elements.clear();
+                                    transform(ed.begin(), ed.end(),
+                                              std::back_inserter(data->elements),
+                                              [](const OFDictData::dict::value_type& e)
+                                              {
+                                                  return SpeciesData::Parameters::properties_custom_type::elements_default_type
+                                                      {e.first, boost::get<int>(e.second)};
+                                              }
+                                              );
+                                }
+                                {
+                                    auto& td=ssd.subDict("transport");
+                                    trdata.Tref=td.getDouble("Ts");
+                                    trdata.mu=sutherland_mu(td.getDouble("As"), trdata.Tref);
+                                }
+                                {
+                                    auto& td=ssd.subDict("thermodynamics");
+                                    thdata.Tlow=td.getDouble("Tlow");
+                                    thdata.Thi=td.getDouble("Thigh");
+                                    thdata.Tmid=td.getDouble("Tcommon");
+                                    {
+                                        auto l=td.getList("lowCpCoeffs", false);
+                                        thdata.coeffs_lo.resize(l.size());
+                                        int i=0;
+                                        for (const auto& e: l)
+                                        {
+                                            if (auto *v = boost::get<double>(&e))
+                                                thdata.coeffs_lo(i)=*v;
+                                            else
+                                                thdata.coeffs_lo(i)=boost::get<int>(e);
+                                            i++;
+                                        }
+                                    }
+                                    {
+                                        auto h=td.getList("highCpCoeffs", false);
+                                        thdata.coeffs_hi.resize(h.size());
+                                        int i=0;
+                                        for (const auto& e: h)
+                                        {
+                                            if (auto *v = boost::get<double>(&e))
+                                                thdata.coeffs_hi(i)=*v;
+                                            else
+                                                thdata.coeffs_hi(i)=boost::get<int>(e);
+                                            i++;
+                                        }
+                                    }
+                                }
+
+                                data->transport=trdata;
+                                data->thermo=thdata;
+
+                                this->insert({name, data});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
 const std::map<std::string, SpeciesData::ElementData> SpeciesData::elements = {
     { "H",  {1, "Hydrogen",     1.008 } },
     { "He", {2, "Helium",       4.002602 } },
@@ -149,53 +277,53 @@ const std::map<std::string, SpeciesData::ElementData> SpeciesData::elements = {
 
 
 
-void SpeciesData::modifyDefaults(ParameterSet &ps)
+// void SpeciesData::modifyDefaults(ParameterSet &ps)
+// {
+//     auto& p = ps.get<SelectableSubsetParameter>("properties");
+//     ParameterSet fl( p.getParametersForSelection("fromLibrary") );
+//     auto& sl = fl.get<SelectionParameter>("specie");
+
+//     if (speciesLibrary_.size()>0)
+//     {
+//         SelectionParameter::ItemList ni;
+//         std::transform(speciesLibrary_.begin(), speciesLibrary_.end(),
+//                        std::back_inserter(ni),
+//                        [](const SpeciesLibrary::value_type& sle)
+//                        {
+//                            return sle.first;
+//                        }
+//                        );
+//         sl.resetItems(ni);
+//     }
+//     p.setParametersForSelection("fromLibrary", fl);
+// }
+
+
+
+
+SpeciesData::SpeciesData(const Parameters& p)
 {
-    auto& p = ps.get<SelectableSubsetParameter>("properties");
-    ParameterSet fl( p.getParametersForSelection("fromLibrary") );
-    auto& sl = fl.get<SelectionParameter>("specie");
-
-    if (speciesLibrary_.size()>0)
-    {
-        SelectionParameter::ItemList ni;
-        std::transform(speciesLibrary_.begin(), speciesLibrary_.end(),
-                       std::back_inserter(ni),
-                       [](const SpeciesLibrary::value_type& sle)
-                       {
-                           return sle.first;
-                       }
-                       );
-        sl.resetItems(ni);
-    }
-    p.setParametersForSelection("fromLibrary", fl);
-}
-
-
-
-
-SpeciesData::SpeciesData(const ParameterSet &ps)
-{
-    Parameters p(ps);
+    // Parameters p(ps);
 
     // name_=p.name;
-
-    const auto& propsel = ps.get<SelectableSubsetParameter>("properties");
-
-    if (propsel.selection()=="fromLibrary")
+    // const auto& propsel = ps.get<SelectableSubsetParameter>("properties");
+    if (auto* lib = boost::get<Parameters::properties_fromLibrary_type>(&p.properties))
+    // if (propsel.selection()=="fromLibrary")
     {
-        const auto& specie_sel = propsel().get<SelectionParameter>("specie");
+        // const auto& specie_sel = propsel().get<SelectionParameter>("specie");
 
-        auto sname = specie_sel.selection();
+        // auto sname = specie_sel.selection();
 
-        auto e = speciesLibrary_.find(sname);
-        if (e==speciesLibrary_.end())
-        {
-            throw insight::Exception("invalid selection: species library does not contain "+sname);
-        }
-        else
-        {
-            p_=e->second;
-        }
+        // auto e = speciesLibrary_.find(sname);
+        // if (e==speciesLibrary_.end())
+        // {
+        //     throw insight::Exception("invalid selection: species library does not contain "+sname);
+        // }
+        // else
+        // {
+        //     p_=e->second;
+        p_=*lib->specie.value;
+        // }
     }
     else if (const auto* c = boost::get<Parameters::properties_custom_type>(&p.properties))
     {
@@ -597,127 +725,6 @@ void SpeciesData::insertElementsEntries(OFDictData::dict& d) const
 }
 
 
-
-
-SpeciesData::Parameters::properties_custom_type
-SpeciesData::specieFromLibrary(const std::string &name)
-{
-    auto i = speciesLibrary_.find(name);
-
-    insight::assertion(
-        i != speciesLibrary_.end(),
-        "specie %s not found in library!", name.c_str());
-
-    return i->second;
-}
-
-
-
-
-
-SpeciesData::SpeciesLibrary SpeciesData::speciesLibrary_;
-
-
-
-
-SpeciesData::SpeciesLibrary::SpeciesLibrary()
-{
-    using namespace boost::filesystem;
-
-    auto paths = SharedPathList::global();
-    for ( const path& sharedPath: paths )
-    {
-        if ( exists(sharedPath) && is_directory (sharedPath) )
-        {
-            path spd=sharedPath/"thermophysical";
-
-            if ( exists(spd) && is_directory ( spd ) )
-            {
-                directory_iterator end_itr; // default construction yields past-the-end
-
-                for ( directory_iterator itr ( spd ); itr != end_itr; ++itr )
-                {
-                    if ( is_regular_file ( itr->status() ) )
-                    {
-                        if ( itr->path().extension() == ".species" )
-                        {
-                            CurrentExceptionContext ex(2, "reading species data base "+itr->path().string());
-                            std::ifstream fs(itr->path().string());
-                            OFDictData::dict sd;
-                            readOpenFOAMDict(fs, sd);
-
-                            for (const auto& s: sd)
-                            {
-                                CurrentExceptionContext ex2(3, "reading species "+s.first);
-                                auto name=s.first;
-                                auto ssd=sd.subDict(s.first);
-
-                                Parameters::properties_custom_type data;
-                                Parameters::properties_custom_type::transport_sutherland_type trdata;
-                                Parameters::properties_custom_type::thermo_janaf_type thdata;
-
-                                {
-                                    auto& ed=ssd.subDict("elements");
-                                    data.elements.clear();
-                                    transform(ed.begin(), ed.end(),
-                                              std::back_inserter(data.elements),
-                                              [](const OFDictData::dict::value_type& e)
-                                              {
-                                                  return Parameters::properties_custom_type::elements_default_type
-                                                      {e.first, boost::get<int>(e.second)};
-                                              }
-                                              );
-                                }
-                                {
-                                    auto& td=ssd.subDict("transport");
-                                    trdata.Tref=td.getDouble("Ts");
-                                    trdata.mu=sutherland_mu(td.getDouble("As"), trdata.Tref);
-                                }
-                                {
-                                    auto& td=ssd.subDict("thermodynamics");
-                                    thdata.Tlow=td.getDouble("Tlow");
-                                    thdata.Thi=td.getDouble("Thigh");
-                                    thdata.Tmid=td.getDouble("Tcommon");
-                                    {
-                                        auto l=td.getList("lowCpCoeffs", false);
-                                        thdata.coeffs_lo.resize(l.size());
-                                        int i=0;
-                                        for (const auto& e: l)
-                                        {
-                                            if (auto *v = boost::get<double>(&e))
-                                                thdata.coeffs_lo(i)=*v;
-                                            else
-                                                thdata.coeffs_lo(i)=boost::get<int>(e);
-                                            i++;
-                                        }
-                                    }
-                                    {
-                                        auto h=td.getList("highCpCoeffs", false);
-                                        thdata.coeffs_hi.resize(h.size());
-                                        int i=0;
-                                        for (const auto& e: h)
-                                        {
-                                            if (auto *v = boost::get<double>(&e))
-                                                thdata.coeffs_hi(i)=*v;
-                                            else
-                                                thdata.coeffs_hi(i)=boost::get<int>(e);
-                                            i++;
-                                        }
-                                    }
-                                }
-
-                                data.transport=trdata;
-                                data.thermo=thdata;
-
-                                this->insert(value_type(name, data));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 
 

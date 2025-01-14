@@ -25,6 +25,7 @@
 #include <QMenu>
 
 #include "isofcasebuilderwindow.h"
+#include "cadparametersetvisualizer.h"
 #include "insertedcaseelement.h"
 #include "iqvtkcadmodel3dviewer.h"
 
@@ -80,7 +81,7 @@ bool isofCaseBuilderWindow::CADisCollapsed() const
 
 void isofCaseBuilderWindow::expandOrCollapseCADIfNeeded()
 {
-  if ( (multiViz_->size()>0) && CADisCollapsed())
+  if ( (multiVizSources_.size()>0) && CADisCollapsed())
   {
     // expand
     QList<int> sz = ui->mainSplitter->sizes();
@@ -88,7 +89,7 @@ void isofCaseBuilderWindow::expandOrCollapseCADIfNeeded()
     sz[1]=sz[2];
     ui->mainSplitter->setSizes(sz);
   }
-  else if ( (multiViz_->size()==0) && !CADisCollapsed())
+  else if ( (multiVizSources_.size()==0) && !CADisCollapsed())
   {
     QList<int> sz = ui->mainSplitter->sizes();
     sz[0]=0;
@@ -115,15 +116,14 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
   ui->mainSplitter->insertWidget(0, cadview);
 
   display_=new IQVTKParameterSetDisplay(this, cadview, ui->modeltree);
-  multiViz_ = new insight::MultiCADParameterSetVisualizer;
-  multiViz_->setModel(display_->model());
+
 
   availableBCsModel_=new AvailableBCsModel(this);
   availableCaseElementsModel_=new AvailableCaseElementsModel(this);
   caseConfigModel_=new CaseConfigurationModel(this);
 
   BCConfigModel_=new BoundaryConfigurationModel(
-        new DefaultPatch(multiViz_),
+        new DefaultPatch(multiVizSources_, this),
         this );
   ui->boundaryConfiguration->setAlternatingRowColors(true);
   ui->boundaryConfiguration->horizontalHeader()->setStretchLastSection(true);
@@ -280,8 +280,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       return;
     }
 
-    auto idx = caseConfigModel_->addCaseElement(new InsertedCaseElement(typeName, multiViz_));
-    expandOrCollapseCADIfNeeded();
+    auto *ice = new InsertedCaseElement(typeName, multiVizSources_, this);
+    auto idx = caseConfigModel_->addCaseElement(ice);
     ui->caseConfiguration->setCurrentIndex(idx);
     showParameterEditorForCaseElement(idx);
   });
@@ -289,21 +289,21 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 
   connect(ui->btnRemoveCaseElement, &QPushButton::clicked, this,
           [&]()
-  {
-    auto cei = ui->caseConfiguration->currentIndex();
-    if (cei.isValid())
-    {
-      auto answer=QMessageBox::question(
-            this, "Remove case element?",
-            "Remove the selected case element?\nNote: the parameter changes will be lost!",
-            QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-      if (answer==QMessageBox::Yes)
-      {
-        caseConfigModel_->removeElement(cei);
-        expandOrCollapseCADIfNeeded();
-      }
-    }
-  });
+          {
+            auto cei = ui->caseConfiguration->currentIndex();
+            if (cei.isValid())
+            {
+              auto answer=QMessageBox::question(
+                    this, "Remove case element?",
+                    "Remove the selected case element?\nNote: the parameter changes will be lost!",
+                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+              if (answer==QMessageBox::Yes)
+              {
+                caseConfigModel_->removeElement(cei);
+              }
+            }
+          }
+          );
 
 
 
@@ -361,7 +361,6 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       if (answer==QMessageBox::Yes)
       {
         BCConfigModel_->removePatch(ci);
-        expandOrCollapseCADIfNeeded();
       }
     }
   });
@@ -399,7 +398,6 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     if (answer==QMessageBox::Yes)
     {
       BCConfigModel_->clear();
-      expandOrCollapseCADIfNeeded();
     }
   });
 
@@ -422,7 +420,6 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     }
 
     BCConfigModel_->resetBCType(patchi, typeName);
-    expandOrCollapseCADIfNeeded();
 
     showParameterEditorForPatch(patchi);
   });
@@ -464,15 +461,15 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 }
 
 
-void isofCaseBuilderWindow::showEvent(QShowEvent *ev)
-{
-    QMainWindow::showEvent(ev);
-    expandOrCollapseCADIfNeeded();
-}
-
 
 isofCaseBuilderWindow::~isofCaseBuilderWindow()
-{}
+{
+    // explicitly delete first
+    delete caseElementParameterEditor_;
+    delete patchParameterEditor_;
+    delete caseConfigModel_;
+    delete BCConfigModel_;
+}
 
 
 void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool skipBCs)
@@ -508,46 +505,26 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 
     caseConfigModel_->readFromNode(
           doc, rootnode,
-          multiViz_, file.parent_path() );
+          multiVizSources_, this,
+          file.parent_path() );
 
     if (!skipBCs)
     {
       xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
       if (BCnode)
       {
-        BCConfigModel_->readFromNode(doc, BCnode, multiViz_, file.parent_path());
+        BCConfigModel_->readFromNode(
+              doc, BCnode,
+              multiVizSources_, this,
+              file.parent_path() );
       }
     }
-
-    expandOrCollapseCADIfNeeded();
 
     current_config_file_=file;
     config_is_modified_=false;
     updateTitle();
 }
 
-
-//void isofCaseBuilderWindow::updateCAD()
-//{
-//  // initial display of visualizations
-//  // == insert selected case elements
-//  for (int i=0; i < ui->selected_elements->count(); i++)
-//  {
-//      if ( InsertedCaseElement* elem =
-//           dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i)) )
-//      {
-//        try
-//        {
-//            insight::ParameterSet_VisualizerPtr viz =
-//                insight::OpenFOAMCaseElement::visualizer(elem->type_name());
-//            viz->update(elem->parameters());
-//            viz->updateVisualizationElements(ui->occview, ui->modeltree);
-//        }
-//        catch (const std::exception& e)
-//        { /* ignore, if non-existent */ }
-//      }
-//  }
-//}
 
 
 void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
@@ -1163,9 +1140,10 @@ void isofCaseBuilderWindow::recreateOFCase(const QString& ofename)
   ofc_.reset(new OpenFOAMCase(OFEs::get(ofen)));
 }
 
-ParameterSet& isofCaseBuilderWindow::caseElementParameters(int id)
+
+Parameter& isofCaseBuilderWindow::caseElementParameter(int id, const std::string& path)
 {
-    return caseConfigModel_->caseElementParametersRef(id);
+    return caseConfigModel_->caseElementParameterRef(id, path);
 }
 
 
@@ -1189,4 +1167,46 @@ void isofCaseBuilderWindow::onStartPV()
 void isofCaseBuilderWindow::setOFVersion(const QString & ofename)
 {
   ui->OFversion->setCurrentIndex(ui->OFversion->findText(ofename));
+}
+
+void isofCaseBuilderWindow::rebuildVisualization()
+{
+    // execute also, if number if visualizers is zero:
+    // model will be cleared this way, after the last item is removed
+
+    if (viz_ && !viz_->isFinished())
+    {
+        viz_->stopVisualizationComputation();
+        viz_->deleteLater();
+    }
+
+    expandOrCollapseCADIfNeeded();
+
+    viz_ = new insight::MultiCADParameterSetVisualizer(
+        this,
+        multiVizSources_,
+        casepath(), consoleProgressDisplayer
+        );
+
+    // connect(
+    //     viz_, &insight::CADParameterSetVisualizer::visualizationCalculationFinished, viz_,
+    //     [this](bool success)
+    //     { if (success) overlayText_->hide(); } );
+
+    // connect(
+    //     viz_, &insight::CADParameterSetVisualizer::visualizationComputationError, viz_,
+    //     [this](insight::Exception ex)
+    //     {
+    //         overlayText_->setTextFormat(Qt::MarkdownText);
+    //         overlayText_->setText(QString::fromStdString(
+    //             "The visualization could not be generated.\n\n"
+    //             "Reason:\n\n"
+    //             "**"+ex.description()+"**\n\n"+
+    //             boost::replace_all_copy(ex.context(), "\n", "\n\n")
+    //             ));
+    //         overlayText_->show();
+    //     }
+    //     );
+
+    viz_->launch(display_->model());
 }

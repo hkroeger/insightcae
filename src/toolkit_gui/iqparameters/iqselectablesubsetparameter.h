@@ -3,12 +3,13 @@
 
 #include "toolkit_gui_export.h"
 
+#include <QStyledItemDelegate>
 
-#include <iqparameter.h>
-
+#include "iqselectionparameter.h"
 #include "base/parameters/selectablesubsetparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQSelectableSubsetParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQSelectableSubsetParameter
+    : public IQSelectionParameterBase<insight::SelectableSubsetParameter>
 {
 public:
   declareType(insight::SelectableSubsetParameter::typeName_());
@@ -17,19 +18,14 @@ public:
   (
       QObject* parent,
       IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& parameter,
+      insight::Parameter* parameter,
       const insight::ParameterSet& defaultParameterSet
   );
 
-  QString valueText() const override;
-
-  QVBoxLayout* populateEditControls(
-          QWidget* editControlsContainer,
-          IQCADModel3DViewer *viewer) override;
-
   void populateContextMenu(QMenu* m) override;
-
 };
+
+
+
 
 #endif // IQSELECTABLESUBSETPARAMETER_H

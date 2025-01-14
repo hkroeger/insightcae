@@ -1,4 +1,5 @@
 #include "iqvtkselectcadentity.h"
+#include "iqfilteredparametersetmodel.h"
 
 #include <QCheckBox>
 #include <QToolBar>
@@ -115,7 +116,8 @@ void CADEntityMultiSelection::erase(IQCADModel3DViewer::CADEntity entity)
 
 
 
-std::vector<IQCADModel3DViewer::CADEntity> IQVTKSelectCADEntity::findEntitiesUnderCursor(const QPoint &point) const
+std::vector<IQCADModel3DViewer::CADEntity>
+IQVTKSelectCADEntity::findEntitiesUnderCursor(const QPoint &point) const
 {
     std::vector<IQCADModel3DViewer::CADEntity> ret;
 

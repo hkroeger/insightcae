@@ -2,15 +2,12 @@
 #define INCLUDEDSUBSETPARAMETERPARSER_H
 
 
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
 
-struct IncludedSubsetParameterParser
+struct IncludedSubsetGenerator
+    : public ParameterGenerator
 {
-
-    struct Data
-            : public ParserDataBase
-    {
         std::string value;
 
         typedef boost::fusion::vector3<std::string, std::string, std::string> DefaultModification;
@@ -18,51 +15,47 @@ struct IncludedSubsetParameterParser
 
         DefaultValueModifications default_value_modifications;
 
-        Data(const std::string& v, const std::string& d, const DefaultValueModifications& defmod);
+        IncludedSubsetGenerator(
+            const std::string& v,
+            const std::string& d,
+            const DefaultValueModifications& defmod );
 
-        void cppAddHeader(std::set<std::string>& headers) const override;
+        // void setPath(const std::string &containerPath) override;
 
-        std::string cppType(const std::string&) const override;
+        void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
-        std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
+        std::string cppInsightType() const override;
+        std::string cppStaticType() const override;
+        std::string cppDefaultValueExpression() const override;
 
-        std::string cppParamType(const std::string& ) const override;
 
         void cppWriteCreateStatement
         (
             std::ostream& os,
-            const std::string& name,
-            const std::string& thisscope
+            const std::string& psvarname
         ) const override;
 
         void cppWriteInsertStatement
         (
             std::ostream& os,
-            const std::string& psvarname,
-            const std::string& name,
-            const std::string& thisscope
+            const std::string& psvarname
         ) const override;
 
 
         void cppWriteSetStatement
         (
             std::ostream& os,
-            const std::string& ,
             const std::string& varname,
-            const std::string& staticname,
-            const std::string&
+            const std::string& staticname
         ) const override;
 
         void cppWriteGetStatement
         (
             std::ostream& os,
-            const std::string& ,
             const std::string& varname,
-            const std::string& staticname,
-            const std::string&
+            const std::string& staticname
         ) const override;
 
-    };
 
     declareType("includedset");
 
@@ -81,9 +74,11 @@ struct IncludedSubsetParameterParser
                         >> '=' >> ruleset.r_up_to_semicolon
                      )
                    >> '}')
-                   |qi::attr(Data::DefaultValueModifications())
+                   |qi::attr(IncludedSubsetGenerator::DefaultValueModifications())
                   ) )
-                [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
+                [ qi::_val = phx::construct<ParameterGeneratorPtr>(
+                         phx::new_<IncludedSubsetGenerator>(
+                             qi::_1, qi::_2, qi::_3)) ]
 
             )
         );

@@ -79,69 +79,55 @@ class SelectableSubsetParameter;
 
 
 
-class ParameterSet : public SubsetParameter
-{
+// class ParameterSet
+//     : public SubsetParameter
+// {
 
-public:
-  typedef std::shared_ptr<ParameterSet> Ptr;
+// public:
+//     ParameterSet();
 
+//     ParameterSet(
+//         SubsetParameter::Entries &&defaultValue,
+//         const std::string& description = std::string() );
 
-public:
-  ParameterSet();
-  ParameterSet ( const ParameterSet& o );
-  ParameterSet ( const SubsetParameter& o );
-  ParameterSet( const SubsetParameter::EntryCopies &defaultValue, const std::string& description = std::string() );
-  ParameterSet( const SubsetParameter::EntryReferences &defaultValue, const std::string& description = std::string() );
+//     ParameterSet(
+//         const SubsetParameter::EntryReferences &defaultValue,
+//         const std::string& description = std::string() );
 
-  virtual ~ParameterSet();
+//     virtual ~ParameterSet();
 
+//     void copyFrom(const Parameter& o) override;
+//     void operator=(const ParameterSet& o);
 
-  void setParameterSetDescription(const std::string& desc);
-  const SimpleLatex& parameterSetDescription() const;
+//     /**
+//    * insert values from other, where matching. Ignore non-matching parameters.
+//    * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
+//    */
+//     ParameterSet& merge ( const ParameterSet& other );
 
-  void copyFrom(const Parameter& o) override;
-  void operator=(const ParameterSet& o);
+//     /**
+//    * @brief intersection
+//    * construct a ParameterSet which contains only elements
+//    * that are present both in this set and "other"
+//    * @param other
+//    * @return a new ParameterSet with the common elements
+//    */
+//     std::unique_ptr<ParameterSet>
+//     intersection(const ParameterSet& other) const;
 
-  /**
-   * insert values from other, where matching. Ignore non-matching parameters.
-   * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
-   */
-  ParameterSet& merge ( const ParameterSet& other );
+//     virtual std::unique_ptr<ParameterSet> cloneParameterSet() const;
 
-  /**
-   * @brief intersection
-   * construct a ParameterSet which contains only elements
-   * that are present both in this set and "other"
-   * @param other
-   * @return a new ParameterSet with the common elements
-   */
-  ParameterSet intersection(const ParameterSet& other) const;
-
-  virtual ParameterSet* cloneParameterSet() const;
-
-  virtual void appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-                              boost::filesystem::path inputfilepath ) const;
-  virtual void readFromNode ( rapidxml::xml_node<>& node,
-                              boost::filesystem::path inputfilepath );
+//     virtual void appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+//                               boost::filesystem::path inputfilepath ) const;
+//     virtual void readFromNode ( rapidxml::xml_node<>& node,
+//                               boost::filesystem::path inputfilepath );
 
 
-  void packExternalFiles();
-  void removePackedData();
-  void unpackAllExternalFiles(const boost::filesystem::path& basePath);
-
-};
+// };
 
 
 
 
-
-
-#ifndef SWIG
-std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
-#endif
-
-
-typedef std::shared_ptr<ParameterSet> ParameterSetPtr;
 
 
 

@@ -16,34 +16,27 @@ addToFactoryTable(Parameter, CADSketchParameter);
 
 
 
-
-
-
-
-
-
 void CADSketchParameter::resetCADGeometry()
 {
     CADGeometry_ = insight::cad::ConstrainedSketch::create(
         std::make_shared<cad::DatumPlane>(
             cad::vec3const(0,0,0),
-            cad::vec3const(0,0,1) ));
+            cad::vec3const(0,0,1) ),
+        *entityProperties() );
 
-    CADGeometry_->changeDefaultLayerProperties(
-        cad::ConstrainedSketch::LayerProperties(
-            makeDefaultLayerParameters() ) );
+    CADGeometry_->setParentParameter(this);
 
     cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
     [this](int) {
-        if (!valueChangeSignalBlocked_) childValueChanged();
+        if (!valueChangeSignalBlocked()) childValueChanged();
     };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
     [this](int) {
-        if (!valueChangeSignalBlocked_) childValueChanged();
+        if (!valueChangeSignalBlocked()) childValueChanged();
     };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
     [this](int) {
-        if (!valueChangeSignalBlocked_) childValueChanged();
+        if (!valueChangeSignalBlocked()) childValueChanged();
     };
 
     addSlot_.track_foreign(CADGeometry_);
@@ -95,17 +88,17 @@ CADSketchParameter::CADSketchParameter(
 
 CADSketchParameter::CADSketchParameter(
    const std::string& script,
-    cad::MakeDefaultGeometryParametersFunction mdpf,
-    cad::MakeDefaultLayerParametersFunction deflp,
-    SketchEntityAppearanceCallback sac,
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+    const std::string& presentationDelegateKey,
     const std::map<int, std::string>& references,
    const std::string& description,
    bool isHidden, bool isExpert, bool isNecessary, int order
    )
     : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order),
-    makeDefaultGeometryParameters(mdpf),
-    makeDefaultLayerParameters(deflp),
-    sketchAppearance(sac),
+    entityProperties_(
+          entityProperties?
+            entityProperties : insight::cad::noParametersDelegate ),
+    presentationDelegateKey_(presentationDelegateKey),
     references_(references)
 {
     setScript(script);
@@ -128,22 +121,18 @@ void CADSketchParameter::setReferences(
 }
 
 
-
-ParameterSet CADSketchParameter::defaultGeometryParameters() const
+std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate>
+CADSketchParameter::entityProperties() const
 {
-    return makeDefaultGeometryParameters();
+    return entityProperties_;
 }
 
-ParameterSet CADSketchParameter::defaultLayerParameters() const
+const std::string&
+CADSketchParameter::presentationDelegateKey() const
 {
-    return makeDefaultLayerParameters();
+    return presentationDelegateKey_;
 }
 
-CADSketchParameter::SketchEntityAppearanceCallback
-CADSketchParameter::sketchAppearanceFunction() const
-{
-    return sketchAppearance;
-}
 
 
 std::string CADSketchParameter::script() const
@@ -156,7 +145,7 @@ std::string CADSketchParameter::script() const
     {
         std::ostringstream so;
         CADGeometry_->generateScript(so);
-        return so.str();;
+        return so.str();
     }
     else
     {
@@ -204,7 +193,7 @@ CADSketchParameter::featureGeometryRef()
             std::istringstream is(*script_);
 
             CADGeometry_->readFromStream(
-                is, makeDefaultGeometryParameters()
+                is, *entityProperties()
                 );
 
             script_.reset();
@@ -264,28 +253,29 @@ void CADSketchParameter::readFromNode
     }
 }
 
-CADSketchParameter *
+std::unique_ptr<CADSketchParameter>
 CADSketchParameter::cloneCADSketchParameter(
     bool keepParentRef
     ) const
 {
-    auto ncgp=new CADSketchParameter(
+    auto ncgp=std::make_unique<CADSketchParameter>(
         script(),
-        makeDefaultGeometryParameters,
-        makeDefaultLayerParameters,
-        sketchAppearance,
+        entityProperties_,
+        presentationDelegateKey_,
         references_,
-        description_.simpleLatex(),
-        isHidden_, isExpert_, isNecessary_, order_ );
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order() );
 
     if (keepParentRef)
-        ncgp->setParent(parent());
+        ncgp->setParent(
+            const_cast<Parameter*>(
+                &parent() ) );
 
     return ncgp;
 }
 
 
-Parameter *CADSketchParameter::clone() const
+std::unique_ptr<Parameter> CADSketchParameter::clone() const
 {
     return cloneCADSketchParameter();
 }
@@ -297,15 +287,10 @@ void CADSketchParameter::copyFrom(const Parameter& op)
 
 void CADSketchParameter::operator=(const CADSketchParameter &op)
 {
-    description_ = op.description_;
-    isHidden_ = op.isHidden_;
-    isExpert_ = op.isExpert_;
-    isNecessary_ = op.isNecessary_;
-    order_ = op.order_;
+    Parameter::copyFrom(op);
 
-    makeDefaultGeometryParameters = op.makeDefaultGeometryParameters;
-    makeDefaultLayerParameters = op.makeDefaultLayerParameters;
-    sketchAppearance = op.sketchAppearance;
+    entityProperties_ = op.entityProperties_;
+    presentationDelegateKey_ = op.presentationDelegateKey_;
     references_ = op.references_;
 
     if (op.script_)
@@ -349,7 +334,7 @@ int CADSketchParameter::nChildren() const
 }
 
 
-std::string CADSketchParameter::childParameterName( int i ) const
+std::string CADSketchParameter::childParameterName( int i, bool ) const
 {
     insight::assertion(
         i>=0 && i<nChildren(),

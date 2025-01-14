@@ -37,58 +37,58 @@ namespace insight
 enum trimmedMesher {sHM, cfM};
 
 
-ExternalGeometryFile::ExternalGeometryFile(const ParameterSet& ps)
-: p_(ps)
-{
-    auto fname=p_.fileName->originalFilePath().filename().string();
-    insight::assertion(
-        std::isalpha(fname[0]),
-        "filename must not start with a number or special char (got %s)",
-        fname.c_str() );
-//  std::cout<<"added \""<<p_.fileName<<"\""<<std::endl;
-}
+// ExternalGeometryFile::ExternalGeometryFile(ParameterSetInput ip)
+//     : ps_(&ip.parameterSet()), p_(ip.create<Parameters>())
+// {
+//     auto fname=p().fileName->originalFilePath().filename().string();
+//     insight::assertion(
+//         std::isalpha(fname[0]),
+//         "filename must not start with a number or special char (got %s)",
+//         fname.c_str() );
+// //  std::cout<<"added \""<<p_.fileName<<"\""<<std::endl;
+// }
 
-std::string ExternalGeometryFile::fileName() const
-{
-    return p_.fileName->fileName().string();
-}
+// std::string ExternalGeometryFile::fileName() const
+// {
+//     return p().fileName->fileName().string();
+// }
 
 
-void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
-{
-  boost::filesystem::path from( p_.fileName->filePath(location) );
-  boost::filesystem::path to( ExternalGeometryFile::geometryDir(ofc, location)/from.filename() );
+// void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
+// {
+//   boost::filesystem::path from( p().fileName->filePath(location) );
+//   boost::filesystem::path to( ExternalGeometryFile::geometryDir(ofc, location)/from.filename() );
   
-  if (!exists(to.parent_path()))
-    create_directories(to.parent_path());
+//   if (!exists(to.parent_path()))
+//     create_directories(to.parent_path());
 
-  ofc.executeCommand(location, "surfaceTransformPoints",
-    {
-     absolute(from).string(),
-     absolute(to).string(),
-     "-scale", OFDictData::to_OF(p_.scale),
-     "-translate", OFDictData::to_OF(p_.translate),
-     "-rollPitchYaw", OFDictData::to_OF(p_.rollPitchYaw)
-    }
-  );
-}
+//   ofc.executeCommand(location, "surfaceTransformPoints",
+//     {
+//      absolute(from).string(),
+//      absolute(to).string(),
+//      "-scale", OFDictData::to_OF(p().scale),
+//      "-translate", OFDictData::to_OF(p().translate),
+//      "-rollPitchYaw", OFDictData::to_OF(p().rollPitchYaw)
+//     }
+//   );
+// }
 
 
-boost::filesystem::path
-ExternalGeometryFile::geometryDir(
-    const OFEnvironment& /*ofe*/,
-    const boost::filesystem::path& caseDir )
-{
-    return caseDir/"constant"/"triSurface";
-}
+// boost::filesystem::path
+// ExternalGeometryFile::geometryDir(
+//     const OFEnvironment& /*ofe*/,
+//     const boost::filesystem::path& caseDir )
+// {
+//     return caseDir/"constant"/"triSurface";
+// }
 
-boost::filesystem::path
-ExternalGeometryFile::geometryDir(
-    const OpenFOAMCase &cm, // to be able to check version
-    const boost::filesystem::path &caseDir )
-{
-    return geometryDir(cm.ofe(), caseDir);
-}
+// boost::filesystem::path
+// ExternalGeometryFile::geometryDir(
+//     const OpenFOAMCase &cm, // to be able to check version
+//     const boost::filesystem::path &caseDir )
+// {
+//     return geometryDir(cm.ofe(), caseDir);
+// }
 
   
   
@@ -96,12 +96,29 @@ ExternalGeometryFile::geometryDir(
 namespace snappyHexMeshFeats
 {
 
-    
+
+static boost::filesystem::path
+geometryDir(const OFEnvironment& ofe, const boost::filesystem::path& caseDir)
+{
+    return caseDir/"constant"/"triSurface";
+}
+
+static boost::filesystem::path
+geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir)
+{
+    return geometryDir(cm.ofe(), caseDir);
+}
+
+
     
     
 defineType(Feature);
 defineDynamicClass(Feature);
-    
+
+Feature::Feature(ParameterSetInput ip)
+ : p_(ip.forward<Parameters>())
+{}
+
 void Feature::modifyFiles
 (
   const OpenFOAMCase&,
@@ -122,37 +139,36 @@ addToFactoryTable(Feature, Geometry);
 addToStaticFunctionTable(Feature, Geometry, defaultParameters);
 
 
-Geometry::Geometry( const ParameterSet& ps )
-: ExternalGeometryFile(ps),
-  p_(ps)
+Geometry::Geometry( ParameterSetInput ip )
+    : ExternalGeometryFile<Feature>(ip.forward<Parameters>())
 {}
 
 void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict geodict;
   geodict["type"]="triSurfaceMesh";
-  geodict["name"]=p_.name;
+  geodict["name"]=p().name;
     //boost::filesystem::path x; x.f
-  std::string fn=p_.fileName->fileName().string();
+  std::string fn=p().fileName->fileName().string();
   if (!isalpha(fn[0]))
     fn="\""+fn+"\"";
   sHMDict.subDict("geometry")[fn]=geodict;
 
   OFDictData::dict castdict;
   OFDictData::list levels;
-  levels.push_back(p_.minLevel);
-  levels.push_back(p_.maxLevel);
+  levels.push_back(p().minLevel);
+  levels.push_back(p().maxLevel);
   castdict["level"]=levels;
-  if (p_.zoneName!="")
+  if (p().zoneName!="")
   {
-    castdict["faceZone"]=p_.zoneName;
-    castdict["cellZone"]=p_.zoneName;
+    castdict["faceZone"]=p().zoneName;
+    castdict["cellZone"]=p().zoneName;
     castdict["cellZoneInside"]="inside";
   }
-  if (p_.regionRefinements.size()>0)
+  if (p().regionRefinements.size()>0)
   {
     OFDictData::dict rrd;
-    for (const Parameters::regionRefinements_default_type& rr: p_.regionRefinements)
+    for (const Parameters::regionRefinements_default_type& rr: p().regionRefinements)
     {
       OFDictData::dict ld;
       OFDictData::list rrl;
@@ -164,16 +180,16 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
     }
     castdict["regions"]=rrd;
   }
-  sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p_.name]=castdict;
+  sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p().name]=castdict;
 
   OFDictData::dict layerdict;
-  layerdict["nSurfaceLayers"]=p_.nLayers;
-  sHMDict.subDict("addLayersControls").subDict("layers")["\""+p_.name+".*\""]=layerdict;
-  for (const Parameters::regionRefinements_default_type& rr: p_.regionRefinements)
+  layerdict["nSurfaceLayers"]=p().nLayers;
+  sHMDict.subDict("addLayersControls").subDict("layers")["\""+p().name+".*\""]=layerdict;
+  for (const Parameters::regionRefinements_default_type& rr: p().regionRefinements)
   {
    OFDictData::dict layerdict;
    layerdict["nSurfaceLayers"]=0;
-   sHMDict.subDict("addLayersControls").subDict("layers")[p_.name+"_"+rr.regionname]=layerdict;
+   sHMDict.subDict("addLayersControls").subDict("layers")[p().name+"_"+rr.regionname]=layerdict;
   }
 
 }
@@ -186,7 +202,7 @@ void Geometry::modifyFiles(const OpenFOAMCase& ofc,
 
 bool Geometry::producesPrismLayers() const
 {
-  return p_.nLayers>0;
+  return p().nLayers>0;
 }
 
 
@@ -196,8 +212,8 @@ defineType(PatchLayers);
 addToFactoryTable(Feature, PatchLayers);
 addToStaticFunctionTable(Feature, PatchLayers, defaultParameters);
 
-PatchLayers::PatchLayers(const ParameterSet& ps)
-: p_(ps)
+PatchLayers::PatchLayers(ParameterSetInput ip)
+    : Feature(ip.forward<Parameters>())
 {
 }
 
@@ -205,13 +221,13 @@ PatchLayers::PatchLayers(const ParameterSet& ps)
 void PatchLayers::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict layerdict;
-  layerdict["nSurfaceLayers"]=p_.nLayers;
-  sHMDict.subDict("addLayersControls").subDict("layers")[p_.name]=layerdict;
+  layerdict["nSurfaceLayers"]=p().nLayers;
+  sHMDict.subDict("addLayersControls").subDict("layers")[p().name]=layerdict;
 }
 
 bool PatchLayers::producesPrismLayers() const
 {
-  return p_.nLayers>0;
+  return p().nLayers>0;
 }
 
 
@@ -222,23 +238,23 @@ addToFactoryTable(Feature, ExplicitFeatureCurve);
 addToStaticFunctionTable(Feature, ExplicitFeatureCurve, defaultParameters);
 
 
-ExplicitFeatureCurve::ExplicitFeatureCurve( const ParameterSet& ps )
-: p_(ps)
+ExplicitFeatureCurve::ExplicitFeatureCurve(ParameterSetInput ip)
+    : Feature(ip.forward<Parameters>())
 {
 }
 
 void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
-  refdict["file"]=std::string("\"")+p_.fileName->fileName().string()+"\"";
-  refdict["levels"]=OFDictData::list( {OFDictData::list({p_.distance, p_.level}) });
+  refdict["file"]=std::string("\"")+p().fileName->fileName().string()+"\"";
+  refdict["levels"]=OFDictData::list( {OFDictData::list({p().distance, p().level}) });
   sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
 }
 
 void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
-  boost::filesystem::path from(p_.fileName->filePath(location));
+  boost::filesystem::path from(p().fileName->filePath(location));
 
   if (!exists(from))
   {
@@ -251,16 +267,16 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
   }
 
   boost::filesystem::path to(
-      ExternalGeometryFile::geometryDir(ofc, location)
+      snappyHexMeshFeats::geometryDir(ofc, location)
       / from.filename() );
   
   ofc.executeCommand(location, "eMeshTransformPoints",
     {
      absolute(from).string(),
      absolute(to).string(),
-     "-scale", OFDictData::to_OF(p_.scale),
-     "-translate", OFDictData::to_OF(p_.translate),
-     "-rollPitchYaw", OFDictData::to_OF(p_.rollPitchYaw)
+     "-scale", OFDictData::to_OF(p().scale),
+     "-translate", OFDictData::to_OF(p().translate),
+     "-rollPitchYaw", OFDictData::to_OF(p().rollPitchYaw)
     }
   );
 }
@@ -269,40 +285,40 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
 
 defineType(RefinementRegion);
 
-RefinementRegion::RefinementRegion(const ParameterSet& ps)
-: p_(ps)
+RefinementRegion::RefinementRegion(ParameterSetInput ip)
+    : Feature(ip.forward<Parameters>())
 {
 }
 
 void RefinementRegion::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict geodict;
-  std::string entryTitle=p_.name;
+  std::string entryTitle=p().name;
   if (setGeometrySubdict(geodict, entryTitle))
     sHMDict.subDict("geometry")[entryTitle]=geodict;
 
   OFDictData::dict castdict;
   std::string mode;
-  if ( p_.mode == Parameters::inside )
+  if ( p().mode == Parameters::inside )
   {
       mode="inside";
   }
-  else if (p_.mode==Parameters::outside)
+  else if (p().mode==Parameters::outside)
   {
       mode="outside";
   }
-  else if (p_.mode == Parameters::distance)
+  else if (p().mode == Parameters::distance)
   {
       mode="distance";
   }
   castdict["mode"]=mode;
   OFDictData::list level;
-  level.push_back(p_.dist);
-  level.push_back(p_.level);
+  level.push_back(p().dist);
+  level.push_back(p().level);
   OFDictData::list levels;
   levels.push_back(level);
   castdict["levels"]=levels;
-  sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name]=castdict;
+  sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p().name]=castdict;
 }
 
 
@@ -312,17 +328,16 @@ defineType(RefinementBox);
 addToFactoryTable(Feature, RefinementBox);
 addToStaticFunctionTable(Feature, RefinementBox, defaultParameters);
 
-RefinementBox::RefinementBox(const ParameterSet& ps)
-: RefinementRegion(ps),
-  p_(ps)
+RefinementBox::RefinementBox(ParameterSetInput ip)
+    : RefinementRegion(ip.forward<Parameters>())
 {
 }
 
 bool RefinementBox::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableBox";
-  d["min"]=OFDictData::to_OF(p_.min);
-  d["max"]=OFDictData::to_OF(p_.max);
+  d["min"]=OFDictData::to_OF(p().min);
+  d["max"]=OFDictData::to_OF(p().max);
   return true;
 }
 
@@ -334,18 +349,16 @@ defineType(RefinementCylinder);
 addToFactoryTable(Feature, RefinementCylinder);
 addToStaticFunctionTable(Feature, RefinementCylinder, defaultParameters);
 
-RefinementCylinder::RefinementCylinder(const ParameterSet& ps)
-: RefinementRegion(ps),
-  p_(ps)
-{
-}
+RefinementCylinder::RefinementCylinder(ParameterSetInput ip)
+    : RefinementRegion(ip.forward<Parameters>())
+{}
 
 bool RefinementCylinder::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableCylinder";
-  d["point1"]=OFDictData::to_OF(p_.point1);
-  d["point2"]=OFDictData::to_OF(p_.point2);
-  d["radius"]=p_.radius;
+  d["point1"]=OFDictData::to_OF(p().point1);
+  d["point2"]=OFDictData::to_OF(p().point2);
+  d["radius"]=p().radius;
   return true;
 }
 
@@ -357,17 +370,16 @@ defineType(RefinementSphere);
 addToFactoryTable(Feature, RefinementSphere);
 addToStaticFunctionTable(Feature, RefinementSphere, defaultParameters);
 
-RefinementSphere::RefinementSphere(const ParameterSet& ps)
-: RefinementRegion(ps),
-  p_(ps)
+RefinementSphere::RefinementSphere(ParameterSetInput ip)
+    : RefinementRegion(ip.forward<Parameters>())
 {
 }
 
 bool RefinementSphere::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableSphere";
-  d["centre"]=OFDictData::to_OF(p_.center);
-  d["radius"]=p_.radius;
+  d["centre"]=OFDictData::to_OF(p().center);
+  d["radius"]=p().radius;
   return true;
 }
 
@@ -379,10 +391,8 @@ defineType(RefinementGeometry);
 addToFactoryTable(Feature, RefinementGeometry);
 addToStaticFunctionTable(Feature, RefinementGeometry, defaultParameters);
 
-RefinementGeometry::RefinementGeometry(const ParameterSet& ps)
-: RefinementRegion(ps),
-  p_(ps),
-  geometryfile_(p_.geometry)
+RefinementGeometry::RefinementGeometry(ParameterSetInput ip)
+: ExternalGeometryFile<RefinementRegion>(ip.forward<Parameters>())
 {}
 
 // void RefinementGeometry::addIntoDictionary(OFDictData::dict& sHMDict) const
@@ -401,11 +411,12 @@ RefinementGeometry::RefinementGeometry(const ParameterSet& ps)
 //   castdict["levels"]=levels;
 //   sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name()]=castdict;
 // }
+
 bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
 {
-  entryTitle=geometryfile_.fileName().c_str();
+  entryTitle=fileName().c_str();
   geodict["type"]="triSurfaceMesh";
-  geodict["name"]=p_.name;
+  geodict["name"]=p().name;
 //   //boost::filesystem::path x; x.f
 //   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
   return true;
@@ -414,7 +425,7 @@ bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::stri
 void RefinementGeometry::modifyFiles(const OpenFOAMCase& ofc, 
 	      const boost::filesystem::path& location) const
 {
-  geometryfile_.putIntoConstantTrisurface(ofc, location);
+  putIntoConstantTrisurface(ofc, location);
 }
 
 
@@ -424,8 +435,8 @@ addToFactoryTable(Feature, NearSurfaceRefinement);
 addToStaticFunctionTable(Feature, NearSurfaceRefinement, defaultParameters);
 
 
-NearSurfaceRefinement::NearSurfaceRefinement(const ParameterSet& ps)
-: RefinementRegion(ps)
+NearSurfaceRefinement::NearSurfaceRefinement(ParameterSetInput ip)
+    : RefinementRegion(ip.forward<Parameters>())
 {
 }
 
@@ -443,18 +454,14 @@ defineType(NearTemplatePatchRefinement);
 addToFactoryTable(Feature, NearTemplatePatchRefinement);
 addToStaticFunctionTable(Feature, NearTemplatePatchRefinement, defaultParameters);
 
-NearTemplatePatchRefinement::NearTemplatePatchRefinement
-(
-  const ParameterSet& ps
-)
-: RefinementRegion(ps),
-  p_(ps)
-{
-}
+NearTemplatePatchRefinement::NearTemplatePatchRefinement(
+    ParameterSetInput ip )
+    : RefinementRegion(ip.forward<Parameters>())
+{}
 
 void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
-  boost::filesystem::path to( boost::filesystem::path("constant")/"triSurface"/p_.fileName->fileName() );
+  boost::filesystem::path to( boost::filesystem::path("constant")/"triSurface"/p().fileName->fileName() );
 
   if (!exists((location/to).parent_path()))
     create_directories((location/to).parent_path());
@@ -462,7 +469,7 @@ void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const pat
   ofc.executeCommand(location, "surfaceMeshTriangulate",
     list_of<std::string>
     ("-patches")
-    ("("+p_.name+")")
+                     ("("+p().name+")")
     (to.string())
   );
 }
@@ -470,9 +477,9 @@ void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const pat
 
 bool NearTemplatePatchRefinement::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
 {
-  entryTitle=p_.fileName->fileName().string();
+  entryTitle=p().fileName->fileName().string();
   geodict["type"]="triSurfaceMesh";
-  geodict["name"]=p_.name;
+  geodict["name"]=p().name;
   return true;
 }
 
@@ -654,9 +661,8 @@ RefinementLevel::RefinementLevel(
 defineType(snappyHexMeshConfiguration);
 addToOpenFOAMCaseElementFactoryTable(snappyHexMeshConfiguration);
 
-snappyHexMeshConfiguration::snappyHexMeshConfiguration( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "snappyHexMeshConfiguration", ps),
-  p_(ps)
+snappyHexMeshConfiguration::snappyHexMeshConfiguration( OpenFOAMCase& c, ParameterSetInput ip )
+    : OpenFOAMCaseElement(c, /*"snappyHexMeshConfiguration", */ip.forward<Parameters>())
 {
 }
 
@@ -666,12 +672,10 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   
   OFDictData::dict& sHMDict=dictionaries.lookupDict("system/snappyHexMeshDict");
   
-  const snappyHexMeshConfiguration::Parameters& p = p_;
-  
   // setup dict structure
-  sHMDict["castellatedMesh"] = p.doCastellatedMesh;
-  sHMDict["snap"] = p.doSnap;
-  sHMDict["addLayers"] = p.doAddLayers;
+  sHMDict["castellatedMesh"] = p().doCastellatedMesh;
+  sHMDict["snap"] = p().doSnap;
+  sHMDict["addLayers"] = p().doAddLayers;
   sHMDict["debug"] = 0;
   sHMDict["mergeTolerance"] = 1e-6;
   OFDictData::dict& geomCtrls=sHMDict.subDict("geometry");
@@ -686,17 +690,17 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
 
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
-  snapCtrls["implicitFeatureSnap"]=p.doImplicitFeatureSnap;
-  snapCtrls["explicitFeatureSnap"]=p.doExplicitFeatureSnap;
+  snapCtrls["implicitFeatureSnap"]=p().doImplicitFeatureSnap;
+  snapCtrls["explicitFeatureSnap"]=p().doExplicitFeatureSnap;
 
   setStdCastellatedCtrls(castellatedCtrls);
-  castellatedCtrls["allowFreeStandingZoneFaces"]=p.allowFreeStandingZoneFaces;
+  castellatedCtrls["allowFreeStandingZoneFaces"]=p().allowFreeStandingZoneFaces;
   
-  if (p.PiM.size()>1)
+  if (p().PiM.size()>1)
   {
     OFDictData::list PiM;
     int i=1;
-    for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
+    for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p().PiM)
     {
       if (OFversion()>=600)
       {
@@ -709,43 +713,44 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
     }
     castellatedCtrls["locationsInMesh"]=PiM;
   }
-  else if (p.PiM.size()==1)
+  else if (p().PiM.size()==1)
   {
-    castellatedCtrls["locationInMesh"]=OFDictData::vector3(p.PiM[0]);
+    castellatedCtrls["locationInMesh"]=OFDictData::vector3(p().PiM[0]);
   }
   else
       throw insight::Exception("snappyHexMesh: at least one point in mesh has to be provided!");
   
   setStdLayerCtrls(layerCtrls);
-  layerCtrls["relativeSizes"]=p.relativeSizes;
-  layerCtrls["finalLayerThickness"]=p.tlayer;
-  layerCtrls["expansionRatio"]=p.erlayer;
-  layerCtrls["nLayerIter"]=p.nLayerIter;  //OCFD
-  layerCtrls["maxLayerIter"]=p.nLayerIter;  // engys
+  layerCtrls["relativeSizes"]=p().relativeSizes;
+  layerCtrls["finalLayerThickness"]=p().tlayer;
+  layerCtrls["expansionRatio"]=p().erlayer;
+  layerCtrls["nLayerIter"]=p().nLayerIter;  //OCFD
+  layerCtrls["maxLayerIter"]=p().nLayerIter;  // engys
   
-  if (p.qualityCtrls==snappyHexMeshConfiguration::Parameters::standard)
+  if (p().qualityCtrls==snappyHexMeshConfiguration::Parameters::standard)
   {
     setStdQualityCtrls(qualityCtrls);
   }
-  else if (p.qualityCtrls==snappyHexMeshConfiguration::Parameters::relaxed)
+  else if (p().qualityCtrls==snappyHexMeshConfiguration::Parameters::relaxed)
   {
     setRelaxedQualityCtrls(qualityCtrls);
   }
-  else if (p.qualityCtrls==snappyHexMeshConfiguration::Parameters::disabled)
+  else if (p().qualityCtrls==snappyHexMeshConfiguration::Parameters::disabled)
   {
     setNoQualityCtrls(qualityCtrls);
   }
 
-  for (const snappyHexMeshConfiguration::Parameters::features_default_type& feat: p.features)
+  for (const snappyHexMeshConfiguration::Parameters::features_default_type& feat: p().features)
   {
       feat->addIntoDictionary(sHMDict);
   }
   
 }
 
-void snappyHexMeshConfiguration::modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const
+void snappyHexMeshConfiguration::modifyCaseOnDisk (
+    const OpenFOAMCase& cm, const boost::filesystem::path& location ) const
 {
-  for (const snappyHexMeshConfiguration::Parameters::features_default_type& feat: p_.features)
+  for (auto& feat: p().features)
   {
       feat->modifyFiles(cm, location);
   }
@@ -764,7 +769,7 @@ void reconstructParMesh
 
     if (is_parallel)
     {
-      ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
+      ofc.executeCommand(location, "reconstructParMesh", {"-constant"} );
       ofc.removeProcessorDirectories(location);
     }
 }
@@ -776,7 +781,7 @@ void snappyHexMesh
 //   const OFDictData::list& PiM,
 //   const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
 //   snappyHexMeshOpts::Parameters const& p,
-  const ParameterSet& ps,
+  const snappyHexMeshConfiguration::Parameters& p,
   bool overwrite,
   bool isalreadydecomposed,
   bool keepdecomposedafterfinish,
@@ -787,8 +792,6 @@ void snappyHexMesh
   using namespace snappyHexMeshFeats;
   
   OFDictData::dictFile sHMDict;
-  
-  snappyHexMeshConfiguration::Parameters p(ps);
   
   // setup dict structure
   sHMDict["castellatedMesh"] = p.doCastellatedMesh;

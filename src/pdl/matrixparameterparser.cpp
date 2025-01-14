@@ -3,15 +3,17 @@
 using namespace std;
 
 defineType(MatrixParameterParser);
-addToStaticFunctionTable(ParserDataBase, MatrixParameterParser, insertrule);
+addToStaticFunctionTable(ParameterGenerator, MatrixParameterParser, insertrule);
 
 
-MatrixParameterParser::Data::Data(arma::uword r, arma::uword c, const std::string& d)
-: ParserDataBase(d), value(arma::zeros(r,c))
+MatrixParameterParser::MatrixParameterParser(
+    arma::uword r, arma::uword c, const std::string& d)
+: ParameterGenerator(d), value(arma::zeros(r,c))
 {}
 
-MatrixParameterParser::Data::Data(const std::vector<std::vector<double> >& mat, const std::string& d)
-: ParserDataBase(d)
+MatrixParameterParser::MatrixParameterParser(
+    const std::vector<std::vector<double> >& mat, const std::string& d)
+: ParameterGenerator(d)
 {
   size_t r=mat.size();
   if (r<1)
@@ -34,23 +36,27 @@ MatrixParameterParser::Data::Data(const std::vector<std::vector<double> >& mat, 
   }
 }
 
-void MatrixParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+
+void MatrixParameterParser::cppAddRequiredInclude(std::set<std::string>& headers) const
 {
-  headers.insert("<armadillo>");
-  headers.insert("\"base/parameters/matrixparameter.h\"");
+    headers.insert("<armadillo>");
+    headers.insert("\"base/parameters/matrixparameter.h\"");
 }
 
-std::string MatrixParameterParser::Data::cppType(const std::string&) const
-{
-  return "arma::mat";
-}
 
-std::string MatrixParameterParser::Data::cppParamType(const std::string& ) const
+std::string MatrixParameterParser::cppInsightType() const
 {
   return "insight::MatrixParameter";
 }
 
-std::string MatrixParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
+
+std::string MatrixParameterParser::cppStaticType() const
+{
+    return "arma::mat";
+}
+
+
+std::string MatrixParameterParser::cppDefaultValueExpression() const
 {
   std::ostringstream os;
   os<<"arma::mat(boost::assign::list_of";
@@ -65,14 +71,13 @@ std::string MatrixParameterParser::Data::cppValueRep(const std::string&, const s
   return os.str();
 }
 
-void MatrixParameterParser::Data::cppWriteCreateStatement
-(
-    std::ostream& os, const std::string& name,
-    const std::string& thisscope
-) const
+
+void MatrixParameterParser::cppWriteCreateStatement(
+    std::ostream& os,
+    const std::string& psvarname ) const
 {
 
-  os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
+  os<<"std::unique_ptr< "<<cppInsightType()<<" > "<<psvarname<<";"<<endl;
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
   os<<"{"<<endl;
   os<<"arma::mat data; data"<<endl;
@@ -85,7 +90,7 @@ void MatrixParameterParser::Data::cppWriteCreateStatement
     os<<"<<arma::endr";
   };
   os<<";"<<endl;
-  os<<name<<".reset(new "<<cppParamType(name)<<"(data, \""<<description<<"\")); "<<endl;
+  os<<psvarname<<".reset(new "<<cppInsightType()<<"(data, "<<cppInsightTypeConstructorParameters()<<"));\n";
   os<<"}"<<endl;
 }
 

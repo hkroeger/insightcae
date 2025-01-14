@@ -97,43 +97,27 @@ eval = set
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
+public:
+    typedef
+        supplementedInputDataDerived<Parameters, typename Base::supplementedInputData>
+        supplementedInputData;
 
+    addParameterMembers_ParameterClass(OpenFOAMAnalysisTemplate::Parameters);
+
+protected:
   ResultSetPtr derivedInputData_;
 
   std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
-    OpenFOAMAnalysisTemplate
-        (
-            const std::string& name,
-            const std::string& description,
-            const ParameterSet& ps,
-            const boost::filesystem::path& exepath,
-            ProgressDisplayer& progress = consoleProgressDisplayer
-        )
-      : Base(name, description, ps, exepath, progress),
-        p_(ps)
-    {}
-
-
-    template<class PT>
-    OpenFOAMAnalysisTemplate
-    (
-        const std::string& name,
-        const std::string& description,
-        std::unique_ptr<PT> sp,
-        const boost::filesystem::path& exepath,
-        ProgressDisplayer& progress = consoleProgressDisplayer
-        )
-      : Base(name, description, std::move(sp), exepath, progress),
-        p_(Base::parameters())
+    OpenFOAMAnalysisTemplate(
+        const std::shared_ptr<supplementedInputDataBase>& sp )
+      : Base(sp)
     {}
 
     int np() const
     {
-        return realNp(p_.run.np);
+        return realNp(p().run.np);
     }
 
     static insight::OperatingSystemSet compatibleOperatingSystems()
@@ -141,19 +125,13 @@ public:
         return { insight::LinuxOS };
     }
 
-    boost::filesystem::path setupExecutionEnvironment() override
-    {
-        CurrentExceptionContext ex("creating the execution directory");
-
-        return Analysis::setupExecutionEnvironment();
-    }
     
     void initializeDerivedInputDataSection()
     {
         if (!derivedInputData_)
         {
-            ParameterSet empty_ps;
-            derivedInputData_.reset(new ResultSet(empty_ps, "Derived Input Data", ""));
+            auto empty_ps = ParameterSet::create();
+            derivedInputData_.reset(new ResultSet(*empty_ps, "Derived Input Data", ""));
         }
     }
 
@@ -242,7 +220,7 @@ public:
 
     void changeMapFromPath(const boost::filesystem::path& newMapFromPath)
     {
-        p_.run.mapFrom->setOriginalFilePath(newMapFromPath);
+        p().run.mapFrom->setOriginalFilePath(newMapFromPath);
     }
 
 
@@ -323,13 +301,13 @@ public:
             _("creating OpenFOAM case in directory \"%s\""),
             dir.c_str() );
 
-        OFEnvironment ofe = OFEs::get(p_.run.OFEname);
-        ofe.setExecutionMachine(p_.run.machine);
+        OFEnvironment ofe = OFEs::get(p().run.OFEname);
+        ofe.setExecutionMachine(p().run.machine);
 
         parentActionProgress.message(_("Computing derived input quantities"));
         calcDerivedInputData(parentActionProgress);
 
-        bool evaluateonly=p_.run.evaluateonly;
+        bool evaluateonly=p().run.evaluateonly;
         if (evaluateonly)
         {
             insight::Warning(
@@ -345,13 +323,13 @@ public:
             if (!meshCase->meshPresentOnDisk(dir))
             {
                 meshcreated=true;
-                if (p_.mesh.linkmesh->isValid())
+                if (p().mesh.linkmesh->isValid())
                 {
                     parentActionProgress.message(
                         str(boost::format(
                                 _("Linking the mesh to OpenFOAM case in directory %s.")
                                 ) % dir.string() ) );
-                    linkPolyMesh(p_.mesh.linkmesh->filePath(dir)/"constant", dir/"constant", &ofe);
+                    linkPolyMesh(p().mesh.linkmesh->filePath(dir)/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
@@ -439,10 +417,10 @@ public:
 
         if (!cm.outputTimesPresentOnDisk(exepath, false))
         {
-            if ((cm.OFversion()>=230) && (p_.run.mapFrom->isValid()))
+            if ((cm.OFversion()>=230) && (p().run.mapFrom->isValid()))
             {
                 // parallelTarget option is not present in OF2.3.x
-                mapFromOther(cm, parentProgress, p_.run.mapFrom->filePath(exepath), false);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(exepath), false);
             }
         }
 
@@ -462,15 +440,15 @@ public:
 
         if (!cm.outputTimesPresentOnDisk(exepath, is_parallel))
         {
-            if ( (!(cm.OFversion()>=230)) && (p_.run.mapFrom->isValid()) )
+            if ( (!(cm.OFversion()>=230)) && (p().run.mapFrom->isValid()) )
             {
-                mapFromOther(cm, parentProgress, p_.run.mapFrom->filePath(exepath), is_parallel);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(exepath), is_parallel);
             }
             else
             {
-                if (p_.run.potentialinit)
+                if (p().run.potentialinit)
                 {
-                    if (p_.run.mapFrom->isValid())
+                    if (p().run.mapFrom->isValid())
                     {
                         parentProgress.message(
                             str(boost::format(
@@ -594,17 +572,15 @@ public:
             _("evaluating the results for case \"%s\""),
             exepath.c_str() );
 
-        auto results = std::make_shared<ResultSet>(
-            this->parameters(), this->name_, "Result Report");
-        results->introduction() = this->description_;
+        auto results = this->createResultSet();
 
-        if (!p_.eval.skipmeshquality)
+        if (!p().eval.skipmeshquality)
         {
             parentActionProgress.message("Generating mesh quality report");
             meshQualityReport(cm, exepath, results);
         }
 
-        if (p_.eval.reportdicts)
+        if (p().eval.reportdicts)
         {
             parentActionProgress.message("Adding numerical settings to report");
             currentNumericalSettingsReport(cm, exepath, results);
@@ -630,14 +606,11 @@ public:
     {
         CurrentExceptionContext ex(_("running OpenFOAM analysis"));
 
-        auto ofprg = progress.forkNewAction( p_.run.evaluateonly? 5 : 7 );
+        auto ofprg = progress.forkNewAction( p().run.evaluateonly? 4 : 6 );
 
-        ofprg.message(_("Creating execution environment"));
-        setupExecutionEnvironment();
-        ++ofprg;
 
-        OFEnvironment ofe = OFEs::get(p_.run.OFEname);
-        ofe.setExecutionMachine(p_.run.machine);
+        OFEnvironment ofe = OFEs::get(p().run.OFEname);
+        ofe.setExecutionMachine(p().run.machine);
 
         ofprg.message(_("Preparing case creation"));
         prepareCaseCreation(ofprg);
@@ -650,7 +623,7 @@ public:
 
         auto dir = this->executionPath();
 
-        if (!p_.run.evaluateonly)
+        if (!p().run.evaluateonly)
         {
             PrefixedProgressDisplayer iniprogdisp(
                 &ofprg, "initrun",
@@ -663,7 +636,7 @@ public:
             ++ofprg;
         }
 
-        if (!p_.run.evaluateonly && !p_.run.preprocessonly)
+        if (!p().run.evaluateonly && !p().run.preprocessonly)
         {
             ofprg.message(_("Running solver"));
             runSolver(ofprg, runCase);
@@ -671,7 +644,7 @@ public:
         }
 
         ResultSetPtr results;
-        if (!p_.run.preprocessonly)
+        if (!p().run.preprocessonly)
         {
             ofprg.message(_("Finalizing solver run"));
             finalizeSolverRun(runCase, ofprg);
@@ -684,8 +657,7 @@ public:
         else
         {
             // empty report containing only the input parameters
-            results = std::make_shared<ResultSet>(
-                this->parameters(), this->name_, "Result Report");
+            results = this->createResultSet();
         }
 
         return results;
@@ -695,9 +667,9 @@ public:
 };
 
 // #ifndef SWIG
-typedef OpenFOAMAnalysisTemplate<Analysis> OpenFOAMAnalysis;
+typedef OpenFOAMAnalysisTemplate<AnalysisWithParameters> OpenFOAMAnalysis;
 #ifdef SWIG
-%template(OpenFOAMAnalysis) OpenFOAMAnalysisTemplate<Analysis>;
+%template(OpenFOAMAnalysis) OpenFOAMAnalysisTemplate<AnalysisWithParameters>;
 #endif
 // #else
 // typedef OpenFOAMAnalysisTemplate OpenFOAMAnalysis;
@@ -711,7 +683,8 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const P& tmp )
         _("inserting turbulence model configuration into OpenFOAM case")
         );
 
-  turbulenceModel* model = turbulenceModel::lookup(tmp.selection, cm, tmp.parameters);
+  turbulenceModel* model = turbulenceModel::lookup(
+      tmp.selection, cm, ParameterSetInput(*tmp.parameters) );
 
   if (!model)
       throw insight::Exception(_("Unrecognized RASModel selection: %s"), tmp.selection);

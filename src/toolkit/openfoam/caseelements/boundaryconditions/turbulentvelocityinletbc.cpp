@@ -20,11 +20,12 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps
+  ParameterSetInput ip
 )
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps),
-  p_(ps)
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>())
 {
  BCtype_="patch";
 }
@@ -44,23 +45,22 @@ const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types =
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
-  ParameterSet ps=Parameters::makeDefault();
-  p_.set(ps);
-
   if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu
-        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(
+            &p().turbulence))
   {
-    FieldData(ps.getSubset("umean")).setDirichletBC(BC, dictionaries);
+    FieldData(p().umean).setDirichletBC(BC, dictionaries);
   }
-  else if (const Parameters::turbulence_inflowGenerator_type* tu
-        = boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  else if (auto* tu
+             = boost::get<Parameters::turbulence_inflowGenerator_type>(
+                 &p().turbulence))
   {
     BC["type"]= inflowGenerator_types[tu->type];
-    BC["Umean"]=FieldData(ps.getSubset("umean")).sourceEntry(dictionaries);
+    BC["Umean"]=FieldData(p().umean).sourceEntry(dictionaries);
     BC["c"]=FieldData(tu->volexcess).sourceEntry(dictionaries);
     BC["uniformConvection"]=tu->uniformConvection;
-    BC["R"]=FieldData(ps.get<SelectableSubsetParameter>("turbulence")().getSubset("R")).sourceEntry(dictionaries);
-    BC["L"]=FieldData(ps.get<SelectableSubsetParameter>("turbulence")().getSubset("L")).sourceEntry(dictionaries);
+    BC["R"]=FieldData(tu->R).sourceEntry(dictionaries);
+    BC["L"]=FieldData(tu->L).sourceEntry(dictionaries);
     BC["value"]="uniform (0 0 0)";
   }
 }
@@ -73,10 +73,11 @@ void TurbulentVelocityInletBC::setField_p(OFDictData::dict& BC, OFdicts&) const
 void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC, OFdicts&) const
 {
   if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu
-        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(
+            &p().turbulence))
   {
 
-    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    double U=FieldData( p().umean ).representativeValueMag();
 
     double uprime=tu->intensity*U;
     double k=std::max(1e-6, 3.*pow(uprime, 2)/2.);
@@ -85,7 +86,8 @@ void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC, OFdicts&) const
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
-        = boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_inflowGenerator_type>(
+                 &p().turbulence))
   {
     // set some small sgs energy
     BC["type"]="fixedValue";
@@ -96,10 +98,11 @@ void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC, OFdicts&) const
 void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC, OFdicts&) const
 {
   if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu
-        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(
+            &p().turbulence))
   {
 
-    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    double U=FieldData( p().umean ).representativeValueMag();
 
     double uprime = tu->intensity*U;
     double k = std::max(1e-6, 3.*pow(uprime, 2)/2.);
@@ -109,7 +112,8 @@ void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC, OFdicts&) co
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
-        = boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_inflowGenerator_type>(
+                 &p().turbulence))
   {
     throw insight::Exception("Requested BC for field omega while inflow generator was selected!");
   }
@@ -119,10 +123,11 @@ void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC, OFdicts&) 
 {
 
   if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu
-        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(
+            &p().turbulence))
   {
 
-    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    double U=FieldData( p().umean ).representativeValueMag();
 
     double uprime = tu->intensity*U;
     double k=3.*pow(uprime, 2)/2.;
@@ -132,7 +137,8 @@ void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC, OFdicts&) 
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
-        = boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_inflowGenerator_type>(
+                 &p().turbulence))
   {
     throw insight::Exception("Requested BC for field epsilon while inflow generator was selected!");
   }
@@ -142,10 +148,11 @@ void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC, OFdicts&) 
 void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC, OFdicts&) const
 {
   if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu
-        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(
+            &p().turbulence))
   {
 
-    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    double U=FieldData( p().umean ).representativeValueMag();
 
     double uprime = tu->intensity*U;
     double nutilda=sqrt(1.5)* uprime * tu->lengthScale;
@@ -154,7 +161,8 @@ void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC, OFdicts&) 
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
-        = boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_inflowGenerator_type>(
+                 &p().turbulence))
   {
     throw insight::Exception("Requested BC for field nuTilda while inflow generator was selected!");
   }
@@ -164,10 +172,11 @@ void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC, OFdicts&) 
 void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC, OFdicts&) const
 {
   if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu
-        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(
+            &p().turbulence))
   {
 
-    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    double U=FieldData( p().umean ).representativeValueMag();
 
     double uprime=tu->intensity*U;
     double kBy3=std::max(1e-6, pow(uprime, 2)/2.);
@@ -176,7 +185,8 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC, OFdicts&) const
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
-        = boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+        = boost::get<Parameters::turbulence_inflowGenerator_type>(
+                 &p().turbulence))
   {
     throw insight::Exception("Requested BC for field R while inflow generator was selected!");
   }
@@ -185,12 +195,11 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC, OFdicts&) const
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
-  multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+  multiphaseBC::multiphaseBCPtr phasefractions =p().phasefractions;
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
 
-  if (boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  if (boost::get<Parameters::turbulence_inflowGenerator_type>(&p().turbulence))
     controlDict.getList("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
 
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);

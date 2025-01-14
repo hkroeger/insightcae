@@ -5,10 +5,9 @@ namespace insight {
 
 defineType(RASModel);
 
-RASModel::RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: turbulenceModel(c, ps)
-{
-}
+RASModel::RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: turbulenceModel(c, ip.forward<Parameters>())
+{}
 
 
 void RASModel::addIntoDictionaries(OFdicts& dictionaries) const

@@ -1,6 +1,7 @@
 #ifndef IQPARAMETERSETMODEL_H
 #define IQPARAMETERSETMODEL_H
 
+#include "base/parameter.h"
 #include "toolkit_gui_export.h"
 
 #include <QSet>
@@ -19,15 +20,15 @@ class IQArrayParameter;
 class IQSelectableSubsetParameter;
 class IQCADModel3DViewer;
 template<class IQBaseParameter, const char* N> class IQArrayElementParameter;
+class IQParameterSetModel;
 
 
 
 
 namespace insight {
-class CADParameterSetVisualizer;
+class CADParameterSetModelVisualizer;
 class LabeledArrayParameter;
 }
-
 
 
 
@@ -53,30 +54,44 @@ private:
   template<class IQBaseParameter, const char* N>
   friend class IQArrayElementParameter;
 
-  insight::ParameterSet parameterSet_, defaultParameterSet_;
-  QList<IQParameter*> rootParameters_;
-  std::string analysisName_;
+  std::unique_ptr<insight::ParameterSet> parameterSet_;
 
-  mutable std::map<QString, insight::cad::FeaturePtr> transformedGeometry_;
+  std::unique_ptr<insight::ParameterSet> defaultParameterSet_;
+  std::string analysisName_; // reqd for parameter proposition engine
+
+  mutable std::map<std::string, insight::cad::FeaturePtr> transformedGeometry_;
+  mutable std::key_observer_map<IQParameter, int> wrappers_;
+
+  IQParameter* findWrapper(const insight::Parameter& p) const;
+  int countDisplayedChildren(const QModelIndex& index) const;
 
   /**
    * @brief vectorBasePoints_
    * if a vector parameter represents a direction, this map contains the base point.
    * If there is no base point for a vector parameter, it treated as a point (location vector)
    */
-  mutable std::map<QString, arma::mat> vectorBasePoints_;
+  mutable std::map<std::string, arma::mat> vectorBasePoints_;
+
 
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
-  QList<IQParameter*> decorateChildren(QObject* parent, insight::Parameter& p);
-  IQParameter* decorateArrayElement(QObject* parent, int i, insight::Parameter& cp);
-  QList<IQParameter*> decorateArrayContent(QObject*, insight::ArrayParameterBase& ap);
-  IQParameter* decorateLabeledArrayElement(QObject* parent, const std::string& name, insight::Parameter& cp);
-  QList<IQParameter*> decorateLabeledArrayContent(QObject*, insight::LabeledArrayParameter& ap);
-
-
 public:
-  IQParameterSetModel(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps, QObject* parent=nullptr);
+  static insight::Parameter* indexData(const QModelIndex& idx);
+  const IQParameter* iqIndexData(const QModelIndex& idx) const;
+  IQParameter* iqIndexData(const QModelIndex& idx);
+
+  IQParameterSetModel(
+      const insight::ParameterSet& ps,
+      boost::optional<const insight::ParameterSet&> defaultps
+        = boost::optional<const insight::ParameterSet&>(),
+      QObject* parent=nullptr);
+
+    const insight::Parameter* visibleParent(const insight::Parameter&p, int& row) const;
+
+    // access functions
+    QModelIndex indexFromParameter(const insight::Parameter& p, int col) const;
+    QModelIndex indexFromParameterPath(const std::string& pp, int col) const;
+
 
   int	columnCount(const QModelIndex &parent = QModelIndex()) const override;
   QVariant	headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
@@ -113,10 +128,6 @@ public:
   };
   friend class ParameterContext;
 
-  // access functions
-  QList<int> pathFromIndex(const QModelIndex& i) const;
-  QModelIndex indexFromParameterPath(const std::string& pp) const;
-  QModelIndex indexFromPath(const QList<int>& p) const;
 
   const insight::ParameterSet& getParameterSet() const;
 
@@ -125,6 +136,7 @@ public:
   static IQParameter* parameterFromIndex(const QModelIndex& index);
 
   insight::Parameter& parameterRef(const QModelIndex &index);
+  insight::Parameter& parameterRef(const std::string &path);
 
 
   /**
@@ -133,14 +145,14 @@ public:
    * @param path
    * path (slash separated) to changed parameter
    */
-  void notifyParameterChange(const std::string &path, bool redecorateChildren=false);
+  void notifyParameterChange(const insight::Parameter& p);
 
   /**
    * @brief notifyParameterChange
    * update parameter and redecorate all children, if necessary
    * @param index
    */
-  void notifyParameterChange(const QModelIndex &index, bool redecorateChildren=false);
+  void notifyParameterChange(const QModelIndex &index);
 
   void appendArrayElement(const QModelIndex &index, const insight::Parameter& elem);
   /**
@@ -154,22 +166,29 @@ public:
 
 
   void addGeometryToSpatialTransformationParameter(
-          const QString& parameterPath, insight::cad::FeaturePtr geom );
+          const std::string& parameterPath, insight::cad::FeaturePtr geom );
   void addVectorBasePoint(
-          const QString& parameterPath, const arma::mat& pBase );
+          const std::string& parameterPath, const arma::mat& pBase );
 
   insight::cad::FeaturePtr
   getGeometryToSpatialTransformationParameter(
-          const QString& parameterPath );
+          const std::string& parameterPath );
   const arma::mat* const getVectorBasePoint(
-          const QString& parameterPath );
+          const std::string& parameterPath );
+
+  void pack();
+  void clearPackedData();
 
   void setAnalysisName(const std::string& analysisName);
   const std::string& getAnalysisName() const;
 
 public Q_SLOTS:
   void clearParameters();
-  void resetParameters(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps);
+  void resetParameters(
+        const insight::ParameterSet& ps );
+  void resetParameters(
+      const insight::ParameterSet& ps,
+      const insight::ParameterSet& defaultps);
 
 };
 
@@ -201,31 +220,5 @@ void disconnectParameterSetChanged(
 
 
 
-class IQFilteredParameterSetModel
-: public QAbstractProxyModel
-{
-
-
-  std::vector<std::string> sourceRootParameterPaths_;
-  QList<QPersistentModelIndex> rootSourceIndices;
-
-  QList<QPersistentModelIndex> mappedIndices_;
-  void searchRootSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex& sourceParent);
-  void storeAllChildSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex& sourceParent);
-  bool isBelowRootParameter(const QModelIndex& sourceIndex, int* topRow=nullptr) const;
-
-public:
-  IQFilteredParameterSetModel(const std::vector<std::string>& sourceParameterPaths, QObject* parent=nullptr);
-
-  void setSourceModel(QAbstractItemModel *sourceModel) override;
-  QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
-  QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
-
-  int	columnCount(const QModelIndex &parent = QModelIndex()) const override;
-  int	rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  QModelIndex	index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-  QModelIndex	parent(const QModelIndex &index) const override;
-
-};
 
 #endif // IQPARAMETERSETMODEL_H

@@ -41,134 +41,111 @@ namespace insight
 
 
 
-ParameterSet::ParameterSet()
-{
-}
+// ParameterSet::ParameterSet()
+//     : SubsetParameter(std::string())
+// {}
 
-ParameterSet::ParameterSet(const ParameterSet &o)
-{
-    operator=(o);
-}
-
-
-ParameterSet::ParameterSet ( const SubsetParameter& o )
-{
-    SubsetParameter::operator=(o);
-    initialize();
-}
+// // ParameterSet::ParameterSet(const ParameterSet &o)
+// //     : SubsetParameter(o.description().simpleLatex())
+// // {
+// //     operator=(o);
+// // }
 
 
-ParameterSet::ParameterSet(const EntryCopies &defaultValue, const std::string &description)
-    : SubsetParameter(defaultValue, description)
-{
-    initialize();
-}
+// // ParameterSet::ParameterSet ( const SubsetParameter& o )
+// //     : SubsetParameter(o.description().simpleLatex())
+// // {
+// //     SubsetParameter::operator=(o);
+// //     initialize();
+// // }
 
 
-ParameterSet::ParameterSet(const EntryReferences &defaultValue, const std::string &description)
-    : SubsetParameter(defaultValue, description)
-{
-    initialize();
-}
+// ParameterSet::ParameterSet(Entries &&defaultValue, const std::string &description)
+//     : SubsetParameter(std::move(defaultValue), description)
+// {
+//     initialize();
+// }
 
 
-ParameterSet::~ParameterSet()
-{
-}
+// ParameterSet::ParameterSet(const EntryReferences &defaultValue, const std::string &description)
+//     : SubsetParameter(defaultValue, description)
+// {
+//     initialize();
+// }
 
 
-
-void ParameterSet::setParameterSetDescription(const std::string& desc)
-{
-  description_.simpleLatex() = desc;
-}
-
-const SimpleLatex& ParameterSet::parameterSetDescription() const
-{
-  return description_;
-}
-
-
-void ParameterSet::copyFrom(const Parameter& o)
-{
-  operator=(dynamic_cast<const ParameterSet&>(o));
-}
-
-
-void ParameterSet::operator=(const ParameterSet &o)
-{
-  SubsetParameter::operator=(o);
-  initialize();
-}
+// ParameterSet::~ParameterSet()
+// {
+// }
 
 
 
 
-ParameterSet& ParameterSet::merge(const ParameterSet& other )
-{
-  SubsetParameter::merge(other);
-  initialize();
-  return *this;
-}
+
+// void ParameterSet::copyFrom(const Parameter& o)
+// {
+//   operator=(dynamic_cast<const ParameterSet&>(o));
+// }
 
 
-
-ParameterSet ParameterSet::intersection(const ParameterSet &other) const
-{
-  ParameterSet ps;
-  ps.SubsetParameter::copyFrom( *SubsetParameter::intersection(other) );
-  return ps;
-}
+// void ParameterSet::operator=(const ParameterSet &o)
+// {
+//   SubsetParameter::operator=(o);
+//   initialize();
+// }
 
 
 
 
-ParameterSet* ParameterSet::cloneParameterSet() const
-{
-  ParameterSet *np=new ParameterSet;
-  np->SubsetParameter::copyFrom( *this );
-  np->initialize();
-  return np;
-}
-
-void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath) const
-{
-  SubsetParameter::appendToNode(std::string(), doc, node, inputfilepath);
-}
-
-void ParameterSet::readFromNode(
-    rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath)
-{
-  SubsetParameter::readFromNode(std::string(), node, inputfilepath);
-  initialize();
-}
-
-
-void ParameterSet::packExternalFiles()
-{
-  SubsetParameter::pack();
-}
-
-void ParameterSet::removePackedData()
-{
-  SubsetParameter::clearPackedData();
-}
-
-void ParameterSet::unpackAllExternalFiles(const boost::filesystem::path& basePath)
-{
-  SubsetParameter::unpack(basePath);
-}
+// ParameterSet& ParameterSet::merge(const ParameterSet& other )
+// {
+//   SubsetParameter::merge(other);
+//   initialize();
+//   return *this;
+// }
 
 
 
-std::ostream& operator<<(std::ostream& os, const ParameterSet& ps)
-{
-  CurrentExceptionContext ex(2, "writing plain text representation of parameter set to output stream (via << operator)");
-  os << ps.plainTextRepresentation(0);
-  return os;
-}
+// std::unique_ptr<ParameterSet>
+// ParameterSet::intersection(const ParameterSet &other) const
+// {
+//   auto ps=std::make_unique<ParameterSet>();
+//   ps->SubsetParameter::copyFrom( *SubsetParameter::intersection(other) );
+//   return std::move(ps);
+// }
+
+
+
+
+// std::unique_ptr<ParameterSet> ParameterSet::cloneParameterSet() const
+// {
+//   auto np=std::make_unique<ParameterSet>();
+//   np->SubsetParameter::copyFrom( *this );
+//   np->initialize();
+//   return np;
+// }
+
+// void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+//     boost::filesystem::path inputfilepath) const
+// {
+//   SubsetParameter::appendToNode(std::string(), doc, node, inputfilepath);
+// }
+
+// void ParameterSet::readFromNode(
+//     rapidxml::xml_node<>& node,
+//     boost::filesystem::path inputfilepath)
+// {
+//   SubsetParameter::readFromNode(std::string(), node, inputfilepath);
+//   initialize();
+// }
+
+
+
+
+
+
+
+
 
 
 

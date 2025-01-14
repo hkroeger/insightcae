@@ -35,8 +35,8 @@ namespace bmd
 
 
 
-BlockMeshTemplate::BlockMeshTemplate ( OpenFOAMCase& c, const ParameterSet& ps )
-    : blockMesh ( c, ps )
+BlockMeshTemplate::BlockMeshTemplate ( OpenFOAMCase& c, ParameterSetInput ip )
+    : blockMesh ( c, ip.forward<Parameters>() )
 {
 }
 
@@ -76,73 +76,73 @@ defineType ( blockMeshDict_Cylinder );
 addToOpenFOAMCaseElementFactoryTable(blockMeshDict_Cylinder );
 
 
-blockMeshDict_Cylinder::blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ), p_ ( ps )
+blockMeshDict_Cylinder::blockMeshDict_Cylinder ( OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
 {}
 
 
 void blockMeshDict_Cylinder::create_bmd()
 {
-    this->setDefaultPatch(p_.mesh.defaultPatchName);
+    this->setDefaultPatch(p().mesh.defaultPatchName);
 
-    bool hollow = p_.geometry.d > 1e-10;
+    bool hollow = p().geometry.d > 1e-10;
 
     int nu, nx, nr;
     double L_r, L_u;
 
     auto setLrLu = [&](double x)
     {
-        L_r = 0.5*(p_.geometry.D-p_.geometry.d),
-        L_u = 2.*M_PI * ( (1.-x)*p_.geometry.d + x*p_.geometry.D ) /4.;
+        L_r = 0.5*(p().geometry.D-p().geometry.d),
+        L_u = 2.*M_PI * ( (1.-x)*p().geometry.d + x*p().geometry.D ) /4.;
     };
 
     setLrLu(0.5);
 
-    if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+    if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p().mesh.resolution))
     {
       nu=ic->nu;
       nx=ic->nx;
       nr=ic->nr;
     }
-    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p().mesh.resolution))
     {
       setLrLu(ic->xcubical);
-      nx=std::max(1, int(std::ceil(p_.geometry.L/ic->delta)));
+      nx=std::max(1, int(std::ceil(p().geometry.L/ic->delta)));
       nr=std::max(1, int(std::ceil(L_r/ic->delta)));
       nu=std::max(1, int(std::ceil(L_u/ic->delta)));
     }
-    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+    else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p().mesh.resolution))
     {
       setLrLu(ic->xcubical);
 
-      auto Ls={p_.geometry.L, L_r, L_u};
+      std::vector<double> Ls={p().geometry.L, L_r, L_u};
       double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
 
-      nx=std::max(1, int(std::ceil(p_.geometry.L/delta)));
+      nx=std::max(1, int(std::ceil(p().geometry.L/delta)));
       nr=std::max(1, int(std::ceil(L_r/delta)));
       nu=std::max(1, int(std::ceil(L_u/delta)));
     }
     else throw insight::UnhandledSelection();
 
-    arma::mat p0=p_.geometry.p0;
-    arma::mat ex=p_.geometry.ex;
-    arma::mat er=p_.geometry.er;
+    arma::mat p0=p().geometry.p0;
+    arma::mat ex=p().geometry.ex;
+    arma::mat er=p().geometry.er;
     arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, er);
 
     double al = M_PI/2.;
 
     double Lc=0.;
-    if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p_.mesh.topology))
+    if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p().mesh.topology))
     {
-        Lc=p_.geometry.D*og->core_fraction;
+        Lc=p().geometry.D*og->core_fraction;
     }
-    if (hollow) Lc=p_.geometry.d*0.5;
+    if (hollow) Lc=p().geometry.d*0.5;
 
     std::map<int, Point> pts = {
-          { 1, 	0.5*p_.geometry.D*ey },
+          { 1, 	0.5*p().geometry.D*ey },
           { 0, 	/*::cos ( al/2. ) **/Lc*ey }
     };
-    arma::mat vL=p_.geometry.L*ex;
+    arma::mat vL=p().geometry.L*ex;
 
 //     std::cout<<pts[0]<<pts[1]<<std::endl;
     Patch* base=nullptr;
@@ -150,17 +150,17 @@ void blockMeshDict_Cylinder::create_bmd()
     Patch* outer=nullptr;
     Patch *inner=nullptr;
 
-    if ( p_.mesh.basePatchName!="" ) {
-        base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
+    if ( p().mesh.basePatchName!="" ) {
+        base=&this->addOrDestroyPatch ( p().mesh.basePatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.topPatchName!="" ) {
-        top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
+    if ( p().mesh.topPatchName!="" ) {
+        top=&this->addOrDestroyPatch ( p().mesh.topPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.circumPatchName!="" ) {
-        outer=&this->addOrDestroyPatch ( p_.mesh.circumPatchName, new bmd::Patch() );
+    if ( p().mesh.circumPatchName!="" ) {
+        outer=&this->addOrDestroyPatch ( p().mesh.circumPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.innerPatchName!="" ) {
-        inner=&this->addOrDestroyPatch ( p_.mesh.innerPatchName, new bmd::Patch() );
+    if ( p().mesh.innerPatchName!="" ) {
+        inner=&this->addOrDestroyPatch ( p().mesh.innerPatchName, new bmd::Patch() );
     }
 
     // core block
@@ -178,8 +178,8 @@ void blockMeshDict_Cylinder::create_bmd()
                                         p0+( r1*pts[0] )+vL, p0+( r2*pts[0] )+vL, p0+( r3*pts[0] )+vL, p0+( r0*pts[0] )+vL
                                     ),
                                     nu, nu, nx,
-                                    {1, 1, p_.mesh.gradax},
-                                    p_.mesh.cellZoneName
+                                    {1, 1, p().mesh.gradax},
+                                    p().mesh.cellZoneName
                                   )
                     );
         if ( base ) {
@@ -204,8 +204,8 @@ void blockMeshDict_Cylinder::create_bmd()
                                             p0+( r1*pts[0] )+vL, p0+( r0*pts[0] )+vL, p0+( r0*pts[1] )+vL, p0+( r1*pts[1] )+vL
                                         ),
                                         nu, nr, nx,
-                                        { 1,  1./p_.mesh.gradr, p_.mesh.gradax },
-                                        p_.mesh.cellZoneName
+                                        { 1,  1./p().mesh.gradr, p().mesh.gradax },
+                                        p().mesh.cellZoneName
                                       )
                         );
             if ( base ) {
@@ -236,7 +236,7 @@ void blockMeshDict_Cylinder::create_bmd()
         }
         else
         {
-            if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p_.mesh.topology))
+            if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p().mesh.topology))
             {
               if (og->smoothCore)
               {
@@ -251,7 +251,7 @@ void blockMeshDict_Cylinder::create_bmd()
                 double linfrac=0.2;
                 auto& e1 = this->addEdge(new SplineEdge(
                                 {pstart, //(1.-linfrac)*pstart + linfrac*pend,
-                                 pmido + elo*(0.5*p_.geometry.D-Lc),
+                                 pmido + elo*(0.5*p().geometry.D-Lc),
                                  /*linfrac*pstart+(1.-linfrac)*pend, */pend}));
                 this->addEdge(e1.transformed(arma::eye(3,3), vL));
               }
@@ -273,18 +273,18 @@ defineType ( blockMeshDict_Box );
 addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Box );
 
 
-blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ), p_ ( ps )
+blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
 {
 }
 
 
 void blockMeshDict_Box::create_bmd()
 {
-    this->setDefaultPatch(p_.mesh.defaultPatchName);
+    this->setDefaultPatch(p().mesh.defaultPatchName);
     
-    arma::mat ex=p_.geometry.ex;
-    arma::mat ez=p_.geometry.ez;
+    arma::mat ex=p().geometry.ex;
+    arma::mat ez=p().geometry.ez;
     arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
     
     double ang = ::acos(arma::norm_dot(ex, ez))*180./M_PI;
@@ -298,54 +298,53 @@ void blockMeshDict_Box::create_bmd()
     }
 
     std::map<int, Point> pts;
-    pts = boost::assign::map_list_of
-          ( 0, 	p_.geometry.p0 )
-          ( 1, 	p_.geometry.p0 +p_.geometry.L*ex )
-          ( 2, 	p_.geometry.p0 +p_.geometry.L*ex +p_.geometry.W*ey )
-          ( 3, 	p_.geometry.p0 +p_.geometry.W*ey )
-          ( 4, 	p_.geometry.p0 +p_.geometry.H*ez )
-          ( 5, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex )
-          ( 6, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex +p_.geometry.W*ey )
-          ( 7, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.W*ey )
-          .convert_to_container<std::map<int, Point> >()
-          ;
+    pts = {
+        { 0, 	p().geometry.p0 },
+        { 1, 	p().geometry.p0 +p().geometry.L*ex },
+        { 2, 	p().geometry.p0 +p().geometry.L*ex +p().geometry.W*ey },
+        { 3, 	p().geometry.p0 +p().geometry.W*ey },
+        { 4, 	p().geometry.p0 +p().geometry.H*ez },
+        { 5, 	p().geometry.p0 +p().geometry.H*ez +p().geometry.L*ex },
+        { 6, 	p().geometry.p0 +p().geometry.H*ez +p().geometry.L*ex +p().geometry.W*ey },
+        { 7, 	p().geometry.p0 +p().geometry.H*ez +p().geometry.W*ey }
+    };
 
     Patch *Xp=nullptr, *Xm=nullptr, *Yp=nullptr, *Ym=nullptr, *Zp=nullptr, *Zm=nullptr;
 
-    if ( p_.mesh.XpPatchName!="" ) {
-        Xp=&this->addOrDestroyPatch ( p_.mesh.XpPatchName, new bmd::Patch() );
+    if ( p().mesh.XpPatchName!="" ) {
+        Xp=&this->addOrDestroyPatch ( p().mesh.XpPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.XmPatchName!="" ) {
-        Xm=&this->addOrDestroyPatch ( p_.mesh.XmPatchName, new bmd::Patch() );
+    if ( p().mesh.XmPatchName!="" ) {
+        Xm=&this->addOrDestroyPatch ( p().mesh.XmPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.YpPatchName!="" ) {
-        Yp=&this->addOrDestroyPatch ( p_.mesh.YpPatchName, new bmd::Patch() );
+    if ( p().mesh.YpPatchName!="" ) {
+        Yp=&this->addOrDestroyPatch ( p().mesh.YpPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.YmPatchName!="" ) {
-        Ym=&this->addOrDestroyPatch ( p_.mesh.YmPatchName, new bmd::Patch() );
+    if ( p().mesh.YmPatchName!="" ) {
+        Ym=&this->addOrDestroyPatch ( p().mesh.YmPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.ZpPatchName!="" ) {
-        Zp=&this->addOrDestroyPatch ( p_.mesh.ZpPatchName, new bmd::Patch() );
+    if ( p().mesh.ZpPatchName!="" ) {
+        Zp=&this->addOrDestroyPatch ( p().mesh.ZpPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.ZmPatchName!="" ) {
-        Zm=&this->addOrDestroyPatch ( p_.mesh.ZmPatchName, new bmd::Patch() );
+    if ( p().mesh.ZmPatchName!="" ) {
+        Zm=&this->addOrDestroyPatch ( p().mesh.ZmPatchName, new bmd::Patch() );
     }
 
     int nx, ny, nz;
-    if (const auto* cu = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+    if (const auto* cu = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p().mesh.resolution))
       {
-        double dx=std::max(std::max(p_.geometry.L, p_.geometry.W), p_.geometry.H)/double(cu->n_max);
-        nx=int(std::ceil(p_.geometry.L/dx));
-        ny=int(std::ceil(p_.geometry.W/dx));
-        nz=int(std::ceil(p_.geometry.H/dx));
+        double dx=std::max(std::max(p().geometry.L, p().geometry.W), p().geometry.H)/double(cu->n_max);
+        nx=int(std::ceil(p().geometry.L/dx));
+        ny=int(std::ceil(p().geometry.W/dx));
+        nz=int(std::ceil(p().geometry.H/dx));
       }
-    else if (const auto* cus = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+    else if (const auto* cus = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p().mesh.resolution))
       {
-        nx=int(std::ceil(p_.geometry.L/cus->delta));
-        ny=int(std::ceil(p_.geometry.W/cus->delta));
-        nz=int(std::ceil(p_.geometry.H/cus->delta));
+        nx=int(std::ceil(p().geometry.L/cus->delta));
+        ny=int(std::ceil(p().geometry.W/cus->delta));
+        nz=int(std::ceil(p().geometry.H/cus->delta));
       }
-    else if (const auto* ind = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+    else if (const auto* ind = boost::get<Parameters::mesh_type::resolution_individual_type>(&p().mesh.resolution))
       {
         nx=ind->nx;
         ny=ind->ny;
@@ -393,8 +392,8 @@ defineType ( blockMeshDict_Sphere );
 addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Sphere );
 
 
-blockMeshDict_Sphere::blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ), p_ ( ps )
+blockMeshDict_Sphere::blockMeshDict_Sphere ( OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
 {}
 
 
@@ -402,11 +401,11 @@ void blockMeshDict_Sphere::create_bmd()
 {
 //    this->setDefaultPatch(p_.mesh.outerPatchName);
 
-    arma::mat ex=p_.geometry.ex; ex/=arma::norm(ex, 2);
-    arma::mat ez=p_.geometry.ez; ez/=arma::norm(ez, 2);
+    arma::mat ex=p().geometry.ex; ex/=arma::norm(ex, 2);
+    arma::mat ez=p().geometry.ez; ez/=arma::norm(ez, 2);
     arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
 
-    std::cout<<ex<<ey<<ez<<p_.geometry.D<<std::endl;
+    std::cout<<ex<<ey<<ez<<p().geometry.D<<std::endl;
 
     double ang = ::acos(arma::norm_dot(ex, ez))*180./M_PI;
     if (fabs(90.-ang)>1e-3)
@@ -418,16 +417,16 @@ void blockMeshDict_Sphere::create_bmd()
         ez=eznew;
     }
 
-    int nu=std::max(1, p_.mesh.n_u/4);
-    double Lc=p_.geometry.core_fraction*p_.geometry.D;
-    double Lr=0.5 *( p_.geometry.D - Lc*std::sqrt(2.) );
+    int nu=std::max(1, p().mesh.n_u/4);
+    double Lc=p().geometry.core_fraction*p().geometry.D;
+    double Lr=0.5 *( p().geometry.D - Lc*std::sqrt(2.) );
     double du=Lc/double(nu);
 
-    GradingAnalyzer ga(p_.mesh.grad_r);
+    GradingAnalyzer ga(p().mesh.grad_r);
     int nr = ga.calc_n(du, Lr);
 
 
-    arma::mat c = p_.geometry.center;
+    arma::mat c = p().geometry.center;
     // core
     this->addBlock
                 (
@@ -439,16 +438,16 @@ void blockMeshDict_Sphere::create_bmd()
                   )
                 );
 
-    const double R=0.5*p_.geometry.D;
+    const double R=0.5*p().geometry.D;
     auto op = [&](double theta, double phi) -> arma::mat {
         return c + R*(ez*std::cos(theta) + ex*std::sin(theta)*std::cos(phi) + ey*std::sin(theta)*std::sin(phi));
       };
 
     // outer blocks
 
-    outer_ = &this->addOrDestroyPatch ( p_.mesh.outerPatchName, new bmd::Patch() );
+    outer_ = &this->addOrDestroyPatch ( p().mesh.outerPatchName, new bmd::Patch() );
 
-    double theta1=p_.mesh.theta_trans*SI::deg, theta2=180*SI::deg-theta1;
+    double theta1=p().mesh.theta_trans*SI::deg, theta2=180*SI::deg-theta1;
     // -X
     {
       auto bpts = P_8 (
@@ -458,7 +457,7 @@ void blockMeshDict_Sphere::create_bmd()
       Block& bl = this->addBlock(
           new Block ( bpts,
            nu, nu, nr,
-           { 1, 1, 1./p_.mesh.grad_r }
+           { 1, 1, 1./p().mesh.grad_r }
           )
       );
       this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
@@ -480,7 +479,7 @@ void blockMeshDict_Sphere::create_bmd()
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p_.mesh.grad_r },
+                      { 1, 1, 1./p().mesh.grad_r },
                       "", true
                   )
                 );
@@ -501,7 +500,7 @@ void blockMeshDict_Sphere::create_bmd()
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p_.mesh.grad_r },
+                      { 1, 1, 1./p().mesh.grad_r },
                       "", true
                   )
                 );
@@ -520,7 +519,7 @@ void blockMeshDict_Sphere::create_bmd()
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p_.mesh.grad_r }/*,
+                      { 1, 1, 1./p().mesh.grad_r }/*,
                       "", true*/
                   )
                 );
@@ -540,7 +539,7 @@ void blockMeshDict_Sphere::create_bmd()
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p_.mesh.grad_r }
+                      { 1, 1, 1./p().mesh.grad_r }
                   )
                 );
       outer_->addFace(bl.face("0321"));
@@ -556,7 +555,7 @@ void blockMeshDict_Sphere::create_bmd()
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p_.mesh.grad_r },
+                      { 1, 1, 1./p().mesh.grad_r },
                                 "", true
                   )
                 );
@@ -573,8 +572,8 @@ void blockMeshDict_Sphere::addIntoDictionaries ( OFdicts& dictionaries ) const
     OFDictData::dict geom;
     OFDictData::dict sphere;
     sphere["type"]="searchableSphere";
-    sphere["centre"]=OFDictData::vector3(p_.geometry.center);
-    sphere["radius"]=p_.geometry.D*0.5;
+    sphere["centre"]=OFDictData::vector3(p().geometry.center);
+    sphere["radius"]=p().geometry.D*0.5;
     geom["sphere"]=sphere;
     bmd["geometry"]=geom;
 

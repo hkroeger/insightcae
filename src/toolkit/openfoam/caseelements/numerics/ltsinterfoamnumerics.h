@@ -10,7 +10,7 @@ class LTSInterFoamNumerics
 {
 public:
     declareType ( "LTSInterFoamNumerics" );
-    LTSInterFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    LTSInterFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 

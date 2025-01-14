@@ -22,14 +22,16 @@ f = vector (0 0 0) "Forchheimer coefficients for each direction"
 
 direction_x = vector (1 0 0) "X direction of the porosity coordinate system"
 direction_y = vector (0 1 0) "Y direction of the porosity coordinate system"
+
+
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
+private:
+    Parameters pzp_;
 
 public:
-    porousZoneConfig ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    porousZoneConfig ( OpenFOAMCase& c, const porousZoneConfig::Parameters& p );
     void addIntoDict ( OFDictData::dict& dict) const;
 };
 
@@ -40,10 +42,21 @@ class porousZone
     : public OpenFOAMCaseElement,
       public porousZoneConfig
 {
+public:
+#include "porouszone__porousZone__Parameters.h"
+/*
+PARAMETERSET>>> porousZone Parameters
+inherits OpenFOAMCaseElement::Parameters
+
+porousZone = includedset "insight::porousZoneConfig::Parameters" "configuration of the porous zone"
+
+createGetters
+<<<PARAMETERSET
+*/
 
 public:
     declareType ( "porousZone" );
-    porousZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    porousZone ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }
@@ -57,18 +70,23 @@ class porousZoneOption
       public porousZoneConfig
 {
 public:
-    typedef porousZoneConfig::Parameters Parameters;
+#include "porouszone__porousZoneOption__Parameters.h"
+/*
+PARAMETERSET>>> porousZoneOption Parameters
+inherits cellSetFvOption::Parameters
+
+porousZone = includedset "insight::porousZoneConfig::Parameters" "configuration of the porous zone"
+
+createGetters
+<<<PARAMETERSET
+*/
 
 public:
     declareType ( "porousZoneOption" );
-    porousZoneOption ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    porousZoneOption ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoFvOptionDictionary ( OFDictData::dict& fvOptionDict, OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }
-
-    inline static insight::ParameterSet defaultParameters()
-    { return Parameters::makeDefault(); }
-
 };
 
 

@@ -17,7 +17,7 @@ public:
 PARAMETERSET>>> source Parameters
 inherits cellSetFvOption::Parameters
 
-name = string "source" "Name of the volume drag element"
+#name = string "source" "Name of the volume drag element"
 fieldName = string "T" "Name of the field to which this source shall contribute"
 zoneName = string "" "Name of the zone with the cells which receive the source contribution"
 
@@ -37,15 +37,13 @@ value = selectablesubset {{
 
 }} scalar "value of the source"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "source" );
-    source ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    source ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptionDict,
         OFdicts& dictionaries) const override;

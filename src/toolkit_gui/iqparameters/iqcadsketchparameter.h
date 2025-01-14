@@ -6,7 +6,8 @@
 #include "cadsketchparameter.h"
 
 
-class IQCADSketchParameter : public IQParameter
+class IQCADSketchParameter
+    : public IQSpecializedParameter<insight::CADSketchParameter>
 {
 public:
     declareType(insight::CADSketchParameter::typeName_());
@@ -14,9 +15,8 @@ public:
     IQCADSketchParameter
         (
             QObject* parent,
-        IQParameterSetModel* psmodel,
-            const QString& name,
-            insight::Parameter& parameter,
+            IQParameterSetModel* psmodel,
+            insight::Parameter* parameter,
             const insight::ParameterSet& defaultParameterSet
             );
 

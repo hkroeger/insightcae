@@ -20,6 +20,8 @@
 
 
 #include "openfoamanalysis.h"
+#include "base/cppextensions.h"
+#include <memory>
 
 
 namespace insight
@@ -41,8 +43,13 @@ int realNp(int userInputNp)
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {
   CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
-  struct P { std::string selection; ParameterSet parameters; };
-  return insertTurbulenceModel(cm, P{ ps.selection(), ps() } );
+  struct P { std::string selection; std::shared_ptr<ParameterSet> parameters; };
+  return insertTurbulenceModel(
+      cm, P{
+            ps.selection(),
+            std::dynamic_unique_ptr_cast<ParameterSet>(
+                ps().clone()) }
+      );
 }
 
 

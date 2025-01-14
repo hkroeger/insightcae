@@ -21,10 +21,12 @@ SuctionInletBC::SuctionInletBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps
+  ParameterSetInput ip
 )
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps)
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>())
 {
  BCtype_="patch";
 }
@@ -34,9 +36,8 @@ SuctionInletBC::SuctionInletBC
 
 void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-    Parameters p(ps_);
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
+        p().phasefractions;
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
 
@@ -50,11 +51,14 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
 
-          if (const auto *normal = boost::get<Parameters::inletBehaviour_normal_type>(&p.inletBehaviour))
+          if (const auto *normal = boost::get<Parameters::inletBehaviour_normal_type>(
+                    &p().inletBehaviour))
           {
             BC["type"]=OFDictData::data ( "pressureInletOutletVelocity" );
           }
-          else if (const auto *directed = boost::get<Parameters::inletBehaviour_directed_type>(&p.inletBehaviour))
+          else if (const auto *directed =
+                     boost::get<Parameters::inletBehaviour_directed_type>(
+                         &p().inletBehaviour))
           {
             BC["type"]=OFDictData::data ( "pressureDirectedInletOutletVelocity" );
             double dmag=arma::norm(directed->inflowDirection,2);
@@ -69,36 +73,37 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "inletOutletTotalTemperature" );
-            BC["inletValue"]="uniform "+boost::lexical_cast<std::string> ( p.T );
-            BC["T0"]="uniform "+boost::lexical_cast<std::string> ( p.T );
-            BC["U"]=OFDictData::data ( p.UName );
-            BC["phi"]=OFDictData::data ( p.phiName );
-            BC["psi"]=OFDictData::data ( p.psiName );
-            BC["gamma"]=OFDictData::data ( p.gamma );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p.T );
+            BC["inletValue"]="uniform "+boost::lexical_cast<std::string> ( p().T );
+            BC["T0"]="uniform "+boost::lexical_cast<std::string> ( p().T );
+            BC["U"]=OFDictData::data ( p().UName );
+            BC["phi"]=OFDictData::data ( p().phiName );
+            BC["psi"]=OFDictData::data ( p().psiName );
+            BC["gamma"]=OFDictData::data ( p().gamma );
+            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p().T );
         } else if (
             ( ( field.first=="p" ) || isPrghPressureField(field) )
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "totalPressure" );
-            BC["p0"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p.pressure ) );
-            BC["U"]=OFDictData::data ( p.UName );
-            BC["phi"]=OFDictData::data ( p.phiName );
-            BC["rho"]=OFDictData::data ( p.rhoName );
-            BC["psi"]=OFDictData::data ( p.psiName );
-            BC["gamma"]=OFDictData::data ( p.gamma );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p.pressure ) );
+            BC["p0"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p().pressure ) );
+            BC["U"]=OFDictData::data ( p().UName );
+            BC["phi"]=OFDictData::data ( p().phiName );
+            BC["rho"]=OFDictData::data ( p().rhoName );
+            BC["psi"]=OFDictData::data ( p().psiName );
+            BC["gamma"]=OFDictData::data ( p().gamma );
+            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p().pressure ) );
         }
         else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p.rho ) );
+            BC["value"]=OFDictData::data ( "uniform "
+                                           +boost::lexical_cast<std::string> ( p().rho ) );
           }
         else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "turbulentIntensityKineticEnergyInlet" );
-            BC["intensity"]=p.turb_I;
+            BC["intensity"]=p().turb_I;
             BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 0.1 ) );
           }
         else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
@@ -106,7 +111,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["type"]=
                 (compressible_case&&(OFversion()<300) ? "compressible::" : "")
                 + std::string("turbulentMixingLengthFrequencyInlet");
-            BC["mixingLength"]=p.turb_L;
+            BC["mixingLength"]=p().turb_L;
             BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 1.0 ) );
           }
         else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
@@ -114,7 +119,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["type"]=
                 (compressible_case&&(OFversion()<300) ? "compressible::" : "")
                 + std::string("turbulentMixingLengthDissipationRateInlet");
-            BC["mixingLength"]=p.turb_L;
+            BC["mixingLength"]=p().turb_L;
             BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 1.0 ) );
           }
         else if ( (

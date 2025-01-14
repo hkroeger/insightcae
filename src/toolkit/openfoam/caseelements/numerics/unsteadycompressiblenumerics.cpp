@@ -12,13 +12,12 @@ namespace insight {
 defineType(unsteadyCompressibleNumerics);
 addToOpenFOAMCaseElementFactoryTable(unsteadyCompressibleNumerics);
 
-unsteadyCompressibleNumerics::unsteadyCompressibleNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+unsteadyCompressibleNumerics::unsteadyCompressibleNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
-  OFcase().addField(pName_, FieldInfo(scalarField, 	dimPressure, 	FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField(pName_, FieldInfo(scalarField, 	dimPressure, 	FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p().Uinternal.begin(), p().Uinternal.end()), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p().Tinternal}), volField ) );
   OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({0.0}), volField ) );
 }
 
@@ -33,7 +32,7 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  if (p_.formulation == Parameters::rhoPimpleFoam)
+  if (p().formulation == Parameters::rhoPimpleFoam)
   {
     if (OFversion()<170)
     {
@@ -47,7 +46,7 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
       controlDict["application"]="rhoPimpleFoam";
     }
   }
-  else if (p_.formulation == Parameters::sonicFoam)
+  else if (p().formulation == Parameters::sonicFoam)
   {
     if (OFversion()<170 && (OFcase().findElements<MRFZone>().size()>0) )
     {
@@ -60,14 +59,14 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   }
 
 
-  CompressiblePIMPLESettings(p_.time_integration).addIntoDictionaries(OFcase(), dictionaries);
+  CompressiblePIMPLESettings(p().time_integration).addIntoDictionaries(OFcase(), dictionaries);
 
   // ============ setup fvSolution ================================
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
 
   double final_reltol_multiplier=0.0;
-  if (const auto* simple = boost::get<Parameters::time_integration_type::pressure_velocity_coupling_SIMPLE_type>(&p_.time_integration.pressure_velocity_coupling))
+  if (const auto* simple = boost::get<Parameters::time_integration_type::pressure_velocity_coupling_SIMPLE_type>(&p().time_integration.pressure_velocity_coupling))
   {
       if (simple->relax_final)
         final_reltol_multiplier=1.0;
@@ -75,7 +74,7 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   for ( auto s: std::map<std::string,double>({ {"", 1.0}, {"Final", final_reltol_multiplier} }) )
   {
-    if (p_.formulation == Parameters::sonicFoam)
+    if (p().formulation == Parameters::sonicFoam)
     {
       solvers["rho"+s.first]=OFcase().diagonalSolverSetup();
     }
@@ -84,7 +83,7 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
       solvers["rho"+s.first]=OFcase().stdSymmSolverSetup(1e-7, 0.1*s.second);
     }
 
-    if (p_.time_integration.transonic || (p_.formulation == Parameters::sonicFoam) )
+    if (p().time_integration.transonic || (p().formulation == Parameters::sonicFoam) )
     {
       solvers["p"+s.first]=OFcase().stdAsymmSolverSetup(1e-8, 0.01*s.second);
     }
@@ -143,7 +142,7 @@ void unsteadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   else
   {
 
-    switch (p_.setup)
+    switch (p().setup)
     {
       case Parameters::setup_type::accurate:
         div["div(phi,U)"]       = "Gauss limitedLinearV 1";

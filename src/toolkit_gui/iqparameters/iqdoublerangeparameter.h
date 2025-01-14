@@ -8,7 +8,8 @@
 
 #include "base/parameters/doublerangeparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQDoubleRangeParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQDoubleRangeParameter
+    : public IQSpecializedParameter<insight::DoubleRangeParameter>
 {
 public:
     declareType(insight::DoubleRangeParameter::typeName_());
@@ -17,8 +18,7 @@ public:
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
     );
 

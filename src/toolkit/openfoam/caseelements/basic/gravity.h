@@ -15,21 +15,22 @@ public:
 #include "gravity__gravity__Parameters.h"
 /*
 PARAMETERSET>>> gravity Parameters
+inherits OpenFOAMCaseElement::Parameters
+
 
 description
 "This case elements adds the information about the gravity acceleration vector to the OpenFOAM case."
 
 g = vector (0 0 -9.81) "[m/s^2] Gravity acceleration vector"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "gravity" );
-    gravity ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    gravity ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

@@ -20,14 +20,27 @@ namespace HeatBC
 class HeatBC
 {
 public:
+#include "boundarycondition_heat__HeatBC__Parameters.h"
+/*
+PARAMETERSET>>> HeatBC Parameters
+createGetter
+<<<PARAMETERSET
+*/
+
+public:
     declareType ( "HeatBC" );
     declareDynamicClass(HeatBC);
 
+    HeatBC(ParameterSetInput ip = ParameterSetInput() );
     virtual ~HeatBC();
 
     virtual void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const;
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const =0;
+    virtual bool addIntoFieldDictionary (
+        const std::string& fieldname,
+        const FieldInfo& fieldinfo,
+        OFDictData::dict& BC,
+        OFdicts& dictionaries ) const =0;
 };
 
 
@@ -37,10 +50,7 @@ class AdiabaticBC
 {
 public:
   declareType ( "Adiabatic" );
-  AdiabaticBC ( const ParameterSet& ps = ParameterSet() );
-
-  static ParameterSet defaultParameters() { return ParameterSet(); }
-  ParameterSet getParameters() const override { return ParameterSet(); }
+  AdiabaticBC ( ParameterSetInput ip = ParameterSetInput() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -55,6 +65,7 @@ public:
 #include "boundarycondition_heat__FixedTemperatureBC__Parameters.h"
 /*
 PARAMETERSET>>> FixedTemperatureBC Parameters
+inherits HeatBC::Parameters
 
 T = includedset "FieldData::Parameters" "Temperature specification"
    modifyDefaults {
@@ -62,17 +73,13 @@ T = includedset "FieldData::Parameters" "Temperature specification"
     vector fielddata/value = 300.0;
    }
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
   declareType ( "FixedTemperature" );
-  FixedTemperatureBC ( const ParameterSet& ps = ParameterSet() );
-
-  ParameterSet getParameters() const override { return p_; }
+  FixedTemperatureBC ( ParameterSetInput ip = ParameterSetInput() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -88,6 +95,7 @@ public:
 #include "boundarycondition_heat__TemperatureGradientBC__Parameters.h"
 /*
 PARAMETERSET>>> TemperatureGradientBC Parameters
+inherits HeatBC::Parameters
 
 gradT = selectablesubset {{
 
@@ -103,17 +111,13 @@ gradT = selectablesubset {{
  }
 }} constant "specification of temperature gradient"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
   declareType ( "TemperatureGradientBC" );
-  TemperatureGradientBC ( const ParameterSet& ps = ParameterSet() );
-
-  ParameterSet getParameters() const override { return p_; }
+  TemperatureGradientBC ( ParameterSetInput ip = ParameterSetInput() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -131,6 +135,7 @@ public:
 #include "boundarycondition_heat__ExternalWallBC__Parameters.h"
 /*
 PARAMETERSET>>> ExternalWallBC Parameters
+inherits HeatBC::Parameters
 
 kappaSource = selectablesubset {{
 
@@ -172,17 +177,13 @@ wallLayers = array [
  }
 ]*1 "Layer composition of external wall"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
   declareType ( "ExternalWall" );
-  ExternalWallBC ( const ParameterSet& ps = ParameterSet() );
-
-  ParameterSet getParameters() const override { return p_; }
+  ExternalWallBC ( ParameterSetInput ip = ParameterSetInput() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -196,6 +197,7 @@ public:
 #include "boundarycondition_heat__CHTCoupledWall__Parameters.h"
 /*
 PARAMETERSET>>> CHTCoupledWall Parameters
+inherits HeatBC::Parameters
 
 sampleRegion = string "" "Neighbouring region" *necessary
 samplePatch = string "" "Name of coupled patch in neighbouring region" *necessary
@@ -210,17 +212,13 @@ offset = selectablesubset {{
 
 method = selection (nearestPatchFace nearestPatchFaceAMI) nearestPatchFace "The mapping method"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
   declareType ( "CHTCoupledWall" );
-  CHTCoupledWall ( const ParameterSet& ps = ParameterSet() );
-
-  ParameterSet getParameters() const override { return p_; }
+  CHTCoupledWall ( ParameterSetInput ip = ParameterSetInput() );
 
   void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const override;
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;

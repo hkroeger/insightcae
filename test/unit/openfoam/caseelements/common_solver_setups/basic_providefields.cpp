@@ -15,7 +15,8 @@ int main(int argc, char*argv[])
     provideFields::Parameters p;
     p.set_createScalarFields
         ( {
-            {"T", {0,0,0,1}, 300.0}
+            provideFields::Parameters::createScalarFields_default_type
+                              {"T", {0,0,0,1}, 300.0}
           } );
     tc.insert(new provideFields(tc, p));
 

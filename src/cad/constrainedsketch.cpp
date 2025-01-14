@@ -40,24 +40,88 @@ size_t ConstrainedSketch::calcHash() const
 
 
 
+std::unique_ptr<LayerProperties> LayerProperties::create()
+{
+    return std::unique_ptr<LayerProperties>(new LayerProperties);
+}
+
+std::unique_ptr<LayerProperties> LayerProperties::create(
+    const ParameterSet& parameters )
+{
+    return std::unique_ptr<LayerProperties>(
+        new LayerProperties(parameters.copyEntries(), "") );
+}
 
 
-ConstrainedSketch::ConstrainedSketch(DatumPtr pl)
+
+void
+ConstrainedSketchParametersDelegate::changeDefaultParameters(
+    ConstrainedSketchEntity& e) const
+{}
+
+std::unique_ptr<LayerProperties>
+ConstrainedSketchParametersDelegate::createDefaultLayerProperties(
+    const std::string &layerName) const
+{
+    return LayerProperties::create();
+}
+
+
+std::shared_ptr<ConstrainedSketchParametersDelegate>
+    noParametersDelegate(
+        new ConstrainedSketchParametersDelegate
+        );
+
+
+
+defineType(ConstrainedSketchPresentationDelegate);
+defineStaticFunctionTable2(ConstrainedSketchPresentationDelegate, SketchPresentationDelegates, sketchPresentationFor);
+
+
+IQParameterSetModel*
+ConstrainedSketchPresentationDelegate::setupSketchEntityParameterSetModel(
+    const ConstrainedSketchEntity& e) const
+{
+    return nullptr;
+}
+
+
+IQParameterSetModel*
+ConstrainedSketchPresentationDelegate::setupLayerParameterSetModel(
+    const std::string& layerName, const LayerProperties& e) const
+{
+    return nullptr;
+}
+
+
+void ConstrainedSketchPresentationDelegate::setEntityAppearance(
+    const ConstrainedSketchEntity& e, vtkProperty* actprops) const
+{}
+
+
+
+
+
+ConstrainedSketch::ConstrainedSketch(
+    DatumPtr pl,
+    const ConstrainedSketchParametersDelegate& pd )
     : pl_(pl),
     solverSettings_({rootND, insight::SMALL, 1., 1000})
-{}
+{
+    addLayer( defaultLayerName, pd );
+}
 
 
 ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
     solverSettings_(other.solverSettings_)
 {
-    defaultLayerProperties_=other.defaultLayerProperties_;
-    for (auto lp: other.layerProperties_)
+    for (auto &lp: other.layerProperties_)
     {
-        layerProperties_.insert(
+        layerProperties_.insert({
             lp.first,
-            std::auto_ptr<ParameterSet>(lp.second->cloneParameterSet()));
+            lp.second->cloneLayerProperties()
+        });
     }
 
     std::map<
@@ -69,6 +133,11 @@ ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     for (const auto& g: other.geometry_)
     {
         auto clone = g.second->clone();
+        if (propertiesParent_)
+        {
+            clone->parametersRef().setParent(
+                propertiesParent_.get());
+        }
         geometry_.insert({ g.first, clone });
         cem[g.second]=clone;
     }
@@ -84,19 +153,39 @@ ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
 }
 
 
+void ConstrainedSketch::setParentParameter(Parameter *p)
+{
+    propertiesParent_=p;
+    if (propertiesParent_)
+    {
+        for (auto& g: geometry_)
+        {
+            g.second->parametersRef().setParent(propertiesParent_.get());
+        }
+    }
+}
+
+Parameter* ConstrainedSketch::parentParameter() const
+{
+    return const_cast<Parameter*>(propertiesParent_.get());
+}
+
 
 std::shared_ptr<ConstrainedSketch> ConstrainedSketch::createFromStream(
-    DatumPtr pl, istream &in, const ParameterSet& geomPS )
+    DatumPtr pl, istream &in,
+    const ConstrainedSketchParametersDelegate& pd )
 {
-    auto sk = ConstrainedSketch::create(pl);
-    sk->readFromStream(in);
+    auto sk = ConstrainedSketch::create(pl, pd);
+    sk->readFromStream(in, pd);
     return sk;
 }
 
 
 
 
-void ConstrainedSketch::readFromStream(istream &in, const ParameterSet &geomPS)
+void ConstrainedSketch::readFromStream(
+    istream &in,
+    const ConstrainedSketchParametersDelegate& pd )
 {
     in >> std::noskipws;
 
@@ -113,7 +202,7 @@ void ConstrainedSketch::readFromStream(istream &in, const ParameterSet &geomPS)
 
     ConstrainedSketchGrammar grammar(
         std::dynamic_pointer_cast<ConstrainedSketch>(shared_from_this()),
-        [&geomPS]() ->insight::ParameterSet { return geomPS; });
+        pd );
 
     bool success = boost::spirit::qi::phrase_parse(
         first,  last,
@@ -123,6 +212,14 @@ void ConstrainedSketch::readFromStream(istream &in, const ParameterSet &geomPS)
     insight::assertion(
         success,
         "parsing of constrained sketch script was not successful!" );
+
+    if (propertiesParent_)
+    {
+        for (auto& g: geometry_)
+        {
+            g.second->parametersRef().setParent(propertiesParent_.get());
+        }
+    }
 }
 
 
@@ -242,6 +339,11 @@ ConstrainedSketch::insertGeometry(
     auto i = geometry_.find(key);
     if (i==geometry_.end())
     {
+        if (propertiesParent_)
+        {
+            geomEntity->parametersRef().setParent(
+                propertiesParent_.get());
+        }
         geometry_.insert({key, geomEntity});
         geometryAdded(key);
     }
@@ -420,12 +522,12 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
     Feature::operator=(o);
     pl_=o.pl_;
 
-    defaultLayerProperties_=o.defaultLayerProperties_;
-    for (auto lp: o.layerProperties_)
+    for (auto &lp: o.layerProperties_)
     {
-        layerProperties_.insert(
+        layerProperties_.insert({
             lp.first,
-            std::auto_ptr<ParameterSet>(lp.second->cloneParameterSet()));
+            lp.second->cloneLayerProperties()
+        });
     }
 
     std::set<GeometryMap::key_type> remaining;
@@ -698,7 +800,6 @@ void ConstrainedSketchScriptBuffer::write(ostream &os)
 
 
 
-
 void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
 {
     namespace qi = boost::spirit::qi;
@@ -714,14 +815,16 @@ void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
             >
             ConstrainedSketchRule;
 
-    auto noParams = []() { return insight::ParameterSet(); };
-
     auto *rule = new ConstrainedSketchRule(
         '('
 
         > ruleset.r_datumExpression
-                  [ qi::_a = phx::bind(&ConstrainedSketch::create<DatumPtr>, qi::_1),
-               qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(qi::_a, std::bind(noParams), phx::val(&ruleset)),
+                  [ qi::_a = phx::bind(
+                   &ConstrainedSketch::create<DatumPtr, const ConstrainedSketchParametersDelegate&>,
+                   qi::_1, *noParametersDelegate),
+               qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(
+                   qi::_a, *noParametersDelegate,
+                   phx::val(&ruleset)),
                    qi::_val = qi::_a ]  > ','
 
         > qi::lazy(phx::bind(&ConstrainedSketchGrammar::r_sketch, qi::_b))
@@ -762,7 +865,7 @@ void ConstrainedSketch::generateScript(ostream &os) const
             sb, entityLabels);
     }
 
-    for (auto lp: layerProperties_)
+    for (auto &lp: layerProperties_)
     {
         std::string s;
         lp.second->saveToString(s, boost::filesystem::current_path()/"outfile");
@@ -810,7 +913,7 @@ arma::mat ConstrainedSketch::sketchBoundingBox() const
 
 
 
-std::set<std::string> ConstrainedSketch::layerNames() const
+std::set<std::string> ConstrainedSketch::usedLayerNames() const
 {
     std::set<std::string> l;
     std::transform(
@@ -823,59 +926,61 @@ std::set<std::string> ConstrainedSketch::layerNames() const
 
 
 
-const ConstrainedSketch::LayerProperties&
-ConstrainedSketch::defaultLayerProperties() const
+
+std::set<std::string> ConstrainedSketch::layerNames() const
 {
-    return defaultLayerProperties_;
+    auto l = usedLayerNames();
+    std::transform(
+        layerProperties_.begin(), layerProperties_.end(),
+        std::inserter(l, l.begin()),
+        [](const decltype(layerProperties_)::value_type& lp)
+        { return lp.first; }
+        );
+    return l;
+}
+
+bool ConstrainedSketch::hasLayer(
+    const std::string& layerName) const
+{
+    return layerNames().count(layerName);
+}
+
+bool ConstrainedSketch::layerIsUsed(
+    const std::string& layerName) const
+{
+    return usedLayerNames().count(layerName);
 }
 
 
-
-
-void ConstrainedSketch::changeDefaultLayerProperties(const LayerProperties &ps)
+void ConstrainedSketch::addLayer(
+    const std::string& layerName,
+    const ConstrainedSketchParametersDelegate& pd )
 {
-    defaultLayerProperties_=ps;
+    layerProperties_.insert({
+        layerName,
+        pd.createDefaultLayerProperties(layerName)
+    });
 }
 
-
-const ConstrainedSketch::LayerProperties&
+const LayerProperties&
 ConstrainedSketch::layerProperties(
     const std::string& layerName ) const
 {
-    auto i = layerProperties_.find(layerName);
-    if (i!=layerProperties_.end())
-    {
-        return *i->second;
-    }
-    else
-    {
-        return defaultLayerProperties();
-    }
+    return *layerProperties_.at(layerName);
 }
 
 void ConstrainedSketch::setLayerProperties(
     const std::string& layerName,
-    const LayerProperties &ps )
+    const ParameterSet &ps)
 {
-    auto i = layerProperties_.find(layerName);
-    if (i!=layerProperties_.end())
-    {
-        *i->second = ps;
-    }
-    else
-    {
-        layerProperties_.insert(
-            layerName,
-            std::auto_ptr<LayerProperties>(
-                new LayerProperties(ps) )
-            );
-    }
+    layerProperties_.at(layerName)->ParameterSet::operator=(ps);
 }
 
 
 void ConstrainedSketch::parseLayerProperties(
     const std::string& layerName,
-    const std::string& s )
+    const std::string& s,
+    const ConstrainedSketchParametersDelegate& pd )
 {
     if (!s.empty())
     {
@@ -884,11 +989,24 @@ void ConstrainedSketch::parseLayerProperties(
         doc.parse<0>(const_cast<char*>(&s[0]));
         xml_node<> *rootnode = doc.first_node("root");
 
-        auto p=layerProperties(layerName);
-        p.readFromNode(*rootnode, "." );
+        if (!hasLayer(layerName))
+            addLayer(layerName, pd);
 
-        setLayerProperties(layerName, p);
+        auto p=layerProperties(layerName).cloneLayerProperties();
+        p->readFromNode(std::string(), *rootnode, "." );
+
+        setLayerProperties(layerName, *p);
     }
+}
+
+void ConstrainedSketch::removeLayer(const std::string &layerName)
+{
+    if (!layerIsUsed(layerName))
+        layerProperties_.erase(layerName);
+    else
+        throw insight::Exception(
+            "cannot remove layer properties for layer %s, it is still in use",
+            layerName.c_str() );
 }
 
 void ConstrainedSketch::build()
@@ -933,6 +1051,7 @@ void ConstrainedSketch::build()
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
 }
+
 
 
 

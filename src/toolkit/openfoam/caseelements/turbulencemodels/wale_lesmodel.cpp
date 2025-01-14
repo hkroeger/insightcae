@@ -17,8 +17,8 @@ void WALE_LESModel::addFields(OpenFOAMCase& c) const
     c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
 
-WALE_LESModel::WALE_LESModel(OpenFOAMCase& c, const ParameterSet&)
-: LESModel(c)
+WALE_LESModel::WALE_LESModel(OpenFOAMCase& c, ParameterSetInput ip)
+: LESModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

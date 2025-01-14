@@ -8,7 +8,8 @@
 
 #include "base/parameters/simpleparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQDateTimeParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQDateTimeParameter
+    : public IQSpecializedParameter<insight::DateTimeParameter>
 {
 public:
     declareType(insight::DateTimeParameter::typeName_());
@@ -17,8 +18,7 @@ public:
         (
             QObject* parent,
             IQParameterSetModel* psmodel,
-            const QString& name,
-            insight::Parameter& parameter,
+            insight::Parameter* parameter,
             const insight::ParameterSet& defaultParameterSet
             );
 

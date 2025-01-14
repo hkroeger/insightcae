@@ -20,11 +20,14 @@
 
 
 #include "analysis.h"
+#include "boost/filesystem/operations.hpp"
 #include "exception.h"
 #include "tools.h"
 
 #include <fstream>
 #include <cstdlib>
+#include <functional>
+#include <memory>
 
 #include "base/boost_include.h"
 #include "boost/function.hpp"
@@ -40,30 +43,29 @@ using namespace boost::filesystem;
 
 namespace insight
 {
-  
-  
+
+
+
+
 defineType ( Analysis );
 
-defineFactoryTable 
-( 
-  Analysis,
-  LIST(
-      const ParameterSet& ps,
-      const boost::filesystem::path& exePath,
-      ProgressDisplayer& displayer
-  ),
-  LIST(ps, exePath, displayer)
-);
 
-defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
-defineStaticFunctionTable(Analysis, category, std::string);
-defineStaticFunctionTable(Analysis, compatibleOperatingSystems, OperatingSystemSet);
-defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr);
-defineStaticFunctionTable(Analysis, visualizer, std::shared_ptr<ParameterSetVisualizer>);
-defineStaticFunctionTableWithArgs(Analysis, getPropositionsForParameter, ParameterSet,
-                                  LIST(const std::string& parameterPath, const ParameterSet& currentParameterValues),
-                                  LIST(parameterPath, currentParameterValues)
-                                  );
+
+defineStaticFunctionTable2(Analysis, supplementedInputDataFactory, createSupplementedInputDataFor);
+defineStaticFunctionTable2(Analysis, AnalysisFactory, createAnalysis);
+defineStaticFunctionTable2(Analysis, defaultParametersFunctions, defaultParametersFor);
+defineStaticFunctionTable2(Analysis, categoryFunctions, categoryFor);
+defineStaticFunctionTable2(Analysis, compatibleOperatingSystemsFunctions, compatibleOperatingSystemsFor);
+defineStaticFunctionTable2(Analysis, validatorFunctions, validatorFor);
+defineStaticFunctionTable2(Analysis, getPropositionsForParameterFunctions, getPropositionsForParameterFor);
+defineStaticFunctionTable2(Analysis, DescriptionFunctions, descriptionFor);
+
+
+void Analysis::resetParameters(
+    std::shared_ptr<supplementedInputDataBase> sid )
+{
+    sp_ = sid;
+}
 
 
 std::string Analysis::category()
@@ -71,129 +73,77 @@ std::string Analysis::category()
     return "Uncategorized";
 }
 
+
+
+
 OperatingSystemSet
 Analysis::compatibleOperatingSystems()
 {
     return { WindowsOS, LinuxOS };
 }
 
+
+
+
 ParameterSet_ValidatorPtr Analysis::validator()
 {
     return ParameterSet_ValidatorPtr();
 }
 
-std::shared_ptr<ParameterSetVisualizer> Analysis::visualizer()
-{
-    return std::shared_ptr<ParameterSetVisualizer>();
-}
 
-ParameterSet Analysis::getPropositionsForParameter(
+
+
+
+std::unique_ptr<ParameterSet> Analysis::getPropositionsForParameter(
     const std::string &parameterPath,
     const ParameterSet &currentParameterValues )
 {
-    return ParameterSet();
+    return nullptr;
 }
 
 
 
 
+Analysis::Analysis(
+    const std::shared_ptr<supplementedInputDataBase> &sp )
+    : sp_(sp)
+{}
 
 
-boost::filesystem::path Analysis::setupExecutionEnvironment()
-{
-  if ( executionPath_ =="" )
-    {
-      executionPath_ =
-          boost::filesystem::unique_path(
-            timeCodePrefix()+"_analysis-%%%%%%"
-            );
-      if (!enforceExecutionPathRemovalBehaviour_) removeExecutionPath_=true;
-    }
-
-  if ( !exists ( executionPath_ ) )
-    {
-      create_directories ( executionPath_ );
-      if (!enforceExecutionPathRemovalBehaviour_) removeExecutionPath_=true;
-    }
-
-  return executionPath_;
-}
+Analysis::~Analysis()
+{}
 
 
-void Analysis::setExecutionPath ( const boost::filesystem::path& exePath )
-{
-    executionPath_ =exePath;
-}
-
-//void Analysis::setParameters ( const ParameterSet& p )
-//{
-//    parameters_ = p;
-//}
 
 path Analysis::executionPath() const
 {
-    if ( executionPath_ =="" ) {
-        throw insight::Exception ( "Temporary analysis storage requested but not yet created!" );
-    }
-    return executionPath_;
+    return spBase().executionPath();
 }
 
-path Analysis::createExecutionPathIfNonexistent()
+
+
+
+ResultSetPtr Analysis::createResultSet() const
 {
-  if ( executionPath_ =="" )
-  {
-    setupExecutionEnvironment();
-  }
-  return executionPath();
+    auto desc=Analysis::descriptionFor(type());
+    auto results=std::make_shared<ResultSet>(
+        parameters(), desc.name, "Result Report");
+    results->introduction() = desc.description;
+    return results;
 }
 
 
-Analysis::Analysis (
-    const std::string& name,
-    const std::string& description,
-    const ParameterSet& /*ps*/,
-    const boost::filesystem::path& exePath,
-    ProgressDisplayer& /*displayer*/ )
-: name_ ( name ),
-  description_ ( description ),
-  executionPath_ ( exePath ),
-  removeExecutionPath_(false),
-  enforceExecutionPathRemovalBehaviour_(false)
+
+AnalysisDescription Analysis::description()
 {
-//  setParameters(ps);
-  setExecutionPath(exePath);
+    return {"", ""};
 }
 
-
-// void Analysis::setDefaults()
-// {
-// //   std::string name(type());
-// //   replace_all(name, " ", "_");
-// //   replace_all(name, "/", "-");
-// //   executionPath_()=path(".")/name;
-//     executionPath_() =path ( "." );
-// }
-
-Analysis::~Analysis()
+const ParameterSet &Analysis::parameters() const
 {
-    if (removeExecutionPath_)
-    {
-        remove_all(executionPath_);
-    }
+    return spBase().parameters();
 }
 
-
-//bool Analysis::checkParameters() const
-//{
-//    return true;
-//}
-
-
-
-//Analysis* Analysis::clone() const
-//{
-//    return this->lookup ( this->type(), parameters_, executionPath_ );
-//}
 
 
 
@@ -241,6 +191,18 @@ void SynchronisedAnalysisQueue::cancelAll()
 //        boost::get<1> ( dequeue() )->cancel();
 //    }
 }
+
+
+
+
+
+AnalysisWithParameters::AnalysisWithParameters(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+  : Analysis(sp)
+{}
+
+
+
 
 
 

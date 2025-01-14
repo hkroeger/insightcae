@@ -107,13 +107,14 @@ The maximum relative change between the last 15 average values needs to stay bel
 } "Execution parameters"
 
 <<<PARAMETERSET
-*/  
+*/
 
 
-  struct supplementedInputData : public supplementedInputDataDerived<Parameters>
+  struct supplementedInputData
+        : public supplementedInputDataDerived<Parameters>
   {
     supplementedInputData(
-        std::unique_ptr<Parameters> pPtr,
+        ParameterSetInput ip,
         const boost::filesystem::path& workDir,
         ProgressDisplayer& progress = consoleProgressDisplayer
         );
@@ -123,20 +124,14 @@ The maximum relative change between the last 15 average values needs to stay bel
     double c_;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
+  addParameterMembers_SupplementedInputData(AirfoilSection::Parameters);
+
 
 public:
   declareType("Airfoil 2D");
   
   AirfoilSection(
-      const ParameterSet& ps,
-      const boost::filesystem::path& exepath,
-      ProgressDisplayer& progress );
-
-  
-  static std::string category() { return "Generic Analyses"; }
+      const std::shared_ptr<supplementedInputDataBase>& sp );
 
   virtual void calcDerivedInputData(ProgressDisplayer& progress);
 
@@ -144,10 +139,17 @@ public:
   virtual void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
   
+  static std::string category() { return "Generic Analyses"; }
+  static AnalysisDescription description() { return {"Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section"}; }
 };
 
 
+
+
 extern RangeParameterList rpl_AirfoilSectionPolar;
+
+
+
 
 class AirfoilSectionPolar 
 : public OpenFOAMParameterStudy<AirfoilSection, rpl_AirfoilSectionPolar>
@@ -155,13 +157,16 @@ class AirfoilSectionPolar
 public:
     declareType("Airfoil 2D Polar");
     
-    static std::string category() { return "Generic Analyses"; }
-    
     AirfoilSectionPolar(
-        const ParameterSet& ps,
-        const boost::filesystem::path& exepath,
-        ProgressDisplayer& progress );
+        const std::shared_ptr<supplementedInputDataBase>& sp );
+
     virtual void evaluateCombinedResults(ResultSetPtr& results);
+
+    static AnalysisDescription description()
+    {
+        return {
+            "Polar of Airfoil",
+            "Computes the polar of a 2D airfoil section using CFD" }; }
 };
 
 }

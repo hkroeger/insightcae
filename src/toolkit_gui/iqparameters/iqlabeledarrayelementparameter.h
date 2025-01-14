@@ -16,17 +16,15 @@ public:
             LIST(
                 QObject* parent,
                 IQParameterSetModel* psmodel,
-                const QString& name,
-                insight::Parameter& parameter,
+                insight::Parameter* parameter,
                 const insight::ParameterSet& defaultParameterSet ),
-            LIST(parent, psmodel, name, parameter, defaultParameterSet)
+            LIST(parent, psmodel, parameter, defaultParameterSet)
             );
 
     static IQParameter* create(
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& p,
+        insight::Parameter* p,
         const insight::ParameterSet& defaultParameterSet );
 
 public:
@@ -36,8 +34,7 @@ public:
         (
             QObject *parent,
             IQParameterSetModel* psmodel,
-            const QString &name,
-            insight::Parameter &parameter,
+            insight::Parameter *parameter,
             const insight::ParameterSet &defaultParameterSet
             );
 };
@@ -59,19 +56,18 @@ public:
         (
             QObject *parent,
             IQParameterSetModel* psmodel,
-            const QString &name,
-            insight::Parameter &parameter,
+            insight::Parameter *parameter,
             const insight::ParameterSet &defaultParameterSet
             )
-        : IQBaseParameter(parent, psmodel, name, parameter, defaultParameterSet),
-        IQLabeledArrayElementParameterBase(parent, psmodel, name, parameter, defaultParameterSet)
+        : IQBaseParameter(parent, psmodel, parameter, defaultParameterSet),
+        IQLabeledArrayElementParameterBase(parent, psmodel, parameter, defaultParameterSet)
     {}
 
-    const QString path(bool redirectArrayElementsToDefault=false) const override
-    {
-        QString n=this->name();
-        return this->buildPath(n, redirectArrayElementsToDefault);
-    }
+    // const QString path(bool redirectArrayElementsToDefault=false) const override
+    // {
+    //     QString n=this->name();
+    //     return this->buildPath(n, redirectArrayElementsToDefault);
+    // }
 
 
     virtual void populateContextMenu(QMenu* m);

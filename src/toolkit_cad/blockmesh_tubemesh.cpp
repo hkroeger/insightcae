@@ -23,8 +23,8 @@ defineType ( blockMeshDict_TubeMesh );
 addToOpenFOAMCaseElementFactoryTable( blockMeshDict_TubeMesh );
 
 
-blockMeshDict_TubeMesh::blockMeshDict_TubeMesh ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ), p_ ( ps )
+blockMeshDict_TubeMesh::blockMeshDict_TubeMesh ( OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
 {}
 
 
@@ -34,13 +34,13 @@ void blockMeshDict_TubeMesh::create_bmd()
 
   TopoDS_Shape s;
   BRep_Builder sb;
-  BRepTools::Read(s, p_.geometry.wire->stream(), sb);
+  BRepTools::Read(s, p().geometry.wire->stream(), sb);
   TopoDS_Wire w = TopoDS::Wire(s);
 
-  GProp_GProps p;
-  BRepGProp::LinearProperties(w, p);
-  double L=p.Mass();
-  double dx=L/double(p_.mesh.nx);
+  GProp_GProps prop;
+  BRepGProp::LinearProperties(w, prop);
+  double L=prop.Mass();
+  double dx=L/double(p().mesh.nx);
 
   arma::mat last_er;
   auto calc_or_get_er = [&] (const arma::mat& ex) -> arma::mat
@@ -85,24 +85,24 @@ void blockMeshDict_TubeMesh::create_bmd()
             cp.geometry.ex = L/l;
             cp.geometry.er = calc_or_get_er(cp.geometry.ex);
 
-            cp.geometry.D = p_.geometry.D;
+            cp.geometry.D = p().geometry.D;
             cp.geometry.L = l;
             cp.geometry.p0 = vec3(ps);
 
             blockMeshDict_Cylinder::Parameters::mesh_type::resolution_individual_type pmr;
-            pmr.nr = p_.mesh.nr;
-            pmr.nu = p_.mesh.nu;
+            pmr.nr = p().mesh.nr;
+            pmr.nu = p().mesh.nu;
             pmr.nx = std::max(1, int(l/dx));
             cp.mesh.resolution=pmr;
 
-            cp.mesh.gradr = p_.mesh.gradr;
+            cp.mesh.gradr = p().mesh.gradr;
             cp.mesh.topology = blockMeshDict_Cylinder::Parameters::mesh_type::topology_oGrid_type{
-                                    p_.mesh.core_fraction, true };
+                                    p().mesh.core_fraction, true };
 
-            cp.mesh.defaultPatchName = p_.mesh.defaultPatchName;
-            cp.mesh.circumPatchName = p_.mesh.circumPatchName;
-            if (is_start) cp.mesh.basePatchName = p_.mesh.basePatchName;
-            if (is_end) cp.mesh.topPatchName = p_.mesh.topPatchName;
+            cp.mesh.defaultPatchName = p().mesh.defaultPatchName;
+            cp.mesh.circumPatchName = p().mesh.circumPatchName;
+            if (is_start) cp.mesh.basePatchName = p().mesh.basePatchName;
+            if (is_end) cp.mesh.topPatchName = p().mesh.topPatchName;
 
             OpenFOAMCase dummy(OFcase().ofe());
             blockMeshDict_Cylinder c(dummy, cp);
@@ -114,8 +114,8 @@ void blockMeshDict_TubeMesh::create_bmd()
         case GeomAbs_Circle: {
             blockMeshDict_CurvedCylinder::Parameters ccp;
 
-            gp_Vec v; gp_Pnt p;
-            ac.D1(ac.FirstParameter(), p, v);
+            gp_Vec v; gp_Pnt pt;
+            ac.D1(ac.FirstParameter(), pt, v);
 
             GProp_GProps pp;
             BRepGProp::LinearProperties(e, pp);
@@ -124,20 +124,20 @@ void blockMeshDict_TubeMesh::create_bmd()
             ccp.geometry.ex = vec3(v.Normalized());
             ccp.geometry.er = calc_or_get_er(ccp.geometry.ex);
 
-            ccp.geometry.D = p_.geometry.D;
+            ccp.geometry.D = p().geometry.D;
             ccp.geometry.p0 = vec3(ps);
             ccp.geometry.p1 = vec3(pe);
 
-            ccp.mesh.nr = p_.mesh.nr;
-            ccp.mesh.nu = p_.mesh.nu;
+            ccp.mesh.nr = p().mesh.nr;
+            ccp.mesh.nu = p().mesh.nu;
             ccp.mesh.nx = std::max(1, int(l/dx));
-            ccp.mesh.gradr = p_.mesh.gradr;
-            ccp.mesh.core_fraction = p_.mesh.core_fraction;
+            ccp.mesh.gradr = p().mesh.gradr;
+            ccp.mesh.core_fraction = p().mesh.core_fraction;
 
-            ccp.mesh.defaultPatchName = p_.mesh.defaultPatchName;
-            ccp.mesh.circumPatchName = p_.mesh.circumPatchName;
-            if (is_start) ccp.mesh.basePatchName = p_.mesh.basePatchName;
-            if (is_end) ccp.mesh.topPatchName = p_.mesh.topPatchName;
+            ccp.mesh.defaultPatchName = p().mesh.defaultPatchName;
+            ccp.mesh.circumPatchName = p().mesh.circumPatchName;
+            if (is_start) ccp.mesh.basePatchName = p().mesh.basePatchName;
+            if (is_end) ccp.mesh.topPatchName = p().mesh.topPatchName;
 
             OpenFOAMCase dummy(OFcase().ofe());
             blockMeshDict_CurvedCylinder cc(dummy, ccp);

@@ -13,6 +13,7 @@
 
 #include <QWidget>
 #include <QRubberBand>
+#include <typeindex>
 
 #include "Standard_Version.hxx"
 #include "V3d_View.hxx"
@@ -50,11 +51,14 @@ public:
   typedef std::shared_ptr<InputReceiver> Ptr;
 
   boost::signals2::signal<void()> aboutToBeDestroyed;
+  boost::signals2::signal<void(const QString&)> userPrompt;
 
 private:
   Viewer& viewer_;
 
   std::set<InputReceiver*> childReceivers_;
+
+  bool capturesAllInput_;
 
 protected:
   /**
@@ -65,13 +69,14 @@ protected:
   std::unique_ptr<QPoint> lastMouseLocation_;
 
 public:
-  InputReceiver(Viewer& viewer)
-  : viewer_(viewer)
+  InputReceiver(Viewer& viewer, bool captureAllInput)
+    : viewer_(viewer), capturesAllInput_(captureAllInput)
   {}
 
-  InputReceiver(Viewer& viewer, const QPoint& p)
+  InputReceiver(Viewer& viewer, const QPoint& p, bool captureAllInput)
   : viewer_(viewer),
-    lastMouseLocation_(new QPoint(p))
+    lastMouseLocation_(new QPoint(p)),
+    capturesAllInput_(captureAllInput)
   {}
 
   virtual ~InputReceiver()
@@ -84,7 +89,8 @@ public:
       recv->aboutToBeDestroyed.connect(
           [this,recv]()
           {
-              childReceivers_.erase(recv);
+              if (childReceivers_.count(recv))
+                childReceivers_.erase(recv);
           }
           );
       childReceivers_.insert(recv);
@@ -93,6 +99,11 @@ public:
   void removeChildReceiver(InputReceiver* recv)
   {
       childReceivers_.erase(recv);
+  }
+
+  bool hasChildReceivers() const
+  {
+      return childReceivers_.size()>0;
   }
 
 
@@ -121,83 +132,128 @@ public:
 
   virtual bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onLeftButtonDoubleClick(nFlags, point)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onLeftButtonDoubleClick(nFlags, point)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onLeftButtonDown(nFlags, point, afterDoubleClick)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onLeftButtonDown(nFlags, point, afterDoubleClick)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onMiddleButtonDown(nFlags, point)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onMiddleButtonDown(nFlags, point)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onRightButtonDown(nFlags, point)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onRightButtonDown(nFlags, point)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onLeftButtonUp(nFlags, point, afterDoubleClick)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onLeftButtonUp(nFlags, point, afterDoubleClick)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onMiddleButtonUp(nFlags, point)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onMiddleButtonUp(nFlags, point)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onRightButtonUp(nFlags, point)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onRightButtonUp(nFlags, point)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onKeyPress(modifiers, key)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onKeyPress(modifiers, key)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
   {
-      for (auto&c: childReceivers_)
+      if (childReceivers_.size())
       {
-          if (c->onKeyRelease(modifiers, key)) return true;
+          for (auto&c: childReceivers_)
+          {
+              if (c->onKeyRelease(modifiers, key)) return true;
+          }
+          return true;
       }
-      return false;
+      else
+          return capturesAllInput_;
   }
 
   virtual bool onMouseMove
@@ -250,18 +306,172 @@ public:
 
 
 template<class Viewer>
-class ViewWidgetAction
-  : public InputReceiver<Viewer>
+class ViewWidgetAction;
+
+
+
+/**
+ * @brief The ViewWidgetActionHost class
+ * an input receiver that may run an action.
+ * If not special action is launched
+ */
+template<class Viewer>
+class ViewWidgetActionHost
+    : public InputReceiver<Viewer>
 {
 
 public:
-  typedef std::shared_ptr<ViewWidgetAction> Ptr;
-
-    boost::signals2::signal<void(bool)> actionIsFinished;
-    boost::signals2::signal<void(const QString&)> userPrompt;
+    typedef
+        std::shared_ptr<ViewWidgetAction<Viewer> >
+        ViewWidgetActionPtr;
 
 private:
-  Ptr childAction_;
+    ViewWidgetActionPtr currentAction_;
+    mutable boost::optional<std::type_index> defaultActionType_;
+
+protected:
+    /**
+     * @brief setupDefaultAction
+     * @return
+     * empty ptr, if no default action
+     */
+    virtual ViewWidgetActionPtr setupDefaultAction()
+    {
+        return nullptr;
+    }
+
+    void prepareDestruction()
+    {
+        this->aboutToBeDestroyed.connect(
+            [this]() { currentAction_.reset(); } );
+    }
+
+public:
+    ViewWidgetActionHost(Viewer& v, bool captureAllInput)
+        : InputReceiver<Viewer>(v, captureAllInput)
+    {
+        prepareDestruction();
+    }
+
+    ViewWidgetActionHost(ViewWidgetActionHost& parent, bool captureAllInput)
+        : InputReceiver<Viewer>(parent.viewer(), captureAllInput)
+    {
+        prepareDestruction();
+    }
+
+    ViewWidgetActionHost(ViewWidgetActionHost& parent, const QPoint& p, bool captureAllInput)
+        : InputReceiver<Viewer>(parent.viewer(), p, captureAllInput)
+    {
+        prepareDestruction();
+    }
+
+
+    void setDefaultAction()
+    {
+        if (ViewWidgetActionPtr da = setupDefaultAction())
+        {
+            defaultActionType_ = typeid(*da);
+            launchAction(da);
+        }
+    }
+
+    bool isDefaultAction() const
+    {
+        if (defaultActionType_.is_initialized())
+        {
+            if (currentAction_)
+            {
+                return
+                    std::type_index(typeid(*currentAction_))
+                       == *defaultActionType_;
+            }
+        }
+        return false;
+    }
+
+    virtual bool launchAction(
+        ViewWidgetActionPtr childAction,
+        bool force=true )
+    {
+        if (currentAction_ && force)
+            currentAction_.reset();
+
+        if (!currentAction_)
+        {
+            currentAction_=childAction;
+            auto cPtr = childAction.get();
+
+            InputReceiver<Viewer>::registerChildReceiver( cPtr );
+
+            currentAction_->actionIsFinished.connect(
+                [this,cPtr](bool)
+                {
+                    InputReceiver<Viewer>::removeChildReceiver(
+                        cPtr );
+
+                    // might have been reset by some other signal handler already...
+                    if (currentAction_.get()==cPtr)
+                    {
+                        currentAction_.reset();
+                    }
+
+                    setDefaultAction();
+                });
+
+            currentAction_->userPrompt.connect(
+                this->userPrompt );
+
+
+            currentAction_->start();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    template<class A = ViewWidgetAction<Viewer> >
+    bool isRunning() const
+    {
+        return bool(std::dynamic_pointer_cast<A>(currentAction_));
+    }
+
+    template<class A = ViewWidgetAction<Viewer> >
+    A* runningAction() const
+    {
+        return std::dynamic_pointer_cast<A>(currentAction_).get();
+    }
+
+    void cancelCurrentAction()
+    {
+        if (isRunning() && !isDefaultAction())
+        {
+            currentAction_.reset();
+            setDefaultAction();
+        }
+    }
+
+    ViewWidgetActionHost<Viewer>* topmostActionHost() const
+    {
+        if (auto *a=this->runningAction())
+            return a->topmostActionHost();
+        else
+            return this;
+    }
+};
+
+
+
+
+template<class Viewer>
+class ViewWidgetAction
+  : public ViewWidgetActionHost<Viewer>
+{
+
+public:
+
+    boost::signals2::signal<void(bool)> actionIsFinished;
+
 
 protected:
   virtual void finishAction(bool accepted=true)
@@ -269,55 +479,18 @@ protected:
       actionIsFinished(accepted); //finished_=true;
   }
 
-  virtual void launchChildAction(Ptr childAction)
-  {
-      if (childAction_)
-          childAction_.reset();
-
-      childAction_=childAction;
-      auto cPtr = childAction.get();
-
-      InputReceiver<Viewer>::registerChildReceiver( cPtr );
-
-      childAction_->actionIsFinished.connect(
-          [this,cPtr](bool)
-          {
-              InputReceiver<Viewer>::removeChildReceiver(
-                  cPtr );
-
-              // might have been reset by some other signal handler already...
-              if (childAction_.get()==cPtr)
-              {
-                childAction_.reset();
-              }
-          });
-
-      childAction_->start();
-  }
-
-  template<class A>
-  bool isRunning() const
-  {
-      return bool(std::dynamic_pointer_cast<A>(childAction_));
-  }
-
-  template<class A>
-  A* runningAction() const
-  {
-      return std::dynamic_pointer_cast<A>(childAction_).get();
-  }
-
 public:
-  ViewWidgetAction(Viewer& viewer)
-      : InputReceiver<Viewer>(viewer)
-  {}
+  using ViewWidgetActionHost<Viewer>::ViewWidgetActionHost;
 
-  ViewWidgetAction(Viewer& viewer, const QPoint& p)
-      : InputReceiver<Viewer>(viewer, p)
+  ViewWidgetAction(ViewWidgetActionHost<Viewer>& parent, bool captureAllInput=true)
+    : ViewWidgetActionHost<Viewer>(parent, captureAllInput)
   {}
 
   virtual void start() =0;
 };
+
+
+
 
 
 

@@ -20,11 +20,11 @@ IQDateParameter::IQDateParameter
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
         )
-    : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+    : IQSpecializedParameter<insight::DateParameter>(
+          parent, psmodel, parameter, defaultParameterSet )
 {
 }
 
@@ -33,7 +33,7 @@ QString IQDateParameter::valueText() const
 {
     return QString::fromStdString(
         boost::gregorian::to_simple_string(
-        dynamic_cast<const insight::DateParameter&>(parameter())()
+            parameter()()
             ) );
 }
 
@@ -43,12 +43,13 @@ QVBoxLayout* IQDateParameter::populateEditControls(
     IQCADModel3DViewer *viewer)
 {
     auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
-    auto &dp = dynamic_cast<const insight::DateParameter&>(parameter());
 
     QHBoxLayout *layout2=new QHBoxLayout;
     QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
     layout2->addWidget(promptLabel);
-    auto ds=QString::fromStdString(boost::gregorian::to_iso_extended_string(dp()));
+    auto ds=QString::fromStdString(
+        boost::gregorian::to_iso_extended_string(
+            parameter()()));
 
     auto*de = new QCalendarWidget(editControlsContainer);
     de->setDateEditEnabled(true);
@@ -63,8 +64,7 @@ QVBoxLayout* IQDateParameter::populateEditControls(
 
     auto applyFunction = [=]()
     {
-        auto &dp = dynamic_cast<insight::DateParameter&>(this->parameterRef());
-        dp.set(boost::gregorian::from_simple_string(
+        parameterRef().set(boost::gregorian::from_simple_string(
             de->selectedDate().toString(Qt::ISODate).toStdString()
             ));
     };
@@ -73,17 +73,17 @@ QVBoxLayout* IQDateParameter::populateEditControls(
     connect(apply, &QPushButton::pressed, applyFunction);
 
     // handle external value change
-    auto &p = dynamic_cast<insight::DateParameter&>(this->parameterRef());
     ::disconnectAtEOL(
         layout,
-        p.valueChanged.connect(
+        parameterRef().valueChanged.connect(
             [=]()
             {
-                auto &p = dynamic_cast<const insight::DateParameter&>(parameter());
                 QSignalBlocker sb(de);
                 de->setSelectedDate(
                     QDate::fromString(
-                        QString::fromStdString(boost::gregorian::to_iso_extended_string(p())),
+                        QString::fromStdString(
+                            boost::gregorian::to_iso_extended_string(
+                                parameter()()) ),
                         Qt::ISODate
                     ) );
             }

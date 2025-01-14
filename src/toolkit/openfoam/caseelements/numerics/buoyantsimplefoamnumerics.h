@@ -25,17 +25,16 @@ nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
 Tinternal = double 300 "initial temperature in internal field"
 pinternal = double 1e5 "initial pressure in internal field"
 
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     void init();
 
 public:
     declareType ( "buoyantSimpleFoamNumerics" );
-    buoyantSimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    buoyantSimpleFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

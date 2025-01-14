@@ -47,5 +47,5 @@ void IQVTKCADModel3DViewerMeasureDiameter::start()
         }
         );
 
-    launchChildAction(sel);
+    launchAction(sel);
 }

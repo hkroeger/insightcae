@@ -18,6 +18,7 @@
  *
  */
 
+#include "cadparametersetvisualizer.h"
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
@@ -98,7 +99,7 @@ AnalysisForm::AnalysisForm(
         insight::Analysis::defaultParametersFor(analysisName_);
 
     isOpenFOAMAnalysis_ =
-        defaultParams.hasParameter("run/OFEname");
+        defaultParams->hasParameter("run/OFEname");
 
 
     ui = new Ui::AnalysisForm;
@@ -183,17 +184,16 @@ AnalysisForm::AnalysisForm(
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
 
-    insight::ParameterSetVisualizerPtr viz;
+    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb;
     insight::ParameterSet_ValidatorPtr vali;
 
-    if (insight::Analysis::has_visualizer(analysisName_))
+    if (insight::CADParameterSetModelVisualizer::visualizerForAnalysis_table().count(analysisName_))
     {
-      insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
-        viz = insight::Analysis::visualizerFor(analysisName_);
-        viz ->setProgressDisplayer(&progressDisplayer_);
+        insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
+        vizb = insight::CADParameterSetModelVisualizer::visualizerForAnalysis_table().lookup(analysisName_);
     }
 
-    if (insight::Analysis::has_validator(analysisName_))
+    if (insight::Analysis::validatorFor_table().count(analysisName_))
     {
         vali = insight::Analysis::validatorFor(analysisName_);
     }
@@ -204,8 +204,25 @@ AnalysisForm::AnalysisForm(
 
     {
         insight::CurrentExceptionContext ex(_("create parameter set editor"));
-        psmodel_=new IQParameterSetModel(defaultParams, defaultParams);
-        peditor_=new ParameterEditorWidget(ui->inputTab, viz, vali);
+        psmodel_=new IQParameterSetModel(*defaultParams, *defaultParams);
+        peditor_=new ParameterEditorWidget(
+            ui->inputTab,
+            [this,vizb](QObject* _1,
+               IQParameterSetModel *_2)
+            {
+                return vizb(
+                    _1, _2,
+                    localCaseDirectory(),
+                    progressDisplayer_ );
+            },
+            [](
+                 const std::string&,
+                 QObject *,
+                 IQCADModel3DViewer *,
+                 IQParameterSetModel *
+                 ) -> insight::GUIActionList { return {}; },
+            vali
+        );
         peditor_->setModel(psmodel_);
         connect(
               peditor_, &ParameterEditorWidget::updateSupplementedInputData,
@@ -215,10 +232,13 @@ AnalysisForm::AnalysisForm(
     }
     psmodel_->setAnalysisName(analysisName_);
 
-    if (viz)
+    insight::CameraState cs;
+    if (insight::CADParameterSetModelVisualizer
+        ::defaultCameraStateForAnalysis_table().count(analysisName_))
     {
-        peditor_->viewer()->setCameraState(
-            viz->defaultCameraState() );
+        cs=insight::CADParameterSetModelVisualizer
+            ::defaultCameraStateForAnalysis(analysisName);
+        peditor_->viewer()->setCameraState(cs);
     }
 
     sidtab_ = new QTableView;
@@ -413,7 +433,9 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
     if (event->isAccepted())
     {
-      peditor_->viewer()->closeEvent(event);
+
+      if (peditor_->hasViewer())
+        peditor_->viewer()->closeEvent(event);
 
       if (event->isAccepted())
       {
@@ -451,15 +473,15 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
-    insight::ParameterSet p = parameters();
+    auto p = parameters().cloneSubset();
 
     if (pack_parameterset_)
     {
-      p.packExternalFiles();
+      p->pack();
     }
     else
     {
-      p.removePackedData();
+      p->clearPackedData();
     }
 
     // prepare XML document
@@ -472,7 +494,7 @@ void AnalysisForm::saveParameters(bool *cancelled)
     xml_node<> *rootNode = doc.allocate_node(node_element, "root");
     doc.append_node(rootNode);
 
-    p.saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
+    p->saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
 
     {
      auto vs = insight::appendNode(doc, *rootNode, "viewerState");
@@ -557,7 +579,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
     resetExecutionEnvironment(ist_file_.parent_path());
   }
 
-  insight::ParameterSet ps = parameters();
+  auto ps = parameters().cloneSubset();
 
   std::string contents;
   insight::readFileIntoString(ist_file_, contents);
@@ -567,7 +589,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
   doc.parse<0>(&contents[0]);
 
   xml_node<> *rootnode = doc.first_node("root");
-  ps.readFromRootNode(*rootnode, ist_file_.parent_path());
+  ps->readFromRootNode(*rootnode, ist_file_.parent_path());
 
   if (auto *vs = rootnode->first_node("viewerState"))
   {
@@ -579,12 +601,11 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
   //ps.readFromFile(ist_file_);
 
 
-
+  auto defp = insight::Analysis::defaultParametersFor(
+      analysisName_);
 
   psmodel_->resetParameters(
-        ps,
-        insight::Analysis::defaultParametersFor(
-          analysisName_) );
+        *ps, *defp);
 }
 
 
@@ -657,10 +678,12 @@ void AnalysisForm::onConfigModification()
 
 
 
-void AnalysisForm::onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid)
+void AnalysisForm::onUpdateSupplementedInputData(
+    insight::supplementedInputDataBasePtr sid)
 {
-  supplementedInputDataModel_.reset( sid->reportedSupplementQuantities() );
-  if (sid->reportedSupplementQuantities().size())
+  sid_=sid;
+  supplementedInputDataModel_.reset( sid_->reportedSupplementQuantities() );
+  if (sid_->reportedSupplementQuantities().size())
     sidtab_->show();
   else
       sidtab_->hide();

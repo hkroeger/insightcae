@@ -26,15 +26,14 @@ qr = selectablesubset {{
  }
 }} none "Treatment of radiation heat flux"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "wallHeatFlux" );
-    wallHeatFlux ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    wallHeatFlux ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     OFDictData::dict functionObjectDict() const override;
 

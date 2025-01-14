@@ -9,9 +9,9 @@ namespace insight {
 defineType(PressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(PressureGradientSource);
 
-PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: cellSetFvOption(c, "PressureGradientSource"+ps.getString("name"), ps),
-  p_(ps)
+PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, ParameterSetInput ip )
+: cellSetFvOption(c, /*"PressureGradientSource"+ps.getString("name"),*/
+                      ip.forward<Parameters>())
 {
 }
 
@@ -23,7 +23,7 @@ void PressureGradientSource::addIntoFvOptionDictionary(
   {
     OFDictData::dict coeffs;
     OFDictData::list flds; flds.push_back("U");
-    coeffs["Ubar"]=OFDictData::vector3(p_.Ubar);
+    coeffs["Ubar"]=OFDictData::vector3(p().Ubar);
 
     OFDictData::dict fod;
     if (OFversion()>=300)
@@ -55,7 +55,8 @@ void PressureGradientSource::addIntoFvOptionDictionary(
   {
     // for channelFoam:
     OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
-    transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar));
+    transportProperties["Ubar"]=OFDictData::dimensionedData(
+        "Ubar", dimVelocity, OFDictData::vector3(p().Ubar));
   }
 }
 

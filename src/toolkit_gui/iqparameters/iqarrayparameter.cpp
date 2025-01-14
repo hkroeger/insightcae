@@ -2,6 +2,7 @@
 #include <QPushButton>
 
 
+#include "iqarrayelementparameter.h"
 #include "iqarrayparameter.h"
 #include "iqparametersetmodel.h"
 
@@ -12,17 +13,18 @@ IQArrayParameter::IQArrayParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
-) : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+)
+    : IQSpecializedParameter<insight::ArrayParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {}
 
 
 QString IQArrayParameter::valueText() const
 {
-  auto& p = dynamic_cast<const insight::ArrayParameter&>(parameter());
-  return QString( "array[%1]" ).arg(p.size());
+  return QString( "array[%1]" )
+        .arg( parameter().size() );
 }
 
 
@@ -39,24 +41,52 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
   QPushButton *addbtn=new QPushButton("+ Add new", editControlsContainer);
   layout2->addWidget(addbtn);
 
-  connect(addbtn, &QPushButton::clicked, this, [this]()
-  {
-    auto &p = dynamic_cast<insight::ArrayParameter&>(this->parameterRef());
-    p.appendEmpty();
-  }
-  );
+  connect(addbtn, &QPushButton::clicked,
+          this, &IQArrayParameter::appendEmpty );
 
   QPushButton *clearbtn=new QPushButton("Clear all", editControlsContainer);
   layout2->addWidget(clearbtn);
-  connect(clearbtn, &QPushButton::clicked, this, [this]()
-  {
-
-    auto &p = dynamic_cast<insight::ArrayParameter&>(this->parameterRef());
-    p.clear();
-  }
-  );
+  connect(clearbtn, &QPushButton::clicked,
+          this, &IQArrayParameter::clearAll );
 
   layout->addLayout(layout2);
 
   return layout;
+}
+
+
+
+
+void IQArrayParameter::populateContextMenu(QMenu *cm)
+{
+    auto *ca = new QAction("Clear array");
+    cm->addAction(ca);
+    connect(ca, &QAction::triggered,
+            this, &IQArrayParameter::clearAll );
+
+    auto *ap = new QAction("Append new element");
+    cm->addAction(ap);
+    connect(ap, &QAction::triggered,
+            this, &IQArrayParameter::appendEmpty );
+}
+
+
+
+
+void IQArrayParameter::appendEmpty()
+{
+    parameterRef().appendEmpty();
+}
+
+
+
+
+void IQArrayParameter::clearAll()
+{
+    while (children().size())
+    {
+        auto c=children().front();
+        if (auto *ae = dynamic_cast<IQArrayElementParameterBase*>(c))
+            ae->deleteFromArray();
+    }
 }

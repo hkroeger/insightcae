@@ -37,17 +37,21 @@ defineFactoryTable
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& ps
+        ParameterSetInput&& ip
     ),
-    LIST ( c, patchName, boundaryDict, ps )
+    LIST ( c, patchName, boundaryDict, std::move(ip) )
 );
-defineStaticFunctionTable(BoundaryCondition, defaultParameters, ParameterSet);
+defineStaticFunctionTable(
+    BoundaryCondition, defaultParameters, std::unique_ptr<ParameterSet>);
 
 
 
 
-BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, patchName+"BC", ps),
+BoundaryCondition::BoundaryCondition(
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip)
+: OpenFOAMCaseElement(c, /*patchName+"BC", */ip.forward<Parameters>()),
   patchName_(patchName),
   BCtype_("UNDEFINED"),
   nFaces_(0),

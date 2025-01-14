@@ -37,7 +37,7 @@ class BlockMeshTemplate
     : public insight::bmd::blockMesh
 {
 public:
-    BlockMeshTemplate(OpenFOAMCase& c, const ParameterSet& ps);
+    BlockMeshTemplate(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual void create_bmd () =0;
 
@@ -59,6 +59,7 @@ public:
 #include "blockmesh_templates__blockMeshDict_Cylinder__Parameters.h"
 /*
 PARAMETERSET>>> blockMeshDict_Cylinder Parameters
+inherits BlockMeshTemplate::Parameters
 
 geometry = set
 {
@@ -116,16 +117,15 @@ mesh = set
     cellZoneName = string "" "name of the zone into which all cells are to be included"
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "blockMeshDict_Cylinder" );
 
-    blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+    blockMeshDict_Cylinder ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     virtual void create_bmd();
 };
@@ -148,6 +148,7 @@ public:
 #include "blockmesh_templates__blockMeshDict_Box__Parameters.h"
 /*
 PARAMETERSET>>> blockMeshDict_Box Parameters
+inherits BlockMeshTemplate::Parameters
 
 geometry = set
 {
@@ -188,16 +189,14 @@ mesh = set
     ZmPatchName = string "" "name of patch on bottom (-Z) side"
 }
 
+createGetters
 <<<PARAMETERSET
 */
-
-protected:
-    Parameters p_;
 
 public:
     declareType ( "blockMeshDict_Box" );
 
-    blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+    blockMeshDict_Box ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     virtual void create_bmd();
 
@@ -219,6 +218,7 @@ public:
 #include "blockmesh_templates__blockMeshDict_Sphere__Parameters.h"
 /*
 PARAMETERSET>>> blockMeshDict_Sphere Parameters
+inherits BlockMeshTemplate::Parameters
 
 geometry = set
 {
@@ -241,17 +241,17 @@ mesh = set
     outerPatchName = string "outer" "name of boundary patch."
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     Patch* outer_;
+
 public:
     declareType ( "blockMeshDict_Sphere" );
 
-    blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+    blockMeshDict_Sphere ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     void create_bmd() override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;

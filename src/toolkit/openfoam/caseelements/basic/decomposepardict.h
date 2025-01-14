@@ -25,6 +25,7 @@ public:
 #include "decomposepardict__decomposeParDict__Parameters.h"
 /*
 PARAMETERSET>>> decomposeParDict Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 np = int 1 "Number of processors"
 
@@ -32,14 +33,13 @@ decompositionMethod = selection ( simple hierarchical metis scotch ) scotch "Par
 
 decompWeights = vector (1 1 1) "Decomposition weights"
 
+createGetter
 <<<PARAMETERSET
 */
-protected:
-  Parameters p_;
 
 public:
   declareType ( "decomposeParDict" );
-  decomposeParDict(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
+  decomposeParDict(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
   static std::string category();

@@ -14,19 +14,29 @@ IQBoolParameter::IQBoolParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::BoolParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {
 }
 
 
 QString IQBoolParameter::valueText() const
 {
-  const auto&p = dynamic_cast<const insight::BoolParameter&>(parameter());
-  return p() ? "true" : "false";
+  return parameter()() ? "true" : "false";
+}
+
+bool IQBoolParameter::setValue(QVariant value)
+{
+    if (value.canConvert<Qt::CheckState>())
+    {
+        parameterRef().set(
+            value.value<Qt::CheckState>()==Qt::Checked );
+        return true;
+    }
+    return false;
 }
 
 

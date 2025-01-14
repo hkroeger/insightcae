@@ -11,11 +11,10 @@ namespace insight {
 defineType(copyFiles);
 addToOpenFOAMCaseElementFactoryTable(copyFiles);
 
-copyFiles::copyFiles( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "", ps),
-  p_(ps)
+copyFiles::copyFiles( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {
-    name_="copyFiles";
+    // name_="copyFiles";
 }
 
 
@@ -25,7 +24,7 @@ void copyFiles::addIntoDictionaries(OFdicts&) const
 
 void copyFiles::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& /*cm*/, const boost::filesystem::path& location ) const
 {
-  for (const auto& f: p_.files)
+  for (const auto& f: p().files)
   {
     boost::filesystem::path src = f.source->filePath(location);
     boost::filesystem::path targ = location / f.target;

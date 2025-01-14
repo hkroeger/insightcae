@@ -4,94 +4,107 @@ using namespace std;
 
 
 defineType(DynamicClassSelectableSubsetParameterParser);
-addToStaticFunctionTable(ParserDataBase, DynamicClassSelectableSubsetParameterParser, insertrule);
+addToStaticFunctionTable(
+    ParameterGenerator,
+    DynamicClassSelectableSubsetParameterParser, insertrule);
 
-DynamicClassSelectableSubsetParameterParser::Data::Data ( const std::string& base,  const std::string& default_sel, const std::string& d )
-    : ParserDataBase ( d ), base_type( base ), default_sel_(default_sel)
+DynamicClassSelectableSubsetParameterParser
+    ::DynamicClassSelectableSubsetParameterParser (
+    const std::string& base,  const std::string& default_sel, const std::string& d )
+    : ParameterGenerator ( d ), base_type( base ), default_sel_(default_sel)
 {}
 
-void DynamicClassSelectableSubsetParameterParser::Data::cppAddHeader ( std::set<std::string>& headers ) const
+
+void DynamicClassSelectableSubsetParameterParser
+    ::cppAddRequiredInclude (
+    std::set<std::string>& headers ) const
 {
   headers.insert("\"base/parameters/selectablesubsetparameter.h\"");
 }
 
-std::string DynamicClassSelectableSubsetParameterParser::Data::cppType ( const std::string&  ) const
+
+std::string
+DynamicClassSelectableSubsetParameterParser
+    ::cppInsightType () const
+{
+    return "insight::SelectableSubsetParameter";
+}
+
+
+std::string
+DynamicClassSelectableSubsetParameterParser
+    ::cppStaticType () const
 {
     std::ostringstream os;
     os << "std::shared_ptr<"<<base_type<<">";
     return os.str();
 }
-std::string DynamicClassSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&, const std::string& thisscope  ) const
+
+
+std::string
+DynamicClassSelectableSubsetParameterParser
+    ::cppDefaultValueExpression() const
 {
     return "nullptr";
 }
 
 
-std::string DynamicClassSelectableSubsetParameterParser::Data::cppParamType ( const std::string&  ) const
-{
-    return "insight::SelectableSubsetParameter";
-}
 
-void DynamicClassSelectableSubsetParameterParser::Data::cppWriteCreateStatement
-(
+void DynamicClassSelectableSubsetParameterParser
+    ::cppWriteCreateStatement(
     std::ostream& os,
-    const std::string& name,
-    const std::string& thisscope
-) const
+    const std::string& psvarname ) const
 {
 
     os <<
-         "std::unique_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"
+         "std::unique_ptr< "<<cppInsightType () <<" > "<<psvarname<<";"
          "{"
-         <<name<<".reset(new "<<cppParamType ( name ) <<"(\""<<description<<"\")); "
+         <<psvarname<<".reset(new "<<cppInsightType () <<"(\""<<description<<"\")); "
         "for (auto i = "<<base_type<<"::factories_->begin();"
             "i != "<<base_type<<"::factories_->end(); i++)"
         "{"
-            "ParameterSet defp = "<<base_type<<"::defaultParametersFor(i->first);"
-            <<name<<"->addItem( i->first, defp );"
+            "auto defp = "<<base_type<<"::defaultParametersFor(i->first);"
+            <<psvarname<<"->addItem( i->first, std::move(defp) );"
         "}";
 
     if (default_sel_==std::string())
-         os<<name<<"->setSelection("<<base_type<<"::factories_->begin()->first);";
+         os<<psvarname<<"->setSelection("<<base_type<<"::factories_->begin()->first);";
     else
-         os<<name<<"->setSelection(\""<<default_sel_<<"\");";
+         os<<psvarname<<"->setSelection(\""<<default_sel_<<"\");";
 
     os << "}"
     ;
 }
 
-void DynamicClassSelectableSubsetParameterParser::Data::cppWriteSetStatement
+void DynamicClassSelectableSubsetParameterParser
+    ::cppWriteSetStatement
 (
     std::ostream& os,
-    const std::string& ,
     const std::string& varname,
-    const std::string& staticname,
-    const std::string&
+    const std::string& staticname
 ) const
 {
     os<<"{"
           <<varname<<".setSelection("<<staticname<<"->type());"
-          <<varname<<"()="<<staticname<<"->getParameters();"
+          <<varname<<"() = "<<staticname<<"->getParameters();"
         "}"<<endl;
 }
 
-void DynamicClassSelectableSubsetParameterParser::Data::cppWriteGetStatement
+void DynamicClassSelectableSubsetParameterParser
+    ::cppWriteGetStatement
 (
     std::ostream& os,
-    const std::string& ,
     const std::string& varname,
-    const std::string& staticname,
-    const std::string&
+    const std::string& staticname
 ) const
 {
 
     os<<
     "{"
 
-        "std::string typ = "<<varname<<".selection();"
-        "const ParameterSet& param = "<<varname<<"();"
-
-        <<staticname<<".reset ( "<<base_type<<"::lookup( typ, param) );"
-
+        "std::string typ = "<<varname<<".selection();\n"
+        "auto& param = "<<varname<<"();\n"
+        <<staticname<< ".reset( " <<base_type<<"::lookup( typ, param) );\n"
+        <<staticname<< ".setPath( "<<varname<<" .path());\n"
     "}";
 }

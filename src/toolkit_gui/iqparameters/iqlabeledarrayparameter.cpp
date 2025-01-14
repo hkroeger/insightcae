@@ -10,17 +10,17 @@ IQLabeledArrayParameter::IQLabeledArrayParameter
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
-        ) : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+        ) : IQSpecializedParameter<insight::LabeledArrayParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {}
 
 
 QString IQLabeledArrayParameter::valueText() const
 {
-    auto& p = dynamic_cast<const insight::LabeledArrayParameter&>(parameter());
-    return QString( "labeledarray[%1]" ).arg(p.size());
+    return QString( "labeledarray[%1]" )
+        .arg(parameter().size());
 }
 
 
@@ -39,8 +39,7 @@ QVBoxLayout* IQLabeledArrayParameter::populateEditControls(
 
     connect(addbtn, &QPushButton::clicked, this, [this]()
             {
-                auto &p = dynamic_cast<insight::LabeledArrayParameter&>(this->parameterRef());
-                p.appendEmpty();
+                parameterRef().appendEmpty();
             }
             );
 
@@ -49,8 +48,7 @@ QVBoxLayout* IQLabeledArrayParameter::populateEditControls(
     connect(clearbtn, &QPushButton::clicked, this, [this]()
             {
 
-                auto &p = dynamic_cast<insight::LabeledArrayParameter&>(this->parameterRef());
-                p.clear();
+                parameterRef().clear();
             }
             );
 

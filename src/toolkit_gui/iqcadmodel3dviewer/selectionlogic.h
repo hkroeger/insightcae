@@ -186,25 +186,27 @@ public:
         Qt::KeyboardModifiers nFlags,
         const QPoint point, bool afterDoubleClick ) override
     {
-        if (!nextSelectionCandidates_ && !afterDoubleClick)
+        if (!this->hasChildReceivers() || !Base::onLeftButtonDown(nFlags, point, afterDoubleClick))
         {
-            auto selectedEntities = findEntitiesUnderCursorFiltered(point);
-
-            if (selectedEntities.size()>0)
+            if (!nextSelectionCandidates_ && !afterDoubleClick)
             {
-                previewHighlight_ = boost::blank();
-                nextSelectionCandidates_=
-                    std::make_shared<SelectionCandidates>
-                    (*this, selectedEntities);
+                auto selectedEntities = findEntitiesUnderCursorFiltered(point);
 
-                this->userPrompt(QString("There are %1 entities at picked location. Hold mouse button and press <Space> to cycle selection.")
-                                     .arg(nextSelectionCandidates_->size()));
+                if (selectedEntities.size()>0)
+                {
+                    previewHighlight_ = boost::blank();
+                    nextSelectionCandidates_=
+                        std::make_shared<SelectionCandidates>
+                        (*this, selectedEntities);
 
-                return true;
+                    this->userPrompt(QString("There are %1 entities at picked location. Hold mouse button and press <Space> to cycle selection.")
+                                         .arg(nextSelectionCandidates_->size()));
+
+                    return true;
+                }
             }
         }
-
-        return Base::onLeftButtonDown(nFlags, point, afterDoubleClick);
+        return false;
     }
 
 
@@ -213,15 +215,18 @@ public:
         Qt::KeyboardModifiers modifiers,
         int key ) override
     {
-        if (key==Qt::Key_Space)
+        if (!this->hasChildReceivers() || !Base::onKeyPress(modifiers, key))
         {
-            if (nextSelectionCandidates_)
+            if (key==Qt::Key_Space)
             {
-                nextSelectionCandidates_->cycleCandidate();
+                if (nextSelectionCandidates_)
+                {
+                    nextSelectionCandidates_->cycleCandidate();
+                }
+                return true;
             }
-            return true;
         }
-        return Base::onKeyPress(modifiers, key);
+        return false;
     }
 
 
@@ -232,57 +237,60 @@ public:
         const QPoint point,
         bool lastClickWasDoubleClick ) override
     {
-        if (!lastClickWasDoubleClick)
+        if (!this->hasChildReceivers() || !Base::onLeftButtonUp(nFlags, point,
+                                  lastClickWasDoubleClick))
         {
-            if (nextSelectionCandidates_)
+            if (!lastClickWasDoubleClick)
             {
-                if (!(nFlags&Qt::ShiftModifier))
+                if (nextSelectionCandidates_)
+                {
+                    if (!(nFlags&Qt::ShiftModifier))
+                    {
+                        clearSelection();
+                    }
+
+                    // apply sel candidate
+                    if (!currentSelection_)
+                    {
+                        currentSelection_ =
+                            multiSelectionContainerFactory_();
+                    }
+
+                    auto selcand = nextSelectionCandidates_->selected(true);
+                    nextSelectionCandidates_.reset();
+
+                    if (currentSelection_->count(selcand)<1)
+                    {
+                        currentSelection_->insert(selcand);
+                        this->userPrompt(
+                            QString("Added to selection. Now %1 entities selected.")
+                                .arg(currentSelection_->size()));
+
+                        if (highlights_.count(selcand)<1)
+                            highlights_[selcand]=highlightEntity(selcand, selectionColor);
+
+                        this->updateLastMouseLocation(point);
+                        entitySelected(selcand); // last, because current obj might be deleted
+                    }
+                    else // remove from sel
+                    {
+                        currentSelection_->erase(selcand);
+                        this->userPrompt(
+                            QString("Removed from selection. Now %1 entities selected.")
+                                .arg(currentSelection_->size()));
+                        highlights_.erase(selcand);
+                    }
+
+                    return true;
+                }
+                else // nothing was under cursor
                 {
                     clearSelection();
+                    this->userPrompt("Nothing picked. Selection cleared.");
                 }
-
-                // apply sel candidate
-                if (!currentSelection_)
-                {
-                    currentSelection_ =
-                        multiSelectionContainerFactory_();
-                }
-
-                auto selcand = nextSelectionCandidates_->selected(true);
-                nextSelectionCandidates_.reset();
-
-                if (currentSelection_->count(selcand)<1)
-                {
-                    currentSelection_->insert(selcand);
-                    this->userPrompt(
-                        QString("Added to selection. Now %1 entities selected.")
-                            .arg(currentSelection_->size()));
-
-                    if (highlights_.count(selcand)<1)
-                        highlights_[selcand]=highlightEntity(selcand, selectionColor);
-
-                    this->updateLastMouseLocation(point);
-                    entitySelected(selcand); // last, because current obj might be deleted
-                }
-                else // remove from sel
-                {
-                    currentSelection_->erase(selcand);
-                    this->userPrompt(
-                        QString("Removed from selection. Now %1 entities selected.")
-                            .arg(currentSelection_->size()));
-                    highlights_.erase(selcand);
-                }
-
-                return true;
-            }
-            else // nothing was under cursor
-            {
-                clearSelection();
-                this->userPrompt("Nothing picked. Selection cleared.");
             }
         }
-        return Base::onLeftButtonUp(nFlags, point,
-                                    lastClickWasDoubleClick);
+        return false;
     }
 
 
@@ -294,37 +302,40 @@ public:
             Qt::KeyboardModifiers curFlags
         ) override
     {
-        if (!(buttons&Qt::LeftButton)
-            && !nextSelectionCandidates_
-            && doPreviewSelection_
-            )
+        if (!this->hasChildReceivers() || !Base::onMouseMove(buttons, point, curFlags))
         {
-            auto euc = findEntitiesUnderCursorFiltered(point);
-            if (euc.size()>0)
+            if (!(buttons&Qt::LeftButton)
+                && !nextSelectionCandidates_
+                && doPreviewSelection_
+                )
             {
-                if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
+                auto euc = findEntitiesUnderCursorFiltered(point);
+                if (euc.size()>0)
                 {
-                    if ( !SelectedEntityCompare()(ph->first, euc[0])
-                         &&
-                         !SelectedEntityCompare()(euc[0], ph->first) )
+                    if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
                     {
-                        // already in preview highlight, nothing to do
-                        return false;
+                        if ( !SelectedEntityCompare()(ph->first, euc[0])
+                             &&
+                             !SelectedEntityCompare()(euc[0], ph->first) )
+                        {
+                            // already in preview highlight, nothing to do
+                            return false;
+                        }
                     }
+
+                    previewHighlight_ = boost::blank();
+                    previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
+
+                    newPreviewEntity(euc[0]);
+
+                    return false;
                 }
-
-                previewHighlight_ = boost::blank();
-                previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
-
-                newPreviewEntity(euc[0]);
-
-                return false;
             }
         }
 
         previewHighlight_ = boost::blank();
 
-        return Base::onMouseMove(buttons, point, curFlags);
+        return false;
     }
 
 

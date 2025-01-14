@@ -20,6 +20,7 @@
 #ifndef INSIGHT_NUMERICALWINDTUNNEL_H
 #define INSIGHT_NUMERICALWINDTUNNEL_H
 
+#include "base/parameters/subsetparameter.h"
 #include "openfoam/openfoamanalysis.h"
 
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters_headers.h"
@@ -37,7 +38,7 @@ class NumericalWindtunnel
   friend class NumericalWindtunnel_ParameterSet_Visualizer;
 
 public:
-  static void modifyDefaults(ParameterSet& p);
+  static void modifyDefaults(insight::ParameterSet& p);
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters.h"
 /*
 PARAMETERSET>>> NumericalWindtunnel Parameters
@@ -144,9 +145,10 @@ fluid = set {
       : public supplementedInputDataDerived<Parameters>
   {
   public:
-    supplementedInputData(std::unique_ptr<Parameters> p,
-                          const boost::filesystem::path& workDir,
-                          ProgressDisplayer& progress = consoleProgressDisplayer );
+    supplementedInputData(
+          ParameterSetInput ip,
+          const boost::filesystem::path& workDir,
+          ProgressDisplayer& progress = consoleProgressDisplayer );
 
     gp_Trsf cad_to_cfd_;
     double Lupstream_;
@@ -158,16 +160,14 @@ fluid = set {
     const std::string FOname;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
-  
+  addParameterMembers_SupplementedInputData(NumericalWindtunnel::Parameters);
+
 public:
   declareType("Numerical Wind Tunnel");
   
-  NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
+  NumericalWindtunnel(
+      const std::shared_ptr<supplementedInputDataBase>& sp );
 
-  static std::string category() { return "Generic Analyses"; }
   
   void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
   
@@ -175,6 +175,9 @@ public:
   void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
 
   ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
+
+  static std::string category() { return "Generic Analyses"; }
+  static AnalysisDescription description() { return {"Numerical Wind Tunnel", ""}; }
 };
 
 

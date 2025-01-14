@@ -9,8 +9,8 @@ namespace createPatchOps
 
 
 
-createPatchOperator::createPatchOperator(const ParameterSet& p )
-: p_(p)
+createPatchOperator::createPatchOperator(ParameterSetInput ip)
+    : p_(ip.forward<Parameters>())
 {}
 
 createPatchOperator::~createPatchOperator()
@@ -20,15 +20,15 @@ createPatchOperator::~createPatchOperator()
 void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
 {
   OFDictData::dict opdict;
-  opdict["name"]=p_.name;
-  opdict["constructFrom"]=p_.constructFrom;
+  opdict["name"]=p().name;
+  opdict["constructFrom"]=p().constructFrom;
   OFDictData::list pl;
-  std::copy(p_.patches.begin(), p_.patches.end(), std::back_inserter(pl));
+  std::copy(p().patches.begin(), p().patches.end(), std::back_inserter(pl));
   opdict["patches"]=pl;
-  opdict["set"]=p_.setname;
+  opdict["set"]=p().setname;
 
   OFDictData::dict opsubdict;
-  opsubdict["type"]=p_.patchtype;
+  opsubdict["type"]=p().patchtype;
 
   if (ofc.OFversion()<170)
   {
@@ -47,8 +47,8 @@ void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData:
 
 
 
-createCyclicOperator::createCyclicOperator(const ParameterSet& p )
-: p_(p)
+createCyclicOperator::createCyclicOperator(ParameterSetInput ip)
+: createPatchOperator(ip.forward<Parameters>())
 {}
 
 void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
@@ -65,28 +65,28 @@ void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData
   for (const std::string& suf: suffixes)
   {
     OFDictData::dict opdict;
-    opdict["name"]=p_.name+suf;
-    opdict["constructFrom"]=p_.constructFrom;
+    opdict["name"]=p().name+suf;
+    opdict["constructFrom"]=p().constructFrom;
     OFDictData::list pl;
     if (suf=="_half0" || suf=="")
     {
-      pl.resize(pl.size()+p_.patches.size());
-      std::copy(p_.patches.begin(), p_.patches.end(), pl.begin());
-      opdict["set"]=p_.setname;
+      pl.resize(pl.size()+p().patches.size());
+      std::copy(p().patches.begin(), p().patches.end(), pl.begin());
+      opdict["set"]=p().setname;
     }
     if (suf=="_half1" || suf=="")
     {
       size_t osize=pl.size();
-      pl.resize(osize+p_.patches_half1.size());
-      std::copy(p_.patches_half1.begin(), p_.patches_half1.end(), pl.begin()+osize);
-      if (suf!="") opdict["set"]=p_.set_half1;
+      pl.resize(osize+p().patches_half1.size());
+      std::copy(p().patches_half1.begin(), p().patches_half1.end(), pl.begin()+osize);
+      if (suf!="") opdict["set"]=p().set_half1;
     }
     opdict["patches"]=pl;
 
     OFDictData::dict opsubdict;
     opsubdict["type"]="cyclic";
-    if (suf=="_half0") opsubdict["neighbourPatch"]=p_.name+"_half1";
-    if (suf=="_half1") opsubdict["neighbourPatch"]=p_.name+"_half0";
+    if (suf=="_half0") opsubdict["neighbourPatch"]=p().name+"_half1";
+    if (suf=="_half1") opsubdict["neighbourPatch"]=p().name+"_half0";
 
     if (ofc.OFversion()>=210)
     {

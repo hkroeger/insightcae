@@ -6,17 +6,16 @@
 #include "base/parameters/subsetparameter.h"
 
 class TOOLKIT_GUI_EXPORT IQSubsetParameter
-    : public IQParameter
+    : public IQSpecializedParameter<insight::ParameterSet>
 {
 public:
-    declareType(insight::SubsetParameter::typeName_());
+    declareType(insight::ParameterSet::typeName_());
 
     IQSubsetParameter
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
     );
 

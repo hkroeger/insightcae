@@ -46,8 +46,8 @@ using namespace std;
 using namespace insight;
 
 
-
-insight::ParameterSet& split_and_check
+template<class P>
+P& split_and_check
 (
     isofCaseBuilderWindow& wnd, 
     std::vector<std::string>& pair,
@@ -65,12 +65,12 @@ insight::ParameterSet& split_and_check
 
     if (pair[0][0]=='#')
     {
-        int ceid=boost::lexical_cast<int>(pair[0][1]);
-        return wnd.caseElementParameters(ceid);
+        int ceid=boost::lexical_cast<int>(pair[0].substr(1, pair[0].size()-1));
+        return dynamic_cast<P&>(wnd.caseElementParameter(ceid, pair[1]));
     } 
     else
     {
-        return wnd.BCParameters(pair[0]);
+        return dynamic_cast<P&>(wnd.BCParameter(pair[0], pair[1]));
     }
 }
 
@@ -173,9 +173,9 @@ int main ( int argc, char** argv )
               for (const string& s: sets)
               {
                   std::vector<std::string> pair;
-                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  auto &p = split_and_check<BoolParameter>(window, pair, s);
                   bool v=boost::lexical_cast<bool>(pair[2]);
-                  parameters.setBool(pair[1], v);
+                  p.set(v);
               }
           }
 
@@ -185,8 +185,8 @@ int main ( int argc, char** argv )
               for (const string& s: sets)
               {
                   std::vector<std::string> pair;
-                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                  parameters.setString(pair[1], pair[2]);
+                  auto &p = split_and_check<StringParameter>(window, pair, s);
+                  p.set(pair[2]);
               }
           }
 
@@ -196,8 +196,8 @@ int main ( int argc, char** argv )
               for (const string& s: sets)
               {
                   std::vector<std::string> pair;
-                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                  parameters.get<SelectionParameter>(pair[1]).setSelection(pair[2]);
+                  auto &p = split_and_check<SelectionParameter>(window, pair, s);
+                  p.setSelection(pair[2]);
               }
           }
 
@@ -207,8 +207,8 @@ int main ( int argc, char** argv )
               for (const string& s: sets)
               {
                   std::vector<std::string> pair;
-                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
-                  parameters.setOriginalFileName(pair[1], pair[2]);
+                  auto &p = split_and_check<PathParameter>(window, pair, s);
+                  p.setOriginalFilePath(pair[2]);
               }
           }
 
@@ -218,9 +218,9 @@ int main ( int argc, char** argv )
               for (const string& s: sets)
               {
                   std::vector<std::string> pair;
-                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  auto &p = split_and_check<DoubleParameter>(window, pair, s);
                   double v=toNumber<double>(pair[2]);
-                  parameters.setDouble(pair[1], v);
+                  p.set(v);
               }
           }
 
@@ -230,10 +230,10 @@ int main ( int argc, char** argv )
               for (const string& s: sets)
               {
                   std::vector<std::string> pair;
-                  insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                  auto &p = split_and_check<VectorParameter>(window, pair, s);
                   arma::mat v;
                   stringToValue(pair[2], v);
-                  parameters.setVector(pair[1], v);
+                  p.set(v);
               }
           }
 
@@ -243,9 +243,9 @@ int main ( int argc, char** argv )
             for (const string& s: sets)
             {
                 std::vector<std::string> pair;
-                insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                auto &p = split_and_check<IntParameter>(window, pair, s);
                 int v=toNumber<int>(pair[2]);
-                parameters.setInt(pair[1], v);
+                p.set(v);
             }
         }
 

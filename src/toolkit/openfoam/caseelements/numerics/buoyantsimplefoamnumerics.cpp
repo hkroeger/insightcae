@@ -17,25 +17,25 @@ void buoyantSimpleFoamNumerics::init()
   if (OFversion() < 230)
     throw insight::UnsupportedFeature("buoyantSimpleFoamNumerics currently supports only OF >=230");
 
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
-      OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p_.pinternal}), volField ) );
-      OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p_.pinternal}), volField ) );
+      OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p().pinternal}), volField ) );
+      OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p().pinternal}), volField ) );
       OFcase().addField("alphat", FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   }
   else
   {
-      OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
-      OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
+      OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
+      OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
   }
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p().Tinternal}), volField ) );
 }
 
 
-buoyantSimpleFoamNumerics::buoyantSimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p_rgh"),
-  p_(ps)
+buoyantSimpleFoamNumerics::buoyantSimpleFoamNumerics(
+    OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p_rgh")
 {
     init();
 }
@@ -49,7 +49,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=
-      p_.boussinesqApproach
+      p().boussinesqApproach
           ? "buoyantBoussinesqSimpleFoam"
           : "buoyantSimpleFoam"
       ;
@@ -69,7 +69,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
 
   std::string energy("h");
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
       energy="T";
   }
@@ -114,12 +114,12 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+  SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
   SIMPLE["momentumPredictor"]=false;
   SIMPLE["pRefCell"]=0;
-  SIMPLE["pRefValue"]=p_.pinternal;
+  SIMPLE["pRefValue"]=p().pinternal;
 
-  if ( (OFversion()>=210) && p_.checkResiduals )
+  if ( (OFversion()>=210) && p().checkResiduals )
   {
     OFDictData::dict resCtrl;
     resCtrl["p_rgh"]=1e-4;
@@ -156,7 +156,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["default"]="none";
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV limitedGrad";
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind grad(k)";
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
       div["div(phi,T)"]	=	pref+"Gauss linearUpwind grad(T)";
   }
@@ -171,7 +171,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
 
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
       div["div((nuEff*dev2(T(grad(U)))))"]="Gauss linear"; // kOmegaSST2
   }
@@ -206,7 +206,7 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool buoyantSimpleFoamNumerics::isCompressible() const
 {
-    if (p_.boussinesqApproach)
+    if (p().boussinesqApproach)
         return false;
     else
         return true;

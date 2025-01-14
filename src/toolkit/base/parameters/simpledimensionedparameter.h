@@ -24,7 +24,7 @@
 
 #include "base/parameter.h"
 #include "base/units.h"
-
+#include "base/rapidxml.h"
 
 namespace insight {
 
@@ -106,14 +106,14 @@ public:
     }
 
 
-    Parameter* clone() const override
+    std::unique_ptr<Parameter> clone() const override
     {
-      using namespace boost::units;
-        return new SimpleDimensionedParameter<T, Unit, N>
+        using namespace boost::units;
+        return std::make_unique<SimpleDimensionedParameter<T, Unit, N> >
             (
               value_.value(),
-              description_.simpleLatex(),
-              isHidden_, isExpert_, isNecessary_, order_
+              description().simpleLatex(),
+              isHidden(), isExpert(), isNecessary(), order()
             );
     }
 

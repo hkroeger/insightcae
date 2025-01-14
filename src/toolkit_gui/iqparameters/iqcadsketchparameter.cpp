@@ -25,29 +25,24 @@ addToFactoryTable(IQParameter, IQCADSketchParameter);
 IQCADSketchParameter::IQCADSketchParameter
     (
         QObject* parent,
-    IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        IQParameterSetModel* psmodel,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
         )
-    : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
-{
-}
+    : IQSpecializedParameter<insight::CADSketchParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
+{}
 
 
 void IQCADSketchParameter::connectSignals()
 {
     IQParameter::connectSignals();
 
-    auto& sp=dynamic_cast<insight::CADSketchParameter&>(parameterRef());
     disconnectAtEOL(
-        sp.childValueChanged.connect(
+        parameterRef().childValueChanged.connect(
             [this]() {
                 auto blocker = block_all();
-                model()->notifyParameterChange(
-                    path().toStdString(),
-                    true
-                    );
+                model()->notifyParameterChange( *this );
             }
             )
         );
@@ -68,13 +63,12 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
     QWidget* editControlsContainer,
     IQCADModel3DViewer *viewer)
 {
-    const auto&p = dynamic_cast<const insight::CADSketchParameter&>(parameter());
 
     auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
 
     auto *teScript = new QTextEdit(editControlsContainer);
-    teScript->document()->setPlainText(QString::fromStdString(p.script()));
+    teScript->document()->setPlainText(QString::fromStdString(parameter().script()));
     layout->addWidget(teScript);
 
 
@@ -88,7 +82,7 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
         auto applyFunction = [=]()
         {
-            auto&p = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
+            auto&p = this->parameterRef();
             p.setUpdateValueSignalBlockage(true);
             p.setScript( teScript->document()->toPlainText().toStdString() );
             p.setUpdateValueSignalBlockage(false);
@@ -99,71 +93,20 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
         auto editFunction = [=]()
         {
-            auto&p = dynamic_cast<insight::CADSketchParameter&>(
-                this->parameterRef());
+            auto&p = this->parameterRef();
 
             auto sk = p.featureGeometryRef();
 
             viewer->editSketch(
-                *sk,
-                p.defaultGeometryParameters(),
 
-                p.sketchAppearanceFunction(),
-// #warning replace!!
-//                 [](
-//                     const insight::ParameterSet& seps,
-//                     vtkProperty* actprops)
-//                 {
-//                     if ( (seps.size()>0) && seps.contains("type") )
-//                     {
-//                         auto &selp = seps.get<insight::SelectableSubsetParameter>("type");
-//                         if (selp.selection()=="wall")
-//                         {
-//                             auto c = QColorConstants::Black;
-//                             actprops->SetColor(
-//                                 c.redF(),
-//                                 c.greenF(),
-//                                 c.blueF() );
-//                             actprops->SetLineWidth(3);
-//                         }
-//                         else if (selp.selection()=="window")
-//                         {
-//                             auto c = QColorConstants::DarkYellow;
-//                             actprops->SetColor(
-//                                 c.redF(),
-//                                 c.greenF(),
-//                                 c.blueF() );
-//                             actprops->SetLineWidth(4);
-//                         }
-//                         else if (selp.selection()=="door")
-//                         {
-//                             auto c = QColorConstants::DarkMagenta;
-//                             actprops->SetColor(
-//                                 c.redF(),
-//                                 c.greenF(),
-//                                 c.blueF() );
-//                             actprops->SetLineWidth(4);
-//                         }
-//                         else if (selp.selection()=="floorCutout")
-//                         {
-//                             actprops->SetColor(41./255., 128./255., 185./255.); // blueish
-//                             actprops->SetLineWidth(4);
-//                         }
-//                     }
-//                     else
-//                     {
-//                         auto c = QColorConstants::DarkCyan;
-//                         actprops->SetColor(
-//                             c.redF(),
-//                             c.greenF(),
-//                             c.blueF() );
-//                         actprops->SetLineWidth(2);
-//                     }
-//                 },
+                *sk,
+
+                p.entityProperties(),
+                p.presentationDelegateKey(),
 
                 [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
                 {
-                    auto& tp = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
+                    auto& tp = this->parameterRef();
 
                     {
                         auto blocker{parameterRef().blockUpdateValueSignal()};

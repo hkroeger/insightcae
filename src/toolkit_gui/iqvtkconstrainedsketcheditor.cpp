@@ -1,5 +1,7 @@
 #include "iqvtkconstrainedsketcheditor.h"
+#include "base/exception.h"
 #include "base/units.h"
+#include "constrainedsketch.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -47,6 +49,67 @@ using namespace insight;
 using namespace insight::cad;
 
 
+defineType(DefaultGUIConstrainedSketchPresentationDelegate);
+insight::cad::ConstrainedSketchPresentationDelegate::Add<DefaultGUIConstrainedSketchPresentationDelegate>
+    addDefaultGUIConstrainedSketchPresentationDelegate;
+
+std::string defaultGUIConstrainedSketchPresentationDelegate(
+    DefaultGUIConstrainedSketchPresentationDelegate::typeName );
+
+
+
+IQParameterSetModel*
+DefaultGUIConstrainedSketchPresentationDelegate::setupSketchEntityParameterSetModel(
+    const insight::cad::ConstrainedSketchEntity& e) const
+{
+    if (e.parameters().size()>0)
+        return new IQParameterSetModel(e.parameters(), e.defaultParameters());
+    else
+        return nullptr;
+}
+
+
+IQParameterSetModel*
+DefaultGUIConstrainedSketchPresentationDelegate::setupLayerParameterSetModel(
+    const std::string& layerName, const insight::cad::LayerProperties& curP) const
+{
+    if (curP.size()>0)
+    {
+        return new IQParameterSetModel(
+            curP, curP
+             );
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+
+void DefaultGUIConstrainedSketchPresentationDelegate::setEntityAppearance(
+    const insight::cad::ConstrainedSketchEntity &e, vtkProperty *actprops ) const
+{
+    if (dynamic_cast<const insight::cad::Feature*>(&e))
+    {
+        auto sec = QColorConstants::DarkCyan;
+        actprops->SetColor(
+            sec.redF(),
+            sec.greenF(),
+            sec.blueF() );
+        actprops->SetLineWidth(2);
+    }
+    else
+    {
+        auto sec = QColorConstants::Black;
+        actprops->SetColor(
+            sec.redF(),
+            sec.greenF(),
+            sec.blueF() );
+        actprops->SetLineWidth(1);
+    }
+}
+
+
 void IQVTKConstrainedSketchEditor::showLayerParameterEditor()
 {
     if (!layerPropertiesEditor_)
@@ -86,7 +149,6 @@ void IQVTKConstrainedSketchEditor::hideLayerParameterEditor()
 void IQVTKConstrainedSketchEditor::add(
     ConstrainedSketchEntityPtr sg)
 {
-    auto setapp = setActorAppearance_;
     std::vector<vtkSmartPointer<vtkProp> > acs;
 
     if (auto feat = std::dynamic_pointer_cast<
@@ -122,7 +184,7 @@ void IQVTKConstrainedSketchEditor::add(
     {
         if (vtkSmartPointer<vtkActor> aa = vtkActor::SafeDownCast(a))
         {
-            setapp(sg->parameters(), aa->GetProperty());
+            presentation_->setEntityAppearance(*sg, aa->GetProperty());
         }
         if (auto follower=vtkFollower::SafeDownCast(a))
         {
@@ -156,25 +218,14 @@ void IQVTKConstrainedSketchEditor::remove(
 
 
 
-bool IQVTKConstrainedSketchEditor::defaultSelectionActionRunning()
-{
-    return isRunning<IQVTKSelectConstrainedSketchEntity>();
-}
 
-void IQVTKConstrainedSketchEditor::launchChildAction(Ptr childAction)
-{
-    childAction->actionIsFinished.connect(
-        std::bind(&IQVTKConstrainedSketchEditor::launchDefaultSelectionAction, this) );
-    ViewWidgetAction<IQVTKCADModel3DViewer>::launchChildAction(childAction);
-}
-
-
-
-void IQVTKConstrainedSketchEditor::launchDefaultSelectionAction()
+IQVTKConstrainedSketchEditor::ViewWidgetActionHost::ViewWidgetActionPtr
+IQVTKConstrainedSketchEditor::setupDefaultAction()
 {
     auto sel = std::make_shared<IQVTKSelectConstrainedSketchEntity>(*this);
-    ViewWidgetAction<IQVTKCADModel3DViewer>::launchChildAction(sel);
+    return sel;
 }
+
 
 
 
@@ -213,7 +264,7 @@ void IQVTKConstrainedSketchEditor::drawPoint()
                         FixedPointConstraint::create( pp.p ) ); // fix first point
                 }
 
-                pp.p->changeDefaultParameters(defaultGeometryParameters_);
+                entityProperties_->changeDefaultParameters(*pp.p);
 
                 (*this)->invalidate();
                 this->updateActors();
@@ -223,7 +274,7 @@ void IQVTKConstrainedSketchEditor::drawPoint()
 
 
 
-    launchChildAction(dl);
+    launchAction(dl);
 }
 
 
@@ -279,7 +330,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
                    IQVTKCADModel3DViewerDrawLine::PointProperty* p2,
                    IQVTKCADModel3DViewerDrawLine::PointProperty* p1 )
             {
-                line->changeDefaultParameters(defaultGeometryParameters_);
+                entityProperties_->changeDefaultParameters(*line);
 
                 auto pointIsFixed = [](IQVTKCADModel3DViewerDrawLine::PointProperty *pp)
                 {
@@ -343,7 +394,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
             }
             );
 
-    launchChildAction(dl);
+    launchAction(dl);
 }
 
 
@@ -426,7 +477,7 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
 
                 for (auto& line: addedLines)
                 {
-                    line->changeDefaultParameters(defaultGeometryParameters_);
+                    entityProperties_->changeDefaultParameters(*line);
                 }
 
                 (*this)->invalidate();
@@ -437,7 +488,7 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
 
 
 
-    launchChildAction(dl);
+    launchAction(dl);
 }
 
 
@@ -458,18 +509,30 @@ void IQVTKConstrainedSketchEditor::solve()
 
 
 IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
-        IQVTKCADModel3DViewer& viewer,
-        const insight::cad::ConstrainedSketch& sketch,
-        const insight::ParameterSet& defaultGeometryParameters,
-        IQCADModel3DViewer::SetSketchEntityAppearanceCallback sseac
+    IQVTKCADModel3DViewer& viewer,
+    const insight::cad::ConstrainedSketch& sketch,
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+    const std::string& presentationDelegateKey
 )
 : ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
   insight::cad::ConstrainedSketchPtr(
       insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
-  setActorAppearance_(sseac),
-  defaultGeometryParameters_(defaultGeometryParameters),
+  entityProperties_(
+          entityProperties?
+              entityProperties : std::make_shared<insight::cad::ConstrainedSketchParametersDelegate>() ),
   layerPropertiesEditor_(nullptr)
 {
+    if (!presentationDelegateKey.empty())
+    {
+        presentation_=
+            insight::cad::ConstrainedSketchPresentationDelegate::sketchPresentationFor(
+              presentationDelegateKey );
+    }
+    if (!presentation_)
+    {
+        presentation_ =
+            std::make_shared<DefaultGUIConstrainedSketchPresentationDelegate>();
+    }
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
 
@@ -902,17 +965,13 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     auto selectedLayerName =
                         model->data(current.siblingAtColumn(1))
                                              .toString().toStdString();
-                    auto curP=this->sketch().layerProperties(selectedLayerName);
 
-                    if (curP.size()>0)
+                    if (auto m= presentation_->setupLayerParameterSetModel(
+                            selectedLayerName,
+                            this->sketch().layerProperties(selectedLayerName)))
                     {
+
                         showLayerParameterEditor();
-
-                        auto m = new IQParameterSetModel(
-                            curP,
-                            this->sketch().defaultLayerProperties(),
-                            layerPropertiesEditor_ );
-
                         layerPropertiesEditor_->setModel(m);
 
                         connect(
@@ -1024,7 +1083,7 @@ void IQVTKConstrainedSketchEditor::start()
         new IQVTKCADModel3DViewer::ExposeItem(
             nullptr, QModelIndex(), viewer() )
         );
-    launchDefaultSelectionAction();
+    setDefaultAction();
     updateActors();
 }
 
@@ -1233,7 +1292,7 @@ bool IQVTKConstrainedSketchEditor::onMouseMove
                     std::dynamic_pointer_cast<insight::cad::DistanceConstraint>(
                         selact->currentSelectionCandidate().lock() ) )
                 {
-                    launchChildAction(std::make_shared<IQVTKDragDimensionlineAction>(*this, dc));
+                    launchAction(std::make_shared<IQVTKDragDimensionlineAction>(*this, dc));
 
                     ret=true;
                 }
@@ -1241,7 +1300,7 @@ bool IQVTKConstrainedSketchEditor::onMouseMove
                          std::dynamic_pointer_cast<insight::cad::AngleConstraint>(
                              selact->currentSelectionCandidate().lock() ) )
                 {
-                    launchChildAction(std::make_shared<IQVTKDragAngleDimensionAction>(*this, ac));
+                    launchAction(std::make_shared<IQVTKDragAngleDimensionAction>(*this, ac));
 
                     ret=true;
                 }
@@ -1326,16 +1385,87 @@ void IQVTKConstrainedSketchEditor::renameLayer(
     const std::string &currentLayerName,
     const std::string &newLayerName )
 {
-  for (auto& g: **this)
-  {
-      auto feat=g.second;
-      if (feat->layerName()==currentLayerName)
-        feat->setLayerName(newLayerName);
-  }
-  if (hiddenLayers_.count(currentLayerName))
-  {
-      hiddenLayers_.erase(currentLayerName);
-      hiddenLayers_.insert(newLayerName);
-  }
-  Q_EMIT sketchChanged();
+    if (!(*this)->hasLayer(newLayerName))
+        (*this)->addLayer(newLayerName, *entityProperties_);
+
+    for (auto& g: **this)
+    {
+        auto feat=g.second;
+        if (feat->layerName()==currentLayerName)
+            feat->setLayerName(newLayerName);
+    }
+    if (hiddenLayers_.count(currentLayerName))
+    {
+        hiddenLayers_.erase(currentLayerName);
+        hiddenLayers_.insert(newLayerName);
+    }
+
+    (*this)->removeLayer(currentLayerName);
+
+    Q_EMIT sketchChanged();
 }
+
+
+
+// std::string IQVTKConstrainedSketchEditor::latexRepresentation() const
+// {
+//     return "";
+// }
+
+// std::string IQVTKConstrainedSketchEditor::plainTextRepresentation(int indent) const
+// {
+//     return "";
+// }
+
+// std::unique_ptr<Parameter> IQVTKConstrainedSketchEditor::clone() const
+// {
+//     throw insight::Exception("not implemented");
+//     return nullptr;
+// }
+
+// void IQVTKConstrainedSketchEditor::readFromNode(const std::string &name, rapidxml::xml_node<> &node, boost::filesystem::path inputfilepath)
+// {}
+
+
+// int IQVTKConstrainedSketchEditor::nChildren() const
+// {
+//     return (*this)->size();
+// }
+
+
+// std::string IQVTKConstrainedSketchEditor::childParameterName( int i, bool ) const
+// {
+//     insight::assertion(
+//         i>=0 && i<nChildren(),
+//         "invalid child parameter index %d (must be in range 0...%d)",
+//         i, nChildren() );
+
+//     return str(boost::format("entity_%d")%i);
+// }
+
+
+// Parameter& IQVTKConstrainedSketchEditor::childParameterRef ( int i )
+// {
+//     insight::assertion(
+//         i>=0 && i<nChildren(),
+//         "invalid child parameter index %d (must be in range 0...%d)",
+//         i, nChildren() );
+
+//     auto g = (*this)->begin();
+//     std::advance(g, i);
+//     return g->second->parametersRef();
+// }
+
+
+// const Parameter& IQVTKConstrainedSketchEditor::childParameter( int i ) const
+// {
+//     insight::assertion(
+//         i>=0 && i<nChildren(),
+//         "invalid child parameter index %d (must be in range 0...%d)",
+//         i, nChildren() );
+
+//     auto g = (*this)->begin();
+//     std::advance(g, i);
+//     return g->second->parameters();
+// }
+

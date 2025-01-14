@@ -19,6 +19,7 @@
  */
 
 #include "parameter.h"
+#include "base/exception.h"
 #include "base/latextools.h"
 #include "base/tools.h"
 #include <iostream>
@@ -45,58 +46,7 @@ using namespace rapidxml;
 
 namespace insight 
 {
-  
-    
-rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name, const std::string& typeName)
-{
-    if (name.empty())
-    {
-        return &father;
-    }
-    else
-    {
-        for (xml_node<> *child = father.first_node(typeName.c_str()); child; child = child->next_sibling(typeName.c_str()))
-        {
-          if (child->first_attribute("name")->value() == name)
-          {
-            return child;
-          }
-        }
-    }
 
-    return nullptr;
-}
-
-    
-
-
-
-
-
-
-void writeMatToXMLNode(const arma::mat& matrix, xml_document< char >& doc, xml_node< char >& node)
-{
-  std::ostringstream voss;
-  matrix.save(voss, arma::raw_ascii);
-  
-  // set stringified table values as node value
-  node.value(doc.allocate_string(voss.str().c_str()));
-}
-
-
-
-
-
-
-
-
-ArrayParameterBase::~ArrayParameterBase()
-{}
-
-Parameter &ArrayParameterBase::elementRef(int i)
-{
-  return const_cast<Parameter&>(element(i));
-}
 
 
 
@@ -162,6 +112,11 @@ Parameter::iterator::reference Parameter::iterator::operator*() const
 }
 
 Parameter::iterator::pointer Parameter::iterator::operator->() const
+{
+  return &operator*();
+}
+
+Parameter::iterator::pointer Parameter::iterator::get_pointer() const
 {
   return &operator*();
 }
@@ -243,6 +198,11 @@ Parameter::const_iterator::pointer Parameter::const_iterator::operator->() const
   return &operator*();
 }
 
+Parameter::const_iterator::pointer Parameter::const_iterator::get_pointer() const
+{
+  return &operator*();
+}
+
 string Parameter::const_iterator::name() const
 {
   insight::assertion(
@@ -267,6 +227,7 @@ void Parameter::triggerChildValueChanged()
   if (!valueChangeSignalBlocked_) childValueChanged();
 }
 
+
 void Parameter::setParent(Parameter *parent)
 {
     parent_=parent;
@@ -275,14 +236,6 @@ void Parameter::setParent(Parameter *parent)
 
 
 
-Parameter::Parameter()
-: description_(),
-  isHidden_(false), isExpert_(false), isNecessary_(false), order_(0),
-  valueChangeSignalBlocked_(false),
-    parent_(nullptr),
-    needsInitialization_(true)
-{
-}
 
 Parameter::Parameter(const std::string& description, bool isHidden, bool isExpert, bool isNecessary, int order)
 : description_(description),
@@ -306,21 +259,49 @@ void Parameter::initialize()
     }
 }
 
+bool Parameter::hasParent() const
+{
+    return parent_.valid();
+}
 
 
-Parameter *Parameter::parent() const
+
+Parameter& Parameter::parent()
 {
     return parent_;
 }
 
-SubsetParameter& Parameter::parentSet() const
+const Parameter& Parameter::parent() const
 {
-    // if (auto *ssp = dynamic_cast<SelectableSubsetParameter*>(parent()))
-    // {
-    //     return (*ssp)();
-    // }
-    // else
-        return dynamic_cast<SubsetParameter&>(*parent());
+    return parent_;
+}
+
+
+ParameterSet& Parameter::parentSet()
+{
+    return dynamic_cast<ParameterSet&>(parent());
+}
+
+string Parameter::path(bool redirectArrayElementsToDefault) const
+{
+    if (hasParent())
+    {
+        auto pp=parent().path(redirectArrayElementsToDefault);
+        auto n=name(redirectArrayElementsToDefault);
+        return pp+(!(pp.empty()||n.empty())?"/":"")+n;
+    }
+    return std::string();
+}
+
+
+std::string Parameter::name(bool redirectArrayElementsToDefault) const
+{
+    if (hasParent())
+    {
+        return parent().childParameterName(this, redirectArrayElementsToDefault);
+    }
+    else
+        return std::string();
 }
 
 
@@ -335,6 +316,37 @@ bool Parameter::isDifferent(const Parameter &) const
 }
 
 int Parameter::order() const { return order_; }
+
+
+bool Parameter::isModified(const ParameterSet &defaultValues) const
+{
+    bool cmodified = false;
+    try
+    {
+        if (nChildren()>0) // has children
+        {
+            for (int k=0; k<nChildren(); ++k)
+            {
+                cmodified |= childParameter(k).isModified(defaultValues);
+            }
+        }
+        else
+        {
+            auto pp=path(true);
+            if (defaultValues.hasParameter(pp))
+            {
+                const auto& dp = defaultValues.get<insight::Parameter>(pp);
+                cmodified = isDifferent(dp);
+            }
+        }
+    }
+    catch (...)
+    {
+        cmodified=true;
+    }
+
+    return cmodified;
+}
 
 
 rapidxml::xml_node<>* Parameter::appendToNode(
@@ -579,11 +591,38 @@ std::unique_ptr<Parameter> Parameter::intersection(const Parameter &other) const
 }
 
 
-std::string Parameter::childParameterName( int i ) const
+std::string Parameter::childParameterName( int i, bool ) const
 {
   if (nChildren()!=0)
-    throw insight::Exception("internal error: childParameterRef() not implemented!");
+    throw insight::Exception("internal error: childParameterName() not implemented!");
   return std::string();
+}
+
+
+
+std::string Parameter::childParameterName(
+    const Parameter *childParam,
+    bool redirectArrayElementsToDefault ) const
+{
+    for (int k=0; k<nChildren(); ++k)
+    {
+        if (childParam==&childParameter(k))
+        {
+            return childParameterName(k, redirectArrayElementsToDefault);
+        }
+    }
+
+    {
+        std::vector<std::string> cands;
+        for (int k=0; k<nChildren(); ++k)
+            cands.push_back(childParameterName(k));
+
+        throw insight::Exception(
+            "Parameter %d not found in children list. Candidates are: %s",
+            childParam,
+            boost::join(cands, ", ").c_str() );
+    }
+    return std::string();
 }
 
 
@@ -602,13 +641,24 @@ const Parameter &Parameter::childParameter(int i) const
 }
 
 
-int Parameter::childParameterIndex( const std::string& name ) const
+int Parameter::childParameterIndex(const std::string& name) const
 {
   for (int k=0; k<nChildren(); ++k)
   {
     if (childParameterName(k)==name) return k;
   }
   return -1;
+}
+
+
+int Parameter::childParameterIndex( const Parameter* childParam ) const
+{
+    for (int k=0; k<nChildren(); ++k)
+    {
+        if (&childParameter(k)==childParam)
+            return k;
+    }
+    return -1;
 }
 
 
@@ -756,7 +806,7 @@ void stringToValue(const std::string& s, boost::posix_time::ptime& datetime)
     datetime=boost::posix_time::time_from_string(s);
 }
 
- 
+
 
 
 

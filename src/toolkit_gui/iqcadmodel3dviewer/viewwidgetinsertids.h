@@ -26,7 +26,7 @@ protected:
 
 public:
   ViewWidgetInsertIDs(QoccViewWidget &viewWidget)
-    : ViewWidgetAction<QoccViewWidget>(viewWidget)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, true)
   {}
 
   ~ViewWidgetInsertIDs()

@@ -20,10 +20,10 @@ int main(int argc, char*argv[])
 
     p.limitVelocity = limitQuantities::Parameters::limitVelocity_limit_type{100.};
 
-    p.limitFields = {
+    p.limitFields.push_back(
       limitQuantities::Parameters::limitFields_default_type
         {"p", limitQuantities::Parameters::limitFields_default_type::scalar, -100, 100}
-    };
+    );
 
     tc.insert(new limitQuantities(tc, p));
 

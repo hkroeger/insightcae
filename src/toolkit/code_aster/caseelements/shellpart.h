@@ -15,15 +15,17 @@ public:
 
 /*
 PARAMETERSET>>> ShellPart Parameters
+inherits CodeAsterCaseElement::Parameters
 
 geometry = path "" "Geometry of the shell part"
 thickness = double 1 "Shell thickness"
 
+createGetters
 <<<PARAMETERSET
 */
 
 public:
-    ShellPart(CodeAsterCase& c, const std::string& name, const ParameterSet& ps);
+    ShellPart(CodeAsterCase& c, ParameterSetInput ip = ParameterSetInput() );
 };
 
 } // namespace insight

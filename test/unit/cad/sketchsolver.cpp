@@ -57,7 +57,7 @@ int main(int, char*argv[])
         auto pl = std::make_shared<DatumPlane>(
             vec3const(0,0,0), vec3const(0,0,1)
             );
-        auto csk = ConstrainedSketch::createFromStream(pl, is);
+        auto csk = ConstrainedSketch::createFromStream(pl, is, *noParametersDelegate);
 
         auto ss = csk->solverSettings();
         ss.solver_=ConstrainedSketch::rootND;

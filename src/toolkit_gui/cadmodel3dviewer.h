@@ -1,7 +1,7 @@
 #ifndef CADMODEL3DVIEWER_H
 #define CADMODEL3DVIEWER_H
 
-#include "base/parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "toolkit_gui_export.h"
 #include "cadtypes.h"
 

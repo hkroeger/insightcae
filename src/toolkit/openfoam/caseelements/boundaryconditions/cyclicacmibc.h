@@ -16,16 +16,16 @@ inherits GGIBCBase::Parameters
 
 //modifyMesh = bool false "Create auxiliary patch and baffles."
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "CyclicACMIBC" );
-    CyclicACMIBC( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-                  const ParameterSet&ps = Parameters::makeDefault() );
+    CyclicACMIBC(
+        OpenFOAMCase& c, const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = ParameterSetInput() );
 
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
@@ -44,7 +44,7 @@ public:
         const std::map<std::string, std::string>& patchNames_shadowPatchNames );
 
     static std::string uncoupledPatchName(const std::string& patchName, const CyclicACMIBC::Parameters& p);
-    inline std::string uncoupledPatchName() const { return uncoupledPatchName(patchName(), p_); }
+    inline std::string uncoupledPatchName() const { return uncoupledPatchName(patchName(), p()); }
 
 };
 

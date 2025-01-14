@@ -1,6 +1,6 @@
 #include "availablecaseelementsmodel.h"
 
-#include "base/parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
 
@@ -95,14 +95,11 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
     {
       QIcon icon;
 
-      try
+        if (insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement_table().count(elemName))
       {
-          insight::ParameterSetVisualizerPtr viz
-              = insight::OpenFOAMCaseElement::visualizerFor(elemName);
-          viz->setIcon(&icon);
+          icon =
+              insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement(elemName);
       }
-      catch (const std::exception& e)
-      { /* ignore, if non-existent */ }
 
       pe->addCaseElement( QString::fromStdString(elemName), icon );
     }

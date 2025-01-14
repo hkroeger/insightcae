@@ -14,18 +14,18 @@ public:
 #include "smagorinsky_lesmodel__Smagorinsky_LESModel__Parameters.h"
 /*
 PARAMETERSET>>> Smagorinsky_LESModel Parameters
+inherits LESModel::Parameters
 
 C = double 0.1 "Smagorinsky constant"
 
+createGetters
 <<<PARAMETERSET
 */
-protected:
-    Parameters p_;
 
 public:
   declareType("Smagorinsky");
 
-  Smagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
+  Smagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };

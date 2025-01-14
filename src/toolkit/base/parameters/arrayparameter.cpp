@@ -1,6 +1,7 @@
 #include "arrayparameter.h"
 #include "base/translations.h"
 #include "base/tools.h"
+#include "base/rapidxml.h"
 
 namespace insight
 {
@@ -58,7 +59,7 @@ bool ArrayParameter::isDifferent(const Parameter& p) const
 
 void ArrayParameter::setDefaultValue ( const Parameter& defP )
 {
-  defaultValue_.reset ( defP.clone() );
+  defaultValue_=defP.clone();
 }
 
 
@@ -102,31 +103,42 @@ void ArrayParameter::eraseValue ( int i )
     i>=0 && i<size(),
       "%d out of range (0...%d)", i, size()-1);
 
+  beforeChildRemoval(i, i);
+
   auto idx=value_.begin();
   std::advance(idx, i);
 
   valueChangedConnections_.erase(idx->get());
   childValueChangedConnections_.erase(idx->get());
 
-  auto item=*idx; // don't delete yet, this would cause crash in IQParameterSetModel.
+  // auto item=std::move(*idx); // don't delete yet, this would cause crash in IQParameterSetModel.
   value_.erase ( idx ); // Just remove from array
+
+  childRemovalDone(i, i);
+
   triggerValueChanged();
 }
 
 
 void ArrayParameter::appendValue ( const Parameter& np )
 {
-  value_.push_back ( ParameterPtr( np.clone() ) );
+    int i=value_.size();
+  beforeChildInsertion(i, i);
+
+  value_.push_back ( np.clone() );
   auto& ins=value_.back();
 
-  valueChangedConnections_[ins.get()]=
+  valueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
-          ins->valueChanged.connect( childValueChanged ));
-  childValueChangedConnections_[ins.get()]=
+          ins->valueChanged.connect( childValueChanged )));
+  childValueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
-          ins->childValueChanged.connect( childValueChanged ));
-  newItemAdded(ins);
+          ins->childValueChanged.connect( childValueChanged )));
+  newItemAdded(ins.get());
   ins->setParent(this);
+
+  childInsertionDone(i, i);
+
   triggerValueChanged();
 }
 
@@ -137,33 +149,44 @@ void ArrayParameter::insertValue ( int i, const Parameter& np )
       i>=0 && i<size(),
       "%d out of range (0...%d)", i, size()-1);
 
-  auto ins = value_.insert( value_.begin()+i, ParameterPtr( np.clone() ) );
+  beforeChildInsertion(i, i);
 
-  valueChangedConnections_[ins->get()]=
+  auto ins = value_.insert( value_.begin()+i, np.clone() );
+
+  valueChangedConnections_.insert(ins->get(),
       std::make_shared<boost::signals2::scoped_connection>(
-       (*ins)->valueChanged.connect( childValueChanged ));
-  childValueChangedConnections_[ins->get()]=
+       (*ins)->valueChanged.connect( childValueChanged )));
+  childValueChangedConnections_.insert(ins->get(),
       std::make_shared<boost::signals2::scoped_connection>(
-       (*ins)->childValueChanged.connect( childValueChanged ));
-  newItemAdded(*ins);
+       (*ins)->childValueChanged.connect( childValueChanged )));
+  newItemAdded(ins->get());
   (*ins)->setParent(this);
+
+  childInsertionDone(i, i);
+
   triggerValueChanged();
 }
 
 
 void ArrayParameter::appendEmpty()
 {
-  value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
+    int i=value_.size();
+    beforeChildInsertion(i, i);
+
+  value_.push_back ( defaultValue_->clone() );
 
   auto& ins=value_.back();
-  valueChangedConnections_[ins.get()]=
+  valueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
-        ins->valueChanged.connect( childValueChanged ));
-  childValueChangedConnections_[ins.get()]=
+        ins->valueChanged.connect( childValueChanged )));
+  childValueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
-        ins->childValueChanged.connect( childValueChanged ));
-  newItemAdded(ins);
+        ins->childValueChanged.connect( childValueChanged )));
+  newItemAdded(ins.get());
   ins->setParent(this);
+
+  childInsertionDone(i, i);
+
   triggerValueChanged();
 }
 
@@ -171,6 +194,11 @@ void ArrayParameter::appendEmpty()
 Parameter& ArrayParameter::operator[] ( int i )
 {
   return elementRef(i);
+}
+
+Parameter &ArrayParameter::elementRef(int i)
+{
+    return *(value_[i]);
 }
 
 
@@ -197,12 +225,14 @@ int ArrayParameter::nChildren() const
     return value_.size();
 }
 
-std::string ArrayParameter::childParameterName(int i) const
+std::string ArrayParameter::childParameterName(
+    int i,
+    bool redirectArrayElementsToDefault ) const
 {
-    if (i<nChildren())
-        return str(boost::format("%d")%i);
-    else if (i==nChildren())
+    if ( redirectArrayElementsToDefault || (i==nChildren()) )
         return "default";
+    else if (i<nChildren())
+        return str(boost::format("%d")%i);
     else
     {
         throw insight::Exception(
@@ -393,8 +423,6 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name, type());
 
-  std::vector<std::pair<double, ParameterPtr> > readvalues;
-
   if (child)
   {
     int imax=-1;
@@ -435,9 +463,13 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
 
 
 
-Parameter* ArrayParameter::clone () const
+std::unique_ptr<Parameter> ArrayParameter::clone () const
 {
-  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  auto np=std::make_unique<ArrayParameter>(
+        *defaultValue_,
+        0,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order());
   for (int i=0; i<size(); i++)
   {
     np->appendValue( *(value_[i]) );
@@ -462,6 +494,7 @@ void ArrayParameter::operator=(const ArrayParameter& op)
   defaultSize_ = op.defaultSize_;
 
   resize(op.size());
+
   for (int i=0; i<op.size(); ++i)
   {
     (*value_[i]).copyFrom( *op.value_[i] );

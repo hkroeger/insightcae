@@ -48,9 +48,9 @@ using namespace rapidxml;
 
 
 
-ParameterSet& isofCaseBuilderWindow::BCParameters(const std::string& patchName)
+Parameter& isofCaseBuilderWindow::BCParameter(const std::string& patchName, const std::string& path)
 {
-  return BCConfigModel_->patchParametersRef(patchName);
+  return BCConfigModel_->patchParameterRef(patchName, path);
 }
 
 

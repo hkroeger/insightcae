@@ -27,7 +27,7 @@ namespace insight
 {
   
 class FileTemplate
-: public Analysis
+: public AnalysisWithParameters
 {
   
 public:
@@ -47,6 +47,9 @@ numerical = array [ set {
 <<<PARAMETERSET
 */
 
+    typedef supplementedInputDataBase supplementedInputData;
+    addParameterMembers_ParameterClass(FileTemplate::Parameters);
+
 protected:
   enum ReservedFiles 
   {
@@ -63,20 +66,18 @@ protected:
     }
 #endif
    ;
-    // derived data
 
-protected:
-  Parameters p_;
   
 public:
     declareType("FileTemplate");
-    FileTemplate(const ParameterSet& ps, const bfs_path& exedir, ProgressDisplayer& pd);
 
-    ParameterSet parameters() const override;
+    FileTemplate(
+        const std::shared_ptr<supplementedInputDataBase>& sp );
+    
+    ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;    
+
     static std::string category() { return "Generic Analyses"; }
-    
-    ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
-    
+    static AnalysisDescription description() { return {"FileTemplate", "File template based analysis"}; }
 };
 }
 #endif // INSIGHT_FILETEMPLATE_H

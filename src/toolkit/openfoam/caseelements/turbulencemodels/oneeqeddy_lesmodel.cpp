@@ -19,8 +19,8 @@ void oneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 }
 
 
-oneEqEddy_LESModel::oneEqEddy_LESModel(OpenFOAMCase& c, const ParameterSet& ps)
-: LESModel(c)
+oneEqEddy_LESModel::oneEqEddy_LESModel(OpenFOAMCase& c, ParameterSetInput ip)
+: LESModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

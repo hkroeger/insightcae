@@ -15,17 +15,15 @@ public:
         LIST(
             QObject* parent,
             IQParameterSetModel* psmodel,
-            const QString& name,
-            insight::Parameter& parameter,
+            insight::Parameter* parameter,
             const insight::ParameterSet& defaultParameterSet ),
-        LIST(parent, psmodel, name, parameter, defaultParameterSet)
+        LIST(parent, psmodel, parameter, defaultParameterSet)
   );
 
   static IQParameter* create(
       QObject* parent,
       IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& p,
+      insight::Parameter* p,
       const insight::ParameterSet& defaultParameterSet );
 
 public:
@@ -35,10 +33,12 @@ public:
   (
       QObject *parent,
       IQParameterSetModel* psmodel,
-      const QString &name,
-      insight::Parameter &parameter,
+      insight::Parameter *parameter,
       const insight::ParameterSet &defaultParameterSet
   );
+
+public Q_SLOTS:
+  virtual void deleteFromArray() =0;
 };
 
 
@@ -58,24 +58,16 @@ public:
   (
       QObject *parent,
       IQParameterSetModel* psmodel,
-      const QString &name,
-      insight::Parameter &parameter,
+      insight::Parameter *parameter,
       const insight::ParameterSet &defaultParameterSet
   )
-    : IQBaseParameter(parent, psmodel, name, parameter, defaultParameterSet),
-      IQArrayElementParameterBase(parent, psmodel, name, parameter, defaultParameterSet)
+    : IQBaseParameter(parent, psmodel, parameter, defaultParameterSet),
+      IQArrayElementParameterBase(parent, psmodel, parameter, defaultParameterSet)
   {}
 
-  const QString path(bool redirectArrayElementsToDefault=false) const override
-  {
-    QString n=this->name();
-    if (redirectArrayElementsToDefault) n="default";
-    return this->buildPath(n, redirectArrayElementsToDefault);
-  }
+  void populateContextMenu(QMenu* m) override;
 
-
-  virtual void populateContextMenu(QMenu* m);
-//  virtual QVBoxLayout* populateEditControls(IQParameterSetModel* model, const QModelIndex &index, QWidget* editControlsContainer);
+  void deleteFromArray() override;
 };
 
 #endif // IQARRAYELEMENTPARAMETER_H

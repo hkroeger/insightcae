@@ -2,8 +2,8 @@
 
 namespace insight {
 
-GluedConnection::GluedConnection(CodeAsterCase& c, const std::string& name, const ParameterSet& ps)
-    : CodeAsterCaseElement(c, name, ps)
+GluedConnection::GluedConnection(CodeAsterCase& c, ParameterSetInput ip)
+    : CodeAsterCaseElement(c, ip.forward<Parameters>())
 {}
 
 } // namespace insight

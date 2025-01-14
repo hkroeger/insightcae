@@ -59,7 +59,8 @@ const double ValZWMin = 1;
 
 
 class TOOLKIT_GUI_EXPORT QoccViewWidget
-: public QWidget
+: public QWidget,
+  public ViewWidgetActionHost<QoccViewWidget>
 #if OCC_VERSION_MAJOR>=7
   , protected AIS_ViewController
 #endif
@@ -76,7 +77,6 @@ private:
 
 //  InputReceiver<QoccViewWidget>::Ptr currentNavigationAction_;
   NavigationManager<QoccViewWidget>::Ptr navigationManager_;
-  ViewWidgetAction<QoccViewWidget>::Ptr currentUserActivity_;
 
 public:
 
@@ -303,21 +303,8 @@ private: // members
 
 private: // methods
   
-  void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  void onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point );
-  void onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  void onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  void onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  void onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point );
-  
-  void onMouseMove  
-    (
-     Qt::MouseButtons buttons, 
-     Qt::KeyboardModifiers nFlags, 
-     const QPoint point,
-     Qt::KeyboardModifiers curFlags
-     );
-  
+
+
   AIS_StatusOfPick dragEvent 
     (
      const QPoint startPoint, 

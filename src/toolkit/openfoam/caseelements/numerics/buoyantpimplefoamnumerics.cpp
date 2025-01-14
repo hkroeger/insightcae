@@ -17,26 +17,26 @@ void buoyantPimpleFoamNumerics::init()
   if (OFversion() < 230)
     throw insight::UnsupportedFeature("buoyantSimpleFoamNumerics currently supports only OF >=230");
 
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
-    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p_.pinternal}), volField ) );
-    OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p_.pinternal}), volField ) );
+    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p().pinternal}), volField ) );
+    OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure,            FieldValue({p().pinternal}), volField ) );
 
     OFcase().addField("alphat", FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   }
   else
   {
-    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
-    OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
+    OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
+    OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
   }
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p().Tinternal}), volField ) );
 }
 
 
-buoyantPimpleFoamNumerics::buoyantPimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p_rgh"),
-  p_(ps)
+buoyantPimpleFoamNumerics::buoyantPimpleFoamNumerics(
+    OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p_rgh")
 {
     init();
 }
@@ -50,12 +50,12 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=
-      p_.boussinesqApproach
+      p().boussinesqApproach
       ? "buoyantBoussinesqPimpleFoam"
       : "buoyantPimpleFoam"
         ;
-//  controlDict["maxCo"]=p_.maxCo;
-//  controlDict["maxDeltaT"]=p_.maxDeltaT;
+//  controlDict["maxCo"]=p().maxCo;
+//  controlDict["maxDeltaT"]=p().maxDeltaT;
 
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );
@@ -75,7 +75,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["\"rho.*\""]=OFcase().stdSymmSolverSetup(1e-8, 0.01);
 
   std::vector<std::string> rf({"U", "k", "epsilon", "nuTilda"});
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
     rf.push_back("T");
   }
@@ -95,7 +95,8 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["omegaFinal"]=OFcase().stdAsymmSolverSetup(1e-12, 0.0, 1);
 
 
-  CompressiblePIMPLESettings(p_.time_integration).addIntoDictionaries(OFcase(), dictionaries);
+  CompressiblePIMPLESettings( p().time_integration )
+      .addIntoDictionaries(OFcase(), dictionaries);
 
 
   // ============ setup fvSchemes ================================
@@ -116,7 +117,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV limitedGrad";
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind grad(k)";
 
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
     div["div(phi,T)"]	=	pref+"Gauss linearUpwind grad(T)";
   }
@@ -132,7 +133,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
 
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
   {
     div["div((nuEff*dev2(T(grad(U)))))"]="Gauss linear"; // kOmegaSST2
   }
@@ -167,7 +168,7 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool buoyantPimpleFoamNumerics::isCompressible() const
 {
-  if (p_.boussinesqApproach)
+  if (p().boussinesqApproach)
     return false;
   else
     return true;

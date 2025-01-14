@@ -1,25 +1,20 @@
 #ifndef INTPARAMETERPARSER_H
 #define INTPARAMETERPARSER_H
 
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
 struct IntParameterParser
+    : public ParameterGenerator
 {
-    struct Data
-            : public ParserDataBase
-    {
         int value;
 
-        Data(int v, const std::string& d);
+        IntParameterParser(int v, const std::string& d);
 
-        void cppAddHeader(std::set<std::string>& headers) const override;
+        void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
-        std::string cppType(const std::string&) const override;
-
-        std::string cppParamType(const std::string& ) const override;
-
-        std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
-    };
+        std::string cppInsightType() const override;
+        std::string cppStaticType() const override;
+        std::string cppDefaultValueExpression() const override;
 
     declareType("int");
 
@@ -31,7 +26,8 @@ struct IntParameterParser
             std::make_shared<PDLParserRuleset::ParameterDataRule>(
 
                 ( qi::int_ >> ruleset.r_description_string )
-                [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2)) ]
+                [ qi::_val = phx::construct<ParameterGeneratorPtr>(
+                         phx::new_<IntParameterParser>(qi::_1, qi::_2)) ]
 
             )
         );

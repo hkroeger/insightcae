@@ -19,17 +19,16 @@ inherits FVNumerics::Parameters
 
 solverName = string "magneticFoam" "Name of the solver to use"
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     void init();
 
 public:
     declareType ( "magneticFoamNumerics" );
-    magneticFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    magneticFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 

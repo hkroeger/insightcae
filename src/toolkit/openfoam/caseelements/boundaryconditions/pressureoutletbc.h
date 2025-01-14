@@ -20,6 +20,7 @@ public:
 #include "pressureoutletbc__PressureOutletBC__Parameters.h"
 /*
 PARAMETERSET>>> PressureOutletBC Parameters
+inherits BoundaryCondition::Parameters
 
 prohibitInflow = bool true "Whether to clip velocities to zero in case of flow reversal"
 
@@ -71,11 +72,10 @@ behaviour = selectablesubset {{
 rho = double 1025.0 "Density"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    ParameterSet ps_;
 
 public:
     declareType ( "PressureOutletBC" );
@@ -84,7 +84,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& ps = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 

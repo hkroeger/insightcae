@@ -9,7 +9,7 @@ namespace insight
 class AnalysisParameterPropositions
 {
 public:
-    typedef std::function<ParameterSet(
+    typedef std::function<std::unique_ptr<ParameterSet>(
         const std::string&,
         const ParameterSet&)> propositionGeneratorFunction;
 
@@ -31,7 +31,8 @@ public:
      * @param currentParameterValues
      * @return
      */
-    static ParameterSet getCombinedPropositionsForParameter(
+    static std::unique_ptr<ParameterSet>
+    getCombinedPropositionsForParameter(
         const std::string& analysisName,
         const std::string& parameterPath,
         const ParameterSet& currentParameterValues );

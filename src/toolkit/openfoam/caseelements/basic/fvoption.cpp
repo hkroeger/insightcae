@@ -7,9 +7,8 @@ defineType(fvOption);
 
 fvOption::fvOption(
     OpenFOAMCase &c,
-    const std::string& name,
-    const ParameterSet &ps )
-    : OpenFOAMCaseElement(c, name, ps)
+    ParameterSetInput ip )
+    : OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {}
 
 
@@ -32,10 +31,8 @@ defineType ( cellSetFvOption );
 
 cellSetFvOption::cellSetFvOption(
     OpenFOAMCase& c,
-    const std::string& name,
-    const ParameterSet& ps )
-: fvOption(c, name, ps),
-    p_(ps)
+    ParameterSetInput ip )
+    : fvOption(c, ip.forward<Parameters>())
 {}
 
 void cellSetFvOption::addIntoFvOptionDictionary(
@@ -46,7 +43,7 @@ void cellSetFvOption::addIntoFvOptionDictionary(
     d["active"]=true;
     if (auto* tl =
         boost::get<Parameters::execution_timeLimited_type>(
-            &p_.execution))
+            &p().execution))
     {
         d["timeStart"]=tl->timeStart;
         d["duration"]=tl->duration;

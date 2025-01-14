@@ -12,9 +12,8 @@ defineType(potentialFreeSurfaceFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(potentialFreeSurfaceFoamNumerics);
 
 
-potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: unsteadyIncompressibleNumerics(c, ps, "p_gh"),
-  p_(ps)
+potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: unsteadyIncompressibleNumerics(c, ip.forward<Parameters>(), "p_gh")
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({0.0}), volField ) );
 //  OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({0.0}), volField ) );

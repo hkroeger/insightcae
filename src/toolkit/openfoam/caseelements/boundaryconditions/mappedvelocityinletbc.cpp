@@ -22,10 +22,12 @@ MappedVelocityInletBC::MappedVelocityInletBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps
+  ParameterSetInput ip
 )
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps)
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>() )
 {
  BCtype_="patch";
 }
@@ -35,8 +37,6 @@ MappedVelocityInletBC::MappedVelocityInletBC
 
 void MappedVelocityInletBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
 {
-  Parameters p(ps_);
-
   bndDict["nFaces"]=nFaces_;
   bndDict["startFace"]=startFace_;
 //   if (OFversion()>=210)
@@ -47,7 +47,7 @@ void MappedVelocityInletBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) 
         bndDict["sampleRegion"]="region0";
         bndDict["samplePatch"]="none";
         bndDict["offsetMode"]="uniform";
-        bndDict["offset"]=OFDictData::vector3(p.distance);
+        bndDict["offset"]=OFDictData::vector3(p().distance);
     //bndDict["transform"]= "rotational";
 //   }
 //   else
@@ -60,9 +60,8 @@ void MappedVelocityInletBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) 
 
 void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-    Parameters p(ps_);
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
+        p().phasefractions;
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
 
@@ -77,7 +76,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
             BC["fieldName"]="U";
             BC["setAverage"]=true;
             BC["interpolationScheme"]="cell";
-            BC["average"]=OFDictData::vector3(p.average);
+            BC["average"]=OFDictData::vector3(p().average);
             BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
         } else if (
             ( field.first=="T" )
@@ -85,7 +84,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p.T );
+            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p().T );
         } else if (
             ( ( field.first=="p" ) || isPrghPressureField(field) )
             &&
@@ -94,7 +93,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p.rho ) );
+            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p().rho ) );
         } else if
         (
             (

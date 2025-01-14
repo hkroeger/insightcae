@@ -23,11 +23,11 @@ IQDateTimeParameter::IQDateTimeParameter
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
         )
-    : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+    : IQSpecializedParameter<insight::DateTimeParameter>(
+          parent, psmodel, parameter, defaultParameterSet )
 {
 }
 
@@ -36,7 +36,7 @@ QString IQDateTimeParameter::valueText() const
 {
     return QString::fromStdString(
         boost::posix_time::to_simple_string(
-            dynamic_cast<const insight::DateTimeParameter&>(parameter())()
+            parameter()()
             ) );
 }
 
@@ -46,7 +46,6 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
     IQCADModel3DViewer *viewer)
 {
     auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
-    auto &dp = dynamic_cast<const insight::DateTimeParameter&>(parameter());
 
     QHBoxLayout *layout2=new QHBoxLayout;
     QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
@@ -55,7 +54,9 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
     auto*de = new QDateTimeEdit(editControlsContainer);
     de->setCalendarPopup(true);
     de->setDateTime(QDateTime::fromString(
-        QString::fromStdString(boost::posix_time::to_iso_extended_string(dp())),
+        QString::fromStdString(
+            boost::posix_time::to_iso_extended_string(
+                parameter()())),
         Qt::ISODate
         ) );
     layout2->addWidget(de);
@@ -68,8 +69,7 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
 
     auto applyFunction = [=]()
     {
-        auto &dp = dynamic_cast<insight::DateTimeParameter&>(this->parameterRef());
-        dp.set(boost::posix_time::from_iso_extended_string(
+        parameterRef().set(boost::posix_time::from_iso_extended_string(
             de->dateTime().toString(Qt::ISODate).toStdString()
             ));
     };
@@ -78,17 +78,17 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
     connect(apply, &QPushButton::pressed, applyFunction);
 
     // handle external value change
-    auto &p = dynamic_cast<insight::DateTimeParameter&>(this->parameterRef());
     ::disconnectAtEOL(
         layout,
-        p.valueChanged.connect(
+        parameterRef().valueChanged.connect(
             [=]()
             {
-                auto &p = dynamic_cast<const insight::DateTimeParameter&>(parameter());
                 QSignalBlocker sb(de);
                 de->setDateTime(
                     QDateTime::fromString(
-                        QString::fromStdString(boost::posix_time::to_iso_extended_string(p())),
+                        QString::fromStdString(
+                            boost::posix_time::to_iso_extended_string(
+                                parameter()()) ),
                         Qt::ISODate
                         ) );
             }

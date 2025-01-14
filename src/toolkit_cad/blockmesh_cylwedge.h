@@ -101,6 +101,7 @@ and the section will remain part of outerPatch."
  coordinates and the surface in between will be given the specified name."
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
@@ -110,9 +111,10 @@ and the section will remain part of outerPatch."
   private:
 
   public:
-    supplementedInputData(std::unique_ptr<Parameters> p,
-                          const boost::filesystem::path& workDir,
-                          ProgressDisplayer& progress = consoleProgressDisplayer );
+    supplementedInputData(
+          ParameterSetInput ip,
+          const boost::filesystem::path& workDir,
+          ProgressDisplayer& progress );
 
     arma::mat p0_, ex_, er_, ey_;
     Handle_Geom_Curve spine_;
@@ -121,14 +123,14 @@ and the section will remain part of outerPatch."
     arma::mat point_on_spine(double r) const;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData_WithoutParametersFunction(Parameters, supplementedInputData)
-#endif
+// #ifndef SWIG
+//   defineBaseClassWithSupplementedInputData_WithoutParametersFunction(Parameters, supplementedInputData)
+// #endif
 
 public:
     declareType ( "blockMeshDict_CylWedge" );
 
-    blockMeshDict_CylWedge ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_CylWedge ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     virtual void create_bmd();
 

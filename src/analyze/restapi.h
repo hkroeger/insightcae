@@ -18,7 +18,6 @@ class AnalyzeRESTServer
   public insight::TextProgressDisplayer
 {
   insight::AnalysisThread* analysisThread_;
-  insight::Analysis* analysis_;
   boost::filesystem::path inputFileParentPath_;
 
   boost::mutex mx_;
@@ -56,7 +55,7 @@ public:
       );
 
 
-  void setAnalysis(insight::Analysis* a, const boost::filesystem::path& inputFileParentPath);
+  void setAnalysis(const boost::filesystem::path& inputFileParentPath);
   void setSolverThread(insight::AnalysisThread* at);
   void setResults(insight::ResultSetPtr results);
   void setException(const insight::Exception& ex);

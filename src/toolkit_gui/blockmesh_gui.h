@@ -37,9 +37,12 @@ namespace bmd
 
 
 class TOOLKIT_GUI_EXPORT blockMeshDict_Box_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
+ : public CADParameterSetModelVisualizer
 {
 public:
+    using CADParameterSetModelVisualizer::CADParameterSetModelVisualizer;
+
+    std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() override;
     void recreateVisualizationElements() override;
 };
 
@@ -47,20 +50,25 @@ public:
 
 
 class TOOLKIT_GUI_EXPORT blockMeshDict_Cylinder_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
+ : public CADParameterSetModelVisualizer
 {
 public:
+    using CADParameterSetModelVisualizer::CADParameterSetModelVisualizer;
+
+    std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() override;
     void recreateVisualizationElements() override;
-    void setIcon(QIcon* i) override;
 };
 
 
 
 
 class TOOLKIT_GUI_EXPORT blockMeshDict_Sphere_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
+ : public CADParameterSetModelVisualizer
 {
 public:
+    using CADParameterSetModelVisualizer::CADParameterSetModelVisualizer;
+
+    std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() override;
     void recreateVisualizationElements() override;
 };
 

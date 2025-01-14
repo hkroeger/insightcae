@@ -63,7 +63,7 @@ public:
 
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
-        MakeDefaultGeometryParametersFunction mdpf);
+        const ConstrainedSketchParametersDelegate& pd );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
     dependencies() const override;

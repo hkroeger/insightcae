@@ -25,23 +25,26 @@ RemoteServer::Config::Config(const boost::filesystem::path& bp, int np)
 std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml_node<> *e)
 {
   std::shared_ptr<RemoteServer::Config> result;
-  string label(e->first_attribute("label")->value());
+  string label = getAttribute(*e, "label");
+  {
+      CurrentExceptionContext ex("reading configuration of remote server %s", label.c_str());
 
-  if (auto *ta = e->first_attribute("type"))
-  {
-    std::string t(ta->value());
-    if (t=="SSHLinux")
-    {
-      result = std::make_shared<SSHLinuxServer::Config>(e);
-    }
-    else if (t=="WSLLinux")
-    {
-      result = std::make_shared<WSLLinuxServer::Config>(e);
-    }
-  }
-  else // type SSH
-  {
-    result = std::make_shared<SSHLinuxServer::Config>(e);
+      if (auto* ta = e->first_attribute("type"))
+      {
+        std::string t(ta->value());
+        if (t=="SSHLinux")
+        {
+          result = std::make_shared<SSHLinuxServer::Config>(e);
+        }
+        else if (t=="WSLLinux")
+        {
+          result = std::make_shared<WSLLinuxServer::Config>(e);
+        }
+      }
+      else // type SSH
+      {
+        result = std::make_shared<SSHLinuxServer::Config>(e);
+      }
   }
 
   if (result)

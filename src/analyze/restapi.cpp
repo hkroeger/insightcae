@@ -157,8 +157,7 @@ AnalyzeRESTServer::AnalyzeRESTServer(
     const std::string& listenAddr, int port
     )
   : Wt::WServer(srvname.c_str()),
-    analysisThread_(nullptr),
-    analysis_(nullptr)
+    analysisThread_(nullptr)
 {
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
@@ -184,9 +183,8 @@ AnalyzeRESTServer::AnalyzeRESTServer(
 }
 
 
-void AnalyzeRESTServer::setAnalysis(insight::Analysis *a, const boost::filesystem::path& inputFileParentPath)
+void AnalyzeRESTServer::setAnalysis(const boost::filesystem::path& inputFileParentPath)
 {
-  analysis_=a;
   inputFileParentPath_=inputFileParentPath;
 }
 
@@ -372,14 +370,14 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
     if (stateSelection==Parameters)
     {
-        if (analysis_)
+        if (auto analysis = analysisThread_->analysis())
         {
             response.setStatus(200);
             response.setMimeType("application/xml");
-            analysis_->parameters().saveToStream(
+            analysis->parameters().saveToStream(
                 response.out(),
                 inputFileParentPath_,
-                analysis_->type() );
+                analysis->type() );
 
             return;
         }
@@ -399,7 +397,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     {
       response.setStatus(200);
       response.setMimeType("text/plain");
-      response.out() << analysis_->executionPath();
+      response.out() << analysisThread_->executionPath();
 
       return;
     }
@@ -517,9 +515,9 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         else if (action=="wnow")
         {
 
-          if (analysis_)
+          if (auto analysis = analysisThread_->analysis())
           {
-              std::ofstream f( (analysis_->executionPath()/"wnow").string() );
+              std::ofstream f( (analysis->executionPath()/"wnow").string() );
               f.close();
           }
 
@@ -530,9 +528,9 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnowandstop")
         {
-          if (analysis_)
+          if (auto analysis = analysisThread_->analysis())
           {
-              std::ofstream f( (analysis_->executionPath()/"wnowandstop").string() );
+              std::ofstream f( (analysis->executionPath()/"wnowandstop").string() );
               f.close();
           }
 

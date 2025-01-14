@@ -109,8 +109,8 @@ public:
       rapidxml::xml_node<>& node,
       boost::filesystem::path inputfilepath) override;
 
-  PathParameter* clonePathParameter() const;
-  Parameter* clone() const override;
+  std::unique_ptr<PathParameter> clonePathParameter() const;
+  std::unique_ptr<Parameter> clone() const override;
 
   void copyFrom(const Parameter& p) override;
   void operator=(const PathParameter& p);
@@ -170,8 +170,8 @@ public:
 
     void operator=(const DirectoryParameter& p);
 
-    Parameter* clone() const override;
-    DirectoryParameter* cloneDirectoryParameter() const;
+    std::unique_ptr<Parameter> clone() const override;
+    std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };
 
 

@@ -20,15 +20,13 @@ inherits cellSetFvOption::Parameters
 
 Ubar = vector (0 0 0) "Average velocity"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "PressureGradientSource" );
-    PressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    PressureGradientSource ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptions,
         OFdicts& dictionaries ) const override;

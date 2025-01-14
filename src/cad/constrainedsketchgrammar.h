@@ -19,6 +19,7 @@ namespace cad {
 class ConstrainedSketch;
 class ConstrainedSketchEntity;
 class ConstrainedSketchGeometry;
+class ConstrainedSketchParametersDelegate;
 
 struct ConstrainedSketchGrammar
     :  public ExtendedGrammar<qi::grammar<std::string::iterator, cad::parser::skip_grammar> >
@@ -89,7 +90,7 @@ public:
 
     ConstrainedSketchGrammar(
         std::shared_ptr<ConstrainedSketch> sk,
-        std::function<insight::ParameterSet(void)> mdpf,
+        const insight::cad::ConstrainedSketchParametersDelegate& pd,
         cad::parser::ISCADParser *iscadScriptRules = nullptr
         );
 

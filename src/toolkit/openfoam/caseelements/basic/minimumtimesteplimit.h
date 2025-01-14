@@ -15,18 +15,17 @@ public:
 #include "minimumtimesteplimit__minimumTimestepLimit__Parameters.h"
 /*
 PARAMETERSET>>> minimumTimestepLimit Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 minDT = double 1e-10 "Minimum time step size. If automatic time step adaption underruns this value, output is written and simulation is stopped."
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "minimumTimestepLimit" );
-    minimumTimestepLimit ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    minimumTimestepLimit ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category();

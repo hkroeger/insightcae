@@ -34,10 +34,9 @@ defineFactoryTable
         LIST(
             QObject* parent,
             IQParameterSetModel* psmodel,
-            const QString& name,
-            insight::Parameter& parameter,
+            insight::Parameter* parameter,
             const insight::ParameterSet& defaultParameterSet ),
-        LIST(parent, psmodel, name, parameter, defaultParameterSet)
+        LIST(parent, psmodel, parameter, defaultParameterSet)
         );
 
 
@@ -45,8 +44,7 @@ defineFactoryTable
 IQLabeledArrayElementParameterBase::IQLabeledArrayElementParameterBase(
     QObject *,
     IQParameterSetModel*,
-    const QString &,
-    insight::Parameter &,
+    insight::Parameter *,
     const insight::ParameterSet &)
 {}
 
@@ -76,21 +74,20 @@ createIQLabeledArrayElement(IQSpatialTransformationParameter, "spatialTransforma
 IQParameter *IQLabeledArrayElementParameterBase::create(
     QObject *parent,
     IQParameterSetModel* psmodel,
-    const QString &name,
-    insight::Parameter &p,
+    insight::Parameter *p,
     const insight::ParameterSet &defaultParameterSet )
 {
     IQParameter *np;
-    if (IQLabeledArrayElementParameterBase::has_factory(p.type()))
+    if (IQLabeledArrayElementParameterBase::has_factory(p->type()))
     {
         np=dynamic_cast<IQParameter*>(
-            IQLabeledArrayElementParameterBase::lookup(p.type(), parent, psmodel, name, p, defaultParameterSet)
+            IQLabeledArrayElementParameterBase::lookup(p->type(), parent, psmodel, p, defaultParameterSet)
             );
     }
     else
     {
         np=dynamic_cast<IQParameter*>(
-            new IQParameterLabeledArrayElement(parent, psmodel, name, p, defaultParameterSet)
+            new IQParameterLabeledArrayElement(parent, psmodel, p, defaultParameterSet)
             );
     }
 

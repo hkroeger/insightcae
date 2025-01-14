@@ -9,11 +9,10 @@ namespace insight {
 defineType(customDictEntries);
 addToOpenFOAMCaseElementFactoryTable(customDictEntries);
 
-customDictEntries::customDictEntries( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "", ps),
-  p_(ps)
+customDictEntries::customDictEntries( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {
-    name_="customDictEntries";
+    // name_="customDictEntries";
 }
 
 OFDictData::dict& getOrCreateSubDict(OFDictData::dict& d, std::string path)
@@ -40,7 +39,7 @@ OFDictData::dict& getOrCreateSubDict(OFDictData::dict& d, std::string path)
 
 void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  for (const auto& e: p_.entries)
+    for (const auto& e: p().entries)
     {
       OFDictData::dict& dict
         = dictionaries.lookupDict(e.dict);
@@ -62,7 +61,7 @@ void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
       parent[key]=e.value;
     }
 
-  for (const auto& e: p_.appendList)
+    for (const auto& e: p().appendList)
     {
       OFDictData::dict& dict
         = dictionaries.lookupDict(e.dict);

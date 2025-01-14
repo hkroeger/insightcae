@@ -20,28 +20,30 @@ public:
 #include "wallbc__WallBC__Parameters.h"
 /*
 PARAMETERSET>>> WallBC Parameters
+inherits BoundaryCondition::Parameters
 
 wallVelocity = vector (0 0 0) "Velocity of the wall surface"
 rotating = bool false "Whether the wall is rotating"
 CofR = vector (0 0 0) "Center of rotation"
 roughness_z0 = double 0 "Wall roughness height"
-meshmotion = dynamicclassconfig "MeshMotionBC::MeshMotionBC" default "NoMeshMotion" "Mesh motion properties at the boundary"
-phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
-heattransfer = dynamicclassconfig "HeatBC::HeatBC" default "Adiabatic" "Definition of the heat transfer through the wall"
 
+meshmotion = dynamicclassconfig "insight::MeshMotionBC::MeshMotionBC" default "NoMeshMotion" "Mesh motion properties at the boundary"
+phasefractions = dynamicclassconfig "insight::multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
+heattransfer = dynamicclassconfig "insight::HeatBC::HeatBC" default "Adiabatic" "Definition of the heat transfer through the wall"
+
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    ParameterSet ps_;
 
 public:
     declareType("WallBC");
 
     WallBC
     (
-        OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-        const ParameterSet &ps = Parameters::makeDefault()
+        OpenFOAMCase& c, const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = ParameterSetInput()
     );
 
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;

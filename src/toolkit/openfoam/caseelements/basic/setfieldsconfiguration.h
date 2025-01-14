@@ -15,6 +15,7 @@ public:
 #include "setfieldsconfiguration__setFieldsConfiguration__Parameters.h"
 /*
 PARAMETERSET>>> setFieldsConfiguration Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 defaultValues = array [ selectablesubset {{
 
@@ -59,16 +60,14 @@ regionSelectors = array [ selectablesubset {{
 
  }} box ]*1 "region selectors"
 
-
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "setFieldsConfiguration" );
-    setFieldsConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    setFieldsConfiguration ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

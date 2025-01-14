@@ -18,7 +18,7 @@ class CADEntityMultiSelection
 {
     Q_OBJECT
 
-    insight::ParameterSet commonParameters_, defaultCommonParameters_;
+    std::unique_ptr<insight::ParameterSet> commonParameters_, defaultCommonParameters_;
     IQVTKCADModel3DViewer& viewer_;
 
     QWidget *pew_;

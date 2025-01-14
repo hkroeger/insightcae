@@ -6,8 +6,8 @@
 
 namespace insight {
 
-FaNumerics::FaNumerics(OpenFOAMCase& c, const ParameterSet& p)
-: OpenFOAMCaseElement(c, "FaNumerics", p), p_(p)
+FaNumerics::FaNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+    : OpenFOAMCaseElement(c, /*"FaNumerics", */ip.forward<Parameters>())
 {
 }
 

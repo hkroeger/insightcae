@@ -149,15 +149,15 @@ std::set<std::string> Analysis::availableAnalysisTypes(
 {
     AnalysisLibraryLoader::analysisLibraries();
     std::set<std::string> al;
-    for (auto &f: *insight::Analysis::factories_)
+    for (auto f: insight::Analysis::createAnalysis_table().ToC())
     {
         if (restrictToCategories.size())
         {
             if (restrictToCategories.count(
-                    Analysis::categoryFor(f.first))<1)
+                    Analysis::categoryFor(f))<1)
                 continue;
         }
-        al.insert(f.first);
+        al.insert(f);
     }
     // std::transform(
     //             insight::Analysis::factories_->begin(),
@@ -168,6 +168,8 @@ std::set<std::string> Analysis::availableAnalysisTypes(
     // );
     return al;
 }
+
+
 
 
 

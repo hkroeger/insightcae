@@ -22,6 +22,7 @@
 #define SIMPLEPARAMETER_H
 
 #include "base/parameter.h"
+#include "base/rapidxml.h"
 
 #include "boost/date_time/gregorian/gregorian.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -99,9 +100,12 @@ public:
     }
 
 
-    Parameter* clone() const override
+    std::unique_ptr<Parameter> clone() const override
     {
-        return new SimpleParameter<T, N> ( value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_ );
+        return std::make_unique<SimpleParameter<T, N> >(
+            value_,
+            description().simpleLatex(),
+            isHidden(), isExpert(), isNecessary(), order() );
     }
 
 

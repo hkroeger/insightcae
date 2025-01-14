@@ -60,15 +60,9 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         }
         );
 
-    if (viz_)
+    if (hasVisualizer())
     {
-        insight::CurrentExceptionContext ex("connecting visualizer");
-
-        // there is a visualization generator available
-        connect(
-            viz_.get(), &insight::CADParameterSetVisualizer::updateSupplementedInputData,
-            this, &ParameterEditorWidget::updateSupplementedInputData
-            );
+        insight::CurrentExceptionContext ex("setting up 3D viewer");
 
         if (!display)
         {
@@ -98,19 +92,6 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
             display_=display;
             viewer_=display_->viewer();
         }
-
-        viz_->setModel(display_->model());
-
-        // {
-        //     QList<int> l;
-        //     l << 3300 << 6600;
-        //     if (viz_ && !display_)
-        //     {
-        //         l.append(6600);
-        //         l.append(0);
-        //     }
-        //     setSizes(l);
-        // }
     }
     else
     {
@@ -118,60 +99,62 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         viewer_=nullptr;
     }
 
-    QObject::connect( parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
-                     [this](const QModelIndex& index)
-                     {
-//                         model_->IQParameterSetModel::handleClick(
-//                             index, inputContents_,
-//                             display_ ? display_->viewer() : nullptr,
-//                             viz_.get() );
-                            if (index.isValid())
+    QObject::connect(
+        parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
+        [this](const QModelIndex& index)
+        {
+            if (index.isValid())
+            {
+                if (auto* p=IQParameterSetModel::parameterFromIndex(index))
+                {
+                    // remove existing controls first
+                    {
+                        // clear contents of widget with edit controls
+                        QList<QWidget*> widgets = inputContents_->findChildren<QWidget*>();
+                        foreach(QWidget* widget, widgets)
+                        {
+                            widget->deleteLater();
+                        }
+                        // remove old layout
+                        if (inputContents_->layout())
+                        {
+                            delete inputContents_->layout();
+                        }
+                    }
+
+                    // create new controls
+                    auto l = p->populateEditControls(
+                        inputContents_,
+                        viewer_ );
+
+
+                    if (viz_ && viewer_)
+                    {
+                        if (createGUIActions_)
+                        {
+                            auto cmdl=new QHBoxLayout;
+                            auto acts = createGUIActions_(
+                                p->get()->path(),
+                                inputContents_,
+                                viewer_,
+                                dynamic_cast<IQParameterSetModel*>(model_)
+                            );
+                            for (auto& act: acts)
                             {
-                                if (auto* p=IQParameterSetModel::parameterFromIndex(index))
-                                {
-                                    // remove existing controls first
-                                    {
-                                        // clear contents of widget with edit controls
-                                        QList<QWidget*> widgets = inputContents_->findChildren<QWidget*>();
-                                        foreach(QWidget* widget, widgets)
-                                        {
-                                            widget->deleteLater();
-                                        }
-                                        // remove old layout
-                                        if (inputContents_->layout())
-                                        {
-                                            delete inputContents_->layout();
-                                        }
-                                    }
-
-                                    // create new controls
-                                    auto l = p->populateEditControls(
-                                        inputContents_,
-                                        viewer_ );
-
-
-                                    if (viz_ && viewer_)
-                                    {
-                                        auto cmdl=new QHBoxLayout;
-                                        auto acts = viz_->createGUIActions(
-                                            p->path().toStdString(),
-                                            inputContents_,
-                                            viewer_);
-                                        for (auto& act: acts)
-                                        {
-                                            auto btn = new QPushButton(act.icon, act.label);
-                                            connect(btn, &QPushButton::clicked, btn,
-                                                    act.action);
-                                            cmdl->addWidget(btn);
-                                        }
-                                        l->addLayout(cmdl);
-                                    }
-
-                                    l->addStretch();
-                                }
+                                auto btn = new QPushButton(act.icon, act.label);
+                                connect(btn, &QPushButton::clicked, btn,
+                                        act.action);
+                                cmdl->addWidget(btn);
                             }
-                     }
-                     );
+                            l->addLayout(cmdl);
+                        }
+                    }
+
+                    l->addStretch();
+                }
+            }
+        }
+        );
 
 }
 
@@ -208,14 +191,16 @@ public:
 ParameterEditorWidget::ParameterEditorWidget
 (
   QWidget *parent,
-  insight::ParameterSetVisualizerPtr viz,
+  insight::PECADParameterSetVisualizerBuilder psvb,
+  insight::CADParameterSetModelVisualizer::CreateGUIActionsFunctions::Function cgaf,
   insight::ParameterSet_ValidatorPtr vali,
   ParameterSetDisplay* display
 )
 : QSplitter(Qt::Horizontal, parent),
   model_(nullptr),
   vali_(vali),
-  viz_(std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz)),
+    createVisualizer_(psvb),
+    createGUIActions_(cgaf),
   firstShowOccurred_(false)
 {
 
@@ -263,29 +248,6 @@ ParameterEditorWidget::ParameterEditorWidget
         f.setPixelSize(QFontInfo(f).pixelSize()*1.5);
         overlayText_->setFont(f);
         overlayText_->hide();
-
-        connect(
-            viz_.get(), &insight::CADParameterSetVisualizer::visualizationCalculationFinished, viz_.get(),
-            [this](bool success)
-            { if (success) overlayText_->hide(); } );
-
-        if (viz_)
-        {
-            connect(
-                viz_.get(), &insight::CADParameterSetVisualizer::visualizationComputationError, viz_.get(),
-                [this](insight::Exception ex)
-                {
-                    overlayText_->setTextFormat(Qt::MarkdownText);
-                    overlayText_->setText(QString::fromStdString(
-                        "The visualization could not be generated.\n\n"
-                        "Reason:\n\n"
-                        "**"+ex.description()+"**\n\n"+
-                        boost::replace_all_copy(ex.context(), "\n", "\n\n")
-                        ));
-                    overlayText_->show();
-                }
-            );
-        }
     }
 }
 
@@ -316,7 +278,6 @@ ParameterEditorWidget::ParameterEditorWidget
     : QSplitter(Qt::Horizontal, parent),
     model_(nullptr),
     vali_(nullptr),
-    viz_(nullptr),
     parameterTreeView_(parameterTreeView),
     inputContents_(contentEditorFrame),
     firstShowOccurred_(false),
@@ -330,7 +291,7 @@ ParameterEditorWidget::ParameterEditorWidget
 
 bool ParameterEditorWidget::hasVisualizer() const
 {
-    return bool(viz_);
+    return bool(createVisualizer_);
 }
 
 
@@ -350,16 +311,22 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
         this, &ParameterEditorWidget::onParameterSetChanged );
 
     parameterTreeView_->setModel(model_);
-    if (viz_)
+    parameterTreeView_->setItemDelegate(
+        new IQParameterGridViewSelectorDelegate);
+
+    if (display_)
     {
-        if (auto *psm = dynamic_cast<IQParameterSetModel*>(model_))
-            viz_->setParameterSetModel(psm);
+        display_->model()->setAssociatedParameterSetModel(model_);
     }
-    if (display_) display_->model()->setAssociatedParameterSetModel(model_);
 
     parameterTreeView_->expandToDepth(2);
     parameterTreeView_->resizeColumnToContents(0);
     parameterTreeView_->resizeColumnToContents(1);
+}
+
+bool ParameterEditorWidget::hasViewer() const
+{
+    return viewer_!=nullptr;
 }
 
 
@@ -373,13 +340,56 @@ ParameterEditorWidget::CADViewer *ParameterEditorWidget::viewer() const
 
 
 
+void ParameterEditorWidget::rebuildVisualization()
+{
+    if (hasVisualizer())
+    {
+        if (viz_ && !viz_->isFinished())
+        {
+            viz_->stopVisualizationComputation();
+            viz_->deleteLater();
+        }
+
+
+        viz_ = createVisualizer_(
+                this,
+                dynamic_cast<IQParameterSetModel*>(model_)
+            );
+
+        connect(
+            viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
+            this, &ParameterEditorWidget::updateSupplementedInputData
+            );
+        connect(
+            viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
+            [this](bool success)
+            { if (success) overlayText_->hide(); } );
+
+        connect(
+            viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
+            [this](insight::Exception ex)
+            {
+                overlayText_->setTextFormat(Qt::MarkdownText);
+                overlayText_->setText(QString::fromStdString(
+                    "The visualization could not be generated.\n\n"
+                    "Reason:\n\n"
+                    "**"+ex.description()+"**\n\n"+
+                    boost::replace_all_copy(ex.context(), "\n", "\n\n")
+                    ));
+                overlayText_->show();
+            }
+        );
+
+        viz_->launch(display_->model());
+    }
+}
+
+
+
 void ParameterEditorWidget::onParameterSetChanged()
 {
-  if (viz_)
-  {
-    viz_->update(getParameterSet(model_));
-  }
-  Q_EMIT parameterSetChanged();
+    rebuildVisualization();
+    Q_EMIT parameterSetChanged();
 }
 
 

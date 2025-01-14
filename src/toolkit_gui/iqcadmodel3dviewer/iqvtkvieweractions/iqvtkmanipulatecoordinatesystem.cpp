@@ -14,10 +14,10 @@
 #include <vtkRegularPolygonSource.h>
 
 IQVTKManipulateCoordinateSystem::IQVTKManipulateCoordinateSystem(
-    IQVTKCADModel3DViewer &viewWidget,
+    ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
     const insight::CoordinateSystem& cs,
     bool showOnlyX )
-  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget),
+  : ViewWidgetAction<IQVTKCADModel3DViewer>(parent, true),
     cs_(cs),
     showOnlyX_(showOnlyX)
 {

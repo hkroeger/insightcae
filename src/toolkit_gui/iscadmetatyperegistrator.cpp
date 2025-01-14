@@ -12,6 +12,7 @@ ISCADMetaTypeRegistrator::ISCADMetaTypeRegistrator()
   qRegisterMetaType<Optional_AIS_DisplayMode>("boost::variant<boost::blank,AIS_DisplayMode>");
   qRegisterMetaType<QVector<int> >("QVector<int>");
   qRegisterMetaType<AIS_DisplayMode>("AIS_DisplayMode");
+  qRegisterMetaType<Optional_FeatureVisualizationStyle>("boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>");
 }
 
 ISCADMetaTypeRegistrator iscadmetatyperegistrator;

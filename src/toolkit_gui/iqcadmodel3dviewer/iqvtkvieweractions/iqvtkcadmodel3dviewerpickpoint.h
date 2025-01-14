@@ -13,7 +13,7 @@ class IQVTKCADModel3DViewerPickPoint
 
 public:
     IQVTKCADModel3DViewerPickPoint(
-        IQVTKCADModel3DViewer &viewWidget );
+        ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent );
 
     ~IQVTKCADModel3DViewerPickPoint();
 

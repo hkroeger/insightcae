@@ -111,7 +111,8 @@ public Q_SLOTS:
 
 
 class TOOLKIT_GUI_EXPORT IQVTKCADModel3DViewer
-        : public IQCADModel3DViewer
+    : public IQCADModel3DViewer,
+      public ViewWidgetActionHost<IQVTKCADModel3DViewer>
 {
     Q_OBJECT
 
@@ -340,7 +341,6 @@ private:
 
 
     NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
-    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr currentAction_;
 
     const DisplayedEntity* findDisplayedItem(
             const CADEntity& item,
@@ -392,9 +392,7 @@ public:
     QSize sizeHint() const override;
     QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
 
-    void setDefaultAction();
-    bool isDefaultAction();
-    bool launchAction(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
+    ViewWidgetActionPtr setupDefaultAction() override;
 
     const Bounds& sceneBounds() const;
 
@@ -465,8 +463,8 @@ public:
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
     void editSketch(
         const insight::cad::ConstrainedSketch& sk,
-        const insight::ParameterSet& defaultGeometryParameters,
-        SetSketchEntityAppearanceCallback saac,
+        std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+        const std::string& presentationDelegateKey,
         SketchCompletionCallback onAccept,
         SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
         ) override;

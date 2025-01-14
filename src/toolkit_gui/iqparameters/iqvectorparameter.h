@@ -8,7 +8,8 @@
 
 #include "base/parameters/simpleparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQVectorParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQVectorParameter
+    : public IQSpecializedParameter<insight::VectorParameter>
 {
 public:
   declareType(insight::VectorParameter::typeName_());
@@ -18,9 +19,8 @@ public:
   IQVectorParameter
   (
       QObject* parent,
-        IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& parameter,
+      IQParameterSetModel* psmodel,
+      insight::Parameter* parameter,
       const insight::ParameterSet& defaultParameterSet
   );
 

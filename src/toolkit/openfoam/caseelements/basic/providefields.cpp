@@ -9,11 +9,9 @@ namespace insight {
 defineType(provideFields);
 addToOpenFOAMCaseElementFactoryTable(provideFields);
 
-provideFields::provideFields( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "provideFields", ps),
-  p_(ps)
-{
-}
+provideFields::provideFields( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
+{}
 
 void provideFields::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -27,7 +25,7 @@ void provideFields::addIntoDictionaries(OFdicts& dictionaries) const
   fod["readFields"]=rf;
 
   OFDictData::dict csf;
-  for (const auto& c: p_.createScalarFields)
+  for (const auto& c: p().createScalarFields)
   {
     OFDictData::dict sf;
     sf["dimensions"]=boost::str(boost::format("[%d %d %d %d 0]")

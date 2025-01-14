@@ -9,11 +9,10 @@ namespace insight {
 defineType(SRFoption);
 addToOpenFOAMCaseElementFactoryTable(SRFoption);
 
-SRFoption::SRFoption( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "", ps),
-  p_(ps)
+SRFoption::SRFoption( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {
-    name_="SRFoption";
+    // name_="SRFoption";
 }
 
 
@@ -30,11 +29,11 @@ void SRFoption::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& SRFProperties=dictionaries.lookupDict("constant/SRFProperties");
   SRFProperties["SRFModel"]="rpm";
-  SRFProperties["origin"]=OFDictData::vector3(p_.origin);
-  SRFProperties["axis"]=OFDictData::vector3( p_.axis/arma::norm(p_.axis,2) );
+  SRFProperties["origin"]=OFDictData::vector3(p().origin);
+  SRFProperties["axis"]=OFDictData::vector3( p().axis/arma::norm(p().axis,2) );
 
   OFDictData::dict& rpmCoeffs=SRFProperties.subDict("rpmCoeffs");
-  rpmCoeffs["rpm"]=p_.rpm;
+  rpmCoeffs["rpm"]=p().rpm;
 }
 
 } // namespace insight

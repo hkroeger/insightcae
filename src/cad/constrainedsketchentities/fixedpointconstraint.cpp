@@ -1,6 +1,8 @@
 #include "fixedpointconstraint.h"
 
 
+#include "base/parameters/subsetparameter.h"
+#include "base/parameterset.h"
 #include "vtkCaptionActor2D.h"
 #include "vtkTextActor.h"
 #include "vtkTextProperty.h"
@@ -21,12 +23,12 @@ FixedPointConstraint::FixedPointConstraint(
       p_(p)
 {
     auto c=p->coords2D();
-    changeDefaultParameters(
-        insight::ParameterSet({
-           {"x", std::make_shared<insight::DoubleParameter>(c(0), "x location")},
-           {"y", std::make_shared<insight::DoubleParameter>(c(1), "y location")}
-        })
-        );
+
+    insight::ParameterSet::Entries ps;
+    ps.emplace("x", std::make_unique<insight::DoubleParameter>(c(0), "x location"));
+    ps.emplace("y", std::make_unique<insight::DoubleParameter>(c(1), "y location"));
+
+    changeDefaultParameters( *insight::ParameterSet::create(std::move(ps), "") );
 }
 
 std::vector<vtkSmartPointer<vtkProp> >
@@ -101,7 +103,7 @@ addToStaticFunctionTable(ConstrainedSketchEntity, FixedPointConstraint, addParse
 
 void FixedPointConstraint::addParserRule(
     ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
+    const ConstrainedSketchParametersDelegate& pd )
 {
     using namespace insight::cad;
     namespace qi=boost::spirit::qi;
@@ -120,6 +122,7 @@ void FixedPointConstraint::addParserRule(
                  &FixedPointConstraint::create<SketchPointPtr, const std::string&>,
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2), qi::_3
                  ),
+                phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );

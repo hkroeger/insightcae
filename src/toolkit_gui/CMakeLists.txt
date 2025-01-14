@@ -125,6 +125,8 @@ set(toolkit_gui_SRCS
     iqremoteexecutionstate.h iqremoteexecutionstate.cpp
 
     iqparametersetmodel.h iqparametersetmodel.cpp
+    iqfilteredparametersetmodel.h iqfilteredparametersetmodel.cpp
+
     iqresultsetfiltermodel.h iqresultsetfiltermodel.cpp
     iqparameter.cpp iqparameter.h
     iqparameters/iqsubsetparameter.h iqparameters/iqsubsetparameter.cpp

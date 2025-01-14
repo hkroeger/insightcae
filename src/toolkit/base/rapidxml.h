@@ -2,8 +2,12 @@
 #define INSIGHT_RAPIDXML_H
 
 #include <string>
+
+#include <armadillo>
 #include "base/boost_include.h"
 
+#include "base/exception.h"
+#include "boost/lexical_cast.hpp"
 #include "rapidxml/rapidxml.hpp"
 
 
@@ -39,6 +43,15 @@ void appendAttribute(
     );
 }
 
+
+
+std::string
+getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+
+
+std::shared_ptr<std::string>
+getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+
 std::reference_wrapper<rapidxml::xml_node<> >
 appendRootNode(
     rapidxml::xml_document<>& doc,
@@ -56,6 +69,35 @@ struct XMLDocument
 {
     XMLDocument(const boost::filesystem::path& file);
 };
+
+
+rapidxml::xml_node<> *findNode(
+    rapidxml::xml_node<>& father,
+    const std::string& name,
+    const std::string& typeName
+    );
+
+template<class T = std::string>
+T getAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attrLabel )
+{
+    auto attr = node.first_attribute(attrLabel.c_str());
+
+    insight::assertion(
+        bool(attr),
+        "could not find attribute \"%s\"", attrLabel.c_str());
+
+    return boost::lexical_cast<T>(attr->value());
+}
+
+
+void writeMatToXMLNode(
+    const arma::mat& matrix,
+    rapidxml::xml_document< char >& doc,
+    rapidxml::xml_node< char >& node
+    );
+
 
 
 } // namespace insight

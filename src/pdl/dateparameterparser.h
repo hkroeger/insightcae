@@ -2,27 +2,22 @@
 #define DATEPARAMETERPARSER_H
 
 #include "boost/date_time/gregorian/parsers.hpp"
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
 #include "boost/date_time/gregorian_calendar.hpp"
 
-struct DateParameterParser
+struct DateGenerator
+    : public ParameterGenerator
 {
-    struct Data
-        : public ParserDataBase
-    {
         boost::gregorian::date value;
 
-        Data(boost::gregorian::date v, const std::string& d);
+        DateGenerator(boost::gregorian::date v, const std::string& d);
 
-        void cppAddHeader(std::set<std::string>& headers) const override;
+        void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
-        std::string cppType(const std::string&) const override;
-
-        std::string cppParamType(const std::string& ) const override;
-
-        std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
-    };
+        std::string cppInsightType() const override;
+        std::string cppStaticType() const override;
+        std::string cppDefaultValueExpression() const override;
 
     declareType("date");
 
@@ -36,7 +31,8 @@ struct DateParameterParser
                 ( qi::as_string[qi::raw[ qi::int_ >> '-' >> qi::int_ >> '-' >> qi::int_]]
                    >> ruleset.r_description_string )
                     [ std::cout<<"'"<<qi::_1<<"'"<<std::endl,
-                     qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(
+                     qi::_val = phx::construct<ParameterGeneratorPtr>(
+                        phx::new_<DateGenerator>(
                          phx::bind(&boost::gregorian::from_simple_string, qi::_1),
                          qi::_2)) ]
 

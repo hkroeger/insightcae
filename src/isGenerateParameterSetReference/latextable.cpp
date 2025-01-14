@@ -105,7 +105,7 @@ void generateLatexTable(
     auto lxlabel=SimpleLatex(label).toLaTeX();
     auto lxdesc=p->description().toLaTeX();
 
-    if (const auto* subp = dynamic_cast<const SubsetParameter*>(&*p))
+    if (const auto* subp = dynamic_cast<const ParameterSet*>(&*p))
     {
       generateLatexTable(
             doc,
@@ -150,7 +150,7 @@ void generateLatexTable(
     }
     else if (const auto* subarr = dynamic_cast<const ArrayParameter*>(&*p))
     {
-        if (const auto* subp = dynamic_cast<const SubsetParameter*>(&subarr->defaultValue()))
+        if (const auto* subp = dynamic_cast<const ParameterSet*>(&subarr->defaultValue()))
         {
             generateLatexTable(
                   doc,

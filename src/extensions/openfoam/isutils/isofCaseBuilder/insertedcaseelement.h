@@ -8,55 +8,28 @@
 #include <string>
 
 #ifndef Q_MOC_RUN
-#include "base/parametersetvisualizer.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/caseelements/boundarycondition.h"
 #endif
 
 
-namespace insight {
-class MultiCADParameterSetVisualizer;
-}
-
-class CaseElementData : public QObject
-{
-  Q_OBJECT
-
-protected:
-  std::string type_name_;
-  insight::ParameterSet curp_;
-
-  insight::MultiCADParameterSetVisualizer* mv_;
-  insight::ParameterSetVisualizerPtr viz_;
-
-public:
-  CaseElementData(
-      const std::string& type_name,
-      insight::MultiCADParameterSetVisualizer* d,
-      QObject* parent=nullptr );
-
-  ~CaseElementData();
-
-  inline insight::ParameterSet& parameters() { return curp_; }
-  virtual const insight::ParameterSet defaultParameters() const;
-  inline const insight::ParameterSet& parameters() const { return curp_; }
-  inline const std::string& type_name() const { return type_name_; }
-
-  insight::ParameterSetVisualizerPtr visualizer();
-  insight::MultiCADParameterSetVisualizer* multiVisualizer() const;
-  void updateVisualization();
-};
+#include "caseelementdata.h"
 
 
 
 class InsertedCaseElement
 : public CaseElementData
 {
+protected:
+virtual
+    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function
+    getVisualizerFactoryFunction() override;
 
 public:
     InsertedCaseElement(
         const std::string& type_name,
-        insight::MultiCADParameterSetVisualizer* d,
+        insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+        MultivisualizationGenerator* visGen,
         QObject* parent=nullptr );
 
     insight::OpenFOAMCaseElement* createElement(insight::OpenFOAMCase& c) const;

@@ -27,38 +27,52 @@ namespace insight
 
 
 defineType(CaseElement);
-defineStaticFunctionTableWithArgs( CaseElement, isInConflict, bool, LIST(const insight::CaseElement& e), LIST(e) );
+defineStaticFunctionTableWithArgs(
+    CaseElement,
+    isInConflict, bool,
+    LIST(const insight::CaseElement& e),
+    LIST(e)
+    );
 
-CaseElement::CaseElement(Case& c, const std::string& name, const ParameterSet& ps)
-: name_(name),
-  case_(c),
-  ps_(ps)
+CaseElement::CaseElement(Case& c, ParameterSetInput ip)
+: case_(c),
+    p_(ip.forward<Parameters>())
 {
 
 }
 
 CaseElement::CaseElement(const CaseElement& other)
-: name_(other.name_),
-  case_(other.case_),
-  ps_(other.ps_)
+: case_(other.case_),
+    p_(other.p_.clone())
 {
 
 }
 
 CaseElement::~CaseElement()
-{
+{}
 
+
+
+// void CaseElement::rename(const std::string& name)
+// {
+//   name_=name;
+// }
+
+
+// const ParameterSet& CaseElement::parameters() const
+// {
+//   return ps_;
+// }
+
+const Case& CaseElement::get_case() const
+{
+    return case_;
 }
 
-void CaseElement::rename(const std::string& name)
+
+Case& CaseElement::caseRef()
 {
-  name_=name;
-}
-
-
-const ParameterSet& CaseElement::parameters() const
-{ 
-  return ps_;
+    return case_;
 }
 
 

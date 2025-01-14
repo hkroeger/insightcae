@@ -61,10 +61,10 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
                   }
                   );
 
-              launchChildAction(sel2);
+              launchAction(sel2);
           }
       }
       );
 
-  launchChildAction(sel);
+  launchAction(sel);
 }

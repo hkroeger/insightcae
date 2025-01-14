@@ -80,7 +80,9 @@ using namespace boost::assign;
 namespace insight 
 {
 
-addToAnalysisFactoryTable(InternalPressureLoss);
+
+defineType(InternalPressureLoss);
+Analysis::Add<InternalPressureLoss> addInternalPressureLoss;
 
 
 void InternalPressureLoss::modifyDefaults(ParameterSet& p)
@@ -97,15 +99,15 @@ void InternalPressureLoss::modifyDefaults(ParameterSet& p)
 
 
 InternalPressureLoss::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
+    ParameterSetInput ip,
     const boost::filesystem::path &executionPath,
     ProgressDisplayer &prg )
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
+    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, prg )
 {
   auto& p=this->p();
 
 
-  stldir_=ExternalGeometryFile::geometryDir(OFEs::get(p.run.OFEname), executionPath);
+  stldir_=snappyHexMeshFeats::geometryDir(OFEs::get(p.run.OFEname), executionPath);
   fn_inlet_="inlet";
   fn_outlet_="outlet";
 
@@ -179,14 +181,14 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
       boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
           &p.operation.thermalTreatment))
   {
-      globalTmin=globalTmax=thermsolve->initialInternalTemperature*si::degK;
+      globalTmin=globalTmax=double(thermsolve->initialInternalTemperature)*si::degK;
       auto updateTmima = [&](si::Temperature T)
       {
           globalTmin=std::min(globalTmin, T);
           globalTmin=std::min(globalTmin, T);
       };
 
-      updateTmima(thermsolve->inletTemperature*si::degK);
+      updateTmima(double(thermsolve->inletTemperature)*si::degK);
 
       for (auto& wbc: thermsolve->wallBCs)
       {
@@ -195,7 +197,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
               boost::get<Parameters::operation_type::thermalTreatment_solve_type::wallBCs_default_fixedTemperature_type>(
                   &wbc.second))
           {
-              updateTmima(wallfixedT->wallTemperature*si::degK);
+              updateTmima(double(wallfixedT->wallTemperature)*si::degK);
           }
       }
 
@@ -218,15 +220,9 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
 
 
 
-InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
-: OpenFOAMAnalysis
-  (
-    "Internal Pressure Loss",
-    "Determination of internal pressure loss by CFD a simulation",
-    ps, exepath
-  ),
-  parameters_(new supplementedInputData(std::make_unique<Parameters>(ps), exepath, pd))
-  // default values for derived parameters
+InternalPressureLoss::InternalPressureLoss(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMAnalysis(sp)
 {}
 
 
@@ -319,35 +315,35 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
             snappyHexMeshFeats::FeaturePtr(
                 new snappyHexMeshFeats::Geometry(
                     snappyHexMeshFeats::Geometry::Parameters()
-                       .set_name(w.first)
                        .set_minLevel(p.mesh.minLevel)
                        .set_maxLevel(p.mesh.maxLevel)
                        .set_nLayers(p.mesh.nLayers)
                        .set_scale(s)
                        .set_fileName(make_filepath(fn))
+                       .set_name(w.first)
                    )));
     }
 
     sp().inlet_->saveAs(executionPath()/sp().stldir_/(sp().fn_inlet_+".stlb"));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-      .set_name("inlet")
       .set_minLevel(p.mesh.minLevel)
       .set_maxLevel(p.mesh.maxLevel)
       .set_nLayers(0)
       .set_scale(s)
 
       .set_fileName(make_filepath(executionPath()/sp().stldir_/(sp().fn_inlet_+".stlb")))
+      .set_name("inlet")
     )));
 
     sp().outlet_->saveAs(executionPath()/sp().stldir_/(sp().fn_outlet_+".stlb"));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-      .set_name("outlet")
       .set_minLevel(p.mesh.minLevel)
       .set_maxLevel(p.mesh.maxLevel)
       .set_nLayers(0)
       .set_scale(s)
 
       .set_fileName(make_filepath(executionPath()/sp().stldir_/(sp().fn_outlet_+".stlb")))
+      .set_name("outlet")
     )));
 
 
@@ -627,7 +623,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
   ++ap;
 
     double delta_p=
-      p_vs_t(p_vs_t.n_rows-1,1) * (numerics.isCompressible()? 1.0 : p.fluid.rho)
+      p_vs_t(p_vs_t.n_rows-1,1) * (numerics.isCompressible()? 1.0 : double(p.fluid.rho))
        -
       sp().pAmbient_;
 
@@ -1106,15 +1102,14 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 RangeParameterList rpl_InternalPressureLossCharacteristics = { "operation/Q" };
 
 
-addToAnalysisFactoryTable(InternalPressureLossCharacteristics);
+defineType(InternalPressureLossCharacteristics);
+Analysis::Add<InternalPressureLossCharacteristics> addInternalPressureLossCharacteristics;
 
 
 InternalPressureLossCharacteristics::InternalPressureLossCharacteristics(
-    const ParameterSet &ps,
-    const path &exepath,
-    ProgressDisplayer &pd )
+    const std::shared_ptr<supplementedInputDataBase>& sp  )
 : OpenFOAMParameterStudy<InternalPressureLoss,rpl_InternalPressureLossCharacteristics>(
-        typeName, "Internal pressure loss calculation for multiple volume fluxes", ps, exepath, pd )
+          sp )
 {}
 
 

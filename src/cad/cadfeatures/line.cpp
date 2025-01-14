@@ -21,6 +21,7 @@
 
 #include "line.h"
 #include "base/exception.h"
+#include "boost/phoenix/core/reference.hpp"
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -122,7 +123,9 @@ void Line::generateScriptCommand(
 
 
 
-void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction mdpf)
+void Line::addParserRule(
+    ConstrainedSketchGrammar &ruleset,
+    const ConstrainedSketchParametersDelegate& pd )
 {
     namespace qi=boost::spirit::qi;
     ruleset.entityRules.add
@@ -136,10 +139,14 @@ void Line::addParserRule(ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryP
              > ruleset.r_parameters > ')'
             )
             [   qi::_a = phx::bind(
-                 &Line::create<VectorPtr, VectorPtr, bool, const std::string&>, qi::_2, qi::_3, false, qi::_4),
-                phx::bind(&ConstrainedSketchEntity::changeDefaultParameters, qi::_a, phx::bind(mdpf)),
-                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, boost::filesystem::path(".")),
-                qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
+                 &Line::create<VectorPtr, VectorPtr, bool, const std::string&>,
+                    qi::_2, qi::_3, false, qi::_4),
+                phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters,
+                       &pd, phx::ref(*qi::_a) ),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet,
+                       qi::_a, qi::_5, boost::filesystem::path(".")),
+                qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(
+                        qi::_1, qi::_a) ]
         );
 }
 

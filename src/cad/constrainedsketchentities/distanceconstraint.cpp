@@ -46,12 +46,10 @@ DistanceConstraint::DistanceConstraint(
     Distance(p1, p2, distanceAlong),
     planeNormal_(planeNormal)
 {
-    changeDefaultParameters(
-        ParameterSet({
-            {"dimLineOfs", std::make_shared<DoubleParameter>(1., "dimension line offset")},
-            {"arrowSize", std::make_shared<DoubleParameter>(1., "arrow size")}
-        })
-        );
+    ParameterSet::Entries e;
+    e.emplace("dimLineOfs", std::make_unique<DoubleParameter>(1., "dimension line offset"));
+    e.emplace("arrowSize", std::make_unique<DoubleParameter>(1., "arrow size"));
+    changeDefaultParameters(*ParameterSet::create(std::move(e), ""));
 }
 
 
@@ -198,11 +196,12 @@ FixedDistanceConstraint::FixedDistanceConstraint(
     )
     : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
 {
-    auto ps = defaultParameters();
-    ps.extend(ParameterSet({
-        {"distance", std::make_shared<DoubleParameter>(calcDistance(), "target value")}
-    }));
-    changeDefaultParameters(ps);
+    auto ps = defaultParameters().cloneSubset();
+    ps->insert(
+        "distance",
+        std::make_unique<DoubleParameter>(
+            calcDistance(), "target value") );
+    changeDefaultParameters(*ps);
 }
 
 
@@ -256,7 +255,8 @@ void FixedDistanceConstraint::generateScriptCommand(
 
 
 void FixedDistanceConstraint::addParserRule(
-    ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction)
+    ConstrainedSketchGrammar &ruleset,
+    const ConstrainedSketchParametersDelegate& pd )
 {
     namespace qi=boost::spirit::qi;
     namespace phx=boost::phoenix;
@@ -278,6 +278,7 @@ void FixedDistanceConstraint::addParserRule(
                      qi::_2, qi::_3,
                      phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
                      qi::_5, qi::_4 ),
+                 phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
@@ -376,7 +377,7 @@ void LinkedDistanceConstraint::generateScriptCommand(
 
 void LinkedDistanceConstraint::addParserRule(
     ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
+    const ConstrainedSketchParametersDelegate& pd )
 {
     if (ruleset.iscadScriptRules)
     {
@@ -413,6 +414,7 @@ void LinkedDistanceConstraint::addParserRule(
                          qi::_2, qi::_3, qi::_b,
                          phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
                          qi::_5, qi::_4 ),
+                     phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, pd, *qi::_a),
                      phx::bind(&ConstrainedSketchEntity::parseParameterSet,
                                qi::_a, qi::_6, boost::filesystem::path(".")),
                      qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(

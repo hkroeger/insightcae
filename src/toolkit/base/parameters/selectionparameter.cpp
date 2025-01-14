@@ -6,25 +6,75 @@
 namespace insight
 {
 
+bool SelectionParameterInterface::contains(const std::string &value) const
+{
+    auto l = selectionKeys();
+    return ( std::find(l.begin(), l.end(), value) != l.end() );
+}
 
+int SelectionParameterInterface::indexOfSelection(const std::string& key) const
+{
+    auto keys=selectionKeys();
+    for (auto s: boost::adaptors::index(keys))
+    {
+        if (s.value()==key)
+            return s.index();
+    }
+    return -1;
+}
+
+int SelectionParameterInterface::selectionIndex() const
+{
+    return indexOfSelection(selection());
+}
+
+void SelectionParameterInterface::setSelectionFromIndex(int idx)
+{
+    auto keys=selectionKeys();
+    if ((idx>=0) && (idx<keys.size()))
+    {
+        auto i=keys.begin();
+        std::advance(i, idx);
+        setSelection(*i);
+    }
+    else
+        throw insight::Exception(
+            "index %d out of range 0 ... %d",
+            idx, keys.size() );
+}
+
+std::string
+SelectionParameterInterface::iconPathForKey(
+    const std::string &key ) const
+{
+    return std::string();
+}
 
 
 defineType(SelectionParameter);
 addToFactoryTable(Parameter, SelectionParameter);
 
-SelectionParameter::SelectionParameter( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: SimpleParameter< int , IntName>(-1, description, isHidden, isExpert, isNecessary, order)
+SelectionParameter::SelectionParameter(
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
+: IntParameter(-1, description, isHidden, isExpert, isNecessary, order)
 {
 }
 
-SelectionParameter::SelectionParameter(const int& value, const SelectionParameter::ItemList& items, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: SimpleParameter< int , IntName>(value, description, isHidden, isExpert, isNecessary, order),
+SelectionParameter::SelectionParameter(
+    const int& value,
+    const SelectionParameter::ItemList& items,
+    const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: IntParameter(value, description, isHidden, isExpert, isNecessary, order),
   items_(items)
 {
 }
 
-SelectionParameter::SelectionParameter(const std::string& key, const SelectionParameter::ItemList& items, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: SimpleParameter< int , IntName>(0, description, isHidden, isExpert, isNecessary, order),
+SelectionParameter::SelectionParameter(
+    const std::string& key,
+    const SelectionParameter::ItemList& items,
+    const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+: IntParameter(0, description, isHidden, isExpert, isNecessary, order),
   items_(items)
 {
   ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
@@ -63,10 +113,20 @@ const SelectionParameter::ItemList& SelectionParameter::items() const
   return items_;
 }
 
+std::vector<std::string> SelectionParameter::selectionKeys() const
+{
+    return items_;
+}
+
 void SelectionParameter::setSelection ( const std::string& sel )
 {
-  value_=selection_id ( sel );
+  value_=indexOfSelection ( sel );
   triggerValueChanged();
+}
+
+const std::string &SelectionParameter::selection() const
+{
+    return items_[value_];
 }
 
 
@@ -143,9 +203,13 @@ void SelectionParameter::readFromNode
 
 
 
-Parameter* SelectionParameter::clone() const
+std::unique_ptr<Parameter> SelectionParameter::clone() const
 {
-  return new SelectionParameter(value_, items_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  return std::make_unique<SelectionParameter>(
+        value_, items_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order()
+        );
 }
 
 

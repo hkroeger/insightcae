@@ -20,15 +20,14 @@ inherits steadyIncompressibleNumerics::Parameters
 
 FEMinterval = int 10 "Interval between successive FEM updates"
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "simpleDyMFoamNumerics" );
-    simpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    simpleDyMFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 

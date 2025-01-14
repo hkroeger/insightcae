@@ -12,8 +12,8 @@ namespace insight {
 namespace setFieldOps
 {
 
-setFieldOperator::setFieldOperator(const OpenFOAMCase& c, ParameterSet const& p)
-: c_(c), p_(p)
+setFieldOperator::setFieldOperator(const OpenFOAMCase& c, ParameterSetInput ip)
+    : c_(c), p_(ip.forward<Parameters>())
 {
 }
 
@@ -24,20 +24,19 @@ setFieldOperator::~setFieldOperator()
 
 
 
-fieldToCellOperator::fieldToCellOperator(const OpenFOAMCase& c, ParameterSet const& p)
-: setFieldOperator(c, p),
-  p_(p)
+fieldToCellOperator::fieldToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip)
+: setFieldOperator(c, ip.forward<Parameters>())
 {}
 
 void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["fieldName"]=p_.fieldName;
-  opdict["min"]=p_.min;
-  opdict["max"]=p_.max;
+  opdict["fieldName"]=p().fieldName;
+  opdict["min"]=p().min;
+  opdict["max"]=p().max;
 
   OFDictData::list fve;
-  for (const auto& fvs: p_.fieldValues)
+  for (const auto& fvs: p().fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -53,18 +52,17 @@ void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) cons
 
 
 
-boxToCellOperator::boxToCellOperator(const OpenFOAMCase& c, ParameterSet const& p )
-: setFieldOperator(c, p),
-  p_(p)
+boxToCellOperator::boxToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip )
+: setFieldOperator(c, ip.forward<Parameters>())
 {}
 
 void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["box"]=OFDictData::to_OF(p_.min) + OFDictData::to_OF(p_.max);
+  opdict["box"]=OFDictData::to_OF(p().min) + OFDictData::to_OF(p().max);
 
   OFDictData::list fve;
-  for (const auto& fvs: p_.fieldValues)
+  for (const auto& fvs: p().fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -78,18 +76,17 @@ void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 
 
 
-cellToCellOperator::cellToCellOperator(const OpenFOAMCase& c, ParameterSet const& p )
-: setFieldOperator(c, p),
-  p_(p)
+cellToCellOperator::cellToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip )
+: setFieldOperator(c, ip.forward<Parameters>())
 {}
 
 void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["set"]=p_.cellSet;
+  opdict["set"]=p().cellSet;
 
   OFDictData::list fve;
-  for (const auto& fvs: p_.fieldValues)
+  for (const auto& fvs: p().fieldValues)
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -104,21 +101,20 @@ void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 
 
 
-zoneToCellOperator::zoneToCellOperator(const OpenFOAMCase& c, ParameterSet const& p )
-    : setFieldOperator(c, p),
-      p_(p)
+zoneToCellOperator::zoneToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip )
+    : setFieldOperator(c, ip.forward<Parameters>())
 {}
 
 void zoneToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
     OFDictData::dict opdict;
     if (c_.OFversion()<060505)
-        opdict["name"]=p_.cellZone;
+        opdict["name"]=p().cellZone;
     else
-        opdict["zone"]=p_.cellZone;
+        opdict["zone"]=p().cellZone;
 
     OFDictData::list fve;
-    for (const auto& fvs: p_.fieldValues)
+    for (const auto& fvs: p().fieldValues)
     {
       fve.push_back( fvs );
     }

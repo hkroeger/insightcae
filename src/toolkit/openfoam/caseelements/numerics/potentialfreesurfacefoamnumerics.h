@@ -18,15 +18,14 @@ public:
 PARAMETERSET>>> potentialFreeSurfaceFoamNumerics Parameters
 inherits unsteadyIncompressibleNumerics::Parameters
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "potentialFreeSurfaceFoamNumerics" );
-    potentialFreeSurfaceFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    potentialFreeSurfaceFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 

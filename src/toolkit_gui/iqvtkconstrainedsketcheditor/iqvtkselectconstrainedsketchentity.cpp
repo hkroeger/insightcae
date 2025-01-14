@@ -1,5 +1,7 @@
 #include "iqvtkselectconstrainedsketchentity.h"
 
+#include "base/cppextensions.h"
+#include "iqfilteredparametersetmodel.h"
 #include "iqvtkconstrainedsketcheditor.h"
 #include "parametereditorwidget.h"
 
@@ -7,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QLineEdit>
 
 
 void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEditor)
@@ -51,17 +54,26 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
         layEd->setEditText(
             QString::fromStdString(*commonLayerName));
 
-    connect(layEd, &QComboBox::currentTextChanged,
-            [this](const QString& newLayerName)
+    auto changeLayer =
+            [this,layEd]()
             {
+                auto newLayerName = layEd->currentText().toStdString();
                 for (auto& ee: *this)
                 {
                     auto e = ee.lock();
-                    e->setLayerName(
-                        newLayerName.toStdString());
+                    if (!(*editor_).hasLayer(newLayerName))
+                    {
+                        (*editor_).addLayer(newLayerName, *editor_.entityProperties_);
+                    }
+                    e->setLayerName(newLayerName);
                 }
                 editor_.sketchChanged();
-            });
+            };
+
+    connect(layEd->lineEdit(), &QLineEdit::editingFinished, layEd,
+            changeLayer);
+    connect(layEd, QOverload<int>::of(&QComboBox::currentIndexChanged), layEd,
+            changeLayer);
 
     if (includeParameterEditor)
     {
@@ -138,36 +150,36 @@ void SketchEntityMultiSelection::insert(
 
             auto lentity=entity.lock();
 
+
             if (size()==1)
             {
-                commonParameters_=
-                    lentity->parameters();
-                defaultCommonParameters_=
-                    lentity->defaultParameters();
+                // commonParameters_=
+                //     lentity->parameters().cloneSubset();
+                // defaultCommonParameters_=
+                //     lentity->defaultParameters().cloneSubset();
             }
             else if (size()>1)
             {
-                commonParameters_=
-                    commonParameters_.intersection(
-                    lentity->parameters());
+                // commonParameters_=std::move(
+                //     std::dynamic_unique_ptr_cast<insight::ParameterSet>(
+                //     commonParameters_->intersection(
+                //     lentity->parameters())));
 
-                defaultCommonParameters_=
-                    defaultCommonParameters_.intersection(
-                    lentity->defaultParameters());
+                // defaultCommonParameters_=std::move(
+                //     std::dynamic_unique_ptr_cast<insight::ParameterSet>(
+                //     defaultCommonParameters_->intersection(
+                //     lentity->defaultParameters())));
             }
 
             if ( size()>0 )
             {
                 if (!pew_)
                     showPropertiesEditor(
-                        commonParameters_.size()>0 );
+                        size()>0 );
 
-                if (commonParameters_.size()>0)
+                if (auto *psm = editor_.presentation_->setupSketchEntityParameterSetModel(*lentity))
                 {
-                    auto m = new IQParameterSetModel(
-                        commonParameters_,
-                        defaultCommonParameters_, pe_);
-                    pe_->setModel(m);
+                    pe_->setModel(psm);
                 }
             }
             else

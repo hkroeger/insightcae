@@ -9,8 +9,8 @@ defineType(kOmegaSST_LowRe_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST_LowRe_RASModel);
 addToOpenFOAMCaseElementFactoryTable(kOmegaSST_LowRe_RASModel);
 
-kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: kOmegaSST_RASModel(c)
+kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+    : kOmegaSST_RASModel(c, ip.forward<Parameters>())
 {}
 
 

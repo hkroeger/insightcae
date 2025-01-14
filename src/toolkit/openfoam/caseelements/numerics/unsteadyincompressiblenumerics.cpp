@@ -11,12 +11,11 @@ namespace insight {
 defineType(unsteadyIncompressibleNumerics);
 addToOpenFOAMCaseElementFactoryTable(unsteadyIncompressibleNumerics);
 
-unsteadyIncompressibleNumerics::unsteadyIncompressibleNumerics(OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName)
-: FVNumerics(c, ps, pName),
-  p_(ps)
+unsteadyIncompressibleNumerics::unsteadyIncompressibleNumerics(OpenFOAMCase& c, ParameterSetInput ip, const std::string& pName)
+: FVNumerics(c, ip.forward<Parameters>(), pName)
 {
-  OFcase().addField(pName_, FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
+  OFcase().addField(pName_, FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p().Uinternal.begin(), p().Uinternal.end()), volField ) );
 }
 
 
@@ -35,7 +34,7 @@ void unsteadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) 
   else
    setApplicationName(dictionaries, "pimpleFoam");
 
-  PIMPLESettings(p_.time_integration).addIntoDictionaries(OFcase(), dictionaries);
+  PIMPLESettings(p().time_integration).addIntoDictionaries(OFcase(), dictionaries);
 
   // ============ setup fvSolution ================================
 
@@ -85,7 +84,7 @@ void unsteadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) 
     /*if (OFversion()>=220)
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
-    if (p_.LESfilteredConvection)
+    if (p().LESfilteredConvection)
       div["div(phi,U)"]="Gauss filteredLinear";
     else
       div["div(phi,U)"]="Gauss linear";

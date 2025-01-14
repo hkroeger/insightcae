@@ -2,6 +2,7 @@
 #include "base/resultelements/chartrenderer.h"
 
 #include "base/tools.h"
+#include "base/rapidxml.h"
 
 using namespace std;
 using namespace boost;

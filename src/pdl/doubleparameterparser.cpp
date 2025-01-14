@@ -3,86 +3,67 @@
 
 using namespace std;
 
-defineType(DoubleParameterParser);
-addToStaticFunctionTable(ParserDataBase, DoubleParameterParser, insertrule);
+defineType(DoubleGenerator);
+addToStaticFunctionTable(ParameterGenerator, DoubleGenerator, insertrule);
 
 
 
-DoubleParameterParser::Data::Data(double v, const std::string& d)
-: ParserDataBase(d), value(v)
+DoubleGenerator::DoubleGenerator(double v, const std::string& d)
+: ParameterGenerator(d), value(v)
 {}
 
-void DoubleParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+void DoubleGenerator::cppAddRequiredInclude(std::set<std::string>& headers) const
 {
   headers.insert("\"base/parameters/simpleparameter.h\"");
 }
 
+std::string DoubleGenerator::cppInsightType() const
+{
+    return "insight::DoubleParameter";
+}
 
-std::string DoubleParameterParser::Data::cppType(const std::string&) const
+std::string DoubleGenerator::cppStaticType() const
 {
   return "double";
 }
 
-std::string DoubleParameterParser::Data::cppParamType(const std::string&) const
-{
-  return "insight::DoubleParameter";
-}
-
-std::string DoubleParameterParser::Data::cppValueRep(const std::string&, const std::string& /*thisscope*/) const
+std::string DoubleGenerator::cppDefaultValueExpression() const
 {
   return boost::lexical_cast<std::string>(value);
 }
 
 
 
-defineType(dimensionedScalarParameterParser);
-addToStaticFunctionTable(ParserDataBase, dimensionedScalarParameterParser, insertrule);
+defineType(dimensionedScalarGenerator);
+addToStaticFunctionTable(ParameterGenerator, dimensionedScalarGenerator, insertrule);
 
 
-dimensionedScalarParameterParser::Data::Data
+dimensionedScalarGenerator::dimensionedScalarGenerator
 (
     const std::string& dimensionTypeName,
     const std::string& defaultUnit,
     double v,
     const std::string& d
 )
-: ParserDataBase("["+defaultUnit+"] "+d),
+: ParameterGenerator("["+defaultUnit+"] "+d),
   dimensionTypeName_(dimensionTypeName),
   defaultUnit_(defaultUnit),
   value(v)
 {}
 
-std::string dimensionedScalarParameterParser::Data::cppType(const std::string&name) const
+
+std::string dimensionedScalarGenerator::cppInsightType() const
 {
-  return cppParamType(name)+"::value_type";
+    return "insight::scalar"+dimensionTypeName_+"Parameter";
 }
 
-std::string dimensionedScalarParameterParser::Data::cppParamType(const std::string&) const
+std::string dimensionedScalarGenerator::cppStaticType() const
 {
-  return "insight::scalar"+dimensionTypeName_+"Parameter";
+  return cppInsightType()+"::value_type";
 }
 
-std::string dimensionedScalarParameterParser::Data::cppValueRep(const std::string&name, const std::string& /*thisscope*/) const
+std::string dimensionedScalarGenerator::cppDefaultValueExpression() const
 {
-  return cppType(name)+"("+cppParamType(name)+"::base_value_type("+boost::lexical_cast<std::string>(value)+") * boost::units::si::"+defaultUnit_+")";
+  return cppStaticType()+"("+cppInsightType()+"::base_value_type("+boost::lexical_cast<std::string>(value)+") * boost::units::si::"+defaultUnit_+")";
 }
 
-void dimensionedScalarParameterParser::Data::cppWriteCreateStatement
-(
-   std::ostream& os,
-   const std::string& name,
-   const std::string& thisscope
-) const
-{
-   os<<"std::unique_ptr< "<<cppParamType(name)<<" > "<<name<<"("
-     "new "<<cppParamType(name)<<"("
-     //<<boost::lexical_cast<std::string>(value)<<", "
-     <<cppValueRep(name, thisscope)<<", "
-     <<"\""<<description<<"\", "
-     << (isHidden?"true":"false")<<", "
-     << (isExpert?"true":"false")<<", "
-     << (isNecessary?"true":"false")<<", "
-     << order
-     <<")"
-     "); ";
-}

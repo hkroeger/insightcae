@@ -11,10 +11,10 @@ class laminar_RASModel
 public:
   declareType("laminar");
 
-  laminar_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  laminar_RASModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;
-  inline static ParameterSet defaultParameters() { return ParameterSet(); }
+
 };
 
 } // namespace insight

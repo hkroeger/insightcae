@@ -159,13 +159,13 @@ void RemoteRun::uploadInputFile()
 
         insight::dbg()<<"upload input file"<<std::endl;
 
-        insight::ParameterSet p = af_->parameters();
-        p.packExternalFiles(); // pack
+        auto p = af_->parameters().cloneSubset();
+        p->pack(); // pack
 
         {
             auto rs = remote_->exeConfig().remoteOFStream(
                 "param.ist", 0 );
-            p.saveToStream(*rs, ".", af_->analysisName_);
+            p->saveToStream(*rs, ".", af_->analysisName_);
         }
 
         launchProgress_.stepTo(2);

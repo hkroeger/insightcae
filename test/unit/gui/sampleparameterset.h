@@ -12,6 +12,20 @@ namespace TestPS
 /*
 PARAMETERSET>>> TestPS Parameters
 
+someSel = selection ( one two three ) two ""
+
+
+outline = cadsketch
+    ""
+    ""
+    ""
+    "cabin floorplan"
+
+someArray = array [ set {
+ one=double 1. ""
+ two = int 4 ""
+} ] *2 ""
+
 geometry = set {
 
  LupstreamByL   = double 4 "[-] upstream domain extent, divided by object diagonal" *hidden
@@ -55,6 +69,22 @@ mesh = set {
    box set {
     pmin = vector (0 0 0) "[m] Minimum corner" *necessary
     pmax = vector (1 1 1) "[m] Maximum corner" *necessary
+
+      geometry2 = selectablesubset {{
+
+       box_centered2 set {
+        pc2 = vector (0 0 0) " [m] Center point" *necessary
+        L2 = double 1.0 "[m] Length of the box along x direction, centered around pc" *necessary
+        W2 = double 1.0 "[m] Width of the box along y direction, centered around pc" *necessary
+        H2 = double 1.0 "[m] Height of the box along z direction, centered around pc" *necessary
+       }
+
+       box2 set {
+        pmin2 = vector (0 0 0) "[m] Minimum corner" *necessary
+        pmax2 = vector (1 1 1) "[m] Maximum corner" *necessary
+       }
+
+      }} box_centered2 "Geometry of the refinement zone"
    }
 
   }} box_centered "Geometry of the refinement zone"
@@ -80,6 +110,32 @@ fluid = set {
  nu             = double 1.5e-5 "[m^2/s] Viscosity of the fluid"
 
 } "Parameters of the fluid"
+
+<<<PARAMETERSET
+*/
+
+}
+
+
+namespace SubPS
+{
+
+#include "sampleparameterset__SubPS__Parameters.h"
+/*
+PARAMETERSET>>> SubPS Parameters
+
+
+type = selectablesubset {{
+
+    wall set {
+        pc2 = vector (0 0 0) " [m] Center point" *necessary
+        L2 = double 1.0 "[m] Length of the box along x direction, centered around pc" *necessary
+    }
+
+    floor set {
+    }
+
+}} wall "Geometry of the refinement zone"
 
 <<<PARAMETERSET
 */

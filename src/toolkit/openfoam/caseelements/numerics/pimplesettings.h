@@ -77,13 +77,12 @@ pRefLocation = selectablesubset {{
  location set { pRefPoint = vector (0 0 0) "Reference pressure point coordinates" }
 }} cellID "Location of reference pressure"
 
+createGetter
 <<<PARAMETERSET
 */
-protected:
-  Parameters p_;
 
 public:
-  PIMPLESettings(const ParameterSet& ps);
+  PIMPLESettings(ParameterSetInput ip = ParameterSetInput() );
   virtual ~PIMPLESettings();
 
   virtual void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
@@ -113,13 +112,12 @@ pMin = double 1000 "Minimum pressure"
 rhoMin = double 0 "Minimum density"
 rhoMax = double 1e10 "Maximum density"
 
+createGetter
 <<<PARAMETERSET
 */
-protected:
-  Parameters p_;
 
 public:
-  CompressiblePIMPLESettings(const ParameterSet& ps);
+  CompressiblePIMPLESettings(ParameterSetInput ip = ParameterSetInput() );
 
   void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const override;
 
@@ -139,13 +137,12 @@ inherits PIMPLESettings::Parameters
 
 maxAlphaCo = double 0.5 "Target courant number at free surface"
 
+createGetter
 <<<PARAMETERSET
 */
-protected:
-  Parameters p_;
 
 public:
-  MultiphasePIMPLESettings(const ParameterSet& ps);
+  MultiphasePIMPLESettings(ParameterSetInput ip = ParameterSetInput() );
 
   void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const override;
 };

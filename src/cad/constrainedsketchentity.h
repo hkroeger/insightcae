@@ -24,12 +24,9 @@ typedef
         ConstrainedSketchEntityPtr;
 
 
-typedef std::function<insight::ParameterSet(void)> MakeDefaultGeometryParametersFunction;
-
-
 class ConstrainedSketchEntity
 {
-    insight::ParameterSet parameters_, defaultParameters_;
+    std::unique_ptr<insight::ParameterSet> parameters_, defaultParameters_;
 
     std::string layerName_;
 
@@ -39,8 +36,8 @@ public:
     declareStaticFunctionTableWithArgs(
         addParserRule,
         void,
-        LIST(ConstrainedSketchGrammar&, MakeDefaultGeometryParametersFunction),
-        LIST(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf));
+        LIST(ConstrainedSketchGrammar&, const ConstrainedSketchParametersDelegate&),
+        LIST(ConstrainedSketchGrammar& ruleset, const ConstrainedSketchParametersDelegate& pd));
 
     ConstrainedSketchEntity(const std::string& layerName = std::string());
     virtual ~ConstrainedSketchEntity();
@@ -62,8 +59,14 @@ public:
     const insight::ParameterSet& parameters() const;
     insight::ParameterSet& parametersRef();
     const insight::ParameterSet& defaultParameters() const;
-    void changeDefaultParameters(const insight::ParameterSet&);
-    void parseParameterSet(const std::string& s, const boost::filesystem::path& inputFileParentPath);
+
+
+    void changeDefaultParameters(
+        const insight::ParameterSet& ps);
+
+    void parseParameterSet(
+        const std::string& s,
+        const boost::filesystem::path& inputFileParentPath);
 
     std::string pointSpec(
         insight::cad::VectorPtr p,
@@ -77,7 +80,9 @@ public:
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const =0;
 
     virtual std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const =0;
+
     bool dependsOn(const std::weak_ptr<ConstrainedSketchEntity>& entity) const;
+
     virtual void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) =0;

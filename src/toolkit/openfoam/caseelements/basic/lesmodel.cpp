@@ -6,10 +6,9 @@ namespace insight {
 
 defineType(LESModel);
 
-LESModel::LESModel(OpenFOAMCase& c, const ParameterSet& ps)
-: turbulenceModel(c, ps)
-{
-}
+LESModel::LESModel(OpenFOAMCase& c, ParameterSetInput ip)
+: turbulenceModel(c, ip.forward<Parameters>())
+{}
 
 
 void LESModel::addIntoDictionaries(OFdicts& dictionaries) const

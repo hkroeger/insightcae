@@ -19,17 +19,15 @@ inherits cellSetFvOption::Parameters
 
 gradp = vector (0 0 0) "Constant pressure gradient"
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-    Parameters p_;
 
 public:
     declareType ( "ConstantPressureGradientSource" );
     ConstantPressureGradientSource (
         OpenFOAMCase& c,
-        const ParameterSet& ps = Parameters::makeDefault() );
+        ParameterSetInput ip = ParameterSetInput() );
 
     void addIntoFvOptionDictionary(
         OFDictData::dict& fod,

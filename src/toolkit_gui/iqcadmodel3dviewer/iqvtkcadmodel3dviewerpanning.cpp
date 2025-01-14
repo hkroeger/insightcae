@@ -90,7 +90,7 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
 
 IQVTKCADModel3DViewerPanning::IQVTKCADModel3DViewerPanning(
         IQVTKCADModel3DViewer &viewWidget, const QPoint point)
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, point)
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, point, false)
 {}
 
 void IQVTKCADModel3DViewerPanning::start()

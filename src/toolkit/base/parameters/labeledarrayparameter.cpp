@@ -56,9 +56,12 @@ void LabeledArrayParameter::initialize()
     {
         if (!keySourceParameterPath_.empty())
         {
-            auto& op = parentSet().get<LabeledArrayParameter>(keySourceParameterPath_);
+            auto& op = parentSet()
+                           .get<LabeledArrayParameter>(
+                               keySourceParameterPath_);
+
             op.newItemAdded.connect(
-                [this](const std::string& label, ParameterPtr)
+                [this](const std::string& label, std::observer_ptr<Parameter>)
                 {
                     getOrInsertDefaultValue(label);
                 });
@@ -118,7 +121,7 @@ void LabeledArrayParameter::setKeySourceParameterPath(const std::string& pp)
 
 void LabeledArrayParameter::setDefaultValue ( const Parameter& defP )
 {
-    defaultValue_.reset ( defP.clone() );
+    defaultValue_ = defP.clone();
 }
 
 
@@ -161,7 +164,7 @@ void LabeledArrayParameter::eraseValue ( const std::string& label )
     childValueChangedConnections_.erase(idx->second.get());
     itemRemoved(idx->first);
 
-    auto item=*idx; // don't delete yet, this would cause crash in IQParameterSetModel.
+    auto item=std::move(*idx); // don't delete yet, this would cause crash in IQParameterSetModel.
     value_.erase ( idx ); // Just remove from array
     triggerValueChanged();
 }
@@ -179,14 +182,14 @@ void LabeledArrayParameter::appendValue ( const Parameter& np )
 
 void LabeledArrayParameter::insertValue ( const std::string& label, const Parameter& np )
 {
-    auto ins=value_.insert({ label, ParameterPtr( np.clone() ) });
+    auto ins=value_.insert({ label, np.clone() });
 
-    valueChangedConnections_[ins.first->second.get()]=
+    valueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(
-            ins.first->second->valueChanged.connect( childValueChanged ));
-    childValueChangedConnections_[ins.first->second.get()]=
+            ins.first->second->valueChanged.connect( childValueChanged )));
+    childValueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(
-            ins.first->second->childValueChanged.connect( childValueChanged ));
+            ins.first->second->childValueChanged.connect( childValueChanged )));
     newItemAdded(ins.first->first, ins.first->second);
     ins.first->second->setParent(this);
     triggerValueChanged();
@@ -274,7 +277,8 @@ int LabeledArrayParameter::nChildren() const
 
 
 
-std::string LabeledArrayParameter::childParameterName(int i) const
+std::string LabeledArrayParameter::childParameterName(
+    int i, bool ) const
 {
     if (i<nChildren())
     {
@@ -468,8 +472,6 @@ void LabeledArrayParameter::readFromNode (
     using namespace rapidxml;
     xml_node<>* child = findNode(node, name, type());
 
-    std::vector<std::pair<double, ParameterPtr> > readvalues;
-
     if (child)
     {
         std::set<std::string> readKeys;
@@ -511,11 +513,12 @@ void LabeledArrayParameter::readFromNode (
 
 
 
-Parameter* LabeledArrayParameter::clone () const
+std::unique_ptr<Parameter> LabeledArrayParameter::clone () const
 {
-    auto* np=new LabeledArrayParameter(
+    auto np=std::make_unique<LabeledArrayParameter>(
         *defaultValue_, 0,
-        description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order() );
 
     np->setLabelPattern(labelPattern_);
     np->setKeySourceParameterPath(keySourceParameterPath_);

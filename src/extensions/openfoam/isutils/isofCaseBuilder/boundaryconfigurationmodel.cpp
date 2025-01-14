@@ -1,6 +1,9 @@
 #include "boundaryconfigurationmodel.h"
 
+#include "insertedcaseelement.h"
 #include "parametereditorwidget.h"
+
+#include "isofcasebuilderwindow.h"
 
 using namespace insight;
 using namespace rapidxml;
@@ -153,8 +156,6 @@ void BoundaryConfigurationModel::addPatchConfiguration(Patch* patch)
     patches_.append(patch);
     endInsertRows();
   }
-
-  patch->updateVisualization();
 }
 
 
@@ -166,7 +167,12 @@ void BoundaryConfigurationModel::addUnconfiguredPatchIfNonexistent(
     int r=patches_.size();
     // not there, append
     beginInsertRows(QModelIndex(), r+1, r+1);
-    patches_.append(new Patch(patchName, defaultPatch_->multiVisualizer(), this));
+    auto *ice = new Patch(
+        patchName,
+        defaultPatch_->multiVisualizer(),
+        dynamic_cast<MultivisualizationGenerator*>(parent()),
+        this);
+    patches_.append(ice);
     endInsertRows();
   }
 }
@@ -257,7 +263,8 @@ QList<const Patch *> BoundaryConfigurationModel::allNamedPatches() const
 
 
 
-ParameterSet& BoundaryConfigurationModel::patchParametersRef(const std::string &patchName)
+insight::Parameter& BoundaryConfigurationModel::patchParameterRef(
+    const std::string &patchName, const std::string& path)
 {
   Patch* p=patchByName(patchName);
 
@@ -275,7 +282,7 @@ ParameterSet& BoundaryConfigurationModel::patchParametersRef(const std::string &
         );
   }
 
-  return p->parameters();
+  return p->parameterSetModel()->parameterRef(path);
 }
 
 
@@ -288,11 +295,11 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
   xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
   if (pack)
   {
-    defaultPatch_->parameters().packExternalFiles();
+    defaultPatch_->parameterSetModel()->pack();
   }
   else
   {
-    defaultPatch_->parameters().removePackedData();
+    defaultPatch_->parameterSetModel()->clearPackedData();
   }
   defaultPatch_->appendToNode(doc, *unassignedBCnode, fileParentPath);
   BCnode->append_node ( unassignedBCnode );
@@ -303,11 +310,11 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
       auto *p = patches_[i];
       if (pack)
       {
-        p->parameters().packExternalFiles();
+        p->parameterSetModel()->pack();
       }
       else
       {
-        p->parameters().removePackedData();
+        p->parameterSetModel()->clearPackedData();
       }
       p->appendToNode(doc, *patchnode, fileParentPath);
       BCnode->append_node ( patchnode );
@@ -317,7 +324,8 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
 void BoundaryConfigurationModel::readFromNode(
     rapidxml::xml_document<> &doc,
     rapidxml::xml_node<> *BCnode,
-    insight::MultiCADParameterSetVisualizer *mv,
+    insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+    MultivisualizationGenerator* visGen,
     const boost::filesystem::path &fileParentPath)
 {
   clear();
@@ -325,7 +333,7 @@ void BoundaryConfigurationModel::readFromNode(
   if (xml_node<> *unassignedBCnode =
       BCnode->first_node( "UnassignedPatches" ))
   {
-    defaultPatch_ = new DefaultPatch(doc, *unassignedBCnode, fileParentPath, mv);
+    defaultPatch_ = new DefaultPatch(doc, *unassignedBCnode, fileParentPath, mvl, visGen);
     Q_EMIT dataChanged(
           createIndex(0, 0),
           createIndex(0, 1)
@@ -335,7 +343,8 @@ void BoundaryConfigurationModel::readFromNode(
   for (xml_node<> *e = BCnode->first_node("Patch");
        e; e = e->next_sibling("Patch"))
   {
-    addPatchConfiguration( new Patch(doc, *e, fileParentPath, mv) );
+      auto *ice=new Patch(doc, *e, fileParentPath, mvl, visGen);
+      addPatchConfiguration( ice );
   }
 }
 
@@ -357,27 +366,30 @@ ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
       } catch (const std::exception& e)
       { /* ignore, if non-existent */ }
 
+      insight::CADParameterSetModelVisualizer
+          ::CreateGUIActionsFunctions::Function cgaf;
+
+      if (insight::CADParameterSetModelVisualizer
+          ::createGUIActionsForOpenFOAMCaseElement_table().count(pc->type_name()))
+      {
+          cgaf=insight::CADParameterSetModelVisualizer
+                 ::createGUIActionsForOpenFOAMCaseElement_table().lookup(pc->type_name());
+      }
+
       auto ppe = new ParameterEditorWidget
              (
-//               pc->parameters(),
-//               pc->defaultParameters(),
                parentWidget,
-               pc->visualizer(), vali,
+               PECADParameterSetVisualizerBuilder(),
+               cgaf,
+               vali,
                display
              );
-      auto model = new IQParameterSetModel(pc->parameters(), pc->defaultParameters(), ppe);
+      auto model = pc->parameterSetModel();
       ppe->setModel(model);
 
       // ensure that the editor is removed, when CE is deleted
       connect(pc, &QObject::destroyed,
               ppe, &ParameterEditorWidget::deleteLater );
-
-      connect(ppe, &ParameterEditorWidget::parameterSetChanged,
-              ppe, [&,pc,ppe]()
-              {
-          pc->parameters() = parameterSetModel(ppe->model())->getParameterSet();
-              }
-      );
 
       return ppe;
     }

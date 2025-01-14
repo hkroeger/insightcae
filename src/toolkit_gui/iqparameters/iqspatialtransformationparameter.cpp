@@ -28,11 +28,11 @@ IQSpatialTransformationParameter::IQSpatialTransformationParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::SpatialTransformationParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {
 }
 
@@ -41,15 +41,13 @@ IQSpatialTransformationParameter::IQSpatialTransformationParameter
 
 QString IQSpatialTransformationParameter::valueText() const
 {
-  const auto& p = dynamic_cast<const insight::SpatialTransformationParameter&>(parameter());
-
-  if (p().isIdentityTransform())
+  if (parameter()().isIdentityTransform())
       return QString("identity");
   else
   {
-      arma::mat tr=p().translate();
+      arma::mat tr=parameter()().translate();
       bool trZero = arma::norm(tr, 2)<insight::SMALL;
-      arma::mat rpy=p().rollPitchYaw();
+      arma::mat rpy=parameter()().rollPitchYaw();
 
       QStringList shortDescActions;
 
@@ -65,8 +63,8 @@ QString IQSpatialTransformationParameter::valueText() const
       if (fabs(rpy(2))>insight::SMALL)
           shortDescActions<<QString("Yaw %1°]").arg(tr(2));
 
-      if (fabs(p().scale()-1.)>insight::SMALL)
-          shortDescActions<<QString("*%1").arg(p().scale());
+      if (fabs(parameter()().scale()-1.)>insight::SMALL)
+          shortDescActions<<QString("*%1").arg(parameter()().scale());
 
       return shortDescActions.join(" > ");
   }
@@ -80,10 +78,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer )
 {
-  const auto& p =
-          dynamic_cast<const insight::SpatialTransformationParameter&>(
-              parameter() );
-
   auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
   QLineEdit *translateLE, *rpyLE, *scaleLE;
@@ -123,7 +117,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
       scaleLE->setText(QString::number(t.scale()));
   };
 
-  setValuesToControls(p());
+  setValuesToControls(parameter()());
 
   QPushButton *dlgBtn_=nullptr;
   if (viewer)
@@ -138,9 +132,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p =
-            dynamic_cast<insight::SpatialTransformationParameter&>(
-                this->parameterRef() );
 
     arma::mat m;
 
@@ -155,8 +146,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
     st.setScale(scaleLE->text().toDouble(&ok));
     insight::assertion(ok, "invalid input for scale factor!");
 
-    p.set(st);
-//    model->notifyParameterChange(index);
+    parameterRef().set(st);
   };
 
   connect(translateLE, &QLineEdit::returnPressed, applyFunction);
@@ -170,7 +160,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
           [this,translateLE,v,setValuesToControls,apply]()
           {
             if (insight::cad::FeaturePtr geom =
-              model()->getGeometryToSpatialTransformationParameter(path()))
+              model()->getGeometryToSpatialTransformationParameter(get()->path()))
             {
                 vtkNew<ivtkOCCShape> shape;
                 shape->SetShape( geom->shape() );

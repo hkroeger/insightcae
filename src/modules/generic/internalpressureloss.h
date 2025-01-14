@@ -34,41 +34,6 @@ namespace insight
 
 
 
-// class BoundaryProperties
-// {
-// public:
-// #include "internalpressureloss__BoundaryProperties__Parameters.h"
-// /*
-// PARAMETERSET>>> BoundaryProperties Parameters
-
-// role = selectablesubset {{
-
-//  wall set {
-
-//     wallBC = selectablesubset {{
-
-//      adiabatic set {}
-
-//      fixedTemperature set {
-//       wallTemperature = double 300 "[K] Fixed temperature of the walls"
-//      }
-
-//     }} adiabatic ""
-
-// <<<PARAMETERSET
-// */
-
-// private:
-//     std::string patchName_;
-//     Parameters p_;
-
-// public:
-//     InternalWallProperties(
-//         const ParameterSet& ps
-//         );
-
-//     void insertBC(insight::OpenFOAMCase& cm, OFDictData::dict& boundaryDict);
-// };
 
 
 
@@ -169,9 +134,10 @@ fluid=set
       : public supplementedInputDataDerived<Parameters>
   {
   public:
-    supplementedInputData(std::unique_ptr<Parameters> p,
-                          const boost::filesystem::path& workDir,
-                          ProgressDisplayer& progress = consoleProgressDisplayer );
+    supplementedInputData(
+          ParameterSetInput ip,
+          const boost::filesystem::path& workDir,
+          ProgressDisplayer& progress = consoleProgressDisplayer );
 
     BoundingBox bb_;
     arma::mat L_;
@@ -188,23 +154,25 @@ fluid=set
     si::Temperature globalTmin, globalTmax;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
+  addParameterMembers_SupplementedInputData(InternalPressureLoss::Parameters);
 
 
 public:
     declareType("Internal Pressure Loss");
 
-    InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
+    InternalPressureLoss(
+        const std::shared_ptr<supplementedInputDataBase>& sp );
 
-    static std::string category() { return "Generic Analyses"; }
-    
     void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
     void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
     void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
     
     ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& parentActionProgress) override;
+
+    static std::string category() { return "Generic Analyses"; }
+    static AnalysisDescription description()
+    { return { "Internal Pressure Loss",
+            "Determination of internal pressure loss by CFD a simulation"}; }
 };
 
 
@@ -215,24 +183,18 @@ extern RangeParameterList rpl_InternalPressureLossCharacteristics;
 class InternalPressureLossCharacteristics
     : public OpenFOAMParameterStudy<InternalPressureLoss, rpl_InternalPressureLossCharacteristics>
 {
-protected:
-//    std::map<std::string, std::map<std::string, std::shared_ptr<CoefficientFit> > > fits_;
-    //  boost::ptr_vector<CoefficientFit> fits_;
-
 public:
     declareType("Internal Pressure Loss Characteristic Map");
 
-    InternalPressureLossCharacteristics
-        (
-            const ParameterSet& ps,
-            const boost::filesystem::path& exepath,
-            ProgressDisplayer& pd = consoleProgressDisplayer
-            );
-
-    static std::string category() { return "Generic Analyses"; }
+    InternalPressureLossCharacteristics(
+        const std::shared_ptr<supplementedInputDataBase>& sp );
 
 //    virtual void evaluateForceFits(PlotCurveList& crv) const;
     void evaluateCombinedResults(ResultSetPtr& results) override;
+
+    static AnalysisDescription description()
+    { return { typeName,
+                "Internal pressure loss calculation for multiple volume fluxes" }; }
 };
 
 

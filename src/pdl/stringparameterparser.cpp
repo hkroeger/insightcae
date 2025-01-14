@@ -2,31 +2,32 @@
 
 using namespace std;
 
-defineType(StringParameterParser);
-addToStaticFunctionTable(ParserDataBase, StringParameterParser, insertrule);
+defineType(StringGenerator);
+addToStaticFunctionTable(ParameterGenerator, StringGenerator, insertrule);
 
 
-StringParameterParser::Data::Data(const std::string& v, const std::string& d)
-: ParserDataBase(d), value(v)
+StringGenerator::StringGenerator(const std::string& v, const std::string& d)
+: ParameterGenerator(d), value(v)
 {}
 
-void StringParameterParser::Data::cppAddHeader(std::set< std::string >& headers) const
+
+void StringGenerator::cppAddRequiredInclude(std::set< std::string >& headers) const
 {
   headers.insert("<string>");
   headers.insert("\"base/parameters/simpleparameter.h\"");
 }
 
-std::string StringParameterParser::Data::cppType(const std::string&) const
+std::string StringGenerator::cppInsightType() const
+{
+    return "insight::StringParameter";
+}
+
+std::string StringGenerator::cppStaticType() const
 {
   return "std::string";
 }
 
-std::string StringParameterParser::Data::cppParamType(const std::string& ) const
+std::string StringGenerator::cppDefaultValueExpression() const
 {
-  return "insight::StringParameter";
-}
-
-std::string StringParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
-{
-  return "\""+boost::lexical_cast<std::string>(value)+"\"";
+  return "\""+value+"\"";
 }

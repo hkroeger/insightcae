@@ -24,8 +24,6 @@ class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
       public CADModel3DViewer
 {
 public:
-    typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
-        SetSketchEntityAppearanceCallback;
     typedef std::function<void(insight::cad::ConstrainedSketchPtr)>
         SketchCompletionCallback;
 
@@ -75,16 +73,16 @@ public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
     virtual void undoExposeItem() =0;
 
-    virtual bool onLeftButtonDown(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point, bool afterDoubleClick );
-    virtual bool onKeyPress(
-        Qt::KeyboardModifiers modifiers,
-        int key );
-    virtual bool onLeftButtonUp(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point,
-        bool lastClickWasDoubleClick );
+    // virtual bool onLeftButtonDown(
+    //     Qt::KeyboardModifiers nFlags,
+    //     const QPoint point, bool afterDoubleClick );
+    // virtual bool onKeyPress(
+    //     Qt::KeyboardModifiers modifiers,
+    //     int key );
+    // virtual bool onLeftButtonUp(
+    //     Qt::KeyboardModifiers nFlags,
+    //     const QPoint point,
+    //     bool lastClickWasDoubleClick );
 
     virtual void onMeasureDistance() =0;
     virtual void onMeasureDiameter() =0;
@@ -117,8 +115,8 @@ public Q_SLOT:
     virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;
     virtual void editSketch(
             const insight::cad::ConstrainedSketch& sketch,
-            const insight::ParameterSet& defaultGeometryParameters,
-            SetSketchEntityAppearanceCallback saac,
+            std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+            const std::string& presentationDelegateKey,
             SketchCompletionCallback onAccept,
             SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
         ) =0;

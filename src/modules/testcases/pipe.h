@@ -96,7 +96,7 @@ evaluation = set {
   {
 
     supplementedInputData(
-        std::unique_ptr<Parameters> pPtr,
+        ParameterSetInput ip,
         const boost::filesystem::path& workDir,
         ProgressDisplayer& progress = consoleProgressDisplayer
         );
@@ -107,18 +107,20 @@ evaluation = set {
     double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
+  addParameterMembers_SupplementedInputData(PipeBase::Parameters);
+
 
 public:
   declareType("Pipe Flow Test Case");
   
-  PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
+  PipeBase(
+      const std::shared_ptr<supplementedInputDataBase>& sp );
   ~PipeBase();
 
   static std::string category() { return "Validation Cases"; }
-  
+  static AnalysisDescription description() { return {    "Pipe Flow Test Case",
+                                             "Cylindrical domain with cyclic BCs on axial ends"}; }
+
   std::string cyclPrefix() const;
   virtual void calcDerivedInputData(ProgressDisplayer& progress);
 //   virtual double calcLc(const ParameterSet& p) const;
@@ -168,7 +170,7 @@ class PipeCyclic
 public:
   declareType("Pipe Flow Test Case (Axial Cyclic)");
   
-  PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
+  PipeCyclic(const std::shared_ptr<supplementedInputDataBase>& sp);
   
   virtual void createMesh
   (
@@ -187,41 +189,6 @@ public:
 
 
 
-
-//class PipeInflow
-//: public PipeBase
-//{
-  
-//#ifndef SWIG
-//  const static int ntpc_ = 4;
-//  const static char* tpc_names_[ntpc_];
-//  const static double tpc_xlocs_[ntpc_];
-//#endif
-  
-//public:
-//  declareType("Pipe Flow Test Case (Inflow Generator)");
-  
-//  PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
-  
-//  static ParameterSet defaultParameters();
-//  static std::string category() { return "Validation Cases/Inflow Generator"; }
-  
-//  virtual void createMesh
-//  (
-//    OpenFOAMCase& cm, ProgressDisplayer& progress
-//  );
-  
-//  virtual void createCase
-//  (
-//    OpenFOAMCase& cm, ProgressDisplayer& progress
-//  );
-
-//  ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
-
-//  virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
-//  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
-  
-//};
 
 
 

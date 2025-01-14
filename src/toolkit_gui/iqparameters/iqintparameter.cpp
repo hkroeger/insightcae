@@ -16,18 +16,28 @@ IQIntParameter::IQIntParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
-{
-}
+  : IQSpecializedParameter<insight::IntParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
+{}
 
 
 QString IQIntParameter::valueText() const
 {
-  return QString::number( dynamic_cast<const insight::IntParameter&>(parameter())() );
+  return QString::number( parameter()() );
+}
+
+bool IQIntParameter::setValue(QVariant value)
+{
+    if (value.canConvert<int>())
+    {
+        bool ok;
+        parameterRef().set(value.toInt(&ok));
+        return ok;
+    }
+    return false;
 }
 
 
@@ -41,8 +51,7 @@ QVBoxLayout* IQIntParameter::populateEditControls(
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto* lineEdit=new QLineEdit(editControlsContainer);
-//  connect(le_, &QLineEdit::destroyed, this, &IntParameterWrapper::onDestruction);
-  lineEdit->setText(QString::number( dynamic_cast<const insight::IntParameter&>(parameter())() ));
+  lineEdit->setText(QString::number( parameter()() ));
   lineEdit->setValidator(new QIntValidator());
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
@@ -53,24 +62,21 @@ QVBoxLayout* IQIntParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      auto &p = dynamic_cast<insight::IntParameter&>(this->parameterRef());
-      p.set(lineEdit->text().toInt());
-//      model->notifyParameterChange(index);
+      parameterRef().set(lineEdit->text().toInt());
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
   // handle external value change
-  auto &p = dynamic_cast<insight::IntParameter&>(this->parameterRef());
   ::disconnectAtEOL(
       layout,
-      p.valueChanged.connect(
+      parameterRef().valueChanged.connect(
           [=]()
           {
-              auto &p = dynamic_cast<const insight::IntParameter&>(parameter());
               QSignalBlocker sb(lineEdit);
-              lineEdit->setText(QString::number(p()));
+              lineEdit->setText(
+                  QString::number(parameter()()));
           }
           )
       );

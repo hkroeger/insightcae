@@ -15,10 +15,11 @@ addToStaticFunctionTable(BoundaryCondition, CyclicACMIBC, defaultParameters);
 
 
 CyclicACMIBC::CyclicACMIBC(
-        OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-        const ParameterSet&ps )
-: GGIBCBase(c, patchName, boundaryDict, ps),
-  p_(ps)
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+: GGIBCBase(c, patchName, boundaryDict,
+                ip.forward<Parameters>() )
 {}
 
 
@@ -31,7 +32,7 @@ void CyclicACMIBC::addOptionsToBoundaryDict(OFDictData::dict &bndDict) const
     if (OFversion()>=230)
     {
       bndDict["type"]="cyclicACMI";
-      bndDict["neighbourPatch"]= p_.shadowPatch;
+      bndDict["neighbourPatch"]= p().shadowPatch;
       bndDict["matchTolerance"]= 0.0001;
       bndDict["nonOverlapPatch"]=uncoupledPatchName();
     }

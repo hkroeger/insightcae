@@ -29,13 +29,13 @@ namespace insight {
 
 class OpenFOAMCase;
 class OFdicts;
-class ParameterSetVisualizer;
 
 namespace OFDictData { class dict; }
 
+
 #define addToOpenFOAMCaseElementFactoryTable(DerivedClass) \
- addToFactoryTable(OpenFOAMCaseElement, DerivedClass); \
  addToCaseElementFactoryTable(DerivedClass); \
+ addToFactoryTable(OpenFOAMCaseElement, DerivedClass); \
  addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, defaultParameters); \
  addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, category);
 
@@ -45,14 +45,16 @@ class OpenFOAMCaseElement
 {
 
 public:
-    declareFactoryTable ( OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ) );
-    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    declareFactoryTable (
+        OpenFOAMCaseElement,
+        LIST ( OpenFOAMCase& c, ParameterSetInput&& ip ),
+        LIST ( c, std::move(ip) ) );
+    declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> );
     declareStaticFunctionTable ( category, std::string );
     declareStaticFunctionTable (validator, ParameterSet_ValidatorPtr);
-    declareStaticFunctionTable (visualizer, std::shared_ptr<ParameterSetVisualizer>);
     declareType ( "OpenFOAMCaseElement" );
 
-    OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name, const ParameterSet& ps );
+    OpenFOAMCaseElement ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     // defined below declaration of OpenFOAMCase
     const OpenFOAMCase& OFcase() const;
@@ -69,7 +71,6 @@ public:
 
     static std::string category();
     static ParameterSet_ValidatorPtr validator();
-    static std::shared_ptr<ParameterSetVisualizer> visualizer();
     static bool isInConflict(const CaseElement& other);
 
 

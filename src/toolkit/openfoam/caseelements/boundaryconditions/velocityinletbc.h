@@ -24,6 +24,7 @@ public:
 #include "velocityinletbc__VelocityInletBC__Parameters.h"
 /*
 PARAMETERSET>>> VelocityInletBC Parameters
+inherits BoundaryCondition::Parameters
 
 velocity = includedset "FieldData::Parameters" "Velocity specification"
 
@@ -66,12 +67,9 @@ VoFWave =selectablesubset {{
 
 }} none ""
 
-
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-    ParameterSet ps_;
 
 public:
     declareType("VelocityInletBC");
@@ -81,7 +79,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& p = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
 
     virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh  ) const;

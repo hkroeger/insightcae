@@ -106,11 +106,12 @@ fielddata=selectablesubset {{
   }
 
 }} uniformSteady "Specification of field value. If steady input is desired, specify only a single time instant e.g. at t=0."
+
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
-  Parameters p_;
 
   double representativeValueMag_, maxValueMag_;
 
@@ -148,7 +149,7 @@ public:
   /**
    * takes config from a parameterset
    */
-  FieldData(const ParameterSet& p);
+  FieldData(ParameterSetInput ip);
 
   /**
    * returns according dictionary entry for OF

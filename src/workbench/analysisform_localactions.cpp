@@ -64,9 +64,11 @@ void AnalysisForm::startLocalRun()
 {
   if (isOpenFOAMAnalysis_)
   {
-    bool evalOnly = insight::OpenFOAMAnalysis::Parameters(parameters()).run.evaluateonly;
+    bool evalOnly = insight::OpenFOAMAnalysis::Parameters(
+                          parameters()).run.evaluateonly;
 
-    if ( boost::filesystem::exists( localCaseDirectory() / "constant" / "polyMesh" ) )
+    if ( boost::filesystem::exists(
+            localCaseDirectory() / "constant" / "polyMesh" ) )
     {
       if (!evalOnly)
       {

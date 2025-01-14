@@ -61,10 +61,11 @@ namespace insight
 {
 
 
-addToAnalysisFactoryTable(NumericalWindtunnel);
+defineType(NumericalWindtunnel);
+Analysis::Add<NumericalWindtunnel> addNumericalWindtunnel;
 
 
-void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
+void NumericalWindtunnel::modifyDefaults(insight::ParameterSet& p)
 {
     p.setBool("run/potentialinit", true);
 }
@@ -74,10 +75,10 @@ boost::mutex mtx;
 
 
 NumericalWindtunnel::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
-    const boost::filesystem::path &/*workDir*/,
-    ProgressDisplayer &parentProgresss )
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+    ParameterSetInput ip,
+    const boost::filesystem::path &workDir,
+    ProgressDisplayer &parentProgress )
+  : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, parentProgress ),
     FOname("forces")
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
@@ -109,7 +110,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       bb, // bounding box in SI, rotated to wind tunnel CS
       bbAtt; // bounding box in SI, rotated to wind tunnel CS + applied attitude change
 
-  parentProgresss.message("Getting geometry file"); // extraction may take place now
+  parentProgress.message("Getting geometry file"); // extraction may take place now
   std::string geom_file_ext = p().geometry.objectfile->fileName().extension().string();
   boost::to_lower(geom_file_ext);
 
@@ -133,7 +134,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
             .Multiplied(trim)
             .Multiplied(roll);
 
-  parentProgresss.message("Loading geometry file, computing bounding box");
+  parentProgress.message("Loading geometry file, computing bounding box");
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
   {
     vtk_ChangeCS trsf(
@@ -269,9 +270,9 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
 
 
-NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
-: OpenFOAMAnalysis("Numerical Wind Tunnel", "", ps, exepath),
-  parameters_(new supplementedInputData(std::make_unique<Parameters>(ps), exepath, pd))
+NumericalWindtunnel::NumericalWindtunnel(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMAnalysis(sp)
 {}
 
 
@@ -289,7 +290,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   path dir = executionPath();
   
   boost::filesystem::path objectSTLFile =
-   ExternalGeometryFile::geometryDir(cm, executionPath())/
+   snappyHexMeshFeats::geometryDir(cm, executionPath())/
    (p().geometry.objectfile->fileName().stem().string()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
@@ -552,26 +553,26 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
       new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-    .set_name("object")
     .set_minLevel(p().mesh.lmsurf)
     .set_maxLevel(p().mesh.lxsurf)
     .set_nLayers(p().mesh.nlayer)
     .set_fileName(make_filepath(objectSTLFile))
+    .set_name("object")
   )));
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
    new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
     .set_min(vec3(-0.33*sp().l_, -(0.5+0.5)*sp().w_, sp().Ldown_))
     .set_max(vec3(2.0*sp().l_, (0.5+0.5)*sp().w_, sp().Ldown_+1.33*sp().h_))
     
-    .set_name("refinement_box")
     .set_level(p().mesh.boxlevel)
+    .set_name("refinement_box")
   )));
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
     .set_min(vec3(0.8*sp().l_, -(0.5+0.25)*sp().w_, sp().Ldown_))
     .set_max(vec3(1.5*sp().l_, (0.5+0.25)*sp().w_, sp().Ldown_+1.2*sp().h_))
     
-    .set_name("refinement_rear")
     .set_level(p().mesh.rearlevel)
+    .set_name("refinement_rear")
   )));
 
 
@@ -587,8 +588,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
         .set_min(bc->pc - 0.5*d)
         .set_max(bc->pc + 0.5*d)
 
-        .set_name(str(format("refinement_%d")%iref))
         .set_level(rz.lx)
+        .set_name(str(format("refinement_%d")%iref))
       )));
     }
     else if (const auto* b =
@@ -598,8 +599,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
         .set_min(b->pmin)
         .set_max(b->pmax)
 
-        .set_name(str(format("refinement_%d")%iref))
         .set_level(rz.lx)
+        .set_name(str(format("refinement_%d")%iref))
       )));
     }
 

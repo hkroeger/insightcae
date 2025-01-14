@@ -16,20 +16,20 @@ public:
 
 /*
 PARAMETERSET>>> SRFoption Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 origin = vector (0 0 0) "Center of the rotating motion"
 axis = vector (0 0 1) "Axis of rotation"
 rpm = double 1000.0 "Number of revolutions per minute"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType("SRFoption");
-  SRFoption(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  SRFoption(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static std::string category() { return "Body Force"; }

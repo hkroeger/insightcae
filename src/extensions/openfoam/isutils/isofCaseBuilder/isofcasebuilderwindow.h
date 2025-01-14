@@ -61,7 +61,8 @@ class isofCaseBuilderWindow;
 
 
 class isofCaseBuilderWindow
-: public QMainWindow
+: public QMainWindow,
+      public MultivisualizationGenerator
 {
      Q_OBJECT
 
@@ -80,7 +81,9 @@ private:
 
     //IQCADItemModel cadmodel_;
     IQVTKParameterSetDisplay* display_;
-    insight::MultiCADParameterSetVisualizer* multiViz_;
+
+    insight::MultiCADParameterSetVisualizer::SubVisualizerList multiVizSources_;
+    QPointer<insight::MultiCADParameterSetVisualizer> viz_;
 
     AvailableBCsModel* availableBCsModel_;
     AvailableCaseElementsModel* availableCaseElementsModel_;
@@ -119,9 +122,6 @@ protected:
 
 public:
     isofCaseBuilderWindow();
-
-protected:
-    void showEvent(QShowEvent *ev);
 
 public:
     virtual ~isofCaseBuilderWindow();
@@ -176,8 +176,8 @@ public Q_SLOTS:
 
     void recreateOFCase(const QString & ofename);
     
-    insight::ParameterSet& caseElementParameters(int id);
-    insight::ParameterSet& BCParameters(const std::string& patchName);
+    insight::Parameter& caseElementParameter(int id, const std::string& path);
+    insight::Parameter& BCParameter(const std::string& patchName, const std::string& path);
 
     void selectCaseDir();
 
@@ -189,6 +189,8 @@ public Q_SLOTS:
     void onStartPV();
 
     void setOFVersion(const QString & ofename);
+
+    void rebuildVisualization() override;
 
 
 protected Q_SLOTS:

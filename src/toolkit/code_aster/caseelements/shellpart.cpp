@@ -2,8 +2,8 @@
 
 namespace insight {
 
-ShellPart::ShellPart(CodeAsterCase& c, const std::string& name, const ParameterSet& ps)
-    : CodeAsterCaseElement(c, name, ps)
+ShellPart::ShellPart(CodeAsterCase& c, ParameterSetInput ip)
+    : CodeAsterCaseElement(c, ip.forward<Parameters>())
 {}
 
 } // namespace insight

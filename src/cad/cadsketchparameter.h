@@ -21,14 +21,12 @@ class CADSketchParameter
 {
 
 public:
-    typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
-        SketchEntityAppearanceCallback;
-
+    typedef std::map<int, std::string> References;
 
 protected:
-    cad::MakeDefaultGeometryParametersFunction makeDefaultGeometryParameters;
-    cad::MakeDefaultLayerParametersFunction makeDefaultLayerParameters;
-    SketchEntityAppearanceCallback sketchAppearance;
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties_;
+    std::string presentationDelegateKey_;
+
     std::map<int, std::string> references_;
 
     mutable std::unique_ptr<std::string> script_;
@@ -60,10 +58,9 @@ public:
 
     CADSketchParameter (
         const std::string& script,
-        cad::MakeDefaultGeometryParametersFunction defaultGeometryParameters,
-        cad::MakeDefaultLayerParametersFunction defaultLayerParameters,
-        SketchEntityAppearanceCallback sketchAppearance,
-        const std::map<int, std::string>& references,
+        std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+        const std::string& presentationDelegateKey,
+        const References& references,
         const std::string& description,
         bool isHidden=false,
         bool isExpert=false,
@@ -75,9 +72,8 @@ public:
 
     void setReferences(const std::map<int, std::string>& references);
 
-    insight::ParameterSet defaultGeometryParameters() const;
-    insight::ParameterSet defaultLayerParameters() const;
-    SketchEntityAppearanceCallback sketchAppearanceFunction() const;
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties() const;
+    const std::string& presentationDelegateKey() const;
 
     std::string script() const;
     void setScript(const std::string& script);
@@ -105,8 +101,10 @@ public:
             boost::filesystem::path inputfilepath
             ) override;
 
-    CADSketchParameter* cloneCADSketchParameter(bool keepParentRef=false) const;
-    Parameter* clone() const override;
+    std::unique_ptr<CADSketchParameter>
+        cloneCADSketchParameter(
+            bool keepParentRef=false ) const;
+    std::unique_ptr<Parameter> clone() const override;
 
     void copyFrom(const Parameter& op) override;
     void operator=(const CADSketchParameter& op);
@@ -114,7 +112,9 @@ public:
     bool isDifferent(const Parameter &) const override;
 
     int nChildren() const override;
-    std::string childParameterName( int i ) const override;
+    std::string childParameterName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
     Parameter& childParameterRef ( int i ) override;
     const Parameter& childParameter( int i ) const override;
 

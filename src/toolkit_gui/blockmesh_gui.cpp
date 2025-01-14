@@ -21,22 +21,22 @@ namespace bmd
 
 
 
-ParameterSetVisualizerPtr blockMeshDict_Box_visualizer()
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    blockMeshDict_Box, &newVisualizer<blockMeshDict_Box_ParameterSet_Visualizer>);
+
+
+std::shared_ptr<supplementedInputDataBase>
+blockMeshDict_Box_ParameterSet_Visualizer::computeSupplementedInput()
 {
-    return ParameterSetVisualizerPtr( new blockMeshDict_Box_ParameterSet_Visualizer );
+    return nullptr;
 }
-
-addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Box, visualizer, blockMeshDict_Box_visualizer);
-
-
 
 void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 {
   CurrentExceptionContext ex("computing visualization of blockMeshDict box template");
 
-  CADParameterSetVisualizer::recreateVisualizationElements();
-
-  blockMeshDict_Box::Parameters p(currentParameters());
+  blockMeshDict_Box::Parameters p(parameters());
 
   arma::mat ey = arma::cross( p.geometry.ez, p.geometry.ex);
 
@@ -55,19 +55,21 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 
 
 
-ParameterSetVisualizerPtr blockMeshDict_Cylinder_visualizer()
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    blockMeshDict_Cylinder, &newVisualizer<blockMeshDict_Cylinder_ParameterSet_Visualizer>);
+
+
+std::shared_ptr<supplementedInputDataBase>
+blockMeshDict_Cylinder_ParameterSet_Visualizer::computeSupplementedInput()
 {
-    return ParameterSetVisualizerPtr( new blockMeshDict_Cylinder_ParameterSet_Visualizer );
+    return nullptr;
 }
-
-addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cylinder, visualizer, blockMeshDict_Cylinder_visualizer);
-
 
 void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CADParameterSetVisualizer::recreateVisualizationElements();
 
-  blockMeshDict_Cylinder::Parameters p(currentParameters());
+  blockMeshDict_Cylinder::Parameters p(parameters());
 
   arma::mat ex=p.geometry.ex;
   arma::mat er=p.geometry.er;
@@ -125,27 +127,30 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
 
 
-void blockMeshDict_Cylinder_ParameterSet_Visualizer::setIcon(QIcon* i)
+
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer, IconFunctions, iconForOpenFOAMCaseElement,
+    blockMeshDict_Cylinder, [](){ return QIcon(":symbole/bmd_cyl.svg"); });
+
+
+
+
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    blockMeshDict_Sphere, &newVisualizer<blockMeshDict_Sphere_ParameterSet_Visualizer>);
+
+
+
+
+std::shared_ptr<supplementedInputDataBase>
+blockMeshDict_Sphere_ParameterSet_Visualizer::computeSupplementedInput()
 {
-  *i=QIcon(":symbole/bmd_cyl.svg");
+    return nullptr;
 }
-
-
-
-
-ParameterSetVisualizerPtr blockMeshDict_Sphere_visualizer()
-{
-    return ParameterSetVisualizerPtr( new blockMeshDict_Sphere_ParameterSet_Visualizer );
-}
-
-addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Sphere, visualizer, blockMeshDict_Sphere_visualizer);
-
 
 void blockMeshDict_Sphere_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CADParameterSetVisualizer::recreateVisualizationElements();
-
-  blockMeshDict_Sphere::Parameters p(currentParameters());
+  blockMeshDict_Sphere::Parameters p(parameters());
 
   arma::mat ex=p.geometry.ex;
   arma::mat ez=p.geometry.ez;

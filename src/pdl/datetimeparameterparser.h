@@ -2,25 +2,20 @@
 #define DATETIMEPARAMETERPARSER_H
 
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
-struct DateTimeParameterParser
+struct DateTimeGenerator
+    : public ParameterGenerator
 {
-    struct Data
-        : public ParserDataBase
-    {
         boost::posix_time::ptime value;
 
-        Data(boost::posix_time::ptime v, const std::string& d);
+        DateTimeGenerator(boost::posix_time::ptime v, const std::string& d);
 
-        void cppAddHeader(std::set<std::string>& headers) const override;
+        void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
-        std::string cppType(const std::string&) const override;
-
-        std::string cppParamType(const std::string& ) const override;
-
-        std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
-    };
+        std::string cppInsightType() const override;
+        std::string cppStaticType() const override;
+        std::string cppDefaultValueExpression() const override;
 
     declareType("datetime");
 
@@ -35,7 +30,8 @@ struct DateTimeParameterParser
                      qi::int_ >> '-' >> qi::int_ >> '-' >> qi::int_ >> qi::int_ >> ':' >> qi::int_
                       ] ] >> ruleset.r_description_string )
                         [ std::cout<<"'"<<qi::_1<<"'"<<std::endl,
-                         qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(
+                         qi::_val = phx::construct<ParameterGeneratorPtr>(
+                          phx::new_<DateTimeGenerator>(
                              phx::bind(&boost::posix_time::time_from_string, qi::_1),
                              qi::_2)) ]
 

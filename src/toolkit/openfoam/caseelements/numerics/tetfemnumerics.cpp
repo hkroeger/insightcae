@@ -5,8 +5,8 @@
 
 namespace insight {
 
-tetFemNumerics::tetFemNumerics(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "tetFemNumerics", ParameterSet())
+tetFemNumerics::tetFemNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: OpenFOAMCaseElement(c, /*"tetFemNumerics",*/ ip.forward<Parameters>() )
 {
 }
 

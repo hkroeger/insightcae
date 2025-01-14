@@ -14,12 +14,11 @@ defineType(FVNumerics);
 
 
 
-FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName)
-: decomposeParDict(c, ps),
-  p_(ps),
+FVNumerics::FVNumerics(OpenFOAMCase& c, ParameterSetInput ip, const std::string& pName)
+: decomposeParDict(c, ip.forward<Parameters>()),
   pName_(pName)
 {
-  rename("FVNumerics");
+  // rename("FVNumerics");
 }
 
 
@@ -29,31 +28,31 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //  std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["deltaT"]=p_.deltaT;
+  controlDict["deltaT"]=p().deltaT;
   controlDict["maxCo"]=0.5;
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
-  controlDict["endTime"]=p_.endTime;
+  controlDict["endTime"]=p().endTime;
 
   std::string wfc("UNDEFINED");
-  if (p_.writeControl == Parameters::writeControl_type::adjustableRunTime)
+  if (p().writeControl == Parameters::writeControl_type::adjustableRunTime)
   {
       wfc="adjustableRunTime";
   }
-  else if (p_.writeControl == Parameters::writeControl_type::clockTime)
+  else if (p().writeControl == Parameters::writeControl_type::clockTime)
   {
       wfc="clockTime";
   }
-  else if (p_.writeControl == Parameters::writeControl_type::cpuTime)
+  else if (p().writeControl == Parameters::writeControl_type::cpuTime)
   {
       wfc="cpuTime";
   }
-  else if (p_.writeControl == Parameters::writeControl_type::runTime)
+  else if (p().writeControl == Parameters::writeControl_type::runTime)
   {
       wfc="runTime";
   }
-  else if (p_.writeControl == Parameters::writeControl_type::timeStep)
+  else if (p().writeControl == Parameters::writeControl_type::timeStep)
   {
       wfc="timeStep";
   }
@@ -62,28 +61,28 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
   if (
-      p_.writeControl == Parameters::writeControl_type::runTime
+      p().writeControl == Parameters::writeControl_type::runTime
       ||
-      p_.writeControl == Parameters::writeControl_type::adjustableRunTime
+      p().writeControl == Parameters::writeControl_type::adjustableRunTime
       ||
-      ( p_.writeControl == Parameters::writeControl_type::timeStep && p_.timeStep==1. )
+      ( p().writeControl == Parameters::writeControl_type::timeStep && p().timeStep==1. )
       )
   {
-    controlDict["writeInterval"]=std::min(p_.writeInterval, p_.endTime);
+    controlDict["writeInterval"]=std::min(p().writeInterval, p().endTime);
   }
   else
   {
-    controlDict["writeInterval"]=p_.writeInterval;
+    controlDict["writeInterval"]=p().writeInterval;
   }
 
-  controlDict["purgeWrite"]=p_.purgeWrite;
+  controlDict["purgeWrite"]=p().purgeWrite;
 
   std::string wfk("UNDEFINED");
-  if (p_.writeFormat == Parameters::writeFormat_type::ascii)
+  if (p().writeFormat == Parameters::writeFormat_type::ascii)
   {
       wfk="ascii";
   }
-  else if (p_.writeFormat == Parameters::writeFormat_type::binary)
+  else if (p().writeFormat == Parameters::writeFormat_type::binary)
   {
       wfk="binary";
   }
@@ -118,7 +117,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   if (const auto* rwp =
-          boost::get<Parameters::restartWrite_clockTime_type>(&p_.restartWrite))
+          boost::get<Parameters::restartWrite_clockTime_type>(&p().restartWrite))
   {
       OFDictData::dict rw;
       rw["type"]="restartWrite";
@@ -193,7 +192,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     OFDictData::dict& mfd=dictionaries.lookupDict("system/mapFieldsDict");
 
     OFDictData::list patchMapPairs;
-    for (const auto& i: p_.mapFields.patchMap)
+    for (const auto& i: p().mapFields.patchMap)
     {
       patchMapPairs.push_back(i.targetPatch);
       patchMapPairs.push_back(i.sourcePatch);
@@ -201,8 +200,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     mfd["patchMap"]=patchMapPairs;
 
     OFDictData::list cuttingPatches;
-    std::copy(p_.mapFields.cuttingPatches.begin(),
-              p_.mapFields.cuttingPatches.end(),
+    std::copy(p().mapFields.cuttingPatches.begin(),
+              p().mapFields.cuttingPatches.end(),
               std::back_inserter(cuttingPatches));
     mfd["cuttingPatches"]=cuttingPatches;
   }
@@ -212,16 +211,16 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
-const FVNumerics::Parameters &FVNumerics::parameters() const
-{
-  return p_;
-}
+// const FVNumerics::Parameters &FVNumerics::parameters() const
+// {
+//   return p_;
+// }
 
 
-FVNumerics::Parameters &FVNumerics::parametersRef()
-{
-    return p_;
-}
+// FVNumerics::Parameters &FVNumerics::parametersRef()
+// {
+//     return p_;
+// }
 
 
 

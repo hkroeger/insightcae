@@ -21,15 +21,13 @@ solverName = string "cavitatingFoam" "Name of the solver"
 pamb = double 1e5 "Ambient pressure value"
 rhoamb = double 1 "Ambient density"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "cavitatingFoamNumerics" );
-    cavitatingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    cavitatingFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

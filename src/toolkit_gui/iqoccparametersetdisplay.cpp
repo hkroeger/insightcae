@@ -15,7 +15,7 @@ IQOCCParameterSetDisplay::IQOCCParameterSetDisplay
     modeltree_(modeltree)
 {}
 
-void IQOCCParameterSetDisplay::connectVisualizer(std::shared_ptr<insight::CADParameterSetVisualizer> viz)
+void IQOCCParameterSetDisplay::connectVisualizer(std::shared_ptr<insight::CADParameterSetModelVisualizer> viz)
 {
   if (viz)
   {
@@ -23,7 +23,7 @@ void IQOCCParameterSetDisplay::connectVisualizer(std::shared_ptr<insight::CADPar
   }
 }
 
-void IQOCCParameterSetDisplay::disconnectVisualizer(std::shared_ptr<insight::CADParameterSetVisualizer> viz)
+void IQOCCParameterSetDisplay::disconnectVisualizer(std::shared_ptr<insight::CADParameterSetModelVisualizer> viz)
 {
   if (viz)
   {

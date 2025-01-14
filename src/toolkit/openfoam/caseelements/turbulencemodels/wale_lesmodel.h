@@ -11,10 +11,9 @@ class WALE_LESModel
 public:
   declareType("WALE");
 
-  WALE_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  WALE_LESModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
-  inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
 } // namespace insight

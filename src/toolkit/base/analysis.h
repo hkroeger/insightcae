@@ -22,6 +22,7 @@
 #ifndef INSIGHT_ANALYSIS_H
 #define INSIGHT_ANALYSIS_H
 
+#include "base/exception.h"
 #include "base/progressdisplayer.h"
 #include "base/parameters.h"
 #include "base/parameterset.h"
@@ -30,9 +31,13 @@
 #include "base/analysisstepcontrol.h"
 #include "base/tools.h"
 #include "boost/chrono/duration.hpp"
+#include "boost/range/algorithm/transform.hpp"
 
 #include "base/progressdisplayer/textprogressdisplayer.h"
 
+#include <algorithm>
+#include <iterator>
+#include <memory>
 #include <queue>
 #include <thread>
 
@@ -45,15 +50,11 @@ namespace insight
 {
 
 
-class ParameterSetVisualizer;
 
-
-#define addToAnalysisFactoryTable(DerivedClass) \
- defineType(DerivedClass); \
- addToFactoryTable(Analysis, DerivedClass); \
- addToStaticFunctionTable(Analysis, DerivedClass, defaultParameters); \
- addToStaticFunctionTable(Analysis, DerivedClass, category); \
- addToStaticFunctionTable(Analysis, DerivedClass, compatibleOperatingSystems);
+struct AnalysisDescription {
+    std::string name;
+    std::string description;
+};
 
 /**
  * An analysis is the basic container in InsightCAE.
@@ -63,27 +64,133 @@ class ParameterSetVisualizer;
 class Analysis
 {
 
+
 public:
-    declareFactoryTable 
-    (
-        Analysis,
-        LIST(
-            const ParameterSet& ps,
-            const boost::filesystem::path& exePath,
-            ProgressDisplayer& displayer = consoleProgressDisplayer
-        ),
-        LIST(ps, exePath, displayer)
-    );
-    
-    declareStaticFunctionTable(defaultParameters, ParameterSet);
-    declareStaticFunctionTable(category, std::string);
-    declareStaticFunctionTable(compatibleOperatingSystems, OperatingSystemSet);
-    declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr);
-    declareStaticFunctionTable(visualizer, std::shared_ptr<ParameterSetVisualizer>);
-    declareStaticFunctionTableWithArgs(getPropositionsForParameter, ParameterSet,
-                                       LIST(const std::string&, const ParameterSet&),
-                                       LIST(const std::string& parameterPath, const ParameterSet& currentParameterValues)
-                                       );
+    declareType ( "Analysis" );
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            std::unique_ptr<supplementedInputDataBase>,
+            ParameterSetInput&&, const boost::filesystem::path&, ProgressDisplayer&
+        >
+        supplementedInputDataFactory;
+
+    declareStaticFunctionTable2(supplementedInputDataFactory, createSupplementedInputDataFor);
+
+    typedef
+        insight::Factory<
+            &typeName, Analysis,
+            const std::shared_ptr<supplementedInputDataBase>&
+        >
+        AnalysisFactory;
+
+    declareStaticFunctionTable2(AnalysisFactory, createAnalysis);
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            std::unique_ptr<ParameterSet>
+            >
+        defaultParametersFunctions;
+
+    declareStaticFunctionTable2(defaultParametersFunctions, defaultParametersFor);
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            std::string
+        >
+        categoryFunctions;
+
+    declareStaticFunctionTable2(categoryFunctions, categoryFor);
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            OperatingSystemSet
+        >
+        compatibleOperatingSystemsFunctions;
+
+    declareStaticFunctionTable2(compatibleOperatingSystemsFunctions, compatibleOperatingSystemsFor);
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            ParameterSet_ValidatorPtr
+        >
+        validatorFunctions;
+
+    declareStaticFunctionTable2(validatorFunctions, validatorFor);
+
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            std::unique_ptr<ParameterSet>,
+            const std::string&, const ParameterSet&
+        >
+        getPropositionsForParameterFunctions;
+
+    declareStaticFunctionTable2(getPropositionsForParameterFunctions, getPropositionsForParameterFor);
+
+
+    typedef
+        insight::StaticFunctionTable<
+            &typeName, AnalysisDescription
+        >
+        DescriptionFunctions;
+
+    declareStaticFunctionTable2(DescriptionFunctions, descriptionFor);
+
+
+
+    template<class AnalysisInstance>
+    struct Add
+    {
+        Add()
+        {
+            addToStaticFunctionTable2(
+                Analysis, supplementedInputDataFactory, createSupplementedInputDataFor,
+                AnalysisInstance,
+                (&std::make_unique<
+                    typename AnalysisInstance::supplementedInputData,
+                    ParameterSetInput&&,
+                    const boost::filesystem::path&,
+                    ProgressDisplayer&>) );
+
+            addToFactoryTable2(
+                Analysis, AnalysisFactory, createAnalysis,
+                AnalysisInstance );
+
+            addToStaticFunctionTable2(
+                Analysis, defaultParametersFunctions, defaultParametersFor,
+                AnalysisInstance, &AnalysisInstance::defaultParameters );
+
+            addToStaticFunctionTable2(
+                Analysis, categoryFunctions, categoryFor,
+                AnalysisInstance,
+                &AnalysisInstance::category );
+
+            addToStaticFunctionTable2(
+                Analysis, compatibleOperatingSystemsFunctions, compatibleOperatingSystemsFor,
+                AnalysisInstance, &AnalysisInstance::compatibleOperatingSystems );
+
+            addToStaticFunctionTable2(
+                Analysis, getPropositionsForParameterFunctions, getPropositionsForParameterFor,
+                AnalysisInstance, &AnalysisInstance::getPropositionsForParameter);
+
+            addToStaticFunctionTable2(
+                Analysis, DescriptionFunctions, descriptionFor,
+                AnalysisInstance,  &AnalysisInstance::description);
+        }
+    };
 
     /**
      * @brief analyses
@@ -94,31 +201,19 @@ public:
         const std::set<std::string>& restrictToCategories = {} );
 
 
-#include "analysis__Analysis__Parameters.h"
-/*
-PARAMETERSET>>> Analysis Parameters
-
-<<<PARAMETERSET
-*/
-
+private:
+    std::shared_ptr<supplementedInputDataBase> sp_;
 
 protected:
-    std::string name_;
-    std::string description_;
-    boost::filesystem::path executionPath_;
-    bool removeExecutionPath_;
-    bool enforceExecutionPathRemovalBehaviour_;
-
-    void setExecutionPath ( const boost::filesystem::path& exePath );
+    void resetParameters(
+        std::shared_ptr<supplementedInputDataBase> sid );
 
 public:
-    declareType ( "Analysis" );
     
     static std::string category();
     static OperatingSystemSet compatibleOperatingSystems();
 
     static ParameterSet_ValidatorPtr validator();
-    static std::shared_ptr<ParameterSetVisualizer> visualizer();
 
     /**
      * @brief getPropositionsForParameter
@@ -133,7 +228,7 @@ public:
      * the proposed value.
      * An empty set means there are no propositions.
      */
-    static ParameterSet getPropositionsForParameter(
+    static std::unique_ptr<ParameterSet> getPropositionsForParameter(
         const std::string& parameterPath,
         const ParameterSet& currentParameterValues );
 
@@ -146,59 +241,24 @@ public:
      * @param exePath Path of working directory. Empty path "" requests a temporary storage directory. If the directory is not existing, it will be created and removed when the analysis object is deleted. This behaviour can be overridden by calling setKeepExecutionDirectory or setRemoveExecutionDirectory.
      */
     Analysis(
-        const std::string& name,
-        const std::string& description,
-        const ParameterSet& ps,
-        const boost::filesystem::path& exePath,
-        ProgressDisplayer& displayer = consoleProgressDisplayer
-        );
+        const std::shared_ptr<supplementedInputDataBase>& sp );
+
     virtual ~Analysis();
 
-    virtual boost::filesystem::path setupExecutionEnvironment();
+    static AnalysisDescription description();
 
     virtual boost::filesystem::path executionPath() const;
-    boost::filesystem::path createExecutionPathIfNonexistent();
+    virtual const ParameterSet& parameters() const;
 
-    inline void setKeepExecutionDirectory(bool keep = true)
+    inline const supplementedInputDataBase& spBase() const
     {
-        enforceExecutionPathRemovalBehaviour_=true;
-        removeExecutionPath_=!keep;
-    }
-    
-    inline void setRemoveExecutionDirectory(bool remove = true)
-    {
-        enforceExecutionPathRemovalBehaviour_=true;
-        removeExecutionPath_=remove;
+        return *sp_;
     }
 
-    inline const std::string& getName() const
-    {
-        return name_;
-    }
-    inline std::string& name()
-    {
-        return name_;
-    }
-    inline std::string safe_name() const
-    {
-        std::string n ( getName() );
-        boost::replace_all ( n, " ", "_" );
-        boost::replace_all ( n, "/", "-" );
-        return n;
-    }
+    virtual ResultSetPtr createResultSet() const;
 
-    inline const std::string& getDescription() const
-    {
-        return description_;
-    }
-    inline std::string& description()
-    {
-        return description_;
-    }
-
-    virtual ParameterSet parameters() const =0;
-
-    virtual ResultSetPtr operator() ( ProgressDisplayer& displayer = consoleProgressDisplayer ) =0;
+    virtual ResultSetPtr operator() (
+        ProgressDisplayer& displayer = consoleProgressDisplayer ) =0;
 };
 
 
@@ -206,6 +266,48 @@ public:
 
 
 typedef std::shared_ptr<Analysis> AnalysisPtr;
+
+
+
+
+class AnalysisWithParameters
+    : public Analysis
+{
+public:
+
+#include "analysis__AnalysisWithParameters__Parameters.h"
+/*
+PARAMETERSET>>> AnalysisWithParameters Parameters
+
+userInformation = set {
+ cause = string "" "Cause of the analysis."
+ notes = string "" "Additional notes"
+ version = int 1 ""
+ modification = int 1 ""
+}
+
+<<<PARAMETERSET
+*/
+
+public:
+    typedef supplementedInputDataDerived<Parameters> supplementedInputData;
+    addParameterMembers_SupplementedInputData(AnalysisWithParameters::Parameters);
+
+public:
+    AnalysisWithParameters(
+        const std::shared_ptr<supplementedInputDataBase>& sp
+        );
+
+    inline const supplementedInputDataFromParameters& spPBase() const
+    {
+        return
+            dynamic_cast<const supplementedInputDataFromParameters&>(
+              spBase() );
+    }
+
+
+
+};
 
 
 

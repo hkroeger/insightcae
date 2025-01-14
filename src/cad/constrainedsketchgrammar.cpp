@@ -10,7 +10,7 @@ namespace cad {
 
 ConstrainedSketchGrammar::ConstrainedSketchGrammar(
     std::shared_ptr<ConstrainedSketch> sk,
-    MakeDefaultGeometryParametersFunction mdpf,
+    const ConstrainedSketchParametersDelegate& pd,
     cad::parser::ISCADParser *isr
     )
     : ExtendedGrammar<qi::grammar<std::string::iterator, cad::parser::skip_grammar> >(r_sketch),
@@ -54,7 +54,7 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
                      > r_parametersetstring )
                         [ //std::cout<<"lbl="<<qi::_1<<std::endl,
                          phx::bind( &ConstrainedSketch::parseLayerProperties, sketch,
-                                    qi::_1, qi::_2 ) ]
+                                    qi::_1, qi::_2, pd ) ]
         )
         ;
 
@@ -78,7 +78,7 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
 
     for (const auto& apr : *ConstrainedSketchEntity::addParserRuleFunctions_)
     {
-        apr.second(*this, mdpf);
+        apr.second(*this, pd);
     }
 }
 

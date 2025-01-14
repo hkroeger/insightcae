@@ -7,8 +7,8 @@
 
 
 IQVTKCADModel3DViewerPickPoint::IQVTKCADModel3DViewerPickPoint(
-    IQVTKCADModel3DViewer &viewWidget )
-: ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
+    ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent )
+: ViewWidgetAction<IQVTKCADModel3DViewer>(parent, true)
 {}
 
 

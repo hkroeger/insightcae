@@ -3,8 +3,8 @@ project(genericmodules)
 #find_package(OpenCasCade REQUIRED)
 
 set(genericmodules_SOURCES 
-  filetemplate.cpp 
-  convergenceanalysis.cpp
+  filetemplate.cpp filetemplate.h
+  convergenceanalysis.cpp convergenceanalysis.h
 )
 
 set(genericmodules_LIBS
@@ -13,8 +13,8 @@ set(genericmodules_LIBS
 
 if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)
     LIST(APPEND genericmodules_SOURCES
-        numericalwindtunnel.cpp
-        internalpressureloss.cpp
+        numericalwindtunnel.cpp numericalwindtunnel.h
+        internalpressureloss.cpp internalpressureloss.h
     )
     LIST(APPEND genericmodules_LIBS insightcad)
 endif()

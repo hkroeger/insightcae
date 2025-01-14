@@ -27,6 +27,9 @@ typedef boost::variant<boost::blank,AIS_DisplayMode> Optional_AIS_DisplayMode;
 Q_DECLARE_METATYPE(Optional_AIS_DisplayMode)
 Q_DECLARE_METATYPE(QVector<int>)
 Q_DECLARE_METATYPE(AIS_DisplayMode)
+typedef boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>
+    Optional_FeatureVisualizationStyle;
+Q_DECLARE_METATYPE(Optional_FeatureVisualizationStyle)
 
 class TOOLKIT_GUI_EXPORT ISCADMetaTypeRegistrator
 {

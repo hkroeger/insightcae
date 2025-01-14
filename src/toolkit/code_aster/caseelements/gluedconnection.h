@@ -9,7 +9,7 @@ class GluedConnection
 :public CodeAsterCaseElement
 {
 public:
-    GluedConnection(CodeAsterCase& c, const std::string& name, const ParameterSet& ps);
+    GluedConnection(CodeAsterCase& c, ParameterSetInput ip = ParameterSetInput() );
 };
 
 } // namespace insight

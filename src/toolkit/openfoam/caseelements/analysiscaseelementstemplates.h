@@ -31,9 +31,8 @@ namespace insight
 {
 
 template<class TPC, const char* TypeName>
-TPCArray<TPC,TypeName>::TPCArray(OpenFOAMCase& cm, ParameterSet const &ps )
-    : outputFilterFunctionObject(cm, ps),
-      p_(ps)
+TPCArray<TPC,TypeName>::TPCArray(OpenFOAMCase& cm, ParameterSetInput ip )
+    : outputFilterFunctionObject(cm, ip.forward<Parameters>())
 {
     using namespace std;
     using namespace boost;
@@ -46,20 +45,20 @@ TPCArray<TPC,TypeName>::TPCArray(OpenFOAMCase& cm, ParameterSet const &ps )
     {
         double x = double(i)/(n_r);
         double r;
-        if (p_.grading == Parameters::towardsEnd)
+        if (p().grading == Parameters::towardsEnd)
         {
-            r = -::cos(M_PI*(0.5+0.5*x))*p_.R;
+            r = -::cos(M_PI*(0.5+0.5*x))*p().R;
         }
-        else if (p_.grading == Parameters::towardsStart)
+        else if (p().grading == Parameters::towardsStart)
         {
-            r = (1.+::sin(-M_PI*(0.5+0.5*x)))*p_.R;
+            r = (1.+::sin(-M_PI*(0.5+0.5*x)))*p().R;
         }
-        else if (p_.grading == Parameters::none)
+        else if (p().grading == Parameters::none)
         {
-            r = x*p_.R;
+            r = x*p().R;
         }
 
-        cout<<"Creating tpc FOs for set "<<p_.name<<" at r="<<r<<endl;
+        cout<<"Creating tpc FOs for set "<<p().name<<" at r="<<r<<endl;
         r_.push_back(r);
 
         tpc_tan_.push_back(new TPC(cm, getTanParameters(i)));
@@ -104,16 +103,16 @@ void TPCArray<TPC,TypeName>::evaluate(
 {
     Ordering so;
     evaluateSingle(cm, location, results,
-                   p_.name+"_tan",
-                   p_.tanSpan, axisTitleTan(),
+                   p().name+"_tan",
+                   p().tanSpan, axisTitleTan(),
                    tpc_tan_,
                    shortDescription+" (along tangential direction)",
                    so
                   );
 
     evaluateSingle(cm, location, results,
-                   p_.name+"_ax",
-                   p_.axSpan,  axisTitleAx(),
+                   p().name+"_ax",
+                   p().axSpan,  axisTitleAx(),
                    tpc_ax_,
                    shortDescription+" (along axial direction)", //"two-point correlation of velocity along axial direction at different radii"
                    so
@@ -171,14 +170,14 @@ void TPCArray<TPC,TypeName>::evaluateSingle
             (
                 join_rows
                 (
-                    arma::linspace<arma::mat>(0, span, p_.np),
+                    arma::linspace<arma::mat>(0, span, p().np),
                     res[k+1].row(res[k+1].n_rows-1).t() // one TPC profile per row (one row per output time step), get the last row
                 )
             );
             data.col(1) /= data(0,1); // Normalize two-point correlation values (y)
 
             CorrelationFunctionModel m;
-            cout<<"Fitting tpc profile for set "<<p_.name<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
+            cout<<"Fitting tpc profile for set "<<p().name<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
             nonlinearRegression(data.col(1), data.col(0), m);
             arma::mat regressiondata
             (

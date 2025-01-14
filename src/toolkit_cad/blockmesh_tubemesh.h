@@ -45,16 +45,15 @@ mesh = set
     topPatchName = string "" "name of patch on top end"
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "blockMeshDict_TubeMesh" );
 
-    blockMeshDict_TubeMesh ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_TubeMesh ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
 
     virtual void create_bmd();
 };

@@ -13,11 +13,13 @@ namespace insight
 
 
 class TOOLKIT_GUI_EXPORT snappyHexMeshConfiguration_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
+ : public CADParameterSetModelVisualizer
 {
 public:
-    virtual void recreateVisualizationElements();
-    virtual void setIcon(QIcon* icon);
+    using CADParameterSetModelVisualizer::CADParameterSetModelVisualizer;
+
+    std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() override;
+    void recreateVisualizationElements() override;
 };
 
 

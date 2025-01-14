@@ -55,7 +55,7 @@ class ResultSet
     public ResultElement
 {
 protected:
-    ParameterSet p_;
+    std::shared_ptr<ParameterSet> p_;
     std::string title_, subtitle_, date_, author_;
     std::string introduction_;
 
@@ -120,7 +120,7 @@ public:
     void transfer ( const ResultSet& other );
     inline const ParameterSet& parameters() const
     {
-        return p_;
+        return *p_;
     }
     void clearInputParameters();
 
@@ -157,8 +157,8 @@ public:
     virtual void readFromStream ( std::istream& is );
     virtual void readFromString ( const std::string& contents );
 
-    virtual ParameterSetPtr convertIntoParameterSet() const;
-    ParameterPtr convertIntoParameter() const override;
+    std::unique_ptr<ParameterSet> convertIntoParameterSet() const;
+    std::unique_ptr<Parameter> convertIntoParameter() const override;
 
     ResultElementPtr clone() const override;
 };

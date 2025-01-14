@@ -11,8 +11,8 @@ defineType(reactingParcelFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(reactingParcelFoamNumerics);
 
 
-reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: reactingFoamNumerics(c, ps)
+reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: reactingFoamNumerics(c, ip.forward<Parameters>())
 {
 }
 

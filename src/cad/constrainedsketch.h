@@ -2,11 +2,17 @@
 #define INSIGHT_CAD_CONSTRAINEDSKETCH_H
 
 
+#include "base/cppextensions.h"
 #include "sketch.h"
 #include "base/exception.h"
 #include "base/parameterset.h"
 #include "constrainedsketchentities/sketchpoint.h"
 #include "constrainedsketchentities/externalreference.h"
+#include <memory>
+
+
+class IQParameterSetModel;
+
 
 namespace insight {
 namespace cad {
@@ -27,7 +33,113 @@ public:
 
 
 
-typedef std::function<insight::ParameterSet(void)> MakeDefaultLayerParametersFunction;
+
+struct LayerProperties
+    : public insight::ParameterSet
+{
+    using insight::ParameterSet::ParameterSet;
+
+    static std::unique_ptr<LayerProperties> create();
+    static std::unique_ptr<LayerProperties> create(
+        const ParameterSet& parameters );
+
+    std::unique_ptr<LayerProperties> cloneLayerProperties() const
+    {
+        return
+            create(*this);
+    }
+};
+
+
+
+
+
+/**
+ * @brief The ConstrainedSketchEntityParametersDelegate class
+ * manages creation and editing of a certain sketch
+ */
+class ConstrainedSketchParametersDelegate
+{
+public:
+    /**
+     * @brief createDefaultParameters
+     * @param e
+     * @return
+     * the parameters associated with the given entity
+     */
+    virtual void
+    changeDefaultParameters(ConstrainedSketchEntity& e) const;
+
+    /**
+     * @brief createDefaultLayerProperties
+     * @param e
+     * @return
+     * the parameters associated with the given layer
+     */
+    virtual std::unique_ptr<LayerProperties>
+    createDefaultLayerProperties(const std::string& layerName) const;
+};
+
+
+extern std::shared_ptr<ConstrainedSketchParametersDelegate> noParametersDelegate;
+
+
+
+class ConstrainedSketchPresentationDelegate
+{
+public:
+    declareType("ConstrainedSketchPresentationDelegate");
+    typedef
+        insight::StaticFunctionTable<
+            &typeName,
+            std::shared_ptr<ConstrainedSketchPresentationDelegate>
+            >
+            SketchPresentationDelegates;
+
+    declareStaticFunctionTable2(SketchPresentationDelegates, sketchPresentationFor);
+
+    template<class Instance>
+    struct Add
+        : public insight::cad::ConstrainedSketchPresentationDelegate
+                ::SketchPresentationDelegates::Add<Instance>
+    {
+        Add()
+            : insight::cad::ConstrainedSketchPresentationDelegate
+                ::SketchPresentationDelegates::Add<Instance>(
+                    insight::cad::ConstrainedSketchPresentationDelegate
+                        ::sketchPresentationFor_table(),
+                    &std::make_shared<Instance>
+                )
+        {}
+    };
+
+    /**
+     * @brief setupSketchEditorParameterSetModel
+     * @param e
+     * @return
+     * an IQParameterSetModel for editing the parameters of the given entity.
+     * The model may be enriched with additional data for the presentation,
+     * e.g. base points for vectors which are required during editing
+     */
+    virtual IQParameterSetModel*
+    setupSketchEntityParameterSetModel(
+        const ConstrainedSketchEntity& e) const;
+
+    virtual IQParameterSetModel*
+    setupLayerParameterSetModel(
+        const std::string& layerName, const LayerProperties& e) const;
+
+    /**
+     * @brief setEntityAppearance
+     * modifies the VTK actor
+     * @param e
+     * @param actprops
+     */
+    virtual void setEntityAppearance(
+        const ConstrainedSketchEntity& e, vtkProperty* actprops) const;
+};
+
+
 
 
 class ConstrainedSketch
@@ -48,14 +160,7 @@ public:
         int maxIter_;
     };
 
-    struct LayerProperties
-    : public insight::ParameterSet
-    {
-        template<class ...Args>
-        LayerProperties(Args&&... addArgs)
-            : insight::ParameterSet( std::forward<Args>(addArgs)... )
-        {}
-    };
+
 
     typedef std::map<int, ConstrainedSketchEntityPtr> GeometryMap;
 
@@ -68,6 +173,7 @@ public:
 
 private:
     DatumPtr pl_;
+    std::observer_ptr<Parameter> propertiesParent_;
 
     // ID is key.
     // storage of ID is required for proper update during parameter refresh (via parse from script)
@@ -75,10 +181,9 @@ private:
 
     SolverSettings solverSettings_;
 
-    LayerProperties defaultLayerProperties_;
-    boost::ptr_map<std::string, LayerProperties> layerProperties_;
+    std::map<std::string, std::unique_ptr<LayerProperties> > layerProperties_;
 
-    ConstrainedSketch( DatumPtr pl );
+    ConstrainedSketch( DatumPtr pl, const ConstrainedSketchParametersDelegate& pd );
     ConstrainedSketch( const ConstrainedSketch& other );
 
     size_t calcHash() const override;
@@ -94,14 +199,17 @@ public:
 
     CREATE_FUNCTION(ConstrainedSketch);
 
+    void setParentParameter(Parameter* p);
+    Parameter* parentParameter() const;
+
     static std::shared_ptr<ConstrainedSketch> createFromStream(
         DatumPtr pl,
         std::istream& is,
-        const ParameterSet& geomPS = insight::ParameterSet() );
+        const ConstrainedSketchParametersDelegate& pd);
 
     void readFromStream(
         std::istream& is,
-        const ParameterSet& geomPS = insight::ParameterSet() );
+        const ConstrainedSketchParametersDelegate& pd );
 
     const DatumPtr& plane() const;
     VectorPtr sketchPlaneNormal() const;
@@ -161,13 +269,29 @@ public:
 
     arma::mat sketchBoundingBox() const;
 
+    std::set<std::string> usedLayerNames() const;
     std::set<std::string> layerNames() const;
 
-    const LayerProperties& defaultLayerProperties() const;
-    void changeDefaultLayerProperties(const LayerProperties& ps);
-    const LayerProperties& layerProperties(const std::string& layerName) const;
-    void setLayerProperties(const std::string& layerName, const LayerProperties& ps);
-    void parseLayerProperties(const std::string& layerName, const std::string& ps);
+    bool hasLayer(const std::string& layerName) const;
+    bool layerIsUsed(const std::string& layerName) const;
+
+    void addLayer(
+        const std::string& layerName,
+        const ConstrainedSketchParametersDelegate& pd );
+
+    const LayerProperties& layerProperties(
+        const std::string& layerName ) const;
+
+    void setLayerProperties(
+        const std::string& layerName,
+        const ParameterSet& ps);
+
+    void parseLayerProperties(
+        const std::string& layerName,
+        const std::string& ps,
+        const ConstrainedSketchParametersDelegate& pd );
+
+    void removeLayer(const std::string& layerName);
 
 };
 

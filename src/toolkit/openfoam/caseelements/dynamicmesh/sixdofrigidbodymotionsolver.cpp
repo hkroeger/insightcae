@@ -6,14 +6,13 @@ namespace insight {
 
 defineType(SixDOFRigidBodyMotionSolver);
 
-SixDOFRigidBodyMotionSolver::SixDOFRigidBodyMotionSolver(const ParameterSet& ps )
-    : ps_(ps)
+SixDOFRigidBodyMotionSolver::SixDOFRigidBodyMotionSolver(
+    ParameterSetInput ip )
+    : p_(ip.forward<Parameters>())
 {}
 
 void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
 {
-    Parameters p(ps_);
-
     rbmc["report"]=true;
 
 
@@ -22,11 +21,13 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
     rbmc["solver"]=sc;
 
 
-    if (const Parameters::rho_field_type* rhof = boost::get<Parameters::rho_field_type>(&p.rho))
+    if (auto* rhof =
+        boost::get<Parameters::rho_field_type>(&p().rho))
       {
         rbmc["rho"]=rhof->fieldname;
       }
-    else if (const Parameters::rho_constant_type* rhoc = boost::get<Parameters::rho_constant_type>(&p.rho))
+    else if (auto* rhoc =
+               boost::get<Parameters::rho_constant_type>(&p().rho))
       {
         rbmc["rho"]="rhoInf";
         rbmc["rhoInf"]=rhoc->rhoInf;
@@ -35,7 +36,7 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
     rbmc["accelerationRelaxation"]=0.4;
 
     OFDictData::dict bl;
-    for (const Parameters::bodies_default_type& body: p.bodies)
+    for (auto& body: p().bodies)
     {
       OFDictData::dict bc;
 
@@ -83,7 +84,7 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
 
 
     OFDictData::dict rcs;
-    for (const auto& rc: p.restraints)
+    for (const auto& rc: p().restraints)
     {
         if (const auto* pv =
                 boost::get<Parameters::restraints_default_prescribedVelocity_type>(&rc))
@@ -109,13 +110,17 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
 
 
     // after bodies have been added
-    if (const auto* impl = boost::get<Parameters::implementation_extended_type>(&p.implementation))
+    if (auto* impl =
+        boost::get<Parameters::implementation_extended_type>(
+            &p().implementation))
     {
-        insertExtendedMotionParameters(rbmc, p, *impl);
+        insertExtendedMotionParameters(rbmc, p(), *impl);
     }
-    else if (const auto* impl = boost::get<Parameters::implementation_maneuvering_type>(&p.implementation))
+    else if (auto* impl =
+               boost::get<Parameters::implementation_maneuvering_type>(
+                   &p().implementation))
     {
-        insertExtendedMotionParameters(rbmc, p, *impl);
+        insertExtendedMotionParameters(rbmc, p(), *impl);
 
         rbmc["relativeMovingBodies"]=OFDictData::list();
 
@@ -136,14 +141,14 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
 
 std::string SixDOFRigidBodyMotionSolver::motionSolverName() const
 {
-    Parameters p(ps_);
-
     std::string name="rigidBodyMotion";
-    if (boost::get<Parameters::implementation_extended_type>(&p.implementation))
+    if (boost::get<Parameters::implementation_extended_type>(
+            &p().implementation))
     {
       name="extendedRigidBodyMotion";
     }
-    else if (boost::get<Parameters::implementation_maneuvering_type>(&p.implementation))
+    else if (boost::get<Parameters::implementation_maneuvering_type>(
+                   &p().implementation))
     {
       name="maneuveringMotion";
     }

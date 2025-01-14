@@ -24,17 +24,16 @@ time_integration = includedset "insight::CompressiblePIMPLESettings::Parameters"
 Tinternal = double 300 "initial temperature in internal field"
 pinternal = double 1e5 "initial pressure in internal field. Should be zero, if boussinesqApproach is set to true and some physical reasonable absolut pressure value otherwise."
 
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     void init();
 
 public:
     declareType ( "buoyantPimpleFoamNumerics" );
-    buoyantPimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    buoyantPimpleFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

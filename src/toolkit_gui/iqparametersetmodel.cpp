@@ -1,3 +1,4 @@
+#include <QObject>
 #include <QDebug>
 #include <QLayout>
 #include <QPushButton>
@@ -9,6 +10,11 @@
 #include <iterator>
 
 #include "iqparametersetmodel.h"
+#include "base/parameter.h"
+#include "base/parameters/arrayparameter.h"
+#include "base/parameters/selectablesubsetparameter.h"
+#include "base/parameters/subsetparameter.h"
+#include "base/parameterset.h"
 #include "iqparameter.h"
 #include "iqparameters/iqarrayparameter.h"
 #include "iqparameters/iqarrayelementparameter.h"
@@ -25,13 +31,159 @@
 
 
 
-
-IQParameterSetModel::IQParameterSetModel(const insight::ParameterSet& ps, const insight::ParameterSet& defaultps, QObject *parent)
-  : QAbstractItemModel(parent)
+IQParameter *
+IQParameterSetModel::findWrapper(const insight::Parameter &p) const
 {
-  resetParameters(ps, defaultps);
+    auto i = std::find_if(
+        wrappers_.begin(), wrappers_.end(),
+        [&](decltype(wrappers_)::const_reference_type v)
+        {
+            return v.first.valid() && (v.first.get()==&p);
+        }
+        );
+    if (i==wrappers_.end())
+        return nullptr;
+    else
+        return const_cast<IQParameter*>(&(*i).first);
 }
 
+
+
+
+int IQParameterSetModel::countDisplayedChildren(const QModelIndex &index) const
+{
+    auto iqp=iqIndexData(index);
+    int n=0;
+    for (auto& c: iqp->children())
+    {
+        if (dynamic_cast<IQParameter*>(c))
+            ++n;
+    }
+    return n;
+}
+
+
+
+insight::Parameter* IQParameterSetModel::indexData(const QModelIndex& idx)
+{
+    return static_cast<insight::Parameter*>(idx.internalPointer());
+}
+
+
+
+IQParameter *IQParameterSetModel::iqIndexData(const QModelIndex &idx)
+{
+    // create wrapper on the fly
+    if (auto *p=indexData(idx))
+    {
+        IQParameter *wrapper = findWrapper(*p);
+        if (!wrapper)
+        {
+            auto *model = const_cast<IQParameterSetModel*>(this);
+
+            // use other wrapper, if its an array element
+            if (p->hasParent() && dynamic_cast<insight::ArrayParameter*>(&p->parent()))
+            {
+                wrapper = IQArrayElementParameterBase::create(
+                    model, model,
+                    p, *defaultParameterSet_ );
+            }
+            else
+            {
+                wrapper = IQParameter::create(
+                    model, model,
+                    p, *defaultParameterSet_ );
+            }
+
+            wrappers_.insert( wrapper, 0 );
+        }
+
+        return wrapper;
+    }
+
+    return nullptr;
+}
+
+
+
+const IQParameter *IQParameterSetModel::iqIndexData(const QModelIndex &idx) const
+{
+    return const_cast<IQParameterSetModel*>(this)
+        ->iqIndexData(idx);
+}
+
+
+
+IQParameterSetModel::IQParameterSetModel(
+    const insight::ParameterSet& ps,
+    boost::optional<const insight::ParameterSet&> defaultps,
+    QObject *parent
+    )
+  : QAbstractItemModel(parent)
+{
+  resetParameters( ps, defaultps ? *defaultps : ps );
+}
+
+
+
+const insight::Parameter *IQParameterSetModel::visibleParent(
+    const insight::Parameter &p, int& row ) const
+{
+    const insight::Parameter *pp = nullptr;
+    if (p.hasParent())
+    {
+        pp=&p.parent();
+        row=pp->childParameterIndex(&p);
+
+        // is parent is subset and parents parent is selectablesubet,
+        // then redirect
+        if (dynamic_cast<const insight::ParameterSet*>(pp))
+        {
+            if (pp->hasParent())
+            {
+                if (dynamic_cast<const insight::SelectableSubsetParameter*>(&pp->parent()))
+                {
+                    pp=&pp->parent();
+                }
+            }
+        }
+    }
+    else
+    {
+        row=parameterSet_->childParameterIndex(&p);
+    }
+    return pp;
+}
+
+
+
+QModelIndex IQParameterSetModel::indexFromParameter(const insight::Parameter &p, int col) const
+{
+    auto *model = const_cast<IQParameterSetModel*>(this);
+    auto *parameter = const_cast<insight::Parameter*>(&p);
+
+    const insight::Parameter *pp = parameterSet_.get();
+
+    if (parameter==pp) return QModelIndex();
+
+    int row=-1;
+    if (p.hasParent())
+    {
+        pp=visibleParent(p, row);
+    }
+
+    return createIndex(
+        row, col, parameter );
+}
+
+
+
+
+QModelIndex IQParameterSetModel::indexFromParameterPath(const std::string &path, int col) const
+{
+    return indexFromParameter(
+        parameterSet_->get<insight::Parameter>(path), col );
+}
 
 
 
@@ -64,13 +216,13 @@ int IQParameterSetModel::rowCount(const QModelIndex &parent) const
   int s=0;
   if (!parent.isValid())
   {
-    s=rootParameters_.size();
+    s=parameterSet_->nChildren();
   }
-  else if (const auto* p=static_cast<IQParameter*>(parent.internalPointer()))
+  else if (const auto* p=indexData(parent))
   {
       if (parent.column()==0)
       {
-          s=p->nChildParameters(); // only first column has children
+          s = p->nChildren(); // only first column has children
       }
   }
 
@@ -82,24 +234,26 @@ int IQParameterSetModel::rowCount(const QModelIndex &parent) const
 
 QModelIndex IQParameterSetModel::index(int row, int column, const QModelIndex &parent) const
 {
-  QModelIndex i;
+    QModelIndex i;
 
-  if (!parent.isValid()) // in root dict
-  {
-    if (row>=0 && row<rootParameters_.size())
+    if (!parent.isValid()) // in root dict
     {
-      i=createIndex(row, column, rootParameters_[row]);
+        if (row>=0 && row<parameterSet_->nChildren())
+        {
+            i=indexFromParameter(
+                parameterSet_->childParameter(row), column );
+        }
     }
-  }
-  else if (auto* p=static_cast<IQParameter*>(parent.internalPointer())) // down in tree
-  {
-    if (row>=0 && row<p->nChildParameters())
+    else if (auto* p=indexData(parent)) // down in tree
     {
-      i=createIndex(row, column, (*p)[row]);
+        if ( (row>=0) && (row<p->nChildren()) )
+        {
+            i=indexFromParameter(
+                p->childParameter(row), column );
+        }
     }
-  }
 
-  return i;
+    return i;
 }
 
 
@@ -107,30 +261,23 @@ QModelIndex IQParameterSetModel::index(int row, int column, const QModelIndex &p
 
 QModelIndex IQParameterSetModel::parent(const QModelIndex &index) const
 {
-  QModelIndex i;
+    QModelIndex i;
+    int row;
 
-  if ( index.isValid() )
-  {
-    if (auto* p=static_cast<IQParameter*>(index.internalPointer()))
+    if ( index.isValid() )
     {
-      if (auto* pp = p->parentParameter())
-      {
-        int parentRow;
-        if (auto* ppp = pp->parentParameter())
+        if (auto* p = indexData(index))
         {
-          parentRow = ppp->indexOf(pp);
+            if (auto *pp=visibleParent(*p, row))
+            {
+                i = indexFromParameter(*pp, 0);
+            }
         }
-        else
-        {
-          parentRow = rootParameters_.indexOf(pp);
-        }
-        i = createIndex(parentRow, 0, pp);
-      }
     }
-  }
 
-  return i;
+    return i;
 }
+
 
 
 
@@ -143,8 +290,9 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
 
   auto flags=QAbstractItemModel::flags(index);
 
-  auto *iqp=static_cast<IQParameter*>(index.internalPointer());
-  auto *p = iqp ? &iqp->parameter() : nullptr;
+  auto *iqp=iqIndexData(index);
+  auto *p=iqp->get();
+
 
   flags |= Qt::ItemIsDragEnabled;
   flags |= Qt::ItemIsDropEnabled;
@@ -159,10 +307,17 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
 
     if (dynamic_cast<const insight::BoolParameter*>(p))
         flags |= Qt::ItemIsUserCheckable;
+
+    if (IQParameterGridViewDelegateEditorWidget::has_createDelegate(iqp->type()))
+    {
+        flags |= Qt::ItemIsEditable;
+    }
   }
 
   return flags;
 }
+
+
 
 
 Qt::DropActions IQParameterSetModel::supportedDropActions() const
@@ -170,10 +325,14 @@ Qt::DropActions IQParameterSetModel::supportedDropActions() const
   return Qt::CopyAction | Qt::MoveAction;
 }
 
+
+
+
 QStringList IQParameterSetModel::mimeTypes() const
 {
   return { "application/xml" };
 }
+
 
 
 
@@ -194,10 +353,9 @@ QMimeData *IQParameterSetModel::mimeData(const QModelIndexList &indexes) const
   {
     if (index.column()==0) // one index per col is issued
     {
-        auto *iqp=static_cast<IQParameter*>(index.internalPointer());
-        const auto& ip=iqp->parameter();
+        auto *ip=indexData(index);
 
-        ip.appendToNode(iqp->name().toStdString(), doc, *rootnode, "");
+        ip->appendToNode(ip->name(), doc, *rootnode, "");
     }
   }
   os << doc;
@@ -218,102 +376,96 @@ bool IQParameterSetModel::dropMimeData(
     int row, int column,
     const QModelIndex &parent )
 {
-  if (action == Qt::IgnoreAction)
-  {
-    return true;
-  }
-  else if (action == Qt::MoveAction || action == Qt::CopyAction)
-  {
+  // if (action == Qt::IgnoreAction)
+  // {
+  //   return true;
+  // }
+  // else if (action == Qt::MoveAction || action == Qt::CopyAction)
+  // {
 
-    // parse, what we got
-    std::string contents(data->data("application/xml").toStdString());
-    using namespace rapidxml;
-    xml_document<> doc;
-    doc.parse<0>(&contents[0]);
-    xml_node<> *rootnode = doc.first_node("root");
+  //   // parse, what we got
+  //   std::string contents(data->data("application/xml").toStdString());
+  //   using namespace rapidxml;
+  //   xml_document<> doc;
+  //   doc.parse<0>(&contents[0]);
+  //   xml_node<> *rootnode = doc.first_node("root");
 
-    std::string allTypesEqual(rootnode->first_node()->name());
-    int nArgs = 0;
-    for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-    {
-        std::string type(e->name());
-        nArgs++;
-        if (type!=allTypesEqual) allTypesEqual="";
-    }
+  //   std::string allTypesEqual(rootnode->first_node()->name());
+  //   int nArgs = 0;
+  //   for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
+  //   {
+  //       std::string type(e->name());
+  //       nArgs++;
+  //       if (type!=allTypesEqual) allTypesEqual="";
+  //   }
 
-    IQArrayParameter *iqap = nullptr;
-    insight::ArrayParameter *iap = nullptr;
-    if (auto *iqp=static_cast<IQParameter*>(parent.internalPointer()))
-    {
-        if ((iqap = dynamic_cast<IQArrayParameter*>(iqp)))
-        {
-            iap = dynamic_cast<insight::ArrayParameter*>(
-                &iqap->parameterRef());
-        }
-    }
+  //   insight::ArrayParameter *iap = nullptr;
+  //   if (auto *ip=indexData(parent))
+  //   {
+  //       iap = dynamic_cast<insight::ArrayParameter*>(ip);
+  //   }
 
-    if (iqap && allTypesEqual==iap->defaultValue().type())
-    {
-        // Parent is Array and all given parameters are of the same and child type of array? -> inserted/append children
-        std::vector<insight::ParameterPtr> args;
-        for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-        {
-            insight::ParameterPtr np(
-                iap->defaultValue().clone() );
+  //   if (iap && allTypesEqual==iap->defaultValue().type())
+  //   {
+  //       // Parent is Array and all given parameters are of the same and child type of array? -> inserted/append children
+  //       std::vector<insight::ParameterPtr> args;
+  //       for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
+  //       {
+  //           insight::ParameterPtr np(
+  //               iap->defaultValue().clone() );
 
-            np->readFromNode(
-                e->first_attribute("name")->value(),
-                *rootnode,
-                ""
-                );
+  //           np->readFromNode(
+  //               e->first_attribute("name")->value(),
+  //               *rootnode,
+  //               ""
+  //               );
 
-            args.push_back(np);
-        }
+  //           args.push_back(np);
+  //       }
 
-        auto row=parent.row();
-        if (row<0) // append
-        {
-            for (auto& arg: args)
-            {
-                appendArrayElement(parent, *arg);
-            }
-            return true;
-        }
-        else if (row>=0)
-        {
-            // insert in reverse order
-            std::reverse(args.begin(), args.end());
-            for (auto& arg: args)
-            {
-                insertArrayElement(parent, *arg);
-            }
-            return true;
-        }
-    }
-    else if (nArgs==1)
-    {
-        // expect a single given item of same type as indexed parameter
-        auto targetIndex = index(row, column, parent);
-        if (!targetIndex.isValid())
-            targetIndex=parent;
+  //       auto row=parent.row();
+  //       if (row<0) // append
+  //       {
+  //           for (auto& arg: args)
+  //           {
+  //               appendArrayElement(parent, *arg);
+  //           }
+  //           return true;
+  //       }
+  //       else if (row>=0)
+  //       {
+  //           // insert in reverse order
+  //           std::reverse(args.begin(), args.end());
+  //           for (auto& arg: args)
+  //           {
+  //               insertArrayElement(parent, *arg);
+  //           }
+  //           return true;
+  //       }
+  //   }
+  //   else if (nArgs==1)
+  //   {
+  //       // expect a single given item of same type as indexed parameter
+  //       auto targetIndex = index(row, column, parent);
+  //       if (!targetIndex.isValid())
+  //           targetIndex=parent;
 
-        auto *iqp=static_cast<IQParameter*>(targetIndex.internalPointer());
-        if (allTypesEqual==iqp->parameter().type())
-        {
-            insight::ParameterPtr np(iqp->parameter().clone());
-            np->readFromNode(
-                    rootnode->first_node()->first_attribute("name")->value(),
-                    *rootnode,
-                    ""
-                );
-            iqp->parameterRef().copyFrom( *np );
-            notifyParameterChange(targetIndex, true);
-            return true;
-        }
-    }
+  //       auto *ip=indexData(targetIndex);
+  //       if (allTypesEqual==ip->type())
+  //       {
+  //           insight::ParameterPtr np(iqp->parameter().clone());
+  //           np->readFromNode(
+  //                   rootnode->first_node()->first_attribute("name")->value(),
+  //                   *rootnode,
+  //                   ""
+  //               );
+  //           iqp->parameterRef().copyFrom( *np );
+  //           return true;
+  //       }
+  //   }
 
 
-  }
+  // }
 
   return false;
 }
@@ -323,8 +475,10 @@ bool IQParameterSetModel::dropMimeData(
 
 QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
 {
-  if (auto *p = static_cast<IQParameter*>(index.internalPointer()))
+  if (auto *iqp = iqIndexData(index))
   {
+    auto *p=iqp->get();
+
     switch (role)
     {
 
@@ -332,51 +486,51 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
       case Qt::EditRole:
         if (index.column()==labelCol) // name
         {
-          return p->name();
+          return QString::fromStdString(p->name());
         }
         else if (index.column()==valueCol) // data
         {
-          if (auto *sp = dynamic_cast<const insight::SelectionParameter*>(&p->parameter()))
+            if (auto *sp = dynamic_cast<const insight::SelectionParameter*>(p))
                 return QString::fromStdString(sp->selection());
-          else if (auto *dp = dynamic_cast<const insight::DoubleParameter*>(&p->parameter()))
+          else if (auto *dp = dynamic_cast<const insight::DoubleParameter*>(p))
                 return dp->operator()();
-          else if (auto *ip = dynamic_cast<const insight::IntParameter*>(&p->parameter()))
+          else if (auto *ip = dynamic_cast<const insight::IntParameter*>(p))
                 return ip->operator()();
-          else if (auto *sp = dynamic_cast<const insight::StringParameter*>(&p->parameter()))
+          else if (auto *sp = dynamic_cast<const insight::StringParameter*>(p))
                 return QString::fromStdString(sp->operator()());
-          else if (auto *bp = dynamic_cast<const insight::BoolParameter*>(&p->parameter()))
+          else if (auto *bp = dynamic_cast<const insight::BoolParameter*>(p))
                 return QVariant(); //handled in checkstaterole below //dp->operator()();
           else
-                return p->valueText();
+                return iqp->valueText();
         }
         else if (index.column()==stringPathCol) // full path (hidden)
         {
-          return p->path();
+          return QString::fromStdString(p->path());
         }
         else if (index.column()==iqParamCol) // pointer to decorator (hidden)
         {
-          return QVariant::fromValue(static_cast<void*>(p));
+          return QVariant::fromValue(static_cast<void*>(const_cast<IQParameter*>(iqp)));
         }
         break;
 
       case Qt::CheckStateRole:
         if (index.column()==valueCol) // data
         {
-          if (auto *bp = dynamic_cast<const insight::BoolParameter*>(&p->parameter()))
+          if (auto *bp = dynamic_cast<const insight::BoolParameter*>(p))
                 return bp->operator()() ? Qt::Checked : Qt::Unchecked;
         }
         break;
 
       case Qt::BackgroundRole:
-        return p->backgroundColor();
+        return iqp->backgroundColor();
         break;
 
       case Qt::ForegroundRole:
-        return p->textColor();
+        return iqp->textColor();
         break;
 
       case Qt::FontRole:
-        return p->textFont();
+        return iqp->textFont();
         break;
 
     }
@@ -388,7 +542,7 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
 
 bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-  if (auto *p = static_cast<IQParameter*>(index.internalPointer()))
+  if (auto *p = indexData(index))
   {
     switch (role)
     {
@@ -396,43 +550,27 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
     case Qt::EditRole:
         if (index.column()==valueCol) // data
         {
-          if (auto *dp = dynamic_cast<insight::DoubleParameter*>(&p->parameterRef()))
-          {
-                bool ok;
-                dp->set(value.toDouble(&ok));
-                if (ok)
-                {
-                    Q_EMIT dataChanged(index, index, {role});
-                }
-                return ok;
-          }
-          else if (auto *ip = dynamic_cast<insight::IntParameter*>(&p->parameterRef()))
-          {
-                bool ok;
-                ip->set(value.toInt(&ok));
-                if (ok)
-                {
-                    Q_EMIT dataChanged(index, index, {role});
-                }
-                return ok;
-          }
-          else if (auto *sp = dynamic_cast<insight::StringParameter*>(&p->parameterRef()))
-          {
-                sp->set(value.toString().toStdString());
+            auto *iqp=iqIndexData(index);
+            bool ok = iqp->setValue(value);
+            if (ok)
+            {
                 Q_EMIT dataChanged(index, index, {role});
-                return true;
-          }
+            }
+            return ok;
         }
         break;
 
     case Qt::CheckStateRole:
         if (index.column()==valueCol) // data
         {
-          if (auto *bp = dynamic_cast<insight::BoolParameter*>(&p->parameterRef()))
+          if (auto *bp = dynamic_cast<insight::BoolParameter*>(p))
           {
-                bp->set(value.value<Qt::CheckState>()==Qt::Checked);
+            auto *iqp=iqIndexData(index);
+            if (iqp->setValue(value))
+            {
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
+            }
           }
         }
         break;
@@ -513,90 +651,90 @@ void IQParameterSetModel::contextMenu(QWidget *pw, const QModelIndex& index, con
 
 
 
-QList<IQParameter*> IQParameterSetModel::decorateChildren(QObject* parent, insight::Parameter& curParam)
-{
-  if (auto* ap = dynamic_cast<insight::ArrayParameterBase*>(&curParam))
-  {
-    return decorateArrayContent(parent, *ap);
-  }
-  else if (auto* ap = dynamic_cast<insight::LabeledArrayParameter*>(&curParam))
-  {
-      return decorateLabeledArrayContent(parent, *ap);
-  }
-  else
-  {
-    QList<IQParameter*> children;
-    for (auto childParam=curParam.begin(); childParam!=curParam.end(); ++childParam)
-    {
-      auto name = QString::fromStdString(childParam.name());
-      auto iqp = IQParameter::create(parent, this, name, *childParam, defaultParameterSet_);
+// QList<IQParameter*> IQParameterSetModel::decorateChildren(QObject* parent, insight::Parameter& curParam)
+// {
+//   if (auto* ap = dynamic_cast<insight::ArrayParameterBase*>(&curParam))
+//   {
+//     return decorateArrayContent(parent, *ap);
+//   }
+//   else if (auto* ap = dynamic_cast<insight::LabeledArrayParameter*>(&curParam))
+//   {
+//       return decorateLabeledArrayContent(parent, *ap);
+//   }
+//   else
+//   {
+//     QList<IQParameter*> children;
+//     for (auto childParam=curParam.begin(); childParam!=curParam.end(); ++childParam)
+//     {
+//       auto name = QString::fromStdString(childParam.name());
+//       auto iqp = IQParameter::create(parent, this, name, *childParam, defaultParameterSet_);
 
-      decorateChildren(iqp, *childParam);
-      children.append(iqp);
-    }
-    if (auto* ciqp = dynamic_cast<IQParameter*>(parent))
-    {
-      ciqp->append(children);
-    }
-    return children;
-  }
-}
-
-
-
-
-
-IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, insight::Parameter& cp)
-{
-  auto name = QString("%1").arg(i);
-  auto iqp = IQArrayElementParameterBase::create(parent, this, name, cp, defaultParameterSet_);
-
-  decorateChildren(iqp, cp);
-  return iqp;
-}
+//       decorateChildren(iqp, *childParam);
+//       children.append(iqp);
+//     }
+//     if (auto* ciqp = dynamic_cast<IQParameter*>(parent))
+//     {
+//       ciqp->append(children);
+//     }
+//     return children;
+//   }
+// }
 
 
 
 
-QList<IQParameter*> IQParameterSetModel::decorateArrayContent(QObject* parent, insight::ArrayParameterBase& ap)
-{
-  QList<IQParameter*> children;
-  for (int i=0; i<ap.size(); ++i)
-  {
-    auto iqp=decorateArrayElement(parent, i, ap.elementRef(i));
-    children.append(iqp);
-  }
-  if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
-  {
-    ciqp->append(children);
-  }
-  return children;
-};
+
+// IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, insight::Parameter& cp)
+// {
+//   auto name = QString("%1").arg(i);
+//   auto iqp = IQArrayElementParameterBase::create(parent, this, name, cp, defaultParameterSet_);
+
+//   decorateChildren(iqp, cp);
+//   return iqp;
+// }
 
 
 
-IQParameter *IQParameterSetModel::decorateLabeledArrayElement(QObject *parent, const std::string& name, insight::Parameter &cp)
-{
-    auto iqp = IQLabeledArrayElementParameterBase::create(parent, this, QString::fromStdString(name), cp, defaultParameterSet_);
 
-    decorateChildren(iqp, cp);
-    return iqp;
-}
+// QList<IQParameter*> IQParameterSetModel::decorateArrayContent(QObject* parent, insight::ArrayParameterBase& ap)
+// {
+//   QList<IQParameter*> children;
+//   for (int i=0; i<ap.size(); ++i)
+//   {
+//     auto iqp=decorateArrayElement(parent, i, ap.elementRef(i));
+//     children.append(iqp);
+//   }
+//   if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
+//   {
+//     ciqp->append(children);
+//   }
+//   return children;
+// };
 
-QList<IQParameter *> IQParameterSetModel::decorateLabeledArrayContent(QObject *parent, insight::LabeledArrayParameter &ap)
-{
-    QList<IQParameter*> children;
-    for (int i=0; i<ap.size(); ++i)
-    {
-        auto iqp=decorateLabeledArrayElement(parent, ap.childParameterName(i), ap.childParameterRef(i));
-        children.append(iqp);
-    }
-    if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
-    {
-        ciqp->append(children);
-    }
-    return children;
-}
+
+
+// IQParameter *IQParameterSetModel::decorateLabeledArrayElement(QObject *parent, const std::string& name, insight::Parameter &cp)
+// {
+//     auto iqp = IQLabeledArrayElementParameterBase::create(parent, this, QString::fromStdString(name), cp, defaultParameterSet_);
+
+//     decorateChildren(iqp, cp);
+//     return iqp;
+// }
+
+// QList<IQParameter *> IQParameterSetModel::decorateLabeledArrayContent(QObject *parent, insight::LabeledArrayParameter &ap)
+// {
+//     QList<IQParameter*> children;
+//     for (int i=0; i<ap.size(); ++i)
+//     {
+//         auto iqp=decorateLabeledArrayElement(parent, ap.childParameterName(i), ap.childParameterRef(i));
+//         children.append(iqp);
+//     }
+//     if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
+//     {
+//         ciqp->append(children);
+//     }
+//     return children;
+// }
 
 
 
@@ -604,18 +742,34 @@ QList<IQParameter *> IQParameterSetModel::decorateLabeledArrayContent(QObject *p
 void IQParameterSetModel::clearParameters()
 {
   beginResetModel();
-  for (auto& rp: rootParameters_)
-  {
-    //rp->deleteLater();
-    delete rp; // needs to be deleted before PS is reassigned (valueChanged handler needs to be disconnected)
-  }
-  rootParameters_.clear();
-  endResetModel();
+  // for (auto& rp: rootParameters_)
+  // {
+  //   //rp->deleteLater();
+  //   delete rp; // needs to be deleted before PS is reassigned (valueChanged handler needs to be disconnected)
+  // }
+  // rootParameters_.clear();
 
-  parameterSet_=insight::ParameterSet();
-  defaultParameterSet_=insight::ParameterSet();
+  parameterSet_=insight::ParameterSet::create();
+  defaultParameterSet_=insight::ParameterSet::create();
+  endResetModel();
 }
 
+
+
+
+void IQParameterSetModel::resetParameters(
+    const insight::ParameterSet &ps )
+{
+    beginResetModel();
+    parameterSet_=insight::ParameterSet::create();
+    endResetModel();
+
+    // create decorators that store parent relationship
+
+    beginInsertRows(QModelIndex(), 0, parameterSet_->size()-1);
+    *parameterSet_ = ps;
+    endInsertRows();
+}
 
 
 
@@ -625,13 +779,11 @@ void IQParameterSetModel::resetParameters(
 {
   clearParameters();
 
-  parameterSet_=ps;
-  defaultParameterSet_=defaultps;
+  *defaultParameterSet_ = defaultps;
 
   // create decorators that store parent relationship
-
-  beginInsertRows(QModelIndex(), 0, parameterSet_.size()-1);
-  rootParameters_=decorateChildren(this, parameterSet_);
+  beginInsertRows(QModelIndex(), 0, parameterSet_->size()-1);
+  *parameterSet_ = ps;
   endInsertRows();
 }
 
@@ -640,8 +792,11 @@ void IQParameterSetModel::resetParameters(
 
 const insight::ParameterSet &IQParameterSetModel::getParameterSet() const
 {
-  return parameterSet_;
+  return *parameterSet_;
 }
+
+
+
 
 IQParameter *IQParameterSetModel::parameterFromIndex(const QModelIndex &index)
 {
@@ -656,19 +811,19 @@ IQParameter *IQParameterSetModel::parameterFromIndex(const QModelIndex &index)
 
 bool IQParameterSetModel::removeRows(int row, int count, const QModelIndex &parent)
 {
-  if (parent.column()==0)
-  {
-      auto* iqp=static_cast<IQParameter*>(parent.internalPointer());
-      if (auto *iqap=dynamic_cast<IQArrayParameter*>(iqp))
-      {
-        for (int i=row+count-1; i>=row; --i)
+    if (parent.column()==0)
+    {
+        auto *ip = indexData(parent);
+        if (auto *iap=dynamic_cast<insight::ArrayParameter*>(ip))
         {
-          removeArrayElement(index(i, 0, parent));
+            for (int i=row+count-1; i>=row; --i)
+            {
+                removeArrayElement(index(i, 0, parent));
+            }
+            return true;
         }
-        return true;
-      }
-  }
-  return false;
+    }
+    return false;
 }
 
 
@@ -676,13 +831,14 @@ bool IQParameterSetModel::removeRows(int row, int count, const QModelIndex &pare
 
 
 
-insight::Parameter &IQParameterSetModel::parameterRef(const QModelIndex &index)
+insight::Parameter &
+IQParameterSetModel::parameterRef(const QModelIndex &index)
 {
   if (index.isValid())
   {
-    if (auto* p=static_cast<IQParameter*>(index.internalPointer()))
+    if (auto* p = indexData(index) )
     {
-      return const_cast<insight::Parameter&>(p->parameter());
+      return *p;
     }
   }
 
@@ -690,68 +846,32 @@ insight::Parameter &IQParameterSetModel::parameterRef(const QModelIndex &index)
 }
 
 
-void IQParameterSetModel::notifyParameterChange(const std::string &path, bool redecorateChildren)
+insight::Parameter& IQParameterSetModel::parameterRef(const std::string &path)
 {
-    auto idx=indexFromParameterPath(path);
+    return parameterSet_->get<insight::Parameter>(path);
+}
+
+
+void IQParameterSetModel::notifyParameterChange(const insight::Parameter& p)
+{
+    auto idx=indexFromParameter(p, 0);
     if (idx.isValid())
     {
-        notifyParameterChange( idx, redecorateChildren );
+        notifyParameterChange( idx );
     }
 }
 
 
-void IQParameterSetModel::notifyParameterChange(const QModelIndex &index, bool redecorateChildren)
+
+
+void IQParameterSetModel::notifyParameterChange(const QModelIndex &index)
 {
   Q_ASSERT(index.isValid());
 
-  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
-  auto& p = iqp->parameterRef();
-
-  if (redecorateChildren)
-  {
-      // remove existing child params
-      std::function<void(const QModelIndex&,int)> removeChildDecorators;
-      removeChildDecorators =
-          [this, &removeChildDecorators]
-          (const QModelIndex& index, int indent)
-      {
-          for (int i=0;i<rowCount(index); i++)
-          {
-              removeChildDecorators(this->index(i, 0, index), indent+1);
-          }
-          auto* iqp = static_cast<IQParameter*>(index.internalPointer());
-          if (iqp->size())
-          {
-              beginRemoveRows(index, 0, iqp->size()-1);
-              for (auto* c: *iqp)
-              {
-                  c->deleteLater();
-              }
-              iqp->clear();
-              endRemoveRows();
-          }
-      };
-      removeChildDecorators(index,0);
-
-      int nc=p.nChildren();
-      if (nc>0)
-      {
-        // repopulate
-        beginInsertRows(index, 0, nc-1);
-        decorateChildren(iqp, p);
-        endInsertRows();
-      }
-
-  }
-
-  if (auto *p=static_cast<IQParameter*>(index.internalPointer()))
-  {
-    p->resetModificationState();
-  }
-
   Q_EMIT dataChanged(
-        createIndex(index.row(), 0, index.internalPointer()),
-        createIndex(index.row(), columnCount(index)-1, index.internalPointer()) );
+      index.siblingAtColumn(0),
+      index.siblingAtColumn(columnCount(index)-1)
+      );
 }
 
 
@@ -761,7 +881,7 @@ void IQParameterSetModel::appendArrayElement(
     const QModelIndex &index,
     const insight::Parameter &elem )
 {
-  insertArrayElement(index, elem);
+    insertArrayElement(index, elem);
 }
 
 
@@ -769,30 +889,28 @@ void IQParameterSetModel::appendArrayElement(
 
 void IQParameterSetModel::insertArrayElement(const QModelIndex &index, const insight::Parameter &elem)
 {
-  IQArrayParameter *iqap(nullptr);
-  insight::ArrayParameter *iap(nullptr);
   int iIns=0;
 
-  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
-  auto parentIndex = parent(index);
-  auto *iqpp = static_cast<IQParameter*>(parentIndex.internalPointer());
-  if ((iqap=dynamic_cast<IQArrayParameter*>(iqp)))
+  insight::ArrayParameter *iap(nullptr);
+  // if index points to array, insert there,
+  // otherwise parent is assumed to be array and insert into it
+  if ((iap=dynamic_cast<insight::ArrayParameter*>(
+           indexData(index))))
   {
-    iap=dynamic_cast<insight::ArrayParameter*>(&iqap->parameterRef());
     iIns=iap->size();
   }
-  else if ((iqap=dynamic_cast<IQArrayParameter*>(iqpp)))
+  else if ((iap=dynamic_cast<insight::ArrayParameter*>(
+                  indexData(parent(index)))))
   {
-    iap=dynamic_cast<insight::ArrayParameter*>(&iqap->parameterRef());
     iIns=index.row();
   }
 
-  iap->insertValue( iIns, elem );
 
 
   beginInsertRows(index, iIns, iIns);
-  auto iqnp=decorateArrayElement(iqap, iIns, iap->elementRef(iIns)/*, 0*/);
-  iqap->append(iqnp);
+  iap->insertValue( iIns, elem );
+  // auto iqnp=decorateArrayElement(iqap, iIns, iap->elementRef(iIns)/*, 0*/);
+  // iqp->append(iqnp);
   endInsertRows();
 }
 
@@ -804,90 +922,36 @@ void IQParameterSetModel::removeArrayElement(const QModelIndex &index)
   auto parentIndex = parent(index);
   Q_ASSERT( parentIndex.isValid() );
 
-  auto *aiqp = static_cast<IQParameter*>(parentIndex.internalPointer());
-  auto &parentParameter = dynamic_cast<insight::ArrayParameter&>(aiqp->parameterRef());
-
-  auto row = index.row();
-  auto* iqp = static_cast<IQParameter*>(index.internalPointer());
-
-
-  beginRemoveRows(parentIndex, row, row);
-  iqp->deleteLater();
-  aiqp->erase(aiqp->begin()+row);
-  endRemoveRows();
-
-  parentParameter.eraseValue(row);
-  notifyParameterChange(parentIndex);
-
-  // change name for all subsequent parameters
-  for (int i=row; i<aiqp->size(); ++i)
+  if (auto *ap = dynamic_cast<insight::ArrayParameter*>(indexData(parentIndex)))
   {
-    (*aiqp)[i]->setName(QString("%1").arg(i));
-    notifyParameterChange( this->index(i, 1, parentIndex) );
+      auto row = index.row();
+
+
+      beginRemoveRows(parentIndex, row, row);
+      ap->eraseValue(row);
+      endRemoveRows();
+      // notifyParameterChange(parentIndex);
+
+      // change name for all subsequent parameters
+      for (int i=row; i<ap->size(); ++i)
+      {
+        // (*aiqp)[i]->setName(QString("%1").arg(i));
+        notifyParameterChange( this->index(i, 1, parentIndex) );
+      }
   }
 }
 
 
 
 
-QList<int> IQParameterSetModel::pathFromIndex(const QModelIndex &i) const
-{
-  QList<int> p;
-  QModelIndex ii = i;
-  while (ii.isValid())
-  {
-    p<<ii.row();
-    ii=parent(ii);
-  }
-  return p;
-}
 
 
-
-
-QModelIndex IQParameterSetModel::indexFromParameterPath(const std::string &pp) const
-{
-    std::vector<std::string> splitPath;
-    boost::split(splitPath, pp, boost::is_any_of("/"));
-
-    QModelIndex ii;
-    QList<IQParameter*> paramList=rootParameters_;
-    for (int si=0; si<splitPath.size(); ++si)
-    {
-        for (int j=0; j<paramList.size(); ++j)
-        {
-            if (paramList[j]->name().toStdString() == splitPath[si])
-            {
-                paramList=*paramList[j];
-                ii=index(j, 0, ii);
-                break;
-            }
-        }
-    }
-    return ii;
-}
-
-
-
-
-QModelIndex IQParameterSetModel::indexFromPath(const QList<int> &p) const
-{
-  QModelIndex ii;
-  if (p.size())
-  {
-    for (int i=p.size()-1; i>=0; --i)
-    {
-      ii=index(p[i], 0, ii);
-    }
-  }
-  return ii;
-}
 
 
 
 
 void IQParameterSetModel::addGeometryToSpatialTransformationParameter(
-        const QString &parameterPath,
+        const std::string &parameterPath,
         insight::cad::FeaturePtr geom )
 {
     transformedGeometry_[parameterPath]=geom;
@@ -896,13 +960,13 @@ void IQParameterSetModel::addGeometryToSpatialTransformationParameter(
 
 
 
-void IQParameterSetModel::addVectorBasePoint(const QString &parameterPath, const arma::mat &pBase)
+void IQParameterSetModel::addVectorBasePoint(const std::string &parameterPath, const arma::mat &pBase)
 {
     vectorBasePoints_[parameterPath]=pBase;
 }
 
 insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformationParameter(
-        const QString &parameterPath )
+        const std::string &parameterPath )
 {
     auto i = transformedGeometry_.find(parameterPath);
     if (i!=transformedGeometry_.end())
@@ -915,7 +979,7 @@ insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformation
 
 
 
-const arma::mat * const IQParameterSetModel::getVectorBasePoint(const QString &parameterPath)
+const arma::mat * const IQParameterSetModel::getVectorBasePoint(const std::string &parameterPath)
 {
     auto i = vectorBasePoints_.find(parameterPath);
     if (i!=vectorBasePoints_.end())
@@ -925,6 +989,17 @@ const arma::mat * const IQParameterSetModel::getVectorBasePoint(const QString &p
     return nullptr;
 }
 
+
+void IQParameterSetModel::pack()
+{
+    parameterSet_->pack();
+}
+
+
+void IQParameterSetModel::clearPackedData()
+{
+    parameterSet_->clearPackedData();
+}
 
 
 
@@ -946,9 +1021,12 @@ const std::string &IQParameterSetModel::getAnalysisName() const
 
 
 
-IQParameterSetModel::ParameterEditor::ParameterEditor(IQParameterSetModel& psm, const std::string &parameterPath)
+IQParameterSetModel::ParameterEditor::ParameterEditor(
+    IQParameterSetModel& psm,
+    const std::string &parameterPath
+    )
     : model_(psm),
-      index_( psm.indexFromParameterPath(parameterPath) ),
+      index_( psm.indexFromParameterPath(parameterPath, 0) ),
       parameter( psm.parameterRef(index_) )
 {}
 
@@ -957,287 +1035,6 @@ IQParameterSetModel::ParameterEditor::~ParameterEditor()
     model_.notifyParameterChange(index_);
 }
 
-
-
-
-void IQFilteredParameterSetModel::searchRootSourceIndices(
-    QAbstractItemModel *sourceModel,
-    const QModelIndex& parent )
-{
-    for (int r=0; r<sourceModel->rowCount(parent); ++r)
-    {
-        auto i=sourceModel->index(r, IQParameterSetModel::stringPathCol, parent);
-        auto curPath=sourceModel->data(i).toString();
-
-        bool searchDown=false;
-        for (const auto& sourceParam: qAsConst(sourceRootParameterPaths_))
-        {
-            if (boost::ends_with(sourceParam, "/*") // support wildcard to select all below
-                &&  boost::starts_with(curPath, sourceParam.substr(0, sourceParam.size()-2))
-                &&  curPath.size()>sourceParam.size()-2 )
-            {
-                rootSourceIndices.append(i.siblingAtColumn(0));
-                searchDown=false;
-            }
-            else if (boost::starts_with(sourceParam, curPath)) // sourceParam starts with curPath?
-            {
-                if (curPath.size()==sourceParam.size())
-                {
-                    rootSourceIndices.append(i.siblingAtColumn(0));
-                }
-                else if (curPath.size()<sourceParam.size())
-                {
-                    searchDown=true;
-                }
-            }
-        }
-
-        if (searchDown)
-        {
-          searchRootSourceIndices(sourceModel, i.siblingAtColumn(0));
-        }
-
-    }
-}
-
-
-
-
-void IQFilteredParameterSetModel::storeAllChildSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex &sourceIndex)
-{
-    if (!mappedIndices_.contains(sourceIndex))
-        mappedIndices_.append(sourceIndex);
-
-    for (int r=0; r<sourceModel->rowCount(sourceIndex); ++r)
-    {
-        storeAllChildSourceIndices(
-            sourceModel,
-            sourceModel->index(r, 0, sourceIndex) );
-    }
-}
-
-
-
-
-bool IQFilteredParameterSetModel::isBelowRootParameter(const QModelIndex &sourceIndex, int* topRow) const
-{
-    if (!sourceIndex.isValid())
-        return false;
-
-    if (rootSourceIndices.contains(sourceIndex))
-    {
-        if (topRow)
-            *topRow=rootSourceIndices.indexOf(sourceIndex);
-        return true;
-    }
-
-    auto sourceIndexParent = sourceModel()->parent(sourceIndex);
-
-    if (!sourceIndexParent.isValid())
-    {
-        return false;
-    }
-    else
-    {
-        if (rootSourceIndices.contains(sourceIndexParent))
-        {
-            if (topRow) *topRow=-1;
-            return true;
-        }
-        else
-            return isBelowRootParameter(sourceIndexParent, topRow);
-    }
-}
-
-
-
-
-IQFilteredParameterSetModel::IQFilteredParameterSetModel(
-    const std::vector<std::string>& sourceParameterPaths,
-    QObject *parent )
-  : QAbstractProxyModel(parent),
-    sourceRootParameterPaths_(sourceParameterPaths)
-{}
-
-
-
-
-void IQFilteredParameterSetModel::setSourceModel(QAbstractItemModel *sourceModel)
-{
-    searchRootSourceIndices(sourceModel, QModelIndex());
-    for (auto& pi: qAsConst(rootSourceIndices))
-    {
-        storeAllChildSourceIndices(sourceModel, pi);
-    }
-    QAbstractProxyModel::setSourceModel(sourceModel);
-    connect(sourceModel, &QAbstractItemModel::dataChanged, this,
-            [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
-            {
-                if (isBelowRootParameter(topLeft)&&isBelowRootParameter(bottomRight))
-                    Q_EMIT dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight), roles);
-            }
-            );
-#warning needs disconnect somewhere
-}
-
-
-
-
-QModelIndex IQFilteredParameterSetModel::mapFromSource(const QModelIndex &sourceIndex) const
-{
-    if (!sourceIndex.isValid())
-        return QModelIndex();
-
-    int topRow=-1;
-    if (isBelowRootParameter(sourceIndex, &topRow))
-    {
-        if (topRow>=0)
-        {
-            return index(topRow, sourceIndex.column());
-        }
-        else
-        {
-            return index(sourceIndex.row(), sourceIndex.column(), mapFromSource(sourceIndex.parent()));
-        }
-    }
-    return QModelIndex();
-}
-
-
-
-
-QModelIndex IQFilteredParameterSetModel::mapToSource(const QModelIndex &proxyIndex) const
-{
-    if (!proxyIndex.isValid())
-    {
-        return QModelIndex();
-    }
-
-    if (!proxyIndex.internalPointer())  // top level
-    {
-        if (proxyIndex.row()>=0 && proxyIndex.row()<rootSourceIndices.size())
-        {
-            return QModelIndex(rootSourceIndices[proxyIndex.row()]).siblingAtColumn(proxyIndex.column());
-        }
-    }
-    else
-    {
-        auto& sppi = *reinterpret_cast<QPersistentModelIndex*>(
-            proxyIndex.internalPointer() );
-        return sourceModel()->index(proxyIndex.row(), proxyIndex.column(), sppi);
-    }
-    return QModelIndex();
-}
-
-
-
-
-int IQFilteredParameterSetModel::columnCount(const QModelIndex &parent) const
-{
-    auto nc = sourceModel()->columnCount(mapToSource(parent));
-    return nc;
-}
-
-
-
-
-int IQFilteredParameterSetModel::rowCount(const QModelIndex &parent) const
-{
-    if (!parent.isValid())
-    {
-        return rootSourceIndices.size();
-    }
-    else
-    {
-        auto r= sourceModel()->rowCount(mapToSource(parent));
-        return r;
-    }
-
-    return 0;
-}
-
-
-
-
-QModelIndex IQFilteredParameterSetModel::index(int row, int column, const QModelIndex &parent) const
-{
-    if (!parent.isValid())
-    {
-        // top rows
-        if (row>=0 && row<rootSourceIndices.size())
-        {
-            return createIndex(
-                row, column, nullptr
-            );
-        }
-    }
-    else
-    {
-        auto pp=parent.parent();
-        if (!pp.isValid())
-        {
-            // one below top rows
-            auto mi=mappedIndices_.indexOf(rootSourceIndices[parent.row()]);
-            return createIndex(
-                row, column,
-                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
-                );
-        }
-        else
-        {
-            auto si=mapToSource(parent);
-            auto mi=mappedIndices_.indexOf(si);
-            // more than one level below top rows
-            return createIndex(
-                row, column,
-                //parent.internalPointer()
-                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
-                );
-        }
-    }
-
-    return QModelIndex();
-}
-
-
-
-
-QModelIndex IQFilteredParameterSetModel::parent(const QModelIndex &index) const
-{
-    if (!index.isValid())
-    {
-        // top node
-        return QModelIndex();
-    }
-
-    if (index.internalPointer())
-    {
-        // some index below top level
-        auto& sppi = *reinterpret_cast<QPersistentModelIndex*>(
-            index.internalPointer() );
-
-        auto mi1=rootSourceIndices.indexOf(sppi);
-        if (mi1>=0)
-        {
-            // top level row
-            return createIndex(
-                mi1, 0,
-                nullptr
-                );
-        }
-        else
-        {
-            // below top level row
-            auto mi=mappedIndices_.indexOf(sppi.parent());
-            return createIndex(
-                sppi.row(), 0,
-                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
-                );
-        }
-    }
-
-    return QModelIndex();
-}
 
 
 

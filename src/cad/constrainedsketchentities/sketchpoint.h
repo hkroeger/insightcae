@@ -40,9 +40,12 @@ public:
         ConstrainedSketchScriptBuffer& script,
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
 
-    static void addParserRule(ConstrainedSketchGrammar& ruleset, MakeDefaultGeometryParametersFunction mdpf);
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        const ConstrainedSketchParametersDelegate& pd );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > dependencies() const override;
+
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;

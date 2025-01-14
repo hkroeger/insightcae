@@ -2,9 +2,9 @@
 
 namespace insight {
 
-OversetConfiguration::OversetConfiguration(OpenFOAMCase& c, const ParameterSet& ps)
+OversetConfiguration::OversetConfiguration(OpenFOAMCase& c, ParameterSetInput ip)
     : cm_(c),
-      p_(ps)
+      p_(ip.forward<Parameters>())
 {}
 
 void OversetConfiguration::addFields() const
@@ -21,11 +21,11 @@ void OversetConfiguration::addIntoDictionaries (
     OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
 
     OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
-    fvSolution.subDict("PIMPLE")["oversetAdjustPhi"]=p_.oversetAdjustPhi;
+    fvSolution.subDict("PIMPLE")["oversetAdjustPhi"]=p().oversetAdjustPhi;
 
     OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
     auto& ovi = fvSchemes.subDict("oversetInterpolation");
-    switch (p_.oversetInterpolation)
+    switch (p().oversetInterpolation)
     {
         case Parameters::cellVolumeWeight:
             ovi["method"]="cellVolumeWeight";
@@ -45,7 +45,7 @@ void OversetConfiguration::addIntoDictionaries (
     ovis["grad("+pName+")"]="";
     ovis["surfaceIntegrate("+fluxName+")"]="";
 
-    if (!p_.skipPoissonWallDist)
+    if (!p().skipPoissonWallDist)
     {
         OFDictData::dict& wd = fvSchemes.subDict("wallDist");
         wd["method"]="Poisson";

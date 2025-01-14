@@ -19,9 +19,12 @@ namespace multiphaseBC
 defineType(multiphaseBC);
 defineDynamicClass(multiphaseBC);
 
+multiphaseBC::multiphaseBC(ParameterSetInput ip)
+    : p_(ip.forward<Parameters>())
+{}
+
 multiphaseBC::~multiphaseBC()
-{
-}
+{}
 
 void multiphaseBC::addIntoDictionaries(OFdicts&) const
 {
@@ -29,19 +32,18 @@ void multiphaseBC::addIntoDictionaries(OFdicts&) const
 
 
 
-
 defineType(uniformPhases);
 addToFactoryTable(multiphaseBC, uniformPhases);
 addToStaticFunctionTable(multiphaseBC, uniformPhases, defaultParameters);
 
-uniformPhases::uniformPhases(const ParameterSet& ps)
-: p_(ps)
+uniformPhases::uniformPhases(ParameterSetInput ip)
+    : multiphaseBC(ip.forward<Parameters>())
 {}
 
 bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
 {
     const Parameters::phaseFractions_default_type* pf =NULL;
-    for ( const Parameters::phaseFractions_default_type& c: p_.phaseFractions ) {
+    for ( const Parameters::phaseFractions_default_type& c: p().phaseFractions ) {
         if ( c.name == fieldname ) {
             pf=&c;
             break;
@@ -95,14 +97,14 @@ defineType(uniformWallTiedPhases);
 addToFactoryTable(multiphaseBC, uniformWallTiedPhases);
 addToStaticFunctionTable(multiphaseBC, uniformWallTiedPhases, defaultParameters);
 
-uniformWallTiedPhases::uniformWallTiedPhases(const ParameterSet& ps)
-: uniformPhases(ps)
+uniformWallTiedPhases::uniformWallTiedPhases(ParameterSetInput ip)
+: uniformPhases(ip.forward<Parameters>())
 {}
 
 bool uniformWallTiedPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
 {
     const Parameters::phaseFractions_default_type* pf =NULL;
-    for ( const Parameters::phaseFractions_default_type& c: p_.phaseFractions ) {
+    for ( const Parameters::phaseFractions_default_type& c: p().phaseFractions ) {
         if ( c.name == fieldname ) {
             pf=&c;
             break;

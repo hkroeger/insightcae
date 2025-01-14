@@ -19,18 +19,17 @@ public:
 #include "singlephasetransportmodel__singlePhaseTransportProperties__Parameters.h"
 /*
 PARAMETERSET>>> singlePhaseTransportProperties Parameters
+inherits transportModel::Parameters
 
 nu = double 1e-6 "Kinematic viscosity"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "singlePhaseTransportProperties" );
-    singlePhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    singlePhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }
@@ -55,15 +54,13 @@ TRef = double 300 "[K] Reference temperature"
 Pr = double 0.7 "Laminar prandtl number"
 Prt = double 0.85 "Turbulent prandtl number"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "boussinesqSinglePhaseTransportProperties" );
-    boussinesqSinglePhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    boussinesqSinglePhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     double density(double T) const;

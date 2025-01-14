@@ -37,12 +37,10 @@ AngleConstraint::AngleConstraint(
                 insight::cad::vec3const(1,0,0) ),
         pCtr )
 {
-    changeDefaultParameters(
-        ParameterSet({
-            {"dimLineRadius", std::make_shared<DoubleParameter>(1., "dimension line radius")},
-            {"arrowSize", std::make_shared<DoubleParameter>(1., "arrow size")}
-        })
-        );
+    ParameterSet::Entries e;
+    e.emplace("dimLineRadius", std::make_unique<DoubleParameter>(1., "dimension line radius"));
+    e.emplace("arrowSize", std::make_unique<DoubleParameter>(1., "arrow size"));
+    changeDefaultParameters(*ParameterSet::create(std::move(e), ""));
 }
 
 
@@ -154,17 +152,14 @@ FixedAngleConstraint::FixedAngleConstraint(
     )
     : AngleConstraint(p1, p2, pCtr, layerName)
 {
-    auto ps = defaultParameters();
-    ps.extend(
-        ParameterSet({
-            {"angle", std::make_shared<DoubleParameter>(
-                          calculate(
-                              p1_->value(),
-                              p2_->value(),
-                              pCtr_->value() )/SI::deg, "[deg] target value")}
-        })
-        );
-    changeDefaultParameters(ps);
+    auto ps = defaultParameters().cloneSubset();
+    ps->insert(
+        "angle", std::make_unique<DoubleParameter>(
+                  calculate(
+                    p1_->value(),
+                    p2_->value(),
+                    pCtr_->value() )/SI::deg, "[deg] target value"));
+    changeDefaultParameters(*ps);
 }
 
 
@@ -208,7 +203,7 @@ void FixedAngleConstraint::generateScriptCommand(
 
 void FixedAngleConstraint::addParserRule(
     ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
+    const ConstrainedSketchParametersDelegate& pd )
 {
     namespace qi = boost::spirit::qi;
     namespace phx = boost::phoenix;
@@ -226,6 +221,7 @@ void FixedAngleConstraint::addParserRule(
                      &FixedAngleConstraint::create<
                          VectorPtr, VectorPtr, VectorPtr, const std::string&>,
                      qi::_2, qi::_3, qi::_4, qi::_5),
+                 phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
@@ -317,7 +313,7 @@ void LinkedAngleConstraint::generateScriptCommand(
 
 void LinkedAngleConstraint::addParserRule(
     ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
+    const ConstrainedSketchParametersDelegate& pd )
 {
     if (ruleset.iscadScriptRules)
     {
@@ -353,6 +349,7 @@ void LinkedAngleConstraint::addParserRule(
                              VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
                              const std::string&, const std::string&>,
                          qi::_2, qi::_3, qi::_4, qi::_b, qi::_6, qi::_5),
+                     phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, pd, *qi::_a),
                      phx::bind(&ConstrainedSketchEntity::parseParameterSet,
                                qi::_a, qi::_7, boost::filesystem::path(".")),
                      qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]

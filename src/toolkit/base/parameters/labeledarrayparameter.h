@@ -1,6 +1,7 @@
 #ifndef INSIGHT_LABELEDARRAY_H
 #define INSIGHT_LABELEDARRAY_H
 
+#include "base/cppextensions.h"
 #include "base/parameter.h"
 #include <string>
 
@@ -10,16 +11,16 @@ class LabeledArrayParameter
     : public Parameter
 {
 public:
-    typedef std::map<std::string, ParameterPtr> value_type;
+    typedef std::map<std::string, std::unique_ptr<Parameter> > value_type;
 
 #ifndef SWIG
-    boost::signals2::signal<void(const std::string& key, ParameterPtr)> newItemAdded;
+    boost::signals2::signal<void(const std::string& key, std::observer_ptr<Parameter>)> newItemAdded;
     boost::signals2::signal<void(const std::string& key)> itemRemoved;
     boost::signals2::signal<void(const std::string& key, const std::string& newKey)> itemRelabeled;
 #endif
 
 protected:
-    ParameterPtr defaultValue_;
+    std::unique_ptr<Parameter> defaultValue_;
     value_type value_;
 
     std::string labelPattern_;
@@ -30,7 +31,7 @@ protected:
      */
     std::string keySourceParameterPath_;
 
-    std::map<Parameter*, std::shared_ptr<boost::signals2::scoped_connection> >
+    std::key_observer_map<Parameter, std::shared_ptr<boost::signals2::scoped_connection> >
         valueChangedConnections_,
         childValueChangedConnections_;
 
@@ -79,7 +80,9 @@ public:
     int size() const;
 
     int nChildren() const override;
-    std::string childParameterName(int i) const override;
+    std::string childParameterName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
     Parameter& childParameterRef ( int i ) override;
     const Parameter& childParameter( int i ) const override;
     int childParameterIndex( const std::string& name ) const override;
@@ -105,7 +108,7 @@ public:
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
-    Parameter* clone () const override;
+    std::unique_ptr<Parameter> clone () const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const LabeledArrayParameter& p);
     void extend ( const Parameter& op ) override;

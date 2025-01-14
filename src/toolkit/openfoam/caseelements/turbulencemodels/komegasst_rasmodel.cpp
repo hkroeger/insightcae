@@ -24,9 +24,8 @@ void kOmegaSST_RASModel::addFields( OpenFOAMCase& c ) const
     c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
 
-kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: RASModel(c),
-  p_(ps)
+kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: RASModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }
@@ -37,12 +36,12 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  if (const auto *none = boost::get<Parameters::freeSurfaceProductionDamping_none_type>(&p_.freeSurfaceProductionDamping))
+  if (const auto *none = boost::get<Parameters::freeSurfaceProductionDamping_none_type>(&p().freeSurfaceProductionDamping))
   {
     RASProperties["RASModel"]="kOmegaSST";
     RASProperties.subDict("kOmegaSSTCoeffs");
   }
-  else if (const auto *damp = boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p_.freeSurfaceProductionDamping))
+  else if (const auto *damp = boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p().freeSurfaceProductionDamping))
   {
     RASProperties["RASModel"]="kOmegaSST3";
 

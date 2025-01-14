@@ -8,7 +8,10 @@ addToFactoryTable(BoundaryCondition, EmptyBC);
 addToStaticFunctionTable(BoundaryCondition, EmptyBC, defaultParameters);
 
 
-EmptyBC::EmptyBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& )
+EmptyBC::EmptyBC (
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
     : SimpleBC ( c, patchName, boundaryDict, "empty" )
 {}
 

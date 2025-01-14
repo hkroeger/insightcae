@@ -56,7 +56,7 @@ protected:
 
 public:
   NavigationManager( Viewer& viewer )
-  : InputReceiver<Viewer>(viewer)
+  : InputReceiver<Viewer>(viewer, false)
   {}
 
   bool onMouseWheel

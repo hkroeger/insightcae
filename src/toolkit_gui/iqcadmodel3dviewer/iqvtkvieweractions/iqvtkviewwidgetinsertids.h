@@ -60,7 +60,7 @@ public:
           }
           );
 
-      launchChildAction(sel);
+      launchAction(sel);
   }
 
 

@@ -22,9 +22,18 @@ namespace multiphaseBC
 class multiphaseBC
 {
 public:
+#include "boundarycondition_multiphase__multiphaseBC__Parameters.h"
+/*
+PARAMETERSET>>> multiphaseBC Parameters
+createGetter
+<<<PARAMETERSET
+*/
+
+public:
     declareType ( "multiphaseBC" );
     declareDynamicClass(multiphaseBC);
 
+    multiphaseBC(ParameterSetInput ip = ParameterSetInput() );
     virtual ~multiphaseBC();
 
 
@@ -45,6 +54,7 @@ public:
 #include "boundarycondition_multiphase__uniformPhases__Parameters.h"
 /*
 PARAMETERSET>>> uniformPhases Parameters
+inherits multiphaseBC::Parameters
 
 phaseFractions = array [
     set {
@@ -57,19 +67,16 @@ If a dirichlet BC shall remain under all circumstances, uncheck this option. The
 
 } ] *0 "Mass fractions of species"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "uniformPhases" );
-    uniformPhases ( const ParameterSet& p );
+    uniformPhases ( ParameterSetInput ip = ParameterSetInput() );
     inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
     static uniformPhases::Parameters mixture( const std::map<std::string, double>& sp);
-    ParameterSet getParameters() const override { return p_; }
 };
 
 
@@ -80,7 +87,7 @@ class uniformWallTiedPhases
 {
 public:
     declareType ( "uniformWallTiedPhases" );
-    uniformWallTiedPhases ( const ParameterSet& p );
+    uniformWallTiedPhases ( ParameterSetInput ip = ParameterSetInput() );
     inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformWallTiedPhases(ps)); }
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 };

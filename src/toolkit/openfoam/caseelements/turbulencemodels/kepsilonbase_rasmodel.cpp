@@ -19,8 +19,8 @@ void kEpsilonBase_RASModel::addFields( OpenFOAMCase& c ) const
   }
 }
 
-kEpsilonBase_RASModel::kEpsilonBase_RASModel(OpenFOAMCase& c)
-: RASModel(c)
+kEpsilonBase_RASModel::kEpsilonBase_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: RASModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

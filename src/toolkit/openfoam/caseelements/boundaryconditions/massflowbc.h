@@ -18,6 +18,7 @@ public:
 #include "massflowbc__MassflowBC__Parameters.h"
 /*
 PARAMETERSET>>> MassflowBC Parameters
+inherits BoundaryCondition::Parameters
 
 flowrate = selectablesubset {{
  massflow set { value = double 1.0 "mass flow through boundary" }
@@ -34,11 +35,9 @@ UName = string "U" "Name of velocity field"
 turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" default "uniformIntensityAndLengthScale" "Definition of the turbulence state at the boundary"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-    ParameterSet ps_;
 
 public:
     declareType ( "MassflowBC" );
@@ -47,7 +46,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& ps = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 

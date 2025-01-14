@@ -1,39 +1,42 @@
 #include "vectorparameterparser.h"
+#include "boost/lexical_cast.hpp"
 
 using namespace std;
 
 defineType(VectorParameterParser);
-addToStaticFunctionTable(ParserDataBase, VectorParameterParser, insertrule);
+addToStaticFunctionTable(ParameterGenerator, VectorParameterParser, insertrule);
 
 
-VectorParameterParser::Data::Data(const arma::mat& v, const std::string& d)
-: ParserDataBase(d), value(v)
+VectorParameterParser::VectorParameterParser(
+    const arma::mat& v, const std::string& d)
+: ParameterGenerator(d), value(v)
 {}
 
-void VectorParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+void VectorParameterParser::cppAddRequiredInclude(std::set<std::string>& headers) const
 {
   headers.insert("<armadillo>");
   headers.insert("\"base/parameters/simpleparameter.h\"");
 }
 
-std::string VectorParameterParser::Data::cppType(const std::string&) const
+std::string VectorParameterParser::cppInsightType() const
+{
+    return "insight::VectorParameter";
+}
+
+std::string VectorParameterParser::cppStaticType() const
 {
   return "arma::mat";
 }
 
-std::string VectorParameterParser::Data::cppParamType(const std::string& ) const
+std::string VectorParameterParser::cppDefaultValueExpression() const
 {
-  return "insight::VectorParameter";
-}
+    std::vector<std::string> defCmpts;
+    for (size_t i=0; i<value.n_elem; i++)
+    {
+        defCmpts.push_back(
+            boost::lexical_cast<std::string>(
+                value(i) ) );
+    }
 
-std::string VectorParameterParser::Data::cppValueRep(const std::string&, const std::string& thisscope ) const
-{
-  std::ostringstream os;
-  os<<"arma::mat(boost::assign::list_of";
-  for (size_t i=0; i<value.n_elem; i++)
-  {
-    os<<"(double("<<value(i)<<"))";
-  }
-  os<<".convert_to_container<std::vector<double> >().data(), "<<value.n_elem<<", 1)";
-  return os.str();
+    return "arma::mat({"+boost::join(defCmpts, ", ")+"}).t()";
 }

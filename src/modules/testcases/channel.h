@@ -116,7 +116,7 @@ public:
   {
 
     supplementedInputData(
-        std::unique_ptr<Parameters> pPtr,
+        ParameterSetInput ip,
         const boost::filesystem::path& workDir,
         ProgressDisplayer& progress = consoleProgressDisplayer
         );
@@ -202,9 +202,7 @@ public:
     std::vector<arma::mat> probe_locations_;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
+  addParameterMembers_SupplementedInputData(ChannelBase::Parameters);
 
 protected:
   /**
@@ -215,10 +213,10 @@ protected:
 public:
   declareType("Channel Flow Test Case");
   
-  ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
+  ChannelBase(
+      const std::shared_ptr<supplementedInputDataBase>& sp );
   ~ChannelBase();
 
-  static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;
   virtual void calcDerivedInputData(ProgressDisplayer& progress);
@@ -243,9 +241,12 @@ public:
     bool includeAllComponentsInCharts = false,
     const std::string& vertical_probes_array_name="center_probes"
   );
-    
+
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
 
+  static std::string category() { return "Validation Cases"; }
+  static AnalysisDescription description() { return {"Channel Flow Test Case",
+                                             "Rectangular domain with cyclic BCs on axial ends"}; }
 };
 
 
@@ -267,14 +268,13 @@ run = set {
 <<<PARAMETERSET
 */
 
-#ifndef SWIG
-  defineDerivedClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
+  addParameterMembers_SupplementedInputData(ChannelCyclic::Parameters);
 
 public:
   declareType("Channel Flow Test Case (Axial Cyclic)");
   
-  ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress);
+  ChannelCyclic(
+          const std::shared_ptr<supplementedInputDataBase>& sp );
 
 
   virtual void createMesh

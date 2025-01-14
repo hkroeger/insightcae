@@ -32,15 +32,13 @@ value = selectablesubset {{
 
 }} vector "value inside zone"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "fixedValueConstraint" );
-    fixedValueConstraint ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    fixedValueConstraint ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptions,
         OFdicts& dictionaries ) const override;

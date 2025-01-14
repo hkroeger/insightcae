@@ -19,6 +19,7 @@ public:
 #include "mappedvelocityinletbc__MappedVelocityInletBC__Parameters.h"
 /*
 PARAMETERSET>>> MappedVelocityInletBC Parameters
+inherits BoundaryCondition::Parameters
 
 distance = vector (1 0 0) "distance of sampling plane"
 average =  vector (1 0 0) "average"
@@ -31,11 +32,10 @@ rhoName = string "none" "Name of density field"
 UName = string "U" "Name of velocity field"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    ParameterSet ps_;
 
 public:
     declareType ( "MappedVelocityInletBC" );
@@ -44,7 +44,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet&ps = Parameters::makeDefault()
+        ParameterSetInput ip = ParameterSetInput()
     );
 
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;

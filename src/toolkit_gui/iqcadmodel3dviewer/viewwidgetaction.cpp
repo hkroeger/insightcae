@@ -25,7 +25,7 @@ ToNotepadEmitter::~ToNotepadEmitter()
 
 
 OCCViewWidgetRotation::OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point)
-  : ViewWidgetAction<QoccViewWidget>(viewWidget)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget, false)
 {
     viewer().view().StartRotation(point.x(), point.y());
 }
@@ -48,7 +48,7 @@ bool OCCViewWidgetRotation::onMouseMove
 
 
 OCCViewWidgetPanning::OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point)
-    : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false)
 {}
 
 void OCCViewWidgetPanning::start()
@@ -74,7 +74,7 @@ bool OCCViewWidgetPanning::onMouseMove
 
 
 OCCViewWidgetDynamicZooming::OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point)
-    : ViewWidgetAction<QoccViewWidget>(viewWidget, point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false)
 {}
 
 void OCCViewWidgetDynamicZooming::start()
@@ -101,7 +101,7 @@ bool OCCViewWidgetDynamicZooming::onMouseMove
 
 
 OCCViewWidgetWindowZooming::OCCViewWidgetWindowZooming(QoccViewWidget &viewWidget, const QPoint point, QRubberBand *rb)
-  : ViewWidgetAction<QoccViewWidget>(viewWidget, point), rb_(rb)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false), rb_(rb)
 {}
 
 OCCViewWidgetWindowZooming::~OCCViewWidgetWindowZooming()
@@ -141,7 +141,7 @@ bool OCCViewWidgetWindowZooming::onMouseMove
 
 
 OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget)
-  : ViewWidgetAction<QoccViewWidget>(viewWidget)
+  : ViewWidgetAction<QoccViewWidget>(viewWidget, false)
 {}
 
 OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()

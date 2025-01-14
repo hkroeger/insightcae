@@ -40,7 +40,7 @@ public:
   const DefaultPatch* defaultPatch() const;
   QList<const Patch *> allNamedPatches() const;
 
-  insight::ParameterSet& patchParametersRef(const std::string& patchName);
+  insight::Parameter& patchParameterRef(const std::string& patchName, const std::string& path);
 
 
   void appendConfigurationToNode(
@@ -51,7 +51,8 @@ public:
   void readFromNode(
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<> *rootnode,
-      insight::MultiCADParameterSetVisualizer* mv,
+      insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+      MultivisualizationGenerator* visGen,
       const boost::filesystem::path& fileParentPath );
 
   ParameterEditorWidget* launchParameterEditor(

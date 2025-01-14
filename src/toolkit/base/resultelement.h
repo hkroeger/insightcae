@@ -109,7 +109,7 @@ public:
      * returns an invalid pointer per default
      * Since not all Results can be converted into parameters, a check for validity is required before using the pointer.
      */
-    virtual ParameterPtr convertIntoParameter() const;
+    virtual std::unique_ptr<Parameter> convertIntoParameter() const;
 
     virtual std::shared_ptr<ResultElement> clone() const =0;
 };

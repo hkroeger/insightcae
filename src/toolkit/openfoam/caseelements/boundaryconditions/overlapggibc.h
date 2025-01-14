@@ -25,16 +25,17 @@ rotationAxis = vector (0 0 1) "Direction of rotation axis (only required, if foa
 nCopies = int 1 "number of copies (only required, if foam-extend is used)"
 periodicPatch = string "" "lateral periodic patch, which determines the transform (only required, if openfoam.org versions are used)"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "OverlapGGIBC" );
-    OverlapGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-                   const ParameterSet&ps = Parameters::makeDefault() );
+    OverlapGGIBC (
+        OpenFOAMCase& c, const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = ParameterSetInput() );
+
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 };

@@ -25,6 +25,8 @@
 
 
 #include "base/analysis.h"
+#include "base/supplementedinputdata.h"
+#include "boost/filesystem/path.hpp"
 
 
 
@@ -44,6 +46,10 @@ class AnalysisThread
 
   boost::thread thread_;
 
+  mutable boost::mutex dataAccess_;
+  boost::filesystem::path executionPath_;
+  std::atomic<const Analysis*> analysis_;
+
 protected:
   /**
    * @brief results_
@@ -62,9 +68,19 @@ protected:
   void launch(std::function<void(void)> action);
 
 public:
+  typedef
+        std::tuple<const ParameterSet*, boost::filesystem::path>
+        ParameterSetAndExePath;
+  typedef
+      boost::variant<
+        ParameterSetAndExePath,
+        insight::supplementedInputDataBasePtr>
+      ParameterInput;
+
   AnalysisThread(
-      AnalysisPtr analysis,
-      ProgressDisplayer* pd
+      const std::string& analysisName,
+      const ParameterInput& input,
+      ProgressDisplayer *pd
 #ifndef SWIG
       ,
       std::function<void(void)> preAction = []()->void {},
@@ -94,6 +110,9 @@ public:
   {
     return thread_.try_join_for(rel_time);
   }
+
+  const boost::filesystem::path& executionPath() const;
+  const Analysis* analysis() const;
 };
 
 

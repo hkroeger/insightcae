@@ -24,16 +24,16 @@ rotationCentre = vector (0 0 0) "Origin of rotation axis"
 rotationAxis = vector (0 0 1) "Direction of rotation axis"
 rotationAngle = double 0.0 "[deg] Angle of rotation"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "CyclicGGIBC" );
-    CyclicGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-                  const ParameterSet&ps = Parameters::makeDefault() );
+    CyclicGGIBC (
+        OpenFOAMCase& c, const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = ParameterSetInput() );
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;
 };

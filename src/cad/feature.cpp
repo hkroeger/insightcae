@@ -18,6 +18,7 @@
  *
  */
 
+#include "base/exception.h"
 #include "cadfeature.h"
 #include "feature.h"
 #include "boost/lexical_cast.hpp"
@@ -219,6 +220,16 @@ size_t DeferredFeatureSet::calcFeatureSetHash() const
         {
             h += **fp;
         }
+        else if (auto *v = boost::get<VectorPtr>(&arg))
+        {
+            h += (*v)->value();
+        }
+        else if (auto *s = boost::get<ScalarPtr>(&arg))
+        {
+            h += (*s)->value();
+        }
+        else
+            throw insight::UnhandledSelection();
     }
 
     return h.getHash();

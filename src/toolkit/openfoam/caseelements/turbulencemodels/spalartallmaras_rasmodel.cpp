@@ -22,8 +22,8 @@ void SpalartAllmaras_RASModel::addFields( OpenFOAMCase& c ) const
   }
 }
 
-SpalartAllmaras_RASModel::SpalartAllmaras_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: RASModel(c)
+SpalartAllmaras_RASModel::SpalartAllmaras_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: RASModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

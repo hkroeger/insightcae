@@ -20,15 +20,13 @@ inherits cellSetFvOption::Parameters
 name = string "volumeDrag" "Name of the volume drag element. Equals the name of the cell zone."
 CD = vector (1 0 0) "Volume drag coefficient for each direction"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "volumeDrag" );
-    volumeDrag ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    volumeDrag ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptions,
         OFdicts& dictionaries ) const override;

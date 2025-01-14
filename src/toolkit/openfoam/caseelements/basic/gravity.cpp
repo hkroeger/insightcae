@@ -8,9 +8,8 @@ namespace insight {
 defineType(gravity);
 addToOpenFOAMCaseElementFactoryTable(gravity);
 
-gravity::gravity( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "gravity", ps),
-  p_(ps)
+gravity::gravity( OpenFOAMCase& c, ParameterSetInput ip )
+    : OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {
 }
 
@@ -19,7 +18,7 @@ void gravity::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& g=dictionaries.lookupDict("constant/g");
   g["dimensions"]="[0 1 -2 0 0 0 0]";
   OFDictData::list gv;
-  for (size_t i=0; i<3; i++) gv.push_back(p_.g(i));
+  for (size_t i=0; i<3; i++) gv.push_back(p().g(i));
   g["value"]=gv;
 }
 

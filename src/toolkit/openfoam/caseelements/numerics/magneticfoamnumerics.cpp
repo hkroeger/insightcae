@@ -15,9 +15,8 @@ void magneticFoamNumerics::init()
   OFcase().addField("psi", FieldInfo(scalarField, 	dimCurrent, 	FieldValue({0.0}), volField ) );
 }
 
-magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, ""),
-  p_(ps)
+magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "")
 {
   init();
 }
@@ -30,7 +29,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]=p_.solverName;
+  controlDict["application"]=p().solverName;
 
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );

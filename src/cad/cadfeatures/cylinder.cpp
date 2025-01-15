@@ -140,6 +140,13 @@ void Cylinder::build()
 
     providedDatums_["axis"]=DatumPtr ( new ExplicitDatumAxis ( p1_, VectorPtr ( new SubtractedVector ( p2_, p1_ ) ) ) );
 
+    providedFeatureSets_["frontFace"]=makeFaceFeatureSet(
+        shared_from_this(), "isPlane && minimal(dist(CoG, %m0))", {cad::matconst(p1)}
+        );
+    providedFeatureSets_["backFace"]=makeFaceFeatureSet(
+        shared_from_this(), "isPlane && minimal(dist(CoG, %m0))", {cad::matconst(p2)}
+        );
+
     setShape ( cyl );
     cache.insert(shared_from_this());
   }

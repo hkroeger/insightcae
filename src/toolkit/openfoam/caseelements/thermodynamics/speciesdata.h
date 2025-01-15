@@ -157,7 +157,7 @@ public:
 /*
 PARAMETERSET>>> SpeciesData Parameters
 
-name = string "N2" "Name of specie (i.e. the field name). Has to be unique!" *necessary
+#name = string "N2" "Name of specie (i.e. the field name). Has to be unique!" *necessary
 
 properties = selectablesubset {{
 

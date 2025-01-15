@@ -72,6 +72,7 @@ public:
     void insertValue ( const std::string& label, const Parameter& np );
     Parameter& getOrInsertDefaultValue ( const std::string& label );
     void appendEmpty();
+    void insertWithDefaults(const std::string& label);
     void changeLabel ( const std::string& label, const std::string& newLabel );
 
     Parameter& operator[] ( const std::string& label);

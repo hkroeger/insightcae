@@ -53,7 +53,7 @@ std::string LabeledArrayGenerator::cppInsightType() const
 
 std::string LabeledArrayGenerator::cppStaticType( ) const
 {
-    return "std::map<std::string, StaticValueWrap<"+value->cppTypeName()+"> >";
+    return "std::map<std::string, "+value->cppWrappedStaticType()+" >";
 }
 
 

@@ -1247,7 +1247,6 @@ void IQVTKCADModel3DViewer::redrawNow(bool force)
                 bounds[3]-bounds[2],
                 bounds[5]-bounds[4]);
 
-            //std::cout<<p0.t()<<pc.t()<<L.t()<<std::endl;
             cam->SetPosition(
                 arma::mat(
                     p0+std::max(insight::LSMALL,L.max())*dir
@@ -1887,7 +1886,7 @@ void IQVTKCADModel3DViewer::onlyOneShaded(QPersistentModelIndex pidx)
                         auto repr=  insight::DatasetRepresentation(
                                 idx.siblingAtColumn(IQCADItemModel::entityRepresentationCol)
                                 .data().toInt() );
-                        std::cout<<"set repr="<<repr<<std::endl;
+                        // std::cout<<"set repr="<<repr<<std::endl;
                         ivtkocc->SetRepresentation(r);
                         ivtkocc->Update();
                     }

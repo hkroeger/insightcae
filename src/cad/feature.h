@@ -247,6 +247,7 @@ public:
 };
 
 
+
 template<EntityType ET>
 FeatureSetPtr makeFeatureSet(
     ConstFeaturePtr feat,
@@ -259,6 +260,23 @@ FeatureSetPtr makeFeatureSet(
         expression, refs
         );
 }
+
+
+
+template<EntityType ET>
+FeatureSetPtr makeFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    )
+{
+    return DeferredFeatureSet::create<ConstFeatureSetPtr>(
+        feat,
+        expression, refs
+        );
+}
+
+
 
 FeatureSetPtr makeVertexFeatureSet(
     ConstFeaturePtr feat,
@@ -284,6 +302,31 @@ FeatureSetPtr makeSolidFeatureSet(
     const FeatureSetParserArgList& refs = {}
     );
 
+
+
+FeatureSetPtr makeVertexFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
+
+FeatureSetPtr makeEdgeFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
+
+FeatureSetPtr makeFaceFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
+
+FeatureSetPtr makeSolidFeatureSet(
+    ConstFeatureSetPtr feat,
+    const std::string& expression = "",
+    const FeatureSetParserArgList& refs = {}
+    );
 
 }
 }

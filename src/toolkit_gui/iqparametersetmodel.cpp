@@ -313,6 +313,12 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
         flags |= Qt::ItemIsEditable;
     }
   }
+  else if (index.column()==labelCol)
+  {
+      if (dynamic_cast<const insight::LabeledArrayParameter*>(&p->parent())
+          )
+          flags |= Qt::ItemIsEditable;
+  }
 
   return flags;
 }
@@ -557,6 +563,18 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
                 Q_EMIT dataChanged(index, index, {role});
             }
             return ok;
+        }
+        else if (index.column()==labelCol) // data
+        {
+            auto *me = iqIndexData(index);
+            auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(me->parentParameter());
+            auto &p = dynamic_cast<insight::LabeledArrayParameter&>(iqp->parameterRef());
+            auto label = p.name();
+            auto newl = value.toString();
+            if (!newl.isEmpty())
+            {
+                p.changeLabel(label, newl.toStdString());
+            }
         }
         break;
 

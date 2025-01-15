@@ -43,9 +43,9 @@ uniformPhases::uniformPhases(ParameterSetInput ip)
 bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
 {
     const Parameters::phaseFractions_default_type* pf =NULL;
-    for ( const Parameters::phaseFractions_default_type& c: p().phaseFractions ) {
-        if ( c.name == fieldname ) {
-            pf=&c;
+    for ( const auto& c: p().phaseFractions ) {
+        if ( c.first == fieldname ) {
+            pf=&c.second;
             break;
         }
     }
@@ -76,16 +76,16 @@ bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const
 }
 
 
-uniformPhases::Parameters uniformPhases::mixture( const std::map<std::string, double>& sps )
+uniformPhases::Parameters
+uniformPhases::mixture( const std::map<std::string, double>& sps )
 {
     Parameters pf;
     typedef std::map<std::string, double> MixList;
     for (const MixList::value_type& sp: sps)
     {
         Parameters::phaseFractions_default_type s;
-        s.name=sp.first;
         s.fraction=sp.second;
-        pf.phaseFractions.push_back(s);
+        pf.phaseFractions[sp.first]=s;
     }
     return pf;
 }
@@ -103,13 +103,17 @@ uniformWallTiedPhases::uniformWallTiedPhases(ParameterSetInput ip)
 
 bool uniformWallTiedPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
 {
-    const Parameters::phaseFractions_default_type* pf =NULL;
-    for ( const Parameters::phaseFractions_default_type& c: p().phaseFractions ) {
-        if ( c.name == fieldname ) {
-            pf=&c;
+    const Parameters::phaseFractions_default_type* pf
+        = nullptr;
+
+    for ( const auto& c: p().phaseFractions )
+    {
+        if ( c.first == fieldname ) {
+            pf=&c.second;
             break;
         }
     }
+
     if
     (
 //     (f.find(fieldname)!=f.end())

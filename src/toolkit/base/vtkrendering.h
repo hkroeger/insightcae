@@ -4,11 +4,12 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <limits>
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
+#include "base/spatialtransformation.h"
 
-#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 #include "vtkLookupTable.h"
@@ -470,6 +471,22 @@ public:
   vtkSmartPointer<vtkMultiBlockDataSetAlgorithm> extractBlocks(const std::set<int>& blockIdxs) const;
   vtkSmartPointer<vtkCompositeDataGeometryFilter> extractBlock(const std::set<int>& blockIdxs) const;
 };
+
+
+template<class T>
+T average(vtkDataArray *arr)
+{
+    T avg=0.;
+    for (int i=0; i<arr->GetNumberOfTuples(); ++i)
+    {
+        avg += arr->GetTuple1(i);
+    }
+    avg/=double(arr->GetNumberOfTuples());
+    return avg;
+}
+
+template<>
+arma::mat average(vtkDataArray *arr);
 
 
 void forEachUnconnectedPart(

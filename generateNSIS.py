@@ -136,19 +136,43 @@ DetailPrint "Installing the WSL backend..."
 
 ClearErrors
 SetRegView 64
-ReadRegStr $0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\MSI" "InstallLocation"
+ReadRegStr $R9 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\MSI" "InstallLocation"
 ${{DisableX64FSRedirection}}
-ExecWait '$0\\wsl --import "{imgname}" "$PROFILE\\\\{imgname}" "$TEMP\\\\{file}"'
-${{EnableX64FSRedirection}}
 
-IfErrors 0 installConfig
+SetDetailsPrint both
+DetailPrint "Checking for previous install of WSL backend..."
+ClearErrors
+ExecWait '"$R9\\wsl.exe" -d {imgname} -- exit' $R1
+StrCmp $R1 "0" removalStep installStep
 
-  MessageBox MB_OK "The installation of the WSL backend image failed!$\\r$\\nPlease consider performing an update of the WSL subsystem.$\\r$\\n(execute 'wsl --update' in a powershell)"
-  Quit
+removalStep:
+SetDetailsPrint both
+DetailPrint "Removing previous install of WSL backend..."
+ClearErrors
+ExecWait '"$R9\\wsl.exe" --unregister {imgname}'
 
-installConfig:
+installStep:
+SetDetailsPrint both
+DetailPrint "Installing the WSL backend..."
+ExecWait '$R9\\wsl --import {imgname} "$PROFILE\\\\{imgname}" "$TEMP\\\\{file}"' $R1
+StrCmp $R1 "0" installConfigStep 0
+
+MessageBox MB_OK "The installation of the WSL backend image failed!$\\r$\\nPlease consider performing an update of the WSL subsystem.$\\r$\\n(execute 'wsl --update' in a powershell)"
+Goto end
+
+installConfigStep:
+SetDetailsPrint both
+DetailPrint "Installing the default InsightCAE configuration..."
+IfFileExists "$PROFILE\.insight\share" 0 create
+MessageBox MB_YESNO "The InsightCAE configuration files exist already (report templates, executable paths etc.)$\\r$\\nDo you want to overwrite them with the defaults?" IDYES yes IDNO end
+yes:
+MessageBox MB_YESNO "Your existing configuration will be overwritten!$\\r$\\nReally overwrite?" IDYES create IDNO end
+create:
 CreateDirectory "$PROFILE\\.insight\\share"
 File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"
+
+end:
+${{EnableX64FSRedirection}}
 
 """.format(file=self.filename, imgname=imgname)
 
@@ -342,11 +366,11 @@ Section "Update WSL System"
  DetailPrint "Updating the WSL subsystem..."
 
  ClearErrors
- ExecWait 'wsl --update'
- IfErrors 0 updateFinished
+ ExecWait 'wsl --update' $R1
+ StrCmp $R1 "0" updateFinished 0
 
-  MessageBox MB_OK "The update of the WSL subsystem failed!"
-  Quit
+ MessageBox MB_OK "The update of the WSL subsystem failed!"
+ Quit
 
  updateFinished:
 SectionEnd

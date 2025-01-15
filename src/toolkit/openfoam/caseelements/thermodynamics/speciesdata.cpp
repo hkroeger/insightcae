@@ -303,8 +303,6 @@ const std::map<std::string, SpeciesData::ElementData> SpeciesData::elements = {
 
 SpeciesData::SpeciesData(const Parameters& p)
 {
-    // Parameters p(ps);
-
     // name_=p.name;
     // const auto& propsel = ps.get<SelectableSubsetParameter>("properties");
     if (auto* lib = boost::get<Parameters::properties_fromLibrary_type>(&p.properties))

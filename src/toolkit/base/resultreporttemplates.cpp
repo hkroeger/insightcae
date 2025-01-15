@@ -216,6 +216,8 @@ void ResultReportTemplates::readConfiguration()
                     "\\usepackage{hyperref}\n"
                     "\\usepackage{fancyhdr}\n"
                     "\\usepackage{longtable}\n"
+                    "\\usepackage{enumitem}\n"
+                    "\\setlistdepth{9}\n"
                     "\\pagestyle{fancy}\n"
                     "###HEADER###\n"
                     "\\begin{document}\n"

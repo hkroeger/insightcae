@@ -21,6 +21,7 @@
 #define BLOCKMESHDICT_CURVEDCYLINDER_H
 
 #include "openfoam/blockmesh_templates.h"
+#include "base/spatialtransformation.h"
 
 #include "blockmesh_curvedcylinder__blockMeshDict_CurvedCylinder__Parameters_headers.h"
 

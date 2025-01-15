@@ -85,6 +85,7 @@ protected:
   
 public:
   blockMesh(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  blockMesh(OpenFOAMCase& c, const blockMesh& o );
 
   void copy(const blockMesh& other);
   

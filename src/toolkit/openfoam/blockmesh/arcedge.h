@@ -15,6 +15,8 @@ protected:
 public:
   ArcEdge(const Point& c0, const Point& c1, const Point& midpoint);
 
+  const Point& midpoint() const;
+
   std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const override;
 
   Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const override;

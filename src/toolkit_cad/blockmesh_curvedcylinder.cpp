@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 
 #include "base/units.h"
+#include "base/spatialtransformation.h"
 
 #include "occinclude.h"
 

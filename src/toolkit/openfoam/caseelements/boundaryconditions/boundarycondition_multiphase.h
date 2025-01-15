@@ -56,9 +56,8 @@ public:
 PARAMETERSET>>> uniformPhases Parameters
 inherits multiphaseBC::Parameters
 
-phaseFractions = array [
+phaseFractions = labeledarray "phase%d" [
     set {
-    name = string "CO2" "Name of specie"
     fraction = double 0.5 "Mass fraction of specie"
     handleflowreversal = bool true
 "By default, the BC turns into a Neumann boundary condition, if outflow occurs on this boundary for any reason.
@@ -74,9 +73,14 @@ createGetter
 public:
     declareType ( "uniformPhases" );
     uniformPhases ( ParameterSetInput ip = ParameterSetInput() );
-    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
-    static uniformPhases::Parameters mixture( const std::map<std::string, double>& sp);
+
+    inline static multiphaseBCPtr
+    create(const ParameterSet& ps)
+    { return std::make_shared<uniformPhases>(ps); }
+
+    static Parameters
+    mixture( const std::map<std::string, double>& sp);
 };
 
 
@@ -88,7 +92,13 @@ class uniformWallTiedPhases
 public:
     declareType ( "uniformWallTiedPhases" );
     uniformWallTiedPhases ( ParameterSetInput ip = ParameterSetInput() );
-    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformWallTiedPhases(ps)); }
+
+    inline static multiphaseBCPtr
+    create(const ParameterSet& ps)
+    {
+        return multiphaseBCPtr(new uniformWallTiedPhases(ps));
+    }
+
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 };
 

@@ -409,12 +409,14 @@ void ChannelBase::createCase
         .set_fieldname("theta")
     ));
     fields_to_average.push_back("theta");
-    multiphaseBC::multiphaseBCPtr temp_hi(new multiphaseBC::uniformWallTiedPhases( multiphaseBC::uniformWallTiedPhases::mixture(
-        map_list_of("theta", 1.0)
-    )));
-    multiphaseBC::multiphaseBCPtr temp_lo(new multiphaseBC::uniformWallTiedPhases( multiphaseBC::uniformWallTiedPhases::mixture(
-        map_list_of("theta", 0.0)
-    )));
+    auto temp_hi = std::make_shared<multiphaseBC::uniformWallTiedPhases>(
+            multiphaseBC::uniformPhases::mixture(
+             {{"theta", 1.0}})
+    );
+    auto temp_lo = std::make_shared<multiphaseBC::uniformWallTiedPhases>(
+            multiphaseBC::uniformPhases::mixture(
+             {{ "theta", 0.0 }})
+    );
     
     cm.insert(new WallBC(cm, sp().wall_lo_, boundaryDict, WallBC::Parameters()
      .set_phasefractions(temp_hi) 

@@ -22,9 +22,8 @@ int main(int argc, char*argv[])
           insert(new WallBC(*this, "walls", bd, WallBC::Parameters()
                             .set_phasefractions(
                                 std::make_shared<multiphaseBC::uniformWallTiedPhases>(
-                                    multiphaseBC::uniformWallTiedPhases::Parameters()
-                                    .set_phaseFractions({
-                                                            {"Y", 0.4, true}
+                                    multiphaseBC::uniformPhases::mixture({
+                                                            {"Y", 0.4}
                                                         })
                                     )
                                 ))

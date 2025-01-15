@@ -16,7 +16,7 @@ public:
 PARAMETERSET>>> compressibleTwoPhaseThermophysicalProperties Parameters
 inherits transportModel::Parameters
 
-phases = array [
+phases = labeledarray "phase%d" [
      includedset "insight::SpeciesData::Parameters"
     ] *2 "Definitions of the phases"
 

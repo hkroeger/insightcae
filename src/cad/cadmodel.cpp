@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "base/exception.h"
 #include "base/tools.h"
 #include "cadmodel.h"
 #include "cadfeature.h"
@@ -66,7 +67,7 @@ void Model::copyVariables(const ModelVariableTable& vars)
             addDirection(name, boost::fusion::at_c<0>(*vv) );
           }
         }
-        else if ( const DatumPtr* dd = boost::get<DatumPtr>( &boost::fusion::at_c<1>(s) ) )
+        else if ( const auto* dd = boost::get<DatumPtr>( &boost::fusion::at_c<1>(s) ) )
         {
             addDatum(name, *dd);
         }
@@ -74,6 +75,8 @@ void Model::copyVariables(const ModelVariableTable& vars)
         {
             addModelstep(name, *ff, false);
         }
+        else
+            throw insight::UnhandledSelection();
     }
 }
 

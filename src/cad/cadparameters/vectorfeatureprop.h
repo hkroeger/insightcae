@@ -134,6 +134,29 @@ public:
 
 
 
+class DatumPlaneX
+    : public insight::cad::Vector
+{
+    ConstDatumPtr pfs_;
+
+public:
+    DatumPlaneX(ConstDatumPtr pfs);
+    virtual arma::mat value() const;
+};
+
+
+
+class DatumPlaneY
+    : public insight::cad::Vector
+{
+    ConstDatumPtr pfs_;
+
+public:
+    DatumPlaneY(ConstDatumPtr pfs);
+    virtual arma::mat value() const;
+};
+
+
 
 class BBMin
 : public insight::cad::Vector

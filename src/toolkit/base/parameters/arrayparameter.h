@@ -57,15 +57,15 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    void setDefaultValue ( const Parameter& defP );
+    void setDefaultValue ( std::unique_ptr<Parameter>&& defP );
     const Parameter& defaultValue() const;
 
     int defaultSize() const;
-    void resize(int newSize);
+    void resize(int newSize, bool init);
     void eraseValue ( int i );
-    void appendValue ( const Parameter& np );
-    void insertValue ( int i, const Parameter& np );
-    void appendEmpty();
+    void appendValue ( std::unique_ptr<Parameter>&& np );
+    void insertValue ( int i, std::unique_ptr<Parameter>&& np );
+    void appendEmpty(bool init);
     Parameter& operator[] ( int i );
     const Parameter& operator[] ( int i ) const;
 
@@ -105,7 +105,7 @@ public:
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
-    std::unique_ptr<Parameter> clone () const override;
+    std::unique_ptr<Parameter> clone (bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const ArrayParameter& p);
     void extend ( const Parameter& op ) override;

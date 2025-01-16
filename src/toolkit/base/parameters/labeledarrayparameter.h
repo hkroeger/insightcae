@@ -61,16 +61,25 @@ public:
     bool isDifferent(const Parameter& p) const override;
 
     void setLabelPattern(const std::string& pat);
+    void synchronizeKeys();
     void setKeySourceParameterPath(const std::string& pp);
+    void unsetKeySourceParameterPath();
 
-    void setDefaultValue ( const Parameter& defP );
+    std::set<std::string> keys() const;
+
+    void setDefaultValue ( std::unique_ptr<Parameter>&& defP );
     const Parameter& defaultValue() const;
 
+    bool keysAreLocked() const;
     std::string findUniqueNewKey() const;
     void eraseValue ( const std::string& label );
-    void appendValue ( const Parameter& np );
-    void insertValue ( const std::string& label, const Parameter& np );
+    void appendValue ( std::unique_ptr<Parameter>&& np );
+    void insertValue (
+        const std::string& label,
+        std::unique_ptr<Parameter>&& np );
+
     Parameter& getOrInsertDefaultValue ( const std::string& label );
+
     void appendEmpty();
     void insertWithDefaults(const std::string& label);
     void changeLabel ( const std::string& label, const std::string& newLabel );
@@ -109,7 +118,7 @@ public:
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
-    std::unique_ptr<Parameter> clone () const override;
+    std::unique_ptr<Parameter> clone (bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const LabeledArrayParameter& p);
     void extend ( const Parameter& op ) override;

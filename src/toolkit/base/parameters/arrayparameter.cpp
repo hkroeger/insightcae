@@ -28,10 +28,10 @@ ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const st
 : Parameter(description, isHidden, isExpert, isNecessary, order),
   defaultSize_(size)
 {
-    setDefaultValue(defaultValue);
+    setDefaultValue(defaultValue.clone(false));
     for (int i=0; i<defaultSize_; i++)
     {
-        appendEmpty();
+        appendEmpty(false);
     }
 }
 
@@ -57,9 +57,10 @@ bool ArrayParameter::isDifferent(const Parameter& p) const
 
 
 
-void ArrayParameter::setDefaultValue ( const Parameter& defP )
+void ArrayParameter::setDefaultValue (
+    std::unique_ptr<Parameter>&& defP )
 {
-  defaultValue_=defP.clone();
+  defaultValue_=std::move(defP);
 }
 
 
@@ -74,7 +75,7 @@ int ArrayParameter::defaultSize() const
   return defaultSize_;
 }
 
-void ArrayParameter::resize(int newSize)
+void ArrayParameter::resize(int newSize, bool init)
 {
   if (newSize<size())
   {
@@ -87,7 +88,7 @@ void ArrayParameter::resize(int newSize)
   {
     for (int k=size(); k<newSize; ++k)
     {
-      appendEmpty();
+      appendEmpty(init);
     }
   }
 
@@ -120,12 +121,12 @@ void ArrayParameter::eraseValue ( int i )
 }
 
 
-void ArrayParameter::appendValue ( const Parameter& np )
+void ArrayParameter::appendValue ( std::unique_ptr<Parameter>&& np )
 {
     int i=value_.size();
   beforeChildInsertion(i, i);
 
-  value_.push_back ( np.clone() );
+  value_.push_back ( std::move(np) );
   auto& ins=value_.back();
 
   valueChangedConnections_.insert(ins.get(),
@@ -143,7 +144,7 @@ void ArrayParameter::appendValue ( const Parameter& np )
 }
 
 
-void ArrayParameter::insertValue ( int i, const Parameter& np )
+void ArrayParameter::insertValue ( int i, std::unique_ptr<Parameter>&& np )
 {
   insight::assertion(
       i>=0 && i<size(),
@@ -151,7 +152,7 @@ void ArrayParameter::insertValue ( int i, const Parameter& np )
 
   beforeChildInsertion(i, i);
 
-  auto ins = value_.insert( value_.begin()+i, np.clone() );
+  auto ins = value_.insert( value_.begin()+i, std::move(np) );
 
   valueChangedConnections_.insert(ins->get(),
       std::make_shared<boost::signals2::scoped_connection>(
@@ -168,12 +169,13 @@ void ArrayParameter::insertValue ( int i, const Parameter& np )
 }
 
 
-void ArrayParameter::appendEmpty()
+void ArrayParameter::appendEmpty(bool init)
 {
     int i=value_.size();
     beforeChildInsertion(i, i);
 
-  value_.push_back ( defaultValue_->clone() );
+  value_.push_back ( defaultValue_->clone(false) );
+  if (init) initialize();
 
   auto& ins=value_.back();
   valueChangedConnections_.insert(ins.get(),
@@ -437,15 +439,16 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
       {
         int i=boost::lexical_cast<int>(name);
         imax=std::max(imax,i);
-        if (i>size()-1) resize(i+1);
+        if (i>size()-1) resize(i+1, false);
         value_[i]->readFromNode( name, *child, inputfilepath );
       }
     }
     if (imax<0)
       clear();
     else
-      resize(imax+1);
+      resize(imax+1, false);
 
+    initialize();
     triggerValueChanged();
   }
   else
@@ -463,17 +466,21 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>&
 
 
 
-std::unique_ptr<Parameter> ArrayParameter::clone () const
+std::unique_ptr<Parameter> ArrayParameter::clone (bool init) const
 {
   auto np=std::make_unique<ArrayParameter>(
         *defaultValue_,
         0,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order());
+
   for (int i=0; i<size(); i++)
   {
-    np->appendValue( *(value_[i]) );
+    np->appendValue( value_[i]->clone(false) );
   }
+
+  if (init) np->initialize();
+
   return np;
 }
 
@@ -493,7 +500,7 @@ void ArrayParameter::operator=(const ArrayParameter& op)
   (*defaultValue_).copyFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
 
-  resize(op.size());
+  resize(op.size(), true);
 
   for (int i=0; i<op.size(); ++i)
   {
@@ -530,7 +537,7 @@ void ArrayParameter::merge(const Parameter &other)
   }
   for (; i<op.size(); ++i) // if other is larger
   {
-    appendEmpty();
+    appendEmpty(true);
     insight::assertion( value_.size()-1==i, "unexpected" );
     value_.back()->merge(*op.value_[i]);
   }

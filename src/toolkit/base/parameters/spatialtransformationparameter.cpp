@@ -192,12 +192,14 @@ void SpatialTransformationParameter::readFromNode (
 
 
 std::unique_ptr<Parameter>
-SpatialTransformationParameter::clone() const
+SpatialTransformationParameter::clone(bool init) const
 {
-    return std::make_unique<SpatialTransformationParameter>(
+    auto p= std::make_unique<SpatialTransformationParameter>(
         operator()(), description().simpleLatex(),
         isHidden(), isNecessary(), isExpert(), order()
     );
+    if (init) p->initialize();
+    return p;
 }
 
 

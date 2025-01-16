@@ -366,7 +366,7 @@ public:
         const std::string& startAtSubnode = std::string() );
 
 //    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
-    virtual std::unique_ptr<Parameter> clone() const =0;
+    virtual std::unique_ptr<Parameter> clone(bool initialize) const =0;
 
     /**
      * @brief isPacked
@@ -491,10 +491,10 @@ void stringToValue(const std::string& s, boost::gregorian::date& date);
 void stringToValue(const std::string& s, boost::posix_time::ptime& date);
 
 
-inline std::unique_ptr<Parameter> new_clone(const Parameter& p)
-{
-  return p.clone();
-}
+// inline std::unique_ptr<Parameter> new_clone(const Parameter& p)
+// {
+//   return p.clone();
+// }
 
 
 

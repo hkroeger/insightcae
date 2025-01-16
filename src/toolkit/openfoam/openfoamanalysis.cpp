@@ -51,7 +51,7 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetP
       cm, P{
             ps.selection(),
             std::dynamic_unique_ptr_cast<ParameterSet>(
-                ps().clone()) }
+                ps().cloneParameterSet()) }
       );
 }
 

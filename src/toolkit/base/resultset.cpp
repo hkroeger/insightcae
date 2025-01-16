@@ -94,7 +94,7 @@ ResultSet::ResultSet
     const std::string* author
 )
     : ResultElement ( "", "", "" ),
-      p_ ( std::dynamic_unique_ptr_cast<ParameterSet>(p.clone()) ),
+      p_ ( p.cloneParameterSet() ),
       title_ ( title ),
       subtitle_ ( subtitle ),
       introduction_()

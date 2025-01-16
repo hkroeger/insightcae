@@ -99,7 +99,7 @@ public:
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
-    std::unique_ptr<Parameter> clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const DoubleRangeParameter& p);
     int nChildren() const override;

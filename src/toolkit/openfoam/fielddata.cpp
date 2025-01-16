@@ -492,11 +492,12 @@ double FieldData::calcMaxValueMag() const
 Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::string& )
 {
   std::unique_ptr<Parameter> p(
-        Parameters::makeDefault()->get<ParameterSet>("fielddata").clone());
+        Parameters::makeDefault()->get<ParameterSet>("fielddata").clone(false));
   auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
 
-  auto cp = std::dynamic_unique_ptr_cast<ParameterSet>(
-    opts->getParametersForSelection("uniformSteady").clone());
+  auto cp =
+    opts->getParametersForSelection("uniformSteady").cloneParameterSet();
+
   cp->get<VectorParameter>("value").set( def_val );
   opts->setParametersForSelection("uniformSteady", *cp);
 

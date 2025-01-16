@@ -130,11 +130,13 @@ void MatrixParameter::readFromNode
   }
 }
 
-std::unique_ptr<Parameter> MatrixParameter::clone() const
+std::unique_ptr<Parameter> MatrixParameter::clone(bool init) const
 {
-  return std::make_unique<MatrixParameter>(
+    auto p=std::make_unique<MatrixParameter>(
         value_,
         description().simpleLatex());
+    if (init) p->initialize();
+    return p;
 }
 
 

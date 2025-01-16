@@ -78,7 +78,7 @@ public:
         boost::filesystem::path
     ) override;
 
-    std::unique_ptr<Parameter> clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const PropertyLibrarySelectionParameter& p);
     int nChildren() const override;

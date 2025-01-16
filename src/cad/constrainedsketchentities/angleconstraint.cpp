@@ -152,7 +152,7 @@ FixedAngleConstraint::FixedAngleConstraint(
     )
     : AngleConstraint(p1, p2, pCtr, layerName)
 {
-    auto ps = defaultParameters().cloneSubset();
+    auto ps = defaultParameters().cloneParameterSet();
     ps->insert(
         "angle", std::make_unique<DoubleParameter>(
                   calculate(

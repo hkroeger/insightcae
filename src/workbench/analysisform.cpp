@@ -204,7 +204,7 @@ AnalysisForm::AnalysisForm(
 
     {
         insight::CurrentExceptionContext ex(_("create parameter set editor"));
-        psmodel_=new IQParameterSetModel(*defaultParams, *defaultParams);
+        psmodel_=new IQParameterSetModel(std::move(defaultParams));
         peditor_=new ParameterEditorWidget(
             ui->inputTab,
             [this,vizb](QObject* _1,
@@ -473,7 +473,7 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
-    auto p = parameters().cloneSubset();
+    auto p = parameters().cloneParameterSet();
 
     if (pack_parameterset_)
     {
@@ -579,7 +579,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
     resetExecutionEnvironment(ist_file_.parent_path());
   }
 
-  auto ps = parameters().cloneSubset();
+  auto ps = parameters().cloneParameterSet();
 
   std::string contents;
   insight::readFileIntoString(ist_file_, contents);
@@ -596,16 +596,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
     peditor_->viewer()->restoreViewerState(*vs);
   }
 
-
-
-  //ps.readFromFile(ist_file_);
-
-
-  auto defp = insight::Analysis::defaultParametersFor(
-      analysisName_);
-
-  psmodel_->resetParameters(
-        *ps, *defp);
+  psmodel_->resetParameterValues( *ps );
 }
 
 

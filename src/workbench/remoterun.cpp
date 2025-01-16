@@ -159,7 +159,7 @@ void RemoteRun::uploadInputFile()
 
         insight::dbg()<<"upload input file"<<std::endl;
 
-        auto p = af_->parameters().cloneSubset();
+        auto p = af_->parameters().cloneParameterSet();
         p->pack(); // pack
 
         {

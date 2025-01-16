@@ -69,7 +69,7 @@ ParameterSet::ParameterSet(
     {
         insert(
             p.first,
-            p.second->clone() );
+            p.second->clone(false) );
     }
 }
 
@@ -157,7 +157,7 @@ ParameterSet::Entries ParameterSet::copyEntries() const
         result.insert(
             {
              p.first,
-             p.second->clone()
+             p.second->clone(false)
             });
     }
     return result;
@@ -721,13 +721,15 @@ void ParameterSet::replace ( const std::string& key, std::unique_ptr<Parameter> 
 
 
 
-std::unique_ptr<Parameter> ParameterSet::clone() const
+std::unique_ptr<Parameter> ParameterSet::clone(bool init) const
 {
-  return ParameterSet::create(
-      entries(),
-      description().simpleLatex(),
-      isHidden(), isExpert(), isNecessary(), order()
-      );
+    auto p =std::unique_ptr<ParameterSet>(new ParameterSet(
+        entries(),
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order()
+        ));
+    if (init) p->initialize();
+    return p;
 }
 
 
@@ -749,8 +751,12 @@ void ParameterSet::operator=(const ParameterSet& osp)
     if (i!=value_.end())
           i->second->copyFrom( *p.second );
     else
-          insert(p.first, std::unique_ptr<Parameter>(p.second->clone()));
+          insert(
+            p.first,
+            std::unique_ptr<Parameter>(
+                p.second->clone(false) ) );
   }
+  initialize();
   Parameter::copyFrom(osp);
 }
 
@@ -768,9 +774,10 @@ void ParameterSet::extend ( const Parameter& other )
     }
     else
     {
-          insert( i.first, i.second->clone() );
+          insert( i.first, i.second->clone(false) );
     }
   }
+  initialize();
 }
 
 
@@ -789,6 +796,8 @@ void ParameterSet::merge ( const Parameter& other )
       }
   }
 }
+
+
 
 void ParameterSet::clear()
 {

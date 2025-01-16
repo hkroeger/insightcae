@@ -110,7 +110,7 @@ public:
       boost::filesystem::path inputfilepath) override;
 
   std::unique_ptr<PathParameter> clonePathParameter() const;
-  std::unique_ptr<Parameter> clone() const override;
+  std::unique_ptr<Parameter> clone(bool initialize) const override;
 
   void copyFrom(const Parameter& p) override;
   void operator=(const PathParameter& p);
@@ -170,7 +170,7 @@ public:
 
     void operator=(const DirectoryParameter& p);
 
-    std::unique_ptr<Parameter> clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
     std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };
 

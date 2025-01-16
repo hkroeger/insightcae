@@ -117,7 +117,7 @@ void LabeledArrayGenerator::cppWriteCreateStatement
 
     value->cppWriteCreateStatement(os, name+"_default_value");
 
-    os<<psvarname<<"->setDefaultValue(*"<<name<<"_default_value);\n";
+    os<<psvarname<<"->setDefaultValue(std::move("<<name<<"_default_value));\n";
     if (num>0)
     {
         os<<"for (size_t i=0; i<"<<num<<"; i++) "

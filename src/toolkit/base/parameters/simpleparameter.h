@@ -100,12 +100,14 @@ public:
     }
 
 
-    std::unique_ptr<Parameter> clone() const override
+    std::unique_ptr<Parameter> clone(bool init) const override
     {
-        return std::make_unique<SimpleParameter<T, N> >(
+        auto p= std::make_unique<SimpleParameter<T, N> >(
             value_,
             description().simpleLatex(),
             isHidden(), isExpert(), isNecessary(), order() );
+        if (init) p->initialize();
+        return p;
     }
 
 

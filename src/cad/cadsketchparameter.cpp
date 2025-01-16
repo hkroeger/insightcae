@@ -275,9 +275,11 @@ CADSketchParameter::cloneCADSketchParameter(
 }
 
 
-std::unique_ptr<Parameter> CADSketchParameter::clone() const
+std::unique_ptr<Parameter> CADSketchParameter::clone(bool init) const
 {
-    return cloneCADSketchParameter();
+    auto p=cloneCADSketchParameter();
+    if (init) p->initialize();
+    return p;
 }
 
 void CADSketchParameter::copyFrom(const Parameter& op)

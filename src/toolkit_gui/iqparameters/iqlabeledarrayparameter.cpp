@@ -34,23 +34,32 @@ QVBoxLayout* IQLabeledArrayParameter::populateEditControls(
 
     QHBoxLayout *layout2=new QHBoxLayout;
 
-    QPushButton *addbtn=new QPushButton("+ Add new", editControlsContainer);
-    layout2->addWidget(addbtn);
+    if (!parameter().keysAreLocked())
+    {
+        QPushButton *addbtn=new QPushButton("+ Add new", editControlsContainer);
+        layout2->addWidget(addbtn);
 
-    connect(addbtn, &QPushButton::clicked, this, [this]()
-            {
-                parameterRef().appendEmpty();
-            }
-            );
+        connect(addbtn, &QPushButton::clicked, this, [this]()
+                {
+                    parameterRef().appendEmpty();
+                }
+                );
 
-    QPushButton *clearbtn=new QPushButton("Clear all", editControlsContainer);
-    layout2->addWidget(clearbtn);
-    connect(clearbtn, &QPushButton::clicked, this, [this]()
-            {
-
-                parameterRef().clear();
-            }
-            );
+        QPushButton *clearbtn=new QPushButton("Clear all", editControlsContainer);
+        layout2->addWidget(clearbtn);
+        connect(clearbtn, &QPushButton::clicked, this, [this]()
+                {
+                    auto &p=parameterRef();
+                    auto keys=p.keys();
+                    while (keys.size())
+                    {
+                        auto k=*keys.begin();
+                        p.eraseValue(k);
+                        keys.erase(k);
+                    }
+                }
+                );
+    }
 
     layout->addLayout(layout2);
 

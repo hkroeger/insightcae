@@ -7,6 +7,9 @@
 
 #include <iqparameter.h>
 
+class IQLabeledArrayParameter;
+
+
 class TOOLKIT_GUI_EXPORT IQLabeledArrayElementParameterBase
 {
 public:
@@ -69,8 +72,13 @@ public:
     //     return this->buildPath(n, redirectArrayElementsToDefault);
     // }
 
+    IQLabeledArrayParameter* arrayParameter()
+    {
+        return dynamic_cast<IQLabeledArrayParameter*>(this->parentParameter());
+    }
 
     virtual void populateContextMenu(QMenu* m);
+
 };
 
 

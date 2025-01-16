@@ -57,7 +57,8 @@ int main(int argc, char*argv[])
     auto wp=boost::get<SubPS::Parameters::type_wall_type>(&sp.type);
     std::cout<<"path="<<wp->L2.parameterPath<<std::endl;
 
-    IQParameterSetModel baseForModelToBeTested(*ps, *TestPS::defaultParameters());
+    IQParameterSetModel baseForModelToBeTested(
+        ps->cloneParameterSet(), *TestPS::defaultParameters());
 
     // QAbstractItemModelTester tester(
     //     &baseForModelToBeTested,

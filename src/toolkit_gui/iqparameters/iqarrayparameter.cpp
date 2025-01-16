@@ -75,7 +75,7 @@ void IQArrayParameter::populateContextMenu(QMenu *cm)
 
 void IQArrayParameter::appendEmpty()
 {
-    parameterRef().appendEmpty();
+    parameterRef().appendEmpty(true);
 }
 
 

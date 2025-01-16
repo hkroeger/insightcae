@@ -26,7 +26,7 @@ InsertedCaseElement::InsertedCaseElement(
     : CaseElementData(
           type_name, mvl, visGen,
           new IQParameterSetModel(
-              *insight::OpenFOAMCaseElement::defaultParametersFor(type_name)
+              insight::OpenFOAMCaseElement::defaultParametersFor(type_name)
             ),
           parent)
 {}

@@ -1,8 +1,10 @@
 #include "labeledarrayparameter.h"
 #include "base/exception.h"
 #include "base/rapidxml.h"
+#include "base/tools.h"
 #include "base/translations.h"
 #include "base/parameters/subsetparameter.h"
+#include <algorithm>
 #include <iterator>
 
 #include "boost/range/adaptor/map.hpp"
@@ -42,10 +44,48 @@ LabeledArrayParameter::LabeledArrayParameter (
 : Parameter(description, isHidden, isExpert, isNecessary, order),
     labelPattern_("entry_%d")
 {
-    setDefaultValue(defaultValue);
+    setDefaultValue(defaultValue.clone(false));
     for (int i=0; i<n; i++)
     {
         appendEmpty();
+    }
+}
+
+
+void LabeledArrayParameter::synchronizeKeys()
+{
+    auto& op = parentSet()
+        .get<LabeledArrayParameter>(
+            keySourceParameterPath_);
+
+
+    {
+        auto myKeys = keys();
+        auto validKeys = op.keys();
+        std::set<std::string>  tbr;
+        std::set_difference(
+            myKeys.begin(), myKeys.end(),
+            validKeys.begin(), validKeys.end(),
+            std::inserter(tbr, tbr.begin()) );
+
+        for (auto& k: tbr)
+        {
+            eraseValue(k);
+        }
+    }
+    {
+        auto myKeys = keys();
+        auto validKeys = op.keys();
+        std::set<std::string> tba;
+        std::set_difference(
+            validKeys.begin(), validKeys.end(),
+            myKeys.begin(), myKeys.end(),
+            std::inserter(tba, tba.begin()) );
+
+        for (auto& k: tba)
+        {
+            insertWithDefaults(k);
+        }
     }
 }
 
@@ -56,6 +96,8 @@ void LabeledArrayParameter::initialize()
     {
         if (!keySourceParameterPath_.empty())
         {
+            synchronizeKeys();
+
             auto& op = parentSet()
                            .get<LabeledArrayParameter>(
                                keySourceParameterPath_);
@@ -114,14 +156,32 @@ void LabeledArrayParameter::setLabelPattern(const std::string& pat)
 void LabeledArrayParameter::setKeySourceParameterPath(const std::string& pp)
 {
     keySourceParameterPath_=pp;
+    needsInitialization_=true;
+}
+
+void LabeledArrayParameter::unsetKeySourceParameterPath()
+{
+    setKeySourceParameterPath(std::string());
+    needsInitialization_=true;
+}
+
+std::set<std::string> LabeledArrayParameter::keys() const
+{
+    std::set<std::string> r;
+    std::transform(
+        value_.begin(), value_.end(),
+        std::inserter(r, r.begin()),
+        [](const value_type::value_type& v){return v.first;} );
+    return r;
 }
 
 
 
 
-void LabeledArrayParameter::setDefaultValue ( const Parameter& defP )
+void LabeledArrayParameter::setDefaultValue (
+    std::unique_ptr<Parameter>&& defP )
 {
-    defaultValue_ = defP.clone();
+    defaultValue_ = std::move(defP);
 }
 
 
@@ -130,6 +190,13 @@ void LabeledArrayParameter::setDefaultValue ( const Parameter& defP )
 const Parameter& LabeledArrayParameter::defaultValue() const
 {
     return *defaultValue_;
+}
+
+
+
+bool LabeledArrayParameter::keysAreLocked() const
+{
+    return !keySourceParameterPath_.empty();
 }
 
 
@@ -160,29 +227,43 @@ void LabeledArrayParameter::eraseValue ( const std::string& label )
 
     auto idx=value_.find(label);
 
+    int i = std::distance(value_.begin(), idx);
+
+    beforeChildRemoval(i, i);
+
     valueChangedConnections_.erase(idx->second.get());
     childValueChangedConnections_.erase(idx->second.get());
     itemRemoved(idx->first);
 
     auto item=std::move(*idx); // don't delete yet, this would cause crash in IQParameterSetModel.
     value_.erase ( idx ); // Just remove from array
+
+    childRemovalDone(i, i);
+
     triggerValueChanged();
 }
 
 
 
 
-void LabeledArrayParameter::appendValue ( const Parameter& np )
+void LabeledArrayParameter::appendValue (
+    std::unique_ptr<Parameter>&& np )
 {
-    insertValue( findUniqueNewKey(), np );
+    insertValue( findUniqueNewKey(), std::move(np) );
 }
 
 
 
 
-void LabeledArrayParameter::insertValue ( const std::string& label, const Parameter& np )
+void LabeledArrayParameter::insertValue (
+    const std::string& label,
+    std::unique_ptr<Parameter>&& np )
 {
-    auto ins=value_.insert({ label, np.clone() });
+    auto i = predictInsertionLocation(value_, label);
+
+    beforeChildInsertion(i, i);
+
+    auto ins=value_.insert({ label, std::move(np) });
 
     valueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(
@@ -192,6 +273,9 @@ void LabeledArrayParameter::insertValue ( const std::string& label, const Parame
             ins.first->second->childValueChanged.connect( childValueChanged )));
     newItemAdded(ins.first->first, ins.first->second);
     ins.first->second->setParent(this);
+
+    childInsertionDone(i, i);
+
     triggerValueChanged();
 }
 
@@ -206,7 +290,7 @@ Parameter &LabeledArrayParameter::getOrInsertDefaultValue(const std::string &lab
     }
     else
     {
-        insertValue(label, *defaultValue_);
+        insertValue(label, defaultValue_->clone(false));
         return *value_.at(label);
     }
 }
@@ -216,7 +300,7 @@ Parameter &LabeledArrayParameter::getOrInsertDefaultValue(const std::string &lab
 
 void LabeledArrayParameter::appendEmpty()
 {
-    appendValue(*defaultValue_);
+    appendValue(defaultValue_->clone(false));
 }
 
 void LabeledArrayParameter::insertWithDefaults(const std::string &label)
@@ -224,7 +308,7 @@ void LabeledArrayParameter::insertWithDefaults(const std::string &label)
     auto i=value_.find(label);
     if (i==value_.end())
     {
-        insertValue(label, *defaultValue_);
+        insertValue(label, defaultValue_->clone(false));
     }
 }
 
@@ -522,7 +606,7 @@ void LabeledArrayParameter::readFromNode (
 
 
 
-std::unique_ptr<Parameter> LabeledArrayParameter::clone () const
+std::unique_ptr<Parameter> LabeledArrayParameter::clone(bool initialize) const
 {
     auto np=std::make_unique<LabeledArrayParameter>(
         *defaultValue_, 0,
@@ -536,8 +620,11 @@ std::unique_ptr<Parameter> LabeledArrayParameter::clone () const
     {
         np->insertValue(
             childParameterName(i),
-            childParameter(i) );
+            childParameter(i).clone(false) );
     }
+
+    if (initialize) np->initialize();
+
     return np;
 }
 
@@ -580,7 +667,7 @@ void LabeledArrayParameter::operator=(const LabeledArrayParameter& op)
         }
         else
         {
-            insertValue(ov.first, *ov.second);
+            insertValue(ov.first, ov.second->clone(false) );
         }
     }
 

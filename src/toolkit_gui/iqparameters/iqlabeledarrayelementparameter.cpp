@@ -102,6 +102,7 @@ IQParameter *IQLabeledArrayElementParameterBase::create(
 template<class IQBaseParameter, const char *N>
 void IQLabeledArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
 {
+    if (!arrayParameter()->parameter().keysAreLocked())
     {
         auto *removeAction = new QAction("Remove this array element");
         cm->addAction(removeAction);
@@ -120,6 +121,7 @@ void IQLabeledArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMe
              );
     }
 
+    if (!arrayParameter()->parameter().keysAreLocked())
     {
         auto *renameAction = new QAction("Change label of element");
         cm->addAction(renameAction);

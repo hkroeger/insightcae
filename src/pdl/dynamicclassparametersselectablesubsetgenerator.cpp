@@ -131,6 +131,6 @@ void DynamicClassParametersSelectableSubsetGenerator
 {
 
     os <<staticname<< ".selection = "<<varname<<".selection();\n"
-       <<staticname<< ".parameters = std::dynamic_unique_ptr_cast<insight::ParameterSet>("<<varname<<"().clone());\n"
+       <<staticname<< ".parameters = std::dynamic_unique_ptr_cast<insight::ParameterSet>("<<varname<<"().clone(false));\n"
        <<staticname<< ".setPath( "<<varname<<" .path());\n";
 }

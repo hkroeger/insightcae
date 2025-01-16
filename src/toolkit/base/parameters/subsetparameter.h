@@ -223,11 +223,11 @@ public:
 
   void replace ( const std::string& key, std::unique_ptr<Parameter> newp );
 
-  std::unique_ptr<Parameter> clone() const override;
+  std::unique_ptr<Parameter> clone(bool initialize) const override;
 
-  inline std::unique_ptr<ParameterSet> cloneSubset() const
+  inline std::unique_ptr<ParameterSet> cloneParameterSet() const
   {
-      return std::dynamic_unique_ptr_cast<ParameterSet>(clone());
+      return std::dynamic_unique_ptr_cast<ParameterSet>(clone(true));
   }
 
   void copyFrom(const Parameter& o) override;

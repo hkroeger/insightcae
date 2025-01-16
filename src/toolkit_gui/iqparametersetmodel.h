@@ -81,7 +81,7 @@ public:
   IQParameter* iqIndexData(const QModelIndex& idx);
 
   IQParameterSetModel(
-      const insight::ParameterSet& ps,
+      std::unique_ptr<insight::ParameterSet>&& ps,
       boost::optional<const insight::ParameterSet&> defaultps
         = boost::optional<const insight::ParameterSet&>(),
       QObject* parent=nullptr);
@@ -163,6 +163,7 @@ public:
    */
   void insertArrayElement(const QModelIndex &index, const insight::Parameter& elem);
   void removeArrayElement(const QModelIndex &index);
+  void removeLabeledArrayElement(const QModelIndex &index);
 
 
   void addGeometryToSpatialTransformationParameter(
@@ -182,13 +183,16 @@ public:
   void setAnalysisName(const std::string& analysisName);
   const std::string& getAnalysisName() const;
 
+  void resetParameters(
+      std::unique_ptr<insight::ParameterSet>&& ps );
+
 public Q_SLOTS:
   void clearParameters();
-  void resetParameters(
-        const insight::ParameterSet& ps );
-  void resetParameters(
+
+  void resetParameterValues(
       const insight::ParameterSet& ps,
-      const insight::ParameterSet& defaultps);
+      boost::optional<const insight::ParameterSet&> defaultps
+      = boost::optional<const insight::ParameterSet&>() );
 
 };
 

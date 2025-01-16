@@ -82,9 +82,19 @@ IQParameter *IQParameterSetModel::iqIndexData(const QModelIndex &idx)
             auto *model = const_cast<IQParameterSetModel*>(this);
 
             // use other wrapper, if its an array element
-            if (p->hasParent() && dynamic_cast<insight::ArrayParameter*>(&p->parent()))
+            if (p->hasParent() &&
+                dynamic_cast<insight::ArrayParameter*>(
+                    &p->parent()))
             {
                 wrapper = IQArrayElementParameterBase::create(
+                    model, model,
+                    p, *defaultParameterSet_ );
+            }
+            else if (p->hasParent() &&
+                       dynamic_cast<insight::LabeledArrayParameter*>(
+                           &p->parent()))
+            {
+                wrapper = IQLabeledArrayElementParameterBase::create(
                     model, model,
                     p, *defaultParameterSet_ );
             }
@@ -115,13 +125,17 @@ const IQParameter *IQParameterSetModel::iqIndexData(const QModelIndex &idx) cons
 
 
 IQParameterSetModel::IQParameterSetModel(
-    const insight::ParameterSet& ps,
+    std::unique_ptr<insight::ParameterSet>&& ps,
     boost::optional<const insight::ParameterSet&> defaultps,
     QObject *parent
     )
   : QAbstractItemModel(parent)
 {
-  resetParameters( ps, defaultps ? *defaultps : ps );
+    resetParameters( std::move(ps) );
+    if (defaultps)
+    {
+        *defaultParameterSet_ = *defaultps;
+    }
 }
 
 
@@ -315,9 +329,12 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
   }
   else if (index.column()==labelCol)
   {
-      if (dynamic_cast<const insight::LabeledArrayParameter*>(&p->parent())
+      if (auto *lap = dynamic_cast<const insight::LabeledArrayParameter*>(&p->parent())
           )
-          flags |= Qt::ItemIsEditable;
+      {
+          if (!lap->keysAreLocked())
+            flags |= Qt::ItemIsEditable;
+      }
   }
 
   return flags;
@@ -568,12 +585,12 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
         {
             auto *me = iqIndexData(index);
             auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(me->parentParameter());
-            auto &p = dynamic_cast<insight::LabeledArrayParameter&>(iqp->parameterRef());
-            auto label = p.name();
+            auto &pp = dynamic_cast<insight::LabeledArrayParameter&>(iqp->parameterRef());
+            auto label = p->name();
             auto newl = value.toString();
             if (!newl.isEmpty())
             {
-                p.changeLabel(label, newl.toStdString());
+                pp.changeLabel(label, newl.toStdString());
             }
         }
         break;
@@ -760,13 +777,6 @@ void IQParameterSetModel::contextMenu(QWidget *pw, const QModelIndex& index, con
 void IQParameterSetModel::clearParameters()
 {
   beginResetModel();
-  // for (auto& rp: rootParameters_)
-  // {
-  //   //rp->deleteLater();
-  //   delete rp; // needs to be deleted before PS is reassigned (valueChanged handler needs to be disconnected)
-  // }
-  // rootParameters_.clear();
-
   parameterSet_=insight::ParameterSet::create();
   defaultParameterSet_=insight::ParameterSet::create();
   endResetModel();
@@ -776,32 +786,41 @@ void IQParameterSetModel::clearParameters()
 
 
 void IQParameterSetModel::resetParameters(
-    const insight::ParameterSet &ps )
+    std::unique_ptr<insight::ParameterSet>&& ps )
 {
-    beginResetModel();
-    parameterSet_=insight::ParameterSet::create();
-    endResetModel();
+    clearParameters();
 
     // create decorators that store parent relationship
 
-    beginInsertRows(QModelIndex(), 0, parameterSet_->size()-1);
-    *parameterSet_ = ps;
+    beginInsertRows(QModelIndex(), 0, ps->size()-1);
+    defaultParameterSet_ = ps->cloneParameterSet();
+    parameterSet_ = std::move(ps);
     endInsertRows();
 }
 
 
 
-void IQParameterSetModel::resetParameters(
+void IQParameterSetModel::resetParameterValues(
     const insight::ParameterSet &ps,
-    const insight::ParameterSet &defaultps )
+    boost::optional<const insight::ParameterSet&> defaultps )
 {
   clearParameters();
 
-  *defaultParameterSet_ = defaultps;
 
   // create decorators that store parent relationship
-  beginInsertRows(QModelIndex(), 0, parameterSet_->size()-1);
+  beginInsertRows(QModelIndex(), 0, ps.size()-1);
+
+  if (defaultps)
+  {
+      *defaultParameterSet_ = *defaultps;
+  }
+  else
+  {
+      *defaultParameterSet_ = ps;
+  }
+
   *parameterSet_ = ps;
+
   endInsertRows();
 }
 
@@ -837,6 +856,14 @@ bool IQParameterSetModel::removeRows(int row, int count, const QModelIndex &pare
             for (int i=row+count-1; i>=row; --i)
             {
                 removeArrayElement(index(i, 0, parent));
+            }
+            return true;
+        }
+        else if (auto *iap=dynamic_cast<insight::LabeledArrayParameter*>(ip))
+        {
+            for (int i=row+count-1; i>=row; --i)
+            {
+                removeLabeledArrayElement(index(i, 0, parent));
             }
             return true;
         }
@@ -926,7 +953,7 @@ void IQParameterSetModel::insertArrayElement(const QModelIndex &index, const ins
 
 
   beginInsertRows(index, iIns, iIns);
-  iap->insertValue( iIns, elem );
+  iap->insertValue( iIns, elem.clone(true) );
   // auto iqnp=decorateArrayElement(iqap, iIns, iap->elementRef(iIns)/*, 0*/);
   // iqp->append(iqnp);
   endInsertRows();
@@ -957,6 +984,34 @@ void IQParameterSetModel::removeArrayElement(const QModelIndex &index)
         notifyParameterChange( this->index(i, 1, parentIndex) );
       }
   }
+}
+
+
+
+
+void IQParameterSetModel::removeLabeledArrayElement(const QModelIndex &index)
+{
+    auto *p = indexData(index);
+    auto parentIndex = parent(index);
+    Q_ASSERT( parentIndex.isValid() );
+
+    if (auto *ap = dynamic_cast<insight::LabeledArrayParameter*>(indexData(parentIndex)))
+    {
+        auto row = index.row();
+
+
+        beginRemoveRows(parentIndex, row, row);
+        ap->eraseValue(p->name());
+        endRemoveRows();
+        // notifyParameterChange(parentIndex);
+
+        // change name for all subsequent parameters
+        for (int i=row; i<ap->size(); ++i)
+        {
+            // (*aiqp)[i]->setName(QString("%1").arg(i));
+            notifyParameterChange( this->index(i, 1, parentIndex) );
+        }
+    }
 }
 
 

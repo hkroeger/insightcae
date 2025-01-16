@@ -106,15 +106,17 @@ public:
     }
 
 
-    std::unique_ptr<Parameter> clone() const override
+    std::unique_ptr<Parameter> clone(bool init) const override
     {
         using namespace boost::units;
-        return std::make_unique<SimpleDimensionedParameter<T, Unit, N> >
+        auto p = std::make_unique<SimpleDimensionedParameter<T, Unit, N> >
             (
               value_.value(),
               description().simpleLatex(),
               isHidden(), isExpert(), isNecessary(), order()
             );
+        if (init) p->initialize();
+        return p;
     }
 
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,

@@ -251,9 +251,9 @@ void CaseConfigurationModel::readFromNode(
           type_name, mvl, visGen
           );
 
-    auto np = ice->parameterSetModel()->getParameterSet().cloneSubset();
+    auto np = ice->parameterSetModel()->getParameterSet().cloneParameterSet();
     np->readFromNode(std::string(), *e, fileParentPath);
-    ice->parameterSetModel()->resetParameters(*np);
+    ice->parameterSetModel()->resetParameterValues(*np);
 
     addCaseElement( ice );
   }

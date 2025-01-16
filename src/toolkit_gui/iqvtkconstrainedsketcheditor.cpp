@@ -63,7 +63,8 @@ DefaultGUIConstrainedSketchPresentationDelegate::setupSketchEntityParameterSetMo
     const insight::cad::ConstrainedSketchEntity& e) const
 {
     if (e.parameters().size()>0)
-        return new IQParameterSetModel(e.parameters(), e.defaultParameters());
+        return new IQParameterSetModel(
+            e.parameters().cloneParameterSet());
     else
         return nullptr;
 }
@@ -76,8 +77,7 @@ DefaultGUIConstrainedSketchPresentationDelegate::setupLayerParameterSetModel(
     if (curP.size()>0)
     {
         return new IQParameterSetModel(
-            curP, curP
-             );
+            curP.cloneParameterSet());
     }
     else
     {

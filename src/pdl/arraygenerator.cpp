@@ -90,13 +90,13 @@ void ArrayGenerator::cppWriteCreateStatement
     <<"{\n";
 
   value->cppWriteCreateStatement(os, value->name+"_default");
-  os<<psvarname<<"->setDefaultValue(*"<<value->name<<"_default);\n";
+  os<<psvarname<<"->setDefaultValue(std::move("<<value->name<<"_default));\n";
 
   if (num>0)
   {
     os << "for (size_t i=0; i<"<<num<<"; i++)\n"
        << "{\n"
-       <<  psvarname<<"->appendEmpty();\n"
+       <<  psvarname<<"->appendEmpty(false);\n"
        << "}\n";
   }
   os<<"}\n";
@@ -117,7 +117,7 @@ void ArrayGenerator::cppWriteSetStatement
   os << "for (size_t k=0; k<"<<staticname<<".size(); k++)\n";
   os << "{\n";
 
-  os <<  varname<<".appendEmpty();"<<endl;
+  os <<  varname<<".appendEmpty(false);"<<endl;
 
   os <<  "auto& "<<varname<<"_cur = "
      <<     "dynamic_cast< "<< value->cppInsightType() <<"& >"

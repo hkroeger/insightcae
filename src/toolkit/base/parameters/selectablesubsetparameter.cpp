@@ -36,7 +36,10 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 {
   for ( auto &i: defaultValue )
   {
-        addItem(i.first, *i.second);
+        addItem(
+          i.first,
+          std::dynamic_unique_ptr_cast<ParameterSet>(
+              i.second->clone(false) ) );
   }
   setSelection(defaultSelection);
 }
@@ -52,7 +55,7 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 {
   for ( auto &i: defaultValue )
   {
-        addItem(i.first, *i.second);
+        addItem(i.first, std::move(i.second) );
   }
   setSelection(defaultSelection);
 }
@@ -202,7 +205,7 @@ SelectableSubsetParameter::copyItems() const
         {
          sp.first,
          std::dynamic_unique_ptr_cast<ParameterSet>(
-                 sp.second->clone())
+                 sp.second->clone(false))
         });
   }
   return result;
@@ -210,16 +213,6 @@ SelectableSubsetParameter::copyItems() const
 
 
 
-
-void SelectableSubsetParameter::addItem(
-    key_type key,
-    const ParameterSet& ps )
-{
-    addItem(
-        key,
-        std::dynamic_unique_ptr_cast<ParameterSet>(
-            ps.clone() ) );
-}
 
 
 void SelectableSubsetParameter::addItem(
@@ -385,7 +378,7 @@ void SelectableSubsetParameter::readFromNode
 
 
 std::unique_ptr<Parameter>
-SelectableSubsetParameter::clone () const
+SelectableSubsetParameter::clone (bool init) const
 {
   auto np=
       std::make_unique<SelectableSubsetParameter>(
@@ -395,11 +388,15 @@ SelectableSubsetParameter::clone () const
   for (auto i=value_.begin(); i!=value_.end(); i++)
   {
     np->addItem(
-          i->first, *i->second
+          i->first,
+          std::dynamic_unique_ptr_cast<ParameterSet>(
+              i->second->clone(false))
           );
   }
 
   np->setSelection(selection_);
+
+  if (init) np->initialize();
 
   return np;
 }
@@ -473,7 +470,9 @@ SelectableSubsetParameter::intersection(
                   isd.release()));
           if (issp.get())
           {
-              np->addItem( key, *issp );
+              np->addItem(
+                  key,
+                  issp->cloneParameterSet() );
           }
       }
     }

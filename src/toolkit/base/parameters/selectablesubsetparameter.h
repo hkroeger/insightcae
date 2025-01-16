@@ -93,7 +93,6 @@ public:
   EntryReferences items() const;
   Entries copyItems() const;
 
-  void addItem(key_type key, const ParameterSet& ps );
   void addItem(key_type key, std::unique_ptr<ParameterSet>&& ps );
 
   inline ParameterSet& operator() ()
@@ -130,7 +129,7 @@ public:
       rapidxml::xml_node<>& node,
       boost::filesystem::path inputfilepath ) override;
 
-  std::unique_ptr<Parameter> clone () const override;
+  std::unique_ptr<Parameter> clone (bool initialize) const override;
   void copyFrom(const Parameter& p) override;
   void operator=(const SelectableSubsetParameter& p);
   void extend ( const Parameter& op ) override;

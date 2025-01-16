@@ -4,6 +4,7 @@
 #include <ostream>
 #include <memory>
 
+#include "base/cppextensions.h"
 #include "vtkSTLWriter.h"
 
 #include "base/tools.h"
@@ -210,16 +211,19 @@ void PathParameter::readFromNode
 
 std::unique_ptr<PathParameter> PathParameter::clonePathParameter() const
 {
-  return std::make_unique<PathParameter>(
+    return std::dynamic_unique_ptr_cast<PathParameter>(
+        clone(true));
+}
+
+std::unique_ptr<Parameter> PathParameter::clone(bool init) const
+{
+    auto p= std::make_unique<PathParameter>(
         originalFilePath_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order(),
         file_content_);
-}
-
-std::unique_ptr<Parameter> PathParameter::clone() const
-{
-  return clonePathParameter();
+    if (init) p->initialize();
+    return p;
 }
 
 void PathParameter::copyFrom(const Parameter& p)
@@ -354,17 +358,19 @@ void DirectoryParameter::operator=(const DirectoryParameter &p)
 
 
 
-std::unique_ptr<Parameter> DirectoryParameter::clone() const
+std::unique_ptr<Parameter> DirectoryParameter::clone(bool init) const
 {
-  return cloneDirectoryParameter();
+    auto p=std::make_unique<DirectoryParameter>(
+        originalFilePath_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order() );
+    if (init) p->initialize();
+    return p;
 }
 
 std::unique_ptr<DirectoryParameter> DirectoryParameter::cloneDirectoryParameter() const
 {
-  return std::make_unique<DirectoryParameter>(
-        originalFilePath_,
-        description().simpleLatex(),
-        isHidden(), isExpert(), isNecessary(), order() );
+    return std::dynamic_unique_ptr_cast<DirectoryParameter>(clone(true));
 }
 
 

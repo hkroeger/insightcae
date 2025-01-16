@@ -104,7 +104,7 @@ public:
     std::unique_ptr<CADSketchParameter>
         cloneCADSketchParameter(
             bool keepParentRef=false ) const;
-    std::unique_ptr<Parameter> clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
 
     void copyFrom(const Parameter& op) override;
     void operator=(const CADSketchParameter& op);

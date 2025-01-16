@@ -141,12 +141,14 @@ void DoubleRangeParameter::readFromNode
 }
 
 
-std::unique_ptr<Parameter> DoubleRangeParameter::clone() const
+std::unique_ptr<Parameter> DoubleRangeParameter::clone(bool init) const
 {
-  return std::make_unique<DoubleRangeParameter>(
+  auto p = std::make_unique<DoubleRangeParameter>(
         values_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order());
+    if (init) p->initialize();
+    return p;
 }
 
 

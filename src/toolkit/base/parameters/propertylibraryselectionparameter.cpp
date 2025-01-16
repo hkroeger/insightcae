@@ -142,11 +142,12 @@ void PropertyLibrarySelectionParameter::readFromNode(
 
 
 
-std::unique_ptr<Parameter> PropertyLibrarySelectionParameter::clone() const
+std::unique_ptr<Parameter> PropertyLibrarySelectionParameter::clone(bool init) const
 {
+    std::unique_ptr<Parameter> p;
     if (propertyLibrary_)
     {
-        return std::make_unique<PropertyLibrarySelectionParameter>(
+        p=std::make_unique<PropertyLibrarySelectionParameter>(
             value_,
             *propertyLibrary_,
             description().simpleLatex(),
@@ -156,12 +157,14 @@ std::unique_ptr<Parameter> PropertyLibrarySelectionParameter::clone() const
     }
     else
     {
-        return std::make_unique<PropertyLibrarySelectionParameter>(
+        p=std::make_unique<PropertyLibrarySelectionParameter>(
             description().simpleLatex(),
             isHidden(), isExpert(), isNecessary(),
             order()
             );
     }
+    if (init) p->initialize();
+    return p;
 }
 
 

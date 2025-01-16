@@ -207,7 +207,7 @@ std::unique_ptr<ParameterSet> ParameterSetInput::parameterSetCopy() const
     auto &ps = parameterSet();
 
     if (auto* rps=dynamic_cast<const ParameterSet*>(&ps))
-        return rps->cloneSubset();
+        return rps->cloneParameterSet();
     else
         return ParameterSet::create(ps.entries(), std::string());
 }

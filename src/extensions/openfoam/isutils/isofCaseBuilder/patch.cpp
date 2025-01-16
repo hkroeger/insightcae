@@ -26,7 +26,7 @@ Patch::Patch(
     insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
     MultivisualizationGenerator* visGen,
     QObject* parent)
-    : CaseElementData("", mvl, visGen, new IQParameterSetModel(*ParameterSet::create()), parent),
+    : CaseElementData("", mvl, visGen, new IQParameterSetModel(ParameterSet::create()), parent),
   patch_name_(patch_name)
 {
 //  updateText();
@@ -40,7 +40,7 @@ Patch::Patch(rapidxml::xml_document<>& doc,
              MultivisualizationGenerator* visGen,
              QObject* parent
              )
-: CaseElementData("", mvl, visGen, new IQParameterSetModel(*ParameterSet::create()), parent)
+: CaseElementData("", mvl, visGen, new IQParameterSetModel(ParameterSet::create()), parent)
 {
   auto patchnameattr=node.first_attribute ( "patchName" );
   insight::assertion(patchnameattr, "Patch name attribute missing!");
@@ -56,9 +56,10 @@ Patch::Patch(rapidxml::xml_document<>& doc,
   {
       set_bc_type(type_name_);
 
-      auto np = parameterSetModel()->getParameterSet().cloneSubset();
+      auto np = parameterSetModel()->getParameterSet().cloneParameterSet();
       np->readFromNode(std::string(), node, inputfilepath);
-    parameterSetModel()->resetParameters(*np);
+
+      parameterSetModel()->resetParameterValues(*np);
   }
 }
 
@@ -75,8 +76,8 @@ Patch::Patch(rapidxml::xml_document<>& doc,
 void Patch::set_bc_type(const std::string& type_name)
 {
     type_name_=type_name;
-    auto defp = BoundaryCondition::defaultParametersFor(type_name_);
-    curp_->resetParameters(*defp, *defp);
+    curp_->resetParameters(
+        BoundaryCondition::defaultParametersFor(type_name_) );
     Q_EMIT visualizationUpdateRequired();
 }
 

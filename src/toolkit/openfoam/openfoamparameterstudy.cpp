@@ -107,7 +107,7 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
 
         // Generate a valid parameterset with actual values for mesh mesh genration
         // use first value from each range
-        auto defp = ps.cloneSubset();
+        auto defp = ps.cloneParameterSet();
         for (int j=0; j<var_params.size(); j++)
         {
             // Replace RangeParameter by first actual single value

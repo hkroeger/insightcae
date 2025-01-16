@@ -203,13 +203,15 @@ void SelectionParameter::readFromNode
 
 
 
-std::unique_ptr<Parameter> SelectionParameter::clone() const
+std::unique_ptr<Parameter> SelectionParameter::clone(bool init) const
 {
-  return std::make_unique<SelectionParameter>(
+    auto p= std::make_unique<SelectionParameter>(
         value_, items_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order()
         );
+    if (init) p->initialize();
+    return p;
 }
 
 

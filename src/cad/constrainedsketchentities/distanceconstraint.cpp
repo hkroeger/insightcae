@@ -196,7 +196,7 @@ FixedDistanceConstraint::FixedDistanceConstraint(
     )
     : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
 {
-    auto ps = defaultParameters().cloneSubset();
+    auto ps = defaultParameters().cloneParameterSet();
     ps->insert(
         "distance",
         std::make_unique<DoubleParameter>(

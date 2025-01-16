@@ -587,7 +587,7 @@ void Parameter::merge ( const Parameter& other )
 
 std::unique_ptr<Parameter> Parameter::intersection(const Parameter &other) const
 {
-  return std::unique_ptr<Parameter>(clone());
+  return std::unique_ptr<Parameter>(clone(true));
 }
 
 

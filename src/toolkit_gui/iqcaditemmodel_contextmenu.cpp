@@ -151,7 +151,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
         }
 
         a=new QAction("Show", &cm);
-        connect(a, &QAction::triggered,
+        connect(a, &QAction::triggered, a,
                 [this,idx]() {
                     QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
                     if (flags(visi)&Qt::ItemIsUserCheckable)
@@ -162,7 +162,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
         cm.addAction(a);
 
         a=new QAction("Hide", &cm);
-        connect(a, &QAction::triggered,
+        connect(a, &QAction::triggered, a,
                 [this,idx]() {
                     QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
                     if (flags(visi)&Qt::ItemIsUserCheckable)

@@ -440,7 +440,8 @@ void QModelTree::connectGenerator(IQISCADModelGenerator *model)
 //          this, &QModelTree::storeSymbolSnapshot );
   connect(model, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable),
           this, &QModelTree::onAddScalar);
-  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelGenerator::createdVariable),
+  connect(model, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(
+                     &IQISCADModelGenerator::createdVariable),
           this, &QModelTree::onAddVector);
   connect(model, &IQISCADModelGenerator::createdFeature,
           this, &QModelTree::onAddFeature);

@@ -83,7 +83,7 @@ AnalysisForm::AnalysisForm(
     const std::string& analysisName,
     bool logToConsole
     )
-: QMdiSubWindow(parent),
+: /*QMdiSubWindow*/ QWidget(parent),
   IQExecutionWorkspace(this),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
@@ -103,11 +103,12 @@ AnalysisForm::AnalysisForm(
 
 
     ui = new Ui::AnalysisForm;
-    QWidget* iw=new QWidget(this);
+    QWidget* iw=this; //new QWidget(this);
     {
       insight::CurrentExceptionContext ex(_("setup user interface"));
-        ui->setupUi(iw);
-        setWidget(iw);
+        ui->setupUi(this);
+        // ui->setupUi(iw);
+        // setWidget(iw);
     }
 
     if (isOpenFOAMAnalysis_)
@@ -448,7 +449,7 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
           settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
-          QMdiSubWindow::closeEvent(event);
+          /*QMdiSubWindow*/QWidget::closeEvent(event);
       }
     }
 

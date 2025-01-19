@@ -177,6 +177,12 @@ IQVTKSelectCADEntity::~IQVTKSelectCADEntity()
     delete toolBar_;
 }
 
+bool IQVTKSelectCADEntity::onRightButtonUp(Qt::KeyboardModifiers nFlags, const QPoint point)
+{
+    viewer().contextMenuClick( viewer().mapToGlobal(point) );
+    return true;
+}
+
 void IQVTKSelectCADEntity::start()
 {
     toolBar_ = this->viewer().addToolBar("Selection");

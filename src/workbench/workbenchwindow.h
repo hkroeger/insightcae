@@ -28,6 +28,9 @@
 #include <QAction>
 #include <QThread>
 #include <QPointer>
+#include <QTabWidget>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 
 #include "insightcaeapplication.h"
 #include "sdmdiarea.h"
@@ -35,6 +38,10 @@
 #include <array>
 
 #include "base/wsllinuxserver.h"
+
+
+
+class AnalysisForm;
 
 
 class WidgetWithDynamicMenuEntries
@@ -58,28 +65,32 @@ public:
 };
 
 
-class workbench
+class WorkbenchMainWindow
 : public QMainWindow
 {
 Q_OBJECT
 
 private:
-  SDMdiArea *mdiArea_;
+  // SDMdiArea *mdiArea_;
 
   QAction *separatorAct_;
   std::array<QAction *,5> recentFileActs_;
 
+  QTabWidget *tw;
+
   bool logToConsole_;
 
   void updateRecentFileActions();
+
+  AnalysisForm* addAnalysisTabWithDefaults(const std::string& analysisType);
 
 public:
 
    QPointer<WidgetWithDynamicMenuEntries> lastActive_;
 
 public:
-    workbench(bool logToConsole=false);
-    virtual ~workbench();
+    WorkbenchMainWindow(bool logToConsole=false);
+    virtual ~WorkbenchMainWindow();
 
     void openAnalysis(const QString& fn);
     void closeEvent(QCloseEvent *event);
@@ -92,11 +103,8 @@ public Q_SLOTS:
 private Q_SLOTS:
     void onOpenAnalysis();
     void openRecentFile();
-
     void checkInstallation(bool reportSummary=false);
-
-private slots:
-    void onSubWindowActivated( QMdiSubWindow * window );
+    void onAnalysisFormActivated( QWidget * analysisForm );
 };
 
 #endif // workbench_H

@@ -2,6 +2,7 @@
 
 #include "base/cppextensions.h"
 
+#include "base/exception.h"
 #include "iqcaditemmodel.h"
 #include "qnamespace.h"
 
@@ -22,7 +23,15 @@ Node::Node(IQGroupingItemModel* model, Node *p, const QString &l, QPersistentMod
     else
     {
         isInsertedGroup_=false;
-        model_->nodeMap_[sourceIndex_]=this;
+
+        int nf=0;
+        for (auto *n: model_->nodeMap_)
+            if (n->sourceIndex_==si) nf++;
+        insight::assertion(
+            nf==0,
+            "index was already added to nodemap");
+
+        model_->nodeMap_.insert(this);
     }
 
     if (auto *p = parentNode())
@@ -58,22 +67,15 @@ Node::~Node()
     {
         QModelIndex myidx=
             model_->createIndex(pn->children.indexOf(this), 0, this);
+
         model_->beginRemoveRows(model_->parent(myidx), myidx.row(), myidx.row());
         pn->children.removeOne(this);
         model_->endRemoveRows();
     }
 
-    auto j = std::find_if(
-        model_->nodeMap_.begin(),
-        model_->nodeMap_.end(),
-        [this](const decltype(model_->nodeMap_)::value_type& mo)
-            {return mo.second == this; }
-    );
-
-    if (j!=model_->nodeMap_.end())
-    {
-        model_->nodeMap_.erase(j);
-    }
+    insight::assertion(
+        model_->nodeMap_.erase(this)==1,
+        "node was not in nodemap" );
 }
 
 
@@ -275,16 +277,12 @@ void IQGroupingItemModel::setSourceModel(QAbstractItemModel *sm)
             [&](const QModelIndex &sourceParent, int first, int last)
             {
                 auto psi=mapFromSource(sourceParent);
-                // if (!psi.isValid())
-                // {
-                //     qDebug() <<sourceModel()->data(
-                //         sourceParent.siblingAtColumn(IQCADItemModel::labelCol));
-                // }
+                auto *pnode=static_cast<Node*>(psi.internalPointer());
                 for (int i=first; i<=last; ++i)
                 {
                     decorateSourceNode(
                         sourceModel()->index(i, 0, sourceParent),
-                        static_cast<Node*>(psi.internalPointer())
+                        pnode
                         );
                 }
             }
@@ -345,6 +343,10 @@ void IQGroupingItemModel::setSourceModel(QAbstractItemModel *sm)
                     "unexpected");
 
                 auto tls=mapFromSource(topLeft);
+                insight::assertion(
+                    tls.isValid(),
+                    "unexpected: unmapped index has changed");
+
                 Q_EMIT dataChanged(
                     tls,
                     mapFromSource(bottomRight),
@@ -380,11 +382,10 @@ void IQGroupingItemModel::setSourceModel(QAbstractItemModel *sm)
 
 QModelIndex IQGroupingItemModel::mapFromSource(const QModelIndex &sourceIndex) const
 {
-    for (auto& nm: nodeMap_)
+    for (auto& n: nodeMap_)
     {
-        if (nm.first==sourceIndex)
+        if (n->sourceIndex(sourceIndex.column())==sourceIndex)
         {
-            auto *n=nm.second;
             auto row=n->parentNode()->children.indexOf(n);
             return createIndex(row, sourceIndex.column(), n);
         }
@@ -513,7 +514,7 @@ QVariant IQGroupingItemModel::data(const QModelIndex &index, int role) const
         }
         else
         {
-            if (role==Qt::DisplayRole && index.column()==1)
+            if (index.column()==labelCol_ && role==Qt::DisplayRole)
             {
                 return n->label;
             }
@@ -640,6 +641,26 @@ bool IQGroupingItemModel::setData(
         }
     }
     return false;
+}
+
+void IQGroupingItemModel::showContextMenu(
+    const QModelIndex &index,
+    const QPoint &pos,
+    IQCADModel3DViewer *viewer )
+{
+    if (auto *n=static_cast<Node*>(index.internalPointer()))
+    {
+        if (n->isMappedToSource())
+        {
+            if (auto *cadm=dynamic_cast<IQCADItemModel*>(sourceModel()))
+            {
+                cadm->showContextMenu(
+                    n->sourceIndex(
+                        index.column()),
+                    pos, viewer);
+            }
+        }
+    }
 }
 
 

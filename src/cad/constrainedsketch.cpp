@@ -213,6 +213,16 @@ void ConstrainedSketch::readFromStream(
         success,
         "parsing of constrained sketch script was not successful!" );
 
+    // add referenced layers, if not present
+    for (auto& ske: geometry_)
+    {
+        auto & l = ske.second->layerName();
+        if (!layerProperties_.count(l))
+        {
+            addLayer(l, pd);
+        }
+    }
+
     if (propertiesParent_)
     {
         for (auto& g: geometry_)
@@ -868,10 +878,17 @@ void ConstrainedSketch::generateScript(ostream &os) const
     for (auto &lp: layerProperties_)
     {
         std::string s;
-        lp.second->saveToString(s, boost::filesystem::current_path()/"outfile");
-        sb.appendLayerProp("layer "+lp.first+" "+s);
+        if (lp.second->size())
+        {
+            lp.second->saveToString(s, boost::filesystem::current_path()/"outfile");
+            s=" "+s;
+        }
+        sb.appendLayerProp("layer "+lp.first+s);
     }
 
+    std::cout<<">>>>"<<std::endl;
+    sb.write(std::cout);
+    std::cout<<"<<<<"<<std::endl;
     sb.write(os);
 }
 
@@ -979,22 +996,21 @@ void ConstrainedSketch::setLayerProperties(
 
 void ConstrainedSketch::parseLayerProperties(
     const std::string& layerName,
-    const std::string& s,
+    const boost::optional<std::string>& s,
     const ConstrainedSketchParametersDelegate& pd )
 {
-    if (!s.empty())
+    if (!hasLayer(layerName))
+        addLayer(layerName, pd);
+
+    if (s && !s->empty())
     {
         using namespace rapidxml;
         xml_document<> doc;
-        doc.parse<0>(const_cast<char*>(&s[0]));
+        doc.parse<0>(const_cast<char*>(&(*s)[0]));
         xml_node<> *rootnode = doc.first_node("root");
-
-        if (!hasLayer(layerName))
-            addLayer(layerName, pd);
 
         auto p=layerProperties(layerName).cloneLayerProperties();
         p->readFromNode(std::string(), *rootnode, "." );
-
         setLayerProperties(layerName, *p);
     }
 }

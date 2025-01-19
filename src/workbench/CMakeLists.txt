@@ -67,7 +67,8 @@ else()
 endif()
 
 
-add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
+add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS}
+  newanalysisform.h newanalysisform.cpp newanalysisform.ui)
 
 target_link_libraries(workbench ${workbench_LIBS})
 linkToolkitVtk(workbench Onscreen)

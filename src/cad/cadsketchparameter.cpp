@@ -96,7 +96,7 @@ CADSketchParameter::CADSketchParameter(
    )
     : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order),
     entityProperties_(
-          entityProperties?
+          bool(entityProperties)?
             entityProperties : insight::cad::noParametersDelegate ),
     presentationDelegateKey_(presentationDelegateKey),
     references_(references)
@@ -145,7 +145,8 @@ std::string CADSketchParameter::script() const
     {
         std::ostringstream so;
         CADGeometry_->generateScript(so);
-        return so.str();
+        auto s=so.str();
+        return s;
     }
     else
     {

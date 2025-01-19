@@ -388,7 +388,7 @@ public:\
         *this->spPBase().baseParametersPtr() ); } \
     const supplementedInputData& sp() const \
     { return dynamic_cast<const supplementedInputData&>(\
-        *this->spPBase() ); }
+        this->spPBase() ); }
 
 
 #define defineDerivedClassWithSupplementedInputData(ParametersType, SupplementedInputDataBaseType) \

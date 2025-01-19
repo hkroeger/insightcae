@@ -87,7 +87,7 @@ class SolverOutputAnalyzer;
 
 
 class AnalysisForm
-: public QMdiSubWindow,
+: public QWidget, //QMdiSubWindow,
   public IQExecutionWorkspace
 {
   Q_OBJECT

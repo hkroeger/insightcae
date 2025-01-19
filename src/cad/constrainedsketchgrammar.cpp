@@ -51,10 +51,9 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
     r_layerProps =
         *( ( qi::lit("layer")
                      > r_label
-                     > r_parametersetstring )
-                        [ //std::cout<<"lbl="<<qi::_1<<std::endl,
-                         phx::bind( &ConstrainedSketch::parseLayerProperties, sketch,
-                                    qi::_1, qi::_2, pd ) ]
+                     > -r_parametersetstring )
+                        [ phx::bind( &ConstrainedSketch::parseLayerProperties, sketch,
+                                    qi::_1, qi::_2, phx::ref(pd) ) ]
         )
         ;
 

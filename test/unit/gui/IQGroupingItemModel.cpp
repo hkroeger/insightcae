@@ -28,10 +28,16 @@ int main(int argc, char*argv[])
         cadmodel->addScalar("gr/sgr1/s6", cad::scalarconst(6.0)); // 7
         cadmodel->addScalar("gr/sgr1/sgr2/s7", cad::scalarconst(7.0)); // 8
 
+
         cadmodel->addModelstep("fgr/s1", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)), false);
         cadmodel->addModelstep("fgr/s2", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(2.)), false);
         cadmodel->addModelstep("s3", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(3.)), false);
         cadmodel->addModelstep("gr2/s4", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(4.)), false);
+
+        cadmodel->addModelstep("storey_0/walls/VZ/wall_001", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)), false);
+        cadmodel->addModelstep("storey_0/walls/VZ/wall_002", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)), false);
+        cadmodel->addModelstep("storey_0/walls/VZ/wall_003", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)), false);
+        cadmodel->addModelstep("storey_0/walls/VZ/wall_004", cad::Sphere::create(cadmodel->lookupPoint("O"), cad::scalarconst(1.)), false);
 
         IQCADItemModel origModel(cadmodel);
 
@@ -64,6 +70,11 @@ int main(int argc, char*argv[])
             auto s = win.size();
             s*=2;
             win.resize(s);
+
+            QObject::connect(tv, &QTreeView::clicked,
+                    [&origModel](const QModelIndex&){
+                                 origModel.addPoint("vk", cad::vec3const(1., 4., 7.0)); // 8
+                    });
 
             return app.exec();
         }

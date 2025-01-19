@@ -32,10 +32,11 @@
 #include <map>
 #include <string>
 
+#include "workbenchwindow.h"
 
 
 
-newAnalysisDlg::newAnalysisDlg(QWidget* parent)
+newAnalysisDlg::newAnalysisDlg(WorkbenchMainWindow* parent)
 : QDialog(parent)
 {
   ui=new Ui::newAnalysisDlg();
@@ -43,10 +44,16 @@ newAnalysisDlg::newAnalysisDlg(QWidget* parent)
 
   this->setWindowTitle(_("Create New Analysis"));
   
-  connect(this->ui->buttonBox, &QDialogButtonBox::accepted, this, &newAnalysisDlg::accept);
-  connect(this->ui->buttonBox, &QDialogButtonBox::rejected, this, &newAnalysisDlg::reject);
-  
-  fillAnalysisList();
+  auto cancelBtn=new QPushButton("Cancel");
+  ui->widget->replaceLoadButton(cancelBtn);
+
+  connect(cancelBtn, &QPushButton::clicked,
+          this, &QDialog::reject);
+
+  connect(ui->widget, &NewAnalysisForm::createAnalysis,
+          parent, &WorkbenchMainWindow::newAnalysis);
+  connect(ui->widget, &NewAnalysisForm::createAnalysis,
+          this, &QDialog::accept);
 }
 
 
@@ -57,95 +64,5 @@ newAnalysisDlg::~newAnalysisDlg()
   delete ui;
 }
 
-
-
-
-class HierarchyLevel
-: public std::map<std::string, HierarchyLevel>
-{
-public:
-    QTreeWidgetItem* parent_;
-    
-    HierarchyLevel(QTreeWidgetItem* parent)
-    : parent_(parent)
-    {}
-    
-    iterator addHierarchyLevel(const std::string& entry)
-    {
-        QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
-        { QFont f=newnode->font(0); f.setBold(true); newnode->setFont(0, f); }
-        std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
-        return ret.first;
-    }
-    
-    HierarchyLevel& sublevel(const std::string& entry)
-    {
-        iterator it = find(entry);
-        if (it == end())
-        {
-            it=addHierarchyLevel(entry);
-        }
-        return it->second;
-    }
-};
-
-
-
-
-void newAnalysisDlg::fillAnalysisList()
-{
-  QTreeWidgetItem *topitem = new QTreeWidgetItem ( ui->treeWidget, QStringList() << _("Available Analyses") );
-  { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+2); topitem->setFont(0, f); }
-  HierarchyLevel toplevel ( topitem );
-  
-  HierarchyLevel::iterator i=toplevel.addHierarchyLevel(_("Uncategorized"));
-
-  auto analyses = insight::Analysis::availableAnalysisTypes();
-  for ( const auto& analysisName: analyses )
-    {
-
-      QStringList path =
-          QString::fromStdString ( insight::Analysis::categoryFor ( analysisName ) )
-          .split ( "/", Qt::SkipEmptyParts );
-
-      HierarchyLevel* parent = &toplevel;
-      for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
-        {
-          parent = & ( parent->sublevel ( pit->toStdString() ) );
-        }
-      QTreeWidgetItem* item = new QTreeWidgetItem ( parent->parent_, QStringList() << analysisName.c_str() );
-//       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
-    }
-    
-  ui->treeWidget->expandItem(topitem);
-}
-
-
-
-
-std::string newAnalysisDlg::getAnalysisName() const
-{
-    return ui->treeWidget->selectedItems()[0]->text(0).toStdString();
-}
-   
-   
-   
-   
-void newAnalysisDlg::done(int r)
-{
-  if ( r == QDialog::Accepted)
-  {
-    if (ui->treeWidget->selectedItems().size() == 1)
-    {
-        QTreeWidgetItem * curitem = ui->treeWidget->selectedItems()[0];
-        if (curitem->childCount()==0) // is leaf?
-        {
-            QDialog::done(r);
-        } else return;
-    } else return;
-  }
-  
-  QDialog::done(r);
-}
 
 

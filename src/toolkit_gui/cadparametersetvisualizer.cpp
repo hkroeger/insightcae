@@ -55,6 +55,19 @@ CADParameterSetVisualizerGenerator::CADParameterSetVisualizerGenerator(
     workDir_(workDir), progress_(progress)
 {}
 
+void CADParameterSetVisualizerGenerator::addPoint(
+    const std::string& name,
+    const arma::mat& p,
+    bool initialVisibility)
+{
+    CurrentExceptionContext ec("adding visualizer point "+name);
+    Q_EMIT createdVariable(
+        QString::fromStdString(name),
+        cad::matconst(p),
+        cad::Point,
+        initialVisibility );
+}
+
 
 void CADParameterSetVisualizerGenerator::addDatum(
     const std::string& name,
@@ -304,8 +317,8 @@ void MultiCADParameterSetVisualizer::launch(IQCADItemModel *model)
 
         connect(vis, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable),
                 this, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable) );
-        connect(vis, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelGenerator::createdVariable),
-                this, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(&IQISCADModelGenerator::createdVariable) );
+        connect(vis, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(&IQISCADModelGenerator::createdVariable),
+                this, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(&IQISCADModelGenerator::createdVariable) );
         connect(vis, &IQISCADModelGenerator::createdFeature,
                 this, &IQISCADModelGenerator::createdFeature);
         connect(vis, &IQISCADModelGenerator::createdDatum,

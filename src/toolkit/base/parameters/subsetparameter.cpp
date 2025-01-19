@@ -756,8 +756,8 @@ void ParameterSet::operator=(const ParameterSet& osp)
             std::unique_ptr<Parameter>(
                 p.second->clone(false) ) );
   }
-  initialize();
   Parameter::copyFrom(osp);
+  initialize();
 }
 
 

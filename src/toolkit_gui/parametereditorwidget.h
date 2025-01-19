@@ -170,10 +170,8 @@ public:
 public Q_SLOTS:
     void onParameterSetChanged();
 
-    void onCADModelDataChanged(
-            const QModelIndex &topLeft,
-            const QModelIndex &bottomRight,
-            const QVector<int> &roles );
+    void onItemClicked(
+            const QModelIndex &item );
 
 Q_SIGNALS:
     void parameterSetChanged();

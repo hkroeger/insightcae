@@ -27,11 +27,12 @@ IQVTKISCADModelDisplay::IQVTKISCADModelDisplay
 
     modeltree_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(
-                modeltree_, &QTreeView::customContextMenuRequested, model_,
-                [this](const QPoint& pos)
+                modeltree_, &QTreeView::customContextMenuRequested, gm,
+                [this,gm](const QPoint& pos)
                 {
                     auto idx = modeltree_->indexAt(pos);
-                    model_->showContextMenu(idx, modeltree_->mapToGlobal(pos), viewer_);
+                    gm->showContextMenu(
+                        idx, modeltree_->mapToGlobal(pos), viewer_);
                 }
     );
 

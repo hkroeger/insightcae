@@ -392,12 +392,12 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
         dictionaries.lookupDict(
          "constant/thermophysicalProperties");
 
-  const FVNumerics* nce = OFcase().get<FVNumerics>("FVNumerics");
+  auto& nce = OFcase().findUniqueElement<FVNumerics>();
 
   std::string ttn;
   if ( auto *rfn =
       dynamic_cast<const reactingFoamNumerics*>(
-          nce ) )
+          &nce ) )
   {
     if (rfn->p().buoyancy)
     {

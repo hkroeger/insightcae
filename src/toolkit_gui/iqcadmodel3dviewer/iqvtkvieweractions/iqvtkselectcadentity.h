@@ -69,6 +69,8 @@ public:
     IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectCADEntity();
 
+    bool onRightButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+
     void start() override;
 };
 

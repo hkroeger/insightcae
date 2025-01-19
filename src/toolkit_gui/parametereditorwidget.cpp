@@ -83,8 +83,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 
             // after ParameterSetDisplay constructor!
             modeltree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-            connect(modeltree->model(), &QAbstractItemModel::dataChanged,
-                    this, &ParameterEditorWidget::onCADModelDataChanged );
+            connect(modeltree, &QTreeView::clicked,
+                    this, &ParameterEditorWidget::onItemClicked );
         }
         else
         {
@@ -394,38 +394,56 @@ void ParameterEditorWidget::onParameterSetChanged()
 
 
 
-void ParameterEditorWidget::onCADModelDataChanged
+void ParameterEditorWidget::onItemClicked
 (
-      const QModelIndex &topLeft,
-      const QModelIndex &bottomRight,
-      const QVector<int> &roles )
+      const QModelIndex &item )
 {
-    if (roles.contains(Qt::CheckStateRole))
-    {
-        if (display_)
-        {
-            auto modeltree=display_->modeltree();
 
-            disconnect(modeltree->model(), &QAbstractItemModel::dataChanged,
-                       this, &ParameterEditorWidget::onCADModelDataChanged );
+#warning reimplement multi show/hide
+    // if (display_)
+    // {
+    //     auto modeltree=display_->modeltree();
 
-            auto checkstate = topLeft.data(Qt::CheckStateRole);
-            auto indices = modeltree->selectionModel()->selectedIndexes();
-            for (const auto& idx: indices)
-            {
-                if (idx.column()==topLeft.column())
-                {
-                    modeltree->model()->setData(
-                        idx,
-                        checkstate,
-                        Qt::CheckStateRole );
-                }
-            }
+    //     if (roles.contains(Qt::CheckStateRole)
+    //         && topLeft.column()<=IQCADItemModel::visibilityCol
+    //         && bottomRight.column()>=IQCADItemModel::visibilityCol)
+    //     {
 
-            connect(modeltree->model(), &QAbstractItemModel::dataChanged,
-                    this, &ParameterEditorWidget::onCADModelDataChanged );
-        }
-    }
+    //         // disconnect(modeltree->model(), &QAbstractItemModel::dataChanged,
+    //         //            this, &ParameterEditorWidget::onCADModelDataChanged );
+
+    //         // extend visibility toggling action to all selected items
+    //         auto checkstate = topLeft.data(Qt::CheckStateRole);
+    //         auto indices = modeltree->selectionModel()->selectedIndexes();
+    //         std::set<QModelIndex> toExtTo;
+    //         for (const auto& idx: indices) // through all selected
+    //         {
+    //             if (idx.column()==IQCADItemModel::visibilityCol) // if is the right col
+    //             {
+    //                 if (idx.parent()==topLeft.parent()) // if same parent
+    //                 {
+    //                     if (! (
+    //                         (topLeft.row()<=idx.row()) &&
+    //                         (idx.row()<=bottomRight.row()))) // if not already modified
+    //                     {
+    //                             toExtTo.insert(idx);
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         for (auto &idx: toExtTo)
+    //         {
+    //             modeltree->model()->setData(
+    //                 idx,
+    //                 checkstate,
+    //                 Qt::CheckStateRole );
+    //         }
+
+    //         // connect(modeltree->model(), &QAbstractItemModel::dataChanged,
+    //         //         this, &ParameterEditorWidget::onCADModelDataChanged );
+    //     }
+    // }
 }
 
 

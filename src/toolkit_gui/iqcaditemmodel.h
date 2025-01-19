@@ -94,19 +94,19 @@ public:
 
   static const int
       visibilityCol=0,
-      labelCol=1,
-      valueCol=2,
+      labelCol=0,
+      valueCol=1,
 
-      datasetFieldNameCol = 3,
-      datasetPointCellCol = 4,
-      datasetComponentCol = 5,
-      datasetMinCol = 6,
-      datasetMaxCol = 7,
-      datasetRepresentationCol = 8,
+      datasetFieldNameCol = 2,
+      datasetPointCellCol = 3,
+      datasetComponentCol = 4,
+      datasetMinCol = 5,
+      datasetMaxCol = 6,
+      datasetRepresentationCol = 7,
 
-      entityColorCol = 3,
-      entityOpacityCol = 4,
-      entityRepresentationCol = 5, // insight::DatasetRepresentation
+      entityColorCol = 2,
+      entityOpacityCol = 3,
+      entityRepresentationCol = 4, // insight::DatasetRepresentation
       entityCol=99,
 
       assocParamPathsCol=98;
@@ -127,17 +127,17 @@ private:
       if (ss!=s.end())
       {
           auto i = eidxfunc(name);
-          auto ie = index(i.row(), entityCol, i.parent());
+          auto ie = index(i.row(), 0, i.parent());
           if (ss->second==value)
           {
               // is present and the same
-              Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
+              Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
           }
           else
           {
               // replace
               modeladdfunc(name, value);
-              Q_EMIT dataChanged(ie, ie, {Qt::EditRole});
+              Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
           }
       }
       else
@@ -249,8 +249,8 @@ public:
    * modifier functions
    */
   void addScalar(const std::string& name, insight::cad::ScalarPtr value);
-  void addPoint(const std::string& name, insight::cad::VectorPtr value);
-  void addDirection(const std::string& name, insight::cad::VectorPtr value);
+  void addPoint(const std::string& name, insight::cad::VectorPtr value, bool initialVisibility = false);
+  void addDirection(const std::string& name, insight::cad::VectorPtr value, bool initialVisibility = false);
   void addDatum(const std::string& name, insight::cad::DatumPtr value, bool initialVisibility=false);
   void addModelstep(
       const std::string& name,

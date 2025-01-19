@@ -30,7 +30,7 @@ createGetter
 
 public:
     declareType ( "gravity" );
-    gravity ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    gravity ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

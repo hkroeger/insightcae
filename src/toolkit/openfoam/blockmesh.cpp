@@ -46,7 +46,7 @@ blockMesh::blockMesh(OpenFOAMCase& c, ParameterSetInput ip)
 
 
 blockMesh::blockMesh(OpenFOAMCase& c, const blockMesh &o)
-: OpenFOAMCaseElement(c, /*"blockMesh", */ParameterSetInput() ),
+    : OpenFOAMCaseElement(c, /*"blockMesh", */OpenFOAMCaseElement::Parameters() ),
     scaleFactor_(o.scaleFactor_),
     defaultPatchName_(o.defaultPatchName_),
     defaultPatchType_(o.defaultPatchType_)

@@ -102,6 +102,10 @@ public:
     virtual void stopVisualizationComputation() =0;
     virtual bool isFinished() const =0;
 
+    virtual void addPoint(
+        const std::string& name,
+        const arma::mat& p,
+        bool initialVisibility=true);
 
     virtual void addDatum(
         const std::string& name,

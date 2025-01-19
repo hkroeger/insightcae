@@ -231,11 +231,8 @@ bool FVNumerics::isLES() const
 
   try
   {
-    const turbulenceModel* tm = this->OFcase().get<turbulenceModel>("turbulenceModel");
-    if (tm)
-    {
-      LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
-    }
+      auto& tm = this->OFcase().findUniqueElement<turbulenceModel>();
+      LES=LES || (tm.minAccuracyRequirement() >= turbulenceModel::AC_LES);
   }
   catch (...)
   {

@@ -45,8 +45,7 @@ struct LayerProperties
 
     std::unique_ptr<LayerProperties> cloneLayerProperties() const
     {
-        return
-            create(*this);
+        return create(*this);
     }
 };
 
@@ -288,7 +287,7 @@ public:
 
     void parseLayerProperties(
         const std::string& layerName,
-        const std::string& ps,
+        const boost::optional<std::string>& ps,
         const ConstrainedSketchParametersDelegate& pd );
 
     void removeLayer(const std::string& layerName);

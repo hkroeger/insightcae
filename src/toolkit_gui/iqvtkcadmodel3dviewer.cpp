@@ -2322,11 +2322,6 @@ void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
         bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
         if (!ret)
             ret=this->onRightButtonUp( e->modifiers(), e->pos() );
-
-        if (!ret)
-        {
-            Q_EMIT contextMenuClick( mapToGlobal(e->pos()) );
-        }
     }
     else if ( e->button() & Qt::MidButton )
     {

@@ -8,6 +8,7 @@
 
 class Node;
 class IQGroupingItemModel;
+class IQCADModel3DViewer;
 
 typedef QList<Node*> ChildrenList;
 
@@ -50,13 +51,15 @@ public:
 class IQGroupingItemModel
     : public QAbstractItemModel
 {
+    Q_OBJECT
+
     friend class Node;
 
     QAbstractItemModel *sourceModel_;
     int labelCol_;
 
     Node *rootNode_;
-    std::map<QPersistentModelIndex, Node*> nodeMap_;
+    std::set<Node*> nodeMap_;
 
     void decorateSourceNode(const QModelIndex& sourceIndex, Node* parent);
 
@@ -91,6 +94,9 @@ public:
 
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+
+public Q_SLOTS:
+    void showContextMenu(const QModelIndex& idx, const QPoint &pos, IQCADModel3DViewer* viewer);
 };
 
 #endif // IQGROUPINGITEMMODEL_H

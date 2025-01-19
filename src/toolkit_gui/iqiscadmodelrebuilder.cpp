@@ -56,13 +56,14 @@ void IQISCADModelRebuilder::onAddScalar(
 void IQISCADModelRebuilder::onAddVector(
         const QString& name,
         insight::cad::VectorPtr vv,
-        insight::cad::VectorVariableType vt )
+        insight::cad::VectorVariableType vt,
+        bool initialVisibility )
 {
     if (vt==insight::cad::VectorVariableType::Point)
     {
         QMetaObject::invokeMethod(
               qApp,
-              std::bind(&IQCADItemModel::addPoint, model_, name.toStdString(), vv)
+              std::bind(&IQCADItemModel::addPoint, model_, name.toStdString(), vv, initialVisibility)
         );
         symbolsSnapshot_.points_.erase(name.toStdString());
     }
@@ -70,7 +71,7 @@ void IQISCADModelRebuilder::onAddVector(
     {
         QMetaObject::invokeMethod(
               qApp,
-              std::bind(&IQCADItemModel::addDirection, model_, name.toStdString(), vv)
+              std::bind(&IQCADItemModel::addDirection, model_, name.toStdString(), vv, initialVisibility)
         );
         symbolsSnapshot_.directions_.erase(name.toStdString());
     }
@@ -171,7 +172,7 @@ void IQISCADModelRebuilder::connectGenerator(IQISCADModelGenerator *gen)
     connect(gen, QOverload<const QString&,insight::cad::ScalarPtr>::of(
                 &IQISCADModelGenerator::createdVariable),
             this, &IQISCADModelRebuilder::onAddScalar);
-    connect(gen, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType>::of(
+    connect(gen, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(
                 &IQISCADModelGenerator::createdVariable),
             this, &IQISCADModelRebuilder::onAddVector);
     connect(gen, &IQISCADModelGenerator::createdFeature,
@@ -197,7 +198,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
     {
         if (sysn.scalars_.find(s.first)!=sysn.scalars_.end())
         {
-            model_->removeScalar(s.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removeScalar, model_, s.first)
+            );
         }
     }
 
@@ -206,7 +210,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
     {
         if (sysn.points_.find(p.first)!=sysn.points_.end())
         {
-            model_->removePoint(p.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removePoint, model_, p.first)
+                );
         }
     }
 
@@ -215,7 +222,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
     {
         if (sysn.directions_.find(d.first)!=sysn.directions_.end())
         {
-            model_->removeDirection(d.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removeDirection, model_, d.first)
+                );
         }
     }
 
@@ -225,7 +235,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
         if (sysn.features_.find(m.first)!=sysn.features_.end()
                 && !model_->isStaticModelStep(m.first) )
         {
-            model_->removeModelstep(m.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removeModelstep, model_, m.first)
+                );
         }
     }
 
@@ -234,7 +247,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
     {
         if (sysn.datums_.find(d.first)!=sysn.datums_.end())
         {
-            model_->removeDatum(d.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removeDatum, model_, d.first)
+                );
         }
     }
 
@@ -243,7 +259,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
     {
         if (sysn.postprocactions_.find(p.first)!=sysn.postprocactions_.end())
         {
-            model_->removePostprocAction(p.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removePostprocAction, model_, p.first)
+                );
         }
     }
 
@@ -252,7 +271,10 @@ void IQISCADModelRebuilder::removeNonRecreatedSymbols()
     {
         if (sysn.datasets_.find(d.first)!=sysn.datasets_.end())
         {
-            model_->removeDataset(d.first);
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(&IQCADItemModel::removeDataset, model_, d.first)
+                );
         }
     }
 }

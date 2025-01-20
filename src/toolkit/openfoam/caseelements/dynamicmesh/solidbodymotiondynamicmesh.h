@@ -54,7 +54,7 @@ public:
 
   solidBodyMotionDynamicMesh(
       OpenFOAMCase& c,
-      ParameterSetInput ip = ParameterSetInput() );
+      ParameterSetInput ip = Parameters() );
 
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

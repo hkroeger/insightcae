@@ -33,7 +33,7 @@ createGetter
 
 public:
     declareType ( "wallHeatFlux" );
-    wallHeatFlux ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    wallHeatFlux ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     OFDictData::dict functionObjectDict() const override;
 

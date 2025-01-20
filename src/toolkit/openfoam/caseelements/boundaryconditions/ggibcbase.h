@@ -30,7 +30,7 @@ public:
     GGIBCBase (
         OpenFOAMCase& c, const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        ParameterSetInput ip = ParameterSetInput() );
+        ParameterSetInput ip = Parameters() );
 
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;

@@ -11,7 +11,7 @@ class kOmegaSST2_RASModel
 public:
   declareType("kOmegaSST2");
 
-  kOmegaSST2_RASModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  kOmegaSST2_RASModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 //   virtual void addFields( OpenFOAMCase& c ) const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;

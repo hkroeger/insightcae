@@ -75,7 +75,7 @@ createGetters
 public:
     declareType ( "blockMeshDict_CurvedCylinder" );
 
-    blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     CoordinateSystem calc_end_CS() const;
 

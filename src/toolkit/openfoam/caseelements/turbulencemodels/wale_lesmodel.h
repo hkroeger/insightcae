@@ -11,7 +11,7 @@ class WALE_LESModel
 public:
   declareType("WALE");
 
-  WALE_LESModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  WALE_LESModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };

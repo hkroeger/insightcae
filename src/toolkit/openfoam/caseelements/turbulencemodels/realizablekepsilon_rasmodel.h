@@ -10,7 +10,7 @@ class realizablekEpsilon_RASModel
 {
 public:
   declareType("realizableKE");
-  realizablekEpsilon_RASModel(OpenFOAMCase& ofc, ParameterSetInput ip = ParameterSetInput() );
+  realizablekEpsilon_RASModel(OpenFOAMCase& ofc, ParameterSetInput ip = Parameters() );
 };
 
 } // namespace insight

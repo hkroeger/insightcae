@@ -25,7 +25,7 @@ createGetters
 public:
   declareType("Smagorinsky");
 
-  Smagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  Smagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };

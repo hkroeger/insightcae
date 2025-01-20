@@ -66,7 +66,7 @@ private:
   Case& case_;
 
 public:
-    CaseElement(Case& c, ParameterSetInput ip = ParameterSetInput() );
+    CaseElement(Case& c, ParameterSetInput ip = Parameters() );
     CaseElement(const CaseElement& other);
     virtual ~CaseElement();
 

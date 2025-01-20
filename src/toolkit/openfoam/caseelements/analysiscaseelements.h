@@ -93,7 +93,7 @@ public:
   declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> );
   declareType("outputFilterFunctionObject");
 
-  outputFilterFunctionObject(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  outputFilterFunctionObject(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual OFDictData::dict functionObjectDict() const =0;
   virtual std::vector<std::string> requiredLibraries() const;
   void addIntoControlDict(OFDictData::dict& controlDict) const;
@@ -134,7 +134,7 @@ createGetter
   
 public:
   declareType("fieldAveraging");
-  fieldAveraging(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  fieldAveraging(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
 };
@@ -166,7 +166,7 @@ createGetter
   
 public:
     declareType("probes");
-    probes(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    probes(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     /**
      * reads and returns probe sample data.
@@ -235,7 +235,7 @@ createGetter
 
 public:
     declareType("volumeIntegrate");
-    volumeIntegrate(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    volumeIntegrate(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     static arma::mat readVolumeIntegrals
     (
@@ -290,7 +290,7 @@ createGetter
 
 public:
     declareType("surfaceIntegrate");
-    surfaceIntegrate(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    surfaceIntegrate(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     static std::string category() {
         return "Postprocessing";
@@ -336,7 +336,7 @@ createGetter
 
 public:
     declareType("fieldMinMax");
-    fieldMinMax(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    fieldMinMax(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     OFDictData::dict functionObjectDict() const override;
 
@@ -379,7 +379,7 @@ createGetter
   
 public:
   declareType("cuttingPlane");
-  cuttingPlane(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  cuttingPlane(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
 };
@@ -413,7 +413,7 @@ createGetter
   
 public:
   declareType("twoPointCorrelation");
-  twoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  twoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     
 
   OFDictData::dict functionObjectDict() const override;
@@ -450,7 +450,7 @@ createGetter
   
 public:
   declareType("cylindricalTwoPointCorrelation");
-  cylindricalTwoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  cylindricalTwoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict csysConfiguration() const override;
 };
@@ -486,7 +486,7 @@ createGetter
   
 public:
   declareType("forces");
-  forces(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  forces(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
   std::vector<std::string> requiredLibraries() const override;
@@ -520,7 +520,7 @@ createGetter
   
 public:
   declareType("extendedForces");
-  extendedForces(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  extendedForces(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   OFDictData::dict functionObjectDict() const override;
   std::vector<std::string> requiredLibraries() const override;
 };
@@ -569,7 +569,7 @@ createGetter
 
 public:
   declareType("catalyst");
-  catalyst(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  catalyst(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   static std::string category() { return "Postprocessing"; }
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
@@ -677,7 +677,7 @@ protected:
 public:
   declareType(TypeName);
   
-  TPCArray(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  TPCArray(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual OFDictData::dict functionObjectDict() const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results,

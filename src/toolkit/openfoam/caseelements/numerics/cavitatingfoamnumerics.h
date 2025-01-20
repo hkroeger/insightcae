@@ -27,7 +27,7 @@ createGetter
 
 public:
     declareType ( "cavitatingFoamNumerics" );
-    cavitatingFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    cavitatingFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

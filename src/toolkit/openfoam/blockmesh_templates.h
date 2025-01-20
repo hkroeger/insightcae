@@ -37,7 +37,7 @@ class BlockMeshTemplate
     : public insight::bmd::blockMesh
 {
 public:
-    BlockMeshTemplate(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    BlockMeshTemplate(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual void create_bmd () =0;
 
@@ -125,7 +125,7 @@ createGetters
 public:
     declareType ( "blockMeshDict_Cylinder" );
 
-    blockMeshDict_Cylinder ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_Cylinder ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     virtual void create_bmd();
 };
@@ -196,7 +196,7 @@ createGetters
 public:
     declareType ( "blockMeshDict_Box" );
 
-    blockMeshDict_Box ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_Box ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     virtual void create_bmd();
 
@@ -251,7 +251,7 @@ protected:
 public:
     declareType ( "blockMeshDict_Sphere" );
 
-    blockMeshDict_Sphere ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_Sphere ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     void create_bmd() override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;

@@ -25,7 +25,7 @@ createGetters
 */
 
 public:
-    FaNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    FaNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static std::string category() { return "Numerics"; }
     virtual bool isUnique() const;

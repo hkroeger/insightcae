@@ -30,7 +30,7 @@ createGetter
 
 public:
   declareType("copyFiles");
-  copyFiles(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  copyFiles(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 

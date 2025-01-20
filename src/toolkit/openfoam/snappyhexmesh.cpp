@@ -466,11 +466,9 @@ void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const pat
   if (!exists((location/to).parent_path()))
     create_directories((location/to).parent_path());
 
-  ofc.executeCommand(location, "surfaceMeshTriangulate",
-    list_of<std::string>
-    ("-patches")
-                     ("("+p().name+")")
-    (to.string())
+  ofc.executeCommand(location,
+    ofc.OFversion() <=600 ? "surfaceMeshTriangulate" : "surfaceMeshExtract",
+    { "-patches", "("+p().name+")", to.string() }
   );
 }
 

@@ -25,7 +25,7 @@ createGetters
 
 public:
     declareType ( "potentialFoamNumerics" );
-    potentialFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    potentialFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

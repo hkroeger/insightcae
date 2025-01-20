@@ -29,7 +29,7 @@ createGetter
 
 public:
   declareType("SRFoption");
-  SRFoption(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  SRFoption(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static std::string category() { return "Body Force"; }

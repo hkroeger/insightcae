@@ -29,7 +29,7 @@ createGetter
 
 public:
     declareType ( "rangeWeightField" );
-    rangeWeightField ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    rangeWeightField ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

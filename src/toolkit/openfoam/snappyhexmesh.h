@@ -71,7 +71,7 @@ createGetter
 
 
 public:
-  ExternalGeometryFile( ParameterSetInput ip = ParameterSetInput() )
+  ExternalGeometryFile( ParameterSetInput ip = Parameters() )
         : Base(ip.forward<Parameters>())
   {
         auto fname=p().fileName->originalFilePath().filename().string();
@@ -144,7 +144,7 @@ public:
 
   declareDynamicClass ( Feature );
 
-  Feature( ParameterSetInput ip = ParameterSetInput() );
+  Feature( ParameterSetInput ip = Parameters() );
   virtual void addIntoDictionary ( OFDictData::dict& sHMDict ) const =0;
   virtual void modifyFiles (
       const OpenFOAMCase& ofc,
@@ -183,7 +183,7 @@ createGetter
 public:
   declareType("Geometry");
 
-  Geometry(ParameterSetInput ip = ParameterSetInput() );
+  Geometry(ParameterSetInput ip = Parameters() );
   
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
@@ -214,7 +214,7 @@ createGetter
 public:
   declareType("PatchLayers");
 
-  PatchLayers(ParameterSetInput ip = ParameterSetInput() );
+  PatchLayers(ParameterSetInput ip = Parameters() );
 
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   bool producesPrismLayers() const override;
@@ -247,7 +247,7 @@ createGetter
 public:
   declareType("ExplicitFeatureCurve");
 
-  ExplicitFeatureCurve(ParameterSetInput ip = ParameterSetInput() );
+  ExplicitFeatureCurve(ParameterSetInput ip = Parameters() );
 
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
@@ -278,7 +278,7 @@ createGetter
 public:
   declareType ( "RefinementRegion" );
 
-  RefinementRegion (ParameterSetInput ip = ParameterSetInput() );
+  RefinementRegion (ParameterSetInput ip = Parameters() );
 
   /**
    * create entry into geometry subdict.
@@ -311,7 +311,7 @@ createGetter
 public:
   declareType ( "RefinementBox" );
 
-  RefinementBox (ParameterSetInput ip = ParameterSetInput() );
+  RefinementBox (ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
@@ -340,7 +340,7 @@ createGetter
 public:
   declareType ( "RefinementCylinder" );
 
-  RefinementCylinder (ParameterSetInput ip = ParameterSetInput() );
+  RefinementCylinder (ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
@@ -367,7 +367,7 @@ createGetter
 public:
   declareType ( "RefinementSphere" );
 
-  RefinementSphere (ParameterSetInput ip = ParameterSetInput() );
+  RefinementSphere (ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
@@ -392,7 +392,7 @@ createGetter
 public:
   declareType("RefinementGeometry");
 
-  RefinementGeometry(ParameterSetInput ip = ParameterSetInput() );
+  RefinementGeometry(ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
   //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
@@ -410,7 +410,7 @@ class NearSurfaceRefinement
 public:
   declareType("NearSurfaceRefinement");
 
-  NearSurfaceRefinement(ParameterSetInput ip = ParameterSetInput() );
+  NearSurfaceRefinement(ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
 };
@@ -436,7 +436,7 @@ createGetter
 public:
   declareType ( "NearTemplatePatchRefinement" );
 
-  NearTemplatePatchRefinement (ParameterSetInput ip = ParameterSetInput() );
+  NearTemplatePatchRefinement (ParameterSetInput ip = Parameters() );
 
   void modifyFiles ( const OpenFOAMCase& ofc,
                      const boost::filesystem::path& location ) const override;
@@ -505,7 +505,7 @@ createGetter
 public:
   declareType ( "snappyHexMeshConfiguration" );
 
-  snappyHexMeshConfiguration ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  snappyHexMeshConfiguration ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
   void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 

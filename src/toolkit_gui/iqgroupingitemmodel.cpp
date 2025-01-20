@@ -73,9 +73,7 @@ Node::~Node()
         model_->endRemoveRows();
     }
 
-    insight::assertion(
-        model_->nodeMap_.erase(this)==1,
-        "node was not in nodemap" );
+    model_->nodeMap_.erase(this);
 }
 
 

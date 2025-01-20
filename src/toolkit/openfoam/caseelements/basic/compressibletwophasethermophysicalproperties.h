@@ -33,7 +33,7 @@ createGetter
 
 public:
     declareType ( "compressibleTwoPhaseThermophysicalProperties" );
-    compressibleTwoPhaseThermophysicalProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    compressibleTwoPhaseThermophysicalProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }

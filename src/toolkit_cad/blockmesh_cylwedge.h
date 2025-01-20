@@ -130,7 +130,7 @@ createGetters
 public:
     declareType ( "blockMeshDict_CylWedge" );
 
-    blockMeshDict_CylWedge ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_CylWedge ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     virtual void create_bmd();
 

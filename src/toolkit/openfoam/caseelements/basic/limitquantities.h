@@ -50,7 +50,7 @@ createGetter
 
 public:
     declareType ( "limitQuantities" );
-    limitQuantities ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    limitQuantities ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Tweaks"; }

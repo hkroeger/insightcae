@@ -31,7 +31,7 @@ protected:
 public:
     OversetConfiguration(
             OpenFOAMCase& c,
-            ParameterSetInput ip = ParameterSetInput() );
+            ParameterSetInput ip = Parameters() );
 
     void addFields() const;
 

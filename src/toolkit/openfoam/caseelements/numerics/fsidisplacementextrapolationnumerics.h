@@ -22,7 +22,7 @@ createGetters
 
 
 public:
-  FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 

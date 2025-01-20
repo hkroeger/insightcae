@@ -28,7 +28,7 @@ public:
     declareType ( "phaseChangeModel" );
     declareDynamicClass(phaseChangeModel);
 
-    phaseChangeModel(ParameterSetInput ip = ParameterSetInput() );
+    phaseChangeModel(ParameterSetInput ip = Parameters() );
     virtual ~phaseChangeModel();
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const =0;
 };
@@ -57,7 +57,7 @@ createGetters
 
 public:
     declareType ( "SchnerrSauer" );
-    SchnerrSauer ( ParameterSetInput ip = ParameterSetInput() );
+    SchnerrSauer ( ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 
@@ -90,7 +90,7 @@ createGetters
 
 public:
     declareType ( "cavitationTwoPhaseTransportProperties" );
-    cavitationTwoPhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    cavitationTwoPhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 

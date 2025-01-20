@@ -31,7 +31,7 @@ public:
     declareType ( "MeshMotionBC" );
     declareDynamicClass(MeshMotionBC);
 
-    MeshMotionBC(ParameterSetInput ip = ParameterSetInput() );
+    MeshMotionBC(ParameterSetInput ip = Parameters() );
     virtual ~MeshMotionBC();
 
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
@@ -96,7 +96,7 @@ createGetter
 
 public:
   declareType ( "CAFSIBC" );
-  CAFSIBC ( ParameterSetInput ip = ParameterSetInput() );
+  CAFSIBC ( ParameterSetInput ip = Parameters() );
 
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;

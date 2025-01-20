@@ -84,7 +84,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        ParameterSetInput ip = ParameterSetInput()
+        ParameterSetInput ip = Parameters()
     );
 
     virtual void setField_p ( OFDictData::dict& BC, OFdicts& dictionaries ) const;

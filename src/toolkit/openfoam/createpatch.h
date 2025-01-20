@@ -36,7 +36,7 @@ createGetters
 */
 
 public:
-  createPatchOperator(ParameterSetInput ip = ParameterSetInput() );
+  createPatchOperator(ParameterSetInput ip = Parameters() );
   virtual ~createPatchOperator();
 
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
@@ -69,7 +69,7 @@ createGetters
 */
 
 public:
-  createCyclicOperator(ParameterSetInput ip = ParameterSetInput() );
+  createCyclicOperator(ParameterSetInput ip = Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
 };
 

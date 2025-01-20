@@ -13,7 +13,7 @@ public:
     declareType ( "fvOption" );
     fvOption(
         OpenFOAMCase& c,
-        ParameterSetInput ip = ParameterSetInput() );
+        ParameterSetInput ip = Parameters() );
 
     virtual void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptionDict,
@@ -52,7 +52,7 @@ public:
     declareType ( "cellSetFvOption" );
     cellSetFvOption(
         OpenFOAMCase& c,
-        ParameterSetInput ip = ParameterSetInput() );
+        ParameterSetInput ip = Parameters() );
 
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptionDict,

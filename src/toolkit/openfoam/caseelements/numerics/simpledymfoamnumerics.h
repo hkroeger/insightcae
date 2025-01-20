@@ -27,7 +27,7 @@ createGetters
 
 public:
     declareType ( "simpleDyMFoamNumerics" );
-    simpleDyMFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    simpleDyMFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 

@@ -34,7 +34,7 @@ createGetters
 
 
 public:
-    set(ParameterSetInput ip = ParameterSetInput() );
+    set(ParameterSetInput ip = Parameters() );
     virtual ~set();
 
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
@@ -97,7 +97,7 @@ createGetters
 */
 
 public:
-    line(ParameterSetInput ip = ParameterSetInput() );
+    line(ParameterSetInput ip = Parameters() );
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 
@@ -137,7 +137,7 @@ protected:
     line l_;
 
 public:
-    uniformLine(ParameterSetInput ip = ParameterSetInput() );
+    uniformLine(ParameterSetInput ip = Parameters() );
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 
@@ -185,7 +185,7 @@ protected:
     boost::ptr_vector<line> lines_;
 
 public:
-    circumferentialAveragedUniformLine(ParameterSetInput ip = ParameterSetInput() );
+    circumferentialAveragedUniformLine(ParameterSetInput ip = Parameters() );
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 
@@ -224,7 +224,7 @@ protected:
     boost::ptr_vector<line> lines_;
 
 public:
-    linearAveragedPolyLine(ParameterSetInput ip = ParameterSetInput() );
+    linearAveragedPolyLine(ParameterSetInput ip = Parameters() );
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 
@@ -265,7 +265,7 @@ protected:
     linearAveragedPolyLine pl_;
 
 public:
-    linearAveragedUniformLine(ParameterSetInput ip = ParameterSetInput() );
+    linearAveragedUniformLine(ParameterSetInput ip = Parameters() );
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 

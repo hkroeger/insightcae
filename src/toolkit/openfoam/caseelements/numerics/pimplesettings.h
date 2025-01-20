@@ -82,7 +82,7 @@ createGetter
 */
 
 public:
-  PIMPLESettings(ParameterSetInput ip = ParameterSetInput() );
+  PIMPLESettings(ParameterSetInput ip = Parameters() );
   virtual ~PIMPLESettings();
 
   virtual void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const;
@@ -117,7 +117,7 @@ createGetter
 */
 
 public:
-  CompressiblePIMPLESettings(ParameterSetInput ip = ParameterSetInput() );
+  CompressiblePIMPLESettings(ParameterSetInput ip = Parameters() );
 
   void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const override;
 
@@ -142,7 +142,7 @@ createGetter
 */
 
 public:
-  MultiphasePIMPLESettings(ParameterSetInput ip = ParameterSetInput() );
+  MultiphasePIMPLESettings(ParameterSetInput ip = Parameters() );
 
   void addIntoDictionaries ( const OpenFOAMCase& oc, OFdicts& dictionaries ) const override;
 };

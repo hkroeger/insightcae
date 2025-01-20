@@ -151,7 +151,7 @@ public:
 
 public:
     SixDOFRigidBodyMotionSolver(
-        ParameterSetInput ip = ParameterSetInput() );
+        ParameterSetInput ip = Parameters() );
 
     virtual void addIntoDict(OFDictData::dict& dict) const;
 

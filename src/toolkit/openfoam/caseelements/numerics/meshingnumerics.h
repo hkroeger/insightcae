@@ -24,7 +24,7 @@ createGetters
 public:
     declareType ( "MeshingNumerics" );
 
-    MeshingNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    MeshingNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
 };

@@ -25,7 +25,7 @@ createGetter
 
 public:
     declareType ( "minimumTimestepLimit" );
-    minimumTimestepLimit ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    minimumTimestepLimit ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category();

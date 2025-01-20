@@ -30,7 +30,7 @@ public:
     declareType ( "turbulenceBC" );
     declareDynamicClass(turbulenceBC);
 
-    turbulenceBC(ParameterSetInput ip = ParameterSetInput() );
+    turbulenceBC(ParameterSetInput ip = Parameters() );
     virtual ~turbulenceBC();
 
 
@@ -65,7 +65,7 @@ createGetter
 
 public:
     declareType("uniformIntensityAndLengthScale");
-    uniformIntensityAndLengthScale(ParameterSetInput ip = ParameterSetInput() );
+    uniformIntensityAndLengthScale(ParameterSetInput ip = Parameters() );
     inline static turbulenceBCPtr create(const ParameterSet& ps) { return turbulenceBCPtr(new uniformIntensityAndLengthScale(ps)); }
 
     void setDirichletBC_k(OFDictData::dict& BC, double U) const override;

@@ -29,7 +29,7 @@ createGetters
 
 public:
     declareType ( "steadyIncompressibleNumerics" );
-    steadyIncompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput(), const std::string& pName="p" );
+    steadyIncompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters(), const std::string& pName="p" );
 
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;

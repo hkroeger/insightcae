@@ -27,7 +27,7 @@ public:
     declareType ( "ConstantPressureGradientSource" );
     ConstantPressureGradientSource (
         OpenFOAMCase& c,
-        ParameterSetInput ip = ParameterSetInput() );
+        ParameterSetInput ip = Parameters() );
 
     void addIntoFvOptionDictionary(
         OFDictData::dict& fod,

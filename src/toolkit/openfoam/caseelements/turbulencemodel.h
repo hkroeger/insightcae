@@ -31,7 +31,7 @@ public:
 public:
   declareType("turbulenceModel");
 
-  turbulenceModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  turbulenceModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const =0;
   virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const =0;

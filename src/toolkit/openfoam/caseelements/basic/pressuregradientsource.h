@@ -26,7 +26,7 @@ createGetter
 
 public:
     declareType ( "PressureGradientSource" );
-    PressureGradientSource ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    PressureGradientSource ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptions,
         OFdicts& dictionaries ) const override;

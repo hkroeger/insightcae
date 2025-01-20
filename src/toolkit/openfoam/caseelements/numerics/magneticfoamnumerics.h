@@ -28,7 +28,7 @@ protected:
 
 public:
     declareType ( "magneticFoamNumerics" );
-    magneticFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    magneticFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 

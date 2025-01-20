@@ -33,7 +33,7 @@ protected:
 
 public:
     declareType ( "buoyantPimpleFoamNumerics" );
-    buoyantPimpleFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    buoyantPimpleFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

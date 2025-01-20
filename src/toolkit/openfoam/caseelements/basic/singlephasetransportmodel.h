@@ -29,7 +29,7 @@ createGetter
 
 public:
     declareType ( "singlePhaseTransportProperties" );
-    singlePhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    singlePhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }
@@ -60,7 +60,7 @@ createGetter
 
 public:
     declareType ( "boussinesqSinglePhaseTransportProperties" );
-    boussinesqSinglePhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    boussinesqSinglePhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     double density(double T) const;

@@ -29,7 +29,7 @@ createGetter
 
 public:
     declareType ( "provideFields" );
-    provideFields ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    provideFields ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

@@ -43,7 +43,7 @@ createGetter
 
 public:
     declareType ( "source" );
-    source ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    source ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptionDict,
         OFdicts& dictionaries) const override;

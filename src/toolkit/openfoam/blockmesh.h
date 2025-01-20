@@ -84,7 +84,7 @@ protected:
   std::vector<ProjectedFace> projectedFaces_;
   
 public:
-  blockMesh(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  blockMesh(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   blockMesh(OpenFOAMCase& c, const blockMesh& o );
 
   void copy(const blockMesh& other);

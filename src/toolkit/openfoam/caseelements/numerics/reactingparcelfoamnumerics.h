@@ -10,7 +10,7 @@ class reactingParcelFoamNumerics
 {
 public:
     declareType ( "reactingParcelFoamNumerics" );
-    reactingParcelFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    reactingParcelFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 

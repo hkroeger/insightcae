@@ -56,7 +56,7 @@ createGetters
 */
   
 public:
-  cavitatingFoamThermodynamics(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  cavitatingFoamThermodynamics(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 
@@ -142,7 +142,7 @@ protected:
   SpeciesList species_;
 
 public:
-  compressibleMixtureThermophysicalProperties(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  compressibleMixtureThermophysicalProperties(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

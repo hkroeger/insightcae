@@ -49,7 +49,7 @@ createGetters
 
 public:
     declareType ( "unsteadyCompressibleNumerics" );
-    unsteadyCompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    unsteadyCompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

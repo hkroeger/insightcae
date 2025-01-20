@@ -31,7 +31,7 @@ public:
     declareType ( "HeatBC" );
     declareDynamicClass(HeatBC);
 
-    HeatBC(ParameterSetInput ip = ParameterSetInput() );
+    HeatBC(ParameterSetInput ip = Parameters() );
     virtual ~HeatBC();
 
     virtual void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const;
@@ -50,7 +50,7 @@ class AdiabaticBC
 {
 public:
   declareType ( "Adiabatic" );
-  AdiabaticBC ( ParameterSetInput ip = ParameterSetInput() );
+  AdiabaticBC ( ParameterSetInput ip = Parameters() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -79,7 +79,7 @@ createGetter
 
 public:
   declareType ( "FixedTemperature" );
-  FixedTemperatureBC ( ParameterSetInput ip = ParameterSetInput() );
+  FixedTemperatureBC ( ParameterSetInput ip = Parameters() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -117,7 +117,7 @@ createGetter
 
 public:
   declareType ( "TemperatureGradientBC" );
-  TemperatureGradientBC ( ParameterSetInput ip = ParameterSetInput() );
+  TemperatureGradientBC ( ParameterSetInput ip = Parameters() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -183,7 +183,7 @@ createGetter
 
 public:
   declareType ( "ExternalWall" );
-  ExternalWallBC ( ParameterSetInput ip = ParameterSetInput() );
+  ExternalWallBC ( ParameterSetInput ip = Parameters() );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;
 
@@ -218,7 +218,7 @@ createGetter
 
 public:
   declareType ( "CHTCoupledWall" );
-  CHTCoupledWall ( ParameterSetInput ip = ParameterSetInput() );
+  CHTCoupledWall ( ParameterSetInput ip = Parameters() );
 
   void addOptionsToBoundaryDict ( OFDictData::dict& BCdict ) const override;
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries ) const override;

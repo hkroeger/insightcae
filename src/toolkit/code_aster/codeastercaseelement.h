@@ -11,7 +11,7 @@ class CodeAsterCaseElement
 : public CaseElement
 {
 public:
-    CodeAsterCaseElement(CodeAsterCase& c, ParameterSetInput ip = ParameterSetInput() );
+    CodeAsterCaseElement(CodeAsterCase& c, ParameterSetInput ip = Parameters() );
 };
 
 } // namespace insight

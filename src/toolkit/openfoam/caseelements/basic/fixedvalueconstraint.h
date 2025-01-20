@@ -38,7 +38,7 @@ createGetter
 
 public:
     declareType ( "fixedValueConstraint" );
-    fixedValueConstraint ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    fixedValueConstraint ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptions,
         OFdicts& dictionaries ) const override;

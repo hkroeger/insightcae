@@ -36,7 +36,7 @@ createGetter
 
 public:
   declareType("customDictEntries");
-  customDictEntries(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  customDictEntries(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static std::string category() { return "Custom"; }

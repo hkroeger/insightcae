@@ -26,7 +26,7 @@ createGetter
 
 public:
     declareType ( "volumeDrag" );
-    volumeDrag ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    volumeDrag ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoFvOptionDictionary(
         OFDictData::dict& fvOptions,
         OFdicts& dictionaries ) const override;

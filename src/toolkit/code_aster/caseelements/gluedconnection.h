@@ -9,7 +9,7 @@ class GluedConnection
 :public CodeAsterCaseElement
 {
 public:
-    GluedConnection(CodeAsterCase& c, ParameterSetInput ip = ParameterSetInput() );
+    GluedConnection(CodeAsterCase& c, ParameterSetInput ip = Parameters() );
 };
 
 } // namespace insight

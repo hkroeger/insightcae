@@ -29,7 +29,7 @@ createGetters
 public:
     declareType ( "compressibleInterFoamNumerics" );
 
-    compressibleInterFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    compressibleInterFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

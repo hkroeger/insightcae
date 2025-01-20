@@ -11,7 +11,7 @@ class dynSmagorinsky_LESModel
 public:
   declareType("dynSmagorinsky");
 
-  dynSmagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  dynSmagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };

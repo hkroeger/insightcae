@@ -10,7 +10,7 @@ class thermodynamicModel
 : public OpenFOAMCaseElement
 {
 public:
-  thermodynamicModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  thermodynamicModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 };
 
 }

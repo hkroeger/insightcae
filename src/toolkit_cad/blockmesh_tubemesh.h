@@ -53,7 +53,7 @@ createGetters
 public:
     declareType ( "blockMeshDict_TubeMesh" );
 
-    blockMeshDict_TubeMesh ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_TubeMesh ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     virtual void create_bmd();
 };

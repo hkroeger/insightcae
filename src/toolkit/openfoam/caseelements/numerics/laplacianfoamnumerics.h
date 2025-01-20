@@ -29,7 +29,7 @@ createGetters
 
 public:
     declareType ( "laplacianFoamNumerics" );
-    laplacianFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    laplacianFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

@@ -35,7 +35,7 @@ protected:
   const OpenFOAMCase& c_;
 
 public:
-  setFieldOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  setFieldOperator(const OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual ~setFieldOperator();
 
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const =0;
@@ -67,7 +67,7 @@ createGetter
 
 
 public:
-  fieldToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  fieldToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   void addIntoDictionary(OFDictData::dict& setFieldDict) const override;
 };
@@ -94,7 +94,7 @@ createGetter
 
 
 public:
-  boxToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  boxToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   void addIntoDictionary(OFDictData::dict& setFieldDict) const override;
 };
@@ -119,7 +119,7 @@ createGetter
 
 
 public:
-  cellToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  cellToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
 };
@@ -144,7 +144,7 @@ createGetter
 
 
 public:
-  zoneToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  zoneToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
 };

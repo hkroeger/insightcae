@@ -34,7 +34,7 @@ protected:
 
 public:
     declareType ( "chtMultiRegionNumerics" );
-    chtMultiRegionNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    chtMultiRegionNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };
@@ -72,7 +72,7 @@ protected:
 
 public:
     declareType ( "chtMultiRegionFluidNumerics" );
-    chtMultiRegionFluidNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    chtMultiRegionFluidNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

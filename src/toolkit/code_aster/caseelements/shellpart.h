@@ -25,7 +25,7 @@ createGetters
 */
 
 public:
-    ShellPart(CodeAsterCase& c, ParameterSetInput ip = ParameterSetInput() );
+    ShellPart(CodeAsterCase& c, ParameterSetInput ip = Parameters() );
 };
 
 } // namespace insight

@@ -41,7 +41,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        ParameterSetInput ip = ParameterSetInput()
+        ParameterSetInput ip = Parameters()
     );
 
     virtual void addDataDict ( OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data ) const;

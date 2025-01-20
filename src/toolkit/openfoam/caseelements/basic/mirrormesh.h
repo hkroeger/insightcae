@@ -41,7 +41,7 @@ createGetter
 
 public:
     declareType ( "mirrorMesh" );
-    mirrorMesh ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    mirrorMesh ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

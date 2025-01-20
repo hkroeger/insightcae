@@ -12,7 +12,7 @@ class oneEqEddy_LESModel
 public:
   declareType("oneEqEddy");
 
-  oneEqEddy_LESModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  oneEqEddy_LESModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };

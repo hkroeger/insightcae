@@ -34,7 +34,7 @@ protected:
 
 public:
     declareType ( "buoyantSimpleFoamNumerics" );
-    buoyantSimpleFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    buoyantSimpleFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

@@ -33,7 +33,7 @@ public:
     declareType ( "multiphaseBC" );
     declareDynamicClass(multiphaseBC);
 
-    multiphaseBC(ParameterSetInput ip = ParameterSetInput() );
+    multiphaseBC(ParameterSetInput ip = Parameters() );
     virtual ~multiphaseBC();
 
 
@@ -72,7 +72,7 @@ createGetter
 
 public:
     declareType ( "uniformPhases" );
-    uniformPhases ( ParameterSetInput ip = ParameterSetInput() );
+    uniformPhases ( ParameterSetInput ip = Parameters() );
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 
     inline static multiphaseBCPtr
@@ -91,7 +91,7 @@ class uniformWallTiedPhases
 {
 public:
     declareType ( "uniformWallTiedPhases" );
-    uniformWallTiedPhases ( ParameterSetInput ip = ParameterSetInput() );
+    uniformWallTiedPhases ( ParameterSetInput ip = Parameters() );
 
     inline static multiphaseBCPtr
     create(const ParameterSet& ps)

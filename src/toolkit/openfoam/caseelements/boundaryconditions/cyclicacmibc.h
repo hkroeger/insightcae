@@ -25,7 +25,7 @@ public:
     CyclicACMIBC(
         OpenFOAMCase& c, const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        ParameterSetInput ip = ParameterSetInput() );
+        ParameterSetInput ip = Parameters() );
 
     void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const override;
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;

@@ -31,7 +31,7 @@ createGetter
 
 public:
     declareType ( "twoPhaseTransportProperties" );
-    twoPhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    twoPhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }

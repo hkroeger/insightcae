@@ -54,7 +54,7 @@ public:
     declareStaticFunctionTable (validator, ParameterSet_ValidatorPtr);
     declareType ( "OpenFOAMCaseElement" );
 
-    OpenFOAMCaseElement ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    OpenFOAMCaseElement ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     // defined below declaration of OpenFOAMCase
     const OpenFOAMCase& OFcase() const;

@@ -54,7 +54,7 @@ createGetters
 
 public:
     declareType ( "compressibleSinglePhaseThermophysicalProperties" );
-    compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    compressibleSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     std::string requiredThermoType() const;
     std::unique_ptr<SpeciesData> speciesData() const;

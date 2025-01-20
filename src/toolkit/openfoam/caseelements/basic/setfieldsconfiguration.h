@@ -67,7 +67,7 @@ createGetter
 
 public:
     declareType ( "setFieldsConfiguration" );
-    setFieldsConfiguration ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    setFieldsConfiguration ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

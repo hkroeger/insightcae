@@ -50,7 +50,7 @@ createGetter
 
 
 public:
-  magnet( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  magnet( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const override;
   

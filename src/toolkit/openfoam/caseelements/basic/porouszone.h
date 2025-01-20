@@ -56,7 +56,7 @@ createGetters
 
 public:
     declareType ( "porousZone" );
-    porousZone ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    porousZone ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }
@@ -83,7 +83,7 @@ createGetters
 
 public:
     declareType ( "porousZoneOption" );
-    porousZoneOption ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    porousZoneOption ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoFvOptionDictionary ( OFDictData::dict& fvOptionDict, OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }

@@ -39,7 +39,7 @@ createGetter
 
 public:
   declareType ( "decomposeParDict" );
-  decomposeParDict(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  decomposeParDict(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
   static std::string category();

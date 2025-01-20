@@ -9,7 +9,7 @@ class dynamicMesh
 : public OpenFOAMCaseElement
 {
 public:
-  dynamicMesh(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  dynamicMesh(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   static std::string category() { return "Dynamic Mesh"; }
   virtual bool isUnique() const;
 };

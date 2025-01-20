@@ -9,7 +9,7 @@ class transportModel
 : public OpenFOAMCaseElement
 {
 public:
-  transportModel(OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+  transportModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual bool isUnique() const;
 };
 

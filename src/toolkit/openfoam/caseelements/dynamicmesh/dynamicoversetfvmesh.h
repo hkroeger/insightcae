@@ -32,7 +32,7 @@ public:
 
   dynamicOversetFvMesh(
       OpenFOAMCase& c,
-      ParameterSetInput ip = ParameterSetInput() );
+      ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

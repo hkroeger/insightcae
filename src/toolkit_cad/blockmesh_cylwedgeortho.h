@@ -157,7 +157,7 @@ protected:
 public:
     declareType ( "blockMeshDict_CylWedgeOrtho" );
 
-    blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, ParameterSetInput ip = ParameterSetInput() );
+    blockMeshDict_CylWedgeOrtho ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     virtual void create_bmd();
 

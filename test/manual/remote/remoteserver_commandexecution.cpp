@@ -6,7 +6,7 @@
 #include "base/sshlinuxserver.h"
 #include "base/remoteserverlist.h"
 
-#include "dummies.h"
+#include "dummyanalysis.h"
 
 
 using namespace std;

@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <limits>
+#include <thread>
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
@@ -274,7 +275,10 @@ enum DatasetRepresentation
   Surface = VTK_SURFACE
 };
 
+extern boost::mutex VTKlock; // only one renderer c at a time
+
 class VTKOffscreenScene
+    : boost::mutex::scoped_lock
 {
 
 protected:

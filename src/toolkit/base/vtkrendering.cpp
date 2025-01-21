@@ -1414,9 +1414,12 @@ std::set<int> MultiBlockDataSetExtractor::flatIndices(const std::vector<std::str
 
 
 
+boost::mutex VTKlock;
 
 VTKOffscreenScene::VTKOffscreenScene()
+    : boost::mutex::scoped_lock(VTKlock)
 {
+
   vtkRenderingOpenGL2_AutoInit_Construct();
   vtkRenderingFreeType_AutoInit_Construct();
   vtkInteractionStyle_AutoInit_Construct();

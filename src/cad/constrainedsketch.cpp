@@ -886,9 +886,9 @@ void ConstrainedSketch::generateScript(ostream &os) const
         sb.appendLayerProp("layer "+lp.first+s);
     }
 
-    std::cout<<">>>>"<<std::endl;
-    sb.write(std::cout);
-    std::cout<<"<<<<"<<std::endl;
+    // std::cout<<">>>>"<<std::endl;
+    // sb.write(std::cout);
+    // std::cout<<"<<<<"<<std::endl;
     sb.write(os);
 }
 

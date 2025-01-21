@@ -316,6 +316,7 @@ public:
 struct AnalysisInstance
 {
   std::string name;
+  std::shared_ptr<ParameterSet> parameters_; // needs to exist, until analysis is finished
   AnalysisPtr analysis;
   ResultSetPtr results;
   std::exception_ptr exception;

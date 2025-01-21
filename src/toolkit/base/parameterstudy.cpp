@@ -169,7 +169,7 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
                     BaseAnalysis::typeName,
                     ParameterSetInput(*newp), ep, consoleProgressDisplayer ) );
 
-    instances.enqueue( AnalysisInstance{ n.str(), std::move(newinst), emptyresset, nullptr } );
+    instances.enqueue( AnalysisInstance{ n.str(), std::move(newp), std::move(newinst), emptyresset, nullptr } );
 }
 
 

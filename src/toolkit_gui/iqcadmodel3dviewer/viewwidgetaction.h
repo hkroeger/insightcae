@@ -13,6 +13,10 @@
 
 #include <QWidget>
 #include <QRubberBand>
+
+#include <QMetaObject>
+#include <QApplication>
+#include <qnamespace.h>
 #include <typeindex>
 
 #include "Standard_Version.hxx"
@@ -58,6 +62,7 @@ private:
 
   std::set<InputReceiver*> childReceivers_;
 
+protected:
   bool capturesAllInput_;
 
 protected:
@@ -130,130 +135,130 @@ public:
       lastMouseLocation_.reset(new QPoint(p));
   }
 
+  template<class Function, typename... Args>
+  bool toFirstChildAction(Function f, Args&&... args)
+  {
+      for (auto&c: childReceivers_)
+      {
+          if (
+              std::bind(f, c, std::forward<Args>(args)...)()
+              ) return true;
+      }
+      return false;
+   }
+
+  template<class Function, typename... Args>
+  bool toAllChildActions(Function f, Args&&... args)
+  {
+      bool handled=false;
+      for (auto&c: childReceivers_)
+      {
+          handled=
+            handled
+                    ||
+            std::bind(f, c, std::forward<Args>(args)...)();
+      }
+      return handled;
+  }
+
+  template<class Function, typename... Args>
+  void forAllChildActions(Function f, Args&&... args)
+  {
+      for (auto&c: childReceivers_)
+      {
+          std::bind(f, c, std::forward<Args>(args)...)();
+      }
+  }
+
   virtual bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onLeftButtonDoubleClick(nFlags, point)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+                 &InputReceiver::onLeftButtonDoubleClick,
+                   nFlags, point )
+           ||
+             capturesAllInput_;
   }
 
   virtual bool onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onLeftButtonDown(nFlags, point, afterDoubleClick)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onLeftButtonDown,
+                        nFlags, point, afterDoubleClick)
+          ||
+             capturesAllInput_;
+
   }
 
   virtual bool onMiddleButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onMiddleButtonDown(nFlags, point)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onMiddleButtonDown,
+                        nFlags, point )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onRightButtonDown ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onRightButtonDown(nFlags, point)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onRightButtonDown,
+                        nFlags, point )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onLeftButtonUp    ( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onLeftButtonUp(nFlags, point, afterDoubleClick)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onLeftButtonUp,
+                        nFlags, point, afterDoubleClick )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onMiddleButtonUp  ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onMiddleButtonUp(nFlags, point)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onMiddleButtonUp,
+                        nFlags, point )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onRightButtonUp   ( Qt::KeyboardModifiers nFlags, const QPoint point )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onRightButtonUp(nFlags, point)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onRightButtonUp,
+                        nFlags, point )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onKeyPress(modifiers, key)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onKeyPress,
+                        modifiers, key )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
   {
-      if (childReceivers_.size())
-      {
-          for (auto&c: childReceivers_)
-          {
-              if (c->onKeyRelease(modifiers, key)) return true;
-          }
-          return true;
-      }
-      else
-          return capturesAllInput_;
+      return
+          toFirstChildAction(
+              &InputReceiver::onKeyRelease,
+              modifiers, key )
+          ||
+          capturesAllInput_;
   }
 
   virtual bool onMouseMove
@@ -263,15 +268,13 @@ public:
      Qt::KeyboardModifiers curFlags
      )
   {
-      bool handled=false;
-      for (auto&c: childReceivers_)
-      {
-          if (!handled)
-          {
-              handled=c->onMouseMove(buttons, point, curFlags);
-          }
-      }
+      bool handled=
+          toFirstChildAction(
+              &InputReceiver::onMouseMove,
+              buttons, point, curFlags );
+
       updateLastMouseLocation(point);
+
       return handled;
   }
 
@@ -281,23 +284,16 @@ public:
       double angleDeltaY
      )
   {
-      bool handled=false;
-      for (auto&c: childReceivers_)
-      {
-          if (!handled)
-          {
-              handled=c->onMouseWheel(angleDeltaX, angleDeltaY);
-          }
-      }
-      return handled;
+      return
+          toFirstChildAction(
+            &InputReceiver::onMouseWheel,
+            angleDeltaX, angleDeltaY );
   }
 
   virtual void onMouseLeavesViewer()
   {
-      for (auto&c: childReceivers_)
-      {
-          c->onMouseLeavesViewer();
-      }
+      forAllChildActions(
+        &InputReceiver::onMouseLeavesViewer);
   }
 
 };
@@ -403,7 +399,7 @@ public:
 
             InputReceiver<Viewer>::registerChildReceiver( cPtr );
 
-            currentAction_->actionIsFinished.connect(
+            currentAction_->connectActionIsFinished(
                 [this,cPtr](bool)
                 {
                     InputReceiver<Viewer>::removeChildReceiver(
@@ -469,7 +465,24 @@ class ViewWidgetAction
 {
 
 public:
+    /**
+     * @brief connectActionIsFinished
+     * queue into event loop, don't execute directly
+     * since object might delete itself
+     * @param f
+     */
+    void connectActionIsFinished(std::function<void(bool)> f)
+    {
+        actionIsFinished.connect([f](bool success){
+            QMetaObject::invokeMethod(
+                qApp,
+                std::bind(f, success),
+                Qt::QueuedConnection
+                );
+        });
+    }
 
+private:
     boost::signals2::signal<void(bool)> actionIsFinished;
 
 
@@ -485,6 +498,21 @@ public:
   ViewWidgetAction(ViewWidgetActionHost<Viewer>& parent, bool captureAllInput=true)
     : ViewWidgetActionHost<Viewer>(parent, captureAllInput)
   {}
+
+  bool onKeyPress(Qt::KeyboardModifiers modifiers, int key) override
+  {
+      if (!this->toFirstChildAction(
+          &InputReceiver<Viewer>::onKeyPress,
+              modifiers, key))
+      {
+          if (key == Qt::Key_Escape)
+          {
+              finishAction();
+              return true;
+          }
+      }
+      return this->capturesAllInput_;
+  }
 
   virtual void start() =0;
 };

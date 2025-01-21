@@ -835,7 +835,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         {
             bool ok;
             double sf=QInputDialog::getDouble(
-                this,
+                &viewer,
                 "Scale Sketch",
                 "Enter scale factor:", 1.,
                 -DBL_MAX, DBL_MAX, -1, &ok);
@@ -1059,6 +1059,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
 IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 {
+    viewer().commonToolBox()->removeItem(
+        viewer().commonToolBox()->indexOf(this) );
+
     toolBar_->hide();
     toolBar_->deleteLater();
 
@@ -1226,11 +1229,8 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonDoubleClick(
 
 bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifiers, int key )
 {
-
-    bool ret=ViewWidgetAction<IQVTKCADModel3DViewer>
-        ::onKeyRelease(modifiers, key);
-
-    if (!ret && (key == Qt::Key_Delete) )
+    if (!toFirstChildAction(&InputReceiver::onKeyRelease, modifiers, key)
+        && (key == Qt::Key_Delete) )
     {
         if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
         {
@@ -1244,12 +1244,12 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
                 {
                     deleteEntity(td);
                 }
-                ret=true;
+                return true;
             }
         }
     }
 
-    return ret;
+    return false;
 }
 
 

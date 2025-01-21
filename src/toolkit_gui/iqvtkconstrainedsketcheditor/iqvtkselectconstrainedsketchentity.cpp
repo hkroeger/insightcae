@@ -245,7 +245,9 @@ IQVTKSelectConstrainedSketchEntity::IQVTKSelectConstrainedSketchEntity(
     :   IQVTKConstrainedSketchEditorSelectionLogic(
         [&editor]()
         { return std::make_shared<SketchEntityMultiSelection>(editor); },
-        editor.viewer() ),
+        editor.viewer(),
+        false // captureAllInput
+          ),
     editor_(editor)
 {
     toggleHoveringSelectionPreview(true);

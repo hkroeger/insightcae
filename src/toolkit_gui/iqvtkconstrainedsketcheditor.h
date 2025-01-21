@@ -44,7 +44,7 @@ extern std::string defaultGUIConstrainedSketchPresentationDelegate;
 
 
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
-      : public QWidget, //QObject,
+      : public QWidget, // in toolbar
         public ViewWidgetAction<IQVTKCADModel3DViewer>,
         public insight::cad::ConstrainedSketchPtr
 {
@@ -66,18 +66,18 @@ private:
         SketchGeometryActorMap;
 
 
+    std::unique_ptr<IQVTKCADModel3DViewer::ExposeItem> transparency_;
+
     SketchGeometryActorMap sketchGeometryActors_;
 
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties_;
     std::shared_ptr<insight::cad::ConstrainedSketchPresentationDelegate> presentation_;
 
-    QToolBar *toolBar_;
-
-    std::unique_ptr<IQVTKCADModel3DViewer::ExposeItem> transparency_;
 
     std::set<std::string> hiddenLayers_;
 
     ParameterEditorWidget* layerPropertiesEditor_;
+    QToolBar *toolBar_;
 
     void showLayerParameterEditor();
     void hideLayerParameterEditor();

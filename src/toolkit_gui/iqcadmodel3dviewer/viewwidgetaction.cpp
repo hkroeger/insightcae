@@ -11,8 +11,6 @@
 
 
 
-
-
 ToNotepadEmitter::ToNotepadEmitter()
     : QObject(nullptr)
 {}

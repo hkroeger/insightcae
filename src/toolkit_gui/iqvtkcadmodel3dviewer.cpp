@@ -1977,7 +1977,7 @@ void IQVTKCADModel3DViewer::editSketch(
 
         insight::cad::ConstrainedSketchPtr skePtr=*ske;
 
-        ske->actionIsFinished.connect(
+        ske->connectActionIsFinished(
             [onAccept,onCancel,skePtr](bool accepted)
             {
                 if (accepted)
@@ -2276,6 +2276,8 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
 {
     dbg(3)<<">>> mouse press, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
+    IQCADModel3DViewer::mousePressEvent(e);
+
     if ( e->button() & Qt::LeftButton )
     {
         bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
@@ -2297,7 +2299,7 @@ void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
             ret=this->onMiddleButtonDown( e->modifiers(), e->pos() );
     }
 
-    IQCADModel3DViewer::mousePressEvent(e);
+
 }
 
 
@@ -2340,8 +2342,6 @@ void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
 {
     dbg(3)<<">>> mouse move"<<std::endl;
 
-    if (!hasFocus()) setFocus();
-
     IQCADModel3DViewer::mouseMoveEvent(e);
 
     bool ret=false;
@@ -2372,20 +2372,13 @@ void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
 
     IQCADModel3DViewer::keyPressEvent(e);
 
-    if (e->key() == Qt::Key_Escape)
+    if (!e->isAccepted())
     {
-        setDefaultAction();
+        bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
+
+        if (!ret && vtkWidget_.hasFocus())
+          ret = this->onKeyPress(e->modifiers(), e->key());
     }
-
-    bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
-
-    if (!ret)
-      ret = this->onKeyPress(e->modifiers(), e->key());
-
-    if (!ret)
-      ret=this->onKeyPress(e->modifiers(), e->key());
-
-    if (!ret) QWidget::keyPressEvent(e);
 }
 
 
@@ -2396,13 +2389,13 @@ void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
     dbg(3)<<"key release"<<std::endl;
 
     IQCADModel3DViewer::keyReleaseEvent(e);
+    if (!e->isAccepted())
+    {
+        bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
 
-    bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
-
-    if (!ret)
-      ret=this->onKeyRelease(e->modifiers(), e->key());
-
-    if (!ret) QWidget::keyReleaseEvent(e);
+        if (!ret && vtkWidget_.hasFocus())
+          ret=this->onKeyRelease(e->modifiers(), e->key());
+    }
 }
 
 

@@ -91,13 +91,29 @@ class BackgroundImage
     IQVTKCADModel3DViewer& viewer();
 
 public:
+    /**
+     * @brief BackgroundImage
+     * load image and launch orientation action
+     * @param fp
+     * @param viewer
+     */
     BackgroundImage(
         const boost::filesystem::path& fp,
         IQVTKCADModel3DViewer& viewer );
+
+    /**
+     * @brief BackgroundImage
+     * restore from XML saved config
+     * @param node
+     * @param viewer
+     */
     BackgroundImage(
         const rapidxml::xml_node<>& node,
         IQVTKCADModel3DViewer& viewer );
+
     ~BackgroundImage();
+
+    void reorientImage();
 
     QString label() const;
 
@@ -358,7 +374,7 @@ private:
 
     std::set<vtkProp*> actorsExcludedFromPicking_;
 
-    QToolButton *clBGBtn, *addBGBtn;
+    QToolButton *addBGBtn;
     void connectBackgroundImageCommands(BackgroundImage *bgi);
 
 private Q_SLOT:

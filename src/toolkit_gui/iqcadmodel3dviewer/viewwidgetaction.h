@@ -52,15 +52,33 @@ template<class Viewer>
 class InputReceiver
 {
 public:
-  typedef std::shared_ptr<InputReceiver> Ptr;
+    struct Deleter
+    {
+        void operator()(InputReceiver* ir)
+        {
+            ir->aboutToBeDestroyed();
+            delete ir;
+        }
+    };
+
+    typedef Viewer Viewer_type;
+
+  typedef std::unique_ptr<InputReceiver, Deleter> Ptr;
 
   boost::signals2::signal<void()> aboutToBeDestroyed;
-  boost::signals2::signal<void(const QString&)> userPrompt;
+  boost::signals2::signal<void(const QString&)> userPrompt, descriptionChanged;
 
 private:
+
+  mutable bool cleanupDone_ = false;
   Viewer& viewer_;
 
   std::set<InputReceiver*> childReceivers_;
+
+  void prepareCleanup()
+  {
+      aboutToBeDestroyed.connect([this](){cleanupDone_=true;});
+  }
 
 protected:
   bool capturesAllInput_;
@@ -76,18 +94,26 @@ protected:
 public:
   InputReceiver(Viewer& viewer, bool captureAllInput)
     : viewer_(viewer), capturesAllInput_(captureAllInput)
-  {}
+  {
+      prepareCleanup();
+  }
 
   InputReceiver(Viewer& viewer, const QPoint& p, bool captureAllInput)
   : viewer_(viewer),
     lastMouseLocation_(new QPoint(p)),
     capturesAllInput_(captureAllInput)
-  {}
+  {
+     prepareCleanup();
+  }
 
   virtual ~InputReceiver()
   {
-      aboutToBeDestroyed();
+      if (!cleanupDone_)
+      {
+          insight::Warning("internal error in InputReveiver: cleanup not done!");
+      }
   }
+
 
   void registerChildReceiver(InputReceiver* recv)
   {
@@ -295,7 +321,6 @@ public:
       forAllChildActions(
         &InputReceiver::onMouseLeavesViewer);
   }
-
 };
 
 
@@ -318,7 +343,7 @@ class ViewWidgetActionHost
 
 public:
     typedef
-        std::shared_ptr<ViewWidgetAction<Viewer> >
+        std::unique_ptr<ViewWidgetAction<Viewer>, typename InputReceiver<Viewer>::Deleter >
         ViewWidgetActionPtr;
 
 private:
@@ -339,7 +364,9 @@ protected:
     void prepareDestruction()
     {
         this->aboutToBeDestroyed.connect(
-            [this]() { currentAction_.reset(); } );
+            [this]() {
+                currentAction_.reset();
+            } );
     }
 
 public:
@@ -367,7 +394,7 @@ public:
         if (ViewWidgetActionPtr da = setupDefaultAction())
         {
             defaultActionType_ = typeid(*da);
-            launchAction(da);
+            launchAction(std::move(da));
         }
     }
 
@@ -394,8 +421,8 @@ public:
 
         if (!currentAction_)
         {
-            currentAction_=childAction;
             auto cPtr = childAction.get();
+            currentAction_=std::move(childAction);
 
             InputReceiver<Viewer>::registerChildReceiver( cPtr );
 
@@ -417,6 +444,11 @@ public:
             currentAction_->userPrompt.connect(
                 this->userPrompt );
 
+            this->descriptionChanged(
+                currentAction_->description());
+
+            currentAction_->descriptionChanged.connect(
+                this->descriptionChanged );
 
             currentAction_->start();
 
@@ -429,21 +461,25 @@ public:
     template<class A = ViewWidgetAction<Viewer> >
     bool isRunning() const
     {
-        return bool(std::dynamic_pointer_cast<A>(currentAction_));
+        return bool(dynamic_cast<const A*>(currentAction_.get()));
     }
 
     template<class A = ViewWidgetAction<Viewer> >
     A* runningAction() const
     {
-        return std::dynamic_pointer_cast<A>(currentAction_).get();
+        return dynamic_cast<const A*>(currentAction_.get());
     }
 
-    void cancelCurrentAction()
+    void cancelCurrentAction(bool launchDefaultAction=true)
     {
         if (isRunning() && !isDefaultAction())
         {
+
             currentAction_.reset();
-            setDefaultAction();
+
+            if (launchDefaultAction)
+                setDefaultAction();
+
         }
     }
 
@@ -495,7 +531,9 @@ protected:
 public:
   using ViewWidgetActionHost<Viewer>::ViewWidgetActionHost;
 
-  ViewWidgetAction(ViewWidgetActionHost<Viewer>& parent, bool captureAllInput=true)
+  ViewWidgetAction(
+      ViewWidgetActionHost<Viewer>& parent,
+      bool captureAllInput=true)
     : ViewWidgetActionHost<Viewer>(parent, captureAllInput)
   {}
 
@@ -515,6 +553,11 @@ public:
   }
 
   virtual void start() =0;
+
+  virtual QString description() const
+  {
+      return QString();
+  }
 };
 
 
@@ -522,11 +565,26 @@ public:
 
 
 
+template<class VWA, typename... Args>
+std::unique_ptr<VWA, typename InputReceiver<typename VWA::Viewer_type>::Deleter>
+make_viewWidgetAction(Args&&... args)
+{
+    return std::unique_ptr<VWA, typename InputReceiver<typename VWA::Viewer_type>::Deleter >
+        (new VWA(std::forward<Args>(args)...));
+}
 
-class OCCViewWidgetRotation : public ViewWidgetAction<QoccViewWidget>
+
+
+
+
+
+
+class OCCViewWidgetRotation
+    : public ViewWidgetAction<QoccViewWidget>
 {
 public:
-  OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point);
+  OCCViewWidgetRotation(
+        QoccViewWidget &viewWidget, const QPoint point);
 
   void start() override;
 
@@ -539,10 +597,12 @@ public:
 };
 
 
-class OCCViewWidgetPanning : public ViewWidgetAction<QoccViewWidget>
+class OCCViewWidgetPanning
+    : public ViewWidgetAction<QoccViewWidget>
 {
 public:
-  OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point);
+  OCCViewWidgetPanning(
+        QoccViewWidget &viewWidget, const QPoint point);
 
   void start() override;
 
@@ -555,10 +615,12 @@ public:
 };
 
 
-class OCCViewWidgetDynamicZooming : public ViewWidgetAction<QoccViewWidget>
+class OCCViewWidgetDynamicZooming
+    : public ViewWidgetAction<QoccViewWidget>
 {
 public:
-  OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point);
+  OCCViewWidgetDynamicZooming(
+        QoccViewWidget &viewWidget, const QPoint point);
 
   void start() override;
 
@@ -576,8 +638,9 @@ class OCCViewWidgetWindowZooming : public ViewWidgetAction<QoccViewWidget>
 {
   QRubberBand *rb_;
 public:
-  OCCViewWidgetWindowZooming(QoccViewWidget &viewWidget, const QPoint point, QRubberBand* rb);
-  ~OCCViewWidgetWindowZooming();
+  OCCViewWidgetWindowZooming(
+        QoccViewWidget &viewWidget, const QPoint point, QRubberBand* rb);
+  // ~OCCViewWidgetWindowZooming();
 
   void start() override;
 
@@ -592,13 +655,17 @@ public:
 
 
 
-class OCCViewWidgetMeasurePoints : public ViewWidgetAction<QoccViewWidget>
+class OCCViewWidgetMeasurePoints
+    : public ViewWidgetAction<QoccViewWidget>
 {
   std::shared_ptr<insight::cad::Vector> p1_, p2_;
 
 public:
-  OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget);
-  ~OCCViewWidgetMeasurePoints();
+  OCCViewWidgetMeasurePoints(
+        QoccViewWidget &viewWidget);
+  // ~OCCViewWidgetMeasurePoints();
+
+  QString description() const override;
 
   void start() override;
 

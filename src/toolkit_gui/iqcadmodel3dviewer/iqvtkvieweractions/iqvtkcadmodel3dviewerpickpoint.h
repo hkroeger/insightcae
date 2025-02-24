@@ -15,7 +15,6 @@ public:
     IQVTKCADModel3DViewerPickPoint(
         ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent );
 
-    ~IQVTKCADModel3DViewerPickPoint();
 
     void start() override;
 

@@ -69,6 +69,8 @@ public:
     IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectCADEntity();
 
+    QString description() const override;
+
     bool onRightButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
 
     void start() override;
@@ -106,6 +108,8 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectSubshape
 public:
     IQVTKSelectSubshape(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectSubshape();
+
+    QString description() const override;
 
     void start() override;
 };

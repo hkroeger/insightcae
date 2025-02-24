@@ -111,10 +111,9 @@ QoccViewWidget::QoccViewWidget(QWidget *parent)
   : QWidget(parent),
     ViewWidgetActionHost<QoccViewWidget>(*this, true),
     navigationManager_(
-      std::make_shared<
-        TouchpadNavigationManager<
+      new TouchpadNavigationManager<
          QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
-        > >(*this) ),
+        >(*this)),
     myGridSnap          ( Standard_False ),
     myDetection         ( AIS_SOD_Nothing ),
     myPrecision		( 0.0001 ),
@@ -1335,7 +1334,7 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 
 void QoccViewWidget::onMeasureDistance()
 {
-    launchAction( std::make_shared<OCCViewWidgetMeasurePoints>(*this) );
+    launchAction( ViewWidgetActionPtr(new OCCViewWidgetMeasurePoints(*this)) );
 }
 
 void QoccViewWidget::onMeasureDiameter()
@@ -1348,7 +1347,7 @@ void QoccViewWidget::onMeasureDiameter()
 
 void QoccViewWidget::onSelectPoints()
 {
-  launchAction( std::make_shared<ViewWidgetInsertPointIDs>(*this) );
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertPointIDs(*this)) );
 }
 
 
@@ -1356,7 +1355,7 @@ void QoccViewWidget::onSelectPoints()
 
 void QoccViewWidget::onSelectEdges()
 {
-  launchAction( std::make_shared<ViewWidgetInsertEdgeIDs>(*this) );
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertEdgeIDs(*this)) );
 }
 
 
@@ -1364,7 +1363,7 @@ void QoccViewWidget::onSelectEdges()
 
 void QoccViewWidget::onSelectFaces()
 {
-  launchAction( std::make_shared<ViewWidgetInsertFaceIDs>(*this) );
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertFaceIDs(*this)) );
 }
 
 
@@ -1372,7 +1371,7 @@ void QoccViewWidget::onSelectFaces()
 
 void QoccViewWidget::onSelectSolids()
 {
-  launchAction( std::make_shared<ViewWidgetInsertSolidIDs>(*this) );
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertSolidIDs(*this)) );
 }
 
 

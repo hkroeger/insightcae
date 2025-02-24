@@ -17,7 +17,6 @@ public:
     IQVTKDragAngleDimensionAction(
         IQVTKConstrainedSketchEditor &editor,
         std::shared_ptr<insight::cad::AngleConstraint> ac);
-    ~IQVTKDragAngleDimensionAction();
 
     void start() override;
 

@@ -54,17 +54,22 @@ IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(
     )
   : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget),
     imageActor_(imageActor)
-{}
-
-
-
-IQVTKOrientBackgroundImage::~IQVTKOrientBackgroundImage()
 {
-    for (auto pAct: pAct_)
-    {
-        viewer().renderer()->RemoveActor(pAct);
-    }
+    aboutToBeDestroyed.connect(
+        [this](){
+            for (auto pAct: pAct_)
+            {
+                viewer().renderer()->RemoveActor(pAct);
+            }
+        });
 }
+
+QString IQVTKOrientBackgroundImage::description() const
+{
+    return "Orient background image";
+}
+
+
 
 void IQVTKOrientBackgroundImage::start()
 {

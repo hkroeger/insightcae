@@ -222,8 +222,7 @@ void IQVTKConstrainedSketchEditor::remove(
 IQVTKConstrainedSketchEditor::ViewWidgetActionHost::ViewWidgetActionPtr
 IQVTKConstrainedSketchEditor::setupDefaultAction()
 {
-    auto sel = std::make_shared<IQVTKSelectConstrainedSketchEntity>(*this);
-    return sel;
+    return make_viewWidgetAction<IQVTKSelectConstrainedSketchEntity>(*this);
 }
 
 
@@ -232,7 +231,7 @@ IQVTKConstrainedSketchEditor::setupDefaultAction()
 
 void IQVTKConstrainedSketchEditor::drawPoint()
 {
-    auto dl = std::make_shared<IQVTKCADModel3DViewerDrawPoint>(*this);
+    auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawPoint>(*this);
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawPoint::pointAdded, dl.get(),
 
@@ -274,14 +273,14 @@ void IQVTKConstrainedSketchEditor::drawPoint()
 
 
 
-    launchAction(dl);
+    launchAction(std::move(dl));
 }
 
 
 
 void IQVTKConstrainedSketchEditor::drawLine()
 {
-    auto dl = std::make_shared<IQVTKCADModel3DViewerDrawLine>(*this);
+    auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawLine>(*this);
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors, dl.get(),
             [this]() { updateActors(); } );
@@ -394,7 +393,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
             }
             );
 
-    launchAction(dl);
+    launchAction(std::move(dl));
 }
 
 
@@ -402,7 +401,7 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
 void IQVTKConstrainedSketchEditor::drawRectangle()
 {
-    auto dl = std::make_shared<IQVTKCADModel3DViewerDrawRectangle>(*this);
+    auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawRectangle>(*this);
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawRectangle::rectangleAdded, dl.get(),
 
@@ -488,7 +487,7 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
 
 
 
-    launchAction(dl);
+    launchAction(std::move(dl));
 }
 
 
@@ -537,10 +536,10 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish_accept.svg"), "Finish & Accept",
-                        std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, true) );
+                        this, std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, true) );
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish_cancel.svg"), "Cancel",
-                        std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, false) );
+                        this, std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, false) );
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawpoint.svg"), "Point",
                         this, &IQVTKConstrainedSketchEditor::drawPoint);
@@ -556,7 +555,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         "H",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -580,7 +579,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     );
     toolBar_->addAction(
         "V",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -605,7 +604,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_fixpoint.svg"), "Fix Point Coordinates",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -636,7 +635,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_distance_xf.svg"), "Fix Points X-Coordinate",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -671,7 +670,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_distance_yf.svg"), "Fix Points Y-Coordinate",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -706,7 +705,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_pointoncurve.svg"), "Point on curve",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -751,7 +750,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_distance.svg"), "Distance",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -794,7 +793,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_mergepoints.svg"), "Merge points",
-        [&]()
+        this, [this]()
         {
             if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
             {
@@ -831,11 +830,11 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_->addAction(
         "Scale",
-        [&]()
+        this, [this]()
         {
             bool ok;
             double sf=QInputDialog::getDouble(
-                &viewer,
+                &this->viewer(),
                 "Scale Sketch",
                 "Enter scale factor:", 1.,
                 -DBL_MAX, DBL_MAX, -1, &ok);
@@ -957,7 +956,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         connect(
             layerlist->selectionModel(),
             &QItemSelectionModel::currentChanged,
-            layerlist,
+            this,
             [this,model](const QModelIndex &current, const QModelIndex &previous)
             {
                 if (current.isValid())
@@ -1020,7 +1019,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         connect(
             geolist->selectionModel(),
             &QItemSelectionModel::selectionChanged,
-            geolist,
+            this,
             [this,model](
                 const QItemSelection &selected,
                 const QItemSelection &deselected )
@@ -1049,33 +1048,53 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         l->addRow("Entities", geolist);
     }
 
-    setLayout(l);
 
-    viewer.commonToolBox()->addItem(this, "Sketch");
+    tbw=new QWidget;
+    tbw->setLayout(l);
+    viewer.commonToolBox()->addItem(tbw, "Sketch");
+
+    aboutToBeDestroyed.connect(
+        [this](){
+            cancelCurrentAction();
+
+            transparency_.reset();
+
+            {
+                // copy because "remove" invalidates for-loop
+                std::set<insight::cad::ConstrainedSketchEntityPtr> sgs;
+
+                std::transform(sketchGeometryActors_.begin(), sketchGeometryActors_.end(),
+                               std::inserter(sgs, sgs.end()),
+                               [](const SketchGeometryActorMap::value_type& v){ return v.first; } );
+
+                for (const auto& sg: sgs)
+                {
+                    remove(sg);
+                }
+
+                sketchGeometryActors_.clear();
+            }
+
+            // tbw->hide();
+            // tbw->deleteLater();
+            // toolBar_->hide();
+            // toolBar_->deleteLater();
+            delete tbw;
+            delete toolBar_;
+        });
 }
 
 
 
 
 IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
+{}
+
+
+
+QString IQVTKConstrainedSketchEditor::description() const
 {
-    viewer().commonToolBox()->removeItem(
-        viewer().commonToolBox()->indexOf(this) );
-
-    toolBar_->hide();
-    toolBar_->deleteLater();
-
-    // copy because "remove" invalidates for-loop
-    std::set<insight::cad::ConstrainedSketchEntityPtr> sgs;
-
-    std::transform(sketchGeometryActors_.begin(), sketchGeometryActors_.end(),
-        std::inserter(sgs, sgs.end()),
-        [](const SketchGeometryActorMap::value_type& v){ return v.first; } );
-
-    for (const auto& sg: sgs)
-    {
-        remove(sg);
-    }
+    return "Edit sketch";
 }
 
 
@@ -1292,7 +1311,7 @@ bool IQVTKConstrainedSketchEditor::onMouseMove
                     std::dynamic_pointer_cast<insight::cad::DistanceConstraint>(
                         selact->currentSelectionCandidate().lock() ) )
                 {
-                    launchAction(std::make_shared<IQVTKDragDimensionlineAction>(*this, dc));
+                    launchAction(make_viewWidgetAction<IQVTKDragDimensionlineAction>(*this, dc));
 
                     ret=true;
                 }
@@ -1300,7 +1319,7 @@ bool IQVTKConstrainedSketchEditor::onMouseMove
                          std::dynamic_pointer_cast<insight::cad::AngleConstraint>(
                              selact->currentSelectionCandidate().lock() ) )
                 {
-                    launchAction(std::make_shared<IQVTKDragAngleDimensionAction>(*this, ac));
+                    launchAction(make_viewWidgetAction<IQVTKDragAngleDimensionAction>(*this, ac));
 
                     ret=true;
                 }

@@ -103,7 +103,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
                 //                                curMod->getVector()
                 //                                ) ) );
                 //          } );
-                auto mani = std::make_shared<IQVTKManipulateCoordinateSystem>(
+                auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
                     *v->topmostActionHost(), insight::CoordinateSystem((*bp), parameter()()), true );
                 connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
                         [this,applyFunction](const insight::CoordinateSystem& cs)
@@ -111,11 +111,11 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
                             parameterRef().set(cs.ex);
                         }
                         );
-                v->topmostActionHost()->launchAction(mani);
+                v->topmostActionHost()->launchAction(std::move(mani));
             }
             else
             {
-              auto ppc = std::make_shared<IQVTKCADModel3DViewerPickPoint>(
+              auto ppc = make_viewWidgetAction<IQVTKCADModel3DViewerPickPoint>(
                     *v->topmostActionHost() );
               connect(ppc.get(), &IQVTKCADModel3DViewerPickPoint::pickedPoint,
                         [this,applyFunction](const arma::mat& pt)
@@ -123,7 +123,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
                           parameterRef().set(pt);
                         }
                       );
-              v->topmostActionHost()->launchAction(ppc);
+              v->topmostActionHost()->launchAction(std::move(ppc));
             }
           }
     );

@@ -28,11 +28,11 @@ protected:
 public:
   IQVTKViewWidgetInsertIDs(IQVTKCADModel3DViewer &viewWidget)
     : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
-  {  }
-
-  ~IQVTKViewWidgetInsertIDs()
   {
-      viewer().deactivateSubshapeSelectionAll();
+      aboutToBeDestroyed.connect(
+          [this](){
+              viewer().deactivateSubshapeSelectionAll();
+          });
   }
 
   void start() override
@@ -40,7 +40,7 @@ public:
       viewer().activateSelectionAll(shapeType);
       //viewer().sendStatus("Please select "+QString(selectionName)+" and finish with right click!");
 
-      auto sel = std::make_shared<IQVTKSelectSubshape>(viewer());
+      auto sel = make_viewWidgetAction<IQVTKSelectSubshape>(viewer());
       sel->entitySelected.connect(
           [this](IQVTKCADModel3DViewer::SubshapeData sd)
           {
@@ -60,7 +60,7 @@ public:
           }
           );
 
-      launchAction(sel);
+      launchAction(std::move(sel));
   }
 
 
@@ -106,6 +106,7 @@ protected:
 
 public:
   IQVTKViewWidgetInsertPointIDs(IQVTKCADModel3DViewer &viewWidget);
+  QString description() const override;
 };
 
 
@@ -121,6 +122,7 @@ protected:
 
 public:
   IQVTKViewWidgetInsertEdgeIDs(IQVTKCADModel3DViewer &viewWidget);
+  QString description() const override;
 };
 
 
@@ -136,6 +138,7 @@ protected:
 
 public:
   IQVTKViewWidgetInsertFaceIDs(IQVTKCADModel3DViewer &viewWidget);
+  QString description() const override;
 };
 
 
@@ -150,6 +153,7 @@ protected:
 
 public:
   IQVTKViewWidgetInsertSolidIDs(IQVTKCADModel3DViewer &viewWidget);
+  QString description() const override;
 };
 
 

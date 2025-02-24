@@ -6,7 +6,8 @@
 
 class IQVTKCADModel3DViewer;
 
-class IQVTKCADModel3DViewerRotation : public ViewWidgetAction<IQVTKCADModel3DViewer>
+class IQVTKCADModel3DViewerRotation
+    : public ViewWidgetAction<IQVTKCADModel3DViewer>
 {
 
     const double MotionFactor = 10.;
@@ -15,7 +16,8 @@ class IQVTKCADModel3DViewerRotation : public ViewWidgetAction<IQVTKCADModel3DVie
     void rotate(int x, int y);
 
 public:
-  IQVTKCADModel3DViewerRotation(IQVTKCADModel3DViewer &viewWidget, const QPoint point);
+  IQVTKCADModel3DViewerRotation(
+        IQVTKCADModel3DViewer &viewWidget, const QPoint point);
 
   void start() override;
 

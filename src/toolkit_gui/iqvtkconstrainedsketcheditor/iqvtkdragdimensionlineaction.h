@@ -17,7 +17,6 @@ public:
     IQVTKDragDimensionlineAction(
         IQVTKConstrainedSketchEditor &editor,
         std::shared_ptr<insight::cad::DistanceConstraint> dc);
-    ~IQVTKDragDimensionlineAction();
 
     void start() override;
 

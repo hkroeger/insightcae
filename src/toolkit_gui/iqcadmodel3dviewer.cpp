@@ -4,6 +4,7 @@
 
 #include <QColorDialog>
 #include <QDockWidget>
+#include <QStatusBar>
 
 uint
 IQCADModel3DViewer::QPersistentModelIndexHash::operator()
@@ -23,6 +24,14 @@ IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
     commonToolBox_=new QToolBox(dockWidget_);
     addDockWidget(Qt::RightDockWidgetArea, dockWidget_);
     dockWidget_->setWidget(commonToolBox_);
+
+    userMessage_ = new QLabel;
+    userMessage_->setAlignment(Qt::AlignLeft);
+    currentActionDesc_ = new QLabel;
+    currentActionDesc_->setAlignment(Qt::AlignRight);
+
+    statusBar()->addPermanentWidget(userMessage_, 90);
+    statusBar()->addPermanentWidget(currentActionDesc_, 10);
 }
 
 void IQCADModel3DViewer::setModel(QAbstractItemModel *model)
@@ -133,5 +142,16 @@ void IQCADModel3DViewer::selectBackgroundColor()
     {
         setBackgroundColor(aRetColor);
     }
+}
+
+void IQCADModel3DViewer::showCurrentActionDescription(const QString& desc)
+{
+    currentActionDesc_->setText(desc);
+    userMessage_->setText(QString());
+}
+
+void IQCADModel3DViewer::showUserPrompt(const QString &text)
+{
+    userMessage_->setText(text);
 }
 

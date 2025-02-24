@@ -9,12 +9,8 @@ IQVTKDragAngleDimensionAction::IQVTKDragAngleDimensionAction(
     std::shared_ptr<insight::cad::AngleConstraint> ac )
     : ViewWidgetAction<IQVTKCADModel3DViewer>(editor.viewer(), true),
     editor_(editor), ac_(ac)
-{
-}
-
-
-IQVTKDragAngleDimensionAction::~IQVTKDragAngleDimensionAction()
 {}
+
 
 
 

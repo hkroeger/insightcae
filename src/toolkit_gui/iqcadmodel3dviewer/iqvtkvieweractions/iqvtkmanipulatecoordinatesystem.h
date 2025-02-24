@@ -67,7 +67,7 @@ public:
         const insight::CoordinateSystem& cs,
         bool showOnlyX=false );
 
-    ~IQVTKManipulateCoordinateSystem();
+    QString description() const override;
 
     void start() override;
 

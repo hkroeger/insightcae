@@ -24,6 +24,7 @@
         <file>icon_sketch_finish_accept.svg</file>
         <file>icon_remoteserver.svg</file>
         <file>icon_remoteserverpool.svg</file>
+        <file>icon_bgimage.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

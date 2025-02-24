@@ -12,7 +12,8 @@ class IQVTKCADModel3DViewerMeasurePoints
 
 public:
   IQVTKCADModel3DViewerMeasurePoints(IQVTKCADModel3DViewer &viewWidget);
-  ~IQVTKCADModel3DViewerMeasurePoints();
+
+  QString description() const override;
 
   void start() override;
 };

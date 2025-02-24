@@ -8,6 +8,7 @@
 #include <QTextEdit>
 #include <QMainWindow>
 #include <QToolBox>
+#include <QLabel>
 
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
@@ -41,6 +42,7 @@ protected:
     QAbstractItemModel* model_;
     QDockWidget *dockWidget_;
     QToolBox *commonToolBox_;
+    QLabel *userMessage_, *currentActionDesc_;
 
 public:
     IQCADModel3DViewer(QWidget* parent=nullptr);
@@ -120,6 +122,9 @@ public Q_SLOT:
             SketchCompletionCallback onAccept,
             SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
         ) =0;
+
+    void showCurrentActionDescription(const QString& desc);
+    void showUserPrompt(const QString& text);
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

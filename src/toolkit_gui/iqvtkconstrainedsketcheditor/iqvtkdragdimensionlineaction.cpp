@@ -12,10 +12,6 @@ IQVTKDragDimensionlineAction::IQVTKDragDimensionlineAction(
 }
 
 
-IQVTKDragDimensionlineAction::~IQVTKDragDimensionlineAction()
-{}
-
-
 
 void IQVTKDragDimensionlineAction::start()
 {}

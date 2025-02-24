@@ -98,18 +98,19 @@ bool OCCViewWidgetDynamicZooming::onMouseMove
 
 
 
-OCCViewWidgetWindowZooming::OCCViewWidgetWindowZooming(QoccViewWidget &viewWidget, const QPoint point, QRubberBand *rb)
+OCCViewWidgetWindowZooming::OCCViewWidgetWindowZooming(
+    QoccViewWidget &viewWidget, const QPoint point, QRubberBand *rb)
   : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false), rb_(rb)
-{}
-
-OCCViewWidgetWindowZooming::~OCCViewWidgetWindowZooming()
 {
-  auto r=rb_->rect();
-  viewer().view().WindowFitAll(
-        r.topLeft().x(),
-        r.topLeft().y(),
-        r.bottomRight().x(),
-      r.bottomRight().y() );
+    aboutToBeDestroyed.connect(
+        [this]() {
+            auto r=rb_->rect();
+            viewer().view().WindowFitAll(
+                r.topLeft().x(),
+                r.topLeft().y(),
+                r.bottomRight().x(),
+                r.bottomRight().y() );
+    });
 }
 
 void OCCViewWidgetWindowZooming::start()
@@ -138,14 +139,25 @@ bool OCCViewWidgetWindowZooming::onMouseMove
 
 
 
-OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(QoccViewWidget &viewWidget)
+OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(
+    QoccViewWidget &viewWidget)
   : ViewWidgetAction<QoccViewWidget>(viewWidget, false)
-{}
-
-OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()
 {
-  insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
+    aboutToBeDestroyed.connect(
+        [this](){
+            insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
+        });
 }
+
+QString OCCViewWidgetMeasurePoints::description() const
+{
+    return "Measure distance between points";
+}
+
+// OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()
+// {
+//     insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
+// }
 
 void OCCViewWidgetMeasurePoints::start()
 {

@@ -27,12 +27,13 @@ protected:
 public:
   ViewWidgetInsertIDs(QoccViewWidget &viewWidget)
     : ViewWidgetAction<QoccViewWidget>(viewWidget, true)
-  {}
-
-  ~ViewWidgetInsertIDs()
   {
-    insight::cad::DeactivateAll(viewer().getContext(), shapeEnum);
+      aboutToBeDestroyed.connect(
+          [this](){
+              insight::cad::DeactivateAll(viewer().getContext(), shapeEnum);
+          });
   }
+
 
   void start() override
   {

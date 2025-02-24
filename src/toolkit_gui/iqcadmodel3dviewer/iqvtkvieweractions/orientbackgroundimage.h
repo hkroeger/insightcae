@@ -33,7 +33,8 @@ private:
 
 public:
     IQVTKOrientBackgroundImage(IQVTKCADModel3DViewer &viewWidget, vtkImageActor* imageActor);
-    ~IQVTKOrientBackgroundImage();
+
+    QString description() const override;
 
     void start() override;
 

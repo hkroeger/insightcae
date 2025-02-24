@@ -248,6 +248,47 @@ ParameterEditorWidget::ParameterEditorWidget
         f.setPixelSize(QFontInfo(f).pixelSize()*1.5);
         overlayText_->setFont(f);
         overlayText_->hide();
+
+
+        // connect(
+        //     viz_.get(), &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_.get(),
+        //     [this](bool success)
+        //     { if (success) overlayText_->hide(); } );
+
+        // if (viz_)
+        // {
+        //     connect(
+        //         viz_.get(), &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_.get(),
+        //         [this](insight::Exception ex)
+        //         {
+        //             overlayText_->setTextFormat(Qt::MarkdownText);
+        //             std::ostringstream msg;
+        //             msg
+        //             << "The visualization could not be generated.\n\n"
+        //                "Reason:\n\n"
+        //                "**"+ex.description()+"**\n\n"
+        //                 <<boost::replace_all_copy(ex.context(), "\n", "\n\n")
+        //                 ;
+
+        //             // if (auto *cae = dynamic_cast<const insight::CADException*>(&ex))
+        //             // {
+        //             //     auto gm = cae->contextGeometry();
+        //             //     for (auto g: gm)
+        //             //     {
+        //             //         std::string fn("errorContext_"+g.first+".brep");
+        //             //         BRepTools::Write(
+        //             //             *g.second,
+        //             //             fn.c_str()
+        //             //         );
+        //             //         msg<<"saved context to "<<fn<<"\n";
+        //             //     }
+        //             // }
+
+        //             overlayText_->setText(QString::fromStdString(msg.str()));
+        //             overlayText_->show();
+        //         }
+        //     );
+        // }
     }
 }
 

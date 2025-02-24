@@ -13,10 +13,6 @@ IQVTKCADModel3DViewerPickPoint::IQVTKCADModel3DViewerPickPoint(
 
 
 
-
-IQVTKCADModel3DViewerPickPoint::~IQVTKCADModel3DViewerPickPoint()
-{}
-
 void IQVTKCADModel3DViewerPickPoint::start()
 {}
 

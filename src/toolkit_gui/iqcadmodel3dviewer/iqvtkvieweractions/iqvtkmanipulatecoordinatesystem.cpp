@@ -21,22 +21,28 @@ IQVTKManipulateCoordinateSystem::IQVTKManipulateCoordinateSystem(
     cs_(cs),
     showOnlyX_(showOnlyX)
 {
+    aboutToBeDestroyed.connect(
+        [this](){
+            viewer().renderer()->RemoveActor(aP0_);
+            viewer().renderer()->RemoveActor(aEx_);
+            if (!showOnlyX_)
+            {
+                viewer().renderer()->RemoveActor(aEy_);
+                viewer().renderer()->RemoveActor(aEz_);
+            }
+            viewer().renderer()->RemoveActor(aXY_);
+            viewer().renderer()->RemoveActor(aYZ_);
+            viewer().renderer()->RemoveActor(aXZ_);
+            viewer().scheduleRedraw();
+        });
+
 }
 
-IQVTKManipulateCoordinateSystem::~IQVTKManipulateCoordinateSystem()
+QString IQVTKManipulateCoordinateSystem::description() const
 {
-    viewer().renderer()->RemoveActor(aP0_);
-    viewer().renderer()->RemoveActor(aEx_);
-    if (!showOnlyX_)
-    {
-        viewer().renderer()->RemoveActor(aEy_);
-        viewer().renderer()->RemoveActor(aEz_);
-    }
-    viewer().renderer()->RemoveActor(aXY_);
-    viewer().renderer()->RemoveActor(aYZ_);
-    viewer().renderer()->RemoveActor(aXZ_);
-    viewer().scheduleRedraw();
+    return "Manipulation coordinate system";
 }
+
 
 void IQVTKManipulateCoordinateSystem::setCS()
 {

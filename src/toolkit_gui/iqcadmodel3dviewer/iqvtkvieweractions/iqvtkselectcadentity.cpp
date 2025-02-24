@@ -177,6 +177,11 @@ IQVTKSelectCADEntity::~IQVTKSelectCADEntity()
     delete toolBar_;
 }
 
+QString IQVTKSelectCADEntity::description() const
+{
+    return "Select CAD entity";
+}
+
 bool IQVTKSelectCADEntity::onRightButtonUp(Qt::KeyboardModifiers nFlags, const QPoint point)
 {
     viewer().contextMenuClick( viewer().mapToGlobal(point) );
@@ -249,6 +254,11 @@ IQVTKSelectSubshape::IQVTKSelectSubshape(IQVTKCADModel3DViewer &viewer)
 
 IQVTKSelectSubshape::~IQVTKSelectSubshape()
 {}
+
+QString IQVTKSelectSubshape::description() const
+{
+    return "Select sub shape";
+}
 
 
 void IQVTKSelectSubshape::start()

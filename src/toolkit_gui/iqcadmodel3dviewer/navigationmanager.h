@@ -12,7 +12,7 @@ class NavigationManager
     : public InputReceiver<Viewer>
 {
 public:
-  typedef std::shared_ptr<NavigationManager> Ptr;
+  typedef std::unique_ptr<NavigationManager, typename InputReceiver<Viewer>::Deleter > Ptr;
 
 private:
   typename InputReceiver<Viewer>::Ptr currentAction_;
@@ -24,15 +24,15 @@ protected:
   }
 
   template<class T>
-  std::shared_ptr<T> currentAction()
+  T* currentAction()
   {
-    return std::dynamic_pointer_cast<T>(currentAction_);
+    return dynamic_cast<T*>(currentAction_.get());
   }
 
   void setCurrentAction(typename InputReceiver<Viewer>::Ptr newAct)
   {
     currentAction_.reset(); // delete first
-    currentAction_ = newAct;
+    currentAction_ = std::move(newAct);
     this->registerChildReceiver(currentAction_.get());
   }
 
@@ -126,7 +126,7 @@ public:
       {
         if (!this->actionInProgress() && this->hasLastMouseLocation() )
         {
-          this->setCurrentAction( std::make_shared<Panning>(
+          this->setCurrentAction( make_viewWidgetAction<Panning>(
                                 this->viewer(), this->lastMouseLocation()) );
             return true;
         }
@@ -135,7 +135,7 @@ public:
       {
         if (!this->actionInProgress() && this->hasLastMouseLocation())
         {
-          this->setCurrentAction( std::make_shared<Rotation>(
+          this->setCurrentAction( make_viewWidgetAction<Rotation>(
                                 this->viewer(), this->lastMouseLocation()) );
             return true;
         }

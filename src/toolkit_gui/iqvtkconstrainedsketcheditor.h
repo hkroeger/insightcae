@@ -44,7 +44,7 @@ extern std::string defaultGUIConstrainedSketchPresentationDelegate;
 
 
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
-      : public QWidget, // in toolbar
+      : public QObject,
         public ViewWidgetAction<IQVTKCADModel3DViewer>,
         public insight::cad::ConstrainedSketchPtr
 {
@@ -77,6 +77,7 @@ private:
     std::set<std::string> hiddenLayers_;
 
     ParameterEditorWidget* layerPropertiesEditor_;
+    QWidget *tbw;
     QToolBar *toolBar_;
 
     void showLayerParameterEditor();
@@ -101,6 +102,8 @@ public:
             const std::string& presentationDelegateKey
             );
     ~IQVTKConstrainedSketchEditor();
+
+    QString description() const override;
 
     void start() override;
 

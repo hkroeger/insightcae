@@ -7,43 +7,6 @@ namespace insight {
 
 
 
-namespace ParameterPath {
-
-
-
-
-std::string
-join(const std::string& p1, const std::string& p2)
-{
-    return
-        p1
-        + (
-            (!p1.empty()) && (!p2.empty())
-             ? "/" : ""
-           ) +
-        p2;
-}
-
-
-
-
-std::string
-join(const std::vector<std::string>& ps)
-{
-    std::string result;
-    for (auto& p: ps)
-    {
-        result=join(result, p);
-    }
-    return result;
-}
-
-
-
-
-}
-
-
 
 
 ParametersBase::ParametersBase()

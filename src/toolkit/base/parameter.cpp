@@ -50,6 +50,41 @@ namespace insight
 
 
 
+namespace ParameterPath {
+
+
+
+
+std::string
+join(const std::string& p1, const std::string& p2)
+{
+    return
+        p1
+        + (
+            (!p1.empty()) && (!p2.empty())
+                ? "/" : ""
+            ) +
+        p2;
+}
+
+
+
+
+std::string
+join(const std::vector<std::string>& ps)
+{
+    std::string result;
+    for (auto& p: ps)
+    {
+        result=join(result, p);
+    }
+    return result;
+}
+
+
+
+
+}
 
 defineType(Parameter);
 defineFactoryTable(Parameter, LIST(const std::string& desc), LIST(desc) );
@@ -679,6 +714,28 @@ const Parameter& Parameter::childParameterByName ( const std::string& name ) con
       i!=-1,
       "no parameter with name %s", name.c_str() );
   return childParameter(i);
+}
+
+
+std::vector<string> Parameter::childParameterNameList() const
+{
+    std::vector<std::string> res;
+    for (int i=0; i<nChildren(); ++i)
+    {
+        res.push_back(childParameterName(i));
+    }
+    return res;
+}
+
+
+std::vector<std::string> Parameter::childParameterFullPathList() const
+{
+    auto res = childParameterNameList();
+    for (auto &r: res)
+    {
+        r=ParameterPath::join({path(), r});
+    }
+    return res;
 }
 
 

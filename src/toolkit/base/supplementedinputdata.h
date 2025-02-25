@@ -17,15 +17,7 @@
 
 namespace insight {
 
-namespace ParameterPath {
 
-std::string
-join(const std::string& p1, const std::string& p2);
-
-std::string
-join(const std::vector<std::string>& ps);
-
-}
 
 
 struct ParametersBase

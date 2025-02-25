@@ -55,6 +55,16 @@ class ConstrainedSketch;
 }
 
 
+namespace ParameterPath {
+
+std::string
+join(const std::string& p1, const std::string& p2);
+
+std::string
+join(const std::vector<std::string>& ps);
+
+}
+
 
 template<class T>
 struct PrimitiveStaticValueWrap
@@ -439,6 +449,9 @@ public:
     Parameter& childParameterByNameRef ( const std::string& name );
 
     const Parameter& childParameterByName ( const std::string& name ) const;
+
+    std::vector<std::string> childParameterNameList() const;
+    std::vector<std::string> childParameterFullPathList() const;
 
 
     iterator begin();

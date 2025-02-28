@@ -141,7 +141,7 @@ public:
     typedef std::map<std::string, std::string> ErrorList;
 
 protected:
-    ParameterSet ps_;
+    ParameterSet* ps_;
 
 
     WarningList warnings_;

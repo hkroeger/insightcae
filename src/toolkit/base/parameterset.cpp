@@ -157,7 +157,7 @@ void ParameterSet_Validator::update(const ParameterSet& ps)
 {
     errors_.clear();
     warnings_.clear();
-    ps_=ps;
+    ps_=&ps;
 }
 
 bool ParameterSet_Validator::isValid() const

@@ -39,99 +39,14 @@ struct ParametersBase
 
 
 
-// typedef boost::variant<
-//     const SubsetParameter*,
-//     std::unique_ptr<insight::ParametersBase>,
-//     std::unique_ptr<insight::ParameterSet>
-//     >
-//     ParameterSetInputBase;
-
-
-// struct ParameterSet_visitor
-//     : public boost::static_visitor<std::unique_ptr<insight::ParameterSet> >
-// {
-//     std::unique_ptr<insight::ParameterSet>
-//     operator()( const std::unique_ptr<insight::ParametersBase>& pb )
-//     {
-//         throw insight::Exception("conversion not allowed");
-//         return nullptr;
-//     }
-
-//     std::unique_ptr<insight::ParameterSet>
-//     operator()( const SubsetParameter* ps )
-//     {
-//         auto r=std::make_unique<ParameterSet>();
-//         r->insight::SubsetParameter::operator=(*ps);
-//         return r;
-//     }
-
-//     std::unique_ptr<insight::ParameterSet>
-//     operator()(std::unique_ptr<insight::ParameterSet>& ps)
-//     {
-//         return std::move(ps);
-//     }
-// };
-
-
-// struct ParametersBase_visitor
-//     : public boost::static_visitor<std::unique_ptr<insight::ParametersBase> >
-// {
-//     std::unique_ptr<insight::ParametersBase>
-//     operator()( std::unique_ptr<insight::ParametersBase>& pb )
-//     {
-//         return std::move(pb);
-//     }
-
-//     std::unique_ptr<insight::ParametersBase>
-//     operator()( const SubsetParameter* ps )
-//     {
-//         return nullptr;
-//     }
-
-//     std::unique_ptr<insight::ParametersBase>
-//     operator()(std::unique_ptr<insight::ParameterSet>& ps)
-//     {
-//         return nullptr;
-//     }
-// };
-
-// template<class P>
-// struct forward_visitor
-//     : public boost::static_visitor<std::unique_ptr<insight::ParametersBase> >
-// {
-//     std::unique_ptr<insight::ParametersBase>
-//     operator()( std::unique_ptr<insight::ParametersBase>& pb )
-//     {
-//         return std::move(pb);
-//     }
-
-
-//     std::unique_ptr<insight::ParametersBase>
-//     operator()( const SubsetParameter* ps )
-//     {
-//         if (ps==nullptr)
-//             return std::make_unique<P>(); // default parameters
-//         else
-//             return std::make_unique<P>(*ps);
-//     }
-
-//     std::unique_ptr<insight::ParametersBase>
-//     operator()(const std::unique_ptr<insight::ParameterSet>& ps)
-//     {
-//         return std::make_unique<P>(*ps);
-//     }
-// };
-
 
 struct ParameterSetInput
-    // : public ParameterSetInputBase
 {
 private:
     std::observer_ptr<const ParameterSet> ps_;
     std::unique_ptr<insight::ParametersBase> p_;
 
 public:
-    // using ParameterSetInputBase::ParameterSetInputBase;
 
     ParameterSetInput();
     ParameterSetInput(ParameterSetInput&& o);
@@ -188,6 +103,7 @@ private:
     ParameterSetInput( const ParameterSetInput& o ) = delete;
     ParameterSetInput& operator=( const ParameterSetInput& o ) = delete;
 };
+
 
 
 
@@ -262,7 +178,6 @@ public:
 
   const boost::filesystem::path& executionPath() const;
 };
-
 
 
 

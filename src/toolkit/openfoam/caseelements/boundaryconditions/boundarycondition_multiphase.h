@@ -79,7 +79,7 @@ public:
     create(const ParameterSet& ps)
     { return std::make_shared<uniformPhases>(ps); }
 
-    static Parameters
+    static uniformPhases::Parameters
     mixture( const std::map<std::string, double>& sp);
 };
 

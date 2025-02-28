@@ -165,6 +165,7 @@ using namespace insight::createPatchOps;
 %include "common.i"
 %include "exception.i"
 
+
 %exception {
 	try {
 	$action
@@ -174,6 +175,12 @@ using namespace insight::createPatchOps;
 	}
 }
 
+%typemap(in) insight::ParameterSetInput {
+    void *psi=0;
+    SWIG_ConvertPtr($input, (void **) &psi, $1_descriptor, 0);
+    *(&$1) = ParameterSetInput(
+        *reinterpret_cast< insight::ParameterSet * >(psi) );
+}
 
 %typemap(out) int& getInt %{
   $result = PyInt_FromLong(*$1);
@@ -192,14 +199,7 @@ using namespace insight::createPatchOps;
 %include "base/parameter.h"
 %include "base/parameterset.h"
 
-//%feature("novaluewrapper") insight::ParameterSetInput;
 %include "base/supplementedinputdata.h"
-// %typemap(in) insight::ParameterSetInput %{
-//     { void *psi=0;
-//     SWIG_ConvertPtr($input, (void **) &psi, $1_descriptor, 0);
-// *(&$1) = boost::get<const SubsetParameter*>(*reinterpret_cast< insight::ParameterSetInput * >(psi)); }
-// %}
-
 %include "base/resultelement.h"
 %include "base/resultelementcollection.h"
 %include "base/resultset.h"

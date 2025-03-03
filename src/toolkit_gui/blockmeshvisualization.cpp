@@ -11,6 +11,10 @@
 #include "base/exception.h"
 #include "occinclude.h"
 #include "cadfeatures/importsolidmodel.h"
+#include "cadfeatures/transform.h"
+#include "cadparametersetvisualizer.h"
+
+#include "boost/iterator_adaptors.hpp"
 
 namespace std
 {
@@ -148,6 +152,39 @@ blockMeshVisualization::blockMeshVisualization(const bmd::blockMesh& bm)
 //        addEdge(e.c0(), e.c1());
 //    }
 }
+
+
+
+void blockMeshVisualization::addToVisualizer(
+    CADParameterSetModelVisualizer &vz,
+    const std::string &prefix,
+    const boost::variant<double,gp_Trsf>& s_or_t ) const
+{
+    std::string p=prefix;
+    if (!p.empty()) p+="/";
+
+    gp_Trsf trsf;
+    if (auto* tr = boost::get<gp_Trsf>(&s_or_t))
+        trsf=*tr;
+    else if (auto* sf = boost::get<double>(&s_or_t))
+        trsf.SetScaleFactor(*sf);
+    else
+        throw insight::UnhandledSelection();
+
+    for (auto s: boost::adaptors::index(*this))
+    {
+        vz.addFeature
+            (
+                p+str(boost::format("meshBlock_%d")%s.index()),
+                cad::Transform::create(
+                    cad::Import::create(s.value()),
+                    trsf ),
+                { insight::Wireframe }
+                );
+    }
+}
+
+
 
 }
 

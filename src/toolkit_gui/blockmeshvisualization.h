@@ -7,6 +7,8 @@
 
 namespace insight {
 
+class CADParameterSetModelVisualizer;
+
 namespace bmd
 {
 
@@ -23,6 +25,11 @@ class blockMeshVisualization
 
 public:
     blockMeshVisualization(const bmd::blockMesh& bm);
+
+    void addToVisualizer(
+        CADParameterSetModelVisualizer& vz,
+        const std::string& prefix,
+        const boost::variant<double,gp_Trsf>& s_or_t = 1.0 ) const;
 };
 
 }

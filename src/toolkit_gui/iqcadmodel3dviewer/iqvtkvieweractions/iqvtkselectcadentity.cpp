@@ -16,28 +16,32 @@
 void CADEntityMultiSelection::showParameterEditor()
 {
 
-    pew_ = new QWidget;
-    auto tbi = viewer_.commonToolBox()->addItem(pew_, "Selection Properties");
+    editorContainerWidget_ = new QWidget;
+    auto tbi = viewer_.commonToolBox()->addItem(
+        editorContainerWidget_, "Selection Properties");
+
     viewer_.commonToolBox()->setCurrentIndex(tbi);
 
     auto lo = new QVBoxLayout;
-    pew_->setLayout(lo);
+    editorContainerWidget_->setLayout(lo);
 
     auto tree=new QTreeView;
     lo->addWidget(tree);
     auto editControls = new QWidget;
     lo->addWidget(editControls);
-    pe_ = new ParameterEditorWidget(pew_, tree, editControls, &viewer_);
+
+    editorWidget_ = new ParameterEditorWidget(
+        editorContainerWidget_, tree, editControls, &viewer_);
 
 }
 
 void CADEntityMultiSelection::removeParameterEditor()
 {
-    if (pew_)
+    if (editorContainerWidget_)
     {
-        delete pew_;
-        pew_=nullptr;
-        pe_=nullptr;
+        delete editorContainerWidget_;
+        editorContainerWidget_=nullptr;
+        editorWidget_=nullptr;
     }
 }
 
@@ -47,8 +51,8 @@ void CADEntityMultiSelection::removeParameterEditor()
 CADEntityMultiSelection::CADEntityMultiSelection(
     IQVTKCADModel3DViewer& viewer )
   : viewer_(viewer),
-    pew_(nullptr),
-    pe_(nullptr)
+    editorContainerWidget_(nullptr),
+    editorWidget_(nullptr)
 {
 }
 
@@ -90,15 +94,15 @@ void CADEntityMultiSelection::insert(
 
                 if (paramList.size())
                 {
-                    if (!pe_) showParameterEditor();
-                    spm=new IQFilteredParameterSetModel(paramList, pe_);
+                    if (!editorWidget_) showParameterEditor();
+                    spm=new IQFilteredParameterSetModel(paramList, editorWidget_);
                     spm->setSourceModel(apsm);
-                    pe_->setModel(spm);
+                    editorWidget_->setModel(spm);
                 }
             }
         }
 
-        if (!spm && pe_)
+        if (!spm && editorWidget_)
         {
             removeParameterEditor();
         }

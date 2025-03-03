@@ -492,11 +492,16 @@ void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
         auto i = displayedData_.find(pidx);
         if (i!=displayedData_.end())
         {
-            //if (i->second.actor_)
+            // remove from selection, if is selected
+            if (auto sel = runningAction<IQVTKSelectCADEntity>())
+            {
+                sel->externallyUnselect(i->second.ce_);
+            }
+            // remove from scene
             for (const auto& actor: i->second.actors_)
             {
-                /*i->second.actor_*/actor->SetVisibility(false);
-                ren_->RemoveActor(/*i->second.actor_*/actor);
+                actor->SetVisibility(false);
+                ren_->RemoveActor(actor);
             }
             displayedData_.erase(i);
             recomputeSceneBounds();
@@ -913,9 +918,9 @@ void IQVTKCADModel3DViewer::onDataChanged(
             auto colInRange = [&](int minCol, int maxCol=-1)
             {
                 if (maxCol<0) maxCol=minCol;
-                return (topLeft.column() >= minCol)
+                return (topLeft.column() <= minCol)
                         &&
-                       (bottomRight.column() <= maxCol);
+                       (bottomRight.column() >= maxCol);
             };
 
             if (roles.indexOf(Qt::EditRole)>=0 || roles.empty())

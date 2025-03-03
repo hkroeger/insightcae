@@ -131,7 +131,7 @@ private:
           if (ss->second==value)
           {
               // is present and the same
-              Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
+              // Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
           }
           else
           {

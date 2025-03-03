@@ -21,8 +21,8 @@ class CADEntityMultiSelection
     std::unique_ptr<insight::ParameterSet> commonParameters_, defaultCommonParameters_;
     IQVTKCADModel3DViewer& viewer_;
 
-    QWidget *pew_;
-    ParameterEditorWidget* pe_;
+    QWidget *editorContainerWidget_;
+    ParameterEditorWidget* editorWidget_;
 
     void showParameterEditor();
     void removeParameterEditor();

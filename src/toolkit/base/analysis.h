@@ -44,7 +44,7 @@
 #include "base/boost_include.h"
 #include "boost/thread.hpp"
 
-#include "analysis__Analysis__Parameters_headers.h"
+#include "analysis__AnalysisWithParameters__Parameters_headers.h"
 
 namespace insight
 {

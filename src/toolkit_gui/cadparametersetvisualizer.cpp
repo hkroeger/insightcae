@@ -115,6 +115,7 @@ defineStaticFunctionTable2(CADParameterSetModelVisualizer, CameraStateFunctions,
 defineStaticFunctionTable2(CADParameterSetModelVisualizer, CreateGUIActionsFunctions, createGUIActionsForAnalysis);
 defineStaticFunctionTable2(CADParameterSetModelVisualizer, CreateGUIActionsFunctions, createGUIActionsForOpenFOAMCaseElement);
 
+defineStaticFunctionTable2(CADParameterSetModelVisualizer, CreateGUIWizards, createGUIWizardForAnalysis);
 
 
 defineType(CADParameterSetModelVisualizer);

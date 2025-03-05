@@ -229,7 +229,8 @@ AnalysisForm::AnalysisForm(
               peditor_, &ParameterEditorWidget::updateSupplementedInputData,
               this, &AnalysisForm::onUpdateSupplementedInputData
               );
-        vsplit->addWidget(peditor_);
+
+        //vsplit->addWidget(peditor_); // add later, depending on wizard or not
     }
     psmodel_->setAnalysisName(analysisName_);
 
@@ -242,12 +243,6 @@ AnalysisForm::AnalysisForm(
         peditor_->viewer()->setCameraState(cs);
     }
 
-    sidtab_ = new QTableView;
-    sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    sidtab_->setAlternatingRowColors(true);
-    sidtab_->setModel(&supplementedInputDataModel_);
-    vsplit->addWidget(sidtab_);
-    sidtab_->hide();
 
 
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
@@ -274,6 +269,35 @@ AnalysisForm::AnalysisForm(
 
 
     IQExecutionWorkspace::initializeToDefaults();
+
+    if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis_table().count(
+            analysisName_ ))
+    {
+#warning check StaticFunctionTable parameter: r-value ref?
+        auto ppm=psmodel_;
+        auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis(
+            analysisName_, std::move(ppm)
+            );
+
+        auto *container=new QSplitter;
+        container->setOrientation(Qt::Horizontal);
+        container->addWidget(wiz);
+        container->addWidget(peditor_);
+
+        vsplit->addWidget(container);
+    }
+    else
+    {
+        vsplit->addWidget(peditor_);
+    }
+
+
+    sidtab_ = new QTableView;
+    sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    sidtab_->setAlternatingRowColors(true);
+    sidtab_->setModel(&supplementedInputDataModel_);
+    vsplit->addWidget(sidtab_);
+    sidtab_->hide();
 
 
     {

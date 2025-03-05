@@ -195,6 +195,15 @@ public:
   declareStaticFunctionTable2(CreateGUIActionsFunctions, createGUIActionsForOpenFOAMCaseElement);
 
 
+  typedef insight::StaticFunctionTable<
+      &CADParameterSetModelVisualizer::typeName,
+      QWidget*,
+      IQParameterSetModel *
+      > CreateGUIWizards;
+
+  declareStaticFunctionTable2(CreateGUIWizards, createGUIWizardForAnalysis);
+
+
 protected:
   std::unique_ptr<boost::thread> rebuildThread_;
   IQParameterSetModel *psmodel_;

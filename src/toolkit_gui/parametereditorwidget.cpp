@@ -208,6 +208,7 @@ ParameterEditorWidget::ParameterEditorWidget
     QVBoxLayout *l=new QVBoxLayout;
     w->setLayout(l);
 
+    l->addWidget(new QLabel("Input Parameters"));
     parameterTreeView_ = new QTreeView(w);
     l->addWidget(parameterTreeView_);
 

@@ -37,10 +37,12 @@ endif()
 
 install_shared_file(genericmodules_module_cfg genericmodules.module modules.d)
 
+find_package(Qt5Widgets CONFIG REQUIRED)
 set(genericmodulesgui_SOURCES
     numericalwindtunnel_gui.cpp
     internalpressureloss_gui.cpp
 )
+qt5_add_resources(genericmodulesgui_SOURCES genericmodules.qrc)
 add_library(genericmodulesgui SHARED ${genericmodulesgui_SOURCES})
 target_link_libraries(genericmodulesgui genericmodules toolkit_gui)
 

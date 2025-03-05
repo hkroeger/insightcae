@@ -1,6 +1,8 @@
 #include "cadparametersetvisualizer.h"
 #include "internalpressureloss.h"
 
+#include "filetemplate.h"
+
 #include "datum.h"
 
 namespace insight
@@ -39,5 +41,35 @@ addToStaticFunctionTable2(
     InternalPressureLoss, &newVisualizer<InternalPressureLoss_ParameterSet_Visualizer>);
 
 
+insight::CADParameterSetModelVisualizer::IconFunctions::Add<InternalPressureLoss>
+    addInternalPressureLossIcon(
+        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        []() {
+            return QIcon(":/analysis_internalpressureloss.svg");
+        } );
+
+insight::CADParameterSetModelVisualizer::IconFunctions::Add<InternalPressureLossCharacteristics>
+    addInternalPressureLossCharacteristicsIcon(
+        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        []() {
+            return QIcon(":/analysis_internalpressureloss_vs_Q.svg");
+        } );
+
+insight::CADParameterSetModelVisualizer::IconFunctions::Add<FileTemplate>
+    addFileTemplateIcon(
+        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        []() {
+            return QIcon(":/analysis_filetemplate.svg");
+        } );
 
 }
+
+
+struct GenericModulesResInit {
+    GenericModulesResInit() {
+        Q_INIT_RESOURCE(genericmodules);
+    }
+    ~GenericModulesResInit() {
+        Q_CLEANUP_RESOURCE(genericmodules);
+    }
+} genericModulesResInit;

@@ -51,3 +51,14 @@ add_pybindings(TestcaseModules "testcasemodules.i" testcases)
 install_script(isCreateChannelProfiles isCreateChannelProfiles.py)
 
 endif()
+
+
+find_package(Qt5Widgets CONFIG REQUIRED)
+set(testcasesgui_SOURCES
+    testcases_gui.cpp
+)
+qt5_add_resources(testcasesgui_SOURCES testcases.qrc)
+add_library(testcasesgui SHARED ${testcasesgui_SOURCES})
+target_link_libraries(testcasesgui testcases toolkit_gui)
+
+install(TARGETS testcasesgui LIBRARY DESTINATION lib COMPONENT ${INSIGHT_INSTALL_COMPONENT})

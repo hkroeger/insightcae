@@ -58,6 +58,7 @@
 #include "base/qt5_helper.h"
 #include "base/toolkitversion.h"
 #include "base/translations.h"
+#include "qtextensions.h"
 
  
 
@@ -172,13 +173,12 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 
 void IQISCADMainWindow::loadModel()
 {
-    QString fn=QFileDialog::getOpenFileName(
-          this, _("Select file"),
-          "",
-          _("ISCAD Model Files (*.iscad)"));
-    if (fn!="")
+    if (auto fn=getFileName(
+            this, _("Select file"),
+            GetFileMode::Open,
+            {{"iscad", _("ISCAD Model Files")}}))
     {
-        insertModel(qPrintable(fn))->modelEdit()->unsetUnsavedState();
+        insertModel(fn)->modelEdit()->unsetUnsavedState();
     }
 }
 
@@ -549,17 +549,15 @@ void IQISCADMainWindow::onFileClicked(const QModelIndex &index)
 
 void IQISCADMainWindow::onCreateNewModel(const QString& directory)
 {
-    QString fn=QFileDialog::getSaveFileName
-    (
-        this,
-        _("Select file"),
-        directory,
-        _("ISCAD Model Files (*.iscad)")
-    );
-    if (fn!="")
+    if (auto fn = getFileName(
+        this, _("Select file"),
+        GetFileMode::Save,
+        {{ "iscad", _("ISCAD Model Files"), true }},
+        boost::filesystem::path(directory.toStdString())
+    ))
     {
         IQISCADModelWindow *me=insertEmptyModel();
-        me->modelEdit()->setFilename(qPrintable(fn));
+        me->modelEdit()->setFilename(fn);
         me->modelEdit()->saveModel();
     }
 }

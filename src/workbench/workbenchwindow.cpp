@@ -39,6 +39,7 @@
 #include "iqconfigureexternalprogramsdialog.h"
 #include "iqmanagereporttemplatesdialog.h"
 #include "qanalysisthread.h"
+#include "qtextensions.h"
 
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
@@ -286,10 +287,13 @@ void WorkbenchMainWindow::newAnalysis(std::string analysisType)
 
 void WorkbenchMainWindow::onOpenAnalysis()
 {
-  QString fn = QFileDialog::getOpenFileName(
-        this, _("Open Parameters"), QString(),
-        _("Insight parameter sets (*.ist)") );
-  if (!fn.isEmpty()) openAnalysis(fn);
+  if (auto fn = getFileName(
+        this, _("Open Parameters"),
+        GetFileMode::Open,
+        {{ "ist", _("Insight parameter sets") }} ) )
+  {
+     openAnalysis(fn);
+  }
 }
 
 

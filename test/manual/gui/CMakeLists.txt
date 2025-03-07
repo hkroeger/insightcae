@@ -23,3 +23,13 @@ target_link_libraries(cadviewertest
       toolkit_gui
       )
 linkToolkitVtk(cadviewertest Onscreen)
+
+
+
+add_executable(fileselectiondialog fileselectiondialog.cpp)
+
+target_link_libraries(fileselectiondialog
+      Qt5::Widgets
+      toolkit_gui
+      )
+linkToolkitVtk(fileselectiondialog Onscreen)

@@ -74,6 +74,8 @@
 #include "base/cppextensions.h"
 #include "iqvtkviewer.h"
 
+#include "qtextensions.h"
+
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
 #include <QDebug>
@@ -1414,10 +1416,14 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
 
     connect(addBGAction, &QAction::triggered, addBGAction,
     [this]() {
-        auto fn = QFileDialog::getOpenFileName(this, "Select background image file");
-        if (!fn.isEmpty())
+        if (auto fn = getFileName(
+                this, "Select background image file", GetFileMode::Open,
+                {
+                    {"jpg jpeg", "JPEG bitmap"},
+                    {"png", "Portable Network Graphic"}
+                } ))
         {
-            auto bgi = new BackgroundImage(fn.toStdString(), *this);
+            auto bgi = new BackgroundImage(fn, *this);
             backgroundImages_.push_back(bgi);
 
             connectBackgroundImageCommands(bgi);

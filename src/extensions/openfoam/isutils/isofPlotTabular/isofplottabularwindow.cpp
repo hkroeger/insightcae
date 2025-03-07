@@ -35,6 +35,7 @@
 #include <fstream>
 
 #include "base/qt5_helper.h"
+#include "qtextensions.h"
 
 using namespace std;
 using namespace boost;
@@ -165,8 +166,13 @@ void IsofPlotTabularWindow::onSaveFinalValues(QString fn)
 
     if (fn.isEmpty())
     {
-        fn=QFileDialog::getSaveFileName(
-            this, "Select CSV file", QString(), "Comma separated values file (*.csv)");
+        if (auto fd = getFileName(
+                this, "Select CSV file",
+                GetFileMode::Save,
+                {{ "csv", "Comma separated values file" }} ) )
+        {
+            fn=fd.asQString();
+        }
     }
 
     std::string sep=",";

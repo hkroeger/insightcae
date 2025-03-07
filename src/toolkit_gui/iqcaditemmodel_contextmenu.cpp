@@ -4,6 +4,7 @@
 #include "iqcaditemmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 #include "datum.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -357,17 +358,19 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         bool ok=false;
                         auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
                                         .value<insight::cad::FeaturePtr>();
-                        auto fn=QFileDialog::getSaveFileName(
-                            viewer,
-                            "Export file name",
-                            "",
-                            "BREP file (*.brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
-                            );
-                        if (!fn.isEmpty())
+                        if (auto fn = getFileName(
+                            viewer, "Export file name",
+                            GetFileMode::Save,
+                            {
+                                    {"brep", "BREP file"},
+                                    {"stl", "ASCII STL file"},
+                                    {"stlb", "Binary STL file"},
+                                    {"stp step", "STEP file", true},
+                                    {"igs iges", "IGES file"}
+                            }
+                            ) )
                         {
-                            feat->saveAs(
-                                insight::ensureDefaultFileExtension(
-                                    fn.toStdString(), ".stp") );
+                            feat->saveAs(fn);
                         }
                     });
             cm.addAction(a);

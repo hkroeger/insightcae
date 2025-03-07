@@ -73,6 +73,7 @@
 
 
 #include "iqvtkcadmodel3dviewer.h"
+#include "qtextensions.h"
 
 namespace fs = boost::filesystem;
 
@@ -551,30 +552,32 @@ void AnalysisForm::onSaveParametersAs()
 
 void AnalysisForm::saveParametersAs(bool *cancelled)
 {
-//   emit apply();
+  if (auto fn = getFileName(
+          this, _("Save input parameters"),
+          GetFileMode::Save,
+          {
+              {"ist", "Insight parameter sets", true},
+              {"*", "any file", false}
+          },
+          boost::none,
+          [this](QGridLayout *fdl)
+          {
+              auto *cb = new QCheckBox;
+              cb->setText("Pack: embed externally referenced files into parameterset");
+              int last_row=fdl->rowCount(); // id of new row below
+              fdl->addWidget(cb, last_row, 0, 1, -1);
 
-  QFileDialog fd(this);
-  fd.setOption(QFileDialog::DontUseNativeDialog, true);
-  fd.setWindowTitle(_("Save Parameters"));
-  QStringList filters;
-  filters << _("Insight parameter sets (*.ist)");
-  fd.setNameFilters(filters);
+              cb->setChecked(pack_parameterset_);
 
-  QCheckBox* cb = new QCheckBox;
-  cb->setText(_("Pack: embed externally referenced files into parameterset"));
-  QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
-  int last_row=fdl->rowCount(); // id of new row below
-  fdl->addWidget(cb, last_row, 0, 1, -1);
-
-  cb->setChecked(pack_parameterset_);
-
-  if (fd.exec() == QDialog::Accepted)
+              QObject::connect(cb, &QCheckBox::destroyed, cb,
+                               [this,cb]()
+                               { pack_parameterset_=cb->isChecked(); } );
+          }
+          ))
   {
-    QString fn = fd.selectedFiles()[0];
-    pack_parameterset_ = cb->isChecked();
     updateSaveMenuLabel();
 
-    ist_file_=fn.toStdString();
+    ist_file_ = fn.asFilesystemPath();
 
     if (!hasLocalWorkspace())
     {
@@ -647,14 +650,12 @@ void AnalysisForm::onLoadParameters()
     }
   }
 
-  QString fn = QFileDialog::getOpenFileName(
-      this, _("Open Parameters"),
-              QString(),
-      _("Insight parameter sets (*.ist)") );
-
-  if (!fn.isEmpty())
+  if (auto fn = getFileName(
+    this, _("Open Parameters"),
+    GetFileMode::Open,
+    {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
   {
-    loadParameters(fn.toStdString());
+    loadParameters(fn);
   }
 }
 

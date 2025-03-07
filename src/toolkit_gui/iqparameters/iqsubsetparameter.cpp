@@ -6,6 +6,8 @@
 
 #include <QFileDialog>
 
+#include "qtextensions.h"
+
 defineType(IQSubsetParameter);
 addToFactoryTable(IQParameter, IQSubsetParameter);
 
@@ -33,14 +35,12 @@ void IQSubsetParameter::populateContextMenu(QMenu *cm)
         saveAction, &QAction::triggered, this,
         [this]()
         {
-            auto fn = QFileDialog::getSaveFileName(
-                nullptr, "Save subset contents", QString(), "(*.isp)");
-
-            if (!fn.isEmpty())
+            if (auto fn = getFileName(
+                nullptr, "Save subset contents",
+                GetFileMode::Save,
+                    {{ "isp", "Subset contents" }} ) )
             {
-                parameter().saveToFile(
-                    insight::ensureFileExtension(
-                        fn.toStdString(), "isp"));
+                parameter().saveToFile(fn);
             }
         }
         );
@@ -50,13 +50,13 @@ void IQSubsetParameter::populateContextMenu(QMenu *cm)
         loadAction, &QAction::triggered, this,
         [this]()
         {
-            auto fn = QFileDialog::getOpenFileName(
-                nullptr, "Load subset contents", QString(), "(*.isp)");
-            if (!fn.isEmpty())
+            if (auto fn = getFileName(
+                nullptr, "Load subset contents",
+                GetFileMode::Open,
+                {{ "isp", "Subset parameter contents" }})
+                )
             {
-                parameterRef().readFromFile(
-                    insight::ensureFileExtension(
-                        fn.toStdString(), "isp"));
+                parameterRef().readFromFile(fn);
             }
         }
         );

@@ -14,6 +14,7 @@
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
+#include "qtextensions.h"
 
 
 
@@ -60,16 +61,13 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
       {
           using namespace rapidxml;
 
-          auto fn = QFileDialog::getSaveFileName(
+          if (auto fn = getFileName(
               nullptr, "Save selectable subset contents",
-              QString(), "(*.iss)");
-
-          if (!fn.isEmpty())
+              GetFileMode::Save,
+              {{ "iss", "Selectable subset contents" }} ) )
           {
-              auto file = insight::ensureFileExtension(fn.toStdString(), "iss");
-
-              insight::CurrentExceptionContext ex(3, "writing parameter set to file "+file.string());
-              std::ofstream f(file.c_str());
+              insight::CurrentExceptionContext ex(3, "writing parameter set to file "+fn.asString());
+              std::ofstream f(fn.asString());
 
               // prepare XML document
               xml_document<> doc;
@@ -101,13 +99,12 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
       {
           using namespace rapidxml;
 
-          auto fn = QFileDialog::getOpenFileName(
+          if (auto fn = getFileName(
               nullptr, "Load selectable subset contents",
-              QString(), "(*.iss)");
-
-          if (!fn.isEmpty())
+              GetFileMode::Open,
+              {{ "iss", "Selectable subset contents" }}) )
           {
-              auto file = insight::ensureFileExtension(fn.toStdString(), "iss");
+              auto file = insight::ensureFileExtension(fn, "iss");
 
               insight::CurrentExceptionContext ex("reading parameter set from file "+file.string());
               std::string contents;

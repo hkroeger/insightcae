@@ -9,6 +9,7 @@
 
 #include "base/cppextensions.h"
 #include "rapidxml/rapidxml_print.hpp"
+#include "qtextensions.h"
 
 IQResultSetDisplayerWidget::IQResultSetDisplayerWidget(QWidget *parent) :
     QWidget(parent),
@@ -127,12 +128,12 @@ bool IQResultSetDisplayerWidget::hasResults() const
 
 void IQResultSetDisplayerWidget::loadResultSet(const std::string& analysisName)
 {
-    auto f = QFileDialog::getOpenFileName(
-                this, "Load result set", "",
-                "InsightCAE Result Set (*.isr)" );
-    if (!f.isEmpty())
+    if (auto f = getFileName(
+            this, "Load result set",
+            GetFileMode::Open,
+            {{ "ist", "InsightCAE Result Set" }} ) )
     {
-      auto r = insight::ResultSet::createFromFile(f.toStdString(), analysisName);
+      auto r = insight::ResultSet::createFromFile(f, analysisName);
       loadResults(r);
     }
 }
@@ -242,16 +243,15 @@ void IQResultSetDisplayerWidget::renderReport()
 
 void IQResultSetDisplayerWidget::loadFilter()
 {
-    auto inf = QFileDialog::getOpenFileName(
+    if (auto inf = getFileName(
                 this, "Select result filter file",
-                "", "InsightCAE Result Set Filter (*.irf)");
-
-    if (!inf.isEmpty())
+            GetFileMode::Open,
+            {{ "irf", "InsightCAE Result Set Filter" }} ) )
     {
-        insight::CurrentExceptionContext ex("reading result set filter from file "+inf.toStdString());
+        insight::CurrentExceptionContext ex("reading result set filter from file "+inf.asString());
 
         std::string contents;
-        insight::readFileIntoString(inf.toStdString(), contents);
+        insight::readFileIntoString(inf, contents);
 
         rapidxml::xml_document<> doc;
         doc.parse<0>(&contents[0]);
@@ -265,13 +265,13 @@ void IQResultSetDisplayerWidget::loadFilter()
 
 void IQResultSetDisplayerWidget::saveFilter()
 {
-    auto outf = QFileDialog::getSaveFileName(this, "Select result filter file",
-                                            "", "InsightCAE Result Set Filter (*.irf)");
-    if (!outf.isEmpty())
+    if (auto outf = getFileName(
+            this,
+            "Select result filter file",
+            GetFileMode::Save,
+            {{ "irf", "InsightCAE Result Set Filter" }} ) )
     {
-        insight::CurrentExceptionContext ex("writing result set filter into file "+outf.toStdString());
-
-        auto outfn = insight::ensureFileExtension(outf.toStdString(), ".irf");
+        insight::CurrentExceptionContext ex("writing result set filter into file "+outf.asString());
 
       //   std::cout<<"Writing parameterset to file "<<file<<std::endl;
 
@@ -287,7 +287,7 @@ void IQResultSetDisplayerWidget::saveFilter()
 
         filterModel_->filter().appendToNode(doc, *rootnode);
 
-        std::ofstream f(outfn.string());
+        std::ofstream f(outf.asString());
         f << doc << std::endl;
     }
 }

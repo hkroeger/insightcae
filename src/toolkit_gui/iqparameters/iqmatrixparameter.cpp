@@ -7,6 +7,7 @@
 #include "iqmatrixparameter.h"
 #include "iqparametersetmodel.h"
 #include "base/table.h"
+#include "qtextensions.h"
 
 defineType(IQMatrixParameter);
 addToFactoryTable(IQParameter, IQMatrixParameter);
@@ -68,14 +69,13 @@ QVBoxLayout* IQMatrixParameter::populateEditControls(
   connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
           [lineEdit, editControlsContainer, applyFunction]()
           {
-              QString fn = QFileDialog::getOpenFileName(
+              if (auto fn = getFileName(
                     editControlsContainer,
                     "Select file",
-                    QString(),
-                    "CSV file (*.csv)" );
-              if (!fn.isEmpty())
+                    GetFileMode::Open,
+                    { { "csv", "CSV file" } } ) )
               {
-                  std::ifstream f(fn.toStdString());
+                  std::ifstream f(fn.asString());
                   insight::Table tab(f);
                   // insight::assertion(
                   //             tab.nCols()==2,

@@ -6,10 +6,12 @@
 #include <QProcess>
 #include <QMessageBox>
 #include <QDesktopServices>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #include "iqpathparameter.h"
 #include "iqparametersetmodel.h"
-
+#include "qtextensions.h"
 #include "base/externalprograms.h"
 
 defineType(IQPathParameter);
@@ -142,15 +144,17 @@ QVBoxLayout* IQPathParameter::populateEditControls(
     boost::filesystem::path orgfn(
           parameter().originalFilePath() );
 
-    QString fn = QFileDialog::getSaveFileName(
+    if (auto fn = getFileName(
           editControlsContainer,
           "Please select export path",
-          QString(),
-          QString::fromStdString("(*."+orgfn.extension().string()+")")
-          );
-    if (!fn.isEmpty())
+          GetFileMode::Save,
+          {
+            { boost::trim_left_copy_if(orgfn.extension().string(), boost::is_any_of(".")),
+              "File" }
+          }
+          ) )
     {
-      parameter().copyTo( fn.toStdString() );
+      parameter().copyTo( fn.asString() );
     }
   }
   );

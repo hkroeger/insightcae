@@ -42,7 +42,7 @@
 #endif
 
 #include "base/qt5_helper.h"
-
+#include "qtextensions.h"
 
 
 
@@ -984,18 +984,14 @@ void isofCaseBuilderWindow::onLoad()
         return;
       }
     }
-    
-    QString fn = QFileDialog::getOpenFileName
-                 (
-                     this,
-                     "Load Parameters",
-                     "",
-                     "Insight Case Builder Parameter File (*.iscb)"
-                 );
 
-    if ( !fn.isEmpty() )
+
+    if (  auto fn = getFileName(
+            this, "Load Parameters",
+            GetFileMode::Open,
+            {{"iscb", "Insight Case Builder Parameter File"}} ))
     {
-        boost::filesystem::path file (fn.toStdString());
+        boost::filesystem::path file(fn);
         caseConfigModel_->clear();
         loadFile(file);
     }

@@ -1,19 +1,19 @@
 # German translations for workbench package.
-# Copyright (C) 2023 hkroeger
+# Copyright (C) 2024 hkroeger
 # This file is distributed under the same license as the workbench package.
-# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+# Hannes Kröger <EMAIL@ADDRESS>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: workbench \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-25 11:41+0100\n"
-"PO-Revision-Date: 2023-07-02 22:36+0200\n"
+"POT-Creation-Date: 2025-03-07 12:29+0100\n"
+"PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=ASCII\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
@@ -94,155 +94,149 @@ msgid ""
 " Therefore the execution is locked to a WSL backend or a remote host."
 msgstr ""
 
-#: analysisform.cpp:92
+#: analysisform.cpp:94
 #, c-format
 msgid "creating analysis form for analysis %s"
 msgstr ""
 
-#: analysisform.cpp:107
+#: analysisform.cpp:109
 msgid "setup user interface"
 msgstr ""
 
-#: analysisform.cpp:114
+#: analysisform.cpp:117
 msgid "enable OpenFOAM controls"
 msgstr ""
 
-#: analysisform.cpp:144
+#: analysisform.cpp:147
 msgid "Save..."
 msgstr ""
 
-#: analysisform.cpp:145
+#: analysisform.cpp:148
 msgid "Email..."
 msgstr ""
 
-#: analysisform.cpp:146
+#: analysisform.cpp:149
 msgid "Clear"
 msgstr ""
 
-#: analysisform.cpp:147
+#: analysisform.cpp:150
 msgid "Auto Scroll"
 msgstr ""
 
-#: analysisform.cpp:170
+#: analysisform.cpp:173
 msgid "redirect console"
 msgstr ""
 
-#: analysisform.cpp:191
+#: analysisform.cpp:194
 msgid "create parameter set visualizer"
 msgstr ""
 
-#: analysisform.cpp:206
+#: analysisform.cpp:208
 msgid "create parameter set editor"
 msgstr ""
 
-#: analysisform.cpp:253
+#: analysisform.cpp:305
 msgid "create result viewer"
 msgstr ""
 
-#: analysisform.cpp:281
+#: analysisform.cpp:333
 msgid "create menus"
 msgstr ""
 
-#: analysisform.cpp:285
+#: analysisform.cpp:337
 msgid "&Parameters"
 msgstr ""
 
-#: analysisform.cpp:286
+#: analysisform.cpp:338
 msgid "&Actions"
 msgstr ""
 
-#: analysisform.cpp:287
+#: analysisform.cpp:339
 msgid "&Results"
 msgstr ""
 
-#: analysisform.cpp:288
+#: analysisform.cpp:340
 msgid "&Tools"
 msgstr ""
 
-#: analysisform.cpp:298
+#: analysisform.cpp:350
 msgid "&Save parameter set as..."
 msgstr ""
 
-#: analysisform.cpp:303
+#: analysisform.cpp:355
 msgid "&Pack external files into parameter file"
 msgstr ""
 
-#: analysisform.cpp:317
+#: analysisform.cpp:369
 msgid "&Merge other parameter set into current..."
 msgstr ""
 
-#: analysisform.cpp:321
+#: analysisform.cpp:373
 msgid "&Show in XML format"
 msgstr ""
 
-#: analysisform.cpp:327
-#, fuzzy
+#: analysisform.cpp:379
 msgid "&Run Analysis"
-msgstr "&Analyse"
+msgstr "&Analyse starten"
 
-#: analysisform.cpp:330
-#, fuzzy
+#: analysisform.cpp:382
 msgid "&Stop Analysis"
-msgstr "&Analyse"
+msgstr "&Analyse stoppen"
 
-#: analysisform.cpp:336
+#: analysisform.cpp:388
 msgid "&Load results..."
 msgstr ""
 
-#: analysisform.cpp:344
+#: analysisform.cpp:396
 msgid "&Save results as..."
 msgstr ""
 
-#: analysisform.cpp:349
+#: analysisform.cpp:401
 msgid "Create &report..."
 msgstr ""
 
-#: analysisform.cpp:358
+#: analysisform.cpp:410
 msgid "Load &filter..."
 msgstr ""
 
-#: analysisform.cpp:364
+#: analysisform.cpp:416
 msgid "Sa&ve filter..."
 msgstr ""
 
-#: analysisform.cpp:370
+#: analysisform.cpp:422
 msgid "Start ParaView in execution directory"
 msgstr ""
 
-#: analysisform.cpp:373
+#: analysisform.cpp:425
 msgid "Clean OpenFOAM case..."
 msgstr ""
 
-#: analysisform.cpp:391 analysisform.cpp:590
+#: analysisform.cpp:443 analysisform.cpp:638
 msgid "Parameters unsaved"
 msgstr ""
 
-#: analysisform.cpp:392
+#: analysisform.cpp:444
 msgid ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 msgstr ""
 
-#: analysisform.cpp:503
-msgid "Save Parameters"
+#: analysisform.cpp:556
+msgid "Save input parameters"
 msgstr ""
 
-#: analysisform.cpp:505 analysisform.cpp:608 workbenchwindow.cpp:242
-msgid "Insight parameter sets (*.ist)"
-msgstr ""
-
-#: analysisform.cpp:509
-msgid "Pack: embed externally referenced files into parameterset"
-msgstr ""
-
-#: analysisform.cpp:591
+#: analysisform.cpp:639
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
 msgstr ""
 
-#: analysisform.cpp:606 workbenchwindow.cpp:241
+#: analysisform.cpp:654 workbenchwindow.cpp:291
 msgid "Open Parameters"
+msgstr ""
+
+#: analysisform.cpp:656
+msgid "Insight parameter sets (*.ist)"
 msgstr ""
 
 #: analysisform_gui.cpp:42
@@ -299,12 +293,12 @@ msgstr ""
 msgid "Failed to start mate-terminal in directory %1"
 msgstr ""
 
-#: analysisform_localactions.cpp:75
+#: analysisform_localactions.cpp:77
 msgid ""
 "There is already an OpenFOAM case present in the execution directory \"%1\"!"
 msgstr ""
 
-#: analysisform_localactions.cpp:78
+#: analysisform_localactions.cpp:80
 msgid ""
 "Depending on the state of the data, the behaviour will be as follows:"
 "<br><ul><li>the mesh exists (\"constant/polyMesh/\") and a time directory "
@@ -316,13 +310,13 @@ msgid ""
 "<br><br>Continue?"
 msgstr ""
 
-#: analysisform_localactions.cpp:105
+#: analysisform_localactions.cpp:107
 msgid ""
 "You have selected to run the evaluation only but there is no valid OpenFOAM "
 "case present in the execution directory \"%1\"!"
 msgstr ""
 
-#: analysisform_localactions.cpp:108
+#: analysisform_localactions.cpp:110
 msgid ""
 "The subsequent step is likely to fail.<br>Are you sure, that you want to "
 "continue?"
@@ -354,76 +348,72 @@ msgstr ""
 msgid "Transfer from remote location to local directory started"
 msgstr ""
 
-#: newanalysisdlg.cpp:44
+#: newanalysisdlg.cpp:45
 msgid "Create New Analysis"
-msgstr ""
+msgstr "Neue Analyse"
 
-#: newanalysisdlg.cpp:97
-msgid "Available Analyses"
-msgstr ""
-
-#: newanalysisdlg.cpp:101
-msgid "Uncategorized"
-msgstr ""
-
-#: workbenchwindow.cpp:110
+#: workbenchwindow.cpp:163
 msgid "&Analysis"
 msgstr "&Analyse"
 
-#: workbenchwindow.cpp:112
+#: workbenchwindow.cpp:165
 msgid "New..."
 msgstr "Neu..."
 
-#: workbenchwindow.cpp:118
+#: workbenchwindow.cpp:171
 msgid "Open..."
 msgstr "Öffnen..."
 
-#: workbenchwindow.cpp:136
+#: workbenchwindow.cpp:189
 msgid "&Settings"
 msgstr ""
 
-#: workbenchwindow.cpp:138
+#: workbenchwindow.cpp:191
 msgid "Remote servers..."
 msgstr ""
 
-#: workbenchwindow.cpp:148
+#: workbenchwindow.cpp:201
 msgid "Configure paths to external programs..."
 msgstr ""
 
-#: workbenchwindow.cpp:159
+#: workbenchwindow.cpp:212
 msgid "Manage report templates..."
 msgstr ""
 
-#: workbenchwindow.cpp:170
+#: workbenchwindow.cpp:223
 msgid "&Help"
 msgstr ""
 
-#: workbenchwindow.cpp:172
+#: workbenchwindow.cpp:225
 msgid "About..."
 msgstr ""
 
-#: workbenchwindow.cpp:179
+#: workbenchwindow.cpp:232
 msgid "Workbench Information"
 msgstr ""
 
-#: workbenchwindow.cpp:180
+#: workbenchwindow.cpp:233
 msgid ""
 "InsightCAE Analysis Workbench\n"
 "Version %1\n"
 msgstr ""
 
-#: workbenchwindow.cpp:191
+#: workbenchwindow.cpp:248
 msgid "Check backend installation version..."
 msgstr ""
 
-#: workbenchwindow.cpp:230
+#: workbenchwindow.cpp:280
 #, c-format
 msgid ""
 "Creation of an analysis of type \"%s\" failed.\n"
 "Reason: %s"
 msgstr ""
 
-#: workbenchwindow.cpp:313
+#: workbenchwindow.cpp:293
+msgid "Insight parameter sets"
+msgstr ""
+
+#: workbenchwindow.cpp:363
 #, c-format
 msgid ""
 "Creation of an analysis of type \"%s\" failed.\n"
@@ -468,79 +458,71 @@ msgstr ""
 msgid "Setting up the remote workspace..."
 msgstr ""
 
-#: remoterun.cpp:115
+#: remoterun.cpp:117
 msgid "Remote directory is invalid!"
 msgstr ""
 
-#: remoterun.cpp:118
+#: remoterun.cpp:121
 msgid "setting up the execution environment"
 msgstr ""
 
-#: remoterun.cpp:121
+#: remoterun.cpp:125
 msgid "Launching remote execution server..."
 msgstr ""
 
-#: remoterun.cpp:143 remoterun.cpp:194
+#: remoterun.cpp:147 remoterun.cpp:225
 #, c-format
 msgid "Could not clean remote location! Reason: %s"
 msgstr ""
 
 #: remoterun.cpp:172
+msgid "Writing input file in execution directory..."
+msgstr ""
+
+#: remoterun.cpp:203
 msgid "launching the remote execution server"
 msgstr ""
 
-#: remoterun.cpp:175
+#: remoterun.cpp:206
 msgid "Establishing contact to remote execution server..."
 msgstr ""
 
-#: remoterun.cpp:217
+#: remoterun.cpp:248
 msgid "Could not contact analysis server after launching it!"
 msgstr ""
 
-#: remoterun.cpp:236
-msgid "Transmitting input data and starting analysis..."
+#: remoterun.cpp:267
+msgid "Monitoring analysis..."
 msgstr ""
 
-#: remoterun.cpp:278
-msgid "Monitoring remote run"
-msgstr ""
-
-#: remoterun.cpp:288
-msgid "Failed to start analysis on remote server!"
-msgstr ""
-
-#: remoterun.cpp:297
-msgid "No response after starting analysis on remote server!"
-msgstr ""
-
-#: remoterun.cpp:342
+#: remoterun.cpp:373
 msgid "timeout in quering status of analysis server"
 msgstr ""
 
-#: remoterun.cpp:369
+#: remoterun.cpp:400
 msgid "timeout while fetching results"
 msgstr ""
 
-#: remoterun.cpp:388
+#: remoterun.cpp:419
 msgid "stop server"
 msgstr ""
 
-#: remoterun.cpp:389
+#: remoterun.cpp:420
 msgid "was"
 msgstr ""
 
-#: remoterun.cpp:389
+#: remoterun.cpp:420
 msgid "was not"
 msgstr ""
 
-#: remoterun.cpp:390
+#: remoterun.cpp:421
 msgid "successful"
 msgstr ""
 
-#: remoterun.cpp:400
+#: remoterun.cpp:431
 msgid "timeout while stopping remote analysis server"
 msgstr ""
 
-#: remoterun.cpp:455
+#: remoterun.cpp:486
 msgid "remote run cancelled"
 msgstr ""

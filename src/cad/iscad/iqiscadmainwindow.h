@@ -60,6 +60,7 @@ protected:
       insert_import,
       insert_component_name,
       insert_loadmodel,
+      insert_drawing,
       clear_cache,
       fit_all,
       toggle_grid,

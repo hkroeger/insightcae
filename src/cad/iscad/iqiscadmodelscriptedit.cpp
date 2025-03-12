@@ -20,6 +20,7 @@
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelscriptedit.h"
 #include "iqiscadsyntaxhighlighter.h"
+#include "insertdrawingdialog.h"
 
 //#include "qmodeltree.h"
 //#include "qmodelstepitem.h"
@@ -548,6 +549,20 @@ void IQISCADModelScriptEdit::insertLibraryModelAtCursor()
       textCursor().insertText(expr.c_str());
     }
   }
+}
+
+
+void IQISCADModelScriptEdit::insertDrawingAtCursor()
+{
+    auto dlg = new InsertDrawingDialog(this);
+    if ( dlg->exec() == QDialog::Accepted )
+    {
+        std::string expr = dlg->expression();
+        if (!expr.empty())
+        {
+            textCursor().insertText(expr.c_str());
+        }
+    }
 }
 
 

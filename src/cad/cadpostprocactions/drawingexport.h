@@ -44,8 +44,6 @@ typedef boost::tuple<std::string, VectorPtr, VectorPtr, VectorPtr, bool, bool, b
 typedef boost::fusion::vector2<FeaturePtr, std::vector<DrawingViewDefinition> > DrawingViewDefinitions;
 
 
-
-
 class DrawingExport 
 : public PostprocAction
 {

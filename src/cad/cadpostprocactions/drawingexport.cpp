@@ -25,7 +25,8 @@ namespace insight
 {
 namespace cad 
 {
-  
+
+
 defineType(DrawingExport);
     
 size_t DrawingExport::calcHash() const

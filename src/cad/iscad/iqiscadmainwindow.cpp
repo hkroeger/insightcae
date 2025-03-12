@@ -96,6 +96,8 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
                 me->modelEdit(), &IQISCADModelScriptEdit::insertLibraryModelAtCursor);
         connect(act_[insert_component_name], &QAction::triggered,
                 me->modelEdit(), &IQISCADModelScriptEdit::insertComponentNameAtCursor);
+        connect(act_[insert_drawing], &QAction::triggered,
+                me->modelEdit(), &IQISCADModelScriptEdit::insertDrawingAtCursor);
         connect(act_[clear_cache], &QAction::triggered,
                 me->modelEdit(), &IQISCADModelScriptEdit::clearCache);
         connect(act_[editor_font_larger], &QAction::triggered,
@@ -383,6 +385,10 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     act_[insert_section_comment] = new QAction(_("Insert comment: new section..."), this);
     act_[insert_section_comment]->setShortcut(Qt::AltModifier + Qt::Key_S);
     mmenu->addAction(act_[insert_section_comment]);
+
+    act_[insert_drawing] = new QAction(_("Insert drawing..."), this);
+    act_[insert_drawing]->setShortcut(Qt::AltModifier + Qt::Key_D);
+    mmenu->addAction(act_[insert_drawing]);
 
     mmenu->addSeparator();
 

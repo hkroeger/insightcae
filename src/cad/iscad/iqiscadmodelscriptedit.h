@@ -151,7 +151,8 @@ public slots:
     void insertImportedModelAtCursor();
     void insertComponentNameAtCursor();
     void insertLibraryModelAtCursor();
-    
+    void insertDrawingAtCursor();
+
     void onIncreaseFontSize();
     void onDecreaseFontSize();
 //    /**

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-19 22:41+0100\n"
+"POT-Creation-Date: 2025-03-08 13:35+0100\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,10 +17,26 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: qtextensions.cpp:110
+msgid "Save file"
+msgstr "Datei speichern"
+
+#: qtextensions.cpp:118
+msgid "Open file"
+msgstr "Datei öffnen"
+
 #: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "Change Item Label"
-msgstr ""
+msgstr "Bezeichner ändern"
 
 #: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "New label:"
-msgstr ""
+msgstr "Neuer Bezeichner:"
+
+#: logviewerwidget.cpp:136
+msgid "Create file failed"
+msgstr "Erzeugen der Datei fehlgeschlagen"
+
+#: logviewerwidget.cpp:137
+msgid "Could not create file %1"
+msgstr "Konnte die Datei %1 nicht erzeugen"

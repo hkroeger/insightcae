@@ -1,14 +1,14 @@
 # English translations for analyze package.
-# Copyright (C) 2023 hkroeger
+# Copyright (C) 2024 hkroeger
 # This file is distributed under the same license as the analyze package.
-# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+# Hannes Kröger <EMAIL@ADDRESS>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: analyze \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-01 09:22+0200\n"
-"PO-Revision-Date: 2023-10-25 10:57+0200\n"
+"POT-Creation-Date: 2025-03-07 12:29+0100\n"
+"PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -31,7 +31,7 @@ msgstr "skip execution of pdflatex"
 
 #: analyze.cpp:80
 msgid "skip inclusion of input parameters into report"
-msgstr ""
+msgstr "skip inclusion of input parameters into report"
 
 #: analyze.cpp:81
 msgid "print version and exit"
@@ -158,18 +158,6 @@ msgstr "Could not start web server!"
 msgid "Error: library file does not exist: "
 msgstr "Error: library file does not exist: "
 
-#: analyze.cpp:240
-msgid ""
-"Running in server mode without explicitly specified input file: waiting for "
-"input transmission"
-msgstr ""
-"Running in server mode without explicitly specified input file: waiting for "
-"input transmission"
-
-#: analyze.cpp:244
-msgid "Received interruption!"
-msgstr "Received interruption!"
-
 #: analyze.cpp:250
 msgid "input file has to be specified!"
 msgstr "input file has to be specified!"
@@ -186,7 +174,7 @@ msgstr "Error: input file does not exist"
 msgid "Executing analysis in directory"
 msgstr "Executing analysis in directory"
 
-#: analyze.cpp:313
+#: analyze.cpp:314
 #, c-format
 msgid ""
 "merge command needs either one or three arguments!\n"
@@ -195,63 +183,63 @@ msgstr ""
 "merge command needs either one or three arguments!\n"
 "Got: %s"
 
-#: analyze.cpp:327
+#: analyze.cpp:328
 #, c-format
 msgid "Resizing array '%s' to %d"
 msgstr "Resizing array '%s' to %d"
 
-#: analyze.cpp:346
+#: analyze.cpp:347
 #, c-format
 msgid "Setting boolean '%s' = %d"
 msgstr "Setting boolean '%s' = %d"
 
-#: analyze.cpp:360
+#: analyze.cpp:361
 #, c-format
 msgid "Setting string '%s' = \"%s\""
 msgstr "Setting string '%s' = \"%s\""
 
-#: analyze.cpp:374
+#: analyze.cpp:375
 #, c-format
 msgid "Setting selection '%s' = \"%s\""
 msgstr "Setting selection '%s' = \"%s\""
 
-#: analyze.cpp:388
+#: analyze.cpp:389
 #, c-format
 msgid "Setting path '%s' = \"%s\""
 msgstr "Setting path '%s' = \"%s\""
 
-#: analyze.cpp:404
+#: analyze.cpp:405
 #, c-format
 msgid "Setting double '%s' = %g"
 msgstr "Setting double '%s' = %g"
 
-#: analyze.cpp:420
+#: analyze.cpp:421
 #, c-format
 msgid "Setting vector '%s' = [%g %g %g]"
 msgstr "Setting vector '%s' = [%g %g %g]"
 
-#: analyze.cpp:435
+#: analyze.cpp:436
 #, c-format
 msgid "Setting int '%s'= %d"
 msgstr "Setting int '%s'= %d"
 
-#: analyze.cpp:447
+#: analyze.cpp:448
 msgid "Applied Parameters for this run"
 msgstr "Applied Parameters for this run"
 
-#: analyze.cpp:541
+#: analyze.cpp:542
 msgid "TeX input file was written but could not execute pdflatex successfully."
 msgstr ""
 "TeX input file was written but could not execute pdflatex successfully."
 
-#: analyze.cpp:554
+#: analyze.cpp:555
 msgid "ANALYSIS FINISHED SUCCESSFULLY."
 msgstr "ANALYSIS FINISHED SUCCESSFULLY."
 
-#: analyze.cpp:560
+#: analyze.cpp:561
 msgid "ANALYSIS STOPPED WITHOUT RESULTS."
 msgstr "ANALYSIS STOPPED WITHOUT RESULTS."
 
-#: analyze.cpp:575
+#: analyze.cpp:576
 msgid "The analysis was stopped due to this error:"
 msgstr "The analysis was stopped due to this error:"

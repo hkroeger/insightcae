@@ -70,7 +70,7 @@
 #include "vtkMultiProcessController.h"
 #include "vtkCommunicator.h"
 
-#include "vtkSMDoubleVectorProperty.h"
+// #include "vtkSMDoubleVectorProperty.h"
 #include "vtkInformationDataObjectKey.h"
 
 #include <deque>

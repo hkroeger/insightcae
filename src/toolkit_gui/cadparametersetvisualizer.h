@@ -14,6 +14,7 @@
 
 #include "base/analysis.h"
 #include "base/supplementedinputdata.h"
+#include "boost/atomic.hpp"
 #include "cadtypes.h"
 #include "iqiscadmodelgenerator.h"
 #include "iqiscadmodelrebuilder.h"

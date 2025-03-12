@@ -53,6 +53,13 @@ if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
 endif()
 
+if (CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_WRAPPER "/opt/mxe/usr/bin/i686-w64-mingw32.shared-cmake" CACHE STRING "required in MXE cross build, cmake is called through wrapper script there")
+  list(APPEND VTK_CMAKE_ADDARGS "-DVTKCompileTools_DIR=${VTKCompileTools_DIR}")
+else()
+  set(CMAKE_WRAPPER ${CMAKE_COMMAND})
+endif()
+
 if (INSIGHT_BUILD_ISCAD AND NOT INSIGHT_BUILD_CAD)
  message(FATAL_ERROR "It is not possible to build ISCAD without the CAD parser library. Please reconsider your option selection.")
 endif()
@@ -64,6 +71,10 @@ if (NOT ${INSIGHT_SUPERBUILD} STREQUAL "")
  include (${INSIGHT_SUPERBUILD}/InsightSuperbuildDependencies.cmake)
 ENDIF()
 
+if (NOT VTK_ONSCREEN_DIR)
+  message(STATUS "VTK_ONSCREEN_DIR not defined. Set to VTK_DIR")
+  set(VTK_ONSCREEN_DIR ${VTK_DIR})
+endif()
 
 
 ### determine combined git revision

@@ -5,6 +5,7 @@ unset(VTKm_DIR CACHE)
 unset(ParaView_DIR CACHE)
 
 if (NOT WIN32)
+
  find_package(VTK
     COMPONENTS
         FiltersCore
@@ -16,6 +17,7 @@ if (NOT WIN32)
         FiltersFlowPaths
         FiltersVerdict
         FiltersParallel
+        CommonColor
         CommonCore
         CommonDataModel
         CommonMisc
@@ -37,8 +39,16 @@ if (NOT WIN32)
     NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
     HINTS ${VTK_ONSCREEN_DIR}
  )
-else()
-    find_package(VTK
+
+else(NOT WIN32)
+
+  if (CMAKE_TOOLCHAIN_FILE)
+    FIND_PACKAGE(
+      VTKCompileTools REQUIRED
+      HINTS "/opt/mxe/usr/x86_64-pc-linux-gnu/vtkCompileTools-9")
+  endif(CMAKE_TOOLCHAIN_FILE)
+
+  find_package(VTK
        COMPONENTS
            vtkFiltersCore
            vtkFiltersGeneral
@@ -49,6 +59,7 @@ else()
            vtkFiltersFlowPaths
            vtkFiltersVerdict
            vtkFiltersParallel
+           vtkCommonColor
            vtkCommonCore
            vtkCommonDataModel
            vtkCommonMisc
@@ -80,36 +91,56 @@ include(ExternalProject)
 get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
 get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
 
-if (CMAKE_WRAPPER)
-  set(CMAKE "${CMAKE_WRAPPER}") # required in MXE cross build, cmake is called through wrapper script there
-else()
-  set(CMAKE "${CMAKE_COMMAND}")
-endif()
 
 if (WIN32)
-  set(LIBNAME lib/libvtkDICOM-8.2.0.dll.a)
+  set(LIBNAME lib/libvtkDICOM-pvis.dll.a)
 else()
   set(LIBNAME lib/libvtkDICOM-pvis.so.0.8.15)
 endif()
 
-ExternalProject_Add( vtkdicom-onscreen
-   GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-   GIT_TAG 6a81888
-   INSTALL_DIR ${CMAKE_BINARY_DIR}
-   CMAKE_COMMAND ${CMAKE}
-   CMAKE_ARGS
-     -DBUILD_SHARED_LIBS=ON
-     -DBUILD_PYTHON_WRAPPERS=OFF
-     -DCMAKE_BUILD_TYPE=Release
-     -DVTK_DIR=${VTK_ONSCREEN_DIR}
-     -DPython3_ROOT_DIR=${PY3ROOT}
-     -DVTK_VERSIONED_INSTALL=OFF
-     -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
-     -DBUILD_PROGRAMS=OFF
-     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+if (CMAKE_TOOLCHAIN_FILE)
+  ExternalProject_Add( vtkdicom-onscreen
+     GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
+     GIT_TAG 6a81888
+     PATCH_COMMAND bash -c "( grep 'find_package(VTKCompileTools REQUIRED)' CMakeLists.txt || sed -ie '/find_package(VTK REQUIRED)/ifind_package(VTKCompileTools REQUIRED)' CMakeLists.txt )"
+     INSTALL_DIR ${CMAKE_BINARY_DIR}
+     CMAKE_COMMAND ${CMAKE_WRAPPER}
+     CMAKE_ARGS
+       -DBUILD_SHARED_LIBS=ON
+       -DBUILD_PYTHON_WRAPPERS=OFF
+       -DCMAKE_BUILD_TYPE=Release
+       -DVTK_DIR=${VTK_ONSCREEN_DIR}
+       -DPython3_ROOT_DIR=${PY3ROOT}
+       -DVTK_VERSIONED_INSTALL=OFF
+       -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
+       -DBUILD_PROGRAMS=OFF
+       -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+       ${VTK_CMAKE_ADDARGS}
 
-   BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
-)
+     BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
+  )
+else()
+  ExternalProject_Add( vtkdicom-onscreen
+     GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
+     GIT_TAG 6a81888
+     INSTALL_DIR ${CMAKE_BINARY_DIR}
+     CMAKE_COMMAND ${CMAKE_WRAPPER}
+     CMAKE_ARGS
+       -DBUILD_SHARED_LIBS=ON
+       -DBUILD_PYTHON_WRAPPERS=OFF
+       -DCMAKE_BUILD_TYPE=Release
+       -DVTK_DIR=${VTK_ONSCREEN_DIR}
+       -DPython3_ROOT_DIR=${PY3ROOT}
+       -DVTK_VERSIONED_INSTALL=OFF
+       -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
+       -DBUILD_PROGRAMS=OFF
+       -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+       ${VTK_CMAKE_ADDARGS}
+
+     BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
+  )
+endif()
+
 
 ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
 ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
@@ -146,8 +177,22 @@ IF (WIN32)
     add_dependencies(vtkOffscreen vtkdicom-onscreen)
 
     add_library(vtkHeaders INTERFACE)
-    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS} $<BUILD_INTERFACE:${VTKDICOMONSCREEN_INCLUDE_DIR}>)
-    target_link_libraries(vtkHeaders INTERFACE ${VTK_LIBRARIES} ${VTKDICOMONSCREEN_LIBRARY})
+    list(APPEND VTKONSCREEN_HEADERS ${VTK_INCLUDE_DIRS})
+    list(APPEND VTKONSCREEN_HEADERS $<BUILD_INTERFACE:${VTKDICOMONSCREEN_INCLUDE_DIR}>)
+    list(APPEND VTKONSCREEN_LIBS ${VTK_LIBRARIES})
+    list(APPEND VTKONSCREEN_LIBS ${VTKDICOMONSCREEN_LIBRARY})
+
+    if (INSIGHT_BUILD_MEDREADER)
+      list(APPEND VTKONSCREEN_HEADERS
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/medreader-onscreen/include>)
+      list(APPEND VTKONSCREEN_LIBS
+          ${CMAKE_BINARY_DIR}/medreader-onscreen/lib/libvtkMedReader-pvis.dll.a
+      )
+    endif()
+
+    target_include_directories(vtkHeaders INTERFACE ${VTKONSCREEN_HEADERS})
+    target_link_libraries(vtkHeaders INTERFACE ${VTKONSCREEN_LIBS})
+
 
     install(
         TARGETS vtkHeaders EXPORT vtkHeaders_targets
@@ -178,6 +223,7 @@ IF (WIN32)
       NAMESPACE insight::
       DESTINATION ${INSIGHT_ConfigPackageLocation}
     )
+
 else()
 
     set(LIBS "")

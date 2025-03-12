@@ -115,13 +115,18 @@ blockMeshVisualization::blockMeshVisualization(const bmd::blockMesh& bm)
             }
             catch (...)
             {
-                auto i=edgs.begin();
+                TopTools_ListIteratorOfListOfShape i(edgs);
+                auto nextValue= [&]() {
+                    auto v=i.Value();
+                    i.Next();
+                    return v;
+                };
                 throw insight::CADException(
                     {
-                     {"e1", cad::Import::create(*(i)) },
-                     {"e2", cad::Import::create(*(++i)) },
-                     {"e3", cad::Import::create(*(++i)) },
-                     {"e4", cad::Import::create(*(++i)) }
+                     {"e1", cad::Import::create(nextValue()) },
+                     {"e2", cad::Import::create(nextValue()) },
+                     {"e3", cad::Import::create(nextValue()) },
+                     {"e4", cad::Import::create(nextValue()) }
                     },
                     "failed to create wire"
                 );

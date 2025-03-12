@@ -152,7 +152,7 @@ public:
 
         doc.append_node(rootnode);
 
-        ofstream f(file.string());
+        std::ofstream f(file.string());
         f << doc;
     }
 

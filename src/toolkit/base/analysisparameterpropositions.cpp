@@ -124,7 +124,7 @@ struct SharedLibraryFunction
         if (auto gfp=GetProcAddress(
                 static_cast<HMODULE>(libraryHandle_), functionName.c_str()))
         {
-            typedef ParameterSet (*FunctionPointer) (const std::string&, const ParameterSet&);
+            typedef std::unique_ptr<ParameterSet> (*FunctionPointer) (const std::string&, const ParameterSet&);
             this->AnalysisParameterPropositions::propositionGeneratorFunction::operator=(
                 reinterpret_cast<FunctionPointer>(gfp) );
         }

@@ -43,9 +43,8 @@ if (NOT WIN32)
 else(NOT WIN32)
 
   if (CMAKE_TOOLCHAIN_FILE)
-    FIND_PACKAGE(
-      VTKCompileTools REQUIRED
-      HINTS "/opt/mxe/usr/x86_64-pc-linux-gnu/vtkCompileTools-9")
+    FIND_PACKAGE(VTKCompileTools REQUIRED)
+    list(APPEND VTK_CMAKE_ADDARGS "-DVTKCompileTools_DIR=${VTKCompileTools_DIR}")
   endif(CMAKE_TOOLCHAIN_FILE)
 
   find_package(VTK

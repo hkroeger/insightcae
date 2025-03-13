@@ -24,6 +24,7 @@ CMAKE_OPTS+=(
  "-DPYTHON_LIBRARY=$MXEPATH/usr/i686-w64-mingw32.shared/python36/python36.dll"
  "-DVTK_ONSCREEN_DIR=$MXEPATH/usr/i686-w64-mingw32.shared/lib/cmake/vtk-8.2"
  "-DCMAKE_WRAPPER=$MXEPATH/usr/bin/i686-w64-mingw32.shared-cmake"
+ "-DVTKCompileTools_DIR=/opt/mxe/usr/x86_64-pc-linux-gnu/vtkCompileTools-9"
  "-DINSIGHT_BUILD_MEDREADER:BOOL=OFF"
 )
 

@@ -55,7 +55,6 @@ endif()
 
 if (CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_WRAPPER "/opt/mxe/usr/bin/i686-w64-mingw32.shared-cmake" CACHE STRING "required in MXE cross build, cmake is called through wrapper script there")
-  list(APPEND VTK_CMAKE_ADDARGS "-DVTKCompileTools_DIR=${VTKCompileTools_DIR}")
 else()
   set(CMAKE_WRAPPER ${CMAKE_COMMAND})
 endif()

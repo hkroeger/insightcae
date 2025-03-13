@@ -67,6 +67,6 @@ RUN winetricks -q dotnet40
 RUN sudo apt-get --ignore-missing install -y python3-mako libosmesa6-dev
 
 RUN sudo apt update
-RUN sudo apt install -y docker docker.io
+RUN sudo apt install -y docker-ce docker.io
 RUN sudo usermod -aG docker ${USER}
 

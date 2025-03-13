@@ -41,8 +41,9 @@ Function createWSLDlg
 FunctionEnd
 
 Function installWSL
-    ${PowerShellExec} "dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart"
-    ${PowerShellExec} "dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+    ;${PowerShellExec} "dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart"
+    ;${PowerShellExec} "dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+    ${PowerShellExec} "wsl --install --no-distribution"
     WriteRegStr HKCU "Software\Microsoft\Windows\Currentversion\Runonce" "InstallResume" '"$insightInstallerPath"'
 FunctionEnd
 

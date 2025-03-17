@@ -79,7 +79,7 @@ class Dependency:
         if not os.path.exists(self.localfile) and not URL is None:
             req.urlretrieve(URL, self.localfile)
             
-        self.command='ExecShellWait "" "$TEMP\{file}"'.format(
+        self.command='ExecShellWait "" "$TEMP\\{file}"'.format(
             file=self.filename)
         
         self.note=note
@@ -87,7 +87,7 @@ class Dependency:
     def config(self, label):
         return """
 Section "{label}"
-    File "/oname=$TEMP\{file}" "{localfile}"
+    File "/oname=$TEMP\\{file}" "{localfile}"
     {note}
     SetDetailsPrint both
     DetailPrint "Installing {label}..."
@@ -163,7 +163,7 @@ Goto end
 installConfigStep:
 SetDetailsPrint both
 DetailPrint "Installing the default InsightCAE configuration..."
-IfFileExists "$PROFILE\.insight\share" 0 create
+IfFileExists "$PROFILE\\.insight\\share" 0 create
 MessageBox MB_YESNO "The InsightCAE configuration files exist already (report templates, executable paths etc.)$\\r$\\nDo you want to overwrite them with the defaults?" IDYES yes IDNO end
 yes:
 MessageBox MB_YESNO "Your existing configuration will be overwritten!$\\r$\\nReally overwrite?" IDYES create IDNO end
@@ -317,7 +317,7 @@ Function .onInit
     
 notInstalled:
     # active wsl using auxiliary installer
-    File "/oname=$PLUGINSDIR\wsl-activation-installer.exe" "{srcPath}/wsl-activation-installer.exe"
+    File "/oname=$PLUGINSDIR\\wsl-activation-installer.exe" "{srcPath}/wsl-activation-installer.exe"
     ExecShellWait "" "$PLUGINSDIR\wsl-activation-installer.exe" "/insightInstallerPath=$EXEPATH"
     Abort
 isInstalled:

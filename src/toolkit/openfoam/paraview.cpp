@@ -123,15 +123,15 @@ Paraview::Paraview(
         "  # bug in PV4.4: parallel projection is not restored from state file\n"
         "  for view in GetRenderViews():\n"
         "     view.CameraParallelProjection = 0\n"
-        "  RenderAllViews()\n"
+        //"  RenderAllViews()\n"  // changes scale
         "  for view in GetRenderViews():\n"
         "     view.CameraParallelProjection = 1\n"
             ;
         }
         else
         {
-            ls <<
-        "  RenderAllViews()\n";
+        //    ls <<
+        //"  RenderAllViews()\n"; // changes scale
         }
         if (rescale)
         {

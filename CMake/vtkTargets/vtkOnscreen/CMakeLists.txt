@@ -97,48 +97,30 @@ else()
   set(LIBNAME lib/libvtkDICOM-pvis.so.0.8.15)
 endif()
 
-if (CMAKE_TOOLCHAIN_FILE)
-  ExternalProject_Add( vtkdicom-onscreen
-     GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-     GIT_TAG 6a81888
-     PATCH_COMMAND bash -c "( grep 'find_package(VTKCompileTools REQUIRED)' CMakeLists.txt || sed -ie '/find_package(VTK REQUIRED)/ifind_package(VTKCompileTools REQUIRED)' CMakeLists.txt )"
-     INSTALL_DIR ${CMAKE_BINARY_DIR}
-     CMAKE_COMMAND ${CMAKE_WRAPPER}
-     CMAKE_ARGS
-       -DBUILD_SHARED_LIBS=ON
-       -DBUILD_PYTHON_WRAPPERS=OFF
-       -DCMAKE_BUILD_TYPE=Release
-       -DVTK_DIR=${VTK_ONSCREEN_DIR}
-       -DPython3_ROOT_DIR=${PY3ROOT}
-       -DVTK_VERSIONED_INSTALL=OFF
-       -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
-       -DBUILD_PROGRAMS=OFF
-       -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-       ${VTK_CMAKE_ADDARGS}
 
-     BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
-  )
-else()
-  ExternalProject_Add( vtkdicom-onscreen
-     GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-     GIT_TAG 6a81888
-     INSTALL_DIR ${CMAKE_BINARY_DIR}
-     CMAKE_COMMAND ${CMAKE_WRAPPER}
-     CMAKE_ARGS
-       -DBUILD_SHARED_LIBS=ON
-       -DBUILD_PYTHON_WRAPPERS=OFF
-       -DCMAKE_BUILD_TYPE=Release
-       -DVTK_DIR=${VTK_ONSCREEN_DIR}
-       -DPython3_ROOT_DIR=${PY3ROOT}
-       -DVTK_VERSIONED_INSTALL=OFF
-       -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
-       -DBUILD_PROGRAMS=OFF
-       -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-       ${VTK_CMAKE_ADDARGS}
 
-     BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
-  )
-endif()
+ExternalProject_Add( vtkdicom-onscreen
+   DOWNLOAD_COMMAND "" # Disable download
+   SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../vtk-dicom"
+
+   INSTALL_DIR ${CMAKE_BINARY_DIR}
+
+   CMAKE_COMMAND ${CMAKE_WRAPPER}
+   CMAKE_ARGS
+     -DBUILD_SHARED_LIBS=ON
+     -DBUILD_PYTHON_WRAPPERS=OFF
+     -DCMAKE_BUILD_TYPE=Release
+     -DVTK_DIR=${VTK_ONSCREEN_DIR}
+     -DPython3_ROOT_DIR=${PY3ROOT}
+     -DVTK_VERSIONED_INSTALL=OFF
+     -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
+     -DBUILD_PROGRAMS=OFF
+     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+     ${VTK_CMAKE_ADDARGS}
+
+   BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
+)
+
 
 
 ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )

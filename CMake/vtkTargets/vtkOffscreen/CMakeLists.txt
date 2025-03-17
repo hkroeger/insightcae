@@ -56,9 +56,11 @@ else()
 
 
     ExternalProject_Add( vtkdicom-offscreen
-       GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-       GIT_TAG 6a81888
+       DOWNLOAD_COMMAND "" # Disable download
+       SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../vtk-dicom"
+
        INSTALL_DIR ${CMAKE_BINARY_DIR}
+
        CMAKE_ARGS
          -DBUILD_SHARED_LIBS=ON
          -DBUILD_PYTHON_WRAPPERS=OFF

@@ -214,6 +214,7 @@ OutFile "{outFile}.exe"
 RequestExecutionLevel user
 LicenseData "{srcPath}/gpl.txt"
 Icon "{srcPath}/insightpackage.ico"
+SetCompressor LZMA
 
 Function VersionCompare
 	!define VersionCompare `!insertmacro VersionCompareCall`

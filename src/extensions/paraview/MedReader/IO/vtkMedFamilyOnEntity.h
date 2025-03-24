@@ -38,7 +38,7 @@ class VTK_EXPORT vtkMedFamilyOnEntity : public vtkObject
 public :
   static vtkMedFamilyOnEntity* New();
   vtkTypeMacro(vtkMedFamilyOnEntity, vtkObject)
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // Description:
   // This is the family of this family on entity.

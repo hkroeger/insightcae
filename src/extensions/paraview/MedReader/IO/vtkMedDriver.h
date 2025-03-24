@@ -48,7 +48,7 @@ class VTK_EXPORT vtkMedDriver: public vtkObject
 public:
   static vtkMedDriver* New();
   vtkTypeMacro(vtkMedDriver, vtkObject)
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // Description:
   // Set/Get the med file that use this driver

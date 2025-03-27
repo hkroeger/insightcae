@@ -40,4 +40,20 @@ add_toolkit_test(toolkit_paralleltimedirectories ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_cacheableentity ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_observer_ptr)
 
+add_library(toolkit_factory_lib_base SHARED  toolkit_factory_unit2.cpp toolkit_factory_unit2.h)
+target_include_directories(toolkit_factory_lib_base PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(toolkit_factory_lib_base toolkitHeaders)
+
+add_library(toolkit_factory_lib_ext SHARED toolkit_factory_unit2.h
+    toolkit_factory_unit3.h
+    toolkit_factory_unit3.cpp)
+target_include_directories(toolkit_factory_lib_ext PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(toolkit_factory_lib_ext toolkitHeaders)
+
+add_executable(toolkit_factory toolkit_factory.cpp toolkit_factory_unit2.h toolkit_factory_unit3.h)
+target_include_directories(toolkit_factory PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(toolkit_factory toolkitHeaders toolkit_factory_lib_base)
+add_dependencies(toolkit_factory toolkit_factory_lib_ext) # don't actually link
+add_test(NAME unit_toolkit_factory COMMAND toolkit_factory ${ARGN})
+
 add_subdirectory(analysis_parameterstudy)

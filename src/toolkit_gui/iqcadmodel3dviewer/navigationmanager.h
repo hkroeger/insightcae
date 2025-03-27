@@ -1,10 +1,15 @@
 #ifndef NAVIGATIONMANAGER_H
 #define NAVIGATIONMANAGER_H
 
+#include <QMouseEvent>
 
 
-
+#include "base/exception.h"
 #include "viewwidgetaction.h"
+#include <qnamespace.h>
+
+
+
 
 
 template<class Viewer>
@@ -12,7 +17,11 @@ class NavigationManager
     : public InputReceiver<Viewer>
 {
 public:
-  typedef std::unique_ptr<NavigationManager, typename InputReceiver<Viewer>::Deleter > Ptr;
+  typedef
+        std::unique_ptr<
+            NavigationManager,
+            typename InputReceiver<Viewer>::Deleter
+        > Ptr;
 
 private:
   typename InputReceiver<Viewer>::Ptr currentAction_;
@@ -55,124 +64,62 @@ protected:
   }
 
 public:
+  declareType("Navigation");
+
   NavigationManager( Viewer& viewer )
   : InputReceiver<Viewer>(viewer, false)
   {}
 
-  bool onMouseWheel
-      (
-        double angleDeltaX,
-        double angleDeltaY
-       ) override
-  {
-    if (angleDeltaY>0)
-    {
-        scaleUp();
-    }
-    else if (angleDeltaY<0)
-    {
-        scaleDown();
-    }
-    return InputReceiver<Viewer>::onMouseWheel(angleDeltaX, angleDeltaY);
-  }
 
-  bool onLeftButtonDown( Qt::KeyboardModifiers modifiers, const QPoint point, bool afterDoubleClick ) override
-  {
-    if ( this->viewer().pickAtCursor( modifiers&Qt::ControlModifier ) )
-    {
-      this->viewer().emitGraphicalSelectionChanged();
-      return true;
-    }
-    return InputReceiver<Viewer>::onLeftButtonDown(modifiers, point, afterDoubleClick);
-  }
 
-  bool onKeyPress( Qt::KeyboardModifiers modifiers, int key ) override
-  {
-    if (key == Qt::Key_Escape)
-    {
-      currentAction_.reset();
-    }
-    if ( key==Qt::Key_Plus && (modifiers&Qt::ControlModifier) )
-    {
-      scaleUp();
-      return true;
-    }
-    else if (key==Qt::Key_Minus && (modifiers&Qt::ControlModifier))
-    {
-      scaleDown();
-      return true;
-    }
-    return InputReceiver<Viewer>::onKeyPress(modifiers, key);
-  }
+  // bool onLeftButtonDown( Qt::KeyboardModifiers modifiers, const QPoint point, bool afterDoubleClick ) override
+  // {
+  //   if ( this->viewer().pickAtCursor( modifiers&Qt::ControlModifier ) )
+  //   {
+  //     this->viewer().emitGraphicalSelectionChanged();
+  //     return true;
+  //   }
+  //   return InputReceiver<Viewer>::onLeftButtonDown(modifiers, point, afterDoubleClick);
+  // }
+
+  // bool onKeyPress( Qt::KeyboardModifiers modifiers, int key ) override
+  // {
+  //   if (key == Qt::Key_Escape)
+  //   {
+  //     currentAction_.reset();
+  //   }
+  //   if ( key==Qt::Key_Plus && (modifiers&Qt::ControlModifier) )
+  //   {
+  //     scaleUp();
+  //     return true;
+  //   }
+  //   else if (key==Qt::Key_Minus && (modifiers&Qt::ControlModifier))
+  //   {
+  //     scaleDown();
+  //     return true;
+  //   }
+  //   return InputReceiver<Viewer>::onKeyPress(modifiers, key);
+  // }
 
 };
 
 
 
-template<class Viewer, class Panning, class Rotation>
-class TouchpadNavigationManager
-        : public NavigationManager<Viewer>
+
+template<class Viewer>
+class MouseKeyboardInputAdapter
 {
-
+    NavigationManager<Viewer>& target_;
 public:
-  TouchpadNavigationManager(
-          Viewer& viewer )
-      : NavigationManager<Viewer>(viewer)
-  {}
-
-  bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
-  {
-      if (modifiers & Qt::ShiftModifier)
-      {
-        if (!this->actionInProgress() && this->hasLastMouseLocation() )
-        {
-          this->setCurrentAction( make_viewWidgetAction<Panning>(
-                                this->viewer(), this->lastMouseLocation()) );
-            return true;
-        }
-      }
-      else if (modifiers & Qt::AltModifier)
-      {
-        if (!this->actionInProgress() && this->hasLastMouseLocation())
-        {
-          this->setCurrentAction( make_viewWidgetAction<Rotation>(
-                                this->viewer(), this->lastMouseLocation()) );
-            return true;
-        }
-      }
-      else if (key==Qt::Key_PageUp)
-      {
-        this->scaleUp();
-        return true;
-      }
-      else if (key==Qt::Key_PageDown)
-      {
-        this->scaleDown();
-        return true;
-      }
-
-      return NavigationManager<Viewer>::onKeyPress(modifiers, key);
-  }
-
-  bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key) override
-  {
-    if ( !(modifiers & Qt::ShiftModifier)
-         && this->template currentAction<Panning>() )
-    {
-      this->stopCurrentAction();
-        return true;
-    }
-    else if ( !(modifiers & Qt::AltModifier)
-         && this->template currentAction<Rotation>() )
-    {
-      this->stopCurrentAction();
-        return true;
-    }
-
-    return NavigationManager<Viewer>::onKeyRelease(modifiers, key);
-  }
-
+    MouseKeyboardInputAdapter(
+        NavigationManager<Viewer>& target
+    )
+        : target_(target)
+    {}
 };
+
+
+
 
 
 

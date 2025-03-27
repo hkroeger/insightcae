@@ -65,7 +65,7 @@ AnalysisThread::AnalysisThread(
                 executionPath_ = std::get<1>(*pap);
               }
               sid =
-                insight::Analysis::createSupplementedInputDataFor(
+                insight::Analysis::supplementedInputDatas()(
                     analysisName, ParameterSetInput(*std::get<0>(*pap)), executionPath_, *pd );
           }
           else if (auto *pap =
@@ -79,7 +79,7 @@ AnalysisThread::AnalysisThread(
               sid = *pap;
           }
 
-          auto analysis = insight::Analysis::createAnalysis(
+          auto analysis = insight::Analysis::analyses()(
               analysisName, sid);
 
           analysis_ = analysis.get();

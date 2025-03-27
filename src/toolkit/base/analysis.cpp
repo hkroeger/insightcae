@@ -49,16 +49,37 @@ namespace insight
 
 defineType ( Analysis );
 
+defineFactoryTable2(
+    Analysis, AnalysisFactories, analyses );
 
+defineStaticFunctionTable2(
+    "supplemented input data generators",
+    Analysis, SupplementedInputDataFactories, supplementedInputDatas );
 
-defineStaticFunctionTable2(Analysis, supplementedInputDataFactory, createSupplementedInputDataFor);
-defineStaticFunctionTable2(Analysis, AnalysisFactory, createAnalysis);
-defineStaticFunctionTable2(Analysis, defaultParametersFunctions, defaultParametersFor);
-defineStaticFunctionTable2(Analysis, categoryFunctions, categoryFor);
-defineStaticFunctionTable2(Analysis, compatibleOperatingSystemsFunctions, compatibleOperatingSystemsFor);
-defineStaticFunctionTable2(Analysis, validatorFunctions, validatorFor);
-defineStaticFunctionTable2(Analysis, getPropositionsForParameterFunctions, getPropositionsForParameterFor);
-defineStaticFunctionTable2(Analysis, DescriptionFunctions, descriptionFor);
+defineStaticFunctionTable2(
+    "default parameters",
+    Analysis, DefaultParameterFactories, defaultParameters );
+
+defineStaticFunctionTable2(
+    "categories",
+    Analysis, CategoryFunctions, categories );
+
+defineStaticFunctionTable2(
+    "supported operating systems",
+    Analysis, CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions );
+
+defineStaticFunctionTable2(
+    "parameter set validators",
+    Analysis, ValidatorFunctions, validators );
+
+defineStaticFunctionTable2(
+    "parameter proposition generators",
+    Analysis, PropositionsForParameterFunctions, propositionsForParameter );
+
+defineStaticFunctionTable2(
+    "analysis descriptions",
+    Analysis, DescriptionFunctions, descriptions );
+
 
 
 void Analysis::resetParameters(
@@ -125,7 +146,7 @@ path Analysis::executionPath() const
 
 ResultSetPtr Analysis::createResultSet() const
 {
-    auto desc=Analysis::descriptionFor(type());
+    auto desc=Analysis::descriptions()(type());
     auto results=std::make_shared<ResultSet>(
         parameters(), desc.name, "Result Report");
     results->introduction() = desc.description;

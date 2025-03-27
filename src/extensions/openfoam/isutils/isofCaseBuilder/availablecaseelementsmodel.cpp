@@ -95,10 +95,10 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
     {
       QIcon icon;
 
-        if (insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement_table().count(elemName))
+        if (insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement().count(elemName))
       {
           icon =
-              insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement(elemName);
+              insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement()(elemName);
       }
 
       pe->addCaseElement( QString::fromStdString(elemName), icon );

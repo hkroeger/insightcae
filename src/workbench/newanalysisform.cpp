@@ -76,14 +76,14 @@ void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
 
     HierarchyLevel::iterator i=toplevel.addHierarchyLevel(_("Uncategorized"));
 
-    auto analyses = insight::Analysis::createAnalysis_table().ToC();
+    auto analyses = insight::Analysis::analyses().ToC();
 
     for ( const auto& analysisType: analyses )
     {
 
         QStringList path =
             QString::fromStdString (
-                               insight::Analysis::categoryFor( analysisType ) )
+                               insight::Analysis::categories()( analysisType ) )
                 .split ( "/", Qt::SkipEmptyParts );
 
         HierarchyLevel* parent = &toplevel;
@@ -94,13 +94,13 @@ void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
 
         QString desc;
         QIcon icon(":analysis_default_icon.svg");
-        if (insight::CADParameterSetModelVisualizer::iconForAnalysis_table().count(analysisType))
+        if (insight::CADParameterSetModelVisualizer::iconForAnalysis().count(analysisType))
         {
-            icon=insight::CADParameterSetModelVisualizer::iconForAnalysis(analysisType);
+            icon=insight::CADParameterSetModelVisualizer::iconForAnalysis()(analysisType);
         }
-        if (insight::Analysis::descriptionFor_table().count(analysisType))
+        if (insight::Analysis::descriptions().count(analysisType))
         {
-            auto d=insight::Analysis::descriptionFor(analysisType);
+            auto d=insight::Analysis::descriptions()(analysisType);
             try
             {
                 desc=QString::fromStdString(

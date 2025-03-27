@@ -9,6 +9,7 @@
 #include "qoccviewwidget.h"
 #include "occtools.h"
 #include "occguitools.h"
+#include <qnamespace.h>
 
 template<
     TopAbs_ShapeEnum shapeEnum,
@@ -41,68 +42,72 @@ public:
     userPrompt("Please select "+QString(selectionName)+" and finish with right click!");
   }
 
-  bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point,
-                      bool lastClickWasDoubleClick ) override
+  bool onMouseClick  (
+      Qt::MouseButtons btn,
+      Qt::KeyboardModifiers nFlags,
+      const QPoint point) override
   {
-    auto context = viewer().getContext();
-
-    context->InitSelected();
-    if (context->MoreSelected())
-    {
-      TopoDS_Shape v = context->SelectedShape();
-      if (!selection_)
-        {
-          if (QFeatureItem *parent =
-              dynamic_cast<QFeatureItem*>(
-                viewer().getOwnerItem(context->SelectedInteractive()) ) )
-            {
-              // restrict further selection to current shape
-              insight::cad::DeactivateAll( context, shapeEnum );
-              context->Activate(
-                    parent->ais(*context), AIS_Shape::SelectionMode(shapeEnum) );
-
-              selection_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), shapeType));
-
-              insight::cad::FeatureID id = getId(parent->solidmodel(), v); //parent->solidmodel().vertexID(v);
-              selection_->add(id);
-              viewer().sendStatus( QString::fromStdString(
-                    boost::str(boost::format(
-                                 "Selected %s %d. Select next %s, end with right click."
-                    ) % selectionName % id % selectionName ) ) );
-            }
-        }
-        else
-        {
-          insight::cad::FeatureID id = getId(*selection_->model(), v); //selection_->model()->vertexID(v);
-          selection_->add(id);
-          viewer().sendStatus( QString::fromStdString(
-                boost::str(boost::format(
-                             "Selected %s %d. Select next %s, end with right click."
-                ) % selectionName % id % selectionName ) ) );
-        }
-        return true;
-    }
-
-    return false;
-  }
-
-  bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
-  {
-    QString text = QString::fromStdString(
-          selection_->model()->featureSymbolName() + "?" + featSelCmdName + "=("
-          );
-    int j=0;
-    for (insight::cad::FeatureID i: selection_->data())
+      if (btn&Qt::RightButton)
       {
-        text+=QString::number( i );
-        if (j++ < selection_->size()-1) text+=",";
-      }
-    text+=")\n";
-    viewer().insertNotebookText(text);
-    
-    finishAction();
+          auto context = viewer().getContext();
 
-    return true;
+          context->InitSelected();
+          if (context->MoreSelected())
+          {
+              TopoDS_Shape v = context->SelectedShape();
+              if (!selection_)
+              {
+                  if (QFeatureItem *parent =
+                      dynamic_cast<QFeatureItem*>(
+                          viewer().getOwnerItem(context->SelectedInteractive()) ) )
+                  {
+                      // restrict further selection to current shape
+                      insight::cad::DeactivateAll( context, shapeEnum );
+                      context->Activate(
+                          parent->ais(*context), AIS_Shape::SelectionMode(shapeEnum) );
+
+                      selection_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), shapeType));
+
+                      insight::cad::FeatureID id = getId(parent->solidmodel(), v); //parent->solidmodel().vertexID(v);
+                      selection_->add(id);
+                      viewer().sendStatus( QString::fromStdString(
+                          boost::str(boost::format(
+                                         "Selected %s %d. Select next %s, end with right click."
+                                         ) % selectionName % id % selectionName ) ) );
+                  }
+              }
+              else
+              {
+                  insight::cad::FeatureID id = getId(*selection_->model(), v); //selection_->model()->vertexID(v);
+                  selection_->add(id);
+                  viewer().sendStatus( QString::fromStdString(
+                      boost::str(boost::format(
+                                     "Selected %s %d. Select next %s, end with right click."
+                                     ) % selectionName % id % selectionName ) ) );
+              }
+              return true;
+          }
+
+          return false;
+      }
+      else if (btn&Qt::RightButton)
+      {
+          QString text = QString::fromStdString(
+              selection_->model()->featureSymbolName() + "?" + featSelCmdName + "=("
+              );
+          int j=0;
+          for (insight::cad::FeatureID i: selection_->data())
+          {
+              text+=QString::number( i );
+              if (j++ < selection_->size()-1) text+=",";
+          }
+          text+=")\n";
+          viewer().insertNotebookText(text);
+
+          finishAction();
+
+          return true;
+      }
   }
 };
 

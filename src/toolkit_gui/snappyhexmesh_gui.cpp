@@ -20,7 +20,8 @@ namespace insight
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
     snappyHexMeshConfiguration, &newVisualizer<snappyHexMeshConfiguration_ParameterSet_Visualizer>);
 
 
@@ -128,7 +129,8 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, IconFunctions, iconForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    IconFunctions, iconForOpenFOAMCaseElement,
     snappyHexMeshConfiguration, [](){ return QIcon(":symbole/sHM-cfg.svg"); });
 
 

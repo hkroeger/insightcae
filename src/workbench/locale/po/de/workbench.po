@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: workbench \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-07 12:29+0100\n"
+"POT-Creation-Date: 2025-03-27 09:35+0100\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -94,148 +94,152 @@ msgid ""
 " Therefore the execution is locked to a WSL backend or a remote host."
 msgstr ""
 
-#: analysisform.cpp:94
+#: analysisform.cpp:96
 #, c-format
 msgid "creating analysis form for analysis %s"
 msgstr ""
 
-#: analysisform.cpp:109
+#: analysisform.cpp:111
 msgid "setup user interface"
 msgstr ""
 
-#: analysisform.cpp:117
+#: analysisform.cpp:119
 msgid "enable OpenFOAM controls"
 msgstr ""
 
-#: analysisform.cpp:147
+#: analysisform.cpp:149
 msgid "Save..."
 msgstr ""
 
-#: analysisform.cpp:148
+#: analysisform.cpp:150
 msgid "Email..."
 msgstr ""
 
-#: analysisform.cpp:149
+#: analysisform.cpp:151
 msgid "Clear"
 msgstr ""
 
-#: analysisform.cpp:150
+#: analysisform.cpp:152
 msgid "Auto Scroll"
 msgstr ""
 
-#: analysisform.cpp:173
+#: analysisform.cpp:175
 msgid "redirect console"
 msgstr ""
 
-#: analysisform.cpp:194
+#: analysisform.cpp:198
 msgid "create parameter set visualizer"
 msgstr ""
 
-#: analysisform.cpp:208
+#: analysisform.cpp:212
 msgid "create parameter set editor"
 msgstr ""
 
-#: analysisform.cpp:305
+#: analysisform.cpp:309
 msgid "create result viewer"
 msgstr ""
 
-#: analysisform.cpp:333
+#: analysisform.cpp:337
 msgid "create menus"
 msgstr ""
 
-#: analysisform.cpp:337
+#: analysisform.cpp:341
 msgid "&Parameters"
 msgstr ""
 
-#: analysisform.cpp:338
+#: analysisform.cpp:342
 msgid "&Actions"
 msgstr ""
 
-#: analysisform.cpp:339
+#: analysisform.cpp:343
 msgid "&Results"
 msgstr ""
 
-#: analysisform.cpp:340
+#: analysisform.cpp:344
 msgid "&Tools"
 msgstr ""
 
-#: analysisform.cpp:350
+#: analysisform.cpp:349
+msgid "3D &viewer settings..."
+msgstr ""
+
+#: analysisform.cpp:367
 msgid "&Save parameter set as..."
 msgstr ""
 
-#: analysisform.cpp:355
+#: analysisform.cpp:372
 msgid "&Pack external files into parameter file"
 msgstr ""
 
-#: analysisform.cpp:369
+#: analysisform.cpp:386
 msgid "&Merge other parameter set into current..."
 msgstr ""
 
-#: analysisform.cpp:373
+#: analysisform.cpp:390
 msgid "&Show in XML format"
 msgstr ""
 
-#: analysisform.cpp:379
+#: analysisform.cpp:396
 msgid "&Run Analysis"
 msgstr "&Analyse starten"
 
-#: analysisform.cpp:382
+#: analysisform.cpp:399
 msgid "&Stop Analysis"
 msgstr "&Analyse stoppen"
 
-#: analysisform.cpp:388
+#: analysisform.cpp:405
 msgid "&Load results..."
 msgstr ""
 
-#: analysisform.cpp:396
+#: analysisform.cpp:413
 msgid "&Save results as..."
 msgstr ""
 
-#: analysisform.cpp:401
+#: analysisform.cpp:418
 msgid "Create &report..."
 msgstr ""
 
-#: analysisform.cpp:410
+#: analysisform.cpp:427
 msgid "Load &filter..."
 msgstr ""
 
-#: analysisform.cpp:416
+#: analysisform.cpp:433
 msgid "Sa&ve filter..."
 msgstr ""
 
-#: analysisform.cpp:422
+#: analysisform.cpp:439
 msgid "Start ParaView in execution directory"
 msgstr ""
 
-#: analysisform.cpp:425
+#: analysisform.cpp:442
 msgid "Clean OpenFOAM case..."
 msgstr ""
 
-#: analysisform.cpp:443 analysisform.cpp:638
+#: analysisform.cpp:460 analysisform.cpp:655
 msgid "Parameters unsaved"
 msgstr ""
 
-#: analysisform.cpp:444
+#: analysisform.cpp:461
 msgid ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 msgstr ""
 
-#: analysisform.cpp:556
+#: analysisform.cpp:573
 msgid "Save input parameters"
 msgstr ""
 
-#: analysisform.cpp:639
+#: analysisform.cpp:656
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
 msgstr ""
 
-#: analysisform.cpp:654 workbenchwindow.cpp:291
+#: analysisform.cpp:671 workbenchwindow.cpp:291
 msgid "Open Parameters"
 msgstr ""
 
-#: analysisform.cpp:656
+#: analysisform.cpp:673
 msgid "Insight parameter sets (*.ist)"
 msgstr ""
 

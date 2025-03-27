@@ -3,6 +3,7 @@
 #include "datum.h"
 
 #include "vtkPolyLineSource.h"
+#include <qnamespace.h>
 
 using namespace insight;
 using namespace insight::cad;
@@ -184,28 +185,32 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
 
 
 
-bool IQVTKCADModel3DViewerDrawRectangle::onMouseMove
-    (
-        Qt::MouseButtons buttons,
-        const QPoint point,
-        Qt::KeyboardModifiers curFlags
-        )
+bool IQVTKCADModel3DViewerDrawRectangle::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
 {
     updatePreviewRect(
         IQVTKCADModel3DViewerPlanePointBasedAction::applyWizards(point, nullptr)
             .p->value() );
 
     return IQVTKCADModel3DViewerPlanePointBasedAction
-        ::onMouseMove(buttons, point, curFlags);
+        ::onMouseMove(point, curFlags);
 }
 
 
 
 
-bool IQVTKCADModel3DViewerDrawRectangle::onRightButtonDown(
+bool IQVTKCADModel3DViewerDrawRectangle::onMouseClick  (
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    finishAction();
-    return true;
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+    else
+        return IQVTKCADModel3DViewerPlanePointBasedAction
+            ::onMouseClick( btn, nFlags, point );
 }

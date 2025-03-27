@@ -48,9 +48,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
   ui->setupUi(this);
 
-   parameters_ = insight::Analysis::defaultParametersFor("Numerical Wind Tunnel");
-   auto a = insight::Analysis::createAnalysis("Numerical Wind Tunnel",
-                insight::Analysis::createSupplementedInputDataFor(
+   parameters_ = insight::Analysis::defaultParameters()("Numerical Wind Tunnel");
+   auto a = insight::Analysis::analyses()("Numerical Wind Tunnel",
+                insight::Analysis::supplementedInputDatas()(
                     "Numerical Wind Tunnel", *parameters_, ".", insight::consoleProgressDisplayer ) );
 //  insight::AnalysisPtr a( new insight::GasDispersion(defaultParams, "") );
 

@@ -216,7 +216,7 @@ public:
   // ================================================================================
   // ===== general logic
 
-  WidgetWithDynamicMenuEntries* createMenus(QMenuBar* mainMenu);
+  WidgetWithDynamicMenuEntries* createMenus(WorkbenchMainWindow* mw);
 //  void insertMenu(QMenuBar* mainMenu) override;
 //  void removeMenu() override;
 

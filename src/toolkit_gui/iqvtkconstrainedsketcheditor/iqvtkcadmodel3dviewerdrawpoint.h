@@ -16,7 +16,10 @@ public:
 
     void start() override;
 
-    bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
 Q_SIGNALS:
     void pointAdded(

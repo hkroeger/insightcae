@@ -13,7 +13,7 @@ class IQVTKCADModel3DViewerRotation
     const double MotionFactor = 10.;
     const bool AutoAdjustCameraClippingRange = true;
 
-    void rotate(int x, int y);
+    void rotate(const QPoint& point);
 
 public:
   IQVTKCADModel3DViewerRotation(
@@ -21,12 +21,15 @@ public:
 
   void start() override;
 
-  bool onMouseMove
-    (
-     Qt::MouseButtons buttons,
+  bool onMouseDrag  (
+      Qt::MouseButtons btn,
+      Qt::KeyboardModifiers nFlags,
+      const QPoint point,
+      EventType eventType ) override;
+
+  bool onMouseMove(
      const QPoint point,
-     Qt::KeyboardModifiers curFlags
-     ) override;
+     Qt::KeyboardModifiers curFlags ) override;
 };
 
 

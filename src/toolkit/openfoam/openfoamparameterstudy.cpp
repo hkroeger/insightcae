@@ -119,8 +119,8 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
 
 //     base_case->setExecutionPath(exep);
         base_case_ = std::dynamic_unique_ptr_cast<OpenFOAMAnalysis>(
-            Analysis::createAnalysis(BaseAnalysis::typeName,
-                Analysis::createSupplementedInputDataFor(BaseAnalysis::typeName,
+            Analysis::analyses()(BaseAnalysis::typeName,
+                Analysis::supplementedInputDatas()(BaseAnalysis::typeName,
                     ParameterSetInput(*defp), exep, displayer)) );
 
         if (!base_case_)

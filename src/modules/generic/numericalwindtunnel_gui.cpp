@@ -116,13 +116,14 @@ public:
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForAnalysis,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForAnalysis,
     NumericalWindtunnel, &newVisualizer<NumericalWindtunnel_ParameterSet_Visualizer>);
 
 
 insight::CADParameterSetModelVisualizer::IconFunctions::Add<NumericalWindtunnel>
     addNumericalWindtunnelIcon(
-        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        &insight::CADParameterSetModelVisualizer::iconForAnalysis,
         []() {
             return QIcon(":/analysis_numericalwindtunnel.svg");
         } );

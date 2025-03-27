@@ -278,10 +278,10 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
       ::CreateGUIActionsFunctions::Function cgaf;
 
   if (insight::CADParameterSetModelVisualizer
-      ::createGUIActionsForOpenFOAMCaseElement_table().count(ce->type_name()))
+      ::createGUIActionsForOpenFOAMCaseElement().count(ce->type_name()))
   {
       cgaf=insight::CADParameterSetModelVisualizer
-             ::createGUIActionsForOpenFOAMCaseElement_table().lookup(ce->type_name());
+             ::createGUIActionsForOpenFOAMCaseElement().lookup(ce->type_name());
   }
 
   auto cepe = new ParameterEditorWidget

@@ -30,6 +30,7 @@
 #include <QDoubleValidator>
 #include <QComboBox>
 #include <QTableView>
+#include <qnamespace.h>
 
 #include "constrainedsketchentities/distanceconstraint.h"
 #include "constrainedsketchentities/angleconstraint.h"
@@ -513,7 +514,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
     const std::string& presentationDelegateKey
 )
-: ViewWidgetAction<IQVTKCADModel3DViewer>(viewer),
+: ViewWidgetAction<IQVTKCADModel3DViewer>(viewer, false),
   insight::cad::ConstrainedSketchPtr(
       insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
   entityProperties_(
@@ -524,7 +525,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     if (!presentationDelegateKey.empty())
     {
         presentation_=
-            insight::cad::ConstrainedSketchPresentationDelegate::sketchPresentationFor(
+            insight::cad::ConstrainedSketchPresentationDelegate::delegates()(
               presentationDelegateKey );
     }
     if (!presentation_)
@@ -1162,10 +1163,32 @@ bool IQVTKConstrainedSketchEditor::layerIsVisible(const std::string &layerName) 
 }
 
 
+std::shared_ptr<ConstrainedSketchEntity>
+IQVTKConstrainedSketchEditor::selectedItemUnderCursor() const
+{
+    if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+    {
+        if (selact->somethingSelected()
+            && selact->currentSelection().size()==1)
+        {
+            return selact->currentSelection().begin()->lock();
+        }
+        else if (selact->hasSelectionCandidate())
+        {
+            return selact->currentSelectionCandidate().lock();
+        }
+        else if (selact->hasPreviewedItem())
+        {
+            return selact->previewedItem().lock();
+        }
+    }
+    return nullptr;
+}
 
-
-bool IQVTKConstrainedSketchEditor::onLeftButtonDoubleClick(
-    Qt::KeyboardModifiers nFlags, const QPoint point)
+bool IQVTKConstrainedSketchEditor::onDoubleClick(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
 {
     auto editInPlace = [&](double initValue, std::function<void(double)> setNewValue)
     {
@@ -1194,19 +1217,7 @@ bool IQVTKConstrainedSketchEditor::onLeftButtonDoubleClick(
 
     if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
     {
-        std::shared_ptr<ConstrainedSketchEntity> selitem;
-
-        if (selact->somethingSelected()
-            && selact->currentSelection().size()==1)
-        {
-            selitem = selact->currentSelection().begin()->lock();
-        }
-        else if (selact->hasSelectionCandidate())
-        {
-            selitem = selact->currentSelectionCandidate().lock();
-        }
-
-        if (selitem)
+        if (auto selitem = selectedItemUnderCursor())
         {
             if (auto ac = std::dynamic_pointer_cast<FixedAngleConstraint>(selitem))
             {
@@ -1274,25 +1285,23 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
 
 
 
-bool IQVTKConstrainedSketchEditor::onMouseMove
+bool IQVTKConstrainedSketchEditor::onMouseDrag
 (
    Qt::MouseButtons buttons,
+   Qt::KeyboardModifiers curFlags,
    const QPoint point,
-   Qt::KeyboardModifiers curFlags
+   EventType eventType
 )
 {
-    bool ret = ViewWidgetAction<IQVTKCADModel3DViewer>
-        ::onMouseMove(buttons, point, curFlags);
-
-    if (!ret)
+    if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
     {
-        if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+        if ((buttons==Qt::LeftButton))
         {
-            if (selact->hasSelectionCandidate())
+            if (auto selitem = selectedItemUnderCursor())
             {
                 if (auto sp =
                     std::dynamic_pointer_cast<insight::cad::SketchPoint>(
-                        selact->currentSelectionCandidate().lock() ) )
+                        selitem ) )
                 {
                     arma::mat pip=viewer().pointInPlane3D(
                         (*this)->plane()->plane(), point );
@@ -1305,29 +1314,30 @@ bool IQVTKConstrainedSketchEditor::onMouseMove
                     (*this)->invalidate();
                     (*this).updateActors();
 
-                    ret=true;
+                    return true;
                 }
                 else if (auto dc =
                     std::dynamic_pointer_cast<insight::cad::DistanceConstraint>(
-                        selact->currentSelectionCandidate().lock() ) )
+                        selitem ) )
                 {
                     launchAction(make_viewWidgetAction<IQVTKDragDimensionlineAction>(*this, dc));
 
-                    ret=true;
+                    return true;
                 }
                 else if (auto ac =
                          std::dynamic_pointer_cast<insight::cad::AngleConstraint>(
-                             selact->currentSelectionCandidate().lock() ) )
+                             selitem ) )
                 {
                     launchAction(make_viewWidgetAction<IQVTKDragAngleDimensionAction>(*this, ac));
 
-                    ret=true;
+                    return true;
                 }
             }
         }
     }
 
-    return ret;
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onMouseDrag(buttons, curFlags, point, eventType);
 }
 
 

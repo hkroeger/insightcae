@@ -1,5 +1,6 @@
 #include "iqvtkcadmodel3dviewer.h"
 #include "base/exception.h"
+#include "base/factory.h"
 #include "base/linearalgebra.h"
 #include "constrainedsketch.h"
 #include "iqcaditemmodel.h"
@@ -9,8 +10,7 @@
 
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h"
-#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h"
-#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h"
+
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
 #include "iqvtkconstrainedsketcheditor.h"
@@ -30,6 +30,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QStatusBar>
+#include <QSettings>
 
 #include <boost/lexical_cast.hpp>
 #include <vtkAxesActor.h>
@@ -1337,23 +1338,38 @@ void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
 
 }
 
+void IQVTKCADModel3DViewer::resetNavigationManager(
+    typename NavigationManager<IQVTKCADModel3DViewer>::Ptr&& nm)
+{
+    QSettings settings("silentdynamics", "VTKCADModel3DViewer");
+    settings.setValue("navigationStyle", QString::fromStdString(nm->type()) );
 
+    QWidgetToInputReceiverAdapter<
+        IQVTKCADModel3DViewer, IQCADModel3DViewer>
+        ::resetNavigationManager(std::move(nm));
+}
 
 
 IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         QWidget* parent )
-    : IQCADModel3DViewer(parent),
-      ViewWidgetActionHost<IQVTKCADModel3DViewer>(*this, true),
-      vtkWidget_(this),
-      navigationManager_(
-        new TouchpadNavigationManager<
-           IQVTKCADModel3DViewer, IQVTKCADModel3DViewerPanning, IQVTKCADModel3DViewerRotation
-          >(*this) ),
-      viewState_(*this),
+    : QWidgetToInputReceiverAdapter<
+          IQVTKCADModel3DViewer, IQCADModel3DViewer
+          >(*this, parent),
+    vtkWidget_(this),
+    viewState_(*this),
     defaultSelectionModel_(nullptr),
     customSelectionModel_(nullptr),
     afterDoubleClick_(false)
 {
+    {
+        QSettings settings("silentdynamics", "VTKCADModel3DViewer");
+        auto navkey=settings.value("navigationStyle", "Inventor")
+                          .toString().toStdString();
+        resetNavigationManager(
+            VTKNavigationManager::navigationManagers()(navkey, *this)
+        );
+    }
+
     setCentralWidget(&vtkWidget_);
 
     connect(&vtkWidget_, &MyVTKWidget::mouseLeavesViewer, &vtkWidget_,
@@ -1682,7 +1698,7 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     //    picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
 
-        insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
+        // insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
         auto pi = picker3d->GetProp3Ds();
         auto pp = picker3d->GetPickedPositions();
         int nsel = pi->GetNumberOfItems();
@@ -1697,7 +1713,7 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
                 arma::mat x=insight::vec3FromComponents(pp->GetPoint(i));
                 double dist=arma::norm(x-cp, 2);
                 aa3d.insert({dist, prop});
-                insight::dbg()<<"hit #"<<i<<" "<<x.t()<<" "<<prop->GetClassName()<<std::endl;
+                // insight::dbg()<<"hit #"<<i<<" "<<x.t()<<" "<<prop->GetClassName()<<std::endl;
             }
         }
         std::transform(
@@ -2284,146 +2300,146 @@ void IQVTKCADModel3DViewer::setBackgroundColor(QColor c)
 }
 
 
-void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
-{
-    dbg(3)<<">>> mouse double click"<<std::endl;
+// void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
+// {
+//     dbg(3)<<">>> mouse double click"<<std::endl;
 
-    if ( e->button() & Qt::LeftButton )
-    {
-        afterDoubleClick_=true;
-        bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-      if (!ret)
-            ret=this->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-    }
+//     if ( e->button() & Qt::LeftButton )
+//     {
+//         afterDoubleClick_=true;
+//         bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+//       if (!ret)
+//             ret=this->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+//     }
 
-    IQCADModel3DViewer::mouseDoubleClickEvent(e);
-}
+//     IQCADModel3DViewer::mouseDoubleClickEvent(e);
+// }
 
-void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
-{
-    dbg(3)<<">>> mouse press, afterDoubleClick="<<afterDoubleClick_<<std::endl;
+// void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
+// {
+//     dbg(3)<<">>> mouse press, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
-    IQCADModel3DViewer::mousePressEvent(e);
+//     IQCADModel3DViewer::mousePressEvent(e);
 
-    if ( e->button() & Qt::LeftButton )
-    {
-        bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
-        if (!ret)
-            ret = this->onLeftButtonDown(e->modifiers(), e->pos(), afterDoubleClick_ );
-        if (!ret)
-            ret=this->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
-    }
-    else if ( e->button() & Qt::RightButton )
-    {
-        bool ret=navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (!ret)
-            ret=this->onRightButtonDown( e->modifiers(), e->pos() );
-    }
-    else if ( e->button() & Qt::MidButton )
-    {
-        bool ret=navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (!ret)
-            ret=this->onMiddleButtonDown( e->modifiers(), e->pos() );
-    }
-
-
-}
+//     if ( e->button() & Qt::LeftButton )
+//     {
+//         bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
+//         if (!ret)
+//             ret = this->onLeftButtonDown(e->modifiers(), e->pos(), afterDoubleClick_ );
+//         if (!ret)
+//             ret=this->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
+//     }
+//     else if ( e->button() & Qt::RightButton )
+//     {
+//         bool ret=navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onRightButtonDown( e->modifiers(), e->pos() );
+//     }
+//     else if ( e->button() & Qt::MidButton )
+//     {
+//         bool ret=navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onMiddleButtonDown( e->modifiers(), e->pos() );
+//     }
 
 
-
-
-void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
-{
-    dbg(3)<<">>> mouse release, afterDoubleClick="<<afterDoubleClick_<<std::endl;
-
-    IQCADModel3DViewer::mouseReleaseEvent(e);
-
-    if ( e->button() & Qt::LeftButton )
-    {
-        bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
-        if (!ret)
-            ret = this->onLeftButtonUp(e->modifiers(), e->pos(), afterDoubleClick_ );
-        if (!ret)
-            ret=this->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
-    }
-    else if ( e->button() & Qt::RightButton )
-    {
-        bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (!ret)
-            ret=this->onRightButtonUp( e->modifiers(), e->pos() );
-    }
-    else if ( e->button() & Qt::MidButton )
-    {
-        bool ret=navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (!ret)
-            ret=this->onMiddleButtonUp( e->modifiers(), e->pos() );
-    }
-
-    afterDoubleClick_=false; // reset
-}
+// }
 
 
 
 
-void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
-{
-    dbg(3)<<">>> mouse move"<<std::endl;
+// void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
+// {
+//     dbg(3)<<">>> mouse release, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
-    IQCADModel3DViewer::mouseMoveEvent(e);
+//     IQCADModel3DViewer::mouseReleaseEvent(e);
 
-    bool ret=false;
-    if (!ret) ret=this->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-    if (!ret) navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-}
+//     if ( e->button() & Qt::LeftButton )
+//     {
+//         bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
+//         if (!ret)
+//             ret = this->onLeftButtonUp(e->modifiers(), e->pos(), afterDoubleClick_ );
+//         if (!ret)
+//             ret=this->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
+//     }
+//     else if ( e->button() & Qt::RightButton )
+//     {
+//         bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onRightButtonUp( e->modifiers(), e->pos() );
+//     }
+//     else if ( e->button() & Qt::MidButton )
+//     {
+//         bool ret=navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onMiddleButtonUp( e->modifiers(), e->pos() );
+//     }
 
-
-
-
-void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
-{
-    dbg(3)<<"wheel"<<std::endl;
-
-    IQCADModel3DViewer::wheelEvent(e);
-
-    bool ret=false;
-    if (!ret) ret=this->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-    if (!ret) navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-}
-
-
-
-
-void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
-{
-    dbg(3)<<"key press"<<std::endl;
-
-    IQCADModel3DViewer::keyPressEvent(e);
-
-    if (!e->isAccepted())
-    {
-        bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
-
-        if (!ret && vtkWidget_.hasFocus())
-          ret = this->onKeyPress(e->modifiers(), e->key());
-    }
-}
+//     afterDoubleClick_=false; // reset
+// }
 
 
 
 
-void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
-{
-    dbg(3)<<"key release"<<std::endl;
+// void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
+// {
+//     dbg(3)<<">>> mouse move"<<std::endl;
 
-    IQCADModel3DViewer::keyReleaseEvent(e);
-    if (!e->isAccepted())
-    {
-        bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
+//     IQCADModel3DViewer::mouseMoveEvent(e);
 
-        if (!ret && vtkWidget_.hasFocus())
-          ret=this->onKeyRelease(e->modifiers(), e->key());
-    }
-}
+//     bool ret=false;
+//     if (!ret) ret=this->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+//     if (!ret) navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+// }
+
+
+
+
+// void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
+// {
+//     dbg(3)<<"wheel"<<std::endl;
+
+//     IQCADModel3DViewer::wheelEvent(e);
+
+//     bool ret=false;
+//     if (!ret) ret=this->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+//     if (!ret) navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+// }
+
+
+
+
+// void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
+// {
+//     dbg(3)<<"key press"<<std::endl;
+
+//     IQCADModel3DViewer::keyPressEvent(e);
+
+//     if (!e->isAccepted())
+//     {
+//         bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
+
+//         if (!ret && vtkWidget_.hasFocus())
+//           ret = this->onKeyPress(e->modifiers(), e->key());
+//     }
+// }
+
+
+
+
+// void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
+// {
+//     dbg(3)<<"key release"<<std::endl;
+
+//     IQCADModel3DViewer::keyReleaseEvent(e);
+//     if (!e->isAccepted())
+//     {
+//         bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
+
+//         if (!ret && vtkWidget_.hasFocus())
+//           ret=this->onKeyRelease(e->modifiers(), e->key());
+//     }
+// }
 
 
 
@@ -2469,6 +2485,13 @@ void IQVTKCADModel3DViewer::ViewState::resetCameraIfAllow()
     }
 }
 
+
+
 IQVTKCADModel3DViewer::Bounds::Bounds()
     : xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0)
 {}
+
+
+defineTemplateType(NavigationManager<IQVTKCADModel3DViewer>);
+defineFactoryTable2(
+    VTKNavigationManager, NavigationManagerFactory, navigationManagers );

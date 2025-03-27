@@ -75,8 +75,10 @@ std::shared_ptr<ConstrainedSketchParametersDelegate>
 
 
 defineType(ConstrainedSketchPresentationDelegate);
-defineStaticFunctionTable2(ConstrainedSketchPresentationDelegate, SketchPresentationDelegates, sketchPresentationFor);
 
+defineStaticFunctionTable2(
+    "delegates for entity presentation in constrained sketch editor",
+    ConstrainedSketchPresentationDelegate, DelegateFactories, delegates );
 
 IQParameterSetModel*
 ConstrainedSketchPresentationDelegate::setupSketchEntityParameterSetModel(

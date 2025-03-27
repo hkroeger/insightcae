@@ -12,10 +12,10 @@ insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function
 Patch::getVisualizerFactoryFunction()
 {
     if (insight::CADParameterSetModelVisualizer
-        ::visualizerForOpenFOAMCaseElement_table().count(type_name_))
+        ::visualizerForOpenFOAMCaseElement().count(type_name_))
     {
         return insight::CADParameterSetModelVisualizer
-            ::visualizerForOpenFOAMCaseElement_table().lookup(type_name_);
+            ::visualizerForOpenFOAMCaseElement().lookup(type_name_);
     }
     else
         return nullptr;

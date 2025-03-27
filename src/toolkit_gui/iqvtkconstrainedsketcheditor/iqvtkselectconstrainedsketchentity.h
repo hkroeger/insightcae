@@ -30,7 +30,6 @@ class SketchEntityMultiSelection
 {
     Q_OBJECT
 
-    // std::unique_ptr<insight::ParameterSet> commonParameters_, defaultCommonParameters_;
     IQVTKConstrainedSketchEditor& editor_;
 
     QWidget *pew_;

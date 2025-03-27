@@ -75,6 +75,8 @@
 #include "iqvtkcadmodel3dviewer.h"
 #include "qtextensions.h"
 
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
+
 namespace fs = boost::filesystem;
 
 
@@ -97,7 +99,7 @@ AnalysisForm::AnalysisForm(
 
     // load default parameters
     auto defaultParams =
-        insight::Analysis::defaultParametersFor(analysisName_);
+        insight::Analysis::defaultParameters()(analysisName_);
 
     isOpenFOAMAnalysis_ =
         defaultParams->hasParameter("run/OFEname");
@@ -189,15 +191,17 @@ AnalysisForm::AnalysisForm(
     insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb;
     insight::ParameterSet_ValidatorPtr vali;
 
-    if (insight::CADParameterSetModelVisualizer::visualizerForAnalysis_table().count(analysisName_))
+    auto& atab = insight::CADParameterSetModelVisualizer::visualizerForAnalysis();
+    std::cout<<"table of "<<atab.description()<<" of size "<<atab.size()<<std::endl;
+    if (atab.count(analysisName_))
     {
         insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
-        vizb = insight::CADParameterSetModelVisualizer::visualizerForAnalysis_table().lookup(analysisName_);
+        vizb = atab.lookup(analysisName_);
     }
 
-    if (insight::Analysis::validatorFor_table().count(analysisName_))
+    if (insight::Analysis::validators().count(analysisName_))
     {
-        vali = insight::Analysis::validatorFor(analysisName_);
+        vali = insight::Analysis::validators()(analysisName_);
     }
 
     auto vsplit = new QSplitter;
@@ -237,10 +241,10 @@ AnalysisForm::AnalysisForm(
 
     insight::CameraState cs;
     if (insight::CADParameterSetModelVisualizer
-        ::defaultCameraStateForAnalysis_table().count(analysisName_))
+        ::defaultCameraStateForAnalysis().count(analysisName_))
     {
         cs=insight::CADParameterSetModelVisualizer
-            ::defaultCameraStateForAnalysis(analysisName);
+            ::defaultCameraStateForAnalysis()(analysisName);
         peditor_->viewer()->setCameraState(cs);
     }
 
@@ -271,12 +275,12 @@ AnalysisForm::AnalysisForm(
 
     IQExecutionWorkspace::initializeToDefaults();
 
-    if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis_table().count(
+    if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis().count(
             analysisName_ ))
     {
 #warning check StaticFunctionTable parameter: r-value ref?
         auto ppm=psmodel_;
-        auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis(
+        auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis()(
             analysisName_, std::move(ppm)
             );
 
@@ -328,18 +332,31 @@ AnalysisForm::~AnalysisForm()
 
 
 
-WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
+WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 {
   insight::CurrentExceptionContext ex(_("create menus"));
 
     auto *dm = new WidgetWithDynamicMenuEntries(this);
 
-    auto menu_parameters = dm->add(mainMenu->addMenu(_("&Parameters")));
-    auto menu_actions = dm->add(mainMenu->addMenu(_("&Actions")));
-    auto menu_results = dm->add(mainMenu->addMenu(_("&Results")));
-    auto menu_tools = dm->add(mainMenu->addMenu(_("&Tools")));
+    auto menu_parameters = dm->add(mw->menuBar()->addMenu(_("&Parameters")));
+    auto menu_actions = dm->add(mw->menuBar()->addMenu(_("&Actions")));
+    auto menu_results = dm->add(mw->menuBar()->addMenu(_("&Results")));
+    auto menu_tools = dm->add(mw->menuBar()->addMenu(_("&Tools")));
 
     auto menu_tools_of = menu_tools->addMenu("&OpenFOAM");
+
+    {
+        auto cfgview=new QAction(_("3D &viewer settings..."), this);
+        mw->settingsMenu_->addAction(cfgview);
+        auto viewer_settings=dm->add(cfgview);
+        connect( cfgview, &QAction::triggered, cfgview,
+                [this]()
+                {
+                    IQVTKCADModel3DViewerSettingsDialog dlg(peditor_->viewer(), this);
+                    dlg.exec();
+                } );
+    }
+
 
     act_save_=new QAction("&S", this);
     act_save_->setShortcut(Qt::CTRL + Qt::Key_S);

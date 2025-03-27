@@ -103,22 +103,55 @@ void CADParameterSetVisualizerGenerator::addDataset(
 
 
 
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForAnalysis);
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement);
-
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, IconFunctions, iconForAnalysis);
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, IconFunctions, iconForOpenFOAMCaseElement);
-
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, CameraStateFunctions, defaultCameraStateForAnalysis);
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, CameraStateFunctions, defaultCameraStateForOpenFOAMCaseElement);
-
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, CreateGUIActionsFunctions, createGUIActionsForAnalysis);
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, CreateGUIActionsFunctions, createGUIActionsForOpenFOAMCaseElement);
-
-defineStaticFunctionTable2(CADParameterSetModelVisualizer, CreateGUIWizards, createGUIWizardForAnalysis);
-
 
 defineType(CADParameterSetModelVisualizer);
+
+defineStaticFunctionTableAccessFunction2(
+    "analysis visualizers",
+    CADParameterSetModelVisualizer, VisualizerFunctions,
+    visualizerForAnalysis);
+
+defineStaticFunctionTableAccessFunction2(
+    "OpenFOAM case element visualizers",
+    CADParameterSetModelVisualizer, VisualizerFunctions,
+    visualizerForOpenFOAMCaseElement);
+
+defineStaticFunctionTableAccessFunction2(
+    "analysis icons",
+    CADParameterSetModelVisualizer, IconFunctions,
+    iconForAnalysis);
+
+defineStaticFunctionTableAccessFunction2(
+    "OpenFOAM case element icons",
+    CADParameterSetModelVisualizer, IconFunctions,
+    iconForOpenFOAMCaseElement);
+
+defineStaticFunctionTableAccessFunction2(
+    "analysis default camera states",
+    CADParameterSetModelVisualizer, DefaultCameraStateFunctions,
+    defaultCameraStateForAnalysis);
+
+defineStaticFunctionTableAccessFunction2(
+    "OpenFOAM case element default camera states",
+    CADParameterSetModelVisualizer, DefaultCameraStateFunctions,
+    defaultCameraStateForOpenFOAMCaseElement);
+
+defineStaticFunctionTableAccessFunction2(
+    "analysis GUI actions",
+    CADParameterSetModelVisualizer, CreateGUIActionsFunctions,
+    createGUIActionsForAnalysis);
+
+defineStaticFunctionTableAccessFunction2(
+    "OpenFOAM case element GUI actions",
+    CADParameterSetModelVisualizer, CreateGUIActionsFunctions,
+    createGUIActionsForOpenFOAMCaseElement);
+
+defineStaticFunctionTable2(
+    "wizards for analysis",
+    CADParameterSetModelVisualizer, GUIWizardFunctions,
+    createGUIWizardForAnalysis );
+
+
 
 CADParameterSetModelVisualizer::CADParameterSetModelVisualizer(
     QObject* parent,
@@ -388,6 +421,52 @@ void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished(QObje
   }
 }
 
+// Need explicit template instantiation. Otherwise unexpected behaviour:
+// https://www.reddit.com/r/cpp_questions/comments/11pnhaq/comment/jixenmc
+template class insight::StaticFunctionTable<
+    CADParameterSetModelVisualizer*,
+    QObject*,
+    IQParameterSetModel *,
+    const boost::filesystem::path&,
+    ProgressDisplayer&
+    >;
 
+
+template class
+    insight::StaticFunctionTable<
+        QIcon
+        >;
+
+
+template class
+    insight::StaticFunctionTable<
+        CameraState
+        >;
+
+template class insight::StaticFunctionTable<
+    GUIActionList,
+    const std::string&,
+    QObject *,
+    IQCADModel3DViewer *,
+    IQParameterSetModel *
+    >;
+
+
+
+template class insight::StaticFunctionTable<
+    QWidget*,
+    IQParameterSetModel *
+    >;
+
+
+void blubb()
+{
+    // produce some calls to inline functions to trigger static object init
+    int s;
+    s=insight::CADParameterSetModelVisualizer::visualizerForAnalysis().size();
+    s=insight::CADParameterSetModelVisualizer::visualizerForOpenFOAMCaseElement().size();
+    s=insight::CADParameterSetModelVisualizer::iconForAnalysis().size();
+    s=insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement().size();
+}
 
 }

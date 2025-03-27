@@ -224,90 +224,8 @@ void IQVTKManipulateCoordinateSystem::ManipPlane::update(const QPoint& newp)
     start=newp;
 }
 
-// void IQVTKManipulateCoordinateSystem::ManipEX::update(const QPoint& newp)
-// {
-//     vtkCamera* camera = parent->viewer().renderer()->GetActiveCamera();
 
-//     auto n=insight::vec3FromComponents(camera->GetViewPlaneNormal());
-//     auto ev = insight::normalized(arma::cross(n, parent->cs_.ex));
-//     arma::mat en = insight::normalized(arma::cross(parent->cs_.ex, ev));
 
-//     // goes through origin and ex
-//     gp_Ax3 viewPlane(
-//         to_Pnt(parent->cs_.origin),
-//         to_Vec(en)
-//         );
-
-//     auto nex = insight::normalized(
-//         parent->viewer().pointInPlane3D(
-//             viewPlane,
-//             newp
-//         )
-//     );
-
-//     // rotate EX in
-//     parent->cs_=insight::CoordinateSystem(
-//         parent->cs_.origin, nex, parent->cs_.ez);
-//     parent->setCS();
-
-//     parent->viewer().scheduleRedraw();
-// }
-
-// void IQVTKManipulateCoordinateSystem::ManipEY::update(const QPoint& newp)
-// {
-//     vtkCamera* camera = parent->viewer().renderer()->GetActiveCamera();
-
-//     auto n=insight::vec3FromComponents(camera->GetViewPlaneNormal());
-//     auto ev = insight::normalized(arma::cross(n, parent->cs_.ey));
-//     arma::mat en = insight::normalized(arma::cross(parent->cs_.ey, ev));
-
-//     // goes through origin and ex
-//     gp_Ax3 viewPlane(
-//         to_Pnt(parent->cs_.origin),
-//         to_Vec(en)
-//         );
-
-//     auto ney = insight::normalized(
-//         parent->viewer().pointInPlane3D(
-//             viewPlane,
-//             newp
-//             )
-//         );
-
-//     parent->cs_=insight::CoordinateSystem(
-//         parent->cs_.origin, arma::cross(ney, parent->cs_.ez), parent->cs_.ez);
-//     parent->setCS();
-
-//     parent->viewer().scheduleRedraw();
-// }
-
-// void IQVTKManipulateCoordinateSystem::ManipEZ::update(const QPoint& newp)
-// {
-//     vtkCamera* camera = parent->viewer().renderer()->GetActiveCamera();
-
-//     auto n=insight::vec3FromComponents(camera->GetViewPlaneNormal());
-//     auto ev = insight::normalized(arma::cross(n, parent->cs_.ez));
-//     arma::mat en = insight::normalized(arma::cross(parent->cs_.ez, ev));
-
-//     // goes through origin and ex
-//     gp_Ax3 viewPlane(
-//         to_Pnt(parent->cs_.origin),
-//         to_Vec(en)
-//         );
-
-//     auto nez = insight::normalized(
-//         parent->viewer().pointInPlane3D(
-//             viewPlane,
-//             newp
-//             )
-//         );
-
-//     parent->cs_=insight::CoordinateSystem(
-//         parent->cs_.origin, arma::cross(parent->cs_.ey, nez), nez);
-//     parent->setCS();
-
-//     parent->viewer().scheduleRedraw();
-// }
 
 void IQVTKManipulateCoordinateSystem::ManipP0::update(const QPoint& newp)
 {
@@ -335,95 +253,87 @@ void IQVTKManipulateCoordinateSystem::ManipP0::update(const QPoint& newp)
     parent->viewer().scheduleRedraw();
 }
 
-bool IQVTKManipulateCoordinateSystem::onLeftButtonDown(
-    Qt::KeyboardModifiers nFlags,
-    const QPoint point, bool afterDoubleClick )
-{
-    if (auto hit = viewer().findActorUnderCursorAt(
-            point, {aXY_, aYZ_, aXZ_/*aP0_,*/ /*aEx_, aEy_, aEz_*/} ))
-    {
-        if (hit==aXY_)
-        {
-            auto mex=std::make_unique<ManipPlane>();
-            mex->parent=this;
-            mex->normal=[&]() { return cs_.ez; };
-            action=std::move(mex);
-            return true;
-        }
-        else if (hit==aYZ_)
-        {
-            auto mex=std::make_unique<ManipPlane>();
-            mex->parent=this;
-            mex->normal=[&]() { return cs_.ex; };
-            action=std::move(mex);
-            return true;
-        }
-        else if (hit==aXZ_)
-        {
-            auto mex=std::make_unique<ManipPlane>();
-            mex->parent=this;
-            mex->normal=[&]() { return cs_.ey; };
-            action=std::move(mex);
-            return true;
-        }
-        // if (hit==aEx_)
-        // {
-        //     auto mex=std::make_unique<ManipEX>();
-        //     mex->start=point;
-        //     mex->parent=this;
-        //     action=std::move(mex);
-        //     return true;
-        // }
-        // else if (hit==aEy_)
-        // {
-        //     auto mey=std::make_unique<ManipEY>();
-        //     mey->start=point;
-        //     mey->parent=this;
-        //     action=std::move(mey);
-        //     return true;
-        // }
-        // else if (hit==aEz_)
-        // {
-        //     auto mez=std::make_unique<ManipEZ>();
-        //     mez->start=point;
-        //     mez->parent=this;
-        //     action=std::move(mez);
-        //     return true;
-        // }
-        // else if (hit==aP0_)
-        // {
-        //     auto mp0=std::make_unique<ManipP0>();
-        //     mp0->start=point;
-        //     mp0->parent=this;
-        //     action=std::move(mp0);
-        //     return true;
-        // }
-    }
-
-    return false;
-}
-
-bool IQVTKManipulateCoordinateSystem::onMouseMove(
-    Qt::MouseButtons buttons,
-    const QPoint point,
-    Qt::KeyboardModifiers curFlags )
-{
-    if (action)
-    {
-        action->update(point);
-        return true;
-    }
-
-    return false;
-}
 
 
-bool IQVTKManipulateCoordinateSystem::onLeftButtonUp(
+
+bool IQVTKManipulateCoordinateSystem::onMouseDrag(
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
     const QPoint point,
-    bool lastClickWasDoubleClick )
+    EventType eventType )
 {
-    if (action)
+    if (eventType==Begin)
+    {
+        if (auto hit = viewer().findActorUnderCursorAt(
+                point, {aXY_, aYZ_, aXZ_/*aP0_,*/ /*aEx_, aEy_, aEz_*/} ))
+        {
+            if (hit==aXY_)
+            {
+                auto mex=std::make_unique<ManipPlane>();
+                mex->parent=this;
+                mex->normal=[&]() { return cs_.ez; };
+                action=std::move(mex);
+                return true;
+            }
+            else if (hit==aYZ_)
+            {
+                auto mex=std::make_unique<ManipPlane>();
+                mex->parent=this;
+                mex->normal=[&]() { return cs_.ex; };
+                action=std::move(mex);
+                return true;
+            }
+            else if (hit==aXZ_)
+            {
+                auto mex=std::make_unique<ManipPlane>();
+                mex->parent=this;
+                mex->normal=[&]() { return cs_.ey; };
+                action=std::move(mex);
+                return true;
+            }
+            // if (hit==aEx_)
+            // {
+            //     auto mex=std::make_unique<ManipEX>();
+            //     mex->start=point;
+            //     mex->parent=this;
+            //     action=std::move(mex);
+            //     return true;
+            // }
+            // else if (hit==aEy_)
+            // {
+            //     auto mey=std::make_unique<ManipEY>();
+            //     mey->start=point;
+            //     mey->parent=this;
+            //     action=std::move(mey);
+            //     return true;
+            // }
+            // else if (hit==aEz_)
+            // {
+            //     auto mez=std::make_unique<ManipEZ>();
+            //     mez->start=point;
+            //     mez->parent=this;
+            //     action=std::move(mez);
+            //     return true;
+            // }
+            // else if (hit==aP0_)
+            // {
+            //     auto mp0=std::make_unique<ManipP0>();
+            //     mp0->start=point;
+            //     mp0->parent=this;
+            //     action=std::move(mp0);
+            //     return true;
+            // }
+        }
+    }
+    else if (eventType==Intermediate)
+    {
+        if (action)
+        {
+            action->update(point);
+            return true;
+        }
+    }
+    else if (eventType==Final)
     {
         action.reset();
         return true;
@@ -432,13 +342,21 @@ bool IQVTKManipulateCoordinateSystem::onLeftButtonUp(
     return false;
 }
 
-bool IQVTKManipulateCoordinateSystem::onRightButtonDown(
+bool IQVTKManipulateCoordinateSystem::onMouseClick(
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
-    const QPoint point )
+    const QPoint point)
 {
-    this->finishAction(false);
-    return true;
+    if (btn&Qt::RightButton)
+    {
+        this->finishAction(false);
+        return true;
+    }
+    return false;
 }
+
+
+
 
 bool IQVTKManipulateCoordinateSystem::onKeyPress ( Qt::KeyboardModifiers modifiers, int key )
 {

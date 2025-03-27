@@ -85,6 +85,7 @@ private:
   AnalysisForm* addAnalysisTabWithDefaults(const std::string& analysisType);
 
 public:
+  QMenu* settingsMenu_;
 
    QPointer<WidgetWithDynamicMenuEntries> lastActive_;
 

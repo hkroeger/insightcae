@@ -40,7 +40,8 @@ namespace bmd
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
     blockMeshDict_CylWedge, &newVisualizer<blockMeshDict_CylWedge_ParameterSet_Visualizer>);
 
 

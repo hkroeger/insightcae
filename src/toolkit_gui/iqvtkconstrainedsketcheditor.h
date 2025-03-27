@@ -113,14 +113,23 @@ public:
     void deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td);
     bool layerIsVisible(const std::string &layerName) const;
 
-    bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override;
-    bool onMouseMove
-      (
-       Qt::MouseButtons buttons,
-       const QPoint point,
-       Qt::KeyboardModifiers curFlags
-       ) override;
+    std::shared_ptr<insight::cad::ConstrainedSketchEntity>
+    selectedItemUnderCursor() const;
+
+    bool onDoubleClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
+
+    bool onKeyRelease (
+        Qt::KeyboardModifiers modifiers,
+        int key ) override;
+
+    bool onMouseDrag(
+        Qt::MouseButtons buttons,
+        Qt::KeyboardModifiers curFlags,
+        const QPoint point,
+        EventType eventType ) override;
 
     inline const insight::cad::ConstrainedSketch& sketch() const
     { return **this; }

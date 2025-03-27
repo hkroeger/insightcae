@@ -14,6 +14,7 @@
 
 #include "base/analysis.h"
 #include "base/supplementedinputdata.h"
+#include "openfoam/caseelements/openfoamcaseelement.h"
 #include "boost/atomic.hpp"
 #include "cadtypes.h"
 #include "iqiscadmodelgenerator.h"
@@ -147,7 +148,6 @@ public:
 
   typedef
       insight::StaticFunctionTable<
-          &CADParameterSetModelVisualizer::typeName,
           CADParameterSetModelVisualizer*,
               QObject*,
               IQParameterSetModel *,
@@ -156,35 +156,40 @@ public:
           >
           VisualizerFunctions;
 
-  declareStaticFunctionTable2(VisualizerFunctions, visualizerForAnalysis);
-  declareStaticFunctionTable2(VisualizerFunctions, visualizerForOpenFOAMCaseElement);
+  declareStaticFunctionTableAccessFunction2(
+      VisualizerFunctions, visualizerForAnalysis);
+
+  declareStaticFunctionTableAccessFunction2(
+      VisualizerFunctions, visualizerForOpenFOAMCaseElement);
 
 
   typedef
       insight::StaticFunctionTable<
-          &CADParameterSetModelVisualizer::typeName,
           QIcon
           >
           IconFunctions;
 
+  declareStaticFunctionTableAccessFunction2(
+      IconFunctions, iconForAnalysis);
 
-  declareStaticFunctionTable2(IconFunctions, iconForAnalysis);
-  declareStaticFunctionTable2(IconFunctions, iconForOpenFOAMCaseElement);
+  declareStaticFunctionTableAccessFunction2(
+      IconFunctions, iconForOpenFOAMCaseElement);
 
 
   typedef
       insight::StaticFunctionTable<
-          &CADParameterSetModelVisualizer::typeName,
-          CameraState
-          >
-          CameraStateFunctions;
+        CameraState
+      >
+      DefaultCameraStateFunctions;
 
-  declareStaticFunctionTable2(CameraStateFunctions, defaultCameraStateForAnalysis);
-  declareStaticFunctionTable2(CameraStateFunctions, defaultCameraStateForOpenFOAMCaseElement);
+  declareStaticFunctionTableAccessFunction2(
+      DefaultCameraStateFunctions, defaultCameraStateForAnalysis);
+
+  declareStaticFunctionTableAccessFunction2(
+      DefaultCameraStateFunctions, defaultCameraStateForOpenFOAMCaseElement);
 
 
   typedef insight::StaticFunctionTable<
-      &CADParameterSetModelVisualizer::typeName,
       GUIActionList,
       const std::string&,
       QObject *,
@@ -192,17 +197,17 @@ public:
       IQParameterSetModel *
       > CreateGUIActionsFunctions;
 
-  declareStaticFunctionTable2(CreateGUIActionsFunctions, createGUIActionsForAnalysis);
-  declareStaticFunctionTable2(CreateGUIActionsFunctions, createGUIActionsForOpenFOAMCaseElement);
+  declareStaticFunctionTableAccessFunction2(
+      CreateGUIActionsFunctions, createGUIActionsForAnalysis);
+
+  declareStaticFunctionTableAccessFunction2(
+      CreateGUIActionsFunctions, createGUIActionsForOpenFOAMCaseElement);
 
 
-  typedef insight::StaticFunctionTable<
-      &CADParameterSetModelVisualizer::typeName,
+  declareStaticFunctionTable2(
+      GUIWizardFunctions, createGUIWizardForAnalysis,
       QWidget*,
-      IQParameterSetModel *
-      > CreateGUIWizards;
-
-  declareStaticFunctionTable2(CreateGUIWizards, createGUIWizardForAnalysis);
+      IQParameterSetModel * );
 
 
 protected:

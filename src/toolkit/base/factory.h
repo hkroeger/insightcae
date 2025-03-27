@@ -33,6 +33,7 @@
 #include <stdexcept>
 #include <functional>
 #include <memory>
+#include <iostream>
 
 namespace std {
 
@@ -45,6 +46,12 @@ std::unique_ptr<T> make_unique(Args&&... args)
 }
 
 #endif
+
+template<typename T, typename Del, typename... Args>
+std::unique_ptr<T, Del> make_unique_with_deleter(Args&&... args)
+{
+    return std::unique_ptr<T, Del>(new T(std::forward<Args>(args)...));
+}
 
 
 }
@@ -158,31 +165,32 @@ static std::vector<std::string> factoryToC()
 
 
 
-template<const std::string* typeName, class FunctionReturnType = void, class ...FunctionArgs>
+template<class FunctionReturnType = void, class ...FunctionArgs>
 class StaticFunctionTable
-    : public std::map<
-          std::string,
-          std::function<
-              FunctionReturnType( FunctionArgs... )
-              >
-          >
+  : public std::map<
+        std::string,
+        std::function<
+          FunctionReturnType( FunctionArgs... )
+      >
+    >
 {
 
+    std::string description_;
 
 public:
-    StaticFunctionTable()
+    StaticFunctionTable(const std::string& description)
+        : description_(description)
     {}
+
+    const std::string& description() const
+    {
+        return description_;
+    }
 
     typedef std::function<
         FunctionReturnType( FunctionArgs... )
         > Function;
 
-
-    // //not working as expected
-    // bool has(const std::string& key) const
-    // {
-    //     return this->count(key)>0;
-    // }
 
     std::vector<std::string> ToC() const
     {
@@ -206,8 +214,8 @@ public:
             throw std::runtime_error(
                 "Could not lookup type \""
                 + key +
-                "\" in factory table of "
-                + *typeName );
+                "\" in table of "
+                + description() );
         }
 
         return i->second;
@@ -222,12 +230,10 @@ public:
             );
     }
 
-
     template<class Instance>
     struct Add {
-        // std::unique_ptr<> createInstance
-        Add(StaticFunctionTable& table, Function f) {
-            table.emplace(
+        Add(std::function<StaticFunctionTable&(void)> table, Function f) {
+            table().emplace(
                 Instance::typeName_(), f
                 );
         }
@@ -235,59 +241,92 @@ public:
 
 };
 
+/*
+ * Static access function must not be inline but declare and defined in a translation unit.
+ * Otherwise different instances of the global static table might
+ */
+#define declareStaticFunctionTableAccessFunction2(TYPE, TABFUNC) \
+static TYPE& TABFUNC();
+
+#define defineStaticFunctionTableAccessFunction2(DESCRIPTION, NAMESPACE, TYPE, TABFUNC) \
+NAMESPACE::TYPE& NAMESPACE::TABFUNC() {                                                 \
+    static TYPE theTable( DESCRIPTION );                                                \
+    return theTable; }
+
+#define declareStaticFunctionTable2(TYPE, TABFUNC, RETURNTYPE, ...) \
+typedef StaticFunctionTable< RETURNTYPE, ## __VA_ARGS__ > TYPE;                 \
+declareStaticFunctionTableAccessFunction2(TYPE, TABFUNC)
+
+#define defineStaticFunctionTable2(DESCRIPTION, NAMESPACE, TYPE, TABFUNC)   \
+defineStaticFunctionTableAccessFunction2(DESCRIPTION, NAMESPACE, TYPE, TABFUNC)
 
 
-#define declareStaticFunctionTable2(TYPE, NAME)                         \
-static TYPE& NAME##_table();                                            \
-template<class ...FunctionArgs>                                         \
-static TYPE::Function::result_type                                      \
-NAME(const TYPE::key_type& key, FunctionArgs&&... addArgs)              \
-{ return NAME##_table()( key, std::forward<FunctionArgs>(addArgs)...); }
-
-
-#define defineStaticFunctionTable2(BASE, TYPE, NAME)                    \
-BASE::TYPE& BASE::NAME##_table() {                                      \
- static TYPE theInstance;                                               \
- return theInstance;                                                    \
-}
-
-
-#define addToStaticFunctionTable2(BASE, TYPE, NAME, DERIVED, OBJECT)    \
-BASE::TYPE::Add<DERIVED>                                                \
-    add##DERIVED##To##NAME##In##BASE(                                             \
-        BASE::NAME##_table(),                                           \
+#define addToStaticFunctionTable2(NAMESPACE, TYPE, TABFUNC, DERIVED, OBJECT)    \
+NAMESPACE::TYPE::Add<DERIVED>                                                   \
+    add##DERIVED##To##TABFUNC##In##NAMESPACE(                                   \
+        &NAMESPACE::TABFUNC,                                                    \
         OBJECT )
 
-#define addToFactoryTable2(BASE, TYPE, NAME, DERIVED)                   \
-BASE::TYPE::Add<DERIVED>                                                \
-    add##DERIVED##To##NAME##In##BASE(                                   \
-      BASE::NAME##_table() )
 
 
-
-template<const std::string* typeName, class BaseClass, class ...FunctionArgs>
-class Factory
-    : public StaticFunctionTable<typeName, std::unique_ptr<BaseClass>, FunctionArgs...>
+template<class BaseClass, class Del, class ...FunctionArgs>
+class FactoryWithDeleter
+    : public StaticFunctionTable<std::unique_ptr<BaseClass, Del>, FunctionArgs...>
 {
 
 public:
+    typedef StaticFunctionTable<std::unique_ptr<BaseClass, Del>, FunctionArgs...> FactoryBase;
 
-    typedef StaticFunctionTable<typeName, std::unique_ptr<BaseClass>, FunctionArgs...> FactoryBase;
+    FactoryWithDeleter()
+        : FactoryBase(BaseClass::typeName_())
+    {}
 
     template<class Instance>
     struct Add
         : public FactoryBase::template Add<Instance>
     {
-        Add(Factory& factory)
+        Add(std::function<FactoryWithDeleter&(void)> factory)
         : FactoryBase::template Add<Instance>(
-            factory,
-            &std::make_unique<Instance, FunctionArgs...> )
+            [factory]() -> FactoryBase& { return factory(); },
+            &std::make_unique_with_deleter<Instance, Del, FunctionArgs...> )
         {}
     };
 };
 
 
+template<class BaseClass, class ...FunctionArgs>
+class Factory
+    : public FactoryWithDeleter<BaseClass, std::default_delete<BaseClass>, FunctionArgs...>
+{
 
+public:
+    typedef FactoryWithDeleter<BaseClass, std::default_delete<BaseClass>, FunctionArgs...>
+        FactoryBase;
+
+    using FactoryBase::FactoryBase;
+};
+
+
+#define declareFactoryTableAccessFunction2(TYPE, TABFUNC) \
+static TYPE& TABFUNC()
+
+#define defineFactoryTableAccessFunction2(NAMESPACE, TYPE, TABFUNC) \
+NAMESPACE::TYPE& NAMESPACE::TABFUNC() { \
+        static TYPE theTable; \
+        return theTable; \
+}
+
+#define declareFactoryTable2(BASECLASS, TYPE, TABFUNC, ...) \
+typedef Factory< BASECLASS, ## __VA_ARGS__ > TYPE; \
+declareFactoryTableAccessFunction2(TYPE, TABFUNC)
+
+#define defineFactoryTable2(NAMESPACE, TYPE, TABFUNC) \
+defineFactoryTableAccessFunction2(NAMESPACE, TYPE, TABFUNC)
+
+#define addToFactoryTable2(NAMESPACE, TYPE, TABFUNC, DERIVED)          \
+NAMESPACE::TYPE::Add<DERIVED>                                          \
+    add##DERIVED##To##TABFUNC##In##NAMESPACE(                          \
+            &NAMESPACE::TABFUNC )
 
 
  

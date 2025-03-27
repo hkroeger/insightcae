@@ -20,17 +20,12 @@ public:
 
     void start() override;
 
-    bool onMouseMove
-        (
-            Qt::MouseButtons buttons,
-            const QPoint point,
-            Qt::KeyboardModifiers curFlags
-            ) override;
-
-    bool onLeftButtonUp(
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
         const QPoint point,
-        bool lastClickWasDoubleClick ) override;
+        EventType eventType ) override;
+
 };
 
 #endif // IQVTKDRAGDIMENSIONLINEACTION_H

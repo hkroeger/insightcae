@@ -3,6 +3,7 @@
 
 #include "viewwidgetaction.h"
 #include "boost/signals2.hpp"
+#include <qnamespace.h>
 
 template<class T>
 std::ostream&
@@ -182,32 +183,62 @@ public:
     }
 
 
-    bool onLeftButtonDown(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point, bool afterDoubleClick ) override
+    bool updateSelectionCandidates(const QPoint& point)
     {
-        if (!this->hasChildReceivers() || !Base::onLeftButtonDown(nFlags, point, afterDoubleClick))
+        if (!nextSelectionCandidates_ )
         {
-            if (!nextSelectionCandidates_ && !afterDoubleClick)
+            auto selectedEntities = findEntitiesUnderCursorFiltered(point);
+
+            if (selectedEntities.size()>0)
             {
-                auto selectedEntities = findEntitiesUnderCursorFiltered(point);
+                previewHighlight_ = boost::blank();
+                nextSelectionCandidates_=
+                    std::make_shared<SelectionCandidates>
+                    (*this, selectedEntities);
 
-                if (selectedEntities.size()>0)
-                {
-                    previewHighlight_ = boost::blank();
-                    nextSelectionCandidates_=
-                        std::make_shared<SelectionCandidates>
-                        (*this, selectedEntities);
+                this->userPrompt(
+                    QString(
+                        "There are %1 entities at picked location."
+                        " Hold mouse button and press <Space> to cycle selection." )
+                    .arg(nextSelectionCandidates_->size() ) );
 
-                    this->userPrompt(QString("There are %1 entities at picked location. Hold mouse button and press <Space> to cycle selection.")
-                                         .arg(nextSelectionCandidates_->size()));
-
-                    return true;
-                }
+                return true;
             }
         }
+
         return false;
     }
+
+    // bool onMouseClick(
+    //     typename Base::MouseButton btn,
+    //     Qt::KeyboardModifiers nFlags,
+    //     const QPoint point ) override
+    // {
+    //     if (!this->hasChildReceivers() || !Base::onMouseClick(btn, nFlags, point))
+    //     {
+    //         if (!nextSelectionCandidates_ )
+    //         {
+    //             auto selectedEntities = findEntitiesUnderCursorFiltered(point);
+
+    //             if (selectedEntities.size()>0)
+    //             {
+    //                 previewHighlight_ = boost::blank();
+    //                 nextSelectionCandidates_=
+    //                     std::make_shared<SelectionCandidates>
+    //                     (*this, selectedEntities);
+
+    //                 this->userPrompt(
+    //                     QString(
+    //                         "There are %1 entities at picked location."
+    //                         " Hold mouse button and press <Space> to cycle selection." )
+    //                     .arg(nextSelectionCandidates_->size() ) );
+
+    //                 return true;
+    //             }
+    //         }
+    //     }
+    //     return false;
+    // }
 
 
 
@@ -215,33 +246,61 @@ public:
         Qt::KeyboardModifiers modifiers,
         int key ) override
     {
-        if (!this->hasChildReceivers() || !Base::onKeyPress(modifiers, key))
+        if (!this->hasChildReceivers() /*|| !Base::onKeyPress(modifiers, key)*/)
         {
-            if (key==Qt::Key_Space)
+            if ( (key==Qt::Key_Space)
+                || (key==Qt::Key_Tab) )
             {
-                if (nextSelectionCandidates_)
+                if (!nextSelectionCandidates_ && this->hasLastMouseLocation() )
+                {
+                    auto selectedEntities =
+                        findEntitiesUnderCursorFiltered(
+                            this->lastMouseLocation()
+                        );
+
+                    if (selectedEntities.size()>0)
+                    {
+                        previewHighlight_ = boost::blank();
+                        nextSelectionCandidates_=
+                            std::make_shared<SelectionCandidates>
+                            (*this, selectedEntities);
+
+                        this->userPrompt(
+                            QString(
+                                "There are %1 entities at the current location."
+                                " Don't move the mouse and press <Space> or <Tab> to cycle selection." )
+                                .arg(nextSelectionCandidates_->size() ) );
+
+                        return true;
+                    }
+                }
+                else
                 {
                     nextSelectionCandidates_->cycleCandidate();
+                    return true;
                 }
-                return true;
             }
         }
-        return false;
+        return Base::onKeyPress(modifiers, key);
     }
 
 
 
 
-    bool onLeftButtonUp(
+    bool onMouseClick(
+        Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
-        const QPoint point,
-        bool lastClickWasDoubleClick ) override
+        const QPoint point ) override
     {
-        if (!this->hasChildReceivers() || !Base::onLeftButtonUp(nFlags, point,
-                                  lastClickWasDoubleClick))
+        if (!this->hasChildReceivers()/*
+            || !Base::onMouseClick(btn, nFlags, point)*/)
         {
-            if (!lastClickWasDoubleClick)
+            if (btn==Qt::LeftButton)
             {
+                if (!nextSelectionCandidates_)
+                {
+                    updateSelectionCandidates(point);
+                }
                 if (nextSelectionCandidates_)
                 {
                     if (!(nFlags&Qt::ShiftModifier))
@@ -290,57 +349,57 @@ public:
                 }
             }
         }
-        return false;
+        return Base::onMouseClick(btn, nFlags, point);
     }
 
+
+    bool updatePreview(const QPoint& point)
+    {
+        auto euc = findEntitiesUnderCursorFiltered(point);
+        if (euc.size()>0)
+        {
+            if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
+            {
+                if ( !SelectedEntityCompare()(ph->first, euc[0])
+                    &&
+                    !SelectedEntityCompare()(euc[0], ph->first) )
+                {
+                    // already in preview highlight, nothing to do
+                    return false;
+                }
+            }
+
+            previewHighlight_ = boost::blank();
+            previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
+
+            newPreviewEntity(euc[0]);
+
+            return true;
+        }
+
+        // else
+        previewHighlight_ = boost::blank();
+        return false;
+    }
 
 
 
     bool onMouseMove(
-            Qt::MouseButtons buttons,
             const QPoint point,
             Qt::KeyboardModifiers curFlags
         ) override
     {
-        if (!this->hasChildReceivers() || !Base::onMouseMove(buttons, point, curFlags))
+        if (!this->hasChildReceivers() /*|| !Base::onMouseMove(point, curFlags)*/)
         {
-            if (!(buttons&Qt::LeftButton)
-                && !nextSelectionCandidates_
-                && doPreviewSelection_
-                )
+            if ( !nextSelectionCandidates_
+                 && doPreviewSelection_ )
             {
-                auto euc = findEntitiesUnderCursorFiltered(point);
-                if (euc.size()>0)
-                {
-                    if (auto *ph = boost::get<PreviewHighlight>(&previewHighlight_))
-                    {
-                        if ( !SelectedEntityCompare()(ph->first, euc[0])
-                             &&
-                             !SelectedEntityCompare()(euc[0], ph->first) )
-                        {
-                            // already in preview highlight, nothing to do
-                            return false;
-                        }
-                    }
-
-                    previewHighlight_ = boost::blank();
-                    previewHighlight_ = std::make_pair(euc[0], highlightEntity(euc[0], candidateColor));
-
-                    newPreviewEntity(euc[0]);
-
-                    return false;
-                }
+                updatePreview(point);
             }
         }
 
-        previewHighlight_ = boost::blank();
-
-        return false;
+        return Base::onMouseMove(point, curFlags);
     }
-
-
-
-
 
 
 
@@ -349,6 +408,7 @@ public:
     {
         previewHighlight_ = boost::blank();
     }
+
 
     bool hasPreviewedItem() const
     {
@@ -359,6 +419,7 @@ public:
         return false;
     }
 
+
     SelectedEntity previewedItem() const
     {
         auto ph = boost::get<PreviewHighlight>(previewHighlight_);
@@ -368,6 +429,11 @@ public:
 
     bool hasSelectionCandidate() const
     {
+        insight::dbg(3)
+            <<"nextSelectionCandidates:"
+            <<(bool(nextSelectionCandidates_)?nextSelectionCandidates_->size():0)
+            <<std::endl;
+
         return bool(nextSelectionCandidates_)
                && (nextSelectionCandidates_->size()>0);
     }

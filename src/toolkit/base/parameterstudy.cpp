@@ -68,7 +68,7 @@ std::unique_ptr<ParameterSet>
 ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
 {
 
-  auto dfp = Analysis::defaultParametersFor(BaseAnalysis::typeName);
+  auto dfp = Analysis::defaultParameters()(BaseAnalysis::typeName);
   
   // == Modify parameter set of base analysis:
 
@@ -163,13 +163,19 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
 
     // create analysis object
     auto newinst =
-        Analysis::createAnalysis(
+        Analysis::analyses()(
             BaseAnalysis::typeName,
-                Analysis::createSupplementedInputDataFor(
+                Analysis::supplementedInputDatas()(
                     BaseAnalysis::typeName,
                     ParameterSetInput(*newp), ep, consoleProgressDisplayer ) );
 
-    instances.enqueue( AnalysisInstance{ n.str(), std::move(newp), std::move(newinst), emptyresset, nullptr } );
+    instances.enqueue(
+        AnalysisInstance{
+            n.str(),
+            std::move(newp),
+            std::move(newinst),
+            emptyresset,
+            nullptr  } );
 }
 
 

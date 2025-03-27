@@ -11,6 +11,7 @@
 #include "vtkLineSource.h"
 #include "vtkPolyDataMapper.h"
 #include "vtkCamera.h"
+#include <qnamespace.h>
 
 
 
@@ -195,7 +196,6 @@ void IQVTKCADModel3DViewerDrawLine::start()
 
 
 bool IQVTKCADModel3DViewerDrawLine::onMouseMove(
-        Qt::MouseButtons buttons,
         const QPoint point,
         Qt::KeyboardModifiers curFlags )
 {
@@ -204,17 +204,24 @@ bool IQVTKCADModel3DViewerDrawLine::onMouseMove(
             .p->value() );
 
     return IQVTKCADModel3DViewerPlanePointBasedAction
-        ::onMouseMove(buttons, point, curFlags);
+        ::onMouseMove(point, curFlags);
 }
 
 
 
 
 
-bool IQVTKCADModel3DViewerDrawLine::onRightButtonDown(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point )
+bool IQVTKCADModel3DViewerDrawLine::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
 {
-    finishAction();
-    return true;
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+
+    return IQVTKCADModel3DViewerPlanePointBasedAction
+        ::onMouseClick(btn, nFlags, point);
 }

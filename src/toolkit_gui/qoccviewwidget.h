@@ -16,8 +16,15 @@
 #include "AIS_Plane.hxx"
 #include "V3d_Coordinate.hxx"
 
+
+#if OCC_VERSION_MAJOR>=7
+#include "AIS_ViewController.hxx"
+class Aspect_GraphicCallbackStruct;
+#endif
+
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqcadmodel3dviewer/navigationmanager.h"
+#include "iqcadmodel3dviewer/qwidgettoinputreceiveradapter.h"
 
 #if OCC_VERSION_MAJOR>=7
 #include "AIS_ViewController.hxx"
@@ -58,9 +65,120 @@ const double ValZWMin = 1;
 
 
 
+class OCCViewWidgetRotation
+    : public ViewWidgetAction<QoccViewWidget>
+{
+public:
+    OCCViewWidgetRotation(
+        QoccViewWidget &viewWidget, const QPoint point);
+
+    void start() override;
+
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override;
+
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point,
+        EventType eventType ) override;
+};
+
+
+class OCCViewWidgetPanning
+    : public ViewWidgetAction<QoccViewWidget>
+{
+public:
+    OCCViewWidgetPanning(
+        QoccViewWidget &viewWidget, const QPoint point);
+
+    void start() override;
+
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override;
+
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point,
+        EventType eventType ) override;
+};
+
+
+class OCCViewWidgetDynamicZooming
+    : public ViewWidgetAction<QoccViewWidget>
+{
+public:
+    OCCViewWidgetDynamicZooming(
+        QoccViewWidget &viewWidget, const QPoint point);
+
+    void start() override;
+
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override;
+
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point,
+        EventType eventType ) override;
+};
+
+
+
+class OCCViewWidgetWindowZooming : public ViewWidgetAction<QoccViewWidget>
+{
+    QRubberBand *rb_;
+public:
+    OCCViewWidgetWindowZooming(
+        QoccViewWidget &viewWidget, const QPoint point, QRubberBand* rb);
+    // ~OCCViewWidgetWindowZooming();
+
+    void start() override;
+
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override;
+
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point,
+        EventType eventType ) override;
+};
+
+
+
+
+class OCCViewWidgetMeasurePoints
+    : public ViewWidgetAction<QoccViewWidget>
+{
+    std::shared_ptr<insight::cad::Vector> p1_, p2_;
+
+public:
+    OCCViewWidgetMeasurePoints(
+        QoccViewWidget &viewWidget);
+    // ~OCCViewWidgetMeasurePoints();
+
+    QString description() const override;
+
+    void start() override;
+
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
+};
+
+
+
+
 class TOOLKIT_GUI_EXPORT QoccViewWidget
-: public QWidget,
-  public ViewWidgetActionHost<QoccViewWidget>
+: public QWidgetToInputReceiverAdapter<
+          QoccViewWidget, QWidget>
 #if OCC_VERSION_MAJOR>=7
   , protected AIS_ViewController
 #endif
@@ -76,7 +194,7 @@ private:
   void addLights();
 
 //  InputReceiver<QoccViewWidget>::Ptr currentNavigationAction_;
-  NavigationManager<QoccViewWidget>::Ptr navigationManager_;
+  // NavigationManager<QoccViewWidget>::Ptr navigationManager_;
 
 public:
 
@@ -250,13 +368,7 @@ protected: // methods
 
   void paintEvent        ( QPaintEvent* e ) override;
   void resizeEvent       ( QResizeEvent* e ) override;
-  void mousePressEvent   ( QMouseEvent* e ) override;
-  void mouseReleaseEvent ( QMouseEvent* e ) override;
   void mouseMoveEvent    ( QMouseEvent* e ) override;
-  void wheelEvent        ( QWheelEvent* e ) override;
-  void keyPressEvent     ( QKeyEvent* e ) override;
-  void keyReleaseEvent   ( QKeyEvent* e ) override;
-  void leaveEvent	 ( QEvent * ) override;
 
   void displayContextMenu( const QPoint& p);
 

@@ -215,23 +215,23 @@ PythonAnalysisLoader::PythonAnalysisLoader()
                             auto scriptfile = itr->path();
                             std::string analysisName = scriptfile.string();
                             
-                            Analysis::descriptionFor_table().emplace(
+                            Analysis::descriptions().emplace(
                                 analysisName,
                                 [scriptfile](){ return AnalysisDescription{ scriptfile.string(), "" }; }
                                 );
 
-                            Analysis::categoryFor_table().emplace(
+                            Analysis::categories().emplace(
                                 analysisName,
                                 [scriptfile](){ return PythonAnalysis::category(scriptfile); }
                                 );
 
-                            Analysis::defaultParametersFor_table().emplace(
+                            Analysis::defaultParameters().emplace(
                                 analysisName,
                                 [scriptfile](){ return PythonAnalysis::defaultParameters(scriptfile); }
                                 );
 
 
-                            Analysis::createSupplementedInputDataFor_table().emplace(
+                            Analysis::supplementedInputDatas().emplace(
                                 analysisName,
                                 [](ParameterSetInput ip,
                                    const boost::filesystem::path& exePath,
@@ -239,7 +239,7 @@ PythonAnalysisLoader::PythonAnalysisLoader()
                                 { return std::make_unique<supplementedInputDataBase>(std::move(ip), exePath, pd); }
                                 );
 
-                            Analysis::createAnalysis_table().emplace(
+                            Analysis::analyses().emplace(
                                 analysisName,
                                 [scriptfile](const std::shared_ptr<supplementedInputDataBase>& sp)
                                 { return std::make_unique<PythonAnalysis>(scriptfile, sp); }

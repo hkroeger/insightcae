@@ -202,7 +202,7 @@ AnalysisParameterPropositions::AnalysisParameterPropositions()
                 {
                     std::string analysisName(l->value());
 
-                    if (Analysis::createAnalysis_table().count(analysisName))
+                    if (Analysis::analyses().count(analysisName))
                     {
                         insight::Warning(
                             "Proposition sources for non-existing analysis "+analysisName
@@ -276,7 +276,7 @@ AnalysisParameterPropositions::getCombinedPropositionsForParameter(
     auto props=ParameterSet::create();
 
     if (auto hardCodedProps =
-          Analysis::getPropositionsForParameterFor(
+          Analysis::propositionsForParameter()(
             analysisName, parameterPath, currentParameterValues))
     {
         props->extend(*hardCodedProps);

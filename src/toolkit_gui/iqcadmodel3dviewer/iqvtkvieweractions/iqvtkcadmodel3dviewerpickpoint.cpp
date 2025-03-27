@@ -3,6 +3,8 @@
 
 #include "vtkSmartPointer.h"
 #include "vtkWorldPointPicker.h"
+#include <qdebug.h>
+#include <qnamespace.h>
 
 
 
@@ -19,18 +21,26 @@ void IQVTKCADModel3DViewerPickPoint::start()
 
 
 
-bool IQVTKCADModel3DViewerPickPoint::onLeftButtonDown(Qt::KeyboardModifiers nFlags, const QPoint screenPos, bool afterDoubleClick)
+bool IQVTKCADModel3DViewerPickPoint::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
 {
-    auto picker = vtkSmartPointer<vtkWorldPointPicker>::New();
+    if (btn&Qt::LeftButton)
+    {
+        auto picker = vtkSmartPointer<vtkWorldPointPicker>::New();
 
-    auto p = viewer().widgetCoordsToVTK(screenPos);
-    picker->Pick(p.x(), p.y(), 0, viewer().renderer());
+        auto p = viewer().widgetCoordsToVTK(point);
+        picker->Pick(p.x(), p.y(), 0, viewer().renderer());
 
-    arma::mat pt = insight::vec3Zero();
-    picker->GetPickPosition(pt.memptr());
-    Q_EMIT pickedPoint(pt);
-    
-    finishAction();
+        arma::mat pt = insight::vec3Zero();
+        picker->GetPickPosition(pt.memptr());
+        Q_EMIT pickedPoint(pt);
 
-    return true;
+        finishAction();
+
+        return true;
+    }
+
+    return false;
 }

@@ -22,7 +22,8 @@ namespace bmd
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
     blockMeshDict_Box, &newVisualizer<blockMeshDict_Box_ParameterSet_Visualizer>);
 
 
@@ -56,7 +57,8 @@ void blockMeshDict_Box_ParameterSet_Visualizer::recreateVisualizationElements()
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
     blockMeshDict_Cylinder, &newVisualizer<blockMeshDict_Cylinder_ParameterSet_Visualizer>);
 
 
@@ -129,14 +131,16 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::recreateVisualizationElemen
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, IconFunctions, iconForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    IconFunctions, iconForOpenFOAMCaseElement,
     blockMeshDict_Cylinder, [](){ return QIcon(":symbole/bmd_cyl.svg"); });
 
 
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
     blockMeshDict_Sphere, &newVisualizer<blockMeshDict_Sphere_ParameterSet_Visualizer>);
 
 

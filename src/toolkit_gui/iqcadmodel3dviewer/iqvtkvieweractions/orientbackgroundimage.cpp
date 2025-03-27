@@ -77,11 +77,10 @@ void IQVTKOrientBackgroundImage::start()
 }
 
 
-bool IQVTKOrientBackgroundImage::onLeftButtonUp(
+bool IQVTKOrientBackgroundImage::onMouseClick(
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
-    const QPoint point,
-    bool lastClickWasDoubleClick
-    )
+    const QPoint point )
 {
     auto picker = vtkSmartPointer<vtkPropPicker>::New();
     picker->AddPickList(imageActor_);
@@ -124,6 +123,7 @@ bool IQVTKOrientBackgroundImage::onLeftButtonUp(
         return true;
     }
 
-    return ViewWidgetAction<IQVTKCADModel3DViewer>::onLeftButtonDown(nFlags, point, lastClickWasDoubleClick);
+    return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseClick(
+        btn, nFlags, point );
 }
 

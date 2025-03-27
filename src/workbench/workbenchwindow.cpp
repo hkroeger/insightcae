@@ -114,9 +114,9 @@ AnalysisForm* WorkbenchMainWindow::addAnalysisTabWithDefaults(const std::string 
 
     QString desc;
     QIcon icon(":analysis_default_icon.svg");
-    if (insight::CADParameterSetModelVisualizer::iconForAnalysis_table().count(analysisType))
+    if (insight::CADParameterSetModelVisualizer::iconForAnalysis().count(analysisType))
     {
-        icon=insight::CADParameterSetModelVisualizer::iconForAnalysis(analysisType);
+        icon=insight::CADParameterSetModelVisualizer::iconForAnalysis()(analysisType);
     }
     tw->setTabIcon(i, icon);
 
@@ -186,7 +186,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
   }
   updateRecentFileActions();
 
-  QMenu *settingsMenu = menuBar()->addMenu( _("&Settings") );
+  settingsMenu_ = menuBar()->addMenu( _("&Settings") );
 
   a = new QAction(_("Remote servers..."), this);
   connect(a, &QAction::triggered, this,
@@ -196,7 +196,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
             dlg.exec();
           }
   );
-  settingsMenu->addAction( a );
+  settingsMenu_->addAction( a );
 
   a = new QAction(_("Configure paths to external programs..."), this);
   connect(a, &QAction::triggered, this,
@@ -206,7 +206,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
             dlg.exec();
           }
   );
-  settingsMenu->addAction( a );
+  settingsMenu_->addAction( a );
 
 
   a = new QAction(_("Manage report templates..."), this);
@@ -217,7 +217,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
             dlg.exec();
           }
   );
-  settingsMenu->addAction( a );
+  settingsMenu_->addAction( a );
 
 
   QMenu *helpMenu = menuBar()->addMenu( _("&Help") );
@@ -422,7 +422,7 @@ void WorkbenchMainWindow::onAnalysisFormActivated( QWidget * widget )
 
     if (auto* newactive = dynamic_cast<AnalysisForm*>(widget))
     {
-        lastActive_=newactive->createMenus(menuBar());
+        lastActive_=newactive->createMenus(this);
     }
     else
     {

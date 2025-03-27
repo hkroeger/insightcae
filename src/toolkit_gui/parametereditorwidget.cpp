@@ -199,8 +199,8 @@ ParameterEditorWidget::ParameterEditorWidget
 : QSplitter(Qt::Horizontal, parent),
   model_(nullptr),
   vali_(vali),
-    createVisualizer_(psvb),
-    createGUIActions_(cgaf),
+  createVisualizer_(psvb),
+  createGUIActions_(cgaf),
   firstShowOccurred_(false)
 {
 

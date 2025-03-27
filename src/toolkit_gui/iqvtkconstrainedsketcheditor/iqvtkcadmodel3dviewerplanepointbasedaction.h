@@ -40,9 +40,10 @@ public:
     IQVTKCADModel3DViewerPlanePointBasedAction(
         IQVTKConstrainedSketchEditor &editor );
 
-    bool onLeftButtonDown(
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
-        const QPoint point, bool afterDoubleClick ) override;
+        const QPoint point ) override;
 };
 
 #endif // IQVTKCADMODEL3DVIEWERPLANEPOINTBASEDACTION_H

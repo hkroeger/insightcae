@@ -71,7 +71,10 @@ public:
 
     QString description() const override;
 
-    bool onRightButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
     void start() override;
 };

@@ -19,12 +19,11 @@ void IQVTKDragDimensionlineAction::start()
 
 
 
-bool IQVTKDragDimensionlineAction::onMouseMove
-    (
-        Qt::MouseButtons buttons,
-        const QPoint point,
-        Qt::KeyboardModifiers curFlags
-        )
+bool IQVTKDragDimensionlineAction::onMouseDrag(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    EventType eventType )
 {
     arma::mat pip=viewer().pointInPlane3D(
         editor_->plane()->plane(), point );
@@ -34,17 +33,19 @@ bool IQVTKDragDimensionlineAction::onMouseMove
     editor_->invalidate();
     editor_.updateActors();
 
+    if (eventType==Final) finishAction();
+
     return true;
 }
 
 
 
 
-bool IQVTKDragDimensionlineAction::onLeftButtonUp(
-    Qt::KeyboardModifiers nFlags,
-    const QPoint point,
-    bool lastClickWasDoubleClick )
-{
-    finishAction();
-    return true;
-}
+// bool IQVTKDragDimensionlineAction::onLeftButtonUp(
+//     Qt::KeyboardModifiers nFlags,
+//     const QPoint point,
+//     bool lastClickWasDoubleClick )
+// {
+//     finishAction();
+//     return true;
+// }

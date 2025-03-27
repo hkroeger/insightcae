@@ -3,6 +3,7 @@
 #include "datum.h"
 #include "constrainedsketchentities/angleconstraint.h"
 #include "constrainedsketchentities/distanceconstraint.h"
+#include <qnamespace.h>
 
 using namespace insight;
 using namespace insight::cad;
@@ -91,12 +92,13 @@ IQVTKCADModel3DViewerPlanePointBasedAction
 
 
 
-bool IQVTKCADModel3DViewerPlanePointBasedAction::onLeftButtonDown(
+bool IQVTKCADModel3DViewerPlanePointBasedAction::onMouseClick  (
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
-    const QPoint point, bool afterDoubleClick )
+    const QPoint point )
 {
-    auto ret = IQVTKSelectConstrainedSketchEntity::onLeftButtonDown(nFlags, point, afterDoubleClick);
-    if (!ret)
+    auto ret = IQVTKSelectConstrainedSketchEntity::onMouseClick(btn, nFlags, point);
+    if ((btn==Qt::LeftButton) && (!ret))
     {
         pointSelected(
             applyWizards(

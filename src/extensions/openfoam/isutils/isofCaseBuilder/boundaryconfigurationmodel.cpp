@@ -370,10 +370,10 @@ ParameterEditorWidget* BoundaryConfigurationModel::launchParameterEditor(
           ::CreateGUIActionsFunctions::Function cgaf;
 
       if (insight::CADParameterSetModelVisualizer
-          ::createGUIActionsForOpenFOAMCaseElement_table().count(pc->type_name()))
+          ::createGUIActionsForOpenFOAMCaseElement().count(pc->type_name()))
       {
           cgaf=insight::CADParameterSetModelVisualizer
-                 ::createGUIActionsForOpenFOAMCaseElement_table().lookup(pc->type_name());
+                 ::createGUIActionsForOpenFOAMCaseElement().lookup(pc->type_name());
       }
 
       auto ppe = new ParameterEditorWidget

@@ -59,7 +59,7 @@ ResultSet::ResultSet(const std::string& analysisName)
 {
   if (analysisName!="")
   {
-        p_ = Analysis::defaultParametersFor(analysisName);
+        p_ = Analysis::defaultParameters()(analysisName);
   }
 }
 

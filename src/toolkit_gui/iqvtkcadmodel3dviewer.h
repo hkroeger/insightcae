@@ -8,6 +8,9 @@
 #include "iqcadmodel3dviewer/selectionlogic.h"
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqcadmodel3dviewer/navigationmanager.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h"
+#include "iqcadmodel3dviewer/qwidgettoinputreceiveradapter.h"
 
 #include "vtkVersionMacros.h"
 #include "vtkGenericOpenGLRenderWindow.h"
@@ -126,9 +129,11 @@ public Q_SLOTS:
 };
 
 
+
+
 class TOOLKIT_GUI_EXPORT IQVTKCADModel3DViewer
-    : public IQCADModel3DViewer,
-      public ViewWidgetActionHost<IQVTKCADModel3DViewer>
+    : public QWidgetToInputReceiverAdapter<
+          IQVTKCADModel3DViewer, IQCADModel3DViewer>
 {
     Q_OBJECT
 
@@ -356,7 +361,7 @@ private:
     void doExposeItem( CADEntity item );
 
 
-    NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
+    // NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
 
     const DisplayedEntity* findDisplayedItem(
             const CADEntity& item,
@@ -393,6 +398,9 @@ Q_SIGNALS:
 
 public:
     void closeEvent(QCloseEvent *ev) override;
+
+    void resetNavigationManager(
+        typename NavigationManager<IQVTKCADModel3DViewer>::Ptr&& nm) override;
 
 public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
@@ -485,18 +493,38 @@ public:
         SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
         ) override;
 
-protected:
-    void mouseDoubleClickEvent(QMouseEvent* e) override;
-    void mousePressEvent(QMouseEvent* e) override;
-    void mouseReleaseEvent(QMouseEvent* e) override;
-    void mouseMoveEvent(QMouseEvent* e) override;
-    void wheelEvent(QWheelEvent* e) override;
-    void keyPressEvent(QKeyEvent* e) override;
-    void keyReleaseEvent(QKeyEvent* e) override;
+// protected:
+//     void mouseDoubleClickEvent(QMouseEvent* e) override;
+//     void mousePressEvent(QMouseEvent* e) override;
+//     void mouseReleaseEvent(QMouseEvent* e) override;
+//     void mouseMoveEvent(QMouseEvent* e) override;
+//     void wheelEvent(QWheelEvent* e) override;
+//     void keyPressEvent(QKeyEvent* e) override;
+//     void keyReleaseEvent(QKeyEvent* e) override;
 
 
 //    vtkActor* getActor(insight::cad::FeaturePtr geom);
 };
+
+
+class VTKNavigationManager
+    : public NavigationManager<IQVTKCADModel3DViewer>
+{
+public:
+    typedef insight::FactoryWithDeleter<
+        NavigationManager<IQVTKCADModel3DViewer>,
+        NavigationManager<IQVTKCADModel3DViewer>::Ptr::deleter_type,
+        IQVTKCADModel3DViewer&
+        >
+        NavigationManagerFactory;
+
+    declareFactoryTableAccessFunction2(NavigationManagerFactory, navigationManagers);
+
+public:
+    using NavigationManager<IQVTKCADModel3DViewer>::NavigationManager;
+};
+
+
 
 
 #endif // IQVTKCADMODEL3DVIEWER_H

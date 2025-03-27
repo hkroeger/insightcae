@@ -4,14 +4,14 @@
 
 #include "vtkCamera.h"
 
-void IQVTKCADModel3DViewerRotation::rotate(int x, int y)
+void IQVTKCADModel3DViewerRotation::rotate(const QPoint& point)
 {
 
     if (hasLastMouseLocation())
     {
 
-        int dx = x - lastMouseLocation().x();
-        int dy = lastMouseLocation().y() - y;
+        int dx = point.x() - lastMouseLocation().x();
+        int dy = lastMouseLocation().y() - point.y();
 
         int* size = viewer().renWin()->GetSize();
 
@@ -39,6 +39,8 @@ void IQVTKCADModel3DViewerRotation::rotate(int x, int y)
 
         viewer().scheduleRedraw();
     }
+
+    this->updateLastMouseLocation(point);
 }
 
 
@@ -53,16 +55,21 @@ IQVTKCADModel3DViewerRotation::IQVTKCADModel3DViewerRotation(
 void IQVTKCADModel3DViewerRotation::start()
 {}
 
-
-
-
-bool IQVTKCADModel3DViewerRotation::onMouseMove
-(
- Qt::MouseButtons buttons,
- const QPoint point,
- Qt::KeyboardModifiers curFlags
- )
+bool IQVTKCADModel3DViewerRotation::onMouseDrag(
+    Qt::MouseButtons btn, Qt::KeyboardModifiers nFlags,
+    const QPoint point, EventType eventType )
 {
-    rotate( point.x(), point.y() );
-    return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseMove(buttons, point, curFlags);
+    rotate( point );
+    return true;
+}
+
+
+
+
+bool IQVTKCADModel3DViewerRotation::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    rotate( point );
+    return true;
 }

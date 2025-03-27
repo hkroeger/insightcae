@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
         }
 
         auto parameters =
-            insight::Analysis::defaultParametersFor(analysisName);
+            insight::Analysis::defaultParameters()(analysisName);
 
         parameters->readFromNode(
             std::string(), *rootnode,

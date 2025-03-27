@@ -149,12 +149,12 @@ std::set<std::string> Analysis::availableAnalysisTypes(
 {
     AnalysisLibraryLoader::analysisLibraries();
     std::set<std::string> al;
-    for (auto f: insight::Analysis::createAnalysis_table().ToC())
+    for (auto f: insight::Analysis::analyses().ToC())
     {
         if (restrictToCategories.size())
         {
             if (restrictToCategories.count(
-                    Analysis::categoryFor(f))<1)
+                    Analysis::categories()(f))<1)
                 continue;
         }
         al.insert(f);

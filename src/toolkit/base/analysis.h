@@ -69,85 +69,40 @@ public:
     declareType ( "Analysis" );
 
 
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
+    declareStaticFunctionTable2(
+            SupplementedInputDataFactories, supplementedInputDatas,
             std::unique_ptr<supplementedInputDataBase>,
-            ParameterSetInput&&, const boost::filesystem::path&, ProgressDisplayer&
-        >
-        supplementedInputDataFactory;
+            ParameterSetInput&&, const boost::filesystem::path&, ProgressDisplayer& );
 
-    declareStaticFunctionTable2(supplementedInputDataFactory, createSupplementedInputDataFor);
+    declareFactoryTable2(
+            Analysis,
+            AnalysisFactories, analyses,
+            const std::shared_ptr<supplementedInputDataBase>& );
 
-    typedef
-        insight::Factory<
-            &typeName, Analysis,
-            const std::shared_ptr<supplementedInputDataBase>&
-        >
-        AnalysisFactory;
+    declareStaticFunctionTable2(
+            DefaultParameterFactories, defaultParameters,
+            std::unique_ptr<ParameterSet> );
 
-    declareStaticFunctionTable2(AnalysisFactory, createAnalysis);
+    declareStaticFunctionTable2(
+            CategoryFunctions, categories,
+            std::string );
 
+    declareStaticFunctionTable2(
+            CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions,
+            OperatingSystemSet );
 
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
-            std::unique_ptr<ParameterSet>
-            >
-        defaultParametersFunctions;
+    declareStaticFunctionTable2(
+            ValidatorFunctions, validators,
+            ParameterSet_ValidatorPtr );
 
-    declareStaticFunctionTable2(defaultParametersFunctions, defaultParametersFor);
-
-
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
-            std::string
-        >
-        categoryFunctions;
-
-    declareStaticFunctionTable2(categoryFunctions, categoryFor);
-
-
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
-            OperatingSystemSet
-        >
-        compatibleOperatingSystemsFunctions;
-
-    declareStaticFunctionTable2(compatibleOperatingSystemsFunctions, compatibleOperatingSystemsFor);
-
-
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
-            ParameterSet_ValidatorPtr
-        >
-        validatorFunctions;
-
-    declareStaticFunctionTable2(validatorFunctions, validatorFor);
-
-
-
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
+    declareStaticFunctionTable2(
+            PropositionsForParameterFunctions, propositionsForParameter,
             std::unique_ptr<ParameterSet>,
-            const std::string&, const ParameterSet&
-        >
-        getPropositionsForParameterFunctions;
+            const std::string&, const ParameterSet& );
 
-    declareStaticFunctionTable2(getPropositionsForParameterFunctions, getPropositionsForParameterFor);
-
-
-    typedef
-        insight::StaticFunctionTable<
-            &typeName, AnalysisDescription
-        >
-        DescriptionFunctions;
-
-    declareStaticFunctionTable2(DescriptionFunctions, descriptionFor);
+    declareStaticFunctionTable2(
+            DescriptionFunctions, descriptions,
+            AnalysisDescription );
 
 
 
@@ -156,8 +111,14 @@ public:
     {
         Add()
         {
+            addToFactoryTable2(
+                Analysis,
+                AnalysisFactories, analyses,
+                AnalysisInstance );
+
             addToStaticFunctionTable2(
-                Analysis, supplementedInputDataFactory, createSupplementedInputDataFor,
+                Analysis,
+                SupplementedInputDataFactories, supplementedInputDatas,
                 AnalysisInstance,
                 (&std::make_unique<
                     typename AnalysisInstance::supplementedInputData,
@@ -165,29 +126,30 @@ public:
                     const boost::filesystem::path&,
                     ProgressDisplayer&>) );
 
-            addToFactoryTable2(
-                Analysis, AnalysisFactory, createAnalysis,
-                AnalysisInstance );
-
             addToStaticFunctionTable2(
-                Analysis, defaultParametersFunctions, defaultParametersFor,
+                Analysis,
+                DefaultParameterFactories, defaultParameters,
                 AnalysisInstance, &AnalysisInstance::defaultParameters );
 
             addToStaticFunctionTable2(
-                Analysis, categoryFunctions, categoryFor,
+                Analysis,
+                CategoryFunctions, categories,
                 AnalysisInstance,
                 &AnalysisInstance::category );
 
             addToStaticFunctionTable2(
-                Analysis, compatibleOperatingSystemsFunctions, compatibleOperatingSystemsFor,
+                Analysis,
+                CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions,
                 AnalysisInstance, &AnalysisInstance::compatibleOperatingSystems );
 
             addToStaticFunctionTable2(
-                Analysis, getPropositionsForParameterFunctions, getPropositionsForParameterFor,
+                Analysis,
+                PropositionsForParameterFunctions, propositionsForParameter,
                 AnalysisInstance, &AnalysisInstance::getPropositionsForParameter);
 
             addToStaticFunctionTable2(
-                Analysis, DescriptionFunctions, descriptionFor,
+                Analysis,
+                DescriptionFunctions, descriptions,
                 AnalysisInstance,  &AnalysisInstance::description);
         }
     };

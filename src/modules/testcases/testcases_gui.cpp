@@ -9,14 +9,14 @@ namespace insight
 
 insight::CADParameterSetModelVisualizer::IconFunctions::Add<AirfoilSection>
     addAirfoilSectionIcon(
-        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        &insight::CADParameterSetModelVisualizer::iconForAnalysis,
         []() {
             return QIcon(":/analysis_airfoil2d.svg");
         } );
 
 insight::CADParameterSetModelVisualizer::IconFunctions::Add<AirfoilSectionPolar>
     addAirfoilSectionPolarIcon(
-        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        &insight::CADParameterSetModelVisualizer::iconForAnalysis,
         []() {
             return QIcon(":/analysis_airfoil2d_vs_alpha.svg");
         } );

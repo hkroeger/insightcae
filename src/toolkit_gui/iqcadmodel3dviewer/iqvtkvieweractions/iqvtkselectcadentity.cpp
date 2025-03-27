@@ -11,6 +11,7 @@
 #include <QDockWidget>
 
 #include <QSortFilterProxyModel>
+#include <qnamespace.h>
 
 
 void CADEntityMultiSelection::showParameterEditor()
@@ -170,7 +171,9 @@ IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
     : IQVTKCADModel3DViewerSelectionLogic(
         [&viewer]()
         { return std::make_shared<CADEntityMultiSelection>(viewer); },
-        viewer )
+        viewer,
+        false // captureAllInput
+    )
 {}
 
 
@@ -186,10 +189,19 @@ QString IQVTKSelectCADEntity::description() const
     return "Select CAD entity";
 }
 
-bool IQVTKSelectCADEntity::onRightButtonUp(Qt::KeyboardModifiers nFlags, const QPoint point)
+bool IQVTKSelectCADEntity::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
 {
-    viewer().contextMenuClick( viewer().mapToGlobal(point) );
-    return true;
+    if (btn==Qt::RightButton)
+    {
+        viewer().contextMenuClick(
+            viewer().mapToGlobal(point) );
+        return true;
+    }
+    return IQVTKCADModel3DViewerSelectionLogic
+        ::onMouseClick(btn, nFlags, point);
 }
 
 void IQVTKSelectCADEntity::start()

@@ -88,25 +88,27 @@ class ConstrainedSketchPresentationDelegate
 {
 public:
     declareType("ConstrainedSketchPresentationDelegate");
-    typedef
-        insight::StaticFunctionTable<
-            &typeName,
-            std::shared_ptr<ConstrainedSketchPresentationDelegate>
-            >
-            SketchPresentationDelegates;
 
-    declareStaticFunctionTable2(SketchPresentationDelegates, sketchPresentationFor);
+    // typedef
+    //     insight::StaticFunctionTable<
+    //         std::shared_ptr<ConstrainedSketchPresentationDelegate>
+    //         >
+    //         DelegateFactories;
+
+    declareStaticFunctionTable2(
+        DelegateFactories, delegates,
+        std::shared_ptr<ConstrainedSketchPresentationDelegate> );
 
     template<class Instance>
     struct Add
         : public insight::cad::ConstrainedSketchPresentationDelegate
-                ::SketchPresentationDelegates::Add<Instance>
+                ::DelegateFactories::Add<Instance>
     {
         Add()
             : insight::cad::ConstrainedSketchPresentationDelegate
-                ::SketchPresentationDelegates::Add<Instance>(
-                    insight::cad::ConstrainedSketchPresentationDelegate
-                        ::sketchPresentationFor_table(),
+                ::DelegateFactories::Add<Instance>(
+                    &insight::cad::ConstrainedSketchPresentationDelegate
+                  ::delegates,
                     &std::make_shared<Instance>
                 )
         {}

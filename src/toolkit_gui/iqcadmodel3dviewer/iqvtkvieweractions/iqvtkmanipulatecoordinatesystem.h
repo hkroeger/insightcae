@@ -71,15 +71,16 @@ public:
 
     void start() override;
 
-    bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-
-    bool onLeftButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick ) override;
-    bool onMouseMove(
-        Qt::MouseButtons buttons,
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
         const QPoint point,
-        Qt::KeyboardModifiers curFlags ) override;
-    bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point,
-                        bool lastClickWasDoubleClick ) override;
+        EventType eventType ) override;
+
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
     bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override;
 

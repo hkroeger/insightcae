@@ -18,7 +18,10 @@ public:
 
     void start() override;
 
-    bool onLeftButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point, bool afterDoubleClick ) override;
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
 Q_SIGNALS:
     void pickedPoint(const arma::mat& pt);

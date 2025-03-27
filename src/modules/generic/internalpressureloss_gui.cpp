@@ -37,27 +37,28 @@ public:
 
 
 addToStaticFunctionTable2(
-    CADParameterSetModelVisualizer, VisualizerFunctions, visualizerForAnalysis,
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForAnalysis,
     InternalPressureLoss, &newVisualizer<InternalPressureLoss_ParameterSet_Visualizer>);
 
 
 insight::CADParameterSetModelVisualizer::IconFunctions::Add<InternalPressureLoss>
     addInternalPressureLossIcon(
-        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        &insight::CADParameterSetModelVisualizer::iconForAnalysis,
         []() {
             return QIcon(":/analysis_internalpressureloss.svg");
         } );
 
 insight::CADParameterSetModelVisualizer::IconFunctions::Add<InternalPressureLossCharacteristics>
     addInternalPressureLossCharacteristicsIcon(
-        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        &insight::CADParameterSetModelVisualizer::iconForAnalysis,
         []() {
             return QIcon(":/analysis_internalpressureloss_vs_Q.svg");
         } );
 
 insight::CADParameterSetModelVisualizer::IconFunctions::Add<FileTemplate>
     addFileTemplateIcon(
-        insight::CADParameterSetModelVisualizer::iconForAnalysis_table(),
+        &insight::CADParameterSetModelVisualizer::iconForAnalysis,
         []() {
             return QIcon(":/analysis_filetemplate.svg");
         } );

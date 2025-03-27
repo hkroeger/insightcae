@@ -64,9 +64,10 @@ public:
   }
 
 
-  bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override
+  bool onMouseClick( Qt::MouseButtons btn, Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
-    if (selection_)
+    if ( selection_
+          && (btn&Qt::RightButton) )
     {
         auto icmd = featureSelCmds.find(shapeType);
 

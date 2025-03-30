@@ -33,6 +33,7 @@ if (INSIGHT_BUILD_MEDREADER)
         CMAKE_ARGS
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
          -DVTK_DIR=${VTK_ONSCREEN_DIR}
+         -DVTKCompileTools_DIR=${VTKCompileTools_DIR}
          -DParaView_DIR=${VTK_ONSCREEN_DIR}/..
          -DLIBRARY_NAME_SUFFIX=pvis
          ${VTK_CMAKE_ADDARGS}
@@ -51,6 +52,7 @@ if (INSIGHT_BUILD_MEDREADER)
         CMAKE_ARGS
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
          -DVTK_DIR=${VTK_OFFSCREEN_DIR}
+         -DVTKCompileTools_DIR=${VTKCompileTools_DIR}
          -DParaView_DIR=${VTK_OFFSCREEN_DIR}/..
          -DLIBRARY_NAME_SUFFIX=pvisoffscreen
          ${VTK_CMAKE_ADDARGS}

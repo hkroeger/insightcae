@@ -126,12 +126,7 @@ void IQVTKConstrainedSketchEditor::showLayerParameterEditor()
 
         layerPropertiesEditor_ = new ParameterEditorWidget(pew, tree, editControls, &viewer());
 
-        QWidget *w=nullptr;
-        for (int i=0; i<viewer().commonToolBox()->count(); ++i)
-            if (viewer().commonToolBox()->itemText(i)=="Sketch")
-                w=viewer().commonToolBox()->widget(i);
-
-        auto *l = static_cast<QFormLayout*>(w->layout());
+        auto *l = static_cast<QFormLayout*>(sketchToolBoxWidget_->layout());
         l->addRow(pew);
     }
 }
@@ -1050,9 +1045,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     }
 
 
-    tbw=new QWidget;
-    tbw->setLayout(l);
-    viewer.commonToolBox()->addItem(tbw, "Sketch");
+    sketchToolBoxWidget_=new QWidget;
+    sketchToolBoxWidget_->setLayout(l);
+    viewer.addToolBox(sketchToolBoxWidget_, "Sketch");
 
     aboutToBeDestroyed.connect(
         [this](){
@@ -1080,7 +1075,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             // tbw->deleteLater();
             // toolBar_->hide();
             // toolBar_->deleteLater();
-            delete tbw;
+            delete sketchToolBoxWidget_;
             delete toolBar_;
         });
 }

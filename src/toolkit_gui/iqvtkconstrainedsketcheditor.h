@@ -77,7 +77,7 @@ private:
     std::set<std::string> hiddenLayers_;
 
     ParameterEditorWidget* layerPropertiesEditor_;
-    QWidget *tbw;
+    QWidget *sketchToolBoxWidget_;
     QToolBar *toolBar_;
 
     void showLayerParameterEditor();

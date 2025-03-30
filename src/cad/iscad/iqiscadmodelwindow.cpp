@@ -81,7 +81,7 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 
     {
         modelTree_ = new QTreeView(viewer_);
-        viewer_->commonToolBox()->addItem(modelTree_, _("Model Tree"));
+        viewer_->addToolBox(modelTree_, _("Model Tree"));
     }
 
     {

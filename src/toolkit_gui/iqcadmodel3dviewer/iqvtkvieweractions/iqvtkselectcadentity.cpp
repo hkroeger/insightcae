@@ -18,10 +18,10 @@ void CADEntityMultiSelection::showParameterEditor()
 {
 
     editorContainerWidget_ = new QWidget;
-    auto tbi = viewer_.commonToolBox()->addItem(
+    viewer_.addToolBox(
         editorContainerWidget_, "Selection Properties");
 
-    viewer_.commonToolBox()->setCurrentIndex(tbi);
+    // viewer_.commonToolBox()->setCurrentIndex(tbi);
 
     auto lo = new QVBoxLayout;
     editorContainerWidget_->setLayout(lo);

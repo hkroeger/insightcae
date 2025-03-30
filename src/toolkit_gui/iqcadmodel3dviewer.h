@@ -40,8 +40,6 @@ private:
 
 protected:
     QAbstractItemModel* model_;
-    QDockWidget *dockWidget_;
-    QToolBox *commonToolBox_;
     QLabel *userMessage_, *currentActionDesc_;
 
 public:
@@ -51,7 +49,8 @@ public:
     QAbstractItemModel* model() const;
     IQCADItemModel* cadmodel() const;
 
-    inline QToolBox *commonToolBox() { return commonToolBox_; }
+    // inline QToolBox *commonToolBox() { return commonToolBox_; }
+    void addToolBox(QWidget* w, const QString& title);
 
     virtual void connectNotepad(QTextEdit *notepad) const;
 

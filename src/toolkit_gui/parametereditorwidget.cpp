@@ -79,7 +79,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
             display_ = new ParameterSetDisplay(static_cast<QSplitter*>(this), viewer, modeltree);
             viewer_ = display_->viewer();
 
-            viewer_->commonToolBox()->addItem(modeltree, "Model structure");
+            viewer_->addToolBox(modeltree, "Model structure");
 
             // after ParameterSetDisplay constructor!
             modeltree->setSelectionMode(QAbstractItemView::ExtendedSelection);

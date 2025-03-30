@@ -15,9 +15,7 @@
 void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEditor)
 {
     pew_ = new QWidget;
-    auto *tb=editor_.viewer().commonToolBox();
-    auto tbi = tb->addItem(pew_, "Sketch entity properties");
-    tb->setCurrentIndex(tbi);
+    editor_.viewer().addToolBox(pew_, "Sketch entity properties");
 
     auto lo = new QVBoxLayout;
     pew_->setLayout(lo);

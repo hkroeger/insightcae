@@ -68,43 +68,42 @@ class Analysis
 public:
     declareType ( "Analysis" );
 
-
-    declareStaticFunctionTable2(
-            SupplementedInputDataFactories, supplementedInputDatas,
-            std::unique_ptr<supplementedInputDataBase>,
-            ParameterSetInput&&, const boost::filesystem::path&, ProgressDisplayer& );
-
+#ifndef SWIG
     declareFactoryTable2(
-            Analysis,
-            AnalysisFactories, analyses,
-            const std::shared_ptr<supplementedInputDataBase>& );
+        Analysis,
+        AnalysisFactories, analyses,
+        const std::shared_ptr<supplementedInputDataBase>& );
 
     declareStaticFunctionTable2(
-            DefaultParameterFactories, defaultParameters,
-            std::unique_ptr<ParameterSet> );
+        SupplementedInputDataFactories, supplementedInputDatas,
+        std::unique_ptr<supplementedInputDataBase>,
+        ParameterSetInput&&, const boost::filesystem::path&, ProgressDisplayer& );
 
     declareStaticFunctionTable2(
-            CategoryFunctions, categories,
-            std::string );
+        DefaultParameterFactories, defaultParameters,
+        std::unique_ptr<ParameterSet> );
 
     declareStaticFunctionTable2(
-            CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions,
-            OperatingSystemSet );
+        CategoryFunctions, categories,
+        std::string );
 
     declareStaticFunctionTable2(
-            ValidatorFunctions, validators,
-            ParameterSet_ValidatorPtr );
+        CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions,
+        OperatingSystemSet );
 
     declareStaticFunctionTable2(
-            PropositionsForParameterFunctions, propositionsForParameter,
-            std::unique_ptr<ParameterSet>,
-            const std::string&, const ParameterSet& );
+        ValidatorFunctions, validators,
+        ParameterSet_ValidatorPtr );
 
     declareStaticFunctionTable2(
-            DescriptionFunctions, descriptions,
-            AnalysisDescription );
+        PropositionsForParameterFunctions, propositionsForParameter,
+        std::unique_ptr<ParameterSet>,
+        const std::string&, const ParameterSet& );
 
-
+    declareStaticFunctionTable2(
+        DescriptionFunctions, descriptions,
+        AnalysisDescription );
+#endif
 
     template<class AnalysisInstance>
     struct Add

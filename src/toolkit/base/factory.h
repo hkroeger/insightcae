@@ -246,7 +246,7 @@ public:
  * Otherwise different instances of the global static table might
  */
 #define declareStaticFunctionTableAccessFunction2(TYPE, TABFUNC) \
-static TYPE& TABFUNC();
+static TYPE& TABFUNC()
 
 #define defineStaticFunctionTableAccessFunction2(DESCRIPTION, NAMESPACE, TYPE, TABFUNC) \
 NAMESPACE::TYPE& NAMESPACE::TABFUNC() {                                                 \
@@ -254,7 +254,7 @@ NAMESPACE::TYPE& NAMESPACE::TABFUNC() {                                         
     return theTable; }
 
 #define declareStaticFunctionTable2(TYPE, TABFUNC, RETURNTYPE, ...) \
-typedef StaticFunctionTable< RETURNTYPE, ## __VA_ARGS__ > TYPE;                 \
+typedef StaticFunctionTable<RETURNTYPE, ## __VA_ARGS__> TYPE;                 \
 declareStaticFunctionTableAccessFunction2(TYPE, TABFUNC)
 
 #define defineStaticFunctionTable2(DESCRIPTION, NAMESPACE, TYPE, TABFUNC)   \

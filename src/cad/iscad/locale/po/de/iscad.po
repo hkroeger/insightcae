@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: iscad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-10 15:08+0100\n"
+"POT-Creation-Date: 2025-03-30 16:59+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -369,3 +369,8 @@ msgstr "Skriptfehler"
 #: loadmodeldialog.cpp:166
 msgid "Model"
 msgstr "Modell"
+
+#: insertdrawingdialog.cpp:21
+#, fuzzy
+msgid "Select output file name"
+msgstr "Datei auswählen"

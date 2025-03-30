@@ -738,6 +738,8 @@ void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int r
     }
 }
 
+
+
 void IQISCADModelScriptEdit::onCancelRebuild()
 {
   if (bgparsethread_.isRunning())
@@ -745,3 +747,5 @@ void IQISCADModelScriptEdit::onCancelRebuild()
       bgparsethread_.cancelRebuild();
     }
 }
+
+

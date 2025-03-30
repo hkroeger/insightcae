@@ -78,6 +78,10 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 
     if (me)
     {
+
+        connect(act_[settings_viewer], &QAction::triggered,
+                me, &IQISCADModelWindow::viewerSettings);
+
         connect(act_[save], &QAction::triggered,
                 me->modelEdit(), &IQISCADModelScriptEdit::saveModel);
         connect(act_[saveas], &QAction::triggered,
@@ -315,6 +319,7 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     QMenu *emenu = menuBar()->addMenu(_("&Editor"));
     QMenu *msmenu = menuBar()->addMenu(_("M&easure"));
     QMenu *selmenu = menuBar()->addMenu(_("&Selection"));
+    QMenu *settingsmenu = menuBar()->addMenu(_("Se&ttings"));
     QMenu *helpmenu = menuBar()->addMenu(_("&Help"));
 
     QAction* ab = new QAction("About...", this);
@@ -354,6 +359,9 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     fmenu->addAction(act);
     connect(act, &QAction::triggered, this, &IQISCADMainWindow::close);
 
+    act=new QAction(_("3D &viewer settings..."), this);
+    settingsmenu->addAction(act);
+    act_[settings_viewer]=act;
 
     act_[rebuild] = new QAction(_("&Rebuild model"), this);
     act_[rebuild]->setShortcut(Qt::ControlModifier + Qt::Key_Return);

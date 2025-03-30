@@ -13,6 +13,7 @@
 #include "iqiscadmodelscriptedit.h"
 
 #include "base/translations.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
 
 IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 : QWidget(parent),
@@ -232,6 +233,14 @@ void IQISCADModelWindow::onCopyBtnClicked()
 void IQISCADModelWindow::onInsertNotebookText(const QString& text)
 {
   notepad_->insertPlainText(text);
+}
+
+
+
+void IQISCADModelWindow::viewerSettings()
+{
+    IQVTKCADModel3DViewerSettingsDialog dlg(viewer_, this);
+    dlg.exec();
 }
 
 

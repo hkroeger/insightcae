@@ -20,7 +20,7 @@ template<
     class _SelectedEntity,
     class HighlightingHandle, // highlighting in viewer ends, if such object is disposed
     class _MultiSelectionContainer = std::set<_SelectedEntity>,
-    class SelectedEntityCompare = std::less<_SelectedEntity>
+    class _SelectedEntityCompare = std::less<_SelectedEntity>
     >
 class SelectionLogic
     : public Base
@@ -31,6 +31,7 @@ public:
     typedef _SelectedEntity SelectedEntity;
     typedef _MultiSelectionContainer MultiSelectionContainer;
     typedef std::function<bool(SelectedEntity)> SelectionFilterFunction;
+    typedef _SelectedEntityCompare SelectedEntityCompare;
 
     boost::signals2::signal<void(SelectedEntity)> entitySelected, newPreviewEntity;
 
@@ -144,9 +145,11 @@ private:
     bool doPreviewSelection_;
     boost::variant<boost::blank, PreviewHighlight> previewHighlight_;
 
-    std::map<SelectedEntity, HighlightingHandle, SelectedEntityCompare> highlights_;
 
     SelectionFilterFunction selectionFilter_;
+
+protected:
+    std::map<SelectedEntity, HighlightingHandle, SelectedEntityCompare> highlights_;
 
 public:
     template<class ...Args>
@@ -182,8 +185,16 @@ public:
         return doPreviewSelection_;
     }
 
+    template<class Container>
+    void updateSelectionCandidates(const Container& selectedEntities)
+    {
+        previewHighlight_ = boost::blank();
+        nextSelectionCandidates_=
+            std::make_shared<SelectionCandidates>
+            (*this, selectedEntities);
+    }
 
-    bool updateSelectionCandidates(const QPoint& point)
+    void updateSelectionCandidates(const QPoint& point)
     {
         if (!nextSelectionCandidates_ )
         {
@@ -191,22 +202,15 @@ public:
 
             if (selectedEntities.size()>0)
             {
-                previewHighlight_ = boost::blank();
-                nextSelectionCandidates_=
-                    std::make_shared<SelectionCandidates>
-                    (*this, selectedEntities);
+                updateSelectionCandidates(selectedEntities);
 
                 this->userPrompt(
                     QString(
                         "There are %1 entities at picked location."
                         " Hold mouse button and press <Space> to cycle selection." )
                     .arg(nextSelectionCandidates_->size() ) );
-
-                return true;
             }
         }
-
-        return false;
     }
 
     // bool onMouseClick(
@@ -292,8 +296,7 @@ public:
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override
     {
-        if (!this->hasChildReceivers()/*
-            || !Base::onMouseClick(btn, nFlags, point)*/)
+        if (!this->hasChildReceivers())
         {
             if (btn==Qt::LeftButton)
             {
@@ -344,8 +347,12 @@ public:
                 }
                 else // nothing was under cursor
                 {
-                    clearSelection();
-                    this->userPrompt("Nothing picked. Selection cleared.");
+                    if (currentSelection_ && currentSelection_->size()>0)
+                    {
+                        clearSelection();
+                        this->userPrompt("Nothing picked. Selection cleared.");
+                        return true;
+                    }
                 }
             }
         }
@@ -389,7 +396,7 @@ public:
             Qt::KeyboardModifiers curFlags
         ) override
     {
-        if (!this->hasChildReceivers() /*|| !Base::onMouseMove(point, curFlags)*/)
+        if (!this->hasChildReceivers())
         {
             if ( !nextSelectionCandidates_
                  && doPreviewSelection_ )
@@ -492,6 +499,30 @@ public:
                         .arg(currentSelection_->size()));
                 highlights_.erase(entity);
             }
+        }
+    }
+
+    template<class Container>
+    void setSelectionTo(const Container& selectedEntities)
+    {
+        std::set<SelectedEntity, SelectedEntityCompare> tbr;
+        if (currentSelection_)
+        {
+            for (auto& cs: *currentSelection_)
+            {
+                tbr.insert(cs);
+            }
+        }
+
+        for (auto& selcand: selectedEntities)
+        {
+            externallySelect(selcand);
+            tbr.erase(selcand);
+        }
+
+        for (auto& e: tbr)
+        {
+            externallyUnselect(e);
         }
     }
 

@@ -36,6 +36,8 @@ public:
 
     FeaturePtr referencedFeature() const;
 
+    bool isInside( SelectionRect r) const override;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const ExternalReference& other);
 

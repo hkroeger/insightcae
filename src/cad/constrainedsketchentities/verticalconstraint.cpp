@@ -26,33 +26,23 @@ defineType(VerticalConstraint);
 VerticalConstraint::VerticalConstraint(
     std::shared_ptr<insight::cad::Line> line,
     const std::string& layerName )
-  : ConstrainedSketchEntity(layerName),
+  : SingleSymbolConstraint(layerName),
     line_(line)
 {}
 
 
 
-
-std::vector<vtkSmartPointer<vtkProp> >
-VerticalConstraint::createActor() const
+std::string VerticalConstraint::symbolText() const
 {
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("V");
-    caption->BorderOff();
-    caption->SetAttachmentPoint(
-        arma::mat(0.5*
-                  (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
-            .memptr());
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->FrameOff();
-    caption->GetCaptionTextProperty()->ShadowOff();
-    caption->GetCaptionTextProperty()->BoldOff();
-
-    return {caption};
-
+    return "V";
 }
+
+arma::mat VerticalConstraint::symbolLocation() const
+{
+    return 0.5*
+           (line_->getDatumPoint("p0")+line_->getDatumPoint("p1"));
+}
+
 
 
 

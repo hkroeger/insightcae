@@ -2,7 +2,7 @@
 #define POINTONCURVECONSTRAINT_H
 
 
-#include "constrainedsketchentity.h"
+#include "singlesymbolconstraint.h"
 
 #include "constrainedsketch.h"
 #include "cadfeature.h"
@@ -13,7 +13,7 @@ namespace cad
 {
 
 class PointOnCurveConstraint
-    : public ConstrainedSketchEntity
+    : public SingleSymbolConstraint
 {
     std::shared_ptr<SketchPoint> p_;
     std::shared_ptr<Feature> curve_;
@@ -28,7 +28,8 @@ public:
 
     CREATE_FUNCTION(PointOnCurveConstraint);
 
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
+    std::string symbolText() const override;
+    arma::mat symbolLocation() const override;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;

@@ -134,6 +134,20 @@ void Angle::operator=(const Angle &other)
 }
 
 
+arma::mat Angle::symbolLocation() const
+{
+    arma::mat pCtr=pCtr_->value();
+    double rDimLine = std::max(
+        insight::LSMALL, dimLineRadius() );
+    arma::mat p1=p1_->value();
+    arma::mat p2=p2_->value();
+    arma::mat r1=p1-pCtr;
+    arma::mat r2=p2-pCtr;
+    arma::mat er1 = normalized(r1);
+    arma::mat er2 = normalized(r2);
+    return pCtr+rDimLine*normalized(er1+er2);
+}
+
 
 std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
 {

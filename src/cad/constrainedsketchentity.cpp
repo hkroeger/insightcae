@@ -27,6 +27,19 @@ defineStaticFunctionTableWithArgs(
     LIST(ruleset, pd) );
 
 
+bool ConstrainedSketchEntity::SelectionRect
+    ::isInside(const arma::mat& p3d) const
+{
+    auto p2=sketch->p3Dto2D(p3d);
+    return isInside(p2[0], p2[1]);
+}
+
+bool ConstrainedSketchEntity::SelectionRect
+    ::isInside(double x, double y) const
+{
+    return (x1<=x) && (x<=x2) && (y1<=y) && (y<=y2);
+}
+
 
 
 ConstrainedSketchEntity::ConstrainedSketchEntity(

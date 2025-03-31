@@ -117,6 +117,16 @@ void AngleConstraint::setDimLineRadius(double r)
     op.set( r, true );
 }
 
+
+
+
+bool AngleConstraint::isInside( SelectionRect r) const
+{
+    return r.isInside(symbolLocation());
+}
+
+
+
 void AngleConstraint::operator=(const ConstrainedSketchEntity& other)
 {
     operator=(dynamic_cast<const AngleConstraint&>(other));

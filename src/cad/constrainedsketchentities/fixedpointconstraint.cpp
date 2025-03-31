@@ -19,7 +19,7 @@ defineType(FixedPointConstraint);
 
 FixedPointConstraint::FixedPointConstraint(
     insight::cad::SketchPointPtr p, const std::string& layerName )
-    : ConstrainedSketchEntity(layerName),
+    : SingleSymbolConstraint(layerName),
       p_(p)
 {
     auto c=p->coords2D();
@@ -31,22 +31,18 @@ FixedPointConstraint::FixedPointConstraint(
     changeDefaultParameters( *insight::ParameterSet::create(std::move(ps), "") );
 }
 
-std::vector<vtkSmartPointer<vtkProp> >
-FixedPointConstraint::createActor() const
-{
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("F");
-    caption->BorderOff();
-    caption->SetAttachmentPoint(p_->value().memptr());
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->FrameOff();
-    caption->GetCaptionTextProperty()->ShadowOff();
-    caption->GetCaptionTextProperty()->BoldOff();
 
-    return {caption};
+std::string FixedPointConstraint::symbolText() const
+{
+    return "F";
 }
+
+
+arma::mat FixedPointConstraint::symbolLocation() const
+{
+    return p_->value();
+}
+
 
 int FixedPointConstraint::nConstraints() const
 {

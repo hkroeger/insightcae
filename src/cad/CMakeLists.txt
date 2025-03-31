@@ -30,6 +30,7 @@ set(insightcad_SOURCES
   constrainedsketch.h constrainedsketch.cpp
   constrainedsketchentity.h constrainedsketchentity.cpp
   constrainedsketchentities/sketchpoint.h constrainedsketchentities/sketchpoint.cpp
+  constrainedsketchentities/singlesymbolconstraint.h constrainedsketchentities/singlesymbolconstraint.cpp
   constrainedsketchentities/fixedpointconstraint.h constrainedsketchentities/fixedpointconstraint.cpp
   constrainedsketchentities/horizontalconstraint.h constrainedsketchentities/horizontalconstraint.cpp
   constrainedsketchentities/verticalconstraint.h constrainedsketchentities/verticalconstraint.cpp

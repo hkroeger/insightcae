@@ -1,7 +1,7 @@
 #ifndef FIXEDPOINTCONSTRAINT_H
 #define FIXEDPOINTCONSTRAINT_H
 
-#include "constrainedsketchentity.h"
+#include "singlesymbolconstraint.h"
 #include "constrainedsketch.h"
 
 namespace insight
@@ -10,7 +10,7 @@ namespace cad
 {
 
 class FixedPointConstraint
-    : public ConstrainedSketchEntity
+    : public SingleSymbolConstraint
 {
 
     SketchPointPtr p_;
@@ -23,7 +23,8 @@ public:
 
     CREATE_FUNCTION(FixedPointConstraint);
 
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
+    std::string symbolText() const override;
+    arma::mat symbolLocation() const override;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
@@ -43,6 +44,7 @@ public:
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedPointConstraint& other);

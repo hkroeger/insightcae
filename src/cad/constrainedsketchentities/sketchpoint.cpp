@@ -147,6 +147,11 @@ void SketchPoint::replaceDependency(
     const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
 {}
 
+bool SketchPoint::isInside(SelectionRect r) const
+{
+    return r.isInside(value());
+}
+
 
 void SketchPoint::operator=(const ConstrainedSketchEntity& other)
 {

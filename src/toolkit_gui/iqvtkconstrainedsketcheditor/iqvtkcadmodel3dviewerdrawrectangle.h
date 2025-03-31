@@ -18,6 +18,10 @@ private:
 
     vtkSmartPointer<vtkActor> previewLine_;
     insight::cad::Line* prevLine_;
+    bool addToSketch_;
+
+public:
+    boost::signals2::signal<void(const arma::mat& p1, const arma::mat& p2)> previewUpdated;
 
 private:
     std::pair<arma::mat, arma::mat>
@@ -28,7 +32,9 @@ private:
 
 public:
     IQVTKCADModel3DViewerDrawRectangle(
-        IQVTKConstrainedSketchEditor &editor );
+        IQVTKConstrainedSketchEditor &editor,
+        bool allowExistingPoints = true,
+        bool addToSketch = true );
     ~IQVTKCADModel3DViewerDrawRectangle();
 
     void start() override;

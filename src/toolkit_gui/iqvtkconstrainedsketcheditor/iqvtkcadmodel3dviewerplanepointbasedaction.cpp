@@ -38,9 +38,13 @@ IQVTKCADModel3DViewerPlanePointBasedAction::applyWizards(
 
 IQVTKCADModel3DViewerPlanePointBasedAction
     ::IQVTKCADModel3DViewerPlanePointBasedAction(
-        IQVTKConstrainedSketchEditor &editor )
-    : IQVTKSelectConstrainedSketchEntity( editor )
+    IQVTKConstrainedSketchEditor &editor,
+    bool allowExistingEntities )
+: OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>( editor )
 {
+    OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>
+        ::switchEventProcessing(allowExistingEntities);
+
     setSelectionFilter(
         [](std::weak_ptr<insight::cad::ConstrainedSketchEntity> se)
         {
@@ -97,7 +101,10 @@ bool IQVTKCADModel3DViewerPlanePointBasedAction::onMouseClick  (
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    auto ret = IQVTKSelectConstrainedSketchEntity::onMouseClick(btn, nFlags, point);
+    bool ret=
+        OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>
+        ::onMouseClick(btn, nFlags, point);
+
     if ((btn==Qt::LeftButton) && (!ret))
     {
         pointSelected(
@@ -108,5 +115,7 @@ bool IQVTKCADModel3DViewerPlanePointBasedAction::onMouseClick  (
                     ), nullptr ) );
         return true;
     }
+
     return ret;
 }
+

@@ -85,6 +85,11 @@ public:
 
     void start() override;
 
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
+
     IQVTKConstrainedSketchEditor& editor() const;
     insight::cad::ConstrainedSketch& sketch() const;
 };

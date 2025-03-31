@@ -251,6 +251,18 @@ VectorPtr ConstrainedSketch::sketchPlaneNormal() const
     return vec3const( dir.X(), dir.Y(), dir.Z() );
 }
 
+arma::mat ConstrainedSketch::p3Dto2D(const arma::mat &p3d) const
+{
+    auto pl=plane()->plane();
+    auto p0=vec3(pl.Location());
+    auto ex=vec3(pl.XDirection());
+    auto ey=vec3(pl.YDirection());
+    return vec2(
+        arma::dot(p3d-p0, ex),
+        arma::dot(p3d-p0, ey)
+        );
+}
+
 
 
 
@@ -1027,6 +1039,31 @@ void ConstrainedSketch::removeLayer(const std::string &layerName)
             layerName.c_str() );
 }
 
+std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
+ConstrainedSketch::entitiesInsideRect(
+    double x1, double y1, double x2, double y2
+    ) const
+{
+    ConstrainedSketchEntity::SelectionRect r;
+    r.sketch=this;
+    r.x1=std::min(x1,x2);
+    r.y1=std::min(y1,y2);
+    r.x2=std::max(x1,x2);
+    r.y2=std::max(y1,y2);
+
+    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > es;
+
+    for (auto& e: *this)
+    {
+        if (e.second->isInside(r))
+        {
+            es.push_back(e.second);
+        }
+    }
+    return es;
+}
+
+
 void ConstrainedSketch::build()
 {
     ExecTimer t("ConstrainedSketch::build() ["+featureSymbolName()+"]");
@@ -1069,6 +1106,7 @@ void ConstrainedSketch::build()
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
 }
+
 
 
 

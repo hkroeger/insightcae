@@ -279,6 +279,107 @@ public:
 };
 
 
+template<class Base>
+class OptionalInputReceiver
+: public Base
+{
+    bool enabled_ = true;
+
+public:
+    using Base::Base;
+
+    void switchEventProcessing(bool enabled)
+    {
+        enabled_=enabled;
+    }
+
+    void enableEventProcessing()
+    {
+        enabled_=true;
+    }
+
+    void disableEventProcessing()
+    {
+        enabled_=false;
+    }
+
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override
+    {
+        if (enabled_)
+            return Base::onMouseClick(
+                btn, nFlags, point );
+        else
+            return false;
+    }
+
+    bool onDoubleClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override
+    {
+        if (enabled_)
+            return Base::onDoubleClick  (
+                btn, nFlags, point );
+        else
+            return false;
+    }
+
+
+    bool onMouseDrag  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point,
+        typename Base::EventType eventType ) override
+    {
+        if (enabled_)
+            return Base::onMouseDrag  (
+                btn, nFlags, point, eventType );
+        else
+            return false;
+    }
+
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override
+    {
+        if (enabled_)
+            return Base::onMouseMove(
+                point, curFlags );
+        else
+            return false;
+    }
+
+    bool onMouseWheel(
+        double angleDeltaX,
+        double angleDeltaY ) override
+    {
+        if (enabled_)
+            return Base::onMouseWheel(
+                angleDeltaX, angleDeltaY );
+        else
+            return false;
+    }
+
+    bool onKeyPress ( Qt::KeyboardModifiers modifiers, int key ) override
+    {
+        if (enabled_)
+            return Base::onKeyPress( modifiers, key );
+        else
+            return false;
+    }
+
+    bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override
+    {
+        if (enabled_)
+            return Base::onKeyRelease ( modifiers, key );
+        else
+            return false;
+    }
+};
+
 
 
 #endif // INPUTRECEIVER_H

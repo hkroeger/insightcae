@@ -142,6 +142,14 @@ double Distance::distance() const
     return distance_;
 }
 
+arma::mat Distance::symbolLocation() const
+{
+    arma::mat ofs = dimLineOffset();
+    arma::mat p1 = p1_->value();
+    arma::mat p2 = p1 + measureDirection()*distance();
+    arma::mat pmid = 0.5*(p1+p2);
+    return pmid+ofs;
+}
 
 std::vector<vtkSmartPointer<vtkProp> >
 Distance::createVTKRepr(bool displayCoords) const

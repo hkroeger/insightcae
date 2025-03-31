@@ -72,6 +72,7 @@ public:
   virtual double relativeArrowSize() const;
 
   double distance() const;
+  arma::mat symbolLocation() const;
 
   std::vector<vtkSmartPointer<vtkProp> > createVTKRepr(bool displayCoords) const;
   std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const override;

@@ -46,6 +46,12 @@ FeaturePtr ExternalReference::referencedFeature() const
     return extRef_;
 }
 
+bool ExternalReference::isInside( SelectionRect r) const
+{
+    return false;
+}
+
+
 void ExternalReference::operator=(const ConstrainedSketchEntity& other)
 {
     ExternalReference::operator=(dynamic_cast<const ExternalReference&>(other));

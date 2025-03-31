@@ -464,6 +464,8 @@ public:
         const std::set<vtkProp*>& restrictPicking = {}
         ) const;
     std::vector<vtkProp*> findAllActorsUnderCursorAt(const QPoint& clickPos) const;
+    std::vector<vtkProp*> findAllActorsInRectangle(
+        const QPoint& clickPos1, const QPoint& clickPos2) const;
 
     typedef boost::variant<
         boost::blank,

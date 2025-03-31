@@ -47,6 +47,7 @@
 #include "vtkRenderWindowInteractor.h"
 #include "vtkPropPicker.h"
 #include "vtkCellPicker.h"
+#include "vtkAreaPicker.h"
 #include "vtkImageReader2Factory.h"
 #include "vtkImageReader2.h"
 #include "vtkCaptionActor2D.h"
@@ -1721,6 +1722,51 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
             std::back_inserter(aa),
             [](decltype(aa3d)::value_type& aa3di) { return aa3di.second; }
             );
+    }
+
+    return aa;
+}
+
+std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsInRectangle(
+    const QPoint &clickPos1, const QPoint &clickPos2) const
+{
+    std::vector<vtkProp *> aa;
+    //    std::vector<double> dist;
+
+    auto p1 = widgetCoordsToVTK(clickPos1);
+    auto p2 = widgetCoordsToVTK(clickPos2);
+
+    // {
+    //     // look for text (2D actors)
+    //     auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+    //     picker2d->Pick(p.x(), p.y(), 0, ren_);
+    //     if (auto act2 = picker2d->GetActor2D())
+    //     {
+    //         aa.push_back(act2);
+    //     }
+
+    //     const_cast<IQVTKCADModel3DViewer*>(this)
+    //         ->redrawNow(); // flickering bug (black screen) otherwise
+    // }
+    {
+        // take a closer look with other pick engine
+        // which can detect multiple overlapping actors
+        auto picker3d = vtkSmartPointer<vtkAreaPicker>::New();
+        picker3d->AreaPick(p1.x(), p1.y(), p2.x(), p2.y(), ren_);
+
+        // insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
+        auto pi = picker3d->GetProp3Ds();
+        int nsel = pi->GetNumberOfItems();
+
+        auto cp = insight::vec3FromComponents(ren_->GetActiveCamera()->GetPosition());
+        for (int i=0; i<nsel; ++i)
+        {
+            auto prop = vtkProp::SafeDownCast(pi->GetItemAsObject(i));
+            if (actorsExcludedFromPicking_.count(prop)<1)
+            {
+                aa.push_back(prop);
+            }
+        }
     }
 
     return aa;

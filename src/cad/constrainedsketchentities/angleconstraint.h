@@ -47,6 +47,8 @@ public:
     double dimLineRadius() const override;
     void setDimLineRadius(double r);
 
+    bool isInside( SelectionRect r) const override;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const AngleConstraint& other);
 

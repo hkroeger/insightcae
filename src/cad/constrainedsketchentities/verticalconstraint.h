@@ -1,7 +1,7 @@
 #ifndef VERTICALCONSTRAINT_H
 #define VERTICALCONSTRAINT_H
 
-#include "constrainedsketchentity.h"
+#include "singlesymbolconstraint.h"
 #include "cadfeatures/line.h"
 
 namespace insight
@@ -10,7 +10,7 @@ namespace cad
 {
 
 class VerticalConstraint
-    : public ConstrainedSketchEntity
+    : public SingleSymbolConstraint
 {
     std::shared_ptr<Line> line_;
 
@@ -23,7 +23,8 @@ public:
 
     CREATE_FUNCTION(VerticalConstraint);
 
-    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
+    std::string symbolText() const override;
+    arma::mat symbolLocation() const override;
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
@@ -42,6 +43,7 @@ public:
     void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const VerticalConstraint& other);

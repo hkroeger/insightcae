@@ -41,6 +41,7 @@ public:
 
   void operator=(const Angle& other);
 
+  arma::mat symbolLocation() const;
   std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const override;
 };
 

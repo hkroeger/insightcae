@@ -214,6 +214,7 @@ public:
 
     const DatumPtr& plane() const;
     VectorPtr sketchPlaneNormal() const;
+    arma::mat p3Dto2D(const arma::mat& p3d) const;
 
     GeometryMap::key_type findUnusedID(int direction=1) const;
 
@@ -294,6 +295,8 @@ public:
 
     void removeLayer(const std::string& layerName);
 
+    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
+    entitiesInsideRect( double x1, double y1, double x2, double y2 ) const;
 };
 
 

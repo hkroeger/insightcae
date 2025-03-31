@@ -44,6 +44,8 @@ public:
 
     VectorPtr planeNormal() const;
 
+    bool isInside( SelectionRect r) const override;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const DistanceConstraint& other);
 

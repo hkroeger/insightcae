@@ -22,30 +22,19 @@ defineType(HorizontalConstraint);
 HorizontalConstraint::HorizontalConstraint(
     std::shared_ptr<insight::cad::Line> line,
     const std::string& layerName )
-    : ConstrainedSketchEntity(layerName), line_(line)
+    : SingleSymbolConstraint(layerName), line_(line)
 {}
 
 
-
-
-std::vector<vtkSmartPointer<vtkProp> >
-HorizontalConstraint::createActor() const
+std::string HorizontalConstraint::symbolText() const
 {
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("H");
-    caption->BorderOff();
-    caption->SetAttachmentPoint(
-        arma::mat(0.5*
-                  (line_->getDatumPoint("p0")+line_->getDatumPoint("p1")))
-            .memptr());
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->FrameOff();
-    caption->GetCaptionTextProperty()->ShadowOff();
-    caption->GetCaptionTextProperty()->BoldOff();
+    return "H";
+}
 
-    return {caption};
+arma::mat HorizontalConstraint::symbolLocation() const
+{
+    return 0.5*
+           (line_->getDatumPoint("p0")+line_->getDatumPoint("p1"));
 }
 
 

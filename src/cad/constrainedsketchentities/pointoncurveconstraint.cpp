@@ -23,33 +23,20 @@ PointOnCurveConstraint::PointOnCurveConstraint(
     std::shared_ptr<insight::cad::SketchPoint> p,
     std::shared_ptr<insight::cad::Feature> curve,
     const std::string& layerName )
-    : ConstrainedSketchEntity(layerName),
+    : SingleSymbolConstraint(layerName),
     p_(p),
     curve_(curve)
 {}
 
 
-
-
-std::vector<vtkSmartPointer<vtkProp> >
-PointOnCurveConstraint::createActor() const
+std::string PointOnCurveConstraint::symbolText() const
 {
-    auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
-    caption->SetCaption("C");
-    caption->BorderOff();
-    caption->SetAttachmentPoint(
-        arma::mat(p_->value()).memptr()
-        );
-    caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
-    caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
-    caption->GetCaptionTextProperty()->SetFrame(false);
-    caption->GetCaptionTextProperty()->SetShadow(false);
-    caption->GetCaptionTextProperty()->FrameOff();
-    caption->GetCaptionTextProperty()->ShadowOff();
-    caption->GetCaptionTextProperty()->BoldOff();
+    return "C";
+}
 
-    return {caption};
+arma::mat PointOnCurveConstraint::symbolLocation() const
+{
+    return p_->value();
 }
 
 

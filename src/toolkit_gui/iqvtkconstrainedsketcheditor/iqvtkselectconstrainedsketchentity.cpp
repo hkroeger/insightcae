@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QLineEdit>
 
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 
 void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEditor)
 {
@@ -252,17 +253,74 @@ IQVTKSelectConstrainedSketchEntity::IQVTKSelectConstrainedSketchEntity(
 }
 
 
+
 IQVTKSelectConstrainedSketchEntity::~IQVTKSelectConstrainedSketchEntity()
 {}
 
+
+
 void IQVTKSelectConstrainedSketchEntity::start()
 {}
+
+
+
+bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point)
+{
+    if (!this->hasChildReceivers())
+    {
+        if (!IQVTKConstrainedSketchEditorSelectionLogic
+            ::onMouseClick(btn, nFlags, point)
+            && (btn==Qt::LeftButton) )
+        {
+            auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawRectangle>(
+                editor(), false, false );
+
+            connect(dl.get(), &IQVTKCADModel3DViewerDrawRectangle::rectangleAdded, dl.get(),
+
+                    [this]( std::vector<std::shared_ptr<insight::cad::Line> > addedLines,
+                           IQVTKCADModel3DViewerDrawRectangle::PointProperty* p2,
+                           IQVTKCADModel3DViewerDrawRectangle::PointProperty* p1 )
+                    {
+                        std::cout<<"added"<<std::endl;
+                    }
+                    );
+
+            dl->previewUpdated.connect(
+                [this](const arma::mat& p1_3d, const arma::mat& p2_3d)
+                {
+                    auto p1=(*editor_).p3Dto2D(p1_3d);
+                    auto p2=(*editor_).p3Dto2D(p2_3d);
+
+                    auto selectedEntities =
+                        (*editor_).entitiesInsideRect(
+                            p1[0], p1[1], p2[0], p2[1] );
+
+                    setSelectionTo(selectedEntities);
+                }
+                );
+
+            auto& dlRef=*dl;
+            launchAction(std::move(dl));
+            return dlRef.onMouseClick(btn, nFlags, point);
+        }
+        return false;
+    }
+    else
+        return IQVTKConstrainedSketchEditorSelectionLogic
+            ::onMouseClick(btn, nFlags, point);
+}
+
 
 
 IQVTKConstrainedSketchEditor &IQVTKSelectConstrainedSketchEntity::editor() const
 {
     return editor_;
 }
+
+
 
 insight::cad::ConstrainedSketch &IQVTKSelectConstrainedSketchEntity::sketch() const
 {

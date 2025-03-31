@@ -156,6 +156,12 @@ VectorPtr DistanceConstraint::planeNormal() const
 }
 
 
+bool DistanceConstraint::isInside(SelectionRect r) const
+{
+    return r.isInside(symbolLocation());
+}
+
+
 
 
 void DistanceConstraint::operator=(const ConstrainedSketchEntity& other)

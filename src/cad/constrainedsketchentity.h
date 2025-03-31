@@ -26,6 +26,17 @@ typedef
 
 class ConstrainedSketchEntity
 {
+public:
+    struct SelectionRect
+    {
+        const ConstrainedSketch* sketch;
+        double x1, y1, x2, y2;
+
+        bool isInside(const arma::mat& p3d) const;
+        bool isInside(double x, double y) const;
+    };
+
+private:
     std::unique_ptr<insight::ParameterSet> parameters_, defaultParameters_;
 
     std::string layerName_;
@@ -86,6 +97,8 @@ public:
     virtual void replaceDependency(
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) =0;
+
+    virtual bool isInside( SelectionRect r) const =0;
 
     virtual void operator=(const ConstrainedSketchEntity& other);
 

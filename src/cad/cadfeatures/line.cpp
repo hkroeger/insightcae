@@ -186,6 +186,13 @@ void Line::replaceDependency(
 }
 
 
+bool Line::isInside( SelectionRect r) const
+{
+    return
+        r.isInside(p0_->value())
+           && r.isInside(p1_->value());
+}
+
 
 
 void Line::build()

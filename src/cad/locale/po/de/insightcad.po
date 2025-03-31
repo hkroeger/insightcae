@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-28 07:55+0100\n"
+"POT-Creation-Date: 2025-03-31 15:10+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -352,7 +352,7 @@ msgid ""
 "feature are shifted in increments of delta_l. The number of copies is n."
 msgstr ""
 
-#: cadfeatures/line.cpp:275
+#: cadfeatures/line.cpp:282
 msgid "Creates a line between point p0 and p1."
 msgstr ""
 

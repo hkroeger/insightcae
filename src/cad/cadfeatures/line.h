@@ -72,6 +72,8 @@ public:
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
+    bool isInside( SelectionRect r) const override;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const Line& other);
 

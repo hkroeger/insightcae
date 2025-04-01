@@ -79,8 +79,13 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectConstrainedSketchEntity
     IQVTKConstrainedSketchEditor& editor_;
     QToolBar *toolBar_;
 
+    bool allowBoxSelection_;
+
 public:
-    IQVTKSelectConstrainedSketchEntity(IQVTKConstrainedSketchEditor& editor);
+    IQVTKSelectConstrainedSketchEntity(
+        IQVTKConstrainedSketchEditor& editor,
+        bool allowBoxSelection =false );
+
     ~IQVTKSelectConstrainedSketchEntity();
 
     void start() override;

@@ -218,7 +218,7 @@ void IQVTKConstrainedSketchEditor::remove(
 IQVTKConstrainedSketchEditor::ViewWidgetActionHost::ViewWidgetActionPtr
 IQVTKConstrainedSketchEditor::setupDefaultAction()
 {
-    return make_viewWidgetAction<IQVTKSelectConstrainedSketchEntity>(*this);
+    return make_viewWidgetAction<IQVTKSelectConstrainedSketchEntity>(*this, true);
 }
 
 

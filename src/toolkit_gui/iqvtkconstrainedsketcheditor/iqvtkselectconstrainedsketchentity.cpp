@@ -10,6 +10,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QLineEdit>
+#include <qnamespace.h>
 
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 
@@ -206,12 +207,27 @@ IQVTKSelectConstrainedSketchEntity::findEntitiesUnderCursor(
 {
     std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > ret;
     auto aa = viewer().findAllActorsUnderCursorAt(point);
-    for (auto& a: aa)
+    for (int i=0; i<2; ++i)
     {
-        if (auto sg =
-            editor_.findSketchElementOfActor(a))
+        for (auto& a: aa)
         {
-            ret.push_back(sg);
+            if (auto sg = editor_.findSketchElementOfActor(a))
+            {
+                // sort points to beginning of list
+                if (
+                    (i==0 && std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                    ||
+                    (i==1 && !std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                    )
+                {
+                    if (std::find_if(ret.begin(), ret.end(),
+                        [&sg](const decltype(ret)::value_type& i){return i.lock()==sg;})
+                        == ret.end())
+                    {
+                        ret.push_back(sg);
+                    }
+                }
+            }
         }
     }
     return ret;
@@ -240,14 +256,16 @@ IQVTKSelectConstrainedSketchEntity::highlightEntity(
 
 
 IQVTKSelectConstrainedSketchEntity::IQVTKSelectConstrainedSketchEntity(
-    IQVTKConstrainedSketchEditor &editor )
+    IQVTKConstrainedSketchEditor &editor,
+    bool allowBoxSelection )
     :   IQVTKConstrainedSketchEditorSelectionLogic(
         [&editor]()
         { return std::make_shared<SketchEntityMultiSelection>(editor); },
         editor.viewer(),
         false // captureAllInput
         ),
-    editor_(editor)
+    editor_(editor),
+    allowBoxSelection_(allowBoxSelection)
 {
     toggleHoveringSelectionPreview(true);
 }
@@ -271,22 +289,13 @@ bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
 {
     if (!this->hasChildReceivers())
     {
-        if (!IQVTKConstrainedSketchEditorSelectionLogic
-            ::onMouseClick(btn, nFlags, point)
-            && (btn==Qt::LeftButton) )
+        bool ret=IQVTKConstrainedSketchEditorSelectionLogic
+            ::onMouseClick(btn, nFlags, point);
+
+        if (!ret && (btn==Qt::LeftButton) && allowBoxSelection_ )
         {
             auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawRectangle>(
                 editor(), false, false );
-
-            connect(dl.get(), &IQVTKCADModel3DViewerDrawRectangle::rectangleAdded, dl.get(),
-
-                    [this]( std::vector<std::shared_ptr<insight::cad::Line> > addedLines,
-                           IQVTKCADModel3DViewerDrawRectangle::PointProperty* p2,
-                           IQVTKCADModel3DViewerDrawRectangle::PointProperty* p1 )
-                    {
-                        std::cout<<"added"<<std::endl;
-                    }
-                    );
 
             dl->previewUpdated.connect(
                 [this](const arma::mat& p1_3d, const arma::mat& p2_3d)
@@ -306,7 +315,7 @@ bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
             launchAction(std::move(dl));
             return dlRef.onMouseClick(btn, nFlags, point);
         }
-        return false;
+        return ret;
     }
     else
         return IQVTKConstrainedSketchEditorSelectionLogic

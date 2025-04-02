@@ -1,7 +1,7 @@
 #ifndef DISTANCECONSTRAINT_H
 #define DISTANCECONSTRAINT_H
 
-#include "constrainedsketchentity.h"
+#include "constraintwithdimensionlines.h"
 #include "cadpostprocactions/pointdistance.h"
 
 namespace insight {
@@ -10,7 +10,7 @@ namespace cad {
 
 class DistanceConstraint
     : public Distance,
-      public ConstrainedSketchEntity
+      public ConstraintWithDimensionLines
 {
     VectorPtr planeNormal_;
 
@@ -41,6 +41,8 @@ public:
     arma::mat dimLineOffset() const override;
     void setDimLineOffset(const arma::mat& p);
     double relativeArrowSize() const override;
+
+    void setArrowSize(double absoluteArrowSize) override;
 
     VectorPtr planeNormal() const;
 

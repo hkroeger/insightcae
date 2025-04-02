@@ -15,6 +15,7 @@
 #include "base/parameters/simpleparameter.h"
 
 #include "iqvtkcadmodel3dviewer.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 
 using namespace boost;
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
             v->editSketch(
                 *sketch,
                 std::make_shared<PD>(),
-                nullptr,
+                defaultGUIConstrainedSketchPresentationDelegate,
                 [](insight::cad::ConstrainedSketchPtr editedSk){
                     // do nothing, just discard
                 }

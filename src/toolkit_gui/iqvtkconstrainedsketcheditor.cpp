@@ -1,6 +1,7 @@
 #include "iqvtkconstrainedsketcheditor.h"
 #include "base/exception.h"
 #include "base/units.h"
+#include "base/translations.h"
 #include "constrainedsketch.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h"
@@ -17,6 +18,7 @@
 #include "vtkTextProperty.h"
 #include "vtkCaptionActor2D.h"
 
+#include "iqvtkconstrainedsketcheditor/iqvtkdragpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
@@ -111,6 +113,37 @@ void DefaultGUIConstrainedSketchPresentationDelegate::setEntityAppearance(
 }
 
 
+
+IQVTKConstrainedSketchEditor::UndoState::UndoState(
+    const QString& description,
+    const insight::cad::ConstrainedSketch &other )
+: IQUndoRedoStackState(description),
+  std::shared_ptr<insight::cad::ConstrainedSketch>(
+     insight::cad::ConstrainedSketch::create(other)  )
+{}
+
+
+
+void IQVTKConstrainedSketchEditor
+    ::applyUndoState(const IQUndoRedoStackState& state)
+{
+    insight::CurrentExceptionContext ex("applying undo state");
+    auto& s=dynamic_cast<const UndoState&>(state);
+
+    **this = *s;
+
+    (*this)->invalidate();
+    Q_EMIT sketchChanged();
+}
+
+
+IQUndoRedoStackStatePtr IQVTKConstrainedSketchEditor
+    ::createUndoState(const QString& description) const
+{
+    return std::make_shared<UndoState>(description, **this);
+}
+
+
 void IQVTKConstrainedSketchEditor::showLayerParameterEditor()
 {
     if (!layerPropertiesEditor_)
@@ -142,7 +175,7 @@ void IQVTKConstrainedSketchEditor::hideLayerParameterEditor()
 }
 
 
-void IQVTKConstrainedSketchEditor::add(
+void IQVTKConstrainedSketchEditor::addActors(
     ConstrainedSketchEntityPtr sg)
 {
     std::vector<vtkSmartPointer<vtkProp> > acs;
@@ -192,13 +225,15 @@ void IQVTKConstrainedSketchEditor::add(
     }
 
     sketchGeometryActors_[sg]=as;
+
+    viewer().scheduleRedraw();
 }
 
 
 
 
-void IQVTKConstrainedSketchEditor::remove(
-    ConstrainedSketchEntityPtr sg)
+void IQVTKConstrainedSketchEditor::removeActors(
+    ConstrainedSketchEntityPtr sg, bool redraw)
 {
     auto i=sketchGeometryActors_.find(sg);
     if (i!=sketchGeometryActors_.end())
@@ -210,6 +245,8 @@ void IQVTKConstrainedSketchEditor::remove(
            viewer().renderer()->RemoveActor(a);
        }
     }
+
+    if (redraw) viewer().scheduleRedraw();
 }
 
 
@@ -262,13 +299,13 @@ void IQVTKConstrainedSketchEditor::drawPoint()
                 entityProperties_->changeDefaultParameters(*pp.p);
 
                 (*this)->invalidate();
-                this->updateActors();
                 Q_EMIT sketchChanged();
             }
     );
 
 
 
+    storeUndoState("Draw Point");
     launchAction(std::move(dl));
 }
 
@@ -277,9 +314,6 @@ void IQVTKConstrainedSketchEditor::drawPoint()
 void IQVTKConstrainedSketchEditor::drawLine()
 {
     auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawLine>(*this);
-
-    connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::updateActors, dl.get(),
-            [this]() { updateActors(); } );
 
     connect(dl.get(), &IQVTKCADModel3DViewerDrawLine::endPointSelected, dl.get(),
 
@@ -384,11 +418,11 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
 
                 (*this)->invalidate();
-                this->updateActors();
                 Q_EMIT sketchChanged();
             }
             );
 
+    storeUndoState("Draw Line");
     launchAction(std::move(dl));
 }
 
@@ -476,13 +510,13 @@ void IQVTKConstrainedSketchEditor::drawRectangle()
                 }
 
                 (*this)->invalidate();
-                this->updateActors();
                 Q_EMIT sketchChanged();
             }
             );
 
 
 
+    storeUndoState("Draw Rectangle");
     launchAction(std::move(dl));
 }
 
@@ -531,6 +565,15 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     toolBar_ = this->viewer().addToolBar("Sketcher commands");
 
+    addUndoAction(
+        toolBar_->addAction(QPixmap(":/icons/icon_sketch_undo.svg"),
+        "Undo" ) );
+
+    addRedoAction(
+        toolBar_->addAction(QPixmap(":/icons/icon_sketch_redo.svg"),
+        "Redo" ) );
+
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_finish_accept.svg"), "Finish & Accept",
                         this, std::bind(&IQVTKConstrainedSketchEditor::finishAction, this, true) );
 
@@ -565,7 +608,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             auto lc = HorizontalConstraint::create( l );
                             (*this)->insertGeometry(lc);
                             (*this)->invalidate();
-                            this->updateActors();
                             Q_EMIT sketchChanged();
                         }
                     }
@@ -589,7 +631,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             auto lc = insight::cad::VerticalConstraint::create( l );
                             (*this)->insertGeometry(lc);
                             (*this)->invalidate();
-                            this->updateActors();
                             Q_EMIT sketchChanged();
                         }
                     }
@@ -620,7 +661,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             auto c = FixedPointConstraint::create( p );
                             (*this)->insertGeometry(c);
                             (*this)->invalidate();
-                            this->updateActors();
                             Q_EMIT sketchChanged();
                         }
                     }
@@ -655,7 +695,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                                 vec3const(1,0,0) );
                             (*this)->insertGeometry(c);
                             (*this)->invalidate();
-                            this->updateActors();
                             Q_EMIT sketchChanged();
                         }
                     }
@@ -690,7 +729,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                                 vec3const(0,1,0) );
                             (*this)->insertGeometry(c);
                             (*this)->invalidate();
-                            this->updateActors();
                             Q_EMIT sketchChanged();
                         }
                     }
@@ -734,7 +772,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             auto lc = PointOnCurveConstraint::create( pt, curve );
                             (*this)->insertGeometry(lc);
                             (*this)->invalidate();
-                            this->updateActors();
                             Q_EMIT sketchChanged();
                             break;
                         }
@@ -779,7 +816,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         (*this)->sketchPlaneNormal() );
                     (*this)->insertGeometry(dc);
                     (*this)->invalidate();
-                    this->updateActors();
                     Q_EMIT sketchChanged();
                 }
             }
@@ -817,7 +853,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     }
                     (*this)->eraseGeometry(p1);
                     (*this)->invalidate();
-                    this->updateActors();
                     Q_EMIT sketchChanged();
                 }
             }
@@ -841,7 +876,6 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                     geom.second->scaleSketch(sf);
                 }
                 (*this)->invalidate();
-                this->updateActors();
                 Q_EMIT sketchChanged();
             }
         }
@@ -1065,7 +1099,7 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
                 for (const auto& sg: sgs)
                 {
-                    remove(sg);
+                    removeActors(sg);
                 }
 
                 sketchGeometryActors_.clear();
@@ -1077,6 +1111,30 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             // toolBar_->deleteLater();
             delete sketchToolBoxWidget_;
             delete toolBar_;
+        });
+
+    (*this)->geometryAboutToBeRemoved.connect(
+        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+            removeActors((*this)->get(geoId));
+        });
+
+    (*this)->geometryAdded.connect(
+        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+            addActors((*this)->get(geoId));
+            onSketchSizeChanged();
+        });
+
+    (*this)->geometryChanged.connect(
+        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+              // redisplay, if displayed already
+              auto g=(*this)->get(geoId);
+              auto i=sketchGeometryActors_.find(g);
+              if (i!=sketchGeometryActors_.end())
+              {
+                removeActors(g, false);
+                addActors(g);
+              }
+              onSketchSizeChanged();
         });
 }
 
@@ -1128,23 +1186,30 @@ IQVTKConstrainedSketchEditor::findSketchElementOfActor
 
 
 
-void IQVTKConstrainedSketchEditor::deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td)
+void IQVTKConstrainedSketchEditor::deleteEntity(
+    std::weak_ptr<insight::cad::ConstrainedSketchEntity> td)
 {
+    storeUndoState(
+        QString("Delete %1").arg(
+            QString::fromStdString(td.lock()->type())) );
 
     // check if the entity to be deleted is a dependency of any other sketchentity
-    std::set<std::comparable_weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
+    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
     for (auto& e: **this)
     {
         if (e.second->dependsOn(td))
-            tbd.insert(e.second);
+            tbd.push_back(e.second);
     }
     for (auto& e: tbd)
     {
-        deleteEntity(e);
+        if (!e.expired())
+        {
+            deleteEntity(e);
+        }
     }
 
     auto gptr=td.lock();
-    remove(gptr);
+    // removeActors(gptr);
     (*this)->eraseGeometry(gptr);
     Q_EMIT sketchChanged();
 }
@@ -1261,13 +1326,17 @@ bool IQVTKConstrainedSketchEditor::onKeyRelease ( Qt::KeyboardModifiers modifier
         {
             if (selact->somethingSelected() && selact->currentSelection().size()>0)
             {
-                std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
+                std::vector<
+                    std::weak_ptr<insight::cad::ConstrainedSketchEntity> > tbd;
+
                 for (auto& s: selact->currentSelection())
                     tbd.push_back(s);
+
                 selact->clearSelection();
                 for (auto& td: tbd)
                 {
-                    deleteEntity(td);
+                    if (!td.expired())
+                        deleteEntity(td);
                 }
                 return true;
             }
@@ -1298,33 +1367,24 @@ bool IQVTKConstrainedSketchEditor::onMouseDrag
                     std::dynamic_pointer_cast<insight::cad::SketchPoint>(
                         selitem ) )
                 {
-                    arma::mat pip=viewer().pointInPlane3D(
-                        (*this)->plane()->plane(), point );
-
-                    arma::mat p2=viewer().pointInPlane2D(
-                        (*this)->plane()->plane(), pip );
-
-                    sp->setCoords2D(p2(0), p2(1));
-
-                    (*this)->invalidate();
-                    (*this).updateActors();
-
+                    storeUndoState("Drag Point");
+                    launchAction(make_viewWidgetAction<IQVTKDragPoint>(*this, sp));
                     return true;
                 }
                 else if (auto dc =
                     std::dynamic_pointer_cast<insight::cad::DistanceConstraint>(
                         selitem ) )
                 {
+                    storeUndoState("Drag Dimension Line");
                     launchAction(make_viewWidgetAction<IQVTKDragDimensionlineAction>(*this, dc));
-
                     return true;
                 }
                 else if (auto ac =
                          std::dynamic_pointer_cast<insight::cad::AngleConstraint>(
                              selitem ) )
                 {
+                    storeUndoState("Drag Angle Dimension");
                     launchAction(make_viewWidgetAction<IQVTKDragAngleDimensionAction>(*this, ac));
-
                     return true;
                 }
             }
@@ -1342,17 +1402,7 @@ bool IQVTKConstrainedSketchEditor::onMouseDrag
 void IQVTKConstrainedSketchEditor::updateActors()
 {
 
-  auto bb=(*this)->sketchBoundingBox();
-  double Ldiag=arma::norm(bb.col(1)-bb.col(0), 2);
-  for (const auto& g: **this)
-  {
-        if (auto dim =
-            std::dynamic_pointer_cast<DistanceConstraint>(g.second))
-        {
-            auto &asp = dim->parametersRef().get<DoubleParameter>("arrowSize");
-            asp.set(Ldiag*0.01, true);
-        }
-  }
+  onSketchSizeChanged();
 
 
   // through all geom elements
@@ -1362,12 +1412,12 @@ void IQVTKConstrainedSketchEditor::updateActors()
       auto i=sketchGeometryActors_.find(g.second);
       if (i!=sketchGeometryActors_.end())
       {
-          remove(g.second);
+          removeActors(g.second);
       }
 
       // add, if not filtered
       if (hiddenLayers_.count(g.second->layerName())==0)
-        add(g.second);
+        addActors(g.second);
   }
 
   // remove vanished geometry
@@ -1377,7 +1427,7 @@ void IQVTKConstrainedSketchEditor::updateActors()
       auto i=(*this)->findGeometry(g);
       if (i==ConstrainedSketch::GeometryMap::const_iterator())
       {
-        remove(g);
+        removeActors(g);
       }
   }
 
@@ -1428,6 +1478,35 @@ void IQVTKConstrainedSketchEditor::renameLayer(
 
     Q_EMIT sketchChanged();
 }
+
+
+
+void IQVTKConstrainedSketchEditor::onSketchSizeChanged()
+{
+    auto bb=(*this)->sketchBoundingBox();
+    double Ldiag=std::max(
+        insight::LSMALL,
+        arma::norm(bb.col(1)-bb.col(0), 2) );
+
+    for (const auto& g: **this)
+    {
+        if (auto dim =
+            std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
+                g.second ) )
+        {
+            dim->setArrowSize(Ldiag*0.01);
+            auto i=sketchGeometryActors_.find(dim);
+            if (i!=sketchGeometryActors_.end())
+            {
+                removeActors(dim, false);
+                addActors(dim);
+            }
+        }
+    }
+}
+
+
+
 
 
 

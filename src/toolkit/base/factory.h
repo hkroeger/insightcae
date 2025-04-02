@@ -535,12 +535,19 @@ declareFactoryTable ( baseT, LIST ( ParameterSetInput&& ip ), LIST ( std::move(i
     defineStaticFunctionTable(baseT, defaultParameters, std::unique_ptr<ParameterSet>)
 
 
+#define CREATE_COPY_FUNCTION(DerivedClass) \
+static std::shared_ptr<DerivedClass> create(const DerivedClass& other) \
+{ \
+        return std::shared_ptr<DerivedClass>( \
+            new DerivedClass(other)); \
+}
+
 #define CREATE_FUNCTION(DerivedClass) \
 template <typename... T> \
-    static std::shared_ptr<DerivedClass> create(T /*&&*/...args) \
+static std::shared_ptr<DerivedClass> create(T...args) \
 { \
-        DerivedClass *ptr = new DerivedClass(::std::forward<T>(args)...); \
-        return std::shared_ptr<DerivedClass>(ptr); \
+        return std::shared_ptr<DerivedClass>( \
+            new DerivedClass(::std::forward<T>(args)...)); \
 }
 
 #define REUSE_CTOR(BaseClass, DerivedClass) \

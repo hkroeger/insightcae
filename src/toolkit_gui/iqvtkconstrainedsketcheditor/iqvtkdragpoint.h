@@ -1,22 +1,22 @@
-#ifndef IQVTKDRAGANGLEDIMENSIONACTION_H
-#define IQVTKDRAGANGLEDIMENSIONACTION_H
+#ifndef IQVTKDRAGPOINT_H
+#define IQVTKDRAGPOINT_H
+
 
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor.h"
-#include "constrainedsketchentities/angleconstraint.h"
 
 class IQVTKCADModel3DViewer;
 
-class IQVTKDragAngleDimensionAction
+class IQVTKDragPoint
     : public ViewWidgetAction<IQVTKCADModel3DViewer>
 {
     IQVTKConstrainedSketchEditor &editor_;
-    std::shared_ptr<insight::cad::AngleConstraint> ac_;
+    std::shared_ptr<insight::cad::SketchPoint> p_;
 
 public:
-    IQVTKDragAngleDimensionAction(
+    IQVTKDragPoint(
         IQVTKConstrainedSketchEditor &editor,
-        std::shared_ptr<insight::cad::AngleConstraint> ac);
+        std::shared_ptr<insight::cad::SketchPoint> p);
 
     void start() override;
 
@@ -27,4 +27,6 @@ public:
         EventType eventType ) override;
 };
 
-#endif // IQVTKDRAGANGLEDIMENSIONACTION_H
+
+
+#endif // IQVTKDRAGPOINT_H

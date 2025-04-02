@@ -292,7 +292,9 @@ bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
         bool ret=IQVTKConstrainedSketchEditorSelectionLogic
             ::onMouseClick(btn, nFlags, point);
 
-        if (!ret && (btn==Qt::LeftButton) && allowBoxSelection_ )
+        if (!ret
+            && (btn==Qt::LeftButton) && (nFlags==Qt::ShiftModifier)
+            && allowBoxSelection_ )
         {
             auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawRectangle>(
                 editor(), false, false );

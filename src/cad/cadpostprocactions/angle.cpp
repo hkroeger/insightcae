@@ -163,8 +163,10 @@ std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
     double rDimLine = std::max(
         insight::LSMALL, angleDim->dimLineRadius() );
 
-    double arrSize = rDimLine *
-                     angleDim->angle_ * angleDim->relativeArrowSize();
+    double arrSize =
+        rDimLine *
+        std::max(insight::LSMALL, angleDim->angle_) *
+        angleDim->relativeArrowSize();
 
     arma::mat r1=p1-pCtr;
     arma::mat r2=p2-pCtr;

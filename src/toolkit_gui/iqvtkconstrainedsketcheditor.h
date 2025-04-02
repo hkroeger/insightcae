@@ -12,10 +12,12 @@
 #include <QToolBar>
 #include <QToolBox>
 #include <QDockWidget>
+#include <memory>
 
 #include "constrainedsketch.h"
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h"
+#include "iqundoredostack.h"
 
 
 
@@ -43,8 +45,10 @@ extern std::string defaultGUIConstrainedSketchPresentationDelegate;
 
 
 
+
+
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
-      : public QObject,
+      : public IQUndoRedoStack,
         public ViewWidgetAction<IQVTKCADModel3DViewer>,
         public insight::cad::ConstrainedSketchPtr
 {
@@ -57,6 +61,21 @@ public:
 
     friend class SketchEntityMultiSelection;
     friend class IQVTKSelectConstrainedSketchEntity;
+
+
+    class UndoState
+        : public IQUndoRedoStackState,
+          public std::shared_ptr<insight::cad::ConstrainedSketch>
+    {
+    public:
+        UndoState(
+            const QString& description,
+            const insight::cad::ConstrainedSketch& sk );
+    };
+
+protected:
+    void applyUndoState(const IQUndoRedoStackState& state) override;
+    IQUndoRedoStackStatePtr createUndoState(const QString& description) const override;
 
 private:
     typedef
@@ -82,8 +101,8 @@ private:
 
     void showLayerParameterEditor();
     void hideLayerParameterEditor();
-    void add(insight::cad::ConstrainedSketchEntityPtr);
-    void remove(insight::cad::ConstrainedSketchEntityPtr);
+    void addActors(insight::cad::ConstrainedSketchEntityPtr);
+    void removeActors(insight::cad::ConstrainedSketchEntityPtr, bool redraw=true);
 
 
     ViewWidgetActionPtr setupDefaultAction() override;
@@ -139,6 +158,7 @@ public Q_SLOTS:
     void hideLayer(const std::string& layerName);
     void showLayer(const std::string& layerName);
     void renameLayer(const std::string& currentLayerName, const std::string& newLayerName);
+    void onSketchSizeChanged();
 
 Q_SIGNALS:
     void sketchChanged();

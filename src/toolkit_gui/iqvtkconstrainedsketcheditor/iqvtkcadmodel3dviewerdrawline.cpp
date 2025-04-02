@@ -144,7 +144,6 @@ void IQVTKCADModel3DViewerDrawLine::start()
                 Q_EMIT endPointSelected(p1_.get(), nullptr);
 
                 sketch().invalidate();
-                Q_EMIT updateActors();
             }
             else
             {
@@ -166,9 +165,6 @@ void IQVTKCADModel3DViewerDrawLine::start()
                 Q_EMIT lineAdded(line, prevLine_, p2_.get(), p1_.get() );
 
                 prevLine_=line.get();
-
-                Q_EMIT updateActors();
-
 
                 // continue with next line
                 p1_=p2_;

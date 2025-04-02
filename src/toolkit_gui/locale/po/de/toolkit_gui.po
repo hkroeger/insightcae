@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-31 16:07+0200\n"
+"POT-Creation-Date: 2025-04-02 21:50+0200\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -24,6 +24,24 @@ msgstr "Datei speichern"
 #: qtextensions.cpp:118
 msgid "Open file"
 msgstr "Datei öffnen"
+
+#: iqundoredostack.cpp:75
+msgid "undo sketch editing step"
+msgstr ""
+
+#: iqundoredostack.cpp:80
+#, c-format
+msgid "undo step %s"
+msgstr ""
+
+#: iqundoredostack.cpp:108
+msgid "redo sketch editing step"
+msgstr ""
+
+#: iqundoredostack.cpp:113
+#, c-format
+msgid "redo step %s"
+msgstr ""
 
 #: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "Change Item Label"

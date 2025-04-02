@@ -31,7 +31,9 @@ bool IQVTKDragDimensionlineAction::onMouseDrag(
     dc_->setDimLineOffset(pip);
 
     editor_->invalidate();
-    editor_.updateActors();
+
+    editor_->geometryChanged(
+        editor_->findGeometry(dc_)->first);
 
     if (eventType==Final) finishAction();
 

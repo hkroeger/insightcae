@@ -51,7 +51,6 @@ public:
         const QPoint point ) override;
 
 Q_SIGNALS:
-    void updateActors();
     void endPointSelected(
         PointProperty*  addedPoint,
         insight::cad::SketchPointPtr previousPoint

@@ -32,7 +32,9 @@ bool IQVTKDragAngleDimensionAction::onMouseDrag  (
     ac_->setDimLineRadius( arma::norm(pip - ac_->centerPoint()->value(), 2) );
 
     editor_->invalidate();
-    editor_.updateActors();
+
+    editor_->geometryChanged(
+        editor_->findGeometry(ac_)->first);
 
     if (eventType==Final) finishAction();
 

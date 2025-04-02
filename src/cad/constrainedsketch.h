@@ -169,7 +169,7 @@ public:
 
 #ifndef SWIG
     typedef boost::signals2::signal<void(GeometryMap::key_type)> GeometryEditSignal;
-    GeometryEditSignal geometryAdded, geometryRemoved, geometryChanged;
+    GeometryEditSignal geometryAdded, geometryAboutToBeRemoved, geometryRemoved, geometryChanged;
 #endif
 
 private:
@@ -198,6 +198,7 @@ public:
 
     declareType("ConstrainedSketch");
 
+    CREATE_COPY_FUNCTION(ConstrainedSketch);
     CREATE_FUNCTION(ConstrainedSketch);
 
     void setParentParameter(Parameter* p);
@@ -240,7 +241,7 @@ public:
     GeometryMap::const_iterator cbegin() const;
     GeometryMap::const_iterator cend() const;
 
-    template<class T>
+    template<class T = ConstrainedSketchEntity>
     std::shared_ptr<T> get(GeometryMap::key_type geomEntityId) const
     {
         auto i=geometry_.find(geomEntityId);

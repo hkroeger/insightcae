@@ -27,7 +27,7 @@ AngleConstraint::AngleConstraint(
     VectorPtr p1, VectorPtr p2, VectorPtr pCtr,
     const std::string& layerName
     )
-    : ConstrainedSketchEntity(layerName),
+    : ConstraintWithDimensionLines(layerName),
     Angle(
         p1,
         p2 ?
@@ -117,6 +117,17 @@ void AngleConstraint::setDimLineRadius(double r)
     op.set( r, true );
 }
 
+double AngleConstraint::relativeArrowSize() const
+{
+    return parameters().getDouble("arrowSize")
+           /std::max(insight::LSMALL, angle_)
+           /std::max(insight::LSMALL, dimLineRadius() );
+}
+
+void AngleConstraint::setArrowSize(double absoluteArrowSize)
+{
+    parametersRef().setDouble("arrowSize", absoluteArrowSize);
+}
 
 
 

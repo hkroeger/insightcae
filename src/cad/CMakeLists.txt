@@ -35,6 +35,7 @@ set(insightcad_SOURCES
   constrainedsketchentities/horizontalconstraint.h constrainedsketchentities/horizontalconstraint.cpp
   constrainedsketchentities/verticalconstraint.h constrainedsketchentities/verticalconstraint.cpp
   constrainedsketchentities/pointoncurveconstraint.h constrainedsketchentities/pointoncurveconstraint.cpp
+  constrainedsketchentities/constraintwithdimensionlines.h constrainedsketchentities/constraintwithdimensionlines.cpp
   constrainedsketchentities/angleconstraint.h constrainedsketchentities/angleconstraint.cpp
   constrainedsketchentities/distanceconstraint.h constrainedsketchentities/distanceconstraint.cpp
   constrainedsketchentities/externalreference.h constrainedsketchentities/externalreference.cpp

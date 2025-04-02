@@ -1,7 +1,7 @@
 #ifndef ANGLECONSTRAINT_H
 #define ANGLECONSTRAINT_H
 
-#include "constrainedsketchentity.h"
+#include "constraintwithdimensionlines.h"
 #include "cadpostprocactions/angle.h"
 
 namespace insight {
@@ -10,7 +10,7 @@ namespace cad {
 
 class AngleConstraint
     : public Angle,
-      public ConstrainedSketchEntity
+      public ConstraintWithDimensionLines
 {
 
     size_t calcHash() const override;
@@ -46,6 +46,9 @@ public:
 
     double dimLineRadius() const override;
     void setDimLineRadius(double r);
+
+    double relativeArrowSize() const override;
+    void setArrowSize(double absoluteArrowSize) override;
 
     bool isInside( SelectionRect r) const override;
 

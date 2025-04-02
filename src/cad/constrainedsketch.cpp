@@ -416,6 +416,7 @@ ConstrainedSketch::setExternalReference(
 
 void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 {
+    geometryAboutToBeRemoved(geomEntityId);
     geometry_.erase(geomEntityId);
     geometryRemoved(geomEntityId);
 }

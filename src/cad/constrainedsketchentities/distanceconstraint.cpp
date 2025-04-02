@@ -42,7 +42,7 @@ DistanceConstraint::DistanceConstraint(
     VectorPtr planeNormal,
     const std::string& layerName,
     VectorPtr distanceAlong)
-    : ConstrainedSketchEntity(layerName),
+    : ConstraintWithDimensionLines(layerName),
     Distance(p1, p2, distanceAlong),
     planeNormal_(planeNormal)
 {
@@ -146,6 +146,13 @@ double DistanceConstraint::relativeArrowSize() const
 {
     double L = std::max(SMALL, std::fabs(distance()));
     return parameters().getDouble("arrowSize")/L;
+}
+
+
+
+void DistanceConstraint::setArrowSize(double absoluteArrowSize)
+{
+    parametersRef().setDouble("arrowSize", absoluteArrowSize);
 }
 
 

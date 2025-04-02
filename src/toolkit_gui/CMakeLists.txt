@@ -48,6 +48,7 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
+ iqundoredostack.h iqundoredostack.cpp
  iqcadmodel3dviewer/iqvtkviewerstate.h iqcadmodel3dviewer/iqvtkviewerstate.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.cpp
@@ -76,6 +77,7 @@ set(toolkit_gui_SRCS
 
 
  iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
+ iqvtkconstrainedsketcheditor/iqvtkdragpoint.h iqvtkconstrainedsketcheditor/iqvtkdragpoint.cpp
  iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.cpp
  iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.cpp
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.cpp

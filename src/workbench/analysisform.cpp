@@ -405,7 +405,10 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         auto act=new QAction(_("&Load results..."), this);
         menu_results->addAction( act );
         connect( act, &QAction::triggered, resultsViewer_,
-                 [this]() { this->resultsViewer_->loadResultSet(analysisName_); } );
+                 [this]() {
+                ui->tabWidget->setCurrentWidget(ui->outputTab);
+                    this->resultsViewer_->loadResultSet(analysisName_);
+        } );
     }
 
     menu_results->addSeparator();

@@ -42,7 +42,6 @@ public:
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
-    void resetContents(int width, int height) override;
 };
 
 } // namespace insight

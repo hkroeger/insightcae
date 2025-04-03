@@ -6,16 +6,22 @@
 #include <QLabel>
 #include <QTextEdit>
 
+
+
 namespace insight {
+
+
 
 defineType(QResultSection);
 addToFactoryTable(IQResultElement, QResultSection);
 
+
+
 QResultSection::QResultSection(QObject *parent, const QString &label, insight::ResultElementPtr rep)
     : IQResultElement(parent, label, rep)
-{
+{}
 
-}
+
 
 QVariant QResultSection::previewInformation(int role) const
 {
@@ -23,26 +29,25 @@ QVariant QResultSection::previewInformation(int role) const
   {
     auto sec=resultElementAs<insight::ResultSection>();
 
-    return QString::fromStdString(SimpleLatex(sec->secionName()).toPlainText());
+    auto pt=SimpleLatex(sec->secionName()).toPlainText();
+
+    return QString::fromStdString(pt);
   }
 
   return QVariant();
 }
 
+
+
 void QResultSection::createFullDisplay(QVBoxLayout* layout)
 {
   IQResultElement::createFullDisplay(layout);
-  te_=new QTextEdit;
-  te_->setReadOnly(true);
-  te_->setFrameShape(QFrame::NoFrame);
+  te_=new IQSimpleLatexView(
+      resultElementAs<insight::ResultSection>()
+          ->introduction());
   layout->addWidget(te_);
 }
 
-void QResultSection::resetContents(int width, int height)
-{
-  IQResultElement::resetContents(width, height);
-  auto sec = resultElementAs<insight::ResultSection>();
-  te_->setHtml(QString::fromStdString( SimpleLatex(sec->introduction()).toHTML(width) ));
-}
+
 
 } // namespace insight

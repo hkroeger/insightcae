@@ -62,12 +62,12 @@ void IQVideo::setPreviewImage(const QPixmap &pm)
 
 QVariant IQVideo::previewInformation(int role) const
 {
-    if (role==Qt::DecorationRole)
-    {
+    // if (role==Qt::DecorationRole)
+    // {
         // QFontMetrics fm(QApplication::font());
         // int h = fm.height();
         // return QVariant(previewImage_.scaledToHeight(3*h));
-    }
+    // }
 
     return QVariant();
 }
@@ -114,15 +114,6 @@ void IQVideo::createFullDisplay(QVBoxLayout *layout)
 }
 
 
-
-
-void IQVideo::resetContents(int width, int height)
-{
-    IQResultElement::resetContents(width, height);
-
-    // id_->setPixmap(image_.scaledToWidth(width-delta_w_));
-    // id_->adjustSize();
-}
 
 } // namespace insight
 

@@ -181,7 +181,7 @@ set(toolkit_gui_SRCS
     qinsighterror.cpp qinsighterror.h
     email.cpp email.h
     mimetypemanager.cpp mimetypemanager.h
-    helpwidget.cpp helpwidget.h
+
     of_clean_case.cpp of_clean_case.h of_clean_case.ui
     snappyhexmesh_gui.cpp snappyhexmesh_gui.h
     cadparametersetvisualizer.cpp cadparametersetvisualizer.h

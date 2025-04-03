@@ -54,6 +54,7 @@ class SimpleLatex
   
 public:
   SimpleLatex();
+  SimpleLatex(const SimpleLatex& slt);
   SimpleLatex(const std::string& simpleLatex);
   
   const std::string& simpleLatex() const;

@@ -8,7 +8,6 @@
 #include <QPushButton>
 #include <QListWidget>
 
-#include "helpwidget.h"
 #include "iqparameter.h"
 
 #include "base/exception.h"
@@ -17,6 +16,7 @@
 
 #include "cadparametersetvisualizer.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 
 
@@ -289,8 +289,8 @@ QVBoxLayout* IQParameter::populateEditControls(
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
 
-  HelpWidget *shortDescLabel =
-    new HelpWidget( editControlsContainer, (*this)->description() );
+  auto *shortDescLabel =
+    new IQSimpleLatexView( (*this)->description(), editControlsContainer );
   layout->addWidget(shortDescLabel);
 
   auto analysisName = model_->getAnalysisName();
@@ -302,6 +302,7 @@ QVBoxLayout* IQParameter::populateEditControls(
             (*this)->path(),
             model_->getParameterSet()
     );
+
     if (propositions->size()>0)
     {
         auto *proplist = new QListWidget;

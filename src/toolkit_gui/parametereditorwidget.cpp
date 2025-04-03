@@ -32,6 +32,9 @@
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqvtkparametersetdisplay.h"
 #include "qnamespace.h"
+#include "qtextensions.h"
+
+
 
 using namespace std;
 
@@ -150,7 +153,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                         }
                     }
 
-                    l->addStretch();
+                    // l->addStretch();
                 }
             }
         }
@@ -175,17 +178,6 @@ void ParameterEditorWidget::showEvent(QShowEvent *event)
 }
 
 
-class MLabel : public QLabel
-{
-public:
-    MLabel(QWidget *parent) : QLabel(parent) {};
-
-    void mousePressEvent(QMouseEvent *event) override
-    {
-        QLabel::mousePressEvent(event);
-        hide();
-    }
-};
 
 
 ParameterEditorWidget::ParameterEditorWidget
@@ -204,31 +196,35 @@ ParameterEditorWidget::ParameterEditorWidget
   firstShowOccurred_(false)
 {
 
-    QWidget *w=new QWidget(this);
-    QVBoxLayout *l=new QVBoxLayout;
-    w->setLayout(l);
-
-    l->addWidget(new QLabel("Input Parameters"));
-    parameterTreeView_ = new QTreeView(w);
-    l->addWidget(parameterTreeView_);
-
-    QLabel *hints=new QLabel(w);
-    hints->setStyleSheet("font: 8pt;");
-    hints->setText(
-        "Please edit the parameters in the list above.\n"
-        "Yellow background: need to revised for each case.\n"
-        "Light gray: can usually be left on default values."
-        );
-    l->addWidget(hints);
-    // addWidget(w);
-
     auto spv = new QSplitter(Qt::Vertical);
-    spv->addWidget(w);
-    inputContents_=new QWidget(this);
-    //addWidget(inputContents_);
-    spv->addWidget(inputContents_);
-    addWidget(spv);
 
+    {
+        QWidget *w=new QWidget(this);
+        QVBoxLayout *l=new QVBoxLayout;
+        w->setLayout(l);
+
+        l->addWidget(new QLabel("Input Parameters"));
+        parameterTreeView_ = new QTreeView(w);
+        l->addWidget(parameterTreeView_);
+
+        QLabel *hints=new QLabel(w);
+        hints->setStyleSheet("font: 8pt;");
+        hints->setText(
+            "Please edit the parameters in the list above.\n"
+            "Yellow background: need to revised for each case.\n"
+            "Light gray: can usually be left on default values."
+            );
+        l->addWidget(hints);
+
+        spv->addWidget(w);
+    }
+
+    {
+        inputContents_=new QWidget(this);
+        spv->addWidget(inputContents_);
+    }
+
+    addWidget(spv);
 
 
     setup(display);
@@ -240,7 +236,7 @@ ParameterEditorWidget::ParameterEditorWidget
 
     if (display_)
     {
-        overlayText_ = new MLabel(viewer());
+        overlayText_ = new IQEphemeralLabel(viewer());
         overlayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         overlayText_->setAutoFillBackground(true);
         overlayText_->setPalette(semiTransparent);

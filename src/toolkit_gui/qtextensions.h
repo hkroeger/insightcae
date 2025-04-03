@@ -2,13 +2,19 @@
 #define QTEXTENSIONS_H
 
 #include <set>
+
 #include "base/boost_include.h"
+#include "base/latextools.h"
 
 #include <QObject>
 #include <QGridLayout>
+#include <QTextEdit>
+#include <QLabel>
+#include <QResizeEvent>
 
 #include "boost/signals2.hpp"
 
+#include "toolkit_gui_export.h"
 
 
 // helper for boost::signals: disconnect at QObject destruction
@@ -68,5 +74,58 @@ public:
 };
 
 
+
+/**
+ * @brief The IQEphemeralLabel class
+ * disappears on mouseclick
+ */
+class TOOLKIT_GUI_EXPORT IQEphemeralLabel : public QLabel
+{
+public:
+    IQEphemeralLabel(QWidget *parent=nullptr);
+
+    void mousePressEvent(QMouseEvent *event) override;
+};
+
+
+
+class TOOLKIT_GUI_EXPORT IQPixmapLabel
+    : public QLabel
+{
+    Q_OBJECT
+
+    QPixmap pixmap_;
+
+public:
+    IQPixmapLabel(const QPixmap &pm, QWidget *parent = nullptr);
+
+    int heightForWidth(int width) const override;
+    QSize sizeHint() const override;
+    QPixmap scaledPixmap() const;
+    const QPixmap& originalPixmap() const;
+
+public Q_SLOTS:
+    void resizeEvent(QResizeEvent *) override;
+
+};
+
+
+class TOOLKIT_GUI_EXPORT IQSimpleLatexView
+    : public QTextEdit
+{
+    Q_OBJECT
+
+    insight::SimpleLatex content_;
+    int cur_content_width_;
+
+    void updateContent();
+
+public:
+    IQSimpleLatexView(const insight::SimpleLatex &slt, QWidget *parent = nullptr);
+
+public Q_SLOTS:
+    void resizeEvent(QResizeEvent *) override;
+
+};
 
 #endif // QTEXTENSIONS_H

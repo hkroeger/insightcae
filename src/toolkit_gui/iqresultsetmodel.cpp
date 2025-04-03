@@ -9,6 +9,7 @@
 #include <QTreeView>
 #include <QSpacerItem>
 #include <QDebug>
+#include <qnamespace.h>
 
 namespace insight
 {
@@ -84,54 +85,19 @@ void IQResultElement::createFullDisplay(QVBoxLayout* layout)
   {
     if (!resultElement_->shortDescription().empty())
     {
-      shortDesc_=new QTextEdit;
-      shortDesc_->setReadOnly(true);
-      shortDesc_->setFrameShape(QFrame::NoFrame);
-      shortDesc_->setMinimumHeight (2*QFontMetrics(shortDesc_->font()).lineSpacing());
+      shortDesc_=new IQSimpleLatexView(
+            resultElement_->shortDescription() );
       layout->addWidget(shortDesc_);
     }
     if (!resultElement_->longDescription().empty())
     {
-      longDesc_=new QTextEdit;
-      longDesc_->setReadOnly(true);
-      longDesc_->setFrameShape(QFrame::NoFrame);
-      longDesc_->setMinimumHeight (2*QFontMetrics(longDesc_->font()).lineSpacing()) ;
+      longDesc_=new IQSimpleLatexView(
+            resultElement_->longDescription() );
       layout->addWidget(longDesc_);
     }
   }
-
-
-  auto ef=new ResizeEventNotifier(this);
-  layout->parentWidget()->installEventFilter(ef);
-  connect(ef, &ResizeEventNotifier::resized, this,
-          [this](int w, int h)
-          {
-            this->resetContents(w, h);
-          }
-  );
 }
 
-
-
-
-void IQResultElement::resetContents(int, int)
-{
-  if (resultElement_)
-  {
-    if (!resultElement_->shortDescription().empty())
-    {
-      shortDesc_->setHtml( QString::fromStdString(
-          SimpleLatex(resultElement_->shortDescription()).toHTML(shortDesc_->width())
-      ));
-    }
-    if (!resultElement_->longDescription().empty())
-    {
-      longDesc_->setHtml( QString::fromStdString(
-          SimpleLatex(resultElement_->longDescription()).toHTML(shortDesc_->width())
-      ));
-    }
-  }
-}
 
 
 
@@ -448,25 +414,30 @@ QVariant IQResultSetModel::headerData(int section, Qt::Orientation orient, int r
 
 QVariant IQResultSetModel::data(const QModelIndex &index, int role) const
 {
-  if (auto *e=dynamic_cast<IQResultElement*>(static_cast<QObject*>(index.internalPointer())))
-  {
-      if (role == Qt::CheckStateRole)
-      {
-          if ( index.column()==0 && selectableElements_)
-          {
-              return QVariant( e->isChecked() );
-          }
-      }
-      int dc0=selectableElements_?1:0;
-      if (index.column()==dc0+0)
-      {
-          if (role==Qt::DisplayRole) return QVariant(e->label_);
-      }
-      else if (index.column()==dc0+1)
-      {
-          return e->previewInformation(role);
-      }
-  }
+    if (auto *e=dynamic_cast<IQResultElement*>(
+            static_cast<QObject*>(index.internalPointer())))
+    {
+        if (role == Qt::CheckStateRole)
+        {
+            if ( index.column()==0 && selectableElements_)
+            {
+                return QVariant( e->isChecked() );
+            }
+        }
+        int dc0=selectableElements_?1:0;
+        if (index.column()==dc0+0)
+        {
+            if (role==Qt::DisplayRole)
+            {
+                return QVariant(e->label_);
+            }
+        }
+        else if (index.column()==dc0+1)
+        {
+            auto pe=e->previewInformation(role);
+            return pe;
+        }
+    }
 
 
   return QVariant();
@@ -672,10 +643,6 @@ void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* contentDisplayWi
           re->createFullDisplay(layout);
 
           layout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
-
-          auto r=contentDisplayWidget->size();
-          re->resetContents(r.width(), r.height());
-
         }
     }
   }

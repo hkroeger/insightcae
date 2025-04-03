@@ -1,5 +1,6 @@
 #include "iqresultsetdisplayerwidget.h"
 #include "base/exception.h"
+#include "base/translations.h"
 #include "ui_iqresultsetdisplayerwidget.h"
 
 #include "iqaddfilterdialog.h"
@@ -21,7 +22,12 @@ IQResultSetDisplayerWidget::IQResultSetDisplayerWidget(QWidget *parent) :
     ui->setupUi(this);
 
     ui->lvResultElementFilters->setModel(filterModel_);
-    insight::connectToCWithContentsDisplay(ui->lvFilteredResultSetToC, ui->wiResultElementContent);
+
+    ui->lvFilteredResultSetToC->header()->setStretchLastSection(false);
+
+    insight::connectToCWithContentsDisplay(
+            ui->lvFilteredResultSetToC,
+            ui->wiResultElementContent);
 
     connect(filterModel_, &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
@@ -118,6 +124,18 @@ void IQResultSetDisplayerWidget::loadResults(insight::ResultSetPtr results)
     ui->lvFilteredResultSetToC->expandAll();
     ui->lvFilteredResultSetToC->resizeColumnToContents(0);
     ui->lvFilteredResultSetToC->resizeColumnToContents(1);
+
+    int w = ui->lvFilteredResultSetToC->columnWidth(0);
+    w += ui->lvFilteredResultSetToC->columnWidth(1);
+
+    auto s=ui->hsplitter->sizes();
+    int wframe=s[0]-ui->lvFilteredResultSetToC->viewport()->width();
+
+    int sum=s[0]+s[1];
+    s[0]=std::min<int>(w+wframe, sum/2);
+    s[1]=sum-s[0];
+
+    ui->hsplitter->setSizes(s);
 }
 
 bool IQResultSetDisplayerWidget::hasResults() const
@@ -129,9 +147,9 @@ bool IQResultSetDisplayerWidget::hasResults() const
 void IQResultSetDisplayerWidget::loadResultSet(const std::string& analysisName)
 {
     if (auto f = getFileName(
-            this, "Load result set",
+            this, _("Load result set"),
             GetFileMode::Open,
-            {{ "ist", "InsightCAE Result Set" }} ) )
+            {{ "isr", _("InsightCAE Result Set") }} ) )
     {
       auto r = insight::ResultSet::createFromFile(f, analysisName);
       loadResults(r);

@@ -17,6 +17,7 @@ class QTreeView;
 #include "base/resultset.h"
 #include "base/factory.h"
 
+#include "qtextensions.h"
 
 
 
@@ -51,7 +52,7 @@ class TOOLKIT_GUI_EXPORT IQResultElement
 
   insight::ResultElementPtr resultElement_;
 
-  QTextEdit *shortDesc_, *longDesc_;
+  IQSimpleLatexView *shortDesc_, *longDesc_;
 
   Qt::CheckState checkState_;
 
@@ -82,7 +83,6 @@ public:
 
     virtual QVariant previewInformation(int role) const =0;
     virtual void createFullDisplay(QVBoxLayout* layout);
-    virtual void resetContents(int width, int height);
 
     Qt::CheckState isChecked() const;
     void setChecked( Qt::CheckState cs );

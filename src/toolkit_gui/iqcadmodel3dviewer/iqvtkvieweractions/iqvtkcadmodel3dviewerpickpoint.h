@@ -13,13 +13,15 @@ class IQVTKCADModel3DViewerPickPoint
 
 public:
     IQVTKCADModel3DViewerPickPoint(
-        IQVTKCADModel3DViewer &viewWidget );
+        ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent );
 
-    ~IQVTKCADModel3DViewerPickPoint();
 
     void start() override;
 
-    bool onLeftButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
 Q_SIGNALS:
     void pickedPoint(const arma::mat& pt);

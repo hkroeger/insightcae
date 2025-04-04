@@ -8,7 +8,7 @@
 
 
 class TOOLKIT_GUI_EXPORT IQSpatialTransformationParameter
-        : public IQParameter
+    : public IQSpecializedParameter<insight::SpatialTransformationParameter>
 {
 public:
     declareType(insight::SpatialTransformationParameter::typeName_());
@@ -17,8 +17,7 @@ public:
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
     );
 

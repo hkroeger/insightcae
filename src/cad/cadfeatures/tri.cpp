@@ -21,7 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
-
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -84,7 +84,7 @@ void Tri::build()
     w.Add ( BRepBuilderAPI_MakeEdge ( p3, p1 ) );
 
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-    providedSubshapes_["OuterWire"]=Feature::create ( w.Wire() );
+    providedSubshapes_["OuterWire"]=Import::create ( w.Wire() );
 
     setShape ( BRepBuilderAPI_MakeFace ( w.Wire() ) );
 }

@@ -25,6 +25,7 @@
 
 
 #include "iqresultsetmodel.h"
+#include "qtextensions.h"
 
 class QTextEdit;
 
@@ -37,7 +38,7 @@ class TOOLKIT_GUI_EXPORT QComment
 {
     Q_OBJECT
 
-    QTextEdit *te_;
+    IQSimpleLatexView *te_;
 
 public:
     declareType ( insight::Comment::typeName_() );
@@ -46,7 +47,6 @@ public:
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
-    void resetContents(int width, int height) override;
 };
 
 

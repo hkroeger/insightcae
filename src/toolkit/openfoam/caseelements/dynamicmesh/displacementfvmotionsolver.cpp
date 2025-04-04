@@ -7,7 +7,7 @@
 namespace insight {
 
 displacementFvMotionSolver::displacementFvMotionSolver(OpenFOAMCase& c)
-: dynamicMesh(c, ParameterSet())
+    : dynamicMesh(c, *ParameterSet::create())
 {
 }
 

@@ -19,7 +19,6 @@ class LocalRun
 {
   Q_OBJECT
 
-  std::shared_ptr<insight::Analysis> analysis_;
   insight::ResultSetPtr results_;
   insight::QAnalysisThread workerThread_;
 

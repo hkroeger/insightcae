@@ -28,7 +28,6 @@ public:
 
 /*
 PARAMETERSET>>> FVNumerics Parameters
-
 inherits decomposeParDict::Parameters
 
 writeControl = selection (
@@ -79,19 +78,19 @@ mapFields = set {
 
 } "Mapfield configuration"
 
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
     std::string pName_;
 
 public:
-    FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName );
+    FVNumerics ( OpenFOAMCase& c, ParameterSetInput ip, const std::string& pName );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
-    const Parameters& parameters() const;
-    Parameters& parametersRef();
+    // const Parameters& parameters() const;
+    // Parameters& parametersRef();
 
     virtual bool isCompressible() const =0;
     virtual bool isLES() const;

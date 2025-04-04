@@ -37,21 +37,20 @@ public:
 #include "electromagneticscaseelements__magnet__Parameters.h"
 /*
 PARAMETERSET>>> magnet Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 name = string "magnet" "name of magnet"
 permeability = double 0.2 "magnet permeability"
 remanence = double 1000.0 "magnet remanence"
 orientation = vector (1 0 0) "magnet orientation"
 
+createGetter
 <<<PARAMETERSET
 */
 
 
-protected:
-  Parameters p_;
-  
 public:
-  magnet(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  magnet( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const override;
   
@@ -68,20 +67,19 @@ public:
 #include "electromagneticscaseelements__FarFieldBC__Parameters.h"
 /*
 PARAMETERSET>>> FarFieldBC Parameters
+inherits BoundaryCondition::Parameters
 
+createGetter
 <<<PARAMETERSET
 */
-  
-protected:
-  Parameters p_;
-  
+
 public:
   FarFieldBC
   (
     OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
-    ParameterSet const& p = Parameters::makeDefault()
+    ParameterSetInput ip
   );
   void addIntoFieldDictionaries(OFdicts& dictionaries) const override;
 };

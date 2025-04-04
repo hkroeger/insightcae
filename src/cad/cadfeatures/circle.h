@@ -36,8 +36,8 @@ class Circle
     Circle(VectorPtr p0, VectorPtr n, ScalarPtr D);
 
 protected:
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("Circle");

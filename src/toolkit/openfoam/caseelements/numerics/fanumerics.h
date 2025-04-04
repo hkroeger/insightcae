@@ -18,15 +18,14 @@ public:
 
 /*
 PARAMETERSET>>> FaNumerics Parameters
+inherits OpenFOAMCaseElement::Parameters
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
-    FaNumerics ( OpenFOAMCase& c, const ParameterSet& p = Parameters::makeDefault() );
+    FaNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static std::string category() { return "Numerics"; }
     virtual bool isUnique() const;

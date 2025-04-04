@@ -58,6 +58,7 @@
 #include "base/qt5_helper.h"
 #include "base/toolkitversion.h"
 #include "base/translations.h"
+#include "qtextensions.h"
 
  
 
@@ -77,6 +78,10 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 
     if (me)
     {
+
+        connect(act_[settings_viewer], &QAction::triggered,
+                me, &IQISCADModelWindow::viewerSettings);
+
         connect(act_[save], &QAction::triggered,
                 me->modelEdit(), &IQISCADModelScriptEdit::saveModel);
         connect(act_[saveas], &QAction::triggered,
@@ -95,6 +100,8 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
                 me->modelEdit(), &IQISCADModelScriptEdit::insertLibraryModelAtCursor);
         connect(act_[insert_component_name], &QAction::triggered,
                 me->modelEdit(), &IQISCADModelScriptEdit::insertComponentNameAtCursor);
+        connect(act_[insert_drawing], &QAction::triggered,
+                me->modelEdit(), &IQISCADModelScriptEdit::insertDrawingAtCursor);
         connect(act_[clear_cache], &QAction::triggered,
                 me->modelEdit(), &IQISCADModelScriptEdit::clearCache);
         connect(act_[editor_font_larger], &QAction::triggered,
@@ -172,13 +179,12 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 
 void IQISCADMainWindow::loadModel()
 {
-    QString fn=QFileDialog::getOpenFileName(
-          this, _("Select file"),
-          "",
-          _("ISCAD Model Files (*.iscad)"));
-    if (fn!="")
+    if (auto fn=getFileName(
+            this, _("Select file"),
+            GetFileMode::Open,
+            {{"iscad", _("ISCAD Model Files")}}))
     {
-        insertModel(qPrintable(fn))->modelEdit()->unsetUnsavedState();
+        insertModel(fn)->modelEdit()->unsetUnsavedState();
     }
 }
 
@@ -313,6 +319,7 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     QMenu *emenu = menuBar()->addMenu(_("&Editor"));
     QMenu *msmenu = menuBar()->addMenu(_("M&easure"));
     QMenu *selmenu = menuBar()->addMenu(_("&Selection"));
+    QMenu *settingsmenu = menuBar()->addMenu(_("Se&ttings"));
     QMenu *helpmenu = menuBar()->addMenu(_("&Help"));
 
     QAction* ab = new QAction("About...", this);
@@ -352,6 +359,9 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     fmenu->addAction(act);
     connect(act, &QAction::triggered, this, &IQISCADMainWindow::close);
 
+    act=new QAction(_("3D &viewer settings..."), this);
+    settingsmenu->addAction(act);
+    act_[settings_viewer]=act;
 
     act_[rebuild] = new QAction(_("&Rebuild model"), this);
     act_[rebuild]->setShortcut(Qt::ControlModifier + Qt::Key_Return);
@@ -383,6 +393,10 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
     act_[insert_section_comment] = new QAction(_("Insert comment: new section..."), this);
     act_[insert_section_comment]->setShortcut(Qt::AltModifier + Qt::Key_S);
     mmenu->addAction(act_[insert_section_comment]);
+
+    act_[insert_drawing] = new QAction(_("Insert drawing..."), this);
+    act_[insert_drawing]->setShortcut(Qt::AltModifier + Qt::Key_D);
+    mmenu->addAction(act_[insert_drawing]);
 
     mmenu->addSeparator();
 
@@ -549,17 +563,15 @@ void IQISCADMainWindow::onFileClicked(const QModelIndex &index)
 
 void IQISCADMainWindow::onCreateNewModel(const QString& directory)
 {
-    QString fn=QFileDialog::getSaveFileName
-    (
-        this,
-        _("Select file"),
-        directory,
-        _("ISCAD Model Files (*.iscad)")
-    );
-    if (fn!="")
+    if (auto fn = getFileName(
+        this, _("Select file"),
+        GetFileMode::Save,
+        {{ "iscad", _("ISCAD Model Files"), true }},
+        boost::filesystem::path(directory.toStdString())
+    ))
     {
         IQISCADModelWindow *me=insertEmptyModel();
-        me->modelEdit()->setFilename(qPrintable(fn));
+        me->modelEdit()->setFilename(fn);
         me->modelEdit()->saveModel();
     }
 }

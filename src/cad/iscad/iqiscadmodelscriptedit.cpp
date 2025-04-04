@@ -20,6 +20,7 @@
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelscriptedit.h"
 #include "iqiscadsyntaxhighlighter.h"
+#include "insertdrawingdialog.h"
 
 //#include "qmodeltree.h"
 //#include "qmodelstepitem.h"
@@ -57,7 +58,7 @@
 
 #include "datum.h"
 
-
+#include "qtextensions.h"
 
 
 
@@ -159,13 +160,12 @@ bool IQISCADModelScriptEdit::saveModel()
 
 bool IQISCADModelScriptEdit::saveModelAs()
 {
-    QString fn=QFileDialog::getSaveFileName(
+    if (auto fn = getFileName(
         this, _("Select location"),
-        "",
-        _("ISCAD Model Files (*.iscad)") );
-    if (fn!="")
+        GetFileMode::Save,
+        {{ "iscad", _("ISCAD Model Files") }} ) )
     {
-        setFilename(qPrintable(fn));
+        setFilename(fn);
         saveModel();
         return true;
     }
@@ -510,14 +510,19 @@ void IQISCADModelScriptEdit::insertFeatureAtCursor()
 
 void IQISCADModelScriptEdit::insertImportedModelAtCursor()
 {
-  auto fn = QFileDialog::getOpenFileName(
-        this, _("Please select file"), "",
-        QString("%1 (*.step *.stp);;%2 (*.igs *.iges);;%3 (*.brep)")
-            .arg(_("STEP model")).arg(_("IGES model")).arg(_("BREP model"))
-        );
-  if (!fn.isEmpty())
+    if (auto fn = getFileName(
+          this, _("Please select file"),
+          GetFileMode::Open,
+          {
+            { "stp step", _("STEP model") },
+            { "igs iges", _("IGES model") },
+            { "brep", _("BREP model") }
+          }))
   {
-    textCursor().insertText(QString("import(\"%1\")").arg(fn));
+    textCursor()
+            .insertText(
+                QString("import(\"%1\")")
+                    .arg(fn.asQString()));
   }
 }
 
@@ -544,6 +549,20 @@ void IQISCADModelScriptEdit::insertLibraryModelAtCursor()
       textCursor().insertText(expr.c_str());
     }
   }
+}
+
+
+void IQISCADModelScriptEdit::insertDrawingAtCursor()
+{
+    auto dlg = new InsertDrawingDialog(this);
+    if ( dlg->exec() == QDialog::Accepted )
+    {
+        std::string expr = dlg->expression();
+        if (!expr.empty())
+        {
+            textCursor().insertText(expr.c_str());
+        }
+    }
 }
 
 
@@ -719,6 +738,8 @@ void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int r
     }
 }
 
+
+
 void IQISCADModelScriptEdit::onCancelRebuild()
 {
   if (bgparsethread_.isRunning())
@@ -726,3 +747,5 @@ void IQISCADModelScriptEdit::onCancelRebuild()
       bgparsethread_.cancelRebuild();
     }
 }
+
+

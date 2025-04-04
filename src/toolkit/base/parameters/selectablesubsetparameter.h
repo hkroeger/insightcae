@@ -24,22 +24,21 @@
 
 #include "base/parameter.h"
 #include "base/parameterset.h"
-
-#include "boost/ptr_container/ptr_map.hpp"
+#include "base/parameters/selectionparameter.h"
 
 namespace insight {
 
 
 class SelectableSubsetParameter
-  : public Parameter
+    : public Parameter, public SelectionParameterInterface
 {
 public:
   typedef std::string key_type;
-  typedef boost::ptr_map<key_type, SubsetParameter> ItemList;
+  typedef std::map<key_type, std::unique_ptr<ParameterSet> > ItemList;
   typedef ItemList value_type;
 
-  typedef std::map< key_type, const SubsetParameter* > EntryReferences;
-  typedef std::map< key_type, std::shared_ptr<SubsetParameter> > EntryCopies;
+  typedef std::map< key_type, std::observer_ptr<ParameterSet> > EntryReferences;
+  typedef std::map< key_type, std::unique_ptr<ParameterSet> > Entries;
 
 protected:
   key_type selection_;
@@ -48,44 +47,66 @@ protected:
 public:
   declareType ( "selectableSubset" );
 
-  SelectableSubsetParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+  SelectableSubsetParameter (
+      const std::string& description,
+      bool isHidden=false,
+      bool isExpert=false,
+      bool isNecessary=false,
+      int order=0 );
+
   /**
    * Construct from components:
    * \param defaultSelection The key of the subset which is selected per default
    * \param defaultValue A map of key-subset pairs. Between these can be selected
    * \param description The description of the selection parameter
    */
-  SelectableSubsetParameter ( const key_type& defaultSelection, const EntryReferences& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+  SelectableSubsetParameter (
+      const key_type& defaultSelection,
+      const EntryReferences& defaultValue,
+      const std::string& description,
+      bool isHidden=false,
+      bool isExpert=false,
+      bool isNecessary=false,
+      int order=0 );
 
-  SelectableSubsetParameter ( const key_type& defaultSelection, const EntryCopies& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+  SelectableSubsetParameter (
+      const key_type& defaultSelection,
+      Entries&& defaultValue,
+      const std::string& description,
+      bool isHidden=false,
+      bool isExpert=false,
+      bool isNecessary=false,
+      int order=0 );
+
+  void initialize() override;
 
   bool isDifferent(const Parameter& p) const override;
 
-  void setSelection(const key_type& nk);
+  std::vector<std::string> selectionKeys() const override;
+  void setSelection(const key_type& nk) override;
+  const key_type& selection() const override;
 
-  inline const key_type& selection() const
-  {
-    return selection_;
-  }
+  // int indexOfSelection(const std::string& key) const;
+  // int selectionIndex() const;
+  // void setSelectionFromIndex(int);
 
   EntryReferences items() const;
-  EntryCopies copyItems() const;
+  Entries copyItems() const;
 
-  void addItem ( key_type key, const SubsetParameter& ps );
+  void addItem(key_type key, std::unique_ptr<ParameterSet>&& ps );
 
-  inline SubsetParameter& operator() ()
+  inline ParameterSet& operator() ()
   {
     return * ( value_.find ( selection_ )->second );
   }
 
-  inline const SubsetParameter& operator() () const
+  inline const ParameterSet& operator() () const
   {
     return * ( value_.find ( selection_ )->second );
   }
 
-  void setParametersForSelection(const key_type& key, const SubsetParameter& ps);
-  void setParametersAndSelection(const key_type& key, const SubsetParameter& ps);
-  const SubsetParameter& getParametersForSelection(const key_type& key) const;
+  void setParametersForSelection(const key_type& key, const ParameterSet& ps);
+  const ParameterSet& getParametersForSelection(const key_type& key) const;
 
   std::string latexRepresentation() const override;
   std::string plainTextRepresentation(int indent=0) const override;
@@ -96,12 +117,19 @@ public:
   void clearPackedData() override;
 
 
-  rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+  rapidxml::xml_node<>*
+  appendToNode (
+      const std::string& name,
+      rapidxml::xml_document<>& doc,
+      rapidxml::xml_node<>& node,
       boost::filesystem::path inputfilepath ) const override;
-  void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
-                              boost::filesystem::path inputfilepath ) override;
 
-  Parameter* clone () const override;
+  void readFromNode (
+      const std::string& name,
+      rapidxml::xml_node<>& node,
+      boost::filesystem::path inputfilepath ) override;
+
+  std::unique_ptr<Parameter> clone (bool initialize) const override;
   void copyFrom(const Parameter& p) override;
   void operator=(const SelectableSubsetParameter& p);
   void extend ( const Parameter& op ) override;
@@ -112,9 +140,23 @@ public:
 
 
   int nChildren() const override;
-  std::string childParameterName(int i) const override;
-  Parameter& childParameterRef ( int i ) override;
-  const Parameter& childParameter( int i ) const override;
+
+  int childParameterIndex(
+      const std::string& name ) const override;
+
+  std::string childParameterName(
+      int i,
+      bool redirectArrayElementsToDefault=false ) const override;
+
+  std::string childParameterName(
+      const Parameter* childParam,
+      bool redirectArrayElementsToDefault=false ) const override;
+
+  Parameter& childParameterRef (
+      int i ) override;
+
+  const Parameter& childParameter(
+      int i ) const override;
 
 };
 

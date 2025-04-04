@@ -4,6 +4,7 @@
 #include <QSplashScreen>
 #include <QMainWindow>
 #include <QToolBar>
+#include <memory>
 
 #include "constrainedsketch.h"
 #include "insightcaeapplication.h"
@@ -11,8 +12,10 @@
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/parameters/simpleparameter.h"
 
 #include "iqvtkcadmodel3dviewer.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 
 using namespace boost;
@@ -37,25 +40,28 @@ int main(int argc, char *argv[])
 
     auto sketch =
         insight::cad::ConstrainedSketch::create(
-            m.model()->lookupDatum("XY")
+            m.model()->lookupDatum("XY"), *insight::cad::noParametersDelegate
         );
 
+    class PD : public insight::cad::ConstrainedSketchParametersDelegate
+    {
+    public:
+        void
+        changeDefaultParameters(insight::cad::ConstrainedSketchEntity& e) const override
+        {
+            auto deflGeoP=insight::ParameterSet::create();
+            deflGeoP->insert("value", std::make_unique<insight::DoubleParameter>(1.33, ""));
+            e.changeDefaultParameters(*deflGeoP);
+        }
+    };
 
     QObject::connect(ska, &QAction::triggered, ska,
         [&]()
         {
             v->editSketch(
                 *sketch,
-                insight::ParameterSet(),
-                [](const insight::ParameterSet&, vtkProperty* actprops)
-                {
-                    auto sec = QColorConstants::DarkCyan;
-                    actprops->SetColor(
-                        sec.redF(),
-                        sec.greenF(),
-                        sec.blueF() );
-                    actprops->SetLineWidth(2);
-                },
+                std::make_shared<PD>(),
+                defaultGUIConstrainedSketchPresentationDelegate,
                 [](insight::cad::ConstrainedSketchPtr editedSk){
                     // do nothing, just discard
                 }

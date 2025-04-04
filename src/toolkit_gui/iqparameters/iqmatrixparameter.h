@@ -8,7 +8,8 @@
 
 #include "base/parameters/matrixparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQMatrixParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQMatrixParameter
+    : public IQSpecializedParameter<insight::MatrixParameter>
 {
 public:
   declareType(insight::MatrixParameter::typeName_());
@@ -17,8 +18,7 @@ public:
   (
       QObject* parent,
       IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& parameter,
+      insight::Parameter* parameter,
       const insight::ParameterSet& defaultParameterSet
   );
 

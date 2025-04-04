@@ -47,8 +47,8 @@ protected:
     Compound ( const CompoundFeatureList& m1 );
     Compound ( const CompoundFeatureMap& m1 );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Compound" );
@@ -60,9 +60,9 @@ public:
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
 
-    virtual double mass ( double density_ovr=-1., double aw_ovr=-1. ) const;
-    virtual arma::mat modelCoG ( double density_ovr=-1. ) const;
-    virtual arma::mat modelInertia ( double density_ovr=-1. ) const;
+    double mass ( double density_ovr=-1., double aw_ovr=-1. ) const override;
+    arma::mat modelCoG ( double density_ovr=-1. ) const override;
+    arma::mat modelInertia ( double density_ovr=-1. ) const override;
 
     Compound& operator=(const Compound& o);
 };

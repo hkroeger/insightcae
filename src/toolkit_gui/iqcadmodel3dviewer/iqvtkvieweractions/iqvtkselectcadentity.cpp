@@ -1,4 +1,5 @@
 #include "iqvtkselectcadentity.h"
+#include "iqfilteredparametersetmodel.h"
 
 #include <QCheckBox>
 #include <QToolBar>
@@ -10,58 +11,49 @@
 #include <QDockWidget>
 
 #include <QSortFilterProxyModel>
+#include <qnamespace.h>
 
 
 void CADEntityMultiSelection::showParameterEditor()
 {
 
-    pew_ = new QWidget;
-    auto tbi = viewer_.commonToolBox()->addItem(pew_, "Selection Properties");
-    viewer_.commonToolBox()->setCurrentIndex(tbi);
+    editorContainerWidget_ = new QWidget;
+    viewer_.addToolBox(
+        editorContainerWidget_, "Selection Properties");
+
+    // viewer_.commonToolBox()->setCurrentIndex(tbi);
 
     auto lo = new QVBoxLayout;
-    pew_->setLayout(lo);
+    editorContainerWidget_->setLayout(lo);
 
     auto tree=new QTreeView;
     lo->addWidget(tree);
     auto editControls = new QWidget;
     lo->addWidget(editControls);
-    pe_ = new ParameterEditorWidget(pew_, tree, editControls);
 
+    editorWidget_ = new ParameterEditorWidget(
+        editorContainerWidget_, tree, editControls, &viewer_);
 
-//    connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
-//            [this]()
-//            {
-//                for (auto& ee: *this)
-//                {
-//                    auto e = ee.lock();
-//                    e->parametersRef().merge(
-//                        pe_->model()->getParameterSet(),
-//                        false
-//                        );
-//                }
-//            }
-//            );
 }
 
 void CADEntityMultiSelection::removeParameterEditor()
 {
-    if (pew_)
+    if (editorContainerWidget_)
     {
-        delete pew_;
-        pew_=nullptr;
-        pe_=nullptr;
+        delete editorContainerWidget_;
+        editorContainerWidget_=nullptr;
+        editorWidget_=nullptr;
     }
 }
 
 
 
 
-CADEntityMultiSelection::CADEntityMultiSelection
-    ( IQVTKCADModel3DViewer& viewer )
-    : viewer_(viewer),
-    pew_(nullptr),
-    pe_(nullptr)
+CADEntityMultiSelection::CADEntityMultiSelection(
+    IQVTKCADModel3DViewer& viewer )
+  : viewer_(viewer),
+    editorContainerWidget_(nullptr),
+    editorWidget_(nullptr)
 {
 }
 
@@ -81,64 +73,40 @@ void CADEntityMultiSelection::insert(
 {
     if (count(entity)<1) // don't add multiple times
     {
+        std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
 
-//        auto i = editor_.sketchGeometryActors_.find(
-//            entity.lock() );
+        auto featPtr = boost::get<insight::cad::FeaturePtr>(&entity);
+        IQFilteredParameterSetModel *spm=nullptr;
 
-//        if (i!=editor_.sketchGeometryActors_.end())
-//        {
-
-            std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
-
-//            auto lentity=entity.lock();
-
-//            if (size()==1)
-//            {
-//                commonParameters_=
-//                    lentity->parameters();
-//                defaultCommonParameters_=
-//                    lentity->defaultParameters();
-//            }
-//            else if (size()>1)
-//            {
-//                commonParameters_=
-//                    commonParameters_.intersection(lentity->parameters());
-//                defaultCommonParameters_=
-//                    defaultCommonParameters_.intersection(lentity->defaultParameters());
-//            }
-
-            auto featPtr = boost::get<insight::cad::FeaturePtr>(&entity);
-            IQFilteredParameterSetModel *spm=nullptr;
-
-            if ( (size() == 1) && featPtr )
+        if ( (size() == 1) && featPtr )
+        {
+            if (auto apsm = viewer_.cadmodel()->associatedParameterSetModel())
             {
-                if (auto apsm = viewer_.cadmodel()->associatedParameterSetModel())
+                auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
+                std::vector<std::string> paramList;
+                std::string assocPs=
+                    index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
+                                          .data()
+                                          .toString()
+                                          .toStdString();
+                boost::split(
+                    paramList, assocPs,
+                    boost::is_any_of(":") );
+
+                if (paramList.size())
                 {
-                    auto index = viewer_.cadmodel()->modelstepIndexFromValue( *featPtr );
-                    std::vector<std::string> paramList;
-                    std::string assocPs=
-                        index.siblingAtColumn(IQCADItemModel::assocParamPathsCol)
-                                              .data()
-                                              .toString()
-                                              .toStdString();
-                    boost::split(
-                        paramList, assocPs,
-                        boost::is_any_of(":") );
-                    if (paramList.size())
-                    {
-                        if (!pe_) showParameterEditor();
-                        spm=new IQFilteredParameterSetModel(paramList, pe_);
-                        spm->setSourceModel(apsm);
-                        pe_->setModel(spm);
-                    }
+                    if (!editorWidget_) showParameterEditor();
+                    spm=new IQFilteredParameterSetModel(paramList, editorWidget_);
+                    spm->setSourceModel(apsm);
+                    editorWidget_->setModel(spm);
                 }
             }
+        }
 
-            if (!spm && pe_)
-            {
-                removeParameterEditor();
-            }
-//        }
+        if (!spm && editorWidget_)
+        {
+            removeParameterEditor();
+        }
     }
 }
 
@@ -153,7 +121,8 @@ void CADEntityMultiSelection::erase(IQCADModel3DViewer::CADEntity entity)
 
 
 
-std::vector<IQCADModel3DViewer::CADEntity> IQVTKSelectCADEntity::findEntitiesUnderCursor(const QPoint &point) const
+std::vector<IQCADModel3DViewer::CADEntity>
+IQVTKSelectCADEntity::findEntitiesUnderCursor(const QPoint &point) const
 {
     std::vector<IQCADModel3DViewer::CADEntity> ret;
 
@@ -200,10 +169,11 @@ IQVTKCADModel3DViewer::HighlightingHandleSet IQVTKSelectCADEntity::highlightEnti
 
 IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
     : IQVTKCADModel3DViewerSelectionLogic(
-        //[]() { return std::make_shared<MultiSelectionContainer>(); },
         [&viewer]()
         { return std::make_shared<CADEntityMultiSelection>(viewer); },
-        viewer )
+        viewer,
+        false // captureAllInput
+    )
 {}
 
 
@@ -212,6 +182,26 @@ IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
 IQVTKSelectCADEntity::~IQVTKSelectCADEntity()
 {
     delete toolBar_;
+}
+
+QString IQVTKSelectCADEntity::description() const
+{
+    return "Select CAD entity";
+}
+
+bool IQVTKSelectCADEntity::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    if (btn==Qt::RightButton)
+    {
+        viewer().contextMenuClick(
+            viewer().mapToGlobal(point) );
+        return true;
+    }
+    return IQVTKCADModel3DViewerSelectionLogic
+        ::onMouseClick(btn, nFlags, point);
 }
 
 void IQVTKSelectCADEntity::start()
@@ -280,6 +270,11 @@ IQVTKSelectSubshape::IQVTKSelectSubshape(IQVTKCADModel3DViewer &viewer)
 
 IQVTKSelectSubshape::~IQVTKSelectSubshape()
 {}
+
+QString IQVTKSelectSubshape::description() const
+{
+    return "Select sub shape";
+}
 
 
 void IQVTKSelectSubshape::start()

@@ -13,23 +13,23 @@ class compressibleInterFoamNumerics
 
 public:
 #include "compressibleinterfoamnumerics__compressibleInterFoamNumerics__Parameters.h"
-    /*
+/*
 PARAMETERSET>>> compressibleInterFoamNumerics Parameters
 inherits interFoamNumerics::Parameters
+
 addTo_makeDefault { p.setDouble("pinternal", 1e5); }
 
 Tinternal = double 300.0 "Internal pressure field value"
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "compressibleInterFoamNumerics" );
 
-    compressibleInterFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    compressibleInterFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

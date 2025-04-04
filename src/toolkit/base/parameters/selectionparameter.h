@@ -23,15 +23,34 @@
 
 
 #include "base/parameters/simpleparameter.h"
+#include <string>
 
 
 namespace insight
 {
 
 
+class SelectionParameterInterface
+{
+public:
+    typedef std::string key_type;
+
+    virtual std::vector<std::string> selectionKeys() const =0;
+    virtual void setSelection(const key_type& nk) =0;
+    virtual const key_type& selection() const =0;
+
+    virtual bool contains(const std::string &value) const;
+    virtual int indexOfSelection(const std::string& key) const;
+    virtual int selectionIndex() const;
+    virtual void setSelectionFromIndex(int idx);
+    virtual std::string iconPathForKey(const std::string& key) const;
+};
+
+
 
 class SelectionParameter
-    : public IntParameter
+    : public IntParameter,
+      public SelectionParameterInterface
 {
 public:
     typedef std::vector<std::string> ItemList;
@@ -57,17 +76,14 @@ public:
     void resetItems(const ItemList& newItems);
     virtual const ItemList& items() const;
 
-    void setSelection ( const std::string& sel );
+    std::vector<std::string> selectionKeys() const override;
+    void setSelection ( const std::string& sel ) override;
+    const std::string& selection() const override;
 
-    inline const std::string& selection() const
-    {
-        return items_[value_];
-    }
-
-    inline int selection_id ( const std::string& key ) const
-    {
-        return  std::find ( items_.begin(), items_.end(), key ) - items_.begin();
-    }
+    // inline int selection_id ( const std::string& key ) const
+    // {
+    //     return  std::find ( items_.begin(), items_.end(), key ) - items_.begin();
+    // }
 
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;
@@ -78,7 +94,7 @@ public:
     void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath ) override;
 
-    Parameter* clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const SelectionParameter& p);
 

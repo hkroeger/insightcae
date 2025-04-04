@@ -42,14 +42,16 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
     const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
     const std::string& FOName, const std::string& fileName,
     int groupByColumn,
-    const std::string& filterChars="()"
+    const std::string& filterChars="()",
+    const std::string& regionName = std::string()
 );
 
 arma::mat readAndCombineTabularFiles
     (
         const OpenFOAMCase& cm, const boost::filesystem::path& caseLocation,
         const std::string& FOName, const std::string& fileName,
-        const std::string& filterChars="()"
+        const std::string& filterChars="()",
+        const std::string& regionName = std::string()
         );
 
 /** ===========================================================================
@@ -64,6 +66,7 @@ public:
 
 /*
 PARAMETERSET>>> outputFilterFunctionObject Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 name = string "unnamed" "Name of the function object"
 region = string "region0" "name of the region, defaults to the value of polyMesh::defaultRegion"
@@ -71,11 +74,10 @@ timeStart = double 0 "Time value, when the function object evaluation should sta
 outputControl = string "outputTime" "Output time control"
 outputInterval = double 1.0 "Time interval between outputs"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
   declareFactoryTable 
@@ -84,14 +86,14 @@ public:
       LIST 
       (  
 	  OpenFOAMCase& c, 
-	  const ParameterSet& ps
-      ), 
-      LIST ( c, ps ) 
+      ParameterSetInput&& ip
+      ),
+      LIST ( c, std::move(ip) )
   );
-  declareStaticFunctionTable ( defaultParameters, ParameterSet );
+  declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> );
   declareType("outputFilterFunctionObject");
 
-  outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = defaultParameters() );
+  outputFilterFunctionObject(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual OFDictData::dict functionObjectDict() const =0;
   virtual std::vector<std::string> requiredLibraries() const;
   void addIntoControlDict(OFDictData::dict& controlDict) const;
@@ -125,15 +127,14 @@ inherits outputFilterFunctionObject::Parameters
 
 fields = array [ string "U" "Name of a field" ]*1 "Names of fields to average in time"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
   declareType("fieldAveraging");
-  fieldAveraging(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+  fieldAveraging(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
 };
@@ -158,15 +159,14 @@ inherits outputFilterFunctionObject::Parameters
 fields = array [ string "U" "Name of a field" ]*1 "Names of fields to average in time"
 probeLocations = array [ vector (0 0 0) "Probe point location" ]*1 "Locations of probe points"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
     declareType("probes");
-    probes(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+    probes(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     /**
      * reads and returns probe sample data.
@@ -229,21 +229,20 @@ weightFieldName = string "none" "Name of field for weighting. This is ignored, i
 
 operation = selection ( sum sumMag average volAverage volIntegrate min max CoV weightedVolIntegrate) volIntegrate "operation to execute on data"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
     declareType("volumeIntegrate");
-    volumeIntegrate(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+    volumeIntegrate(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     static arma::mat readVolumeIntegrals
     (
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
-        const std::string& FOName
+        const std::string& FOName,
+        const std::string& regionName = std::string()
     );
 
     static std::string category() {
@@ -284,15 +283,14 @@ domain = selectablesubset {{
 
 operation = selection ( sum areaIntegrate areaAverage ) areaIntegrate "operation to execute on data"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
     declareType("surfaceIntegrate");
-    surfaceIntegrate(OpenFOAMCase& c, const ParameterSet& ps = defaultParameters() );
+    surfaceIntegrate(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     static std::string category() {
         return "Postprocessing";
@@ -331,15 +329,14 @@ inherits outputFilterFunctionObject::Parameters
 
 fields = array [ string "U" "Name of a field" ]*1 "Names of fields for which minima and maxima will be reported"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
     declareType("fieldMinMax");
-    fieldMinMax(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    fieldMinMax(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     OFDictData::dict functionObjectDict() const override;
 
@@ -351,7 +348,8 @@ public:
     (
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
-        const std::string& foName
+        const std::string& foName,
+        const std::string& regionName = std::string()
     );
 };
 
@@ -375,15 +373,13 @@ basePoint = vector (0 0 0) "Cutting plane base point"
 normal = vector (0 0 1) "Cutting plane normal direction"
 interpolate = bool true "Whether to output VTKs with interpolated fields"
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-  Parameters p_;
   
 public:
   declareType("cuttingPlane");
-  cuttingPlane(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  cuttingPlane(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
 };
@@ -410,21 +406,19 @@ homogeneousTranslationUnit = vector (0 1 0) "Translational distance between two 
 np = int 50 "Number of correlation points"
 nph = int 1 "Number of homogeneous averaging locations"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
   declareType("twoPointCorrelation");
-  twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  twoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     
 
   OFDictData::dict functionObjectDict() const override;
   virtual OFDictData::dict csysConfiguration() const;
 
-  inline const std::string& name() const { return p_.name; }
   static boost::ptr_vector<arma::mat> readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName);
 };
 
@@ -449,15 +443,14 @@ ez = vector (0 0 1) "Axial direction"
 er = vector (1 0 0) "Radial direction"
 degrees = bool false ""
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
   declareType("cylindricalTwoPointCorrelation");
-  cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  cylindricalTwoPointCorrelation(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict csysConfiguration() const override;
 };
@@ -486,15 +479,14 @@ rhoName = string "rhoInf" "Name of density field. rhoInf for constant rho"
 rhoInf = double 1.0 "Value of constant density"
 CofR = vector (0 0 0) "Center point for torque calculation"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
   declareType("forces");
-  forces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  forces(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
   std::vector<std::string> requiredLibraries() const override;
@@ -519,16 +511,16 @@ PARAMETERSET>>> extendedForces Parameters
 inherits insight::forces::Parameters
 
 maskField = string "" "Optional: name of field which masks the force evaluation. The local force density is multiplied by this field."
+maskThreshold = double 0.5 "Threshold value for masking"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
   
 public:
   declareType("extendedForces");
-  extendedForces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  extendedForces(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   OFDictData::dict functionObjectDict() const override;
   std::vector<std::string> requiredLibraries() const override;
 };
@@ -544,6 +536,7 @@ public:
 
 /*
 PARAMETERSET>>> catalyst Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 inputname = string "input" "Name of the input data set"
 
@@ -569,15 +562,14 @@ scripts = array [ selectablesubset {{
 paraview_host = string "localhost" "Name or IP of the host, where the Paraview client is running"
 paraview_port = int 22222 "The port, where paraview is listening"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType("catalyst");
-  catalyst(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  catalyst(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   static std::string category() { return "Postprocessing"; }
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
@@ -605,7 +597,7 @@ public:
 
 
 class ComputeLengthScale
-: public Analysis
+: public AnalysisWithParameters
 {
 public:
 #include "analysiscaseelements__ComputeLengthScale__Parameters.h"
@@ -618,18 +610,19 @@ R_vs_x = matrix 10x2 "autocorrelation function: first column contains coordinate
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
+    typedef supplementedInputDataDerived<Parameters> supplementedInputData;
+    addParameterMembers_SupplementedInputData(ComputeLengthScale::Parameters);
 
 public:
   declareType("ComputeLengthScale");
-  ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress );
+
+  ComputeLengthScale(
+      const std::shared_ptr<supplementedInputDataBase>& sp );
 
   ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
 
-  inline ParameterSet parameters() const override { return p_; }
-
   static std::string category() { return "General Postprocessing"; }
+  static AnalysisDescription description() { return {"Length Scale", "Compute the length scale from autocorrelation functions"}; }
 };
 
 
@@ -666,11 +659,11 @@ e_rad = vector (0 1 0) "radial direction"
 e_tan = vector (0 0 1) "transverse direction"
 grading = selection (towardsEnd towardsStart none) towardsEnd "Grading in placement of TPC sample FOs"
 
+createGetter
 <<<PARAMETERSET
 */
 
 protected:
-  Parameters p_;
   std::vector<double> r_;
   boost::ptr_vector<TPC> tpc_ax_;
   boost::ptr_vector<TPC> tpc_tan_;
@@ -684,7 +677,7 @@ protected:
 public:
   declareType(TypeName);
   
-  TPCArray(OpenFOAMCase& c, ParameterSet const &ps = Parameters::makeDefault() );
+  TPCArray(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual OFDictData::dict functionObjectDict() const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results,
@@ -698,7 +691,7 @@ public:
     const std::string& axisLabel,
     const boost::ptr_vector<TPC>& tpcarray,
     const std::string& shortDescription,
-    Ordering& so = Ordering()
+    Ordering& so
   ) const;
 
 

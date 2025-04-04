@@ -5,6 +5,7 @@ unset(VTKm_DIR CACHE)
 unset(ParaView_DIR CACHE)
 
 if (NOT WIN32)
+
  find_package(VTK
     COMPONENTS
         FiltersCore
@@ -15,6 +16,8 @@ if (NOT WIN32)
         FiltersPoints
         FiltersFlowPaths
         FiltersVerdict
+        FiltersParallel
+        CommonColor
         CommonCore
         CommonDataModel
         CommonMisc
@@ -27,6 +30,7 @@ if (NOT WIN32)
         #IOParallel # not available in mxe
         ImagingCore
         GUISupportQt
+        RenderingLabel
         RenderingOpenGL2
         RenderingAnnotation
          InteractionWidgets
@@ -35,8 +39,15 @@ if (NOT WIN32)
     NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH
     HINTS ${VTK_ONSCREEN_DIR}
  )
-else()
-    find_package(VTK
+
+else(NOT WIN32)
+
+  if (CMAKE_TOOLCHAIN_FILE)
+    FIND_PACKAGE(VTKCompileTools REQUIRED)
+    list(APPEND VTK_CMAKE_ADDARGS "-DVTKCompileTools_DIR=${VTKCompileTools_DIR}")
+  endif(CMAKE_TOOLCHAIN_FILE)
+
+  find_package(VTK
        COMPONENTS
            vtkFiltersCore
            vtkFiltersGeneral
@@ -46,6 +57,8 @@ else()
            vtkFiltersPoints
            vtkFiltersFlowPaths
            vtkFiltersVerdict
+           vtkFiltersParallel
+           vtkCommonColor
            vtkCommonCore
            vtkCommonDataModel
            vtkCommonMisc
@@ -58,6 +71,7 @@ else()
            #IOParallel # not available in mxe
            vtkImagingCore
            vtkGUISupportQt
+           vtkRenderingLabel
            vtkRenderingOpenGL2
            vtkRenderingAnnotation
             vtkInteractionWidgets
@@ -76,23 +90,22 @@ include(ExternalProject)
 get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
 get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
 
-if (CMAKE_WRAPPER)
-  set(CMAKE "${CMAKE_WRAPPER}") # required in MXE cross build, cmake is called through wrapper script there
-else()
-  set(CMAKE "${CMAKE_COMMAND}")
-endif()
 
 if (WIN32)
-  set(LIBNAME lib/libvtkDICOM-8.2.0.dll.a)
+  set(LIBNAME lib/libvtkDICOM-pvis.dll.a)
 else()
   set(LIBNAME lib/libvtkDICOM-pvis.so.0.8.15)
 endif()
 
+
+
 ExternalProject_Add( vtkdicom-onscreen
-   GIT_REPOSITORY "https://github.com/dgobbi/vtk-dicom"
-   GIT_TAG 6a81888
+   DOWNLOAD_COMMAND "" # Disable download
+   SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../vtk-dicom"
+
    INSTALL_DIR ${CMAKE_BINARY_DIR}
-   CMAKE_COMMAND ${CMAKE}
+
+   CMAKE_COMMAND ${CMAKE_WRAPPER}
    CMAKE_ARGS
      -DBUILD_SHARED_LIBS=ON
      -DBUILD_PYTHON_WRAPPERS=OFF
@@ -103,9 +116,12 @@ ExternalProject_Add( vtkdicom-onscreen
      -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvis
      -DBUILD_PROGRAMS=OFF
      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+     ${VTK_CMAKE_ADDARGS}
 
    BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
 )
+
+
 
 ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
 ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
@@ -142,8 +158,52 @@ IF (WIN32)
     add_dependencies(vtkOffscreen vtkdicom-onscreen)
 
     add_library(vtkHeaders INTERFACE)
-    target_include_directories(vtkHeaders INTERFACE ${VTK_INCLUDE_DIRS} ${VTKDICOMONSCREEN_INCLUDE_DIR})
-    target_link_libraries(vtkHeaders INTERFACE ${VTK_LIBRARIES} ${VTKDICOMONSCREEN_LIBRARY})
+    list(APPEND VTKONSCREEN_HEADERS ${VTK_INCLUDE_DIRS})
+    list(APPEND VTKONSCREEN_HEADERS $<BUILD_INTERFACE:${VTKDICOMONSCREEN_INCLUDE_DIR}>)
+    list(APPEND VTKONSCREEN_LIBS ${VTK_LIBRARIES})
+    list(APPEND VTKONSCREEN_LIBS ${VTKDICOMONSCREEN_LIBRARY})
+
+    if (INSIGHT_BUILD_MEDREADER)
+      list(APPEND VTKONSCREEN_HEADERS
+            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/medreader-onscreen/include>)
+      list(APPEND VTKONSCREEN_LIBS
+          ${CMAKE_BINARY_DIR}/medreader-onscreen/lib/libvtkMedReader-pvis.dll.a
+      )
+    endif()
+
+    target_include_directories(vtkHeaders INTERFACE ${VTKONSCREEN_HEADERS})
+    target_link_libraries(vtkHeaders INTERFACE ${VTKONSCREEN_LIBS})
+
+
+    install(
+        TARGETS vtkHeaders EXPORT vtkHeaders_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+    export(EXPORT vtkHeaders_targets
+      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEvtkHeadersTarget.cmake"
+      NAMESPACE insight::
+    )
+    install(EXPORT vtkHeaders_targets
+      FILE InsightCAEvtkHeadersTarget.cmake
+      NAMESPACE insight::
+      DESTINATION ${INSIGHT_ConfigPackageLocation}
+    )
+
+    install(
+        TARGETS vtkOnscreen EXPORT vtkOnscreen_targets
+        LIBRARY DESTINATION lib
+        COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+        )
+    export(EXPORT vtkOnscreen_targets
+      FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEvtkOnscreenTarget.cmake"
+      NAMESPACE insight::
+    )
+    install(EXPORT vtkOnscreen_targets
+      FILE InsightCAEvtkOnscreenTarget.cmake
+      NAMESPACE insight::
+      DESTINATION ${INSIGHT_ConfigPackageLocation}
+    )
 
 else()
 

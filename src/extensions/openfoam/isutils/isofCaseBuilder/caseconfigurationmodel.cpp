@@ -1,6 +1,7 @@
 #include "caseconfigurationmodel.h"
 
 #include "parametereditorwidget.h"
+#include "isofcasebuilderwindow.h"
 
 using namespace insight;
 using namespace rapidxml;
@@ -21,8 +22,7 @@ CaseElementData *CaseConfigurationModel::caseElementByIndex(const QModelIndex &i
 
 CaseConfigurationModel::CaseConfigurationModel(QObject *parent)
   : QAbstractListModel(parent)
-{
-}
+{}
 
 
 
@@ -131,8 +131,6 @@ QModelIndex CaseConfigurationModel::addCaseElement(CaseElementData *ce)
   caseElements_.append(ce);
   endInsertRows();
 
-  ce->updateVisualization();
-
   return createIndex(caseElements_.size()-1, 0);
 }
 
@@ -187,11 +185,11 @@ QString CaseConfigurationModel::applicationName(const QString& OFEname) const
 
 
 
-ParameterSet &CaseConfigurationModel::caseElementParametersRef(int id)
+insight::Parameter &CaseConfigurationModel::caseElementParameterRef(int id, const std::string& path)
 {
   if (auto *ce = caseElementByIndex(index(id,0)))
   {
-    return ce->parameters();
+    return ce->parameterSetModel()->parameterRef(path);
   }
   else
   {
@@ -221,13 +219,14 @@ void CaseConfigurationModel::appendConfigurationToNode(
 
           if (pack)
           {
-            elem->parameters().packExternalFiles();
+            elem->parameterSetModel()->pack();
           }
           else
           {
-            elem->parameters().removePackedData();
+            elem->parameterSetModel()->clearPackedData();
           }
-          elem->parameters().appendToNode(doc, *elemnode, fileParentPath);
+          elem->parameterSetModel()->getParameterSet()
+              .appendToNode(std::string(), doc, *elemnode, fileParentPath);
       }
   }
 }
@@ -235,7 +234,8 @@ void CaseConfigurationModel::appendConfigurationToNode(
 void CaseConfigurationModel::readFromNode(
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<> *rootnode,
-    insight::MultiCADParameterSetVisualizer* mv,
+    insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+    MultivisualizationGenerator* visGen,
     const boost::filesystem::path& fileParentPath )
 {
   clear();
@@ -248,9 +248,12 @@ void CaseConfigurationModel::readFromNode(
     std::string type_name( typeattr->value() );
 
     auto* ice = new InsertedCaseElement(
-          type_name, mv
+          type_name, mvl, visGen
           );
-    ice->parameters().readFromNode(*e, fileParentPath);
+
+    auto np = ice->parameterSetModel()->getParameterSet().cloneParameterSet();
+    np->readFromNode(std::string(), *e, fileParentPath);
+    ice->parameterSetModel()->resetParameterValues(*np);
 
     addCaseElement( ice );
   }
@@ -264,40 +267,39 @@ ParameterEditorWidget *CaseConfigurationModel::launchParameterEditor(
 {
   auto* ce = caseElementByIndex(index);
 
-//        insight::ParameterSet_VisualizerPtr viz;
   insight::ParameterSet_ValidatorPtr vali;
 
-//        try {
-//            viz = insight::OpenFOAMCaseElement::visualizer(cur->type_name());
-//        } catch (const std::exception& e)
-//        { /* ignore, if non-existent */ }
-
   try {
-      vali = insight::OpenFOAMCaseElement::validator(ce->type_name());
+      vali = insight::OpenFOAMCaseElement::validatorFor(ce->type_name());
   } catch (const std::exception& e)
   { /* ignore, if non-existent */ }
 
+  insight::CADParameterSetModelVisualizer
+      ::CreateGUIActionsFunctions::Function cgaf;
+
+  if (insight::CADParameterSetModelVisualizer
+      ::createGUIActionsForOpenFOAMCaseElement().count(ce->type_name()))
+  {
+      cgaf=insight::CADParameterSetModelVisualizer
+             ::createGUIActionsForOpenFOAMCaseElement().lookup(ce->type_name());
+  }
+
   auto cepe = new ParameterEditorWidget
          (
-//           ce->parameters(),
-//           ce->defaultParameters(),
            parentWidget,
-           ce->visualizer(), vali,
+           PECADParameterSetVisualizerBuilder(),
+           cgaf,
+           vali,
            display
          );
-  auto model = new IQParameterSetModel(ce->parameters(), ce->defaultParameters(), cepe);
+
+  auto model = ce->parameterSetModel();        
   cepe->setModel(model);
 
   // ensure that the editor is removed, when CE is deleted
   connect(ce, &QObject::destroyed,
           cepe, &ParameterEditorWidget::deleteLater );
 
-  connect(cepe, &ParameterEditorWidget::parameterSetChanged,
-          cepe, [&,ce,cepe]()
-          {
-      ce->parameters() = parameterSetModel(cepe->model())->getParameterSet();
-          }
-  );
 
   return cepe;
 }

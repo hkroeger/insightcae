@@ -61,16 +61,17 @@ namespace insight
  
   
   
-  
-addToAnalysisFactoryTable(AirfoilSection);
+
+defineType(AirfoilSection);
+Analysis::Add<AirfoilSection> addAirfoilSection;
 
 
 
 AirfoilSection::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
+    ParameterSetInput ip,
     const path &workDir,
     ProgressDisplayer &progress )
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+  : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     in_("in"),
     out_("out"),
     up_("up"),
@@ -131,12 +132,9 @@ AirfoilSection::supplementedInputData::supplementedInputData(
 
 
 
-AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
-: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section", ps, exepath),
-  parameters_( new supplementedInputData(
-                 std::make_unique<Parameters>(ps),
-                 exepath, progress
-                 ) )
+AirfoilSection::AirfoilSection(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMAnalysis(sp)
 {}
 
 
@@ -156,7 +154,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   path dir = executionPath();
     
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
-    .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+    .set_np(np())
   ));
   
   using namespace insight::bmd;
@@ -212,7 +210,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
 
   cm.createOnDisk(dir);
   
-  path targ_path(dir/"constant"/"triSurface"/"foil.stl");
+  path targ_path(snappyHexMeshFeats::geometryDir(cm, dir)/"foil.stl");
   create_directories(targ_path.parent_path());
   STLExtruder(sp().contour_, 0, z0+2.0, targ_path);
   
@@ -229,22 +227,22 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(
     snappyHexMeshFeats::Geometry::Parameters()
-    .set_name(sp().foil_)
     .set_minLevel(p().mesh.lmfoil)
     .set_maxLevel(p().mesh.lxfoil)
     .set_nLayers(p().mesh.nlayer)
-    
+
     .set_fileName(make_filepath(targ_path))
     .set_scale(vec3(sp().c_, sp().c_, 1))
     .set_rollPitchYaw(vec3(0,0,-p().geometry.alpha))
+    .set_name(sp().foil_)
   )));
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::NearSurfaceRefinement(
     snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
-    .set_name(sp().foil_)
     .set_mode( snappyHexMeshFeats::NearSurfaceRefinement::Parameters::distance )
     .set_level(p().mesh.lmfoil)
     .set_dist(0.1*sp().c_)
+    .set_name(sp().foil_)
   )));
 
   shm_cfg.PiM.push_back(PiM);
@@ -284,7 +282,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
     .set_checkResiduals(false)
     .set_purgeWrite(2)
     .set_endTime(5000)
-    .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+    .set_np(np())
   )); 
   
   std::string force_fo_name("foilForces");
@@ -487,22 +485,14 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
 }
 
 
-addToAnalysisFactoryTable(AirfoilSectionPolar);
+defineType(AirfoilSectionPolar);
+Analysis::Add<AirfoilSectionPolar> addAirfoilSectionPolar;
 
 RangeParameterList rpl_AirfoilSectionPolar = list_of<std::string>("geometry/alpha");
 
 AirfoilSectionPolar::AirfoilSectionPolar(
-    const ParameterSet& ps,
-    const boost::filesystem::path& exepath,
-    ProgressDisplayer& displayer )
-: OpenFOAMParameterStudy
-  (
-    "Polar of Airfoil",
-    "Computes the polar of a 2D airfoil section using CFD",
-    ps, exepath, 
-    displayer,
-    true
-  )
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMParameterStudy( sp, true )
 {}
 
 void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)

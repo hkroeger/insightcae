@@ -66,8 +66,10 @@ namespace bmd {
 class blockMesh 
 : public OpenFOAMCaseElement
 {
+
 public:
   typedef boost::ptr_map<std::string, Patch> PatchMap;
+
 protected:
   double scaleFactor_;
   std::string defaultPatchName_;
@@ -82,7 +84,8 @@ protected:
   std::vector<ProjectedFace> projectedFaces_;
   
 public:
-  blockMesh(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
+  blockMesh(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
+  blockMesh(OpenFOAMCase& c, const blockMesh& o );
 
   void copy(const blockMesh& other);
   

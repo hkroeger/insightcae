@@ -22,6 +22,7 @@
 #define CONVERGENCEANALYSIS_H
 
 #include "base/analysis.h"
+#include "base/supplementedinputdata.h"
 #include "convergenceanalysis__ConvergenceAnalysis__Parameters_headers.h"
 
 namespace insight
@@ -29,7 +30,7 @@ namespace insight
   
   
 class ConvergenceAnalysis
-: public insight::Analysis
+: public insight::AnalysisWithParameters
 {
 public:
 #include "convergenceanalysis__ConvergenceAnalysis__Parameters.h"
@@ -50,18 +51,20 @@ solutions = array [ set {
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
+    typedef supplementedInputDataDerived<Parameters> supplementedInputData;
+    addParameterMembers_SupplementedInputData(ConvergenceAnalysis::Parameters);
   
 public:
     declareType("ConvergenceAnalysis");
     
-    ConvergenceAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
-    
-    ParameterSet parameters() const override;
+    ConvergenceAnalysis(
+        const std::shared_ptr<supplementedInputDataBase>& sp );
+
     ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;
 
     static std::string category() { return "General Postprocessing"; }
+    static AnalysisDescription description() { return {"Convergence Analysis", ""}; }
+
 };
 
 }

@@ -24,12 +24,35 @@
 
 #include "base/analysis.h"
 
+#include "boost/thread/detail/thread.hpp"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/caseelements/turbulencemodel.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 
+#include "openfoam/caseelements/basic/decomposepardict.h"
+#include "openfoam/caseelements/turbulencemodel.h"
+#include "openfoam/solveroutputanalyzer.h"
+#include "openfoam/ofes.h"
+#include "base/progressdisplayer/combinedprogressdisplayer.h"
+#include "base/progressdisplayer/convergenceanalysisdisplayer.h"
+#include "base/progressdisplayer/prefixedprogressdisplayer.h"
+
+#include "openfoam/caseelements/basic/rasmodel.h"
+
+#include "openfoamtools.h"
+
+#include "base/boost_include.h"
+
+
 #include "openfoamanalysis__OpenFOAMAnalysis__Parameters_headers.h"
+
+
+#include <libintl.h>
+#pragma push_macro("_")
+#undef _
+#define _(String) dgettext("toolkit", String)
+
 
 namespace insight {
 
@@ -37,24 +60,27 @@ namespace insight {
 
 class ConvergenceAnalysisDisplayer;
 
+int realNp(int userInputNp);
 
-class OpenFOAMAnalysis
-: public Analysis
+template<class Base>
+class OpenFOAMAnalysisTemplate : public Base
 {
 public:
-  
+
 #include "openfoamanalysis__OpenFOAMAnalysis__Parameters.h"
 /*
 PARAMETERSET>>> OpenFOAMAnalysis Parameters
+inherits Base::Parameters
 
 run = set 
 {	
  machine 	= 	string 	"" 	"Machine or queue, where the external commands are executed on. Defaults to 'localhost', if left empty." *hidden
  OFEname 	= 	string 	"OFesi1806" "Identifier of the OpenFOAM installation, that shall be used"
- np 		= 	int 	1 	"Number of processors for parallel run (less or equal 1 means serial execution)" *necessary
+ np 		= 	int 	0 	"Number of processors for parallel run (1 means serial execution, <1 means that all available processors are used)" *necessary
  mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done" *hidden
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
+ preprocessonly	= 	bool 	false 	"Whether to only prepare the case and stop before launching the solver" *hidden
 } "Execution parameters"
 
 mesh = set
@@ -71,50 +97,183 @@ eval = set
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
+public:
+    typedef
+        supplementedInputDataDerived<Parameters, typename Base::supplementedInputData>
+        supplementedInputData;
 
+    addParameterMembers_ParameterClass(OpenFOAMAnalysisTemplate::Parameters);
+
+protected:
   ResultSetPtr derivedInputData_;
 
   std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
-    OpenFOAMAnalysis
-    (
-        const std::string& name,
-        const std::string& description,
-        const ParameterSet& ps,
-        const boost::filesystem::path& exepath
-    );
+    OpenFOAMAnalysisTemplate(
+        const std::shared_ptr<supplementedInputDataBase>& sp )
+      : Base(sp)
+    {}
 
-    boost::filesystem::path setupExecutionEnvironment() override;
+    int np() const
+    {
+        return realNp(p().run.np);
+    }
+
+    static insight::OperatingSystemSet compatibleOperatingSystems()
+    {
+        return { insight::LinuxOS };
+    }
+
     
-    void initializeDerivedInputDataSection();
-    virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
+    void initializeDerivedInputDataSection()
+    {
+        if (!derivedInputData_)
+        {
+            auto empty_ps = ParameterSet::create();
+            derivedInputData_.reset(new ResultSet(*empty_ps, "Derived Input Data", ""));
+        }
+    }
+
+    virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="")
+    {
+        initializeDerivedInputDataSection();
+
+        std::cout<<">>> Intermediate parameter "<<name<<" = "<<value<<" "<<unit;
+        if (description!="")
+            std::cout<<" ("<<description<<")";
+        std::cout<<std::endl;
+
+        boost::assign::ptr_map_insert<ScalarResult>(*derivedInputData_) (name, value, description, "", unit);
+    }
     
-    virtual void calcDerivedInputData(ProgressDisplayer& progress);
+    virtual void calcDerivedInputData(ProgressDisplayer& progress)
+    {}
+
     virtual void createMesh(OpenFOAMCase& cm, ProgressDisplayer& progress) =0;
     virtual void createCase(OpenFOAMCase& cm, ProgressDisplayer& progress) =0;
     
-    virtual void createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
+    virtual void createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
+    {
+        CurrentExceptionContext ex(
+            _("creating OpenFOAM dictionaries in memory for case \"%s\""),
+            this->executionPath().c_str() );
+
+        dicts=cm.createDictionaries();
+    }
     
-    virtual void writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
+    virtual void writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
+    {
+        CurrentExceptionContext ex(
+            _("writing OpenFOAM dictionaries to case \"%s\""),
+            this->executionPath().c_str() );
+
+        cm.createOnDisk(this->executionPath(), dicts);
+        cm.modifyCaseOnDisk(this->executionPath());
+    }
+
     /**
      * Customize dictionaries before they get written to disk
      */
-    virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
-    
+    virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
+#ifdef SWIG
+;
+#else
+    {
+        CurrentExceptionContext ex(
+            _("applying custom options to OpenFOAM case configuration for case \"%s\""),
+            this->executionPath().c_str() );
+
+
+        OFDictData::dict& dpd=dicts->lookupDict("system/decomposeParDict");
+        if (dpd.find("numberOfSubdomains")!=dpd.end())
+        {
+            int cnp=boost::get<int>(dpd["numberOfSubdomains"]);
+            if (cnp!=np())
+            {
+                insight::Warning
+                    (
+                        "decomposeParDict does not contain proper number of processors!\n"
+                        +str(boost::format("(%d != %d)\n") % cnp % np())
+                        +"It will be recreated but the directional preferences cannot be taken into account.\n"
+                          "Correct this by setting the np parameter in FVNumerics during case creation properly."
+                        );
+                decomposeParDict(cm, decomposeParDict::Parameters()
+                                         .set_np(np())
+                                         .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::scotch)
+                                 ).addIntoDictionaries(*dicts);
+            }
+        }
+    }
+#endif
+
+
     
     /**
      * Do modifications to the case when it has been created on disk
      */
-    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress);
+    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
+    {}
     
-    void changeMapFromPath(const boost::filesystem::path& newMapFromPath);
-    virtual void mapFromOther(OpenFOAMCase& cm, ProgressDisplayer& progress, const boost::filesystem::path& mapFromPath, bool is_parallel);
+
+
+
+    void changeMapFromPath(const boost::filesystem::path& newMapFromPath)
+    {
+        p().run.mapFrom->setOriginalFilePath(newMapFromPath);
+    }
+
+
+
+
+    virtual void mapFromOther(
+        OpenFOAMCase& cm,
+        ProgressDisplayer& parentAction,
+        const boost::filesystem::path& mapFromPath,
+        bool is_parallel)
+#ifdef SWIG
+;
+#else
+    {
+        CurrentExceptionContext ex(
+            _("mapping existing CFD solution from case \"%s\" to case \"%s\""),
+            mapFromPath.c_str(), this->executionPath().c_str() );
+
+        if (const RASModel* rm=cm.get<RASModel>(".*"))
+        {
+            // check, if turbulence model is compatible in source case
+            // run "createTurbulenceFields" on source case, if not
+            try
+            {
+                OpenFOAMCase oc(cm.ofe());
+                std::string omodel=readTurbulenceModelName(oc, mapFromPath);
+                if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
+                {
+                    CurrentExceptionContext ex("converting turbulence quantities in case \""+mapFromPath.string()+"\" since the turbulence model is different.");
+                    parentAction.message(ex);
+                    oc.executeCommand(mapFromPath, "createTurbulenceFields", { "-latestTime" } );
+                }
+            }
+            catch (...)
+            {
+                insight::Warning("could not check turbulence model of source case. Continuing anyway.");
+            }
+        }
+
+        parentAction.message("Executing mapFields");
+        mapFields(cm, mapFromPath, this->executionPath(), is_parallel, cm.fieldNames());
+    }
+#endif
+
+
+
+    virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc)
+    {
+        convergenceAnalysis_.push_back(cc);
+    }
     
-    virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);
-    
+
+
     
     /**
      * @brief prepareCaseCreation
@@ -122,37 +281,427 @@ public:
      * e.g. running another solver to obtain corrections for settings
      * @param progress
      */
-    virtual void prepareCaseCreation(ProgressDisplayer& progress);
+    virtual void prepareCaseCreation(ProgressDisplayer& progress)
+    {}
+
+
+
 
     /**
      * integrate all steps before the actual run
      */
-    virtual void createCaseOnDisk(OpenFOAMCase& cm, ProgressDisplayer& progress);
-    
-    virtual void initializeSolverRun(ProgressDisplayer& progress, OpenFOAMCase& cm);
-    virtual void runSolver(ProgressDisplayer& displayer, OpenFOAMCase& cm);
-    virtual void finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& progress);
+    virtual void createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer& parentActionProgress)
+#ifdef SWIG
+;
+#else
+    {
+        auto dir = this->executionPath();
 
-    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
+        CurrentExceptionContext ex(
+            _("creating OpenFOAM case in directory \"%s\""),
+            dir.c_str() );
 
-    ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer ) override;
+        OFEnvironment ofe = OFEs::get(p().run.OFEname);
+        ofe.setExecutionMachine(p().run.machine);
+
+        parentActionProgress.message(_("Computing derived input quantities"));
+        calcDerivedInputData(parentActionProgress);
+
+        bool evaluateonly=p().run.evaluateonly;
+        if (evaluateonly)
+        {
+            insight::Warning(
+                _("Parameter \"run/evaluateonly\" is set.\nSKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!")
+                );
+        }
+
+        std::shared_ptr<OpenFOAMCase> meshCase;
+        bool meshcreated=false;
+        if (!evaluateonly)
+        {
+            meshCase.reset(new OpenFOAMCase(ofe));
+            if (!meshCase->meshPresentOnDisk(dir))
+            {
+                meshcreated=true;
+                if (p().mesh.linkmesh->isValid())
+                {
+                    parentActionProgress.message(
+                        str(boost::format(
+                                _("Linking the mesh to OpenFOAM case in directory %s.")
+                                ) % dir.string() ) );
+                    linkPolyMesh(p().mesh.linkmesh->filePath(dir)/"constant", dir/"constant", &ofe);
+                }
+                else
+                {
+                    parentActionProgress.message(_("Creating the mesh."));
+                    createMesh(*meshCase, parentActionProgress);
+                }
+            }
+            else
+            {
+                insight::Warning(
+                    _("case in \"%s\": mesh is already there, skipping mesh creation."),
+                    dir.c_str() );
+            }
+        }
+
+        int np=1;
+        if (boost::filesystem::exists(dir/"system"/"decomposeParDict"))
+        {
+            np=readDecomposeParDict(dir);
+        }
+        bool is_parallel = np>1;
+
+        if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
+        {
+            runCase.modifyFilesOnDiskBeforeDictCreation( dir );
+        }
+
+
+        parentActionProgress.message(_("Creating the case setup."));
+        createCase(runCase, parentActionProgress);
+
+        std::shared_ptr<OFdicts> dicts;
+
+        parentActionProgress.message(_("Creating the dictionaries."));
+        createDictsInMemory(runCase, dicts);
+
+        parentActionProgress.message(_("Applying custom modifications to dictionaries."));
+        applyCustomOptions(runCase, dicts);
+
+        // might have changed
+        if (boost::filesystem::exists(dir/"system"/"decomposeParDict"))
+        {
+            np=readDecomposeParDict(dir);
+        }
+        is_parallel = np>1;
+
+        if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
+        {
+            if (meshcreated)
+            {
+                parentActionProgress.message(_("Applying custom modifications mesh."));
+                runCase.modifyMeshOnDisk(dir);
+            }
+
+            parentActionProgress.message(_("Writing dictionaries to disk."));
+            writeDictsToDisk(runCase, dicts);
+
+            parentActionProgress.message(_("Applying custom preprocessing steps to OpenFOAM case."));
+            applyCustomPreprocessing(runCase, parentActionProgress);
+        }
+        else
+        {
+            insight::Warning(
+                _("case in \"%s\": skipping case recreation because there are already output time directories present."),
+                dir.c_str() );
+        }
+    }
+#endif
+
+
+    virtual void initializeSolverRun(ProgressDisplayer& parentProgress, OpenFOAMCase& cm)
+#ifdef SWIG
+;
+#else
+    {
+        auto exepath = this->executionPath();
+
+        CurrentExceptionContext ex(
+            _("initializing solver run for case \"%s\""),
+            exepath.c_str() );
+
+        int np=readDecomposeParDict(exepath);
+        bool is_parallel = np>1;
+
+
+        if (!cm.outputTimesPresentOnDisk(exepath, false))
+        {
+            if ((cm.OFversion()>=230) && (p().run.mapFrom->isValid()))
+            {
+                // parallelTarget option is not present in OF2.3.x
+                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(exepath), false);
+            }
+        }
+
+        if (is_parallel)
+        {
+            if (!exists(exepath/"processor0"))
+            {
+                parentProgress.message(_("Executing decomposePar"));
+
+                std::vector<std::string> opts;
+                if (exists(exepath/"constant"/"regionProperties"))
+                    opts={"-allRegions"};
+
+                cm.executeCommand(exepath, "decomposePar", opts);
+            }
+        }
+
+        if (!cm.outputTimesPresentOnDisk(exepath, is_parallel))
+        {
+            if ( (!(cm.OFversion()>=230)) && (p().run.mapFrom->isValid()) )
+            {
+                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(exepath), is_parallel);
+            }
+            else
+            {
+                if (p().run.potentialinit)
+                {
+                    if (p().run.mapFrom->isValid())
+                    {
+                        parentProgress.message(
+                            str(boost::format(
+                                _("case in \"%s\": solution was mapped from other case, skipping potentialFoam.")
+                                    ) % exepath.string() ) );
+                        insight::Warning(
+                            _("A potentialFoam initialization was configured although a solution was mapped from another case.\n"
+                              "The potentialFoam run was skipped in order not to destroy the mapped solution!")
+                            );
+                    }
+                    else
+                    {
+                        parentProgress.message(_("Executing potentialFoam"));
+                        runPotentialFoam(cm, exepath, np);
+                    }
+                }
+            }
+        }
+        else
+        {
+            parentProgress.message(
+                str(boost::format(
+                        _("case in \"%s\": output timestep are already there, skipping initialization.")
+                        ) % exepath.string() )
+                );
+        }
+    }
+#endif
+
+
+    virtual void runSolver(ProgressDisplayer& parentProgress, OpenFOAMCase& cm)
+#ifdef SWIG
+;
+#else
+    {
+        CurrentExceptionContext ex(_("running solver"));
+        auto exepath = this->executionPath();
+
+        CombinedProgressDisplayer cpd(CombinedProgressDisplayer::OR), conv(CombinedProgressDisplayer::AND);
+        cpd.add(&parentProgress);
+        cpd.add(&conv);
+
+        for (auto& ca: this->convergenceAnalysis_)
+        {
+            conv.add(ca.get());
+        }
+
+
+        std::string solverName;
+        double endTime;
+        int np=readDecomposeParDict(exepath);
+
+        {
+            OFDictData::dict controlDict;
+            std::ifstream cdf( (exepath/"system"/"controlDict").c_str() );
+            readOpenFOAMDict(cdf, controlDict);
+            solverName=controlDict.getString("application");
+            endTime=controlDict.getDoubleOrInt("endTime");
+        }
+
+        SolverOutputAnalyzer analyzer(cpd, endTime);
+
+        parentProgress.message(
+            str(boost::format(_("Executing application %s until end time %g."))
+                % solverName % endTime) );
+
+        cm.runSolver(exepath, analyzer, solverName, np);
+    }
+#endif
+
+
+
+    virtual void finalizeSolverRun(OpenFOAMCase& cm, ProgressDisplayer& parentAction)
+#ifdef SWIG
+;
+#else
+    {
+        auto exepath = this->executionPath();
+        CurrentExceptionContext ex(
+            _("finalizing solver run for case \"%s\""),
+            exepath.c_str() );
+
+        int np=readDecomposeParDict(exepath);
+        bool is_parallel = np>1;
+        if (is_parallel)
+        {
+            if (exists(exepath/"processor0"))
+            {
+                if (checkIfReconstructLatestTimestepNeeded(cm, exepath))
+                {
+                    parentAction.message(_("Running reconstructPar for latest time step"));
+
+                    std::vector<std::string> opts={"-latestTime"};
+                    if (exists(exepath/"constant"/"regionProperties"))
+                        opts.push_back("-allRegions");
+
+                    cm.executeCommand(exepath, "reconstructPar", opts );
+                }
+                else
+                {
+                    parentAction.message(_("No reconstruct needed"));
+                }
+            }
+            else
+                insight::Warning(
+                    _("A parallel run is configured, but not processor directory is present!\n"
+                      "Proceeding anyway.") );
+        }
+    }
+#endif
+
+
+
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress)
+#ifdef SWIG
+;
+#else
+    {
+        auto exepath = this->executionPath();
+        CurrentExceptionContext ex(
+            _("evaluating the results for case \"%s\""),
+            exepath.c_str() );
+
+        auto results = this->createResultSet();
+
+        if (!p().eval.skipmeshquality)
+        {
+            parentActionProgress.message("Generating mesh quality report");
+            meshQualityReport(cm, exepath, results);
+        }
+
+        if (p().eval.reportdicts)
+        {
+            parentActionProgress.message("Adding numerical settings to report");
+            currentNumericalSettingsReport(cm, exepath, results);
+        }
+
+        if (derivedInputData_)
+        {
+            parentActionProgress.message("Inserting derived input quantities into report");
+            std::string key(derivedInputData_->title());
+            results->insert( key, derivedInputData_->clone() ) .setOrder(-1.);
+        }
+
+        return results;
+    }
+#endif
+
+
+
+    ResultSetPtr operator()(ProgressDisplayer& progress = consoleProgressDisplayer ) override
+#ifdef SWIG
+;
+#else
+    {
+        CurrentExceptionContext ex(_("running OpenFOAM analysis"));
+
+        auto ofprg = progress.forkNewAction( p().run.evaluateonly? 4 : 6 );
+
+
+        OFEnvironment ofe = OFEs::get(p().run.OFEname);
+        ofe.setExecutionMachine(p().run.machine);
+
+        ofprg.message(_("Preparing case creation"));
+        prepareCaseCreation(ofprg);
+        ++ofprg;
+
+        OpenFOAMCase runCase(ofe);
+        ofprg.message(_("Creating case on disk"));
+        createCaseOnDisk(runCase, ofprg);
+        ++ofprg;
+
+        auto dir = this->executionPath();
+
+        if (!p().run.evaluateonly)
+        {
+            PrefixedProgressDisplayer iniprogdisp(
+                &ofprg, "initrun",
+                PrefixedProgressDisplayer::Prefixed,
+                PrefixedProgressDisplayer::NoActionProgressPrefix
+                );
+
+            ofprg.message(_("Initializing solver run"));
+            initializeSolverRun(iniprogdisp, runCase);
+            ++ofprg;
+        }
+
+        if (!p().run.evaluateonly && !p().run.preprocessonly)
+        {
+            ofprg.message(_("Running solver"));
+            runSolver(ofprg, runCase);
+            ++ofprg;
+        }
+
+        ResultSetPtr results;
+        if (!p().run.preprocessonly)
+        {
+            ofprg.message(_("Finalizing solver run"));
+            finalizeSolverRun(runCase, ofprg);
+            ++ofprg;
+
+            ofprg.message(_("Evaluating results"));
+            results = evaluateResults(runCase, ofprg);
+            ++ofprg;
+        }
+        else
+        {
+            // empty report containing only the input parameters
+            results = this->createResultSet();
+        }
+
+        return results;
+    }
+#endif
+
 };
+
+// #ifndef SWIG
+typedef OpenFOAMAnalysisTemplate<AnalysisWithParameters> OpenFOAMAnalysis;
+#ifdef SWIG
+%template(OpenFOAMAnalysis) OpenFOAMAnalysisTemplate<AnalysisWithParameters>;
+#endif
+// #else
+// typedef OpenFOAMAnalysisTemplate OpenFOAMAnalysis;
+// #endif
+
 
 template<class P>
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const P& tmp )
 {
-  CurrentExceptionContext ex("inserting turbulence model configuration into OpenFOAM case");
+  CurrentExceptionContext ex(
+        _("inserting turbulence model configuration into OpenFOAM case")
+        );
 
-  turbulenceModel* model = turbulenceModel::lookup(tmp.selection, cm, tmp.parameters);
+  turbulenceModel* model = turbulenceModel::lookup(
+      tmp.selection, cm, ParameterSetInput(*tmp.parameters) );
 
   if (!model)
-    throw insight::Exception("Unrecognized RASModel selection: "+tmp.selection);
+      throw insight::Exception(_("Unrecognized RASModel selection: %s"), tmp.selection);
 
   return cm.insert(model);
 }
 
+
+
+
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps );
 
+
+
+
 }
+
+#pragma pop_macro("_")
 
 #endif // INSIGHT_OPENFOAMANALYSIS_H

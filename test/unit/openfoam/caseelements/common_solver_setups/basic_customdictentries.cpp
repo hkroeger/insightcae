@@ -24,10 +24,12 @@ int main(int argc, char*argv[])
         // needs to be added last since entries from other CEs shall be overwritten
         // (thus it needs to be added in an overwritten createCase method)
         customDictEntries::Parameters p;
-        p.entries = {
-          { "system/controlDict", "stopAt", "nextWrite" },
-          { "system/controlDict", "writeInterval", "1" }
-        };
+        p.entries.push_back(
+          customDictEntries::Parameters::entries_default_type{ "system/controlDict", "stopAt", "nextWrite" }
+            );
+        p.entries.push_back(
+          customDictEntries::Parameters::entries_default_type{ "system/controlDict", "writeInterval", "1" }
+            );
         insert(new customDictEntries(*this, p));
       }
 

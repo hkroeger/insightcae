@@ -21,13 +21,14 @@
 #ifndef INSIGHT_PROPERTYLIBRARYSELECTIONPARAMETER_H
 #define INSIGHT_PROPERTYLIBRARYSELECTIONPARAMETER_H
 
-#include "base/parameters/simpleparameter.h"
+#include "base/parameters/selectionparameter.h"
 #include "base/propertylibrary.h"
 
 namespace insight {
 
 class PropertyLibrarySelectionParameter
-        : public StringParameter
+    : public StringParameter,
+      public SelectionParameterInterface
 {
 
 protected:
@@ -63,11 +64,12 @@ public:
 
     const PropertyLibraryBase* propertyLibrary() const;
 
-    std::vector<std::string> items() const;
-    bool contains(const std::string& value) const;
+    // std::vector<std::string> items() const; // now "selectionKeys"
 
-    void setSelection ( const std::string& sel );
-    const std::string& selection() const;
+    std::vector<std::string> selectionKeys() const override;
+    void setSelection ( const std::string& sel ) override;
+    const std::string& selection() const override;
+    std::string iconPathForKey(const std::string& key) const override;
 
 
     void readFromNode(
@@ -76,7 +78,7 @@ public:
         boost::filesystem::path
     ) override;
 
-    Parameter* clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const PropertyLibrarySelectionParameter& p);
     int nChildren() const override;

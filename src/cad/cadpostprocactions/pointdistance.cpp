@@ -20,26 +20,25 @@
 #include "cadfeature.h"
 #include "pointdistance.h"
 
-#include "AIS_Point.hxx"
-// #include "AIS_Drawer.hxx"
-#include "Prs3d_TextAspect.hxx"
-#include "occtools.h"
-
-#include "base/parameters/simpleparameter.h"
-#include "constrainedsketch.h"
-#include "parser.h"
-
-using namespace std;
-using namespace boost;
+#include "vtkActor.h"
+#include "vtkDoubleArray.h"
+#include "vtkLineSource.h"
+#include "vtkPolyLine.h"
+#include "vtkPolyLineSource.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkStringArray.h"
+#include "vtkPointSetToLabelHierarchy.h"
+#include "vtkLabelPlacementMapper.h"
+#include "vtkTextProperty.h"
+#include "vtkGlyph3D.h"
+#include "vtkCaptionActor2D.h"
+#include "vtkTextActor.h"
 
 namespace insight {
 namespace cad {
 
 
-
-
 defineType(Distance);
-
 
 
 
@@ -53,14 +52,22 @@ size_t Distance::calcHash() const
 
 arma::mat Distance::measureDirection() const
 {
+    insight::CurrentExceptionContext ex("determining direction of distance measurement");
+
+    arma::mat delta=vec3Zero();
     if (distanceAlong_)
     {
-        return normalized( distanceAlong_->value() );
+        delta= distanceAlong_->value();
     }
     else
     {
-        return normalized( p2_->value() - p1_->value() );
+        delta= p2_->value() - p1_->value();
     }
+
+    if (arma::norm(delta, 2)<insight::SMALL)
+        return vec3X(1);
+    else
+        return normalized( delta );
 }
 
 
@@ -112,6 +119,8 @@ void Distance::operator=(const Distance &other)
 
 arma::mat Distance::dimLineOffset() const
 {
+  insight::CurrentExceptionContext ex("determining dimension line offset direction");
+
   arma::mat dir = measureDirection();
   arma::mat n = arma::cross(dir, vec3(0,0,1));
   if (arma::norm(n,2)<SMALL)
@@ -133,445 +142,209 @@ double Distance::distance() const
     return distance_;
 }
 
-
-
-
-
-
-
-
-defineType(DistanceConstraint);
-
-
-
-
-size_t DistanceConstraint::calcHash() const
+arma::mat Distance::symbolLocation() const
 {
-    ParameterListHash h;
-    h+=p1_->value();
-    h+=p2_->value();
-    if (distanceAlong_) h+=distanceAlong_->value();
-    h+=targetValue();
-    return h.getHash();
+    arma::mat ofs = dimLineOffset();
+    arma::mat p1 = p1_->value();
+    arma::mat p2 = p1 + measureDirection()*distance();
+    arma::mat pmid = 0.5*(p1+p2);
+    return pmid+ofs;
 }
 
-
-
-
-DistanceConstraint::DistanceConstraint(
-    VectorPtr p1, VectorPtr p2,
-    VectorPtr planeNormal,
-    const std::string& layerName,
-    VectorPtr distanceAlong)
-    : ConstrainedSketchEntity(layerName),
-    Distance(p1, p2, distanceAlong),
-    planeNormal_(planeNormal)
+std::vector<vtkSmartPointer<vtkProp> >
+Distance::createVTKRepr(bool displayCoords) const
 {
-    changeDefaultParameters(
-        ParameterSet({
-            {"dimLineOfs", std::make_shared<DoubleParameter>(1., "dimension line offset")},
-            {"arrowSize", std::make_shared<DoubleParameter>(1., "arrow size")}
-        })
-    );
-}
+    auto dist = this;
+    insight::assertion( bool(dist), "internal error: expected distance object") ;
 
+    arma::mat dir = dist->measureDirection();
+    double L=dist->distance();
+    arma::mat p1 = dist->p1_->value();
+    arma::mat p2 = p1 + dir*L; //dist->p2_->value();
 
+    arma::mat ofs = dist->dimLineOffset();
+    arma::mat pmid = 0.5*(p1+p2);
 
+    double relArrSize = 2.*dist->relativeArrowSize();
 
-int DistanceConstraint::nConstraints() const
-{
-    return 1;
-}
-
-
-
-
-double DistanceConstraint::getConstraintError(unsigned int iConstraint) const
-{
-    insight::assertion(
-                iConstraint==0,
-                "invalid constraint id" );
-    checkForBuildDuringAccess();
-    return (distance_ - targetValue());
-}
-
-
-
-
-std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > DistanceConstraint::dependencies() const
-{
-    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret;
-
-    if (auto sp1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_))
-        ret.insert(sp1);
-    if (auto sp2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_))
-        ret.insert(sp2);
-
-    return ret;
-}
-
-
-
-
-void DistanceConstraint::replaceDependency(
-    const std::weak_ptr<ConstrainedSketchEntity> &entity,
-    const std::shared_ptr<ConstrainedSketchEntity> &newEntity )
-{
-    if (auto p = std::dynamic_pointer_cast<Vector>(newEntity))
+    vtkNew<vtkPolyData> a0;
     {
-        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity)
+        // Create a vtkPoints object and store the points in it
+        vtkNew<vtkPoints> points;
+        points->InsertNextPoint(0,0,0);
+        points->InsertNextPoint(1.-relArrSize, 0, 0);
+        points->InsertNextPoint(1.-relArrSize, relArrSize/5., 0);
+        points->InsertNextPoint(1,0,0);
+        points->InsertNextPoint(1.-relArrSize, -relArrSize/5., 0);
+        points->InsertNextPoint(1.-relArrSize, 0, 0);
+
+        vtkNew<vtkPolyLine> polyLine;
+        polyLine->GetPointIds()->SetNumberOfIds(points->GetNumberOfPoints());
+        for (unsigned int i = 0; i < 6; i++)
         {
-            p1_ = p;
+            polyLine->GetPointIds()->SetId(i, i);
         }
-        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_) == entity)
-        {
-            p2_ = p;
-        }
+
+        // Create a cell array to store the lines in and add the lines to it
+        vtkNew<vtkCellArray> cells;
+        cells->InsertNextCell(polyLine);
+
+        // Create a polydata to store everything in
+
+        // Add the points to the dataset
+        a0->SetPoints(points);
+
+        // Add the lines to the dataset
+        a0->SetLines(cells);
     }
-}
 
 
-
-
-arma::mat DistanceConstraint::dimLineOffset() const
-{
-    arma::mat dir = measureDirection();
-    arma::mat n = normalized(arma::cross(dir, planeNormal_->value()));
-    return n*parameters().getDouble("dimLineOfs");
-}
-
-
-
-
-void DistanceConstraint::setDimLineOffset(const arma::mat &p)
-{
-    arma::mat dir = measureDirection();
-    arma::mat dir2 = p - p1_->value();
-    arma::mat n = normalized(arma::cross(dir, planeNormal_->value()));
-
-    gp_Lin lin(
-        to_Pnt(p1_->value()),
-        to_Vec(dir)
-        );
-
-    auto &op = parametersRef().get<DoubleParameter>("dimLineOfs");
-    op.set(
-        lin.Distance(to_Pnt(p))
-        * (arma::dot(n,dir2)<0.?-1.:1.),
-        true
-        );
-}
-
-
-
-
-double DistanceConstraint::relativeArrowSize() const
-{
-    double L = std::max(SMALL, std::fabs(distance()));
-    return parameters().getDouble("arrowSize")/L;
-}
-
-
-
-VectorPtr DistanceConstraint::planeNormal() const
-{
-    return planeNormal_;
-}
-
-
-
-
-void DistanceConstraint::operator=(const ConstrainedSketchEntity& other)
-{
-    operator=(dynamic_cast<const DistanceConstraint&>(other));
-}
-
-
-
-
-void DistanceConstraint::operator=(const DistanceConstraint& other)
-{
-    Distance::operator=(other);
-    ConstrainedSketchEntity::operator=(other);
-    planeNormal_=other.planeNormal_;
-}
-
-
-
-
-
-
-
-defineType(FixedDistanceConstraint);
-addToStaticFunctionTable(ConstrainedSketchEntity, FixedDistanceConstraint, addParserRule);
-
-
-
-
-FixedDistanceConstraint::FixedDistanceConstraint(
-    VectorPtr p1, VectorPtr p2, VectorPtr planeNormal,
-    const std::string& layerName,
-    VectorPtr distanceAlong
-    )
-    : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
-{
-    auto ps = defaultParameters();
-    ps.extend(ParameterSet({
-       {"distance", std::make_shared<DoubleParameter>(calcDistance(), "target value")}
-    }));
-    changeDefaultParameters(ps);
-}
-
-
-
-
-double FixedDistanceConstraint::targetValue() const
-{
-    return parameters().getDouble("distance");
-}
-
-
-void FixedDistanceConstraint::setTargetValue(double dist)
-{
-    parametersRef().setDouble("distance", dist);
-}
-
-
-void FixedDistanceConstraint::scaleSketch(double scaleFactor)
-{
-    auto& dp=parametersRef().get<DoubleParameter>("distance");
-    dp.set(dp() * scaleFactor);
-}
-
-
-
-
-void FixedDistanceConstraint::generateScriptCommand(
-    ConstrainedSketchScriptBuffer &script,
-    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-    int myLabel=entityLabels.at(this);
-    script.insertCommandFor(
-        myLabel,
-        type() + "( "
-            + lexical_cast<std::string>(myLabel) + ", "
-            + pointSpec(p1_, script, entityLabels)
-            + ", "
-            + pointSpec(p2_, script, entityLabels)
-            + ( bool(distanceAlong_) ?
-                   str(boost::format(", along [%g, %g, %g]")
-                       % distanceAlong_->value()(0)
-                       % distanceAlong_->value()(1)
-                       % distanceAlong_->value()(2) ) : std::string("") )
-            + ", layer " + layerName()
-            + parameterString()
-            + ")"
-        );
-}
-
-
-
-
-void FixedDistanceConstraint::addParserRule(
-    ConstrainedSketchGrammar &ruleset, MakeDefaultGeometryParametersFunction)
-{
-    namespace qi=boost::spirit::qi;
-    namespace phx=boost::phoenix;
-    ruleset.entityRules.add
-        (
-            typeName,
-            ( '('
-             > qi::int_ > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point
-             > (( ',' >> qi::lit("along") > ruleset.r_vector) | qi::attr(VectorPtr()))
-             > (( ',' >> qi::lit("layer") > ruleset.r_label) | qi::attr(std::string()))
-             > ruleset.r_parameters >
-             ')'
-             )
-                [ qi::_a = phx::bind(
-                     &FixedDistanceConstraint::create<
-                       VectorPtr, VectorPtr, VectorPtr, const std::string&, VectorPtr>,
-                     qi::_2, qi::_3,
-                     phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
-                     qi::_5, qi::_4 ),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
-                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
-            );
-}
-
-
-
-
-void FixedDistanceConstraint::operator=(const ConstrainedSketchEntity& other)
-{
-    operator=(dynamic_cast<const FixedDistanceConstraint&>(other));
-}
-
-
-
-ConstrainedSketchEntityPtr FixedDistanceConstraint::clone() const
-{
-    auto cl=FixedDistanceConstraint::create(
-        p1_, p2_, planeNormal(),
-        layerName(), distanceAlong_ );
-
-    cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
-    return cl;
-}
-
-
-
-
-void FixedDistanceConstraint::operator=(const FixedDistanceConstraint& other)
-{
-    DistanceConstraint::operator=(other);
-}
-
-
-
-
-
-
-
-defineType(LinkedDistanceConstraint);
-addToStaticFunctionTable(ConstrainedSketchEntity, LinkedDistanceConstraint, addParserRule);
-
-
-
-
-LinkedDistanceConstraint::LinkedDistanceConstraint(
-    VectorPtr p1, VectorPtr p2,
-    ScalarPtr dist,
-    VectorPtr planeNormal,
-    const std::string& layerName,
-    const std::string& distExpr,
-    VectorPtr distanceAlong )
-
-  : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong ),
-    distExpr_(distExpr), distance_(dist)
-{}
-
-
-
-
-double LinkedDistanceConstraint::targetValue() const
-{
-    return distance_->value();
-}
-
-
-
-
-void LinkedDistanceConstraint::scaleSketch(double scaleFactor)
-{}
-
-
-
-
-void LinkedDistanceConstraint::generateScriptCommand(
-    ConstrainedSketchScriptBuffer &script,
-    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-    int myLabel=entityLabels.at(this);
-    script.insertCommandFor(
-        myLabel,
-        type() + "( "
-            + lexical_cast<std::string>(myLabel) + ", "
-            + pointSpec(p1_, script, entityLabels) + ", "
-            + pointSpec(p2_, script, entityLabels) + ", "
-            + distExpr_
-            + ", layer " + layerName()
-            + parameterString()
-            + ")"
-        );
-}
-
-
-
-
-void LinkedDistanceConstraint::addParserRule(
-    ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
-{
-    if (ruleset.iscadScriptRules)
+    //auto tf= vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+    auto gdpts = vtkSmartPointer<vtkPoints>::New();
+    gdpts->SetNumberOfPoints(2);
+
+    auto gddirs = vtkSmartPointer<vtkDoubleArray>::New();
+    gddirs->SetNumberOfComponents(3);
+    gddirs->SetNumberOfTuples(2);
+    gddirs->SetName("dir");
+
+    // set data
+    gdpts->SetPoint(0, arma::mat(pmid+ofs).memptr());
+    gddirs->SetTypedTuple(
+        0, arma::mat(p1-pmid).memptr() );
+
+    gdpts->SetPoint(1, arma::mat(pmid+ofs).memptr());
+    gddirs->SetTypedTuple(
+        1, arma::mat(p2-pmid).memptr() );
+
+    auto gd = vtkSmartPointer<vtkPolyData>::New();
+    gd->SetPoints(gdpts);
+    gd->GetPointData()->AddArray(gddirs);
+    gd->GetPointData()->SetActiveVectors("dir");
+
+
+    auto gl = vtkSmartPointer<vtkGlyph3D>::New();
+    gl->SetInputData(gd); //data
+    gl->SetSourceData(a0); //arrow
+    gl->SetVectorModeToUseVector();
+    gl->SetScaleModeToScaleByVector();
+    gl->SetInputArrayToProcess(
+        1, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "dir");
+
+
+
+    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    //mapper->SetInputData(arr);
+    mapper->SetInputConnection(gl->GetOutputPort());
+    mapper->Update();
+    auto arrAct = vtkSmartPointer<vtkActor>::New();
+    arrAct->SetMapper( mapper );
+    arrAct->GetProperty()->SetColor(0.5, 0.5, 0.5);
+
+    auto hl1 = vtkSmartPointer<vtkLineSource>::New();
+    hl1->SetPoint1(p1.memptr());
+    hl1->SetPoint2(arma::mat(p1+ofs).memptr());
+    auto mapper1 = vtkSmartPointer<vtkPolyDataMapper>::New();
+    //mapper->SetInputData(arr);
+    mapper1->SetInputConnection(hl1->GetOutputPort());
+    mapper1->Update();
+    auto arrAct1 = vtkSmartPointer<vtkActor>::New();
+    arrAct1->SetMapper( mapper1 );
+    arrAct1->GetProperty()->SetColor(0.5, 0.5, 0.5);
+
+    auto hl2 = vtkSmartPointer<vtkLineSource>::New();
+    hl2->SetPoint1(dist->p2_->value().memptr());
+    hl2->SetPoint2(arma::mat(p2+ofs).memptr());
+    auto mapper2 = vtkSmartPointer<vtkPolyDataMapper>::New();
+    //mapper->SetInputData(arr);
+    mapper2->SetInputConnection(hl2->GetOutputPort());
+    mapper2->Update();
+    auto arrAct2 = vtkSmartPointer<vtkActor>::New();
+    arrAct2->SetMapper( mapper2 );
+    arrAct2->GetProperty()->SetColor(0.5, 0.5, 0.5);
+
+
+    auto lblActor = vtkSmartPointer<vtkActor2D>::New();
+
+    if (displayCoords)
     {
-        typedef
-            boost::spirit::qi::rule<
-                std::string::iterator,
-                ConstrainedSketchGrammar::ParserRuleResult(),
-                insight::cad::parser::skip_grammar,
-                boost::spirit::qi::locals<
-                    std::shared_ptr<ConstrainedSketchEntity>,
-                    insight::cad::ScalarPtr >
-            > ExtParserRule;
+        int nl=displayCoords?3:1;
+        auto points = vtkSmartPointer<vtkPoints>::New();
+        points->SetNumberOfPoints(nl);
+        auto labels = vtkSmartPointer<vtkStringArray>::New();
+        labels->SetName("labels");
+        labels->SetNumberOfValues(nl);
+        auto sizes = vtkSmartPointer<vtkIntArray>::New();
+        sizes->SetName("sizes");
+        sizes->SetNumberOfValues(nl);
 
-        namespace qi=boost::spirit::qi;
-        namespace phx=boost::phoenix;
+        int il=0;
+        points->SetPoint(il, arma::mat(pmid+ofs).memptr());
+        labels->SetValue(il, str(boost::format("L=%g") % L ).c_str());
+        sizes->SetValue(il, 6);
+        il++;
 
-        auto &rule = ruleset.addAdditionalRule(
-            std::make_shared<ExtParserRule>(
-            ( '('
-             > qi::int_ > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point > ','
-             > qi::as_string[
-                 qi::raw[ruleset.iscadScriptRules->r_scalarExpression[phx::ref(qi::_b) = qi::_1]]
-              ]
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-             > ruleset.r_parameters >
-             ')'  )
-                [ qi::_a = phx::bind(
-                     &LinkedDistanceConstraint::create<
-                         VectorPtr, VectorPtr,
-                         ScalarPtr, VectorPtr,
-                         const std::string&, const std::string&>,
-                     qi::_2, qi::_3, qi::_b,
-                     phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
-                     qi::_5, qi::_4 ),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet,
-                           qi::_a, qi::_6, boost::filesystem::path(".")),
-                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(
-                     qi::_1, qi::_a ) ]
-                )
-        );
+        if (displayCoords)
+        {
+            points->SetPoint(il, arma::mat(p1+ofs).memptr());
+            labels->SetValue(il, str(boost::format("[%g %g %g]") % p1(0)%p1(1)%p1(2) ).c_str());
+            sizes->SetValue(il, 4);
+            il++;
 
-        ruleset.entityRules.add( typeName, rule );
+            points->SetPoint(il, arma::mat(p2+ofs).memptr());
+            labels->SetValue(il, str(boost::format("[%g %g %g]") % p2(0)%p2(1)%p2(2) ).c_str());
+            sizes->SetValue(il, 4);
+            il++;
+        }
+
+        auto pointSource = vtkSmartPointer<vtkPolyData>::New();
+        pointSource->SetPoints(points);
+        pointSource->GetPointData()->AddArray(labels);
+        pointSource->GetPointData()->AddArray(sizes);
+
+        auto pts2Lbl = vtkSmartPointer<vtkPointSetToLabelHierarchy>::New();
+        pts2Lbl->SetInputData(pointSource);
+        pts2Lbl->SetLabelArrayName("labels");
+        pts2Lbl->SetPriorityArrayName("sizes");
+        pts2Lbl->GetTextProperty()->SetColor(0,0,0);
+        pts2Lbl->Update();
+
+        // Create a mapper and actor for the labels.
+        auto lblMap = vtkSmartPointer<vtkLabelPlacementMapper>::New();
+        lblMap->SetInputConnection(
+            pts2Lbl->GetOutputPort());
+
+        lblActor->SetMapper(lblMap);
     }
+    else
+    {
+        auto caption = vtkSmartPointer<vtkCaptionActor2D>::New();
+        caption->BorderOff();
+        caption->SetCaption(str(boost::format("%g") % L ).c_str());
+        caption->SetAttachmentPoint( arma::mat(pmid+ofs).memptr() );
+        caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
+        caption->GetCaptionTextProperty()->SetColor(0,0,0);
+        caption->GetCaptionTextProperty()->SetJustificationToCentered();
+        caption->GetCaptionTextProperty()->SetFontSize(10);
+        caption->GetCaptionTextProperty()->FrameOff();
+        caption->GetCaptionTextProperty()->ShadowOff();
+        caption->GetCaptionTextProperty()->BoldOff();
+
+        lblActor=caption;
+    }
+
+    arrAct->GetProperty()->SetLineWidth(0.5);
+    arrAct1->GetProperty()->SetLineWidth(0.5);
+    arrAct2->GetProperty()->SetLineWidth(0.5);
+
+    return { lblActor, arrAct, arrAct1, arrAct2 };
 }
 
-
-
-
-void LinkedDistanceConstraint::operator=(const ConstrainedSketchEntity& other)
+std::vector<vtkSmartPointer<vtkProp> >
+Distance::createVTKRepr() const
 {
-    operator=(dynamic_cast<const LinkedDistanceConstraint&>(other));
+    return createVTKRepr(true);
 }
-
-ConstrainedSketchEntityPtr LinkedDistanceConstraint::clone() const
-{
-    auto cl=LinkedDistanceConstraint::create(
-        p1_, p2_,
-        distance_, planeNormal(),
-        layerName(),
-        distExpr_,
-        distanceAlong_ );
-
-    cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
-    return cl;
-}
-
-
-
-
-void LinkedDistanceConstraint::operator=(const LinkedDistanceConstraint& other)
-{
-    DistanceConstraint::operator=(other);
-    distance_=other.distance_;
-}
-
 
 }
 }

@@ -48,8 +48,8 @@ class CircularPattern
     CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     CircularPattern(FeaturePtr m1, FeaturePtr otherpat);
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("CircularPattern");

@@ -18,6 +18,7 @@ public:
 #include "suctioninletbc__SuctionInletBC__Parameters.h"
 /*
 PARAMETERSET>>> SuctionInletBC Parameters
+inherits BoundaryCondition::Parameters
 
 pressure = double 0.0 "Total pressure at boundary"
 rho = double 1025.0 "Density at boundary"
@@ -43,11 +44,9 @@ inletBehaviour = selectablesubset {{
 
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-    ParameterSet ps_;
 
 public:
     declareType ( "SuctionInletBC" );
@@ -56,7 +55,7 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet&ps = Parameters::makeDefault()
+        ParameterSetInput ip = Parameters()
     );
 
     void addIntoFieldDictionaries ( OFdicts& dictionaries ) const override;

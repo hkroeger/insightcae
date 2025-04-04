@@ -36,33 +36,87 @@ public:
 
 
 
+template<class PropertyLibraryEntry>
+class MapPropertyLibrary
+    : public PropertyLibraryBase,
+      public std::map<std::string, std::shared_ptr<PropertyLibraryEntry> >
+{
+public:
+    typedef PropertyLibraryEntry value_type;
+
+public:
+    MapPropertyLibrary(const std::string& libraryName = "")
+        : PropertyLibraryBase(libraryName)
+    {}
+
+public:
+    std::vector<std::string> entryList() const override
+    {
+        std::vector<std::string> entries;
+        for (const auto& e: *this)
+        {
+            entries.push_back(e.first);
+        }
+        return entries;
+    }
+
+    const value_type& lookup(const std::string& label) const
+    {
+        auto i = this->find(label);
+        if (i == this->end())
+        {
+            throw insight::Exception(
+                "There is no entry "+label+" in the property library!\n"
+                                               "Known entries: "+boost::join(entryList(), " ") );
+        }
+        return *i->second;
+    }
+
+    std::string labelOf(const PropertyLibraryEntry& entry) const
+    {
+        std::string label;
+
+        auto i = std::find_if(
+            this->begin(), this->end(),
+            [&](const std::pair<std::string, std::shared_ptr<PropertyLibraryEntry> >& v)
+            {
+                return v.second.get()==&entry;
+            }
+            );
+        if (i!=this->end()) label=i->first;
+
+        return label;
+    }
+};
+
+
+
 
 template<class PropertyLibraryEntry, const boost::filesystem::path* subDir = nullptr>
 class PropertyLibrary
-      : public PropertyLibraryBase,
-        public std::map<std::string, std::shared_ptr<PropertyLibraryEntry> >
+    : public MapPropertyLibrary<PropertyLibraryEntry>
 {
 public:
     typedef PropertyLibraryEntry value_type;
 
 public:
     PropertyLibrary(const std::string& libraryName = "")
-        : PropertyLibraryBase(libraryName)
+        : MapPropertyLibrary<PropertyLibraryEntry>(libraryName)
     {
-        CurrentExceptionContext ex("reading property library %s", libraryName_.c_str());
+        CurrentExceptionContext ex("reading property library %s", this->libraryName_.c_str());
 
-        if (libraryName_.empty())
+        if (this->libraryName_.empty())
         {
-            libraryName_ = value_type::typeName;
+            this->libraryName_ = value_type::typeName;
             insight::assertion(
-                        !libraryName_.empty(),
+                        !this->libraryName_.empty(),
                         "the property library entry must not have empty type names!" );
         }
 
         boost::filesystem::path subDirectory;
         if (subDir) subDirectory = *subDir;
 
-        auto sp=subDirectory / (libraryName_+"Library.xml");
+        auto sp=subDirectory / (this->libraryName_+"Library.xml");
 
         bool found;
         auto fp =  SharedPathList::global().getSharedFilePath(
@@ -115,7 +169,7 @@ public:
                         {
                             insight::Warning(
                                         "Replacing previously read entry "+label
-                                        + " in library "+libraryName_
+                                        + " in library "+libraryName
                                         + " with that from "+fp.string() );
                         }
 
@@ -142,44 +196,6 @@ public:
     }
 
 public:
-    std::vector<std::string> entryList() const override
-    {
-        std::vector<std::string> entries;
-        for (const auto& e: *this)
-        {
-            entries.push_back(e.first);
-        }
-        return entries;
-    }
-
-    const value_type& lookup(const std::string& label) const
-    {
-        auto i = this->find(label);
-        if (i == this->end())
-        {
-            throw insight::Exception(
-                        "There is no entry "+label+" in the property library!\n"
-                        "Known entries: "+boost::join(entryList(), " ") );
-        }
-        return *i->second;
-    }
-
-    std::string labelOf(const PropertyLibraryEntry& entry) const
-    {
-        std::string label;
-
-        auto i = std::find_if(
-                    this->begin(), this->end(),
-                    [&](const std::pair<std::string, std::shared_ptr<PropertyLibraryEntry> >& v)
-        {
-            return v.second.get()==&entry;
-        }
-        );
-        if (i!=this->end()) label=i->first;
-
-        return label;
-    }
-
 
     static const PropertyLibrary& library()
     {

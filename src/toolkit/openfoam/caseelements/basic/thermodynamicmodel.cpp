@@ -5,10 +5,10 @@ namespace insight
 
 
 
-thermodynamicModel::thermodynamicModel(OpenFOAMCase& c, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, "thermodynamicModel", ps)
-{
-}
+thermodynamicModel::thermodynamicModel(
+    OpenFOAMCase& c, ParameterSetInput ip)
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
+{}
 
 
 

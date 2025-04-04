@@ -36,8 +36,8 @@ class Fillet
 
     Fillet ( FeatureSetPtr edges, ScalarPtr r );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Fillet" );

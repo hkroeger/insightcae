@@ -69,23 +69,35 @@ void ISCADParser::createSelectionExpressions()
                ( (lit("vertices")|lit("vertex"))
                  > (
                   ( lit("at") > r_vectorExpression
-                  ) [ _val = phx::bind(&makeVertexFeatureSet,
-                        qi::_a, std::string("dist(loc,%m0)<1e-6"),
+                  ) [ _val = phx::bind(
+                        &DeferredFeatureSet::create
+                            <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>                                                                      ,
+                        qi::_a, Vertex, std::string("dist(loc,%m0)<1e-6"),
                         phx::construct<FeatureSetParserArgList>(1, qi::_1) ) ]
                   |
                   ( '('
                    > r_string
                    > *( ',' > (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
                    > ')'
-                  ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex, qi::_1, qi::_2)) ]
+                  ) [ _val = phx::bind(
+                        &DeferredFeatureSet::create
+                            <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>,
+                            qi::_a, insight::cad::Vertex, qi::_1, qi::_2) ]
                  )
                )
                |
                ( lit("allvertices")
-               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex)) ]
+               ) [ _val = phx::bind(
+                        &DeferredFeatureSet::create
+                            <ConstFeaturePtr,EntityType>,
+                            qi::_a, insight::cad::Vertex ) ]
                |
                ( lit("vid") > '=' > '(' > ( qi::int_ % ',' ) > ')'
-               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Vertex, qi::_1)) ]
+               ) [ _val = phx::construct<FeatureSetPtr>(
+                        phx::new_<FeatureSet>(
+                            qi::_a, insight::cad::Vertex, qi::_1 )) ]
+               |
+               qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Vertex)) [ qi::_val = qi::_1 ]
             )
         )
         >>
@@ -96,7 +108,10 @@ void ISCADParser::createSelectionExpressions()
             > r_string
             > *( ',' > (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
             > ')'
-        ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
+        ) [ _val = phx::bind(
+                &DeferredFeatureSet::create
+                    <ConstFeatureSetPtr,const std::string&,const FeatureSetParserArgList&>,
+                    qi::_val, qi::_1, qi::_2) ]
         ;
     r_vertexFeaturesExpression.name("vertex selection expression");
 
@@ -109,23 +124,34 @@ void ISCADParser::createSelectionExpressions()
                 ( (lit("edges")|lit("edge"))
                 > (
                    ( lit("from") > r_solidmodel_expression
-                   ) [ _val = phx::bind(&makeEdgeFeatureSet,
-                          qi::_a, std::string("isIdentical(%0)"),
-                          phx::construct<FeatureSetParserArgList>(1,
-                                phx::bind( &Feature::allEdges, qi::_1) ) ) ]
+                   ) [ _val = phx::bind(
+                          &DeferredFeatureSet::create
+                            <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>                                                                      ,
+                            qi::_a, Edge, std::string("isIdentical(%0)"),
+                            phx::construct<FeatureSetParserArgList>(1,
+                                phx::bind( &Feature::allEdges, qi::_1)) ) ]
                    |
                    ( '(' > r_string
                     > *( ',' > ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
                     > ')'
-                    ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge, qi::_1, qi::_2)) ]
+                    ) [ _val = phx::bind(
+                            &DeferredFeatureSet::create
+                            <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>,
+                            qi::_a, insight::cad::Edge, qi::_1, qi::_2) ]
                   )
                 )
                 |
                 ( lit("eid") > '=' > '(' > ( qi::int_ % ',' ) > ')'
-                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge, qi::_1)) ]
+                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(
+                    qi::_a, insight::cad::Edge, qi::_1)) ]
                 |
                 lit("alledges")
-                 [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Edge)) ]
+                 [ _val = phx::bind(
+                       &DeferredFeatureSet::create
+                       <ConstFeaturePtr,EntityType>,
+                       qi::_a, insight::cad::Edge ) ]
+                |
+                qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Edge)) [ qi::_val = qi::_1 ]
               )
         )
         >>
@@ -137,7 +163,10 @@ void ISCADParser::createSelectionExpressions()
             > *( ',' > ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
             > ')'
         )
-        [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
+        [ _val = phx::bind(
+               &DeferredFeatureSet::create
+               <ConstFeatureSetPtr,const std::string&,const FeatureSetParserArgList&>,
+               qi::_val, qi::_1, qi::_2) ]
         ;
     r_edgeFeaturesExpression.name("edge selection expression");
 
@@ -150,16 +179,22 @@ void ISCADParser::createSelectionExpressions()
                  ( (lit("faces")|lit("face"))
                   > (
                       ( lit("from") > r_solidmodel_expression
-                       ) [ _val = phx::bind(&makeFaceFeatureSet,
-                            qi::_a, std::string("isIdentical(%0)"),
-                            phx::construct<FeatureSetParserArgList>(1,
+                       ) [ _val =
+                          phx::bind(
+                              &DeferredFeatureSet::create
+                              <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>                                                                      ,
+                              qi::_a, Face, std::string("isIdentical(%0)"),
+                              phx::construct<FeatureSetParserArgList>(1,
                                 phx::bind( &Feature::allFaces, qi::_1) ) ) ]
                       |
                       (
                         '(' > r_string
                        > *( ',' > (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
                        > ')' )
-                       [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face, qi::_1, qi::_2)) ]
+                       [ _val = phx::bind(
+                               &DeferredFeatureSet::create
+                               <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>,
+                               qi::_a, insight::cad::Face, qi::_1, qi::_2)  ]
                     )
                )
                |
@@ -167,7 +202,12 @@ void ISCADParser::createSelectionExpressions()
                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face, qi::_1)) ]
                |
                ( lit("allfaces")
-               ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face)) ]
+               ) [ _val = phx::bind(
+                              &DeferredFeatureSet::create
+                              <ConstFeaturePtr,EntityType>,
+                              qi::_a, insight::cad::Face ) ]
+               |
+                qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Face)) [ qi::_val = qi::_1 ]
             )
         )
         >>
@@ -179,7 +219,10 @@ void ISCADParser::createSelectionExpressions()
             > *( ',' > (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
             > ')'
         )
-        [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
+        [ _val = phx::bind(
+                   &DeferredFeatureSet::create
+                   <ConstFeatureSetPtr,const std::string&,const FeatureSetParserArgList&>,
+                   qi::_val, qi::_1, qi::_2) ]
         ;
     r_faceFeaturesExpression.name("face selection expression");
 
@@ -194,14 +237,22 @@ void ISCADParser::createSelectionExpressions()
                > r_string
                > *( ',' > (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
                > ')'
-              ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1, qi::_2)) ]
+              ) [ _val = phx::bind(
+                       &DeferredFeatureSet::create
+                       <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>,
+                       qi::_a, insight::cad::Solid, qi::_1, qi::_2) ]
               |
               ( lit("allsolids")
-              ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid)) ]
+              ) [ _val = phx::bind(
+                        &DeferredFeatureSet::create
+                        <ConstFeaturePtr,EntityType>,
+                        qi::_a, insight::cad::Solid ) ]
               |
               ( lit("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'
               )
               [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1)) ]
+              |
+               qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Solid)) [ qi::_val = qi::_1 ]
             )
         )
         >>
@@ -213,7 +264,10 @@ void ISCADParser::createSelectionExpressions()
             > *( ',' > (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
             > ')'
         )
-        [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
+        [ _val = _val = phx::bind(
+                &DeferredFeatureSet::create
+                <ConstFeatureSetPtr,const std::string&,const FeatureSetParserArgList&>,
+                qi::_val, qi::_1, qi::_2) ]
         ;
     r_solidFeaturesExpression.name("solid selection expression");
 }

@@ -40,8 +40,8 @@ class Cutaway
     Cutaway ( FeaturePtr model, VectorPtr p0, VectorPtr n );
     Cutaway ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Cutaway" );

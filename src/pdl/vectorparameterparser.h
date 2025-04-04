@@ -1,25 +1,20 @@
 #ifndef VECTORPARAMETERPARSER_H
 #define VECTORPARAMETERPARSER_H
 
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
 struct VectorParameterParser
+: public ParameterGenerator
 {
-  struct Data
-  : public ParserDataBase
-  {
     arma::mat value;
 
-    Data(const arma::mat& v, const std::string& d);
+    VectorParameterParser(const arma::mat& v, const std::string& d);
 
-    void cppAddHeader(std::set<std::string>& headers) const override;
+    void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
-    std::string cppType(const std::string&) const override;
-
-    std::string cppParamType(const std::string& ) const override;
-
-    std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
-  };
+    std::string cppInsightType() const override;
+    std::string cppStaticType() const override;
+    std::string cppDefaultValueExpression() const override;
 
 
   declareType("vector");
@@ -32,8 +27,9 @@ struct VectorParameterParser
       std::make_shared<PDLParserRuleset::ParameterDataRule>(
 
         ( "(" >> *qi::double_ >> ")" >> ruleset.r_description_string )
-          [ qi::_val = phx::construct<ParserDataBase::Ptr>(
-             phx::new_<Data>(vec2mat_(qi::_1), qi::_2)
+          [ qi::_val = phx::construct<ParameterGeneratorPtr>(
+             phx::new_<VectorParameterParser>(
+                           vec2mat_(qi::_1), qi::_2)
             ) ]
 
       )

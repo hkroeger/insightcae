@@ -156,9 +156,9 @@ void ResultElement::readFromNode ( const string& name, rapidxml::xml_node< char 
 }
 
 
-ParameterPtr ResultElement::convertIntoParameter() const
+std::unique_ptr<Parameter> ResultElement::convertIntoParameter() const
 {
-    return ParameterPtr();
+    return nullptr;
 }
 
 

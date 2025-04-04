@@ -54,6 +54,8 @@ bool operator<(const arma::mat& v1, const arma::mat& v2);
 
 }
 
+class vtkMatrix4x4;
+
 namespace insight 
 {
 
@@ -193,6 +195,16 @@ template<class T>
 T toVec(const arma::mat& v)
 {
   return T(v(0), v(1), v(2));
+}
+
+template<class T>
+T toMat(const arma::mat& m)
+{
+    return T(
+        m(0,0), m(0,1), m(0,2),
+        m(1,0), m(1,1), m(1,2),
+        m(2,0), m(2,1), m(2,2)
+    );
 }
 
 double* toArray(const arma::mat& v); // !non-const! return value to match VTK functions
@@ -383,6 +395,9 @@ public:
    * returns a single y-value from column col
    */
   double y(double x, int col=0, OutOfBounds* outOfBounds=NULL) const;
+
+  double maxY(int col=0) const;
+
   /**
    * returns a single dy/dx-value from column col
    */
@@ -516,53 +531,6 @@ double integrate_indef(F f, double a=0)
 }
 
 
-
-
-struct CoordinateSystem
-{
-  arma::mat origin, ex, ey, ez;
-
-  CoordinateSystem();
-
-  CoordinateSystem(
-          const arma::mat& p0,
-          const arma::mat& ex );
-
-  CoordinateSystem(
-          const arma::mat& p0,
-          const arma::mat& ex,
-          const arma::mat& ez );
-};
-
-
-
-
-/**
- * @brief The View class
- * Represents the orientation of a view.
- */
-struct View : public CoordinateSystem
-{
-  double cameraDistance;
-  std::string title;
-
-  View(
-      const arma::mat& ctr,
-      const arma::mat& cameraOffset,
-      const arma::mat& up,
-      const std::string& title );
-
-  inline arma::mat cameraLocation() const { return origin + cameraDistance*ex; }
-  inline arma::mat focalPoint() const { return origin; }
-  inline arma::mat upwardDirection() const { return ez; }
-};
-
-
-
-std::map<std::string, View>
-generateStandardViews(
-    const CoordinateSystem& objectOrientation,
-    double cameraDistance );
 
 
 double stabilize(double value, double nonZeroThreshold);

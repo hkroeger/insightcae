@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -71,8 +72,8 @@ void Revolution::build()
 {
     if ( !centered_ ) {
         BRepPrimAPI_MakeRevol mkr ( *sk_, gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( to_Vec ( axis_->value() ) ) ), angle_->value(), centered_ );
-        providedSubshapes_["frontFace"]=Feature::create ( mkr.FirstShape() );
-        providedSubshapes_["backFace"]=Feature::create ( mkr.LastShape() );
+        providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
+        providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
         setShape ( mkr.Shape() );
     } else {
         gp_Trsf trsf;
@@ -84,8 +85,8 @@ void Revolution::build()
             BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
             gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
         );
-        providedSubshapes_["frontFace"]=Feature::create ( mkr.FirstShape() );
-        providedSubshapes_["backFace"]=Feature::create ( mkr.LastShape() );
+        providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
+        providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
         setShape ( mkr.Shape() );
     }
 

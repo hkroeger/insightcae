@@ -42,8 +42,8 @@ class FreeCADModel
 
     FreeCADModel ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "FreeCADModel" );

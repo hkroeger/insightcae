@@ -20,7 +20,7 @@ RemoteDirSelector::RemoteDirSelector(QWidget *parent, insight::RemoteServerPtr s
 {
   ui->setupUi(this);
 
-  fs_model_ = new IQRemoteFolderModel(this, server, server->genericServerConfig()->defaultDirectory_);
+  fs_model_ = new IQRemoteFolderModel(this, server, server->config().defaultDirectory_);
   ui->directory->setModel(fs_model_);
 
   connect(ui->newdir, &QPushButton::clicked,

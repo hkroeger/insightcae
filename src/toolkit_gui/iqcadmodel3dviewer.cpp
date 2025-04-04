@@ -4,6 +4,10 @@
 
 #include <QColorDialog>
 #include <QDockWidget>
+#include <QStatusBar>
+#include <QResizeEvent>
+#include <QLayout>
+#include <qnamespace.h>
 
 uint
 IQCADModel3DViewer::QPersistentModelIndexHash::operator()
@@ -13,16 +17,19 @@ IQCADModel3DViewer::QPersistentModelIndexHash::operator()
 }
 
 
+
 IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
     : /*QWidget(parent),*/
       QMainWindow(parent, Qt::Widget), // flag important
       model_(nullptr)
 {
-    dockWidget_ = new QDockWidget("Properties", this);
-    dockWidget_->setMinimumWidth(150);
-    commonToolBox_=new QToolBox(dockWidget_);
-    addDockWidget(Qt::RightDockWidgetArea, dockWidget_);
-    dockWidget_->setWidget(commonToolBox_);
+    userMessage_ = new QLabel;
+    userMessage_->setAlignment(Qt::AlignLeft);
+    currentActionDesc_ = new QLabel;
+    currentActionDesc_->setAlignment(Qt::AlignRight);
+
+    statusBar()->addPermanentWidget(userMessage_, 90);
+    statusBar()->addPermanentWidget(currentActionDesc_, 10);
 }
 
 void IQCADModel3DViewer::setModel(QAbstractItemModel *model)
@@ -40,6 +47,14 @@ IQCADItemModel *IQCADModel3DViewer::cadmodel() const
     return dynamic_cast<IQCADItemModel*>(model_);
 }
 
+void IQCADModel3DViewer::addToolBox(QWidget *w, const QString &title)
+{
+    auto dw=new QDockWidget(title);
+    dw->setWidget(w);
+    connect(w, &QObject::destroyed, dw, &QWidget::deleteLater);
+    addDockWidget(Qt::RightDockWidgetArea, dw);
+}
+
 void IQCADModel3DViewer::connectNotepad(QTextEdit *notepad) const
 {
     connect(
@@ -52,17 +67,18 @@ void IQCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
 {
 }
 
-bool IQCADModel3DViewer::onLeftButtonDown(
-    Qt::KeyboardModifiers nFlags,
-    const QPoint point ) {return false;}
+// bool IQCADModel3DViewer::onLeftButtonDown(
+//     Qt::KeyboardModifiers nFlags,
+//     const QPoint point, bool afterDoubleClick ) {return false;}
 
-bool IQCADModel3DViewer::onKeyPress(
-    Qt::KeyboardModifiers modifiers,
-    int key ) {return false;}
+// bool IQCADModel3DViewer::onKeyPress(
+//     Qt::KeyboardModifiers modifiers,
+//     int key ) {return false;}
 
-bool IQCADModel3DViewer::onLeftButtonUp(
-    Qt::KeyboardModifiers nFlags,
-    const QPoint point ) {return false;}
+// bool IQCADModel3DViewer::onLeftButtonUp(
+//     Qt::KeyboardModifiers nFlags,
+//     const QPoint point,
+//     bool lastClickWasDoubleClick ) {return false;}
 
 void IQCADModel3DViewer::toggleClipXY()
 {
@@ -132,5 +148,16 @@ void IQCADModel3DViewer::selectBackgroundColor()
     {
         setBackgroundColor(aRetColor);
     }
+}
+
+void IQCADModel3DViewer::showCurrentActionDescription(const QString& desc)
+{
+    currentActionDesc_->setText(desc);
+    userMessage_->setText(QString());
+}
+
+void IQCADModel3DViewer::showUserPrompt(const QString &text)
+{
+    userMessage_->setText(text);
 }
 

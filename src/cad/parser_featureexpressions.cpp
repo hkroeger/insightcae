@@ -120,7 +120,7 @@ void ISCADParser::createFeatureExpressions()
 
     r_solidmodel_primary =
         ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) )
-            [ qi::_val = phx::bind(&Feature::create<FeatureSetPtr>, qi::_1) ]
+            [ qi::_val = phx::bind(&Import::create<FeatureSetPtr>, qi::_1) ]
 
         |
 

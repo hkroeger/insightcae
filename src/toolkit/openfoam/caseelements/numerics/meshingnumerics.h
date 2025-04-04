@@ -15,19 +15,16 @@ public:
 
 /*
 PARAMETERSET>>> MeshingNumerics Parameters
-
 inherits decomposeParDict::Parameters
 
+createGetters
 <<<PARAMETERSET
 */
-
-protected:
-    Parameters p_;
 
 public:
     declareType ( "MeshingNumerics" );
 
-    MeshingNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    MeshingNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
 };

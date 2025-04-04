@@ -74,6 +74,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="saveFinalBtn">
+          <property name="text">
+           <string>Save final values...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -105,7 +112,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>28</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

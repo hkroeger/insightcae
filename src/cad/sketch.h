@@ -21,6 +21,7 @@
 #ifndef INSIGHT_CAD_SKETCH_H
 #define INSIGHT_CAD_SKETCH_H
 
+#include "base/cppextensions.h"
 #include "base/linearalgebra.h"
 #include "occinclude.h"
 
@@ -31,6 +32,7 @@
 #include "dxfreader.h"
 
 #include "base/boost_include.h"
+#include "base/parameter.h"
 
 
 
@@ -65,7 +67,6 @@ class Sketch
 public:
   declareType("Sketch");
   CREATE_FUNCTION(Sketch);
-
   
   void operator=(const Sketch& o);
   

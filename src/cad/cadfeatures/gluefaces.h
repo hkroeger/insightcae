@@ -31,8 +31,8 @@ class GlueFaces
   FeaturePtr feat_;
   ScalarPtr tol_;
   
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
   GlueFaces(FeaturePtr faces, ScalarPtr tol=scalarconst(1e-7));
 

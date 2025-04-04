@@ -42,15 +42,14 @@ UMax = double 1000. "Upper clipping for velocity"
 
 setup = selection ( accurate medium stable ) accurate "Select accuratefor second order schemes. In case of stability problems revert to stable."
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "unsteadyCompressibleNumerics" );
-    unsteadyCompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    unsteadyCompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

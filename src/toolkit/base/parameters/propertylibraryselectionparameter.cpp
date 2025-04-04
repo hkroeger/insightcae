@@ -1,5 +1,7 @@
 #include "propertylibraryselectionparameter.h"
 
+#include "base/translations.h"
+
 namespace insight {
 
 
@@ -16,7 +18,7 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         bool isExpert,
         bool isNecessary,
         int order )
-    : StringParameter ( description, isHidden, isExpert, isNecessary, order ),
+    : StringParameter( description, isHidden, isExpert, isNecessary, order ),
       propertyLibrary_(nullptr)
 {}
 
@@ -30,12 +32,14 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
     bool isExpert,
     bool isNecessary,
     int order )
-    : StringParameter ( "", description, isHidden, isExpert, isNecessary, order ),
+    : StringParameter( "", description, isHidden, isExpert, isNecessary, order ),
     propertyLibrary_ ( &lib )
 {
     auto el = propertyLibrary_->entryList();
     if (el.size()>0)
-        setSelection(el.front());
+    {
+        StringParameter::set(el.front());
+    }
 }
 
 
@@ -49,10 +53,10 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
         bool isExpert,
         bool isNecessary,
         int order )
-    : StringParameter ( value, description, isHidden, isExpert, isNecessary, order ),
+    : StringParameter( value, description, isHidden, isExpert, isNecessary, order ),
       propertyLibrary_ ( &lib )
 {
-    setSelection(value);
+    StringParameter::set(value);
 }
 
 
@@ -78,7 +82,8 @@ const PropertyLibraryBase *PropertyLibrarySelectionParameter::propertyLibrary() 
 
 
 
-std::vector<std::string> PropertyLibrarySelectionParameter::items() const
+
+std::vector<std::string> PropertyLibrarySelectionParameter::selectionKeys() const
 {
     if (propertyLibrary_)
         return propertyLibrary_->entryList();
@@ -89,21 +94,13 @@ std::vector<std::string> PropertyLibrarySelectionParameter::items() const
 
 
 
-bool PropertyLibrarySelectionParameter::contains(const std::string &value) const
-{
-    auto l = items();
-    return ( std::find(l.begin(), l.end(), value) != l.end() );
-}
-
-
-
-
 void PropertyLibrarySelectionParameter::setSelection ( const std::string& sel )
 {
     insight::assertion(
         contains(sel),
-        "property library does not contain selection "+sel+"!\n"
-        " Available values are: "+boost::join(items(), " ") );
+        _("property library does not contain selection \"%s\"!\n"
+        " Available values are: %s"),
+        sel.c_str(), boost::join(selectionKeys(), " ").c_str() );
 
     StringParameter::set(sel);
 }
@@ -114,6 +111,18 @@ void PropertyLibrarySelectionParameter::setSelection ( const std::string& sel )
 const std::string& PropertyLibrarySelectionParameter::selection() const
 {
     return value_;
+}
+
+
+
+
+std::string PropertyLibrarySelectionParameter::iconPathForKey(const std::string &key) const
+{
+    if (auto *pl = propertyLibrary())
+    {
+        return pl->icon(key);
+    }
+    return std::string();
 }
 
 
@@ -133,26 +142,29 @@ void PropertyLibrarySelectionParameter::readFromNode(
 
 
 
-Parameter* PropertyLibrarySelectionParameter::clone() const
+std::unique_ptr<Parameter> PropertyLibrarySelectionParameter::clone(bool init) const
 {
+    std::unique_ptr<Parameter> p;
     if (propertyLibrary_)
     {
-        return new PropertyLibrarySelectionParameter(
-                value_,
-                *propertyLibrary_,
-                description_.simpleLatex(),
-                isHidden_, isExpert_, isNecessary_,
-                order_
-                );
+        p=std::make_unique<PropertyLibrarySelectionParameter>(
+            value_,
+            *propertyLibrary_,
+            description().simpleLatex(),
+            isHidden(), isExpert(), isNecessary(),
+            order()
+            );
     }
     else
     {
-        return new PropertyLibrarySelectionParameter(
-                description_.simpleLatex(),
-                isHidden_, isExpert_, isNecessary_,
-                order_
-                );
+        p=std::make_unique<PropertyLibrarySelectionParameter>(
+            description().simpleLatex(),
+            isHidden(), isExpert(), isNecessary(),
+            order()
+            );
     }
+    if (init) p->initialize();
+    return p;
 }
 
 

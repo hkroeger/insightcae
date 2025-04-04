@@ -30,6 +30,22 @@
 namespace insight {
 
 
+const boost::filesystem::path libSubDir = "brake";
+
+class BrakePad
+{
+public:
+    declareType("brakePad");
+
+    BrakePad(rapidxml::xml_node<>& padNode)
+    {}
+};
+
+defineType(BrakePad);
+
+typedef PropertyLibrary<BrakePad, &libSubDir> BrakePads;
+
+
 class TestPDL
 {
 
@@ -53,6 +69,31 @@ trsf = spatialTransformation (0 0 0) ( 0 0 0) 1 ""
 mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
 
 turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
+
+sketch = cadsketch
+        ""
+        ""
+        ""
+        "contour to extrude"
+
+geometry = set {
+      walls = labeledarray "wall_%d" [ set {
+        file = path "" 	"Part of the geometry, excluding in- and outlet. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
+      } ] *1 "Pieces of geometry. All pieces together must completely resemble the perimeter of the internal channel."
+      inlet = path "" "Triangulated geometry of inlet alone. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
+      outlet = path "" "Triangulated geometry of outlet alone. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
+
+    model = librarySelection "insight::BrakePads" RH250 "Select the model" *necessary
+
+} "Specification of geometry"
+
+
+wallBCs = labeledarray keysFrom "geometry/walls" [ selectablesubset {{
+     adiabatic set {}
+     fixedTemperature set {
+      wallTemperature = double 300 "[K] Fixed temperature of the walls"
+     }
+}} adiabatic "" ] *0 ""
 
 run = set {
 
@@ -115,6 +156,11 @@ run = set {
 
 } "Solver parameters"
 
+operation = set {
+
+  DICOMdata = directory "" "Directory with raw data from scan." *necessary
+
+}
 <<<PARAMETERSET
 */
 

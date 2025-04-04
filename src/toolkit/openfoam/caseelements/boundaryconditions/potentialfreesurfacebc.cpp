@@ -14,9 +14,12 @@ PotentialFreeSurfaceBC::PotentialFreeSurfaceBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps
+  ParameterSetInput ip
 )
-: BoundaryCondition(c, patchName, boundaryDict, ps)
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>() )
 {
  BCtype_="patch";
 }

@@ -18,10 +18,13 @@
  */
 
 #include "cutaway.h"
+#include "cadparameters/constantvector.h"
+#include "cadfeatures/extrusion.h"
 #include "quad.h"
 #include "datum.h"
 
-#include "booleanintersection.h"
+#include "cadfeatures/booleansubtract.h"
+#include "cadfeatures/booleanintersection.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -136,26 +139,27 @@ void Cutaway::build()
             );
       this->setShape ( q->shape() );
       //   std::cout<<"Airspace"<<std::endl;
-      TopoDS_Shape airspace=BRepPrimAPI_MakePrism ( TopoDS::Face ( q->shape() ), to_Vec ( L*n ) );
+      // TopoDS_Shape airspace=BRepPrimAPI_MakePrism ( TopoDS::Face ( q->shape() ), to_Vec ( L*n ) );
+      auto airspace=Extrusion::create( q, cad::matconst( L*n ) );
 
       //   SolidModel(airspace).saveAs("airspace.stp");
       refpoints_["p0"]=p0;
       refvectors_["n"]=n;
       providedSubshapes_["input"]=model_;
-      providedSubshapes_["AirSpace"]=Feature::create ( airspace );
+      providedSubshapes_["AirSpace"]=airspace;
 
       try {
         providedSubshapes_["CutSurface"]=
             BooleanIntersection::create
             (
-              model_, Feature::create( TopoDS::Face ( q->shape() ) )
+              model_, q
               );
       } catch ( ... ) {
         insight::Warning ( _("Could not create cutting surface!") );
       }
 
       try {
-        this->setShape ( BRepAlgoAPI_Cut ( model_->shape(), airspace ) );
+        this->setShape ( BooleanSubtract::create( model_, airspace )->shape() );
       } catch ( ... ) {
         throw insight::Exception ( _("Could not create cut!") );
       }

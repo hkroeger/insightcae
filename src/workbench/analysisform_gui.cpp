@@ -134,12 +134,12 @@ void AnalysisForm::onKillAnalysis()
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
+    ui->tabWidget->setCurrentWidget(ui->outputTab);
   resultsViewer_->loadResults(results);
 
   currentWorkbenchAction_.reset();
 
 
-  ui->tabWidget->setCurrentWidget(ui->outputTab);
 
 
   QMessageBox::information(

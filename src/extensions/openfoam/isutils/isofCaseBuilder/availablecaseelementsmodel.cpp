@@ -1,6 +1,6 @@
 #include "availablecaseelementsmodel.h"
 
-#include "base/parametersetvisualizer.h"
+#include "cadparametersetvisualizer.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
 
@@ -80,7 +80,7 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
        )
   {
     std::string elemName = i->first;
-    std::string category = insight::OpenFOAMCaseElement::category (elemName);
+    std::string category = insight::OpenFOAMCaseElement::categoryFor (elemName);
     QStringList path = QString::fromStdString(category)
                         .split ( "/", QString::SkipEmptyParts );
 
@@ -95,14 +95,11 @@ AvailableCaseElementsModel::AvailableCaseElementsModel(QObject *parent)
     {
       QIcon icon;
 
-      try
+        if (insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement().count(elemName))
       {
-          insight::ParameterSetVisualizerPtr viz
-              = insight::OpenFOAMCaseElement::visualizer(elemName);
-          viz->setIcon(&icon);
+          icon =
+              insight::CADParameterSetModelVisualizer::iconForOpenFOAMCaseElement()(elemName);
       }
-      catch (const std::exception& e)
-      { /* ignore, if non-existent */ }
 
       pe->addCaseElement( QString::fromStdString(elemName), icon );
     }

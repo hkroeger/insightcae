@@ -19,6 +19,7 @@
  */
 
 #include "parameter.h"
+#include "base/exception.h"
 #include "base/latextools.h"
 #include "base/tools.h"
 #include <iostream>
@@ -28,9 +29,12 @@
 #include "boost/algorithm/string/trim.hpp"
 
 #include "base/parameterset.h"
+#include "base/parameters/selectablesubsetparameter.h"
 #include "base/rapidxml.h"
 #include "base/cppextensions.h"
 
+#include "boost/date_time/gregorian/parsers.hpp"
+#include "boost/date_time/posix_time/time_formatters.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
 using namespace std;
@@ -42,61 +46,45 @@ using namespace rapidxml;
 
 namespace insight 
 {
-  
-    
-rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name, const std::string& typeName)
+
+
+
+
+namespace ParameterPath {
+
+
+
+
+std::string
+join(const std::string& p1, const std::string& p2)
 {
-    if (name.empty())
+    return
+        p1
+        + (
+            (!p1.empty()) && (!p2.empty())
+                ? "/" : ""
+            ) +
+        p2;
+}
+
+
+
+
+std::string
+join(const std::vector<std::string>& ps)
+{
+    std::string result;
+    for (auto& p: ps)
     {
-        return &father;
+        result=join(result, p);
     }
-    else
-    {
-        for (xml_node<> *child = father.first_node(typeName.c_str()); child; child = child->next_sibling(typeName.c_str()))
-        {
-          if (child->first_attribute("name")->value() == name)
-          {
-            return child;
-          }
-        }
-    }
-
-    return nullptr;
-}
-
-    
-
-
-
-
-
-
-void writeMatToXMLNode(const arma::mat& matrix, xml_document< char >& doc, xml_node< char >& node)
-{
-  std::ostringstream voss;
-  matrix.save(voss, arma::raw_ascii);
-  
-  // set stringified table values as node value
-  node.value(doc.allocate_string(voss.str().c_str()));
+    return result;
 }
 
 
 
 
-
-
-
-
-ArrayParameterBase::~ArrayParameterBase()
-{}
-
-Parameter &ArrayParameterBase::elementRef(int i)
-{
-  return const_cast<Parameter&>(element(i));
 }
-
-
-
 
 defineType(Parameter);
 defineFactoryTable(Parameter, LIST(const std::string& desc), LIST(desc) );
@@ -159,6 +147,11 @@ Parameter::iterator::reference Parameter::iterator::operator*() const
 }
 
 Parameter::iterator::pointer Parameter::iterator::operator->() const
+{
+  return &operator*();
+}
+
+Parameter::iterator::pointer Parameter::iterator::get_pointer() const
 {
   return &operator*();
 }
@@ -240,6 +233,11 @@ Parameter::const_iterator::pointer Parameter::const_iterator::operator->() const
   return &operator*();
 }
 
+Parameter::const_iterator::pointer Parameter::const_iterator::get_pointer() const
+{
+  return &operator*();
+}
+
 string Parameter::const_iterator::name() const
 {
   insight::assertion(
@@ -264,38 +262,81 @@ void Parameter::triggerChildValueChanged()
   if (!valueChangeSignalBlocked_) childValueChanged();
 }
 
+
 void Parameter::setParent(Parameter *parent)
 {
     parent_=parent;
+    needsInitialization_=true;
 }
 
-Parameter::Parameter()
-: description_(),
-  isHidden_(false), isExpert_(false), isNecessary_(false), order_(0),
-  valueChangeSignalBlocked_(false),
-    parent_(nullptr)
-{
-}
+
+
 
 Parameter::Parameter(const std::string& description, bool isHidden, bool isExpert, bool isNecessary, int order)
 : description_(description),
   isHidden_(isHidden), isExpert_(isExpert), isNecessary_(isNecessary), order_(order),
   valueChangeSignalBlocked_(false),
-  parent_(nullptr)
+  parent_(nullptr),
+    needsInitialization_(true)
 {
 }
 
 Parameter::~Parameter()
 {}
 
-Parameter *Parameter::parent() const
+
+
+void Parameter::initialize()
+{
+    for (int i=0; i<nChildren(); ++i)
+    {
+        childParameterRef(i).initialize();
+    }
+}
+
+bool Parameter::hasParent() const
+{
+    return parent_.valid();
+}
+
+
+
+Parameter& Parameter::parent()
 {
     return parent_;
 }
 
-SubsetParameter& Parameter::parentSet() const
+const Parameter& Parameter::parent() const
 {
-    return dynamic_cast<SubsetParameter&>(*parent());
+    return parent_;
+}
+
+
+ParameterSet& Parameter::parentSet()
+{
+    return dynamic_cast<ParameterSet&>(parent());
+}
+
+string Parameter::path(bool redirectArrayElementsToDefault) const
+{
+    if (hasParent())
+    {
+        auto pp=parent().path(redirectArrayElementsToDefault);
+        auto n=name(redirectArrayElementsToDefault);
+        return pp+(!(pp.empty()||n.empty())?"/":"")+n;
+    }
+    return std::string();
+}
+
+
+std::string Parameter::name(bool redirectArrayElementsToDefault) const
+{
+    if (hasParent())
+    {
+        return parent().childParameterName(this, redirectArrayElementsToDefault);
+    }
+    else
+        return std::string();
 }
 
 
@@ -310,6 +351,37 @@ bool Parameter::isDifferent(const Parameter &) const
 }
 
 int Parameter::order() const { return order_; }
+
+
+bool Parameter::isModified(const ParameterSet &defaultValues) const
+{
+    bool cmodified = false;
+    try
+    {
+        if (nChildren()>0) // has children
+        {
+            for (int k=0; k<nChildren(); ++k)
+            {
+                cmodified |= childParameter(k).isModified(defaultValues);
+            }
+        }
+        else
+        {
+            auto pp=path(true);
+            if (defaultValues.hasParameter(pp))
+            {
+                const auto& dp = defaultValues.get<insight::Parameter>(pp);
+                cmodified = isDifferent(dp);
+            }
+        }
+    }
+    catch (...)
+    {
+        cmodified=true;
+    }
+
+    return cmodified;
+}
 
 
 rapidxml::xml_node<>* Parameter::appendToNode(
@@ -348,7 +420,7 @@ void Parameter::saveToNode(
     std::string analysisName ) const
 {
     CurrentExceptionContext ex(
-        2,
+        3,
         "writing parameter %s content into XML node"
         " (parent path %s, analysis name %s",
         type().c_str(), parent_path.string().c_str(), analysisName.c_str());
@@ -378,7 +450,7 @@ void Parameter::saveToStream(
     const boost::filesystem::path& parent_path,
     std::string analysisName ) const
 {
-  CurrentExceptionContext ex(2,
+  CurrentExceptionContext ex(3,
       "writing parameter %s content into output stream (parent path %s, analysis name %s",
       type().c_str(), parent_path.string().c_str(), analysisName.c_str());
 
@@ -398,7 +470,7 @@ void Parameter::saveToStream(
 
 void Parameter::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
-  CurrentExceptionContext ex("writing parameter set to file "+file.string());
+  CurrentExceptionContext ex(3, "writing parameter set to file "+file.string());
   std::ofstream f(file.c_str());
   saveToStream( f, file.parent_path(), analysisName );
   f << std::endl;
@@ -550,15 +622,42 @@ void Parameter::merge ( const Parameter& other )
 
 std::unique_ptr<Parameter> Parameter::intersection(const Parameter &other) const
 {
-  return std::unique_ptr<Parameter>(clone());
+  return std::unique_ptr<Parameter>(clone(true));
 }
 
 
-std::string Parameter::childParameterName( int i ) const
+std::string Parameter::childParameterName( int i, bool ) const
 {
   if (nChildren()!=0)
-    throw insight::Exception("internal error: childParameterRef() not implemented!");
+    throw insight::Exception("internal error: childParameterName() not implemented!");
   return std::string();
+}
+
+
+
+std::string Parameter::childParameterName(
+    const Parameter *childParam,
+    bool redirectArrayElementsToDefault ) const
+{
+    for (int k=0; k<nChildren(); ++k)
+    {
+        if (childParam==&childParameter(k))
+        {
+            return childParameterName(k, redirectArrayElementsToDefault);
+        }
+    }
+
+    {
+        std::vector<std::string> cands;
+        for (int k=0; k<nChildren(); ++k)
+            cands.push_back(childParameterName(k));
+
+        throw insight::Exception(
+            "Parameter %d not found in children list. Candidates are: %s",
+            childParam,
+            boost::join(cands, ", ").c_str() );
+    }
+    return std::string();
 }
 
 
@@ -577,13 +676,24 @@ const Parameter &Parameter::childParameter(int i) const
 }
 
 
-int Parameter::childParameterIndex( const std::string& name ) const
+int Parameter::childParameterIndex(const std::string& name) const
 {
   for (int k=0; k<nChildren(); ++k)
   {
     if (childParameterName(k)==name) return k;
   }
   return -1;
+}
+
+
+int Parameter::childParameterIndex( const Parameter* childParam ) const
+{
+    for (int k=0; k<nChildren(); ++k)
+    {
+        if (&childParameter(k)==childParam)
+            return k;
+    }
+    return -1;
 }
 
 
@@ -604,6 +714,28 @@ const Parameter& Parameter::childParameterByName ( const std::string& name ) con
       i!=-1,
       "no parameter with name %s", name.c_str() );
   return childParameter(i);
+}
+
+
+std::vector<string> Parameter::childParameterNameList() const
+{
+    std::vector<std::string> res;
+    for (int i=0; i<nChildren(); ++i)
+    {
+        res.push_back(childParameterName(i));
+    }
+    return res;
+}
+
+
+std::vector<std::string> Parameter::childParameterFullPathList() const
+{
+    auto res = childParameterNameList();
+    for (auto &r: res)
+    {
+        r=ParameterPath::join({path(), r});
+    }
+    return res;
 }
 
 
@@ -672,7 +804,7 @@ void Parameter::setUpdateValueSignalBlockage(bool block)
 
 
 
-std::string valueToString(const arma::mat& value)
+std::string valueToString(const arma::mat&value)
 {
   std::string s;
   for (arma::uword i=0; i<value.n_elem; i++)
@@ -684,6 +816,19 @@ std::string valueToString(const arma::mat& value)
 }
 
 
+
+
+std::string valueToString(const boost::gregorian::date &date)
+{
+    return boost::gregorian::to_simple_string(date);
+}
+
+
+
+std::string valueToString(const boost::posix_time::ptime &datetime)
+{
+    return boost::posix_time::to_simple_string(datetime);
+}
 
 
 void stringToValue(const std::string& s, arma::mat& v)
@@ -708,11 +853,17 @@ void stringToValue(const std::string& s, arma::mat& v)
 }
 
 
+void stringToValue(const std::string& s, boost::gregorian::date& date)
+{
+    date=boost::gregorian::from_simple_string(s);
+}
+
+void stringToValue(const std::string& s, boost::posix_time::ptime& datetime)
+{
+    datetime=boost::posix_time::time_from_string(s);
+}
 
 
-
-
- 
 
 
 

@@ -6,6 +6,8 @@
 
 #include <QMetaType>
 
+#include "base/parameter.h"
+#include "base/cppextensions.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "base/exception.h"
@@ -15,7 +17,8 @@
 
 #include <armadillo>
 
-Q_DECLARE_METATYPE(insight::ParameterSet);
+Q_DECLARE_METATYPE_TEMPLATE_1ARG(std::observer_ptr);
+// Q_DECLARE_METATYPE(const insight::ParameterSet&);
 Q_DECLARE_METATYPE(insight::ResultSetPtr);
 Q_DECLARE_METATYPE(insight::Exception);
 Q_DECLARE_METATYPE(insight::ProgressState);

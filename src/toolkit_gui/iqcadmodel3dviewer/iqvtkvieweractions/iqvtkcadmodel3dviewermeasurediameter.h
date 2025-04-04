@@ -12,7 +12,8 @@ class IQVTKCADModel3DViewerMeasureDiameter
 
 public:
     IQVTKCADModel3DViewerMeasureDiameter(IQVTKCADModel3DViewer &viewWidget);
-    ~IQVTKCADModel3DViewerMeasureDiameter();
+
+    QString description() const override;
 
     void start() override;
 };

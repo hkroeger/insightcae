@@ -10,12 +10,11 @@ defineType(steadyIncompressibleNumerics);
 addToOpenFOAMCaseElementFactoryTable(steadyIncompressibleNumerics);
 
 
-steadyIncompressibleNumerics::steadyIncompressibleNumerics(OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName)
-: FVNumerics(c, ps, pName),
-  p_(ps)
+steadyIncompressibleNumerics::steadyIncompressibleNumerics(OpenFOAMCase& c, ParameterSetInput ip, const std::string& pName)
+: FVNumerics(c, ip.forward<Parameters>(), pName)
 {
-  OFcase().addField(pName, FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
+  OFcase().addField(pName, FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p().Uinternal.begin(), p().Uinternal.end()), volField ) );
 }
 
 
@@ -64,9 +63,9 @@ void steadyIncompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
   SIMPLE["nNonOrthogonalCorrectors"]=0;
   SIMPLE["pRefCell"]=0;
-  SIMPLE["pRefValue"]=p_.pinternal;
+  SIMPLE["pRefValue"]=p().pinternal;
 
-  if ( (OFversion()>=210) && p_.checkResiduals )
+  if ( (OFversion()>=210) && p().checkResiduals )
   {
     OFDictData::dict resCtrl;
     resCtrl["p"]=1e-4;

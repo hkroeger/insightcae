@@ -3,6 +3,7 @@
 
 
 
+#include "base/factory.h"
 #include "cadfeature.h"
 
 
@@ -15,14 +16,7 @@ class SingleEdgeFeature
         : public Feature
 {
 
-protected:
-    SingleEdgeFeature();
-    SingleEdgeFeature(TopoDS_Edge e);
-    SingleEdgeFeature(FeatureSetPtr creashapes);
-
 public:
-    CREATE_FUNCTION(SingleEdgeFeature);
-
     virtual VectorPtr start() const;
     virtual VectorPtr end() const;
 
@@ -33,7 +27,22 @@ public:
 };
 
 
+class ImportedSingleEdgeFeature
+    : public SingleEdgeFeature
+{
+    boost::variant<TopoDS_Edge,FeatureSetPtr> importSource_;
 
+    ImportedSingleEdgeFeature(TopoDS_Edge e);
+    ImportedSingleEdgeFeature(FeatureSetPtr creashapes);
+
+    size_t calcHash() const override;
+
+    void build() override;
+
+public:
+    CREATE_FUNCTION(ImportedSingleEdgeFeature);
+
+};
 
 } // namespace cad
 } // namespace insight

@@ -12,6 +12,8 @@
 
 #include "dialogs/defineplanedialog.h"
 
+#include "cadfeatures/importsolidmodel.h"
+#include "qtextensions.h"
 using namespace insight;
 
 void IQCADItemModel::addPlane()
@@ -33,15 +35,21 @@ void IQCADItemModel::addPlane()
 
 void IQCADItemModel::addImportedFeature()
 {
-    auto fn = QFileDialog::getOpenFileName(
-                nullptr, "Select CAD model",
-                "", "STEP (*.stp *.step);;IGES (*.igs *.iges);;Triangulated Surface (*.stl *.stlb);;OpenCASCADE BRep (*.brep)");
-    if (!fn.isEmpty())
+
+    if (auto fn=getFileName(
+            nullptr, "Select CAD model",
+            GetFileMode::Open,
+            {
+                {"stp step", "STEP file"},
+                {"igs iges", "IGES file"},
+                {"stl stlb", "Triangulated Surface"},
+                {"brep", "OpenCASCADE BRep"}
+            }
+            ))
     {
-        boost::filesystem::path fp(fn.toStdString());
-        auto m = cad::Feature::create(fp);
+        auto m = cad::Import::create(fn.asFilesystemPath());
         this->addModelstep(
-                    fp.filename().stem().string(),
+                    fn.asString(),
                     m, false );
     }
 }

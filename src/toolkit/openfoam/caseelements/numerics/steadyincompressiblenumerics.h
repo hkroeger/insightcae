@@ -22,15 +22,14 @@ checkResiduals = bool true "Whether to check residuals during run"
 pinternal = double 0.0 "Internal pressure field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "steadyIncompressibleNumerics" );
-    steadyIncompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault(), const std::string& pName="p" );
+    steadyIncompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters(), const std::string& pName="p" );
 
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;

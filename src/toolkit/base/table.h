@@ -92,6 +92,7 @@ public:
     };
 
     arma::mat xy(size_t xcol, size_t ycol, EmptyFieldTreatment eft = EmptyFieldTreatment::SkipRow) const;
+    arma::mat mat() const;
 
     void write(std::ostream& os, char delimiter='\t') const;
     void read(std::istream& is, const std::string& delimiters=";");

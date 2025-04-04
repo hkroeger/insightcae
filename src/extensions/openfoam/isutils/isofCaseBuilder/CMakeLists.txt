@@ -9,6 +9,8 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 set(isofCaseBuilder_SRCS
     isofcasebuilder.cpp
 
+
+    caseelementdata.h caseelementdata.cpp
     insertedcaseelement.cpp insertedcaseelement.h
     patch.cpp patch.h
     isofcasebuilderwindow.cpp isofcasebuilderwindow.h isofcasebuilderwindow.ui

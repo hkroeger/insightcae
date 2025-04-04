@@ -23,6 +23,8 @@
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 #include "base/translations.h"
+#include "feature.h"
+#include "cadfeatures/importsolidmodel.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -140,7 +142,7 @@ void Quad::build()
               matconst(insight::Vector(p4)),
               true
         );
-        providedSubshapes_["OuterWire"]=Feature::create( w.Wire() );
+        providedSubshapes_["OuterWire"]=Import::create( w.Wire() );
 
         TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
         
@@ -184,7 +186,32 @@ void Quad::build()
             s = BRepAlgoAPI_Cut( s,  BRepBuilderAPI_MakeFace ( w.Wire() ) );
         }
         
-        setShape ( s );
+        setShape ( s ); // naming
+
+        providedFeatureSets_["e12"] =
+            makeEdgeFeatureSet(
+                shared_from_this(),
+                "connects(%0, %1)",
+                { vertexAt(vec3(p1)),
+                  vertexAt(vec3(p2)) });
+        providedFeatureSets_["e23"] =
+            makeEdgeFeatureSet(
+                shared_from_this(),
+                "connects(%0, %1)",
+                { vertexAt(vec3(p2)),
+                 vertexAt(vec3(p3)) });
+        providedFeatureSets_["e34"] =
+            makeEdgeFeatureSet(
+                shared_from_this(),
+                "connects(%0, %1)",
+                { vertexAt(vec3(p3)),
+                 vertexAt(vec3(p4)) });
+        providedFeatureSets_["e41"] =
+            makeEdgeFeatureSet(
+                shared_from_this(),
+                "connects(%0, %1)",
+                { vertexAt(vec3(p4)),
+                 vertexAt(vec3(p1)) });
 
         cache.insert ( shared_from_this() );
         

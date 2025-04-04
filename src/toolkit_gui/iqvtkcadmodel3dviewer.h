@@ -8,6 +8,9 @@
 #include "iqcadmodel3dviewer/selectionlogic.h"
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqcadmodel3dviewer/navigationmanager.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h"
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h"
+#include "iqcadmodel3dviewer/qwidgettoinputreceiveradapter.h"
 
 #include "vtkVersionMacros.h"
 #include "vtkGenericOpenGLRenderWindow.h"
@@ -91,13 +94,29 @@ class BackgroundImage
     IQVTKCADModel3DViewer& viewer();
 
 public:
+    /**
+     * @brief BackgroundImage
+     * load image and launch orientation action
+     * @param fp
+     * @param viewer
+     */
     BackgroundImage(
         const boost::filesystem::path& fp,
         IQVTKCADModel3DViewer& viewer );
+
+    /**
+     * @brief BackgroundImage
+     * restore from XML saved config
+     * @param node
+     * @param viewer
+     */
     BackgroundImage(
         const rapidxml::xml_node<>& node,
         IQVTKCADModel3DViewer& viewer );
+
     ~BackgroundImage();
+
+    void reorientImage();
 
     QString label() const;
 
@@ -110,8 +129,11 @@ public Q_SLOTS:
 };
 
 
+
+
 class TOOLKIT_GUI_EXPORT IQVTKCADModel3DViewer
-        : public IQCADModel3DViewer
+    : public QWidgetToInputReceiverAdapter<
+          IQVTKCADModel3DViewer, IQCADModel3DViewer>
 {
     Q_OBJECT
 
@@ -138,15 +160,6 @@ public:
         HighlightingHandle,
         std::owner_less<HighlightingHandle> > HighlightingHandleSet;
 
-
-    struct SubshapeData {
-        insight::cad::FeaturePtr feat;
-        insight::cad::EntityType subshapeType_;
-        insight::cad::FeatureID id_;
-
-        bool operator==(const SubshapeData& o) const;
-        bool operator<(const SubshapeData& o) const;
-    };
 
     typedef std::map<
         vtkSmartPointer<vtkProp>,
@@ -180,6 +193,8 @@ public:
                 const arma::mat& p0,
                 const arma::mat& n );
         ~ClippingPlanes();
+
+        void addToActor(vtkProp* act) const;
     };
 
     friend class ClippingPlanes;
@@ -207,6 +222,8 @@ public:
     static const char bgiNodeName[];
 
 private:
+    mutable bool afterDoubleClick_;
+
     /*VTKWidget*/MyVTKWidget vtkWidget_;
     vtkSmartPointer<vtkRenderer> ren_, backgroundRen_;
 
@@ -344,8 +361,7 @@ private:
     void doExposeItem( CADEntity item );
 
 
-    NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
-    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr currentAction_;
+    // NavigationManager<IQVTKCADModel3DViewer>::Ptr navigationManager_;
 
     const DisplayedEntity* findDisplayedItem(
             const CADEntity& item,
@@ -363,7 +379,7 @@ private:
 
     std::set<vtkProp*> actorsExcludedFromPicking_;
 
-    QToolButton *clBGBtn, *addBGBtn;
+    QToolButton *addBGBtn;
     void connectBackgroundImageCommands(BackgroundImage *bgi);
 
 private Q_SLOT:
@@ -383,6 +399,9 @@ Q_SIGNALS:
 public:
     void closeEvent(QCloseEvent *ev) override;
 
+    void resetNavigationManager(
+        typename NavigationManager<IQVTKCADModel3DViewer>::Ptr&& nm) override;
+
 public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
     ~IQVTKCADModel3DViewer();
@@ -397,15 +416,14 @@ public:
     QSize sizeHint() const override;
     QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
 
-    void setDefaultAction();
-    bool isDefaultAction();
-    bool launchAction(ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force=true);
+    ViewWidgetActionPtr setupDefaultAction() override;
 
     const Bounds& sceneBounds() const;
 
     void writeViewerState(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const override;
     void restoreViewerState(rapidxml::xml_node<>& node) override;
 
+    void setCameraState(const insight::CameraState& camState) override;
 
 public:
     void exposeItem( insight::cad::FeaturePtr feat ) override;
@@ -441,8 +459,13 @@ public:
     void activateSelectionAll(insight::cad::EntityType subshapeType);
     void deactivateSubshapeSelectionAll();
 
-    vtkProp* findActorUnderCursorAt(const QPoint& clickPos) const;
+    vtkProp* findActorUnderCursorAt(
+        const QPoint& clickPos,
+        const std::set<vtkProp*>& restrictPicking = {}
+        ) const;
     std::vector<vtkProp*> findAllActorsUnderCursorAt(const QPoint& clickPos) const;
+    std::vector<vtkProp*> findAllActorsInRectangle(
+        const QPoint& clickPos1, const QPoint& clickPos2) const;
 
     typedef boost::variant<
         boost::blank,
@@ -466,24 +489,44 @@ public:
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
     void editSketch(
         const insight::cad::ConstrainedSketch& sk,
-        const insight::ParameterSet& defaultGeometryParameters,
-        SetSketchEntityAppearanceCallback saac,
+        std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+        const std::string& presentationDelegateKey,
         SketchCompletionCallback onAccept,
         SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
         ) override;
 
-protected:
-    void mouseDoubleClickEvent(QMouseEvent* e) override;
-    void mousePressEvent(QMouseEvent* e) override;
-    void mouseReleaseEvent(QMouseEvent* e) override;
-    void mouseMoveEvent(QMouseEvent* e) override;
-    void wheelEvent(QWheelEvent* e) override;
-    void keyPressEvent(QKeyEvent* e) override;
-    void keyReleaseEvent(QKeyEvent* e) override;
+// protected:
+//     void mouseDoubleClickEvent(QMouseEvent* e) override;
+//     void mousePressEvent(QMouseEvent* e) override;
+//     void mouseReleaseEvent(QMouseEvent* e) override;
+//     void mouseMoveEvent(QMouseEvent* e) override;
+//     void wheelEvent(QWheelEvent* e) override;
+//     void keyPressEvent(QKeyEvent* e) override;
+//     void keyReleaseEvent(QKeyEvent* e) override;
 
 
 //    vtkActor* getActor(insight::cad::FeaturePtr geom);
 };
+
+
+class VTKNavigationManager
+    : public NavigationManager<IQVTKCADModel3DViewer>
+{
+public:
+    typedef insight::FactoryWithDeleter<
+        NavigationManager<IQVTKCADModel3DViewer>,
+        NavigationManager<IQVTKCADModel3DViewer>::Ptr::deleter_type,
+        IQVTKCADModel3DViewer&
+        >
+        NavigationManagerFactory;
+
+    declareFactoryTableAccessFunction2(NavigationManagerFactory, navigationManagers);
+
+public:
+    using NavigationManager<IQVTKCADModel3DViewer>::NavigationManager;
+};
+
+
 
 
 #endif // IQVTKCADMODEL3DVIEWER_H

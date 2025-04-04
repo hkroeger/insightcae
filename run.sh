@@ -25,11 +25,11 @@ git config --global user.email "hannes@kroegeronline.net"
 export PATH=/opt/insightcae/bin:$PATH
 export INSIGHT_THIRDPARTY_DIR=/opt/insightcae
 
-export MED3HOME=/opt/insightcae/code_aster/public/med-4.0.0
-export HDF5_ROOT=/opt/insightcae/code_aster/public/hdf5-1.10.3
-
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MED3HOME/lib
-
+if [ -e /opt/insightcae/code_aster ]; then
+ export MED3HOME=/opt/insightcae/code_aster/public/med-4.0.0
+ export HDF5_ROOT=/opt/insightcae/code_aster/public/hdf5-1.10.3
+ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MED3HOME/lib
+fi
 
 # system-specific build initializations
 case $OS in
@@ -77,6 +77,7 @@ if [ "$ACTION" == "build" ]; then
  CMAKE=${CMAKE:-cmake}
  
  #export VERBOSE=99 
+ touch $(find $SRC_PATH -iname "*.i") # changes in i-files dependencies are not detected properly, always enforce py wrapper rebuild
  $CMAKE $SRC_PATH -DINSIGHT_BRANCH=${BRANCH} -DINSIGHT_SUPERBUILD=${INSIGHT_THIRDPARTY_DIR} -GNinja ${CMAKE_OPTS[@]}
  
  ninja

@@ -22,10 +22,9 @@ MassflowBC::MassflowBC
     OpenFOAMCase& c,
     const std::string& patchName,
     const OFDictData::dict& boundaryDict,
-    const ParameterSet& ps
+    ParameterSetInput ip
 )
-    : BoundaryCondition ( c, patchName, boundaryDict, ps ),
-      ps_ ( ps )
+    : BoundaryCondition ( c, patchName, boundaryDict, ip.forward<Parameters>() )
 {
     BCtype_="patch";
 }
@@ -35,12 +34,10 @@ MassflowBC::MassflowBC
 
 void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-    Parameters p ( ps_ );
-
     turbulenceBC::turbulenceBCPtr turbulence =
-        turbulenceBC::turbulenceBC::create ( ps_.get<SelectableSubsetParameter> ( "turbulence" ) );
+        p().turbulence;
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        p().phasefractions;
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries ( dictionaries );
@@ -51,12 +48,14 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
             BC["type"]=OFDictData::data ( "flowRateInletVelocity" );
-            if (const auto *mf = boost::get<Parameters::flowrate_massflow_type>(&p.flowrate))
+            if (const auto *mf = boost::get<Parameters::flowrate_massflow_type>(
+                    &p().flowrate))
             {
-                BC["rho"]=p.rhoName;
+                BC["rho"]=p().rhoName;
                 BC["massFlowRate"]=mf->value;
             }
-            else if (const auto *vf = boost::get<Parameters::flowrate_volumetric_type>(&p.flowrate))
+            else if (const auto *vf = boost::get<Parameters::flowrate_volumetric_type>(
+                           &p().flowrate))
             {
               if (OFversion()<170)
                 BC["flowRate"]=vf->value;
@@ -69,8 +68,9 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
-            BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p.T );
+            BC["type"]=OFDictData::data ( "inletOutlet" );
+            BC["inletValue"]="uniform "+boost::lexical_cast<std::string> ( p().T );
+            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p().T );
         } else if (isPrghPressureField(field)) {
             if ( OFversion() >=210 ) {
                 BC["type"]=OFDictData::data ( "fixedFluxPressure" );
@@ -79,7 +79,9 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             }
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p.rho ) );
+            BC["value"]=OFDictData::data (
+                "uniform "
+                +boost::lexical_cast<std::string> ( p().rho ) );
         } else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             turbulence->setDirichletBC_k ( BC, velocity );
         } else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) ) {

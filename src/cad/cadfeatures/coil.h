@@ -84,8 +84,8 @@ class CoilPath
         ScalarPtr dr = ScalarPtr()
     );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "CoilPath" );
@@ -95,9 +95,9 @@ public:
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
     
-    virtual bool isSingleEdge() const;
-    virtual bool isSingleCloseWire() const;
-    virtual bool isSingleOpenWire() const;
+    bool isSingleEdge() const override;
+    // bool isSingleCloseWire() const override;
+    bool isSingleOpenWire() const override;
 };
 
 
@@ -125,8 +125,8 @@ class Coil
      */
     ScalarPtr nr_;
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
     Coil
         (
@@ -146,12 +146,12 @@ public:
 
     static void insertrule ( parser::ISCADParser& ruleset );
 
-    virtual bool isSingleEdge() const
+    bool isSingleEdge() const override
     {
         return true;
     };
-    virtual bool isSingleCloseWire() const;
-    virtual bool isSingleOpenWire() const;
+    // virtual bool isSingleCloseWire() const;
+    bool isSingleOpenWire() const override;
 };
 
 

@@ -22,6 +22,8 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadfeature.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -94,26 +96,47 @@ void Extrusion::build()
       L = sk_->averageFaceNormal()*(*Lsc)->value();
     }
 
+    bool extrusionOfEdges =
+        sk_->topologicalProperties().onlyEdges();
+
+
+    TopoDS_Shape toExtr;
     if ( !centered_ )
     {
-        BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec(L ) );
-        providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
-        providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
-        setShape ( mkp.Shape() );
+        toExtr=sk_->shape();
     }
     else
     {
         gp_Trsf trsf;
         trsf.SetTranslation ( to_Vec(-0.5*L) );
-        BRepPrimAPI_MakePrism mkp
-        (
-            BRepBuilderAPI_Transform ( sk_->shape(), trsf ).Shape(),
-            to_Vec(L)
-        );
-        providedSubshapes_["frontFace"]=Feature::create ( mkp.FirstShape() );
-        providedSubshapes_["backFace"]=Feature::create ( mkp.LastShape() );
-        setShape ( mkp.Shape() );
+        toExtr=BRepBuilderAPI_Transform ( sk_->shape(), trsf ).Shape();
     }
+
+
+    BRepPrimAPI_MakePrism mkp ( toExtr, to_Vec(L ) );
+    auto f=Import::create ( mkp.FirstShape() );
+    auto b=Import::create ( mkp.LastShape() );
+
+    if (extrusionOfEdges)
+    {
+        providedSubshapes_["frontEdge"]=f;
+        providedSubshapes_["backEdge"]=b;
+        providedFeatureSets_["frontEdge"]=makeEdgeFeatureSet(
+            shared_from_this(), "isSame(%0)", {f->allEdges()});
+        providedFeatureSets_["backEdge"]=makeEdgeFeatureSet(
+            shared_from_this(), "isSame(%0)", {b->allEdges()});
+    }
+    else
+    {
+        providedSubshapes_["frontFace"]=f;
+        providedSubshapes_["backFace"]=b;
+        providedFeatureSets_["frontFace"]=makeFaceFeatureSet(
+            shared_from_this(), "isSame(%0)", {f->allFaces()});
+        providedFeatureSets_["backFace"]=makeFaceFeatureSet(
+            shared_from_this(), "isSame(%0)", {b->allFaces()});
+    }
+
+    setShape ( mkp.Shape() );
 
 
     copyDatums ( *sk_ );

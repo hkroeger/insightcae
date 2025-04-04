@@ -51,9 +51,11 @@ int main(int argc, char*argv[])
     }
 
     copyFiles::Parameters p;
-    p.files = {
-      { make_filepath(fn), "system/"+fileName.string() }
-    };
+    p.files.push_back(
+        copyFiles::Parameters::files_default_type{
+                    make_filepath(fn),
+            "system/"+fileName.string() }
+        );
     tc.insert(new copyFiles(tc, p));
 
     tc.runTest();

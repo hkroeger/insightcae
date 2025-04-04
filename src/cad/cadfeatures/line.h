@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_LINE_H
 
 #include "singleedgefeature.h"
-#include "constrainedsketchgeometry.h"
+#include "constrainedsketchentity.h"
 
 namespace insight {
 namespace cad {
@@ -63,7 +63,7 @@ public:
 
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
-        MakeDefaultGeometryParametersFunction mdpf);
+        const ConstrainedSketchParametersDelegate& pd );
 
     std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
     dependencies() const override;
@@ -72,10 +72,14 @@ public:
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
+    bool isInside( SelectionRect r) const override;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const Line& other);
 
     ConstrainedSketchEntityPtr clone() const override;
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 };
 
 

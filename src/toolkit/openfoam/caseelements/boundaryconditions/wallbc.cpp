@@ -13,9 +13,14 @@ addToFactoryTable(BoundaryCondition, WallBC);
 addToStaticFunctionTable(BoundaryCondition, WallBC, defaultParameters);
 
 
-WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps)
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps)
+WallBC::WallBC(
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip)
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>())
 {
   BCtype_="wall";
 }
@@ -23,22 +28,20 @@ WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::
 
 void WallBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  MeshMotionBC::MeshMotionBC::create(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoDictionaries(dictionaries);
+  p().meshmotion->addIntoDictionaries(dictionaries);
   BoundaryCondition::addIntoDictionaries(dictionaries);
 }
 
 void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
-    Parameters p(ps_);
-
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
+        p().phasefractions;
 
     HeatBC::HeatBCPtr heattransfer =
-        HeatBC::HeatBC::create( ps_.get<SelectableSubsetParameter>("heattransfer") );
+        p().heattransfer;
 
     MeshMotionBC::MeshMotionBCPtr meshmotion =
-        MeshMotionBC::MeshMotionBC::create( ps_.get<SelectableSubsetParameter>("meshmotion") );
+        p().meshmotion;
 
     BoundaryCondition::addIntoFieldDictionaries(dictionaries);
 
@@ -50,18 +53,18 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
         // velocity
         if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
         {
-            if (p.rotating)
+            if (p().rotating)
             {
                 BC["type"]=OFDictData::data("rotatingWallVelocity");
-                BC["origin"]=OFDictData::to_OF(p.CofR);
-                double om=norm(p.wallVelocity, 2);
-                BC["axis"]=OFDictData::to_OF(p.wallVelocity/om);
+                BC["origin"]=OFDictData::to_OF(p().CofR);
+                double om=norm(p().wallVelocity, 2);
+                BC["axis"]=OFDictData::to_OF(p().wallVelocity/om);
                 BC["omega"]=boost::lexical_cast<std::string>(om);
             }
             else
             {
                 BC["type"]=OFDictData::data("movingWallVelocity");
-                BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p.wallVelocity));
+                BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p().wallVelocity));
             }
         }
 
@@ -89,7 +92,9 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             (get<0>(field.second)==scalarField)
         )
         {
-            OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC, p.roughness_z0);
+            OFcase().findUniqueElement<turbulenceModel>()
+                .addIntoFieldDictionary(
+                    field.first, field.second, BC, p().roughness_z0 );
         }
 
         else
@@ -114,7 +119,7 @@ void WallBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   BoundaryCondition::addOptionsToBoundaryDict(bndDict);
 
   HeatBC::HeatBCPtr heattransfer =
-      HeatBC::HeatBC::create( ps_.get<SelectableSubsetParameter>("heattransfer") );
+      p().heattransfer;
   heattransfer->addOptionsToBoundaryDict(bndDict);
 }
 

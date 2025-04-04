@@ -141,6 +141,19 @@ arma::mat Table::xy(size_t xcol, size_t ycol, EmptyFieldTreatment eft) const
 
 
 
+arma::mat Table::mat() const
+{
+    arma::mat r = arma::zeros(nRows(), nCols());
+    for (size_t i=0; i<nRows(); ++i)
+    {
+        for (size_t j=0; j<nCols(); ++j)
+        {
+            r(i,j)=toNumber<double>(data_[i][j]);
+        }
+    }
+    return r;
+}
+
 
 void Table::write(std::ostream& os, char delimiter) const
 {

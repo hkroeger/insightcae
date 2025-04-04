@@ -64,6 +64,8 @@ public:
         return model_;
     }
 
+    // boost::spirit::qi::symbols<char, FeatureSetPtr> featureSymbols(EntityType et) const override;
+
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
 

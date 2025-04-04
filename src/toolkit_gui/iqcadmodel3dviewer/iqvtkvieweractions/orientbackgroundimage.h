@@ -33,11 +33,15 @@ private:
 
 public:
     IQVTKOrientBackgroundImage(IQVTKCADModel3DViewer &viewWidget, vtkImageActor* imageActor);
-    ~IQVTKOrientBackgroundImage();
+
+    QString description() const override;
 
     void start() override;
 
-    bool onLeftButtonUp( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 };
 
 

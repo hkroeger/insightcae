@@ -6,11 +6,13 @@
 #include <QTemporaryFile>
 #include <QScrollBar>
 #include <QCoreApplication>
+#include <boost/blank.hpp>
 
 #include "email.h"
 #include "base/progressdisplayer.h"
 
-
+#include "base/translations.h"
+#include "qtextensions.h"
 
 
 LogViewerWidget::LogViewerWidget(QWidget* parent)
@@ -119,24 +121,27 @@ void LogViewerWidget::appendLogMessage(const insight::ProgressState &ps)
 
 void LogViewerWidget::saveLog()
 {
-    QString fn=QFileDialog::getSaveFileName(
-        this,
-        "Save Log to file",
-        "",
-        "Log file (*.txt)"
-    );
-
-    if (!fn.isEmpty())
+    if (auto fn = getFileName(
+            this,
+            "Save Log to file",
+            GetFileMode::Save,
+            {{"txt", "Text file", true}}
+        ))
     {
         QFile f(fn);
         if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
         {
-            QMessageBox::critical(this, "Create file failed", "Could not create file "+fn);
+            QMessageBox::critical(
+                this,
+                _("Create file failed"),
+                QString(_("Could not create file %1"))
+                    .arg(fn.asQString()) );
             return;
         }
         QTextStream out(&f);
         out << toPlainText();
     }
+
 }
 
 

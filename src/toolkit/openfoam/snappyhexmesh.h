@@ -26,43 +26,90 @@
 
 #include "base/boost_include.h"
 
+#include "boost/filesystem/path.hpp"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "base/progressdisplayer.h"
 
+#include "openfoam/ofenvironment.h"
 #include "snappyhexmesh__ExternalGeometryFile__Parameters_headers.h"
 
+#include "openfoam/openfoamtools.h"
+
 namespace insight {
-  
-    
-    
-    
+
+
+namespace snappyHexMeshFeats
+{
+
+boost::filesystem::path
+geometryDir(const OFEnvironment& ofe, const boost::filesystem::path& caseDir);
+
+boost::filesystem::path
+geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir);
+
+}
+
+
+template<class Base>
 class ExternalGeometryFile
+: public Base
 {
 public:
 #include "snappyhexmesh__ExternalGeometryFile__Parameters.h"
 /*
 PARAMETERSET>>> ExternalGeometryFile Parameters
+inherits Base::Parameters
 
 fileName = path "" "Path to geometry file (STL format)" *necessary
 scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
 translate = vector (0 0 0) "Translation vector"
 rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
-  ExternalGeometryFile( const ParameterSet& ps = Parameters::makeDefault() );
+  ExternalGeometryFile( ParameterSetInput ip = Parameters() )
+        : Base(ip.forward<Parameters>())
+  {
+        auto fname=p().fileName->originalFilePath().filename().string();
+        insight::assertion(
+            std::isalpha(fname[0]),
+            "filename must not start with a number or special char (got %s)",
+            fname.c_str() );
+        //  std::cout<<"added \""<<p_.fileName<<"\""<<std::endl;
+    }
   
-  std::string fileName() const;
+  std::string fileName() const
+    {
+        return p().fileName->fileName().string();
+    }
   
   virtual void putIntoConstantTrisurface(
       const OpenFOAMCase& ofc,
       const boost::filesystem::path& location
-      ) const;
+      ) const
+    {
+        boost::filesystem::path from( p().fileName->filePath(location) );
+        boost::filesystem::path to( snappyHexMeshFeats::geometryDir(ofc, location)/from.filename() );
+
+        if (!exists(to.parent_path()))
+            create_directories(to.parent_path());
+
+        ofc.executeCommand(location, "surfaceTransformPoints",
+                           {
+                               absolute(from).string(),
+                               absolute(to).string(),
+                               "-scale", OFDictData::to_OF(p().scale),
+                               "-translate", OFDictData::to_OF(p().translate),
+                               "-rollPitchYaw", OFDictData::to_OF(p().rollPitchYaw)
+                           }
+                           );
+    }
+
+
 };
 
 
@@ -70,6 +117,8 @@ public:
 
 namespace snappyHexMeshFeats
 {
+
+
 
 class Feature;
 
@@ -81,10 +130,21 @@ typedef std::shared_ptr<Feature> FeaturePtr;
 class Feature
 {
 public:
+#include "snappyhexmesh__Feature__Parameters.h"
+/*
+PARAMETERSET>>> Feature Parameters
+
+name = string "unnamed" "Name of the geometry feature"  *necessary
+
+createGetter
+<<<PARAMETERSET
+*/
+public:
   declareType ( "Feature" );
 
   declareDynamicClass ( Feature );
 
+  Feature( ParameterSetInput ip = Parameters() );
   virtual void addIntoDictionary ( OFDictData::dict& sHMDict ) const =0;
   virtual void modifyFiles (
       const OpenFOAMCase& ofc,
@@ -97,16 +157,14 @@ public:
 
 
 class Geometry
-: public Feature,
-  public ExternalGeometryFile
+: public ExternalGeometryFile<Feature>
 {
 public:
 #include "snappyhexmesh__Geometry__Parameters.h"
 /*
 PARAMETERSET>>> Geometry Parameters
-inherits insight::ExternalGeometryFile::Parameters
+inherits ExternalGeometryFile<Feature>::Parameters
 
-name = string "unnamed" "Name of the geometry feature"  *necessary
 minLevel = int 0 "Minimum refinement level"
 maxLevel = int 4 "Maximum refinement level"
 nLayers = int 2 "Number of prism layers"
@@ -118,23 +176,20 @@ regionRefinements = array [ set {
  maxLevel = int 0 "Maximum refinement level"
 } ]*0 "Refinement regions"
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-  Parameters p_;
 
 public:
   declareType("Geometry");
 
-  Geometry(const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override { return p_; }
-  inline const Parameters& parameters() const { return p_; }
+  Geometry(ParameterSetInput ip = Parameters() );
   
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
                    const boost::filesystem::path& location) const override;
   bool producesPrismLayers() const override;
+
 };
 
 
@@ -147,22 +202,19 @@ public:
 #include "snappyhexmesh__PatchLayers__Parameters.h"
 /*
 PARAMETERSET>>> PatchLayers Parameters
+inherits Feature::Parameters
 
-name = string "" "Name of the patch"  *necessary
 nLayers = int 2 "Number of layers"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType("PatchLayers");
 
-  PatchLayers(const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override { return p_; }
-  inline const Parameters& parameters() const { return p_; }
+  PatchLayers(ParameterSetInput ip = Parameters() );
 
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   bool producesPrismLayers() const override;
@@ -178,6 +230,7 @@ public:
 #include "snappyhexmesh__ExplicitFeatureCurve__Parameters.h"
 /*
 PARAMETERSET>>> ExplicitFeatureCurve Parameters
+inherits Feature::Parameters
 
 fileName = path "" "Filename of the feature curve"  *necessary
 scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
@@ -186,18 +239,15 @@ rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
 level = int 4 "Refinement level at curve"
 distance = double 0 "Refinement distance"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType("ExplicitFeatureCurve");
 
-  ExplicitFeatureCurve(const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override { return p_; }
-  inline const Parameters& parameters() const { return p_; }
+  ExplicitFeatureCurve(ParameterSetInput ip = Parameters() );
 
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
@@ -214,24 +264,21 @@ public:
 #include "snappyhexmesh__RefinementRegion__Parameters.h"
 /*
 PARAMETERSET>>> RefinementRegion Parameters
+inherits Feature::Parameters
 
-name = string "" "Region name"  *necessary
 dist = double 1e15 "Maximum distance for refinement"
 mode = selection ( inside outside distance ) inside "Refinement mode"
 level = int 1 "Refinement level"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType ( "RefinementRegion" );
 
-  RefinementRegion ( const ParameterSet& ps = Parameters::makeDefault() );
-
-  inline const Parameters& parameters() const { return p_; }
+  RefinementRegion (ParameterSetInput ip = Parameters() );
 
   /**
    * create entry into geometry subdict.
@@ -256,21 +303,15 @@ inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 min = vector (0 0 0) "Minimum corner of refinement box" *necessary
 max = vector (1 1 1) "Maximum corner of refinement box" *necessary
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType ( "RefinementBox" );
 
-  RefinementBox ( const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override
-  {
-    return p_;
-  }
-  inline const Parameters& parameters() const { return p_; }
+  RefinementBox (ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
@@ -291,21 +332,15 @@ point1 = vector (0 0 0) "Base point of the refinement cylinder" *necessary
 point2 = vector (1 0 0) "Tip point of the refinement cylinder" *necessary
 radius = double 1 "Radius of the refinement region" *necessary
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType ( "RefinementCylinder" );
 
-  RefinementCylinder ( const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override
-  {
-    return p_;
-  }
-  inline const Parameters& parameters() const { return p_; }
+  RefinementCylinder (ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
@@ -324,21 +359,15 @@ inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 center = vector (0 0 0) "Center of the refinement sphere" *necessary
 radius = double 1 "Radius of the refinement region" *necessary
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType ( "RefinementSphere" );
 
-  RefinementSphere ( const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override
-  {
-    return p_;
-  }
-  inline const Parameters& parameters() const { return p_; }
+  RefinementSphere (ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const override;
 };
@@ -347,30 +376,23 @@ public:
 
 
 class RefinementGeometry
-: public RefinementRegion
+    : public ExternalGeometryFile<RefinementRegion>
 {
 public:
 #include "snappyhexmesh__RefinementGeometry__Parameters.h"
 /*
 PARAMETERSET>>> RefinementGeometry Parameters
-inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
+inherits ExternalGeometryFile<RefinementRegion>::Parameters
 
-geometry = includedset "insight::ExternalGeometryFile::Parameters" "Geometry file (STL format)"
-
+createGetter
 <<<PARAMETERSET
 */
-//fileName = path "" "Path to geometry file (STL format)"
 
-protected:
-  Parameters p_;
-  ExternalGeometryFile geometryfile_;
 
 public:
   declareType("RefinementGeometry");
 
-  RefinementGeometry( const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override { return p_; }
-  inline const Parameters& parameters() const { return p_; }
+  RefinementGeometry(ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
   //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
@@ -388,9 +410,7 @@ class NearSurfaceRefinement
 public:
   declareType("NearSurfaceRefinement");
 
-  NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override { return p_; }
-  inline const Parameters& parameters() const { return p_; }
+  NearSurfaceRefinement(ParameterSetInput ip = Parameters() );
 
   bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
 };
@@ -409,18 +429,14 @@ inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 
 fileName = path "" "Path to geometry file (STL format)" *necessary
 
+createGetter
 <<<PARAMETERSET
 */
-
-protected:
-  Parameters p_;
 
 public:
   declareType ( "NearTemplatePatchRefinement" );
 
-  NearTemplatePatchRefinement ( const ParameterSet& ps = Parameters::makeDefault() );
-  ParameterSet getParameters() const override { return p_; }
-  inline const Parameters& parameters() const { return p_; }
+  NearTemplatePatchRefinement (ParameterSetInput ip = Parameters() );
 
   void modifyFiles ( const OpenFOAMCase& ofc,
                      const boost::filesystem::path& location ) const override;
@@ -433,7 +449,15 @@ public:
 }
 
 
+struct RefinementLevel
+{
+    double L, delta, level;
 
+    struct L_delta { double L; double delta; };
+    struct L_level { double L; int level; };
+    struct level_delta { double delta; int level; };
+    RefinementLevel(const boost::variant<L_delta,L_level,level_delta>& input);
+};
 
 
 class snappyHexMeshConfiguration
@@ -443,6 +467,7 @@ public:
 #include "snappyhexmesh__snappyHexMeshConfiguration__Parameters.h"
 /*
 PARAMETERSET>>> snappyHexMeshConfiguration Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 doCastellatedMesh = bool true "Enable castellated meshing step"
 doSnap = bool true "Enable snapping step"
@@ -472,16 +497,15 @@ nSmoothPatch = int 3 "Number of patch smoothing operations"
 
 allowFreeStandingZoneFaces = bool true "allowFreeStandingZoneFaces"
     
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType ( "snappyHexMeshConfiguration" );
 
-  snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  snappyHexMeshConfiguration ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
   void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const override;
 
@@ -524,7 +548,7 @@ void snappyHexMesh
 //   const OFDictData::list& PiM,
 //   const std::vector<snappyHexMeshFeats::FeaturePtr>& ops,
 //   snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
-  const ParameterSet &ps = snappyHexMeshConfiguration::Parameters::makeDefault(),
+  const snappyHexMeshConfiguration::Parameters &p,
   bool overwrite=true,
   bool isalreadydecomposed=false,
   bool keepdecomposedafterfinish=false,

@@ -4,11 +4,13 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <limits>
+#include <thread>
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
+#include "base/spatialtransformation.h"
 
-#include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 #include "vtkLookupTable.h"
@@ -38,6 +40,7 @@
 class vtkCompositeDataSet;
 class vtkAppendFilter;
 class vtkMultiProcessController;
+class ResultSection;
 
 class vtkCleanArrays : public vtkPassInputTypeAlgorithm
 {
@@ -172,7 +175,12 @@ vtkSmartPointer<vtkPolyData> createArrows(
     );
 
 
-extern const std::vector<double> colorMapData_SD, colorMapData_NICEdge;
+extern const std::vector<double>
+    colorMapData_SD,
+    colorMapData_NICEdge,
+    colorMapData_BlueGreenOrange,
+    colorMapData_CoolToWarm,
+    colorMapData_BlackBodyRadiation;
 
 
 vtkSmartPointer<vtkLookupTable> createColorMap(
@@ -267,7 +275,10 @@ enum DatasetRepresentation
   Surface = VTK_SURFACE
 };
 
+extern boost::mutex VTKlock; // only one renderer c at a time
+
 class VTKOffscreenScene
+    : boost::mutex::scoped_lock
 {
 
 protected:
@@ -376,8 +387,13 @@ public:
     actor->GetProperty()->SetRepresentation(repr);
 
     renderer_->AddActor(actor);
-
     return actor;
+  }
+
+  vtkProp* addActor(vtkProp* actor)
+  {
+      renderer_->AddActor(actor);
+      return actor;
   }
 
   vtkSmartPointer<vtkScalarBarActor> addColorBar(
@@ -427,7 +443,7 @@ class OpenFOAMCaseScene
   std::vector<double> times_;
 
 public:
-  OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np=1);
+  OpenFOAMCaseScene(const boost::filesystem::path& casepath, bool readZones=false, int np=1);
 
   vtkMultiBlockDataSet* GetOutput();
 
@@ -461,7 +477,28 @@ public:
 };
 
 
+template<class T>
+T average(vtkDataArray *arr)
+{
+    T avg=0.;
+    for (int i=0; i<arr->GetNumberOfTuples(); ++i)
+    {
+        avg += arr->GetTuple1(i);
+    }
+    avg/=double(arr->GetNumberOfTuples());
+    return avg;
+}
 
+template<>
+arma::mat average(vtkDataArray *arr);
+
+
+void forEachUnconnectedPart(
+    OpenFOAMCaseScene& scene,
+    const boost::filesystem::path& exePath,
+    ResultSection *section,
+    vtkAlgorithm* in,
+    std::function<void(vtkAlgorithm*, ResultSection*, int )> displayRegion);
 
 }
 

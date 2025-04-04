@@ -10,11 +10,9 @@ namespace insight {
 defineType(rangeWeightField);
 addToOpenFOAMCaseElementFactoryTable(rangeWeightField);
 
-rangeWeightField::rangeWeightField( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "rangeWeightField", ps),
-  p_(ps)
-{
-}
+rangeWeightField::rangeWeightField( OpenFOAMCase& c, ParameterSetInput ip )
+    : OpenFOAMCaseElement(c, ip.forward<Parameters>())
+{}
 
 void rangeWeightField::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -24,15 +22,15 @@ void rangeWeightField::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict fod;
   fod["type"]="rangeWeightField";
 
-  fod["sourceFieldName"]=p_.sourceFieldName;
-  fod["outputFieldName"]=p_.outputFieldName;
-  fod["min"]=p_.min;
-  fod["max"]=p_.max;
+  fod["sourceFieldName"]=p().sourceFieldName;
+  fod["outputFieldName"]=p().outputFieldName;
+  fod["min"]=p().min;
+  fod["max"]=p().max;
 
-  if (!p_.multiplyFieldName.empty())
-    fod["multiplyFieldName"]=p_.multiplyFieldName;
+  if (!p().multiplyFieldName.empty())
+    fod["multiplyFieldName"]=p().multiplyFieldName;
 
-  cd.subDict("functions")[p_.outputFieldName+"_functionObject"] = fod;
+  cd.subDict("functions")[p().outputFieldName+"_functionObject"] = fod;
 }
 
 

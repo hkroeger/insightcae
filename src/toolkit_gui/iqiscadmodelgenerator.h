@@ -30,7 +30,8 @@ Q_SIGNALS:
   void createdVariable(
       const QString& sn,
       insight::cad::VectorPtr vv,
-      insight::cad::VectorVariableType vt );
+      insight::cad::VectorVariableType vt,
+      bool initialVisibility );
 
   void createdFeature(
       const QString& sn,

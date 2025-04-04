@@ -6,8 +6,8 @@ defineType(kEpsilon_RASModel);
 addToFactoryTable(turbulenceModel, kEpsilon_RASModel);
 addToOpenFOAMCaseElementFactoryTable(kEpsilon_RASModel);
 
-kEpsilon_RASModel::kEpsilon_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-  : kEpsilonBase_RASModel(c)
+kEpsilon_RASModel::kEpsilon_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+  : kEpsilonBase_RASModel(c, ip.forward<Parameters>())
 {}
 
 

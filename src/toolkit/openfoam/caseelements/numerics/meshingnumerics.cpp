@@ -9,10 +9,10 @@ namespace insight {
 defineType(MeshingNumerics);
 addToOpenFOAMCaseElementFactoryTable(MeshingNumerics);
 
-MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: decomposeParDict(c, ps)
+MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: decomposeParDict(c, ip.forward<Parameters>())
 {
-  rename("MeshingNumerics");
+  // rename("MeshingNumerics");
 }
 
 

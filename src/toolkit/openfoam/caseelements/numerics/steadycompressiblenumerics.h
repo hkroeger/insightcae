@@ -31,15 +31,14 @@ consistent = bool true "Check for SIMPLEC instead of plain SIMPLE"
 
 setup = selection ( accurate stable ) accurate "Select accuratefor second order schemes. In case of stability problems revert to stable."
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "steadyCompressibleNumerics" );
-    steadyCompressibleNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    steadyCompressibleNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

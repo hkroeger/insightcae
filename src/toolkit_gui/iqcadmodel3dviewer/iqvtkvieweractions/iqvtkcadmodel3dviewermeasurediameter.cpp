@@ -8,21 +8,29 @@
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
 
-IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(IQVTKCADModel3DViewer &viewWidget)
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
-{}
-
-IQVTKCADModel3DViewerMeasureDiameter::~IQVTKCADModel3DViewerMeasureDiameter()
+IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(
+    IQVTKCADModel3DViewer &viewWidget)
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(
+          viewWidget)
 {
-    viewer().deactivateSubshapeSelectionAll();
+    aboutToBeDestroyed.connect(
+        [this](){
+        viewer().deactivateSubshapeSelectionAll();
+        });
 }
+
+QString IQVTKCADModel3DViewerMeasureDiameter::description() const
+{
+    return "Measure diameter";
+}
+
 
 void IQVTKCADModel3DViewerMeasureDiameter::start()
 {
     viewer().activateSelectionAll(insight::cad::Edge);
     //viewer().sendStatus("Please select first point!");
 
-    auto sel = std::make_shared<IQVTKSelectSubshape>(viewer());
+    auto sel = make_viewWidgetAction<IQVTKSelectSubshape>(viewer());
     sel->entitySelected.connect(
         [this](IQVTKCADModel3DViewer::SubshapeData edg)
         {
@@ -47,5 +55,5 @@ void IQVTKCADModel3DViewerMeasureDiameter::start()
         }
         );
 
-    launchChildAction(sel);
+    launchAction(std::move(sel));
 }

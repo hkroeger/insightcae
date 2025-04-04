@@ -15,26 +15,12 @@ defineStaticFunctionTableWithArgs(
     LIST(ppa)
     );
 
-defineStaticFunctionTableWithArgs(
-    PostProcActionVisualizers,
-    createVTKReprByTypeName,
-    PostProcActionVisualizers::VTKActorList,
-    LIST(insight::cad::PostprocActionPtr ppa),
-    LIST(ppa)
-    );
-
 
 
 Handle_AIS_InteractiveObject
 PostProcActionVisualizers::createAISReprByTypeName(PostprocActionPtr)
 {
   return Handle_AIS_InteractiveObject(); // nothing to visualize by default
-}
-
-PostProcActionVisualizers::VTKActorList
-PostProcActionVisualizers::createVTKReprByTypeName(PostprocActionPtr)
-{
-    return VTKActorList(); // nothing to visualize by default
 }
 
 
@@ -45,7 +31,7 @@ PostProcActionVisualizers::createAISRepr(PostprocActionPtr ppa)
   try
   {
     ppa->checkForBuildDuringAccess();
-    return createAISReprByTypeName(ppa->type(), ppa);
+    return createAISReprByTypeNameFor(ppa->type(), ppa);
   }
   catch (insight::Exception& e)
   {
@@ -55,20 +41,7 @@ PostProcActionVisualizers::createAISRepr(PostprocActionPtr ppa)
   return PostProcActionVisualizers::createAISReprByTypeName(ppa);
 }
 
-PostProcActionVisualizers::VTKActorList
-PostProcActionVisualizers::createVTKRepr( PostprocActionPtr ppa )
-{
-  ppa->checkForBuildDuringAccess();
 
-  if (has_createVTKReprByTypeName(ppa->type()))
-  {
-    return createVTKReprByTypeName(ppa->type(), ppa);
-  }
-  else
-  {
-    return PostProcActionVisualizers::createVTKReprByTypeName(ppa);
-  }
-}
 
 PostProcActionVisualizers postProcActionVisualizers;
 

@@ -41,7 +41,7 @@ class VTK_EXPORT vtkMedMesh: public vtkObject
 public:
   static vtkMedMesh* New();
   vtkTypeMacro(vtkMedMesh, vtkObject);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // Description:
   // The name of the mesh in the med file.

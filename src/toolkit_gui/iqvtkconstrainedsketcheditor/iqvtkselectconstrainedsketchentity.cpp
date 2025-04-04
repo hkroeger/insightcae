@@ -1,5 +1,7 @@
 #include "iqvtkselectconstrainedsketchentity.h"
 
+#include "base/cppextensions.h"
+#include "iqfilteredparametersetmodel.h"
 #include "iqvtkconstrainedsketcheditor.h"
 #include "parametereditorwidget.h"
 
@@ -7,14 +9,15 @@
 #include <QHBoxLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QLineEdit>
+#include <qnamespace.h>
 
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 
-void SketchEntityMultiSelection::showParameterEditor()
+void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEditor)
 {
     pew_ = new QWidget;
-    auto *tb=editor_.viewer().commonToolBox();
-    auto tbi = tb->addItem(pew_, "Sketch entity properties");
-    tb->setCurrentIndex(tbi);
+    editor_.viewer().addToolBox(pew_, "Sketch entity properties");
 
     auto lo = new QVBoxLayout;
     pew_->setLayout(lo);
@@ -24,8 +27,8 @@ void SketchEntityMultiSelection::showParameterEditor()
     l->addWidget(new QLabel("Layer"));
     auto *layEd=new QComboBox;
     layEd->setEditable(true);
-
-    auto ln = editor_->layers();
+    
+    auto ln = editor_->layerNames();
     for (auto& l: ln)
     {
         layEd->addItem(QString::fromStdString(l));
@@ -51,45 +54,61 @@ void SketchEntityMultiSelection::showParameterEditor()
         layEd->setEditText(
             QString::fromStdString(*commonLayerName));
 
-    connect(layEd, &QComboBox::currentTextChanged,
-            [this](const QString& newLayerName)
+    auto changeLayer =
+            [this,layEd]()
             {
+                auto newLayerName = layEd->currentText().toStdString();
                 for (auto& ee: *this)
                 {
                     auto e = ee.lock();
-                    e->setLayerName(
-                        newLayerName.toStdString());
+                    if (!(*editor_).hasLayer(newLayerName))
+                    {
+                        (*editor_).addLayer(newLayerName, *editor_.entityProperties_);
+                    }
+                    e->setLayerName(newLayerName);
                 }
                 editor_.sketchChanged();
-            });
+            };
 
-    auto tree=new QTreeView;
-    lo->addWidget(tree);
-    auto editControls = new QWidget;
-    lo->addWidget(editControls);
+    connect(layEd->lineEdit(), &QLineEdit::editingFinished, layEd,
+            changeLayer);
+    connect(layEd, QOverload<int>::of(&QComboBox::currentIndexChanged), layEd,
+            changeLayer);
 
-    pe_ = new ParameterEditorWidget(pew_, tree, editControls);
-    connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
-            [this]()
-            {
-                for (auto& ee: *this)
+    if (includeParameterEditor)
+    {
+        auto tree=new QTreeView;
+        lo->addWidget(tree);
+        auto editControls = new QWidget;
+        lo->addWidget(editControls);
+
+        pe_ = new ParameterEditorWidget(pew_, tree, editControls, &editor_.viewer());
+        connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
+                [this]()
                 {
-                    auto e = ee.lock();
-                    e->parametersRef().merge(
-                        getParameterSet(pe_->model())
-                        );
+                    for (auto& ee: *this)
+                    {
+                        auto e = ee.lock();
+                        e->parametersRef().merge(
+                            getParameterSet(pe_->model())
+                            );
+                    }
                 }
-            }
-            );
+                );
+    }
 }
 
-void SketchEntityMultiSelection::removeParameterEditor()
+void SketchEntityMultiSelection::removePropertiesEditor()
 {
     if (pe_)
     {
+        delete pe_;
+        pe_=nullptr;
+    }
+    if (pew_)
+    {
         delete pew_;
         pew_=nullptr;
-        pe_=nullptr;
     }
 }
 
@@ -109,7 +128,7 @@ SketchEntityMultiSelection::SketchEntityMultiSelection
 
 SketchEntityMultiSelection::~SketchEntityMultiSelection()
 {
-    removeParameterEditor();
+    removePropertiesEditor();
 }
 
 
@@ -131,36 +150,41 @@ void SketchEntityMultiSelection::insert(
 
             auto lentity=entity.lock();
 
+
             if (size()==1)
             {
-                commonParameters_=
-                    lentity->parameters();
-                defaultCommonParameters_=
-                    lentity->defaultParameters();
+                // commonParameters_=
+                //     lentity->parameters().cloneSubset();
+                // defaultCommonParameters_=
+                //     lentity->defaultParameters().cloneSubset();
             }
             else if (size()>1)
             {
-                commonParameters_=
-                    commonParameters_.intersection(
-                    lentity->parameters());
+                // commonParameters_=std::move(
+                //     std::dynamic_unique_ptr_cast<insight::ParameterSet>(
+                //     commonParameters_->intersection(
+                //     lentity->parameters())));
 
-                defaultCommonParameters_=
-                    defaultCommonParameters_.intersection(
-                    lentity->defaultParameters());
+                // defaultCommonParameters_=std::move(
+                //     std::dynamic_unique_ptr_cast<insight::ParameterSet>(
+                //     defaultCommonParameters_->intersection(
+                //     lentity->defaultParameters())));
             }
 
-            if ( size()>0 && commonParameters_.size()>0 )
+            if ( size()>0 )
             {
-                if (!pe_) showParameterEditor();
-//                pe_->clearParameterSet();
-                auto m = new IQParameterSetModel(
-                    commonParameters_,
-                    defaultCommonParameters_, pe_);
-                pe_->setModel(m);
+                if (!pew_)
+                    showPropertiesEditor(
+                        size()>0 );
+
+                if (auto *psm = editor_.presentation_->setupSketchEntityParameterSetModel(*lentity))
+                {
+                    pe_->setModel(psm);
+                }
             }
             else
             {
-                removeParameterEditor();
+                removePropertiesEditor();
             }
         }
     }
@@ -183,12 +207,27 @@ IQVTKSelectConstrainedSketchEntity::findEntitiesUnderCursor(
 {
     std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > ret;
     auto aa = viewer().findAllActorsUnderCursorAt(point);
-    for (auto& a: aa)
+    for (int i=0; i<2; ++i)
     {
-        if (auto sg =
-            editor_.findSketchElementOfActor(a))
+        for (auto& a: aa)
         {
-            ret.push_back(sg);
+            if (auto sg = editor_.findSketchElementOfActor(a))
+            {
+                // sort points to beginning of list
+                if (
+                    (i==0 && std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                    ||
+                    (i==1 && !std::dynamic_pointer_cast<insight::cad::SketchPoint>(sg))
+                    )
+                {
+                    if (std::find_if(ret.begin(), ret.end(),
+                        [&sg](const decltype(ret)::value_type& i){return i.lock()==sg;})
+                        == ret.end())
+                    {
+                        ret.push_back(sg);
+                    }
+                }
+            }
         }
     }
     return ret;
@@ -217,28 +256,82 @@ IQVTKSelectConstrainedSketchEntity::highlightEntity(
 
 
 IQVTKSelectConstrainedSketchEntity::IQVTKSelectConstrainedSketchEntity(
-    IQVTKConstrainedSketchEditor &editor )
+    IQVTKConstrainedSketchEditor &editor,
+    bool allowBoxSelection )
     :   IQVTKConstrainedSketchEditorSelectionLogic(
         [&editor]()
         { return std::make_shared<SketchEntityMultiSelection>(editor); },
-        editor.viewer() ),
-    editor_(editor)
+        editor.viewer(),
+        false // captureAllInput
+        ),
+    editor_(editor),
+    allowBoxSelection_(allowBoxSelection)
 {
     toggleHoveringSelectionPreview(true);
 }
 
 
+
 IQVTKSelectConstrainedSketchEntity::~IQVTKSelectConstrainedSketchEntity()
 {}
 
+
+
 void IQVTKSelectConstrainedSketchEntity::start()
 {}
+
+
+
+bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point)
+{
+    if (!this->hasChildReceivers())
+    {
+        bool ret=IQVTKConstrainedSketchEditorSelectionLogic
+            ::onMouseClick(btn, nFlags, point);
+
+        if (!ret
+            && (btn==Qt::LeftButton) && (nFlags==Qt::ShiftModifier)
+            && allowBoxSelection_ )
+        {
+            auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawRectangle>(
+                editor(), false, false );
+
+            dl->previewUpdated.connect(
+                [this](const arma::mat& p1_3d, const arma::mat& p2_3d)
+                {
+                    auto p1=(*editor_).p3Dto2D(p1_3d);
+                    auto p2=(*editor_).p3Dto2D(p2_3d);
+
+                    auto selectedEntities =
+                        (*editor_).entitiesInsideRect(
+                            p1[0], p1[1], p2[0], p2[1] );
+
+                    setSelectionTo(selectedEntities);
+                }
+                );
+
+            auto& dlRef=*dl;
+            launchAction(std::move(dl));
+            return dlRef.onMouseClick(btn, nFlags, point);
+        }
+        return ret;
+    }
+    else
+        return IQVTKConstrainedSketchEditorSelectionLogic
+            ::onMouseClick(btn, nFlags, point);
+}
+
 
 
 IQVTKConstrainedSketchEditor &IQVTKSelectConstrainedSketchEntity::editor() const
 {
     return editor_;
 }
+
+
 
 insight::cad::ConstrainedSketch &IQVTKSelectConstrainedSketchEntity::sketch() const
 {

@@ -51,7 +51,7 @@ void IQRXRemoteExecutionState::updateGUI(bool enabled)
                 std::dynamic_pointer_cast<insight::SSHLinuxServer>(exeConfig().server()) )
         {
           auto cmd = QString("ssh %1 -t 'cd '%2'; bash -l'\n")
-              .arg(QString::fromStdString(ssh->serverConfig()->hostName_))
+              .arg(QString::fromStdString(ssh->SSHServerConfig().hostName_))
               .arg(QString::fromStdString(rlc_->remoteDir().string()))
               ;
           mw->terminal_->sendText(cmd);
@@ -279,7 +279,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
       {
           if (remote_)
           {
-              auto server = remote_->location().serverConfig()->getInstanceIfRunning();
+              auto server = remote_->location().serverConfig().getInstanceIfRunning();
               insight::assertion(bool(server), "server is not running");
 
               RemoteDirSelector dlg(this, server);
@@ -291,7 +291,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
                   remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
                       this,
-                      remote_->location().serverConfig(),
+                      remote_->location().serverConfig().clone(),
                       dlg.selectedRemoteDir()
                       );
                   remote_->location().writeConfigFile(
@@ -695,7 +695,7 @@ void MainWindow::remoteWriteAndCopyBack(bool parallel)
 //          ));
 
   auto job=std::make_shared<insight::Job>(
-      remote_->exeConfig().server()->commandAndArgs(cmd.str())
+      remote_->exeConfig().server()->config().commandAndArgs(cmd.str())
       );
 
 //  insight::Job::forkExternalProcess(

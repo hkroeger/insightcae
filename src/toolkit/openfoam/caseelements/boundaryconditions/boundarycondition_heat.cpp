@@ -15,6 +15,10 @@ namespace HeatBC
 defineType(HeatBC);
 defineDynamicClass(HeatBC);
 
+HeatBC::HeatBC(ParameterSetInput ip)
+    : p_(ip.forward<Parameters>())
+{}
+
 HeatBC::~HeatBC()
 {}
 
@@ -32,7 +36,8 @@ defineType(AdiabaticBC);
 addToFactoryTable(HeatBC, AdiabaticBC);
 addToStaticFunctionTable(HeatBC, AdiabaticBC, defaultParameters);
 
-AdiabaticBC::AdiabaticBC(const ParameterSet&)
+AdiabaticBC::AdiabaticBC(ParameterSetInput ip)
+    : HeatBC(ip.forward<Parameters>())
 {}
 
 bool AdiabaticBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const
@@ -59,8 +64,8 @@ defineType(FixedTemperatureBC);
 addToFactoryTable(HeatBC, FixedTemperatureBC);
 addToStaticFunctionTable(HeatBC, FixedTemperatureBC, defaultParameters);
 
-FixedTemperatureBC::FixedTemperatureBC(const ParameterSet& ps)
-: p_(ps)
+FixedTemperatureBC::FixedTemperatureBC(ParameterSetInput ip)
+    : HeatBC(ip.forward<Parameters>())
 {}
 
 bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries) const
@@ -72,7 +77,7 @@ bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const F
       (get<0>(fieldinfo)==scalarField)
     )
     {
-      FieldData(p_.T).setDirichletBC(BC, dictionaries);
+      FieldData(p().T).setDirichletBC(BC, dictionaries);
       return true;
     }
     else
@@ -86,8 +91,8 @@ defineType(TemperatureGradientBC);
 addToFactoryTable(HeatBC, TemperatureGradientBC);
 addToStaticFunctionTable(HeatBC, TemperatureGradientBC, defaultParameters);
 
-TemperatureGradientBC::TemperatureGradientBC(const ParameterSet& ps)
-: p_(ps)
+TemperatureGradientBC::TemperatureGradientBC(ParameterSetInput ip)
+    : HeatBC(ip.forward<Parameters>())
 {}
 
 bool TemperatureGradientBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts& dictionaries) const
@@ -101,11 +106,11 @@ bool TemperatureGradientBC::addIntoFieldDictionary(const string& fieldname, cons
     {
       BC["type"]="uniformFixedGradient";
       std::ostringstream tableData;
-      if (const auto* cd = boost::get<Parameters::gradT_constant_type>(&p_.gradT))
+      if (const auto* cd = boost::get<Parameters::gradT_constant_type>(&p().gradT))
       {
         tableData << cd->gradT;
       }
-      else if (const auto* ud = boost::get<Parameters::gradT_unsteady_type>(&p_.gradT))
+      else if (const auto* ud = boost::get<Parameters::gradT_unsteady_type>(&p().gradT))
       {
         tableData << "table (";
         for (const auto& d: ud->gradT_vs_t)
@@ -127,8 +132,8 @@ defineType(ExternalWallBC);
 addToFactoryTable(HeatBC, ExternalWallBC);
 addToStaticFunctionTable(HeatBC, ExternalWallBC, defaultParameters);
 
-ExternalWallBC::ExternalWallBC(const ParameterSet& ps)
-: p_(ps)
+ExternalWallBC::ExternalWallBC(ParameterSetInput ip)
+    : HeatBC(ip.forward<Parameters>())
 {}
 
 bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, OFdicts&) const
@@ -142,12 +147,16 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
     {
         BC["type"]="externalWallHeatFluxTemperature";
 
-        if (const auto* ft = boost::get<Parameters::kappaSource_fluidThermo_type>(&p_.kappaSource))
+        if (const auto* ft =
+            boost::get<Parameters::kappaSource_fluidThermo_type>(
+                &p().kappaSource))
         {
           BC["kappaMethod"]="fluidThermo";
           BC["kappa"]="none";
         }
-        else if (const auto* lu = boost::get<Parameters::kappaSource_lookup_type>(&p_.kappaSource))
+        else if (const auto* lu =
+                   boost::get<Parameters::kappaSource_lookup_type>(
+                       &p().kappaSource))
         {
           BC["kappaMethod"]="lookup";
           BC["kappa"]=lu->kappaFieldName;
@@ -156,17 +165,23 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
         BC["Qr"]="none";
         BC["relaxation"]=1.0;
 
-        if (const auto* const_p = boost::get<Parameters::heatflux_fixedPower_type>(&p_.heatflux))
+        if (const auto* const_p =
+            boost::get<Parameters::heatflux_fixedPower_type>(
+                &p().heatflux))
           {
             BC["mode"]="power";
             BC["Q"]=boost::str(boost::format("%g")%const_p->Q );
           }
-        else if (const auto* const_q = boost::get<Parameters::heatflux_fixedHeatFlux_type>(&p_.heatflux))
+        else if (const auto* const_q =
+                   boost::get<Parameters::heatflux_fixedHeatFlux_type>(
+                       &p().heatflux))
           {
             BC["mode"]="flux";
             BC["q"]=boost::str(boost::format("uniform %g")%const_q->q );
           }
-        else if (const auto* conv_q = boost::get<Parameters::heatflux_fixedHeatTransferCoeff_type>(&p_.heatflux))
+        else if (const auto* conv_q =
+                     boost::get<Parameters::heatflux_fixedHeatTransferCoeff_type>(
+                         &p().heatflux))
           {
             BC["mode"]="coefficient";
             BC["Ta"]=boost::str(boost::format("uniform %g") % conv_q->Ta );
@@ -174,7 +189,7 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
           }
 
         OFDictData::list tL, kL;
-        for (const Parameters::wallLayers_default_type& layer: p_.wallLayers)
+        for (const Parameters::wallLayers_default_type& layer: p().wallLayers)
         {
           tL.push_back(layer.thickness);
           kL.push_back(layer.kappa);
@@ -197,8 +212,8 @@ defineType(CHTCoupledWall);
 addToFactoryTable(HeatBC, CHTCoupledWall);
 addToStaticFunctionTable(HeatBC, CHTCoupledWall, defaultParameters);
 
-CHTCoupledWall::CHTCoupledWall(const ParameterSet& ps)
-  : p_(ps)
+CHTCoupledWall::CHTCoupledWall(ParameterSetInput ip)
+    : HeatBC(ip.forward<Parameters>())
 {}
 
 void CHTCoupledWall::addOptionsToBoundaryDict(OFDictData::dict &BCdict) const
@@ -208,17 +223,17 @@ void CHTCoupledWall::addOptionsToBoundaryDict(OFDictData::dict &BCdict) const
   BCdict["type"]="mappedWall";
 
   std::string method;
-  switch (p_.method)
+  switch (Parameters::method_type(p().method))
   {
     case Parameters::nearestPatchFace: method="nearestPatchFace"; break;
     case Parameters::nearestPatchFaceAMI: method="nearestPatchFaceAMI"; break;
   }
   BCdict["sampleMode"]=method;
 
-  BCdict["sampleRegion"]=p_.sampleRegion;
-  BCdict["samplePatch"]=p_.samplePatch;
+  BCdict["sampleRegion"]=p().sampleRegion;
+  BCdict["samplePatch"]=p().samplePatch;
 
-  if (const auto *uofs = boost::get<Parameters::offset_uniform_type>(&p_.offset))
+  if (const auto *uofs = boost::get<Parameters::offset_uniform_type>(&p().offset))
   {
     BCdict["offset"]=OFDictData::vector3(uofs->distance);
   }
@@ -234,7 +249,7 @@ bool CHTCoupledWall::addIntoFieldDictionary(const string& fieldname, const Field
     )
     {
         BC["type"]="compressible::turbulentTemperatureCoupledBaffleMixed";
-        BC["Tnbr"]=p_.Tnbr;
+        BC["Tnbr"]=p().Tnbr;
         BC["thicknessLayers"]=OFDictData::list();
         BC["kappaLayers"]=OFDictData::list();
         BC["kappaMethod"]="fluidThermo";

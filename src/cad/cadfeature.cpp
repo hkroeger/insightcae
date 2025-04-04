@@ -18,6 +18,8 @@
  *
  */
 
+#include "TopAbs_State.hxx"
+#include "base/linearalgebra.h"
 #include "geotest.h"
 
 #include <memory>
@@ -48,45 +50,23 @@
 // #include "Standard_Transient_proto.hxx"
 #include "CDM_Document.hxx"
 // #include "MMgt_TShared.hxx"
-#include "TDocStd_Document.hxx"
-//#include "XCAFApp_Application.hxx"
-//#include "XCAFDoc.hxx"
-//#include "XCAFDoc_DocumentTool.hxx"
-//#include "XCAFDoc_ShapeTool.hxx"
-//#include "XSControl_WorkSession.hxx"
-//#include "XSControl_TransferReader.hxx"
-//#include "XSControl_TransferWriter.hxx"
-#include "StepData_StepModel.hxx"
-#include "TDF_LabelSequence.hxx"
-#if (OCC_VERSION_MAJOR>=7)
-#else
-#include "Handle_StepRepr_RepresentationItem.hxx"
-#endif
-//#include "STEPConstruct.hxx"
-//#include "STEPCAFControl_Writer.hxx"
-//#include "STEPCAFControl_Reader.hxx"
-#include "StepRepr_RepresentationItem.hxx"
-#include "StepShape_AdvancedFace.hxx"
-#include "APIHeaderSection_MakeHeader.hxx"
-#include "TDataStd_Name.hxx"
-#include "TDF_ChildIterator.hxx"
-#include "TDF_ChildIDIterator.hxx"
-#include "TransferBRep.hxx"
-#include "Transfer_Binder.hxx"
-#include "Transfer_TransientProcess.hxx"
 #include "TopTools_DataMapIteratorOfDataMapOfIntegerShape.hxx"
-
+#include "BRepClass3d_SolidClassifier.hxx"
 #include "openfoam/openfoamdict.h"
 
 #include "TColStd_SequenceOfTransient.hxx"
 #include "TColStd_HSequenceOfTransient.hxx"
 
+
 #include "BRepBuilderAPI_Copy.hxx"
+#include "vtkCellArray.h"
 
 #if (OCC_VERSION_MAJOR<7)
 #include "compat/Bnd_OBB.hxx"
 #include "compat/BRepBndLib.hxx"
+#include "Poly_Triangulation.hxx"
 #else
+#include "StdPrs_ToolTriangulatedShape.hxx"
 #include "Bnd_OBB.hxx"
 #include "BRepBndLib.hxx"
 #endif
@@ -94,6 +74,21 @@
 #include "base/parameters/pathparameter.h"
 
 #include "featurefilters/same.h"
+
+#include "TDocStd_Application.hxx"
+#include "XCAFDoc_ShapeTool.hxx"
+#include "XCAFDoc_DocumentTool.hxx"
+
+#include "cadfeatures/importsolidmodel.h"
+
+#include "ivtkoccshape.h"
+
+#include <vtkSmartPointer.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkMapper.h>
+
+#include "Poly.hxx"
+#include "Poly_ListOfTriangulation.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -108,8 +103,36 @@ namespace boost
 
 std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
 {
-    auto m = insight::cad::Feature::create(shape);
-    return m->hash();
+    // create hash from
+    // 1. total volume
+    // 2. # vertices
+    // 3. # faces
+    // 4. vertex locations
+
+    size_t hash=0;
+
+    GProp_GProps volprops;
+    BRepGProp::VolumeProperties(shape, volprops);
+    boost::hash_combine(hash, boost::hash<double>()(volprops.Mass()));
+
+    insight::cad::SubshapeNumbering subnum(shape);
+    boost::hash_combine(hash, boost::hash<int>()(subnum.nVertexTags()));
+    boost::hash_combine(hash, boost::hash<int>()(subnum.nFaceTags()));
+
+    insight::cad::FeatureSetData vset;
+    subnum.insertAllVertexTags(vset);
+    for (const insight::cad::FeatureID& j: vset)
+    {
+        auto p=BRep_Tool::Pnt(subnum.vertexByTag(j));
+        boost::hash_combine
+            (
+                hash,
+                boost::hash<arma::mat>()(
+                insight::vec3( p.X(), p.Y(), p.Z() ))
+                );
+    }
+
+    return hash;
 }
 
 
@@ -140,23 +163,36 @@ std::size_t hash<gp_Trsf>::operator()(const gp_Trsf& t) const
 }
 
 
-std::size_t hash<insight::cad::Datum>::operator()(const insight::cad::Datum& m) const
+std::size_t hash<insight::cad::ASTBase>::operator()(
+    const insight::cad::ASTBase& m ) const
 {
   return m.hash();
 }
 
-
-std::size_t hash<insight::cad::Feature>::operator()(const insight::cad::Feature& m) const
+std::size_t hash<insight::cad::Feature>::operator()(
+    const insight::cad::Feature& m ) const
 {
-  return m.hash();
+    return hash<insight::cad::ASTBase>()(m);
+}
+
+std::size_t hash<insight::cad::FeatureSet>::operator()(
+    const insight::cad::FeatureSet& m ) const
+{
+    return m.calcFeatureSetHash();
 }
 
 
-std::size_t hash<insight::cad::FeatureSet>::operator()(const insight::cad::FeatureSet& m) const
+std::size_t hash<insight::cad::DeferredFeatureSet>::operator()(
+    const insight::cad::DeferredFeatureSet& m ) const
 {
-  return m.hash();
+    return hash<insight::cad::ASTBase>()(m);
 }
 
+std::size_t hash<insight::cad::Datum>::operator()(
+    const insight::cad::Datum& m ) const
+{
+    return hash<insight::cad::ASTBase>()(m);
+}
 
 }
 
@@ -290,15 +326,15 @@ defineStaticFunctionTable(
     ruleDocumentation,
     FeatureCmdInfoList );
 
+
+
+
+
 std::mutex Feature::step_read_mutex_;
 
-void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
-{
-    ParameterListHash h;
-    h.addParameter(this->type());
-    h.addParameter(filename);
-    hash_=h.getHash();
 
+void Feature::setShapeFromFile(const boost::filesystem::path& filename)
+{
     std::string ext=filename.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
@@ -314,8 +350,8 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     {
         IGESControl_Controller::Init();
         Interface_Static::SetIVal("read.surfacecurve.mode",3);
-//        Interface_Static::SetIVal ("read.precision.mode",1);
-//        Interface_Static::SetRVal("read.precision.val",0.001);
+        //        Interface_Static::SetIVal ("read.precision.mode",1);
+        //        Interface_Static::SetRVal("read.precision.val",0.001);
 
         IGESControl_Reader igesReader;
 
@@ -332,160 +368,122 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     {
         TopoDS_Shape res;
         {
-          std::lock_guard<std::mutex> guard(step_read_mutex_);
+            std::lock_guard<std::mutex> guard(step_read_mutex_);
 
-          // import STEP
-          STEPControl_Reader reader;
-          reader.ReadFile(filename.string().c_str());
-          reader.TransferRoots();
+            // import STEP
+            STEPControl_Reader reader;
+            reader.ReadFile(filename.string().c_str());
+            reader.TransferRoots();
 
-          res=reader.OneShape();
+            res=reader.OneShape();
         }
         // set shape
         setShape(res);
 
-//        // now detect named features
-//        //
-//        cout<<"detecting names"<<endl;
+        //        // now detect named features
+        //        //
+        //        cout<<"detecting names"<<endl;
 
-//        typedef std::map<std::string, FeatureSetPtr> Feats;
-//        Feats feats;
+        //        typedef std::map<std::string, FeatureSetPtr> Feats;
+        //        Feats feats;
 
-//        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
-//        reader.TransferList(shapeList);
-
-
-//        const Handle_XSControl_WorkSession & theSession = reader.WS();
-//        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
-//        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
-
-//        for(int i=1; i <= shapeList->Length(); i++)
-//        {
-//            Handle_Standard_Transient transient = shapeList->Value(i);
-//            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
-//            if(!shape.IsNull())
-//            {
-//                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
-//                if(!anEntity.IsNull())
-//                {
-//                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
-//                    if(!entity.IsNull())
-//                    {
-//                        if (!entity->Name()->IsEmpty())  // found named entity
-//                        {
-//                            std::string n(entity->Name()->ToCString());
-//                            if (shape.ShapeType()==TopAbs_FACE)
-//                            {
-//                                std::vector<FeatureID> ids;
-//                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
-//                                {
-//                                    TopoDS_Face f=TopoDS::Face(ex.Current());
-//                                    if (f.IsPartner(shape))
-//                                    {
-//                                        ids.push_back(faceID(f));
-////                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
-//                                    }
-//                                }
-//                                if (ids.size()==0)
-//                                {
-//                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
-//                                }
-//                                else
-//                                {
-//                                    std::string name="face_"+n;
-//                                    if (feats.find(name)==feats.end())
-//                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
-//                                    for (const FeatureID& i: ids)
-//                                    {
-//                                        feats[name]->add(i);
-//                                    }
-//                                }
-//                            }
-//                            else if (shape.ShapeType()==TopAbs_SOLID)
-//                            {
-//                                std::vector<FeatureID> ids;
-//                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
-//                                {
-//                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
-//                                    if (f.IsPartner(shape))
-//                                    {
-//                                        ids.push_back(solidID(f));
-////                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
-//                                    }
-//                                }
-//                                if (ids.size()==0)
-//                                {
-//                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
-//                                }
-//                                else
-//                                {
-//                                    std::string name="solid_"+n;
-//                                    if (feats.find(name)==feats.end())
-//                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
-//                                    for (const FeatureID& i: ids)
-//                                    {
-//                                        feats[name]->add(i);
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        //        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
+        //        reader.TransferList(shapeList);
 
 
-//        for (Feats::value_type& f: feats)
-//        {
-//            providedFeatureSets_[f.first]=f.second;
-//            providedSubshapes_[f.first].reset(new Feature(f.second));
-//        }
+        //        const Handle_XSControl_WorkSession & theSession = reader.WS();
+        //        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
+        //        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
+
+        //        for(int i=1; i <= shapeList->Length(); i++)
+        //        {
+        //            Handle_Standard_Transient transient = shapeList->Value(i);
+        //            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
+        //            if(!shape.IsNull())
+        //            {
+        //                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
+        //                if(!anEntity.IsNull())
+        //                {
+        //                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
+        //                    if(!entity.IsNull())
+        //                    {
+        //                        if (!entity->Name()->IsEmpty())  // found named entity
+        //                        {
+        //                            std::string n(entity->Name()->ToCString());
+        //                            if (shape.ShapeType()==TopAbs_FACE)
+        //                            {
+        //                                std::vector<FeatureID> ids;
+        //                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
+        //                                {
+        //                                    TopoDS_Face f=TopoDS::Face(ex.Current());
+        //                                    if (f.IsPartner(shape))
+        //                                    {
+        //                                        ids.push_back(faceID(f));
+        ////                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
+        //                                    }
+        //                                }
+        //                                if (ids.size()==0)
+        //                                {
+        //                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
+        //                                }
+        //                                else
+        //                                {
+        //                                    std::string name="face_"+n;
+        //                                    if (feats.find(name)==feats.end())
+        //                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
+        //                                    for (const FeatureID& i: ids)
+        //                                    {
+        //                                        feats[name]->add(i);
+        //                                    }
+        //                                }
+        //                            }
+        //                            else if (shape.ShapeType()==TopAbs_SOLID)
+        //                            {
+        //                                std::vector<FeatureID> ids;
+        //                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
+        //                                {
+        //                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
+        //                                    if (f.IsPartner(shape))
+        //                                    {
+        //                                        ids.push_back(solidID(f));
+        ////                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
+        //                                    }
+        //                                }
+        //                                if (ids.size()==0)
+        //                                {
+        //                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
+        //                                }
+        //                                else
+        //                                {
+        //                                    std::string name="solid_"+n;
+        //                                    if (feats.find(name)==feats.end())
+        //                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
+        //                                    for (const FeatureID& i: ids)
+        //                                    {
+        //                                        feats[name]->add(i);
+        //                                    }
+        //                                }
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+
+
+        //        for (Feats::value_type& f: feats)
+        //        {
+        //            providedFeatureSets_[f.first]=f.second;
+        //            providedSubshapes_[f.first].reset(new Feature(f.second));
+        //        }
 
     }
     else
     {
         throw insight::Exception("Unknown import file format! (Extension "+ext+")");
-//     return TopoDS_Shape();
+        //     return TopoDS_Shape();
     }
 }
-
-size_t Feature::calcShapeHash() const
-{
-  // create hash from
-  // 1. total volume
-  // 2. # vertices
-  // 3. # faces
-  // 4. vertex locations
-
-  size_t hash=0;
-  
-  boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash, boost::hash<int>()(idx_->nVertexTags()));
-  boost::hash_combine(hash, boost::hash<int>()(idx_->nFaceTags()));
-
-  FeatureSetData vset=allVerticesSet();
-  for (const insight::cad::FeatureID& j: vset)
-  {
-    boost::hash_combine
-    (
-      hash,
-      boost::hash<arma::mat>()(vertexLocation(j))
-    );    
-  }
-
-  return hash;
-}
-
-
-
-
-size_t Feature::calcHash() const
-{
-  ParameterListHash h;
-  if (creashapes_) h+=*creashapes_;
-  return h.getHash();
-}
-
 
 
 
@@ -537,41 +535,40 @@ Feature::Feature(const Feature& o)
 }
 
 
-
-
-Feature::Feature(const TopoDS_Shape& shape)
-: isleaf_(true),
-  featureSymbolName_()
+void Feature::setLocalCoordinateSystem(
+    const arma::mat& O,
+    const arma::mat& ex,
+    const arma::mat& ez )
 {
-  setShape(shape);
-  hash_=calcShapeHash();
-  setValid();
+    insight::CoordinateSystem cs(O, ex, ez);
+    refpoints_["O"]=cs.origin;
+    refvectors_["EX"]=cs.ex;
+    refvectors_["EY"]=cs.ey;
+    refvectors_["EZ"]=cs.ez;
+    providedDatums_["XY"]=std::make_shared<DatumPlane>(
+        cad::matconst(cs.origin), cad::matconst(cs.ez), cad::matconst(cs.ey)
+        );
+    providedDatums_["XZ"]=std::make_shared<DatumPlane>(
+        cad::matconst(cs.origin), cad::matconst(cs.ey), cad::matconst(cs.ex)
+        );
+    providedDatums_["YZ"]=std::make_shared<DatumPlane>(
+        cad::matconst(cs.origin), cad::matconst(cs.ex), cad::matconst(cs.ey)
+        );
 }
 
 
-
-Feature::Feature(FeatureSetPtr creashapes)
-: creashapes_(creashapes),
-  featureSymbolName_(/*"subshapesOf_"+creashapes->model()->featureSymbolName()*/)
-{}
 
 Feature::~Feature()
 {
-  auto h=hash();
-  if (cache.contains(h))
-    cache.erase(h);
+  auto h=hash_;
+  if (h!=0)
+  {
+      if (cache.contains(h))
+        cache.erase(h);
+  }
 }
 
 
-FeaturePtr Feature::create(const boost::filesystem::path& filepath)
-{
-  FeaturePtr f(new Feature());
-  f->loadShapeFromFile(filepath);
-//  f->setShapeHash();
-  f->setValid();
-  f->setFeatureSymbolName("importedFrom_"+filepath.string());
-  return f;
-}
 
 
 void Feature::setFeatureSymbolName( const std::string& name)
@@ -670,45 +667,6 @@ void Feature::checkForBuildDuringAccess() const
 
 
 
-void Feature::build()
-{
-  TopoDS_Compound comp;
-  BRep_Builder builder;
-  builder.MakeCompound( comp );
-
-  for (const FeatureID& id: creashapes_->data())
-  {
-    TopoDS_Shape entity;
-    if (creashapes_->shape()==Vertex)
-    {
-      entity=creashapes_->model()->vertex(id);
-    }
-    else if (creashapes_->shape()==Edge)
-    {
-      entity=creashapes_->model()->edge(id);
-    }
-    else if (creashapes_->shape()==Face)
-    {
-      entity=creashapes_->model()->face(id);
-    }
-    else if (creashapes_->shape()==Solid)
-    {
-      entity=creashapes_->model()->subsolid(id);
-    }
-    if (creashapes_->size()==1)
-    {
-      setShape(entity);
-      return;
-    }
-    else
-    {
-      builder.Add(comp, entity);
-    }
-  }
-  
-  setShape(comp);
-}
-
 
 FeaturePtr Feature::subshape(const std::string& name)
 {
@@ -742,6 +700,18 @@ FeatureSetPtr Feature::providedFeatureSet(const std::string& name)
 }
 
 
+boost::spirit::qi::symbols<char, FeatureSetPtr> Feature::featureSymbols(EntityType et) const
+{
+    boost::spirit::qi::symbols<char, FeatureSetPtr> res;
+    checkForBuildDuringAccess();
+    for (auto& fs: providedFeatureSets_)
+    {
+        if (fs.second->shape()==et)
+            res.add(fs.first, fs.second);
+    }
+    return res;
+}
+
 
 
 Feature& Feature::operator=(const Feature& o)
@@ -763,7 +733,9 @@ Feature& Feature::operator=(const Feature& o)
   if (o.valid())
   {
     if (o.volprops_)
-      volprops_.reset(new GProp_GProps(*o.volprops_));
+        volprops_.reset(new GProp_GProps(*o.volprops_));
+    else
+        volprops_.reset();
 
     idx_.reset(new SubshapeNumbering(*o.idx_));
     setValid();
@@ -920,14 +892,14 @@ double Feature::minDist(const arma::mat& p) const
 {
   BRepExtrema_DistShapeShape dss
   (
-    BRepBuilderAPI_MakeVertex(to_Pnt(p)).Vertex(), 
-    shape()
+    shape(),
+    BRepBuilderAPI_MakeVertex(to_Pnt(p)).Vertex(),
+    Precision::Confusion()
   );
   
   if (!dss.Perform())
     throw insight::Exception("determination of minimum distance to point failed!");
   auto dist= dss.Value();
-  std::cout<<"dist="<<dist<<std::endl;
   return dist;
 }
 
@@ -1022,6 +994,13 @@ arma::mat Feature::modelBndBox(double deflection) const
   return x;
 }
 
+
+arma::mat Feature::modelBndBoxSize(double deflection) const
+{
+    arma::mat bb=modelBndBox(deflection);
+    return bb.col(1)-bb.col(0);
+}
+
 std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double deflection) const
 {
     checkForBuildDuringAccess();
@@ -1078,6 +1057,9 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
                 dr=insight::Vector(boundingBox.ZDirection());
                 sz=boundingBox.ZHSize();
                 break;
+            default:
+                sz=-1;
+                throw insight::UnhandledSelection();
             };
 
             switch (i)
@@ -1091,7 +1073,11 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
             case 2:
                 cs.ez=dr;
                 break;
+            default:
+                throw insight::UnhandledSelection();
             };
+
+
             x(i,0)=-sz;
             x(i,1)=sz;
         }
@@ -1126,25 +1112,14 @@ arma::mat Feature::averageFaceNormal() const
   {
         n+=faceNormal(i);
   }
-  return n/double(af.size());
+  return normalized(n/double(af.size()));
 }
 
 FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ),
-//     boost::counting_iterator<int>( idx_->_vmap.Extent()+1 )
-//   );
   idx_->insertAllVertexTags(fsd);
-//  std::transform
-//  (
-//      vmap_.begin(),
-//      vmap_.end(),
-//      std::inserter(fsd, fsd.begin()),
-//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
-//  );
   return fsd;
 }
 
@@ -1152,18 +1127,7 @@ FeatureSetData Feature::allEdgesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ),
-//     boost::counting_iterator<int>( idx_->_emap.Extent()+1 )
-//   );
   idx_->insertAllEdgeTags(fsd);
-//  std::transform
-//  (
-//      emap_.begin(),
-//      emap_.end(),
-//      std::inserter(fsd, fsd.begin()),
-//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
-//  );
   return fsd;
 }
 
@@ -1172,17 +1136,6 @@ FeatureSetData Feature::allFacesSet() const
   checkForBuildDuringAccess();
   FeatureSetData fsd;
   idx_->insertAllFaceTags(fsd);
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ),
-//     boost::counting_iterator<int>( idx_->_fmap.Extent()+1 )
-//   );
-//  std::transform
-//  (
-//      fmap_.begin(),
-//      fmap_.end(),
-//      std::inserter(fsd, fsd.begin()),
-//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
-//  );
   return fsd;
 }
 
@@ -1191,18 +1144,7 @@ FeatureSetData Feature::allSolidsSet() const
   checkForBuildDuringAccess();
   FeatureSetData fsd;
   idx_->insertAllSolidTags(fsd);
-//   fsd.insert(
-//     boost::counting_iterator<int>( 1 ),
-//     boost::counting_iterator<int>( idx_->_somap.Extent()+1 )
-//   );
-//  std::transform
-//  (
-//      somap_.begin(),
-//      somap_.end(),
-//      std::inserter(fsd, fsd.begin()),
-//      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; }
-//  );
-   return fsd;
+  return fsd;
 }
 
 FeatureSetPtr Feature::allOf(EntityType et) const
@@ -1218,8 +1160,17 @@ FeatureSetPtr Feature::allOf(EntityType et) const
     case Solid:
         return allSolids();
     default:
-        throw insight::Exception("internal error: unhandled selection");
+        throw insight::UnhandledSelection();
     }
+}
+
+FeatureSetPtr Feature::vertexAt(const arma::mat& p) const
+{
+    checkForBuildDuringAccess();
+    return makeVertexFeatureSet(
+        shared_from_this(),
+        "dist(loc,%m0)<1e-6",
+        { cad::matconst(p) } );
 }
 
 FeatureSetPtr Feature::allVertices() const
@@ -1314,7 +1265,7 @@ FeatureSetData Feature::query_vertices_subset(const FeatureSetData& fs, FilterPt
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  cout<<"QUERY_VERTICES RESULT = "<<res<<endl;
+  // cout<<"QUERY_VERTICES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1354,7 +1305,7 @@ FeatureSetData Feature::query_edges_subset(const FeatureSetData& fs, FilterPtr f
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  cout<<"QUERY_EDGES RESULT = "<<res<<endl;
+  // cout<<"QUERY_EDGES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1520,9 +1471,27 @@ void Feature::saveAs
   else if ( (ext==".stp") || (ext==".step") )
   {
 
-   STEPControl_Writer sw;
-   sw.Transfer(shape(), STEPControl_AsIs);
-   sw.Write(filename.string().c_str());
+      // Handle(TDocStd_Application) app
+      //     = new TDocStd_Application ();
+
+      // Handle(TDocStd_Document) doc;
+      // app->NewDocument("NewDocumentFormat", doc);
+
+      // Handle (XCAFDoc_ShapeTool) myAssembly =
+      //     XCAFDoc_DocumentTool::ShapeTool (doc->Main());
+      // // TDF_Label aLabel = myAssembly->NewShape();
+
+      // auto aLabel = myAssembly->AddShape(shape(), false);
+      // TDataStd_Name::Set (aLabel, "shape");
+
+      // STEPCAFControl_Writer writer;
+      // insight::assertion(
+      //   writer.Transfer(doc, STEPControl_AsIs),
+      //     "Failed to translate feature into STEP model!" );
+
+   STEPControl_Writer writer;
+   writer.Transfer(shape(), STEPControl_AsIs);
+   writer.Write(filename.string().c_str());
 
 //   IFSelect_ReturnStatus stat;
    
@@ -2092,6 +2061,16 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<
         }
     }
 
+    for (const auto& fs: m1.providedFeatureSets_)
+    {
+        providedFeatureSets_[prefix+fs.first]=
+            // same IDs but on this model
+            std::make_shared<FeatureSet>(
+                shared_from_this(),
+                fs.second->shape(),
+                fs.second->data());
+    };
+
 }
 
 
@@ -2145,6 +2124,16 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
             providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
         }
     }
+
+    for (const auto& fs: m1.providedFeatureSets_)
+    {
+        providedFeatureSets_[prefix+fs.first]=
+            // same IDs but on this model
+            std::make_shared<FeatureSet>(
+                shared_from_this(),
+                fs.second->shape(),
+                fs.second->data());
+    };
 }
 
 
@@ -2251,44 +2240,24 @@ void Feature::extractReferenceFeatures()
 const TopoDS_Face& Feature::face(FeatureID i) const
 {
     checkForBuildDuringAccess();
-//    insight::assertion(
-//                i>=1 && i<=idx_->_fmap.Extent(),
-//                str(format("face ID %d out of range (%d...%d)")
-//                    % i % 1 % idx_->_fmap.Extent()) );
-//    return TopoDS::Face(idx_->_fmap.FindKey(i));
     return idx_->faceByTag(i);
 }
 
 const TopoDS_Edge& Feature::edge(FeatureID i) const
 {
     checkForBuildDuringAccess();
-//    insight::assertion(
-//                i>=1 && i<=idx_->_emap.Extent(),
-//                str(format("edge ID %d out of range (%d...%d)")
-//                    % i % 1 % idx_->_emap.Extent()) );
-//    return TopoDS::Edge(idx_->_emap.FindKey(i));
     return idx_->edgeByTag(i);
 }
 
 const TopoDS_Vertex& Feature::vertex(FeatureID i) const
 {
     checkForBuildDuringAccess();
-//    insight::assertion(
-//                i>=1 && i<=idx_->_vmap.Extent(),
-//                str(format("vertex ID %d out of range (%d...%d)")
-//                    % i % 1 % idx_->_vmap.Extent()) );
-//    return TopoDS::Vertex(idx_->_vmap.FindKey(i));
     return idx_->vertexByTag(i);
 }
 
 const TopoDS_Solid& Feature::subsolid(FeatureID i) const
 {
     checkForBuildDuringAccess();
-//    insight::assertion(
-//                i>=1 && i<=idx_->_somap.Extent(),
-//                str(format("solid ID %d out of range (%d...%d)")
-//                    % i % 1 % idx_->_somap.Extent()) );
-//    return TopoDS::Solid(idx_->_somap.FindKey(i));
     return idx_->solidByTag(i);
 }
 
@@ -2296,40 +2265,24 @@ const TopoDS_Solid& Feature::subsolid(FeatureID i) const
 FeatureID Feature::solidID(const TopoDS_Shape& f) const
 {
     checkForBuildDuringAccess();
-//    int i=idx_->_somap.FindIndex(f);
-//    if (i==0)
-//        throw insight::Exception("requested solid not indexed!");
-//    return i;
     return idx_->tagOfSolid(TopoDS::Solid(f));
 }
 
 FeatureID Feature::faceID(const TopoDS_Shape& f) const
 {
     checkForBuildDuringAccess();
-//    int i=idx_->_fmap.FindIndex(f);
-//    if (i==0)
-//        throw insight::Exception("requested face not indexed!");
-//    return i;
     return idx_->tagOfFace(TopoDS::Face(f));
 }
 
 FeatureID Feature::edgeID(const TopoDS_Shape& e) const
 {
     checkForBuildDuringAccess();
-//    int i=idx_->_emap.FindIndex(e);
-//    if (i==0)
-//        throw insight::Exception("requested edge not indexed!");
-//    return i;
     return idx_->tagOfEdge(TopoDS::Edge(e));
 }
 
 FeatureID Feature::vertexID(const TopoDS_Shape& v) const
 {
     checkForBuildDuringAccess();
-//    int i=idx_->_vmap.FindIndex(v);
-//    if (i==0)
-//        throw insight::Exception("requested vertex not indexed!");
-//    return i;
     return idx_->tagOfVertex(TopoDS::Vertex(v));
 }
 
@@ -2399,46 +2352,7 @@ gp_Trsf Feature::transformation() const
   return gp_Trsf();
 }
 
-/*
-CREATE_FUNCTION();
-static
- override
-addToStaticFunctionTable(Feature, , insertrule);
-addToStaticFunctionTable(Feature, , ruleDocumentation);
-std::make_shared<parser::ISCADParser::ModelstepRule>(
-*/
 
-#warning circumvent
-//addToStaticFunctionTable(Feature, Feature, insertrule);
-
-void Feature::insertrule(parser::ISCADParser& ruleset)
-{
-  ruleset.modelstepFunctionRules.add
-      (
-          "asModel",
-          std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-              ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' )
-                  [ qi::_val = phx::bind(Feature::create<FeatureSetPtr>, qi::_1) ]
-
-              )
-          );
-}
-
-#warning circumvent
-//addToStaticFunctionTable(Feature, Feature, ruleDocumentation);
-
-FeatureCmdInfoList Feature::ruleDocumentation()
-{
-  return {
-    FeatureCmdInfo
-    (
-        "asModel",
-        "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
-        "Creates a new feature from selected entities of an existing feature."
-    )
-  };
-}
 
 string Feature::generateScriptCommand() const
 {
@@ -2460,6 +2374,218 @@ Feature::TopologicalProperties Feature::topologicalProperties() const
         sas.NbVertices(), sas.NbEdges(),
         sas.NbFaces(), sas.NbShells(),
         sas.NbSolids() };
+}
+
+
+
+bool Feature::pointIsInsideVolume(const arma::mat& p, bool onBoundary) const
+{
+    BRepClass3d_SolidClassifier sc(
+        shape(), to_Pnt(p), Precision::Confusion() );
+
+    bool result = sc.State() == TopAbs_IN;
+    if (onBoundary)
+    {
+        result = result || (sc.State() == TopAbs_ON);
+    }
+    return result;
+}
+
+
+
+
+VTKActorList Feature::createVTKActors() const
+{
+    if (topologicalProperties().onlyEdges())
+    {
+        // if shape consists only of edges,
+        // create a set of actors for each edge
+        // to be able to pick locations inside of
+        // a possible edge loop without
+        // triggering a selection
+        std::vector<vtkSmartPointer<vtkProp> > actors;
+        for (TopExp_Explorer ex(shape(),TopAbs_EDGE); ex.More(); ex.Next())
+        {
+            auto shape = vtkSmartPointer<ivtkOCCShape>::New();
+            shape->SetShape( ex.Current() );
+
+            auto actor = vtkSmartPointer<vtkActor>::New();
+            actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+            actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+
+            actors.push_back(actor);
+        }
+        return actors;
+    }
+    else
+    {
+        auto shape = vtkSmartPointer<ivtkOCCShape>::New();
+        shape->SetShape( this->shape() );
+
+        auto actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
+        actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
+        return {actor};
+    }
+}
+
+
+
+Handle_Poly_Triangulation Feature::triangulation(double tol) const
+{
+    Poly_ListOfTriangulation triangulations;
+
+    double  maxsize=1e300;
+
+    Bnd_Box aBndBox;
+    BRepBndLib::Add (shape(), aBndBox, Standard_False);
+    if (!aBndBox.IsVoid())
+    {
+#define MAX2(X, Y)    (Abs(X) > Abs(Y) ? Abs(X) : Abs(Y))
+#define MAX3(X, Y, Z) (MAX2 (MAX2 (X, Y), Z))
+        Standard_Real aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
+        aBndBox.Get (aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
+        maxsize = MAX3 (aXmax-aXmin, aYmax-aYmin, aZmax-aZmin);
+        tol=maxsize * tol /*theDrawer->DeviationCoefficient()*/;
+        // we store computed relative deflection of shape as absolute deviation coefficient
+        // in case relative type to use it later on for sub-shapes.
+        // theDrawer->SetMaximalChordialDeviation (aDeflection);
+#undef MAX2
+#undef MAX3
+    }
+    // }
+
+    std::cout<<"maxsize="<<maxsize<<", defl="<<tol<<std::endl;
+
+
+    for (TopExp_Explorer ex(shape(), TopAbs_FACE); ex.More(); ex.Next())
+    {
+        auto f=TopoDS::Face(ex.Current());
+
+        TopLoc_Location loc;
+        const int maxRefineAttempts=4;
+        const double refine=0.25;
+
+        auto mesh = BRep_Tool::Triangulation(f,loc);
+        if (!mesh)
+        {
+            double curtol=tol;
+
+            // if (theDrawer->TypeOfDeflection() == Aspect_TOD_RELATIVE)
+            // {
+
+
+            int attempt=0;
+            // double curtol=aDeflection;
+
+            do
+            {
+                if (attempt>0)
+                {
+                    std::cout<<"doing another attempt ("<<attempt<<") to mesh face"<<std::endl;
+                }
+
+                Bnd_Box box;
+
+                double angtol = 20. * M_PI / 180.;
+                bool relative = false;
+
+#if (OCC_VERSION_MAJOR>=7 && OCC_VERSION_MINOR>=4)
+                IMeshTools_Parameters p;
+                p.Angle=angtol;
+                p.Deflection=curtol;
+                p.Relative=relative;
+                BRepMesh_IncrementalMesh  m(f, p);
+#else
+# if (OCC_VERSION_MAJOR>=7)
+                BRepMesh_FastDiscret::Parameters p;
+                p.Angle=angtol;
+                p.Deflection=curtol;
+                p.Relative=relative;
+                BRepMesh_FastDiscret m(box, p);
+# else
+                BRepMesh_FastDiscret m(curtol, angtol, box, true, false, relative, false);
+# endif
+                m.Perform(f);
+#endif
+                attempt++;
+                curtol *= refine;
+
+                mesh = BRep_Tool::Triangulation(f,loc);
+            }
+            while (!mesh && (attempt<maxRefineAttempts));
+
+        }
+
+
+        if (mesh.IsNull())
+        {
+            throw insight::CADException(
+                {
+                    {"face to triangulate", cad::Import::create(f)},
+                    {"parent shape", shared_from_this()}
+                },
+                "face has no triangulation!" );
+        }
+        mesh=mesh->Copy();
+
+        for (int i=1; i<=mesh->NbNodes(); ++i)
+        {
+            mesh->ChangeNodes().ChangeValue(i)=
+                mesh->Nodes().Value(i).Transformed(loc);
+        }
+
+        triangulations.Append(mesh);
+    }
+
+    insight::assertion(
+        triangulations.Extent()>=1,
+        "there are no triangulations!" );
+
+    return Poly::Catenate(triangulations);
+}
+
+
+
+
+vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
+{
+    auto mesh = triangulation(tol);
+
+    auto pts = vtkSmartPointer<vtkPoints>::New();
+    pts->SetNumberOfPoints(mesh->NbNodes());
+
+    for (int i=1; i<=mesh->NbNodes(); ++i)
+    {
+        auto p=mesh->
+#if OCC_VERSION_MAJOR<7
+                 Nodes().Value(i)
+#else
+                 Node(i)
+#endif
+                     .XYZ();
+        pts->SetPoint(i-1, p.X(), p.Y(), p.Z());
+    }
+
+
+    auto cells = vtkSmartPointer<vtkCellArray>::New();
+    for (int i=1; i<=mesh->NbTriangles(); ++i)
+    {
+        auto t=mesh->
+#if OCC_VERSION_MAJOR<7
+                 Triangles().Value(i)
+#else
+                 Triangle(i)
+#endif
+            ;
+        vtkIdType vtx[]={t.Value(1)-1, t.Value(2)-1, t.Value(3)-1};
+        cells->InsertNextCell(3, vtx);
+    }
+
+    auto vmesh = vtkSmartPointer<vtkPolyData>::New();
+    vmesh->SetPoints(pts);
+    vmesh->SetPolys(cells);
+    return vmesh;
 }
 
 

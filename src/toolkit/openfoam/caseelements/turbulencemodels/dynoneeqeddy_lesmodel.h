@@ -12,10 +12,9 @@ class dynOneEqEddy_LESModel
 public:
   declareType("dynOneEqEddy");
 
-  dynOneEqEddy_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  dynOneEqEddy_LESModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
-  inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
 } // namespace insight

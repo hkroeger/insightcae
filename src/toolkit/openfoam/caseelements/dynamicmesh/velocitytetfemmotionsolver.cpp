@@ -7,9 +7,9 @@
 
 namespace insight {
 
-velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c)
-: dynamicMesh(c, ParameterSet()),
-  tetFemNumerics_(c)
+velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c, ParameterSetInput ip)
+: dynamicMesh(c, ip.forward<Parameters>()),
+  tetFemNumerics_(c, ip.forward<Parameters>())
 {
   c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), tetField ) );
 }

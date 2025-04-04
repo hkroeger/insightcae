@@ -22,10 +22,12 @@
 #ifndef INSIGHT_PARAMETER_H
 #define INSIGHT_PARAMETER_H
 
+#include "boost/date_time/posix_time/ptime.hpp"
 #include "factory.h"
 #include "base/latextools.h"
 #include "base/linearalgebra.h"
 #include "base/exception.h"
+#include "base/cppextensions.h"
 
 #include <memory>
 #include <string>
@@ -34,6 +36,7 @@
 #include <typeinfo>
 #include <set>
 #include <sstream>
+#include <type_traits>
 
 #include "base/boost_include.h"
 #include "boost/signals2.hpp"
@@ -45,83 +48,144 @@
 
 
 
-
-
-
 namespace insight {
 
-
-template<class T, typename ...Args>
-std::unique_ptr<T> make(Args... args)
-{
-        return std::unique_ptr<T>(new T(args...));
+namespace cad {
+class ConstrainedSketch;
 }
 
-  
+
+namespace ParameterPath {
+
+std::string
+join(const std::string& p1, const std::string& p2);
+
+std::string
+join(const std::vector<std::string>& ps);
+
+}
 
 
-
-rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name, const std::string& typeName);
-
-
-void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node);
-
-
-class Parameter;
-class ParameterSet;
-class SubsetParameter;
-
-
-
-class ArrayParameterBase
+template<class T>
+struct PrimitiveStaticValueWrap
 {
-public:
-  virtual ~ArrayParameterBase();
+    T value;
+    boost::optional<std::string> parameterPath;
 
-  virtual int size() const =0;
-  Parameter& elementRef ( int i );
-  virtual const Parameter& element( int i ) const =0;
+    PrimitiveStaticValueWrap()
+    {}
+
+    PrimitiveStaticValueWrap(const PrimitiveStaticValueWrap& o)
+    : value(o.value), parameterPath(o.parameterPath)
+    {}
+
+    PrimitiveStaticValueWrap(const T& v)
+        : value(v)
+    {}
+
+    PrimitiveStaticValueWrap&
+    setPath(const std::string &p)
+    {
+        parameterPath=p;
+        return *this;
+    }
+
+    operator T&() { return value; }
+    operator const T&() const { return value; }
 };
 
 
 
-//#ifndef SWIG
 
-//template<typename Signature>
-//class Signal
-//{
-//public:
-//  typedef
-//      std::shared_ptr<boost::signals2::scoped_connection>
-//          ScopedConnectionPtr;
-//  typedef
-//      std::weak_ptr<boost::signals2::scoped_connection>
-//          WeakScopedConnectionPtr;
+template<class T>
+class StaticValueWrap
+    : public T
+{
 
-//  typedef boost::signals2::signal<Signature> base_signal;
+public:
+    boost::optional<std::string> parameterPath;
 
-//private:
-//  base_signal signal_;
-//  std::vector<WeakScopedConnectionPtr> connections_;
+    StaticValueWrap()
+    {}
 
-//public:
-//  ScopedConnectionPtr connect(const typename base_signal::slot_type& slot);
+    StaticValueWrap(const StaticValueWrap& o)
+    : T(o),
+      parameterPath(o.parameterPath)
+    {}
 
-//  template<typename ...Args>
-//  typename base_signal::result_type operator()(Args&&... addArgs)
-//  {
-//    return signal_(std::forward<Args>(addArgs)...);
-//  }
-//};
+    template<class OT>
+    StaticValueWrap(const StaticValueWrap<OT>& o)
+        : T(static_cast<const T&>(o)),
+        parameterPath(o.parameterPath)
+    {}
+
+    StaticValueWrap(const T& t)
+    : T(t)
+    {}
+
+    using T::T;
+
+    StaticValueWrap&
+    setPath(const std::string &p)
+    {
+        parameterPath=p;
+        return *this;
+    }
+
+    // operator const T&() const { return *this; }
+};
 
 
-//#endif
+
+
+}
 
 
 
 
+namespace arma
+{
+
+
+template<>
+struct is_Mat< const insight::StaticValueWrap<Mat<double> > >
+{ static const bool value = true; };
+
+template<>
+class Proxy<insight::StaticValueWrap<Mat<double> > >
+    : public Proxy<arma::mat>
+{
+public:
+    inline Proxy(const insight::StaticValueWrap<Mat<double> >& A)
+        : Proxy<arma::mat>(static_cast<const arma::mat&>(A))
+    {}
+};
+
+
+}
+
+
+namespace insight
+{
+
+
+class Parameter;
+class ParameterSet;
+
+
+
+/**
+ * @brief The Parameter class
+ * - contains the abstract interface for querying child parameters
+ *   but does not actually contain them.
+ * - can emit signal when its value is changed
+ * - another signal when the value of one of its child has changed
+ * - stores a reference to its parent parameter,
+ *   so has pointer semantics
+ */
 class Parameter
-    : public boost::noncopyable
+    : public boost::noncopyable,
+      public std::observable
 {
 
 public:
@@ -129,6 +193,8 @@ public:
 
 #ifndef SWIG
     boost::signals2::signal<void()> valueChanged, childValueChanged;
+    boost::signals2::signal<void(int, int)> beforeChildInsertion, childInsertionDone;
+    boost::signals2::signal<void(int, int)> beforeChildRemoval, childRemovalDone;
 #endif
 
     typedef Parameter& reference;
@@ -166,6 +232,7 @@ public:
 
         reference operator*() const;
         pointer operator->() const;
+        pointer get_pointer() const;
         std::string name() const;
     };
 
@@ -194,13 +261,14 @@ public:
 
         reference operator*() const;
         pointer operator->() const;
+        pointer get_pointer() const;
         std::string name() const;
     };
 
     typedef std::reverse_iterator<iterator> reverse_iterator; //optional
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
 
-protected:
+private:
     SimpleLatex description_;
 
     bool isHidden_, isExpert_, isNecessary_;
@@ -208,28 +276,55 @@ protected:
 
     bool valueChangeSignalBlocked_;
 
-    Parameter* parent_;
-    void setParent(Parameter* parent);
+    std::observer_ptr<Parameter> parent_;
+
+    bool needsInitialization_;
+
 
     friend class ArrayParameter;
-    friend class SubsetParameter;
+    friend class ParameterSet;
     friend class SelectableSubsetParameter;
+    friend class LabeledArrayParameter;
+    friend class cad::ConstrainedSketch;
+
+protected:
+    virtual void setParent(Parameter* parent);
+
+    inline bool valueChangeSignalBlocked() const
+    {
+        return valueChangeSignalBlocked_;
+    }
 
 public:
     declareType ( "Parameter" );
 
-    Parameter();
-    Parameter ( const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order);
+    Parameter (
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
     virtual ~Parameter();
 
-    Parameter* parent() const;
-    SubsetParameter& parentSet() const;
+    /**
+     * @brief initialize
+     * required by synchronized parameters (LabeledArrayParameter) that get a selection from other parameters
+     */
+    virtual void initialize();
+
+    bool hasParent() const;
+    Parameter& parent();
+    const Parameter& parent() const;
+    ParameterSet& parentSet();
+
+    std::string path(bool redirectArrayElementsToDefault=false) const;
+    std::string name(bool redirectArrayElementsToDefault=false) const;
 
     bool isHidden() const;
     bool isExpert() const;
     bool isNecessary() const;
     virtual bool isDifferent(const Parameter& p) const;
     int order() const;
+
+    bool isModified(const ParameterSet& defaultValues) const;
 
     inline const SimpleLatex& description() const
     {
@@ -281,7 +376,7 @@ public:
         const std::string& startAtSubnode = std::string() );
 
 //    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
-    virtual Parameter* clone() const =0;
+    virtual std::unique_ptr<Parameter> clone(bool initialize) const =0;
 
     /**
      * @brief isPacked
@@ -334,13 +429,29 @@ public:
 
 
     virtual int nChildren() const =0;
-    virtual std::string childParameterName( int i ) const;
+
+    virtual std::string childParameterName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const;
+
+    virtual std::string childParameterName(
+        const Parameter* childParam,
+        bool redirectArrayElementsToDefault=false ) const;
+
     virtual Parameter& childParameterRef ( int i );
+
     virtual const Parameter& childParameter( int i ) const;
 
     virtual int childParameterIndex( const std::string& name ) const;
+
+    virtual int childParameterIndex( const Parameter* childParam ) const;
+
     Parameter& childParameterByNameRef ( const std::string& name );
+
     const Parameter& childParameterByName ( const std::string& name ) const;
+
+    std::vector<std::string> childParameterNameList() const;
+    std::vector<std::string> childParameterFullPathList() const;
 
 
     iterator begin();
@@ -364,13 +475,7 @@ public:
     virtual void setUpdateValueSignalBlockage(bool block=true);
     void triggerValueChanged();
     void triggerChildValueChanged();
-
 };
-
-
-
-
-typedef std::shared_ptr<Parameter> ParameterPtr;
 
 
 
@@ -381,9 +486,9 @@ std::string valueToString(const V& value)
   return boost::lexical_cast<std::string>(value);
 }
 
-
-
 std::string valueToString(const arma::mat& value);
+std::string valueToString(const boost::gregorian::date& value);
+std::string valueToString(const boost::posix_time::ptime& value);
 
 
 
@@ -394,16 +499,17 @@ void stringToValue(const std::string& s, V& v)
   v=boost::lexical_cast<V>(s);
 }
 
-
-
 void stringToValue(const std::string& s, arma::mat& v);
-  
+void stringToValue(const std::string& s, boost::gregorian::date& date);
+void stringToValue(const std::string& s, boost::posix_time::ptime& date);
 
 
-inline Parameter* new_clone(const Parameter& p)
-{
-  return p.clone();
-}
+// inline std::unique_ptr<Parameter> new_clone(const Parameter& p)
+// {
+//   return p.clone();
+// }
+
+
 
 
 

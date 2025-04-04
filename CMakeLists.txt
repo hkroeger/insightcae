@@ -36,6 +36,7 @@ OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit a
 OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF)
 OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration (already during build)" OFF)
 OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
+OPTION(INSIGHT_DEVELOPMENT_FILES "create CMake package files to build other projects with CMake and InsightCAE as a dependency" ON)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 
@@ -52,6 +53,12 @@ if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
 endif()
 
+if (CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_WRAPPER "/opt/mxe/usr/bin/i686-w64-mingw32.shared-cmake" CACHE STRING "required in MXE cross build, cmake is called through wrapper script there")
+else()
+  set(CMAKE_WRAPPER ${CMAKE_COMMAND})
+endif()
+
 if (INSIGHT_BUILD_ISCAD AND NOT INSIGHT_BUILD_CAD)
  message(FATAL_ERROR "It is not possible to build ISCAD without the CAD parser library. Please reconsider your option selection.")
 endif()
@@ -63,6 +70,10 @@ if (NOT ${INSIGHT_SUPERBUILD} STREQUAL "")
  include (${INSIGHT_SUPERBUILD}/InsightSuperbuildDependencies.cmake)
 ENDIF()
 
+if (NOT VTK_ONSCREEN_DIR)
+  message(STATUS "VTK_ONSCREEN_DIR not defined. Set to VTK_DIR")
+  set(VTK_ONSCREEN_DIR ${VTK_DIR})
+endif()
 
 
 ### determine combined git revision
@@ -565,6 +576,12 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       ${${_ofvers}_LIB_DIR}/lib${_lib}.so
       )
     endforeach()
+    foreach (_lib ${${_ofvers}_OF_LIBS})
+      list (APPEND ${PRJ_NAME}_LIBRARIES
+      ${${_ofvers}_LIB_DIR}/lib${_lib}.so
+      )
+    endforeach()
+
     
     #LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
     foreach (_targ ${is_of_targets})
@@ -793,28 +810,7 @@ endmacro(install_script)
 
 
 
-macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
-
-  file(GLOB COPY_FILES
-    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    ${SHAREDFILE})
-  get_filename_component(FNAME ${SHAREDFILE} NAME)
-  set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
-  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
-
-  add_custom_command(
-    MAIN_DEPENDENCY ${SRC}
-    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-    OUTPUT ${DST}
-  )
-  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-
-  add_library(${NAME} INTERFACE ${DST})
-
-endmacro(install_shared_file)
-
-
-macro(install_shared_file2 SHAREDFILE DSTLOCATION)
+macro(install_shared_file2 TARGET SHAREDFILE DSTLOCATION)
 
   string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
   file(GLOB COPY_FILES
@@ -832,6 +828,7 @@ macro(install_shared_file2 SHAREDFILE DSTLOCATION)
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
   add_library(${NAME} INTERFACE ${DST})
+  add_dependencies(${TARGET} ${NAME})
 
 endmacro(install_shared_file2)
 

@@ -28,7 +28,7 @@
 #include "base/parameterset.h"
 #include "base/parameters.h"
 #include <boost/typeof/typeof.hpp>
-
+#include "caseelement__CaseElement__Parameters_headers.h"
 
 namespace insight
 {
@@ -42,23 +42,47 @@ class Case;
 
 class CaseElement
 {
-public:
-  declareStaticFunctionTableWithArgs( isInConflict, bool, LIST(const insight::CaseElement&), LIST(const insight::CaseElement& e) );
-  declareType ( "CaseElement" );
-  
-protected:
-  std::string name_;
-  Case& case_;
-  ParameterSet ps_;
 
 public:
-    CaseElement(Case& c, const std::string& name, const ParameterSet& ps);
+
+  declareStaticFunctionTableWithArgs(
+        isInConflict, bool,
+        LIST(const insight::CaseElement&),
+        LIST(const insight::CaseElement& e) );
+
+  declareType ( "CaseElement" );
+  
+public:
+#include "caseelement__CaseElement__Parameters.h"
+/*
+PARAMETERSET>>> CaseElement Parameters
+
+name = string "" "Name of the case element"
+
+createGetter
+<<<PARAMETERSET
+*/
+private:
+  Case& case_;
+
+public:
+    CaseElement(Case& c, ParameterSetInput ip = Parameters() );
     CaseElement(const CaseElement& other);
     virtual ~CaseElement();
 
-    inline const std::string& name() const { return name_; };
-    virtual void rename(const std::string& name);
-    const ParameterSet& parameters() const;
+    inline const std::string& name() const { return p().name; };
+    // virtual void rename(const std::string& name);
+
+    // const ParameterSet& parameters() const;
+
+    template<class P = Parameters>
+    P& tweakParameters()
+    {
+        return dynamic_cast<P&>(p_.tweakParameters());
+    }
+
+    const Case& get_case() const;
+    Case& caseRef();
 
     static bool isInConflict(const CaseElement& other);
 

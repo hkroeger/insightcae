@@ -57,7 +57,7 @@ class VTK_EXPORT vtkMedReader: public vtkMultiBlockDataSetAlgorithm
 public:
   static vtkMedReader* New();
   vtkTypeMacro(vtkMedReader, vtkMultiBlockDataSetAlgorithm);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // Description:
   // Set the file name to read from
@@ -226,17 +226,17 @@ protected:
   // Description:
   // This is called by the superclass.
   virtual int RequestDataObject(vtkInformation*, vtkInformationVector**,
-      vtkInformationVector*);
+      vtkInformationVector*) override;
 
   // Description:
   // This is called by the superclass.
   virtual int RequestInformation(vtkInformation*, vtkInformationVector**,
-      vtkInformationVector*);
+      vtkInformationVector*) override;
 
   // Description:
   // This is called by the superclass.
   virtual int RequestData(vtkInformation*, vtkInformationVector**,
-      vtkInformationVector*);
+      vtkInformationVector*) override;
 
   // Description:
   // Gather all compute steps in the fields

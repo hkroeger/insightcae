@@ -1,30 +1,26 @@
 #ifndef MATRIXPARAMETERPARSER_H
 #define MATRIXPARAMETERPARSER_H
 
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
 struct MatrixParameterParser
+    : public ParameterGenerator
 {
-  struct Data
-  : public ParserDataBase
-  {
     arma::mat value;
 
-    Data(arma::uword r, arma::uword c, const std::string& d);
-    Data(const std::vector<std::vector<double> >& mat, const std::string& d);
+    MatrixParameterParser(arma::uword r, arma::uword c, const std::string& d);
+    MatrixParameterParser(const std::vector<std::vector<double> >& mat, const std::string& d);
 
-    void cppAddHeader(std::set<std::string>& headers) const override;
+    void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
-    std::string cppType(const std::string&) const override;
+    std::string cppInsightType() const override;
+    std::string cppStaticType() const override;
+    std::string cppDefaultValueExpression() const override;
 
-    std::string cppParamType(const std::string& ) const override;
+    void cppWriteCreateStatement(
+        std::ostream& os,
+        const std::string& psvarname ) const override;
 
-    std::string cppValueRep(const std::string&, const std::string& thisscope ) const override;
-
-    void cppWriteCreateStatement(std::ostream& os, const std::string& name,
-                                 const std::string& thisscope) const override;
-
-  };
 
   declareType("matrix");
 
@@ -36,10 +32,14 @@ struct MatrixParameterParser
       std::make_shared<PDLParserRuleset::ParameterDataRule>(
 
         ( qi::int_ >> 'x' >> qi::int_ >> ruleset.r_description_string )
-          [ qi::_val = phx::construct<ParserDataBase::Ptr>( phx::new_<Data>(qi::_1, qi::_2, qi::_3) ) ]
+          [ qi::_val = phx::construct<ParameterGeneratorPtr>(
+                       phx::new_<MatrixParameterParser>(
+                           qi::_1, qi::_2, qi::_3) ) ]
         |
         ( ('[' >> ('[' >> qi::double_ % ',' >> ']') % ',' >> ']' ) >> ruleset.r_description_string )
-          [ qi::_val = phx::construct<ParserDataBase::Ptr>( phx::new_<Data>(qi::_1, qi::_2) ) ]
+          [ qi::_val = phx::construct<ParameterGeneratorPtr>(
+                       phx::new_<MatrixParameterParser>(
+                           qi::_1, qi::_2) ) ]
 
       )
     );

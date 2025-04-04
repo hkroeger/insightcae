@@ -8,7 +8,7 @@ class IQVTKCADModel3DViewer;
 
 
 class IQVTKCADModel3DViewerPlanePointBasedAction
-    : public IQVTKSelectConstrainedSketchEntity
+    : public OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>
 {
 
 public:
@@ -38,11 +38,14 @@ protected:
 
 public:
     IQVTKCADModel3DViewerPlanePointBasedAction(
-        IQVTKConstrainedSketchEditor &editor );
+        IQVTKConstrainedSketchEditor &editor,
+        bool allowExistingEntities = true );
 
-    bool onLeftButtonDown(
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override;
+
 };
 
 #endif // IQVTKCADMODEL3DVIEWERPLANEPOINTBASEDACTION_H

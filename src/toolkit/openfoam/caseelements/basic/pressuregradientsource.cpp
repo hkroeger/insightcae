@@ -9,19 +9,21 @@ namespace insight {
 defineType(PressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(PressureGradientSource);
 
-PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "PressureGradientSource", ps),
-  p_(ps)
+PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, ParameterSetInput ip )
+: cellSetFvOption(c, /*"PressureGradientSource"+ps.getString("name"),*/
+                      ip.forward<Parameters>())
 {
 }
 
-void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
+void PressureGradientSource::addIntoFvOptionDictionary(
+    OFDictData::dict& fvOptions,
+    OFdicts& dictionaries ) const
 {
   if (OFversion()>=220)
   {
     OFDictData::dict coeffs;
     OFDictData::list flds; flds.push_back("U");
-    coeffs["Ubar"]=OFDictData::vector3(p_.Ubar);
+    coeffs["Ubar"]=OFDictData::vector3(p().Ubar);
 
     OFDictData::dict fod;
     if (OFversion()>=300)
@@ -45,16 +47,16 @@ void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
         coeffs["fieldNames"]=flds;
         fod["pressureGradientExplicitSourceCoeffs"]=coeffs;
     }
-    fod["active"]=true;
 
-    OFDictData::dict& fvOptions=dictionaries.lookupDict("system/fvOptions");
     fvOptions[name()]=fod;
+    cellSetFvOption::addIntoFvOptionDictionary(fvOptions, dictionaries);
   }
   else
   {
     // for channelFoam:
     OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
-    transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar));
+    transportProperties["Ubar"]=OFDictData::dimensionedData(
+        "Ubar", dimVelocity, OFDictData::vector3(p().Ubar));
   }
 }
 

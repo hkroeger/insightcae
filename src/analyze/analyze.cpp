@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
     desc.add_options()
       ("help,h", _("produce help message"))
       ("skiplatex,x", _("skip execution of pdflatex"))
+      ("report-skip-input-parameters", _("skip inclusion of input parameters into report"))
       ("version,r", _("print version and exit"))
       ("workdir,w", po::value<std::string>(), _("execution directory"))
       ("savecfg,c", po::value<std::string>(), _("save final configuration (including command line overrides) to this file"))
@@ -233,22 +234,22 @@ int main(int argc, char *argv[])
 
         if (!vm.count("input-file"))
         {
-#ifdef HAVE_WT
-          if (server)
-          {
-            cout<<_("Running in server mode without explicitly specified input file: "
-                          "waiting for input transmission")<<endl;
-            if (!server->waitForInputFile(contents))
-            {
-                throw insight::Exception(_("Received interruption!"));
-            }
-          }
-          else
-#endif
-          {
+// #ifdef HAVE_WT
+//           if (server)
+//           {
+//             cout<<_("Running in server mode without explicitly specified input file: "
+//                           "waiting for input transmission")<<endl;
+//             if (!server->waitForInputFile(contents))
+//             {
+//                 throw insight::Exception(_("Received interruption!"));
+//             }
+//           }
+//           else
+// #endif
+          // {
             cerr<<_("input file has to be specified!")<<endl;
             exit(-1);
-          }
+          // }
         }
         else
         {
@@ -286,9 +287,11 @@ int main(int argc, char *argv[])
 
         cout<< _("Executing analysis in directory")<<" "<<workdir<<endl;
 
-        ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
+        auto parameters =
+            // insight::Analysis::defaultParametersFor(analysisName);
+            insight::Analysis::defaultParameters()(analysisName);
         
-        parameters.readFromNode( *rootnode, inputFileParentPath );
+        parameters->readFromNode( std::string(), *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {
@@ -300,11 +303,11 @@ int main(int argc, char *argv[])
                 if (cargs.size()==1)
                 {
                   // 	ParameterSet to_merge;
-                  parameters.readFromFile(ist);
+                  parameters->readFromFile(ist);
                 }
                 else if (cargs.size()==3)
                 {
-                    parameters.getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
+                    parameters->getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
                 }
                 else
                 {
@@ -324,10 +327,10 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Resizing array '%s' to %d")
                                        ) % pair[0] % ns )<<endl;
-                auto& ap = parameters.get<ArrayParameter>(pair[0]);
+                auto& ap = parameters->get<ArrayParameter>(pair[0]);
                 for (size_t i=ap.size(); i<ns; ++i)
                 {
-                    ap.appendEmpty();
+                    ap.appendEmpty(true);
                 }
             }
         }
@@ -343,7 +346,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting boolean '%s' = %d")
                                        )% pair[0] % v) <<endl;
-                parameters.setBool(pair[0], v);
+                parameters->setBool(pair[0], v);
             }
         }
 
@@ -357,7 +360,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting string '%s' = \"%s\"")
                                        ) % pair[0] % pair[1]) <<endl;
-                parameters.setString(pair[0], pair[1]);
+                parameters->setString(pair[0], pair[1]);
             }
         }
 
@@ -371,7 +374,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting selection '%s' = \"%s\"")
                                        ) % pair[0] % pair[1]) <<endl;
-                parameters.get<SelectionParameter>(pair[0]).setSelection(pair[1]);
+                parameters->get<SelectionParameter>(pair[0]).setSelection(pair[1]);
             }
         }
 
@@ -386,7 +389,7 @@ int main(int argc, char *argv[])
                                        _("Setting path '%s' = \"%s\"")
                                        ) % pair[0] % pair[1]) <<endl;
                 //parameters.getPath(pair[0])=pair[1];
-                parameters.setOriginalFileName(pair[0], pair[1]);
+                parameters->setOriginalFileName(pair[0], pair[1]);
             }
         }
 
@@ -401,7 +404,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting double '%s' = %g")
                                        ) % pair[0] % v) << endl;
-                parameters.setDouble(pair[0], v);
+                parameters->setDouble(pair[0], v);
             }
         }
 
@@ -417,7 +420,7 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                         _("Setting vector '%s' = [%g %g %g]")
                                        ) % pair[0] % v(0) % v(1) % v(2)) <<endl;
-                parameters.setVector(pair[0], v);
+                parameters->setVector(pair[0], v);
             }
         }
 
@@ -432,23 +435,22 @@ int main(int argc, char *argv[])
                 cout << boost::str(boost::format(
                                        _("Setting int '%s'= %d")
                                        ) % pair[0] % v) <<endl;
-                parameters.setInt(pair[0], v);
+                parameters->setInt(pair[0], v);
             }
         }
 
         if (vm.count("savecfg"))
         {
-            parameters.saveToFile( workdir/ vm["savecfg"].as<std::string>(), analysisName );
+            parameters->saveToFile( workdir/ vm["savecfg"].as<std::string>(), analysisName );
         }
 
         std::cout<<std::string(80, '=')+'\n';
         std::cout<<_("Applied Parameters for this run")<<std::endl;
-        std::cout<<parameters;
+        std::cout<<*parameters;
         std::cout<<std::string(80, '=')+"\n\n";
         std::cout<<std::flush;
 
         ResultSetPtr results;
-        AnalysisPtr analysis;
         try
         {
           TextProgressDisplayer tpd;
@@ -463,18 +465,19 @@ int main(int argc, char *argv[])
           }
 #endif
 
-          analysis.reset( insight::Analysis::lookup(analysisName, parameters, workdir, *pd) );
-        
 #ifdef HAVE_WT
           if (server)
           {
-            server->setAnalysis( analysis.get() );
+            server->setAnalysis( inputFileParentPath );
           }
 #endif
 
           // run analysis
 
-          AnalysisThread solver_thread(analysis, pd);
+          AnalysisThread solver_thread(
+              analysisName,
+              AnalysisThread::ParameterSetAndExePath{parameters.get(), workdir},
+              pd);
 
 #ifdef HAVE_WT
           if (server)
@@ -519,10 +522,15 @@ int main(int argc, char *argv[])
           {
             if (!vm.count("output-file"))
             {
-                boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
+                if (vm.count("report-skip-input-parameters"))
+                {
+                    results->clearInputParameters();
+                }
+
+                boost::filesystem::path resoutpath=workdir/ (filestem+".isr");
                 results->saveToFile( resoutpath );
 
-                boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
+                boost::filesystem::path outpath=workdir/ (filestem+".tex");
                 results->writeLatexFile( outpath );
 
                 if (!vm.count("skiplatex"))

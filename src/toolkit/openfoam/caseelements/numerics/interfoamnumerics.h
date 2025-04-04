@@ -56,18 +56,18 @@ overset = selectablesubset {{
 phase1Name = string "phase1" "Name of the first phase (alpha=1)"
 phase2Name = string "phase2" "Name of the second phase (alpha=0)"
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
     std::string alphaname_;
 
     std::unique_ptr<OversetConfiguration> overset_;
 
 public:
     declareType ( "interFoamNumerics" );
-    interFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    interFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 

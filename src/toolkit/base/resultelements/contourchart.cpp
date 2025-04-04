@@ -237,35 +237,37 @@ rapidxml::xml_node<>* PolarContourChart::appendToNode
     using namespace rapidxml;
     auto* child = ResultElement::appendToNode ( name, doc, node );
 
-    appendAttribute(doc, *child, "rlabel", rlabel_);
-    appendAttribute(doc, *child, "rmax", rmax_);
-    appendAttribute(doc, *child, "cblabel", cblabel_);
-    if (zClipMax_)
-        appendAttribute(doc, *child, "zClipMax", *zClipMax_);
-    if (zClipMin_)
-        appendAttribute(doc, *child, "zClipMin", *zClipMin_);
-
     {
-        auto& cln = appendNode(doc, *child, "contourLines" );
-        for (const auto& cl: contourLines_)
+        appendAttribute(doc, *child, "rlabel", rlabel_);
+        appendAttribute(doc, *child, "rmax", rmax_);
+        appendAttribute(doc, *child, "cblabel", cblabel_);
+        if (zClipMax_)
+            appendAttribute(doc, *child, "zClipMax", *zClipMax_);
+        if (zClipMin_)
+            appendAttribute(doc, *child, "zClipMin", *zClipMin_);
+
         {
-            auto& c = appendNode(doc, cln, "contourLine" );
-            appendAttribute(doc, c, "value", cl);
+            auto cln = appendNode(doc, *child, "contourLines" );
+            for (const auto& cl: contourLines_)
+            {
+                auto c = appendNode(doc, cln, "contourLine" );
+                appendAttribute(doc, c, "value", cl);
+            }
         }
-    }
 
 
-    {
-       auto& n = appendNode(doc, *child, "x" );
-        writeMatToXMLNode ( x_, doc, n );
-    }
-    {
-        auto& n = appendNode(doc, *child, "y" );
-        writeMatToXMLNode ( y_, doc, n );
-    }
-    {
-        auto& n = appendNode(doc, *child, "data" );
-        writeMatToXMLNode ( data_, doc, n );
+        {
+            auto n = appendNode(doc, *child, "x" );
+            writeMatToXMLNode ( x_, doc, n );
+        }
+        {
+            auto n = appendNode(doc, *child, "y" );
+            writeMatToXMLNode ( y_, doc, n );
+        }
+        {
+            auto n = appendNode(doc, *child, "data" );
+            writeMatToXMLNode ( data_, doc, n );
+        }
     }
 
     return child;

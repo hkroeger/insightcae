@@ -89,7 +89,7 @@ public:
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;
 
-    DoubleParameter* toDoubleParameter ( RangeList::const_iterator i ) const;
+    std::unique_ptr<DoubleParameter> toDoubleParameter ( RangeList::const_iterator i ) const;
 
 
     rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
@@ -99,7 +99,7 @@ public:
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
-    Parameter* clone() const override;
+    std::unique_ptr<Parameter> clone(bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const DoubleRangeParameter& p);
     int nChildren() const override;

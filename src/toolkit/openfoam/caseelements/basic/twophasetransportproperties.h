@@ -16,6 +16,7 @@ public:
 #include "twophasetransportproperties__twoPhaseTransportProperties__Parameters.h"
 /*
 PARAMETERSET>>> twoPhaseTransportProperties Parameters
+inherits transportModel::Parameters
 
 nu1 = double 1e-6 "Kinematic viscosity of fluid 1"
 rho1 = double 1025.0 "Density of fluid 1"
@@ -23,15 +24,14 @@ nu2 = double 1.5e-5 "Kinematic viscosity of fluid 2"
 rho2 = double 1.0 "Density of fluid 2"
 sigma = double 0.07 "Surface tension"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "twoPhaseTransportProperties" );
-    twoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    twoPhaseTransportProperties ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Material Properties"; }

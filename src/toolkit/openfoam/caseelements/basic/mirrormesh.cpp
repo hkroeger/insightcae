@@ -8,9 +8,8 @@ namespace insight {
 defineType(mirrorMesh);
 addToOpenFOAMCaseElementFactoryTable(mirrorMesh);
 
-mirrorMesh::mirrorMesh( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "mirrorMesh", ps),
-  p_(ps)
+mirrorMesh::mirrorMesh( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
 {
 }
 
@@ -18,10 +17,10 @@ void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& mmd=dictionaries.lookupDict("system/mirrorMeshDict");
 
-  mmd["planeTolerance"]=p_.planeTolerance;
+  mmd["planeTolerance"]=p().planeTolerance;
 
   if (const Parameters::plane_pointAndNormal_type* pn =
-      boost::get<Parameters::plane_pointAndNormal_type>(&p_.plane))
+      boost::get<Parameters::plane_pointAndNormal_type>(&p().plane))
     {
       mmd["planeType"]="pointAndNormal";
       OFDictData::dict d;
@@ -30,7 +29,7 @@ void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
       mmd["pointAndNormalDict"]=d;
     }
   else if (const Parameters::plane_threePoint_type* pt =
-           boost::get<Parameters::plane_threePoint_type>(&p_.plane))
+             boost::get<Parameters::plane_threePoint_type>(&p().plane))
     {
       mmd["planeType"]="embeddedPoints";
       OFDictData::dict d;
@@ -39,8 +38,7 @@ void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
       d["point3"]=OFDictData::vector3(pt->p2);
       mmd["embeddedPointsDict"]=d;
     }
-  else
-    throw insight::Exception("Internal error: Unhandled selection!");
+  else throw insight::UnhandledSelection();
 }
 
 bool mirrorMesh::isUnique() const

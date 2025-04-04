@@ -32,48 +32,28 @@ class PythonAnalysis
 : public Analysis
 {
 
-  ParameterSet parameters_;
   const boost::filesystem::path& scriptfile_;
     
 public:
     
-  class PythonAnalysisFactory
-    : public Analysis::Factory
-  {
-    const boost::filesystem::path scriptfile_;
-    
-  public:
-    boost::function<ParameterSet(void)> defaultParametersWrapper_;
-    boost::function<std::string(void)> categoryWrapper_;
-    
-    PythonAnalysisFactory ( const boost::filesystem::path& scriptfile );
-    virtual ~PythonAnalysisFactory();
-    
-    virtual Analysis* operator() 
-    (
-      const ParameterSet& ps,
-      const boost::filesystem::path& exePath,
-      ProgressDisplayer& progress = consoleProgressDisplayer
-    ) const;
-  
-    ParameterSet defaultParameters() const;
-    
-    std::string category() const;
-  };
-  typedef std::shared_ptr<PythonAnalysisFactory> PythonAnalysisFactoryPtr;
-  
-  static std::set<PythonAnalysisFactoryPtr> pythonAnalysisFactories_;
+  static std::unique_ptr<ParameterSet> defaultParameters(
+      const boost::filesystem::path& scriptfile );
+
+  static std::string category(
+      const boost::filesystem::path& scriptfile );
+
+  typedef supplementedInputDataBase supplementedInputData;
 
 public:
     PythonAnalysis(
         const boost::filesystem::path& scriptfile,
-        const ParameterSet& ps,
-        const boost::filesystem::path& exePath,
-        ProgressDisplayer& progress = consoleProgressDisplayer );
+        const std::shared_ptr<supplementedInputDataBase>& sid );
 
-    inline ParameterSet parameters() const override { return parameters_; }
 
     virtual ResultSetPtr operator() ( ProgressDisplayer& displayer = consoleProgressDisplayer );
+
+    static std::string category() { return "Python Analysis"; }
+
 };
 
 

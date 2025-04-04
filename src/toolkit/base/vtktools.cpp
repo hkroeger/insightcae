@@ -582,6 +582,16 @@ size_t computeObjectSize(vtkSmartPointer<vtkDataObject> pd)
     return pd->GetActualMemorySize()*1024;
 }
 
+arma::mat vec3(vtkPoints *pts, int i)
+{
+    return vec3FromComponents(pts->GetPoint(i));
+}
+
+arma::mat vec3(vtkPointSet *pts, int i)
+{
+    return vec3FromComponents(pts->GetPoint(i));
+}
+
 }
 
 namespace std {

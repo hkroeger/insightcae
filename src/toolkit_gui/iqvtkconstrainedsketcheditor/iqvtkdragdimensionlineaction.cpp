@@ -6,14 +6,10 @@
 IQVTKDragDimensionlineAction::IQVTKDragDimensionlineAction(
     IQVTKConstrainedSketchEditor &editor,
     std::shared_ptr<insight::cad::DistanceConstraint> dc )
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(editor.viewer()),
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(editor.viewer(), true),
     editor_(editor), dc_(dc)
 {
 }
-
-
-IQVTKDragDimensionlineAction::~IQVTKDragDimensionlineAction()
-{}
 
 
 
@@ -23,12 +19,11 @@ void IQVTKDragDimensionlineAction::start()
 
 
 
-bool IQVTKDragDimensionlineAction::onMouseMove
-    (
-        Qt::MouseButtons buttons,
-        const QPoint point,
-        Qt::KeyboardModifiers curFlags
-        )
+bool IQVTKDragDimensionlineAction::onMouseDrag(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    EventType eventType )
 {
     arma::mat pip=viewer().pointInPlane3D(
         editor_->plane()->plane(), point );
@@ -36,7 +31,11 @@ bool IQVTKDragDimensionlineAction::onMouseMove
     dc_->setDimLineOffset(pip);
 
     editor_->invalidate();
-    editor_.updateActors();
+
+    editor_->geometryChanged(
+        editor_->findGeometry(dc_)->first);
+
+    if (eventType==Final) finishAction();
 
     return true;
 }
@@ -44,10 +43,11 @@ bool IQVTKDragDimensionlineAction::onMouseMove
 
 
 
-bool IQVTKDragDimensionlineAction::onLeftButtonUp(
-    Qt::KeyboardModifiers nFlags,
-    const QPoint point )
-{
-    finishAction();
-    return true;
-}
+// bool IQVTKDragDimensionlineAction::onLeftButtonUp(
+//     Qt::KeyboardModifiers nFlags,
+//     const QPoint point,
+//     bool lastClickWasDoubleClick )
+// {
+//     finishAction();
+//     return true;
+// }

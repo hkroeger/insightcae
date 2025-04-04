@@ -2,87 +2,41 @@
 #include "parametereditorwidget.h"
 
 
-
-
-CaseElementData::CaseElementData(
-    const std::string& type_name,
-    insight::MultiCADParameterSetVisualizer* mv,
-    QObject *parent )
-
-  : QObject(parent),
-    type_name_(type_name),
-    mv_(mv)
-{}
-
-
-
-
-CaseElementData::~CaseElementData()
+insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function
+InsertedCaseElement::getVisualizerFactoryFunction()
 {
-  if (mv_ && viz_)
-  {
-    mv_->unregisterVisualizer( std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz_).get() );
-  }
+    if (insight::CADParameterSetModelVisualizer
+        ::visualizerForOpenFOAMCaseElement().count(type_name_))
+    {
+        return insight::CADParameterSetModelVisualizer
+            ::visualizerForOpenFOAMCaseElement().lookup(type_name_);
+    }
+    else
+        return nullptr;
 }
-
-
-
-
-const insight::ParameterSet CaseElementData::defaultParameters() const
-{
-  return insight::OpenFOAMCaseElement::defaultParameters(type_name_);
-}
-
-
-
-
-insight::ParameterSetVisualizerPtr CaseElementData::visualizer()
-{
-  return viz_;
-}
-
-
-insight::MultiCADParameterSetVisualizer* CaseElementData::multiVisualizer() const
-{
-  return mv_;
-}
-
-void CaseElementData::updateVisualization()
-{
-  if (viz_)
-  {
-    viz_->update(curp_);
-  }
-}
-
 
 
 
 InsertedCaseElement::InsertedCaseElement(
     const std::string& type_name,
-    insight::MultiCADParameterSetVisualizer* mv,
+    insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+    MultivisualizationGenerator* visGen,
     QObject *parent
     )
-: CaseElementData(type_name, mv, parent)
-{
-    curp_ = defaultParameters();
-    if (type_name_!="")
-    {
-      try {
-        viz_ = insight::OpenFOAMCaseElement::visualizer(type_name_);
-        mv_->registerVisualizer( std::dynamic_pointer_cast<insight::CADParameterSetVisualizer>(viz_).get() );
-      }
-      catch (...)
-      { /* skip, if there is no visualizer defined */ }
-    }
-}
+    : CaseElementData(
+          type_name, mvl, visGen,
+          new IQParameterSetModel(
+              insight::OpenFOAMCaseElement::defaultParametersFor(type_name)
+            ),
+          parent)
+{}
 
 
 
 
 insight::OpenFOAMCaseElement* InsertedCaseElement::createElement(insight::OpenFOAMCase& c) const
 {
-    return insight::OpenFOAMCaseElement::lookup(type_name_, c, curp_);
+    return insight::OpenFOAMCaseElement::lookup(type_name_, c, curp_->getParameterSet());
 }
 
 

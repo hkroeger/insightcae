@@ -3,6 +3,7 @@
 #include "base/tools.h"
 #include "base/cppextensions.h"
 #include "base/translations.h"
+#include "base/rapidxml.h"
 
 namespace insight
 {
@@ -18,31 +19,31 @@ ParameterNotFoundException::ParameterNotFoundException(
 
 
 
-defineType(SubsetParameter);
-addToFactoryTable(Parameter, SubsetParameter);
+defineType(ParameterSet);
+addToFactoryTable(Parameter, ParameterSet);
 
 
 
 
-SubsetParameter::SubsetParameter()
-{
-}
+
+ParameterSet::ParameterSet()
+    : Parameter(std::string(), false, false, false, 0)
+{}
 
 
 
 
-SubsetParameter::SubsetParameter(
+ParameterSet::ParameterSet(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order )
 : Parameter(description, isHidden, isExpert, isNecessary, order)
-{
-}
+{}
 
 
 
 
-SubsetParameter::SubsetParameter(
-    const EntryCopies &defaultValue,
+ParameterSet::ParameterSet(
+    Entries &&defaultValue,
     const std::string &description,
     bool isHidden, bool isExpert, bool isNecessary, int order )
 : Parameter(description, isHidden, isExpert, isNecessary, order)
@@ -51,15 +52,14 @@ SubsetParameter::SubsetParameter(
     {
         insert(
             p.first,
-            std::unique_ptr<Parameter>(
-                p.second->clone() ) );
+            std::move(p.second) );
     }
 }
 
 
 
 
-SubsetParameter::SubsetParameter(
+ParameterSet::ParameterSet(
     const EntryReferences &defaultValue,
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order )
@@ -69,20 +69,79 @@ SubsetParameter::SubsetParameter(
     {
         insert(
             p.first,
-            std::unique_ptr<Parameter>(
-                p.second->clone() ) );
+            p.second->clone(false) );
     }
 }
 
 
 
+std::unique_ptr<ParameterSet> ParameterSet::create()
+{
+    return std::unique_ptr<ParameterSet>(new ParameterSet());
+}
 
-SubsetParameter::EntryReferences SubsetParameter::entries() const
+std::unique_ptr<ParameterSet> ParameterSet::create_uninitialized(
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+{
+    auto p=std::unique_ptr<ParameterSet>(new ParameterSet(
+        description,
+        isHidden, isExpert, isNecessary, order ));
+    return p;
+}
+
+std::unique_ptr<ParameterSet> ParameterSet::create(
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+{
+    auto p=create_uninitialized(
+        description,
+        isHidden, isExpert, isNecessary, order );
+    p->initialize();
+    return p;
+}
+
+std::unique_ptr<ParameterSet> ParameterSet::create(
+    ParameterSet::Entries &&defaultValue,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+{
+    auto p=std::unique_ptr<ParameterSet>(new ParameterSet(
+        std::move(defaultValue), description,
+        isHidden, isExpert, isNecessary, order ));
+    p->initialize();
+    return p;
+}
+
+std::unique_ptr<ParameterSet> ParameterSet::create_uninitialized(
+    const ParameterSet::EntryReferences &defaultValue,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+{
+    auto p=std::unique_ptr<ParameterSet>(new ParameterSet(
+        defaultValue, description,
+        isHidden, isExpert, isNecessary, order ));
+    return p;
+}
+
+std::unique_ptr<ParameterSet> ParameterSet::create(
+    const ParameterSet::EntryReferences &defaultValue,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+{
+    auto p=create_uninitialized(
+        defaultValue, description,
+        isHidden, isExpert, isNecessary, order );
+    p->initialize();
+    return p;
+}
+
+ParameterSet::EntryReferences ParameterSet::entries() const
 {
     EntryReferences result;
-    for (auto p: value_)
+    for (auto& p: value_)
     {
-        result.insert({p->first, p->second});
+        result.insert({p.first, p.second});
     }
     return result;
 }
@@ -90,16 +149,15 @@ SubsetParameter::EntryReferences SubsetParameter::entries() const
 
 
 
-SubsetParameter::EntryCopies SubsetParameter::copyEntries() const
+ParameterSet::Entries ParameterSet::copyEntries() const
 {
-    EntryCopies result;
-    for (auto p: value_)
+    Entries result;
+    for (auto &p: value_)
     {
         result.insert(
             {
-             p->first,
-             std::shared_ptr<Parameter>(
-                 p->second->clone() )
+             p.first,
+             p.second->clone(false)
             });
     }
     return result;
@@ -108,9 +166,9 @@ SubsetParameter::EntryCopies SubsetParameter::copyEntries() const
 
 
 
-bool SubsetParameter::isDifferent(const Parameter& p) const
+bool ParameterSet::isDifferent(const Parameter& p) const
 {
-  if (const auto *op = dynamic_cast<const SubsetParameter*>(&p))
+  if (const auto *op = dynamic_cast<const ParameterSet*>(&p))
   {
       if (op->value_.size()!=value_.size())
           return true;
@@ -136,35 +194,48 @@ bool SubsetParameter::isDifferent(const Parameter& p) const
 
 
 
-void SubsetParameter::insert(const std::string &name, std::unique_ptr<Parameter> p)
+void ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& p)
 {
 
   auto ie = value_.find(name);
   if (ie!=value_.end())
   {
-    valueChangedConnections_.erase(ie->second);
-    childValueChangedConnections_.erase(ie->second);
+    valueChangedConnections_.erase(ie->second.get());
+    childValueChangedConnections_.erase(ie->second.get());
     value_.erase(ie);
   }
 
-  auto ins = value_.insert(name, std::auto_ptr<Parameter>(p.release()) );
+  auto ins = value_.insert({name, std::move(p)});
 
   ins.first->second->setParent(this);
 
-  valueChangedConnections_[ins.first->second]=
+  valueChangedConnections_.insert(ins.first->second.get(),
       std::make_shared<boost::signals2::scoped_connection>(
-      ins.first->second->valueChanged.connect(childValueChanged));
-  childValueChangedConnections_[ins.first->second]=
+      ins.first->second->valueChanged.connect(childValueChanged)));
+  childValueChangedConnections_.insert(ins.first->second.get(),
       std::make_shared<boost::signals2::scoped_connection>(
-      ins.first->second->childValueChanged.connect( childValueChanged ));
+      ins.first->second->childValueChanged.connect( childValueChanged )));
 
   triggerValueChanged();
 }
 
 
 
+void ParameterSet::remove(const std::string &name)
+{
+    auto ie = value_.find(name);
+    if (ie!=value_.end())
+    {
+        valueChangedConnections_.erase(ie->second.get());
+        childValueChangedConnections_.erase(ie->second.get());
+        value_.erase(ie);
+    }
+}
 
-std::string SubsetParameter::latexRepresentation() const
+
+
+
+std::string ParameterSet::latexRepresentation() const
 {
   std::string result="";
   if (value_.size()>0)
@@ -192,14 +263,18 @@ std::string SubsetParameter::latexRepresentation() const
 
 
 
-std::string SubsetParameter::plainTextRepresentation(int indent) const
+std::string ParameterSet::plainTextRepresentation(int indent) const
 {
   std::string result="\n";
   if (value_.size()>0)
   {
     for(auto i=value_.begin(); i!=value_.end(); i++)
     {
-          result+=std::string(indent, ' ') + (i->first) + " = " + i->second->plainTextRepresentation(indent) + '\n';
+          result+=std::string(indent, ' ')
+                  + (i->first)
+                  + " = "
+                  + i->second->plainTextRepresentation(indent)
+                  + '\n';
     }
   }
   return result;
@@ -208,10 +283,10 @@ std::string SubsetParameter::plainTextRepresentation(int indent) const
 
 
 
-bool SubsetParameter::isPacked() const
+bool ParameterSet::isPacked() const
 {
   bool is_packed=false;
-  for(auto p: value_)
+  for(auto &p: value_)
   {
     is_packed |= p.second->isPacked();
   }
@@ -221,9 +296,9 @@ bool SubsetParameter::isPacked() const
 
 
 
-void SubsetParameter::pack()
+void ParameterSet::pack()
 {
-  for(auto p: value_)
+  for(auto &p: value_)
   {
     p.second->pack();
   }
@@ -232,9 +307,9 @@ void SubsetParameter::pack()
 
 
 
-void SubsetParameter::unpack(const boost::filesystem::path& basePath)
+void ParameterSet::unpack(const boost::filesystem::path& basePath)
 {
-  for(auto p: value_)
+  for(auto &p: value_)
   {
     p.second->unpack(basePath);
   }
@@ -243,9 +318,9 @@ void SubsetParameter::unpack(const boost::filesystem::path& basePath)
 
 
 
-void SubsetParameter::clearPackedData()
+void ParameterSet::clearPackedData()
 {
-  for(auto p: value_)
+  for(auto &p: value_)
   {
     p.second->clearPackedData();
   }
@@ -254,13 +329,13 @@ void SubsetParameter::clearPackedData()
 
 
 
-rapidxml::xml_node<>* SubsetParameter::appendToNode(
+rapidxml::xml_node<>* ParameterSet::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath ) const
 {
-  insight::CurrentExceptionContext ex(2, "appending subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(3, "appending subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
   xml_node<>*  child = Parameter::appendToNode(name, doc, node, inputfilepath);
@@ -276,7 +351,7 @@ rapidxml::xml_node<>* SubsetParameter::appendToNode(
 
 
 
-void SubsetParameter::readFromNode(
+void ParameterSet::readFromNode(
     const std::string& name,
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
@@ -307,7 +382,7 @@ void SubsetParameter::readFromNode(
 
 
 
-int SubsetParameter::nChildren() const
+int ParameterSet::nChildren() const
 {
   return value_.size();
 }
@@ -315,17 +390,24 @@ int SubsetParameter::nChildren() const
 
 
 
-std::string SubsetParameter::childParameterName(int i) const
+std::string ParameterSet::childParameterName(int i, bool ) const
 {
   auto iter=value_.begin();
   std::advance(iter, i);
   return iter->first;
 }
 
+// for any reason, g++ compiler emits warning of
+// typecast const Parameter* to int, if this redefinition is removed
+std::string ParameterSet::childParameterName(
+    const Parameter *p,
+    bool redirectArrayElementsToDefault ) const
+{
+    return Parameter::childParameterName(p, redirectArrayElementsToDefault);
+}
 
 
-
-Parameter& SubsetParameter::childParameterRef ( int i )
+Parameter& ParameterSet::childParameterRef ( int i )
 {
   auto iter=value_.begin();
   std::advance(iter, i);
@@ -334,7 +416,7 @@ Parameter& SubsetParameter::childParameterRef ( int i )
 
 
 
-const Parameter& SubsetParameter::childParameter( int i ) const
+const Parameter& ParameterSet::childParameter( int i ) const
 {
   auto iter=value_.begin();
   std::advance(iter, i);
@@ -344,7 +426,7 @@ const Parameter& SubsetParameter::childParameter( int i ) const
 
 
 
-size_t SubsetParameter::size() const
+size_t ParameterSet::size() const
 {
   return value_.size();
 }
@@ -380,7 +462,7 @@ std::string splitOffFirstParameter(std::string& path, int& nRemaining)
 
 
 
-bool SubsetParameter::hasParameter(std::string path) const
+bool ParameterSet::hasParameter(std::string path) const
 {
 
   std::function<bool(const Parameter&, std::string)> checkChildren;
@@ -410,7 +492,7 @@ bool SubsetParameter::hasParameter(std::string path) const
 
 
 
-Parameter& SubsetParameter::getParameter(std::string path)
+Parameter& ParameterSet::getParameter(std::string path)
 {
 
   std::function<Parameter&(Parameter&, std::string)> getChild;
@@ -421,9 +503,9 @@ Parameter& SubsetParameter::getParameter(std::string path)
       std::string parameterName = splitOffFirstParameter(path, nRemaining);
       if (parameterName=="..")
       {
-          if (auto p=cp.parent())
+          if (cp.hasParent())
           {
-              return getChild(*p, path);
+              return getChild(cp.parent(), path);
           }
           else
               throw insight::ParameterNotFoundException(
@@ -452,7 +534,7 @@ Parameter& SubsetParameter::getParameter(std::string path)
 
 
 
-bool SubsetParameter::contains(const std::string &name) const
+bool ParameterSet::contains(const std::string &name) const
 {
   return value_.count(name)>0;
 }
@@ -460,7 +542,7 @@ bool SubsetParameter::contains(const std::string &name) const
 
 
 
-std::istream& SubsetParameter::getFileStream ( const std::string& name )
+std::istream& ParameterSet::getFileStream ( const std::string& name )
 {
   return this->get<PathParameter> ( name ) .stream();
 }
@@ -468,7 +550,7 @@ std::istream& SubsetParameter::getFileStream ( const std::string& name )
 
 
 
-SubsetParameter& SubsetParameter::setInt ( const std::string& name, int v )
+ParameterSet& ParameterSet::setInt ( const std::string& name, int v )
 {
   this->get<IntParameter> ( name ).set( v );
   return *this;
@@ -477,7 +559,7 @@ SubsetParameter& SubsetParameter::setInt ( const std::string& name, int v )
 
 
 
-SubsetParameter& SubsetParameter::setDouble ( const std::string& name, double v )
+ParameterSet& ParameterSet::setDouble ( const std::string& name, double v )
 {
   this->get<DoubleParameter> ( name ).set( v );
   return *this;
@@ -486,7 +568,7 @@ SubsetParameter& SubsetParameter::setDouble ( const std::string& name, double v 
 
 
 
-SubsetParameter& SubsetParameter::setBool ( const std::string& name, bool v )
+ParameterSet& ParameterSet::setBool ( const std::string& name, bool v )
 {
   this->get<BoolParameter> ( name ).set( v );
   return *this;
@@ -496,7 +578,7 @@ SubsetParameter& SubsetParameter::setBool ( const std::string& name, bool v )
 
 
 
-SubsetParameter& SubsetParameter::setString ( const std::string& name, const std::string& v )
+ParameterSet& ParameterSet::setString ( const std::string& name, const std::string& v )
 {
   this->get<StringParameter> ( name ).set( v );
   return *this;
@@ -505,7 +587,7 @@ SubsetParameter& SubsetParameter::setString ( const std::string& name, const std
 
 
 
-SubsetParameter& SubsetParameter::setVector ( const std::string& name, const arma::mat& v )
+ParameterSet& ParameterSet::setVector ( const std::string& name, const arma::mat& v )
 {
   this->get<VectorParameter> ( name ).set( v );
   return *this;
@@ -514,7 +596,7 @@ SubsetParameter& SubsetParameter::setVector ( const std::string& name, const arm
 
 
 
-SubsetParameter& SubsetParameter::setMatrix ( const std::string& name, const arma::mat& m )
+ParameterSet& ParameterSet::setMatrix ( const std::string& name, const arma::mat& m )
 {
   this->get<MatrixParameter> ( name ).set( m );
   return *this;
@@ -523,14 +605,14 @@ SubsetParameter& SubsetParameter::setMatrix ( const std::string& name, const arm
 
 
 
-SubsetParameter& SubsetParameter::setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp)
+ParameterSet& ParameterSet::setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp)
 {
   this->get<PathParameter> ( name ).setOriginalFilePath(fp);
   return *this;
 }
 
 
-const int& SubsetParameter::getInt ( const std::string& name ) const
+const int& ParameterSet::getInt ( const std::string& name ) const
 {
   return this->get<IntParameter> ( name ) ();
 }
@@ -538,7 +620,7 @@ const int& SubsetParameter::getInt ( const std::string& name ) const
 
 
 
-const double& SubsetParameter::getDouble ( const std::string& name ) const
+const double& ParameterSet::getDouble ( const std::string& name ) const
 {
   return this->get<DoubleParameter> ( name ) ();
 }
@@ -546,7 +628,7 @@ const double& SubsetParameter::getDouble ( const std::string& name ) const
 
 
 
-const bool& SubsetParameter::getBool ( const std::string& name ) const
+const bool& ParameterSet::getBool ( const std::string& name ) const
 {
   return this->get<BoolParameter> ( name ) ();
 }
@@ -554,7 +636,7 @@ const bool& SubsetParameter::getBool ( const std::string& name ) const
 
 
 
-const std::string& SubsetParameter::getString ( const std::string& name ) const
+const std::string& ParameterSet::getString ( const std::string& name ) const
 {
   return this->get<StringParameter> ( name ) ();
 }
@@ -562,7 +644,7 @@ const std::string& SubsetParameter::getString ( const std::string& name ) const
 
 
 
-const arma::mat& SubsetParameter::getVector ( const std::string& name ) const
+const arma::mat& ParameterSet::getVector ( const std::string& name ) const
 {
   return this->get<VectorParameter> ( name ) ();
 }
@@ -570,7 +652,7 @@ const arma::mat& SubsetParameter::getVector ( const std::string& name ) const
 
 
 
-const boost::filesystem::path SubsetParameter::getPath ( const std::string& name, const boost::filesystem::path& basePath ) const
+const boost::filesystem::path ParameterSet::getPath ( const std::string& name, const boost::filesystem::path& basePath ) const
 {
   return this->get<PathParameter> ( name ) .filePath(basePath);
 }
@@ -578,20 +660,20 @@ const boost::filesystem::path SubsetParameter::getPath ( const std::string& name
 
 
 
-SubsetParameter& SubsetParameter::getSubset(const std::string& name)
+ParameterSet& ParameterSet::getSubset(const std::string& name)
 {
   if (name==".")
     return *this;
   else
   {
-    return this->get<SubsetParameter>(name);
+    return this->get<ParameterSet>(name);
   }
 }
 
 
 
 
-const SubsetParameter& SubsetParameter::operator[] ( const std::string& name ) const
+const ParameterSet& ParameterSet::operator[] ( const std::string& name ) const
 {
   return getSubset ( name );
 }
@@ -599,20 +681,20 @@ const SubsetParameter& SubsetParameter::operator[] ( const std::string& name ) c
 
 
 
-const SubsetParameter& SubsetParameter::getSubset(const std::string& name) const
+const ParameterSet& ParameterSet::getSubset(const std::string& name) const
 {
   if (name==".")
     return *this;
   else
   {
-    return this->get<SubsetParameter>(name);
+    return this->get<ParameterSet>(name);
   }
 }
 
 
 
 
-void SubsetParameter::replace ( const std::string& key, Parameter* newp )
+void ParameterSet::replace ( const std::string& key, std::unique_ptr<Parameter> newp )
 {
   using namespace boost;
   using namespace boost::algorithm;
@@ -622,82 +704,94 @@ void SubsetParameter::replace ( const std::string& key, Parameter* newp )
     std::string prefix = copy_range<std::string> ( *make_split_iterator ( key, first_finder ( "/" ) ) );
     std::string remain = key;
     erase_head ( remain, prefix.size()+1 );
-    return this->getSubset ( prefix ).replace ( remain, newp );
+    return
+        this->getSubset ( prefix )
+        .replace (
+            remain,
+            std::move(newp) );
   }
   else
   {
-    insert(key, std::unique_ptr<Parameter>(newp));
+    insert(
+          key,
+          std::move(newp) );
   }
 }
 
 
 
 
-Parameter* SubsetParameter::clone() const
+std::unique_ptr<Parameter> ParameterSet::clone(bool init) const
 {
-  return new SubsetParameter(
-      entries(),
-      description_.simpleLatex(),
-      isHidden_, isExpert_, isNecessary_, order_
-      );
+    auto p =std::unique_ptr<ParameterSet>(new ParameterSet(
+        entries(),
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order()
+        ));
+    if (init) p->initialize();
+    return p;
 }
 
 
 
 
-void SubsetParameter::copyFrom(const Parameter& o)
+void ParameterSet::copyFrom(const Parameter& o)
 {
-  operator=(dynamic_cast<const SubsetParameter&>(o));
-
+  operator=(dynamic_cast<const ParameterSet&>(o));
 }
 
 
 
 
-void SubsetParameter::operator=(const SubsetParameter& osp)
+void ParameterSet::operator=(const ParameterSet& osp)
 {
-  for (auto p: osp.value_)
+  for (auto &p: osp.value_)
   {
     auto i = value_.find(p.first);
     if (i!=value_.end())
           i->second->copyFrom( *p.second );
     else
-          insert(p.first, std::unique_ptr<Parameter>(p.second->clone()));
+          insert(
+            p.first,
+            std::unique_ptr<Parameter>(
+                p.second->clone(false) ) );
   }
   Parameter::copyFrom(osp);
+  initialize();
 }
 
 
 
 
-void SubsetParameter::extend ( const Parameter& other )
+void ParameterSet::extend ( const Parameter& other )
 {
-  auto &osp = dynamic_cast<const SubsetParameter&>(other);
-  for ( auto i: osp.value_ )
+  auto &osp = dynamic_cast<const ParameterSet&>(other);
+  for ( auto &i: osp.value_ )
   {
     if (contains(i.first))
     {
-          value_.at(i.first).extend(*i.second);
+          value_.at(i.first)->extend(*i.second);
     }
     else
     {
-          insert( i.first, std::unique_ptr<Parameter>(i.second->clone()) );
+          insert( i.first, i.second->clone(false) );
     }
   }
+  initialize();
 }
 
 
 
 
-void SubsetParameter::merge ( const Parameter& other )
+void ParameterSet::merge ( const Parameter& other )
 {
-  if (auto *osp = dynamic_cast<const SubsetParameter*>(&other))
+  if (auto *osp = dynamic_cast<const ParameterSet*>(&other))
   {
-      for ( auto i: osp->value_ )
+      for ( auto &i: osp->value_ )
       {
         if (contains(i.first))
         {
-              value_.at(i.first).merge(*i.second);
+              value_.at(i.first)->merge(*i.second);
         }
       }
   }
@@ -705,15 +799,23 @@ void SubsetParameter::merge ( const Parameter& other )
 
 
 
-
-std::unique_ptr<Parameter> SubsetParameter::intersection(const Parameter &other) const
+void ParameterSet::clear()
 {
-  if (auto *osp = dynamic_cast<const SubsetParameter*>(&other))
-  {
-      auto np = std::make_unique<SubsetParameter>(
-          description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+    operator=(*ParameterSet::create());
+}
 
-      for (auto p: value_)
+
+
+
+std::unique_ptr<Parameter> ParameterSet::intersection(const Parameter &other) const
+{
+  if (auto *osp = dynamic_cast<const ParameterSet*>(&other))
+  {
+      auto np = ParameterSet::create(
+          description().simpleLatex(),
+          isHidden(), isExpert(), isNecessary(), order());
+
+      for (auto &p: value_)
       {
         if (osp->value_.count(p.first))
         {
@@ -731,7 +833,13 @@ std::unique_ptr<Parameter> SubsetParameter::intersection(const Parameter &other)
 }
 
 
-
+std::ostream& operator<<(std::ostream& os, const ParameterSet& ps)
+{
+    CurrentExceptionContext ex(
+        2, "writing plain text representation of parameter set to output stream (via << operator)");
+    os << ps.plainTextRepresentation(0);
+    return os;
+}
 
 
 

@@ -2,12 +2,12 @@
 #include <QFont>
 #include <QDebug>
 
+#include <QObject>
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QListWidget>
 
-#include "helpwidget.h"
 #include "iqparameter.h"
 
 #include "base/exception.h"
@@ -16,6 +16,9 @@
 
 #include "cadparametersetvisualizer.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
+
+
 
 
 QString mat2Str(const arma::mat& m)
@@ -34,6 +37,8 @@ QString mat2Str(const arma::mat& m)
 }
 
 
+
+
 defineType(IQParameter);
 defineFactoryTable
 (
@@ -41,63 +46,150 @@ defineFactoryTable
       LIST(
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet),
       LIST(parent,
          psmodel,
-         name,
          parameter,
          defaultParameterSet)
 );
 
+
+
+
 IQParameter* IQParameter::create(
     QObject *parent,
     IQParameterSetModel* psmodel,
-    const QString &name,
-    insight::Parameter &p,
+    insight::Parameter *p,
     const insight::ParameterSet &defaultParameterSet )
 {
-  IQParameter *np;
-  try
-  {
-    np=IQParameter::lookup(p.type(), parent, psmodel, name, p, defaultParameterSet);
-  }
-  catch (const std::exception& e)
-  {
-    np=new IQParameter(parent, psmodel, name, p, defaultParameterSet);
-  }
+    IQParameter *np;
+    if (IQParameter::has_factory(p->type()))
+    {
+        np = IQParameter::lookup(p->type(), parent, psmodel, p, defaultParameterSet);
+    }
+    else
+    {
+        np = new IQParameter(parent, psmodel, p, defaultParameterSet);
+    }
 
-  np->connectSignals();
+    np->connectSignals();
 
-  return np;
+    return np;
 }
+
 
 
 
 IQParameter::IQParameter(
         QObject *parent,
         IQParameterSetModel* psmodel,
-        const QString &name,
-        insight::Parameter &parameter,
+        insight::Parameter *parameter,
         const insight::ParameterSet &defaultParameterSet )
-  : QObject(parent),
+  : std::observer_ptr<insight::Parameter>(parameter),
+    QObject(parent),
     model_(psmodel),
-    name_(name),
-    parameter_(parameter),
     defaultParameterSet_(defaultParameterSet)
 {}
+
+
+
+IQParameter::~IQParameter()
+{}
+
+
+
+
+void IQParameter::removeFromViews(bool deleteLater)
+{
+    auto *parentParameter =
+        dynamic_cast<IQParameter*>(
+            this->parentParameter());
+
+    auto *m=this->model();
+    auto myIndex=m->indexFromParameterPath(
+        this->get()->path(), 0);
+    auto parentIndex=myIndex.parent();
+    auto row=myIndex.row();
+
+    m->beginRemoveRows(parentIndex, row, row);
+
+    if (deleteLater)
+    {
+        this->deleteLater();
+    }
+
+    QObject::connect(
+        this, &QObject::destroyed, this,
+        [m]() { m->endRemoveRows(); } );
+}
+
+
+IQParameter *IQParameter::parentParameter() const
+{
+    if (get()->hasParent())
+        if (auto *iqp=model_->findWrapper(get()->parent()))
+            return iqp;
+    return nullptr;
+}
+
+
+QList<IQParameter *> IQParameter::children() const
+{
+    QList<IQParameter *> ch;
+    for (auto& p: *get())
+    {
+        if (auto *iqp=model_->findWrapper(p))
+            ch.append(iqp);
+    }
+    return ch;
+}
 
 void IQParameter::connectSignals()
 {
     // connect outside constructor because of virtual "path" function is involved
     disconnectAtEOL(
-        parameterRef().valueChanged.connect(
+        (*this)->valueChanged.connect(
             [this]() {
-                model_->notifyParameterChange(
-                    path().toStdString(),
-                    true
-                    );
+                model_->notifyParameterChange( *this );
+            }
+            )
+        );
+
+    disconnectAtEOL(
+        (*this)->beforeChildInsertion.connect(
+            [this](int r0, int r1)
+            {
+                QModelIndex idx=model_->indexFromParameter(*this, 0);
+                model_->beginInsertRows( idx, r0, r1 );
+            }
+            )
+        );
+
+    disconnectAtEOL(
+        (*this)->childInsertionDone.connect(
+            [this](int, int)
+            {
+                model_->endInsertRows();
+            }
+            )
+        );
+
+    disconnectAtEOL(
+        (*this)->beforeChildRemoval.connect(
+            [this](int r0, int r1)
+            {
+                QModelIndex idx=model_->indexFromParameter(*this, 0);
+                model_->beginRemoveRows( idx, r0, r1 );
+            }
+            )
+        );
+
+    disconnectAtEOL(
+        (*this)->childRemovalDone.connect(
+            [this](int, int)
+            {
+                model_->endRemoveRows();
             }
             )
         );
@@ -105,60 +197,32 @@ void IQParameter::connectSignals()
 
 
 
-IQParameter* IQParameter::parentParameter() const
-{
-//  qDebug()<<"request parent of "<<name_;
-  return dynamic_cast<IQParameter*>(parent());
-}
 
-int IQParameter::nChildParameters() const
-{
-  return size();
-}
 
 IQParameterSetModel *IQParameter::model() const
 {
   return model_;
 }
 
-const QString& IQParameter::name() const
+QString IQParameter::name() const
 {
-  return name_;
-}
-
-void IQParameter::setName(const QString &newName)
-{
-  name_=newName;
+    return QString::fromStdString(get()->name());
 }
 
 
-const QString IQParameter::buildPath(const QString& name, bool redirectArrayElementsToDefault) const
-{
-  QString thePath;
-  if (const auto *p = parentParameter())
-  {
-    thePath = p->path(redirectArrayElementsToDefault);
-  }
-  if (!thePath.isEmpty())
-  {
-    thePath = thePath+"/"+name;
-  }
-  else
-  {
-    thePath =name;
-  }
-  return thePath;
-}
 
-const QString IQParameter::path(bool redirectArrayElementsToDefault) const
-{
-  return buildPath(name(), redirectArrayElementsToDefault);
-}
 
 
 QString IQParameter::valueText() const
 {
-  return QString::fromStdString(parameter_.type());
+  return QString::fromStdString((*this)->type());
+}
+
+
+
+bool IQParameter::setValue(QVariant)
+{
+    return false;
 }
 
 
@@ -172,28 +236,8 @@ bool IQParameter::isModified() const
 {
   if (!markedAsModified_)
   {
-    bool cmodified = false;
-    try
-    {
-      if (size()>0) // has children
-      {
-        for (auto& p: (*this))
-        {
-          cmodified |= p->isModified();
-        }
-      }
-      else
-      {
-        const auto& dp = defaultParameterSet_.get<insight::Parameter>(path(true).toStdString());
-        cmodified = parameter().isDifferent(dp);
-      }
-    }
-    catch (...)
-    {
-      cmodified=true;
-    }
-
-    markedAsModified_.reset(new bool(cmodified));
+    markedAsModified_ =
+          (*this)->isModified(defaultParameterSet_);
   }
 
   return *markedAsModified_;
@@ -201,7 +245,7 @@ bool IQParameter::isModified() const
 
 QVariant IQParameter::backgroundColor() const
 {
-  if (parameter_.isNecessary())
+    if ((*this)->isNecessary())
     return QColor(Qt::yellow);
 
   return QVariant();
@@ -209,9 +253,9 @@ QVariant IQParameter::backgroundColor() const
 
 QVariant IQParameter::textColor() const
 {
-  if (parameter_.isHidden())
+  if ((*this)->isHidden())
     return QColor(Qt::gray);
-  if (parameter_.isExpert())
+  if ((*this)->isExpert())
     return QColor(Qt::lightGray);
 
   return QVariant();
@@ -239,28 +283,31 @@ QVBoxLayout* IQParameter::populateEditControls(
 {
   QVBoxLayout *layout=new QVBoxLayout;
 
-  QLabel *nameLabel = new QLabel(name(), editControlsContainer);
+  QLabel *nameLabel = new QLabel(
+      QString::fromStdString((*this)->name()),
+      editControlsContainer );
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
 
-  HelpWidget *shortDescLabel =
-    new HelpWidget( editControlsContainer, parameter().description() );
+  auto *shortDescLabel =
+    new IQSimpleLatexView( (*this)->description(), editControlsContainer );
   layout->addWidget(shortDescLabel);
 
   auto analysisName = model_->getAnalysisName();
   if (!analysisName.empty())
   {
-    auto propositions =
+    std::shared_ptr<insight::ParameterSet> propositions =
         insight::AnalysisParameterPropositions::getCombinedPropositionsForParameter(
             analysisName,
-            path().toStdString(),
+            (*this)->path(),
             model_->getParameterSet()
-        );
-    if (propositions.size()>0)
+    );
+
+    if (propositions->size()>0)
     {
         auto *proplist = new QListWidget;
         layout->addWidget(new QLabel("Proposed values:"));
-        for (auto pp =propositions.begin(); pp!=propositions.end(); ++pp)
+        for (auto pp =propositions->begin(); pp!=propositions->end(); ++pp)
         {
           proplist->addItem(QString::fromStdString(
             pp.name()+": "+pp->plainTextRepresentation()
@@ -270,7 +317,7 @@ QVBoxLayout* IQParameter::populateEditControls(
                 [this,propositions](QListWidgetItem *item)
                 {
                     auto label = item->text().split(":").at(0);
-                    this->applyProposition(propositions, label.toStdString());
+                    this->applyProposition(*propositions, label.toStdString());
                 }
                 );
         layout->addWidget(proplist);
@@ -284,16 +331,7 @@ QVBoxLayout* IQParameter::populateEditControls(
 }
 
 
-const insight::Parameter& IQParameter::parameter() const
-{
-  return parameter_;
-}
 
-
-insight::Parameter &IQParameter::parameterRef()
-{
-  return parameter_;
-}
 
 void IQParameter::applyProposition(
     const insight::ParameterSet &propositions,
@@ -301,6 +339,178 @@ void IQParameter::applyProposition(
 {
 #warning does nothing yet, should be abstract
 }
+
+defineStaticFunctionTableWithArgs(
+    IQParameterGridViewDelegateEditorWidget,
+    createDelegate, QAbstractItemDelegate*,
+    LIST( QObject* parent ),
+    LIST( parent )
+);
+
+IQParameterGridViewDelegateEditorWidget::IQParameterGridViewDelegateEditorWidget(
+    QObject* parent,
+    const IQParameter& parameter,
+    const QModelIndex& index)
+    : QObject(parent), index_(index)
+{
+    if (IQParameterGridViewDelegateEditorWidget::has_createDelegate(parameter.type()))
+    {
+        delegate_=
+            IQParameterGridViewDelegateEditorWidget::createDelegateFor(
+            parameter.type(), this);
+    }
+    else
+    {
+        delegate_=new QStyledItemDelegate(this);
+    }
+}
+
+
+
+
+
+const IQParameterGridViewDelegateEditorWidget*
+IQParameterGridViewSelectorDelegate::delegateWidgetForIndex(
+    const QModelIndex &idx) const
+{
+    for (auto& c: children())
+    {
+        if (auto *delw =
+            dynamic_cast<const IQParameterGridViewDelegateEditorWidget*>(c))
+        {
+            if (delw->index()==idx)
+                return delw;
+        }
+    }
+    return nullptr;
+}
+
+
+
+
+void IQParameterGridViewSelectorDelegate::destroyEditor(
+    QWidget *editor, const QModelIndex &index) const
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        d->delegate()->destroyEditor(editor, index);
+        const_cast<IQParameterGridViewDelegateEditorWidget*>(d)->deleteLater();
+    }
+    else
+        QStyledItemDelegate::destroyEditor(editor, index);
+}
+
+
+
+
+bool IQParameterGridViewSelectorDelegate::editorEvent(
+    QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        return d->delegate()->editorEvent(event, model, option, index);
+    }
+    else
+        return QStyledItemDelegate::editorEvent(event, model, option, index);
+}
+
+
+
+
+bool IQParameterGridViewSelectorDelegate::helpEvent(
+    QHelpEvent *event, QAbstractItemView *view, const QStyleOptionViewItem &option, const QModelIndex &index)
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        return d->delegate()->helpEvent(event, view, option, index);
+    }
+    else
+        return QStyledItemDelegate::helpEvent(event, view, option, index);
+}
+
+
+
+
+void IQParameterGridViewSelectorDelegate::paint(
+    QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        d->delegate()->paint(painter, option, index);
+    }
+    else
+        QStyledItemDelegate::paint(painter, option, index);
+}
+
+
+
+
+QWidget* IQParameterGridViewSelectorDelegate::createEditor(
+    QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    if (auto *psm =dynamic_cast<const IQParameterSetModel*>(
+            index.model()))
+    {
+        auto *iqp = psm->iqIndexData(index);
+        auto dw = new IQParameterGridViewDelegateEditorWidget(
+            const_cast<IQParameterGridViewSelectorDelegate*>(this),
+            *iqp, index);
+        return dw->delegate()->createEditor(parent, option, index);
+    }
+    return QStyledItemDelegate::createEditor(parent, option, index);
+}
+
+
+
+void IQParameterGridViewSelectorDelegate::setEditorData(
+    QWidget *editor, const QModelIndex &index) const
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        d->delegate()->setEditorData(editor, index);
+    }
+    else
+        QStyledItemDelegate::setEditorData(editor, index);
+}
+
+
+void IQParameterGridViewSelectorDelegate::setModelData(
+    QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        d->delegate()->setModelData(editor, model, index);
+    }
+    else
+        QStyledItemDelegate::setModelData(editor, model, index);
+}
+
+
+
+QSize IQParameterGridViewSelectorDelegate::sizeHint(
+    const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        return d->delegate()->sizeHint(option, index);
+    }
+    else
+        return QStyledItemDelegate::sizeHint(option, index);
+}
+
+
+void IQParameterGridViewSelectorDelegate::updateEditorGeometry(
+    QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    if (auto *d=delegateWidgetForIndex(index))
+    {
+        d->delegate()->updateEditorGeometry(editor, option, index);
+    }
+    else
+        QStyledItemDelegate::updateEditorGeometry(editor, option, index);
+}
+
+
 
 
 

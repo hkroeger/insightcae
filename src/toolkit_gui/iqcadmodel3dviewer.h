@@ -2,27 +2,29 @@
 #define IQCADMODEL3DVIEWER_H
 
 #include "toolkit_gui_export.h"
-#include "cadtypes.h"
+#include "cadmodel3dviewer.h"
 
 #include <QAbstractItemModel>
 #include <QTextEdit>
 #include <QMainWindow>
 #include <QToolBox>
+#include <QLabel>
 
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
+
+
+
 
 class QItemSelectionModel;
 
 class IQVTKViewerState;
 
-
 class TOOLKIT_GUI_EXPORT IQCADModel3DViewer
-        : public QMainWindow //for toolbars to work //QWidget
+    : public QMainWindow, //for toolbars to work //QWidget
+      public CADModel3DViewer
 {
 public:
-    typedef std::function<void(const insight::ParameterSet& seps, vtkProperty* actprops)>
-        SetSketchEntityAppearanceCallback;
     typedef std::function<void(insight::cad::ConstrainedSketchPtr)>
         SketchCompletionCallback;
 
@@ -32,30 +34,13 @@ public:
         uint operator()(const QPersistentModelIndex& idx) const;
     };
 
-    typedef boost::variant<
-        insight::cad::VectorPtr,
-        insight::cad::DatumPtr,
-        insight::cad::FeaturePtr,
-        insight::cad::PostprocActionPtr,
-        vtkSmartPointer<vtkDataObject>
-        > CADEntity;
-
-    // typedef boost::variant<
-    //     std::weak_ptr<insight::cad::Vector>,
-    //     std::weak_ptr<insight::cad::Datum>,
-    //     std::weak_ptr<insight::cad::Feature>,
-    //     std::weak_ptr<insight::cad::PostprocAction>,
-    //     vtkWeakPointer<vtkDataObject>
-    //     > CADEntityWeakPtr;
-
 
 private:
     Q_OBJECT
 
 protected:
     QAbstractItemModel* model_;
-    QDockWidget *dockWidget_;
-    QToolBox *commonToolBox_;
+    QLabel *userMessage_, *currentActionDesc_;
 
 public:
     IQCADModel3DViewer(QWidget* parent=nullptr);
@@ -64,7 +49,8 @@ public:
     QAbstractItemModel* model() const;
     IQCADItemModel* cadmodel() const;
 
-    inline QToolBox *commonToolBox() { return commonToolBox_; }
+    // inline QToolBox *commonToolBox() { return commonToolBox_; }
+    void addToolBox(QWidget* w, const QString& title);
 
     virtual void connectNotepad(QTextEdit *notepad) const;
 
@@ -88,15 +74,16 @@ public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
     virtual void undoExposeItem() =0;
 
-    virtual bool onLeftButtonDown(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point );
-    virtual bool onKeyPress(
-        Qt::KeyboardModifiers modifiers,
-        int key );
-    virtual bool onLeftButtonUp(
-        Qt::KeyboardModifiers nFlags,
-        const QPoint point );
+    // virtual bool onLeftButtonDown(
+    //     Qt::KeyboardModifiers nFlags,
+    //     const QPoint point, bool afterDoubleClick );
+    // virtual bool onKeyPress(
+    //     Qt::KeyboardModifiers modifiers,
+    //     int key );
+    // virtual bool onLeftButtonUp(
+    //     Qt::KeyboardModifiers nFlags,
+    //     const QPoint point,
+    //     bool lastClickWasDoubleClick );
 
     virtual void onMeasureDistance() =0;
     virtual void onMeasureDiameter() =0;
@@ -129,11 +116,14 @@ public Q_SLOT:
     virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;
     virtual void editSketch(
             const insight::cad::ConstrainedSketch& sketch,
-            const insight::ParameterSet& defaultGeometryParameters,
-            SetSketchEntityAppearanceCallback saac,
+            std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+            const std::string& presentationDelegateKey,
             SketchCompletionCallback onAccept,
             SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
         ) =0;
+
+    void showCurrentActionDescription(const QString& desc);
+    void showUserPrompt(const QString& text);
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

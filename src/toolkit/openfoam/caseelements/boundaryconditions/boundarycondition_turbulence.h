@@ -20,9 +20,17 @@ namespace turbulenceBC
 class turbulenceBC
 {
 public:
+#include "boundarycondition_turbulence__turbulenceBC__Parameters.h"
+/*
+PARAMETERSET>>> turbulenceBC Parameters
+createGetter
+<<<PARAMETERSET
+*/
+public:
     declareType ( "turbulenceBC" );
     declareDynamicClass(turbulenceBC);
 
+    turbulenceBC(ParameterSetInput ip = Parameters() );
     virtual ~turbulenceBC();
 
 
@@ -45,22 +53,20 @@ public:
 #include "boundarycondition_turbulence__uniformIntensityAndLengthScale__Parameters.h"
 /*
 PARAMETERSET>>> uniformIntensityAndLengthScale Parameters
+inherits turbulenceBC::Parameters
 
 I = double 0.05 "Fluctuation intensity as fraction of mean velocity"
 l = double 0.1 "Length scale"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType("uniformIntensityAndLengthScale");
-    uniformIntensityAndLengthScale(const ParameterSet& ps);
+    uniformIntensityAndLengthScale(ParameterSetInput ip = Parameters() );
     inline static turbulenceBCPtr create(const ParameterSet& ps) { return turbulenceBCPtr(new uniformIntensityAndLengthScale(ps)); }
-
-    ParameterSet getParameters() const override { return p_; }
 
     void setDirichletBC_k(OFDictData::dict& BC, double U) const override;
     void setDirichletBC_omega(OFDictData::dict& BC, double U) const override;

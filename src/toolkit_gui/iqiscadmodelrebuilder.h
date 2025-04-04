@@ -69,7 +69,8 @@ public Q_SLOTS:
     void onAddVector(
         const QString& name,
         insight::cad::VectorPtr vv,
-        insight::cad::VectorVariableType vt );
+        insight::cad::VectorVariableType vt,
+        bool initialVisibility );
 
     void onAddFeature(
         const QString& name,

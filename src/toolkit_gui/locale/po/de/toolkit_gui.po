@@ -1,0 +1,68 @@
+# German translations for toolkit_gui package.
+# Copyright (C) 2024 hkroeger
+# This file is distributed under the same license as the toolkit_gui package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolkit_gui \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-04 12:38+0200\n"
+"PO-Revision-Date: 2024-03-11 11:31+0100\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: qtextensions.cpp:112
+msgid "Save file"
+msgstr "Datei speichern"
+
+#: qtextensions.cpp:120
+msgid "Open file"
+msgstr "Datei öffnen"
+
+#: iqundoredostack.cpp:75
+msgid "undo sketch editing step"
+msgstr ""
+
+#: iqundoredostack.cpp:80
+#, c-format
+msgid "undo step %s"
+msgstr ""
+
+#: iqundoredostack.cpp:108
+msgid "redo sketch editing step"
+msgstr ""
+
+#: iqundoredostack.cpp:113
+#, c-format
+msgid "redo step %s"
+msgstr ""
+
+#: iqparameters/iqlabeledarrayelementparameter.cpp:139
+msgid "Change Item Label"
+msgstr "Bezeichner ändern"
+
+#: iqparameters/iqlabeledarrayelementparameter.cpp:139
+msgid "New label:"
+msgstr "Neuer Bezeichner:"
+
+#: iqresultsetdisplayerwidget.cpp:150
+msgid "Load result set"
+msgstr ""
+
+#: iqresultsetdisplayerwidget.cpp:152
+msgid "InsightCAE Result Set"
+msgstr ""
+
+#: logviewerwidget.cpp:136
+msgid "Create file failed"
+msgstr "Erzeugen der Datei fehlgeschlagen"
+
+#: logviewerwidget.cpp:137
+msgid "Could not create file %1"
+msgstr "Konnte die Datei %1 nicht erzeugen"

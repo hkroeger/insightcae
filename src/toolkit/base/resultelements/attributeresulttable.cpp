@@ -70,16 +70,18 @@ const SimpleLatex& AttributeTableResult::valueColumnTitle() const
 
 void AttributeTableResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& outputfilepath ) const
 {
-    f<< "\\begin{tabular}{lc}\n"
+    f<< "\\begin{longtable}{lc}\n"
      << labelColumnTitle_.toLaTeX()
      << " & "
      << valueColumnTitle_.toLaTeX()
      <<" \\\\\n"
-     "\\hline\\\\";
+     "\\hline\\\\"
+     "\\endfirsthead\n"
+     "\\endhead\n";
     for ( size_t i=0; i<names_.size(); i++ ) {
         f<<names_[i].toLaTeX()<<" & "<<values_[i]<<"\\\\"<<endl;
     }
-    f<<"\\end{tabular}\n";
+    f<<"\\end{longtable}\n";
 }
 
 
@@ -91,7 +93,7 @@ void AttributeTableResult::exportDataToFile ( const string& name, const path& ou
     std::ofstream f ( fname.c_str() );
 
     for ( size_t i=0; i<names_.size(); i++ ) {
-        f<<"\""<<names_[i].toPlainText()<<"\";"<<values_[i]<<endl;
+        f<<"\""<<names_[i].toPlainText()<<"\"\t"<<values_[i]<<endl;
     }
 }
 

@@ -73,7 +73,7 @@ target_include_directories(${vtkMedReaderTargetName} PUBLIC ${CMAKE_CURRENT_BINA
 target_link_libraries(${vtkMedReaderTargetName} PUBLIC
     ${MED_LIBRARIES}
     VTK::CommonExecutionModel
-    ${VTK_PARALLEL}
+    VTK::ParallelCore
     ${vtkPVServerManager}
   )
 

@@ -30,6 +30,9 @@ set(toolkit_gui_SRCS
 
  dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp dialogs/defineplanedialog.ui
 
+
+ cadmodel3dviewer.h cadmodel3dviewer.cpp
+
  iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
  iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
  iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
@@ -45,6 +48,7 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
+ iqundoredostack.h iqundoredostack.cpp
  iqcadmodel3dviewer/iqvtkviewerstate.h iqcadmodel3dviewer/iqvtkviewerstate.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.cpp
@@ -53,8 +57,13 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer/iqvtkcadmodel3dviewer_clippingplanes.cpp
  iqcadmodel3dviewer/viewwidgetaction.h iqcadmodel3dviewer/viewwidgetaction.cpp
  iqcadmodel3dviewer/viewwidgetinsertids.h iqcadmodel3dviewer/viewwidgetinsertids.cpp
+ iqcadmodel3dviewer/qwidgettoinputreceiveradapter.h
+ iqcadmodel3dviewer/touchpadnavigationmanager.h iqcadmodel3dviewer/touchpadnavigationmanager.cpp
+ iqcadmodel3dviewer/inventornavigationmanager.h iqcadmodel3dviewer/inventornavigationmanager.cpp
  iqcadmodel3dviewer/navigationmanager.h iqcadmodel3dviewer/navigationmanager.cpp
  iqcadmodel3dviewer/selectionlogic.h
+ iqcadmodel3dviewer/viewwidgetactionhost.h
+ iqcadmodel3dviewer/inputreceiver.h
  iqcadmodel3dviewer/viewstate.h iqcadmodel3dviewer/viewstate.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.cpp
@@ -62,10 +71,13 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkviewwidgetinsertids.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.cpp
+ iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.cpp iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.ui
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.cpp iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.ui
 
 
  iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
+ iqvtkconstrainedsketcheditor/iqvtkdragpoint.h iqvtkconstrainedsketcheditor/iqvtkdragpoint.cpp
  iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.cpp
  iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.cpp
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerplanepointbasedaction.cpp
@@ -73,11 +85,7 @@ set(toolkit_gui_SRCS
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.cpp
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.cpp
  iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.cpp
- iqvtkconstrainedsketcheditor/iqvtkconstrainedsketchentity.h iqvtkconstrainedsketcheditor/iqvtkconstrainedsketchentity.cpp
- iqvtkconstrainedsketcheditor/iqvtkfixedpoint.h iqvtkconstrainedsketcheditor/iqvtkfixedpoint.cpp
- iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.h iqvtkconstrainedsketcheditor/iqvtkhorizontalconstraint.cpp
- iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.h iqvtkconstrainedsketcheditor/iqvtkverticalconstraint.cpp
- iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.h iqvtkconstrainedsketcheditor/iqvtkpointoncurveconstraint.cpp
+ iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.cpp
  iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.cpp
 
 
@@ -125,6 +133,8 @@ set(toolkit_gui_SRCS
     iqremoteexecutionstate.h iqremoteexecutionstate.cpp
 
     iqparametersetmodel.h iqparametersetmodel.cpp
+    iqfilteredparametersetmodel.h iqfilteredparametersetmodel.cpp
+
     iqresultsetfiltermodel.h iqresultsetfiltermodel.cpp
     iqparameter.cpp iqparameter.h
     iqparameters/iqsubsetparameter.h iqparameters/iqsubsetparameter.cpp
@@ -143,6 +153,10 @@ set(toolkit_gui_SRCS
     iqparameters/iqarrayelementparameter.cpp iqparameters/iqarrayelementparameter.h
     iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
     iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
+    iqparameters/iqlabeledarrayparameter.h iqparameters/iqlabeledarrayparameter.cpp
+    iqparameters/iqlabeledarrayelementparameter.h iqparameters/iqlabeledarrayelementparameter.cpp
+    iqparameters/iqdateparameter.h iqparameters/iqdateparameter.cpp
+    iqparameters/iqdatetimeparameter.h iqparameters/iqdatetimeparameter.cpp
     #iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
     iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
@@ -167,7 +181,7 @@ set(toolkit_gui_SRCS
     qinsighterror.cpp qinsighterror.h
     email.cpp email.h
     mimetypemanager.cpp mimetypemanager.h
-    helpwidget.cpp helpwidget.h
+
     of_clean_case.cpp of_clean_case.h of_clean_case.ui
     snappyhexmesh_gui.cpp snappyhexmesh_gui.h
     cadparametersetvisualizer.cpp cadparametersetvisualizer.h
@@ -181,6 +195,7 @@ set(toolkit_gui_SRCS
     sdmdiarea.cpp sdmdiarea.h
     blockmesh_gui.cpp blockmesh_gui.h
     blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
+    blockmeshvisualization.h blockmeshvisualization.cpp
     #blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp metatypes.h
     iqparaviewdialog.h iqparaviewdialog.cpp iqparaviewdialog.ui
@@ -190,6 +205,8 @@ set(toolkit_gui_SRCS
     analysisguilibrary.h analysisguilibrary.cpp
     wslinstallation.h wslinstallation.cpp
     iqexternalprogramsmodel.h iqexternalprogramsmodel.cpp
+
+    iqcadexceptiondisplaydialog.h iqcadexceptiondisplaydialog.cpp iqcadexceptiondisplaydialog.ui
 
     iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
     iqglobalconfigurationmodel.h
@@ -239,6 +256,8 @@ target_include_directories(toolkit_gui
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
+
+setup_gettext(toolkit_gui toolkit_gui ${toolkit_gui_SRCS})
 
 if (INSIGHT_DEVELOPMENT_FILES)
  install(

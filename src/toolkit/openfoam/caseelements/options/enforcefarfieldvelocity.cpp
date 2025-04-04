@@ -10,9 +10,8 @@ defineType(EnforceFarFieldVelocity);
 addToOpenFOAMCaseElementFactoryTable(EnforceFarFieldVelocity);
 
 
-EnforceFarFieldVelocity::EnforceFarFieldVelocity(OpenFOAMCase& c, const ParameterSet& p)
-    : OpenFOAMCaseElement(c, "EnforceFarFieldVelocity", p),
-      p_(p)
+EnforceFarFieldVelocity::EnforceFarFieldVelocity(OpenFOAMCase& c, ParameterSetInput ip)
+    : OpenFOAMCaseElement(c, /*"EnforceFarFieldVelocity", */ip.forward<Parameters>())
 {
 }
 
@@ -25,14 +24,14 @@ void EnforceFarFieldVelocity::addIntoDictionaries ( OFdicts& dictionaries ) cons
     OFDictData::dict coeffs;
 
     coeffs["type"]="enforceFarFieldVelocity";
-    coeffs["farFieldVelocityFieldName"]=p_.farFieldVelocityFieldName;
+    coeffs["farFieldVelocityFieldName"]=p().farFieldVelocityFieldName;
 
     OFDictData::list pns;
     std::copy(
-                p_.farFieldPatches.begin(), p_.farFieldPatches.end(),
+                p().farFieldPatches.begin(), p().farFieldPatches.end(),
                 std::back_inserter(pns) );
     coeffs["farFieldPatches"]=pns;
-    coeffs["transitionDistance"]=p_.transitionDistance;
+    coeffs["transitionDistance"]=p().transitionDistance;
 
     OFDictData::dict pd;
     pd["method"]="meshWave";

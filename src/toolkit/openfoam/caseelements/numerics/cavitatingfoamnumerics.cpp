@@ -11,13 +11,12 @@ defineType(cavitatingFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(cavitatingFoamNumerics);
 
 
-cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		FieldValue({p_.pamb}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		FieldValue({p().pamb}), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0,0.0,0.0}), volField ) );
-  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		FieldValue({p_.rhoamb}), volField ) );
+  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		FieldValue({p().rhoamb}), volField ) );
 }
 
 
@@ -28,7 +27,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]=p_.solverName;
+  controlDict["application"]=p().solverName;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;
 

@@ -49,7 +49,8 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(ptf, p, iF, mapper),
-    vp_(ptf.vp_().clone())
+    vp_(ptf.vp_().clone()),
+    rescaleMode_(ptf.rescaleMode_)
 {
     vp_->autoMap(mapper);
 }
@@ -66,6 +67,44 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
     fixedValueFvPatchField<Type>(p, iF),
     vp_(FieldDataProvider<Type>::New(dict.lookup("source")))
 {
+
+    if (dict.found("rescale"))
+    {
+        word rescaleMode(dict.lookup("rescale"));
+        if (rescaleMode=="massFlow")
+        {
+            auto mf=RescaleToMassFlow{
+                    readScalar(dict.lookup("massFlow")),
+                    dict.lookupOrDefault<word>("rhoName", "rho")
+                };
+            Info<<"["<<this->patch().name()<<"] Rescaling to mass flow "<<mf.massFlow<<"."<<endl;
+            rescaleMode_=mf;
+        }
+        else if (rescaleMode=="volumeFlow")
+        {
+            auto vf = RescaleToVolumeFlow{
+                    readScalar(dict.lookup("volumeFlow")),
+                };
+            Info<<"["<<this->patch().name()<<"] Rescaling to volume flow "<<vf.volumeFlow<<"."<<endl;
+            rescaleMode_=vf;
+        }
+        else if (rescaleMode=="average")
+        {
+            auto af = RescaleToAverage{
+                pTraits<Type>(dict.lookup("average"))
+            };
+            Info<<"["<<this->patch().name()<<"] Rescaling to average value "<<af.average<<"."<<endl;
+            rescaleMode_=af;
+        }
+        else
+        {
+            FatalErrorIn("extendedFixedValueFvPatchField")
+                <<"unrecognized rescale mode: "<<rescaleMode<<". "
+                "Expected \"massFlow\", \"volumeFlow\" or \"average\""
+                <<abort(FatalError);
+        }
+    }
+
 #warning need to set sensible value here for potentialFoam to work...
   if (dict.found("value"))
   {
@@ -95,7 +134,8 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(ptf),
-    vp_(ptf.vp_().clone())
+    vp_(ptf.vp_().clone()),
+    rescaleMode_(ptf.rescaleMode_)
 {}
 
 
@@ -107,7 +147,8 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(ptf, iF),
-    vp_(ptf.vp_().clone())
+    vp_(ptf.vp_().clone()),
+    rescaleMode_(ptf.rescaleMode_)
 {
 }
 
@@ -147,9 +188,80 @@ void extendedFixedValueFvPatchField<Type>::updateCoeffs()
     {
         return;
     }
-    fvPatchField<Type>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );    
-    
+    fvPatchField<Type>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );
+
+    Type sf=pTraits<Type>::one;
+
+    if (boost::get<boost::blank>(&rescaleMode_))
+    {
+        // leave sf=1
+    }
+    else if (const auto* av = boost::get<RescaleToAverage>(&rescaleMode_))
+    {
+        sf = cmptDivide(
+            av->average,
+            gSum( (*this) * (this->patch().magSf()) )/gSum(this->patch().magSf()) );
+
+    }
+    else
+        FatalErrorIn("update") << "unhandled selection!" << abort(FatalError);
+
+    if (!boost::get<boost::blank>(&rescaleMode_))
+        Info<<"["<<this->patch().name()<<"] rescale factor = "<<sf<<endl;
+
+    fvPatchField<Type>::operator==
+        (cmptMultiply( sf, static_cast<fvPatchField<Type>&>(*this) ));
+
     fixedValueFvPatchField<Type>::updateCoeffs();
+}
+
+template<>
+void extendedFixedValueFvPatchField<vector>::updateCoeffs()
+{
+    if (this->updated())
+    {
+        return;
+    }
+    fvPatchField<vector>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );
+
+    vector sf=vector::one;
+    if (boost::get<boost::blank>(&rescaleMode_))
+    {
+        // leave sf=1
+    }
+    else if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
+    {
+        auto& rho =
+            patch().lookupPatchField<volScalarField, scalar>(
+                rm->densityFieldName );
+        sf = (
+            rm->massFlow
+            /
+              gSum( rho * (*this) & (-this->patch().Sf()) ) ) * vector::one;
+    }
+    else if (const auto* vm = boost::get<RescaleToVolumeFlow>(&rescaleMode_))
+    {
+        sf = (
+            vm->volumeFlow
+            /
+              gSum( (*this) & (-this->patch().Sf()) ) ) * vector::one;
+    }
+    else if (const auto* av = boost::get<RescaleToAverage>(&rescaleMode_))
+    {
+        sf = cmptDivide (
+            av->average,
+            gSum( (*this) * (this->patch().magSf()) )/gSum(this->patch().magSf()) );
+    }
+    else
+        FatalErrorIn("update") << "unhandled selection!" << abort(FatalError);
+
+    if (!boost::get<boost::blank>(&rescaleMode_))
+        Info<<"["<<this->patch().name()<<"] Velocity rescale factor = "<<sf<<endl;
+
+    fvPatchField<vector>::operator==
+        (cmptMultiply( sf, static_cast<fvPatchField<vector>&>(*this) ));
+    
+    fixedValueFvPatchField<vector>::updateCoeffs();
 }
 
 template<class Type>
@@ -189,6 +301,29 @@ void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const
 {
     fvPatchField<Type>::write(os);
     vp_().writeEntry("source", os);
+    if (boost::get<boost::blank>(&rescaleMode_))
+    {
+        // leave sf=1
+    }
+    else if (const auto* rm = boost::get<RescaleToMassFlow>(&rescaleMode_))
+    {
+        os << "rescale massFlow" << token::END_STATEMENT;
+        os << "massFlow" << token::SPACE << rm->massFlow << token::END_STATEMENT;
+        os << "rhoName" << token::SPACE << rm->densityFieldName << token::END_STATEMENT;
+    }
+    else if (const auto* vm = boost::get<RescaleToVolumeFlow>(&rescaleMode_))
+    {
+        os << "rescale volumeFlow" << token::END_STATEMENT;
+        os << "volumeFlow" << token::SPACE << vm->volumeFlow << token::END_STATEMENT;
+    }
+    else if (const auto* am = boost::get<RescaleToAverage>(&rescaleMode_))
+    {
+        os << "rescale average" << token::END_STATEMENT;
+        os << "average" << token::SPACE << am->average << token::END_STATEMENT;
+    }
+    else
+        FatalErrorIn("write") << "unhandled selection!" << abort(FatalError);
+
     this->writeEntry("value", os);
 }
 

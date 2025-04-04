@@ -1,5 +1,6 @@
 #include "iqparaviewdialog.h"
 #include "ui_iqparaviewdialog.h"
+#include "qtextensions.h"
 
 #include <QSettings>
 #include <QFileDialog>
@@ -26,10 +27,11 @@ IQParaviewDialog::IQParaviewDialog(
     connect( ui->btnSelectStateFile, &QPushButton::clicked, ui->btnSelectStateFile,
              [&]()
     {
-      QString fn = QFileDialog::getOpenFileName(
-            this, "Select PV state file", "", "ParaView State File (*.pvsm)"
-            );
-      if (!fn.isEmpty())
+      if (auto fn = getFileName(
+            this, "Select PV state file",
+            GetFileMode::Open,
+            {{ "pvsm", "ParaView State File" }}
+                ) )
       {
         ui->statefile->setCurrentText(fn);
       }

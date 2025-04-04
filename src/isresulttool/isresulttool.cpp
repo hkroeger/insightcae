@@ -479,7 +479,7 @@ int main(int argc, char *argv[])
             {
                 title=vm["title"].as<std::string>();
             }
-            auto r = std::make_shared<ResultSet>(ParameterSet(), title, "");
+            auto r = std::make_shared<ResultSet>(*ParameterSet::create(), title, "");
             Ordering o;
 
             auto i=cargs.begin();

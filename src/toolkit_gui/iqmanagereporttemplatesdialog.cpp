@@ -1,5 +1,6 @@
 #include "iqmanagereporttemplatesdialog.h"
 #include "ui_iqmanagereporttemplatesdialog.h"
+#include "qtextensions.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -28,15 +29,16 @@ IQManageReportTemplatesDialog::IQManageReportTemplatesDialog(QWidget *parent) :
     connect(ui->btnAddTemplate, &QPushButton::clicked, this,
             [&]()
             {
-                auto newpath = QFileDialog::getOpenFileName(
-                            this,
-                            "Please select report template file",
-                            "",
-                            "LaTeX report templates (*.tex);;Template package (*.irt)"
-                            );
-                if (!newpath.isEmpty())
+                if (auto newpath = getFileName(
+                        this,
+                        "Please select report template file",
+                        GetFileMode::Open,
+                        {
+                            { "tex", "LaTeX report templates" },
+                            { "irt", "Template package" }
+                    }) )
                 {
-                    boost::filesystem::path fp(newpath.toStdString());
+                    boost::filesystem::path fp(newpath);
                     rtm_.addItem(
                                 insight::ResultReportTemplate(
                                     fp.filename().stem().string(), fp, false ) );

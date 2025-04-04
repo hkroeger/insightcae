@@ -14,20 +14,19 @@ IQDirectoryParameter::IQDirectoryParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::DirectoryParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {
 }
 
 
 QString IQDirectoryParameter::valueText() const
 {
-  const auto& p = dynamic_cast<const insight::DirectoryParameter&>(parameter());
-
-  return QString::fromStdString( p.originalFilePath().string() );
+  return QString::fromStdString(
+        parameter().originalFilePath().string() );
 }
 
 
@@ -36,7 +35,6 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  const auto& p = dynamic_cast<const insight::DirectoryParameter&>(parameter());
 
   auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
@@ -44,7 +42,8 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
   QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
-  lineEdit->setText(QString::fromStdString(p.originalFilePath().string()));
+  lineEdit->setText(QString::fromStdString(
+      parameter().originalFilePath().string()));
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
 
@@ -53,9 +52,7 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::DirectoryParameter&>(this->parameterRef());
-    p.setOriginalFilePath( lineEdit->text().toStdString() );
-//    model->notifyParameterChange(index);
+    parameterRef().setOriginalFilePath( lineEdit->text().toStdString() );
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

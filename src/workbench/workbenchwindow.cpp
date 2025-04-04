@@ -28,7 +28,10 @@
 #include <QFileDialog>
 #include <QStatusBar>
 #include <QSettings>
+#include <QPushButton>
+#include <QTabWidget>
 
+#include "cadparametersetvisualizer.h"
 #include "newanalysisdlg.h"
 #include "analysisform.h"
 #include "qinsighterror.h"
@@ -36,6 +39,7 @@
 #include "iqconfigureexternalprogramsdialog.h"
 #include "iqmanagereporttemplatesdialog.h"
 #include "qanalysisthread.h"
+#include "qtextensions.h"
 
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
@@ -45,7 +49,7 @@
 #include "base/qt5_helper.h"
 #include "base/translations.h"
 #include "wslinstallation.h"
-
+#include "newanalysisform.h"
 
 WidgetWithDynamicMenuEntries::WidgetWithDynamicMenuEntries(
         QObject *parent,
@@ -68,7 +72,7 @@ WidgetWithDynamicMenuEntries::~WidgetWithDynamicMenuEntries()
 
 
 
-void workbench::updateRecentFileActions()
+void WorkbenchMainWindow::updateRecentFileActions()
 {
   QSettings settings;
   QStringList files;
@@ -95,17 +99,66 @@ void workbench::updateRecentFileActions()
 
 
 
+AnalysisForm* WorkbenchMainWindow::addAnalysisTabWithDefaults(const std::string &analysisType)
+{
+    auto *form = new AnalysisForm(
+        //mdiArea_,
+        tw,
+        analysisType,
+        logToConsole_ );
 
-workbench::workbench(bool logToConsole)
+    // form->showMaximized();
+
+    int i=tw->addTab(form, QString::fromStdString(analysisType) );
+    tw->setCurrentIndex(i);
+
+    QString desc;
+    QIcon icon(":analysis_default_icon.svg");
+    if (insight::CADParameterSetModelVisualizer::iconForAnalysis().count(analysisType))
+    {
+        icon=insight::CADParameterSetModelVisualizer::iconForAnalysis()(analysisType);
+    }
+    tw->setTabIcon(i, icon);
+
+    return form;
+}
+
+
+
+WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
   : logToConsole_(logToConsole)
 {
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
   this->setWindowTitle("InsightCAE Workbench");
 
-  mdiArea_ = new SDMdiArea(this);
-  setCentralWidget( mdiArea_ );
-  connect(mdiArea_, &QMdiArea::subWindowActivated,
-          this, &workbench::onSubWindowActivated);
+  tw=new QTabWidget;
+  tw->setTabsClosable(true);
+  tw->setTabPosition(QTabWidget::TabPosition::West);
+  setCentralWidget( tw );
+  connect(tw, &QTabWidget::currentChanged, tw,
+          [this](int i) { onAnalysisFormActivated(tw->widget(i)); } );
+  connect(tw, &QTabWidget::tabCloseRequested,
+          tw, [this](int i){ if (i>0) tw->removeTab(i); } );
+
+  auto cw=new QWidget(this);
+  auto vl=new QVBoxLayout;
+  cw->setLayout(vl);
+
+  auto availableAnalysesGallery_=new NewAnalysisForm;
+  connect(availableAnalysesGallery_, &NewAnalysisForm::createAnalysis,
+          this, &WorkbenchMainWindow::newAnalysis);
+  connect(availableAnalysesGallery_, &NewAnalysisForm::openAnalysis,
+          this, &WorkbenchMainWindow::onOpenAnalysis);
+  vl->addWidget(availableAnalysesGallery_);
+  tw->addTab(cw, "New Analysis");
+
+  tw->tabBar()->tabButton(0, QTabBar::RightSide)->hide();
+
+  // mdiArea_ = new SDMdiArea(this);
+  // setCentralWidget( mdiArea_ );::
+  // tw->addTab(mdiArea_, "Editor");
+  // connect(mdiArea_, &QMdiArea::subWindowActivated,
+  //         this, &WorkbenchMainWindow::onAnalysisFormActivated);
 
   QMenu *analysisMenu = menuBar()->addMenu( _("&Analysis") );
 
@@ -117,7 +170,7 @@ workbench::workbench(bool logToConsole)
 
   a = new QAction(_("Open..."), this);
   a->setShortcut(Qt::ControlModifier + Qt::Key_O);
-  connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
+  connect(a, &QAction::triggered, this, &WorkbenchMainWindow::onOpenAnalysis );
   analysisMenu->addAction( a );
 
   separatorAct_ = analysisMenu->addSeparator();
@@ -133,7 +186,7 @@ workbench::workbench(bool logToConsole)
   }
   updateRecentFileActions();
 
-  QMenu *settingsMenu = menuBar()->addMenu( _("&Settings") );
+  settingsMenu_ = menuBar()->addMenu( _("&Settings") );
 
   a = new QAction(_("Remote servers..."), this);
   connect(a, &QAction::triggered, this,
@@ -143,7 +196,7 @@ workbench::workbench(bool logToConsole)
             dlg.exec();
           }
   );
-  settingsMenu->addAction( a );
+  settingsMenu_->addAction( a );
 
   a = new QAction(_("Configure paths to external programs..."), this);
   connect(a, &QAction::triggered, this,
@@ -153,7 +206,7 @@ workbench::workbench(bool logToConsole)
             dlg.exec();
           }
   );
-  settingsMenu->addAction( a );
+  settingsMenu_->addAction( a );
 
 
   a = new QAction(_("Manage report templates..."), this);
@@ -164,7 +217,7 @@ workbench::workbench(bool logToConsole)
             dlg.exec();
           }
   );
-  settingsMenu->addAction( a );
+  settingsMenu_->addAction( a );
 
 
   QMenu *helpMenu = menuBar()->addMenu( _("&Help") );
@@ -184,6 +237,10 @@ workbench::workbench(bool logToConsole)
           }
   );
 
+
+
+  tw->setCurrentIndex(0);
+
   readSettings();
 
 #ifdef WIN32
@@ -199,31 +256,24 @@ workbench::workbench(bool logToConsole)
 
 
 
-workbench::~workbench()
+WorkbenchMainWindow::~WorkbenchMainWindow()
 {}
 
 
 
 
-void workbench::newAnalysis(std::string analysisType)
+void WorkbenchMainWindow::newAnalysis(std::string analysisType)
 {
     if (analysisType.empty())
     {
         newAnalysisDlg dlg(this);
-        if (dlg.exec() == QDialog::Accepted)
-        {
-            analysisType = dlg.getAnalysisName();
-        }
-        else
-        {
-            return;
-        }
+        dlg.exec();
+        return;
     }
 
     try
     {
-        AnalysisForm *form = new AnalysisForm(mdiArea_, analysisType, logToConsole_);
-        form->showMaximized();
+        addAnalysisTabWithDefaults(analysisType);
     }
     catch (const std::exception& e)
     {
@@ -235,18 +285,21 @@ void workbench::newAnalysis(std::string analysisType)
 
 
 
-void workbench::onOpenAnalysis()
+void WorkbenchMainWindow::onOpenAnalysis()
 {
-  QString fn = QFileDialog::getOpenFileName(
-        this, _("Open Parameters"), QString(),
-        _("Insight parameter sets (*.ist)") );
-  if (!fn.isEmpty()) openAnalysis(fn);
+  if (auto fn = getFileName(
+        this, _("Open Parameters"),
+        GetFileMode::Open,
+        {{ "ist", _("Insight parameter sets") }} ) )
+  {
+     openAnalysis(fn);
+  }
 }
 
 
 
 
-void workbench::openRecentFile()
+void WorkbenchMainWindow::openRecentFile()
 {
   QAction *action = qobject_cast<QAction *>(sender());
   if (action)
@@ -257,7 +310,7 @@ void workbench::openRecentFile()
 
 
 
-void workbench::checkInstallation(bool reportSummary)
+void WorkbenchMainWindow::checkInstallation(bool reportSummary)
 {
     insight::checkExternalPrograms(this);
 #ifdef WIN32
@@ -268,7 +321,7 @@ void workbench::checkInstallation(bool reportSummary)
 
 
 
-void workbench::openAnalysis(const QString& fn)
+void WorkbenchMainWindow::openAnalysis(const QString& fn)
 {
 
   QSettings settings;
@@ -299,13 +352,10 @@ void workbench::openAnalysis(const QString& fn)
     analysisName = analysisnamenode->first_attribute("name")->value();
   }
   
-  AnalysisForm *form;
+  AnalysisForm *form = nullptr;
   try
   {
-    form = new AnalysisForm(mdiArea_,
-                            analysisName,
-                            logToConsole_
-                            );
+      form = addAnalysisTabWithDefaults( analysisName );
   }
   catch (const std::exception& e)
   {
@@ -321,9 +371,13 @@ void workbench::openAnalysis(const QString& fn)
 }
 
 
-void workbench::closeEvent(QCloseEvent *event)
+void WorkbenchMainWindow::closeEvent(QCloseEvent *event)
 {
-  QList<QMdiSubWindow*>	list = mdiArea_->subWindowList();
+  // QList<QMdiSubWindow*>	list = mdiArea_->subWindowList();
+
+  QList<QWidget*>	list;
+  for (int i=0; i<tw->count(); ++i)
+        list.append(tw->widget(i));
 
   for (int i = 0; i < list.size (); i++)
   {
@@ -343,14 +397,14 @@ void workbench::closeEvent(QCloseEvent *event)
   }
 }
 
-void workbench::readSettings()
+void WorkbenchMainWindow::readSettings()
 {
     QSettings settings("silentdynamics", "workbench_main");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
 }
 
-void workbench::show()
+void WorkbenchMainWindow::show()
 {
     QMainWindow::show();
 #ifdef WIN32
@@ -359,23 +413,19 @@ void workbench::show()
 }
 
 
-void workbench::onSubWindowActivated( QMdiSubWindow * window )
+void WorkbenchMainWindow::onAnalysisFormActivated( QWidget * widget )
 {
     if (lastActive_)
     {
-//        qDebug()<<"remove menu";
         delete lastActive_;
     }
 
-    if (auto* newactive = dynamic_cast<AnalysisForm*>(window))
+    if (auto* newactive = dynamic_cast<AnalysisForm*>(widget))
     {
-//        qDebug()<<"insert menu";
-//        newactive->insertMenu(menuBar());
-        lastActive_=newactive->createMenus(menuBar());
+        lastActive_=newactive->createMenus(this);
     }
     else
     {
-//        qDebug()<<"removed last menu";
         lastActive_=nullptr;
     }
 }

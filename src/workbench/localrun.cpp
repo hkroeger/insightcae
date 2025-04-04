@@ -10,14 +10,15 @@
 
 LocalRun::LocalRun(AnalysisForm *af)
   : WorkbenchAction(af),
-    analysis_(
-          insight::Analysis::lookup(
-            af_->analysisName_,
-            af_->parameters(),
-            af_->localCaseDirectory()
-            )
-          ),
-    workerThread_(analysis_, &af->progressDisplayer_)
+    workerThread_(
+          af_->analysisName_,
+#warning wait for visualization run to finish, if is running
+          bool(af_->sid_) ?
+            insight::AnalysisThread::ParameterInput( af_->sid_ )
+          : insight::AnalysisThread::ParameterInput(
+              insight::AnalysisThread::ParameterSetAndExePath{
+                &af_->parameters(), af_->localCaseDirectory() } ),
+          &af->progressDisplayer_ )
 {
   connectAnalysisThread(&workerThread_);
   af_->progressDisplayer_.reset();

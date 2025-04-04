@@ -35,8 +35,8 @@ class ClipWire
     ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
 
 protected:
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("ClipWire");

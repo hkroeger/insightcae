@@ -16,14 +16,20 @@ namespace MeshMotionBC
 {
 
 
+const NoMeshMotion noMeshMotion;
+
+
 
 
 defineType(MeshMotionBC);
 defineDynamicClass(MeshMotionBC);
 
+MeshMotionBC::MeshMotionBC(ParameterSetInput ip)
+    : p_(ip.forward<Parameters>())
+{}
+
 MeshMotionBC::~MeshMotionBC()
-{
-}
+{}
 
 
 void MeshMotionBC::addIntoDictionaries(OFdicts&) const
@@ -31,12 +37,16 @@ void MeshMotionBC::addIntoDictionaries(OFdicts&) const
 
 
 
-
 defineType(NoMeshMotion);
 addToFactoryTable(MeshMotionBC, NoMeshMotion);
 addToStaticFunctionTable(MeshMotionBC, NoMeshMotion, defaultParameters);
 
-NoMeshMotion::NoMeshMotion(const ParameterSet& /*ps*/)
+NoMeshMotion::NoMeshMotion()
+    : MeshMotionBC(Parameters())
+{}
+
+NoMeshMotion::NoMeshMotion(ParameterSetInput ip)
+    : MeshMotionBC(ip.forward<Parameters>())
 {}
 
 bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
@@ -56,7 +66,7 @@ bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldIn
       return false;
 }
 
-NoMeshMotion noMeshMotion;
+
 
 
 
@@ -65,8 +75,8 @@ defineType(CAFSIBC);
 addToFactoryTable(MeshMotionBC, CAFSIBC);
 addToStaticFunctionTable(MeshMotionBC, CAFSIBC, defaultParameters);
 
-CAFSIBC::CAFSIBC(const ParameterSet& ps)
-: p_(ps)
+CAFSIBC::CAFSIBC(ParameterSetInput ip)
+: MeshMotionBC(ip.forward<Parameters>())
 {
 }
 
@@ -86,12 +96,12 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& /
   if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
   {
     BC["type"]= OFDictData::data("FEMDisplacement");
-    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p_.FEMScratchDir->originalFilePath().string()+"\"");
-    BC["pressureScale"]=  OFDictData::data(p_.pressureScale);
-    BC["minPressure"]=  OFDictData::data(p_.clipPressure);
+    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p().FEMScratchDir->originalFilePath().string()+"\"");
+    BC["pressureScale"]=  OFDictData::data(p().pressureScale);
+    BC["minPressure"]=  OFDictData::data(p().clipPressure);
     BC["nSmoothIter"]=  OFDictData::data(4);
     BC["wallCollisionCheck"]=  OFDictData::data(true);
-    if (const Parameters::oldPressure_uniform_type* op = boost::get<Parameters::oldPressure_uniform_type>(&p_.oldPressure) )
+    if (const Parameters::oldPressure_uniform_type* op = boost::get<Parameters::oldPressure_uniform_type>(&p().oldPressure) )
     {
       std::ostringstream oss;
       oss<<"uniform "<<op->value;
@@ -101,15 +111,15 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& /
 
     OFDictData::list relaxProfile;
 
-//     if (p_.relax().which()==0)
-    if ( const Parameters::relax_constant_type *rc = boost::get< Parameters::relax_constant_type>(&p_.relax) )
+//     if (p().relax().which()==0)
+    if ( auto *rc = boost::get< Parameters::relax_constant_type>(&p().relax) )
     {
       OFDictData::list cp;
       cp.push_back(0.0);
-      cp.push_back( boost::get<double>(rc->value) );
+      cp.push_back(rc->value);
       relaxProfile.push_back( cp );
     }
-    else if ( const Parameters::relax_profile_type *rp = boost::get< Parameters::relax_profile_type>(&p_.relax) )
+    else if ( const Parameters::relax_profile_type *rp = boost::get< Parameters::relax_profile_type>(&p().relax) )
     {
       for (const Parameters::relax_profile_type::values_default_type& rpi: rp->values )
       {

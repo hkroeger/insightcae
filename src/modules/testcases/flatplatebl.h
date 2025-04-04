@@ -100,7 +100,7 @@ eval = set
 <<<PARAMETERSET
 */
   
-protected:
+public:
 
 
   struct supplementedInputData
@@ -108,7 +108,7 @@ protected:
   {
 
     supplementedInputData(
-        std::unique_ptr<Parameters> pPtr,
+        ParameterSetInput ip,
         const boost::filesystem::path& workDir,
         ProgressDisplayer& progress = consoleProgressDisplayer
         );
@@ -176,25 +176,17 @@ protected:
     int n_hom_avg_=10;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
+  addParameterMembers_SupplementedInputData(FlatPlateBL::Parameters);
 
 public:
   declareType("Flat Plate Boundary Layer Test Case");
   
   FlatPlateBL(
-          const ParameterSet& ps,
-          const boost::filesystem::path& exepath,
-          ProgressDisplayer& progress );
-
-  FlatPlateBL(
-          std::unique_ptr<supplementedInputData> p,
-          const boost::filesystem::path& exepath,
-          const std::string& name,
-          const std::string& description );
+          const std::shared_ptr<supplementedInputDataBase>& sp );
 
   static std::string category() { return "Validation Cases"; }
+  static AnalysisDescription description() { return {"Flat Plate Boundary Layer Test Case",
+                                             "Flat Plate with Evolving Boundary Layer"}; }
   
   virtual void calcDerivedInputData(ProgressDisplayer& progress);
   

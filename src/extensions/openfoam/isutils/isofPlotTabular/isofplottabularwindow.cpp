@@ -20,6 +20,7 @@
 
 
 #include <QDoubleSpinBox>
+#include <QFileDialog>
 
 #include "isofplottabularwindow.h"
 #include "plotwidget.h"
@@ -31,8 +32,10 @@
 
 #include "boost/algorithm/string/trim.hpp"
 #include <boost/algorithm/string.hpp>
+#include <fstream>
 
 #include "base/qt5_helper.h"
+#include "qtextensions.h"
 
 using namespace std;
 using namespace boost;
@@ -54,7 +57,20 @@ IsofPlotTabularWindow::IsofPlotTabularWindow(const std::vector<boost::filesystem
   connect(ui->updateBtn, &QPushButton::clicked,
           this, &IsofPlotTabularWindow::onUpdate);
 
+  connect(ui->saveFinalBtn, &QPushButton::clicked, this,
+          [this]() { onSaveFinalValues(); } );
+
   onUpdate();
+}
+
+void IsofPlotTabularWindow::resetAllAvgFractions(double f)
+{
+    completedAverage_.clear();
+    for (size_t j=1; j<data_.n_cols; j++)
+    {
+        auto *p = dynamic_cast<PlotWidget*>(ui->graphs->widget(j-1));
+        p->changeAvgFraction(f);
+    }
 }
 
 
@@ -99,6 +115,7 @@ void IsofPlotTabularWindow::readFiles()
 
 void IsofPlotTabularWindow::onUpdate(bool)
 {
+  completedAverage_.clear();
 
   readFiles();
 
@@ -116,6 +133,8 @@ void IsofPlotTabularWindow::onUpdate(bool)
     for (int j=ui->graphs->count(); j<n_cols; j++)
     {
       PlotWidget* pw=new PlotWidget(this);
+      connect(pw, &PlotWidget::averageValueReady, pw,
+              [this,j](){ averageValueReady(j-1); } );
       ui->graphs->addTab(pw,
                          QString::fromStdString(str(format("Col %d")%j))
                          );
@@ -138,10 +157,65 @@ void IsofPlotTabularWindow::onUpdate(bool)
   connect(ui->graphs, &QTabWidget::currentChanged, this, &IsofPlotTabularWindow::onTabChanged);
 }
 
+
+
+void IsofPlotTabularWindow::onSaveFinalValues(QString fn)
+{
+
+    int nRaw=0, nMean=0;
+
+    if (fn.isEmpty())
+    {
+        if (auto fd = getFileName(
+                this, "Select CSV file",
+                GetFileMode::Save,
+                {{ "csv", "Comma separated values file" }} ) )
+        {
+            fn=fd.asQString();
+        }
+    }
+
+    std::string sep=",";
+
+    if (!fn.isEmpty())
+    {
+        std::ofstream f(fn.toStdString());
+        for (size_t j=1; j<data_.n_cols; j++)
+        {
+            if (j>1) f<<sep;
+            f<<"final raw value of column "<<j<<sep<<"final mean value of column "<<j;
+        }
+        f<<std::endl;
+
+        for (size_t j=1; j<data_.n_cols; j++)
+        {
+            if (j>1) f<<sep;
+            PlotWidget *p = dynamic_cast<PlotWidget*>(ui->graphs->widget(j-1));
+            f<<p->finalRawValue()<<sep;
+            try
+            {
+                f<<p->finalMeanValue();
+            }
+            catch (...) {} // leave empty field, if no mean value available
+        }
+        f<<std::endl;
+    }
+}
+
+
+
 void IsofPlotTabularWindow::onTabChanged(int ct)
 {
   if (PlotWidget* pw = dynamic_cast<PlotWidget*>(ui->graphs->widget(ct)))
   {
     pw->onShow();
   }
+}
+
+void IsofPlotTabularWindow::averageValueReady(int i)
+{
+    completedAverage_.insert(i);
+
+    if (data_.n_cols-1 == completedAverage_.size())
+        Q_EMIT allAverageValuesReady();
 }

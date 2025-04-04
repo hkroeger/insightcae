@@ -21,6 +21,7 @@
 #define BLOCKMESHDICT_CURVEDCYLINDER_H
 
 #include "openfoam/blockmesh_templates.h"
+#include "base/spatialtransformation.h"
 
 #include "blockmesh_curvedcylinder__blockMeshDict_CurvedCylinder__Parameters_headers.h"
 
@@ -66,16 +67,15 @@ mesh = set
     topPatchName = string "" "name of patch on top end"
 }
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "blockMeshDict_CurvedCylinder" );
 
-    blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     CoordinateSystem calc_end_CS() const;
 

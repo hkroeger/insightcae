@@ -24,12 +24,23 @@ set(insightcad_SOURCES
   parser_scalarexpressions.cpp
   parser_vectorexpressions.cpp
   datum.cpp 
-  constrainedsketchgeometry.h constrainedsketchgeometry.cpp
+
   sketch.h sketch.cpp
-  sketchpoint.h sketchpoint.cpp
+
   constrainedsketch.h constrainedsketch.cpp
+  constrainedsketchentity.h constrainedsketchentity.cpp
+  constrainedsketchentities/sketchpoint.h constrainedsketchentities/sketchpoint.cpp
+  constrainedsketchentities/singlesymbolconstraint.h constrainedsketchentities/singlesymbolconstraint.cpp
+  constrainedsketchentities/fixedpointconstraint.h constrainedsketchentities/fixedpointconstraint.cpp
+  constrainedsketchentities/horizontalconstraint.h constrainedsketchentities/horizontalconstraint.cpp
+  constrainedsketchentities/verticalconstraint.h constrainedsketchentities/verticalconstraint.cpp
+  constrainedsketchentities/pointoncurveconstraint.h constrainedsketchentities/pointoncurveconstraint.cpp
+  constrainedsketchentities/constraintwithdimensionlines.h constrainedsketchentities/constraintwithdimensionlines.cpp
+  constrainedsketchentities/angleconstraint.h constrainedsketchentities/angleconstraint.cpp
+  constrainedsketchentities/distanceconstraint.h constrainedsketchentities/distanceconstraint.cpp
+  constrainedsketchentities/externalreference.h constrainedsketchentities/externalreference.cpp
   constrainedsketchgrammar.h constrainedsketchgrammar.cpp
-  externalreference.h externalreference.cpp
+
   geotest.cpp 
   cadparameter.cpp
   cadfeature.cpp 

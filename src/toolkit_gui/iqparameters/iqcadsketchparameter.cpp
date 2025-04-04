@@ -25,29 +25,24 @@ addToFactoryTable(IQParameter, IQCADSketchParameter);
 IQCADSketchParameter::IQCADSketchParameter
     (
         QObject* parent,
-    IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        IQParameterSetModel* psmodel,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
         )
-    : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
-{
-}
+    : IQSpecializedParameter<insight::CADSketchParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
+{}
 
 
 void IQCADSketchParameter::connectSignals()
 {
     IQParameter::connectSignals();
 
-    auto& sp=dynamic_cast<insight::CADSketchParameter&>(parameterRef());
     disconnectAtEOL(
-        sp.childValueChanged.connect(
+        parameterRef().childValueChanged.connect(
             [this]() {
                 auto blocker = block_all();
-                model()->notifyParameterChange(
-                    path().toStdString(),
-                    true
-                    );
+                model()->notifyParameterChange( *this );
             }
             )
         );
@@ -68,120 +63,74 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
     QWidget* editControlsContainer,
     IQCADModel3DViewer *viewer)
 {
-    const auto&p = dynamic_cast<const insight::CADSketchParameter&>(parameter());
 
     auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
 
     auto *teScript = new QTextEdit(editControlsContainer);
-    teScript->document()->setPlainText(QString::fromStdString(p.script()));
+    teScript->document()->setPlainText(QString::fromStdString(parameter().script()));
     layout->addWidget(teScript);
 
 
     QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
     layout->addWidget(apply);
 
-    QPushButton* edit=new QPushButton("&Edit sketch", editControlsContainer);
-    layout->addWidget(edit);
-
-    auto applyFunction = [=]()
+    if (viewer)
     {
-        auto&p = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
-        p.setUpdateValueSignalBlockage(true);
-        p.setScript( teScript->document()->toPlainText().toStdString() );
-        p.setUpdateValueSignalBlockage(false);
-        p.triggerValueChanged();
-    };
-    connect(apply, &QPushButton::pressed, applyFunction);
+        QPushButton* edit=new QPushButton("&Edit sketch", editControlsContainer);
+        layout->addWidget(edit);
 
-    auto editFunction = [=]()
-    {
-        auto&p = dynamic_cast<insight::CADSketchParameter&>(
-            this->parameterRef());
+        auto applyFunction = [=]()
+        {
+            auto&p = this->parameterRef();
+            p.setUpdateValueSignalBlockage(true);
+            p.setScript( teScript->document()->toPlainText().toStdString() );
+            p.setUpdateValueSignalBlockage(false);
+            p.triggerValueChanged();
+        };
+        connect(apply, &QPushButton::pressed, applyFunction);
 
-        auto sk = p.featureGeometryRef();
 
-        viewer->editSketch(
-            *sk,
-            p.defaultGeometryParameters(),
+        auto editFunction = [=]()
+        {
+            auto&p = this->parameterRef();
 
-#warning replace!!
-            [](
-                const insight::ParameterSet& seps,
-                vtkProperty* actprops)
-            {
-                if (seps.size()>0)
+            auto sk = p.featureGeometryRef();
+
+            viewer->editSketch(
+
+                *sk,
+
+                p.entityProperties(),
+                p.presentationDelegateKey(),
+
+                [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
                 {
-                    auto &selp = seps.get<insight::SelectableSubsetParameter>("type");
-                    if (selp.selection()=="wall")
+                    auto& tp = this->parameterRef();
+
                     {
-                        auto c = QColorConstants::Black;
-                        actprops->SetColor(
-                            c.redF(),
-                            c.greenF(),
-                            c.blueF() );
-                        actprops->SetLineWidth(3);
+                        auto blocker{parameterRef().blockUpdateValueSignal()};
+                        *sk = *accSk;
+
+                        std::ostringstream os;
+                        sk->generateScript(os);
+
+                        tp.setScript(os.str());
+                        tp.featureGeometry(); //trigger rebuild
                     }
-                    else if (selp.selection()=="window")
-                    {
-                        auto c = QColorConstants::DarkYellow;
-                        actprops->SetColor(
-                            c.redF(),
-                            c.greenF(),
-                            c.blueF() );
-                        actprops->SetLineWidth(4);
-                    }
-                    else if (selp.selection()=="door")
-                    {
-                        auto c = QColorConstants::DarkMagenta;
-                        actprops->SetColor(
-                            c.redF(),
-                            c.greenF(),
-                            c.blueF() );
-                        actprops->SetLineWidth(4);
-                    }
-                    else if (selp.selection()=="floorCutout")
-                    {
-                        actprops->SetColor(41./255., 128./255., 185./255.); // blueish
-                        actprops->SetLineWidth(4);
-                    }
-                }
-                else
-                {
-                    auto c = QColorConstants::DarkCyan;
-                    actprops->SetColor(
-                        c.redF(),
-                        c.greenF(),
-                        c.blueF() );
-                    actprops->SetLineWidth(2);
-                }
-            },
 
-            [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
-            {
-                auto& tp = dynamic_cast<insight::CADSketchParameter&>(this->parameterRef());
+                    tp.triggerValueChanged();
 
-                {
-                    auto blocker = parameterRef().blockUpdateValueSignal();
-                    *sk = *accSk;
+                    teScript->document()->setPlainText(
+                        QString::fromStdString(tp.script()) );
+                },
 
-                    std::ostringstream os;
-                    sk->generateScript(os);
+                [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
 
-                    tp.setScript(os.str());
-                }
-
-                tp.triggerValueChanged();
-
-                teScript->document()->setPlainText(
-                    QString::fromStdString(tp.script()) );
-            },
-
-            [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
-
-            );
-    };
-    connect(edit, &QPushButton::pressed, editFunction);
+                );
+        };
+        connect(edit, &QPushButton::pressed, editFunction);
+    }
 
     return layout;
 }

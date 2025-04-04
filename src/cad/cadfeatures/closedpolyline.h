@@ -33,8 +33,8 @@ class ClosedPolyline
 
     ClosedPolyline(const std::vector<VectorPtr>& pts);
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("ClosedPolyline");

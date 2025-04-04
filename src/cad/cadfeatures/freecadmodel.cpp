@@ -94,7 +94,6 @@ void FreeCADModel::build()
     boost::filesystem::path filename = filename_;
     std::string solidname = solidname_;
 
-
     filename =
         boost::filesystem::unique_path ( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.brep" );
     boost::filesystem::path macrofilename =
@@ -147,7 +146,7 @@ void FreeCADModel::build()
     }
     boost::filesystem::remove ( macrofilename );
 
-    loadShapeFromFile ( filename );
+    setShapeFromFile ( filename );
 
 }
 

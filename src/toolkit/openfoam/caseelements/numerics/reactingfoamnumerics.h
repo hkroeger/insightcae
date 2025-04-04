@@ -26,21 +26,24 @@ forceLES = bool false "Whether to enforce LES numerics"
 
 buoyancy = bool false "Whether to use a buoyancy formulation"
 
+pinternal = double 1e5 "[Pa] initial pressure in domain"
+Tinternal = double 300. "[K] initial temperature in domain"
+Uinternal = vector (0 0 0) "[m/s] initial velocity in domain"
+
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
-
     void init();
 
 public:
     declareType ( "reactingFoamNumerics" );
-    reactingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    reactingFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 
-    inline const reactingFoamNumerics::Parameters& parameters() const { return p_; }
+    // inline const reactingFoamNumerics::Parameters& parameters() const { return p_; }
 };
 
 } // namespace insight

@@ -18,6 +18,8 @@
  *
  */
 
+#include "boost/filesystem/path.hpp"
+#include "boost/program_options/value_semantic.hpp"
 #include "insightcaeapplication.h"
 #include "plotwidget.h"
 #include "isofplottabularwindow.h"
@@ -43,8 +45,12 @@ int main(int argc, char *argv[])
     // Declare the supported options.
     po::options_description desc("Allowed options");
     desc.add_options()
-    ("help", "produce help message")
-    ("input-file,f", po::value< std::vector<boost::filesystem::path> >(), "Input file names. Use \"-\" to read from stdin.")
+        ("help", "produce help message")
+        ("input-file,f", po::value< std::vector<boost::filesystem::path> >(),
+                        "Input file names. Use \"-\" to read from stdin.")
+        ("avg-fraction,a", po::value<double>(), "moving average fraction")
+        ("csv-output-file,o", po::value<boost::filesystem::path>(),
+                        "output file for final values")
     ;
 
     po::positional_options_description p;
@@ -103,6 +109,29 @@ int main(int argc, char *argv[])
 
     IsofPlotTabularWindow window(fns);
     window.show();
+    if (vm.count("avg-fraction"))
+    {
+        auto f=vm["avg-fraction"].as<double>();
+        QMetaObject::invokeMethod(
+            qApp,
+            [f,&window]()
+            { window.resetAllAvgFractions(f); }
+        );
+    }
+    if (vm.count("csv-output-file"))
+    {
+        auto fn=vm["csv-output-file"]
+                .as<boost::filesystem::path>();
+        QObject::connect(
+            &window, &IsofPlotTabularWindow::allAverageValuesReady,
+            [&window,fn]()
+            {
+                window.onSaveFinalValues(
+                    QString::fromStdString(
+                        fn.string() ) );
+            }
+        );
+    }
     return app.exec();
   }
   catch (const std::exception& e)

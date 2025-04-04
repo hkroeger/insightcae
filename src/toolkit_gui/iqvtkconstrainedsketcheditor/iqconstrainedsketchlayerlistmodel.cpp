@@ -165,7 +165,7 @@ bool IQConstrainedSketchLayerListModel::setData(
 void IQConstrainedSketchLayerListModel::update()
 {
     auto oldLayers=layers_;
-    layers_=(*sketchEditor_)->layers();
+    layers_=(*sketchEditor_)->layerNames();
 
     // compare
     //  remove vanished

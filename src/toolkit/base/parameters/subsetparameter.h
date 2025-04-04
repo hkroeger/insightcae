@@ -21,8 +21,11 @@
 #ifndef SUBSETPARAMETER_H
 #define SUBSETPARAMETER_H
 
+#include "base/cppextensions.h"
 #include "base/parameter.h"
-#include "boost/ptr_container/ptr_map.hpp"
+
+
+
 namespace insight
 {
 
@@ -39,56 +42,89 @@ public:
 
 
 
-class SubsetParameter
+class ParameterSet
   : public Parameter
 {
-public:
-  typedef std::shared_ptr<SubsetParameter> Ptr;
-  typedef boost::ptr_map<std::string, Parameter> value_type;
+// #warning should be removed
+  friend class Parameter; // for constructor table
 
-  typedef std::map<std::string, std::shared_ptr<Parameter> > EntryCopies;
-  typedef std::map<std::string, const Parameter*> EntryReferences;
+public:
+  typedef std::map<std::string, std::unique_ptr<Parameter> > value_type;
+
+  typedef std::map<std::string, std::unique_ptr<Parameter> > Entries;
+  typedef std::map<std::string, std::observer_ptr<Parameter> > EntryReferences;
 
 private:
   value_type value_;
 
-  std::map<Parameter*, std::shared_ptr<boost::signals2::scoped_connection> >
+    std::key_observer_map<
+      Parameter,
+      std::shared_ptr<boost::signals2::scoped_connection>
+      >
         valueChangedConnections_,
         childValueChangedConnections_;
 
+protected:
+    ParameterSet();
+
+    ParameterSet(
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    ParameterSet(
+        Entries &&defaultValue,
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    ParameterSet(
+        const EntryReferences &defaultValue,
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
 public:
-  declareType ( "subset" );
+  declareType ( "subset" );;
 
-  SubsetParameter();
+  static std::unique_ptr<ParameterSet> create();
 
-  SubsetParameter(
+  static std::unique_ptr<ParameterSet> create(
       const std::string& description,
       bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
-  SubsetParameter(
-      const EntryCopies &defaultValue,
+  static std::unique_ptr<ParameterSet> create_uninitialized(
       const std::string& description,
       bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
-  SubsetParameter(
+  static std::unique_ptr<ParameterSet> create(
+      Entries &&defaultValue,
+      const std::string& description,
+      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+  static std::unique_ptr<ParameterSet> create(
       const EntryReferences &defaultValue,
       const std::string& description,
       bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
+  static std::unique_ptr<ParameterSet> create_uninitialized(
+      const EntryReferences &defaultValue,
+      const std::string& description,
+      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+
   EntryReferences entries() const;
-  EntryCopies copyEntries() const;
+  Entries copyEntries() const;
 
   bool isDifferent(const Parameter& p) const override;
 
 
-  void insert(const std::string &name, std::unique_ptr<Parameter> p);
+  void insert(const std::string &name, std::unique_ptr<Parameter>&& p);
+  void remove(const std::string& name);
 
   // for interchangeability in arrays with selectablesubset
-  inline SubsetParameter& operator() ()
+  inline ParameterSet& operator() ()
   {
       return *this;
   }
-  inline const SubsetParameter& operator() () const
+  inline const ParameterSet& operator() () const
   {
       return *this;
   }
@@ -120,8 +156,17 @@ public:
 
 
   int nChildren() const override;
-  std::string childParameterName( int i ) const override;
+
+  std::string childParameterName(
+      int i,
+      bool redirectArrayElementsToDefault=false ) const override;
+
+  std::string childParameterName(
+      const Parameter *p,
+      bool redirectArrayElementsToDefault=false ) const override;
+
   Parameter& childParameterRef ( int i ) override;
+
   const Parameter& childParameter( int i ) const override;
 
 
@@ -136,7 +181,7 @@ public:
   template<class T>
   const T& get ( const std::string& name ) const
   {
-      return const_cast<SubsetParameter&>(*this).get<T>(name);
+      return const_cast<ParameterSet&>(*this).get<T>(name);
   }
 
   template<class T>
@@ -156,15 +201,15 @@ public:
 
   std::istream& getFileStream ( const std::string& name );
 
-  SubsetParameter& setInt ( const std::string& name, int v );
-  SubsetParameter& setDouble ( const std::string& name, double v );
-  SubsetParameter& setBool ( const std::string& name, bool v );
-  SubsetParameter& setString ( const std::string& name, const std::string& v );
-  SubsetParameter& setVector ( const std::string& name, const arma::mat& v );
-  SubsetParameter& setMatrix ( const std::string& name, const arma::mat& m );
-  SubsetParameter& setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp);
+  ParameterSet& setInt ( const std::string& name, int v );
+  ParameterSet& setDouble ( const std::string& name, double v );
+  ParameterSet& setBool ( const std::string& name, bool v );
+  ParameterSet& setString ( const std::string& name, const std::string& v );
+  ParameterSet& setVector ( const std::string& name, const arma::mat& v );
+  ParameterSet& setMatrix ( const std::string& name, const arma::mat& m );
+  ParameterSet& setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp);
 
-  SubsetParameter& getSubset ( const std::string& name );
+  ParameterSet& getSubset ( const std::string& name );
 
   const int& getInt ( const std::string& name ) const;
   const double& getDouble ( const std::string& name ) const;
@@ -172,17 +217,24 @@ public:
   const std::string& getString ( const std::string& name ) const;
   const arma::mat& getVector ( const std::string& name ) const;
   const boost::filesystem::path getPath ( const std::string& name, const boost::filesystem::path& basePath = "" ) const;
-  const SubsetParameter& getSubset ( const std::string& name ) const;
+  const ParameterSet& getSubset ( const std::string& name ) const;
 
-  const SubsetParameter& operator[] ( const std::string& name ) const;
+  const ParameterSet& operator[] ( const std::string& name ) const;
 
-  void replace ( const std::string& key, Parameter* newp );
+  void replace ( const std::string& key, std::unique_ptr<Parameter> newp );
 
-  Parameter* clone() const override;
+  std::unique_ptr<Parameter> clone(bool initialize) const override;
+
+  inline std::unique_ptr<ParameterSet> cloneParameterSet() const
+  {
+      return std::dynamic_unique_ptr_cast<ParameterSet>(clone(true));
+  }
+
   void copyFrom(const Parameter& o) override;
-  void operator=(const SubsetParameter& spo);
+  void operator=(const ParameterSet& spo);
   void extend ( const Parameter& op ) override;
   void merge ( const Parameter& other ) override;
+  void clear();
 #ifndef SWIG
   std::unique_ptr<Parameter> intersection(const Parameter& other) const override;
 #endif
@@ -190,8 +242,14 @@ public:
 
 
 
-template<class T>
-T& SubsetParameter::get ( const std::string& name )
+#ifndef SWIG
+std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
+#endif
+
+
+
+template<class T = insight::Parameter>
+T& ParameterSet::get ( const std::string& name )
 {
   typedef T PT;
 

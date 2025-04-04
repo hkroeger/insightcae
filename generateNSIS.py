@@ -79,7 +79,7 @@ class Dependency:
         if not os.path.exists(self.localfile) and not URL is None:
             req.urlretrieve(URL, self.localfile)
             
-        self.command='ExecShellWait "" "$TEMP\{file}"'.format(
+        self.command='ExecShellWait "" "$TEMP\\{file}"'.format(
             file=self.filename)
         
         self.note=note
@@ -87,7 +87,7 @@ class Dependency:
     def config(self, label):
         return """
 Section "{label}"
-    File "/oname=$TEMP\{file}" "{localfile}"
+    File "/oname=$TEMP\\{file}" "{localfile}"
     {note}
     SetDetailsPrint both
     DetailPrint "Installing {label}..."
@@ -135,24 +135,53 @@ SetDetailsPrint both
 DetailPrint "Installing the WSL backend..."
 
 ClearErrors
-ExecWait 'wsl --import "{imgname}" "$PROFILE\\\\{imgname}" "$TEMP\\\\{file}"'
-IfErrors 0 installConfig
+SetRegView 64
+ReadRegStr $R9 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\MSI" "InstallLocation"
+${{DisableX64FSRedirection}}
 
-  MessageBox MB_OK "The installation of the WSL backend image failed!$\\r$\\nPlease consider performing an update of the WSL subsystem.$\\r$\\n(execute 'wsl --update' in a powershell)"
-  Quit
+SetDetailsPrint both
+DetailPrint "Checking for previous install of WSL backend..."
+ClearErrors
+ExecWait '"$R9\\wsl.exe" -d {imgname} -- exit' $R1
+StrCmp $R1 "0" removalStep installStep
 
-installConfig:
+removalStep:
+SetDetailsPrint both
+DetailPrint "Removing previous install of WSL backend..."
+ClearErrors
+ExecWait '"$R9\\wsl.exe" --unregister {imgname}'
+
+installStep:
+SetDetailsPrint both
+DetailPrint "Installing the WSL backend..."
+ExecWait '$R9\\wsl --import {imgname} "$PROFILE\\\\{imgname}" "$TEMP\\\\{file}"' $R1
+StrCmp $R1 "0" installConfigStep 0
+
+MessageBox MB_OK "The installation of the WSL backend image failed!$\\r$\\nPlease consider performing an update of the WSL subsystem.$\\r$\\n(execute 'wsl --update' in a powershell)"
+Goto end
+
+installConfigStep:
+SetDetailsPrint both
+DetailPrint "Installing the default InsightCAE configuration..."
+IfFileExists "$PROFILE\\.insight\\share" 0 create
+MessageBox MB_YESNO "The InsightCAE configuration files exist already (report templates, executable paths etc.)$\\r$\\nDo you want to overwrite them with the defaults?" IDYES yes IDNO end
+yes:
+MessageBox MB_YESNO "Your existing configuration will be overwritten!$\\r$\\nReally overwrite?" IDYES create IDNO end
+create:
 CreateDirectory "$PROFILE\\.insight\\share"
 File "/oname=$PROFILE\\.insight\\share\\remoteservers.list" "remoteservers.list"
+
+end:
+${{EnableX64FSRedirection}}
 
 """.format(file=self.filename, imgname=imgname)
 
 
 putty=MSIDependency("http://downloads.silentdynamics.de/thirdparty/putty-64bit-0.76-installer.msi")
 gnuplot=Dependency("http://downloads.silentdynamics.de/thirdparty/gp528-win64-mingw.exe")
-miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-21.6-x64.exe")
+miktex=Dependency("http://downloads.silentdynamics.de/thirdparty/basic-miktex-24.1-x64.exe")
 python=Dependency("http://downloads.silentdynamics.de/thirdparty/python-3.6.8rc1.exe", 
-                  note="Please check the option 'Add python.exe to PATH' in the upcoming Python installer!$\\r$\\n$\\r$\\n(If this is omitted, the InsightCAE executables will not run.)")
+                  note="Please choose the following options in the upcoming Python installer:$\\r$\\n$\\r$\\n* check the option 'Add python.exe to PATH'$\\r$\\n$\\r$\\n* perform a custom installation and install for all users!$\\r$\\n$\\r$\\n(If this is omitted, the InsightCAE executables will not run.)")
 paraview=Dependency("http://downloads.silentdynamics.de/thirdparty/ParaView-5.8.1-Windows-Python3.7-msvc2015-64bit.exe")
 insightwsl=WSLImageDependency(file=wslimage)
 
@@ -182,10 +211,95 @@ nsisScript=("""
 
 Name "InsightCAE on Windows"
 OutFile "{outFile}.exe"
-RequestExecutionLevel admin #user
+RequestExecutionLevel user
 LicenseData "{srcPath}/gpl.txt"
 Icon "{srcPath}/insightpackage.ico"
+SetCompressor LZMA
 
+Function VersionCompare
+	!define VersionCompare `!insertmacro VersionCompareCall`
+ 
+	!macro VersionCompareCall _VER1 _VER2 _RESULT
+		Push `${{_VER1}}`
+		Push `${{_VER2}}`
+		Call VersionCompare
+		Pop ${{_RESULT}}
+	!macroend
+ 
+	Exch $1
+	Exch
+	Exch $0
+	Exch
+	Push $2
+	Push $3
+	Push $4
+	Push $5
+	Push $6
+	Push $7
+ 
+	begin:
+	StrCpy $2 -1
+	IntOp $2 $2 + 1
+	StrCpy $3 $0 1 $2
+	StrCmp $3 '' +2
+	StrCmp $3 '.' 0 -3
+	StrCpy $4 $0 $2
+	IntOp $2 $2 + 1
+	StrCpy $0 $0 '' $2
+ 
+	StrCpy $2 -1
+	IntOp $2 $2 + 1
+	StrCpy $3 $1 1 $2
+	StrCmp $3 '' +2
+	StrCmp $3 '.' 0 -3
+	StrCpy $5 $1 $2
+	IntOp $2 $2 + 1
+	StrCpy $1 $1 '' $2
+ 
+	StrCmp $4$5 '' equal
+ 
+	StrCpy $6 -1
+	IntOp $6 $6 + 1
+	StrCpy $3 $4 1 $6
+	StrCmp $3 '0' -2
+	StrCmp $3 '' 0 +2
+	StrCpy $4 0
+ 
+	StrCpy $7 -1
+	IntOp $7 $7 + 1
+	StrCpy $3 $5 1 $7
+	StrCmp $3 '0' -2
+	StrCmp $3 '' 0 +2
+	StrCpy $5 0
+ 
+	StrCmp $4 0 0 +2
+	StrCmp $5 0 begin newer2
+	StrCmp $5 0 newer1
+	IntCmp $6 $7 0 newer1 newer2
+ 
+	StrCpy $4 '1$4'
+	StrCpy $5 '1$5'
+	IntCmp $4 $5 begin newer2 newer1
+ 
+	equal:
+	StrCpy $0 0
+	goto end
+	newer1:
+	StrCpy $0 1
+	goto end
+	newer2:
+	StrCpy $0 2
+ 
+	end:
+	Pop $7
+	Pop $6
+	Pop $5
+	Pop $4
+	Pop $3
+	Pop $2
+	Pop $1
+	Exch $0
+FunctionEnd
 
 Function .onInit
     ${{IfNot}} ${{RunningX64}}
@@ -196,16 +310,15 @@ Function .onInit
     # create temp directory PLUGINSDIR
     InitPluginsDir
     
-    ${{PowerShellExec}} "(get-windowsoptionalfeature -online|where FeatureName -like Microsoft-Windows-Subsystem-Linux).State -eq 'Enabled'"
-    Pop $R1
-    StrCpy $R1 "$R1" -2 # remove newline
-    #MessageBox MB_OK "Powershell return: >$R1<"
+    SetRegView 64
+    ReadRegStr $0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\MSI" "Version"
+    ${{VersionCompare}} "$0" "2.0.0.0" $R0
     
-    StrCmp $R1 "True" isInstalled notInstalled
+    StrCmp $R0 "1" isInstalled notInstalled
     
 notInstalled:
     # active wsl using auxiliary installer
-    File "/oname=$PLUGINSDIR\wsl-activation-installer.exe" "{srcPath}/wsl-activation-installer.exe"
+    File "/oname=$PLUGINSDIR\\wsl-activation-installer.exe" "{srcPath}/wsl-activation-installer.exe"
     ExecShellWait "" "$PLUGINSDIR\wsl-activation-installer.exe" "/insightInstallerPath=$EXEPATH"
     Abort
 isInstalled:
@@ -254,11 +367,11 @@ Section "Update WSL System"
  DetailPrint "Updating the WSL subsystem..."
 
  ClearErrors
- ExecWait 'wsl --update'
- IfErrors 0 updateFinished
+ ExecWait 'wsl --update' $R1
+ StrCmp $R1 "0" updateFinished 0
 
-  MessageBox MB_OK "The update of the WSL subsystem failed!"
-  Quit
+ MessageBox MB_OK "The update of the WSL subsystem failed!"
+ Quit
 
  updateFinished:
 SectionEnd

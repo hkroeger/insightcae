@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 
 #include "base/units.h"
+#include "base/spatialtransformation.h"
 
 #include "occinclude.h"
 
@@ -39,18 +40,18 @@ defineType ( blockMeshDict_CurvedCylinder );
 addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CurvedCylinder );
 
 
-blockMeshDict_CurvedCylinder::blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, const ParameterSet& ps )
-    : BlockMeshTemplate ( c, ps ), p_ ( ps )
+blockMeshDict_CurvedCylinder::blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, ParameterSetInput ip )
+    : BlockMeshTemplate ( c, ip.forward<Parameters>() )
 {}
 
 
 CoordinateSystem blockMeshDict_CurvedCylinder::calc_end_CS() const
 {
-  gp_Pnt P0=to_Pnt(p_.geometry.p0), P1=to_Pnt(p_.geometry.p1);
+  gp_Pnt P0=to_Pnt(p().geometry.p0), P1=to_Pnt(p().geometry.p1);
   Handle_Geom_TrimmedCurve spine = GC_MakeArcOfCircle
       (
         P0,
-        to_Vec(p_.geometry.ex/arma::norm(p_.geometry.ex,2)),
+        to_Vec(p().geometry.ex/arma::norm(p().geometry.ex,2)),
         P1
        ).Value();
 
@@ -63,10 +64,10 @@ CoordinateSystem blockMeshDict_CurvedCylinder::calc_end_CS() const
   arma::mat R = rotMatrix( std::acos(r0.Dot(r1)/r0.Modulus()/r1.Modulus()), vec3(c.Axis().Direction()) );
 
   CoordinateSystem result(
-              p_.geometry.p1,
-              R*p_.geometry.ex );
+              p().geometry.p1,
+              R*p().geometry.ex );
 
-  result.ez=R*p_.geometry.er;
+  result.ez=R*p().geometry.er;
   result.ey=BlockMeshTemplate::correct_trihedron(result.ex, result.ez);
 
   return result;
@@ -75,17 +76,17 @@ CoordinateSystem blockMeshDict_CurvedCylinder::calc_end_CS() const
 
 void blockMeshDict_CurvedCylinder::create_bmd()
 {
-    this->setDefaultPatch(p_.mesh.defaultPatchName);
+    this->setDefaultPatch(p().mesh.defaultPatchName);
 
-    arma::mat p0=p_.geometry.p0;
-    arma::mat ex0=p_.geometry.ex;
-    arma::mat er0=p_.geometry.er;
+    arma::mat p0=p().geometry.p0;
+    arma::mat ex0=p().geometry.ex;
+    arma::mat er0=p().geometry.er;
     arma::mat ey0=BlockMeshTemplate::correct_trihedron(ex0, er0);
 
     CoordinateSystem ec = calc_end_CS();
-//    arma::mat p1=p_.geometry.p1;
-//    arma::mat ex1=R*p_.geometry.ex;
-//    arma::mat er1=R*p_.geometry.er;
+//    arma::mat p1=p().geometry.p1;
+//    arma::mat ex1=R*p().geometry.ex;
+//    arma::mat er1=R*p().geometry.er;
 //    arma::mat ey1=BlockMeshTemplate::correct_trihedron(ex1, er1);
 
     double al = M_PI/2.;
@@ -97,14 +98,14 @@ void blockMeshDict_CurvedCylinder::create_bmd()
     Patch* top=nullptr;
     Patch* outer=nullptr;
 
-    if ( p_.mesh.basePatchName!="" ) {
-        base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
+    if ( p().mesh.basePatchName!="" ) {
+        base=&this->addOrDestroyPatch ( p().mesh.basePatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.topPatchName!="" ) {
-        top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
+    if ( p().mesh.topPatchName!="" ) {
+        top=&this->addOrDestroyPatch ( p().mesh.topPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.circumPatchName!="" ) {
-        outer=&this->addOrDestroyPatch ( p_.mesh.circumPatchName, new bmd::Patch() );
+    if ( p().mesh.circumPatchName!="" ) {
+        outer=&this->addOrDestroyPatch ( p().mesh.circumPatchName, new bmd::Patch() );
     }
 
     arma::mat r00=rotMatrix ( 0.5*al, ex0 );
@@ -128,7 +129,7 @@ void blockMeshDict_CurvedCylinder::create_bmd()
                                     p0+r10*yc0, p0+r20*yc0, p0+r30*yc0, p0+r00*yc0,
                                     ec.origin+r11*yc1, ec.origin+r21*yc1, ec.origin+r31*yc1, ec.origin+r01*yc1
                                   ),
-                                  p_.mesh.nu, p_.mesh.nu, p_.mesh.nx
+                                  p().mesh.nu, p().mesh.nu, p().mesh.nx
                                 )
                   );
 
@@ -147,8 +148,8 @@ void blockMeshDict_CurvedCylinder::create_bmd()
         arma::mat r01=rotMatrix ( double ( i+0.5 ) *al, ec.ex );
         arma::mat r11=rotMatrix ( double ( i+1.5 ) *al, ec.ex );
 
-        arma::mat yc0=Lc*er0, yo0=0.5*p_.geometry.D*er0;
-        arma::mat yc1=Lc*ec.ez, yo1=0.5*p_.geometry.D*ec.ez;
+        arma::mat yc0=Lc*er0, yo0=0.5*p().geometry.D*er0;
+        arma::mat yc1=Lc*ec.ez, yo1=0.5*p().geometry.D*ec.ez;
 
         {
             Block& bl = this->addBlock
@@ -157,8 +158,8 @@ void blockMeshDict_CurvedCylinder::create_bmd()
                                 p0+r10*yc0, p0+r00*yc0, p0+r00*yo0, p0+r10*yo0,
                                 ec.origin+r11*yc1, ec.origin+r01*yc1, ec.origin+r01*yo1, ec.origin+r11*yo1
                             ),
-                            p_.mesh.nu, p_.mesh.nr, p_.mesh.nx,
-                            list_of<double> ( 1 ) ( 1./p_.mesh.gradr ) ( 1 )
+                            p().mesh.nu, p().mesh.nr, p().mesh.nx,
+                            list_of<double> ( 1 ) ( 1./p().mesh.gradr ) ( 1 )
                           )
             );
             if ( base ) {
@@ -213,7 +214,7 @@ void blockMeshDict_CurvedCylinder::create_bmd()
 
 double blockMeshDict_CurvedCylinder::rCore() const
 {
-    return p_.geometry.D*p_.mesh.core_fraction;
+    return p().geometry.D*p().mesh.core_fraction;
 }
 
 

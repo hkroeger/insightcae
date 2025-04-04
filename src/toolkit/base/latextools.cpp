@@ -86,31 +86,38 @@ boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s
 
 boost::filesystem::path findSharedImageFile(const std::string& file)
 {
-  auto spl = SharedPathList::global();
-  boost::filesystem::path p = file;
-  try 
-  { 
-    p=spl.getSharedFilePath(file+".png"); 
-  } 
-  catch(...) 
-  {
-    try 
-    { 
-      p=spl.getSharedFilePath(file+".jpg"); 
-    } 
-    catch(...) 
+    auto spl = SharedPathList::global();
+    boost::filesystem::path p = file;
+    try
     {
-      try 
-      { 
-	p=spl.getSharedFilePath(file+".pdf"); 
-      } 
-      catch(...) 
-      {
-	p=file;
-      } 
-    } 
-  }
-  return p;
+        p=spl.getSharedFilePath(file+".png");
+    }
+    catch(...)
+    {
+        try
+        {
+            p=spl.getSharedFilePath(file+".svg");
+        }
+        catch(...)
+        {
+            try
+            {
+                p=spl.getSharedFilePath(file+".jpg");
+            }
+            catch(...)
+            {
+                try
+                {
+                    p=spl.getSharedFilePath(file+".pdf");
+                }
+                catch(...)
+                {
+                    p=file;
+                }
+            }
+        }
+    }
+    return p;
 }
 
 
@@ -138,6 +145,7 @@ struct Replacements
   }
   
   virtual void appendImage(double width, const std::string& imagename) =0;
+  virtual void appendSvgImage(double width, const std::string& imagename) =0;
   virtual void appendInlineFormula(const std::string& latex_formula) =0;
   virtual void appendDisplayFormula(const std::string& latex_formula) =0;
   virtual void appendFormattedText(const std::string& text, Format fmt) =0;
@@ -161,6 +169,11 @@ struct PlainTextReplacements
     boost::filesystem::path fname = findSharedImageFile(imagename);
 
     reformatted_ += str(format("\nfile://%s\n") % fname.string() );
+  }
+
+  virtual void appendSvgImage(double, const std::string& imagename)
+  {
+      return appendImage(0., imagename);
   }
 
   virtual void appendInlineFormula(const std::string& latex_formula)
@@ -194,6 +207,13 @@ struct LaTeXReplacements
     boost::filesystem::path fname = findSharedImageFile(imagename);
     fname = boost::filesystem::change_extension(fname, "");
     reformatted_ += str(format("\\includegraphics[keepaspectratio,width=%d\\linewidth]{%s}") % width % fname.string() );
+  }
+
+  virtual void appendSvgImage(double width, const std::string& imagename)
+  {
+      boost::filesystem::path fname = findSharedImageFile(imagename);
+      fname = boost::filesystem::change_extension(fname, "");
+      reformatted_ += str(format("\\includesvg[width=%d\\linewidth]{%s}") % width % fname.string() );
   }
 
   virtual void appendInlineFormula(const std::string& latex_formula)
@@ -359,7 +379,12 @@ struct HTMLReplacements
     insight::dbg()<<code<<std::endl;
     reformatted_ += code;
   }
-  
+
+  virtual void appendSvgImage(double width, const std::string& imagename)
+  {
+      return appendImage(width, imagename);
+  }
+
   virtual void appendInlineFormula(const std::string& latex_formula)
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
@@ -407,7 +432,7 @@ struct StringParser
   
   qi::rule< std::string::iterator > start;   
   qi::rule< std::string::iterator, std::string() >
-   inlineformula, displayformula, image, verbatimtext;
+   inlineformula, displayformula, image, svgimage, verbatimtext;
     
 
     StringParser(Replacements& rep)
@@ -427,7 +452,15 @@ struct StringParser
         > '{' > qi::as_string[qi::lexeme[ *(qi::char_ - qi::char_('}')) ]] > '}'
       ) [ phx::bind(&Replacements::appendImage, &rep, qi::_1, qi::_2) ]
 	;
-      
+
+      svgimage =
+          (
+              qi::lit("\\includesvg")
+              > '[' > qi::lit("width") > '=' > (qi::double_|qi::attr(1.0)) > qi::lit("\\linewidth") > ']'
+              > '{' > qi::as_string[qi::lexeme[ *(qi::char_ - qi::char_('}')) ]] > '}'
+              ) [ phx::bind(&Replacements::appendSvgImage, &rep, qi::_1, qi::_2) ]
+          ;
+
       start = *(
         verbatimtext
           [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
@@ -443,7 +476,7 @@ struct StringParser
         qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ]
 	  [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
 	|
-	image
+    image|svgimage
         |
         displayformula
           [ phx::bind(&Replacements::appendDisplayFormula, &rep, qi::_1) ]
@@ -501,14 +534,18 @@ std::string reformat(const std::string& simplelatex, Replacements& rep)
 }
 
 
+
 SimpleLatex::SimpleLatex()
 {}
 
 
+SimpleLatex::SimpleLatex(const SimpleLatex& slt)
+: simpleLatex_code_(slt.simpleLatex_code_)
+{}
 
 
-SimpleLatex::SimpleLatex(const std::string& simpleLatex)
-: simpleLatex_code_(simpleLatex)
+SimpleLatex::SimpleLatex(const std::string &slt)
+    : simpleLatex_code_(slt)
 {}
 
 

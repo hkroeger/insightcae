@@ -14,6 +14,7 @@ public:
 #include "komegasst_rasmodel__kOmegaSST_RASModel__Parameters.h"
 /*
 PARAMETERSET>>> kOmegaSST_RASModel Parameters
+inherits RASModel::Parameters
 
 freeSurfaceProductionDamping = selectablesubset {{
 
@@ -25,15 +26,14 @@ freeSurfaceProductionDamping = selectablesubset {{
 
 }} none "Option for selection of extra turbulence production damping close to the free surface in VOF simulations"
 
+createGetters
 <<<PARAMETERSET
 */
-protected:
-    Parameters p_;
 
 public:
   declareType("kOmegaSST");
 
-  kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
+  kOmegaSST_RASModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const override;

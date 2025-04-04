@@ -22,6 +22,11 @@
 #define SIMPLEPARAMETER_H
 
 #include "base/parameter.h"
+#include "base/rapidxml.h"
+
+#include "boost/date_time/gregorian/gregorian.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/date_time/posix_time/ptime.hpp"
 
 namespace insight {
 
@@ -95,9 +100,14 @@ public:
     }
 
 
-    Parameter* clone() const override
+    std::unique_ptr<Parameter> clone(bool init) const override
     {
-        return new SimpleParameter<T, N> ( value_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_ );
+        auto p= std::make_unique<SimpleParameter<T, N> >(
+            value_,
+            description().simpleLatex(),
+            isHidden(), isExpert(), isNecessary(), order() );
+        if (init) p->initialize();
+        return p;
     }
 
 
@@ -107,7 +117,7 @@ public:
             rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) const override
     {
-        insight::CurrentExceptionContext ex(2, "appending simple parameter "+name+" to node "+node.name());
+        insight::CurrentExceptionContext ex(3, "appending simple parameter "+name+" to node "+node.name());
 
         using namespace rapidxml;
         xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
@@ -182,6 +192,8 @@ extern char IntName[];
 extern char BoolName[];
 extern char VectorName[];
 extern char StringName[];
+extern char DateName[];
+extern char DateTimeName[];
 
 
 
@@ -191,6 +203,8 @@ typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
 typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
+typedef SimpleParameter<boost::gregorian::date, DateName> DateParameter;
+typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParameter;
 
 
 
@@ -201,6 +215,8 @@ typedef SimpleParameter<std::string, StringName> StringParameter;
 %template(BoolParameter) SimpleParameter<bool, BoolName>;
 %template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
 %template(StringParameter) SimpleParameter<std::string, StringName>;
+%template(DateParameter) SimpleParameter<boost::gregorian::date, DateName>;
+%template(DateTimeParameter) SimpleParameter<boost::posix_time::ptime, DateTimeName>;
 #endif
 
 

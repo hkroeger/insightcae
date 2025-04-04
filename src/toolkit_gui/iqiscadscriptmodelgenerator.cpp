@@ -78,7 +78,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                   Q_EMIT statusProgress(is++, istepmax);
                   Q_EMIT createdVariable(
                               QString::fromStdString(p.first), p.second,
-                              insight::cad::VectorVariableType::Point);
+                              insight::cad::VectorVariableType::Point, false);
               }
 
               for (const auto& d: directions)
@@ -88,7 +88,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
                   Q_EMIT statusProgress(is++, istepmax);
                   Q_EMIT createdVariable(
                               QString::fromStdString(d.first), d.second,
-                              insight::cad::VectorVariableType::Direction);
+                              insight::cad::VectorVariableType::Direction, false);
               }
 
               for (const auto& v: modelsteps)

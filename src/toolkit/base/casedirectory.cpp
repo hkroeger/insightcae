@@ -52,7 +52,7 @@ CaseDirectory::CaseDirectory(bool keep, const boost::filesystem::path& prefix)
               unique_path(
                 parentcasedir
                 /
-                (timeCodePrefix() + "_" + fn.string() + "_%%%%")
+                ("temp_" + timeCodePrefix() + "_" + fn.string() + "_%%%%")
                )
         );
 

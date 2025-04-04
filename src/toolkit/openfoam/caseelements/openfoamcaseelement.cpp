@@ -26,11 +26,14 @@ namespace insight {
 
 
 defineType(OpenFOAMCaseElement);
-defineFactoryTable(OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ));
-defineStaticFunctionTable(OpenFOAMCaseElement, defaultParameters, ParameterSet);
+defineFactoryTable(
+    OpenFOAMCaseElement,
+    LIST ( OpenFOAMCase& c, ParameterSetInput&& ip ),
+    LIST ( c, std::move(ip) )
+    );
+defineStaticFunctionTable(OpenFOAMCaseElement, defaultParameters, std::unique_ptr<ParameterSet>);
 defineStaticFunctionTable(OpenFOAMCaseElement, category, std::string);
 defineStaticFunctionTable(OpenFOAMCaseElement, validator, ParameterSet_ValidatorPtr);
-defineStaticFunctionTable(OpenFOAMCaseElement, visualizer, std::shared_ptr<ParameterSetVisualizer>);
 
 
 
@@ -43,7 +46,9 @@ int OpenFOAMCaseElement::OFversion() const
 
 
 
-void OpenFOAMCaseElement::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase&, const boost::filesystem::path& ) const
+void OpenFOAMCaseElement::modifyFilesOnDiskBeforeDictCreation (
+    const OpenFOAMCase&,
+    const boost::filesystem::path& ) const
 {}
 
 
@@ -67,8 +72,10 @@ void OpenFOAMCaseElement::addFields( OpenFOAMCase& ) const
 
 
 
-OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name, const ParameterSet& ps)
-: CaseElement(c, name, ps)
+OpenFOAMCaseElement::OpenFOAMCaseElement(
+    OpenFOAMCase& c,
+    ParameterSetInput ip )
+ : CaseElement(c, ip.forward<Parameters>())
 {}
 
 
@@ -96,12 +103,6 @@ ParameterSet_ValidatorPtr OpenFOAMCaseElement::validator()
 
 
 
-std::shared_ptr<ParameterSetVisualizer> OpenFOAMCaseElement::visualizer()
-{
-  return std::shared_ptr<ParameterSetVisualizer>();
-}
-
-
 
 
 bool OpenFOAMCaseElement::isInConflict(const CaseElement&)
@@ -114,7 +115,7 @@ bool OpenFOAMCaseElement::isInConflict(const CaseElement&)
 
 const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const
 {
-  return *static_cast<OpenFOAMCase*>(&case_);
+  return dynamic_cast<const OpenFOAMCase&>(get_case());
 }
 
 
@@ -122,7 +123,7 @@ const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const
 
 OpenFOAMCase& OpenFOAMCaseElement::OFcase()
 {
-  return *static_cast<OpenFOAMCase*>(&case_);
+  return static_cast<OpenFOAMCase&>(caseRef());
 }
 
 

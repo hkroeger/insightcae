@@ -157,8 +157,7 @@ AnalyzeRESTServer::AnalyzeRESTServer(
     const std::string& listenAddr, int port
     )
   : Wt::WServer(srvname.c_str()),
-    analysisThread_(nullptr),
-    analysis_(nullptr)
+    analysisThread_(nullptr)
 {
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
@@ -178,14 +177,15 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   addResource(this, "/next");
   addResource(this, "/all");
   addResource(this, "/latest");
+  addResource(this, "/parameters");
   addResource(this, "/results");
   addResource(this, "/exepath");
 }
 
 
-void AnalyzeRESTServer::setAnalysis(insight::Analysis *a)
+void AnalyzeRESTServer::setAnalysis(const boost::filesystem::path& inputFileParentPath)
 {
-  analysis_=a;
+  inputFileParentPath_=inputFileParentPath;
 }
 
 void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
@@ -263,29 +263,29 @@ void AnalyzeRESTServer::logMessage(const std::string &line)
 
 
 
-bool AnalyzeRESTServer::hasInputFileReceived() const
-{
-  return !inputFileContents_->empty();
-}
+// bool AnalyzeRESTServer::hasInputFileReceived() const
+// {
+//   return !inputFileContents_->empty();
+// }
 
 
 
 
-bool AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
-{
-  inputFileContents_ = &inputFileContents;
+// bool AnalyzeRESTServer::waitForInputFile(std::string& inputFileContents)
+// {
+//   inputFileContents_ = &inputFileContents;
 
-  int sig=0;
-  SignalChecker sighld(wait_cv_, mx_, sig);
+//   int sig=0;
+//   SignalChecker sighld(wait_cv_, mx_, sig);
 
-  boost::mutex::scoped_lock lock(mx_);
-  while (!( hasInputFileReceived() || (sig!=0) ))
-  {
-    wait_cv_.wait(lock);
-  }
+//   boost::mutex::scoped_lock lock(mx_);
+//   while (!( hasInputFileReceived() || (sig!=0) ))
+//   {
+//     wait_cv_.wait(lock);
+//   }
 
-  return sig==0;
-}
+//   return sig==0;
+// }
 
 
 bool AnalyzeRESTServer::hasResultsDelivered() const
@@ -337,7 +337,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     //auto whichState = payload.get("whichState");
     std::string which = request.path();
     insight::dbg()<<"which="<<which<<endl;
-    enum StateSelection { Next, All, Latest, Results, ExePath } stateSelection = Next;
+    enum StateSelection { Next, All, Latest, Parameters, Results, ExePath } stateSelection = Next;
 //    if (!whichState.isNull())
     {
 //      std::string which = whichState.toString();
@@ -354,6 +354,10 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       {
         stateSelection = Latest;
       }
+      else if (which=="/parameters")
+      {
+          stateSelection = Parameters;
+      }
       else if (which=="/results")
       {
         stateSelection = Results;
@@ -364,7 +368,21 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       }
     }
 
-    if (stateSelection==Results)
+    if (stateSelection==Parameters)
+    {
+        if (auto analysis = analysisThread_->analysis())
+        {
+            response.setStatus(200);
+            response.setMimeType("application/xml");
+            analysis->parameters().saveToStream(
+                response.out(),
+                inputFileParentPath_,
+                analysis->type() );
+
+            return;
+        }
+    }
+    else if (stateSelection==Results)
     {
       if (results_)
       {
@@ -379,7 +397,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     {
       response.setStatus(200);
       response.setMimeType("text/plain");
-      response.out() << analysis_->executionPath();
+      response.out() << analysisThread_->executionPath();
 
       return;
     }
@@ -428,7 +446,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       res["states"] = states;
       res["logLines"] = logLines;
       res["progressStates"] = progressStates;
-      res["inputFileReceived"] = hasInputFileReceived();
+      // res["inputFileReceived"] = hasInputFileReceived();
       res["resultsAvailable"] = results_ ? true : false;
       res["errorOccurred"] = exception_ ? true : false;
       res["errorMessage"] = exception_ ? exception_->what() : "";
@@ -445,25 +463,25 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
   {
     insight::dbg()<<"control request"<<std::endl;
 
-    if (request.contentType()=="application/xml")
-    {
-      // input file
-      insight::readStreamIntoString(request.in(), *inputFileContents_);
+    // if (request.contentType()=="application/xml")
+    // {
+    //   // input file
+    //   insight::readStreamIntoString(request.in(), *inputFileContents_);
 
 
-      response.setStatus(200);
-      response.setMimeType("text/plain");
-      response.out()<<"OK\n";
+    //   response.setStatus(200);
+    //   response.setMimeType("text/plain");
+    //   response.out()<<"OK\n";
 
-      {
-        boost::mutex::scoped_lock lock(mx_);
-        results_.reset();
-        wait_cv_.notify_all();
-      }
+    //   {
+    //     boost::mutex::scoped_lock lock(mx_);
+    //     results_.reset();
+    //     wait_cv_.notify_all();
+    //   }
 
-      return;
-    }
-    else
+    //   return;
+    // }
+    // else
     {
       auto action_data = payload.get("action");
       if (!action_data.isNull())
@@ -497,9 +515,9 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         else if (action=="wnow")
         {
 
-          if (analysis_)
+          if (auto analysis = analysisThread_->analysis())
           {
-              std::ofstream f( (analysis_->executionPath()/"wnow").string() );
+              std::ofstream f( (analysis->executionPath()/"wnow").string() );
               f.close();
           }
 
@@ -510,9 +528,9 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnowandstop")
         {
-          if (analysis_)
+          if (auto analysis = analysisThread_->analysis())
           {
-              std::ofstream f( (analysis_->executionPath()/"wnowandstop").string() );
+              std::ofstream f( (analysis->executionPath()/"wnowandstop").string() );
               f.close();
           }
 

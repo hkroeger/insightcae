@@ -19,6 +19,7 @@
 
 #include "channel.h"
 
+#include <iterator>
 #include <memory>
 
 #include "base/factory.h"
@@ -82,10 +83,10 @@ double ChannelBase::UmaxByUbulk(double Retau)
 }
 
 ChannelBase::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
-    const boost::filesystem::path &/*workDir*/,
+    ParameterSetInput ip,
+    const boost::filesystem::path &workDir,
     ProgressDisplayer &progress)
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+  : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     cycl_in_("cycl_half0"),
     cycl_out_("cycl_half1"),
     wall_up_("wall_upper"),
@@ -188,17 +189,9 @@ ChannelBase::supplementedInputData::supplementedInputData(
 }
 
 
-ChannelBase::ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
-: OpenFOAMAnalysis
-  (
-    "Channel Flow Test Case",
-    "Rectangular domain with cyclic BCs on axial ends",
-    ps, exepath
-  ),
-  parameters_( new supplementedInputData(
-                 std::make_unique<Parameters>(ps),
-                 exepath, progress
-                 ) )
+ChannelBase::ChannelBase(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMAnalysis(sp)
 {}
 
 ChannelBase::~ChannelBase()
@@ -380,7 +373,7 @@ void ChannelBase::createCase
       .set_Uinternal(vec3(sp().Ubulk_,0,0))
       .set_endTime(sp().end_)
       .set_decompWeights(vec3(2,1,0))
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
       .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::hierarchical)
     ));
   } 
@@ -404,7 +397,7 @@ void ChannelBase::createCase
       .set_deltaT( double(p().geometry.L/sp().nax_)/sp().Ubulk_ ) // Co=1
       .set_decompWeights(vec3(2,1,0))
       .set_decompositionMethod(decomposeParDict::Parameters::decompositionMethod_type::simple)
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
     ));
   }
   
@@ -416,12 +409,14 @@ void ChannelBase::createCase
         .set_fieldname("theta")
     ));
     fields_to_average.push_back("theta");
-    multiphaseBC::multiphaseBCPtr temp_hi(new multiphaseBC::uniformWallTiedPhases( multiphaseBC::uniformWallTiedPhases::mixture(
-        map_list_of("theta", 1.0)
-    )));
-    multiphaseBC::multiphaseBCPtr temp_lo(new multiphaseBC::uniformWallTiedPhases( multiphaseBC::uniformWallTiedPhases::mixture(
-        map_list_of("theta", 0.0)
-    )));
+    auto temp_hi = std::make_shared<multiphaseBC::uniformWallTiedPhases>(
+            multiphaseBC::uniformPhases::mixture(
+             {{"theta", 1.0}})
+    );
+    auto temp_lo = std::make_shared<multiphaseBC::uniformWallTiedPhases>(
+            multiphaseBC::uniformPhases::mixture(
+             {{ "theta", 0.0 }})
+    );
     
     cm.insert(new WallBC(cm, sp().wall_lo_, boundaryDict, WallBC::Parameters()
      .set_phasefractions(temp_hi) 
@@ -435,11 +430,16 @@ void ChannelBase::createCase
     .set_patches( list_of<string>("\"wall_.*\"") )
   ));
 
-  cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_fields(fields_to_average)
-    .set_timeStart(sp().avgStart_)
-    .set_name("zzzaveraging") // shall be last FO in list
-  ));
+
+
+  fieldAveraging::Parameters fap;
+  fap
+      .set_timeStart(sp().avgStart_)
+      .set_name("zzzaveraging") // shall be last FO in list
+      ;
+  std::copy(fields_to_average.begin(), fields_to_average.end(),
+            std::back_inserter(fap.fields));
+  cm.insert(new fieldAveraging(cm, fap));
   
   if (p().run.eval2)
   {
@@ -456,20 +456,25 @@ void ChannelBase::createCase
   }
   
   {
-    std::vector<std::string> sample_fields = { "p", "U" };
+    probes::Parameters pp;
+    pp .set_name("center_probes")
+       .set_outputControl("timeStep")
+       .set_outputInterval(10.0)
+        ;
+
+    std::copy(sp().probe_locations_.begin(),
+              sp().probe_locations_.end(),
+              std::back_inserter(pp.probeLocations));
+
+    pp.fields.push_back("p");
+    pp.fields.push_back("U");
     
     if (p().operation.wscalar)
     {
-        sample_fields.push_back("theta");
+        pp.fields.push_back("theta");
     }
     
-    cm.insert(new probes(cm, probes::Parameters()
-    .set_fields( sample_fields )
-    .set_probeLocations(sp().probe_locations_)
-    .set_name("center_probes")
-    .set_outputControl("timeStep")
-    .set_outputInterval(10.0)
-    ));
+    cm.insert(new probes(cm, pp));
   }
   
   cm.insert(new singlePhaseTransportProperties(
@@ -1171,10 +1176,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
 
 
 ChannelCyclic::ChannelCyclic(
-        const ParameterSet& ps,
-        const boost::filesystem::path& exepath,
-        ProgressDisplayer& progress )
-: ChannelBase(ps, exepath, progress)
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: ChannelBase(sp)
 {
 }
 
@@ -1252,7 +1255,9 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts
   controlDict["endTime"] = sp().end_;
 }
 
-addToAnalysisFactoryTable(ChannelCyclic);
+
+defineType(ChannelCyclic);
+Analysis::Add<ChannelCyclic> addChannelCyclic;
 
 
 

@@ -1,8 +1,9 @@
 #include "iqvtkcadmodel3dviewerplanepointbasedaction.h"
 
 #include "datum.h"
-#include "cadpostprocactions/angle.h"
-#include "cadpostprocactions/pointdistance.h"
+#include "constrainedsketchentities/angleconstraint.h"
+#include "constrainedsketchentities/distanceconstraint.h"
+#include <qnamespace.h>
 
 using namespace insight;
 using namespace insight::cad;
@@ -37,9 +38,13 @@ IQVTKCADModel3DViewerPlanePointBasedAction::applyWizards(
 
 IQVTKCADModel3DViewerPlanePointBasedAction
     ::IQVTKCADModel3DViewerPlanePointBasedAction(
-        IQVTKConstrainedSketchEditor &editor )
-    : IQVTKSelectConstrainedSketchEntity( editor )
+    IQVTKConstrainedSketchEditor &editor,
+    bool allowExistingEntities )
+: OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>( editor )
 {
+    OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>
+        ::switchEventProcessing(allowExistingEntities);
+
     setSelectionFilter(
         [](std::weak_ptr<insight::cad::ConstrainedSketchEntity> se)
         {
@@ -91,12 +96,16 @@ IQVTKCADModel3DViewerPlanePointBasedAction
 
 
 
-bool IQVTKCADModel3DViewerPlanePointBasedAction::onLeftButtonDown(
+bool IQVTKCADModel3DViewerPlanePointBasedAction::onMouseClick  (
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    auto ret = IQVTKSelectConstrainedSketchEntity::onLeftButtonDown(nFlags, point);
-    if (!ret)
+    bool ret=
+        OptionalInputReceiver<IQVTKSelectConstrainedSketchEntity>
+        ::onMouseClick(btn, nFlags, point);
+
+    if ((btn==Qt::LeftButton) && (!ret))
     {
         pointSelected(
             applyWizards(
@@ -106,5 +115,7 @@ bool IQVTKCADModel3DViewerPlanePointBasedAction::onLeftButtonDown(
                     ), nullptr ) );
         return true;
     }
+
     return ret;
 }
+

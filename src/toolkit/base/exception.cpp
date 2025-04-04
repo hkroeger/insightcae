@@ -153,12 +153,11 @@ void Exception::saveContext(bool strace)
 
   if (context_list.size()>0)
   {
-    string context="\nThe problem occurred";
+    context_="The problem occurred";
     for (const std::string& c: context_list)
       {
-        context+= "\nwhile "+c;
+        context_+= "\nwhile "+c;
       }
-    message_ += "\n" + context;
   }
 
   if (strace)
@@ -192,19 +191,9 @@ Exception::Exception(std::string fmt, ...)
     int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
 
     message_=str;
-    dbg(2)<<message_<<std::endl;
     saveContext(true);
-}
 
-
-
-
-Exception::Exception(const string &msg, const std::map<string, cad::FeaturePtr> &contextGeometry, bool strace)
-  : message_(msg),
-    contextGeometry_(contextGeometry)
-{
-  dbg(2)<<msg<<std::endl;
-  saveContext(strace);
+    dbg(2)<<message_<<"\n"<<context_<<std::endl;
 }
 
 
@@ -225,11 +214,21 @@ Exception::operator std::string() const
 }
 
 
+const std::string& Exception::description() const
+{
+    return message_;
+}
+
+const std::string& Exception::context() const
+{
+    return context_;
+}
+
 
 
 string Exception::message() const
 {
-   return message_;
+   return message_+"\n"+context_;
 }
 
 
@@ -242,9 +241,13 @@ const char* Exception::what() const noexcept
 }
 
 
+IntendedBreak::IntendedBreak(const std::string& msg)
+    : Exception(msg)
+{}
 
 
-const std::map<string, cad::FeaturePtr> &Exception::contextGeometry() const
+
+const std::map<string, cad::ConstFeaturePtr> &CADException::contextGeometry() const
 {
   return contextGeometry_;
 }
@@ -263,9 +266,7 @@ void assertion(bool condition, std::string fmt, ...)
       va_end(args);
       int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
 
-      throw insight::Exception(
-                  std::string("Internal error: condition violated: ")
-                  + str );
+      throw insight::Exception( str );
   }
 }
 
@@ -615,6 +616,20 @@ UnsupportedFeature::UnsupportedFeature()
 UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
     : Exception(msg, strace)
 {}
+
+
+
+UnhandledSelection::UnhandledSelection(const std::string &contextMsg)
+    : Exception(
+        "internal error: unhandled selection" +
+        ((!contextMsg.empty())?(" in "+contextMsg):std::string())
+    )
+{}
+
+
+
+
+
 
 
 

@@ -7,7 +7,7 @@ d3=TableLookup(ScrewDIN, Dn, Dn, d3);
 dh=TableLookup(ScrewDIN, Dn, Dn, dh);
 e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
-L=24;
+L?=24;
 
 mat=loadmodel(material_props);
 

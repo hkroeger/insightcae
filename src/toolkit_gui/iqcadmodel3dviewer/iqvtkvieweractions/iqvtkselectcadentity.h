@@ -18,12 +18,11 @@ class CADEntityMultiSelection
 {
     Q_OBJECT
 
-    insight::ParameterSet commonParameters_, defaultCommonParameters_;
+    std::unique_ptr<insight::ParameterSet> commonParameters_, defaultCommonParameters_;
     IQVTKCADModel3DViewer& viewer_;
 
-    QWidget *pew_;
-    ParameterEditorWidget* pe_;
-    //QTreeView* pe_;
+    QWidget *editorContainerWidget_;
+    ParameterEditorWidget* editorWidget_;
 
     void showParameterEditor();
     void removeParameterEditor();
@@ -70,6 +69,13 @@ public:
     IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectCADEntity();
 
+    QString description() const override;
+
+    bool onMouseClick(
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
+
     void start() override;
 };
 
@@ -105,6 +111,8 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectSubshape
 public:
     IQVTKSelectSubshape(IQVTKCADModel3DViewer& viewer);
     ~IQVTKSelectSubshape();
+
+    QString description() const override;
 
     void start() override;
 };

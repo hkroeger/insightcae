@@ -31,7 +31,11 @@ void QScalarResult::createFullDisplay(QVBoxLayout* layout)
 
   auto res = resultElementAs<insight::ScalarResult>();
   auto te_=new QLabel;
-  te_->setText( QString("<b>%1=%2 %3</b>").arg(label_).arg(res->value()).arg(QString::fromStdString(res->unit().toHTML(50))) );
+  te_->setText(
+      QString("<big><b>%1=%2 %3</b></big>")
+          .arg(label_).arg(res->value())
+          .arg(QString::fromStdString(
+              res->unit().toHTML(50))) );
   layout->addWidget(te_);
 }
 

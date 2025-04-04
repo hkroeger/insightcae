@@ -16,6 +16,7 @@ public:
 #include "limitquantities__limitQuantities__Parameters.h"
 /*
 PARAMETERSET>>> limitQuantities Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 name = string "limitQty" "Name prefix of the fvOptions"
 
@@ -43,18 +44,14 @@ limitFields = array [ set {
  max = double 1e10 "Maximum value (magnitude for non-scalar fields)"
 } ] *0 "Fields to limit"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "limitQuantities" );
-    limitQuantities ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    limitQuantities ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
-
-    limitQuantities::Parameters& parametersRef();
 
     static std::string category() { return "Tweaks"; }
 };

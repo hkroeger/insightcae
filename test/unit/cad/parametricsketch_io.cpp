@@ -3,8 +3,8 @@
 #include "datum.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"
-#include "cadpostprocactions/pointdistance.h"
-#include "cadpostprocactions/angle.h"
+#include "constrainedsketchentities/distanceconstraint.h"
+#include "constrainedsketchentities/angleconstraint.h"
 
 using namespace insight;
 using namespace insight::cad;
@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
                 vec3const(0,0,0), vec3const(0,0,1) );
 
             auto sk = std::dynamic_pointer_cast<ConstrainedSketch>(
-                ConstrainedSketch::create(pl));
+                ConstrainedSketch::create(pl, *noParametersDelegate));
 
             auto p1 = SketchPoint::create(pl, 0, 0);
             sk->insertGeometry(p1);
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
                 vec3const(0,0,0), vec3const(0,0,1) );
 
             std::ifstream f(scriptFile.string());
-            auto sk = ConstrainedSketch::createFromStream(pl, f);
+            auto sk = ConstrainedSketch::createFromStream(pl, f, *noParametersDelegate);
 
             std::cout<<sk->size()<<std::endl;
             nRetrieved = sk->size();

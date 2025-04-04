@@ -6,62 +6,82 @@
 #include "iqselectionparameter.h"
 #include "iqparametersetmodel.h"
 
-defineType(IQSelectionParameter);
+
+
+
+defineTemplateType(IQSelectionParameter);
 addToFactoryTable(IQParameter, IQSelectionParameter);
 
-IQSelectionParameter::IQSelectionParameter
-(
-    QObject* parent,
-    IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
-    const insight::ParameterSet& defaultParameterSet
-)
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+
+
+
+addFunctionToStaticFunctionTable(
+    IQParameterGridViewDelegateEditorWidget, IQSelectionParameter,
+    createDelegate,
+    [](QObject* parent) { return new IQSelectionDelegate(parent); }
+    );
+
+
+
+
+IQSelectionDelegate::IQSelectionDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
+{}
+
+
+
+
+QWidget *IQSelectionDelegate::createEditor(
+    QWidget *parent,
+    const QStyleOptionViewItem &option,
+    const QModelIndex &index ) const
 {
+    auto*cb= new QComboBox(parent);
+    connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &IQSelectionDelegate::commitAndClose );
+    return cb;
 }
 
 
-QString IQSelectionParameter::valueText() const
-{
-  const auto& p = dynamic_cast<const insight::SelectionParameter&>(parameter());
 
-  return QString::fromStdString( p.selection() );
+
+void IQSelectionDelegate::setEditorData(
+    QWidget *editor,
+    const QModelIndex &index) const
+{
+    auto *cb=dynamic_cast<QComboBox*>(editor);
+    auto *iqp=static_cast<IQParameter*>(
+        index.siblingAtColumn(IQParameterSetModel::iqParamCol)
+            .data().value<void*>() );
+    auto &iqssp=dynamic_cast<IQSelectionParameterInterface&>(*iqp);
+
+    cb->addItems(iqssp.selectionKeys());
+    cb->setCurrentIndex(iqssp.selectionParameter().selectionIndex());
 }
 
 
 
-QVBoxLayout* IQSelectionParameter::populateEditControls(
-        QWidget* editControlsContainer,
-        IQCADModel3DViewer *viewer)
+
+void IQSelectionDelegate::setModelData(
+    QWidget *editor,
+    QAbstractItemModel *model,
+    const QModelIndex &index) const
 {
-  const auto& p = static_cast<const insight::SelectionParameter&>(parameter());
-
-  auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
-
-  QHBoxLayout *layout2=new QHBoxLayout;
-  QLabel *promptLabel = new QLabel("Selection:", editControlsContainer);
-  layout2->addWidget(promptLabel);
-  auto* selBox_=new QComboBox(editControlsContainer);
-//  connect(selBox_, &QComboBox::destroyed, this, &SelectionParameterWrapper::onDestruction);
-  for ( const std::string& s: p.items() )
-  {
-    selBox_->addItem(s.c_str());
-  }
-  selBox_->setCurrentIndex( p() );
-  layout2->addWidget(selBox_);
-  layout->addLayout(layout2);
-
-  QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
-  connect(apply, &QPushButton::pressed, [=]()
-  {
-      auto &p = dynamic_cast<insight::SelectionParameter&>(this->parameterRef());
-      p.set(selBox_->currentIndex());
-//      model->notifyParameterChange(index);
-  }
-  );
-  layout->addWidget(apply);
-
-
-  return layout;
+    auto *cb=dynamic_cast<QComboBox*>(editor);
+    model->setData(index, cb->currentIndex(), Qt::EditRole);
 }
+
+
+
+
+void IQSelectionDelegate::commitAndClose(int)
+{
+    auto *editor = static_cast<QWidget*>(sender());
+    Q_EMIT commitData(editor);
+    Q_EMIT closeEditor(editor);
+}
+
+
+
+
+

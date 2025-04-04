@@ -386,3 +386,4 @@
 }
 
 %template(StringList) std::vector<std::string>;
+%template(StringMap) std::map<std::string, std::string>;

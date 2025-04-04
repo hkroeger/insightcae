@@ -21,17 +21,17 @@ oversetAdjustPhi = bool false ""
 
 skipPoissonWallDist = bool false "For overset parallel runs, a inter-zone method of wall distance determination is required. Set this to true to skip it and stick with the incorrect but stable default method."
 
+createGetters
 <<<PARAMETERSET
 */
 
 protected:
     OpenFOAMCase& cm_;
-    Parameters p_;
 
 public:
     OversetConfiguration(
             OpenFOAMCase& c,
-            const ParameterSet& ps = Parameters::makeDefault() );
+            ParameterSetInput ip = Parameters() );
 
     void addFields() const;
 

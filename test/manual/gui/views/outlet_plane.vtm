@@ -1,0 +1,13 @@
+<VTKFile type="vtkMultiBlockDataSet" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  <vtkMultiBlockDataSet>
+    <DataSet index="0" name="outlet" file="outlet_plane/outlet_plane_0_0.vtp"/>
+  </vtkMultiBlockDataSet>
+  <FieldData>
+    <DataArray type="Int8" Name="CasePath" NumberOfTuples="93" format="binary" RangeMin="0" RangeMax="120">
+      XQAAAAAAAAAvaG9tZS9oYW5uZXMvU0NSQVRDSC9PLTIwMjQtMjU1X0dlc21leF9GaW5hbC9ydW4vY2hhbm5lbDFfY29sZC9zdWJjYXNlX19vcGVyYXRpb25fUT0wLjAxNDI1LwA=
+    </DataArray>
+    <DataArray type="Float64" Name="TimeValue" NumberOfTuples="1" format="binary" RangeMin="6809" RangeMax="6809">
+      CAAAAAAAAAAAAAAAAJm6QA==
+    </DataArray>
+  </FieldData>
+</VTKFile>

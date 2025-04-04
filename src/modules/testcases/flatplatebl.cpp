@@ -51,18 +51,20 @@ using namespace boost::filesystem;
 
 namespace insight 
 {
-  
-addToAnalysisFactoryTable(FlatPlateBL);
+
+
+defineType(FlatPlateBL);
+Analysis::Add<FlatPlateBL> addFlatPlateBL;
 
 const std::vector<double> FlatPlateBL::supplementedInputData::sec_locs_
  = { 0.01, 0.05, 0.1, 0.2, 0.5, 0.7, 0.9 };
   
 
 FlatPlateBL::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
-    const boost::filesystem::path &/*workDir*/,
+    ParameterSetInput ip,
+    const boost::filesystem::path &workDir,
     ProgressDisplayer &progress)
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) )
+    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress )
 {
   Retheta0_= p().operation.Retheta0;
   Rex_0_=Rex(Retheta0_);
@@ -153,33 +155,12 @@ FlatPlateBL::supplementedInputData::supplementedInputData(
 }
 
 
-FlatPlateBL::FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
-: OpenFOAMAnalysis
-  (
-    "Flat Plate Boundary Layer Test Case",
-    "Flat Plate with Evolving Boundary Layer",
-    ps, exepath
-  ),
-  parameters_( std::make_unique<supplementedInputData>(
-                 std::make_unique<Parameters>(ps),
-                 exepath, progress
-                 ) )
-{}
-
-
 FlatPlateBL::FlatPlateBL(
-        std::unique_ptr<supplementedInputData> pPtr,
-        const boost::filesystem::path& exepath,
-        const std::string& name,
-        const std::string& description )
-    : OpenFOAMAnalysis
-      (
-        name,
-        description,
-        pPtr->p(), exepath
-      ),
-      parameters_( std::move(pPtr) )
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMAnalysis(sp)
 {}
+
+
 
 
 void FlatPlateBL::calcDerivedInputData(ProgressDisplayer& progress)
@@ -347,7 +328,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(sp().uinf_,0,0))
       .set_endTime(sp().end_)
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
       .set_decompWeights(vec3(2,1,0))
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
     ));
@@ -377,7 +358,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
       .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
       .set_writeInterval(0.25*sp().T_)
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
-      .set_np(p().OpenFOAMAnalysis::Parameters::run.np)
+      .set_np(np())
       .set_decompWeights(vec3(2,1,0))
     ));
   }

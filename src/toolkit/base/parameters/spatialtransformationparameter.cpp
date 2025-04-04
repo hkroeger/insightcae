@@ -1,4 +1,5 @@
 #include "spatialtransformationparameter.h"
+#include "base/rapidxml.h"
 
 namespace insight {
 
@@ -190,11 +191,15 @@ void SpatialTransformationParameter::readFromNode (
 
 
 
-Parameter* SpatialTransformationParameter::clone() const
+std::unique_ptr<Parameter>
+SpatialTransformationParameter::clone(bool init) const
 {
-    return new SpatialTransformationParameter(
-                *this, description_.simpleLatex()
-                );
+    auto p= std::make_unique<SpatialTransformationParameter>(
+        operator()(), description().simpleLatex(),
+        isHidden(), isNecessary(), isExpert(), order()
+    );
+    if (init) p->initialize();
+    return p;
 }
 
 

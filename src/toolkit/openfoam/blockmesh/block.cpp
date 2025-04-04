@@ -224,10 +224,7 @@ Block::bmdEntry(const PointMap& allPoints, int OFversion) const
                 throw Exception("Invalid number of grading coefficients given!");
             }
         }
-        else
-        {
-            throw Exception("internal error: unhandled selection!");
-        }
+        else throw insight::UnhandledSelection();
     }
     retval.push_back( gl );
 

@@ -11,7 +11,7 @@ class QoccViewWidget;
 class QModelTree;
 
 namespace insight {
-class CADParameterSetVisualizer;
+class CADParameterSetModelVisualizer;
 }
 
 /**
@@ -42,8 +42,8 @@ public:
   inline QoccViewWidget* viewer() { return viewer_; }
   inline QModelTree* modeltree() { return modeltree_; }
 
-  void connectVisualizer(std::shared_ptr<insight::CADParameterSetVisualizer> viz);
-  void disconnectVisualizer(std::shared_ptr<insight::CADParameterSetVisualizer> viz);
+  void connectVisualizer(std::shared_ptr<insight::CADParameterSetModelVisualizer> viz);
+  void disconnectVisualizer(std::shared_ptr<insight::CADParameterSetModelVisualizer> viz);
 
 };
 

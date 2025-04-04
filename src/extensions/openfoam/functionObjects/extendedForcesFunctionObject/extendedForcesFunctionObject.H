@@ -25,6 +25,8 @@
 
 #include "forcesources.h"
 
+#include <boost/optional.hpp>
+
 namespace Foam
 {
 
@@ -44,8 +46,21 @@ protected:
   volVectorField* pressureForce_;
   volVectorField* viscousForce_;
   
-  word maskFieldName_;
-  autoPtr<OFstream> maskedForceFile_, maskedForceFile2_;
+  class Mask
+  {
+  public:
+    word maskFieldName_;
+    boost::optional<scalar> maskThreshold_;
+    autoPtr<OFstream> maskedForceFile_, maskedForceFile2_;
+
+    tmp<volScalarField> operator()(const fvMesh& mesh) const;
+
+    Mask(const word& name, const dictionary& dict);
+
+  };
+
+  boost::optional<Mask> masking_;
+
   vector pr_force_;
   vector vi_force_;
   vector po_force_;
@@ -54,7 +69,13 @@ protected:
   vector po_moment_;
   
   void createFields();
-  
+
+#if OF_VERSION>=060500
+  word phaseName_;
+#endif
+
+  tmp<volSymmTensorField> extendedDevRhoReff() const;
+
 public:
   TypeName("extendedForces");
     // Constructors
@@ -108,7 +129,10 @@ public:
         );
 #endif
 
-
+#if OF_VERSION>=060500
+    bool read(const dictionary&) override;
+    void calcForcesMoment() override;
+#endif
 
 #if OF_VERSION>=040000 //(defined(OFplus)||defined(OFdev)||defined(OFesi1806))
     bool

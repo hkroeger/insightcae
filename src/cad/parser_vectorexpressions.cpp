@@ -68,6 +68,9 @@ void ISCADParser::createVectorExpressions()
             |
             ( '-' >> r_vector_term [_val=phx::construct<VectorPtr>(phx::new_<SubtractedVector>(qi::_val, qi::_1)) ] )
         )
+
+        >> -( lit("in") > r_solidmodel_expression
+                [ _val = phx::construct<VectorPtr>(phx::new_<PointInFeatureCS>(qi::_1, qi::_val)) ] )
         ;
     r_vectorExpression.name("vector expression");
 
@@ -174,6 +177,12 @@ void ISCADParser::createVectorExpressions()
         |
         ( lit("plnorm") >> '(' >> r_datumExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneNormal>(qi::_1)) ]
+        |
+        ( lit("plx") >> '(' >> r_datumExpression >> ')' )
+            [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneX>(qi::_1)) ]
+        |
+        ( lit("ply") >> '(' >> r_datumExpression >> ')' )
+            [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneY>(qi::_1)) ]
         |
         ( lit("circcenter") >> '(' >> r_edgeFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<CircleEdgeCenterCoords>(qi::_1)) ]

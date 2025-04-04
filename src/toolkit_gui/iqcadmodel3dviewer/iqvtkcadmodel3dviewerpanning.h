@@ -17,19 +17,22 @@ class IQVTKCADModel3DViewerPanning
     void ComputeDisplayToWorld(
             double x, double y, double z, double worldPt[4]);
 
-    void pan(int x, int y);
+    void pan(const QPoint& point);
 
 public:
   IQVTKCADModel3DViewerPanning(IQVTKCADModel3DViewer &viewWidget, const QPoint point);
 
   void start() override;
 
-  bool onMouseMove
-    (
-     Qt::MouseButtons buttons,
-     const QPoint point,
-     Qt::KeyboardModifiers curFlags
-     ) override;
+  bool onMouseDrag  (
+      Qt::MouseButtons btn,
+      Qt::KeyboardModifiers nFlags,
+      const QPoint point,
+      EventType eventType ) override;
+
+  bool onMouseMove(
+      const QPoint point,
+      Qt::KeyboardModifiers curFlags ) override;
 };
 
 #endif // IQCADMODEL3DVIEWERPANNING_H

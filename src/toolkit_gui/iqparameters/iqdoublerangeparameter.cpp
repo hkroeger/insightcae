@@ -16,19 +16,19 @@ IQDoubleRangeParameter::IQDoubleRangeParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::DoubleRangeParameter>(
+          parent, psmodel, parameter, defaultParameterSet )
 {
 }
 
 
 QString IQDoubleRangeParameter::valueText() const
 {
-  const auto& p =dynamic_cast<const insight::DoubleRangeParameter&>(parameter());
-  return QString("%1 values").arg( p.values().size() );
+  return QString("%1 values")
+        .arg( parameter().values().size() );
 }
 
 
@@ -37,7 +37,6 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  const auto& p =dynamic_cast<const insight::DoubleRangeParameter&>(parameter());
 
   auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
@@ -53,13 +52,14 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
   {
     int crow=listBox->currentRow();
     listBox->clear();
-    for (insight::DoubleRangeParameter::RangeList::const_iterator i=cp.values().begin(); i!=cp.values().end(); i++)
+    for (auto i=cp.values().begin();
+         i!=cp.values().end(); i++)
     {
       listBox->addItem( QString::number(*i) );
     }
     listBox->setCurrentRow(crow);
   };
-  rebuildList(p);
+  rebuildList(parameter());
 
   QVBoxLayout *sublayout=new QVBoxLayout(editControlsContainer);
 
@@ -71,10 +71,8 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
     double v=QInputDialog::getDouble(editControlsContainer, "Add Range", "Please specify value:", 0., -2147483647,  2147483647, 9, &ok);
     if (ok)
     {
-      auto&p = dynamic_cast<insight::DoubleRangeParameter&>(this->parameterRef());
-      p.insertValue(v);
-      rebuildList(p);
-//      model->notifyParameterChange(index);
+      parameterRef().insertValue(v);
+      rebuildList(parameter());
     }
   }
   );
@@ -86,8 +84,6 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
     QString res=QInputDialog::getText(editControlsContainer, "Add Range", "Please specify range begin, range end and number of values, separated by spaces:");
     if (!res.isEmpty())
     {
-      auto&p = dynamic_cast<insight::DoubleRangeParameter&>(this->parameterRef());
-
       QStringList il=res.split(" ", Qt::SkipEmptyParts);
       double x0=il[0].toDouble();
       double x1=il[1].toDouble();
@@ -95,9 +91,8 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
       for (int i=0; i<num; i++)
       {
         double x=x0+(x1-x0)*double(i)/double(num-1);
-        p.insertValue(x);
-        rebuildList(p);
-//        model->notifyParameterChange(index);
+        parameterRef().insertValue(x);
+        rebuildList(parameter());
       }
     }
   }
@@ -107,10 +102,8 @@ QVBoxLayout* IQDoubleRangeParameter::populateEditControls(
   sublayout->addWidget(clearbtn);
   connect(clearbtn, &QPushButton::clicked, [=]()
   {
-    auto&p = dynamic_cast<insight::DoubleRangeParameter&>(this->parameterRef());
-    p.clear();
-    rebuildList(p);
-//    model->notifyParameterChange(index);
+    parameterRef().clear();
+    rebuildList(parameter());
   }
   );
   layout2->addLayout(sublayout);

@@ -9,15 +9,21 @@
 namespace insight {
 
 
+
+
 defineType(twoPhaseTransportProperties);
 addToOpenFOAMCaseElementFactoryTable(twoPhaseTransportProperties);
 
 
-twoPhaseTransportProperties::twoPhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
-: transportModel(c, ps),
-  p_(ps)
-{
-}
+
+
+twoPhaseTransportProperties::twoPhaseTransportProperties(
+    OpenFOAMCase& c, ParameterSetInput ip )
+: transportModel(c, ip.forward<Parameters>())
+{}
+
+
+
 
 void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -41,15 +47,20 @@ void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) con
 
   OFDictData::dict& phase1=transportProperties.subDict(phases.first);
   phase1["transportModel"]="Newtonian";
-  phase1["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu1);
-  phase1["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho1);
+  phase1["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p().nu1);
+  phase1["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p().rho1);
 
   OFDictData::dict& phase2=transportProperties.subDict(phases.second);
   phase2["transportModel"]="Newtonian";
-  phase2["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu2);
-  phase2["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho2);
+  phase2["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p().nu2);
+  phase2["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p().rho2);
 
-  transportProperties["sigma"]=OFDictData::dimensionedData("sigma", OFDictData::dimension(1, 0, -2), p_.sigma);
+  transportProperties["sigma"]=
+          OFDictData::dimensionedData(
+          "sigma",
+          OFDictData::dimension(1, 0, -2),
+          p().sigma
+      );
 
 }
 

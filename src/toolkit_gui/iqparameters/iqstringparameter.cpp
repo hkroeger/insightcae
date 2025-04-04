@@ -15,20 +15,24 @@ IQStringParameter::IQStringParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::StringParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {
 }
 
 
 QString IQStringParameter::valueText() const
 {
-  const auto& p = dynamic_cast<const insight::StringParameter&>(parameter());
+  return QString::fromStdString( parameter()() );
+}
 
-  return QString::fromStdString( p() );
+bool IQStringParameter::setValue(QVariant value)
+{
+    parameterRef().set(value.toString().toStdString());
+    return true;
 }
 
 
@@ -54,22 +58,18 @@ QVBoxLayout* IQStringParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
-      p.set(lineEdit->text().toStdString());
-//      model->notifyParameterChange(index);
+      parameterRef().set(lineEdit->text().toStdString());
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
   // handle external value change
-  auto &p = dynamic_cast<insight::StringParameter&>(this->parameterRef());
   ::disconnectAtEOL(
       layout,
-      p.valueChanged.connect(
+      parameterRef().valueChanged.connect(
           [=]()
           {
-              auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
               QSignalBlocker sb(lineEdit);
               lineEdit->setText(valueText());
           }

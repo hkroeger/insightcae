@@ -11,12 +11,15 @@ namespace insight {
 
 
 
-GGIBCBase::GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-        const ParameterSet& ps )
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  p_(ps)
-{
-}
+GGIBCBase::GGIBCBase(
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+: BoundaryCondition(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>() )
+{}
 
 
 
@@ -29,7 +32,7 @@ void GGIBCBase::addIntoDictionaries ( OFdicts& dictionaries ) const
   {
       auto& decomposeParDict = dictionaries.lookupDict("system/decomposeParDict");
       auto& gfz = decomposeParDict.getList("globalFaceZones");
-      gfz.push_back( p_.zone );
+      gfz.push_back( p().zone );
   }
   else if (OFversion()>=230)
   {
@@ -39,7 +42,7 @@ void GGIBCBase::addIntoDictionaries ( OFdicts& dictionaries ) const
       if (singleProcessorFaceSets.find("type")==singleProcessorFaceSets.end())
           singleProcessorFaceSets["type"]="singleProcessorFaceSets";
       auto& spfs = singleProcessorFaceSets.getList("singleProcessorFaceSets");
-      spfs.push_back( OFDictData::list({p_.zone, -1}) );
+      spfs.push_back( OFDictData::list({p().zone, -1}) );
   }
 }
 
@@ -50,7 +53,7 @@ void GGIBCBase::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem
 {
     setSet(cm, location,
            {
-               "faceSet "+p_.zone+" new patchToFace "+patchName_
+               "faceSet "+p().zone+" new patchToFace "+patchName_
            });
     if (OFversion()<170)
     {

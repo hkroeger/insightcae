@@ -1,20 +1,21 @@
 #ifndef INSIGHT_FIXEDVALUECONSTRAINT_H
 #define INSIGHT_FIXEDVALUECONSTRAINT_H
 
-#include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/caseelements/basic/fvoption.h"
 
 #include "fixedvalueconstraint__fixedValueConstraint__Parameters_headers.h"
 
 namespace insight {
 
 class fixedValueConstraint
-: public OpenFOAMCaseElement
+: public cellSetFvOption
 {
 
 public:
 #include "fixedvalueconstraint__fixedValueConstraint__Parameters.h"
 /*
 PARAMETERSET>>> fixedValueConstraint Parameters
+inherits cellSetFvOption::Parameters
 
 name = string "fixedValueConstraint" "Name of the volume drag element"
 fieldName = string "U" "Name of the field which shall be constrained"
@@ -31,16 +32,16 @@ value = selectablesubset {{
 
 }} vector "value inside zone"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "fixedValueConstraint" );
-    fixedValueConstraint ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    void addIntoDictionaries ( OFdicts& dictionaries ) const override;
+    fixedValueConstraint ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
+    void addIntoFvOptionDictionary(
+        OFDictData::dict& fvOptions,
+        OFdicts& dictionaries ) const override;
 
     static std::string category() { return "Body Force"; }
 };

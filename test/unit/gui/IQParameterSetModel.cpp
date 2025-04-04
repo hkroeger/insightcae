@@ -8,7 +8,6 @@ using namespace insight;
 
 int main(int argc, char*argv[])
 {
-    ParameterSet ps(NumericalWindtunnel::defaultParameters());
-    IQParameterSetModel modelToBeTested(ps, NumericalWindtunnel::defaultParameters());
+    IQParameterSetModel modelToBeTested(NumericalWindtunnel::defaultParameters());
     QAbstractItemModelTester tester(&modelToBeTested, QAbstractItemModelTester::FailureReportingMode::Fatal);
 }

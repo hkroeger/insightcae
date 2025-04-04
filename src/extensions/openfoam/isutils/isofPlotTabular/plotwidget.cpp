@@ -19,11 +19,13 @@
  */
 
 #include "plotwidget.h"
+#include "base/exception.h"
 #include "ui_plotwidget.h"
 
 
 #include "base/boost_include.h"
 
+#include "base/cppextensions.h""
 #include "base/qt5_helper.h"
 
 #include <QtCharts/QValueAxis>
@@ -106,6 +108,11 @@ void PlotWidget::setData(const arma::mat& x, const arma::mat& y)
   onToggleY0(true);
 }
 
+void PlotWidget::changeAvgFraction(double f)
+{
+    ui->avg_fraction->setValue(f);
+}
+
 void PlotWidget::onShow()
 {
   if (mean_crv_->count()==0)
@@ -136,6 +143,11 @@ void MeanComputer::run()
   emit resultReady( insight::movingAverage(rawdata_, frac_) );
 }
 
+double MeanComputer::fraction() const
+{
+    return frac_;
+}
+
 void PlotWidget::onMeanDataReady(arma::mat avg)
 {
   if (avg.n_rows>0)
@@ -159,8 +171,18 @@ void PlotWidget::onMeanDataReady(arma::mat avg)
   }
 
   mc_->wait();
+
+  bool startOver=false;
+  if (mc_->fraction()!=ui->avg_fraction->value())
+      startOver=true;
+
   delete mc_;
   mc_=nullptr;
+
+  if (startOver)
+      onMeanAvgFractionChange();
+  else
+      Q_EMIT averageValueReady();
 }
 
 
@@ -209,4 +231,16 @@ void PlotWidget::onToggleY0(bool)
     sx1=QString::number(x1);
   }
   onChangeXRange(sx0, sx1);
+}
+
+double PlotWidget::finalRawValue() const
+{
+    insight::assertion(raw_crv_->count()>0, "no data available");
+    return raw_crv_->at(raw_crv_->count()-1).y();
+}
+
+double PlotWidget::finalMeanValue() const
+{
+    insight::assertion(mean_crv_->count()>0, "no mean value computed yet");
+    return mean_crv_->at(mean_crv_->count()-1).y();
 }

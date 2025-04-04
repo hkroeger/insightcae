@@ -59,7 +59,7 @@ add_sources(insightcad_SOURCES
  stl.cpp stl.h
 
  sweep.cpp sweep.h
- thicken.cpp thicken.h
+ sheet.cpp sheet.h
  transform.cpp transform.h
  tri.cpp tri.h
  tongue.cpp tongue.h
@@ -80,6 +80,8 @@ add_sources(insightcad_SOURCES
  exploded.cpp exploded.h
  partition.cpp partition.h
  offset.cpp offset.h
+
+ alignwithboundingbox.h alignwithboundingbox.cpp
  
   GEOMAlgo_Splitter.cxx
   

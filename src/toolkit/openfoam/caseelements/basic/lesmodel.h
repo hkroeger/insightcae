@@ -12,7 +12,7 @@ class LESModel
 public:
   declareType("LESModel");
 
-  LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
+  LESModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const override;
   AccuracyRequirement minAccuracyRequirement() const override;

@@ -15,8 +15,8 @@ void LEMOSHybrid_RASModel::addFields( OpenFOAMCase& c ) const
   c.addField("UAvgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	FieldValue({0,0,0}), volField ) );
 }
 
-LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: kOmegaSST_RASModel(c)
+LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: kOmegaSST_RASModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

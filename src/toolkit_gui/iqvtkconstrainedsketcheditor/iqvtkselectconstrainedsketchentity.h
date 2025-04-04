@@ -30,13 +30,13 @@ class SketchEntityMultiSelection
 {
     Q_OBJECT
 
-    insight::ParameterSet commonParameters_, defaultCommonParameters_;
-    QWidget *pew_;
     IQVTKConstrainedSketchEditor& editor_;
+
+    QWidget *pew_;
     ParameterEditorWidget* pe_;
 
-    void showParameterEditor();
-    void removeParameterEditor();
+    void showPropertiesEditor(bool includeParameterEditor);
+    void removePropertiesEditor();
 
 public:
     SketchEntityMultiSelection(IQVTKConstrainedSketchEditor& editor);
@@ -79,11 +79,21 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectConstrainedSketchEntity
     IQVTKConstrainedSketchEditor& editor_;
     QToolBar *toolBar_;
 
+    bool allowBoxSelection_;
+
 public:
-    IQVTKSelectConstrainedSketchEntity(IQVTKConstrainedSketchEditor& editor);
+    IQVTKSelectConstrainedSketchEntity(
+        IQVTKConstrainedSketchEditor& editor,
+        bool allowBoxSelection =false );
+
     ~IQVTKSelectConstrainedSketchEntity();
 
     void start() override;
+
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
     IQVTKConstrainedSketchEditor& editor() const;
     insight::cad::ConstrainedSketch& sketch() const;

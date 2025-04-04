@@ -20,8 +20,9 @@
 #ifndef INSIGHT_NUMERICALWINDTUNNEL_H
 #define INSIGHT_NUMERICALWINDTUNNEL_H
 
+#include "base/parameters/subsetparameter.h"
 #include "openfoam/openfoamanalysis.h"
-#include "cadparametersetvisualizer.h"
+
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters_headers.h"
 
 #include "gp_Trsf.hxx"
@@ -37,7 +38,7 @@ class NumericalWindtunnel
   friend class NumericalWindtunnel_ParameterSet_Visualizer;
 
 public:
-  static void modifyDefaults(ParameterSet& p);
+  static void modifyDefaults(insight::ParameterSet& p);
 #include "numericalwindtunnel__NumericalWindtunnel__Parameters.h"
 /*
 PARAMETERSET>>> NumericalWindtunnel Parameters
@@ -52,6 +53,27 @@ geometry = set {
  LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden
  forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
+
+ verticalPlacement = selectablesubset {{
+  onFloor set {}
+  centered set {}
+  atHeight set {
+    height = selectablesubset {{
+     relativeToDomain set {
+       hByHdomain = double 0.5 "[-]"
+     }
+     absolute set {
+       h = double 0. "[m] height above floor"
+     }
+    }} relativeToDomain ""
+  }
+ }} onFloor ""
+
+ attitude = set {
+  trim = double 0. "[deg] Trim angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
+  roll = double 0. "[deg] Roll angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
+  yaw = double 0. "[deg] Yaw angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
+ } ""
  
  objectfile     = path "" "Path to object geometry. May be STL, STEP or IGES." *necessary
  
@@ -101,6 +123,8 @@ mesh = set {
 operation = set {
 
  v              = double 1.0 "[m/s] incident velocity" *necessary
+
+ lowerWallIsMoving = bool true "if set, the lower wall moves with the same speed as the inflow. This represents the street in vehicle aerodynamics."
  
 } "Definition of the operation point under consideration"
       
@@ -121,30 +145,29 @@ fluid = set {
       : public supplementedInputDataDerived<Parameters>
   {
   public:
-    supplementedInputData(std::unique_ptr<Parameters> p,
-                          const boost::filesystem::path& workDir,
-                          ProgressDisplayer& progress = consoleProgressDisplayer );
+    supplementedInputData(
+          ParameterSetInput ip,
+          const boost::filesystem::path& workDir,
+          ProgressDisplayer& progress = consoleProgressDisplayer );
 
     gp_Trsf cad_to_cfd_;
     double Lupstream_;
     double Ldownstream_;
-    double Lup_;
+    double Lup_, Ldown_;
     double Laside_;
     double Lref_, l_, w_, h_;
 
     const std::string FOname;
   };
 
-#ifndef SWIG
-  defineBaseClassWithSupplementedInputData(Parameters, supplementedInputData)
-#endif
-  
+  addParameterMembers_SupplementedInputData(NumericalWindtunnel::Parameters);
+
 public:
   declareType("Numerical Wind Tunnel");
   
-  NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
+  NumericalWindtunnel(
+      const std::shared_ptr<supplementedInputDataBase>& sp );
 
-  static std::string category() { return "Generic Analyses"; }
   
   void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
   
@@ -152,20 +175,13 @@ public:
   void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
 
   ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
+
+  static std::string category() { return "Generic Analyses"; }
+  static AnalysisDescription description() { return {"Numerical Wind Tunnel", ""}; }
 };
 
 
 
-
-class NumericalWindtunnel_ParameterSet_Visualizer
- : public CADParameterSetVisualizer
-{
-public:
-    typedef NumericalWindtunnel::Parameters Parameters;
-
-public:
-    void recreateVisualizationElements() override;
-};
 
 }
 

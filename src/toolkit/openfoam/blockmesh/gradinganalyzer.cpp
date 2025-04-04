@@ -58,21 +58,34 @@ double f_calc_n(double n, void* ga)
   double grad=p->get<0>()->grad();
   if (grad<1.) grad=1./grad;
 
-  double G=pow(grad, 1./(n-1.));
-  //int n_c=1+log( 1./G + L*(G-1.)/delta0)/(1e-12+log(G));
+  double L_c=delta0*grad;
+  if ( n>(1.+insight::SMALL) )
+  {
+      double G=pow(grad, 1./(n-1.));
+      L_c=delta0*( pow(G,n)-1. )/(G-1.);
+  }
 
-  double L_c=delta0*( pow(G,n)-1. )/(G-1.);
+  insight::assertion(
+    !isnan(L_c),
+      "failed computed target resolution");
 
-//   cout << L<< " "<<delta0 << " "<<n<<" "<<G<<" "<<n_c<<endl;
-  return L_c-L; //n_c-n;
+  return L_c-L;
 }
 
 int GradingAnalyzer::calc_n(double delta0, double L) const
 {
+    insight::assertion(
+        delta0>insight::SMALL,
+        "invalid input: base mesh size must be positive and not zero! Got: %g", delta0);
 
  if (delta0>L) return 1;
 
  if ( (1.+grad_)*delta0 > L) return 2;
+
+ if (fabs(grad_-1.)<insight::SMALL)
+ {
+     return std::max(1., ::ceil(L/delta0));
+ }
 
   int i, times, status;
   gsl_function f;
@@ -86,8 +99,8 @@ int GradingAnalyzer::calc_n(double delta0, double L) const
     f_calc_n_param p(this, L, delta0);
     f.params = static_cast<void*>(&p);
 
-    x_l = 2;
-    x_r = 10000;
+    x_l = 1.;
+    x_r = 10000.;
 
     gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
 

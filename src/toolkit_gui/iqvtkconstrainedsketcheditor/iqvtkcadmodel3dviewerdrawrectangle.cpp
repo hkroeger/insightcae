@@ -3,6 +3,7 @@
 #include "datum.h"
 
 #include "vtkPolyLineSource.h"
+#include <qnamespace.h>
 
 using namespace insight;
 using namespace insight::cad;
@@ -37,6 +38,8 @@ void IQVTKCADModel3DViewerDrawRectangle::updatePreviewRect(const arma::mat& poin
         auto p1p3=calcP2P4(point3d);
         p[1]=p1p3.first;
         p[3]=p1p3.second;
+
+        previewUpdated(p[0], p[2]);
 
         if (!previewLine_)
         {
@@ -92,10 +95,13 @@ void IQVTKCADModel3DViewerDrawRectangle::updatePreviewRect(const arma::mat& poin
 
 
 IQVTKCADModel3DViewerDrawRectangle::IQVTKCADModel3DViewerDrawRectangle(
-    IQVTKConstrainedSketchEditor &editor )
-  : IQVTKCADModel3DViewerPlanePointBasedAction(editor),
+    IQVTKConstrainedSketchEditor &editor,
+    bool allowExistingPoints,
+    bool addToSketch )
+  : IQVTKCADModel3DViewerPlanePointBasedAction(editor, allowExistingPoints),
     previewLine_(nullptr),
-    prevLine_(nullptr)
+    prevLine_(nullptr),
+    addToSketch_(addToSketch)
 {
 }
 
@@ -124,46 +130,50 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
             {
                 p2_ = std::make_shared_aggr<PointProperty>(pp);
 
-                if ( !p1_->isAnExistingPoint )
+                if (addToSketch_)
                 {
-                    sketch().insertGeometry( p1_->p );
+                    if ( !p1_->isAnExistingPoint )
+                    {
+                        sketch().insertGeometry( p1_->p );
+                    }
+
+                    if (!p2_->isAnExistingPoint)
+                    {
+                        sketch().insertGeometry( p2_->p );
+                    }
+
+                    auto p2p4 = calcP2P4(p2_->p->value());
+
+                    auto sp2 = SketchPoint::create(
+                        sketch().plane(),
+                        viewer().pointInPlane2D(
+                            sketch().plane()->plane(),
+                            p2p4.first ) );
+                    sketch().insertGeometry( sp2 );
+
+                    auto sp4 = SketchPoint::create(
+                        sketch().plane(),
+                        viewer().pointInPlane2D(
+                            sketch().plane()->plane(),
+                            p2p4.second ) );
+                    sketch().insertGeometry( sp4 );
+
+
+                    auto l1 = Line::create( p1_->p, sp2 );
+                    auto l2 = Line::create( sp2, p2_->p );
+                    auto l3 = Line::create( p2_->p, sp4 );
+                    auto l4 = Line::create( sp4, p1_->p );
+
+                    sketch().insertGeometry(l1);
+                    sketch().insertGeometry(l2);
+                    sketch().insertGeometry(l3);
+                    sketch().insertGeometry(l4);
+                    sketch().invalidate();
+
+                    Q_EMIT rectangleAdded({l1, l2, l3, l4}, p2_.get(), p1_.get() );
+                    Q_EMIT updateActors();
                 }
 
-                if (!p2_->isAnExistingPoint)
-                {
-                    sketch().insertGeometry( p2_->p );
-                }
-
-                auto p2p4 = calcP2P4(p2_->p->value());
-
-                auto sp2 = SketchPoint::create(
-                    sketch().plane(),
-                    viewer().pointInPlane2D(
-                        sketch().plane()->plane(),
-                        p2p4.first ) );
-                sketch().insertGeometry( sp2 );
-
-                auto sp4 = SketchPoint::create(
-                    sketch().plane(),
-                    viewer().pointInPlane2D(
-                        sketch().plane()->plane(),
-                        p2p4.second ) );
-                sketch().insertGeometry( sp4 );
-
-
-                auto l1 = Line::create( p1_->p, sp2 );
-                auto l2 = Line::create( sp2, p2_->p );
-                auto l3 = Line::create( p2_->p, sp4 );
-                auto l4 = Line::create( sp4, p1_->p );
-
-                sketch().insertGeometry(l1);
-                sketch().insertGeometry(l2);
-                sketch().insertGeometry(l3);
-                sketch().insertGeometry(l4);
-                sketch().invalidate();
-
-                Q_EMIT rectangleAdded({l1, l2, l3, l4}, p2_.get(), p1_.get() );
-                Q_EMIT updateActors();
 
                 finishAction();
             }
@@ -184,28 +194,32 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
 
 
 
-bool IQVTKCADModel3DViewerDrawRectangle::onMouseMove
-    (
-        Qt::MouseButtons buttons,
-        const QPoint point,
-        Qt::KeyboardModifiers curFlags
-        )
+bool IQVTKCADModel3DViewerDrawRectangle::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
 {
     updatePreviewRect(
         IQVTKCADModel3DViewerPlanePointBasedAction::applyWizards(point, nullptr)
             .p->value() );
 
     return IQVTKCADModel3DViewerPlanePointBasedAction
-        ::onMouseMove(buttons, point, curFlags);
+        ::onMouseMove(point, curFlags);
 }
 
 
 
 
-bool IQVTKCADModel3DViewerDrawRectangle::onRightButtonDown(
+bool IQVTKCADModel3DViewerDrawRectangle::onMouseClick  (
+    Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    finishAction();
-    return true;
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+    else
+        return IQVTKCADModel3DViewerPlanePointBasedAction
+            ::onMouseClick( btn, nFlags, point );
 }

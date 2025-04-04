@@ -11,9 +11,9 @@ addToOpenFOAMCaseElementFactoryTable(rigidBodyMotionDynamicMesh);
 
 
 
-rigidBodyMotionDynamicMesh::rigidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet& ps )
-: dynamicMesh(c, ps),
-  ps_(ps)
+rigidBodyMotionDynamicMesh::rigidBodyMotionDynamicMesh(
+    OpenFOAMCase& c, ParameterSetInput ip )
+: dynamicMesh(c, ip.forward<Parameters>())
 {
 }
 
@@ -28,15 +28,13 @@ void rigidBodyMotionDynamicMesh::addFields( OpenFOAMCase& c ) const
 
 void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) const
 {
-    Parameters p(ps_);
-
     OFDictData::dict& dynamicMeshDict
       = dictionaries.lookupDict("constant/dynamicMeshDict");
 
     dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";
 
 
-    SixDOFRigidBodyMotionSolver rbms(p.rigidBodyMotion);
+    SixDOFRigidBodyMotionSolver rbms(p().rigidBodyMotion);
     std::string name = rbms.motionSolverName();
 
     if (OFversion()<=650)
@@ -59,7 +57,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     dynamicMeshDict["motionSolverLibs"]=libl;
 
 
-    if (p.moveMeshOuterCorrectors)
+    if (p().moveMeshOuterCorrectors)
     {
         OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
         OFDictData::dict& PIMPLE=fvSolution.subDict("PIMPLE");

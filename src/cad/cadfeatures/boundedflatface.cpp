@@ -92,17 +92,17 @@ void BoundedFlatFace::build()
                 edgs.Append(e);
                 n_ok++;
             }
-            else if (m->isSingleWire())
+            else
             {
-                TopoDS_Wire wire=m->asSingleWire();
-                for (TopExp_Explorer ex(wire, TopAbs_EDGE); ex.More(); ex.Next())
+                // TopoDS_Wire wire=m->asSingleWire();
+                for (TopExp_Explorer ex(m->shape(), TopAbs_EDGE); ex.More(); ex.Next())
                 {
                     TopoDS_Edge e=TopoDS::Edge(ex.Current());
                     edgs.Append(e);
                 }
                 n_ok++;
             }
-            else n_nok++;
+            //else n_nok++;
         }
 
         if (n_ok==0)

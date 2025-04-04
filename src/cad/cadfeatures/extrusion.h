@@ -40,8 +40,8 @@ class Extrusion
     Extrusion ( FeaturePtr sk, ScalarPtr L, bool centered=false );
     Extrusion ( FeaturePtr sk, VectorPtr L, bool centered=false );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Extrusion" );

@@ -13,8 +13,10 @@ class EmptyBC
 
 public:
   declareType("EmptyBC");
-  EmptyBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
-  static ParameterSet defaultParameters() { return ParameterSet(); }
+  EmptyBC(
+      OpenFOAMCase& c, const std::string& patchName,
+      const OFDictData::dict& boundaryDict,
+      ParameterSetInput ip = Parameters() );
 };
 
 

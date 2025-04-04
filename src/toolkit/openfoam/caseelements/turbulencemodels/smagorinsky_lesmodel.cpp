@@ -19,9 +19,8 @@ void Smagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
 }
 
 
-Smagorinsky_LESModel::Smagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps)
-: LESModel(c),
-  p_(ps)
+Smagorinsky_LESModel::Smagorinsky_LESModel(OpenFOAMCase& c, ParameterSetInput ip)
+: LESModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }
@@ -42,8 +41,8 @@ void Smagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties["delta"]="vanDriest";
 
   OFDictData::dict smc;
-  //smc["Ck"]=OFDictData::dimensionedData("Ck", dimless, p_.C);
-  smc["Ck"]=p_.C;
+  //smc["Ck"]=OFDictData::dimensionedData("Ck", dimless, p().C);
+  smc["Ck"]=p().C;
   LESProperties[modelname+"Coeffs"]=smc;
 
 

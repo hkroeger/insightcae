@@ -35,7 +35,7 @@ void IQVTKCADModel3DViewerPanning::ComputeDisplayToWorld(
 
 
 
-void IQVTKCADModel3DViewerPanning::pan(int x, int y)
+void IQVTKCADModel3DViewerPanning::pan(const QPoint& point)
 {
     if (hasLastMouseLocation())
     {
@@ -50,7 +50,7 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
         this->ComputeWorldToDisplay(viewFocus[0], viewFocus[1], viewFocus[2], viewFocus);
         focalDepth = viewFocus[2];
 
-        auto p1=viewer().widgetCoordsToVTK(QPoint(x,y));
+        auto p1=viewer().widgetCoordsToVTK(point);
         this->ComputeDisplayToWorld(
                     p1.x(), p1.y(), focalDepth, newPickPoint);
 
@@ -83,6 +83,8 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
 
         viewer().scheduleRedraw();
     }
+
+    this->updateLastMouseLocation(point);
 }
 
 
@@ -90,22 +92,27 @@ void IQVTKCADModel3DViewerPanning::pan(int x, int y)
 
 IQVTKCADModel3DViewerPanning::IQVTKCADModel3DViewerPanning(
         IQVTKCADModel3DViewer &viewWidget, const QPoint point)
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, point)
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, point, false)
 {}
+
 
 void IQVTKCADModel3DViewerPanning::start()
 {}
 
 
-
-
-bool IQVTKCADModel3DViewerPanning::onMouseMove
-(
-        Qt::MouseButtons buttons,
-        const QPoint point,
-        Qt::KeyboardModifiers curFlags
-)
+bool IQVTKCADModel3DViewerPanning::onMouseDrag(
+    Qt::MouseButtons btn, Qt::KeyboardModifiers nFlags,
+    const QPoint point, EventType eventType )
 {
-    pan(point.x(), point.y());
-    return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseMove(buttons, point, curFlags);
+    pan(point);
+    return true;
+}
+
+
+bool IQVTKCADModel3DViewerPanning::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    pan(point);
+    return true;
 }

@@ -177,32 +177,16 @@ void FillingFace::build()
 
   setShape ( FixShape.Face() );
 
-//  auto va1 = vertexID(TopExp::FirstVertex(ee1));
-//  auto vb1 = vertexID(TopExp::LastVertex(ee1));
-//  auto va2 = vertexID(TopExp::FirstVertex(ee2));
-//  auto vb2 = vertexID(TopExp::LastVertex(ee2));
 
   providedSubshapes_.insert(
       {
           "tan1",
-          cad::SingleEdgeFeature::create(ee1/*
-              std::make_shared<FeatureSet>(
-                  shared_from_this(),
-                  EntityType::Edge,
-                  query_edges(
-                      std::make_shared<EdgeConnectingVertices>(
-                          va1, va2)))*/)
+          cad::ImportedSingleEdgeFeature::create(ee1)
       });
   providedSubshapes_.insert(
       {
           "tan2",
-          cad::SingleEdgeFeature::create(ee2/*
-              std::make_shared<FeatureSet>(
-                  shared_from_this(),
-                  EntityType::Edge,
-                  query_edges(
-                      std::make_shared<EdgeConnectingVertices>(
-                          vb1, vb2)))*/)
+          cad::ImportedSingleEdgeFeature::create(ee2)
       });
 }
 

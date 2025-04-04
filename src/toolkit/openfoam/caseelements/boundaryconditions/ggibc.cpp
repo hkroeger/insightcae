@@ -12,10 +12,12 @@ defineType(GGIBC);
 addToFactoryTable(BoundaryCondition, GGIBC);
 addToStaticFunctionTable(BoundaryCondition, GGIBC, defaultParameters);
 
-GGIBC::GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-        const ParameterSet&ps )
-: GGIBCBase(c, patchName, boundaryDict, ps),
-  p_(ps)
+GGIBC::GGIBC(
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+: GGIBCBase(c, patchName, boundaryDict,
+        ip.forward<Parameters>())
 {
 }
 
@@ -26,7 +28,7 @@ void GGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   if (OFversion()>=210)
   {
     bndDict["type"]="cyclicAMI";
-    bndDict["neighbourPatch"]= p_.shadowPatch;
+    bndDict["neighbourPatch"]= p().shadowPatch;
     bndDict["matchTolerance"]= 0.001;
     bndDict["lowWeightCorrection"]=0.1;
     //bndDict["transform"]= "rotational";
@@ -34,10 +36,10 @@ void GGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   else
   {
     bndDict["type"]="ggi";
-    bndDict["shadowPatch"]= p_.shadowPatch;
-    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
-    bndDict["bridgeOverlap"]=p_.bridgeOverlap;
-    bndDict["zone"]=p_.zone;
+    bndDict["shadowPatch"]= p().shadowPatch;
+    bndDict["separationOffset"]=OFDictData::vector3(p().separationOffset);
+    bndDict["bridgeOverlap"]=p().bridgeOverlap;
+    bndDict["zone"]=p().zone;
   }
 }
 

@@ -29,6 +29,7 @@
 #include "GeomAPI_Interpolate.hxx"
 #include "TColgp_HArray1OfPnt.hxx"
 #include "base/translations.h"
+#include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -460,7 +461,7 @@ void SpurGear::build()
     refvalues_["thick_angle"] = g.half_thick_angle*2.;
     
     providedSubshapes_["pitch_circle"]=Circle::create( vec3const(0,0,0), vec3const(0,0,1), scalarconst(g.pitch_diameter));
-    providedSubshapes_["tooth"]=Feature::create( g.gear_shape_.tooth_ );
+    providedSubshapes_["tooth"]=Import::create( g.gear_shape_.tooth_ );
     
     setShape( g );
 

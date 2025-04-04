@@ -19,10 +19,12 @@
  */
 
 #include "occtools.h"
+#include "base/exception.h"
 #include "base/linearalgebra.h"
 #include "base/units.h"
 
-#include "cadfeature.h"
+#include "cadfeatures/importsolidmodel.h"
+#include <algorithm>
 
 namespace insight {
 namespace cad {
@@ -59,6 +61,51 @@ OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
 //  std::cout<<Vector(t.TranslationPart())<<std::endl;
   translate_ = (1./scale_)*inv(R)*insight::Vector(t.TranslationPart());
 }
+
+
+
+
+std::vector<arma::mat> orderedCornerPoints(const TopoDS_Shape &s)
+{
+    auto f=asSingleFace(s);
+
+    std::vector<arma::mat> pts;
+    auto w=BRepTools::OuterWire(f);
+    for ( BRepTools_WireExplorer wex(w, f);
+          wex.More(); wex.Next() )
+    {
+        auto p = BRep_Tool::Pnt(wex.CurrentVertex());
+        pts.push_back(vec3(p));
+    }
+
+    if (f.Orientation()==TopAbs_REVERSED)
+        std::reverse(pts.begin(), pts.end());
+
+    return pts;
+}
+
+TopoDS_Face asSingleFace(const TopoDS_Shape &shape)
+{
+    insight::CurrentExceptionContext exc("converting shape into single face");
+
+    TopExp_Explorer ex(shape, TopAbs_FACE);
+    insight::assertion(ex.More(), "shape does not contain any face");
+
+    auto f=TopoDS::Face(ex.Current());
+    ex.Next();
+    if (ex.More())
+    {
+        throw insight::CADException(
+            {
+                { "geometry", cad::Import::create(shape) }
+            },
+            "Shape contains more than a single face!"
+        );
+    }
+
+    return f;
+}
+
 
 
 

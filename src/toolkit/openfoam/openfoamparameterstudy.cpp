@@ -20,6 +20,7 @@
  */
 
 #include "openfoamparameterstudy.h"
+#include "base/cppextensions.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 
@@ -39,17 +40,10 @@ template<
 >
 OpenFOAMParameterStudy<BaseAnalysis,var_params>::OpenFOAMParameterStudy
 (
-        const std::string& name, 
-        const std::string& description, 
-        const ParameterSet& ps,
-        const boost::filesystem::path& exePath,
-        ProgressDisplayer& displayer,
+        const std::shared_ptr<supplementedInputDataBase>& sp,
         bool subcasesRemesh
 )
-: ParameterStudy<BaseAnalysis,var_params>
-  (
-    name, description, ps, exePath, displayer
-  ),
+: ParameterStudy<BaseAnalysis,var_params>(sp),
   subcasesRemesh_(subcasesRemesh)
 {
 }
@@ -61,21 +55,27 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
+    const std::string& subcase_name,
+    ParameterSet& newp ) const
 {
-  boost::filesystem::path oldmf = newp->get<PathParameter>("run/mapFrom").filePath();
+  boost::filesystem::path oldmf =
+        newp.get<PathParameter>("run/mapFrom").filePath();
   boost::filesystem::path newmf = "";
+
   if (oldmf!="")
   {
     oldmf=boost::filesystem::absolute(oldmf);
     newmf = oldmf / subcase_name;
     if (!boost::filesystem::exists(newmf)) 
     {
-      insight::Warning("No matching subcase exists in "+oldmf.string()+" for mapping of subcase "+subcase_name+"! Omitting.");
+      insight::Warning(
+            "No matching subcase exists in %s for mapping of subcase %s! Omitting.",
+            oldmf.string().c_str(), subcase_name.c_str() );
       newmf="";
     }
   }
-  newp->get<PathParameter>("run/mapFrom").setOriginalFilePath(newmf);
+  newp.get<PathParameter>("run/mapFrom").setOriginalFilePath(newmf);
 }
 
 
@@ -85,19 +85,20 @@ template<
     class BaseAnalysis,
     const RangeParameterList& var_params
     >
-ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(ProgressDisplayer& displayer)
+ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
+    ProgressDisplayer& displayer )
 {
-    ParameterSet& p = this->parameters_; //Analysis::parameters_;
+    auto& ps = this->parameters(); //Analysis::parameters_;
 
     // generate the mesh in the top level case first
-    path dir = this->setupExecutionEnvironment();
+    path dir = this->executionPath();
     //parameters_.saveToFile(dir/"parameters.ist", type());
 
     {
 //     OpenFOAMAnalysis* base_case=static_cast<OpenFOAMAnalysis*>(baseAnalysis_.get());
 
-        auto machine = p.getString("run/machine");
-        auto OFEname = p.getString("run/OFEname");
+        auto machine = ps.getString("run/machine");
+        auto OFEname = ps.getString("run/OFEname");
 
         OFEnvironment ofe = OFEs::get(OFEname);
         ofe.setExecutionMachine(machine);
@@ -106,25 +107,28 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
 
         // Generate a valid parameterset with actual values for mesh mesh genration
         // use first value from each range
-        ParameterSet defp(p);
+        auto defp = ps.cloneParameterSet();
         for (int j=0; j<var_params.size(); j++)
         {
             // Replace RangeParameter by first actual single value
-            const DoubleRangeParameter& rp = p.get<DoubleRangeParameter>(var_params[j]);
-            DoubleParameter* dp=rp.toDoubleParameter(rp.values().begin());
-            defp.replace(var_params[j], dp);
+            const DoubleRangeParameter& rp = ps.template get<insight::DoubleRangeParameter>(var_params[j]);
+            auto dp=rp.toDoubleParameter(rp.values().begin());
+            defp->replace(var_params[j], std::move(dp));
         }
 //     base_case->setParameters(defp);
 
 //     base_case->setExecutionPath(exep);
-        base_case_.reset( dynamic_cast<OpenFOAMAnalysis*>(Analysis::lookup(BaseAnalysis::typeName, defp, exep)) );
+        base_case_ = std::dynamic_unique_ptr_cast<OpenFOAMAnalysis>(
+            Analysis::analyses()(BaseAnalysis::typeName,
+                Analysis::supplementedInputDatas()(BaseAnalysis::typeName,
+                    ParameterSetInput(*defp), exep, displayer)) );
 
         if (!base_case_)
         {
             throw insight::Exception("Internal Error: invalid base analysis type for OpenFOAMParameterStudy!");
         }
 
-        dir = base_case_->setupExecutionEnvironment();
+        dir = base_case_->executionPath();
 
         if (!subcasesRemesh_)
         {
@@ -136,11 +140,12 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
         }
     }
 
-    path old_lp=p.get<PathParameter>("mesh/linkmesh").originalFilePath();
+    path old_lp=ps.template get<PathParameter>("mesh/linkmesh").originalFilePath();
     if (!subcasesRemesh_)
-        p.get<PathParameter>("mesh/linkmesh").setOriginalFilePath( boost::filesystem::absolute(this->executionPath()) );
+        ps.template get<PathParameter>("mesh/linkmesh").setOriginalFilePath(
+            boost::filesystem::absolute(this->executionPath()) );
     this->setupQueue();
-    p.get<PathParameter>("mesh/linkmesh").setOriginalFilePath( old_lp );
+    ps.template get<PathParameter>("mesh/linkmesh").setOriginalFilePath( old_lp );
 
     this->processQueue(displayer);
     ResultSetPtr results = this->evaluateRuns();

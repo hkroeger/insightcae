@@ -21,18 +21,17 @@ void reactingFoamNumerics::init()
   if (OFversion() < 230)
     throw insight::UnsupportedFeature("reactingFoamNumerics currently supports only OF >=230");
 
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );
-  OFcase().addField(pName_, FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0,0.0,0.0}), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({300.0}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({p().pinternal}), volField ) );
+  OFcase().addField(pName_, FieldInfo(scalarField, 	dimPressure, 	FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({p().Uinternal[0], p().Uinternal[1], p().Uinternal[2]}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p().Tinternal}), volField ) );
 }
 
 
-reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
-  if (p_.buoyancy) pName_="p_rgh";
+  if (p().buoyancy) pName_="p_rgh";
   init();
 }
 
@@ -45,11 +44,11 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   std::string solverName="reactingFoam";
-  if (p_.buoyancy)
+  if (p().buoyancy)
     solverName="rhoReactingBuoyantFoam";
   controlDict["application"]=solverName;
 
-  CompressiblePIMPLESettings ps(p_.time_integration);
+  CompressiblePIMPLESettings ps(p().time_integration);
   ps.addIntoDictionaries(OFcase(), dictionaries);
 
   // ============ setup fvSolution ================================
@@ -81,11 +80,11 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup fvSchemes ================================
 
   // check if LES required
-  bool LES=p_.forceLES;
+  bool LES=p().forceLES;
   try
   {
-    const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
-    LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
+      auto& tm = this->OFcase().findUniqueElement<turbulenceModel>();
+      LES=LES || (tm.minAccuracyRequirement() >= turbulenceModel::AC_LES);
   }
   catch (...)
   {

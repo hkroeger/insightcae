@@ -318,10 +318,10 @@ bool CoilPath::isSingleEdge() const
 }
 
 
-bool CoilPath::isSingleCloseWire() const
-{
-  return false;
-}
+// bool CoilPath::isSingleCloseWire() const
+// {
+//   return false;
+// }
 
 
 
@@ -481,10 +481,10 @@ void Coil::insertrule(parser::ISCADParser& ruleset)
 }
 
 
-bool Coil::isSingleCloseWire() const
-{
-  return false;
-}
+// bool Coil::isSingleCloseWire() const
+// {
+//   return false;
+// }
 
 bool Coil::isSingleOpenWire() const
 {

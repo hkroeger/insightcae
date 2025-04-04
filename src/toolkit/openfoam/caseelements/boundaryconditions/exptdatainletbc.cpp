@@ -18,10 +18,11 @@ ExptDataInletBC::ExptDataInletBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet& ps
+  ParameterSetInput ip
 )
-: BoundaryCondition(c, patchName, boundaryDict, ps),
-  ps_(ps)
+: BoundaryCondition(
+          c, patchName, boundaryDict,
+          ip.forward<Parameters>() )
 {
  BCtype_="patch";
 }
@@ -58,22 +59,21 @@ void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& pref
 
 void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-    Parameters p ( ps_ );
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        p().phasefractions;
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries ( dictionaries );
 
     std::string prefix="constant/boundaryData/"+patchName_;
 
-    size_t np=p.data.size();
+    size_t np=p().data.size();
     arma::mat ptdat = arma::zeros ( np, 3 );
     arma::mat velocity = arma::zeros ( np, 3 );
     arma::mat TKE = arma::zeros ( np );
     arma::mat epsilon = arma::zeros ( np );
     size_t j=0;
-    for ( const Parameters::data_default_type& pt: p.data ) {
+    for ( const Parameters::data_default_type& pt: p().data ) {
         ptdat.row ( j ) =pt.point.t();
         velocity.row ( j ) =pt.velocity.t();
         TKE ( j ) =pt.k;

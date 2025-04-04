@@ -16,22 +16,34 @@ IQDoubleParameter::IQDoubleParameter
 (
     QObject* parent,
     IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
+    insight::Parameter* parameter,
     const insight::ParameterSet& defaultParameterSet
-) : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+)
+    : IQSpecializedParameter<insight::DoubleParameter>(
+          parent, psmodel, parameter, defaultParameterSet)
 {}
 
 QString IQDoubleParameter::valueText() const
 {
-  return QString::number( dynamic_cast<const insight::DoubleParameter&>(parameter())() );
+  return QString::number( parameter()() );
+}
+
+bool IQDoubleParameter::setValue(QVariant value)
+{
+    if (value.canConvert<double>())
+    {
+        bool ok;
+        parameterRef().set(value.toDouble(&ok));
+        return ok;
+    }
+    return false;
 }
 
 QVBoxLayout* IQDoubleParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer)
 {
-  auto& p = dynamic_cast<insight::DoubleParameter&>(parameterRef());
+  auto& p = parameterRef();
 
   auto layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
@@ -53,9 +65,8 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      auto &p = dynamic_cast<insight::DoubleParameter&>(this->parameterRef());
+      auto &p = parameterRef();
       p.set(lineEdit->text().toDouble());
-//      model->notifyParameterChange(index);
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -67,9 +78,8 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
       p.valueChanged.connect(
           [=]()
           {
-              auto &p = dynamic_cast<const insight::DoubleParameter&>(parameter());
               QSignalBlocker sb(lineEdit);
-              lineEdit->setText(QString::number(p()));
+              lineEdit->setText(QString::number(parameter()()));
           }
           )
       );

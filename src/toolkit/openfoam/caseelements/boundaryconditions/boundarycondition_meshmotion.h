@@ -6,6 +6,7 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
+#include "boundarycondition_meshmotion__MeshMotionBC__Parameters_headers.h"
 #include "boundarycondition_meshmotion__CAFSIBC__Parameters_headers.h"
 
 
@@ -19,9 +20,18 @@ namespace MeshMotionBC
 class MeshMotionBC
 {
 public:
+#include "boundarycondition_meshmotion__MeshMotionBC__Parameters.h"
+/*
+PARAMETERSET>>> MeshMotionBC Parameters
+createGetter
+<<<PARAMETERSET
+*/
+
+public:
     declareType ( "MeshMotionBC" );
     declareDynamicClass(MeshMotionBC);
 
+    MeshMotionBC(ParameterSetInput ip = Parameters() );
     virtual ~MeshMotionBC();
 
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
@@ -36,20 +46,15 @@ class NoMeshMotion
 {
 public:
   declareType ( "NoMeshMotion" );
-  NoMeshMotion ( const ParameterSet& ps = ParameterSet() );
 
-  static ParameterSet defaultParameters() { return ParameterSet(); }
-
-  ParameterSet getParameters() const override
-  {
-    return ParameterSet();
-  }
+  NoMeshMotion();
+  NoMeshMotion ( ParameterSetInput ip );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
-
 };
 
-extern NoMeshMotion noMeshMotion;
+
+extern const NoMeshMotion noMeshMotion;
 
 
 class CAFSIBC
@@ -59,6 +64,7 @@ public:
 #include "boundarycondition_meshmotion__CAFSIBC__Parameters.h"
 /*
 PARAMETERSET>>> CAFSIBC Parameters
+inherits MeshMotionBC::Parameters
 
 FEMScratchDir = path "" "Directory for data exchange between OF and Code_Aster"
 clipPressure = double -100.0 "Lower pressure limit to consider cavitation"
@@ -83,21 +89,14 @@ relax = selectablesubset {{
 
 }} constant "Relaxation"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
   declareType ( "CAFSIBC" );
-  CAFSIBC ( const ParameterSet& ps );
-
-
-  ParameterSet getParameters() const override
-  {
-    return p_;
-  }
+  CAFSIBC ( ParameterSetInput ip = Parameters() );
 
   void addIntoDictionaries ( OFdicts& dictionaries ) const override;
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;

@@ -16,8 +16,8 @@ void LRR_RASModel::addFields( OpenFOAMCase& c ) const
   c.addField("R", 	FieldInfo(symmTensorField, OFDictData::dimension(0, 2, -2), 	FieldValue({1e-10,1e-10,1e-10,1e-10,1e-10,1e-10}), volField ) );
 }
 
-LRR_RASModel::LRR_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: RASModel(c)
+LRR_RASModel::LRR_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: RASModel(c, ip.forward<Parameters>())
 {
 //   addFields();
 }

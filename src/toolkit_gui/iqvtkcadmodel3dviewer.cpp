@@ -1,4 +1,7 @@
 #include "iqvtkcadmodel3dviewer.h"
+#include "base/exception.h"
+#include "base/factory.h"
+#include "base/linearalgebra.h"
 #include "constrainedsketch.h"
 #include "iqcaditemmodel.h"
 #include "iscadmetatyperegistrator.h"
@@ -7,8 +10,7 @@
 
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h"
-#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h"
-#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewerpanning.h"
+
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
 #include "iqvtkconstrainedsketcheditor.h"
@@ -28,7 +30,9 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QStatusBar>
+#include <QSettings>
 
+#include <boost/lexical_cast.hpp>
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
@@ -43,11 +47,13 @@
 #include "vtkRenderWindowInteractor.h"
 #include "vtkPropPicker.h"
 #include "vtkCellPicker.h"
+#include "vtkAreaPicker.h"
 #include "vtkImageReader2Factory.h"
 #include "vtkImageReader2.h"
 #include "vtkCaptionActor2D.h"
 #include "vtkInteractorStyleUser.h"
 #include "vtkProp3DCollection.h"
+#include "vtkRendererCollection.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -69,6 +75,8 @@
 #include "iqvtkkeepfixedsizecallback.h"
 #include "base/cppextensions.h"
 #include "iqvtkviewer.h"
+
+#include "qtextensions.h"
 
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
@@ -165,43 +173,63 @@ BackgroundImage::BackgroundImage(
     imageReader.TakeReference(ir);
     imageReader->SetFileName(imageFileName_.string().c_str());
     imageReader->Update();
+
     auto imageData = imageReader->GetOutput();
+
+    {
+        int na=imageData->GetPointData()->GetNumberOfArrays();
+        insight::assertion(
+            na==1,
+            "expected a single image array! Got %d arrays.", na);
+
+        int nc=imageData->GetPointData()->GetArray(0)->GetNumberOfComponents();
+        insight::assertion(
+            (nc==3)||(nc==1),
+            "expected image array with three or one components! Got %d.", nc);
+    }
+
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
 
-    QMessageBox questionBox;
-    questionBox.setWindowTitle("Image display");
-    questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
-    auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
-    auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
-    auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
+    reorientImage();
+}
 
-    questionBox.exec();
+void BackgroundImage::reorientImage()
+{
+    // QMessageBox questionBox;
+    // questionBox.setWindowTitle("Image display");
+    // questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
+    // auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
+    // auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
+    // auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
 
-    auto answer = questionBox.clickedButton();
+    // questionBox.exec();
 
-    if (answer==pButtonStatic)
-    {
-        usedRenderer_ = viewer().backgroundRen_;
-        usedRenderer_->AddActor(imageActor_);
+    // auto answer = questionBox.clickedButton();
 
-        viewer().renWin()->Render();
+    // if (answer==pButtonStatic)
+    // {
+    //     usedRenderer_ = viewer().backgroundRen_;
+    //     usedRenderer_->AddActor(imageActor_);
 
-        IQImageReferencePointSelectorWindow::setupCameraForImage(
-            imageData, usedRenderer_->GetActiveCamera());
+    //     viewer().renWin()->Render();
 
-        viewer().scheduleRedraw();
-    }
-    else if (answer==pButtonDynamic)
-    {
+    //     IQImageReferencePointSelectorWindow::setupCameraForImage(
+    //         imageData, usedRenderer_->GetActiveCamera());
+
+    //     viewer().scheduleRedraw();
+    // }
+    // else if (answer==pButtonDynamic)
+    // {
         imageActor_->SetScale( 1 );
         imageActor_->SetPosition( 0, 0, 0 );
+        imageActor_->SetOpacity(1.0);// can't pick if opacity is lower than 1
 
         usedRenderer_=viewer().renderer();
         usedRenderer_->AddActor(imageActor_);
         viewer().scheduleRedraw();
 
-        auto obia=std::make_shared<IQVTKOrientBackgroundImage>(viewer(), imageActor_);
+        auto obia=make_viewWidgetAction<IQVTKOrientBackgroundImage>(viewer(), imageActor_);
         obia->orientationSelected.connect(
             [this](OrientationSpec os)
             {
@@ -230,9 +258,9 @@ BackgroundImage::BackgroundImage(
             );
 
         viewer().launchAction(
-            obia,
+            std::move(obia),
             true );
-    }
+    // }
 }
 
 BackgroundImage::BackgroundImage(
@@ -468,11 +496,16 @@ void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
         auto i = displayedData_.find(pidx);
         if (i!=displayedData_.end())
         {
-            //if (i->second.actor_)
+            // remove from selection, if is selected
+            if (auto sel = runningAction<IQVTKSelectCADEntity>())
+            {
+                sel->externallyUnselect(i->second.ce_);
+            }
+            // remove from scene
             for (const auto& actor: i->second.actors_)
             {
-                /*i->second.actor_*/actor->SetVisibility(false);
-                ren_->RemoveActor(/*i->second.actor_*/actor);
+                actor->SetVisibility(false);
+                ren_->RemoveActor(actor);
             }
             displayedData_.erase(i);
             recomputeSceneBounds();
@@ -577,44 +610,12 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
     else if (const auto *featurePtr =
              boost::get<insight::cad::FeaturePtr>(&entity))
     {
-        auto feat = *featurePtr;
-        if (feat->topologicalProperties().onlyEdges())
-        {
-            // if shape consists only of edges,
-            // create a set of actors for each edge
-            // to be able to pick locations inside of
-            // a possible edge loop without
-            // triggering a selection
-            std::vector<vtkSmartPointer<vtkProp> > actors;
-            for (TopExp_Explorer ex(feat->shape(),TopAbs_EDGE); ex.More(); ex.Next())
-            {
-                auto shape = vtkSmartPointer<ivtkOCCShape>::New();
-                shape->SetShape( ex.Current() );
-
-                auto actor = vtkSmartPointer<vtkActor>::New();
-                actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-                actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
-
-                actors.push_back(actor);
-            }
-            return actors;
-        }
-        else
-        {
-            auto shape = vtkSmartPointer<ivtkOCCShape>::New();
-            shape->SetShape( feat->shape() );
-
-            auto actor = vtkSmartPointer<vtkActor>::New();
-            actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
-            actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
-            return {actor};
-        }
-
+        return (*featurePtr)->createVTKActors();
     }
     else if (const auto *ppPtr =
              boost::get<insight::cad::PostprocActionPtr>(&entity))
     {
-        return insight::cad::postProcActionVisualizers.createVTKRepr(*ppPtr);
+        (*ppPtr)->createVTKRepr();
     }
     else if (const auto *dsPtr =
              boost::get<vtkSmartPointer<vtkDataObject> >(&entity))
@@ -749,6 +750,7 @@ void IQVTKCADModel3DViewer::addModelEntity(
         for (const auto& a: actors)
         {
             ren_->AddActor(a);
+            if (clipping_) clipping_->addToActor(a);
         }
         displayedData_[pidx]={lbl, entity, actors};
         resetVisibility(pidx);
@@ -920,9 +922,9 @@ void IQVTKCADModel3DViewer::onDataChanged(
             auto colInRange = [&](int minCol, int maxCol=-1)
             {
                 if (maxCol<0) maxCol=minCol;
-                return (topLeft.column() >= minCol)
+                return (topLeft.column() <= minCol)
                         &&
-                       (bottomRight.column() <= maxCol);
+                       (bottomRight.column() >= maxCol);
             };
 
             if (roles.indexOf(Qt::EditRole)>=0 || roles.empty())
@@ -1071,7 +1073,7 @@ void IQVTKCADModel3DViewer::closeEvent(QCloseEvent *ev)
 void IQVTKCADModel3DViewer::onMeasureDistance()
 {
     launchAction(
-        std::make_shared<IQVTKCADModel3DViewerMeasurePoints>(*this),
+        make_viewWidgetAction<IQVTKCADModel3DViewerMeasurePoints>(*this),
         true );
 }
 
@@ -1081,17 +1083,17 @@ void IQVTKCADModel3DViewer::onMeasureDistance()
 void IQVTKCADModel3DViewer::onMeasureDiameter()
 {
     launchAction(
-        std::make_shared<IQVTKCADModel3DViewerMeasureDiameter>(*this),
+        make_viewWidgetAction<IQVTKCADModel3DViewerMeasureDiameter>(*this),
         true );
 }
 
 
 void IQVTKCADModel3DViewer::onSelectPoints()
 {
-    auto md = std::make_shared<IQVTKViewWidgetInsertPointIDs>(*this);
+    auto md = make_viewWidgetAction<IQVTKViewWidgetInsertPointIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    launchAction(md, true);
+    launchAction(std::move(md), true);
 }
 
 
@@ -1099,10 +1101,10 @@ void IQVTKCADModel3DViewer::onSelectPoints()
 
 void IQVTKCADModel3DViewer::onSelectEdges()
 {
-    auto md = std::make_shared<IQVTKViewWidgetInsertEdgeIDs>(*this);
+    auto md = make_viewWidgetAction<IQVTKViewWidgetInsertEdgeIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    launchAction(md, true);
+    launchAction(std::move(md), true);
 }
 
 
@@ -1110,10 +1112,10 @@ void IQVTKCADModel3DViewer::onSelectEdges()
 
 void IQVTKCADModel3DViewer::onSelectFaces()
 {
-    auto md = std::make_shared<IQVTKViewWidgetInsertFaceIDs>(*this);
+    auto md = make_viewWidgetAction<IQVTKViewWidgetInsertFaceIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    launchAction(md, true);
+    launchAction(std::move(md), true);
 }
 
 
@@ -1121,10 +1123,10 @@ void IQVTKCADModel3DViewer::onSelectFaces()
 
 void IQVTKCADModel3DViewer::onSelectSolids()
 {
-    auto md = std::make_shared<IQVTKViewWidgetInsertSolidIDs>(*this);
+    auto md = make_viewWidgetAction<IQVTKViewWidgetInsertSolidIDs>(*this);
     connect(md.get(), &ToNotepadEmitter::appendToNotepad,
             this, &IQVTKCADModel3DViewer::appendToNotepad );
-    launchAction(md, true);
+    launchAction(std::move(md), true);
 }
 
 
@@ -1246,6 +1248,27 @@ void IQVTKCADModel3DViewer::redrawNow(bool force)
 {
     if (redrawRequestedWithinWaitPeriod_ || force)
     {
+        auto cam = renderer()->GetActiveCamera();
+        if (cam->GetParallelProjection())
+        {
+            // push cam along axis to boundary of scene
+            auto p0=vec3FromComponents(cam->GetFocalPoint());
+            auto pc=vec3FromComponents(cam->GetPosition());
+            arma::mat dir=normalized(pc-p0);
+            double bounds[6];
+            ren_->ComputeVisiblePropBounds(bounds);
+            auto L=vec3(
+                bounds[1]-bounds[0],
+                bounds[3]-bounds[2],
+                bounds[5]-bounds[4]);
+
+            cam->SetPosition(
+                arma::mat(
+                    p0+std::max(insight::LSMALL,L.max())*dir
+                    ).memptr()
+                );
+            ren_->ResetCameraClippingRange();
+        }
         renWin()->Render();
         redrawRequestedWithinWaitPeriod_=false;
     }
@@ -1294,46 +1317,67 @@ vtkRenderWindow* IQVTKCADModel3DViewer::renWin()
 
 void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
 {
+    auto orientAct = new QAction("Reorient "+bgi->label(), bgi);
+    connect(orientAct, &QAction::triggered,
+            bgi, &BackgroundImage::reorientImage );
+    addBGBtn->addAction(orientAct);
+
     auto remAct = new QAction("Remove "+bgi->label(), bgi);
     connect(remAct, &QAction::triggered, remAct,
             std::bind(&QList<BackgroundImage*>::removeOne, &backgroundImages_, bgi) );
     connect(remAct, &QAction::triggered, bgi, &QObject::deleteLater);
-    clBGBtn->addAction(remAct);
+    addBGBtn->addAction(remAct);
 
-    auto showHideAct = new QAction(bgi->label(), bgi);
+    auto showHideAct = new QAction("Show "+bgi->label(), bgi);
     showHideAct->setCheckable(true);
     connect(
         showHideAct, &QAction::toggled,
-        bgi, &BackgroundImage::toggleVisibility );
+        bgi, &BackgroundImage::toggleVisibility );    
     addBGBtn->addAction(showHideAct);
 
     showHideAct->setChecked(true);
+
 }
 
+void IQVTKCADModel3DViewer::resetNavigationManager(
+    typename NavigationManager<IQVTKCADModel3DViewer>::Ptr&& nm)
+{
+    QSettings settings("silentdynamics", "VTKCADModel3DViewer");
+    settings.setValue("navigationStyle", QString::fromStdString(nm->type()) );
 
+    QWidgetToInputReceiverAdapter<
+        IQVTKCADModel3DViewer, IQCADModel3DViewer>
+        ::resetNavigationManager(std::move(nm));
+}
 
 
 IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         QWidget* parent )
-    : IQCADModel3DViewer(parent),
-      vtkWidget_(this),
-      navigationManager_(
-        std::make_shared<
-          TouchpadNavigationManager<
-           IQVTKCADModel3DViewer, IQVTKCADModel3DViewerPanning, IQVTKCADModel3DViewerRotation
-          > >(*this) ),
-      viewState_(*this),
+    : QWidgetToInputReceiverAdapter<
+          IQVTKCADModel3DViewer, IQCADModel3DViewer
+          >(*this, parent),
+    vtkWidget_(this),
+    viewState_(*this),
     defaultSelectionModel_(nullptr),
-    customSelectionModel_(nullptr)
+    customSelectionModel_(nullptr),
+    afterDoubleClick_(false)
 {
+    {
+        QSettings settings("silentdynamics", "VTKCADModel3DViewer");
+        auto navkey=settings.value("navigationStyle", "Inventor")
+                          .toString().toStdString();
+        resetNavigationManager(
+            VTKNavigationManager::navigationManagers()(navkey, *this)
+        );
+    }
+
     setCentralWidget(&vtkWidget_);
 
     connect(&vtkWidget_, &MyVTKWidget::mouseLeavesViewer, &vtkWidget_,
         [this]()
         {
             navigationManager_->onMouseLeavesViewer();
-            if (currentAction_)
-            currentAction_->onMouseLeavesViewer( );
+            this->onMouseLeavesViewer( );
         }
     );
 
@@ -1350,7 +1394,6 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     renWin()->AddRenderer(ren_);
 
     backgroundRen_->SetBackground(1., 1., 1.);
-
 
     auto btntb = this->addToolBar("View setup");
 
@@ -1382,33 +1425,35 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 QPixmap(":/icons/icon_minusz.svg"), "-Z",
                 this, &IQCADModel3DViewer::viewTop );
 
-    auto clBGAction = btntb->addAction("CLBG");
-    clBGBtn=
-        dynamic_cast<QToolButton*>(btntb->widgetForAction(clBGAction));
+    auto addBGAction = btntb->addAction(
+        QPixmap(":/icons/icon_bgimage.svg"), "Add Background Image");
 
-    auto addBGAction = btntb->addAction("BG");
     addBGBtn=
         dynamic_cast<QToolButton*>(btntb->widgetForAction(addBGAction));
 
     connect(addBGAction, &QAction::triggered, addBGAction,
     [this]() {
-        auto fn = QFileDialog::getOpenFileName(this, "Select background image file");
-        if (!fn.isEmpty())
+        if (auto fn = getFileName(
+                this, "Select background image file", GetFileMode::Open,
+                {
+                    {"jpg jpeg", "JPEG bitmap"},
+                    {"png", "Portable Network Graphic"}
+                } ))
         {
-            auto bgi = new BackgroundImage(fn.toStdString(), *this);
+            auto bgi = new BackgroundImage(fn, *this);
             backgroundImages_.push_back(bgi);
 
             connectBackgroundImageCommands(bgi);
         }
     }
     );
-    connect(clBGAction, &QAction::triggered, clBGAction,
-        [this]()
-        {
-            for (auto bgi: backgroundImages_) delete bgi;
-            backgroundImages_.clear();
-        }
-    );
+    // connect(clBGAction, &QAction::triggered, clBGAction,
+    //     [this]()
+    //     {
+    //         for (auto bgi: backgroundImages_) delete bgi;
+    //         backgroundImages_.clear();
+    //     }
+    // );
 
 
     btntb->addAction(
@@ -1446,6 +1491,13 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         std::bind(&IQVTKCADModel3DViewer::redrawNow, this, false)
     );
 
+    this->userPrompt.connect(
+        std::bind(&IQCADModel3DViewer::showUserPrompt,
+                  this, std::placeholders::_1) );
+    this->descriptionChanged.connect(
+        std::bind(&IQCADModel3DViewer::showCurrentActionDescription,
+                  this, std::placeholders::_1) );
+
     setDefaultAction();
 }
 
@@ -1453,12 +1505,14 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
 
 IQVTKCADModel3DViewer::~IQVTKCADModel3DViewer()
 {
+    aboutToBeDestroyed();
+
     // delete some stuff so that their destructors
     // still have access to viewer before actual viewer is destroyed
     clipping_.reset();
     exposedItem_.reset();
     navigationManager_.reset();
-    currentAction_.reset();
+
     for(auto bg: backgroundImages_)
     {
         delete bg;
@@ -1575,7 +1629,9 @@ void IQVTKCADModel3DViewer::deactivateSubshapeSelectionAll()
 
 
 
-vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) const
+vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
+    const QPoint& clickPos,
+    const std::set<vtkProp*>& restrictPicking ) const
 {
     auto p = widgetCoordsToVTK(clickPos);
 
@@ -1594,6 +1650,13 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(const QPoint& clickPos) c
 //    else
     {
         auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        if (restrictPicking.size())
+        {
+            picker3d->InitializePickList();
+            for (auto i: restrictPicking)
+                picker3d->AddPickList(i);
+            picker3d->SetPickFromList(true);
+        }
         picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
         auto pi = picker3d->GetProp3Ds();
@@ -1618,6 +1681,7 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     auto p = widgetCoordsToVTK(clickPos);
 
     {
+        // look for text (2D actors)
         auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
         picker2d->Pick(p.x(), p.y(), 0, ren_);
         if (auto act2 = picker2d->GetActor2D())
@@ -1635,19 +1699,22 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     //    picker3d->SetTolerance(1e-4);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
 
+        // insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
         auto pi = picker3d->GetProp3Ds();
         auto pp = picker3d->GetPickedPositions();
         int nsel = pi->GetNumberOfItems();
 
         auto cp = insight::vec3FromComponents(ren_->GetActiveCamera()->GetPosition());
-        std::map<double, vtkProp*> aa3d;
+        std::multimap<double, vtkProp*> aa3d;
         for (int i=0; i<nsel; ++i)
         {
             auto prop = vtkProp::SafeDownCast(pi->GetItemAsObject(i));
             if (actorsExcludedFromPicking_.count(prop)<1)
             {
-                double dist=arma::norm(insight::vec3FromComponents(pp->GetPoint(i))-cp, 2);
-                aa3d[dist]=prop;
+                arma::mat x=insight::vec3FromComponents(pp->GetPoint(i));
+                double dist=arma::norm(x-cp, 2);
+                aa3d.insert({dist, prop});
+                // insight::dbg()<<"hit #"<<i<<" "<<x.t()<<" "<<prop->GetClassName()<<std::endl;
             }
         }
         std::transform(
@@ -1655,6 +1722,51 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
             std::back_inserter(aa),
             [](decltype(aa3d)::value_type& aa3di) { return aa3di.second; }
             );
+    }
+
+    return aa;
+}
+
+std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsInRectangle(
+    const QPoint &clickPos1, const QPoint &clickPos2) const
+{
+    std::vector<vtkProp *> aa;
+    //    std::vector<double> dist;
+
+    auto p1 = widgetCoordsToVTK(clickPos1);
+    auto p2 = widgetCoordsToVTK(clickPos2);
+
+    // {
+    //     // look for text (2D actors)
+    //     auto picker2d = vtkSmartPointer<vtkPropPicker>::New();
+    //     picker2d->Pick(p.x(), p.y(), 0, ren_);
+    //     if (auto act2 = picker2d->GetActor2D())
+    //     {
+    //         aa.push_back(act2);
+    //     }
+
+    //     const_cast<IQVTKCADModel3DViewer*>(this)
+    //         ->redrawNow(); // flickering bug (black screen) otherwise
+    // }
+    {
+        // take a closer look with other pick engine
+        // which can detect multiple overlapping actors
+        auto picker3d = vtkSmartPointer<vtkAreaPicker>::New();
+        picker3d->AreaPick(p1.x(), p1.y(), p2.x(), p2.y(), ren_);
+
+        // insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
+        auto pi = picker3d->GetProp3Ds();
+        int nsel = pi->GetNumberOfItems();
+
+        auto cp = insight::vec3FromComponents(ren_->GetActiveCamera()->GetPosition());
+        for (int i=0; i<nsel; ++i)
+        {
+            auto prop = vtkProp::SafeDownCast(pi->GetItemAsObject(i));
+            if (actorsExcludedFromPicking_.count(prop)<1)
+            {
+                aa.push_back(prop);
+            }
+        }
     }
 
     return aa;
@@ -1799,6 +1911,8 @@ IQVTKCADModel3DViewer::pointInPlane3D(
     const gp_Ax3& plane,
     const QPoint &screenPos ) const
 {
+    insight::CurrentExceptionContext ex("mapping screen position to 3D position in plane (gp_Ax3)");
+
     auto *renderer = const_cast<IQVTKCADModel3DViewer*>(this)->renderer();
     auto v = widgetCoordsToVTK(screenPos);
 
@@ -1861,7 +1975,7 @@ void IQVTKCADModel3DViewer::onlyOneShaded(QPersistentModelIndex pidx)
                         auto repr=  insight::DatasetRepresentation(
                                 idx.siblingAtColumn(IQCADItemModel::entityRepresentationCol)
                                 .data().toInt() );
-                        std::cout<<"set repr="<<repr<<std::endl;
+                        // std::cout<<"set repr="<<repr<<std::endl;
                         ivtkocc->SetRepresentation(r);
                         ivtkocc->Update();
                     }
@@ -1916,13 +2030,16 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
     if (!name.isEmpty())
     {
         auto sk = std::dynamic_pointer_cast<insight::cad::ConstrainedSketch>(
-                    insight::cad::ConstrainedSketch::create(plane));
-        editSketch(*sk, insight::ParameterSet(),
-                   [](const insight::ParameterSet&, vtkProperty* actprops)
-                   {
-                       actprops->SetColor(1,0,0);
-                       actprops->SetLineWidth(2);
-                   },
+                    insight::cad::ConstrainedSketch::create(
+                        plane,
+                        *insight::cad::noParametersDelegate
+                ) );
+        editSketch(
+            *sk,
+
+            insight::cad::noParametersDelegate,
+            defaultGUIConstrainedSketchPresentationDelegate,
+
             [this,name](insight::cad::ConstrainedSketchPtr editedSk) {
                         cadmodel()->addModelstep(name.toStdString(), editedSk, false);
                         cadmodel()->setStaticModelStep(name.toStdString(), true);
@@ -1935,22 +2052,21 @@ void IQVTKCADModel3DViewer::doSketchOnPlane(insight::cad::DatumPtr plane)
 
 void IQVTKCADModel3DViewer::editSketch(
     const insight::cad::ConstrainedSketch& psk,
-    const insight::ParameterSet& defaultGeometryParameters,
-    SetSketchEntityAppearanceCallback saac,
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+    const std::string& presentationDelegateKey,
     SketchCompletionCallback onAccept,
     SketchCompletionCallback onCancel )
 {
     if (isDefaultAction())
     {
-        auto ske = std::make_unique<IQVTKConstrainedSketchEditor>(
+        auto ske = make_viewWidgetAction<IQVTKConstrainedSketchEditor>(
             *this,
             psk,
-            defaultGeometryParameters,
-            saac );
+            entityProperties, presentationDelegateKey );
 
         insight::cad::ConstrainedSketchPtr skePtr=*ske;
 
-        ske->actionIsFinished.connect(
+        ske->connectActionIsFinished(
             [onAccept,onCancel,skePtr](bool accepted)
             {
                 if (accepted)
@@ -1991,11 +2107,11 @@ QPointF IQVTKCADModel3DViewer::widgetCoordsToVTK(const QPoint &widgetCoords) con
 
 
 
-void IQVTKCADModel3DViewer::setDefaultAction()
+IQVTKCADModel3DViewer::ViewWidgetActionPtr
+IQVTKCADModel3DViewer::setupDefaultAction()
 {
-    auto selaction = std::make_shared<IQVTKSelectCADEntity>(*this);
+    auto selaction = make_viewWidgetAction<IQVTKSelectCADEntity>(*this);
     auto selactionPtr = selaction.get();
-    launchAction(selaction);
     connect(
         this, &IQVTKCADModel3DViewer::contextMenuClick, selactionPtr,
         [this,selactionPtr](const QPoint& pGlob)
@@ -2031,49 +2147,22 @@ void IQVTKCADModel3DViewer::setDefaultAction()
         }
     );
 
-}
-
-bool IQVTKCADModel3DViewer::isDefaultAction()
-{
-    if (currentAction_)
-    {
-        return typeid(*currentAction_) == typeid(IQVTKSelectCADEntity);
-    }
-    return false;
+    return std::move(selaction);
 }
 
 
 
-bool IQVTKCADModel3DViewer::launchAction(
-    ViewWidgetAction<IQVTKCADModel3DViewer>::Ptr activity, bool force )
-{
-    if (force)
-    {
-        currentAction_.reset();
-    }
-
-    if (!currentAction_)
-    {
-        currentAction_=activity;
-        currentAction_->actionIsFinished.connect(
-            std::bind(&IQVTKCADModel3DViewer::setDefaultAction, this) );        
-        currentAction_->userPrompt.connect(
-            std::bind(&QStatusBar::showMessage, statusBar(), std::placeholders::_1, 0) );
-
-        currentAction_->start();
-
-        return true;
-    }
-    else
-        return false;
-}
 
 const IQVTKCADModel3DViewer::Bounds &IQVTKCADModel3DViewer::sceneBounds() const
 {
     return sceneBounds_;
 }
 
+
+
 const char IQVTKCADModel3DViewer::bgiNodeName[] = "backgroundImage";
+
+
 
 void IQVTKCADModel3DViewer::writeViewerState(
     rapidxml::xml_document<>& doc,
@@ -2081,10 +2170,37 @@ void IQVTKCADModel3DViewer::writeViewerState(
 {
     auto* camera = ren_->GetActiveCamera();
 
+    auto camNode = appendNode(doc, node, "camera");
+
+    appendAttribute(
+        doc, camNode,
+        "parallelProjection", camera->GetParallelProjection());
+
+    appendAttribute(
+        doc, camNode,
+        "parallelScale", camera->GetParallelScale());
+
+    appendAttribute(
+        doc, camNode,
+        "position",
+        insight::valueToString(vec3FromComponents(
+            camera->GetPosition() )) );
+
+    appendAttribute(
+        doc, camNode,
+        "focalPoint",
+        insight::valueToString(vec3FromComponents(
+            camera->GetFocalPoint() )) );
+
+    appendAttribute(
+        doc, camNode,
+        "viewUp",
+        insight::valueToString(vec3FromComponents(
+            camera->GetViewUp() )) );
 
     for (const auto& bgi: backgroundImages_)
     {
-        auto &bgin = insight::appendNode(doc, node, bgiNodeName);
+        auto bgin = insight::appendNode(doc, node, bgiNodeName);
         bgi->write(doc, bgin);
     }
 }
@@ -2093,6 +2209,39 @@ void IQVTKCADModel3DViewer::writeViewerState(
 void IQVTKCADModel3DViewer::restoreViewerState(
     rapidxml::xml_node<>& node )
 {
+    auto* camera = ren_->GetActiveCamera();
+    if (auto *camNode = node.first_node("camera"))
+    {
+        if (auto *pp = camNode->first_attribute("parallelProjection"))
+            camera->SetParallelProjection(
+                boost::lexical_cast<bool>(pp->value()) );
+
+        if (auto *pp = camNode->first_attribute("parallelScale"))
+            camera->SetParallelScale(
+                boost::lexical_cast<double>(pp->value()) );
+
+        if (auto *pos = camNode->first_attribute("position"))
+        {
+            arma::mat p;
+            insight::stringToValue(pos->value(), p);
+            camera->SetPosition(p.memptr());
+        }
+
+        if (auto *fp = camNode->first_attribute("focalPoint"))
+        {
+            arma::mat p;
+            insight::stringToValue(fp->value(), p);
+            camera->SetFocalPoint(p.memptr());
+        }
+
+        if (auto *vu = camNode->first_attribute("viewUp"))
+        {
+            arma::mat v;
+            insight::stringToValue(vu->value(), v);
+            camera->SetViewUp(v.memptr());
+        }
+    }
+
     backgroundImages_.clear();
     for (auto *n=node.first_node(bgiNodeName); n; n=n->next_sibling(bgiNodeName))
     {
@@ -2100,6 +2249,40 @@ void IQVTKCADModel3DViewer::restoreViewerState(
         backgroundImages_.append(bgi);
         connectBackgroundImageCommands(bgi);
     }
+
+    ren_->ResetCameraClippingRange();
+
+    if (interactor()->GetLightFollowCamera())
+    {
+        ren_->UpdateLightsGeometryToFollowCamera();
+    }
+
+    scheduleRedraw();
+
+}
+
+
+void IQVTKCADModel3DViewer::setCameraState(
+    const insight::CameraState &camState )
+{
+    auto* camera = ren_->GetActiveCamera();
+
+    camera->SetParallelProjection(
+        camState.isParallelProjection );
+    camera->SetParallelScale(
+        camState.parallelScale );
+    camera->SetPosition(camState.cameraPosition.memptr());
+    camera->SetFocalPoint(camState.focalPosition.memptr());
+    camera->SetViewUp(camState.viewUp.memptr());
+
+    ren_->ResetCameraClippingRange();
+
+    if (interactor()->GetLightFollowCamera())
+    {
+        ren_->UpdateLightsGeometryToFollowCamera();
+    }
+
+    scheduleRedraw();
 }
 
 
@@ -2163,153 +2346,146 @@ void IQVTKCADModel3DViewer::setBackgroundColor(QColor c)
 }
 
 
-void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
-{
-    IQCADModel3DViewer::mouseDoubleClickEvent(e);
+// void IQVTKCADModel3DViewer::mouseDoubleClickEvent(QMouseEvent *e)
+// {
+//     dbg(3)<<">>> mouse double click"<<std::endl;
 
-    if ( e->button() & Qt::LeftButton )
-    {
-        bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-      if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
-    }
-}
+//     if ( e->button() & Qt::LeftButton )
+//     {
+//         afterDoubleClick_=true;
+//         bool ret=navigationManager_->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+//       if (!ret)
+//             ret=this->onLeftButtonDoubleClick( e->modifiers(), e->pos() );
+//     }
 
-void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
-{
-    dbg(3)<<"mouse press"<<std::endl;
+//     IQCADModel3DViewer::mouseDoubleClickEvent(e);
+// }
 
-    IQCADModel3DViewer::mousePressEvent(e);
+// void IQVTKCADModel3DViewer::mousePressEvent   ( QMouseEvent* e )
+// {
+//     dbg(3)<<">>> mouse press, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
-    if ( e->button() & Qt::LeftButton )
-    {
-        bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
-        if (!ret)
-            ret = this->onLeftButtonDown(e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonDown( e->modifiers(), e->pos() );
-    }
-    else if ( e->button() & Qt::RightButton )
-    {
-        bool ret=navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onRightButtonDown( e->modifiers(), e->pos() );
-    }
-    else if ( e->button() & Qt::MidButton )
-    {
-        bool ret=navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onMiddleButtonDown( e->modifiers(), e->pos() );
-    }
-}
+//     IQCADModel3DViewer::mousePressEvent(e);
+
+//     if ( e->button() & Qt::LeftButton )
+//     {
+//         bool ret=navigationManager_->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
+//         if (!ret)
+//             ret = this->onLeftButtonDown(e->modifiers(), e->pos(), afterDoubleClick_ );
+//         if (!ret)
+//             ret=this->onLeftButtonDown( e->modifiers(), e->pos(), afterDoubleClick_);
+//     }
+//     else if ( e->button() & Qt::RightButton )
+//     {
+//         bool ret=navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onRightButtonDown( e->modifiers(), e->pos() );
+//     }
+//     else if ( e->button() & Qt::MidButton )
+//     {
+//         bool ret=navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onMiddleButtonDown( e->modifiers(), e->pos() );
+//     }
 
 
-
-
-void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
-{
-    dbg(3)<<"mouse release"<<std::endl;
-
-    IQCADModel3DViewer::mouseReleaseEvent(e);
-
-    if ( e->button() & Qt::LeftButton )
-    {
-        bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
-        if (!ret)
-            ret = this->onLeftButtonUp(e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onLeftButtonUp( e->modifiers(), e->pos() );
-    }
-    else if ( e->button() & Qt::RightButton )
-    {
-        bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onRightButtonUp( e->modifiers(), e->pos() );
-
-        if (!ret)
-        {
-            Q_EMIT contextMenuClick( mapToGlobal(e->pos()) );
-        }
-    }
-    else if ( e->button() & Qt::MidButton )
-    {
-        bool ret=navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (!ret && currentAction_)
-            ret=currentAction_->onMiddleButtonUp( e->modifiers(), e->pos() );
-    }
-}
+// }
 
 
 
 
-void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
-{
-    dbg(3)<<"mouse move"<<std::endl;
+// void IQVTKCADModel3DViewer::mouseReleaseEvent ( QMouseEvent* e )
+// {
+//     dbg(3)<<">>> mouse release, afterDoubleClick="<<afterDoubleClick_<<std::endl;
 
-    IQCADModel3DViewer::mouseMoveEvent(e);
+//     IQCADModel3DViewer::mouseReleaseEvent(e);
 
-    bool ret=false;
-    if (currentAction_)
-        if (!ret) ret=currentAction_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-    if (!ret) navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-}
+//     if ( e->button() & Qt::LeftButton )
+//     {
+//         bool ret=navigationManager_->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
+//         if (!ret)
+//             ret = this->onLeftButtonUp(e->modifiers(), e->pos(), afterDoubleClick_ );
+//         if (!ret)
+//             ret=this->onLeftButtonUp( e->modifiers(), e->pos(), afterDoubleClick_ );
+//     }
+//     else if ( e->button() & Qt::RightButton )
+//     {
+//         bool ret=navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onRightButtonUp( e->modifiers(), e->pos() );
+//     }
+//     else if ( e->button() & Qt::MidButton )
+//     {
+//         bool ret=navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
+//         if (!ret)
+//             ret=this->onMiddleButtonUp( e->modifiers(), e->pos() );
+//     }
 
-
-
-
-void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
-{
-    dbg(3)<<"wheel"<<std::endl;
-
-    IQCADModel3DViewer::wheelEvent(e);
-
-    bool ret=false;
-    if (currentAction_)
-        if (!ret) ret=currentAction_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-    if (!ret) navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-}
-
-
-
-
-void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
-{
-    dbg(3)<<"key press"<<std::endl;
-
-    IQCADModel3DViewer::keyPressEvent(e);
-
-    if (e->key() == Qt::Key_Escape)
-    {
-        setDefaultAction();
-    }
-
-    bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
-
-    if (!ret)
-      ret = this->onKeyPress(e->modifiers(), e->key());
-
-    if (!ret && currentAction_)
-      ret=currentAction_->onKeyPress(e->modifiers(), e->key());
-
-    if (!ret) QWidget::keyPressEvent(e);
-}
+//     afterDoubleClick_=false; // reset
+// }
 
 
 
 
-void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
-{
-    dbg(3)<<"key release"<<std::endl;
+// void IQVTKCADModel3DViewer::mouseMoveEvent( QMouseEvent* e )
+// {
+//     dbg(3)<<">>> mouse move"<<std::endl;
 
-    IQCADModel3DViewer::keyReleaseEvent(e);
+//     IQCADModel3DViewer::mouseMoveEvent(e);
 
-    bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
+//     bool ret=false;
+//     if (!ret) ret=this->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+//     if (!ret) navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
+// }
 
-    if (!ret && currentAction_)
-      ret=currentAction_->onKeyRelease(e->modifiers(), e->key());
 
-    if (!ret) QWidget::keyReleaseEvent(e);
-}
+
+
+// void IQVTKCADModel3DViewer::wheelEvent( QWheelEvent* e )
+// {
+//     dbg(3)<<"wheel"<<std::endl;
+
+//     IQCADModel3DViewer::wheelEvent(e);
+
+//     bool ret=false;
+//     if (!ret) ret=this->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+//     if (!ret) navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
+// }
+
+
+
+
+// void IQVTKCADModel3DViewer::keyPressEvent( QKeyEvent* e )
+// {
+//     dbg(3)<<"key press"<<std::endl;
+
+//     IQCADModel3DViewer::keyPressEvent(e);
+
+//     if (!e->isAccepted())
+//     {
+//         bool ret=navigationManager_->onKeyPress(e->modifiers(), e->key());
+
+//         if (!ret && vtkWidget_.hasFocus())
+//           ret = this->onKeyPress(e->modifiers(), e->key());
+//     }
+// }
+
+
+
+
+// void IQVTKCADModel3DViewer::keyReleaseEvent( QKeyEvent* e )
+// {
+//     dbg(3)<<"key release"<<std::endl;
+
+//     IQCADModel3DViewer::keyReleaseEvent(e);
+//     if (!e->isAccepted())
+//     {
+//         bool ret=navigationManager_->onKeyRelease(e->modifiers(), e->key());
+
+//         if (!ret && vtkWidget_.hasFocus())
+//           ret=this->onKeyRelease(e->modifiers(), e->key());
+//     }
+// }
 
 
 
@@ -2355,7 +2531,13 @@ void IQVTKCADModel3DViewer::ViewState::resetCameraIfAllow()
     }
 }
 
+
+
 IQVTKCADModel3DViewer::Bounds::Bounds()
     : xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0)
 {}
 
+
+defineTemplateType(NavigationManager<IQVTKCADModel3DViewer>);
+defineFactoryTable2(
+    VTKNavigationManager, NavigationManagerFactory, navigationManagers );

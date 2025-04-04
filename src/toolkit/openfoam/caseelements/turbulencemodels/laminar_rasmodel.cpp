@@ -9,8 +9,8 @@ addToFactoryTable(turbulenceModel, laminar_RASModel);
 
 addToOpenFOAMCaseElementFactoryTable(laminar_RASModel);
 
-laminar_RASModel::laminar_RASModel(OpenFOAMCase& c, const ParameterSet& /*ps*/)
-: RASModel(c)
+laminar_RASModel::laminar_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: RASModel(c, ip.forward<Parameters>())
 {}
 
 

@@ -4,9 +4,11 @@
 #include <ostream>
 #include <memory>
 
+#include "base/cppextensions.h"
 #include "vtkSTLWriter.h"
 
 #include "base/tools.h"
+#include "base/rapidxml.h"
 
 namespace insight
 {
@@ -168,7 +170,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
   boost::filesystem::path inputfilepath
 ) const
 {
-    insight::CurrentExceptionContext ex(2, "appending path "+name+" to node "+node.name());
+    insight::CurrentExceptionContext ex(3, "appending path "+name+" to node "+node.name());
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
@@ -207,18 +209,21 @@ void PathParameter::readFromNode
   }
 }
 
-PathParameter *PathParameter::clonePathParameter() const
+std::unique_ptr<PathParameter> PathParameter::clonePathParameter() const
 {
-  return new PathParameter(
-        originalFilePath_,
-        description_.simpleLatex(),
-        isHidden_, isExpert_, isNecessary_, order_,
-        file_content_);
+    return std::dynamic_unique_ptr_cast<PathParameter>(
+        clone(true));
 }
 
-Parameter* PathParameter::clone() const
+std::unique_ptr<Parameter> PathParameter::clone(bool init) const
 {
-  return clonePathParameter();
+    auto p= std::make_unique<PathParameter>(
+        originalFilePath_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order(),
+        file_content_);
+    if (init) p->initialize();
+    return p;
 }
 
 void PathParameter::copyFrom(const Parameter& p)
@@ -353,14 +358,19 @@ void DirectoryParameter::operator=(const DirectoryParameter &p)
 
 
 
-Parameter* DirectoryParameter::clone() const
+std::unique_ptr<Parameter> DirectoryParameter::clone(bool init) const
 {
-  return cloneDirectoryParameter();
+    auto p=std::make_unique<DirectoryParameter>(
+        originalFilePath_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order() );
+    if (init) p->initialize();
+    return p;
 }
 
-DirectoryParameter *DirectoryParameter::cloneDirectoryParameter() const
+std::unique_ptr<DirectoryParameter> DirectoryParameter::cloneDirectoryParameter() const
 {
-  return new DirectoryParameter(originalFilePath_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+    return std::dynamic_unique_ptr_cast<DirectoryParameter>(clone(true));
 }
 
 

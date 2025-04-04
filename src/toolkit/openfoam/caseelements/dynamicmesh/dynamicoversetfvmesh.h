@@ -16,19 +16,23 @@ public:
 #include "dynamicoversetfvmesh__dynamicOversetFvMesh__Parameters.h"
 /*
 PARAMETERSET>>> dynamicOversetFvMesh Parameters
+inherits dynamicMesh::Parameters
 
 rigidBodyMotion = includedset "SixDOFRigidBodyMotionSolver::Parameters" "Parameters of the rigid body motion solver"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
+// protected:
+//     ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
 
 public:
   declareType ( "dynamicOversetFvMesh" );
 
-  dynamicOversetFvMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
+  dynamicOversetFvMesh(
+      OpenFOAMCase& c,
+      ParameterSetInput ip = Parameters() );
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

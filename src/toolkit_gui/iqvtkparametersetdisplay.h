@@ -8,7 +8,7 @@
 #include "iqvtkiscadmodeldisplay.h"
 
 namespace insight {
-class CADParameterSetVisualizer;
+class CADParameterSetModelVisualizer;
 }
 
 /**

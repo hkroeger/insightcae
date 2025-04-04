@@ -12,8 +12,8 @@ addToOpenFOAMCaseElementFactoryTable(kOmegaSST2_RASModel);
 //   c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 // }
 
-kOmegaSST2_RASModel::kOmegaSST2_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
-: kOmegaSST_RASModel(c)
+kOmegaSST2_RASModel::kOmegaSST2_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
+: kOmegaSST_RASModel(c, ip.forward<Parameters>())
 {
 //   kOmegaSST2_RASModel::addFields();
 }

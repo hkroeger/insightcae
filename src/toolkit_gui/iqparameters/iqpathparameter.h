@@ -8,7 +8,8 @@
 
 #include "base/parameters/pathparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQPathParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQPathParameter
+    : public IQSpecializedParameter<insight::PathParameter>
 {
 public:
   declareType(insight::PathParameter::typeName_());
@@ -17,8 +18,7 @@ public:
   (
       QObject* parent,
       IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& parameter,
+      insight::Parameter* parameter,
       const insight::ParameterSet& defaultParameterSet
   );
 

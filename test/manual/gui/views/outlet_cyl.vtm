@@ -1,0 +1,13 @@
+<VTKFile type="vtkMultiBlockDataSet" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  <vtkMultiBlockDataSet>
+    <DataSet index="0" name="outlet" file="outlet_cyl/outlet_cyl_0_0.vtp"/>
+  </vtkMultiBlockDataSet>
+  <FieldData>
+    <DataArray type="Int8" Name="CasePath" NumberOfTuples="92" format="binary" RangeMin="0" RangeMax="120">
+      XAAAAAAAAAAvaG9tZS9oYW5uZXMvU0NSQVRDSC9PLTIwMjQtMjU1X0dlc21leF9GaW5hbC9ydW4vY2hhbm5lbDNfaG90L3N1YmNhc2VfX29wZXJhdGlvbl9RPTAuMDIxNDIvAA==
+    </DataArray>
+    <DataArray type="Float64" Name="TimeValue" NumberOfTuples="1" format="binary" RangeMin="0" RangeMax="0">
+      CAAAAAAAAAAAAAAAAAAAAA==
+    </DataArray>
+  </FieldData>
+</VTKFile>

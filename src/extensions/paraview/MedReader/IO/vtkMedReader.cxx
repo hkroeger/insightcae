@@ -70,7 +70,7 @@
 #include "vtkMultiProcessController.h"
 #include "vtkCommunicator.h"
 
-#include "vtkSMDoubleVectorProperty.h"
+// #include "vtkSMDoubleVectorProperty.h"
 #include "vtkInformationDataObjectKey.h"
 
 #include <deque>
@@ -467,17 +467,33 @@ int vtkMedReader::RequestData(vtkInformation *request,
   // This call creates the actual vtkDataSet that corresponds to each support
   int supportId = 0;
   int progress=0;
+
+  // sorted copy
+  std::vector<vtkMedFamilyOnEntityOnProfile*> usedSupports(
+    this->Internal->UsedSupports.begin(),
+    this->Internal->UsedSupports.end() );
+  std::sort(
+    usedSupports.begin(), usedSupports.end(),
+      [](
+         vtkMedFamilyOnEntityOnProfile* foep1,
+         vtkMedFamilyOnEntityOnProfile* foep2 )
+      { return
+         std::string(foep1->GetFamilyOnEntity()->GetFamily()->GetName())
+            <
+         std::string(foep2->GetFamilyOnEntity()->GetFamily()->GetName()); });
+
   int maxprogress=2*this->Internal->UsedSupports.size();
   supportId = 0;
   int it_counter = 0;
-  for(set<vtkMedFamilyOnEntityOnProfile*>::iterator it=
-      this->Internal->UsedSupports.begin(); it
-      !=this->Internal->UsedSupports.end(); it++)
+  for(auto it=
+      usedSupports.begin(); it
+      !=usedSupports.end(); it++)
     {
     ostringstream sstr;
     vtkMedFamilyOnEntityOnProfile* foep = *it;
     sstr<<"Support : "<<vtkMedUtilities::SimplifyName(
         foep->GetFamilyOnEntity()->GetFamily()->GetName());
+    std::cout<<sstr.str()<<std::endl;
     this->SetProgressText(sstr.str().c_str());
     int doBuildSupportField = 1;
     it_counter++;
@@ -489,9 +505,9 @@ int vtkMedReader::RequestData(vtkInformation *request,
 
   this->ClearCaches(EndBuildVTKSupports);
   // This call maps the fields to the supports
-  for(set<vtkMedFamilyOnEntityOnProfile*>::iterator it=
-      this->Internal->UsedSupports.begin(); it
-      !=this->Internal->UsedSupports.end(); it++)
+  for(auto it=
+      usedSupports.begin(); it
+      !=usedSupports.end(); it++)
     {
     vtkMedFamilyOnEntityOnProfile* foep = *it;
     if((foep->GetValid() == 0) && (this->Internal->NumberOfPieces == 1))
@@ -499,6 +515,7 @@ int vtkMedReader::RequestData(vtkInformation *request,
     ostringstream sstr;
     sstr<<"Loading fields on "<<vtkMedUtilities::SimplifyName(
         foep->GetFamilyOnEntity()->GetFamily()->GetName());
+    std::cout<<sstr.str()<<std::endl;
     this->SetProgressText(sstr.str().c_str());
     int doMapField = 1;
     this->MapFieldsOnSupport(*it, doMapField);
@@ -2997,178 +3014,178 @@ int vtkMedReader::HasMeshAnyPointSelectedFamily(vtkMedMesh* mesh)
 
 void vtkMedReader::BuildSIL(vtkMutableDirectedGraph* sil)
 {
-  if(sil==NULL)
-    return;
+    if(sil==NULL)
+        return;
 
-  sil->Initialize();
+    sil->Initialize();
 
-  vtkSmartPointer<vtkVariantArray> childEdge=
-      vtkSmartPointer<vtkVariantArray>::New();
-  childEdge->InsertNextValue(0);
+    vtkSmartPointer<vtkVariantArray> childEdge=
+        vtkSmartPointer<vtkVariantArray>::New();
+    childEdge->InsertNextValue(0);
 
-  vtkSmartPointer<vtkVariantArray> crossEdge=
-      vtkSmartPointer<vtkVariantArray>::New();
-  crossEdge->InsertNextValue(1);
+    vtkSmartPointer<vtkVariantArray> crossEdge=
+        vtkSmartPointer<vtkVariantArray>::New();
+    crossEdge->InsertNextValue(1);
 
-  // CrossEdge is an edge linking hierarchies.
-  vtkUnsignedCharArray* crossEdgesArray=vtkUnsignedCharArray::New();
-  crossEdgesArray->SetName("CrossEdges");
-  sil->GetEdgeData()->AddArray(crossEdgesArray);
-  crossEdgesArray->Delete();
-  std::deque<vtkStdString> names;
+    // CrossEdge is an edge linking hierarchies.
+    vtkUnsignedCharArray* crossEdgesArray=vtkUnsignedCharArray::New();
+    crossEdgesArray->SetName("CrossEdges");
+    sil->GetEdgeData()->AddArray(crossEdgesArray);
+    crossEdgesArray->Delete();
+    std::deque<vtkStdString> names;
 
-  // Now build the hierarchy.
-  vtkIdType rootId=sil->AddVertex();
-  names.push_back("SIL");
+    // Now build the hierarchy.
+    vtkIdType rootId=sil->AddVertex();
+    names.push_back("SIL");
 
-  // Add a global entry to encode global names for the families
-  vtkIdType globalFamilyRoot=sil->AddChild(rootId, childEdge);
-  names.push_back("Families");
+    // Add a global entry to encode global names for the families
+    vtkIdType globalFamilyRoot=sil->AddChild(rootId, childEdge);
+    names.push_back("Families");
 
-  // Add a global entry to encode global names for the families
-  vtkIdType globalGroupRoot=sil->AddChild(rootId, childEdge);
-  names.push_back("Groups");
+    // Add a global entry to encode global names for the families
+    vtkIdType globalGroupRoot=sil->AddChild(rootId, childEdge);
+    names.push_back("Groups");
 
-  // Add the groups subtree
-  vtkIdType groupsRoot=sil->AddChild(rootId, childEdge);
-  names.push_back("GroupTree");
+    // Add the groups subtree
+    vtkIdType groupsRoot=sil->AddChild(rootId, childEdge);
+    names.push_back("GroupTree");
 
-  // Add a global entry to encode names for the cell types
-  vtkIdType globalEntityRoot=sil->AddChild(rootId, childEdge);
-  names.push_back("Entity");
+    // Add a global entry to encode names for the cell types
+    vtkIdType globalEntityRoot=sil->AddChild(rootId, childEdge);
+    names.push_back("Entity");
 
-  // Add the cell types subtree
-  vtkIdType entityTypesRoot=sil->AddChild(rootId, childEdge);
-  names.push_back("EntityTree");
+    // Add the cell types subtree
+    vtkIdType entityTypesRoot=sil->AddChild(rootId, childEdge);
+    names.push_back("EntityTree");
 
-  // this is the map that keep added cell types
-  map<vtkMedEntity, vtkIdType> entityMap;
-  map<med_entity_type, vtkIdType> typeMap;
+    // this is the map that keep added cell types
+    map<vtkMedEntity, vtkIdType> entityMap;
+    map<med_entity_type, vtkIdType> typeMap;
 
-  std::map<std::string, vtkSmartPointer<vtkMedFile> >::iterator
-      meshfileit = this->Internal->MedFiles.begin();
-  while(meshfileit != this->Internal->MedFiles.end())
+    std::map<std::string, vtkSmartPointer<vtkMedFile> >::iterator
+        meshfileit = this->Internal->MedFiles.begin();
+    while(meshfileit != this->Internal->MedFiles.end())
     {
-    vtkMedFile* file = meshfileit->second;
-    meshfileit++;
+        vtkMedFile* file = meshfileit->second;
+        meshfileit++;
 
-    int numMeshes=file->GetNumberOfMesh();
-    for(int meshIndex=0; meshIndex<numMeshes; meshIndex++)
-      {
-      vtkMedMesh* mesh = file->GetMesh(meshIndex);
-      vtkMedGrid* grid = this->FindGridStep(mesh);
-
-      if(grid == NULL)
-        continue;
-
-      // add all entities
-      for(int entityIndex=0; entityIndex<grid->GetNumberOfEntityArray(); entityIndex++)
+        int numMeshes=file->GetNumberOfMesh();
+        for(int meshIndex=0; meshIndex<numMeshes; meshIndex++)
         {
-        vtkMedEntityArray* array=grid->GetEntityArray(entityIndex);
-        vtkMedEntity entity = array->GetEntity();
+            vtkMedMesh* mesh = file->GetMesh(meshIndex);
+            vtkMedGrid* grid = this->FindGridStep(mesh);
 
-        if(entityMap.find(entity)==entityMap.end())
-          {
-          vtkIdType entityGlobalId=sil->AddChild(globalEntityRoot, childEdge);
-          names.push_back(vtkMedUtilities::EntityKey(entity));
+            if(grid == NULL)
+                continue;
 
-          vtkIdType typeId;
-          if(typeMap.find(entity.EntityType)==typeMap.end())
+            // add all entities
+            for(int entityIndex=0; entityIndex<grid->GetNumberOfEntityArray(); entityIndex++)
             {
-            typeId=sil->AddChild(entityTypesRoot, childEdge);
-            names.push_back(vtkMedUtilities::EntityName(entity.EntityType));
-            typeMap[entity.EntityType]=typeId;
+                vtkMedEntityArray* array=grid->GetEntityArray(entityIndex);
+                vtkMedEntity entity = array->GetEntity();
+
+                if(entityMap.find(entity)==entityMap.end())
+                {
+                    vtkIdType entityGlobalId=sil->AddChild(globalEntityRoot, childEdge);
+                    names.push_back(vtkMedUtilities::EntityKey(entity));
+
+                    vtkIdType typeId;
+                    if(typeMap.find(entity.EntityType)==typeMap.end())
+                    {
+                        typeId=sil->AddChild(entityTypesRoot, childEdge);
+                        names.push_back(vtkMedUtilities::EntityName(entity.EntityType));
+                        typeMap[entity.EntityType]=typeId;
+                    }
+                    else
+                    {
+                        typeId=typeMap[entity.EntityType];
+                    }
+                    vtkIdType entityId=sil->AddChild(typeId, childEdge);
+                    names.push_back(entity.GeometryName);
+
+                    sil->AddEdge(entityId, entityGlobalId, crossEdge);
+
+                    entityMap[entity]=entityId;
+                }
             }
-          else
+
+            vtkIdType meshGroup = sil->AddChild(groupsRoot, childEdge);
+            names.push_back(vtkMedUtilities::SimplifyName(mesh->GetName()));
+
+            // add the two OnPoint and OnCell entries, for groups and for families
+            vtkIdType meshCellGroups = sil->AddChild(meshGroup, childEdge);
+            names.push_back(vtkMedUtilities::OnCellName);
+
+            vtkIdType meshPointGroups = sil->AddChild(meshGroup, childEdge);
+            names.push_back(vtkMedUtilities::OnPointName);
+
+            // this maps will keep all added groups on nodes/cells of this mesh
+            map<string, vtkIdType> nodeGroupMap;
+            map<string, vtkIdType> cellGroupMap;
+
+            // add all families
+            for(int famIndex=0; famIndex<mesh->GetNumberOfFamily(); famIndex++)
             {
-            typeId=typeMap[entity.EntityType];
-            }
-          vtkIdType entityId=sil->AddChild(typeId, childEdge);
-          names.push_back(entity.GeometryName);
+                vtkMedFamily* family=mesh->GetFamily(famIndex);
 
-          sil->AddEdge(entityId, entityGlobalId, crossEdge);
+                vtkIdType globalFamilyId = sil->AddChild(globalFamilyRoot, childEdge);
+                names.push_back(vtkMedUtilities::FamilyKey(mesh->GetName(),
+                                                           family->GetPointOrCell(),
+                                                           family->GetName()));
 
-          entityMap[entity]=entityId;
-          }
-        }
+                // family with Id 0 is both on cell and on points, so add it to both
+                map<string, vtkIdType> & groupMap=(family->GetPointOrCell()
+                                                            ==vtkMedUtilities::OnPoint? nodeGroupMap: cellGroupMap);
 
-      vtkIdType meshGroup = sil->AddChild(groupsRoot, childEdge);
-      names.push_back(vtkMedUtilities::SimplifyName(mesh->GetName()));
+                vtkIdType groupRootId =
+                    (family->GetPointOrCell()==vtkMedUtilities::OnPoint?
+                         meshPointGroups : meshCellGroups);
 
-      // add the two OnPoint and OnCell entries, for groups and for families
-      vtkIdType meshCellGroups = sil->AddChild(meshGroup, childEdge);
-      names.push_back(vtkMedUtilities::OnCellName);
+                // add all the groups of this family
+                for(vtkIdType groupIndex=0; groupIndex<family->GetNumberOfGroup();
+                     groupIndex++)
+                {
+                    vtkMedGroup* group=family->GetGroup(groupIndex);
 
-      vtkIdType meshPointGroups = sil->AddChild(meshGroup, childEdge);
-      names.push_back(vtkMedUtilities::OnPointName);
+                    vtkIdType familyGroupId = sil->AddChild(globalFamilyId, childEdge);
+                    names.push_back(vtkMedUtilities::FamilyKey(
+                        mesh->GetName(), family->GetPointOrCell(),
+                        family->GetName()));
 
-      // this maps will keep all added groups on nodes/cells of this mesh
-      map<string, vtkIdType> nodeGroupMap;
-      map<string, vtkIdType> cellGroupMap;
+                    vtkIdType groupGlobalId;
+                    if(groupMap.find(group->GetName())==groupMap.end())
+                    {
+                        vtkIdType groupLocalId;
+                        groupLocalId=sil->AddChild(groupRootId, childEdge);
+                        names.push_back(vtkMedUtilities::SimplifyName(group->GetName()));
 
-      // add all families
-      for(int famIndex=0; famIndex<mesh->GetNumberOfFamily(); famIndex++)
-        {
-        vtkMedFamily* family=mesh->GetFamily(famIndex);
+                        groupGlobalId=sil->AddChild(globalGroupRoot, childEdge);
+                        names.push_back(vtkMedUtilities::GroupKey(
+                            mesh->GetName(), family->GetPointOrCell(),
+                            group->GetName()));
+                        groupMap[group->GetName()]=groupGlobalId;
 
-        vtkIdType globalFamilyId = sil->AddChild(globalFamilyRoot, childEdge);
-        names.push_back(vtkMedUtilities::FamilyKey(mesh->GetName(),
-                                                   family->GetPointOrCell(),
-                                                   family->GetName()));
+                        sil->AddEdge(groupLocalId, groupGlobalId, crossEdge);
+                    }
+                    vtkIdType groupId = groupMap[group->GetName()];
+                    sil->AddEdge(familyGroupId, groupId, childEdge);
 
-        // family with Id 0 is both on cell and on points, so add it to both
-        map<string, vtkIdType> & groupMap=(family->GetPointOrCell()
-            ==vtkMedUtilities::OnPoint? nodeGroupMap: cellGroupMap);
-
-        vtkIdType groupRootId =
-            (family->GetPointOrCell()==vtkMedUtilities::OnPoint?
-             meshPointGroups : meshCellGroups);
-
-        // add all the groups of this family
-        for(vtkIdType groupIndex=0; groupIndex<family->GetNumberOfGroup();
-          groupIndex++)
-          {
-          vtkMedGroup* group=family->GetGroup(groupIndex);
-
-          vtkIdType familyGroupId = sil->AddChild(globalFamilyId, childEdge);
-          names.push_back(vtkMedUtilities::FamilyKey(
-              mesh->GetName(), family->GetPointOrCell(),
-              family->GetName()));
-
-          vtkIdType groupGlobalId;
-          if(groupMap.find(group->GetName())==groupMap.end())
-            {
-            vtkIdType groupLocalId;
-            groupLocalId=sil->AddChild(groupRootId, childEdge);
-            names.push_back(vtkMedUtilities::SimplifyName(group->GetName()));
-
-            groupGlobalId=sil->AddChild(globalGroupRoot, childEdge);
-            names.push_back(vtkMedUtilities::GroupKey(
-                mesh->GetName(), family->GetPointOrCell(),
-                group->GetName()));
-            groupMap[group->GetName()]=groupGlobalId;
-
-            sil->AddEdge(groupLocalId, groupGlobalId, crossEdge);
-            }
-          vtkIdType groupId = groupMap[group->GetName()];
-          sil->AddEdge(familyGroupId, groupId, childEdge);
-
-          }//groupIndex
-        }//famIndex
-      }//meshIndex
+                }//groupIndex
+            }//famIndex
+        }//meshIndex
     }// file iterator
 
-  // This array is used to assign names to nodes.
-  vtkStringArray* namesArray=vtkStringArray::New();
-  namesArray->SetName("Names");
-  namesArray->SetNumberOfTuples(sil->GetNumberOfVertices());
-  sil->GetVertexData()->AddArray(namesArray);
-  namesArray->Delete();
-  std::deque<vtkStdString>::iterator iter;
-  vtkIdType cc;
-  for(cc=0, iter=names.begin(); iter!=names.end(); ++iter, ++cc)
+    // This array is used to assign names to nodes.
+    vtkStringArray* namesArray=vtkStringArray::New();
+    namesArray->SetName("Names");
+    namesArray->SetNumberOfTuples(sil->GetNumberOfVertices());
+    sil->GetVertexData()->AddArray(namesArray);
+    namesArray->Delete();
+    std::deque<vtkStdString>::iterator iter;
+    vtkIdType cc;
+    for(cc=0, iter=names.begin(); iter!=names.end(); ++iter, ++cc)
     {
-    namesArray->SetValue(cc, (*iter).c_str());
+        namesArray->SetValue(cc, (*iter).c_str());
     }
 }
 

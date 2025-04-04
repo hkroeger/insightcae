@@ -1,51 +1,46 @@
 #ifndef DYNAMICCLASSSELECTABLESUBSETPARAMETERPARSER_H
 #define DYNAMICCLASSSELECTABLESUBSETPARAMETERPARSER_H
 
-#include "parserdatabase.h"
+#include "parametergenerator.h"
 
 
-struct DynamicClassSelectableSubsetParameterParser {
+struct DynamicClassSelectableSubsetParameterParser
+    : public ParameterGenerator
+{
 
-    struct Data
-            : public ParserDataBase {
-
-        typedef boost::fusion::vector2<std::string, ParserDataBase::Ptr> SubsetData;
+        typedef boost::fusion::vector2<std::string, ParameterGeneratorPtr> SubsetData;
         typedef std::vector<SubsetData> SubsetListData;
 
         std::string base_type, default_sel_;
 
-        Data ( const std::string& base,  const std::string& default_sel, const std::string& d );
+        DynamicClassSelectableSubsetParameterParser (
+            const std::string& base,  const std::string& default_sel, const std::string& d );
 
-        void cppAddHeader ( std::set<std::string>&  ) const override;
-        std::string cppType ( const std::string&  ) const override;
-        std::string cppValueRep ( const std::string&, const std::string& thisscope  ) const override;
-        std::string cppParamType ( const std::string&  ) const override;
+        void cppAddRequiredInclude ( std::set<std::string>&  ) const override;
+
+        std::string cppInsightType (  ) const override;
+        std::string cppStaticType () const override;
+        std::string cppDefaultValueExpression ( ) const override;
 
         void cppWriteCreateStatement
         (
             std::ostream& os,
-            const std::string& name,
-            const std::string& thisscope
+            const std::string& psvarname
         ) const override;
 
         void cppWriteSetStatement
         (
             std::ostream& os,
-            const std::string& ,
             const std::string& varname,
-            const std::string& staticname,
-            const std::string&
+            const std::string& staticname
         ) const override;
 
         void cppWriteGetStatement
         (
             std::ostream& os,
-            const std::string& ,
             const std::string& varname,
-            const std::string& staticname,
-            const std::string&
+            const std::string& staticname
         ) const override;
-    };
 
     declareType("dynamicclassconfig");
 
@@ -56,8 +51,13 @@ struct DynamicClassSelectableSubsetParameterParser {
             typeName,
             std::make_shared<PDLParserRuleset::ParameterDataRule>(
 
-                ( ruleset.r_string >> ( (qi::lit("default") >> ruleset.r_string)|(qi::attr(std::string())) ) >> ruleset.r_description_string )
-                [ qi::_val = phx::construct<ParserDataBase::Ptr> ( phx::new_<Data> ( qi::_1, qi::_2, qi::_3) ) ]
+                ( ruleset.r_string
+                 >> ( (qi::lit("default")
+                      >> ruleset.r_string)|(qi::attr(std::string())) )
+                 >> ruleset.r_description_string )
+                [ qi::_val = phx::construct<ParameterGeneratorPtr> (
+                         phx::new_<DynamicClassSelectableSubsetParameterParser> (
+                             qi::_1, qi::_2, qi::_3) ) ]
 
             )
         );

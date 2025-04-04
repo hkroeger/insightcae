@@ -14,8 +14,12 @@ defineType(CyclicPairBC);
 // addToFactoryTable(BoundaryCondition, CyclicPairBC);
 // addToStaticFunctionTable(BoundaryCondition, CyclicPairBC, defaultParameters);
 
-CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps)
-: OpenFOAMCaseElement(c, patchName+"CyclicBC", ps),
+CyclicPairBC::CyclicPairBC(
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+: OpenFOAMCaseElement(c, /*patchName+"CyclicBC", */
+                          ip.forward<Parameters>()),
   patchName_(patchName)
 {
   if (c.OFversion()>=210)

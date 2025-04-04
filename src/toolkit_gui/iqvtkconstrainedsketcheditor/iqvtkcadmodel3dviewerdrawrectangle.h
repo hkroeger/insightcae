@@ -18,6 +18,10 @@ private:
 
     vtkSmartPointer<vtkActor> previewLine_;
     insight::cad::Line* prevLine_;
+    bool addToSketch_;
+
+public:
+    boost::signals2::signal<void(const arma::mat& p1, const arma::mat& p2)> previewUpdated;
 
 private:
     std::pair<arma::mat, arma::mat>
@@ -28,19 +32,21 @@ private:
 
 public:
     IQVTKCADModel3DViewerDrawRectangle(
-        IQVTKConstrainedSketchEditor &editor );
+        IQVTKConstrainedSketchEditor &editor,
+        bool allowExistingPoints = true,
+        bool addToSketch = true );
     ~IQVTKCADModel3DViewerDrawRectangle();
 
     void start() override;
 
-    bool onMouseMove
-        (
-            Qt::MouseButtons buttons,
-            const QPoint point,
-            Qt::KeyboardModifiers curFlags
-            ) override;
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override;
 
-    bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
 Q_SIGNALS:
     void updateActors();

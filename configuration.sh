@@ -1,9 +1,9 @@
 
 # the superbuild branch should be identical with the InsightCAE branch
-BRANCH=master
+BRANCH=next-release
 TRACK_BRANCH=master
 OS=ubuntu
-VER=jammy
+VER=noble
 DO_WINDOWS_BUILD=1
 
 INSTALL_PREFIX=/opt/insightcae

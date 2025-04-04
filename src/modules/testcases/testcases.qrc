@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>analysis_airfoil2d.svg</file>
+        <file>analysis_airfoil2d_vs_alpha.svg</file>
+    </qresource>
+</RCC>

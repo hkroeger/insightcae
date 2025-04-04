@@ -134,6 +134,29 @@ public:
 
 
 
+class DatumPlaneX
+    : public insight::cad::Vector
+{
+    ConstDatumPtr pfs_;
+
+public:
+    DatumPlaneX(ConstDatumPtr pfs);
+    virtual arma::mat value() const;
+};
+
+
+
+class DatumPlaneY
+    : public insight::cad::Vector
+{
+    ConstDatumPtr pfs_;
+
+public:
+    DatumPlaneY(ConstDatumPtr pfs);
+    virtual arma::mat value() const;
+};
+
+
 
 class BBMin
 : public insight::cad::Vector
@@ -196,6 +219,19 @@ class SurfaceInertiaAxis
 public:
   SurfaceInertiaAxis(FeaturePtr model, int axis);
   virtual arma::mat value() const;
+};
+
+
+
+class PointInFeatureCS
+    : public insight::cad::Vector
+{
+    FeaturePtr model_;
+    VectorPtr locP_;
+
+public:
+    PointInFeatureCS(FeaturePtr model, VectorPtr locP);
+    virtual arma::mat value() const;
 };
 
 

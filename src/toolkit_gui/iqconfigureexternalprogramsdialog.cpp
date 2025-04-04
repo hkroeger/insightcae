@@ -1,5 +1,6 @@
 #include "iqconfigureexternalprogramsdialog.h"
 #include "ui_iqconfigureexternalprogramsdialog.h"
+#include "qtextensions.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -20,17 +21,19 @@ IQConfigureExternalProgramsDialog::IQConfigureExternalProgramsDialog(QWidget *pa
         auto ep = model_.externalProgram( ci );
         if (ep!=insight::ExternalPrograms::iterator())
         {
-            auto newpath = QFileDialog::getOpenFileName(
-                        this,
-                        "Please select program "+QString::fromStdString(ep->first),
-                        QString::fromStdString(ep->second.parent_path().string()),
+            if (auto newpath = getFileName(
+                    this,
+                    "Please select program "+QString::fromStdString(ep->first),
+                    GetFileMode::Open,
+                    {
 #ifdef WIN32
-                        "Executables (*.exe)"
+                        {"exe", "Executables"}
 #else
-                        "Executables (*)"
+                        {"*", "Executables"}
 #endif
-                        );
-            if (!newpath.isEmpty())
+                    },
+                    ep->second.parent_path()
+                ))
             {
                 model_.resetProgramPath(ci, newpath);
             }

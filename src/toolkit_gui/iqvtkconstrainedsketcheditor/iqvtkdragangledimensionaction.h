@@ -3,7 +3,7 @@
 
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor.h"
-#include "cadpostprocactions/angle.h"
+#include "constrainedsketchentities/angleconstraint.h"
 
 class IQVTKCADModel3DViewer;
 
@@ -17,20 +17,14 @@ public:
     IQVTKDragAngleDimensionAction(
         IQVTKConstrainedSketchEditor &editor,
         std::shared_ptr<insight::cad::AngleConstraint> ac);
-    ~IQVTKDragAngleDimensionAction();
 
     void start() override;
 
-    bool onMouseMove
-        (
-            Qt::MouseButtons buttons,
-            const QPoint point,
-            Qt::KeyboardModifiers curFlags
-            ) override;
-
-    bool onLeftButtonUp(
+    bool onMouseDrag(
+        Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
-        const QPoint point ) override;
+        const QPoint point,
+        EventType eventType ) override;
 };
 
 #endif // IQVTKDRAGANGLEDIMENSIONACTION_H

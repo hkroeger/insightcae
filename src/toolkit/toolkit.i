@@ -1,3 +1,4 @@
+
 %module(directors="1") toolkit
 
 %{
@@ -6,6 +7,7 @@
 #include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
+#include "base/supplementedinputdata.h"
 #include "base/resultelement.h"
 #include "base/resultelementcollection.h"
 #include "base/resultset.h"
@@ -92,15 +94,16 @@
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 #include "openfoam/caseelements/boundaryconditions/wallbc.h"
 #include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
-#include "openfoam/caseelements/boundaryconditions/ggibc.h"
 #include "openfoam/caseelements/boundaryconditions/turbulentvelocityinletbc.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
+#include "openfoam/caseelements/boundaryconditions/ggibcbase.h"
+#include "openfoam/caseelements/boundaryconditions/ggibc.h"
 #include "openfoam/caseelements/boundaryconditions/cyclicggibc.h"
+#include "openfoam/caseelements/boundaryconditions/cyclicacmibc.h"
 #include "openfoam/caseelements/boundaryconditions/mappedvelocityinletbc.h"
 #include "openfoam/caseelements/boundaryconditions/symmetrybc.h"
 #include "openfoam/caseelements/boundaryconditions/potentialfreesurfacebc.h"
 #include "openfoam/caseelements/boundaryconditions/overlapggibc.h"
-#include "openfoam/caseelements/boundaryconditions/ggibcbase.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
 #include "openfoam/caseelements/boundaryconditions/emptybc.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
@@ -162,6 +165,7 @@ using namespace insight::createPatchOps;
 %include "common.i"
 %include "exception.i"
 
+
 %exception {
 	try {
 	$action
@@ -171,6 +175,12 @@ using namespace insight::createPatchOps;
 	}
 }
 
+%typemap(in) insight::ParameterSetInput {
+    void *psi=0;
+    SWIG_ConvertPtr($input, (void **) &psi, $1_descriptor, 0);
+    *(&$1) = ParameterSetInput(
+        *reinterpret_cast< insight::ParameterSet * >(psi) );
+}
 
 %typemap(out) int& getInt %{
   $result = PyInt_FromLong(*$1);
@@ -188,6 +198,8 @@ using namespace insight::createPatchOps;
 %include "base/factory.h"
 %include "base/parameter.h"
 %include "base/parameterset.h"
+
+%include "base/supplementedinputdata.h"
 %include "base/resultelement.h"
 %include "base/resultelementcollection.h"
 %include "base/resultset.h"
@@ -226,7 +238,10 @@ using namespace insight::createPatchOps;
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"
 
+%include "openfoam/openfoamanalysis.h"
+
 %include "openfoam/openfoamtools.h"
+
 //namespace std {
 //%template(PatchLayers) std::map<std::string, int>;
 //}
@@ -283,15 +298,16 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 %include "openfoam/caseelements/boundaryconditions/wallbc.h"
 %include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
-%include "openfoam/caseelements/boundaryconditions/ggibc.h"
 %include "openfoam/caseelements/boundaryconditions/turbulentvelocityinletbc.h"
 %include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
+%include "openfoam/caseelements/boundaryconditions/ggibcbase.h"
+%include "openfoam/caseelements/boundaryconditions/ggibc.h"
 %include "openfoam/caseelements/boundaryconditions/cyclicggibc.h"
+%include "openfoam/caseelements/boundaryconditions/cyclicacmibc.h"
 %include "openfoam/caseelements/boundaryconditions/mappedvelocityinletbc.h"
 %include "openfoam/caseelements/boundaryconditions/symmetrybc.h"
 %include "openfoam/caseelements/boundaryconditions/potentialfreesurfacebc.h"
 %include "openfoam/caseelements/boundaryconditions/overlapggibc.h"
-%include "openfoam/caseelements/boundaryconditions/ggibcbase.h"
 %include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
 %include "openfoam/caseelements/boundaryconditions/emptybc.h"
 %include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
@@ -324,8 +340,6 @@ using namespace insight::createPatchOps;
 %include "openfoam/caseelements/basic/fixedvalueconstraint.h"
 %include "openfoam/caseelements/basic/pressuregradientsource.h"
 %include "openfoam/caseelements/basic/wallheatflux.h"
-
-%include "openfoam/openfoamanalysis.h"
 
 %rename(Cylinder_Parameters) Cylinder::Parameters;
 

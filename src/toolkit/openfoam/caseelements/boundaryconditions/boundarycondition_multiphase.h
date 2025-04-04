@@ -22,9 +22,18 @@ namespace multiphaseBC
 class multiphaseBC
 {
 public:
+#include "boundarycondition_multiphase__multiphaseBC__Parameters.h"
+/*
+PARAMETERSET>>> multiphaseBC Parameters
+createGetter
+<<<PARAMETERSET
+*/
+
+public:
     declareType ( "multiphaseBC" );
     declareDynamicClass(multiphaseBC);
 
+    multiphaseBC(ParameterSetInput ip = Parameters() );
     virtual ~multiphaseBC();
 
 
@@ -45,10 +54,10 @@ public:
 #include "boundarycondition_multiphase__uniformPhases__Parameters.h"
 /*
 PARAMETERSET>>> uniformPhases Parameters
+inherits multiphaseBC::Parameters
 
-phaseFractions = array [
+phaseFractions = labeledarray "phase%d" [
     set {
-    name = string "CO2" "Name of specie"
     fraction = double 0.5 "Mass fraction of specie"
     handleflowreversal = bool true
 "By default, the BC turns into a Neumann boundary condition, if outflow occurs on this boundary for any reason.
@@ -57,19 +66,21 @@ If a dirichlet BC shall remain under all circumstances, uncheck this option. The
 
 } ] *0 "Mass fractions of species"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "uniformPhases" );
-    uniformPhases ( const ParameterSet& p );
-    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
+    uniformPhases ( ParameterSetInput ip = Parameters() );
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
-    static uniformPhases::Parameters mixture( const std::map<std::string, double>& sp);
-    ParameterSet getParameters() const override { return p_; }
+
+    inline static multiphaseBCPtr
+    create(const ParameterSet& ps)
+    { return std::make_shared<uniformPhases>(ps); }
+
+    static uniformPhases::Parameters
+    mixture( const std::map<std::string, double>& sp);
 };
 
 
@@ -80,8 +91,14 @@ class uniformWallTiedPhases
 {
 public:
     declareType ( "uniformWallTiedPhases" );
-    uniformWallTiedPhases ( const ParameterSet& p );
-    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformWallTiedPhases(ps)); }
+    uniformWallTiedPhases ( ParameterSetInput ip = Parameters() );
+
+    inline static multiphaseBCPtr
+    create(const ParameterSet& ps)
+    {
+        return multiphaseBCPtr(new uniformWallTiedPhases(ps));
+    }
+
     bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 };
 

@@ -24,7 +24,9 @@
 
 #include "toolkit_export.h"
 
+#include <algorithm>
 #include <exception>
+#include <iterator>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -84,6 +86,7 @@ namespace cad
 {
 class Feature;
 typedef std::shared_ptr<Feature> FeaturePtr;
+typedef std::shared_ptr<const Feature> ConstFeaturePtr;
 }
 
 
@@ -93,10 +96,8 @@ class Exception
 : public std::exception
 {
 
-  std::string message_;
+  std::string message_, context_;
   std::string strace_;
-
-  std::map<std::string, cad::FeaturePtr> contextGeometry_;
 
   void saveContext(bool strace);
 
@@ -105,9 +106,9 @@ class Exception
 public:
   Exception();
   Exception(std::string msgfmt, ...);
-  Exception(const std::string& msg, const std::map<std::string, cad::FeaturePtr>& contextGeometry, bool strace=true);
-  // Exception(const std::string& msg, const std::string& strace);
 
+  const std::string& description() const;
+  const std::string& context() const;
 
   virtual std::string message() const;
   inline std::string& messageRef() { return message_; }
@@ -117,10 +118,40 @@ public:
   inline const std::string& strace() const { return strace_; }
 
   const char* what() const noexcept override;
-  const std::map<std::string, cad::FeaturePtr>& contextGeometry() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
+
+
+class IntendedBreak
+    : public Exception
+{
+public:
+    IntendedBreak(const std::string& msg="deliberate stop encountered");
+};
+
+
+
+
+class CADException
+    : public Exception
+{
+
+    std::map<std::string, cad::ConstFeaturePtr> contextGeometry_;
+
+public:
+    template<class ...Args>
+    CADException(
+        const std::map<std::string, cad::ConstFeaturePtr>& contextGeometry,
+        Args&&... addArgs )
+      : Exception( std::forward<Args>(addArgs)... ),
+        contextGeometry_(contextGeometry)
+    {}
+
+    const std::map<std::string, cad::ConstFeaturePtr>& contextGeometry() const;
+};
+
+
 
 
 class ExternalProcessFailed
@@ -147,9 +178,16 @@ public:
 };
 
 
+class UnhandledSelection
+: public Exception
+{
+public:
+    UnhandledSelection(const std::string& contextMsg = "");
+};
 
 
-void assertion(bool condition, std::string context_message, ...);
+
+void assertion(bool condition, std::string context_message = "internal error", ...);
 
 
 //std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);
@@ -178,6 +216,21 @@ std::string valueList_to_string(const Container& vals, size_t maxlen)
   }
   os<<" )";
   return os.str();
+}
+
+template<class Container>
+std::string containerKeyList_to_string(const Container& vals, size_t maxlen)
+{
+    std::vector<typename Container::key_type> keys;
+    std::transform(
+        vals.begin(), vals.end(),
+        std::back_inserter(keys),
+        [](const typename Container::value_type& v)
+        {
+            return v.first;
+        }
+        );
+    return valueList_to_string(keys, maxlen);
 }
 
 std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);

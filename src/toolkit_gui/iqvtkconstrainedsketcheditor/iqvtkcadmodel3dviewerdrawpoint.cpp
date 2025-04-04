@@ -1,4 +1,5 @@
 #include "iqvtkcadmodel3dviewerdrawpoint.h"
+#include <qnamespace.h>
 
 
 
@@ -31,8 +32,17 @@ void IQVTKCADModel3DViewerDrawPoint::start()
 }
 
 
-bool IQVTKCADModel3DViewerDrawPoint::onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point )
+bool IQVTKCADModel3DViewerDrawPoint::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
 {
-    finishAction();
-    return true;
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+    else
+        return IQVTKCADModel3DViewerPlanePointBasedAction
+            ::onMouseClick( btn, nFlags, point );
 }

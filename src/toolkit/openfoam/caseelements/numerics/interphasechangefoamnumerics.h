@@ -19,15 +19,14 @@ inherits interFoamNumerics::Parameters
 
 solverName = string "interPhaseChangeFoam" "Name of the solver to use"
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "interPhaseChangeFoamNumerics" );
-    interPhaseChangeFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    interPhaseChangeFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 };
 

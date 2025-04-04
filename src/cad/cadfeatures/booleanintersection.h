@@ -38,8 +38,8 @@ class BooleanIntersection
   BooleanIntersection(FeaturePtr m1, FeaturePtr m2);
   BooleanIntersection(FeaturePtr m1, DatumPtr m2pl);
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
 public:
   declareType("BooleanIntersection");

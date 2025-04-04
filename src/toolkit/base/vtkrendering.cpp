@@ -1,9 +1,12 @@
 #include "vtkrendering.h"
 
+#include <algorithm>
+#include <iterator>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkAppendPolyData.h>
 #include <vtkTransform.h>
 
+#include "boost/range/adaptor/indexed.hpp"
 #include "vtkSmartPointer.h"
 #include "vtkOpenFOAMReader.h"
 #include "vtkArrowSource.h"
@@ -45,6 +48,8 @@
 #include "vtkExecutive.h"
 #include "vtkStreamingDemandDrivenPipeline.h"
 #include "vtkInformationVector.h"
+#include "vtkPointSetToLabelHierarchy.h"
+#include "vtkLabelPlacementMapper.h"
 
 #include "vtkAppendFilter.h"
 #include "vtkCompositeDataSet.h"
@@ -52,10 +57,22 @@
 #include "vtkObjectFactory.h"
 #include "vtkUnstructuredGrid.h"
 #include "vtkMultiProcessStream.h"
+#include "vtkConnectivityFilter.h"
+#include "vtkThreshold.h"
+#include "vtkAlgorithm.h"
+#include "vtkCellData.h"
+
+#include "vtkDataSetSurfaceFilter.h"
+#include "vtkCellSizeFilter.h"
+#include "vtkPolyDataNormals.h"
+#include "vtkCellCenters.h"
 
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
 #include "base/translations.h"
+
+#include "base/resultset.h"
+#include "base/resultelements/attributeresulttable.h"
 
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
@@ -765,6 +782,422 @@ const std::vector<double> colorMapData_NICEdge = {
     0.19120799999999999
 };
 
+
+const std::vector<double> colorMapData_BlueGreenOrange = {
+    0.0,
+    0.83137300000000003,
+    0.90980399999999995,
+    0.98039200000000004,
+
+    0.012500000000000001,
+    0.74902000000000002,
+    0.86274499999999998,
+    0.96078399999999997,
+
+    0.025000000000000001,
+    0.69411800000000001,
+    0.82745100000000005,
+    0.94117600000000001,
+
+    0.050000000000000003,
+    0.56862699999999999,
+    0.76078400000000002,
+    0.92156899999999997,
+
+    0.074999999999999997,
+    0.45097999999999999,
+    0.70588200000000001,
+    0.90196100000000001,
+
+    0.10000000000000001,
+    0.34509800000000002,
+    0.64313699999999996,
+    0.85882400000000003,
+
+    0.125,
+    0.247059,
+    0.57254899999999997,
+    0.819608,
+
+    0.14999999999999999,
+    0.180392,
+    0.52156899999999995,
+    0.78039199999999997,
+
+    0.16,
+    0.14902000000000001,
+    0.49019600000000002,
+    0.74902000000000002,
+
+    0.17999999999999999,
+    0.129412,
+    0.44705899999999998,
+    0.70980399999999999,
+
+    0.20000000000000001,
+    0.101961,
+    0.42745100000000003,
+    0.69019600000000003,
+
+    0.20999999999999999,
+    0.094117999999999993,
+    0.403922,
+    0.65882399999999997,
+
+    0.22,
+    0.090195999999999998,
+    0.39215699999999998,
+    0.63921600000000001,
+
+    0.23000000000000001,
+    0.082352999999999996,
+    0.36862699999999998,
+    0.61960800000000005,
+
+    0.23999999999999999,
+    0.070587999999999998,
+    0.352941,
+    0.59999999999999998,
+
+    0.25,
+    0.066667000000000004,
+    0.32941199999999998,
+    0.56862699999999999,
+
+    0.26000000000000001,
+    0.074510000000000007,
+    0.31372499999999998,
+    0.54117599999999999,
+
+    0.27000000000000002,
+    0.086275000000000004,
+    0.30588199999999999,
+    0.50980400000000003,
+
+    0.28000000000000003,
+    0.094117999999999993,
+    0.286275,
+    0.478431,
+
+    0.28999999999999998,
+    0.101961,
+    0.27843099999999998,
+    0.45097999999999999,
+
+    0.29999999999999999,
+    0.109804,
+    0.26666699999999999,
+    0.41176499999999999,
+
+    0.31,
+    0.11372500000000001,
+    0.258824,
+    0.38039200000000001,
+
+    0.32000000000000001,
+    0.11372500000000001,
+    0.25097999999999998,
+    0.34902,
+
+    0.33000000000000002,
+    0.109804,
+    0.26666699999999999,
+    0.32156899999999999,
+
+    0.34000000000000002,
+    0.105882,
+    0.30196099999999998,
+    0.26274500000000001,
+
+    0.34999999999999998,
+    0.094117999999999993,
+    0.30980400000000002,
+    0.24313699999999999,
+
+    0.35999999999999999,
+    0.082352999999999996,
+    0.32156899999999999,
+    0.22745099999999999,
+
+    0.37,
+    0.074510000000000007,
+    0.34117599999999998,
+    0.219608,
+
+    0.38,
+    0.070587999999999998,
+    0.36078399999999999,
+    0.21176500000000001,
+
+    0.39000000000000001,
+    0.066667000000000004,
+    0.38039200000000001,
+    0.21568599999999999,
+
+    0.40000000000000002,
+    0.062744999999999995,
+    0.40000000000000002,
+    0.17647099999999999,
+
+    0.42499999999999999,
+    0.074510000000000007,
+    0.41960799999999998,
+    0.145098,
+
+    0.45000000000000001,
+    0.086275000000000004,
+    0.439216,
+    0.117647,
+
+    0.47499999999999998,
+    0.121569,
+    0.47058800000000001,
+    0.117647,
+
+    0.5,
+    0.18431400000000001,
+    0.50196099999999999,
+    0.14902000000000001,
+
+    0.52500000000000002,
+    0.25490200000000002,
+    0.54117599999999999,
+    0.18823500000000001,
+
+    0.55000000000000004,
+    0.32549,
+    0.58039200000000002,
+    0.231373,
+
+    0.57499999999999996,
+    0.403922,
+    0.61960800000000005,
+    0.27843099999999998,
+
+    0.59999999999999998,
+    0.50196099999999999,
+    0.67058799999999996,
+    0.33333299999999999,
+
+    0.63,
+    0.59215700000000004,
+    0.72941199999999995,
+    0.40000000000000002,
+
+    0.65000000000000002,
+    0.74117599999999995,
+    0.78823500000000002,
+    0.49019600000000002,
+
+    0.67000000000000004,
+    0.85882400000000003,
+    0.85882400000000003,
+    0.60392199999999996,
+
+    0.69999999999999996,
+    0.92156899999999997,
+    0.83529399999999998,
+    0.58039200000000002,
+
+    0.75,
+    0.90196100000000001,
+    0.72941199999999995,
+    0.494118,
+
+    0.80000000000000004,
+    0.85882400000000003,
+    0.584314,
+    0.388235,
+
+    0.84999999999999998,
+    0.80000000000000004,
+    0.439216,
+    0.32156899999999999,
+
+    0.90000000000000002,
+    0.67843100000000001,
+    0.298039,
+    0.20392199999999999,
+
+    0.94999999999999996,
+    0.54901999999999995,
+    0.168627,
+    0.109804,
+
+    0.97499999999999998,
+    0.478431,
+    0.082352999999999996,
+    0.047058999999999997,
+
+    1.0,
+    0.45097999999999999,
+    0.0078429999999999993,
+    0.0
+};
+
+
+const std::vector<double> colorMapData_CoolToWarm = {
+    0,
+    0,
+    0,
+    0.34902,
+    0.03125,
+    0.039216000000000001,
+    0.062744999999999995,
+    0.38039200000000001,
+    0.0625,
+    0.062744999999999995,
+    0.117647,
+    0.41176499999999999,
+    0.09375,
+    0.090195999999999998,
+    0.18431400000000001,
+    0.45097999999999999,
+    0.125,
+    0.12548999999999999,
+    0.26274500000000001,
+    0.50196099999999999,
+    0.15625,
+    0.16078400000000001,
+    0.33725500000000003,
+    0.54117599999999999,
+    0.1875,
+    0.20000000000000001,
+    0.39607799999999999,
+    0.56862699999999999,
+    0.21875,
+    0.23921600000000001,
+    0.45490199999999997,
+    0.59999999999999998,
+    0.25,
+    0.286275,
+    0.52156899999999995,
+    0.65098,
+    0.28125,
+    0.33725500000000003,
+    0.59215700000000004,
+    0.70196099999999995,
+    0.3125,
+    0.388235,
+    0.65490199999999998,
+    0.74902000000000002,
+    0.34375,
+    0.466667,
+    0.73725499999999999,
+    0.819608,
+    0.375,
+    0.57254899999999997,
+    0.819608,
+    0.87843099999999996,
+    0.40625,
+    0.65490199999999998,
+    0.86666699999999997,
+    0.90980399999999995,
+    0.4375,
+    0.75294099999999997,
+    0.91764699999999999,
+    0.94117600000000001,
+    0.46875,
+    0.82352899999999996,
+    0.95686300000000002,
+    0.96862700000000002,
+    0.5,
+    0.98823499999999997,
+    0.96078399999999997,
+    0.90196100000000001,
+    0.5,
+    0.94117600000000001,
+    0.98431400000000002,
+    0.98823499999999997,
+    0.52000000000000002,
+    0.98823499999999997,
+    0.94509799999999999,
+    0.85097999999999996,
+    0.54000000000000004,
+    0.98039200000000004,
+    0.89803900000000003,
+    0.78431399999999996,
+    0.5625,
+    0.96862700000000002,
+    0.83529399999999998,
+    0.69803899999999997,
+    0.59375,
+    0.94901999999999997,
+    0.73333300000000001,
+    0.58823499999999995,
+    0.625,
+    0.92941200000000002,
+    0.65098,
+    0.50980400000000003,
+    0.65625,
+    0.90980399999999995,
+    0.56470600000000004,
+    0.43529400000000001,
+    0.6875,
+    0.87843099999999996,
+    0.45882400000000001,
+    0.352941,
+    0.71875,
+    0.83921599999999996,
+    0.388235,
+    0.286275,
+    0.75,
+    0.76078400000000002,
+    0.29411799999999999,
+    0.21176500000000001,
+    0.78125,
+    0.70196099999999995,
+    0.21176500000000001,
+    0.168627,
+    0.8125,
+    0.65098,
+    0.156863,
+    0.129412,
+    0.84375,
+    0.59999999999999998,
+    0.094117999999999993,
+    0.094117999999999993,
+    0.875,
+    0.54901999999999995,
+    0.066667000000000004,
+    0.098039000000000001,
+    0.90625,
+    0.50196099999999999,
+    0.050979999999999998,
+    0.12548999999999999,
+    0.9375,
+    0.45097999999999999,
+    0.054901999999999999,
+    0.17254900000000001,
+    0.96875,
+    0.40000000000000002,
+    0.054901999999999999,
+    0.19215699999999999,
+    1,
+    0.34902,
+    0.070587999999999998,
+    0.21176500000000001
+};
+
+const std::vector<double> colorMapData_BlackBodyRadiation = {
+    0,
+    0,
+    0,
+    0,
+    0.40000000000000002,
+    0.90196078431399995,
+    0,
+    0,
+    0.80000000000000004,
+    0.90196078431399995,
+    0.90196078431399995,
+    0,
+    1,
+    1,
+    1,
+    1
+};
+
 vtkSmartPointer<vtkLookupTable> createColorMap(
         const std::vector<double>& cb,
         int nc,
@@ -981,9 +1414,12 @@ std::set<int> MultiBlockDataSetExtractor::flatIndices(const std::vector<std::str
 
 
 
+boost::mutex VTKlock;
 
 VTKOffscreenScene::VTKOffscreenScene()
+    : boost::mutex::scoped_lock(VTKlock)
 {
+
   vtkRenderingOpenGL2_AutoInit_Construct();
   vtkRenderingFreeType_AutoInit_Construct();
   vtkInteractionStyle_AutoInit_Construct();
@@ -1242,7 +1678,10 @@ void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 
 //vtkStandardNewMacro(ModifiedPOpenFOAMReader);
 
-OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, int np)
+OpenFOAMCaseScene::OpenFOAMCaseScene(
+    const boost::filesystem::path& casepath,
+    bool readZones,
+    int np)
   : VTKOffscreenScene()
 {
 #if VTK_MODULE_ENABLE_VTK_ParallelMPI
@@ -1277,7 +1716,14 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(const boost::filesystem::path& casepath, in
   ofcase_->CacheMeshOn();
   ofcase_->DecomposePolyhedraOn();
   ofcase_->ListTimeStepsByControlDictOff();
-  ofcase_->ReadZonesOff();
+  if (readZones)
+  {
+      ofcase_->ReadZonesOn();
+  }
+  else
+  {
+      ofcase_->ReadZonesOff();
+  }
 
   ofcase_->Update();
 
@@ -1511,6 +1957,217 @@ vtkSmartPointer<vtkLookupTable> FieldColor::lookupTable() const
 {
   return boost::fusion::at_c<1>(*this);
 }
+
+
+
+void forEachUnconnectedPart(
+    OpenFOAMCaseScene& scene,
+    const boost::filesystem::path& exePath,
+    ResultSection *section,
+    vtkAlgorithm* in,
+    std::function<void(vtkAlgorithm*, ResultSection*, int )> displayRegion)
+{
+    auto cf =  vtkSmartPointer<vtkConnectivityFilter>::New();
+    cf->SetInputConnection(in->GetOutputPort());
+    cf->SetExtractionModeToAllRegions();
+    cf->ColorRegionsOn();
+    cf->Update();
+
+    int nregions = cf->GetNumberOfExtractedRegions();
+    if (nregions==1)
+    {
+        scene.clearScene();
+        displayRegion(in, section, -1 );
+    }
+    else
+    {
+
+        auto points = vtkSmartPointer<vtkPoints>::New();
+        points->SetNumberOfPoints(nregions);
+        auto labels = vtkSmartPointer<vtkStringArray>::New();
+        labels->SetName("labels");
+        labels->SetNumberOfValues(nregions);
+        auto sizes = vtkSmartPointer<vtkIntArray>::New();
+        sizes->SetName("sizes");
+        sizes->SetNumberOfValues(nregions);
+
+        std::vector<vtkSmartPointer<vtkThreshold> > regions(nregions);
+        std::vector<arma::mat> regionCtrs(nregions);
+
+        for (int r=0; r<nregions; ++r)
+        {
+            auto thr = vtkSmartPointer<vtkThreshold>::New();
+            thr->SetInputConnection(cf->GetOutputPort());
+            thr->SetInputArrayToProcess(
+                0, 0, 0,
+                vtkDataObject::FIELD_ASSOCIATION_CELLS,
+                "RegionId" );
+            thr->ThresholdBetween(r, r);            
+            thr->Update();
+
+            regions[r]=thr;
+
+
+            {
+                auto es = vtkSmartPointer<vtkDataSetSurfaceFilter>::New();
+                es->SetInputConnection(thr->GetOutputPort());
+                auto ms = vtkSmartPointer<vtkCellSizeFilter>::New();
+                ms->ComputeAreaOn();
+                ms->SetInputConnection(es->GetOutputPort());
+                auto ctrs = vtkSmartPointer<vtkCellCenters>::New();
+                ctrs->SetInputConnection(ms->GetOutputPort());
+                ctrs->Update();
+
+                auto pp = ctrs->GetOutput()->GetPoints();
+                auto Ap = ctrs->GetOutput()->GetPointData()->GetArray("Area");
+                arma::mat ctr=vec3Zero();
+                double A=0;
+                for (int i=0; i<pp->GetNumberOfPoints(); ++i)
+                {
+                    A += Ap->GetTuple1(i);
+                    ctr += vec3FromComponents(pp->GetPoint(i)) * Ap->GetTuple1(i);
+                }
+                regionCtrs[r] = ctr/A;
+            }
+
+            auto pts=thr->GetOutput()->GetPoints();
+            double p[3];
+            pts->GetPoint(0, p);
+            points->SetPoint(r, p);
+            labels->SetValue(r, str(format("%d") % r).c_str());
+            sizes->SetValue(r, 4);
+        }
+
+        auto pointSource = vtkSmartPointer<vtkPolyData>::New();
+        pointSource->SetPoints(points);
+        pointSource->GetPointData()->AddArray(labels);
+        pointSource->GetPointData()->AddArray(sizes);
+
+        auto pts2Lbl = vtkSmartPointer<vtkPointSetToLabelHierarchy>::New();
+        pts2Lbl->SetInputData(pointSource);
+        pts2Lbl->SetLabelArrayName("labels");
+        pts2Lbl->SetPriorityArrayName("sizes");
+        pts2Lbl->GetTextProperty()->SetColor(0,0,0);
+        pts2Lbl->Update();
+
+        // Create a mapper and actor for the labels.
+        auto lblMap = vtkSmartPointer<vtkLabelPlacementMapper>::New();
+        lblMap->SetInputConnection(
+            pts2Lbl->GetOutputPort());
+
+        auto lblActor = vtkSmartPointer<vtkActor2D>::New();
+        lblActor->SetMapper(lblMap);
+
+        // display overview
+        scene.clearScene();
+
+        FieldSelection ri_field("RegionId", FieldSupport::OnCell, -1);
+        FieldColor ri_fc(ri_field, createColorMap(), calcRange(ri_field, {}, {cf}));
+        scene.addAlgo<vtkDataSetMapper>(in, ri_fc);
+        scene.addActor(lblActor);
+
+        scene.fitAll();
+
+        auto img = exePath / ("regions.png");
+        scene.exportImage(img);
+        section->insert(img.filename().stem().string(),
+                         std::unique_ptr<Image>(new Image
+                         (
+                            exePath, img.filename(),
+                            "Region IDs", ""
+                            ))).setOrder(0);
+
+
+        AttributeTableResult::AttributeNames rowLabels(nregions);
+        std::map<std::string, AttributeTableResult::AttributeValues> scalarQtys;
+
+        for (int r=0; r<nregions; ++r)
+        {
+            auto thr = regions[r];
+
+            auto subsec = std::make_shared<ResultSection>(
+                str(boost::format("Region %d")%(r+1))
+                );
+
+            auto regionPrefix = str(boost::format("region_%d")%(r+1));
+
+            scene.clearScene();
+            displayRegion( thr, subsec.get(), r );
+
+            subsec->insert(
+                "regionCoG",
+                new VectorResult(
+                    regionCtrs[r],
+                    str(boost::format(_("center of gravity of region %d"))%r), "", "")
+                );
+
+            subsec->setOrder(10.*r);
+            section->insert(
+                regionPrefix,
+                subsec );
+
+            rowLabels[r]=regionPrefix;
+            for (const auto& q: *subsec)
+            {
+                if (auto s = std::dynamic_pointer_cast<ScalarResult>(q.second))
+                {
+                    if (scalarQtys.count(q.first)<1)
+                        scalarQtys[q.first].resize(nregions, {"(n.a.)"});
+
+                    scalarQtys[q.first][r] = s->value();
+                }
+            }
+        }
+
+        {
+            TabularResult::Table rows;
+            for (auto rc: boost::adaptors::index(regionCtrs))
+            {
+                rows.push_back(
+                    {
+                        double(rc.index()+1),
+                        rc.value()(0), rc.value()(1), rc.value()(2)
+                    }
+                    );
+            }
+            section->insert(
+                "table_regionCoG",
+                new TabularResult({"regionId", "x", "y", "z"},
+                                  rows, "table of region CoGs", "", ""));
+        }
+
+        for (const auto& sq: boost::adaptors::index(scalarQtys))
+        {
+            section->insert(
+                       "table_"+sq.value().first,
+                       new AttributeTableResult(
+                           rowLabels, sq.value().second,
+                           "table of "+sq.value().first, "", "",
+                           SimpleLatex("region"), sq.value().first)
+                       ).setOrder(10.*nregions+sq.index());
+        }
+
+    }
+}
+
+arma::mat average(vtkDataArray *arr)
+{
+    int nc=arr->GetNumberOfComponents();
+    arma::mat avg(nc, 1);
+    for (int i=0; i<arr->GetNumberOfTuples(); ++i)
+    {
+        arma::mat cv(nc, 1);
+        arr->GetTuple(i, cv.memptr());
+        avg += cv;
+    }
+    avg/=double(arr->GetNumberOfTuples());
+    return avg;
+}
+
+
+
+
+
 
 
 }

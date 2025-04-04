@@ -4,10 +4,15 @@
 #include "cadfeature.h"
 #include "base/units.h"
 
-#include "base/parameterset.h"
-#include "base/parameters/simpleparameter.h"
-
-#include "constrainedsketch.h"
+#include "vtkActor.h"
+#include "vtkArcSource.h"
+#include "vtkLineSource.h"
+#include "vtkPolyLineSource.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkStringArray.h"
+#include "vtkPointSetToLabelHierarchy.h"
+#include "vtkLabelPlacementMapper.h"
+#include "vtkTextProperty.h"
 
 namespace insight {
 namespace cad {
@@ -129,390 +134,136 @@ void Angle::operator=(const Angle &other)
 }
 
 
-
-
-
-defineType(AngleConstraint);
-
-size_t AngleConstraint::calcHash() const
+arma::mat Angle::symbolLocation() const
 {
-    ParameterListHash h;
-    h+=p1_->value();
-    h+=p2_->value();
-    h+=pCtr_->value();
-    h+=targetValue();
-    return h.getHash();
+    arma::mat pCtr=pCtr_->value();
+    double rDimLine = std::max(
+        insight::LSMALL, dimLineRadius() );
+    arma::mat p1=p1_->value();
+    arma::mat p2=p2_->value();
+    arma::mat r1=p1-pCtr;
+    arma::mat r2=p2-pCtr;
+    arma::mat er1 = normalized(r1);
+    arma::mat er2 = normalized(r2);
+    return pCtr+rDimLine*normalized(er1+er2);
 }
 
 
-AngleConstraint::AngleConstraint(
-    VectorPtr p1, VectorPtr p2, VectorPtr pCtr,
-    const std::string& layerName
-    )
-    : ConstrainedSketchEntity(layerName),
-    Angle(
-          p1,
-          p2 ?
-              p2 :
-              std::make_shared<insight::cad::AddedVector>(
-                    pCtr,
-                    insight::cad::vec3const(1,0,0) ),
-          pCtr )
+std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
 {
-    changeDefaultParameters(
-        ParameterSet({
-            {"dimLineRadius", std::make_shared<DoubleParameter>(1., "dimension line radius")},
-            {"arrowSize", std::make_shared<DoubleParameter>(1., "arrow size")}
-        })
-        );
-}
+    insight::CurrentExceptionContext ex("creating angle dimension lines");
 
+    auto angleDim = this;
+    insight::assertion( bool(angleDim), "internal error: expected distance object") ;
 
+    arma::mat p1=angleDim->p1_->value();
+    arma::mat p2=angleDim->p2_->value();
+    arma::mat pCtr=angleDim->pCtr_->value();
 
-int AngleConstraint::nConstraints() const
-{
-    return 1;
-}
+    double rDimLine = std::max(
+        insight::LSMALL, angleDim->dimLineRadius() );
 
-double AngleConstraint::getConstraintError(unsigned int iConstraint) const
-{
-    insight::assertion(
-                iConstraint==0,
-                "invalid constraint id" );
-    checkForBuildDuringAccess();
-    return (angle_ - targetValue())/M_PI;
-}
+    double arrSize =
+        rDimLine *
+        std::max(insight::LSMALL, angleDim->angle_) *
+        angleDim->relativeArrowSize();
 
-void AngleConstraint::scaleSketch(double scaleFactor)
-{}
+    arma::mat r1=p1-pCtr;
+    arma::mat r2=p2-pCtr;
+    arma::mat er1 = normalized(r1);
+    arma::mat er2 = normalized(r2);
 
-std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
-AngleConstraint::dependencies() const
-{
-    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> > ret;
+    arma::mat n = arma::cross(r1, r2);
+    if (arma::norm(n, 2)<SMALL)
+        n=vec3Z(1);
+    else
+        n=normalized(n);
 
-    if (auto sp1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_))
-        ret.insert(sp1);
-    if (auto sp2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_))
-        ret.insert(sp2);
-    if (auto spCtr=std::dynamic_pointer_cast<ConstrainedSketchEntity>(pCtr_))
-        ret.insert(spCtr);
+    auto arc = vtkSmartPointer<vtkArcSource>::New();
+    arc->SetCenter( pCtr.memptr() );
+    arma::mat ap1=pCtr+rDimLine*er1;
+    arc->SetPoint1( ap1.memptr() );
+    arma::mat ap2=pCtr+rDimLine*er2;
+    arc->SetPoint2( ap2.memptr() );
+    arc->SetResolution(32);
 
-    return ret;
-}
+    // tangents pointing inwards
+    arma::mat et1=-normalized(arma::cross(er1, n));
+    arma::mat et2=normalized(arma::cross(er2, n));
 
-void AngleConstraint::replaceDependency(
-    const std::weak_ptr<ConstrainedSketchEntity> &entity,
-    const std::shared_ptr<ConstrainedSketchEntity> &newEntity)
-{
-    if (auto p = std::dynamic_pointer_cast<Vector>(newEntity))
+    auto addP = [&](vtkPolyLineSource& pp, int i, const arma::mat& p)
     {
-        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity)
-        {
-            p1_ = p;
-        }
-        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p2_) == entity)
-        {
-            p2_ = p;
-        }
-        else if (auto adder = std::dynamic_pointer_cast<AddedVector>(p2_))
-        {
-            auto po=std::dynamic_pointer_cast<SketchPoint>(entity.lock());
-            if (adder->p1()==po)
-            {
-                adder->p1()=po;
-            }
-        }
-        if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(pCtr_) == entity)
-        {
-            pCtr_ = p;
-        }
-    }
+        pp.SetPoint(i, p(0), p(1), p(2) );
+    };
+
+    auto ah1 = vtkSmartPointer<vtkPolyLineSource>::New();
+    ah1->SetNumberOfPoints(3);
+    ah1->ClosedOn();
+    addP(*ah1, 0, ap1);
+    addP(*ah1, 1, ap1+arrSize*(et1+er1/5./2.));
+    addP(*ah1, 2, ap1+arrSize*(et1-er1/5./2.));
+
+    auto ah2 = vtkSmartPointer<vtkPolyLineSource>::New();
+    ah2->SetNumberOfPoints(3);
+    ah2->ClosedOn();
+    addP(*ah2, 0, ap2);
+    addP(*ah2, 1, ap2+arrSize*(et2+er2/5./2.));
+    addP(*ah2, 2, ap2+arrSize*(et2-er2/5./2.));
+
+    auto dl1 = vtkSmartPointer<vtkLineSource>::New();
+    dl1->SetPoint1(p1.memptr());
+    dl1->SetPoint2(arma::mat(ap1+er1*arrSize*2).memptr());
+
+    auto dl2 = vtkSmartPointer<vtkLineSource>::New();
+    dl2->SetPoint1(p2.memptr());
+    dl2->SetPoint2(arma::mat(ap2+er2*arrSize*2).memptr());
+
+    auto creaM = [](vtkAlgorithm* algo) {
+        auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+        mapper->SetInputConnection(algo->GetOutputPort());
+        auto act = vtkSmartPointer<vtkActor>::New();
+        act->SetMapper( mapper );
+        act->GetProperty()->SetColor(0.5, 0.5, 0.5);
+        act->GetProperty()->SetLineWidth(0.5);
+
+        return act;
+    };
+
+
+
+    auto points = vtkSmartPointer<vtkPoints>::New();
+    points->SetNumberOfPoints(1);
+    auto labels = vtkSmartPointer<vtkStringArray>::New();
+    labels->SetName("labels");
+    labels->SetNumberOfValues(1);
+    auto sizes = vtkSmartPointer<vtkIntArray>::New();
+    sizes->SetName("sizes");
+    sizes->SetNumberOfValues(1);
+    points->SetPoint(0, arma::mat(pCtr+rDimLine*normalized(er1+er2)).memptr() );
+    labels->SetValue(0, str(boost::format("%g°") % (angleDim->angle_/SI::deg) ).c_str());
+    sizes->SetValue(0, 6);
+    auto pointSource = vtkSmartPointer<vtkPolyData>::New();
+    pointSource->SetPoints(points);
+    pointSource->GetPointData()->AddArray(labels);
+    pointSource->GetPointData()->AddArray(sizes);
+    auto pts2Lbl = vtkSmartPointer<vtkPointSetToLabelHierarchy>::New();
+    pts2Lbl->SetInputData(pointSource);
+    pts2Lbl->SetLabelArrayName("labels");
+    pts2Lbl->SetPriorityArrayName("sizes");
+    pts2Lbl->GetTextProperty()->SetColor(0,0,0);
+    pts2Lbl->Update();
+
+    // Create a mapper and actor for the labels.
+    auto lblMap = vtkSmartPointer<vtkLabelPlacementMapper>::New();
+    lblMap->SetInputConnection(
+        pts2Lbl->GetOutputPort());
+
+    auto lblActor = vtkSmartPointer<vtkActor2D>::New();
+    lblActor->SetMapper(lblMap);
+
+
+    return { lblActor, creaM(arc), creaM(ah1), creaM(ah2), creaM(dl1), creaM(dl2) };
 }
-
-double AngleConstraint::dimLineRadius() const
-{
-    return parameters().get<DoubleParameter>("dimLineRadius")();
-}
-
-void AngleConstraint::setDimLineRadius(double r)
-{
-    auto &op = parametersRef().get<DoubleParameter>("dimLineRadius");
-    op.set( r, true );
-}
-
-void AngleConstraint::operator=(const ConstrainedSketchEntity& other)
-{
-    operator=(dynamic_cast<const AngleConstraint&>(other));
-}
-
-
-void AngleConstraint::operator=(const AngleConstraint& other)
-{
-    Angle::operator=(other);
-    ConstrainedSketchEntity::operator=(other);
-}
-
-
-
-
-
-
-
-
-defineType(FixedAngleConstraint);
-addToStaticFunctionTable(ConstrainedSketchEntity, FixedAngleConstraint, addParserRule);
-
-
-
-
-FixedAngleConstraint::FixedAngleConstraint(
-    VectorPtr p1, VectorPtr p2, VectorPtr pCtr,
-    const std::string& layerName
-    )
-    : AngleConstraint(p1, p2, pCtr, layerName)
-{
-    auto ps = defaultParameters();
-    ps.extend(
-        ParameterSet({
-            {"angle", std::make_shared<DoubleParameter>(
-                calculate(
-                    p1_->value(),
-                    p2_->value(),
-                    pCtr_->value() )/SI::deg, "[deg] target value")}
-        })
-    );
-    changeDefaultParameters(ps);
-}
-
-
-
-
-double FixedAngleConstraint::targetValue() const
-{
-    return parameters().getDouble("angle")*SI::deg;
-}
-
-void FixedAngleConstraint::setTargetValue(double angle)
-{
-    parametersRef().setDouble("angle", angle/SI::deg);
-}
-
-
-
-
-void FixedAngleConstraint::generateScriptCommand(
-    ConstrainedSketchScriptBuffer &script,
-    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-    int myLabel=entityLabels.at(this);
-    script.insertCommandFor(
-        myLabel,
-        type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + pointSpec(p1_, script, entityLabels) + ", "
-            + ( std::dynamic_pointer_cast<AddedVector>(p2_) ?
-                    "toHorizontal" :
-                   pointSpec(p2_, script, entityLabels) ) + ", "
-            + pointSpec(pCtr_, script, entityLabels)
-            + ", layer " + layerName()
-            + parameterString()
-            + ")"
-        );
-}
-
-
-
-
-void FixedAngleConstraint::addParserRule(
-    ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
-{
-    namespace qi = boost::spirit::qi;
-    namespace phx = boost::phoenix;
-    ruleset.entityRules.add
-        (
-            typeName,
-            ( '(' > qi::int_ > ','
-                > ruleset.r_point > ','
-                > ( ( qi::lit("toHorizontal") >> qi::attr(VectorPtr()) ) | (ruleset.r_point) ) > ','
-                > ruleset.r_point
-                > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-                > ruleset.r_parameters >
-              ')' )
-                [ qi::_a = phx::bind(
-                     &FixedAngleConstraint::create<
-                         VectorPtr, VectorPtr, VectorPtr, const std::string&>,
-                     qi::_2, qi::_3, qi::_4, qi::_5),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
-                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
-            );
-}
-
-
-
-
-void FixedAngleConstraint::operator=(const ConstrainedSketchEntity& other)
-{
-    operator=(dynamic_cast<const FixedAngleConstraint&>(other));
-}
-
-ConstrainedSketchEntityPtr FixedAngleConstraint::clone() const
-{
-    auto cl=FixedAngleConstraint::create(
-        p1_,
-        std::dynamic_pointer_cast<AddedVector>(p2_)?nullptr:p2_,
-        pCtr_,
-        layerName() );
-
-    cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
-    return cl;
-}
-
-
-
-
-void FixedAngleConstraint::operator=(const FixedAngleConstraint& other)
-{
-    AngleConstraint::operator=(other);
-}
-
-
-
-
-
-
-
-
-defineType(LinkedAngleConstraint);
-addToStaticFunctionTable(ConstrainedSketchEntity, LinkedAngleConstraint, addParserRule);
-
-
-
-
-LinkedAngleConstraint::LinkedAngleConstraint(
-    VectorPtr p1, VectorPtr p2, VectorPtr pCtr,
-    ScalarPtr angle,
-    const std::string& layerName,
-    const std::string& angleExpr
-    )
-  : AngleConstraint(p1, p2, pCtr, layerName),
-    angleExpr_(angleExpr),
-    angle_(angle)
-{}
-
-
-
-double LinkedAngleConstraint::targetValue() const
-{
-    return angle_->value();
-}
-
-
-
-void LinkedAngleConstraint::generateScriptCommand(
-    ConstrainedSketchScriptBuffer &script,
-    const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
-{
-    int myLabel=entityLabels.at(this);
-    script.insertCommandFor(
-        myLabel,
-        type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + pointSpec(p1_, script, entityLabels) + ", "
-            + pointSpec(p2_, script, entityLabels) + ", "
-            + pointSpec(pCtr_, script, entityLabels) + ", "
-            + angleExpr_
-            + ", layer " + layerName()
-            + parameterString()
-            + ")"
-        );
-}
-
-
-
-
-void LinkedAngleConstraint::addParserRule(
-    ConstrainedSketchGrammar &ruleset,
-    MakeDefaultGeometryParametersFunction )
-{
-    if (ruleset.iscadScriptRules)
-    {
-        namespace qi = boost::spirit::qi;
-        namespace phx = boost::phoenix;
-
-        typedef
-            boost::spirit::qi::rule<
-                std::string::iterator,
-                ConstrainedSketchGrammar::ParserRuleResult(),
-                insight::cad::parser::skip_grammar,
-                boost::spirit::qi::locals<
-                    std::shared_ptr<ConstrainedSketchEntity>,
-                    insight::cad::ScalarPtr >
-                > ExtParserRule;
-
-        auto &rule = ruleset.addAdditionalRule(
-            std::make_shared<ExtParserRule>(
-            ( '('
-             > qi::int_ > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point > ','
-             > ruleset.r_point > ','
-             > qi::as_string[
-                qi::raw[ruleset.iscadScriptRules->r_scalarExpression[phx::ref(qi::_b) = qi::_1]]
-               ]
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-             > ruleset.r_parameters >
-             ')'
-             )
-                [ qi::_a = phx::bind(
-                     &LinkedAngleConstraint::create<
-                         VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
-                         const std::string&, const std::string&>,
-                         qi::_2, qi::_3, qi::_4, qi::_b, qi::_6, qi::_5),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet,
-                               qi::_a, qi::_7, boost::filesystem::path(".")),
-                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
-                )
-            );
-
-        ruleset.entityRules.add(typeName, rule);
-    }
-}
-
-
-
-
-void LinkedAngleConstraint::operator=(const ConstrainedSketchEntity& other)
-{
-    operator=(dynamic_cast<const LinkedAngleConstraint&>(other));
-}
-
-ConstrainedSketchEntityPtr LinkedAngleConstraint::clone() const
-{
-    auto cl=LinkedAngleConstraint::create(
-        p1_,
-        std::dynamic_pointer_cast<AddedVector>(p2_)?nullptr:p2_,
-        pCtr_,
-        angle_,
-        layerName(), angleExpr_ );
-
-    cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
-    return cl;
-}
-
-
-
-
-void LinkedAngleConstraint::operator=(const LinkedAngleConstraint& other)
-{
-    AngleConstraint::operator=(other);
-    angleExpr_=other.angleExpr_;
-    angle_=other.angle_;
-}
-
 
 
 } // namespace cad

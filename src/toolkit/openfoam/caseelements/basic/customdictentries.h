@@ -16,6 +16,7 @@ public:
 
 /*
 PARAMETERSET>>> customDictEntries Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 entries = array [ set {
  dict = string "system/controlDict" "Path to dictionary"
@@ -29,15 +30,13 @@ appendList = array [ set {
  value = string "libSRFoption.so" "Value to append (verbatim string copy will be copied)"
 } ] *0 "Array of entries to append to lists"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
   declareType("customDictEntries");
-  customDictEntries(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  customDictEntries(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static std::string category() { return "Custom"; }

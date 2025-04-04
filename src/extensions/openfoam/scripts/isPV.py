@@ -111,12 +111,12 @@ for curtime in ftimes:
   # bug in PV4.4: parallel projection is not restored from state file
   for view in GetRenderViews():
      view.CameraParallelProjection = 0
-  RenderAllViews()
+  # RenderAllViews() # changes scale
   for view in GetRenderViews():
      view.CameraParallelProjection = 1
 """ if opts.parallel else "") +
 """
-  RenderAllViews()
+  #RenderAllViews() # changes scale
   %s
   
   layouts=GetLayouts()

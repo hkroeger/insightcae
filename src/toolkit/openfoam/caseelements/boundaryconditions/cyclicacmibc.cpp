@@ -15,10 +15,11 @@ addToStaticFunctionTable(BoundaryCondition, CyclicACMIBC, defaultParameters);
 
 
 CyclicACMIBC::CyclicACMIBC(
-        OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-        const ParameterSet&ps )
-: GGIBCBase(c, patchName, boundaryDict, ps),
-  p_(ps)
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+: GGIBCBase(c, patchName, boundaryDict,
+                ip.forward<Parameters>() )
 {}
 
 
@@ -31,7 +32,7 @@ void CyclicACMIBC::addOptionsToBoundaryDict(OFDictData::dict &bndDict) const
     if (OFversion()>=230)
     {
       bndDict["type"]="cyclicACMI";
-      bndDict["neighbourPatch"]= p_.shadowPatch;
+      bndDict["neighbourPatch"]= p().shadowPatch;
       bndDict["matchTolerance"]= 0.0001;
       bndDict["nonOverlapPatch"]=uncoupledPatchName();
     }
@@ -83,7 +84,11 @@ void CyclicACMIBC::addIntoFieldDictionaries(OFdicts &dictionaries) const
 
 
 void CyclicACMIBC::modifyMeshOnDisk(const OpenFOAMCase &cm, const boost::filesystem::path &location) const
-{}
+{
+    // produces error, if boundaryDict entry is already present
+    // if (p_.modifyMesh)
+    //     modifyMesh(cm, location, {{patchName_, p_}});
+}
 
 
 
@@ -91,8 +96,8 @@ void CyclicACMIBC::modifyMesh(
         const OpenFOAMCase &cm,
         const boost::filesystem::path &location,
         const std::vector<std::pair<
-            const std::string&,
-            const Parameters&> >& patchNames_Parameters )
+            std::string,
+            Parameters> >& patchNames_Parameters )
 {
     if (cm.OFversion()>=230)
     {
@@ -168,6 +173,25 @@ void CyclicACMIBC::modifyMesh(
       cm.executeCommand(location, "createBaffles",
                         { "-overwrite" } );
     }
+}
+
+void CyclicACMIBC::modifyMesh(
+    const OpenFOAMCase &cm,
+    const boost::filesystem::path &location,
+    const std::map<std::string, std::string> &patchNames_shadowPatchNames )
+{
+    std::vector<std::pair<
+        std::string,
+        Parameters> > pp;
+    for (auto ps: patchNames_shadowPatchNames)
+    {
+        Parameters p;
+        p.zone=ps.first;
+        p.shadowPatch=ps.second;
+        p.bridgeOverlap=true;
+        pp.push_back({ps.first, p});
+    }
+    modifyMesh(cm, location, pp);
 }
 
 

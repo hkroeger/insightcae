@@ -10,7 +10,7 @@ namespace insight
 
 
 class SimpleAnalysis
-: public Analysis
+: public AnalysisWithParameters
 {
 public:
 #include "simple_analysis__SimpleAnalysis__Parameters.h"
@@ -21,15 +21,15 @@ x = double 0 "x value"
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
+    addParameterMembers_ParameterClass(Parameters);
 
 public:
     declareType("SimpleAnalysis");
-    SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd);
-    static std::string category() { return "Test"; }
-    ParameterSet parameters() const override { return p_; }
+    SimpleAnalysis(const std::shared_ptr<supplementedInputDataBase>& sp);
     ResultSetPtr operator()(ProgressDisplayer& p = consoleProgressDisplayer) override;
+
+    static std::string category() { return "Test"; }
+    static AnalysisDescription description() { return {"Test", ""}; }
 };
 
 

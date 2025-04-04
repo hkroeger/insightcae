@@ -2,6 +2,7 @@
 #define INSIGHT_PASSIVESCALAR_H
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
+#include "openfoam/openfoamcase.h"
 
 #include "passivescalar__PassiveScalar__Parameters_headers.h"
 
@@ -9,12 +10,17 @@ namespace insight {
 
 class PassiveScalar
     : public OpenFOAMCaseElement
+#ifndef SWIG
+    , public OpenFOAMCase  // may need fvOptions
+#endif
 {
 
 public:
 #include "passivescalar__PassiveScalar__Parameters.h"
 /*
 PARAMETERSET>>> PassiveScalar Parameters
+inherits OpenFOAMCaseElement::Parameters
+
 
 fieldname = string "F" "Name of the passive scalar field"
 internal = double 0.0 "Default internal value"
@@ -28,15 +34,14 @@ scheme = selectablesubset {{
  }
 }} secondorder "Accuracy/stability trade off"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
 
 public:
     declareType ( "PassiveScalar" );
-    PassiveScalar ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    PassiveScalar ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addFields( OpenFOAMCase& c ) const override;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
 

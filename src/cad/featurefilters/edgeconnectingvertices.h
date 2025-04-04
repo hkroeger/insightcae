@@ -16,6 +16,7 @@ protected:
 
 public:
     EdgeConnectingVertices(FeatureID v0, FeatureID v1);
+    EdgeConnectingVertices(const FeatureSet& v0, const FeatureSet& v1);
     bool checkMatch(FeatureID feature) const override;
 
     FilterPtr clone() const override;

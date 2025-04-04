@@ -3,7 +3,7 @@
 #include "openfoam/caseelements/numerics/buoyantsimplefoamnumerics.h"
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
 #include "openfoam/caseelements/basic/gravity.h"
-#include "openfoam/caseelements/thermophysicalcaseelements.h"
+#include "openfoam/caseelements/thermodynamics/compressiblesinglephasethermophysicalproperties.h"
 #include "openfoam/caseelements/turbulencemodels/komegasst_rasmodel.h"
 
 

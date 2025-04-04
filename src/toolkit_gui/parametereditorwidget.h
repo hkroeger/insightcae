@@ -40,6 +40,8 @@
 #include <QSplitter>
 #include <QThread>
 #include <QTreeView>
+#include <QLabel>
+#include <QPointer>
 
 #include <set>
 #include <memory>
@@ -50,10 +52,16 @@ class IQVTKCADModel3DViewer;
 class IQVTKParameterSetDisplay;
 
 namespace insight {
-class CADParameterSetVisualizer;
+class CADParameterSetModelVisualizer;
+
+
+typedef
+    std::function< CADParameterSetModelVisualizer*(
+        QObject*,
+        IQParameterSetModel *
+        )> PECADParameterSetVisualizerBuilder;
+
 }
-
-
 
 class TOOLKIT_GUI_EXPORT ParameterEditorWidget
 : public QSplitter
@@ -64,19 +72,31 @@ public:
     typedef IQVTKParameterSetDisplay ParameterSetDisplay;
     typedef IQVTKCADModel3DViewer CADViewer;
     
+
+
 protected:
 //    insight::ParameterSet defaultParameters_;
     QAbstractItemModel* model_;
 
+    QSplitter* splitterV_=nullptr;
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
-    QTreeView *modeltree_;
-    CADViewer *viewer_;
     ParameterSetDisplay* display_;
+    IQCADModel3DViewer* viewer_;
+
+    QLabel* overlayText_;
 
     insight::ParameterSet_ValidatorPtr vali_;
-    std::shared_ptr<insight::CADParameterSetVisualizer> viz_;
+
+    /**
+     * @brief viz_
+     * the visualizer object
+     */
+    QPointer<insight::CADParameterSetModelVisualizer> viz_;
+
+    insight::PECADParameterSetVisualizerBuilder createVisualizer_;
+    insight::CADParameterSetModelVisualizer::CreateGUIActionsFunctions::Function createGUIActions_;
 
     void setup(
         ParameterSetDisplay* display
@@ -85,13 +105,18 @@ protected:
     bool firstShowOccurred_;
     void showEvent(QShowEvent *event) override;
 
+    void resizeEvent(QResizeEvent*) override;
+
 public:
 
     ParameterEditorWidget
     (
         QWidget* parent,
-        insight::ParameterSetVisualizerPtr viz = insight::ParameterSetVisualizerPtr(),
-        insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
+        insight::PECADParameterSetVisualizerBuilder psvb,
+        insight::CADParameterSetModelVisualizer::CreateGUIActionsFunctions::Function cgaf
+            = insight::CADParameterSetModelVisualizer::CreateGUIActionsFunctions::Function(),
+        insight::ParameterSet_ValidatorPtr vali
+            = insight::ParameterSet_ValidatorPtr(),
         ParameterSetDisplay* display = nullptr
     );
 
@@ -99,7 +124,8 @@ public:
     (
         QWidget* parent,
         QTreeView* parameterTreeView,
-        QWidget* contentEditorFrame
+        QWidget* contentEditorFrame,
+        IQCADModel3DViewer* viewer
     );
 
     /**
@@ -137,19 +163,21 @@ public:
 
     inline QAbstractItemModel* model() const { return model_; }
 
+    bool hasViewer() const;
     CADViewer *viewer() const;
+
+    void rebuildVisualization();
     
 public Q_SLOTS:
     void onParameterSetChanged();
 
-    void onCADModelDataChanged(
-            const QModelIndex &topLeft,
-            const QModelIndex &bottomRight,
-            const QVector<int> &roles );
+    void onItemClicked(
+            const QModelIndex &item );
 
 Q_SIGNALS:
     void parameterSetChanged();
     void updateSupplementedInputData(std::shared_ptr<insight::supplementedInputDataBase> sid);
+    void adaptEditControlsLayout(QSize ns);
 };
 
 

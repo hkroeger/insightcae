@@ -1,15 +1,22 @@
 #include "remoteserverlist.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <exception>
+#include <iterator>
+#include <memory>
 #include <regex>
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/rapidxml.h"
+#include "boost/algorithm/string/predicate.hpp"
 #include "openfoam/openfoamcase.h"
 
 #include "rapidxml/rapidxml_print.hpp"
 
 #include <boost/range/adaptor/reversed.hpp>
+#include <utility>
 
 using namespace std;
 using namespace boost;
@@ -24,57 +31,74 @@ namespace insight {
 
 RemoteServerList::RemoteServerList()
 {
+    std::set<RemoteServer::ConfigPtr> servers;
+    std::set<RemoteServerPoolConfig> pools;
+    std::string preferredServerLabel;
+
     auto paths = SharedPathList::global();
     for ( const bfs_path& p: boost::adaptors::reverse(paths) ) // reverse: start with global, then per-user to possibly overwrite global
     {
         if ( exists(p) && is_directory ( p ) )
         {
-            bfs_path serverlist = bfs_path(p) / "remoteservers.list";
+            bfs_path serverListFile = bfs_path(p) / "remoteservers.list";
 
-            if ( exists(serverlist) )
+            if ( exists(serverListFile) )
             {
-                insight::dbg()<<"reading remote servers from "<<serverlist<<std::endl;
-                // read xml
-                string content;
-                readFileIntoString(serverlist, content);
+                CurrentExceptionContext ex("reading remote servers from %s", serverListFile.c_str());
 
-                using namespace rapidxml;
-                xml_document<> doc;
-
-                try {
-                    doc.parse<0>(&content[0]);
-                }
-                catch (...)
-                {
-                    throw insight::Exception("Failed to parse XML from file "+serverlist.string());
-                }
+                XMLDocument doc(serverListFile);
 
                 auto *rootnode = doc.first_node("root");
                 if (!rootnode)
                     throw insight::Exception("No valid \"remote\" node found in XML!");
 
-                for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+                for (auto *e = rootnode->first_node(); e; e = e->next_sibling())
                 {
-                    if (e->name()==string("remoteServer"))
+                    try
                     {
-                        if ( auto rsc = RemoteServer::Config::create(e) )
+                        if (e->name()==string("remoteServer"))
                         {
-                            std::string label = *rsc;
+                            if ( auto rsc = RemoteServer::Config::create(e) )
+                            {
+                                std::string label = *rsc;
 
-                            // replace entries, which were already existing:
-                            // remove, if already present
-                            auto i=findServerIterator(label);
-                            if (i!=end()) erase(i);
+                                // replace entries, which were already existing:
+                                // remove, if already present
+                                auto i=findServerIterator(label);
+                                if (i!=end()) erase(i);
 
-                            insert(rsc);
+                                servers.insert(rsc);
+                            }
+                            else
+                            {
+                                std::string label("(unlabelled)");
+                                if (auto *le=e->first_attribute("label"))
+                                    label=std::string(le->value());
+                                insight::Warning(
+                                    "ignored invalid remote machine configuration: %s",
+                                    label.c_str());
+                            }
                         }
-                        else
+                        else if (e->name()==string("remoteServerPool"))
                         {
-                            std::string label("(unlabelled)");
-                            if (auto *le=e->first_attribute("label"))
-                                label=std::string(le->value());
-                            insight::Warning("ignored invalid remote machine configuration: "+label);
+                            try
+                            {
+                                pools.insert(RemoteServerPoolConfig(e));
+                            }
+                            catch (insight::Exception& ex)
+                            {
+                                std::string label("(unlabelled)");
+                                if (auto *le=e->first_attribute("label"))
+                                    label=std::string(le->value());
+                                insight::Warning(
+                                    "ignored invalid remote machine pool configuration: %s (Reason: %s)",
+                                    label.c_str(), ex.message().c_str() );
+                            }
                         }
+                    }
+                    catch (insight::Exception& ex)
+                    {
+                        insight::Warning(ex);
                     }
                 }
 
@@ -83,13 +107,19 @@ RemoteServerList::RemoteServerList()
                     if (auto *lbl = prevSrvNode->first_attribute("label"))
                     {
                         insight::dbg()<<"setting preferred server as "<<lbl->value()<<std::endl;
-                        setPreferredServer(lbl->value());
+                        preferredServerLabel = lbl->value();
                     }
                 }
 
             }
         }
     }
+
+    reset(
+        servers,
+        pools,
+        preferredServerLabel
+        );
 }
 
 
@@ -97,6 +127,24 @@ RemoteServerList::RemoteServerList(const RemoteServerList& o)
   : std::set<std::shared_ptr<RemoteServer::Config> >(o),
     preferredServer_(o.preferredServer_)
 {
+}
+
+const std::set<RemoteServerPoolConfig> &RemoteServerList::serverPools() const
+{
+    return serverPools_;
+}
+
+const RemoteServerPoolConfig &RemoteServerList::serverPool(const std::string &label) const
+{
+    auto i = std::find_if(
+        serverPools_.begin(), serverPools_.end(),
+        [&label](const RemoteServerPoolConfig& c)
+        { return *c.configTemplate_ == label; }
+        );
+    insight::assertion(
+        i!=serverPools_.end(),
+        "there is no server pool labelled %s", label.c_str() );
+    return *i;
 }
 
 
@@ -125,9 +173,18 @@ void RemoteServerList::writeConfiguration(const boost::filesystem::path& file)
   xml_node<> *rootnode = doc.allocate_node(node_element, "root");
   for (const auto& rs: *this)
   {
-    xml_node<> *srvnode = doc.allocate_node(node_element, "remoteServer");
-    rs->save(srvnode, doc);
-    rootnode->append_node(srvnode);
+      if (!rs->wasExpanded())
+      {
+        xml_node<> *srvnode = doc.allocate_node(node_element, "remoteServer");
+        rs->save(srvnode, doc);
+        rootnode->append_node(srvnode);
+      }
+  }
+  for (const auto& rspc: serverPools_)
+  {
+      xml_node<> *srvnode = doc.allocate_node(node_element, "remoteServerPool");
+      rspc.save(srvnode, doc);
+      rootnode->append_node(srvnode);
   }
   if (auto ps = getPreferredServer())
   {
@@ -175,7 +232,14 @@ std::shared_ptr<RemoteServer::Config> RemoteServerList::findServer(
 
 void RemoteServerList::setPreferredServer(const std::string &label)
 {
-    preferredServer_ = findServer(label);
+    if (label.empty())
+    {
+        preferredServer_.reset();
+    }
+    else
+    {
+        preferredServer_ = findServer(label);
+    }
 }
 
 
@@ -183,6 +247,72 @@ void RemoteServerList::setPreferredServer(const std::string &label)
 RemoteServer::ConfigPtr RemoteServerList::getPreferredServer() const
 {
     return preferredServer_;
+}
+
+
+RemoteServer::ConfigPtr RemoteServerList::requestUnoccupiedServer(int np, const std::string &poolLabel) const
+{
+    // candidates for occupation test
+    std::vector<RemoteServer::ConfigPtr> candidates;
+    if (!poolLabel.empty())
+    {
+        std::copy_if(
+            begin(), end(),
+            std::back_inserter(candidates),
+            [&](const RemoteServer::ConfigPtr& srv)
+            {
+                return boost::starts_with(*srv, poolLabel+"/");
+            }
+        );
+    }
+    else
+    {
+        std::copy(
+            begin(), end(),
+            std::back_inserter(candidates)
+        );
+    }
+
+    // move preferred server to first position
+    if (preferredServer_)
+    {
+        auto ips=std::find(
+            candidates.begin(), candidates.end(),
+            preferredServer_ );
+        if (ips!=candidates.end())
+        {
+            if (ips!=candidates.begin())
+            {
+                std::swap(*ips, candidates.front());
+            }
+        }
+    }
+
+    std::multimap<int, RemoteServer::ConfigPtr> orderedCandidates;
+
+    for (auto& sc: candidates)
+    {
+        if (sc->np_>=np)
+        {
+            auto leftover=sc->unoccupiedProcessors()-np;
+            if (leftover>=0)
+            {
+                orderedCandidates.insert({leftover, sc});
+            }
+        }
+    }
+
+    insight::dbg()<<"= CANDIDATES =\n";
+    for (auto &c: orderedCandidates)
+    {
+        insight::dbg()<<*c.second<<" (leaves "<<c.first<<" procs unused)\n";
+    }
+    insight::dbg()<<"==============\n";
+
+    if (orderedCandidates.size())
+        return orderedCandidates.begin()->second;
+
+    return nullptr;
 }
 
 

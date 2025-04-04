@@ -16,15 +16,13 @@ public:
 PARAMETERSET>>> FSIDisplacementExtrapolationNumerics Parameters
 inherits FaNumerics::Parameters
 
-
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
 
 public:
-  FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 };
 

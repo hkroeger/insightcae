@@ -18,9 +18,8 @@ void chtMultiRegionNumerics::init()
 }
 
 
-chtMultiRegionNumerics::chtMultiRegionNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p_rgh"),
-  p_(ps)
+chtMultiRegionNumerics::chtMultiRegionNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+    : FVNumerics(c, ip.forward<Parameters>(), "p_rgh")
 {
     init();
 }
@@ -33,9 +32,9 @@ void chtMultiRegionNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  if (boost::get<Parameters::formulation_unsteady_type>(&p_.formulation))
+  if (boost::get<Parameters::formulation_unsteady_type>(&p().formulation))
     controlDict["application"]="chtMultiRegionFoam";
-  else if (boost::get<Parameters::formulation_steady_type>(&p_.formulation))
+  else if (boost::get<Parameters::formulation_steady_type>(&p().formulation))
     controlDict["application"]="chtMultiRegionSimpleFoam";
 
   controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
@@ -68,13 +67,13 @@ void chtMultiRegionNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   regions.push_back("fluid");
   {
     OFDictData::list names;
-    std::copy(p_.fluidRegions.begin(), p_.fluidRegions.end(), std::back_inserter(names));
+    std::copy(p().fluidRegions.begin(), p().fluidRegions.end(), std::back_inserter(names));
     regions.push_back(names);
   }
   regions.push_back("solid");
   {
     OFDictData::list names;
-    std::copy(p_.solidRegions.begin(), p_.solidRegions.end(), std::back_inserter(names));
+    std::copy(p().solidRegions.begin(), p().solidRegions.end(), std::back_inserter(names));
     regions.push_back(names);
   }
 
@@ -101,16 +100,15 @@ void chtMultiRegionFluidNumerics::init()
   if (OFversion() < 600)
     throw insight::UnsupportedFeature("chtMultiRegionNumerics currently supports only OF >=600");
 
-  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({p_.Uinternal(0),p_.Uinternal(1),p_.Uinternal(2)} ), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({p().Uinternal(0),p().Uinternal(1),p().Uinternal(2)} ), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p().Tinternal}), volField ) );
 }
 
 
-chtMultiRegionFluidNumerics::chtMultiRegionFluidNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p_rgh"),
-  p_(ps)
+chtMultiRegionFluidNumerics::chtMultiRegionFluidNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p_rgh")
 {
     init();
 }
@@ -153,8 +151,8 @@ void chtMultiRegionFluidNumerics::addIntoDictionaries(OFdicts& dictionaries) con
   }
 
   OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-  SIMPLE["frozenFlow"]=p_.frozenFlow;
+  SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
+  SIMPLE["frozenFlow"]=p().frozenFlow;
 
 
   // ============ setup fvSchemes ================================

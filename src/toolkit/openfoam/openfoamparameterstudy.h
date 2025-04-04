@@ -44,15 +44,11 @@ public:
     
     OpenFOAMParameterStudy
     (
-        const std::string& name, 
-        const std::string& description, 
-        const ParameterSet& ps,
-        const boost::filesystem::path& exePath,
-        ProgressDisplayer& displayer = consoleProgressDisplayer,
+        const std::shared_ptr<supplementedInputDataBase>& sp,
         bool subcasesRemesh=false
     );
 
-    virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
+    virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSet& newp) const;
     ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 
     virtual void evaluateCombinedResults(ResultSetPtr& results);

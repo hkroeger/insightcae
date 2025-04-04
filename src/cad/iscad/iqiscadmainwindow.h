@@ -60,6 +60,7 @@ protected:
       insert_import,
       insert_component_name,
       insert_loadmodel,
+      insert_drawing,
       clear_cache,
       fit_all,
       toggle_grid,
@@ -83,7 +84,8 @@ protected:
       sel_faces,
       sel_solids,
       editor_font_larger,
-      editor_font_smaller
+      editor_font_smaller,
+      settings_viewer
     };
 
     std::map<ActionNames, QAction*> act_;

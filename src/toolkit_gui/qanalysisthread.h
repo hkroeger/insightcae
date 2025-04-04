@@ -20,8 +20,9 @@ class TOOLKIT_GUI_EXPORT QAnalysisThread
 
 public:
   QAnalysisThread(
-      AnalysisPtr analysis,
-      ProgressDisplayer* pd
+      const std::string& analysisName,
+      const ParameterInput& input,
+      ProgressDisplayer *pd
 #ifndef SWIG
       ,
       std::function<void(void)> preAction=[]()->void {},

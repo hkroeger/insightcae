@@ -11,8 +11,9 @@ class Polygon
 {
 public:
     std::vector<VectorPtr> corners_;
+    bool close_;
 
-    Polygon ( const std::vector<VectorPtr>& corners );
+    Polygon ( const std::vector<VectorPtr>& corners, bool close = true );
 
     size_t calcHash() const override;
     void build() override;

@@ -4,9 +4,11 @@
 #include "iqcaditemmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqparametersetmodel.h"
+#include "qtextensions.h"
 
 #include "datum.h"
 #include "iqvtkcadmodel3dviewer.h"
+#include "iqvtkconstrainedsketcheditor.h"
 
 #include <QInputDialog>
 #include <QColorDialog>
@@ -69,17 +71,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                             {
                                 viewer->editSketch(
                                     *psk,
-                                    insight::ParameterSet(),
-
-                                    [](const insight::ParameterSet&, vtkProperty* actprops)
-                                    {
-                                        auto sec = QColorConstants::DarkCyan;
-                                        actprops->SetColor(
-                                            sec.redF(),
-                                            sec.greenF(),
-                                            sec.blueF() );
-                                        actprops->SetLineWidth(2);
-                                    },
+                                    insight::cad::noParametersDelegate,
+                                    defaultGUIConstrainedSketchPresentationDelegate,
 
                                     [this,name](insight::cad::ConstrainedSketchPtr editedSk) // on accept
                                     {
@@ -107,25 +100,29 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     {
                         QList<QAction*> editActions;
 
-                        std::function<void(IQParameter* p)> addEditActions;
-                        addEditActions = [&](IQParameter* p)
+                        std::function<void(IQParameter* ip)> addEditActions;
+                        addEditActions = [&](IQParameter* ip)
                         {
-                            if (!dynamic_cast<const insight::SubsetParameter*>(&p->parameter()))
+                            if (!dynamic_cast<const insight::ParameterSet*>(ip->get()))
                             {
-                                auto a=new QAction(p->name(), &cm);
+                                auto a=new QAction(
+                                    QString::fromStdString(ip->get()->name()),
+                                    &cm);
+
                                 connect(
                                     a, &QAction::triggered, a,
-                                    [p,viewer]()
+                                    [ip,viewer]()
                                     {
                                         QDialog dlg;
-                                        p->populateEditControls(&dlg, viewer);
+                                        ip->populateEditControls(&dlg, viewer);
                                         dlg.exec();
                                     }
                                     );
                                 editActions.append(a);
                             }
 
-                            for (auto& cp: *p)
+                            auto ch=ip->children();
+                            for (auto& cp: ch)
                             {
                                 addEditActions(cp);
                             }
@@ -134,7 +131,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         for (auto& ap: viz->second.assocParamPaths)
                         {
                             auto psm = parameterSetModel(associatedParameterSetModel_);
-                            auto pi = psm->indexFromParameterPath(ap);
+                            auto pi = psm->indexFromParameterPath(ap, 0);
                             auto iqp = psm->parameterFromIndex(pi);
 
                             addEditActions(iqp);
@@ -155,7 +152,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
         }
 
         a=new QAction("Show", &cm);
-        connect(a, &QAction::triggered,
+        connect(a, &QAction::triggered, a,
                 [this,idx]() {
                     QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
                     if (flags(visi)&Qt::ItemIsUserCheckable)
@@ -166,7 +163,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
         cm.addAction(a);
 
         a=new QAction("Hide", &cm);
-        connect(a, &QAction::triggered,
+        connect(a, &QAction::triggered, a,
                 [this,idx]() {
                     QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
                     if (flags(visi)&Qt::ItemIsUserCheckable)
@@ -361,17 +358,19 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                         bool ok=false;
                         auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
                                         .value<insight::cad::FeaturePtr>();
-                        auto fn=QFileDialog::getSaveFileName(
-                            viewer,
-                            "Export file name",
-                            "",
-                            "BREP file (*.brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
-                            );
-                        if (!fn.isEmpty())
+                        if (auto fn = getFileName(
+                            viewer, "Export file name",
+                            GetFileMode::Save,
+                            {
+                                    {"brep", "BREP file"},
+                                    {"stl", "ASCII STL file"},
+                                    {"stlb", "Binary STL file"},
+                                    {"stp step", "STEP file", true},
+                                    {"igs iges", "IGES file"}
+                            }
+                            ) )
                         {
-                            feat->saveAs(
-                                insight::ensureDefaultFileExtension(
-                                    fn.toStdString(), ".stp") );
+                            feat->saveAs(fn);
                         }
                     });
             cm.addAction(a);

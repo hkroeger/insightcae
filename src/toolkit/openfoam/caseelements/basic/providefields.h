@@ -15,6 +15,7 @@ public:
 #include "providefields__provideFields__Parameters.h"
 /*
 PARAMETERSET>>> provideFields Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 createScalarFields = array [ set {
   fieldName = string "" "Name of the field" *necessary
@@ -22,15 +23,13 @@ createScalarFields = array [ set {
   scalarValue = double 0.0 "Uniform field value"
  } ] *0 "Scalar fields to create"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "provideFields" );
-    provideFields ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    provideFields ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual bool isUnique() const;
 

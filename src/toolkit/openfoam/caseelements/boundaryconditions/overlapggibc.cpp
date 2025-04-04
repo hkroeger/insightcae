@@ -18,12 +18,15 @@ addToStaticFunctionTable(BoundaryCondition, OverlapGGIBC, defaultParameters);
 
 
 
-OverlapGGIBC::OverlapGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
-        const ParameterSet&ps )
-: GGIBCBase(c, patchName, boundaryDict, ps),
-  p_(ps)
-{
-}
+OverlapGGIBC::OverlapGGIBC(
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+: GGIBCBase(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>() )
+{}
 
 
 
@@ -36,21 +39,21 @@ void OverlapGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   if (OFversion()>=210)
   {
     bndDict["type"]="cyclicPeriodicAMI";
-    bndDict["neighbourPatch"]= p_.shadowPatch;
+    bndDict["neighbourPatch"]= p().shadowPatch;
     bndDict["matchTolerance"]= 0.001;
     bndDict["lowWeightCorrection"]=0.1;
     bndDict["maxIter"]=360;
-    bndDict["periodicPatch"]= p_.periodicPatch;
+    bndDict["periodicPatch"]= p().periodicPatch;
   }
   else
   {
     bndDict["type"]="overlapGgi";
-    bndDict["shadowPatch"]= p_.shadowPatch;
-    bndDict["bridgeOverlap"]=p_.bridgeOverlap;
-    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
-    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
-    bndDict["nCopies"]=p_.nCopies;
-    bndDict["zone"]=p_.zone;
+    bndDict["shadowPatch"]= p().shadowPatch;
+    bndDict["bridgeOverlap"]=p().bridgeOverlap;
+    bndDict["separationOffset"]=OFDictData::vector3(p().separationOffset);
+    bndDict["rotationAxis"]=OFDictData::vector3(p().rotationAxis);
+    bndDict["nCopies"]=p().nCopies;
+    bndDict["zone"]=p().zone;
   }
 }
 

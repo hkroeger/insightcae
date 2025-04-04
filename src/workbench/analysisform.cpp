@@ -18,6 +18,7 @@
  *
  */
 
+#include "cadparametersetvisualizer.h"
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
@@ -72,6 +73,9 @@
 
 
 #include "iqvtkcadmodel3dviewer.h"
+#include "qtextensions.h"
+
+#include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
 
 namespace fs = boost::filesystem;
 
@@ -82,7 +86,7 @@ AnalysisForm::AnalysisForm(
     const std::string& analysisName,
     bool logToConsole
     )
-: QMdiSubWindow(parent),
+: /*QMdiSubWindow*/ QWidget(parent),
   IQExecutionWorkspace(this),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
@@ -94,16 +98,20 @@ AnalysisForm::AnalysisForm(
     setAttribute(Qt::WA_DeleteOnClose, true);
 
     // load default parameters
-    auto defaultParams = insight::Analysis::defaultParameters(analysisName_);
-    isOpenFOAMAnalysis_ = defaultParams.hasParameter("run/OFEname");
+    auto defaultParams =
+        insight::Analysis::defaultParameters()(analysisName_);
+
+    isOpenFOAMAnalysis_ =
+        defaultParams->hasParameter("run/OFEname");
 
 
     ui = new Ui::AnalysisForm;
-    QWidget* iw=new QWidget(this);
+    QWidget* iw=this; //new QWidget(this);
     {
       insight::CurrentExceptionContext ex(_("setup user interface"));
-        ui->setupUi(iw);
-        setWidget(iw);
+        ui->setupUi(this);
+        // ui->setupUi(iw);
+        // setWidget(iw);
     }
 
     if (isOpenFOAMAnalysis_)
@@ -180,19 +188,20 @@ AnalysisForm::AnalysisForm(
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
 
-    insight::ParameterSetVisualizerPtr viz;
+    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb;
     insight::ParameterSet_ValidatorPtr vali;
 
-    if (insight::Analysis::has_visualizer(analysisName_))
+    auto& atab = insight::CADParameterSetModelVisualizer::visualizerForAnalysis();
+    std::cout<<"table of "<<atab.description()<<" of size "<<atab.size()<<std::endl;
+    if (atab.count(analysisName_))
     {
-      insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
-        viz = insight::Analysis::visualizer(analysisName_);
-        viz ->setProgressDisplayer(&progressDisplayer_);
+        insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
+        vizb = atab.lookup(analysisName_);
     }
 
-    if (insight::Analysis::has_validator(analysisName_))
+    if (insight::Analysis::validators().count(analysisName_))
     {
-        vali = insight::Analysis::validator(analysisName_);
+        vali = insight::Analysis::validators()(analysisName_);
     }
 
     auto vsplit = new QSplitter;
@@ -201,23 +210,44 @@ AnalysisForm::AnalysisForm(
 
     {
         insight::CurrentExceptionContext ex(_("create parameter set editor"));
-        psmodel_=new IQParameterSetModel(defaultParams, defaultParams);
-        peditor_=new ParameterEditorWidget(ui->inputTab, viz, vali);
+        psmodel_=new IQParameterSetModel(std::move(defaultParams));
+        peditor_=new ParameterEditorWidget(
+            ui->inputTab,
+            [this,vizb](QObject* _1,
+               IQParameterSetModel *_2)
+            {
+                return vizb(
+                    _1, _2,
+                    localCaseDirectory(),
+                    progressDisplayer_ );
+            },
+            [](
+                 const std::string&,
+                 QObject *,
+                 IQCADModel3DViewer *,
+                 IQParameterSetModel *
+                 ) -> insight::GUIActionList { return {}; },
+            vali
+        );
         peditor_->setModel(psmodel_);
         connect(
               peditor_, &ParameterEditorWidget::updateSupplementedInputData,
               this, &AnalysisForm::onUpdateSupplementedInputData
               );
-        vsplit->addWidget(peditor_);
+
+        //vsplit->addWidget(peditor_); // add later, depending on wizard or not
     }
     psmodel_->setAnalysisName(analysisName_);
 
-    sidtab_ = new QTableView;
-    sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    sidtab_->setAlternatingRowColors(true);
-    sidtab_->setModel(&supplementedInputDataModel_);
-    vsplit->addWidget(sidtab_);
-    sidtab_->hide();
+    insight::CameraState cs;
+    if (insight::CADParameterSetModelVisualizer
+        ::defaultCameraStateForAnalysis().count(analysisName_))
+    {
+        cs=insight::CADParameterSetModelVisualizer
+            ::defaultCameraStateForAnalysis()(analysisName);
+        peditor_->viewer()->setCameraState(cs);
+    }
+
 
 
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
@@ -244,6 +274,35 @@ AnalysisForm::AnalysisForm(
 
 
     IQExecutionWorkspace::initializeToDefaults();
+
+    if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis().count(
+            analysisName_ ))
+    {
+#warning check StaticFunctionTable parameter: r-value ref?
+        auto ppm=psmodel_;
+        auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis()(
+            analysisName_, std::move(ppm)
+            );
+
+        auto *container=new QSplitter;
+        container->setOrientation(Qt::Horizontal);
+        container->addWidget(wiz);
+        container->addWidget(peditor_);
+
+        vsplit->addWidget(container);
+    }
+    else
+    {
+        vsplit->addWidget(peditor_);
+    }
+
+
+    sidtab_ = new QTableView;
+    sidtab_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    sidtab_->setAlternatingRowColors(true);
+    sidtab_->setModel(&supplementedInputDataModel_);
+    vsplit->addWidget(sidtab_);
+    sidtab_->hide();
 
 
     {
@@ -273,18 +332,31 @@ AnalysisForm::~AnalysisForm()
 
 
 
-WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
+WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 {
   insight::CurrentExceptionContext ex(_("create menus"));
 
     auto *dm = new WidgetWithDynamicMenuEntries(this);
 
-    auto menu_parameters = dm->add(mainMenu->addMenu(_("&Parameters")));
-    auto menu_actions = dm->add(mainMenu->addMenu(_("&Actions")));
-    auto menu_results = dm->add(mainMenu->addMenu(_("&Results")));
-    auto menu_tools = dm->add(mainMenu->addMenu(_("&Tools")));
+    auto menu_parameters = dm->add(mw->menuBar()->addMenu(_("&Parameters")));
+    auto menu_actions = dm->add(mw->menuBar()->addMenu(_("&Actions")));
+    auto menu_results = dm->add(mw->menuBar()->addMenu(_("&Results")));
+    auto menu_tools = dm->add(mw->menuBar()->addMenu(_("&Tools")));
 
     auto menu_tools_of = menu_tools->addMenu("&OpenFOAM");
+
+    {
+        auto cfgview=new QAction(_("3D &viewer settings..."), this);
+        mw->settingsMenu_->addAction(cfgview);
+        auto viewer_settings=dm->add(cfgview);
+        connect( cfgview, &QAction::triggered, cfgview,
+                [this]()
+                {
+                    IQVTKCADModel3DViewerSettingsDialog dlg(peditor_->viewer(), this);
+                    dlg.exec();
+                } );
+    }
+
 
     act_save_=new QAction("&S", this);
     act_save_->setShortcut(Qt::CTRL + Qt::Key_S);
@@ -333,7 +405,10 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(QMenuBar* mainMenu)
         auto act=new QAction(_("&Load results..."), this);
         menu_results->addAction( act );
         connect( act, &QAction::triggered, resultsViewer_,
-                 [this]() { this->resultsViewer_->loadResultSet(analysisName_); } );
+                 [this]() {
+                ui->tabWidget->setCurrentWidget(ui->outputTab);
+                    this->resultsViewer_->loadResultSet(analysisName_);
+        } );
     }
 
     menu_results->addSeparator();
@@ -404,7 +479,9 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
     if (event->isAccepted())
     {
-      peditor_->viewer()->closeEvent(event);
+
+      if (peditor_->hasViewer())
+        peditor_->viewer()->closeEvent(event);
 
       if (event->isAccepted())
       {
@@ -417,7 +494,7 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
           settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
-          QMdiSubWindow::closeEvent(event);
+          /*QMdiSubWindow*/QWidget::closeEvent(event);
       }
     }
 
@@ -442,15 +519,15 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
-    insight::ParameterSet p = parameters();
+    auto p = parameters().cloneParameterSet();
 
     if (pack_parameterset_)
     {
-      p.packExternalFiles();
+      p->pack();
     }
     else
     {
-      p.removePackedData();
+      p->clearPackedData();
     }
 
     // prepare XML document
@@ -463,10 +540,12 @@ void AnalysisForm::saveParameters(bool *cancelled)
     xml_node<> *rootNode = doc.allocate_node(node_element, "root");
     doc.append_node(rootNode);
 
-    p.saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
+    p->saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
 
-    auto& vs = insight::appendNode(doc, *rootNode, "viewerState");
-    peditor_->viewer()->writeViewerState(doc, vs);
+    {
+     auto vs = insight::appendNode(doc, *rootNode, "viewerState");
+     peditor_->viewer()->writeViewerState(doc, vs);
+    }
 
     std::ofstream f(ist_file_.c_str());
     f << doc;
@@ -493,30 +572,32 @@ void AnalysisForm::onSaveParametersAs()
 
 void AnalysisForm::saveParametersAs(bool *cancelled)
 {
-//   emit apply();
+  if (auto fn = getFileName(
+          this, _("Save input parameters"),
+          GetFileMode::Save,
+          {
+              {"ist", "Insight parameter sets", true},
+              {"*", "any file", false}
+          },
+          boost::none,
+          [this](QGridLayout *fdl)
+          {
+              auto *cb = new QCheckBox;
+              cb->setText("Pack: embed externally referenced files into parameterset");
+              int last_row=fdl->rowCount(); // id of new row below
+              fdl->addWidget(cb, last_row, 0, 1, -1);
 
-  QFileDialog fd(this);
-  fd.setOption(QFileDialog::DontUseNativeDialog, true);
-  fd.setWindowTitle(_("Save Parameters"));
-  QStringList filters;
-  filters << _("Insight parameter sets (*.ist)");
-  fd.setNameFilters(filters);
+              cb->setChecked(pack_parameterset_);
 
-  QCheckBox* cb = new QCheckBox;
-  cb->setText(_("Pack: embed externally referenced files into parameterset"));
-  QGridLayout *fdl = static_cast<QGridLayout*>(fd.layout());
-  int last_row=fdl->rowCount(); // id of new row below
-  fdl->addWidget(cb, last_row, 0, 1, -1);
-
-  cb->setChecked(pack_parameterset_);
-
-  if (fd.exec() == QDialog::Accepted)
+              QObject::connect(cb, &QCheckBox::destroyed, cb,
+                               [this,cb]()
+                               { pack_parameterset_=cb->isChecked(); } );
+          }
+          ))
   {
-    QString fn = fd.selectedFiles()[0];
-    pack_parameterset_ = cb->isChecked();
     updateSaveMenuLabel();
 
-    ist_file_=fn.toStdString();
+    ist_file_ = fn.asFilesystemPath();
 
     if (!hasLocalWorkspace())
     {
@@ -546,7 +627,7 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
     resetExecutionEnvironment(ist_file_.parent_path());
   }
 
-  insight::ParameterSet ps = parameters();
+  auto ps = parameters().cloneParameterSet();
 
   std::string contents;
   insight::readFileIntoString(ist_file_, contents);
@@ -556,23 +637,14 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
   doc.parse<0>(&contents[0]);
 
   xml_node<> *rootnode = doc.first_node("root");
-  ps.readFromRootNode(*rootnode, ist_file_.parent_path());
+  ps->readFromRootNode(*rootnode, ist_file_.parent_path());
 
   if (auto *vs = rootnode->first_node("viewerState"))
   {
     peditor_->viewer()->restoreViewerState(*vs);
   }
 
-
-
-  //ps.readFromFile(ist_file_);
-
-
-
-
-  psmodel_->resetParameters(
-        ps,
-        insight::Analysis::defaultParameters(analysisName_) );
+  psmodel_->resetParameterValues( *ps );
 }
 
 
@@ -598,14 +670,12 @@ void AnalysisForm::onLoadParameters()
     }
   }
 
-  QString fn = QFileDialog::getOpenFileName(
-      this, _("Open Parameters"),
-              QString(),
-      _("Insight parameter sets (*.ist)") );
-
-  if (!fn.isEmpty())
+  if (auto fn = getFileName(
+    this, _("Open Parameters"),
+    GetFileMode::Open,
+    {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
   {
-    loadParameters(fn.toStdString());
+    loadParameters(fn);
   }
 }
 
@@ -645,10 +715,12 @@ void AnalysisForm::onConfigModification()
 
 
 
-void AnalysisForm::onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid)
+void AnalysisForm::onUpdateSupplementedInputData(
+    insight::supplementedInputDataBasePtr sid)
 {
-  supplementedInputDataModel_.reset( sid->reportedSupplementQuantities() );
-  if (sid->reportedSupplementQuantities().size())
+  sid_=sid;
+  supplementedInputDataModel_.reset( sid_->reportedSupplementQuantities() );
+  if (sid_->reportedSupplementQuantities().size())
     sidtab_->show();
   else
       sidtab_->hide();

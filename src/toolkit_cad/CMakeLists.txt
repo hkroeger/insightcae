@@ -17,6 +17,29 @@ target_include_directories(toolkit_cad
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )
-install(TARGETS toolkit_cad LIBRARY DESTINATION lib)
+
+
+if (INSIGHT_DEVELOPMENT_FILES)
+ install(
+    TARGETS toolkit_cad EXPORT toolkit_cad_targets
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+ export(EXPORT toolkit_cad_targets
+  FILE "${INSIGHT_CMAKE_CONFIG_DIR_BIN}/InsightCAEToolkitCADTarget.cmake"
+  NAMESPACE insight::
+ )
+ install(EXPORT toolkit_cad_targets
+  FILE InsightCAEToolkitCADTarget.cmake
+  NAMESPACE insight::
+  DESTINATION ${INSIGHT_ConfigPackageLocation}
+ )
+else()
+ install(
+    TARGETS toolkit_cad
+    LIBRARY DESTINATION lib
+    COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+    )
+endif()
 
 endif()

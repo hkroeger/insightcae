@@ -22,7 +22,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
-
+#include "cadfeatures/importsolidmodel.h"
 
 
 namespace qi = boost::spirit::qi;
@@ -65,7 +65,7 @@ void Circle::build()
   BRepBuilderAPI_MakeEdge e(c);
   BRepBuilderAPI_MakeWire w;
   w.Add(e.Edge());
-  providedSubshapes_["OuterWire"]=Feature::create(e.Edge());
+  providedSubshapes_["OuterWire"]=Import::create(e.Edge());
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 

@@ -40,8 +40,8 @@ private:
 
     FillingFace ( EdgeInput e1, EdgeInput e2, bool inverted=false );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "FillingFace" );

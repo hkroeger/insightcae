@@ -32,10 +32,7 @@ void cellSetOption_Selection::insertSelection(OFDictData::dict& d)
       d["selectionMode"]="cellSet";
       d["cellSet"]=cs->setName;
     }
-  else
-    {
-      throw insight::Exception("Internal error: unhandled selection");
-    }
+  else throw insight::UnhandledSelection();
 }
 
 } // namespace insight

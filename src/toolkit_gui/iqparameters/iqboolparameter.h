@@ -8,7 +8,8 @@
 
 #include "base/parameters/simpleparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQBoolParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQBoolParameter
+    : public IQSpecializedParameter<insight::BoolParameter>
 {
 public:
   declareType(insight::BoolParameter::typeName_());
@@ -17,12 +18,12 @@ public:
   (
       QObject* parent,
       IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& parameter,
+      insight::Parameter* parameter,
       const insight::ParameterSet& defaultParameterSet
   );
 
   QString valueText() const override;
+  bool setValue(QVariant value) override;
 
   QVBoxLayout* populateEditControls(
           QWidget* editControlsContainer,

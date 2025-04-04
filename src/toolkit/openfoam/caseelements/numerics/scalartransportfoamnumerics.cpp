@@ -9,12 +9,11 @@ namespace insight {
 defineType(scalarTransportFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(scalarTransportFoamNumerics);
 
-scalarTransportFoamNumerics::scalarTransportFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+scalarTransportFoamNumerics::scalarTransportFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p_.Tinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({p_.Uinternal[0],p_.Uinternal[1],p_.Uinternal[2]}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p().Tinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({p().Uinternal[0],p().Uinternal[1],p().Uinternal[2]}), volField ) );
 }
 
 
@@ -33,7 +32,7 @@ void scalarTransportFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) con
   solvers["T"]=OFcase().stdAsymmSolverSetup(1e-7, 0.0);
 
   OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+  SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
 
 
   // ============ setup fvSchemes ================================
@@ -49,7 +48,7 @@ void scalarTransportFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) con
 
   // ============ setup controlDict ================================
   OFDictData::dict& tp=dictionaries.lookupDict("constant/transportProperties");
-  tp["DT"]=p_.DT;
+  tp["DT"]=p().DT;
 }
 
 

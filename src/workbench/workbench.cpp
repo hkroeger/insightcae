@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     QCoreApplication::processEvents();
 
     app.setSplashScreen(&splash);
-    workbench window(vm.count("nolog"));
+    WorkbenchMainWindow window(vm.count("nolog"));
 
     try
     {

@@ -24,6 +24,7 @@
 
 #include "base/exception.h"
 #include "base/qt5_helper.h"
+#include "qtextensions.h"
 
 #ifndef Q_MOC_RUN
 #include "qmodelstepitem.h"
@@ -65,13 +66,20 @@ QFeatureItem::QFeatureItem
 
 void QFeatureItem::exportShape()
 {
-  QString fn=QFileDialog::getSaveFileName
-  (
-    treeWidget(), 
-    "Export file name", 
-    "", "BREP file (*.brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
-  );
-  if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
+  if (auto fn = getFileName (
+    treeWidget(), "Export file name",
+    GetFileMode::Save,
+    {
+        {"brep", "BREP file"},
+        {"stl", "ASCII STL file"},
+        {"stlb", "Binary STL file"},
+        {"igs iges", "IGES file"},
+        {"stp step", "STEP file", true}
+    }
+  ))
+  {
+        smp_->saveAs(fn);
+  }
 }
 
 

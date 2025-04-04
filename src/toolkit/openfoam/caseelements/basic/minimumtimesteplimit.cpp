@@ -8,9 +8,8 @@ namespace insight {
 defineType(minimumTimestepLimit);
 addToOpenFOAMCaseElementFactoryTable(minimumTimestepLimit);
 
-minimumTimestepLimit::minimumTimestepLimit( OpenFOAMCase& c, const ParameterSet& ps )
-: OpenFOAMCaseElement(c, "minimumTimestepLimit", ps),
-  p_(ps)
+minimumTimestepLimit::minimumTimestepLimit( OpenFOAMCase& c, ParameterSetInput ip )
+: OpenFOAMCaseElement(c, /*"minimumTimestepLimit", */ip.forward<Parameters>())
 {
 }
 
@@ -20,7 +19,7 @@ void minimumTimestepLimit::addIntoDictionaries(OFdicts& dictionaries) const
 
   Fd["type"]="runTimeControl";
   mindtd["type"]="minTimeStep";
-  mindtd["minValue"]=p_.minDT;
+  mindtd["minValue"]=p().minDT;
   cd["mindt"]=mindtd;
   Fd["conditions"]=cd;
 

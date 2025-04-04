@@ -81,6 +81,15 @@ fl.addFile(
     os.path.join(opts.mxepath, 
                  "usr/i686-w64-mingw32.shared/qt5/plugins/styles/qwindowsvistastyle.dll"), 
     "bin/plugins/styles" )
+# the next two for SVG icons to work:
+fl.addFile( 
+    os.path.join(opts.mxepath,
+                 "usr/i686-w64-mingw32.shared/qt5/plugins/imageformats/qsvg.dll"), 
+    "bin/plugins/imageformats" )
+fl.addFile( 
+    os.path.join(opts.mxepath,
+                 "usr/i686-w64-mingw32.shared/qt5/bin/Qt5Svg.dll"), 
+    "bin" )
 
 
     

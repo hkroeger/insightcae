@@ -87,7 +87,7 @@ class SolverOutputAnalyzer;
 
 
 class AnalysisForm
-: public QMdiSubWindow,
+: public QWidget, //QMdiSubWindow,
   public IQExecutionWorkspace
 {
   Q_OBJECT
@@ -105,6 +105,7 @@ protected:
   // ======== Analysis-related members
   std::string analysisName_;
   bool isOpenFOAMAnalysis_;
+  insight::supplementedInputDataBasePtr sid_;
 
 //  insight::ResultSetPtr results_;
 //  QPointer<insight::IQResultSetModel> resultsModel_;
@@ -215,7 +216,7 @@ public:
   // ================================================================================
   // ===== general logic
 
-  WidgetWithDynamicMenuEntries* createMenus(QMenuBar* mainMenu);
+  WidgetWithDynamicMenuEntries* createMenus(WorkbenchMainWindow* mw);
 //  void insertMenu(QMenuBar* mainMenu) override;
 //  void removeMenu() override;
 
@@ -239,6 +240,7 @@ public:
   void startLocalRun();
 
   bool isOpenFOAMAnalysis() const;
+  insight::OperatingSystemSet compatibleOperatingSystems() const;
 
 
 protected:

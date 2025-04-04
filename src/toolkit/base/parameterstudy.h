@@ -24,12 +24,24 @@
 #include <base/analysis.h>
 #include "base/parameters/doublerangeparameter.h"
 
+
+
+
 namespace insight {
+
+
+
 
 typedef std::map<std::string, double> VarParameterList;
 typedef std::vector<std::string> RangeParameterList;
 
+
+
+
 enum TableInputType { DoubleInputParameter = 0, ScalarResultElement = 1 };
+
+
+
 
 template<
  class BaseAnalysis,
@@ -38,8 +50,6 @@ template<
 class ParameterStudy 
 : public Analysis
 {
-protected:
-  ParameterSet parameters_;
 
 protected:
   void generateInstance
@@ -52,7 +62,7 @@ protected:
   void generateInstances
   (
     SynchronisedAnalysisQueue& instances, 
-    const ParameterSet& templ, 
+    const ParameterSet& templ,
     int myIdx, 
     DoubleRangeParameter::RangeList::const_iterator i[]
   );
@@ -63,17 +73,12 @@ protected:
   
 public:
 //   declareType("Parameter Study");
+  typedef supplementedInputDataBase supplementedInputData;
   
-  ParameterStudy
-  (
-    const std::string& name, 
-    const std::string& description, 
-    const ParameterSet& ps,
-    const boost::filesystem::path& exePath,
-    ProgressDisplayer& displayer = consoleProgressDisplayer
-  );
+  ParameterStudy(
+    const std::shared_ptr<supplementedInputDataBase>& sp );
 
-  static ParameterSet defaultParameters();
+  static std::unique_ptr<ParameterSet> defaultParameters();
   
   /**
    * return a table of results in case the study runs only over a single parameter
@@ -88,21 +93,32 @@ public:
     TableInputType tit = DoubleInputParameter
   ) const;
   
-  virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
+  virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSet& newp) const;
   virtual void setupQueue();
   virtual void processQueue(insight::ProgressDisplayer& displayer);
   virtual ResultSetPtr evaluateRuns();
-
-  inline ParameterSet parameters() const override
-  {
-    return parameters_;
-  }
   
   ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
+
+  static std::string category() { return BaseAnalysis::category(); }
+  static AnalysisDescription description()
+  {
+      auto basedesc=BaseAnalysis::description();
+      return {"Parameter Study of "+basedesc.name, basedesc.description};
+  }
 };
+
+
+
 
 }
 
+
+
+
 #include "parameterstudy.cpp"
+
+
+
 
 #endif // INSIGHT_PARAMETERSTUDY_H

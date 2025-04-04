@@ -1,0 +1,3 @@
+[submodule "CMake/vtkTargets/vtk-dicom"]
+	path = CMake/vtkTargets/vtk-dicom
+	url = https://github.com/hkroeger/vtk-dicom.git

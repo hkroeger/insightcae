@@ -47,14 +47,19 @@ public:
             OpenFOAMCase& c,
             const std::string& patchName,
             const OFDictData::dict& boundaryDict,
-            const ParameterSet& ps
+            ParameterSetInput&& ip
         ),
-        LIST ( c, patchName, boundaryDict, ps )
+        LIST ( c, patchName, boundaryDict, std::move(ip) )
     );
-    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> );
     declareType ( "BoundaryCondition" );
 
-    BoundaryCondition ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& ps );
+    BoundaryCondition (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = Parameters() );
+
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const =0;
     virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;

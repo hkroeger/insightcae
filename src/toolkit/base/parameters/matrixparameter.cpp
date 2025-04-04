@@ -1,4 +1,5 @@
 #include "matrixparameter.h"
+#include "base/rapidxml.h"
 
 namespace insight
 {
@@ -129,9 +130,13 @@ void MatrixParameter::readFromNode
   }
 }
 
-Parameter* MatrixParameter::clone() const
+std::unique_ptr<Parameter> MatrixParameter::clone(bool init) const
 {
-  return new MatrixParameter(value_, description_.simpleLatex());
+    auto p=std::make_unique<MatrixParameter>(
+        value_,
+        description().simpleLatex());
+    if (init) p->initialize();
+    return p;
 }
 
 

@@ -67,16 +67,15 @@ void IQVTKKeepFixedSize::Execute(vtkObject *caller, unsigned long eventId, void 
 
        initialScale_ = std::max(std::max(dx, dy), dz);
 
-       double newScale = initialScale_/* / viewer_->getScale()*/;
+       if (initialScale_>SMALL)
+       {
+           double newScale = initialScale_;
 
-       SpatialTransformation st(-pref_);
-       st.appendTransformation(SpatialTransformation(newScale));
-       st.appendTransformation(SpatialTransformation(pref_));
+           SpatialTransformation st(-pref_);
+           st.appendTransformation(SpatialTransformation(newScale));
+           st.appendTransformation(SpatialTransformation(pref_));
 
-       trsf_->SetTransform(st.toVTKTransform());
-
-//       auto t = vtkTransform::SafeDownCast(trsf_->GetTransform());
-//       t->Identity();
-//       t->Scale(newScale, newScale, newScale);
+           trsf_->SetTransform(st.toVTKTransform());
+       }
    }
 }

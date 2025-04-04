@@ -128,16 +128,16 @@ void Datum::checkForBuildDuringAccess() const
 size_t TransformedDatum::calcHash() const
 {
   ParameterListHash plh;
-  plh+=*base_;
+  plh += *base_;
   if (translation_)
     {
-      plh+=translation_->value();
+      plh += translation_->value();
     }
   else
     {
       for (int i=0; i<3; i++)
           for (int j=0; j<4; j++)
-              plh+=tr_.Value(i+1, j+1);
+              plh += tr_.Value(i+1, j+1);
     }
   return plh.getHash();
 }
@@ -386,6 +386,13 @@ arma::mat DatumPlaneData::ex() const
 arma::mat DatumPlaneData::ey() const
 {
     return vec3(plane().YDirection());
+}
+
+CoordinateSystem DatumPlaneData::coordinateSystem() const
+{
+    return CoordinateSystem(
+        origin(), ex(), arma::cross(ex(), ey())
+        );
 }
 
 

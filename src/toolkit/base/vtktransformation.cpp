@@ -85,7 +85,8 @@ vtk_ChangeCS::vtk_ChangeCS
   }
 }
 
-vtkSmartPointer<vtkPolyDataAlgorithm> vtk_ChangeCS::apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) const
+vtkSmartPointer<vtkPolyDataAlgorithm> vtk_ChangeCS::apply_VTK_Transform(
+    vtkSmartPointer<vtkPolyDataAlgorithm> in) const
 {
   CurrentExceptionContext ec("Applying VTK transformation.");
 

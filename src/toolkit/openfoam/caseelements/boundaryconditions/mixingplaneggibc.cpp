@@ -23,9 +23,11 @@ MixingPlaneGGIBC::MixingPlaneGGIBC
   OpenFOAMCase& c,
   const std::string& patchName,
   const OFDictData::dict& boundaryDict,
-  const ParameterSet&ps
-) : GGIBCBase(c, patchName, boundaryDict, ps),
-  p_(ps)
+  ParameterSetInput ip
+) : GGIBCBase(
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>() )
 {
   if ((OFversion()<160) || (OFversion()>=170))
   {
@@ -41,20 +43,20 @@ void MixingPlaneGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   bndDict["nFaces"]=nFaces_;
   bndDict["startFace"]=startFace_;
   bndDict["type"]="mixingPlane";
-  bndDict["shadowPatch"]= p_.shadowPatch;
-  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
-  bndDict["bridgeOverlap"]=p_.bridgeOverlap;
-  bndDict["zone"]=p_.zone;
+  bndDict["shadowPatch"]= p().shadowPatch;
+  bndDict["separationOffset"]=OFDictData::vector3(p().separationOffset);
+  bndDict["bridgeOverlap"]=p().bridgeOverlap;
+  bndDict["zone"]=p().zone;
 
   OFDictData::dict csDict;
   csDict["type"]="cylindrical";
   csDict["name"]="mixingCS";
-  csDict["origin"]=OFDictData::vector3(p_.rotationCentre);
-  arma::mat orthodir = arma::cross(p_.rotationAxis, vec3(1,0,0));
+  csDict["origin"]=OFDictData::vector3(p().rotationCentre);
+  arma::mat orthodir = arma::cross(p().rotationAxis, vec3(1,0,0));
   if (arma::norm(orthodir,2)<1e-6)
-    orthodir=arma::cross(p_.rotationAxis, vec3(0,1,0));
+    orthodir=arma::cross(p().rotationAxis, vec3(0,1,0));
   csDict["e1"]=OFDictData::vector3(orthodir); //radial
-  csDict["e3"]=OFDictData::vector3(p_.rotationAxis); // rot axis
+  csDict["e3"]=OFDictData::vector3(p().rotationAxis); // rot axis
 
   if (OFversion()>=164)
     csDict["degrees"]=false;
@@ -65,9 +67,9 @@ void MixingPlaneGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
 
   OFDictData::dict rpDict;
   rpDict["sweepAxis"]="Theta";
-  if (p_.stackAxisOrientation==Parameters::stackAxisOrientation_type::radial)
+  if (p().stackAxisOrientation==Parameters::stackAxisOrientation_type::radial)
     rpDict["stackAxis"]="R"; // axial interface
-  else if (p_.stackAxisOrientation==Parameters::stackAxisOrientation_type::axial)
+  else if (p().stackAxisOrientation==Parameters::stackAxisOrientation_type::axial)
     rpDict["stackAxis"]="Z"; // axial interface
   rpDict["discretisation"]="bothPatches";
   bndDict["ribbonPatch"]=rpDict;

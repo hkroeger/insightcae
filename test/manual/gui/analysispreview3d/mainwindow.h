@@ -22,7 +22,7 @@ protected:
 
   // ====================================================================================
   // ======== Analysis-related members
-  insight::ParameterSet parameters_;
+  std::unique_ptr<insight::ParameterSet> parameters_;
 
 public:
   explicit MainWindow(QWidget *parent = nullptr);

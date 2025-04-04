@@ -63,15 +63,18 @@ protected:
   void setupRemoteEnvironment();
   void undoSetupRemoteEnvironment();
 
-  // 2. launch remote execution server
+  // 2. upload input file
+  void uploadInputFile();
+
+  // 3. launch remote execution server
   void launchRemoteExecutionServer();
   void undoLaunchRemoteExecutionServer();
 
-  // 3. contact remote exec server
+  // 4. contact remote exec server
   void waitForContact( int maxAttempt=20 );
 
-  // 4. launch analysis
-  void launchAnalysis();
+  // // 5. launch analysis
+  // void launchAnalysis();
 
   // 5. monitor running simulation
   void monitor();

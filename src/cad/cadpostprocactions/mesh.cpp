@@ -348,13 +348,13 @@ void SnappyHexMesh::build()
         
         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(  
             new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-            .set_name(name)
             .set_minLevel(minlevel)
             .set_maxLevel(maxlevel)
             .set_nLayers(nlayers)
             //.set_regionRefinements(rl)
-            
+
             .set_fileName(make_filepath(filepath))
+            .set_name(name)
         )));
     }
     

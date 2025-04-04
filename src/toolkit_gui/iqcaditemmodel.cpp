@@ -79,10 +79,8 @@ QVariant IQCADItemModel::headerData(int section, Qt::Orientation orientation, in
     {
       if (orientation==Qt::Horizontal)
       {
-        if (section == visibilityCol)
-            return QVariant("Show");
-        else if (section == labelCol)
-            return QVariant("Name");
+        if (section == labelCol)
+            return QVariant("Label");
         else if (section == valueCol)
             return QVariant("Value");
       }
@@ -214,7 +212,7 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
 
 int IQCADItemModel::columnCount(const QModelIndex &parent) const
 {
-    return 3;
+    return 2;
 }
 
 
@@ -709,8 +707,9 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
                 auto features = model_->modelsteps();
                 auto i=features.begin();
                 std::advance(i, index.row());
+                auto desiredState=value.value<Qt::CheckState>();
                 featureVisibility_[i->first].visible =
-                        ( value.value<Qt::CheckState>()==Qt::Checked );
+                        ( desiredState==Qt::Checked );
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
@@ -1021,8 +1020,13 @@ void IQCADItemModel::addScalar(const std::string& name, insight::cad::ScalarPtr 
 
 
 
-void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr value)
+void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr value, bool initialVisibility)
 {
+    if (pointVisibility_.find(name)==pointVisibility_.end())
+    {
+        auto&dvv = pointVisibility_[name];
+        dvv=initialVisibility;
+    }
     addEntity<insight::cad::VectorPtr>(
               name, value,
               std::bind(&insight::cad::Model::points, model_.get()),
@@ -1034,8 +1038,13 @@ void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr v
 
 
 
-void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorPtr value)
+void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorPtr value, bool initialVisibility )
 {
+    if (vectorVisibility_.find(name)==vectorVisibility_.end())
+    {
+        auto&dvv = vectorVisibility_[name];
+        dvv=initialVisibility;
+    }
     addEntity<insight::cad::VectorPtr>(
               name, value,
               std::bind(&insight::cad::Model::directions, model_.get()),
@@ -1195,7 +1204,7 @@ void IQCADItemModel::removeDirection(const std::string& name)
               name,
               std::bind(&IQCADItemModel::directionIndex, this, std::placeholders::_1),
               std::bind(&insight::cad::Model::removeDirection, model_.get(), std::placeholders::_1),
-              CADModelSection::pointVariable );
+              CADModelSection::vectorVariable );
 }
 
 

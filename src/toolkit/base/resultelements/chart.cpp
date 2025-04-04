@@ -2,6 +2,7 @@
 #include "base/resultelements/chartrenderer.h"
 
 #include "base/tools.h"
+#include "base/rapidxml.h"
 
 using namespace std;
 using namespace boost;
@@ -344,7 +345,15 @@ ResultElementPtr Chart::clone() const
 
 
 
-
+std::string yRangeExpression(double mi, double ma, double boundaryBySpan)
+{
+    if (mi>ma) std::swap(mi, ma);
+    double span = ma-mi;
+    double bnd =
+        std::max(1., boundaryBySpan*span);
+    return str ( boost::format ( "set yrange [%g:%g]" )
+               % ( mi-bnd ) % ( ma+bnd ) );
+}
 
 
 

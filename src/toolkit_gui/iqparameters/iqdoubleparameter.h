@@ -7,7 +7,8 @@
 #include <iqparameter.h>
 #include "base/parameters/simpleparameter.h"
 
-class TOOLKIT_GUI_EXPORT IQDoubleParameter : public IQParameter
+class TOOLKIT_GUI_EXPORT IQDoubleParameter
+    : public IQSpecializedParameter<insight::DoubleParameter>
 {
 public:
     declareType(insight::DoubleParameter::typeName_());
@@ -16,12 +17,12 @@ public:
     (
         QObject* parent,
         IQParameterSetModel* psmodel,
-        const QString& name,
-        insight::Parameter& parameter,
+        insight::Parameter* parameter,
         const insight::ParameterSet& defaultParameterSet
     );
 
     QString valueText() const override;
+    bool setValue(QVariant value) override;
 
     QVBoxLayout* populateEditControls(
             QWidget* editControlsContainer,

@@ -11,8 +11,8 @@ defineType(LTSInterFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(LTSInterFoamNumerics);
 
 
-LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: interFoamNumerics(c, ps)
+LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: interFoamNumerics(c, ip.forward<Parameters>())
 {
 }
 
@@ -53,7 +53,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nNonOrthogonalCorrectors"]=1;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
-  SOL["cAlpha"]=p_.cAlpha;
+  SOL["cAlpha"]=p().cAlpha;
   SOL["maxAlphaCo"]=maxAlphaCo;
   SOL["maxCo"]=maxCo;
   SOL["rDeltaTSmoothingCoeff"]=0.05;

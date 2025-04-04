@@ -43,8 +43,8 @@ class Cylinder
     Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
     Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Cylinder" );

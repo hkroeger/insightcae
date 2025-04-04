@@ -1,4 +1,5 @@
 #include "doublerangeparameter.h"
+#include "base/rapidxml.h"
 
 namespace insight
 {
@@ -84,9 +85,10 @@ std::string DoubleRangeParameter::plainTextRepresentation(int indent) const
   return std::string(indent, ' ') + toStringList(values_, "%g", "; ") /*oss.str()*/ + '\n';
 }
 
-DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
+std::unique_ptr<DoubleParameter>
+DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
 {
-  return new DoubleParameter(*i, "realized from range iterator");
+  return std::make_unique<DoubleParameter>(*i, "realized from range iterator");
 }
 
 
@@ -139,9 +141,14 @@ void DoubleRangeParameter::readFromNode
 }
 
 
-Parameter* DoubleRangeParameter::clone() const
+std::unique_ptr<Parameter> DoubleRangeParameter::clone(bool init) const
 {
-  return new DoubleRangeParameter(values_, description_.simpleLatex(), isHidden_, isExpert_, isNecessary_, order_);
+  auto p = std::make_unique<DoubleRangeParameter>(
+        values_,
+        description().simpleLatex(),
+        isHidden(), isExpert(), isNecessary(), order());
+    if (init) p->initialize();
+    return p;
 }
 
 

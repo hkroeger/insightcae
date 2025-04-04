@@ -14,12 +14,17 @@ set(iscad_SRCS
     modelcomponentselectordlg.cpp modelcomponentselectordlg.h
     insertfeaturedlg.cpp insertfeaturedlg.h
     loadmodeldialog.cpp loadmodeldialog.h
+    drawingviewsmodel.h drawingviewsmodel.cpp
+    viewdefinitiondialog.h viewdefinitiondialog.cpp
+    insertdrawingdialog.h insertdrawingdialog.cpp
 )
 
 set(iscad_FORMS
     modelcomponentselectordlg.ui
     insertfeaturedlg.ui
     loadmodeldialog.ui
+    insertdrawingdialog.ui
+    viewdefinitiondialog.ui
     )
 
 set(iscad_RCCS
@@ -35,7 +40,7 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5Widgets CONFIG REQUIRED)
 
 
-add_executable(iscad ${iscad_SRCS} ${iscad_FORMS} ${iscad_RCCS})
+add_executable(iscad ${iscad_SRCS} ${iscad_FORMS} ${iscad_RCCS} )
 
 target_link_libraries(iscad
   Qt5::Widgets

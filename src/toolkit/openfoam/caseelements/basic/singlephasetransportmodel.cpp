@@ -14,11 +14,10 @@ addToOpenFOAMCaseElementFactoryTable(singlePhaseTransportProperties);
 
 
 
-singlePhaseTransportProperties::singlePhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
-: transportModel(c, ps),
-  p_(ps)
-{
-}
+singlePhaseTransportProperties::singlePhaseTransportProperties(
+    OpenFOAMCase& c, ParameterSetInput ip )
+: transportModel(c, ip.forward<Parameters>())
+{}
 
 
 
@@ -27,7 +26,7 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
 {
   OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
   transportProperties["transportModel"]="Newtonian";
-  transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu);
+  transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p().nu);
 }
 
 
@@ -40,10 +39,9 @@ addToOpenFOAMCaseElementFactoryTable(boussinesqSinglePhaseTransportProperties);
 boussinesqSinglePhaseTransportProperties::boussinesqSinglePhaseTransportProperties
 (
     OpenFOAMCase& c,
-    const ParameterSet& ps
+    ParameterSetInput ip
 )
-  : singlePhaseTransportProperties(c, ps),
-    p_(ps)
+  : singlePhaseTransportProperties(c, ip.forward<Parameters>())
 {}
 
 
@@ -53,10 +51,15 @@ void boussinesqSinglePhaseTransportProperties::addIntoDictionaries ( OFdicts& di
   singlePhaseTransportProperties::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& transportProperties=dictionaries.lookupDict("constant/transportProperties");
-  transportProperties["beta"]=p_.beta;
-  transportProperties["TRef"]=p_.TRef;
-  transportProperties["Pr"]=p_.Pr;
-  transportProperties["Prt"]=p_.Prt;
+  transportProperties["beta"]=p().beta;
+  transportProperties["TRef"]=p().TRef;
+  transportProperties["Pr"]=p().Pr;
+  transportProperties["Prt"]=p().Prt;
+}
+
+double boussinesqSinglePhaseTransportProperties::density(double T) const
+{
+    return 1.-p().beta*(T-p().TRef);
 }
 
 

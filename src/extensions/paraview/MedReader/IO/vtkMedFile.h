@@ -37,7 +37,7 @@ class VTK_EXPORT vtkMedFile: public vtkObject
 public:
   static vtkMedFile* New();
   vtkTypeMacro(vtkMedFile, vtkObject)
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
   // Description:
   // Set the file name to read from

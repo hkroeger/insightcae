@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>analysis_numericalwindtunnel.svg</file>
+        <file>analysis_internalpressureloss.svg</file>
+        <file>analysis_internalpressureloss_vs_Q.svg</file>
+        <file>analysis_filetemplate.svg</file>
+    </qresource>
+</RCC>

@@ -6,5 +6,6 @@
         <file>resources/upload.svg</file>
         <file>resources/upload.png</file>
         <file>resources/download.png</file>
+        <file>analysis_default_icon.svg</file>
     </qresource>
 </RCC>

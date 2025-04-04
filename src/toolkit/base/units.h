@@ -32,11 +32,14 @@
 #include <boost/units/systems/si/electric_potential.hpp>
 #include <boost/units/systems/si/current.hpp>
 #include <boost/units/systems/si/resistance.hpp>
+#include <boost/units/systems/si/temperature.hpp>
+#include <boost/units/systems/temperature/celsius.hpp>
 #include <boost/units/systems/si/io.hpp>
 #include "boost/units/systems/si/pressure.hpp"
 #include "boost/units/systems/si/prefixes.hpp"
 #include <boost/units/base_units/metric/knot.hpp>
 #include <boost/units/base_units/metric/ton.hpp>
+#include <boost/units/base_units/metric/hour.hpp>
 #include "boost/units/physical_dimensions.hpp"
 #include "boost/units/systems/si/codata/physico-chemical_constants.hpp"
 
@@ -46,15 +49,30 @@
 #include <boost/units/systems/cgs/volume.hpp>
 #include <boost/units/systems/cgs/mass_density.hpp>
 
+#include "boost/units/cmath.hpp"
 #include "base/linearalgebra.h"
 
 namespace insight {
 namespace si = boost::units::si;
 namespace cgs = boost::units::cgs;
+namespace celsius = boost::units::celsius;
 }
 
 
-namespace boost { namespace units { namespace si {
+namespace boost { namespace units {
+
+
+typedef derived_dimension<length_base_dimension,2,
+                          mass_base_dimension,1,
+                          time_base_dimension,-2,
+                          temperature_base_dimension,-1>::type thermal_capacitance_dimension;
+
+typedef derived_dimension<length_base_dimension,1,
+                          mass_base_dimension,1,
+                          time_base_dimension,-3,
+                          temperature_base_dimension,-1>::type thermal_conductivity_dimension;
+
+namespace si {
 
 
  typedef unit<specific_heat_capacity_dimension,system> specific_heat_capacity;
@@ -70,6 +88,7 @@ namespace boost { namespace units { namespace si {
  static const auto millimeters = milli*meters;
  static const auto millimeter = milli*meter;
  static const auto mps = meter/second;
+ static const auto bar = 1e5*si::pascals;
 
  static const auto dimless = dimensionless();
 
@@ -90,16 +109,31 @@ namespace boost { namespace units { namespace si {
  static const angle_rad_unit angle_rad;
 
  static const auto kelvin_per_meter = kelvin/meter;
+ static const auto cubic_meter_per_second = cubic_meter/second;
+ static const auto hour = metric::hour_base_unit::unit_type();
 
+ static const auto degC = 1.*absolute<celsius::temperature>();
+ static const auto degK = 1.*absolute<si::temperature>();
+
+ static const auto kilojoule = kilo*joule;
+ static const auto megajoule = mega*joule;
+ static const auto kilojoule_per_hour_squaremeter_kelvin
+     = kilojoule/hour/square_meter/kelvin;
 
 
  template<class Dimension, class Type, class Unit>
  Type toValue(const quantity<Dimension,Type>& q, const Unit& u)
  {
-//   return ( static_cast<quantity<Unit, Type> >(q) / u).value();
-     return static_cast<quantity<si::dimensionless, Type> >( q / u ).value();
+     return quantity<Unit, Type>(q).value();
  }
 
+ template<class Dimension, class Type, class Unit>
+ Type toValue(const quantity<Dimension,Type>& q, const quantity<Unit,double>& u)
+ {
+     return
+         toValue<Dimension,Type,Unit>(q, typename quantity<Unit,double>::unit_type())
+            / u.value();
+ }
 
 
  template<class Unit, class Type>
@@ -153,18 +187,33 @@ namespace boost { namespace units { namespace si {
 
  typedef quantity<area, double> Area;
 
+ typedef quantity<volume, double> Volume;
+
  typedef quantity<velocity, double> Velocity;
 
  typedef quantity<plane_angle, double> Angle;
 
  typedef quantity<pressure, double> Pressure;
 
- typedef quantity<temperature, double> Temperature;
+ typedef quantity<absolute<temperature>, double> Temperature;
+
+ typedef quantity<energy, double> Energy;
 
  typedef quantity<power, double> Power;
 
+ typedef quantity<decltype(cubic_meter_per_second)::unit_type, double> VolumeFlux;
+
  typedef quantity<decltype(kelvin_per_meter)::unit_type, double> TemperatureGradient;
 
+ typedef quantity<unit<heat_capacity_dimension,system>, double> HeatCapacity;
+
+ typedef quantity<decltype(joule/kilogram/kelvin), double> SpecificHeatCapacity;
+
+ typedef quantity<decltype(kilojoule_per_hour_squaremeter_kelvin), double> HeatTransferCoefficient;
+
+ typedef quantity<unit<thermal_conductivity_dimension,system>, double> ThermalConductivity;
+
+ typedef quantity<unit<thermal_capacitance_dimension,system>, double> ThermalCapacitance;
 
 }}}
 

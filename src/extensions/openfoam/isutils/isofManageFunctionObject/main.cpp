@@ -48,7 +48,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
     
     OpenFOAMCase cm(OFEs::getCurrentOrPreferred());
     
-    ResultSetPtr results(new ResultSet(ParameterSet(), "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
+    ResultSetPtr results(new ResultSet(*ParameterSet::create(), "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
     Ordering o;
   
     // go through all defined case elements. Evaluate all FOs
@@ -57,13 +57,13 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
         std::string FOtype = e->first_attribute("type")->value();
 	if (outputFilterFunctionObject::factories_->find(FOtype) != outputFilterFunctionObject::factories_->end())
 	{
-	  ParameterSet ps = outputFilterFunctionObject::defaultParameters(FOtype);
-      ps.readFromNode( *e, cfgfile.parent_path() );
-	  std::shared_ptr<outputFilterFunctionObject> fo(outputFilterFunctionObject::lookup(FOtype, cm, ps));
+      auto ps = outputFilterFunctionObject::defaultParametersFor(FOtype);
+      ps->readFromNode( std::string(), *e, cfgfile.parent_path() );
+      std::shared_ptr<outputFilterFunctionObject> fo(outputFilterFunctionObject::lookup(FOtype, cm, *ps));
 	  fo->evaluate
 	  (
 	    cm, boost::filesystem::current_path(), results, 
-	    "Evaluation of function object "+ps.get<StringParameter>("name")()
+        "Evaluation of function object "+ps->get<StringParameter>("name")()
 	  );
 	}
     }    

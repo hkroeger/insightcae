@@ -73,6 +73,219 @@ using namespace std;
 static Handle(OpenGl_GraphicDriver) aGraphicDriver;
 
 
+OCCViewWidgetRotation::OCCViewWidgetRotation(QoccViewWidget &viewWidget, const QPoint point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, false)
+{
+    viewer().view().StartRotation(point.x(), point.y());
+}
+
+void OCCViewWidgetRotation::start()
+{}
+
+
+bool OCCViewWidgetRotation::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    viewer().view().Rotation( point.x(), point.y() );
+    return true;
+}
+
+bool OCCViewWidgetRotation::onMouseDrag(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    EventType eventType)
+{
+    return onMouseMove(point, nFlags);
+}
+
+
+
+
+
+
+OCCViewWidgetPanning::OCCViewWidgetPanning(QoccViewWidget &viewWidget, const QPoint point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false)
+{}
+
+void OCCViewWidgetPanning::start()
+{}
+
+
+bool OCCViewWidgetPanning::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    if (hasLastMouseLocation())
+    {
+        viewer().view().Pan( point.x() - lastMouseLocation().x(),
+                            lastMouseLocation().y() - point.y() );
+    }
+    return true;
+}
+
+bool OCCViewWidgetPanning::onMouseDrag(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    EventType eventType)
+{
+    return onMouseMove(point, nFlags);
+}
+
+
+
+OCCViewWidgetDynamicZooming::OCCViewWidgetDynamicZooming(QoccViewWidget &viewWidget, const QPoint point)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false)
+{}
+
+void OCCViewWidgetDynamicZooming::start()
+{}
+
+
+bool OCCViewWidgetDynamicZooming::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    if (hasLastMouseLocation())
+    {
+        viewer().view().Zoom( lastMouseLocation().x(), lastMouseLocation().y(),
+                             point.x(), point.y() );
+    }
+
+    return true;
+}
+
+bool OCCViewWidgetDynamicZooming::onMouseDrag(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    EventType eventType)
+{
+    return onMouseMove(point, nFlags);
+}
+
+
+
+OCCViewWidgetWindowZooming::OCCViewWidgetWindowZooming(
+    QoccViewWidget &viewWidget, const QPoint point, QRubberBand *rb)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, point, false), rb_(rb)
+{
+    aboutToBeDestroyed.connect(
+        [this]() {
+            auto r=rb_->rect();
+            viewer().view().WindowFitAll(
+                r.topLeft().x(),
+                r.topLeft().y(),
+                r.bottomRight().x(),
+                r.bottomRight().y() );
+        });
+}
+
+void OCCViewWidgetWindowZooming::start()
+{}
+
+
+bool OCCViewWidgetWindowZooming::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    if (hasLastMouseLocation())
+    {
+        rb_->hide();
+        rb_->setGeometry ( QRect(lastMouseLocation(), point).normalized() );
+        rb_->show();
+
+        viewer().view().Zoom( lastMouseLocation().x(), lastMouseLocation().y(),
+                             point.x(), point.y() );
+    }
+
+    return true;
+}
+
+bool OCCViewWidgetWindowZooming::onMouseDrag(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point,
+    EventType eventType )
+{
+    return onMouseMove(point, nFlags);
+}
+
+
+
+OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(
+    QoccViewWidget &viewWidget)
+    : ViewWidgetAction<QoccViewWidget>(viewWidget, false)
+{
+    aboutToBeDestroyed.connect(
+        [this](){
+            insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
+        });
+}
+
+QString OCCViewWidgetMeasurePoints::description() const
+{
+    return "Measure distance between points";
+}
+
+// OCCViewWidgetMeasurePoints::~OCCViewWidgetMeasurePoints()
+// {
+//     insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
+// }
+
+void OCCViewWidgetMeasurePoints::start()
+{
+    insight::cad::ActivateAll(viewer().getContext(), TopAbs_VERTEX);
+    userPrompt("Please select first point!");
+}
+
+bool OCCViewWidgetMeasurePoints::onMouseClick(
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    if (btn&Qt::LeftButton)
+    {
+        viewer().getContext()->InitSelected();
+        if (viewer().getContext()->MoreSelected())
+        {
+            TopoDS_Shape v = viewer().getContext()->SelectedShape();
+
+            gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
+            std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
+
+            if (!p1_)
+            {
+                p1_=insight::cad::matconst(insight::vec3(p));
+                userPrompt("Please select second point!");
+                return true;
+            }
+            else if (!p2_)
+            {
+                p2_=insight::cad::matconst(insight::vec3(p));
+                userPrompt("Measurement is created...");
+
+                viewer().addEvaluationToModel
+                    (
+                        "distance measurement",
+                        insight::cad::PostprocActionPtr
+                        (
+                            new insight::cad::Distance(p1_, p2_)
+                            ),
+                        true
+                        );
+
+                finishAction();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 void QoccViewWidget::addLights()
 {
   Handle_V3d_AmbientLight L1 = new V3d_AmbientLight(
@@ -108,21 +321,30 @@ void QoccViewWidget::addLights()
 
 
 QoccViewWidget::QoccViewWidget(QWidget *parent)
-  : QWidget(parent),
-    navigationManager_(
-      std::make_shared<
-        TouchpadNavigationManager<
-         QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
-        > >(*this) ),
+  : QWidgetToInputReceiverAdapter<
+          QoccViewWidget, QWidget>(*this, parent),
+    // navigationManager_(
+    //   new TouchpadNavigationManager<
+    //      QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
+    //     >(*this)),
     myGridSnap          ( Standard_False ),
     myDetection         ( AIS_SOD_Nothing ),
     myPrecision		( 0.0001 ),
     myViewPrecision     ( 0.0 ),
     myButtonFlags	( Qt::NoButton ),
-    showGrid            ( false )/*,
+    showGrid            ( false ),
+    lastClickWasDoubleClick_(false)/*,
     cimode_             ( CIM_Normal )*/
 {
   insight::CurrentExceptionContext ex("construct QoccViewWidget");
+
+    resetNavigationManager(
+        NavigationManager<QoccViewWidget>::Ptr(
+            new InventorNavigationManager<
+               QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
+              >(*this)
+            )
+        );
 
   // Needed to generate mouse events
   setMouseTracking( true );
@@ -301,74 +523,6 @@ void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
 
 
 
-void QoccViewWidget::mousePressEvent( QMouseEvent* e )
-{
-  insight::dbg()<<"mousepressevent"<<std::endl;
-  if (!myView.IsNull())
-  {
-    if ( e->button() & Qt::LeftButton )
-      {
-        navigationManager_->onLeftButtonDown( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-          currentUserActivity_->onLeftButtonDown( e->modifiers(), e->pos() );
-      }
-    else if ( e->button() & Qt::RightButton )
-      {
-        navigationManager_->onRightButtonDown( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-          currentUserActivity_->onRightButtonDown( e->modifiers(), e->pos() );
-      }
-    else if ( e->button() & Qt::MidButton )
-      {
-        navigationManager_->onMiddleButtonDown( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-          currentUserActivity_->onMiddleButtonDown( e->modifiers(), e->pos() );
-      }
-
-  }
-  else
-    e->ignore();
-}
-
-
-
-
-
-void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
-{
-  insight::dbg()<<"mousereleaseevent"<<std::endl;
-  if (!myView.IsNull())
-  {
-    if ( e->button() & Qt::LeftButton )
-      {
-        navigationManager_->onLeftButtonUp( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-          currentUserActivity_->onLeftButtonUp( e->modifiers(), e->pos() );
-      }
-    else if ( e->button() & Qt::RightButton )
-      {
-        navigationManager_->onRightButtonUp( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-          currentUserActivity_->onRightButtonUp( e->modifiers(), e->pos() );
-        else
-        {
-          displayContextMenu(e->pos());
-        }
-      }
-    else if ( e->button() & Qt::MidButton )
-      {
-        navigationManager_->onMiddleButtonUp( e->modifiers(), e->pos() );
-        if (currentUserActivity_)
-          currentUserActivity_->onMiddleButtonUp( e->modifiers(), e->pos() );
-      }
-
-  }
-  else
-    e->ignore();
-}
-
-
-
 
 /*!
 \brief	Mouse move event, driven from application message loop
@@ -376,46 +530,8 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
 */
 void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 {
-//  insight::dbg()<<"mousemoveevent"<<std::endl;
   if (!myView.IsNull())
   {
-
-//    Standard_Real X, Y, Z;
-  
-//    myCurrentPoint = e->pos();
-//    //Check if the grid is active and that we're snapping to it
-//    if( myContext_->CurrentViewer()->Grid()->IsActive() && myGridSnap )
-//      {
-//        myView->ConvertToGrid
-//          (
-//           myCurrentPoint.x(),
-//           myCurrentPoint.y(),
-//           myV3dX,
-//           myV3dY,
-//           myV3dZ
-//          );
-//        emit mouseMoved( myV3dX, myV3dY, myV3dZ );
-//      }
-//    else //	this is the standard case
-//      {
-//        if (convertToPlane
-//            (
-//             myCurrentPoint.x(),
-//             myCurrentPoint.y(),
-//             X, Y, Z
-//            ) )
-//          {
-//            myV3dX = precision( X );
-//            myV3dY = precision( Y );
-//            myV3dZ = precision( Z );
-//            emit mouseMoved( myV3dX, myV3dY, myV3dZ );
-//          }
-//        else
-//          {
-//            emit sendStatus ( tr("Indeterminate Point") );
-//          }
-//      }
-
     try // sometimes fails in WIN32
     {
       myContext_->MoveTo(
@@ -431,10 +547,8 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
       insight::dbg()<<"Failed moveTo"<<std::endl;
     }
 
-    navigationManager_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-    if (currentUserActivity_)
-      currentUserActivity_->onMouseMove( e->buttons(), e->pos(), e->modifiers() );
-
+    QWidgetToInputReceiverAdapter<
+        QoccViewWidget, QWidget>::mouseMoveEvent(e);
   }
   else
     e->ignore();
@@ -442,19 +556,6 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 }
 
 
-
-
-/*!
-  \brief	A leave event is sent to the widget when the mouse cursor leaves
-  the widget.
-  This sub-classed event handler fixes redraws when gestures are interrupted
-  by use of parent menus etc. (Candidate for change)
-  \param	e	The event data
-*/
-void QoccViewWidget::leaveEvent ( QEvent* /* e */ )
-{
-//  myButtonFlags = Qt::NoButton;
-}
 
 
 
@@ -562,102 +663,6 @@ void QoccViewWidget::displayContextMenu( const QPoint& p)
 
     vmenu.exec(mapToGlobal(p));
   }
-}
-
-
-
-
-/*!
-\brief	The QWheelEvent class contains parameters that describe a wheel event. 
-*/
-void QoccViewWidget::wheelEvent ( QWheelEvent* e )
-{
-  insight::dbg()<<"wheelevent"<<std::endl;
-  if (!myView.IsNull())
-    {
-//      Standard_Real currentScale = myView->Scale();
-//      if (e->angleDelta().y() > 0)
-//	{
-//	  currentScale *= 1.10; // +10%
-//	}
-//      else
-//	{
-//	  currentScale /= 1.10; // -10%
-//	}
-//      myView->SetScale( currentScale );
-      navigationManager_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-      if (currentUserActivity_)
-        currentUserActivity_->onMouseWheel(e->angleDelta().x(), e->angleDelta().y());
-    }
-  else
-    {
-      e->ignore();
-    }
-}
-
-
-
-
-void QoccViewWidget::keyPressEvent(QKeyEvent* e)
-{
-  insight::dbg()<<"key press event"<<std::endl;
-////   std::cout<<e->modifiers()<<std::endl;
-//    if ( ( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
-//    {
-//      setMode(CurAction3d_DynamicZooming);
-//    }
-//    else if ( ( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
-//    {
-//      setMode(CurAction3d_DynamicPanning);
-//    }
-//    else if ( ( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
-//    {
-//      setMode(CurAction3d_DynamicRotation);
-//    }
-//    else
-//      QWidget::keyPressEvent(e);
-
-  if (e->key() == Qt::Key_Escape)
-  {
-    currentUserActivity_.reset();
-  }
-
-
-  navigationManager_->onKeyPress(e->modifiers(), e->key());
-
-  if (currentUserActivity_)
-    currentUserActivity_->onKeyPress(e->modifiers(), e->key());
-
-  QWidget::keyPressEvent(e);
-}
-
-
-
-
-void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
-{
-  insight::dbg()<<"key release event"<<std::endl;
-////   std::cout<<e->modifiers()<<std::endl;
-//    if ( !( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_DynamicZooming) )
-//    {
-//      setMode(CurAction3d_Nothing);
-//    }
-//    else if ( !( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_DynamicPanning) )
-//    {
-//      setMode(CurAction3d_Nothing);
-//    }
-//    else if ( !( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_DynamicRotation) )
-//    {
-//      setMode(CurAction3d_Nothing);
-//    }
-//    else
-//      QWidget::keyReleaseEvent(e);
-  navigationManager_->onKeyRelease(e->modifiers(), e->key());
-
-  if (currentUserActivity_)
-    currentUserActivity_->onKeyRelease(e->modifiers(), e->key());
-
-  QWidget::keyReleaseEvent(e);
 }
 
 
@@ -1344,8 +1349,7 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 
 void QoccViewWidget::onMeasureDistance()
 {
-    currentUserActivity_= std::make_shared<OCCViewWidgetMeasurePoints>(*this);
-    currentUserActivity_->start();
+    launchAction( ViewWidgetActionPtr(new OCCViewWidgetMeasurePoints(*this)) );
 }
 
 void QoccViewWidget::onMeasureDiameter()
@@ -1358,8 +1362,7 @@ void QoccViewWidget::onMeasureDiameter()
 
 void QoccViewWidget::onSelectPoints()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertPointIDs>(*this);
-  currentUserActivity_->start();
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertPointIDs(*this)) );
 }
 
 
@@ -1367,8 +1370,7 @@ void QoccViewWidget::onSelectPoints()
 
 void QoccViewWidget::onSelectEdges()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertEdgeIDs>(*this);
-  currentUserActivity_->start();
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertEdgeIDs(*this)) );
 }
 
 
@@ -1376,8 +1378,7 @@ void QoccViewWidget::onSelectEdges()
 
 void QoccViewWidget::onSelectFaces()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertFaceIDs>(*this);
-  currentUserActivity_->start();
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertFaceIDs(*this)) );
 }
 
 
@@ -1385,8 +1386,7 @@ void QoccViewWidget::onSelectFaces()
 
 void QoccViewWidget::onSelectSolids()
 {
-  currentUserActivity_= std::make_shared<ViewWidgetInsertSolidIDs>(*this);
-  currentUserActivity_->start();
+  launchAction( ViewWidgetActionPtr(new ViewWidgetInsertSolidIDs(*this)) );
 }
 
 
@@ -2381,8 +2381,11 @@ Standard_Real QoccViewWidget::viewPrecision( bool resized )
 
 
 
+defineTemplateType(NavigationManager<QoccViewWidget>);
 
+typedef InventorNavigationManager<
+    QoccViewWidget, OCCViewWidgetPanning, OCCViewWidgetRotation
+    > QoccInventorNavigationManager;
 
-
-
+defineTemplateType(QoccInventorNavigationManager);
 

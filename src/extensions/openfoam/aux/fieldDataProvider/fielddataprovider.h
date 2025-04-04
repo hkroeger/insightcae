@@ -253,7 +253,7 @@ template<class T>
 class linearProfile
 : public FieldDataProvider<T>
 {
-  VectorSpaceBase base_;
+  LinearVectorSpaceBase base_;
   std::vector<fileName> filenames_;
   mutable boost::ptr_map<int, insight::Interpolator> values_;
   
@@ -277,17 +277,33 @@ public:
 
 
 
+template<class T, class CS>
+class CylCoordProfile
+    : public FieldDataProvider<T>
+{
+    CS base_;
+    std::vector<fileName> filenames_;
+    mutable boost::ptr_map<int, insight::Interpolator> values_;
+
+    virtual void appendInstant(Istream& is);
+    virtual void writeInstant(int i, Ostream& os) const;
+
+public:
+    CylCoordProfile(Istream& is);
+    CylCoordProfile(const CylCoordProfile<T,CS>& o);
+
+    virtual void read(Istream& is);
+    virtual void writeSup(Ostream& os) const;
+
+    virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+};
+
+
+
 template<class T>
 class radialProfile
-: public FieldDataProvider<T>
+: public CylCoordProfile<T,RadialCylCoordVectorSpaceBase>
 {
-  CylCoordVectorSpaceBase base_;
-  std::vector<fileName> filenames_;
-  mutable boost::ptr_map<int, insight::Interpolator> values_;
-  
-  virtual void appendInstant(Istream& is);
-  virtual void writeInstant(int i, Ostream& os) const;
-
 public:
   //- Runtime type information
   TypeName("radialProfile");
@@ -295,13 +311,24 @@ public:
   radialProfile(Istream& is);
   radialProfile(const radialProfile<T>& o);
 
-  virtual void read(Istream& is);
-  virtual void writeSup(Ostream& os) const;
-
-  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
   virtual autoPtr<FieldDataProvider<T> > clone() const;
 };
 
+
+
+template<class T>
+class circumferentialProfile
+    : public CylCoordProfile<T,CircumCylCoordVectorSpaceBase>
+{
+public:
+    //- Runtime type information
+    TypeName("circumferentialProfile");
+
+    circumferentialProfile(Istream& is);
+    circumferentialProfile(const circumferentialProfile<T>& o);
+
+    virtual autoPtr<FieldDataProvider<T> > clone() const;
+};
 
 
 
@@ -309,7 +336,7 @@ template<class T>
 class fittedProfile
 : public FieldDataProvider<T>
 {
-  VectorSpaceBase base_;
+  LinearVectorSpaceBase base_;
   std::vector< std::vector<arma::mat> > coeffs_;
   
   virtual void appendInstant(Istream& is);

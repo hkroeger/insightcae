@@ -24,8 +24,8 @@ private:
 
     FaceIsoCurve ( FeatureSetPtr faces, UV coord, ScalarPtr iso_value );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "FaceIsoCurve" );

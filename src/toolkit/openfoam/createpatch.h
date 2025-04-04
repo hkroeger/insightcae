@@ -31,14 +31,12 @@ patchtype = string "patch" ""
 patches = array [ string "" "Patch name" ] *0 "Name of patches"
 setname = string "set" ""
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-  Parameters p_;
-
 public:
-  createPatchOperator(const ParameterSet& p = createPatchOperator::Parameters::makeDefault() );
+  createPatchOperator(ParameterSetInput ip = Parameters() );
   virtual ~createPatchOperator();
 
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
@@ -66,15 +64,12 @@ inherits createPatchOperator::Parameters
 patches_half1 = array [ string "" "" ]*0 ""
 set_half1 = string "set_half1" ""
 
+createGetters
 <<<PARAMETERSET
 */
 
-
-protected:
-  Parameters p_;
-
 public:
-  createCyclicOperator(const ParameterSet& p = createCyclicOperator::Parameters::makeDefault() );
+  createCyclicOperator(ParameterSetInput ip = Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
 };
 

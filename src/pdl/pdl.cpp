@@ -19,7 +19,9 @@
  */
 
 
-#include "parserdatabase.h"
+#include "parametergenerator.h"
+
+#include "parametersetgenerator.h"
 
 
 /**
@@ -58,36 +60,43 @@ skip_grammar::skip_grammar()
 
 
 PDLParserRuleset::PDLParserRuleset()
-{  
-  r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
+{
+  r_string = lexeme [ "\"" >> *~char_("\"") >> "\"" ];
   r_description_string = (r_string | attr(""));
-  r_identifier = lexeme[ alpha >> *(alnum | char_('_') | char_(':') ) >> !(alnum | '_' | ':') ];
+  r_identifier = as_string [ lexeme[ alpha >> *(alnum|char_('_')|char_(':')|char_('<')|char_('>')) >> !(alnum | '_'| ':'|'<'|'>') ]];
   r_path = lexeme[ alpha >> *(alnum | char_('_') | char_('/') ) >> !(alnum | '_' | '/' ) ];
   r_up_to_semicolon = qi::as_string[ qi::lexeme [ *~(qi::char_(";")) >> ";" ] ];
+  r_addcode = as_string[ lexeme [ '{' >> *~char_('}') >> '}' ] ];
+  r_templateArg = lexeme [ '<' >> *~char_('>') >> '>' ];
 
-  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a)
-                  > -( qi::lit("*necessary") [ phx::bind(&ParserDataBase::setNecessary, *qi::_val) ] )
-                  > -( qi::lit("*expert") [ phx::bind(&ParserDataBase::setExpert, *qi::_val) ] )
-                  > -( qi::lit("*hidden") [ phx::bind(&ParserDataBase::setHidden, *qi::_val) ] )
+  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1  ] ] > qi::lazy(*qi::_a)
+                  > -( qi::lit("*necessary") [ phx::bind(&ParameterGenerator::setNecessary, *qi::_val) ] )
+                  > -( qi::lit("*expert") [ phx::bind(&ParameterGenerator::setExpert, *qi::_val) ] )
+                  > -( qi::lit("*hidden") [ phx::bind(&ParameterGenerator::setHidden, *qi::_val) ] )
       ;
   
 
 
-  r_parametersetentry = r_identifier >> '=' > r_parameterdata;
+  r_parametersetentry = (r_identifier >> '=' >> r_parameterdata ) [
+      phx::bind(&ParameterGenerator::setName, *qi::_2, qi::_1),
+       qi::_val = qi::_2 ]
+  ;
 
-  r_parameterset =  *( r_parametersetentry );
-
-  r_addcode =
-     qi::lit("addTo_makeDefault") >> as_string[ lexeme [ "{" >> *~char_("}") >> "}" ] ] [qi::_val = qi::_1]
-    ;
-
-  r_pdl_content =
-         -( as_string[ lexeme [ "<" >> *~char_(">") >> ">" ] ] )
+  r_parameterset = (
+         -( r_templateArg )
       >> -( qi::lit("inherits") >> r_identifier )
       >> -( qi::lit("description") >> r_string )
-      >> ( ( qi::lit("skipDefaultParametersMember") >> qi::attr(true) ) | qi::attr(false) )
-      >> (r_addcode | qi::attr(std::string()))
-      >> r_parameterset;
+      >> -( qi::lit("addTo_makeDefault") >> r_addcode )
+      >> *( r_parametersetentry ) )
+            [ qi::_val = phx::construct<SubsetGeneratorPtr>(
+                phx::new_<SubsetGenerator>(
+                  qi::_5, qi::_1, qi::_2, qi::_3, qi::_4)) ];
+
+  r_pdl_content =
+         ( ( qi::lit("skipDefaultParametersMember") >> qi::attr(true) ) | qi::attr(false) )
+      >> r_parameterset
+      >> ( ( qi::lit("createGetter") >> qi::attr(true) ) | qi::attr(false) )
+      ;
 
 
 }
@@ -114,7 +123,7 @@ struct PDLParser
       : PDLParser::base_type(rules.r_pdl_content)
   {
 
-      for (const auto& r: *ParserDataBase::insertruleFunctions_)
+      for (const auto& r: *ParameterGenerator::insertruleFunctions_)
       {
           r.second(rules);
       }
@@ -162,37 +171,25 @@ int main ( int argc, char *argv[] )
       std::string::iterator last=contents_raw.end();
 
       PDLParserResult result_all;
-      if (!qi::phrase_parse
-          (
-            first,
-            last,
-            parser,
-            skip,
-            result_all
-            ))
+      if ( !qi::phrase_parse(
+            first, last,
+            parser, skip,
+            result_all ) )
       {
-        throw PDLException("Parsing PDL "+inf.string()+" failed!");
+          throw PDLException("Parsing PDL "+inf.string()+" failed!");
+      }
+
+      if (last!=contents_raw.end())
+      {
+          throw PDLException(
+              "Parsing PDL "+inf.string()+" incomplete! "
+              "Remaining: "+std::string(last, contents_raw.end()) );
       }
 
 
-      std::string templateArgs="";
-      auto templateArgsP = boost::fusion::get<0>(result_all);
-      if (templateArgsP) templateArgs=*templateArgsP;
-
-      std::string default_base_type_name="insight::ParametersBase";
-      std::string base_type_name=default_base_type_name;
-      auto inheritParam = boost::fusion::get<1>(result_all);
-      if (inheritParam) base_type_name=*inheritParam;
-
-      std::string description="";
-      auto descParam = boost::fusion::get<2>(result_all);
-      if (descParam) description=*descParam;
-
-      bool skipDefaultParamMember = boost::fusion::get<3>(result_all);
-
-      std::string addTo_makeDefault = boost::fusion::get<4>(result_all);
-
-      ParameterSetData result = boost::fusion::get<5>(result_all);
+      const std::string defaultParameterSetBaseClass = "insight::ParametersBase";
+      bool skipDefaultParamMember = boost::fusion::get<0>(result_all);
+      bool createGetter = boost::fusion::get<2>(result_all);
 
       {
         std::string bname=inf.stem().string();
@@ -204,149 +201,59 @@ int main ( int argc, char *argv[] )
           name=parts[2];
         }
 
+        std::set<std::string> headers;
+
+        auto parameterSetData = std::make_shared<ParameterSetGenerator>(
+            *boost::fusion::get<1>(result_all) );
+
+        if (!parameterSetData->base_type_name_)
+        {
+            headers.insert("\"base/supplementedinputdata.h\"");
+            parameterSetData->base_type_name_=defaultParameterSetBaseClass;
+        }
+
+        parameterSetData->setName(name);
+        parameterSetData->setPath("");
+
+        parameterSetData->cppAddRequiredInclude ( headers );
 
         {
           std::ofstream f ( bname+"_headers.h" );
-          std::set<std::string> headers;
-          if (base_type_name==default_base_type_name)
-          {
-            headers.insert("\"base/supplementedinputdata.h\"");
-          }
-          for ( const ParameterSetEntry& pe: result )
-          {
-            pe.second->cppAddHeader ( headers );
-          }
-          for ( const std::string& h: headers )
+          for ( auto& h: headers )
           {
             f<<"#include "<<h<<endl;
           }
         }
+
+
         {
           std::ofstream f ( bname+".h" );
 
-          if (!templateArgs.empty())
-            f<<"template<"<<templateArgs<<">\n";
+          parameterSetData->writeCppTypeDecl(f);
 
-          f<<"struct "<<name<<endl;
-          if ( !base_type_name.empty() )
-          {
-            f<<": public "<<base_type_name<<endl;
-          }
-          f<<"{"<<endl;
-
-          // declare variables and types
-          for ( const ParameterSetEntry& pe: result )
-          {
-            pe.second->writeCppHeader ( f, pe.first, "" );
-          }
-
-          f<<name<<"()"<<endl;
-          if ( !base_type_name.empty() )
-          {
-            f<<" : "<<base_type_name<<"()"<<endl;
-          }
-          f<<"{"<<endl;
-          f<<" get(makeDefault());"<<endl;
-          f<<"}"<<endl;
-
-          //get from other ParameterSet
-          f<<name<<"(const insight::SubsetParameter& p)"<<endl;
-          if ( !base_type_name.empty() )
-          {
-            f<<" : "<<base_type_name<<"(p)"<<endl;
-          }
-          f <<"{"<<endl
-           <<" get(p);"<<endl
-          <<"}"<<endl
-            ;
-
-          //set into other ParameterSet
-          f<<"void set(insight::SubsetParameter& p) const override"<<endl
-          <<"{"<<endl;
-          if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
-          {
-            f<<" "<<base_type_name<<"::set(p);"<<endl;
-          }
-          for ( const ParameterSetEntry& pe: result )
-          {
-            std::string subname=pe.first;
-            f<<"{"<<endl;
-            f<<"auto& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
-            f<<"const auto& "<<subname<<"_static = this->"<<subname<<";"<<endl;
-            pe.second->cppWriteSetStatement
-                (
-                  f, subname, subname, subname+"_static", ""
-                  );
-            f<<"}"<<endl;
-          }
-          f<<"}"<<endl;
-
-          f<<"void get(const insight::SubsetParameter& p) override"<<endl
-          <<"{"<<endl;
-          if ( !base_type_name.empty() && (base_type_name!=default_base_type_name) )
-          {
-            f<<" "<<base_type_name<<"::get(p);"<<endl;
-          }
-          for ( const ParameterSetEntry& pe: result )
-          {
-            std::string subname=pe.first;
-            f<<"{"<<endl;
-            f<<"const auto& "<<subname<<" = p.get< "<<pe.second->cppParamType ( subname ) <<" >(\""<<subname<<"\");"<<endl;
-            f<<"auto& "<<subname<<"_static = this->"<<subname<<";"<<endl;
-            pe.second->cppWriteGetStatement
-                (
-                  f, subname, subname, subname+"_static", ""
-                  );
-            f<<"}"<<endl;
-          }
-          f<<"}"<<endl;
-
-          // set_variable initialization function
-          for ( const ParameterSetEntry& pe: result )
-          {
-            std::string subname=pe.first;
-
-            f<<name<<"& set_"<<subname<<"(const "<<pe.second->cppTypeName ( subname ) <<"& value)"<<endl
-            <<"{"<<endl;
-            f<<" this->"<<subname<<" = value;"<<endl;
-            f<<" return *this;"<<endl;
-            f<<"}"<<endl;
-          }
-
-          // create a ParameterSet with default values set
-          f<<"static ParameterSet makeDefault() {"<<endl;
-          f<<"insight::ParameterSet p;"<<endl;
-          if ( !base_type_name.empty() )
-          {
-            f<<" p="<<base_type_name<<"::makeDefault();"<<endl;
-          }
-          f<<" p.setParameterSetDescription(\""<<description<<"\");"<<endl;
-          for ( const ParameterSetEntry& pe: result )
-          {
-            pe.second->cppWriteInsertStatement
-                (
-                  f,
-                  "p",
-                  pe.first,
-                  ""
-                  );
-          }
-          f<<addTo_makeDefault<<endl;
-          f<<"return p;"<<endl<<"}"<<endl;
-
-          // convert static data into a ParameterSet
-          f<<"operator ParameterSet() const override"<<endl;
-          f<<"{ insight::ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
-
-          // clone function
-          f<<"std::unique_ptr<insight::ParametersBase> clone() const override"<<endl;
-          f<<"{ return std::make_unique<"<<name<<">(*this); }"<<endl;
-
-          f<<"};"<<endl;
-
+          // ============================================================
+          // some additions to the enclosing (user) class
 
           if (!skipDefaultParamMember)
-            f << "static insight::ParameterSet defaultParameters() { return "<<name<<"::makeDefault(); }" << endl;
+            f << "static std::unique_ptr<insight::ParameterSet> defaultParameters()\n"
+              << "{ return "<<name<<"::makeDefault(); }\n";
+
+          if (createGetter)
+          {
+              if (parameterSetData->base_type_name_.value()
+                  == defaultParameterSetBaseClass)
+              {
+                  f << "protected:\n"
+                    <<  "ParameterSetInput p_;\n"
+                    << "public:\n"
+                    <<  "const ParameterSet& getParameters() const { return p_.parameterSet(); }\n"
+                      ;
+              }
+              f << "public:\n"
+                << "const " <<name<< "& p() const { return dynamic_cast<const " <<name<< "&>(this->p_.parameters()); }\n"
+                // << name << "& p() { return dynamic_cast< " <<name<< "&>(this->p_.parameters()); }\n"
+                  ;
+          }
         }
       }
     }

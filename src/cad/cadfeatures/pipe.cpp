@@ -21,6 +21,7 @@
 #include "Approx_Curve3d.hxx"
 #include "pipe.h"
 #include "base/translations.h"
+#include "cadfeatures/importsolidmodel.h"
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -155,8 +156,8 @@ void Pipe::build()
     p.Build();
 //    p.MakeSolid();
     
-    providedSubshapes_["frontFace"]=Feature::create(p.FirstShape());
-    providedSubshapes_["backFace"]=Feature::create(p.LastShape());
+    providedSubshapes_["frontFace"]=Import::create(p.FirstShape());
+    providedSubshapes_["backFace"]=Import::create(p.LastShape());
     
     TopoDS_Shape res=p.Shape();
     ShapeFix_Shape sfs(res);

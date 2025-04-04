@@ -59,7 +59,7 @@
 #include "cadfeatures/stitchedshell.h"
 #include "cadfeatures/stitchedsolid.h"
 #include "cadfeatures/sweep.h"
-#include "cadfeatures/thicken.h"
+#include "cadfeatures/sheet.h"
 #include "cadfeatures/transform.h"
 #include "cadfeatures/tri.h"
 #include "cadfeatures/wire.h"

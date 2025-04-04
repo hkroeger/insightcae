@@ -1,4 +1,6 @@
 #include "iqresultsetdisplayerwidget.h"
+#include "base/exception.h"
+#include "base/translations.h"
 #include "ui_iqresultsetdisplayerwidget.h"
 
 #include "iqaddfilterdialog.h"
@@ -8,6 +10,7 @@
 
 #include "base/cppextensions.h"
 #include "rapidxml/rapidxml_print.hpp"
+#include "qtextensions.h"
 
 IQResultSetDisplayerWidget::IQResultSetDisplayerWidget(QWidget *parent) :
     QWidget(parent),
@@ -19,7 +22,12 @@ IQResultSetDisplayerWidget::IQResultSetDisplayerWidget(QWidget *parent) :
     ui->setupUi(this);
 
     ui->lvResultElementFilters->setModel(filterModel_);
-    insight::connectToCWithContentsDisplay(ui->lvFilteredResultSetToC, ui->wiResultElementContent);
+
+    ui->lvFilteredResultSetToC->header()->setStretchLastSection(false);
+
+    insight::connectToCWithContentsDisplay(
+            ui->lvFilteredResultSetToC,
+            ui->wiResultElementContent);
 
     connect(filterModel_, &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
@@ -116,6 +124,18 @@ void IQResultSetDisplayerWidget::loadResults(insight::ResultSetPtr results)
     ui->lvFilteredResultSetToC->expandAll();
     ui->lvFilteredResultSetToC->resizeColumnToContents(0);
     ui->lvFilteredResultSetToC->resizeColumnToContents(1);
+
+    int w = ui->lvFilteredResultSetToC->columnWidth(0);
+    w += ui->lvFilteredResultSetToC->columnWidth(1);
+
+    auto s=ui->hsplitter->sizes();
+    int wframe=s[0]-ui->lvFilteredResultSetToC->viewport()->width();
+
+    int sum=s[0]+s[1];
+    s[0]=std::min<int>(w+wframe, sum/2);
+    s[1]=sum-s[0];
+
+    ui->hsplitter->setSizes(s);
 }
 
 bool IQResultSetDisplayerWidget::hasResults() const
@@ -126,12 +146,12 @@ bool IQResultSetDisplayerWidget::hasResults() const
 
 void IQResultSetDisplayerWidget::loadResultSet(const std::string& analysisName)
 {
-    auto f = QFileDialog::getOpenFileName(
-                this, "Load result set", "",
-                "InsightCAE Result Set (*.isr)" );
-    if (!f.isEmpty())
+    if (auto f = getFileName(
+            this, _("Load result set"),
+            GetFileMode::Open,
+            {{ "isr", _("InsightCAE Result Set") }} ) )
     {
-      auto r = insight::ResultSet::createFromFile(f.toStdString(), analysisName);
+      auto r = insight::ResultSet::createFromFile(f, analysisName);
       loadResults(r);
     }
 }
@@ -185,9 +205,10 @@ void IQResultSetDisplayerWidget::renderReport()
         QFileDialog fd(this);
         fd.setOption(QFileDialog::DontUseNativeDialog, true);
         fd.setWindowTitle("Render Report");
-        QStringList filters;
-        filters << "PDF document (*.pdf)";
-        fd.setNameFilters(filters);
+
+        QString PDF("PDF document (*.pdf)");
+        QString TEX("LaTeX input file (*.tex)");
+        fd.setNameFilters(QStringList{PDF, TEX});
 
         QCheckBox* cb = new QCheckBox;
         cb->setText("Save filtered result set");
@@ -199,19 +220,40 @@ void IQResultSetDisplayerWidget::renderReport()
 
         if ( fd.exec() == QDialog::Accepted )
         {
-          boost::filesystem::path outf =
-                  insight::ensureFileExtension(
-                      fd.selectedFiles()[0].toStdString(),
-                      ".pdf"
-                  );
-          if (cb->isChecked())
-          {
-              filteredResultsModel_->filteredResultSet()->generatePDF(outf);
-          }
-          else
-          {
-              resultsModel_->resultSet()->generatePDF(outf);
-          }
+            if (fd.selectedNameFilter()==PDF)
+            {
+                  boost::filesystem::path outf =
+                          insight::ensureFileExtension(
+                              fd.selectedFiles()[0].toStdString(),
+                              ".pdf"
+                          );
+                  if (cb->isChecked())
+                  {
+                      filteredResultsModel_->filteredResultSet()->generatePDF(outf);
+                  }
+                  else
+                  {
+                      resultsModel_->resultSet()->generatePDF(outf);
+                  }
+            }
+            else if (fd.selectedNameFilter()==TEX)
+            {
+                boost::filesystem::path outf =
+                    insight::ensureFileExtension(
+                        fd.selectedFiles()[0].toStdString(),
+                        ".tex"
+                        );
+                if (cb->isChecked())
+                {
+                    filteredResultsModel_->filteredResultSet()->writeLatexFile(outf);
+                }
+                else
+                {
+                    resultsModel_->resultSet()->writeLatexFile(outf);
+                }
+            }
+            else
+                throw insight::UnhandledSelection();
         }
     }
 }
@@ -219,16 +261,15 @@ void IQResultSetDisplayerWidget::renderReport()
 
 void IQResultSetDisplayerWidget::loadFilter()
 {
-    auto inf = QFileDialog::getOpenFileName(
+    if (auto inf = getFileName(
                 this, "Select result filter file",
-                "", "InsightCAE Result Set Filter (*.irf)");
-
-    if (!inf.isEmpty())
+            GetFileMode::Open,
+            {{ "irf", "InsightCAE Result Set Filter" }} ) )
     {
-        insight::CurrentExceptionContext ex("reading result set filter from file "+inf.toStdString());
+        insight::CurrentExceptionContext ex("reading result set filter from file "+inf.asString());
 
         std::string contents;
-        insight::readFileIntoString(inf.toStdString(), contents);
+        insight::readFileIntoString(inf, contents);
 
         rapidxml::xml_document<> doc;
         doc.parse<0>(&contents[0]);
@@ -242,13 +283,13 @@ void IQResultSetDisplayerWidget::loadFilter()
 
 void IQResultSetDisplayerWidget::saveFilter()
 {
-    auto outf = QFileDialog::getSaveFileName(this, "Select result filter file",
-                                            "", "InsightCAE Result Set Filter (*.irf)");
-    if (!outf.isEmpty())
+    if (auto outf = getFileName(
+            this,
+            "Select result filter file",
+            GetFileMode::Save,
+            {{ "irf", "InsightCAE Result Set Filter" }} ) )
     {
-        insight::CurrentExceptionContext ex("writing result set filter into file "+outf.toStdString());
-
-        auto outfn = insight::ensureFileExtension(outf.toStdString(), ".irf");
+        insight::CurrentExceptionContext ex("writing result set filter into file "+outf.asString());
 
       //   std::cout<<"Writing parameterset to file "<<file<<std::endl;
 
@@ -264,7 +305,7 @@ void IQResultSetDisplayerWidget::saveFilter()
 
         filterModel_->filter().appendToNode(doc, *rootnode);
 
-        std::ofstream f(outfn.string());
+        std::ofstream f(outf.asString());
         f << doc << std::endl;
     }
 }

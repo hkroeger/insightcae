@@ -18,25 +18,28 @@ namespace insight
 {
 
 
-ParameterSetVisualizerPtr snappyHexMeshConfiguration_visualizer()
+
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    snappyHexMeshConfiguration, &newVisualizer<snappyHexMeshConfiguration_ParameterSet_Visualizer>);
+
+
+std::shared_ptr<supplementedInputDataBase>
+snappyHexMeshConfiguration_ParameterSet_Visualizer::computeSupplementedInput()
 {
-    return ParameterSetVisualizerPtr( new snappyHexMeshConfiguration_ParameterSet_Visualizer );
+    return nullptr;
 }
-
-addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshConfiguration, visualizer, snappyHexMeshConfiguration_visualizer);
-
 
 void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CADParameterSetVisualizer::recreateVisualizationElements();
-
-  snappyHexMeshConfiguration::Parameters p(currentParameters());
+  snappyHexMeshConfiguration::Parameters p(parameters());
 
   for (const auto& feat: p.features)
   {
     if ( const auto* geo = dynamic_cast<snappyHexMeshFeats::Geometry*>(feat.get()) )
     {
-      const auto& gp = geo->parameters();
+      const auto& gp = geo->p();
 
       if (gp.fileName->isValid())
       {
@@ -61,7 +64,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
       }
     } else if ( const auto* refbox = dynamic_cast<snappyHexMeshFeats::RefinementBox*>(feat.get()) )
     {
-      const auto& gp = refbox->parameters();
+      const auto& gp = refbox->p();
       arma::mat l=gp.max-gp.min;
       addFeature( "refinement:"+gp.name,
                   cad::Box::create(
@@ -74,7 +77,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 
     } else if ( const auto* refcyl = dynamic_cast<snappyHexMeshFeats::RefinementCylinder*>(feat.get()) )
     {
-      const auto& gp = refcyl->parameters();
+      const auto& gp = refcyl->p();
       addFeature( "refinement:"+gp.name,
                   cad::Cylinder::create(
                     cad::matconst(gp.point1),
@@ -84,7 +87,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
                     ));
     } else if ( const auto* refsph = dynamic_cast<snappyHexMeshFeats::RefinementSphere*>(feat.get()) )
     {
-      const auto& gp = refsph->parameters();
+      const auto& gp = refsph->p();
       addFeature( "refinement:"+gp.name,
                   cad::Sphere::create(
                     cad::matconst(gp.center),
@@ -92,8 +95,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
                     ));
     } else if ( const auto* refgeo = dynamic_cast<snappyHexMeshFeats::RefinementGeometry*>(feat.get()) )
     {
-      const auto& rgp = refgeo->parameters();
-      const auto& gp = rgp.geometry;
+      const auto& gp = refgeo->p();
 
       if (gp.fileName->isValid())
       {
@@ -103,7 +105,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
         gp_Trsf scale;
         scale.SetScale(gp::Origin(), gp.scale[0]);
 
-        addFeature( "refinement:"+rgp.name,
+        addFeature( "refinement:"+gp.name,
                     cad::STL::create(gp.fileName->filePath(), trans*scale)
                     );
       }
@@ -126,9 +128,12 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 }
 
 
-void snappyHexMeshConfiguration_ParameterSet_Visualizer::setIcon(QIcon *i)
-{
-  *i=QIcon(":symbole/sHM-cfg.svg");
-}
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer,
+    IconFunctions, iconForOpenFOAMCaseElement,
+    snappyHexMeshConfiguration, [](){ return QIcon(":symbole/sHM-cfg.svg"); });
+
+
+
 
 }

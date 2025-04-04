@@ -168,6 +168,22 @@ void RemoteExecutionConfig::putFile
 
 
 
+std::unique_ptr<RemoteServer::RemoteStream>
+RemoteExecutionConfig::remoteOFStream(
+    const boost::filesystem::path &relativeRemoteFilePath,
+    int totalBytes,
+    std::function<void (int, const std::string &)> progress_callback
+)
+{
+    return server()->remoteOFStream(
+        remoteDir()/relativeRemoteFilePath,
+        totalBytes, progress_callback
+        );
+}
+
+
+
+
 void RemoteExecutionConfig::syncToRemote(
     bool includeProcessorDirectories,
     const std::vector<string> &exclude_pattern,

@@ -36,8 +36,8 @@ class BooleanUnion
     BooleanUnion(FeaturePtr m1);
     BooleanUnion(FeaturePtr m1, FeaturePtr m2);
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType("BooleanUnion");

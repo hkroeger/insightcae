@@ -14,22 +14,32 @@ addToStaticFunctionTable(BoundaryCondition, SimpleBC, defaultParameters);
 
 void SimpleBC::init()
 {
-    BCtype_ = p_.className;
+    BCtype_ = p().className;
     if ( ( OFversion() >=230 ) && ( BCtype_=="symmetryPlane" ) ) {
         BCtype_="symmetry";
     }
 }
 
-SimpleBC::SimpleBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className )
-    : BoundaryCondition ( c, patchName, boundaryDict, Parameters().set_className(className) ),
-    p_(Parameters().set_className(className))
+SimpleBC::SimpleBC (
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    const std::string className )
+    : BoundaryCondition (
+          c, patchName,
+          boundaryDict,
+          Parameters().set_className(className) )
 {
     init();
 }
 
-SimpleBC::SimpleBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
-    : BoundaryCondition ( c, patchName, boundaryDict, p ),
-      p_ ( p )
+SimpleBC::SimpleBC (
+    OpenFOAMCase& c, const std::string& patchName,
+    const OFDictData::dict& boundaryDict,
+    ParameterSetInput ip )
+    : BoundaryCondition (
+          c, patchName,
+          boundaryDict,
+          ip.forward<Parameters>() )
 {
     init();
 }

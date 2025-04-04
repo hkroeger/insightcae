@@ -44,28 +44,27 @@ defineType(interFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(interFoamNumerics);
 
 
-interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics( c, ps, c.OFversion()<170 ? "pd" : "p_rgh" ),
-  p_(ps)
+interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics( c, ip.forward<Parameters>(), c.OFversion()<170 ? "pd" : "p_rgh" )
 {
   OFcase().setRequiredMapMethod(OpenFOAMCase::cellVolumeWeightMapMethod);
 
   if ( const auto * os =
-          boost::get<Parameters::overset_yes_type>(&p_.overset) )
+          boost::get<Parameters::overset_yes_type>(&p().overset) )
   {
       overset_.reset(new OversetConfiguration(c, (*os)));
   }
 
   alphaname_="alpha1";
   if (OFversion()>=230)
-    alphaname_="alpha."+p_.phase1Name;
+    alphaname_="alpha."+p().phase1Name;
 
   // create pressure field to enable mapping from single phase cases
-  OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), 		volField ) );
+  OFcase().addField("p", 	FieldInfo(scalarField, dimPressure, FieldValue({p().pinternal}), 		volField ) );
 
-  OFcase().addField("U", 	FieldInfo(vectorField, dimVelocity, FieldValue({p_.Uinternal(0),p_.Uinternal(1),p_.Uinternal(2)}), volField ) );
-  OFcase().addField(pName_, 	FieldInfo(scalarField, dimPressure, FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless,     FieldValue({p_.alphainternal}), volField ) );
+  OFcase().addField("U", 	FieldInfo(vectorField, dimVelocity, FieldValue({p().Uinternal(0),p().Uinternal(1),p().Uinternal(2)}), volField ) );
+  OFcase().addField(pName_, 	FieldInfo(scalarField, dimPressure, FieldValue({p().pinternal}), volField ) );
+  OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless,     FieldValue({p().alphainternal}), volField ) );
 
   if (overset_) overset_->addFields();
 }
@@ -73,7 +72,7 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 
 std::pair<std::string,std::string> interFoamNumerics::phaseNames() const
 {
-    return { p_.phase1Name, p_.phase2Name };
+    return { p().phase1Name, p().phase2Name };
 }
 
 
@@ -139,20 +138,20 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   {
    OFDictData::dict asd=stdMULESSolverSetup(
-         p_.cAlpha,
-         p_.icAlpha,
+         p().cAlpha,
+         p().icAlpha,
 
          1e-12,
          0.0,
          false,
-         p_.alphaLimiterIter
+         p().alphaLimiterIter
          );
-   asd["nAlphaSubCycles"]=p_.alphaSubCycles;
+   asd["nAlphaSubCycles"]=p().alphaSubCycles;
    solvers["\"alpha.*\""]=asd;
   }
 
 
-  MultiphasePIMPLESettings(p_.time_integration).addIntoDictionaries(OFcase(), dictionaries);
+  MultiphasePIMPLESettings(p().time_integration).addIntoDictionaries(OFcase(), dictionaries);
 
   // ============ setup fvSchemes ================================
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
@@ -192,9 +191,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["laplacian(rAUf,pcorr)"] = boost::str(boost::format("Gauss linear limited %g") % p_.snGradLowQualityLimiterReduction );
-  laplacian["laplacian((1|A(U)),pcorr)"] = boost::str(boost::format("Gauss linear limited %g") % p_.snGradLowQualityLimiterReduction );
-//  laplacian["default"] = boost::str(boost::format("Gauss linear localLimited UBlendingFactor %g") % p_.snGradLowQualityLimiterReduction );
+  laplacian["laplacian(rAUf,pcorr)"] = boost::str(boost::format("Gauss linear limited %g") % p().snGradLowQualityLimiterReduction );
+  laplacian["laplacian((1|A(U)),pcorr)"] = boost::str(boost::format("Gauss linear limited %g") % p().snGradLowQualityLimiterReduction );
+//  laplacian["default"] = boost::str(boost::format("Gauss linear localLimited UBlendingFactor %g") % p().snGradLowQualityLimiterReduction );
 
 //  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
 ////   interpolation["interpolate(U)"]="pointLinear";
@@ -202,7 +201,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //  interpolation["default"]="linear"; //"pointLinear"; // OF23x: pointLinear as default creates artifacts at parallel domain borders!
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]=boost::str(boost::format("localLimited UBlendingFactor %g") % p_.snGradLowQualityLimiterReduction );
+  snGrad["default"]=boost::str(boost::format("localLimited UBlendingFactor %g") % p().snGradLowQualityLimiterReduction );
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
 //  fluxRequired["default"]="no";

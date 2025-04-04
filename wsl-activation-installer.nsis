@@ -24,8 +24,23 @@ FunctionEnd
 
 
 
-Page custom createWSLDlg installWSL "Activate WSL"
-Page custom createWSLFinishedDlg doReboot "Activate WSL"
+Page custom createWSLDlg "" "Activate WSL"
+
+Page instfiles
+
+Section "Activate WSL System"
+    SetDetailsPrint both
+    DetailPrint "Executing WSL install command..."
+    
+    ${DisableX64FSRedirection}
+    ;${PowerShellExec} "dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart"
+    ;${PowerShellExec} "dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+    ${PowerShellExec} "wsl --install --no-distribution"
+    WriteRegStr HKCU "Software\Microsoft\Windows\Currentversion\Runonce" "InstallResume" '"$insightInstallerPath"'
+SectionEnd
+
+
+Page custom createWSLFinishedDlg doReboot "Reboot" /ENABLECANCEL
 
 Var hWnd
 
@@ -33,17 +48,13 @@ Function createWSLDlg
     nsDialogs::Create 1018
     Pop $0
 
-    ${NSD_CreateLabel} 0 0 100% 100% "Please click $\"Next$\" to activate the Windows Subsystem for Linux (WSL) now!"
+    ${NSD_CreateLabel} 0 0 100% 100% "Please click $\"Install$\" to activate the Windows Subsystem for Linux (WSL) now!"
     Pop $hwnd
     ${NSD_AddStyle} $hwnd ${SS_CENTER}
 
     nsDialogs::Show
 FunctionEnd
 
-Function installWSL
-    ${PowerShellExec} "Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux"
-    WriteRegStr HKCU "Software\Microsoft\Windows\Currentversion\Runonce" "InstallResume" '"$insightInstallerPath"'
-FunctionEnd
 
 
 Function createWSLFinishedDlg
@@ -60,7 +71,4 @@ FunctionEnd
 Function doReboot
     Reboot
 FunctionEnd
-
-Section InsightCAE
-SectionEnd
 

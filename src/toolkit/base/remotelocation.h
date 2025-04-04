@@ -84,7 +84,7 @@ public:
     // ====================================================================================
     // ======== query functions
     RemoteServerPtr server() const;
-    RemoteServer::ConfigPtr serverConfig() const;
+    const RemoteServer::Config& serverConfig() const;
     std::string serverLabel() const;
 
     /**

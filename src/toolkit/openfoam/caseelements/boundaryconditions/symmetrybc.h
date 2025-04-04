@@ -11,8 +11,10 @@ class SymmetryBC
 
 public:
   declareType("SymmetryBC");
-  SymmetryBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
-  static ParameterSet defaultParameters() { return ParameterSet(); }
+  SymmetryBC(
+      OpenFOAMCase& c, const std::string& patchName,
+      const OFDictData::dict& boundaryDict,
+      ParameterSetInput ip = Parameters() );
 };
 
 } // namespace insight

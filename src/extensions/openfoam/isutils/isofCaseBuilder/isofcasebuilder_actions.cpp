@@ -117,6 +117,7 @@ void isofCaseBuilderWindow::createCase
   }
 
   ofc_->createOnDisk ( casepath(), restrictToFiles );
+  if ( !restrictToFiles && !skipBCs ) ofc_->modifyMeshOnDisk ( casepath() );
   if ( !restrictToFiles ) ofc_->modifyCaseOnDisk ( casepath() );
 }
 

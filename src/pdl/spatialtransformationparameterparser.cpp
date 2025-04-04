@@ -3,35 +3,39 @@
 using namespace std;
 
 defineType(SpatialTransformationParameterParser);
-addToStaticFunctionTable(ParserDataBase, SpatialTransformationParameterParser, insertrule);
+addToStaticFunctionTable(ParameterGenerator, SpatialTransformationParameterParser, insertrule);
 
 
-SpatialTransformationParameterParser::Data::Data(
-        const arma::mat& t, const arma::mat& r, double s, const std::string& d )
-: ParserDataBase(d), trans(t), rpy(r), scale(s)
+SpatialTransformationParameterParser
+::SpatialTransformationParameterParser(
+    const arma::mat& t,
+    const arma::mat& r,
+    double s,
+    const std::string& d )
+: ParameterGenerator(d), trans(t), rpy(r), scale(s)
 {}
 
-void SpatialTransformationParameterParser::Data::cppAddHeader(std::set<std::string>& headers) const
+
+void SpatialTransformationParameterParser::cppAddRequiredInclude(std::set<std::string>& headers) const
 {
   headers.insert("\"base/spatialtransformation.h\"");
   headers.insert("\"base/parameters/spatialtransformationparameter.h\"");
 }
 
-std::string SpatialTransformationParameterParser::Data::cppType(const std::string&) const
+std::string SpatialTransformationParameterParser::cppInsightType() const
+{
+    return "insight::SpatialTransformationParameter";
+}
+
+std::string SpatialTransformationParameterParser::cppStaticType() const
 {
   return "insight::SpatialTransformation";
 }
 
-std::string SpatialTransformationParameterParser::Data::cppParamType(const std::string& ) const
-{
-  return "insight::SpatialTransformationParameter";
-}
-
-std::string SpatialTransformationParameterParser::Data::cppValueRep(
-        const std::string& name, const std::string& thisscope ) const
+std::string SpatialTransformationParameterParser::cppDefaultValueExpression() const
 {
   std::ostringstream os;
-  os << cppType(name) << "(";
+  os << cppStaticType() << "(";
   writeVec3Constant(os, trans);
   os<<", ";
   writeVec3Constant(os, rpy);

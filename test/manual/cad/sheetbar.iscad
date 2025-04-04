@@ -1,0 +1,17 @@
+xsec=Polyline(O, 5*EX, 5*EX+10*EY, 10*EY );
+bar:SheetBar(O, 50*EZ, xsec, -1, EY);
+
+bar_shell:bar.shell;
+top_bar_shell:*bar_shell?face('maximal(CoG.y)');
+elong:*bar?e_shell_longi;
+estart:*bar?e_shell_start;
+eend:*bar?e_shell_end;
+
+
+plate:
+Sheet(
+ Quad(O+5*EY+2.5*EX, 10*EX, 20*EY, centered),
+ 1
+);
+
+splate:plate.shell;

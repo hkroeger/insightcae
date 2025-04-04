@@ -599,7 +599,7 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
     lines->InitTraversal();
     vtkIdType npts=-1;
 
-#if (VTK_MAJOR_VERSION>=8) && (VTK_MINOR_VERSION>2)
+#if (VTK_MAJOR_VERSION>=8) || ( (VTK_MAJOR_VERSION==8) && (VTK_MINOR_VERSION>2))
     const
 #endif
     vtkIdType *pt=nullptr;
@@ -638,7 +638,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     {
         lines->InitTraversal();
         vtkIdType npts=-1;
-#if (VTK_MAJOR_VERSION>=8) && (VTK_MINOR_VERSION>2)
+#if (VTK_MAJOR_VERSION>=8) || ( (VTK_MAJOR_VERSION==8) && (VTK_MINOR_VERSION>2))
         const
 #endif
         vtkIdType *pt=nullptr;
@@ -876,6 +876,32 @@ arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
   std::cout<<bb1<<bb2<<bbm<<std::endl;
   return bbm;
 }
+
+void writeSTL
+(
+    vtkSmartPointer<vtkPolyData> stl,
+    const boost::filesystem::path& outfile
+)
+{
+    CurrentExceptionContext ec("Writing STL mesh to file "+outfile.string());
+
+    std::string file_ext = outfile.filename().extension().string();
+    boost::to_lower(file_ext);
+
+    vtkSmartPointer<vtkSTLWriter> sw = vtkSmartPointer<vtkSTLWriter>::New();
+    sw->SetInputData(stl);
+    sw->SetFileName(outfile.string().c_str());
+    if (file_ext==".stlb")
+    {
+        sw->SetFileTypeToBinary();
+    }
+    else
+    {
+        sw->SetFileTypeToASCII();
+    }
+    sw->Update();
+}
+
 
 
 void writeSTL
@@ -1154,23 +1180,6 @@ arma::mat computeOffsetContour(const arma::mat &pl, double thickness, const arma
 
 
 
-std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
-{
-    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
-      return std::string(fn->value());
-    else
-      throw insight::Exception("node does not have mandatory attribute \""+attributeName+"\"!");
-}
-
-
-std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
-{
-    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
-      return std::make_shared<std::string>(fn->value());
-    else
-      return std::shared_ptr<std::string>();
-}
-
 boost::filesystem::path ensureDefaultFileExtension(
     const boost::filesystem::path &pth,
     const std::string &defaultExtension )
@@ -1184,5 +1193,16 @@ boost::filesystem::path ensureDefaultFileExtension(
     else
       return pth;
 }
+
+
+OperatingSystem currentOperatingSystem =
+#ifdef __linux__
+    LinuxOS
+#elif WIN32
+    WindowsOS
+#else
+    UnknownOS
+#endif
+;
 
 }

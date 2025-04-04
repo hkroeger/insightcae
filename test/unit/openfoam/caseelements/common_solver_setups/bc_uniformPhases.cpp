@@ -23,9 +23,8 @@ int main(int argc, char*argv[])
                             .set_velocity(FieldData::uniformSteady( 1.0*flowDir_ ))
                             .set_phasefractions(
                                 std::make_shared<multiphaseBC::uniformPhases>(
-                                    multiphaseBC::uniformPhases::Parameters()
-                                    .set_phaseFractions({
-                                                            {"Y", 0.4, true}
+                                    multiphaseBC::uniformPhases::mixture({
+                                                            {"Y", 0.4}
                                                         })
                                     )
                                 ))

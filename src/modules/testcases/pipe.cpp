@@ -54,10 +54,10 @@ namespace insight
 
 
 PipeBase::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
-    const boost::filesystem::path &/*workDir*/,
+    ParameterSetInput ip,
+    const boost::filesystem::path &workDir,
     ProgressDisplayer &progress)
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+  : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     cycl_in_("cycl_half0"),
     cycl_out_("cycl_half1")
 {
@@ -147,17 +147,8 @@ double PipeBase::UmaxByUbulk(double Retau)
 
 
 
-PipeBase::PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
-: OpenFOAMAnalysis
-  (
-    "Pipe Flow Test Case",
-    "Cylindrical domain with cyclic BCs on axial ends",
-    ps, exepath
-  ),
-  parameters_( new supplementedInputData(
-                 std::make_unique<Parameters>(ps),
-                 exepath, progress
-                 ) )
+PipeBase::PipeBase(const std::shared_ptr<supplementedInputDataBase>& sp)
+: OpenFOAMAnalysis(sp)
 {}
 
 
@@ -626,8 +617,9 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& prog
 
 
 
-PipeCyclic::PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& progress)
-: PipeBase(ps, exepath, progress)
+PipeCyclic::PipeCyclic(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: PipeBase(sp)
 {
 }
 
@@ -705,7 +697,9 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& 
         +p().evaluation.mean2time )*sp().T_;
 }
 
-addToAnalysisFactoryTable(PipeCyclic);
+
+defineType(PipeCyclic);
+Analysis::Add<PipeCyclic> addPipeCyclic;
 
 
 
@@ -736,7 +730,7 @@ addToAnalysisFactoryTable(PipeCyclic);
 //{
 //  ParameterSet p(PipeBase::defaultParameters());
 
-//  std::unique_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
+//  std::unique_ptr<ParameterSet> inflowparams(new ParameterSet(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
   
 ////   (*inflowparams)().extend
 ////   (

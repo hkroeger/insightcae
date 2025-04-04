@@ -13,6 +13,7 @@
 
 class IQVTKParameterSetDisplay;
 class ParameterEditorWidget;
+class isofCaseBuilderWindow;
 
 class CaseConfigurationModel : public QAbstractListModel
 {
@@ -43,7 +44,7 @@ public:
   void removeElement(const QModelIndex& index);
   QString applicationName(const QString& OFEname) const;
 
-  insight::ParameterSet& caseElementParametersRef(int id);
+  insight::Parameter& caseElementParameterRef(int id, const std::string& path);
 
   void appendConfigurationToNode(
       rapidxml::xml_document<>& doc,
@@ -54,7 +55,8 @@ public:
   void readFromNode(
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<> *rootnode,
-      insight::MultiCADParameterSetVisualizer* mv,
+      insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+      MultivisualizationGenerator* visGen,
       const boost::filesystem::path& fileParentPath );
 
   template<class T>

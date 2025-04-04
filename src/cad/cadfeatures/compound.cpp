@@ -48,7 +48,7 @@ size_t Compound::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  for (const CompoundFeatureMap::value_type& comp: components_)
+  for (auto& comp: components_)
   {
     h+=comp.first;
     h+=*comp.second;
@@ -125,15 +125,22 @@ void Compound::build()
         FeaturePtr p=c.second;
 
         // delayed evaluation: will be evaluated upon first use
-        auto f = std::make_shared<FeatureSet>(
+        auto f = DeferredFeatureSet::create(
                     shared_from_this(), Face,
                     "isSame(%0)",
                     FeatureSetParserArgList{
-                        std::make_shared<FeatureSet>(p, Face)
+                        makeFaceFeatureSet(p)
                     } );
 //        auto f = find( p->allFaces() ); // find not usable during rebuild!
 
         providedFeatureSets_[c.first] = f;
+        providedFeatureSets_[c.first+"_edges"] =
+            DeferredFeatureSet::create(
+                shared_from_this(), Edge,
+                "isSame(%0)",
+                FeatureSetParserArgList{
+                    makeEdgeFeatureSet(p)
+                } );
       }
     }
     else

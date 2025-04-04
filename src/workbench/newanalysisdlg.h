@@ -24,12 +24,12 @@
 #include <QDialog>
 // #include <QTreeWidgetItem>
 
+class WorkbenchMainWindow;
 
 namespace Ui
 {
 class newAnalysisDlg;
 }
-
 
 class newAnalysisDlg
 : public QDialog
@@ -40,16 +40,10 @@ private:
     Ui::newAnalysisDlg* ui;
 
 public:
-    newAnalysisDlg(QWidget* parent);
+    newAnalysisDlg(WorkbenchMainWindow* parent);
     virtual ~newAnalysisDlg();
     
     void fillAnalysisList();
-    
-    std::string getAnalysisName() const;
-    
-public slots:
-    virtual void done(int r);
-
 };
 
 #endif // NEWANALYSISDLG_H

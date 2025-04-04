@@ -31,22 +31,21 @@ namespace insight
 
 
 class ArrayParameter
-    : public Parameter,
-      public ArrayParameterBase
+    : public Parameter
 {
 public:
-    typedef std::vector<ParameterPtr> value_type;
+    typedef std::vector<std::unique_ptr<Parameter> > value_type;
 
 #ifndef SWIG
-    boost::signals2::signal<void(ParameterPtr)> newItemAdded;
+    boost::signals2::signal<void(std::observer_ptr<Parameter>)> newItemAdded;
 #endif
 
 protected:
-    ParameterPtr defaultValue_;
+    std::unique_ptr<Parameter> defaultValue_;
     int defaultSize_;
-    std::vector<ParameterPtr> value_;
+    value_type value_;
 
-    std::map<Parameter*, std::shared_ptr<boost::signals2::scoped_connection> >
+    std::key_observer_map<Parameter, std::shared_ptr<boost::signals2::scoped_connection> >
         valueChangedConnections_,
         childValueChangedConnections_;
 
@@ -58,24 +57,29 @@ public:
 
     bool isDifferent(const Parameter& p) const override;
 
-    void setDefaultValue ( const Parameter& defP );
+    void setDefaultValue ( std::unique_ptr<Parameter>&& defP );
     const Parameter& defaultValue() const;
 
     int defaultSize() const;
-    void resize(int newSize);
+    void resize(int newSize, bool init);
     void eraseValue ( int i );
-    void appendValue ( const Parameter& np );
-    void insertValue ( int i, const Parameter& np );
-    void appendEmpty();
+    void appendValue ( std::unique_ptr<Parameter>&& np );
+    void insertValue ( int i, std::unique_ptr<Parameter>&& np );
+    void appendEmpty(bool init);
     Parameter& operator[] ( int i );
     const Parameter& operator[] ( int i ) const;
 
-    const Parameter& element(int i) const override;
+    Parameter& elementRef(int i);
+    const Parameter& element(int i) const;
 
-    int size() const override;
+    int size() const;
 
     int nChildren() const override;
-    std::string childParameterName(int i) const override;
+
+    std::string childParameterName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
+
     Parameter& childParameterRef ( int i ) override;
     const Parameter& childParameter( int i ) const override;
     int childParameterIndex( const std::string& name ) const override;
@@ -101,7 +105,7 @@ public:
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
-    Parameter* clone () const override;
+    std::unique_ptr<Parameter> clone (bool initialize) const override;
     void copyFrom(const Parameter& p) override;
     void operator=(const ArrayParameter& p);
     void extend ( const Parameter& op ) override;

@@ -40,8 +40,8 @@ class Ellipse
 
     Ellipse ( VectorPtr p0, VectorPtr axmaj, VectorPtr axmin );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "Ellipse" );

@@ -22,6 +22,11 @@
         <file>icon_distance_yf.svg</file>
         <file>icon_sketch_finish_cancel.svg</file>
         <file>icon_sketch_finish_accept.svg</file>
+        <file>icon_remoteserver.svg</file>
+        <file>icon_remoteserverpool.svg</file>
+        <file>icon_bgimage.svg</file>
+        <file>icon_sketch_undo.svg</file>
+        <file>icon_sketch_redo.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

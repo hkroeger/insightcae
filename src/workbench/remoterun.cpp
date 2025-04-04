@@ -109,18 +109,22 @@ void RemoteRun::setupRemoteEnvironment()
 
         insight::dbg()<<"initialize remote location"<<std::endl;
 
-        remote_->exeConfig().initialize(true);
+        auto &remexeenv = remote_->exeConfig();
+        remexeenv.initialize(true);
 
-        if (!remote_->exeConfig().isActive())
-        throw insight::Exception(_("Remote directory is invalid!"));
+        insight::assertion(
+            remexeenv.isActive(),
+            _("Remote directory is invalid!") );
 
-        addUndoStep( std::bind(&RemoteRun::undoSetupRemoteEnvironment, this),
-                    _("setting up the execution environment") );
+        addUndoStep(
+            std::bind(&RemoteRun::undoSetupRemoteEnvironment, this),
+            _("setting up the execution environment")
+        );
 
         launchProgress_.stepTo(1);
         launchProgress_.message(_("Launching remote execution server..."));
 
-        ac_->ioService().post( std::bind(&RemoteRun::launchRemoteExecutionServer, this) );
+        ac_->ioService().post( std::bind(&RemoteRun::uploadInputFile, this) );
 
     } catch (...) { onError(std::current_exception()); }
 }
@@ -147,6 +151,34 @@ void RemoteRun::undoSetupRemoteEnvironment()
 
 
 
+void RemoteRun::uploadInputFile()
+{
+    try
+    {
+        checkIfCancelled();
+
+        insight::dbg()<<"upload input file"<<std::endl;
+
+        auto p = af_->parameters().cloneParameterSet();
+        p->pack(); // pack
+
+        {
+            auto rs = remote_->exeConfig().remoteOFStream(
+                "param.ist", 0 );
+            p->saveToStream(*rs, ".", af_->analysisName_);
+        }
+
+        launchProgress_.stepTo(2);
+        launchProgress_.message(_("Writing input file in execution directory...") );
+
+        ac_->ioService().post( std::bind(&RemoteRun::launchRemoteExecutionServer, this) );
+
+    } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+
 void RemoteRun::launchRemoteExecutionServer()
 {
     try
@@ -159,19 +191,18 @@ void RemoteRun::launchRemoteExecutionServer()
 
         analyzeProcess_ = remote_->exeConfig().server()->launchBackgroundProcess(
                     "analyze "
-                    " --savecfg param.ist"
                     " --workdir=\""+insight::toUnixPath(rd)+"\""
                     " --server"
                     +str(format(
                     " --port %d"
                              ) % remote_->exeConfig().port() )+
-                    " >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
+                    " param.ist >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
                     );
 
         addUndoStep( std::bind(&RemoteRun::undoLaunchRemoteExecutionServer, this),
                     _("launching the remote execution server") );
 
-        launchProgress_.stepTo(2);
+        launchProgress_.stepTo(3);
         launchProgress_.message(_("Establishing contact to remote execution server...") );
 
         ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, 20) );
@@ -232,10 +263,10 @@ void RemoteRun::waitForContact( int maxAttempts )
                     {
                         // execute callback on success
 
-                        launchProgress_.stepTo(3);
-                        launchProgress_.message(_("Transmitting input data and starting analysis..."));
+                        launchProgress_.stepTo(4);
+                        launchProgress_.message(_("Monitoring analysis..."));
 
-                        ac_->ioService().post( std::bind( &RemoteRun::launchAnalysis, this ));
+                        ac_->ioService().post( std::bind( &RemoteRun::monitor, this ));
                     }
                     else
                     {
@@ -253,53 +284,53 @@ void RemoteRun::waitForContact( int maxAttempts )
 
 
 
-void RemoteRun::launchAnalysis()
-{
-    try {
+// void RemoteRun::launchAnalysis()
+// {
+//     try {
 
-        insight::dbg()<<"packing parameter set"<<std::endl;
+//         insight::dbg()<<"packing parameter set"<<std::endl;
 
-        checkIfCancelled();
+//         checkIfCancelled();
 
-        insight::ParameterSet p = af_->parameters();
-        p.packExternalFiles(); // pack
+//         insight::ParameterSet p = af_->parameters();
+//         p.packExternalFiles(); // pack
 
-        insight::dbg()<<"launch remote analysis"<<p<<std::endl;
+//         insight::dbg()<<"launch remote analysis"<<p<<std::endl;
 
-        ac_->launchAnalysis(
-                    p, "/", af_->analysisName_,
+//         ac_->launchAnalysis(
+//                     p, "/", af_->analysisName_,
 
-                    // on response
-                    [&](insight::AnalyzeClientAction::ReportSuccessResult r)
-                    {
-                        if (r.success)
-                        {
-                            launchProgress_.stepTo(4);
-                            launchProgress_.message(_("Monitoring remote run"));
-                            launchProgress_.completed();
+//                     // on response
+//                     [&](insight::AnalyzeClientAction::ReportSuccessResult r)
+//                     {
+//                         if (r.success)
+//                         {
+//                             launchProgress_.stepTo(5);
+//                             launchProgress_.message(_("Monitoring remote run"));
+//                             launchProgress_.completed();
 
-                            ac_->ioService().post(std::bind(
-                                                      &RemoteRun::monitor, this));
-                        }
-                        else
-                        {
-                            ac_->ioService().post(std::bind(
-                                                      &RemoteRun::onErrorString, this,
-                                _("Failed to start analysis on remote server!")));
-                        }
-                    },
+//                             ac_->ioService().post(std::bind(
+//                                                       &RemoteRun::monitor, this));
+//                         }
+//                         else
+//                         {
+//                             ac_->ioService().post(std::bind(
+//                                                       &RemoteRun::onErrorString, this,
+//                                 _("Failed to start analysis on remote server!")));
+//                         }
+//                     },
 
-                    // on timeout
-                    [&]()
-                    {
-                        ac_->ioService().post(std::bind(
-                                                  &RemoteRun::onErrorString, this,
-                    _("No response after starting analysis on remote server!")));
-                    }
-        );
+//                     // on timeout
+//                     [&]()
+//                     {
+//                         ac_->ioService().post(std::bind(
+//                                                   &RemoteRun::onErrorString, this,
+//                     _("No response after starting analysis on remote server!")));
+//                     }
+//         );
 
-    } catch(...) { onError(std::current_exception()); }
-}
+//     } catch(...) { onError(std::current_exception()); }
+// }
 
 
 

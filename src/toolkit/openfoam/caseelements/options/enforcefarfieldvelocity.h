@@ -16,6 +16,7 @@ public:
 
 /*
 PARAMETERSET>>> EnforceFarFieldVelocity Parameters
+inherits OpenFOAMCaseElement::Parameters
 
 farFieldPatches = array [
  string "" "patch name or regular expression (if set in quotes)"
@@ -25,16 +26,14 @@ farFieldVelocityFieldName = string "zero" "name of the far field value. Reserved
 
 transitionDistance = double 1 "distance within which the value is enforces"
 
+createGetters
 <<<PARAMETERSET
 */
-
-protected:
-    Parameters p_;
 
 public:
     declareType ( "EnforceFarFieldVelocity" );
 
-    EnforceFarFieldVelocity(OpenFOAMCase& c, const ParameterSet& p);
+    EnforceFarFieldVelocity(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     static std::string category() { return "Tweaks"; }

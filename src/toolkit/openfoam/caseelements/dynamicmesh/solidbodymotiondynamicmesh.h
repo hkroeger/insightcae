@@ -13,6 +13,7 @@ public:
 #include "solidbodymotiondynamicmesh__solidBodyMotionDynamicMesh__Parameters.h"
 /*
 PARAMETERSET>>> solidBodyMotionDynamicMesh Parameters
+inherits dynamicMesh::Parameters
 
 zonename = string "none" "Name of the cell zone which moves.
 Enter 'none', if the entire mesh shall be moved."
@@ -41,16 +42,20 @@ motion = selectablesubset
 
 }} rotation "type of motion"
 
+createGetter
 <<<PARAMETERSET
 */
 
-protected:
-    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
+// protected:
+//     ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
 
 public:
   declareType ( "solidBodyMotionDynamicMesh" );
 
-  solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
+  solidBodyMotionDynamicMesh(
+      OpenFOAMCase& c,
+      ParameterSetInput ip = Parameters() );
+
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
   static std::string category() { return "Dynamic Mesh"; }

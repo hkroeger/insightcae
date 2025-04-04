@@ -43,6 +43,15 @@ Case::Case(const Case& other)
 Case::~Case()
 {}
 
+void Case::remove(const CaseElement &e)
+{
+    auto idx =std::find_if(
+        elements_.begin(), elements_.end(),
+        [&](const CaseElement& ce) { return &e==&ce; } );
+    if (idx!=elements_.end())
+        elements_.erase(idx);
+}
+
 // CaseElement const* Case::insert(CaseElement* elem)
 // {
 //   elements_.push_back(elem);

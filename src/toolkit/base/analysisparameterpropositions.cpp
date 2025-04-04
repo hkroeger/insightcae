@@ -31,7 +31,7 @@ struct PythonFunction
             "Script file "+scriptFile_.string()+" does not exist!" );
     }
 
-    ParameterSet operator()(
+    std::unique_ptr<ParameterSet> operator()(
         const std::string &parameterPath,
         const ParameterSet &currentParameterValues )
     {
@@ -92,7 +92,7 @@ struct PythonFunction
                 res,
                 "the function %s in python module %s has to return a ParameterSet object!",
                 functionName_.c_str(), scriptFile_.c_str());
-            return ParameterSet(*res);
+            return std::unique_ptr<ParameterSet>(res);
         }
         catch (const error_already_set &)
         {
@@ -101,7 +101,7 @@ struct PythonFunction
                 "Failed to execute "+functionName_+" in script file "+scriptFile_.string()+".");
         }
 
-        return ParameterSet();
+        return nullptr;
     }
 };
 
@@ -124,7 +124,7 @@ struct SharedLibraryFunction
         if (auto gfp=GetProcAddress(
                 static_cast<HMODULE>(libraryHandle_), functionName.c_str()))
         {
-            typedef ParameterSet (*FunctionPointer) (const std::string&, const ParameterSet&);
+            typedef std::unique_ptr<ParameterSet> (*FunctionPointer) (const std::string&, const ParameterSet&);
             this->AnalysisParameterPropositions::propositionGeneratorFunction::operator=(
                 reinterpret_cast<FunctionPointer>(gfp) );
         }
@@ -144,7 +144,9 @@ struct SharedLibraryFunction
 
         if (auto gfp=dlsym(libraryHandle_, functionName.c_str()))
         {
-            typedef ParameterSet (*FunctionPointer) (const std::string&, const ParameterSet&);
+            typedef std::unique_ptr<ParameterSet> (*FunctionPointer) (
+                const std::string&, const ParameterSet&);
+
             this->AnalysisParameterPropositions::propositionGeneratorFunction::operator=(
                 reinterpret_cast<FunctionPointer>(gfp) );
         }
@@ -200,7 +202,7 @@ AnalysisParameterPropositions::AnalysisParameterPropositions()
                 {
                     std::string analysisName(l->value());
 
-                    if (Analysis::factories_->find(analysisName) == Analysis::factories_->end())
+                    if (Analysis::analyses().count(analysisName))
                     {
                         insight::Warning(
                             "Proposition sources for non-existing analysis "+analysisName
@@ -265,22 +267,19 @@ std::unique_ptr<AnalysisParameterPropositions> AnalysisParameterPropositions::in
 
 
 
-ParameterSet AnalysisParameterPropositions::getCombinedPropositionsForParameter(
+std::unique_ptr<ParameterSet>
+AnalysisParameterPropositions::getCombinedPropositionsForParameter(
     const std::string &analysisName,
     const std::string &parameterPath,
     const ParameterSet &currentParameterValues )
 {
-    ParameterSet props;
+    auto props=ParameterSet::create();
 
-    try
+    if (auto hardCodedProps =
+          Analysis::propositionsForParameter()(
+            analysisName, parameterPath, currentParameterValues))
     {
-        auto hardCodedProps = Analysis::getPropositionsForParameter(
-            analysisName, parameterPath, currentParameterValues);
-        props.extend(hardCodedProps);
-    }
-    catch (...)
-    {
-        // ignore
+        props->extend(*hardCodedProps);
     }
 
     if (!instance)
@@ -294,7 +293,7 @@ ParameterSet AnalysisParameterPropositions::getCombinedPropositionsForParameter(
         for (auto &f: pgf->second)
         {
             auto props2 = f(parameterPath, currentParameterValues);
-            props.extend(props2);
+            props->extend(*props2);
         }
     }
 

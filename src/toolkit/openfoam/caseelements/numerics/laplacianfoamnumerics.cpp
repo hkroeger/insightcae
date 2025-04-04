@@ -10,11 +10,10 @@ namespace insight {
 defineType(laplacianFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(laplacianFoamNumerics);
 
-laplacianFoamNumerics::laplacianFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+laplacianFoamNumerics::laplacianFoamNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 		FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 		FieldValue({p().Tinternal}), volField ) );
 }
 
 
@@ -33,7 +32,7 @@ void laplacianFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["T"]=isGAMGOk()?OFcase().GAMGPCGSolverSetup(1e-7, 0.0):OFcase().stdAsymmSolverSetup(1e-7, 0.0);
 
   OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+  SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
 
   // ============ setup fvSchemes ================================
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
@@ -44,7 +43,7 @@ void laplacianFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   // ============ setup controlDict ================================
   OFDictData::dict& tp=dictionaries.lookupDict("constant/transportProperties");
-  tp["DT"]=OFDictData::dimensionedData("DT", OFDictData::dimension(0, 2, -1), p_.DT);
+  tp["DT"]=OFDictData::dimensionedData("DT", OFDictData::dimension(0, 2, -1), p().DT);
 }
 
 

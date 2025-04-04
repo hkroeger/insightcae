@@ -37,19 +37,21 @@ namespace bmd
 
 
 
-ParameterSetVisualizerPtr blockMeshDict_CylWedge_visualizer()
+
+
+addToStaticFunctionTable2(
+    CADParameterSetModelVisualizer,
+    VisualizerFunctions, visualizerForOpenFOAMCaseElement,
+    blockMeshDict_CylWedge, &newVisualizer<blockMeshDict_CylWedge_ParameterSet_Visualizer>);
+
+
+
+std::shared_ptr<supplementedInputDataBase>
+blockMeshDict_CylWedge_ParameterSet_Visualizer::computeSupplementedInput()
 {
-    return ParameterSetVisualizerPtr( new blockMeshDict_CylWedge_ParameterSet_Visualizer );
+    return std::make_shared<blockMeshDict_CylWedge::supplementedInputData>(
+        parameters(), workDir_, progress_ );
 }
-
-
-
-
-addStandaloneFunctionToStaticFunctionTable(
-    OpenFOAMCaseElement, blockMeshDict_CylWedge,
-    visualizer, blockMeshDict_CylWedge_visualizer);
-
-
 
 
 void blockMeshDict_CylWedge_ParameterSet_Visualizer::setBlockMeshName(const std::string& blockMeshName)
@@ -57,16 +59,11 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::setBlockMeshName(const std:
   blockMeshName_ = blockMeshName;
 }
 
+
 void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  CADParameterSetVisualizer::recreateVisualizationElements();
-
-  auto spp = std::make_shared<blockMeshDict_CylWedge::supplementedInputData>(
-        std::make_unique<blockMeshDict_CylWedge::Parameters>(currentParameters()),
-        "", *progress_ );
-  Q_EMIT updateSupplementedInputData(spp);
-  auto &p = spp->p();
-  auto &bcw = *spp;
+  auto &bcw = dynamic_cast<const blockMeshDict_CylWedge::supplementedInputData&>(*sid_);
+  auto &p = bcw.p();
 
   auto dom =
       cad::Revolution::create(

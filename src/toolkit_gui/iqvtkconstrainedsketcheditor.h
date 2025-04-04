@@ -12,14 +12,43 @@
 #include <QToolBar>
 #include <QToolBox>
 #include <QDockWidget>
+#include <memory>
 
 #include "constrainedsketch.h"
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h"
+#include "iqundoredostack.h"
+
+
+
+class DefaultGUIConstrainedSketchPresentationDelegate
+    : public insight::cad::ConstrainedSketchPresentationDelegate
+{
+public:
+    declareType("default");
+
+    IQParameterSetModel*
+    setupSketchEntityParameterSetModel(
+        const insight::cad::ConstrainedSketchEntity& e) const override;
+
+    IQParameterSetModel*
+    setupLayerParameterSetModel(
+        const std::string& layerName, const insight::cad::LayerProperties& e) const override;
+
+    void setEntityAppearance(
+        const insight::cad::ConstrainedSketchEntity& e, vtkProperty* actprops) const override;
+};
+
+
+extern std::string defaultGUIConstrainedSketchPresentationDelegate;
+
+
+
+
 
 
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
-      : public QWidget, //QObject,
+      : public IQUndoRedoStack,
         public ViewWidgetAction<IQVTKCADModel3DViewer>,
         public insight::cad::ConstrainedSketchPtr
 {
@@ -33,6 +62,21 @@ public:
     friend class SketchEntityMultiSelection;
     friend class IQVTKSelectConstrainedSketchEntity;
 
+
+    class UndoState
+        : public IQUndoRedoStackState,
+          public std::shared_ptr<insight::cad::ConstrainedSketch>
+    {
+    public:
+        UndoState(
+            const QString& description,
+            const insight::cad::ConstrainedSketch& sk );
+    };
+
+protected:
+    void applyUndoState(const IQUndoRedoStackState& state) override;
+    IQUndoRedoStackStatePtr createUndoState(const QString& description) const override;
+
 private:
     typedef
         std::map<
@@ -40,29 +84,30 @@ private:
             ActorSet >
         SketchGeometryActorMap;
 
-    IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance_;
-
-    SketchGeometryActorMap sketchGeometryActors_;
-
-    insight::ParameterSet defaultGeometryParameters_;
-
-    QToolBar *toolBar_;
 
     std::unique_ptr<IQVTKCADModel3DViewer::ExposeItem> transparency_;
 
+    SketchGeometryActorMap sketchGeometryActors_;
+
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties_;
+    std::shared_ptr<insight::cad::ConstrainedSketchPresentationDelegate> presentation_;
+
+
     std::set<std::string> hiddenLayers_;
 
+    ParameterEditorWidget* layerPropertiesEditor_;
+    QWidget *sketchToolBoxWidget_;
+    QToolBar *toolBar_;
 
-    void add(insight::cad::ConstrainedSketchEntityPtr);
-    void remove(insight::cad::ConstrainedSketchEntityPtr);
+    void showLayerParameterEditor();
+    void hideLayerParameterEditor();
+    void addActors(insight::cad::ConstrainedSketchEntityPtr);
+    void removeActors(insight::cad::ConstrainedSketchEntityPtr, bool redraw=true);
 
-    bool defaultSelectionActionRunning();
 
-protected:
-    void launchChildAction(Ptr childAction) override;
+    ViewWidgetActionPtr setupDefaultAction() override;
 
 private Q_SLOTS:
-    void launchDefaultSelectionAction();
     void drawPoint();
     void drawLine();
     void drawRectangle();
@@ -72,10 +117,12 @@ public:
     IQVTKConstrainedSketchEditor(
             IQVTKCADModel3DViewer& viewer,
             const insight::cad::ConstrainedSketch& sketch,
-            const insight::ParameterSet& defaultGeometryParameters,
-            IQCADModel3DViewer::SetSketchEntityAppearanceCallback setActorAppearance
+            std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+            const std::string& presentationDelegateKey
             );
     ~IQVTKConstrainedSketchEditor();
+
+    QString description() const override;
 
     void start() override;
 
@@ -85,21 +132,33 @@ public:
     void deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td);
     bool layerIsVisible(const std::string &layerName) const;
 
-    bool onLeftButtonDoubleClick  ( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
-    bool onKeyRelease ( Qt::KeyboardModifiers modifiers, int key ) override;
-    bool onMouseMove
-      (
-       Qt::MouseButtons buttons,
-       const QPoint point,
-       Qt::KeyboardModifiers curFlags
-       ) override;
+    std::shared_ptr<insight::cad::ConstrainedSketchEntity>
+    selectedItemUnderCursor() const;
 
+    bool onDoubleClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
+
+    bool onKeyRelease (
+        Qt::KeyboardModifiers modifiers,
+        int key ) override;
+
+    bool onMouseDrag(
+        Qt::MouseButtons buttons,
+        Qt::KeyboardModifiers curFlags,
+        const QPoint point,
+        EventType eventType ) override;
+
+    inline const insight::cad::ConstrainedSketch& sketch() const
+    { return **this; }
 
 public Q_SLOTS:
     void updateActors();
     void hideLayer(const std::string& layerName);
     void showLayer(const std::string& layerName);
     void renameLayer(const std::string& currentLayerName, const std::string& newLayerName);
+    void onSketchSizeChanged();
 
 Q_SIGNALS:
     void sketchChanged();

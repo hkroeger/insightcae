@@ -21,10 +21,14 @@ class Patch
 protected:
     std::string patch_name_;
 
+    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function
+        getVisualizerFactoryFunction() override;
+
 public:
     Patch(
         const std::string& patch_name,
-        insight::MultiCADParameterSetVisualizer* mv,
+        insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+        MultivisualizationGenerator* visGen,
         QObject* parent=nullptr
         );
 
@@ -32,11 +36,11 @@ public:
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath,
-        insight::MultiCADParameterSetVisualizer* mv,
+        insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+        MultivisualizationGenerator* visGen,
         QObject* parent=nullptr
         );
 
-    const insight::ParameterSet defaultParameters() const override;
     virtual void set_bc_type(const std::string& type_name);
 //    void updateText();
 
@@ -55,7 +59,8 @@ class DefaultPatch
 {
 public:
     DefaultPatch(
-        insight::MultiCADParameterSetVisualizer* mv,
+        insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+        MultivisualizationGenerator* visGen,
         QObject* parent=nullptr
         );
 
@@ -63,7 +68,8 @@ public:
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath,
-        insight::MultiCADParameterSetVisualizer* mv,
+        insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
+        MultivisualizationGenerator* visGen,
         QObject* parent=nullptr
         );
 

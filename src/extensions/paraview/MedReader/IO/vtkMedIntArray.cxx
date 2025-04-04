@@ -25,8 +25,9 @@
 vtkStandardNewMacro(vtkMedIntArray);
 
 //----------------------------------------------------------------------------
-vtkMedIntArray::vtkMedIntArray(vtkIdType numComp): Superclass(numComp)
+vtkMedIntArray::vtkMedIntArray(vtkIdType numComp): Superclass(/*numComp*/)
 {
+    this->SetNumberOfComponents(numComp);
 }
 
 //----------------------------------------------------------------------------

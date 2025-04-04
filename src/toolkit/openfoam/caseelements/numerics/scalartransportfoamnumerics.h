@@ -24,15 +24,13 @@ DT = double 1e-6 "[m^2/s] Constant diffivity"
 
 nNonOrthogonalCorrectors = int 0 "Number of correctors for non-orthogonality errors"
 
+createGetters
 <<<PARAMETERSET
 */
 
-protected:
-    Parameters p_;
-
 public:
     declareType ( "scalarTransportFoamNumerics" );
-    scalarTransportFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    scalarTransportFoamNumerics ( OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     bool isCompressible() const override;
 };

@@ -42,6 +42,7 @@ public Q_SLOTS:
     void onCopyBtnClicked();
     void onUpdateTitle(const boost::filesystem::path& filepath, bool isUnSaved);
     void onInsertNotebookText(const QString& text);
+    void viewerSettings();
 
 protected:
     virtual void closeEvent(QCloseEvent *event);

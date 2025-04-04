@@ -22,8 +22,8 @@ protected:
 
     CutUp ( FeaturePtr model, VectorPtr n, ScalarPtr t, Clips clips );
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
 
 public:
     declareType ( "CutUp" );

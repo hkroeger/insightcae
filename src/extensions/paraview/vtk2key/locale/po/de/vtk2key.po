@@ -1,14 +1,14 @@
 # German translations for vtk2key package.
-# Copyright (C) 2023 hkroeger
+# Copyright (C) 2024 hkroeger
 # This file is distributed under the same license as the vtk2key package.
-# Hannes Kröger <EMAIL@ADDRESS>, 2023.
+# Hannes Kröger <EMAIL@ADDRESS>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: vtk2key \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-02 09:27+0100\n"
-"PO-Revision-Date: 2023-10-25 10:57+0200\n"
+"POT-Creation-Date: 2025-03-07 12:29+0100\n"
+"PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"

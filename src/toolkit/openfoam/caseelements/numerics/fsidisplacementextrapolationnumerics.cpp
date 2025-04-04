@@ -8,8 +8,9 @@ namespace insight {
 
 
 
-FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c, const ParameterSet& p)
-: FaNumerics(c), p_(p)
+FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(
+    OpenFOAMCase& c, ParameterSetInput ip )
+: FaNumerics(c, ip.forward<Parameters>())
 {
   //c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0), volField ) );
 }

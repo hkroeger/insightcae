@@ -1,7 +1,9 @@
 #include "analysisthread.h"
 
+#include "base/analysis.h"
 #include "base/progressdisplayer/prefixedprogressdisplayer.h"
-
+#include <memory>
+#include <mutex>
 
 namespace insight {
 
@@ -39,19 +41,51 @@ void AnalysisThread::launch(std::function<void(void)> action)
 }
 
 AnalysisThread::AnalysisThread(
-    AnalysisPtr analysis,
+    const std::string& analysisName,
+    const ParameterInput& input,
     ProgressDisplayer *pd,
     std::function<void(void)> preAction,
     std::function<void(void)> postAction,
     std::function<void(std::exception_ptr)> exHdlr
 )
-  : exceptionHandler_(exHdlr)
+  : exceptionHandler_(exHdlr),
+    analysis_(nullptr)
 {
   launch(
-        [this,analysis,pd,preAction,postAction]()
+        [this,analysisName,input,pd,preAction,postAction]()
         {
           preAction();
-          results_ = (*analysis)( *pd );
+
+          std::shared_ptr<supplementedInputDataBase> sid;
+
+          if (auto *pap=boost::get<ParameterSetAndExePath>(&input))
+          {
+              {
+                boost::mutex::scoped_lock lck(dataAccess_);
+                executionPath_ = std::get<1>(*pap);
+              }
+              sid =
+                insight::Analysis::supplementedInputDatas()(
+                    analysisName, ParameterSetInput(*std::get<0>(*pap)), executionPath_, *pd );
+          }
+          else if (auto *pap =
+                     boost::get<insight::supplementedInputDataBasePtr>(
+                         &input ) )
+          {
+              {
+                  boost::mutex::scoped_lock lck(dataAccess_);
+                  executionPath_ = (*pap)->executionPath();
+              }
+              sid = *pap;
+          }
+
+          auto analysis = insight::Analysis::analyses()(
+              analysisName, sid);
+
+          analysis_ = analysis.get();
+
+          results_ = (*analysis)(*pd);
+
           postAction();
         }
   );
@@ -62,7 +96,8 @@ AnalysisThread::AnalysisThread
     std::function<void(void)> action,
     std::function<void(std::exception_ptr)> exHdlr
 )
-  : exceptionHandler_(exHdlr)
+  : exceptionHandler_(exHdlr),
+    analysis_(nullptr)
 {
   launch(
         [action]()
@@ -82,6 +117,17 @@ ResultSetPtr AnalysisThread::join()
   thread_.join();
   if (exception_) std::rethrow_exception(exception_);
   return results_;
+}
+
+const boost::filesystem::path &AnalysisThread::executionPath() const
+{
+    boost::mutex::scoped_lock lck(dataAccess_);
+    return executionPath_;
+}
+
+const Analysis *AnalysisThread::analysis() const
+{
+    return analysis_;
 }
 
 

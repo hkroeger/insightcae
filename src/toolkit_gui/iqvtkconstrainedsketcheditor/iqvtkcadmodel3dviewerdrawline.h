@@ -41,17 +41,16 @@ public:
 
     void start() override;
 
-    bool onMouseMove
-      (
-       Qt::MouseButtons buttons,
-       const QPoint point,
-       Qt::KeyboardModifiers curFlags
-       ) override;
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags ) override;
 
-    bool onRightButtonDown( Qt::KeyboardModifiers nFlags, const QPoint point ) override;
+    bool onMouseClick  (
+        Qt::MouseButtons btn,
+        Qt::KeyboardModifiers nFlags,
+        const QPoint point ) override;
 
 Q_SIGNALS:
-    void updateActors();
     void endPointSelected(
         PointProperty*  addedPoint,
         insight::cad::SketchPointPtr previousPoint

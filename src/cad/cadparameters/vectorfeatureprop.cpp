@@ -246,7 +246,48 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   return vec3(0,0,0);
 }
 
+insight::cad::DatumPlaneX::DatumPlaneX(insight::cad::ConstDatumPtr pfs)
+    : pfs_(pfs)
+{}
 
+
+
+
+arma::mat insight::cad::DatumPlaneX::value() const
+{
+    //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+    if (pfs_->providesPlanarReference())
+    {
+        return vec3(pfs_->plane().XDirection());
+    }
+    else
+    {
+        throw insight::Exception("supplied datum has to be a plane!");
+    }
+    return vec3(0,0,0);
+}
+
+
+insight::cad::DatumPlaneY::DatumPlaneY(insight::cad::ConstDatumPtr pfs)
+    : pfs_(pfs)
+{}
+
+
+
+
+arma::mat insight::cad::DatumPlaneY::value() const
+{
+    //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+    if (pfs_->providesPlanarReference())
+    {
+        return vec3(pfs_->plane().YDirection());
+    }
+    else
+    {
+        throw insight::Exception("supplied datum has to be a plane!");
+    }
+    return vec3(0,0,0);
+}
 
 
 insight::cad::BBMin::BBMin(FeaturePtr model)
@@ -321,3 +362,33 @@ arma::mat insight::cad::SurfaceInertiaAxis::value() const
   return model_->surfaceInertia(axis_);
 }
 
+
+insight::cad::PointInFeatureCS::PointInFeatureCS(
+    FeaturePtr model,
+    VectorPtr locP )
+    : model_(model),
+    locP_(locP)
+{}
+
+arma::mat insight::cad::PointInFeatureCS::value() const
+{
+    arma::mat locP=locP_->value();
+    auto& dp=model_->getDatumPoints();
+    auto& dv=model_->getDatumVectors();
+
+    if (dp.count("O") &&
+        dv.count("EX") &&
+        dv.count("EY") &&
+        dv.count("EZ") )
+    {
+        return
+            dp.at("O")
+               +dv.at("EX")*locP(0)
+               +dv.at("EY")*locP(1)
+               +dv.at("EZ")*locP(2);
+    }
+    else
+    {
+        return locP;
+    }
+}

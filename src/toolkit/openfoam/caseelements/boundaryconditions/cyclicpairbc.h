@@ -19,13 +19,14 @@ protected:
 
 public:
     declareType ( "CyclicPairBC" );
-    CyclicPairBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
+    CyclicPairBC (
+        OpenFOAMCase& c, const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        ParameterSetInput ip = Parameters() );
     void addIntoDictionaries ( OFdicts& dictionaries ) const override;
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
 
     bool providesBCsForPatch ( const std::string& patchName ) const override;
-
-    static ParameterSet defaultParameters() { return ParameterSet(); }
 
 };
 

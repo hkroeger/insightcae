@@ -12,13 +12,13 @@
 namespace insight {
 
 
+
 defineType(QImage);
 addToFactoryTable(IQResultElement, QImage);
 
 
 QImage::QImage(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : IQResultElement(parent, label, rep),
-      delta_w_(0)
+    : IQResultElement(parent, label, rep)
 {
   if (auto im = resultElementAs<insight::Image>())
   {
@@ -35,15 +35,16 @@ QImage::QImage(QObject *parent, const QString &label, insight::ResultElementPtr 
       }
       insight::dbg()<<"closing image file"<<std::endl;
     }
+
     QPixmap pm;
     pm.loadFromData(data);
-    setImage( pm );
+    setImage(pm);
   }
 }
 
 void QImage::setImage(const QPixmap &pm)
 {
-  image_=pm;
+  pm_=pm;
 }
 
 QVariant QImage::previewInformation(int role) const
@@ -52,7 +53,8 @@ QVariant QImage::previewInformation(int role) const
   {
     QFontMetrics fm(QApplication::font());
     int h = fm.height();
-    return QVariant(image_.scaledToHeight(3*h));
+    auto th = pm_.scaledToHeight(3*h);
+    return QVariant(th);
   }
 
   return QVariant();
@@ -63,32 +65,11 @@ void QImage::createFullDisplay(QVBoxLayout *layout)
 {
   IQResultElement::createFullDisplay(layout);
 
-  id_=new QLabel;
-  id_->setFrameShape(QFrame::NoFrame);
-  id_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+  auto id=new IQPixmapLabel(pm_);
+  id->setFrameStyle(QFrame::NoFrame);
 
-
-  sa_ = new QScrollArea;
-  QSizePolicy sp(QSizePolicy::Expanding, QSizePolicy::Expanding);
-  sp.setHeightForWidth(false);
-  sp.setWidthForHeight(false);
-  sp.setVerticalStretch(255);
-  sa_->setSizePolicy(sp);
-  sa_->setWidget(id_);
-
-  layout->addWidget(sa_);
-
-  auto cmp = layout->parentWidget()->contentsMargins();
-  auto cmsa = sa_->contentsMargins();
-  delta_w_ = 2*layout->margin() + cmsa.left() + cmsa.right() + cmp.left() + cmp.right();
+  layout->addWidget(id);
 }
 
-void QImage::resetContents(int width, int height)
-{
-  IQResultElement::resetContents(width, height);
-
-  id_->setPixmap(image_.scaledToWidth(width-delta_w_));
-  id_->adjustSize();
-}
 
 } // namespace insight

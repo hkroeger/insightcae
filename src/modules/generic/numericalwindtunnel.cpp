@@ -20,10 +20,15 @@
 
 #include "numericalwindtunnel.h"
 
+#include "base/exception.h"
+#include "base/units.h"
+#include "base/vtktransformation.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/snappyhexmesh.h"
 #include "openfoam/paraview.h"
+#include "openfoam/blockmeshoutputanalyzer.h"
+
 
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
@@ -43,8 +48,7 @@
 #include "vtkPolyDataMapper.h"
 
 #include "cadfeatures.h"
-#include "openfoam/blockmeshoutputanalyzer.h"
-#include "base/vtktransformation.h"
+#include "occtools.h"
 
 using namespace arma;
 using namespace std;
@@ -57,10 +61,11 @@ namespace insight
 {
 
 
-addToAnalysisFactoryTable(NumericalWindtunnel);
+defineType(NumericalWindtunnel);
+Analysis::Add<NumericalWindtunnel> addNumericalWindtunnel;
 
 
-void NumericalWindtunnel::modifyDefaults(ParameterSet& p)
+void NumericalWindtunnel::modifyDefaults(insight::ParameterSet& p)
 {
     p.setBool("run/potentialinit", true);
 }
@@ -70,10 +75,10 @@ boost::mutex mtx;
 
 
 NumericalWindtunnel::supplementedInputData::supplementedInputData(
-    std::unique_ptr<Parameters> pPtr,
-    const boost::filesystem::path &/*workDir*/,
-    ProgressDisplayer &parentProgresss )
-  : supplementedInputDataDerived<Parameters>( std::move(pPtr) ),
+    ParameterSetInput ip,
+    const boost::filesystem::path &workDir,
+    ProgressDisplayer &parentProgress )
+  : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, parentProgress ),
     FOname("forces")
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
@@ -101,13 +106,35 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
            toVec<gp_Dir>(p().geometry.forwarddir) )
   );
 
-  arma::mat bb; // bounding box in SI, rotated to wind tunnel CS
+  arma::mat
+      bb, // bounding box in SI, rotated to wind tunnel CS
+      bbAtt; // bounding box in SI, rotated to wind tunnel CS + applied attitude change
 
-  parentProgresss.message("Getting geometry file"); // extraction may take place now
+  parentProgress.message("Getting geometry file"); // extraction may take place now
   std::string geom_file_ext = p().geometry.objectfile->fileName().extension().string();
   boost::to_lower(geom_file_ext);
 
-  parentProgresss.message("Loading geometry file, computing bounding box");
+
+  gp_Trsf roll; roll.SetRotation(
+      gp::OX(),
+      toValue(
+          p().geometry.attitude.roll*si::angle_deg,
+          si::radians));
+  gp_Trsf trim; trim.SetRotation(
+      gp::OY(),
+      toValue(
+          p().geometry.attitude.trim*si::angle_deg,
+          si::radians));
+  gp_Trsf yaw; yaw.SetRotation(
+      gp::OZ(),
+      toValue(
+          p().geometry.attitude.yaw*si::angle_deg,
+          si::radians));
+  gp_Trsf att=yaw
+            .Multiplied(trim)
+            .Multiplied(roll);
+
+  parentProgress.message("Loading geometry file, computing bounding box");
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
   {
     vtk_ChangeCS trsf(
@@ -115,66 +142,137 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
           3, 1
          );
 
-    bb = p().geometryscale * STLBndBox(readSTL(p().geometry.objectfile->filePath(), { &trsf }));
+    auto geopositioned=readSTL(p().geometry.objectfile->filePath(), { &trsf });
+    bb = p().geometryscale
+         * STLBndBox(geopositioned);
+
+    auto geofinal = cad::OCCtransformToOF(att)
+                        .apply_VTK_Transform(geopositioned);
+    bbAtt = p().geometryscale
+            * STLBndBox( geofinal );
   }
   else
   {
     boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = cad::Transform::create(
-          cad::Feature::create(p().geometry.objectfile->filePath()), rot);
-    bb = p().geometryscale * obj->modelBndBox(bbdefl);
+    auto geopositioned = cad::Transform::create(
+          cad::Import::create(p().geometry.objectfile->filePath()), rot);
+    bb = p().geometryscale
+         * geopositioned->modelBndBox(bbdefl);
+
+    auto geofinal = cad::Transform::create(
+        geopositioned, att);
+    bbAtt = p().geometryscale
+         * geofinal->modelBndBox(bbdefl);
   }
-
-
-  arma::mat pmin=bb.col(0);
-  reportSupplementQuantity("pmin", pmin, "Minimum point of bounding box", "m");
-  arma::mat pmax=bb.col(1);
-  reportSupplementQuantity("pmax", pmax, "Maximum point of bounding box", "m");
-
-  gp_Trsf sc; sc.SetScaleFactor(p().geometryscale);
-  gp_Trsf tr; tr.SetTranslation(gp_Vec(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2)));
-
-  cad_to_cfd_ = tr.Multiplied(sc).Multiplied(rot);
-
-  l_=(pmax(0)-pmin(0));
-  reportSupplementQuantity("l", l_, "object length", "m");
-  if (l_<1e-12)
-    throw insight::Exception("Length of the object is zero!");
-
-  w_=(pmax(1)-pmin(1));
-  reportSupplementQuantity("w", w_, "object width", "m");
-  if (w_<1e-12)
-    throw insight::Exception("Width of the object is zero!");
-
-  h_=(pmax(2)-pmin(2));
-  reportSupplementQuantity("h", h_, "object height", "m");
-  if (h_<1e-12)
-    throw insight::Exception("Height of the object is zero!");
 
   Lref_ = arma::norm( bb.col(1)-bb.col(0), 2);
   reportSupplementQuantity("Lref", Lref_, "Reference length of object", "m");
   if (Lref_ < 1e-12)
   {
-    throw insight::Exception("Bounding box of object has zero size!");
+      throw insight::Exception("Bounding box of object has zero size!");
   }
+
+
+
+  arma::mat pmin=bbAtt.col(0);
+  reportSupplementQuantity("pmin", pmin, "Minimum point of bounding box", "m");
+  arma::mat pmax=bbAtt.col(1);
+  reportSupplementQuantity("pmax", pmax, "Maximum point of bounding box", "m");
+
+  l_=(pmax(0)-pmin(0));
+  reportSupplementQuantity("l", l_, "object length", "m");
+  if (l_<1e-12)
+      throw insight::Exception("Length of the object is zero!");
+
+  w_=(pmax(1)-pmin(1));
+  reportSupplementQuantity("w", w_, "object width", "m");
+  if (w_<1e-12)
+      throw insight::Exception("Width of the object is zero!");
+
+  h_=(pmax(2)-pmin(2));
+  reportSupplementQuantity("h", h_, "object height", "m");
+  if (h_<1e-12)
+      throw insight::Exception("Height of the object is zero!");
+
 
   Lupstream_ = Lref_*p().geometry.LupstreamByL;
   reportSupplementQuantity("Lupstream", Lupstream_, "Domain extent upstream from object", "m");
   Ldownstream_ = Lref_*p().geometry.LdownstreamByL;
   reportSupplementQuantity("Ldownstream", Ldownstream_, "Domain extent downstream from object", "m");
-  Lup_ = Lref_*p().geometry.LupByL;
-  reportSupplementQuantity("Lup", Lup_, "Domain extent above object", "m");
+  double Hdom = Lref_*p().geometry.LupByL;
+  reportSupplementQuantity("Hdom", Hdom, "Domain height", "m");
   Laside_ = Lref_*p().geometry.LasideByL;
   reportSupplementQuantity("Laside", Laside_, "Domain sideways from object", "m");
+
+
+  double h;
+  if (boost::get<Parameters::geometry_type::verticalPlacement_onFloor_type>(
+          &p().geometry.verticalPlacement))
+  {
+      // no vertical translation
+      h=0.;
+  }
+  else if (boost::get<Parameters::geometry_type::verticalPlacement_centered_type>(
+          &p().geometry.verticalPlacement))
+  {
+      h=Hdom*0.5;
+  }
+  else if (auto * ah =
+             boost::get<Parameters::geometry_type::verticalPlacement_atHeight_type>(
+               &p().geometry.verticalPlacement))
+  {
+      if (auto *rdh = boost::get<Parameters::geometry_type
+                ::verticalPlacement_atHeight_type
+                ::height_relativeToDomain_type>(
+              &ah->height))
+      {
+          h=rdh->hByHdomain*Hdom;
+      }
+      else if (auto *absh = boost::get<Parameters::geometry_type
+                                 ::verticalPlacement_atHeight_type
+                                 ::height_absolute_type>(
+              &ah->height))
+      {
+          h=absh->h;
+      }
+      else
+          throw insight::UnhandledSelection();
+  }
+  else
+      throw insight::UnhandledSelection();
+
+  h=std::max<double>(0,std::min<double>(Hdom,h));
+  gp_Vec deltaVert(0, 0, h);
+
+  Lup_=Hdom-h;
+  reportSupplementQuantity("Lup", Lup_, "Domain height above lower bound of object", "m");
+
+  Ldown_=h;
+  reportSupplementQuantity("Ldown", Ldown_, "Domain height below object", "m");
+
+  gp_Trsf sc; sc.SetScaleFactor(p().geometryscale);
+  gp_Trsf tr; tr.SetTranslation(gp_Vec(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2)));
+  gp_Trsf mv; mv.SetTranslation(deltaVert);
+
+  cad_to_cfd_ = mv
+        .Multiplied(tr)
+        .Multiplied(sc)
+        .Multiplied(att)
+        // .Multiplied(yaw)
+        // .Multiplied(trim)
+        // .Multiplied(roll)
+        .Multiplied(rot);
+
+
 }
 
 
 
 
-NumericalWindtunnel::NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath, ProgressDisplayer& pd)
-: OpenFOAMAnalysis("Numerical Wind Tunnel", "", ps, exepath),
-  parameters_(new supplementedInputData(std::make_unique<Parameters>(ps), exepath, pd))
+NumericalWindtunnel::NumericalWindtunnel(
+    const std::shared_ptr<supplementedInputDataBase>& sp )
+: OpenFOAMAnalysis(sp)
 {}
 
 
@@ -191,24 +289,15 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
 {
   path dir = executionPath();
   
-  boost::filesystem::path objectSTLFile = executionPath()/
-   "constant"/"triSurface"/
+  boost::filesystem::path objectSTLFile =
+   snappyHexMeshFeats::geometryDir(cm, executionPath())/
    (p().geometry.objectfile->fileName().stem().string()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
-    .set_np(p().run.np)
+    .set_np(np())
   ));
   cm.createOnDisk(executionPath());
   
-
-  double Lupstream = sp().Lref_*p().geometry.LupstreamByL;
-  double Ldownstream = sp().Lref_*p().geometry.LdownstreamByL;
-  double Lup = sp().Lref_*p().geometry.LupByL;
-  double Laside = sp().Lref_*p().geometry.LasideByL;
-  
-  if (Lup<=0) throw insight::Exception("LupByL*L has to be larger than h!");
-  if (Laside<=0) throw insight::Exception("LasideByL*L has to be larger than 0.5*w!");
-
   
   double dx=sp().Lref_/double(p().mesh.nx);
 
@@ -216,10 +305,11 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   int ny=std::max(1, int(sp().w_/dx));
   int nz=std::max(1, int(sp().h_/dx));
 
-  int n_upstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_upstream).calc_n(dx, Lupstream));
-  int n_downstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_downstream).calc_n(dx, Ldownstream));
-  int n_up=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, Lup-sp().h_));
-  int n_aside=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_aside).calc_n(dx, Laside-0.5*sp().w_));
+  int n_upstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_upstream).calc_n(dx, sp().Lupstream_));
+  int n_downstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_downstream).calc_n(dx, sp().Ldownstream_));
+  int n_up=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, sp().Lup_-sp().h_));
+  int n_down=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, sp().Ldown_-sp().h_));
+  int n_aside=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_aside).calc_n(dx, sp().Laside_-0.5*sp().w_));
   
 
   using namespace insight::bmd;
@@ -237,18 +327,25 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
 
   // points in cross section
   std::map<int, bmd::Point> pts = {
-        {0, 	vec3( -Lupstream, 0, 0)},
-        {1, 	vec3( 0, 0, 0)},
-        {2, 	vec3( sp().l_, 0, 0)},
-        {3, 	vec3( sp().l_+Ldownstream, 0, 0)},
-        {4, 	vec3( -Lupstream, 0, sp().h_)},
-        {5, 	vec3( 0, 0, sp().h_)},
-        {6, 	vec3( sp().l_, 0, sp().h_)},
-        {7, 	vec3( sp().l_+Ldownstream, 0, sp().h_)},
-        {8, 	vec3( -Lupstream, 0, Lup)},
-        {9, 	vec3( 0, 0, Lup)},
-        {10, 	vec3( sp().l_, 0, Lup)},
-        {11, 	vec3( sp().l_+Ldownstream, 0, Lup)}
+        {100, 	vec3( -sp().Lupstream_, 0, 0)},
+        {101, 	vec3( 0, 0, 0)},
+        {102, 	vec3( sp().l_, 0, 0)},
+        {103, 	vec3( sp().l_+sp().Ldownstream_, 0, 0)},
+
+        {0, 	vec3( -sp().Lupstream_, 0, sp().Ldown_)},
+        {1, 	vec3( 0, 0, sp().Ldown_)},
+        {2, 	vec3( sp().l_, 0, sp().Ldown_)},
+        {3, 	vec3( sp().l_+sp().Ldownstream_, 0, sp().Ldown_)},
+
+        {4, 	vec3( -sp().Lupstream_, 0, sp().Ldown_+sp().h_)},
+        {5, 	vec3( 0, 0, sp().Ldown_+sp().h_)},
+        {6, 	vec3( sp().l_, 0, sp().Ldown_+sp().h_)},
+        {7, 	vec3( sp().l_+sp().Ldownstream_, 0, sp().Ldown_+sp().h_)},
+
+        {8, 	vec3( -sp().Lupstream_, 0, sp().Ldown_+sp().Lup_)},
+        {9, 	vec3( 0, 0, sp().Ldown_+sp().Lup_)},
+        {10, 	vec3( sp().l_, 0, sp().Ldown_+sp().Lup_)},
+        {11, 	vec3( sp().l_+sp().Ldownstream_, 0, sp().Ldown_+sp().Lup_)}
   };
   arma::mat Lv=vec3(0,1,0);
 
@@ -260,18 +357,70 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   {
     nzs= {n_aside, std::max(1,ny/2)};
     grads = {1./p().mesh.grad_aside, 1};
-    y0 = {vec3(0,Laside,0), vec3(0,0.5*sp().w_,0), vec3(0,0,0)};
+    y0 = {vec3(0,sp().Laside_,0), vec3(0,0.5*sp().w_,0), vec3(0,0,0)};
   }
   else
   {
     nzs= {n_aside, ny, n_aside};
     grads = {1./p().mesh.grad_aside, 1, p().mesh.grad_aside};
-    y0 = {vec3(0,Laside,0), vec3(0,0.5*sp().w_,0), vec3(0,-0.5*sp().w_,0), vec3(0,-Laside,0)};
+    y0 = {vec3(0,sp().Laside_,0), vec3(0,0.5*sp().w_,0), vec3(0,-0.5*sp().w_,0), vec3(0,-sp().Laside_,0)};
   }
   
   for (size_t i=0; i<nzs.size(); i++)
   {
-    {
+      if (sp().Ldown_>0.)
+      {
+          {
+              Block& bl = bmd->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[100]+y0[i], pts[101]+y0[i], pts[1]+y0[i], pts[0]+y0[i],
+                                            pts[100]+y0[i+1], pts[101]+y0[i+1], pts[1]+y0[i+1], pts[0]+y0[i+1]
+                                            ),
+                                        n_upstream, n_down, nzs[i],
+                                        { 1./p().mesh.grad_upstream, 1./p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+
+              inlet.addFace(bl.face("0473"));
+              floor.addFace(bl.face("0154"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+          {
+              Block& bl = bmd->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[101]+y0[i], pts[102]+y0[i], pts[2]+y0[i], pts[1]+y0[i],
+                                            pts[101]+y0[i+1], pts[102]+y0[i+1], pts[2]+y0[i+1], pts[1]+y0[i+1]
+                                            ),
+                                        nx, n_down, nzs[i],
+                                        { 1., 1./p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              floor.addFace(bl.face("0154"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+          {
+              Block& bl = bmd->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[102]+y0[i], pts[103]+y0[i], pts[3]+y0[i], pts[2]+y0[i],
+                                            pts[102]+y0[i+1], pts[103]+y0[i+1], pts[3]+y0[i+1], pts[2]+y0[i+1]
+                                            ),
+                                        n_downstream, n_down, nzs[i],
+                                        { p().mesh.grad_downstream, 1./p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              outlet.addFace(bl.face("1265"));
+              floor.addFace(bl.face("0154"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+      }
+
+      {
           Block& bl = bmd->addBlock
                       (
                           new Block(P_8(
@@ -284,7 +433,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
                           );
 
           inlet.addFace(bl.face("0473"));
-          floor.addFace(bl.face("0154"));
+          if (!(sp().Ldown_>0.)) floor.addFace(bl.face("0154"));
           if (i==0) side1.addFace(bl.face("0321"));
           if (i==2) side2.addFace(bl.face("4567"));
     }
@@ -299,7 +448,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
                                   { 1., 1., grads[i] }
                                   )
                         );
-        floor.addFace(bl.face("0154"));
+        if (!(sp().Ldown_>0.)) floor.addFace(bl.face("0154"));
         if (i==0) side1.addFace(bl.face("0321"));
         if (i==2) side2.addFace(bl.face("4567"));
     }
@@ -315,10 +464,11 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
                                   )
                         );
         outlet.addFace(bl.face("1265"));
-        floor.addFace(bl.face("0154"));
+        if (!(sp().Ldown_>0.)) floor.addFace(bl.face("0154"));
         if (i==0) side1.addFace(bl.face("0321"));
         if (i==2) side2.addFace(bl.face("4567"));
     }
+
     {
         Block& bl = bmd->addBlock
                     (
@@ -392,10 +542,10 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
     boost::mutex::scoped_lock lock(mtx);
 
     auto obj = cad::Transform::create(
-          cad::Feature::create(p().geometry.objectfile->filePath()),
+          cad::Import::create(p().geometry.objectfile->filePath()),
           sp().cad_to_cfd_
           );
-    obj->saveAs(objectSTLFile);
+    obj->exportSTL(objectSTLFile);
   }
 
 
@@ -403,27 +553,26 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
       new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-    .set_name("object")
     .set_minLevel(p().mesh.lmsurf)
     .set_maxLevel(p().mesh.lxsurf)
     .set_nLayers(p().mesh.nlayer)
     .set_fileName(make_filepath(objectSTLFile))
+    .set_name("object")
   )));
-  
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
    new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
-    .set_min(vec3(-0.33*sp().l_, -(0.5+0.5)*sp().w_, 0))
-    .set_max(vec3(2.0*sp().l_, (0.5+0.5)*sp().w_, 1.33*sp().h_))
+    .set_min(vec3(-0.33*sp().l_, -(0.5+0.5)*sp().w_, sp().Ldown_))
+    .set_max(vec3(2.0*sp().l_, (0.5+0.5)*sp().w_, sp().Ldown_+1.33*sp().h_))
     
-    .set_name("refinement_box")
     .set_level(p().mesh.boxlevel)
+    .set_name("refinement_box")
   )));
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
-    .set_min(vec3(0.8*sp().l_, -(0.5+0.25)*sp().w_, 0))
-    .set_max(vec3(1.5*sp().l_, (0.5+0.25)*sp().w_, 1.2*sp().h_))
+    .set_min(vec3(0.8*sp().l_, -(0.5+0.25)*sp().w_, sp().Ldown_))
+    .set_max(vec3(1.5*sp().l_, (0.5+0.25)*sp().w_, sp().Ldown_+1.2*sp().h_))
     
-    .set_name("refinement_rear")
     .set_level(p().mesh.rearlevel)
+    .set_name("refinement_rear")
   )));
 
 
@@ -439,8 +588,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
         .set_min(bc->pc - 0.5*d)
         .set_max(bc->pc + 0.5*d)
 
-        .set_name(str(format("refinement_%d")%iref))
         .set_level(rz.lx)
+        .set_name(str(format("refinement_%d")%iref))
       )));
     }
     else if (const auto* b =
@@ -450,8 +599,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
         .set_min(b->pmin)
         .set_max(b->pmax)
 
-        .set_name(str(format("refinement_%d")%iref))
         .set_level(rz.lx)
+        .set_name(str(format("refinement_%d")%iref))
       )));
     }
 
@@ -459,7 +608,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   }
 
   
-  shm_cfg.PiM.push_back(vec3(-0.999*Lupstream,1e-6,1e-6));
+  shm_cfg.PiM.push_back(vec3(-0.999*sp().Lupstream_,1e-6,1e-6));
 
   shm_cfg
   .set_tlayer ( p().mesh.tlayer )
@@ -523,9 +672,17 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
     cm.insert(new PressureOutletBC(cm, "side2", boundaryDict));
   }
 
-  cm.insert(new WallBC(cm, "floor", boundaryDict, WallBC::Parameters()
-    .set_wallVelocity(vec3(p().operation.v,0,0)) // velocity of car vs ground! (wind excluded)
-  ));
+  if (p().operation.lowerWallIsMoving)
+  {
+      cm.insert(new WallBC(cm, "floor", boundaryDict, WallBC::Parameters()
+        .set_wallVelocity(vec3(p().operation.v,0,0)) // velocity of car vs ground! (wind excluded)
+      ));
+  }
+  else
+  {
+      cm.insert(new SimpleBC(cm, "floor", boundaryDict, "symmetryPlane"));
+  }
+
   cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));
   cm.insert(new VelocityInletBC(cm, "inlet", boundaryDict, VelocityInletBC::Parameters()
       .set_velocity( FieldData::uniformSteady(p().operation.v,0,0) )
@@ -637,7 +794,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
     auto camera = scene.activeCamera();
     camera->ParallelProjectionOn();
 
-    auto viewctr=vec3(0.5*sp().l_, 0, 0.5*sp().h_);
+    auto viewctr=vec3(0.5*sp().l_, 0, sp().Ldown_+0.5*sp().h_);
     camera->SetFocalPoint( toArray(viewctr) );
 
     {
@@ -716,7 +873,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
     {
       auto seeds = vtkSmartPointer<vtkPointSource>::New();
-      seeds->SetCenter(toArray(vec3(0.5*sp().l_, 0.5*sp().w_, 0.5*sp().h_)));
+      seeds->SetCenter(toArray(vec3(0.5*sp().l_, 0.5*sp().w_, sp().Ldown_+0.5*sp().h_)));
       seeds->SetRadius(0.2*sp().Lref_);
       seeds->SetDistributionToUniform();
       seeds->SetNumberOfPoints(100);
@@ -725,6 +882,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
       st->SetInputData(im);
       st->SetSourceConnection(seeds->GetOutputPort());
       st->SetIntegrationDirectionToBoth();
+      st->SetMaximumPropagation(10.*sp().Ldownstream_);
       st->SetInputArrayToProcess(
             0, 0, 0,
             vtkDataObject::FIELD_ASSOCIATION_POINTS,
@@ -737,7 +895,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
     {
       auto seeds = vtkSmartPointer<vtkPointSource>::New();
-      seeds->SetCenter(toArray(vec3(0.5*sp().l_, -0.5*sp().w_, 0.5*sp().h_)));
+      seeds->SetCenter(toArray(vec3(0.5*sp().l_, -0.5*sp().w_, sp().Ldown_+0.5*sp().h_)));
       seeds->SetRadius(0.2*sp().Lref_);
       seeds->SetDistributionToUniform();
       seeds->SetNumberOfPoints(100);
@@ -746,6 +904,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
       st->SetInputData(im);
       st->SetSourceConnection(seeds->GetOutputPort());
       st->SetIntegrationDirectionToBoth();
+      st->SetMaximumPropagation(10.*sp().Ldownstream_);
       st->SetInputArrayToProcess(
             0, 0, 0,
             vtkDataObject::FIELD_ASSOCIATION_POINTS,
@@ -834,129 +993,6 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
   return results;
 }
-
-
-
-
-ParameterSetVisualizerPtr NumericalWindtunnel_visualizer()
-{
-    return ParameterSetVisualizerPtr( new NumericalWindtunnel_ParameterSet_Visualizer );
-}
-
-addStandaloneFunctionToStaticFunctionTable(Analysis, NumericalWindtunnel, visualizer, NumericalWindtunnel_visualizer);
-
-
-void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements()
-{
-  CurrentExceptionContext ec("Creating visualization of numerical wind tunnel parameters");
-
-  CADParameterSetVisualizer::recreateVisualizationElements();
-
-  try
-  {
-    auto spp = std::make_shared<NumericalWindtunnel::supplementedInputData>(
-          std::make_unique<Parameters>(currentParameters()), "", *progress_);
-    Q_EMIT updateSupplementedInputData( std::dynamic_pointer_cast<insight::supplementedInputDataBase>(spp) );
-    auto& sp=*spp;
-    auto& p=sp.p();
-
-
-    std::string geom_file_ext = p.geometry.objectfile->fileName().extension().string();
-    boost::to_lower(geom_file_ext);
-
-    cad::FeaturePtr org_geom;
-
-    if (geom_file_ext==".stl" || geom_file_ext==".stlb")
-    {
-      org_geom = cad::STL::create(p.geometry.objectfile->filePath(), sp.cad_to_cfd_);
-    }
-    else
-    {
-      org_geom = cad::Transform::create(
-                   cad::Feature::create(p.geometry.objectfile->filePath()),
-                   sp.cad_to_cfd_
-                   );
-    }
-
-    addFeature("object", org_geom);
-
-
-    if (p.mesh.longitudinalSymmetry)
-    {
-      addFeature
-      (
-        "domain",
-         cad::Box::create(
-          cad::matconst(vec3( -sp.Lupstream_, 0, 0)),
-          cad::matconst(vec3( sp.Lupstream_+sp.l_+sp.Ldownstream_, 0, 0)),
-          cad::matconst(vec3( 0, 0, sp.Lup_)),
-          cad::matconst(vec3( 0, sp.Laside_+0.5*sp.w_, 0))
-         ),
-         { insight::Wireframe }
-      );
-    }
-    else
-    {
-      addFeature
-      (
-        "domain",
-         cad::Box::create(
-          cad::matconst(vec3( -sp.Lupstream_, -0.5*sp.w_-sp.Laside_, 0)),
-          cad::matconst(vec3( sp.Lupstream_+sp.l_+sp.Ldownstream_, 0, 0)),
-          cad::matconst(vec3( 0, 0, sp.Lup_)),
-          cad::matconst(vec3( 0, 2.*sp.Laside_+sp.w_, 0))
-         ),
-         { insight::Wireframe }
-      );
-    }
-
-
-    int iref=0;
-    for (const Parameters::mesh_type::refinementZones_default_type& rz:
-         p.mesh.refinementZones)
-    {
-      if (const auto* bc =
-          boost::get<Parameters::mesh_type::refinementZones_default_type::geometry_box_centered_type>(&rz.geometry))
-      {
-        addFeature
-        (
-          str(format("refinement/[%d]")%iref),
-           cad::Box::create(
-            cad::matconst(bc->pc),
-            cad::matconst(bc->L*vec3(1,0,0)),
-            cad::matconst(bc->W*vec3(0,1,0)),
-            cad::matconst(bc->H*vec3(0,0,1)),
-            cad::BoxCentering(true, true, true)
-           ),
-           { insight::Wireframe }
-        );
-      }
-      else if (const auto* b =
-          boost::get<Parameters::mesh_type::refinementZones_default_type::geometry_box_type>(&rz.geometry))
-      {
-        arma::mat d = b->pmax - b->pmin;
-        addFeature
-        (
-          str(format("refinement/[%d]")%iref),
-           cad::Box::create(
-            cad::matconst(b->pmin),
-            cad::matconst(d(0)*vec3(1,0,0)),
-            cad::matconst(d(1)*vec3(0,1,0)),
-            cad::matconst(d(2)*vec3(0,0,1))
-           ),
-           { insight::Wireframe }
-        );
-      }
-
-      iref++;
-    }
-  }
-  catch (...)
-  {
-    // ignore
-  }
-}
-
 
 
     

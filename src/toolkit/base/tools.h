@@ -373,6 +373,12 @@ arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);
 
 void writeSTL
 (
+    vtkSmartPointer<vtkPolyData> stl,
+    const boost::filesystem::path& outfile
+);
+
+void writeSTL
+(
    vtkSmartPointer<vtkPolyDataAlgorithm> stl,
    const boost::filesystem::path& outfile
 );
@@ -505,6 +511,62 @@ boost::filesystem::path
 ensureDefaultFileExtension(
     const boost::filesystem::path& path,
     const std::string& defaultExtension );
+
+
+
+enum OperatingSystem {
+    UnknownOS, LinuxOS, WindowsOS
+};
+typedef std::set<OperatingSystem> OperatingSystemSet;
+
+extern OperatingSystem currentOperatingSystem;
+
+
+
+
+
+template<class Roles>
+class VariableNames
+    : public std::map<Roles, std::string>
+{
+public:
+    VariableNames(
+        std::initializer_list<
+            typename std::map< Roles, std::string>::value_type
+            > ini)
+        : std::map<Roles, std::string>(ini)
+    {}
+
+    Roles variable(const std::string& orgVarName) const
+    {
+        auto varName=boost::to_upper_copy(orgVarName);
+        auto i = std::find_if(
+            this->begin(), this->end(),
+            [&](const typename std::map<Roles, std::string>::value_type& entry)
+            {
+                return entry.second==varName;
+            }
+            );
+
+        if (i==this->end())
+        {
+            std::vector<std::string> sel;
+            std::transform(
+                this->begin(), this->end(),
+                std::back_inserter(sel),
+                [](const typename std::map<Roles, std::string>::value_type& v)
+                { return v.second; }
+                );
+            throw insight::Exception(
+                "unknown variable name: %s. Recognized names are: %s",
+                varName.c_str(),
+                boost::join(sel, ", ").c_str() );
+        }
+
+        return i->first;
+    }
+};
+
 
 }
 

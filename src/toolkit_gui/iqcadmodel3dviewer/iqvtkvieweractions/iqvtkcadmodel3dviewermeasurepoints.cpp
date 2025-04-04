@@ -10,11 +10,16 @@
 
 IQVTKCADModel3DViewerMeasurePoints::IQVTKCADModel3DViewerMeasurePoints(IQVTKCADModel3DViewer &viewWidget)
   : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
-{}
-
-IQVTKCADModel3DViewerMeasurePoints::~IQVTKCADModel3DViewerMeasurePoints()
 {
-  viewer().deactivateSubshapeSelectionAll();
+    aboutToBeDestroyed.connect(
+        [this](){
+            viewer().deactivateSubshapeSelectionAll();
+        });
+}
+
+QString IQVTKCADModel3DViewerMeasurePoints::description() const
+{
+    return "Measure distance between points";
 }
 
 void IQVTKCADModel3DViewerMeasurePoints::start()
@@ -22,7 +27,7 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
   viewer().activateSelectionAll(insight::cad::Vertex);
   //viewer().sendStatus("Please select first point!");
 
-  auto sel = std::make_shared<IQVTKSelectSubshape>(viewer());
+  auto sel = make_viewWidgetAction<IQVTKSelectSubshape>(viewer());
   sel->entitySelected.connect(
       [this](IQVTKCADModel3DViewer::SubshapeData p1)
       {
@@ -32,7 +37,7 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
               std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
               p1_=insight::cad::matconst(insight::vec3(p));
 
-              auto sel2 = std::make_shared<IQVTKSelectSubshape>(viewer());
+              auto sel2 = make_viewWidgetAction<IQVTKSelectSubshape>(viewer());
               sel2->entitySelected.connect(
                   [this](IQVTKCADModel3DViewer::SubshapeData p2)
                   {
@@ -61,10 +66,10 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
                   }
                   );
 
-              launchChildAction(sel2);
+              launchAction(std::move(sel2));
           }
       }
       );
 
-  launchChildAction(sel);
+  launchAction(std::move(sel));
 }

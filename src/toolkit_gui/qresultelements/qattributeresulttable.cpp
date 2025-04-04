@@ -28,6 +28,46 @@ QVariant QAttributeResultTable::previewInformation(int) const
 }
 
 
+class QAttributeTableView
+    : public QTableWidget
+{
+    insight::AttributeTableResult* tab_;
+
+    void updateContent()
+    {
+        auto width=viewport()->width();
+      QStringList headers;
+      headers
+              << QString::fromStdString(tab_->labelColumnTitle().toHTML(width))
+              << QString::fromStdString(tab_->valueColumnTitle().toHTML(width));
+      setHorizontalHeaderLabels( headers );
+
+      for (size_t i=0; i<tab_->names().size(); i++)
+      {
+          auto attr_name = QString::fromStdString(tab_->names()[i].toHTML(width));
+          QString attr_val(boost::lexical_cast<std::string>(tab_->values()[i]).c_str());
+          setItem(i, 0, new QTableWidgetItem( attr_name ));
+          setItem(i, 1, new QTableWidgetItem( attr_val ));
+      }
+      doItemsLayout();
+      resizeColumnsToContents();
+    };
+
+public:
+    QAttributeTableView(insight::AttributeTableResult* tab)
+     : QTableWidget(tab->names().size(), 2),
+       tab_(tab)
+    {
+        // setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        // setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
+
+    void resizeEvent(QResizeEvent *e)
+    {
+        QTableWidget::resizeEvent(e);
+        updateContent();
+    }
+};
 
 
 void QAttributeResultTable::createFullDisplay(QVBoxLayout* layout)
@@ -35,35 +75,10 @@ void QAttributeResultTable::createFullDisplay(QVBoxLayout* layout)
   auto res = resultElementAs<insight::AttributeTableResult>();
   IQResultElement::createFullDisplay(layout);
 
-  tw_ = new QTableWidget(res->names().size(), 2/*, this*/);
-  tw_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  tw_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  tw_ = new QAttributeTableView(res);
   layout->addWidget(tw_);
 }
 
-
-
-
-void QAttributeResultTable::resetContents(int width, int height)
-{
-  auto res = resultElementAs<insight::AttributeTableResult>();
-
-  QStringList headers;
-  headers
-          << QString::fromStdString(res->labelColumnTitle().toHTML(width))
-          << QString::fromStdString(res->valueColumnTitle().toHTML(width));
-  tw_->setHorizontalHeaderLabels( headers );
-
-  for (size_t i=0; i<res->names().size(); i++)
-  {
-      auto attr_name = QString::fromStdString(res->names()[i].toHTML(width));
-      QString attr_val(boost::lexical_cast<std::string>(res->values()[i]).c_str());
-      tw_->setItem(i, 0, new QTableWidgetItem( attr_name ));
-      tw_->setItem(i, 1, new QTableWidgetItem( attr_val ));
-  }
-  tw_->doItemsLayout();
-  tw_->resizeColumnsToContents();
-}
 
 
 

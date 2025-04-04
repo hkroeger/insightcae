@@ -10,13 +10,12 @@ namespace insight {
 defineType(steadyCompressibleNumerics);
 addToOpenFOAMCaseElementFactoryTable(steadyCompressibleNumerics);
 
-steadyCompressibleNumerics::steadyCompressibleNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps, "p"),
-  p_(ps)
+steadyCompressibleNumerics::steadyCompressibleNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+: FVNumerics(c, ip.forward<Parameters>(), "p")
 {
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({p_.pinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p().Uinternal.begin(), p().Uinternal.end()), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p().Tinternal}), volField ) );
   OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({0.0}), volField ) );
 }
 
@@ -31,7 +30,7 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
 
   setApplicationName(dictionaries, "rhoSimpleFoam");
 
-  controlDict["endTime"]=p_.endTime;
+  controlDict["endTime"]=p().endTime;
 
 
   // ============ setup fvSolution ================================
@@ -40,7 +39,7 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
 
   solvers["rho"]=OFcase().stdSymmSolverSetup(1e-7, 0.01);
 
-  if (p_.transonic)
+  if (p().transonic)
     {
       solvers["p"]=OFcase().stdAsymmSolverSetup(1e-8, 0.01);
     }
@@ -61,11 +60,11 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
   solvers["nuTilda"]=OFcase().smoothSolverSetup(1e-8, 0.1);
 
   OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-  SIMPLE["rhoMin"]=p_.rhoMin;
-  SIMPLE["rhoMax"]=p_.rhoMax;
-  SIMPLE["consistent"]=p_.consistent;
-  SIMPLE["transonic"]=p_.transonic;
+  SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
+  SIMPLE["rhoMin"]=p().rhoMin;
+  SIMPLE["rhoMax"]=p().rhoMax;
+  SIMPLE["consistent"]=p().consistent;
+  SIMPLE["transonic"]=p().transonic;
 
 
   setRelaxationFactors
@@ -98,7 +97,7 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
 
-  if (p_.setup == Parameters::setup_type::accurate)
+  if (p().setup == Parameters::setup_type::accurate)
     {
       div["div(phi,U)"]       =	pref+"Gauss linearUpwindV "+gradNameOrScheme(dictionaries, "grad(U)");
       div["div(phi,e)"]       =	pref+"Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(e)");
@@ -110,7 +109,7 @@ void steadyCompressibleNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
       div["div(phi,omega)"]   =	pref+"Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(omega)");
       div["div(phi,nuTilda)"] =	pref+"Gauss linearUpwind "+gradNameOrScheme(dictionaries, "grad(nuTilda)");
     }
-  else if (p_.setup == Parameters::setup_type::stable)
+  else if (p().setup == Parameters::setup_type::stable)
     {
       div["div(phi,U)"]       =	pref+"Gauss upwind";
       div["div(phi,e)"]       =	pref+"Gauss upwind";

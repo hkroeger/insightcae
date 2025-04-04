@@ -130,6 +130,11 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                         inputContents_,
                         viewer_ );
 
+                    // connect(this, &ParameterEditorWidget::adaptEditControlsLayout, l,
+                    //         [](QSize s){
+
+                    //         });
+
 
                     if (viz_ && viewer_)
                     {
@@ -152,6 +157,19 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                             l->addLayout(cmdl);
                         }
                     }
+
+                    if (splitterV_)
+                    {
+
+                        auto s=splitterV_->sizes();
+                        auto sum=s[0]+s[1];
+
+                        s[1]=sum/2;
+                        s[0]=sum-s[1];
+
+                        splitterV_->setSizes(s);
+                    }
+
 
                     // l->addStretch();
                 }
@@ -196,7 +214,7 @@ ParameterEditorWidget::ParameterEditorWidget
   firstShowOccurred_(false)
 {
 
-    auto spv = new QSplitter(Qt::Vertical);
+    splitterV_ = new QSplitter(Qt::Vertical);
 
     {
         QWidget *w=new QWidget(this);
@@ -216,15 +234,15 @@ ParameterEditorWidget::ParameterEditorWidget
             );
         l->addWidget(hints);
 
-        spv->addWidget(w);
+        splitterV_->addWidget(w);
     }
 
     {
         inputContents_=new QWidget(this);
-        spv->addWidget(inputContents_);
+        splitterV_->addWidget(inputContents_);
     }
 
-    addWidget(spv);
+    addWidget(splitterV_);
 
 
     setup(display);
@@ -304,6 +322,9 @@ void ParameterEditorWidget::resizeEvent(QResizeEvent*e)
             w - 2 * m,
             h - 2 * m );
     }
+
+    if (splitterV_)
+        Q_EMIT adaptEditControlsLayout(splitterV_->size());
 }
 
 ParameterEditorWidget::ParameterEditorWidget

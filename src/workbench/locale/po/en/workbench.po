@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: workbench \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-28 07:55+0100\n"
+"POT-Creation-Date: 2025-04-04 12:38+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -194,35 +194,35 @@ msgstr "&Stop Analysis"
 msgid "&Load results..."
 msgstr "&Load results..."
 
-#: analysisform.cpp:413
+#: analysisform.cpp:416
 msgid "&Save results as..."
 msgstr "&Save results as..."
 
-#: analysisform.cpp:418
+#: analysisform.cpp:421
 msgid "Create &report..."
 msgstr "Create &report..."
 
-#: analysisform.cpp:427
+#: analysisform.cpp:430
 msgid "Load &filter..."
 msgstr "Load &filter..."
 
-#: analysisform.cpp:433
+#: analysisform.cpp:436
 msgid "Sa&ve filter..."
 msgstr "Sa&ve filter..."
 
-#: analysisform.cpp:439
+#: analysisform.cpp:442
 msgid "Start ParaView in execution directory"
 msgstr "Start ParaView in execution directory"
 
-#: analysisform.cpp:442
+#: analysisform.cpp:445
 msgid "Clean OpenFOAM case..."
 msgstr "Clean OpenFOAM case..."
 
-#: analysisform.cpp:460 analysisform.cpp:655
+#: analysisform.cpp:463 analysisform.cpp:658
 msgid "Parameters unsaved"
 msgstr "Parameters unsaved"
 
-#: analysisform.cpp:461
+#: analysisform.cpp:464
 msgid ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
@@ -230,12 +230,12 @@ msgstr ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 
-#: analysisform.cpp:573
+#: analysisform.cpp:576
 #, fuzzy
 msgid "Save input parameters"
 msgstr "Save Parameters"
 
-#: analysisform.cpp:656
+#: analysisform.cpp:659
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
@@ -243,11 +243,11 @@ msgstr ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
 
-#: analysisform.cpp:671 workbenchwindow.cpp:291
+#: analysisform.cpp:674 workbenchwindow.cpp:291
 msgid "Open Parameters"
 msgstr "Open Parameters"
 
-#: analysisform.cpp:673
+#: analysisform.cpp:676
 msgid "Insight parameter sets (*.ist)"
 msgstr "Insight parameter sets (*.ist)"
 

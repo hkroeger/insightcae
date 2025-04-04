@@ -35,7 +35,7 @@ else()
     install(TARGETS genericmodules ARCHIVE DESTINATION lib)
 endif()
 
-install_shared_file(genericmodules_module_cfg genericmodules.module modules.d)
+install_shared_file2(genericmodules genericmodules.module modules.d)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 set(genericmodulesgui_SOURCES

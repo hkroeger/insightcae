@@ -78,6 +78,7 @@ protected:
 //    insight::ParameterSet defaultParameters_;
     QAbstractItemModel* model_;
 
+    QSplitter* splitterV_=nullptr;
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
@@ -176,6 +177,7 @@ public Q_SLOTS:
 Q_SIGNALS:
     void parameterSetChanged();
     void updateSupplementedInputData(std::shared_ptr<insight::supplementedInputDataBase> sid);
+    void adaptEditControlsLayout(QSize ns);
 };
 
 

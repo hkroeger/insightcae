@@ -3,10 +3,12 @@
 #include "base/translations.h"
 
 #include <QFileDialog>
+#include <QDebug>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string.hpp>
+#include <qnamespace.h>
 
 
 
@@ -264,12 +266,44 @@ IQSimpleLatexView::IQSimpleLatexView(
     cur_content_width_(-1)
 {
     setReadOnly(true);
-    setFrameShape(QFrame::NoFrame);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    setFrameStyle(QFrame::NoFrame|QFrame::Plain);
+    viewport()->setAutoFillBackground(false); // BG like QLabel
+
     setMinimumHeight(2*QFontMetrics(font()).lineSpacing());
-    setSizePolicy(
+    QSizePolicy qsp(
         QSizePolicy::Preferred,
-        QSizePolicy::MinimumExpanding );
+        QSizePolicy::MinimumExpanding);
+    qsp.setHeightForWidth(true);
+    setSizePolicy(qsp);
+
     updateContent();
+}
+
+
+int IQSimpleLatexView::heightForWidth(int width) const
+{
+    QTextDocument td;
+    td.setHtml(document()->toHtml());
+    td.setTextWidth(width);
+    td.adjustSize();
+    auto h = td.size().height();
+    return h;
+}
+
+QSize IQSimpleLatexView::sizeHint() const
+{
+    QTextDocument td;
+    td.setHtml(document()->toHtml());
+    if (cur_content_width_>0)
+        td.setTextWidth(cur_content_width_);
+    else
+        td.setTextWidth(td.idealWidth());
+    td.adjustSize();
+    auto ts=td.size();
+    return QSize(ts.width(), ts.height());
 }
 
 void IQSimpleLatexView::resizeEvent(QResizeEvent *e)

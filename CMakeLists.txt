@@ -810,28 +810,7 @@ endmacro(install_script)
 
 
 
-macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
-
-  file(GLOB COPY_FILES
-    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    ${SHAREDFILE})
-  get_filename_component(FNAME ${SHAREDFILE} NAME)
-  set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
-  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${FNAME}")
-
-  add_custom_command(
-    MAIN_DEPENDENCY ${SRC}
-    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
-    OUTPUT ${DST}
-  )
-  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
-
-  add_library(${NAME} INTERFACE ${DST})
-
-endmacro(install_shared_file)
-
-
-macro(install_shared_file2 SHAREDFILE DSTLOCATION)
+macro(install_shared_file2 TARGET SHAREDFILE DSTLOCATION)
 
   string(REGEX REPLACE "[,\.;/\\ ]" "_" NAME ${SHAREDFILE})
   file(GLOB COPY_FILES
@@ -849,6 +828,7 @@ macro(install_shared_file2 SHAREDFILE DSTLOCATION)
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
   add_library(${NAME} INTERFACE ${DST})
+  add_dependencies(${TARGET} ${NAME})
 
 endmacro(install_shared_file2)
 

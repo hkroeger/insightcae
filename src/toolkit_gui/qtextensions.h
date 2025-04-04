@@ -122,6 +122,9 @@ class TOOLKIT_GUI_EXPORT IQSimpleLatexView
 
 public:
     IQSimpleLatexView(const insight::SimpleLatex &slt, QWidget *parent = nullptr);
+    int heightForWidth(int width) const override;
+
+    QSize sizeHint() const override;
 
 public Q_SLOTS:
     void resizeEvent(QResizeEvent *) override;

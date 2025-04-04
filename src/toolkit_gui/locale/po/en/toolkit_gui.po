@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-03 14:51+0200\n"
+"POT-Creation-Date: 2025-04-04 12:38+0200\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -17,11 +17,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: qtextensions.cpp:110
+#: qtextensions.cpp:112
 msgid "Save file"
 msgstr ""
 
-#: qtextensions.cpp:118
+#: qtextensions.cpp:120
 msgid "Open file"
 msgstr ""
 
@@ -51,11 +51,11 @@ msgstr "Change Item Label"
 msgid "New label:"
 msgstr "New label:"
 
-#: iqresultsetdisplayerwidget.cpp:134
+#: iqresultsetdisplayerwidget.cpp:150
 msgid "Load result set"
 msgstr ""
 
-#: iqresultsetdisplayerwidget.cpp:136
+#: iqresultsetdisplayerwidget.cpp:152
 msgid "InsightCAE Result Set"
 msgstr ""
 

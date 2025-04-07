@@ -294,7 +294,8 @@ ConstrainedSketch::findUnusedID(
 
 std::set<ConstrainedSketchEntityPtr>
 ConstrainedSketch::findConnected(
-    ConstrainedSketchEntityPtr theEntity ) const
+    ConstrainedSketchEntityPtr theEntity,
+    std::set<ConstrainedSketchEntityPtr> *subset ) const
 {
     std::set<ConstrainedSketchEntityPtr> conn;
 
@@ -319,21 +320,25 @@ ConstrainedSketch::findConnected(
         conn_s=conn.size();
         for (auto& e: *this)
         {
-            auto cpts=filterPoints(e.second->dependencies());
-
-            decltype(pts) common;
-            std::set_intersection(
-                pts.begin(), pts.end(),
-                cpts.begin(), cpts.end(),
-                std::inserter(common, common.begin())
-                );
-
-            if (common.size())
+            if (!subset || (subset && subset->count(e.second)))
             {
-                if (std::dynamic_pointer_cast<cad::Feature>(e.second))
+                auto cpts=filterPoints(
+                    e.second->dependencies() );
+
+                decltype(pts) common;
+                std::set_intersection(
+                    pts.begin(), pts.end(),
+                    cpts.begin(), cpts.end(),
+                    std::inserter(common, common.begin())
+                    );
+
+                if (common.size())
                 {
-                    conn.insert(e.second);
-                    pts.insert(cpts.begin(), cpts.end());
+                    if (std::dynamic_pointer_cast<cad::Feature>(e.second))
+                    {
+                        conn.insert(e.second);
+                        pts.insert(cpts.begin(), cpts.end());
+                    }
                 }
             }
         }

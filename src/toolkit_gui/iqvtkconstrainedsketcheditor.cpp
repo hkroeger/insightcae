@@ -1223,6 +1223,15 @@ bool IQVTKConstrainedSketchEditor::layerIsVisible(const std::string &layerName) 
 }
 
 
+
+bool IQVTKConstrainedSketchEditor::entityIsVisible(
+    std::shared_ptr<insight::cad::ConstrainedSketchEntity> e) const
+{
+    return sketchGeometryActors_.find(e)
+           !=sketchGeometryActors_.end();
+}
+
+
 std::shared_ptr<ConstrainedSketchEntity>
 IQVTKConstrainedSketchEditor::selectedItemUnderCursor() const
 {
@@ -1300,13 +1309,19 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
             else
             {
                 std::set<insight::cad::ConstrainedSketchEntityPtr> tobeadded;
-                auto con=sketch().findConnected(selitem);
+
+                auto se=shownEntities();
+                auto con=sketch().findConnected(
+                    selitem, &se );
+
                 std::copy(con.begin(), con.end(),
                           std::inserter(tobeadded, tobeadded.begin()));
+
                 for (auto& tba: tobeadded)
                 {
                     selact->externallySelect(tba);
                 }
+
                 return true;
             }
         }
@@ -1393,6 +1408,19 @@ bool IQVTKConstrainedSketchEditor::onMouseDrag
 
     return ViewWidgetAction<IQVTKCADModel3DViewer>
         ::onMouseDrag(buttons, curFlags, point, eventType);
+}
+
+
+
+
+
+std::set<ConstrainedSketchEntityPtr>
+IQVTKConstrainedSketchEditor::shownEntities() const
+{
+    std::set<ConstrainedSketchEntityPtr> se;
+    for (auto& sa: sketchGeometryActors_)
+        se.insert(sa.first);
+    return se;
 }
 
 

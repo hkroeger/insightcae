@@ -237,6 +237,7 @@ bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEnt
 void ConstrainedSketchEntity::operator=(const ConstrainedSketchEntity &other)
 {
     *defaultParameters_ = *other.defaultParameters_;
+    layerName_=other.layerName_;
     parametersRef() = other.parameters();
 }
 

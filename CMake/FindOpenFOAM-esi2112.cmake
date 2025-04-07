@@ -23,19 +23,21 @@ IF(OFesi2112_BASHRC)
   GET_FILENAME_COMPONENT(OFesi2112_ETC_DIR ${OFesi2112_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OFesi2112_DIR ${OFesi2112_ETC_DIR} PATH)
 
-  detectEnvVars(OFesi2112 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
-  detectEnvVar(OFesi2112 LINKLIBSO LINKLIBSO_full)
-  detectEnvVar(OFesi2112 LINKEXE LINKEXE_full)
-  detectEnvVar(OFesi2112 FOAM_MPI MPI)
-  detectEnvVar(OFesi2112 c++FLAGS CXX_FLAGS)
+  detectEnvVars(OFesi2112
+    WM_PROJECT
+    WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN
+    LINKLIBSO LINKEXE
+    FOAM_MPI c++FLAGS
+  )
 
-  filterWarningFlags(OFesi2112_CXX_FLAGS)
-  set(OFesi2112_CXX_FLAGS "${OFesi2112_CXX_FLAGS} -DOFesi2112 -DOF_VERSION=060505 -DOF_FORK_esi")
+  filterWarningFlags(OFesi2112_c++FLAGS)
+  set(OFesi2112_CXX_FLAGS "${OFesi2112_c++FLAGS} -DOFesi2112 -DOF_VERSION=060505 -DOF_FORK_esi")
   set(OFesi2112_LIBSRC_DIR "${OFesi2112_DIR}/src")
   set(OFesi2112_LIB_DIR "${OFesi2112_DIR}/platforms/${OFesi2112_WM_OPTIONS}/lib")
   
-  string(REGEX REPLACE "^[^ ]+" "" OFesi2112_LINKLIBSO ${OFesi2112_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OFesi2112_LINKEXE ${OFesi2112_LINKEXE_full})
+  string(REGEX REPLACE "^[^ ]+" "" OFesi2112_LINKLIBSO ${OFesi2112_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OFesi2112_LINKEXE ${OFesi2112_LINKEXE})
 
   detectIncPaths(OFesi2112)
 
@@ -169,7 +171,7 @@ faOptions
   macro (setup_lib_target_OFesi2112 targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
-    SET(LIB_SEARCHFLAGS "-L${OFesi2112_LIB_DIR} -L${OFesi2112_LIB_DIR}/${OFesi2112_MPI} -L${OFesi2112_FOAM_EXT_LIBBIN} -L${OFesi2112_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OFesi2112_LIB_DIR} -L${OFesi2112_LIB_DIR}/${OFesi2112_FOAM_MPI} -L${OFesi2112_FOAM_EXT_LIBBIN} -L${OFesi2112_SCOTCH_ROOT}/lib")
     
     add_library(${targetname} SHARED ${sources})
     

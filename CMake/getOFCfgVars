@@ -15,5 +15,5 @@ endif
 sinclude \$(GENERAL_RULES)/mplib\$(WM_MPLIB)
 sinclude \$(RULES)/mplib\$(WM_MPLIB)
 print-%:
-	@echo -n '\$(\$*)'
+	@echo '\$(\$*)'
 --ende--

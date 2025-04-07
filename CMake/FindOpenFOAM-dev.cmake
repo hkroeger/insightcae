@@ -25,19 +25,20 @@ IF(OFdev_BASHRC)
   GET_FILENAME_COMPONENT(OFdev_ETC_DIR ${OFdev_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OFdev_DIR ${OFdev_ETC_DIR} PATH)
 
-  detectEnvVars(OFdev WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
-  detectEnvVar(OFdev LINKLIBSO LINKLIBSO_full)
-  detectEnvVar(OFdev LINKEXE LINKEXE_full)
-  detectEnvVar(OFdev FOAM_MPI MPI)
-  detectEnvVar(OFdev c++FLAGS CXX_FLAGS)
+  detectEnvVars(OFdev
+    WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN
+    LINKLIBSO LINKEXE
+    FOAM_MPI c++FLAGS
+  )
 
-  filterWarningFlags(OFdev_CXX_FLAGS)
-  set(OFdev_CXX_FLAGS "${OFdev_CXX_FLAGS} -DOFdev -DOF_VERSION=070000 -DOF_FORK_vanilla")
+  filterWarningFlags(OFdev_c++FLAGS)
+  set(OFdev_CXX_FLAGS "${OFdev_c++FLAGS} -DOFdev -DOF_VERSION=070000 -DOF_FORK_vanilla")
   set(OFdev_LIBSRC_DIR "${OFdev_DIR}/src")
   set(OFdev_LIB_DIR "${OFdev_DIR}/platforms/${OFdev_WM_OPTIONS}/lib")
   
-  string(REGEX REPLACE "^[^ ]+" "" OFdev_LINKLIBSO ${OFdev_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OFdev_LINKEXE ${OFdev_LINKEXE_full})
+  string(REGEX REPLACE "^[^ ]+" "" OFdev_LINKLIBSO ${OFdev_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OFdev_LINKEXE ${OFdev_LINKEXE})
 
   detectIncPaths(OFdev)
 
@@ -166,7 +167,7 @@ randomProcesses
   macro (setup_lib_target_OFdev targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
-    SET(LIB_SEARCHFLAGS "-L${OFdev_LIB_DIR} -L${OFdev_LIB_DIR}/${OFdev_MPI} -L${OFdev_FOAM_EXT_LIBBIN} -L${OFdev_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OFdev_LIB_DIR} -L${OFdev_LIB_DIR}/${OFdev_FOAM_MPI} -L${OFdev_FOAM_EXT_LIBBIN} -L${OFdev_SCOTCH_ROOT}/lib")
     
     add_library(${targetname} SHARED ${sources})
     

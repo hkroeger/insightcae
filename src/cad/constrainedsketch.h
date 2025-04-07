@@ -219,7 +219,9 @@ public:
 
     GeometryMap::key_type findUnusedID(int direction=1) const;
 
-    std::set<ConstrainedSketchEntityPtr> findConnected(ConstrainedSketchEntityPtr theEntity) const;
+    std::set<ConstrainedSketchEntityPtr> findConnected(
+        ConstrainedSketchEntityPtr theEntity,
+        std::set<ConstrainedSketchEntityPtr> *subset = nullptr) const;
 
     // addition
     GeometryMap::key_type insertGeometry(

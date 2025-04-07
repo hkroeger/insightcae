@@ -1,6 +1,7 @@
 #ifndef IQVTKCONSTRAINEDSKETCHEDITOR_H
 #define IQVTKCONSTRAINEDSKETCHEDITOR_H
 
+#include "constrainedsketchentity.h"
 #include "toolkit_gui_export.h"
 
 
@@ -131,6 +132,7 @@ public:
 
     void deleteEntity(std::weak_ptr<insight::cad::ConstrainedSketchEntity> td);
     bool layerIsVisible(const std::string &layerName) const;
+    bool entityIsVisible(std::shared_ptr<insight::cad::ConstrainedSketchEntity> e) const;
 
     std::shared_ptr<insight::cad::ConstrainedSketchEntity>
     selectedItemUnderCursor() const;
@@ -152,6 +154,8 @@ public:
 
     inline const insight::cad::ConstrainedSketch& sketch() const
     { return **this; }
+
+    std::set<insight::cad::ConstrainedSketchEntityPtr> shownEntities() const;
 
 public Q_SLOTS:
     void updateActors();

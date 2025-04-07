@@ -37,12 +37,14 @@ target_include_directories(testcases
   )
 install(TARGETS testcases LIBRARY DESTINATION lib)
 
-install_shared_file2(testcases testcases.module modules.d)
-install_shared_file2(testcases airfoilsection_sketches_1.png testcases)
-install_shared_file2(testcases airfoilsection_sketches_L.png testcases)
-install_shared_file2(testcases airfoilsection_sketches_H.png testcases)
-install_shared_file2(testcases airfoilsection_sketches_alpha.png testcases)
-install_shared_file2(testcases airfoilsection_sketches_csv.png testcases)
+add_shared_file(testcases modules.d testcases.module)
+add_shared_file(testcases testcases
+  airfoilsection_sketches_1.png
+  airfoilsection_sketches_L.png
+  airfoilsection_sketches_H.png
+  airfoilsection_sketches_alpha.png
+  airfoilsection_sketches_csv.png
+)
 
 if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS)
 

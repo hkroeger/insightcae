@@ -367,7 +367,9 @@ target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
 
 setup_gettext(toolkit toolkit ${toolkit_SOURCES})
 
-install_shared_file2(toolkit base/materialLibrary.xml ".")
+add_shared_file(toolkit "."
+  base/materialLibrary.xml
+)
 
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
@@ -472,7 +474,7 @@ endmacro()
 
 
 
-install_shared_file2(toolkit openfoam/caseelements/thermodynamics/gri.species thermophysical)
+add_shared_file(toolkit thermophysical openfoam/caseelements/thermodynamics/gri.species)
 
 add_PDL(toolkit "${toolkit_SOURCES}")
 

@@ -9,16 +9,27 @@ macro(setOFlibvar prefix)
 #   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
 endmacro()
 
-macro(detectEnvVar prefix varname outvarname)
- execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${${prefix}_BASHRC} print-${varname} OUTPUT_VARIABLE ${prefix}_${outvarname})
- #message(STATUS "Detected value of env var " ${varname} "=" ${${prefix}_${outvarname}})
-endmacro()
 
 macro(detectEnvVars prefix)
- FOREACH(f ${ARGN})
-  detectEnvVar(${prefix} ${f} ${f})
- ENDFOREACH(f)
+  set(TARGETS "")
+  foreach(_var ${ARGN})
+    set(TARGETS "${TARGETS} print-${_var}")
+  endforeach()
+
+  execute_process(
+   COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVars
+   ${${prefix}_BASHRC} ${TARGETS}
+   OUTPUT_VARIABLE GETOFCFGVAR_OUTPUT
+  )
+  string(REPLACE "\n" ";" VALUES ${GETOFCFGVAR_OUTPUT})
+
+  set(i 0)
+  foreach(_var ${ARGN})
+    list(GET VALUES ${i} ${prefix}_${_var})
+    MATH(EXPR i "${i}+1")
+  endforeach()
 endmacro()
+
 
 macro(filterWarningFlags VARNAME)
   string(REPLACE " " ";" ARGLIST ${${VARNAME}})

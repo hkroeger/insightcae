@@ -24,19 +24,21 @@ IF(OF23x_BASHRC)
   GET_FILENAME_COMPONENT(OF23x_ETC_DIR ${OF23x_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OF23x_DIR ${OF23x_ETC_DIR} PATH)
 
-  detectEnvVars(OF23x WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
-  detectEnvVar(OF23x LINKLIBSO LINKLIBSO_full)
-  detectEnvVar(OF23x LINKEXE LINKEXE_full)
-  detectEnvVar(OF23x FOAM_MPI MPI)
-  detectEnvVar(OF23x c++FLAGS CXX_FLAGS)
+  detectEnvVars(OF23x
+    WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN
+    LINKLIBSO LINKEXE
+    FOAM_MPI
+    c++FLAGS
+  )
 
-  filterWarningFlags(OF23x_CXX_FLAGS)
-  set(OF23x_CXX_FLAGS "${OF23x_CXX_FLAGS} -DOF23x -DOF_VERSION=020300 -DOF_FORK_vanilla")
+  filterWarningFlags(OF23x_c++FLAGS)
+  set(OF23x_CXX_FLAGS "${OF23x_c++FLAGS} -DOF23x -DOF_VERSION=020300 -DOF_FORK_vanilla")
   set(OF23x_LIBSRC_DIR "${OF23x_DIR}/src")
   set(OF23x_LIB_DIR "${OF23x_DIR}/platforms/${OF23x_WM_OPTIONS}/lib")
   
-  string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKLIBSO ${OF23x_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKEXE ${OF23x_LINKEXE_full})
+  string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKLIBSO ${OF23x_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKEXE ${OF23x_LINKEXE})
 
   detectIncPaths(OF23x "src/TurbulenceModels/*") # skip (unfinished?) TurbulenceModels because of conflicting headers
 
@@ -177,7 +179,7 @@ randomProcesses
   macro (setup_lib_target_OF23x targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
-    SET(LIB_SEARCHFLAGS "-L${OF23x_LIB_DIR} -L${OF23x_LIB_DIR}/${OF23x_MPI} -L${OF23x_FOAM_EXT_LIBBIN} -L${OF23x_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OF23x_LIB_DIR} -L${OF23x_LIB_DIR}/${OF23x_FOAM_MPI} -L${OF23x_FOAM_EXT_LIBBIN} -L${OF23x_SCOTCH_ROOT}/lib")
     
     add_library(${targetname} SHARED ${sources})
     

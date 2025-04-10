@@ -22,11 +22,16 @@ IF(OF22eng_BASHRC)
   GET_FILENAME_COMPONENT(OF22eng_ETC_DIR ${OF22eng_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OF22eng_DIR ${OF22eng_ETC_DIR} PATH)
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22eng_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF22eng_CXX_FLAGS)
-  set(OF22eng_CXX_FLAGS "${OF22eng_CXX_FLAGS} -DOF22eng -DOF_VERSION=020200 -DOF_FORK_engys")
+  detectEnvVars(OF22eng
+    WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN
+    c++FLAGS
+    LINKLIBSO LINKEXE
+    FOAM_MPI
+  )
 
-  filterWarningFlags(OF22eng_CXX_FLAGS)
-  detectEnvVars(OF22eng WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+  filterWarningFlags(OF22eng_c++FLAGS)
+  set(OF22eng_CXX_FLAGS "${OF22eng_c++FLAGS} -DOF22eng -DOF_VERSION=020200 -DOF_FORK_engys")
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF22eng_BASHRC} OUTPUT_VARIABLE OF22eng_LIBRARIES)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF22eng_BASHRC} OUTPUT_VARIABLE OF22eng_INCLUDE_PATHS)
@@ -34,13 +39,10 @@ IF(OF22eng_BASHRC)
   set(OF22eng_LIBSRC_DIR "${OF22eng_DIR}/src")
   set(OF22eng_LIB_DIR "${OF22eng_DIR}/platforms/${OF22eng_WM_OPTIONS}/lib")
   
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22eng_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE OF22eng_LINKLIBSO_full)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22eng_BASHRC} print-LINKEXE OUTPUT_VARIABLE OF22eng_LINKEXE_full)
-  string(REGEX REPLACE "^[^ ]+" "" OF22eng_LINKLIBSO ${OF22eng_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OF22eng_LINKEXE ${OF22eng_LINKEXE_full})
+  string(REGEX REPLACE "^[^ ]+" "" OF22eng_LINKLIBSO ${OF22eng_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OF22eng_LINKEXE ${OF22eng_LINKEXE})
   message(STATUS "libso link flags = "  ${OF22eng_LINKLIBSO})
   message(STATUS "exe link flags = "  ${OF22eng_LINKEXE})
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22eng_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF22eng_MPI)
 
 
   set(OF22eng_INSIGHT_INSTALL_BIN "bin/${OF22eng_WM_PROJECT}-${OF22eng_WM_PROJECT_VERSION}")
@@ -57,8 +59,6 @@ IF(OF22eng_BASHRC)
     set(allincludes ${includes})
     LIST(APPEND allincludes "${OF22eng_INCLUDE_PATHS}")
 
-    #link_directories(${OF22eng_LIB_DIR} ${OF22eng_LIB_DIR}/${OF22eng_MPI} ${OF22eng_FOAM_EXT_LIBBIN} "${OF22eng_SCOTCH_ROOT}/lib")
-    #SET(LIB_SEARCHFLAGS "-L${OF22eng_LIB_DIR} -L${OF22eng_LIB_DIR}/${OF22eng_MPI} -L${OF22eng_FOAM_EXT_LIBBIN} -L${OF22eng_SCOTCH_ROOT}/lib")
     
     add_executable(${targetname} ${sources})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
@@ -70,7 +70,7 @@ IF(OF22eng_BASHRC)
     target_link_libraries(${targetname}
       ${OF22eng_LIBRARIES}
       #${OF22eng_LIB_DIR}/libOpenFOAM.so 
-      ${OF22eng_LIB_DIR}/${OF22eng_MPI}/libPstream.so 
+      ${OF22eng_LIB_DIR}/${OF22eng_FOAM_MPI}/libPstream.so
       ${ARGN} ) 
     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF22eng_INSIGHT_INSTALL_BIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
@@ -84,9 +84,7 @@ IF(OF22eng_BASHRC)
     set(allincludes ${includes})
     LIST(APPEND allincludes "${OF22eng_INCLUDE_PATHS}")
 
-    #message(STATUS "target " ${targetname} ": includes=" ${includes})
-    #link_directories(${OF22eng_LIB_DIR} ${OF22eng_LIB_DIR}/${OF22eng_MPI} ${OF22eng_FOAM_EXT_LIBBIN} "${OF22eng_SCOTCH_ROOT}/lib")
-    SET(LIB_SEARCHFLAGS "-L${OF22eng_LIB_DIR} -L${OF22eng_LIB_DIR}/${OF22eng_MPI} -L${OF22eng_FOAM_EXT_LIBBIN} -L${OF22eng_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OF22eng_LIB_DIR} -L${OF22eng_LIB_DIR}/${OF22eng_FOAM_MPI} -L${OF22eng_FOAM_EXT_LIBBIN} -L${OF22eng_SCOTCH_ROOT}/lib")
     add_library(${targetname} SHARED ${sources})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF22eng_CXX_FLAGS})

@@ -23,18 +23,21 @@ IF(OFplus_BASHRC)
   GET_FILENAME_COMPONENT(OFplus_ETC_DIR ${OFplus_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OFplus_DIR ${OFplus_ETC_DIR} PATH)
 
-  detectEnvVars(OFplus WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
-  detectEnvVar(OFplus LINKLIBSO LINKLIBSO_full)
-  detectEnvVar(OFplus LINKEXE LINKEXE_full)
-  detectEnvVar(OFplus FOAM_MPI MPI)
-  detectEnvVar(OFplus c++FLAGS CXX_FLAGS)
+  detectEnvVars(OFplus
+    WM_PROJECT
+    WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT
+    FOAM_APPBIN FOAM_LIBBIN
+    LINKLIBSO LINKEXE
+    FOAM_MPI c++FLAGS
+  )
 
-  set(OFplus_CXX_FLAGS "${OFplus_CXX_FLAGS} -DOFplus -DOF_VERSION=040000 -DOF_FORK_esi")
+  set(OFplus_CXX_FLAGS "${OFplus_c++FLAGS} -DOFplus -DOF_VERSION=040000 -DOF_FORK_esi")
   set(OFplus_LIBSRC_DIR "${OFplus_DIR}/src")
   set(OFplus_LIB_DIR "${OFplus_DIR}/platforms/${OFplus_WM_OPTIONS}/lib")
  
-  string(REGEX REPLACE "^[^ ]+" "" OFplus_LINKLIBSO ${OFplus_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OFplus_LINKEXE ${OFplus_LINKEXE_full})
+  string(REGEX REPLACE "^[^ ]+" "" OFplus_LINKLIBSO ${OFplus_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OFplus_LINKEXE ${OFplus_LINKEXE})
 
   detectIncPaths(OFplus)
 
@@ -163,7 +166,7 @@ randomProcesses
   macro (setup_lib_target_OFplus targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
-    SET(LIB_SEARCHFLAGS "-L${OFplus_LIB_DIR} -L${OFplus_LIB_DIR}/${OFplus_MPI} -L${OFplus_FOAM_EXT_LIBBIN} -L${OFplus_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OFplus_LIB_DIR} -L${OFplus_LIB_DIR}/${OFplus_FOAM_MPI} -L${OFplus_FOAM_EXT_LIBBIN} -L${OFplus_SCOTCH_ROOT}/lib")
     
     add_library(${targetname} SHARED ${sources})
     

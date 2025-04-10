@@ -22,23 +22,25 @@ IF(OF22x_BASHRC)
   GET_FILENAME_COMPONENT(OF22x_ETC_DIR ${OF22x_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OF22x_DIR ${OF22x_ETC_DIR} PATH)
 
-  detectEnvVars(OF22x WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+  detectEnvVars(OF22x
+    WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN
+    c++FLAGS
+    LINKLIBSO LINKEXE
+    FOAM_MPI
+  )
 
-  detectEnvVar(OF22x c++FLAGS CXX_FLAGS)
-  set(OF22x_CXX_FLAGS "${OF22x_CXX_FLAGS} -DOF22x -DOF_VERSION=020200 -DOF_FORK_vanilla")
-  filterWarningFlags(OF22x_CXX_FLAGS)
+  filterWarningFlags(OF22x_c++FLAGS)
+  set(OF22x_CXX_FLAGS "${OF22x_c++FLAGS} -DOF22x -DOF_VERSION=020200 -DOF_FORK_vanilla")
 
   detectIncPaths(OF22x)
 
   set(OF22x_LIBSRC_DIR "${OF22x_DIR}/src")
   set(OF22x_LIB_DIR "${OF22x_DIR}/platforms/${OF22x_WM_OPTIONS}/lib")
-  
-  detectEnvVar(OF22x LINKLIBSO LINKLIBSO_full)
-  detectEnvVar(OF22x LINKEXE LINKEXE_full)
-  string(REGEX REPLACE "^[^ ]+" "" OF22x_LINKLIBSO ${OF22x_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OF22x_LINKEXE ${OF22x_LINKEXE_full})
-  
-  detectEnvVar(OF22x FOAM_MPI MPI)
+
+  string(REGEX REPLACE "^[^ ]+" "" OF22x_LINKLIBSO ${OF22x_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OF22x_LINKEXE ${OF22x_LINKEXE})
+
 
   setOFlibvar(OF22x 
 FVFunctionObjects
@@ -185,7 +187,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
   macro (setup_lib_target_OF22x targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
     
-    SET(LIB_SEARCHFLAGS "-L${OF22x_LIB_DIR} -L${OF22x_LIB_DIR}/${OF22x_MPI} -L${OF22x_FOAM_EXT_LIBBIN} -L${OF22x_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OF22x_LIB_DIR} -L${OF22x_LIB_DIR}/${OF22x_FOAM_MPI} -L${OF22x_FOAM_EXT_LIBBIN} -L${OF22x_SCOTCH_ROOT}/lib")
     
     add_library(${targetname} SHARED ${sources})
     

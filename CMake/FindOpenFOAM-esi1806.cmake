@@ -23,19 +23,20 @@ IF(OFesi1806_BASHRC)
   GET_FILENAME_COMPONENT(OFesi1806_ETC_DIR ${OFesi1806_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OFesi1806_DIR ${OFesi1806_ETC_DIR} PATH)
 
-  detectEnvVars(OFesi1806 WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
-  detectEnvVar(OFesi1806 LINKLIBSO LINKLIBSO_full)
-  detectEnvVar(OFesi1806 LINKEXE LINKEXE_full)
-  detectEnvVar(OFesi1806 FOAM_MPI MPI)
-  detectEnvVar(OFesi1806 c++FLAGS CXX_FLAGS)
+  detectEnvVars(OFesi1806
+    WM_PROJECT WM_PROJECT_VERSION WM_OPTIONS
+    FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN
+    LINKLIBSO LINKEXE
+    FOAM_MPI c++FLAGS
+  )
 
-  filterWarningFlags(OFesi1806_CXX_FLAGS)
-  set(OFesi1806_CXX_FLAGS "${OFesi1806_CXX_FLAGS} -DOFesi1806 -DOF_VERSION=060000 -DOF_FORK_esi")
+  filterWarningFlags(OFesi1806_c++FLAGS)
+  set(OFesi1806_CXX_FLAGS "${OFesi1806_c++FLAGS} -DOFesi1806 -DOF_VERSION=060000 -DOF_FORK_esi")
   set(OFesi1806_LIBSRC_DIR "${OFesi1806_DIR}/src")
   set(OFesi1806_LIB_DIR "${OFesi1806_DIR}/platforms/${OFesi1806_WM_OPTIONS}/lib")
   
-  string(REGEX REPLACE "^[^ ]+" "" OFesi1806_LINKLIBSO ${OFesi1806_LINKLIBSO_full})
-  string(REGEX REPLACE "^[^ ]+" "" OFesi1806_LINKEXE ${OFesi1806_LINKEXE_full})
+  string(REGEX REPLACE "^[^ ]+" "" OFesi1806_LINKLIBSO ${OFesi1806_LINKLIBSO})
+  string(REGEX REPLACE "^[^ ]+" "" OFesi1806_LINKEXE ${OFesi1806_LINKEXE})
 
   detectIncPaths(OFesi1806)
 
@@ -167,7 +168,7 @@ overset
   macro (setup_lib_target_OFesi1806 targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
-    SET(LIB_SEARCHFLAGS "-L${OFesi1806_LIB_DIR} -L${OFesi1806_LIB_DIR}/${OFesi1806_MPI} -L${OFesi1806_FOAM_EXT_LIBBIN} -L${OFesi1806_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OFesi1806_LIB_DIR} -L${OFesi1806_LIB_DIR}/${OFesi1806_FOAM_MPI} -L${OFesi1806_FOAM_EXT_LIBBIN} -L${OFesi1806_SCOTCH_ROOT}/lib")
     
     add_library(${targetname} SHARED ${sources})
     

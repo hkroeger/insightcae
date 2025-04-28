@@ -1025,12 +1025,23 @@ else(DPKG_PROGRAM)
  if(EXISTS /etc/redhat-release)
    SET(CPACK_GENERATOR "RPM")
    execute_process(
+      COMMAND bash -c "cut -f 1 -d ' ' /etc/redhat-release | tr '[:lower:][:upper:]' '[:lower:][:lower:]'"
+      OUTPUT_VARIABLE CPACK_RPM_SYSTEM_NAME
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+   )
+   execute_process(
+      COMMAND bash -c "cut -f 4 -d ' ' /etc/redhat-release |cut -f 1 -d '.'"
+      OUTPUT_VARIABLE CPACK_RPM_SYSTEM_VERSION
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+   )
+   execute_process(
      COMMAND uname -m
      OUTPUT_VARIABLE CPACK_RPM_PACKAGE_ARCHITECTURE
      OUTPUT_STRIP_TRAILING_WHITESPACE
    )
-   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
-  set(CPACK_RPM_PACKAGE_REQUIRES "/opt/insightcae/bin/insight_setthirdpartyenv.sh")
+   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}~${CPACK_RPM_SYSTEM_NAME}-${CPACK_RPM_SYSTEM_VERSION}.${CPACK_RPM_PACKAGE_ARCHITECTURE}.rpm")
+   set(CPACK_RPM_PACKAGE_REQUIRES "/opt/insightcae/bin/insight_setthirdpartyenv.sh")
+   set(CPACK_RPM_SPEC_MORE_DEFINE "%define __python python3")
  endif()
 
 endif(DPKG_PROGRAM)

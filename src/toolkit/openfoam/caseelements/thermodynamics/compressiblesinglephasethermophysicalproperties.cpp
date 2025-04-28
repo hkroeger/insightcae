@@ -22,7 +22,7 @@ addToOpenFOAMCaseElementFactoryTable(compressibleSinglePhaseThermophysicalProper
 void compressibleSinglePhaseThermophysicalProperties::modifyDefaults(ParameterSet &ps)
 {
     //auto& specie = ps.get<SelectionParameter>("composition/singleSpecie/properties/fromLibrary/specie");
-    auto& specie = ps.get<SelectionParameter>("composition/properties/specie");
+    auto& specie = ps.get<SelectionParameterInterface>("composition/properties/specie");
     specie.setSelection("N2");
 }
 
@@ -38,12 +38,13 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
 {
     std::string tt = "hPsiThermo";
 
-    const FVNumerics* nce = OFcase().get<FVNumerics>("FVNumerics");
+    const auto& nce =
+        OFcase().findUniqueElement<FVNumerics>();
 
     if (
-        dynamic_cast<const buoyantSimpleFoamNumerics*>(nce) ||
-        dynamic_cast<const buoyantPimpleFoamNumerics*>(nce) ||
-        dynamic_cast<const chtMultiRegionFluidNumerics*>(nce)
+        dynamic_cast<const buoyantSimpleFoamNumerics*>(&nce) ||
+        dynamic_cast<const buoyantPimpleFoamNumerics*>(&nce) ||
+        dynamic_cast<const chtMultiRegionFluidNumerics*>(&nce)
         )
     {
         if (OFversion()<170)
@@ -55,7 +56,7 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
             tt="heRhoThermo";
         }
     }
-    else if (dynamic_cast<const steadyCompressibleNumerics*>(nce))
+    else if (dynamic_cast<const steadyCompressibleNumerics*>(&nce))
     {
         if (OFversion()<170)
         {
@@ -66,7 +67,7 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
             tt="heRhoThermo";
         }
     }
-    else if (const auto t = dynamic_cast<const unsteadyCompressibleNumerics*>(nce) )
+    else if (const auto t = dynamic_cast<const unsteadyCompressibleNumerics*>(&nce) )
     {
         if (OFversion()<170)
         {

@@ -58,16 +58,25 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
             [this,layEd]()
             {
                 auto newLayerName = layEd->currentText().toStdString();
+                bool anythingDone=false;
                 for (auto& ee: *this)
                 {
                     auto e = ee.lock();
                     if (!(*editor_).hasLayer(newLayerName))
                     {
                         (*editor_).addLayer(newLayerName, *editor_.entityProperties_);
+                        anythingDone=true;
                     }
-                    e->setLayerName(newLayerName);
+                    if (e->layerName()!=newLayerName)
+                    {
+                        e->setLayerName(newLayerName);
+                        anythingDone=true;
+                    }
                 }
-                editor_.sketchChanged();
+                if (anythingDone)
+                {
+                    Q_EMIT editor_.sketchChanged();
+                }
             };
 
     connect(layEd->lineEdit(), &QLineEdit::editingFinished, layEd,

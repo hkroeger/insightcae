@@ -9,7 +9,7 @@
 
 
 IQVTKCADModel3DViewerMeasurePoints::IQVTKCADModel3DViewerMeasurePoints(IQVTKCADModel3DViewer &viewWidget)
-  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
+  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, false)
 {
     aboutToBeDestroyed.connect(
         [this](){

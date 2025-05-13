@@ -7,6 +7,7 @@
 #include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "cadfeatures/wire.h"
+#include "cadfeatures/line.h"
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
@@ -1043,6 +1044,41 @@ void ConstrainedSketch::removeLayer(const std::string &layerName)
         throw insight::Exception(
             "cannot remove layer properties for layer %s, it is still in use",
             layerName.c_str() );
+}
+
+bool ConstrainedSketch::LineUnderPoint::operator<(
+    const ConstrainedSketch::LineUnderPoint& o) const
+{
+    return (line<o.line);
+}
+
+ConstrainedSketch::LinesUnderPointSearchResult
+ConstrainedSketch::findLinesUnderPoint(const arma::mat &p3d)
+{
+    LinesUnderPointSearchResult r;
+    for (const auto& ig: *this)
+    {
+        auto g=ig.second;
+        if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(g))
+        {
+
+            if (l->pointIsOnLine(p3d))
+            {
+                LineUnderPoint h;
+                h.line=l;
+
+                if ((arma::norm(l->start()->value()-p3d,2)<insight::SMALL)
+                        ||
+                    (arma::norm(l->end()->value()-p3d,2)<insight::SMALL))
+                    h.lupt=OnEnd;
+                else
+                    h.lupt=OnMiddle;
+
+                r.insert(h);
+            }
+        }
+    }
+    return r;
 }
 
 std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >

@@ -21,6 +21,7 @@
 #include "iqvtkconstrainedsketcheditor/iqvtkdragpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqvtkconstrainedsketcheditor/iqvtksplitline.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 #include "base/parameters/simpleparameter.h"
 
@@ -35,6 +36,7 @@
 #include <qnamespace.h>
 
 #include "constrainedsketchentities/distanceconstraint.h"
+#include "constrainedsketchentities/tangentconstraint.h"
 #include "constrainedsketchentities/angleconstraint.h"
 #include "constrainedsketchentities/fixedpointconstraint.h"
 #include "constrainedsketchentities/horizontalconstraint.h"
@@ -429,6 +431,43 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
 
 
+void IQVTKConstrainedSketchEditor::splitLine()
+{
+    auto dl = make_viewWidgetAction<IQVTKSplitLine>(*this);
+    connect(dl.get(), &IQVTKSplitLine::splitPointSelected, dl.get(),
+
+            [this]( IQVTKSplitLine::PointProperty* addPoint,
+                    std::shared_ptr<insight::cad::Line> originalLine )
+            {
+                if ( !addPoint->isAnExistingPoint )
+                {
+                    (*this)->insertGeometry(
+                        FixedDistanceConstraint::create(
+                            originalLine->start(), addPoint->p,
+                            (*this)->sketchPlaneNormal()
+                            )
+                    );
+                }
+            }
+    );
+    connect(dl.get(), &IQVTKSplitLine::splitLineAdded, dl.get(),
+
+            [this]( std::shared_ptr<insight::cad::Line> addedLine,
+                    std::shared_ptr<insight::cad::Line> originalLine )
+            {
+                addedLine->changeDefaultParameters(
+                    originalLine->defaultParameters());
+                (*this)->insertGeometry(
+                    TangentConstraint::create( originalLine, addedLine ) );
+            }
+            );
+    storeUndoState("Split Line");
+    launchAction(std::move(dl));
+}
+
+
+
+
 void IQVTKConstrainedSketchEditor::drawRectangle()
 {
     auto dl = make_viewWidgetAction<IQVTKCADModel3DViewerDrawRectangle>(*this);
@@ -589,6 +628,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawrectangle.svg"), "Rectangle",
                         this, &IQVTKConstrainedSketchEditor::drawRectangle);
 
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_splitline.svg"), "Split Line",
+                        this, &IQVTKConstrainedSketchEditor::splitLine);
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_solve.svg"), "Solve",
                         this, &IQVTKConstrainedSketchEditor::solve);
 
@@ -638,6 +680,35 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             }
         }
     );
+
+    toolBar_->addAction(
+        "T",
+        this, [this]()
+        {
+            if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+            {
+                if (selact->somethingSelected())
+                {
+                    insight::assertion(
+                        selact->currentSelection().size()==2,
+                        "exactly two entities should be selected!");
+
+                    auto l1=std::dynamic_pointer_cast<insight::cad::Line>(
+                        selact->currentSelection().begin()->lock() );
+                    auto l2=std::dynamic_pointer_cast<insight::cad::Line>(
+                        (++selact->currentSelection().begin())->lock() );
+
+                    auto c = TangentConstraint::create(
+                        l1, l2,
+                        std::string() );
+
+                    (*this)->insertGeometry(c);
+                    (*this)->invalidate();
+                    Q_EMIT sketchChanged();
+                }
+            }
+        }
+        );
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_fixpoint.svg"), "Fix Point Coordinates",

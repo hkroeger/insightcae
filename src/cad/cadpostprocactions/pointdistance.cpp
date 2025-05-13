@@ -279,10 +279,9 @@ Distance::createVTKRepr(bool displayCoords) const
         sizes->SetNumberOfValues(nl);
 
         int il=0;
-        points->SetPoint(il, arma::mat(pmid+ofs).memptr());
-        labels->SetValue(il, str(boost::format("L=%g") % L ).c_str());
-        sizes->SetValue(il, 6);
-        il++;
+
+        std::string lbl=
+            str(boost::format("L=%g") % L );
 
         if (displayCoords)
         {
@@ -295,7 +294,18 @@ Distance::createVTKRepr(bool displayCoords) const
             labels->SetValue(il, str(boost::format("[%g %g %g]") % p2(0)%p2(1)%p2(2) ).c_str());
             sizes->SetValue(il, 4);
             il++;
+
+            lbl += "\n"+
+                   str(boost::format("dx=%g\ndy=%g\ndz=%g")
+                              % (p2(0)-p1(0))
+                              % (p2(1)-p1(1))
+                              % (p2(2)-p1(2)) );
         }
+
+        points->SetPoint(il, arma::mat(pmid+ofs).memptr());
+        labels->SetValue(il, lbl.c_str());
+        sizes->SetValue(il, 6);
+        il++;
 
         auto pointSource = vtkSmartPointer<vtkPolyData>::New();
         pointSource->SetPoints(points);

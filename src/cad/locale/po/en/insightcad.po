@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-02 14:24+0200\n"
+"POT-Creation-Date: 2025-05-12 23:35+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -348,13 +348,6 @@ msgstr ""
 "of axmaj. The minor axis length is that of axmin. Its direction is corrected "
 "to be orthogonal to axmaj."
 
-#: cadfeatures/frame.cpp:51
-msgid ""
-"Creates a frame that stiffens a given shell. The section contour is offset "
-"by the given distance into the shells interior and extruded by the given "
-"thickness centered around the section plane."
-msgstr ""
-
 #: cadfeatures/fillet.cpp:114
 msgid ""
 "Creates fillets at selected edges of a solid. All edges in the selection set "
@@ -421,7 +414,7 @@ msgstr ""
 "Copies the bease feature base into a linear pattern. The copies of the base "
 "feature are shifted in increments of delta_l. The number of copies is n."
 
-#: cadfeatures/line.cpp:282
+#: cadfeatures/line.cpp:303
 msgid "Creates a line between point p0 and p1."
 msgstr "Creates a line between point p0 and p1."
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: iscad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-30 19:08+0200\n"
+"POT-Creation-Date: 2025-05-09 08:48+0000\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -74,7 +74,7 @@ msgid "Select file"
 msgstr "Select file"
 
 #: iqiscadmainwindow.cpp:185 iqiscadmainwindow.cpp:569
-#: iqiscadmodelscriptedit.cpp:166
+#: iqiscadmodelscriptedit.cpp:176
 #, fuzzy
 msgid "ISCAD Model Files"
 msgstr "ISCAD Model Files (*.iscad)"
@@ -280,43 +280,43 @@ msgstr "Create new file..."
 msgid "Delete file %1"
 msgstr "Delete file %1"
 
-#: iqiscadmodelwindow.cpp:38
+#: iqiscadmodelwindow.cpp:41
 msgid "Controls"
 msgstr "Controls"
 
-#: iqiscadmodelwindow.cpp:42
+#: iqiscadmodelwindow.cpp:45
 msgid "Rebuild"
 msgstr "Rebuild"
 
-#: iqiscadmodelwindow.cpp:43
+#: iqiscadmodelwindow.cpp:46
 msgid "Rbld to Cursor"
 msgstr "Rbld to Cursor"
 
-#: iqiscadmodelwindow.cpp:52
+#: iqiscadmodelwindow.cpp:55
 msgid "Do BG parsing"
 msgstr "Do BG parsing"
 
-#: iqiscadmodelwindow.cpp:56
+#: iqiscadmodelwindow.cpp:59
 msgid "Skip Postproc Actions"
 msgstr "Skip Postproc Actions"
 
-#: iqiscadmodelwindow.cpp:85
+#: iqiscadmodelwindow.cpp:88
 msgid "Model Tree"
 msgstr "Model Tree"
 
-#: iqiscadmodelwindow.cpp:90
+#: iqiscadmodelwindow.cpp:93
 msgid "Notepad"
 msgstr "Notepad"
 
-#: iqiscadmodelwindow.cpp:96
+#: iqiscadmodelwindow.cpp:99
 msgid "<< Copy to cursor <<"
 msgstr "<< Copy to cursor <<"
 
-#: iqiscadmodelwindow.cpp:98
+#: iqiscadmodelwindow.cpp:101
 msgid "Clear"
 msgstr "Clear"
 
-#: iqiscadmodelwindow.cpp:264
+#: iqiscadmodelwindow.cpp:267
 msgid ""
 "The editor content is not saved.\n"
 "Save now?\n"
@@ -324,55 +324,55 @@ msgstr ""
 "The editor content is not saved.\n"
 "Save now?\n"
 
-#: iqiscadmodelscriptedit.cpp:164
+#: iqiscadmodelscriptedit.cpp:174
 msgid "Select location"
 msgstr "Select location"
 
-#: iqiscadmodelscriptedit.cpp:211
+#: iqiscadmodelscriptedit.cpp:221
 msgid "File error"
 msgstr "File error"
 
-#: iqiscadmodelscriptedit.cpp:212
+#: iqiscadmodelscriptedit.cpp:222
 msgid "The file %1 does not exists!"
 msgstr "The file %1 does not exists!"
 
-#: iqiscadmodelscriptedit.cpp:321
+#: iqiscadmodelscriptedit.cpp:330
 msgid "Background model parsing in progress..."
 msgstr "Background model parsing in progress..."
 
-#: iqiscadmodelscriptedit.cpp:514
+#: iqiscadmodelscriptedit.cpp:524
 msgid "Please select file"
 msgstr "Please select file"
 
-#: iqiscadmodelscriptedit.cpp:517
+#: iqiscadmodelscriptedit.cpp:527
 msgid "STEP model"
 msgstr "STEP model"
 
-#: iqiscadmodelscriptedit.cpp:518
+#: iqiscadmodelscriptedit.cpp:528
 msgid "IGES model"
 msgstr "IGES model"
 
-#: iqiscadmodelscriptedit.cpp:519
+#: iqiscadmodelscriptedit.cpp:529
 msgid "BREP model"
 msgstr "BREP model"
 
-#: iqiscadmodelscriptedit.cpp:605
+#: iqiscadmodelscriptedit.cpp:615
 msgid "Background model parsing in progress, rebuild is currently disabled!"
 msgstr "Background model parsing in progress, rebuild is currently disabled!"
 
-#: iqiscadmodelscriptedit.cpp:643
+#: iqiscadmodelscriptedit.cpp:653
 msgid "Edit Sketch..."
 msgstr "Edit Sketch..."
 
-#: iqiscadmodelscriptedit.cpp:654
+#: iqiscadmodelscriptedit.cpp:664
 msgid "Edit Model..."
 msgstr "Edit Model..."
 
-#: iqiscadmodelscriptedit.cpp:728
+#: iqiscadmodelscriptedit.cpp:738
 msgid "Script error"
 msgstr "Script error"
 
-#: iqiscadmodelscriptedit.cpp:735
+#: iqiscadmodelscriptedit.cpp:745
 msgid "Script Error"
 msgstr "Script Error"
 

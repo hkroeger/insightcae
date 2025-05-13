@@ -101,9 +101,9 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
         {
             bool handled = false;
 
-            handled = meshmotion->addIntoFieldDictionary(field.first, field.second, BC) || handled;
-            handled = phasefractions->addIntoFieldDictionary ( field.first, field.second, BC ) || handled;
-            handled = heattransfer->addIntoFieldDictionary ( field.first, field.second, BC, dictionaries ) || handled;
+            handled = handled || meshmotion->addIntoFieldDictionary(field.first, field.second, BC);
+            handled = handled || phasefractions->addIntoFieldDictionary ( field.first, field.second, BC );
+            handled = handled || heattransfer->addIntoFieldDictionary ( field.first, field.second, BC, dictionaries );
 
             if (!handled)
             {

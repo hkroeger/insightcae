@@ -3,6 +3,7 @@
 
 
 #include "base/cppextensions.h"
+#include "constrainedsketchentity.h"
 #include "sketch.h"
 #include "base/exception.h"
 #include "base/parameterset.h"
@@ -297,6 +298,58 @@ public:
         const ConstrainedSketchParametersDelegate& pd );
 
     void removeLayer(const std::string& layerName);
+
+    // geometric/topologic queries
+    enum LineUnderPointType { OnEnd=0, OnMiddle=1 };
+    struct LineUnderPoint {
+        std::shared_ptr<ConstrainedSketchEntity> line;
+        LineUnderPointType lupt;
+
+        bool operator<(const LineUnderPoint& o) const;
+    };
+    struct LinesUnderPointSearchResult
+        : public std::set<LineUnderPoint>
+    {
+        using std::set<LineUnderPoint>::set;
+
+        std::set<insight::cad::ConstrainedSketchEntityPtr>
+        filterMany(
+            std::function<bool(const LineUnderPoint&)> ff =
+            [](const LineUnderPoint&){ return true; })
+        {
+            std::set<insight::cad::ConstrainedSketchEntityPtr> r;
+            for (const auto& c: *this)
+            {
+                if (ff(c)) r.insert(c.line);
+            }
+
+            return r;
+        }
+
+        insight::cad::ConstrainedSketchEntityPtr
+        filterOne(
+            std::function<bool(const LineUnderPoint&)> ff =
+                [](const LineUnderPoint&){ return true; },
+            bool doThrow = true )
+        {
+            auto r=filterMany(ff);
+
+            if (r.size()!=1)
+            {
+                if (doThrow)
+                    throw insight::Exception(
+                        str(boost::format("expected exactly one entity, got %d")
+                            % r.size()));
+                else
+                    return nullptr;
+            }
+
+            return *r.begin();
+        }
+    };
+
+    LinesUnderPointSearchResult findLinesUnderPoint(
+        const arma::mat& p2d );
 
     std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
     entitiesInsideRect( double x1, double y1, double x2, double y2 ) const;

@@ -19,7 +19,7 @@ if (INSIGHT_BUILD_MEDREADER)
     include(ExternalProject)
 
     if (WIN32)
-      set(LIBNAME lib/libvtkMedReader-9.0.0.dll.a)
+      set(LIBNAME lib/libvtkMedReader-pvis.dll.a)
       list(APPEND VTK_CMAKE_ADDARGS "-DMedReader_BUILD_ParaView_Plugin=OFF")
     else()
       set(LIBNAME lib/libvtkMedReader-pvis.so)
@@ -36,6 +36,7 @@ if (INSIGHT_BUILD_MEDREADER)
          -DVTKCompileTools_DIR=${VTKCompileTools_DIR}
          -DParaView_DIR=${VTK_ONSCREEN_DIR}/..
          -DLIBRARY_NAME_SUFFIX=pvis
+         -DCMAKE_INSTALL_LIBDIR=lib
          ${VTK_CMAKE_ADDARGS}
 
         INSTALL_DIR ${CMAKE_BINARY_DIR}/medreader-onscreen
@@ -55,6 +56,7 @@ if (INSIGHT_BUILD_MEDREADER)
          -DVTKCompileTools_DIR=${VTKCompileTools_DIR}
          -DParaView_DIR=${VTK_OFFSCREEN_DIR}/..
          -DLIBRARY_NAME_SUFFIX=pvisoffscreen
+         -DCMAKE_INSTALL_LIBDIR=lib
          ${VTK_CMAKE_ADDARGS}
 
         INSTALL_DIR ${CMAKE_BINARY_DIR}/medreader-offscreen

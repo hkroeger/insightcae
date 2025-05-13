@@ -515,6 +515,14 @@ std::string SpeciesData::transportType() const
     {
         return "sutherland";
     }
+    else if (const auto *st = boost::get<Parameters::properties_custom_type::transport_polynomial_type>(&p_.transport))
+    {
+        return "polynomial";
+    }
+    else if (const auto *st = boost::get<Parameters::properties_custom_type::transport_WLF_type>(&p_.transport))
+    {
+        return "WLF";
+    }
     return "";
 }
 
@@ -558,6 +566,11 @@ std::string SpeciesData::equationOfStateType() const
                  &p_.equationOfState))
     {
         return "rPolynomial";
+    }
+    else if (boost::get<Parameters::properties_custom_type::equationOfState_icoPolynomial_type>(
+                 &p_.equationOfState))
+    {
+        return "icoPolynomial";
     }
     else if (boost::get<Parameters::properties_custom_type::equationOfState_PengRobinson_type>(
                  &p_.equationOfState))
@@ -653,6 +666,28 @@ void SpeciesData::insertTransportEntries(OFDictData::dict& d) const
         transport["As"]=sutherland_As(st->mu, st->Tref);
         transport["Pr"]=st->Pr;
     }
+    else if (const auto *st = boost::get<Parameters::properties_custom_type::transport_polynomial_type>(&p_.transport))
+    {
+        OFDictData::list muc, kac;
+        std::copy(st->kappaCoeffs.begin(), st->kappaCoeffs.end(),
+                  std::back_inserter(kac));
+        muc.resize(8, 0);
+
+        std::copy(st->muCoeffs.begin(), st->muCoeffs.end(),
+                  std::back_inserter(muc));
+        kac.resize(8, 0);
+
+        transport[str(boost::format("muCoeffs<%d>")%muc.size())]=muc;
+        transport[str(boost::format("kappaCoeffs<%d>")%kac.size())]=kac;
+    }
+    else if (const auto *wl = boost::get<Parameters::properties_custom_type::transport_WLF_type>(&p_.transport))
+    {
+        transport["Tr"]=wl->Tr;
+        transport["mu0"]=wl->mu0;
+        transport["C1"]=wl->C1;
+        transport["C2"]=wl->C2;
+        transport["Pr"]=wl->Pr;
+    }
     d["transport"]=transport;
 }
 
@@ -688,6 +723,18 @@ void SpeciesData::insertEquationOfStateEntries(
                  &p_.equationOfState))
     {
         eos["C"]=OFDictData::list(rp->C);
+    }
+    else if (const auto * icp =
+             boost::get<Parameters::properties_custom_type::equationOfState_icoPolynomial_type>(
+                 &p_.equationOfState))
+    {
+        OFDictData::list rc;
+
+        std::copy(icp->rhoCoeffs.begin(), icp->rhoCoeffs.end(),
+                  std::back_inserter(rc));
+        rc.resize(8, 0);
+
+        eos[str(boost::format("rhoCoeffs<%d>")%rc.size())]=rc;
     }
     else if (const auto * pre =
              boost::get<Parameters::properties_custom_type::equationOfState_PengRobinson_type>(

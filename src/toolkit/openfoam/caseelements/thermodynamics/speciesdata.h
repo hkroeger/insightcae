@@ -68,6 +68,24 @@ transport = selectablesubset {{
    Pr = double 0.7 "Prandtl number"
  }
 
+
+ polynomial
+ set {
+   muCoeffs = array [ double 1000 "coefficient" ] *1
+        "[Pa.s] Dynamic viscosity polynomial coefficients, lowest order (0, i.e. constant) coefficient first."
+   kappaCoeffs = array [ double 2000 "coefficient" ] *1
+        "[W/m/K] Thermal conductivity polynomial coefficients, lowest order (0, i.e. constant) coefficient first."
+ }
+
+ WLF
+ set {
+   mu0 = double 1 "reference viscosity"
+   Tr = double 319.954 "[K] reference temperature"
+   C1 = double 10.86 "constant C1"
+   C2 = double 141.804 "constant C2"
+   Pr = double 1 "Prandtl number"
+ }
+
 }} constant "Transport properties"
 
 
@@ -76,8 +94,8 @@ equationOfState = selectablesubset {{
   perfectGas set {}
 
   perfectFluid set {
-    R = double 3000 ""
-    rho0 = double 1027 ""
+    R = double 3000 "R in $\\rho_0+p/(R T)$"
+    rho0 = double 1027 "Reference density"
   }
 
   // from https://www.cfd-online.com/Forums/openfoam-solving/228725-how-use-tait-equaton-state-compressibleinterfoam.html
@@ -96,6 +114,12 @@ equationOfState = selectablesubset {{
   rPolynomial set {
     C = array [ double 1 "" ] *0 "Polynomial coefficients"
   }
+
+  icoPolynomial set {
+   rhoCoeffs = array [ double 1000 "coefficient" ] *1
+        "[kg/m^3] Density vs. temperature polynomial coefficients, lowest order (0, i.e. constant) coefficient first."
+  }
+
 
   PengRobinson
   set {

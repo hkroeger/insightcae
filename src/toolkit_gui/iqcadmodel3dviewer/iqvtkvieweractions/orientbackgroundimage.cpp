@@ -7,6 +7,7 @@
 #include "vtkPointSource.h"
 
 #include "orientbackgroundimagecoordinatesdialog.h"
+#include <qnamespace.h>
 
 void IQVTKOrientBackgroundImage::selectedNextPoint(const arma::mat &p)
 {
@@ -52,7 +53,7 @@ IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(
     IQVTKCADModel3DViewer &viewWidget,
     vtkImageActor* imageActor
     )
-  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget),
+  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, false),
     imageActor_(imageActor)
 {
     aboutToBeDestroyed.connect(
@@ -82,44 +83,53 @@ bool IQVTKOrientBackgroundImage::onMouseClick(
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    auto picker = vtkSmartPointer<vtkPropPicker>::New();
-    picker->AddPickList(imageActor_);
-    picker->SetPickFromList(true);
-
-    auto p = viewer().widgetCoordsToVTK(point);
-    int np = picker->PickProp(p.x(), p.y(), viewer().renderer());
-
-    // There could be other props assigned to this picker, so
-    // make sure we picked the image actor.
-    vtkAssemblyPath* path = picker->GetPath();
-    bool validPick = false;
-
-    viewer().scheduleRedraw();
-
-    if (path)
+    if (btn==Qt::LeftButton)
     {
-        vtkCollectionSimpleIterator sit;
-        path->InitTraversal(sit);
-        for (int i = 0; i < path->GetNumberOfItems() && !validPick; ++i)
+        auto picker = vtkSmartPointer<vtkPropPicker>::New();
+        picker->AddPickList(imageActor_);
+        picker->SetPickFromList(true);
+
+        auto p = viewer().widgetCoordsToVTK(point);
+        int np = picker->PickProp(p.x(), p.y(), viewer().renderer());
+
+        // There could be other props assigned to this picker, so
+        // make sure we picked the image actor.
+        vtkAssemblyPath* path = picker->GetPath();
+        bool validPick = false;
+
+        viewer().scheduleRedraw();
+
+        if (path)
         {
-            auto node = path->GetNextNode(sit);
-            if (imageActor_ == dynamic_cast<vtkImageActor*>(node->GetViewProp()))
+            vtkCollectionSimpleIterator sit;
+            path->InitTraversal(sit);
+            for (int i = 0; i < path->GetNumberOfItems() && !validPick; ++i)
             {
-                validPick = true;
+                auto node = path->GetNextNode(sit);
+                if (imageActor_ == dynamic_cast<vtkImageActor*>(node->GetViewProp()))
+                {
+                    validPick = true;
+                }
             }
         }
-    }
 
-    if (!validPick)
-    {
-        userPrompt("Please pick on image!");
+        if (!validPick)
+        {
+            userPrompt("Please pick on image!");
+        }
+        else
+        {
+            // Get the world coordinates of the pick.
+            arma::mat p=insight::vec3Zero();
+            picker->GetPickPosition(p.memptr());
+            selectedNextPoint(p);
+            return true;
+        }
     }
-    else
+    else if (btn==Qt::RightButton)
     {
-        // Get the world coordinates of the pick.
-        arma::mat p=insight::vec3Zero();
-        picker->GetPickPosition(p.memptr());
-        selectedNextPoint(p);
+        userPrompt("Image orientation procedure cancelled.");
+        finishAction(false);
         return true;
     }
 

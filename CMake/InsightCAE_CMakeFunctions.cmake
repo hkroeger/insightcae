@@ -4,7 +4,7 @@ macro(install_headers NAME HEADERS)
       file (RELATIVE_PATH _relName "${CMAKE_CURRENT_LIST_DIR}" ${_hdr})
       get_filename_component(_pd ${_relName} DIRECTORY)
       add_custom_command(
-          TARGET ${NAME}
+          TARGET ${NAME} POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae/${_pd}
           COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
       )

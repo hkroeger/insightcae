@@ -615,7 +615,7 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
     else if (const auto *ppPtr =
              boost::get<insight::cad::PostprocActionPtr>(&entity))
     {
-        (*ppPtr)->createVTKRepr();
+        return (*ppPtr)->createVTKRepr();
     }
     else if (const auto *dsPtr =
              boost::get<vtkSmartPointer<vtkDataObject> >(&entity))
@@ -919,12 +919,18 @@ void IQVTKCADModel3DViewer::onDataChanged(
             auto lbl = idx.siblingAtColumn(IQCADItemModel::labelCol).data().toString();
             auto feat = idx.siblingAtColumn(IQCADItemModel::entityCol).data();
 
-            auto colInRange = [&](int minCol, int maxCol=-1)
+            auto colInRange = [&](int col)
             {
-                if (maxCol<0) maxCol=minCol;
-                return (topLeft.column() <= minCol)
+                return (topLeft.column() <= col)
                         &&
-                       (bottomRight.column() >= maxCol);
+                       (bottomRight.column() >= col);
+            };
+
+            auto oneColInRange = [&](int col0, int col1)
+            {
+                for (int i=col0; i<=col1; ++i)
+                    if (colInRange(i)) return true;
+                return false;
             };
 
             if (roles.indexOf(Qt::EditRole)>=0 || roles.empty())
@@ -935,8 +941,8 @@ void IQVTKCADModel3DViewer::onDataChanged(
                     remove( pidx );
                     addChild(idx);
                 }
-                if ( colInRange(IQCADItemModel::datasetFieldNameCol,
-                                IQCADItemModel::datasetRepresentationCol) )
+                if ( oneColInRange(IQCADItemModel::datasetFieldNameCol,
+                                  IQCADItemModel::datasetRepresentationCol) )
                 {
                     resetDisplayProps(pidx);
                 }
@@ -2105,7 +2111,19 @@ QPointF IQVTKCADModel3DViewer::widgetCoordsToVTK(const QPoint &widgetCoords) con
         );
 }
 
-
+QPoint IQVTKCADModel3DViewer::VTKToWidgetCoords(const QPointF &VTKCoords) const
+{
+    double DevicePixelRatio=vtkWidget_.devicePixelRatioF();
+    QPoint pw
+        (
+        (VTKCoords.x()-DevicePixelRatioTolerance)
+            /DevicePixelRatio,
+        (vtkWidget_.size().height()-1-DevicePixelRatioTolerance-VTKCoords.y())
+            /DevicePixelRatio
+        );
+    auto widgetCoords=vtkWidget_.mapToParent(pw);
+    return widgetCoords;
+}
 
 IQVTKCADModel3DViewer::ViewWidgetActionPtr
 IQVTKCADModel3DViewer::setupDefaultAction()

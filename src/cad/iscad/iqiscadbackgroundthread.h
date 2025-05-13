@@ -80,6 +80,7 @@ Q_SIGNALS:
 
     void statusMessage(const QString& msg, double timeout=0);
     void statusProgress(int step, int totalSteps);
+    void modelRebuilt();
 };
 
 

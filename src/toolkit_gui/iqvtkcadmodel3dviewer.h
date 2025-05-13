@@ -415,6 +415,7 @@ public:
 
     QSize sizeHint() const override;
     QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
+    QPoint VTKToWidgetCoords(const QPointF &VTKCoords) const;
 
     ViewWidgetActionPtr setupDefaultAction() override;
 

@@ -126,6 +126,7 @@ void IQVTKCADModel3DViewer::SubshapeSelection::add(
                     viewer_.ren_->AddActor(actor);
                 }
             }
+            viewer_.scheduleRedraw();
         }
     }
 }

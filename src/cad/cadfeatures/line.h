@@ -73,6 +73,8 @@ public:
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     bool isInside( SelectionRect r) const override;
+    bool pointIsOnLine(const arma::mat& p) const;
+    arma::mat projectOntoLine(const arma::mat& p) const;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const Line& other);

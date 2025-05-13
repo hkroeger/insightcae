@@ -324,7 +324,8 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
                                                    FieldData::Parameters::fielddata_uniformSteady_type(vec1(
                                                                                                          0.0
                                                                                                          ))
-                                                  )
+                                                  ),
+                                                false
                                                 ))
                                  ));
    

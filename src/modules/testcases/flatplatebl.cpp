@@ -431,7 +431,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
   cm.insert(new PressureOutletBC(cm, sp().out_top_, boundaryDict, PressureOutletBC::Parameters()
     .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
        FieldData::Parameters()
-        .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(0.0)))
+        .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(0.0))),
+        false
       ))
     .set_prohibitInflow(false)
   ));

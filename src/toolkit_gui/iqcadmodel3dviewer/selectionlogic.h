@@ -56,7 +56,6 @@ public:
                   cands.begin(), cands.end()),
               selectedCandidate_(0)
         {
-            insight::dbg(2) << "selection candidate list created." << std::endl;
             insight::assertion(
                 this->size()>0,
                 "selection candidate list must not be empty!");
@@ -65,9 +64,7 @@ public:
         }
 
         ~SelectionCandidates()
-        {
-            insight::dbg(2) << "selection candidate list destroyed." << std::endl;
-        }
+        {}
 
         void cycleCandidate()
         {
@@ -76,6 +73,11 @@ public:
                 selectedCandidate_=0;
 
             temporaryHighlighting_ = sl_.highlightEntity( selected(true), sl_.candidateColor );
+        }
+
+        size_t selectedCandidateIndex() const
+        {
+            return selectedCandidate_;
         }
 
         SelectedEntity selected(bool clearTempHighlighting) const
@@ -281,6 +283,12 @@ public:
                 else
                 {
                     nextSelectionCandidates_->cycleCandidate();
+                    this->userPrompt(
+                        QString(
+                            "Entity %1 out of %2 entities at the current location."
+                            " Don't move the mouse and press <Space> or <Tab> to cycle selection." )
+                            .arg(nextSelectionCandidates_->selectedCandidateIndex())
+                            .arg(nextSelectionCandidates_->size() ) );
                     return true;
                 }
             }
@@ -398,9 +406,10 @@ public:
     {
         if (!this->hasChildReceivers())
         {
-            if ( !nextSelectionCandidates_
-                 && doPreviewSelection_ )
+            if ( /*!nextSelectionCandidates_
+                 && */doPreviewSelection_ )
             {
+                nextSelectionCandidates_.reset();
                 updatePreview(point);
             }
         }

@@ -40,27 +40,50 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     multiphaseBC::multiphaseBCPtr phasefractions =
         p().phasefractions;
 
+    HeatBC::HeatBCPtr heattransfer =
+        p().heattransfer;
+
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries(dictionaries);
 
     if ( (boost::get<Parameters::behaviour_fixMeanValue_type>(&p().behaviour)) && ( OFversion() !=160 ) ) {
         OFDictData::dict& controlDict=dictionaries.lookupDict ( "system/controlDict" );
-        controlDict.getList ( "libs" ).push_back ( "\"libfixedMeanValueBC.so\"" );
+        controlDict
+            .getList("libs")
+            .push_back("\"libfixedMeanValueBC.so\"");
     }
 
     for ( const FieldList::value_type& field: OFcase().fields() ) {
-        OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
-                             .subDict ( "boundaryField" ).subDict ( patchName_ );
+        OFDictData::dict& BC =
+            dictionaries
+                .addFieldIfNonexistent ( "0/"+field.first, field.second )
+                .subDict ( "boundaryField" )
+                .subDict ( patchName_ );
 
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
-            if ( p().prohibitInflow ) {
-                BC["type"]=OFDictData::data ( "inletOutlet" );
-                BC["inletValue"]=OFDictData::data ( "uniform ( 0 0 0 )" );
-                BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
-            } else {
-                BC["type"]=OFDictData::data ( "zeroGradient" );
-                BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+            const auto* unif =
+                boost::get<Parameters::behaviour_uniform_type>(
+                &p().behaviour);
+
+            if (unif && unif->enforceUniformMeanVelocity)
+            {
+                OFDictData::dict& controlDict=dictionaries.lookupDict ( "system/controlDict" );
+                controlDict
+                    .getList("libs")
+                    .push_back("\"libpressureOutletUniformVelocity.so\"");
+
+                BC["type"]=OFDictData::data ( "pressureOutletUniformVelocity" );
             }
+            else
+            {
+                if ( p().prohibitInflow ) {
+                    BC["type"]=OFDictData::data ( "inletOutlet" );
+                    BC["inletValue"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+                } else {
+                    BC["type"]=OFDictData::data ( "zeroGradient" );
+                }
+            }
+            BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
         } else if (
             ( field.first=="T" )
             &&
@@ -179,12 +202,12 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         ) {
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else {
-            if ( ! (
-                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
-                         ||
-                        phasefractions->addIntoFieldDictionary(field.first, field.second, BC)
-                    ) )
-                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+            bool handled = false;
+            handled = handled || MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+            handled = handled || phasefractions->addIntoFieldDictionary ( field.first, field.second, BC );
+            handled = handled || heattransfer->addIntoFieldDictionary ( field.first, field.second, BC, dictionaries );
+
+            if (!handled)
             {
                 BC["type"]=OFDictData::data ( "zeroGradient" );
             }

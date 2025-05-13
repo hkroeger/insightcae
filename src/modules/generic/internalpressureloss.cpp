@@ -503,7 +503,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
     cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict, PressureOutletBC::Parameters()
               .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
                  FieldData::Parameters()
-                  .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(sp().pAmbient_)))
+                  .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(sp().pAmbient_))), false
                 ))
               ));
 

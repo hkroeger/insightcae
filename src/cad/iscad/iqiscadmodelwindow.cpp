@@ -29,6 +29,9 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 
     modelEdit_=new IQISCADModelScriptEdit(splitterHoriz);
 
+    connect(modelEdit_, &IQISCADModelScriptEdit::displayNeedsRefit,
+            viewer_, &Model3DViewer::fitAll);
+
     auto *widgetVertRight = new QWidget;
     auto *layoutVertRight = new QVBoxLayout;
     widgetVertRight->setLayout(layoutVertRight);

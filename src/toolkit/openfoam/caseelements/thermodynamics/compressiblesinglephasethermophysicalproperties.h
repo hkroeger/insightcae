@@ -47,6 +47,9 @@ composition = selectablesubset {{
 
 }} singleSpecie ""
 
+
+requiresAdditionalThermosLib = bool false "Whether to include the library with additional thermos"
+
 createGetters
 <<<PARAMETERSET
 */

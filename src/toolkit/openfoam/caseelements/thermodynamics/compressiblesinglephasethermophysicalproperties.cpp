@@ -255,6 +255,13 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
         thermophysicalProperties["mixture"]=mixdict;
     }
 
+    if (p().requiresAdditionalThermosLib)
+    {
+        OFDictData::dict& controlDict = dictionaries.lookupDict("system/controlDict");
+        controlDict.getList("libs").insertNoDuplicate(
+            OFDictData::data("\"libadditionalThermos.so\"") );
+    }
+
 }
 
 

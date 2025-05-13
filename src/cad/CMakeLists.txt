@@ -39,6 +39,7 @@ set(insightcad_SOURCES
   constrainedsketchentities/angleconstraint.h constrainedsketchentities/angleconstraint.cpp
   constrainedsketchentities/distanceconstraint.h constrainedsketchentities/distanceconstraint.cpp
   constrainedsketchentities/externalreference.h constrainedsketchentities/externalreference.cpp
+  constrainedsketchentities/tangentconstraint.h constrainedsketchentities/tangentconstraint.cpp
   constrainedsketchgrammar.h constrainedsketchgrammar.cpp
 
   geotest.cpp 

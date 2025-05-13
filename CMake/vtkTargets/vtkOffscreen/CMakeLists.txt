@@ -70,6 +70,7 @@ else()
          -DVTK_VERSIONED_INSTALL=OFF
          -DDICOM_CUSTOM_LIBRARY_SUFFIX=pvisoffscreen
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+         -DCMAKE_INSTALL_LIBDIR=lib
 
        BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so.0.8.15
     )

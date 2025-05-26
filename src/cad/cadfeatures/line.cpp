@@ -177,10 +177,12 @@ void Line::replaceDependency(
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_) == entity )
         {
             p0_ = p;
+            invalidate();
         }
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity )
         {
             p1_ = p;
+            invalidate();
         }
     }
 }

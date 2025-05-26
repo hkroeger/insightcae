@@ -19,6 +19,7 @@
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h"
 #include "iqundoredostack.h"
+#include "editorwithsavablestate.h"
 
 
 
@@ -96,6 +97,8 @@ private:
 
     std::set<std::string> hiddenLayers_;
 
+    boost::optional<std::string> pathToEditedParameter_;
+
     ParameterEditorWidget* layerPropertiesEditor_;
     QWidget *sketchToolBoxWidget_;
     QToolBar *toolBar_;
@@ -117,12 +120,15 @@ private Q_SLOTS:
 
 public:
     IQVTKConstrainedSketchEditor(
-            IQVTKCADModel3DViewer& viewer,
-            const insight::cad::ConstrainedSketch& sketch,
-            std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
-            const std::string& presentationDelegateKey
-            );
+        IQVTKCADModel3DViewer& viewer,
+        const insight::cad::ConstrainedSketch& sketch,
+        std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
+        const std::string& presentationDelegateKey
+    );
     ~IQVTKConstrainedSketchEditor();
+
+    void setPathToEditedParameter(const std::string& pp);
+    boost::optional<std::string> pathToEditedParameter() const;
 
     QString description() const override;
 
@@ -152,6 +158,8 @@ public:
         Qt::KeyboardModifiers curFlags,
         const QPoint point,
         EventType eventType ) override;
+
+    void updateLastMouseLocation(const QPoint& p) override;
 
     inline const insight::cad::ConstrainedSketch& sketch() const
     { return **this; }

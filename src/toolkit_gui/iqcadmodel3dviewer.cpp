@@ -1,5 +1,6 @@
 
 #include "iqcadmodel3dviewer.h"
+#include "constrainedsketch.h"
 #include "datum.h"
 
 #include <QColorDialog>
@@ -8,6 +9,9 @@
 #include <QResizeEvent>
 #include <QLayout>
 #include <qnamespace.h>
+
+#include "cadsketchparameter.h"
+#include "iqparametersetmodel.h"
 
 uint
 IQCADModel3DViewer::QPersistentModelIndexHash::operator()
@@ -28,7 +32,11 @@ IQCADModel3DViewer::IQCADModel3DViewer(QWidget *parent)
     currentActionDesc_ = new QLabel;
     currentActionDesc_->setAlignment(Qt::AlignRight);
 
-    statusBar()->addPermanentWidget(userMessage_, 90);
+    mouseCoordinateDisplay_= new QLabel;
+    mouseCoordinateDisplay_->setAlignment(Qt::AlignCenter);
+
+    statusBar()->addPermanentWidget(userMessage_, 80);
+    statusBar()->addPermanentWidget(mouseCoordinateDisplay_, 10);
     statusBar()->addPermanentWidget(currentActionDesc_, 10);
 }
 
@@ -150,6 +158,51 @@ void IQCADModel3DViewer::selectBackgroundColor()
     }
 }
 
+void IQCADModel3DViewer::editSketchParameter(
+    const std::string& parameterPath,
+    std::shared_ptr<insight::cad::ConstrainedSketch> sketchOvr )
+{
+    if ( auto psm = dynamic_cast<IQParameterSetModel*>(
+            cadmodel()->associatedParameterSetModel()) )
+    {
+        auto &skp = dynamic_cast<insight::CADSketchParameter&>(
+            psm->parameterRef(parameterPath) );
+
+        editSketch(
+
+            sketchOvr ? *sketchOvr : skp.featureGeometry(),
+
+            skp.entityProperties(),
+            skp.presentationDelegateKey(),
+
+            [this,parameterPath](insight::cad::ConstrainedSketchPtr accSk) // on accept
+            {
+                auto psm = dynamic_cast<IQParameterSetModel*>(
+                    cadmodel()->associatedParameterSetModel());
+                auto &skp = dynamic_cast<insight::CADSketchParameter&>(
+                    psm->parameterRef(parameterPath) );
+
+                {
+                    auto blocker{skp.blockUpdateValueSignal()};
+
+                    std::ostringstream os;
+                    accSk->generateScript(os);
+
+                    skp.setScript(os.str());
+                    skp.featureGeometry(); //trigger rebuild
+                }
+
+                skp.triggerValueChanged();
+            },
+
+            [](insight::cad::ConstrainedSketchPtr) {}, // on cancel: just nothing to do
+
+            parameterPath
+        );
+    }
+
+}
+
 void IQCADModel3DViewer::showCurrentActionDescription(const QString& desc)
 {
     currentActionDesc_->setText(desc);
@@ -161,3 +214,11 @@ void IQCADModel3DViewer::showUserPrompt(const QString &text)
     userMessage_->setText(text);
 }
 
+void IQCADModel3DViewer::updateMouseCoordinateDisplay(double x, double y)
+{
+    currentActionDesc_->setText(
+        QString("X=%1, Y=%2")
+            .arg(x,6)
+            .arg(y,6)
+        );
+}

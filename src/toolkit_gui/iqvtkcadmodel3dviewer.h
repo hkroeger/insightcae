@@ -421,10 +421,16 @@ public:
 
     const Bounds& sceneBounds() const;
 
-    void writeViewerState(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const override;
-    void restoreViewerState(rapidxml::xml_node<>& node) override;
-
     void setCameraState(const insight::CameraState& camState) override;
+
+    void saveState(
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parentPath ) const override;
+
+    void restoreState(
+        const rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parentPath ) override;
 
 public:
     void exposeItem( insight::cad::FeaturePtr feat ) override;
@@ -493,7 +499,8 @@ public:
         std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
         const std::string& presentationDelegateKey,
         SketchCompletionCallback onAccept,
-        SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
+        SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {},
+        boost::optional<std::string> parameterPath = boost::optional<std::string>()
         ) override;
 
 // protected:

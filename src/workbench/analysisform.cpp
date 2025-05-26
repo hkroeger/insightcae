@@ -80,12 +80,57 @@ namespace fs = boost::filesystem;
 
 
 
+
+void AnalysisForm::saveState(
+    rapidxml::xml_document<> &doc,
+    rapidxml::xml_node<> &rootNode,
+    const boost::filesystem::path &parentPath ) const
+{
+    {
+        // current parameter set
+        auto p = parameters().cloneParameterSet();
+
+        if (pack_parameterset_)
+        {
+            p->pack();
+        }
+        else
+        {
+            p->clearPackedData();
+        }
+
+        p->saveToNode(doc, rootNode, parentPath, analysisName_);
+    }
+
+    {
+        auto vs = insight::appendNode(doc, rootNode, "viewerState");
+        peditor_->viewer()->saveState(doc, vs, parentPath);
+    }
+}
+
+
+void AnalysisForm::restoreState(
+    const rapidxml::xml_node<>& rootNode,
+    const boost::filesystem::path& parentPath )
+{
+    auto ps = parameters().cloneParameterSet();
+    ps->readFromRootNode(rootNode, parentPath);
+    psmodel_->resetParameterValues( *ps );
+
+    if (auto *vs = rootNode.first_node("viewerState"))
+    {
+        peditor_->viewer()->restoreState(*vs, parentPath);
+    }
+}
+
+
+
 AnalysisForm::AnalysisForm(
     QWidget* parent,
     const std::string& analysisName,
     bool logToConsole
     )
-: /*QMdiSubWindow*/ QWidget(parent),
+: QWidget(parent),
   IQExecutionWorkspace(this),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
@@ -518,25 +563,9 @@ void AnalysisForm::saveParameters(bool *cancelled)
   }
   else
   {
-    auto p = parameters().cloneParameterSet();
-
-    if (pack_parameterset_)
-    {
-      p->pack();
-    }
-    else
-    {
-      p->clearPackedData();
-    }
-
     insight::XMLDocument doc;
 
-    p->saveToNode(*doc.rootNode, ist_file_.parent_path(), analysisName_);
-
-    {
-     auto vs = insight::appendNode(*doc.rootNode, "viewerState");
-     peditor_->viewer()->writeViewerState(doc, vs);
-    }
+    saveState(doc, *doc.rootNode, ist_file_.parent_path());
 
     doc.saveToFile(ist_file_);
 
@@ -611,18 +640,8 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
     resetExecutionEnvironment(ist_file_.parent_path());
   }
 
-  auto ps = parameters().cloneParameterSet();
-
   insight::XMLDocument doc(ist_file_);
-  
-  ps->readFromRootNode(*doc.rootNode, ist_file_.parent_path());
-
-  if (auto *vs = rootnode->first_node("viewerState"))
-  {
-    peditor_->viewer()->restoreViewerState(*vs);
-  }
-
-  psmodel_->resetParameterValues( *ps );
+  restoreState(*doc.rootNode, ist_file_.parent_path());
 }
 
 

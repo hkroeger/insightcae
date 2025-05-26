@@ -62,6 +62,7 @@
 #include "iqexecutionworkspace.h"
 #include "iqresultsetfiltermodel.h"
 #include "iqresultsetdisplayerwidget.h"
+#include "editorwithsavablestate.h"
 
 #include <set>
 
@@ -88,7 +89,8 @@ class SolverOutputAnalyzer;
 
 class AnalysisForm
 : public QWidget, //QMdiSubWindow,
-  public IQExecutionWorkspace
+  public IQExecutionWorkspace,
+  public EditorWithSavableState
 {
   Q_OBJECT
 
@@ -107,10 +109,7 @@ protected:
   bool isOpenFOAMAnalysis_;
   insight::supplementedInputDataBasePtr sid_;
 
-//  insight::ResultSetPtr results_;
-//  QPointer<insight::IQResultSetModel> resultsModel_;
-//  insight::IQFilteredResultSetModel *filteredResultsModel_;
-//  IQResultSetFilterModel *filterModel_;
+
   IQResultSetDisplayerWidget* resultsViewer_;
   IQSupplementedInputDataModel supplementedInputDataModel_;
   
@@ -241,6 +240,15 @@ public:
 
   bool isOpenFOAMAnalysis() const;
   insight::OperatingSystemSet compatibleOperatingSystems() const;
+
+  void saveState(
+      rapidxml::xml_document<>& doc,
+      rapidxml::xml_node<>& rootNode,
+      const boost::filesystem::path& parentPath ) const override;
+
+  void restoreState(
+      const rapidxml::xml_node<>& rootNode,
+      const boost::filesystem::path& parentPath ) override;
 
 
 protected:

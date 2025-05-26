@@ -142,7 +142,7 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
         else if ( ( field.first=="nut" ) && ( get<0> ( field.second ) ==scalarField ) )
         {
             BC["type"]=OFDictData::data ( "calculated" );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( 1e-10 );
+            BC["value"]=OFDictData::toUniformField( 1e-10 );
         }
         else if ( ( field.first=="nuTilda" ) && ( get<0> ( field.second ) ==scalarField ) )
         {
@@ -155,7 +155,7 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
         else if ( ( field.first=="nuSgs" ) && ( get<0> ( field.second ) ==scalarField ) )
         {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]="uniform 1e-10";
+            BC["value"]=OFDictData::toUniformField(1e-10);
         }
         else
         {

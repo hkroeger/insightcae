@@ -102,9 +102,9 @@ public:
                            {
                                absolute(from).string(),
                                absolute(to).string(),
-                               "-scale", OFDictData::to_OF(p().scale),
-                               "-translate", OFDictData::to_OF(p().translate),
-                               "-rollPitchYaw", OFDictData::to_OF(p().rollPitchYaw)
+                               "-scale", OFDictData::toString(OFDictData::vector3(p().scale)),
+                               "-translate", OFDictData::toString(OFDictData::vector3(p().translate)),
+                               "-rollPitchYaw", OFDictData::toString(OFDictData::vector3(p().rollPitchYaw))
                            }
                            );
     }

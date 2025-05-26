@@ -1493,7 +1493,7 @@ arma::mat viscousForceProfile
 )
 {
   std::vector<std::string> opts;
-  opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(axis)));
   opts.push_back("(viscousForce viscousForceMean)");
   opts.push_back("-walls");
   opts.push_back("-n");
@@ -1532,7 +1532,7 @@ arma::mat projectedArea
   }
   pl+=")";
   opts.push_back(pl);
-  opts.push_back(OFDictData::to_OF(direction));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(direction)));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
@@ -1699,13 +1699,20 @@ void extrude2DMesh
   if (!wedgeInsteadOfPrism)
   {
     opt.clear();
-    opt=list_of<std::string>("-translate")(OFDictData::to_OF(offsetTranslation)).convert_to_container<std::vector<std::string> >();
+    opt={
+      "-translate",
+      OFDictData::toString(OFDictData::vector3(offsetTranslation))
+    };
     cm.executeCommand(location, "transformPoints", opt);
   }
   else
   {
     opt.clear();
-    opt=list_of<std::string> (OFDictData::to_OF(vec3(0,0,0))) (sourcePatchName) (sourcePatchName2).convert_to_container<std::vector<std::string> >();
+    opt={
+       OFDictData::toString(OFDictData::vector3(0,0,0)),
+       sourcePatchName,
+       sourcePatchName2
+    };
     cm.executeCommand(location, "flattenWedges", opt);
   }
 }
@@ -1863,7 +1870,7 @@ arma::mat interiorPressureFluctuationProfile
 )
 {
   std::vector<std::string> opts;
-  opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(axis)));
   opts.push_back("(pPrime2Mean)");
   opts.push_back("-interior");
   opts.push_back("-n");
@@ -2047,10 +2054,10 @@ arma::mat surfaceProjectLine
 {
   std::vector<std::string> opts;
   opts.push_back(surfaceFile.string());
-  opts.push_back(OFDictData::to_OF(start));
-  opts.push_back(OFDictData::to_OF(end));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(start)));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(end)));
   opts.push_back(lexical_cast<std::string>(npts));
-  opts.push_back(OFDictData::to_OF(projdir));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(projdir)));
 //   copy(addopts.begin(), addopts.end(), back_inserter(opts));
 
   std::vector<std::string> output;
@@ -2650,7 +2657,7 @@ void eMesh::write(std::ostream &f) const
      <<"("<<endl;
     for (const arma::mat& p: points_)
     {
-      f<<OFDictData::to_OF(p)<<endl;
+      f<<OFDictData::vector3(p)<<endl;
     }
     f<<")"<<endl;
 

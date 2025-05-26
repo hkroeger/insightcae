@@ -103,7 +103,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
         boost::get<Parameters::fielddata_uniformSteady_type>(
             &p().fielddata ) ) //(type=="uniform")
     {
-        os <<" uniform unsteady 0.0 " << OFDictData::to_OF(fd->value);
+        os <<" uniform unsteady 0.0 " << OFDictData::vector3(fd->value);
     }
 
     else if (const auto *fd =
@@ -114,7 +114,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
         for (const auto& inst: fd->values)
         {
-            os << " " << inst.time << " " << OFDictData::to_OF(inst.value);
+            os << " " << inst.time << " " << OFDictData::vector3(inst.value);
         }
     }
     else if ( const auto *fd =
@@ -122,9 +122,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                  &p().fielddata ) )
     {
         os<<" linearProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::vector3(fd->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::vector3(fd->ep)
           ;
 
         os<<" "
@@ -140,9 +140,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                  &p().fielddata) )
     {
         os<<" radialProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::vector3(fd->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::vector3(fd->ep)
           ;
 
         os<<" "
@@ -158,9 +158,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                  &p().fielddata ) )
     {
         os<<" fittedProfile "
-          <<OFDictData::to_OF(fp->p0)
+          <<OFDictData::vector3(fp->p0)
           <<" "
-          <<OFDictData::to_OF(fp->ep)
+          <<OFDictData::vector3(fp->ep)
           <<" "
           <<"unsteady";
 
@@ -182,9 +182,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                    &p().fielddata ) )
     {
         os<<" fittedProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::vector3(fd->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::vector3(fd->ep)
           <<" "
           <<"unsteady";
 
@@ -227,10 +227,11 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
 void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
-  if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p().fielddata) )
+  if (const auto *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(&p().fielddata) )
   {
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform " + OFDictData::to_OF(fd->value);
+    BC["value"]=OFDictData::toUniformField(fd->value);
   }
   else
   {

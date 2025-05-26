@@ -103,17 +103,6 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["offset"]=OFDictData::vector3 ( vec3 ( 0,0,0 ) );
             BC["setAverage"]=false;
             BC["perturb"]=1e-3;
-
-//       OFDictData::dictFile& Udict=dictionaries.lookupDict(prefix+"/0/U");
-//       Udict.isSequential=true;
-//       Udict["a"]=OFDictData::vector3(vec3(0,0,0));
-//
-//       OFDictData::list vals;
-//       const arma::mat& Udat=p_.velocity();
-//       cout<<Udat<<endl;
-//       for (int r=0; r<Udat.n_rows; r++)
-// 	vals.push_back(OFDictData::vector3(Udat.row(r).t()));
-//       Udict["b"]=vals;
             addDataDict ( dictionaries, prefix, "U", velocity );
         }
 
@@ -122,30 +111,13 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         ) {
             BC["type"]=OFDictData::data ( "zeroGradient" );
         }
-//     else if (
-//       (field.first=="T")
-//       &&
-//       (get<0>(field.second)==scalarField)
-//     )
-//     {
-//       BC["type"]=OFDictData::data("fixedValue");
-//       BC["value"]="uniform "+lexical_cast<string>(p_.T());
-//     }
         else if (isPrghPressureField(field)) {
             if ( OFversion() >=210 ) {
                 BC["type"]=OFDictData::data ( "fixedFluxPressure" );
             } else {
                 BC["type"]=OFDictData::data ( "buoyantPressure" );
             }
-//       BC["type"]=OFDictData::data("calculated");
-//       BC["value"]=OFDictData::data("uniform 0");
         }
-
-//     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
-//     {
-//       BC["type"]=OFDictData::data("fixedValue");
-//       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
-//     }
         else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "timeVaryingMappedFixedValue" );
             BC["offset"]=0.0;
@@ -167,18 +139,11 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         } else if ( ( field.first=="nut" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             double nutilda=1e-10; //sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( nutilda );
+            BC["value"]=OFDictData::toUniformField( nutilda );
         }
-//     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
-//     {
-//       BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
-//       BC["offset"]=0.0;
-//       BC["setAverage"]=false;
-// //       addDataDict(dictionaries, prefix, "nuTilda", p_.epsilon());
-//     }
         else if ( ( field.first=="nuSgs" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]="uniform 1e-10";
+            BC["value"]=OFDictData::toUniformField(1e-10);
         } else {
             if ( ! (
                         MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
@@ -187,7 +152,6 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     ) ) {
                 BC["type"]=OFDictData::data ( "zeroGradient" );
             }
-            //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
         }
     }
 }

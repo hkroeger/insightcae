@@ -59,7 +59,7 @@ bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldIn
     )
     {
       BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform (0 0 0)");
+      BC["value"]=OFDictData::toUniformField(vec3Zero());
       return true;
     }
     else
@@ -101,13 +101,12 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& /
     BC["minPressure"]=  OFDictData::data(p().clipPressure);
     BC["nSmoothIter"]=  OFDictData::data(4);
     BC["wallCollisionCheck"]=  OFDictData::data(true);
-    if (const Parameters::oldPressure_uniform_type* op = boost::get<Parameters::oldPressure_uniform_type>(&p().oldPressure) )
+    if (const Parameters::oldPressure_uniform_type* op =
+            boost::get<Parameters::oldPressure_uniform_type>(&p().oldPressure) )
     {
-      std::ostringstream oss;
-      oss<<"uniform "<<op->value;
-      BC["oldPressure"] = OFDictData::data(oss.str());
+      BC["oldPressure"] = OFDictData::toUniformField(op->value);
     }
-    BC["value"]=OFDictData::data("uniform (0 0 0)");
+    BC["value"]=OFDictData::toUniformField(vec3Zero());
 
     OFDictData::list relaxProfile;
 

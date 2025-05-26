@@ -56,15 +56,15 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             if (p().rotating)
             {
                 BC["type"]=OFDictData::data("rotatingWallVelocity");
-                BC["origin"]=OFDictData::to_OF(p().CofR);
+                BC["origin"]=OFDictData::vector3(p().CofR);
                 double om=norm(p().wallVelocity, 2);
-                BC["axis"]=OFDictData::to_OF(p().wallVelocity/om);
+                BC["axis"]=OFDictData::vector3(p().wallVelocity/om);
                 BC["omega"]=boost::lexical_cast<std::string>(om);
             }
             else
             {
                 BC["type"]=OFDictData::data("movingWallVelocity");
-                BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p().wallVelocity));
+                BC["value"]=OFDictData::toUniformField(p().wallVelocity);
             }
         }
 

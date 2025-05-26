@@ -62,15 +62,16 @@ void CyclicACMIBC::addIntoFieldDictionaries(OFdicts &dictionaries) const
           OFDictData::data value;
           if (get<0> ( field.second ) ==scalarField)
           {
-              value="uniform 0";
+              value=OFDictData::toUniformField(0.);
           }
           else if (get<0> ( field.second ) ==vectorField)
           {
-              value="uniform (0 0 0)";
+              value=OFDictData::toUniformField(vec3Zero());
           }
           else if (get<0> ( field.second ) ==symmTensorField)
           {
-              value="uniform (0 0 0 0 0 0)";
+              arma::mat R=arma::zeros(6, 1);
+              value=OFDictData::toUniformField(R);
           }
           BC["value"]=value;
         }

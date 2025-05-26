@@ -123,7 +123,7 @@ public:
         return *lastMouseLocation_;
     }
 
-    void updateLastMouseLocation(const QPoint& p)
+    virtual void updateLastMouseLocation(const QPoint& p)
     {
         lastMouseLocation_.reset(new QPoint(p));
     }

@@ -274,6 +274,8 @@ void IQVTKConstrainedSketchEditor::drawPoint()
             {
                 if (pp.onFeature)
                 {
+                    entityProperties_->changeDefaultParameters(*pp.p);
+
                     if ( pp.onFeature
                             ->topologicalProperties().onlyEdges() )
                     {
@@ -297,8 +299,6 @@ void IQVTKConstrainedSketchEditor::drawPoint()
                     (*this)->insertGeometry(
                         FixedPointConstraint::create( pp.p ) ); // fix first point
                 }
-
-                entityProperties_->changeDefaultParameters(*pp.p);
 
                 (*this)->invalidate();
                 Q_EMIT sketchChanged();
@@ -457,6 +457,7 @@ void IQVTKConstrainedSketchEditor::splitLine()
             {
                 addedLine->changeDefaultParameters(
                     originalLine->defaultParameters());
+
                 (*this)->insertGeometry(
                     TangentConstraint::create( originalLine, addedLine ) );
             }
@@ -587,7 +588,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
       insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
   entityProperties_(
           entityProperties?
-              entityProperties : std::make_shared<insight::cad::ConstrainedSketchParametersDelegate>() ),
+              entityProperties :
+              std::make_shared<insight::cad::ConstrainedSketchParametersDelegate>() ),
   layerPropertiesEditor_(nullptr)
 {
     if (!presentationDelegateKey.empty())
@@ -1216,6 +1218,18 @@ IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 {}
 
 
+void IQVTKConstrainedSketchEditor::setPathToEditedParameter(
+    const std::string& pp)
+{
+    pathToEditedParameter_=pp;
+}
+
+boost::optional<std::string>
+IQVTKConstrainedSketchEditor::pathToEditedParameter() const
+{
+    return pathToEditedParameter_;
+}
+
 
 QString IQVTKConstrainedSketchEditor::description() const
 {
@@ -1481,6 +1495,20 @@ bool IQVTKConstrainedSketchEditor::onMouseDrag
         ::onMouseDrag(buttons, curFlags, point, eventType);
 }
 
+void IQVTKConstrainedSketchEditor::updateLastMouseLocation(const QPoint &p)
+{
+    ViewWidgetAction<IQVTKCADModel3DViewer>::updateLastMouseLocation(p);
+
+    auto p2 = viewer().pointInPlane2D(
+        sketch().plane()->plane(),
+          viewer().pointInPlane3D(
+            sketch().plane()->plane(),
+            p
+        ) );
+    viewer().updateMouseCoordinateDisplay(p2(0), p2(1));
+}
+
+
 
 
 
@@ -1582,25 +1610,34 @@ void IQVTKConstrainedSketchEditor::renameLayer(
 
 void IQVTKConstrainedSketchEditor::onSketchSizeChanged()
 {
-    auto bb=(*this)->sketchBoundingBox();
-    double Ldiag=std::max(
-        insight::LSMALL,
-        arma::norm(bb.col(1)-bb.col(0), 2) );
+    static std::atomic<bool> isRunning(false); // need to detect recursion, might occur via parameter change=>sketch size change
 
-    for (const auto& g: **this)
+    if (!isRunning)
     {
-        if (auto dim =
-            std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
-                g.second ) )
+        isRunning=true;
+
+        auto bb=(*this)->sketchBoundingBox();
+        double Ldiag=std::max(
+            insight::LSMALL,
+            arma::norm(bb.col(1)-bb.col(0), 2) );
+
+        for (const auto& g: **this)
         {
-            dim->setArrowSize(Ldiag*0.01);
-            auto i=sketchGeometryActors_.find(dim);
-            if (i!=sketchGeometryActors_.end())
+            if (auto dim =
+                std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
+                    g.second ) )
             {
-                removeActors(dim, false);
-                addActors(dim);
+                dim->setArrowSize(Ldiag*0.01);
+                auto i=sketchGeometryActors_.find(dim);
+                if (i!=sketchGeometryActors_.end())
+                {
+                    removeActors(dim, false);
+                    addActors(dim);
+                }
             }
         }
+
+        isRunning=false;
     }
 }
 

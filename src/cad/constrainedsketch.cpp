@@ -376,6 +376,11 @@ ConstrainedSketch::insertGeometry(
                 propertiesParent_.get());
         }
         geometry_.insert({key, geomEntity});
+        geomEntity->notifyAboutParameterChanges(
+            this,
+            [this, key](const ParameterSet&) {
+                geometryChanged(key);
+            } );
         geometryAdded(key);
     }
     else
@@ -408,6 +413,11 @@ ConstrainedSketch::setExternalReference(
     if (i==geometry_.end())
     {
         geometry_.insert({ key, extRef });
+        extRef->notifyAboutParameterChanges(
+            this,
+            [this, key](const ParameterSet&) {
+                geometryChanged(key);
+            } );
         geometryAdded(key);
     }
     else

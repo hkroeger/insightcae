@@ -3,6 +3,7 @@
 #include "constrainedsketch.h"
 
 #include "base/exception.h"
+#include "base/rapidxml.h"
 
 #include "boost/functional/hash.hpp"
 
@@ -50,7 +51,14 @@ ConstrainedSketchEntity::ConstrainedSketchEntity(
             : layerName ),
     defaultParameters_(ParameterSet::create()),
     parameters_(ParameterSet::create())
-{}
+{
+    parameters_->valueChanged.connect(
+        [this]() { parametersChanged(*parameters_); }
+        );
+    parameters_->childValueChanged.connect(
+        [this]() { parametersChanged(*parameters_); }
+        );
+}
 
 
 

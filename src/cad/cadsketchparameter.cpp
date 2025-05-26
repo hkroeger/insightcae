@@ -14,7 +14,35 @@ defineType(CADSketchParameter);
 addToFactoryTable(Parameter, CADSketchParameter);
 
 
+std::shared_ptr<insight::cad::ConstrainedSketch>
+CADSketchParameter::createEmpty() const
+{
+    auto s = insight::cad::ConstrainedSketch::create(
+        std::make_shared<cad::DatumPlane>(
+            cad::vec3const(0,0,0),
+            cad::vec3const(0,0,1) ),
+        *entityProperties() );
 
+    for (auto& ref: references_)
+    {
+        try
+        {
+            auto &r =
+                const_cast<CADSketchParameter&>(*this)
+                          .parentSet()
+                          .get<CADGeometryParameter>(ref.second);
+
+            s->setExternalReference(
+                cad::ExternalReference::create(r.geometry()),
+                ref.first
+                );
+        }
+        catch (const ParameterNotFoundException&)
+        {}
+    }
+
+    return s;
+}
 
 void CADSketchParameter::resetCADGeometry()
 {

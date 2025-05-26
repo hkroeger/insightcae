@@ -70,6 +70,8 @@ public:
     ~CADSketchParameter();
 
 
+    std::shared_ptr<insight::cad::ConstrainedSketch> createEmpty() const;
+
     void setReferences(const std::map<int, std::string>& references);
 
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties() const;

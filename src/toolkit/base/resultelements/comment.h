@@ -37,7 +37,7 @@ public:
     void readFromNode
         (
             const std::string& name,
-            rapidxml::xml_node<>& node
+            const rapidxml::xml_node<>& node
         ) override;
 
     inline const std::string& value() const

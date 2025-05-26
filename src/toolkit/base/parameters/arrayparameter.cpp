@@ -419,11 +419,13 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(
 
 
 
-void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>& node,
+void ArrayParameter::readFromNode(
+    const std::string& name,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = findNode(node, name, type());
 
   if (child)
   {

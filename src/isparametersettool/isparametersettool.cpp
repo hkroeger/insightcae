@@ -21,6 +21,7 @@
 
 #include "base/parameters.h"
 #include "base/cppextensions.h"
+#include "base/rapidxml.h"
 #include "base/translations.h"
 #include "base/toolkitversion.h"
 #include "base/tools.h"
@@ -117,38 +118,23 @@ int main(int argc, char *argv[])
             exit(-1);
         }
 
-        std::string contents, analysisName;
+        std::string analysisName;
 
         boost::filesystem::path fn = vm["input-file"].as<std::string>();
         auto inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
         auto filestem = fn.stem().string();
 
-        if (!boost::filesystem::exists(fn))
-        {
-            std::cerr << std::endl
-                      << _("Error: input file does not exist")<<": "<<fn
-                      <<std::endl<<std::endl;
-            exit(-1);
-        }
+        insight::XMLDocument doc(fn);
 
-        readFileIntoString(fn, contents);
-
-        xml_document<> doc;
-        doc.parse<0>(&contents[0]);
-
-        xml_node<> *rootnode = doc.first_node("root");
-
-        xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-        if (analysisnamenode)
+        if (auto *analysisnamenode = doc.rootNode->first_node("analysis"))
         {
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
 
-
         auto parameters =
             insight::Analysis::defaultParameters()(analysisName);
 
-        parameters->readFromNode( std::string(), *rootnode, inputFileParentPath );
+        parameters->readFromNode( std::string(), *doc.rootNode, inputFileParentPath );
 
         if (vm.count("merge"))
         {

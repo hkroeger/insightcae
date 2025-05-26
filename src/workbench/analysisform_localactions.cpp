@@ -141,3 +141,4 @@ AnalysisForm::compatibleOperatingSystems() const
     return insight::Analysis::compatibleOperatingSystemFunctions()(analysisName_);
 }
 
+

@@ -171,16 +171,21 @@ double ResultElementCollection::getScalar(const std::string& path) const
     return this->get<NumericalResult<double> >(path).value();
 }
 
-void ResultElementCollection::appendElementsToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) const
+void ResultElementCollection::appendElementsToNode (
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node ) const
 {
     for ( const_iterator i=begin(); i!= end(); i++ ) {
         i->second->appendToNode ( i->first, doc, node );
     }
 }
 
-void ResultElementCollection::readElementsFromNode ( rapidxml::xml_node<>& node )
+void ResultElementCollection::readElementsFromNode (
+    const rapidxml::xml_node<>& node )
 {
-    for ( xml_node<> *e = node.first_node(); e; e = e->next_sibling() ) {
+    for ( auto *e = node.first_node();
+         e; e = e->next_sibling() )
+    {
         std::string tname ( e->name() );
         std::string name ( e->first_attribute ( "name" )->value() );
 //         std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;

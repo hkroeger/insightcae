@@ -1,5 +1,6 @@
 #include "iqresultsetdisplayerwidget.h"
 #include "base/exception.h"
+#include "base/rapidxml.h"
 #include "base/translations.h"
 #include "ui_iqresultsetdisplayerwidget.h"
 
@@ -268,15 +269,9 @@ void IQResultSetDisplayerWidget::loadFilter()
     {
         insight::CurrentExceptionContext ex("reading result set filter from file "+inf.asString());
 
-        std::string contents;
-        insight::readFileIntoString(inf, contents);
-
-        rapidxml::xml_document<> doc;
-        doc.parse<0>(&contents[0]);
-
-        rapidxml::xml_node<> *rootnode = doc.first_node("root");
+        insight::XMLDocument doc(inf);
         insight::ResultSetFilter rsf;
-        rsf.readFromNode(*rootnode);
+        rsf.readFromNode(*doc.rootNode);
         filterModel_->resetFilter(rsf);
     }
 }

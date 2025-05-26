@@ -106,13 +106,7 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
           {
               auto file = insight::ensureFileExtension(fn, "iss");
 
-              insight::CurrentExceptionContext ex("reading parameter set from file "+file.string());
-              std::string contents;
-              insight::readFileIntoString(file, contents);
-
-              // prepare XML document
-              xml_document<> doc;
-              doc.parse<0>(&contents[0]);
+              insight::XMLDocument doc(file);
               xml_node<> *rootnode = doc.first_node(insight::SelectableSubsetParameter::typeName_());
 
 

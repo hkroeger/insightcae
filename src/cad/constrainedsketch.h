@@ -147,6 +147,7 @@ public:
 class ConstrainedSketch
     : public Feature
 {
+
 public:    
     enum SolverType
     {

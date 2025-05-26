@@ -46,11 +46,14 @@ void appendAttribute(
 
 
 std::string
-getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
-
+getMandatoryAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName );
 
 std::shared_ptr<std::string>
-getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+getOptionalAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName );
 
 std::reference_wrapper<rapidxml::xml_node<> >
 appendRootNode(
@@ -64,15 +67,59 @@ appendNode(
         const std::string& label );
 
 
-struct XMLDocument
+
+
+class XMLDocument
     : public rapidxml::xml_document<>
 {
+    std::string buffer_; // needs to persist during the lifetime of xml_document
+    void parseBuffer();
+
+public:
+    xml_node<> *rootNode = nullptr;
+
+    /**
+     * @brief XMLDocument
+     * create empty XML document with a single rootNode named "root"
+     */
+    XMLDocument();
+
+    /**
+     * @brief XMLDocument
+     * parse the specified string. Find the top level node named "root", if it exists.
+     * @param file
+     */
+    template<class Iterator>
+    XMLDocument(Iterator beg, Iterator end)
+        : buffer_(beg, end)
+    {
+        parseBuffer();
+    }
+
+    /**
+     * @brief XMLDocument
+     * parse the specified stream. Find the top level node named "root", if it exists.
+     * @param file
+     */
+    XMLDocument(std::istream& ons);
+
+    /**
+     * @brief XMLDocument
+     * parse the specified file. Find the top level node named "root", if it exists.
+     * @param file
+     */
     XMLDocument(const boost::filesystem::path& file);
+
+    void saveToStream(std::ostream& os) const;
+    void saveToFile(const boost::filesystem::path& file) const;
 };
 
 
-rapidxml::xml_node<> *findNode(
-    rapidxml::xml_node<>& father,
+
+
+const rapidxml::xml_node<> *
+findNode(
+    const rapidxml::xml_node<>& father,
     const std::string& name,
     const std::string& typeName
     );

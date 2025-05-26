@@ -33,7 +33,6 @@
 #include "base/remoteserverlist.h"
 #include "base/translations.h"
 #include "base/rapidxml.h"
-#include "rapidxml/rapidxml_print.hpp"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
@@ -530,36 +529,21 @@ void AnalysisForm::saveParameters(bool *cancelled)
       p->clearPackedData();
     }
 
-    // prepare XML document
-    using namespace rapidxml;
-    xml_document<> doc;
-    xml_node<>* decl = doc.allocate_node(node_declaration);
-    decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-    decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-    doc.append_node(decl);
-    xml_node<> *rootNode = doc.allocate_node(node_element, "root");
-    doc.append_node(rootNode);
+    insight::XMLDocument doc;
 
-    p->saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
+    p->saveToNode(*doc.rootNode, ist_file_.parent_path(), analysisName_);
 
     {
-     auto vs = insight::appendNode(doc, *rootNode, "viewerState");
+     auto vs = insight::appendNode(*doc.rootNode, "viewerState");
      peditor_->viewer()->writeViewerState(doc, vs);
     }
 
-    std::ofstream f(ist_file_.c_str());
-    f << doc;
-    f << std::endl;
-    f << std::flush;
-    f.close();
-
-    //p.saveToFile(ist_file_, analysisName_);
+    doc.saveToFile(ist_file_);
 
     is_modified_=false;
     updateWindowTitle();
   }
 }
-
 
 
 
@@ -629,15 +613,9 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 
   auto ps = parameters().cloneParameterSet();
 
-  std::string contents;
-  insight::readFileIntoString(ist_file_, contents);
-
-  using namespace rapidxml;
-  xml_document<> doc;
-  doc.parse<0>(&contents[0]);
-
-  xml_node<> *rootnode = doc.first_node("root");
-  ps->readFromRootNode(*rootnode, ist_file_.parent_path());
+  insight::XMLDocument doc(ist_file_);
+  
+  ps->readFromRootNode(*doc.rootNode, ist_file_.parent_path());
 
   if (auto *vs = rootnode->first_node("viewerState"))
   {

@@ -61,7 +61,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& diction
     BC["uniformConvection"]=tu->uniformConvection;
     BC["R"]=FieldData(tu->R).sourceEntry(dictionaries);
     BC["L"]=FieldData(tu->L).sourceEntry(dictionaries);
-    BC["value"]="uniform (0 0 0)";
+    BC["value"]=OFDictData::toUniformField(vec3Zero());
   }
 }
 
@@ -82,7 +82,7 @@ void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC, OFdicts&) const
     double uprime=tu->intensity*U;
     double k=std::max(1e-6, 3.*pow(uprime, 2)/2.);
     BC["type"]="fixedValue";
-    BC["value"]="uniform "+boost::lexical_cast<std::string>(k);
+    BC["value"]=OFDictData::toUniformField(k);
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
@@ -91,7 +91,7 @@ void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC, OFdicts&) const
   {
     // set some small sgs energy
     BC["type"]="fixedValue";
-    BC["value"]="uniform 1e-5";
+    BC["value"]=OFDictData::toUniformField(1e-5);
   }
 }
 
@@ -108,7 +108,7 @@ void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC, OFdicts&) co
     double k = std::max(1e-6, 3.*pow(uprime, 2)/2.);
     double omega = sqrt(k) / tu->lengthScale;
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform "+boost::lexical_cast<std::string>(omega);
+    BC["value"]=OFDictData::toUniformField(omega);
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
@@ -133,7 +133,7 @@ void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC, OFdicts&) 
     double k=3.*pow(uprime, 2)/2.;
     double epsilon=0.09*pow(k, 1.5)/tu->lengthScale;
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform "+boost::lexical_cast<std::string>(epsilon);
+    BC["value"]=OFDictData::toUniformField(epsilon);
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
@@ -157,7 +157,7 @@ void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC, OFdicts&) 
     double uprime = tu->intensity*U;
     double nutilda=sqrt(1.5)* uprime * tu->lengthScale;
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform "+boost::lexical_cast<std::string>(nutilda);
+    BC["value"]=OFDictData::toUniformField(nutilda);
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
@@ -181,7 +181,9 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC, OFdicts&) const
     double uprime=tu->intensity*U;
     double kBy3=std::max(1e-6, pow(uprime, 2)/2.);
     BC["type"]="fixedValue";
-    BC["value"]="uniform ("+boost::str(boost::format("%g 0 0 %g 0 %g") % kBy3 % kBy3 % kBy3 )+")";
+    arma::mat R;
+    R << kBy3 << 0. << 0. << kBy3 << 0. << kBy3 << arma::endr;
+    BC["value"]=OFDictData::toUniformField(R);
 
   }
   else if (const Parameters::turbulence_inflowGenerator_type* tu
@@ -221,36 +223,6 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     {
       setField_p(BC, dictionaries);
     }
-//     else if (
-//       (field.first=="T")
-//       &&
-//       (get<0>(field.second)==scalarField)
-//     )
-//     {
-//       p_.T().setDirichletBC(BC);
-// //       BC["type"]=OFDictData::data("fixedValue");
-// //       BC["value"]="uniform "+lexical_cast<string>(p_.T());
-//     }
-//     else if (
-//       ( (field.first=="pd") || (field.first=="p_rgh") )
-//       &&
-//       (get<0>(field.second)==scalarField)
-//     )
-//     {
-//       if (OFversion()>=210)
-// 	BC["type"]=OFDictData::data("fixedFluxPressure");
-//       else
-// 	BC["type"]=OFDictData::data("buoyantPressure");
-// //       BC["type"]=OFDictData::data("calculated");
-// //       BC["value"]=OFDictData::data("uniform 0");
-//     }
-
-//     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
-//     {
-// //       BC["type"]=OFDictData::data("fixedValue");
-// //       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
-//       p_.rho().setDirichletBC(BC);
-//     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
       setField_k(BC, dictionaries);
@@ -266,7 +238,7 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("calculated");
-      BC["value"]="uniform "+boost::lexical_cast<std::string>(1e-10);
+      BC["value"]=OFDictData::toUniformField(1e-10);
     }
     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
     {
@@ -279,7 +251,6 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]="zeroGradient";
-//       BC["value"]="uniform 1e-10";
     }
     else
     {

@@ -41,7 +41,7 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
     if (fieldname == "k")
   {
     BC["type"]="kqRWallFunction";
-    BC["value"]="uniform 1e-10";
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   else if (fieldname == "omega")
@@ -51,7 +51,7 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
     BC["kappa"]=0.41;
     BC["E"]=9.8;
     BC["tw"]=0.057;
-    BC["value"]="uniform 1";
+    BC["value"]=OFDictData::toUniformField(1.);
     return true;
   }
   else if (fieldname == "nut")
@@ -60,7 +60,7 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
     BC["Cmu"]=0.09;
     BC["kappa"]=0.41;
     BC["E"]=9.8;
-    BC["value"]="uniform 1e-10";
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   return false;

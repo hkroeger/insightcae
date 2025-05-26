@@ -223,7 +223,6 @@ struct dictFile
   void write(const boost::filesystem::path& dictPath) const;
 };
 
-std::string to_OF(const arma::mat& v);
 
 /**
  * Return the first three elements of given vector as OFDictData::list
@@ -249,6 +248,11 @@ std::ostream& operator<<(std::ostream& os, const dimensionSet& d);
 std::ostream& operator<<(std::ostream& os, const dimensionedData& d);
 std::ostream& operator<<(std::ostream& os, const dict& d);
 std::ostream& operator<<(std::ostream& os, const list& l);
+
+
+std::string toString(const data& d);
+std::string toUniformField(const data& d);
+std::string toUniformField(const arma::mat& v);
 
 }
 

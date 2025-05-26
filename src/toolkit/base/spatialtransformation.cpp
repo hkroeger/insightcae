@@ -240,9 +240,9 @@ void SpatialTransformation::executeOFTransforms(
             {
               geofile.string(),
               geofile.string(),
-              "-translate", OFDictData::to_OF( translate() ),
-              "-rollPitchYaw", OFDictData::to_OF( rollPitchYaw() ),
-              "-scale", OFDictData::to_OF( vec3(1,1,1)*scale() )
+              "-translate", OFDictData::toString(OFDictData::vector3( translate() )),
+              "-rollPitchYaw", OFDictData::toString(OFDictData::vector3( rollPitchYaw() )),
+              "-scale", OFDictData::toString(OFDictData::vector3( vec3(1,1,1)*scale() ))
             }
           );
     }

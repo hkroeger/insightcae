@@ -274,9 +274,9 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
     {
      absolute(from).string(),
      absolute(to).string(),
-     "-scale", OFDictData::to_OF(p().scale),
-     "-translate", OFDictData::to_OF(p().translate),
-     "-rollPitchYaw", OFDictData::to_OF(p().rollPitchYaw)
+     "-scale", OFDictData::toString(OFDictData::vector3(p().scale)),
+     "-translate", OFDictData::toString(OFDictData::vector3(p().translate)),
+     "-rollPitchYaw", OFDictData::toString(OFDictData::vector3(p().rollPitchYaw))
     }
   );
 }
@@ -336,8 +336,8 @@ RefinementBox::RefinementBox(ParameterSetInput ip)
 bool RefinementBox::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableBox";
-  d["min"]=OFDictData::to_OF(p().min);
-  d["max"]=OFDictData::to_OF(p().max);
+  d["min"]=OFDictData::vector3(p().min);
+  d["max"]=OFDictData::vector3(p().max);
   return true;
 }
 
@@ -356,8 +356,8 @@ RefinementCylinder::RefinementCylinder(ParameterSetInput ip)
 bool RefinementCylinder::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableCylinder";
-  d["point1"]=OFDictData::to_OF(p().point1);
-  d["point2"]=OFDictData::to_OF(p().point2);
+  d["point1"]=OFDictData::vector3(p().point1);
+  d["point2"]=OFDictData::vector3(p().point2);
   d["radius"]=p().radius;
   return true;
 }
@@ -378,7 +378,7 @@ RefinementSphere::RefinementSphere(ParameterSetInput ip)
 bool RefinementSphere::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableSphere";
-  d["centre"]=OFDictData::to_OF(p().center);
+  d["centre"]=OFDictData::vector3(p().center);
   d["radius"]=p().radius;
   return true;
 }

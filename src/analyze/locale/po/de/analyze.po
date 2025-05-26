@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: analyze \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-09 08:43+0000\n"
+"POT-Creation-Date: 2025-05-26 15:08+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,222 +17,226 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: analyze.cpp:76
+#: analyze.cpp:78
 msgid "Allowed options"
 msgstr "Zulässige Optionen"
 
-#: analyze.cpp:78
+#: analyze.cpp:80
 msgid "produce help message"
 msgstr "Hilfe anzeigen"
 
-#: analyze.cpp:79
+#: analyze.cpp:81
 msgid "skip execution of pdflatex"
 msgstr "die Ausführung von pdflatex auslassen"
 
-#: analyze.cpp:80
+#: analyze.cpp:82
 msgid "skip inclusion of input parameters into report"
 msgstr ""
 
-#: analyze.cpp:81
+#: analyze.cpp:83
 msgid "print version and exit"
 msgstr "Version anzeigen und beenden"
 
-#: analyze.cpp:82
+#: analyze.cpp:84
 msgid "execution directory"
 msgstr "Arbeitsverzeichnis"
 
-#: analyze.cpp:83
+#: analyze.cpp:85
 msgid ""
 "save final configuration (including command line overrides) to this file"
 msgstr ""
 "die finale Konfiguration in diese Datei speichern (inklusive aller in der "
 "Kommandozeile überschriebenen Parameter)"
 
-#: analyze.cpp:84
+#: analyze.cpp:86
 msgid "boolean variable assignment"
 msgstr "Wahrheitswert-Variable zuweisen"
 
-#: analyze.cpp:85
+#: analyze.cpp:87
 msgid "selection variable assignment"
 msgstr "Auswahlvariable zuweisen"
 
-#: analyze.cpp:86
+#: analyze.cpp:88
 msgid "string variable assignment"
 msgstr "Zeichenkettenvariable zuweisen"
 
-#: analyze.cpp:87
+#: analyze.cpp:89
 msgid "path variable assignment"
 msgstr "Dateipfadvariable zuweisen"
 
-#: analyze.cpp:88
+#: analyze.cpp:90
 msgid "double variable assignment"
 msgstr "Gleitkommazahl zuweisen"
 
-#: analyze.cpp:89
+#: analyze.cpp:91
 msgid "vector variable assignment"
 msgstr "Vektorvariable zuweisen"
 
-#: analyze.cpp:90
+#: analyze.cpp:92
 msgid "int variable assignment"
 msgstr "Ganzzahlvariable zuweisen"
 
-#: analyze.cpp:91
+#: analyze.cpp:93
 msgid "set size of array"
 msgstr "Größe einer Liste ändern"
 
-#: analyze.cpp:92
+#: analyze.cpp:94
 msgid ""
 "additional input file to merge into analysis parameters before variable "
 "assignments"
 msgstr ""
 
-#: analyze.cpp:93
+#: analyze.cpp:95
 msgid "Additional libraries with analysis modules to load"
 msgstr ""
 
-#: analyze.cpp:94
+#: analyze.cpp:96
 msgid "Specifies input file."
 msgstr ""
 
-#: analyze.cpp:95
+#: analyze.cpp:97
 msgid ""
 "Specifies output file. May be a PDF report or an ISR InsightCAE XML result "
 "set."
 msgstr ""
 
-#: analyze.cpp:97
+#: analyze.cpp:99
 msgid ""
 "Start with REST API server. Keeps the application running after the analysis "
 "has finished. Once the result set is fetched via the REST API, the "
 "application exits."
 msgstr ""
 
-#: analyze.cpp:98
+#: analyze.cpp:100
 msgid "Server address"
 msgstr ""
 
-#: analyze.cpp:99
+#: analyze.cpp:101
 msgid "Server port"
 msgstr ""
 
-#: analyze.cpp:100
+#: analyze.cpp:102
 msgid "Broadcast listen port"
 msgstr ""
 
-#: analyze.cpp:110
+#: analyze.cpp:112
 msgid "Usage:"
 msgstr "Benutzung:"
 
-#: analyze.cpp:111
+#: analyze.cpp:113
 msgid "options"
 msgstr "Optionen"
 
-#: analyze.cpp:131
+#: analyze.cpp:133
 msgid "Could not parse command line"
 msgstr ""
 
-#: analyze.cpp:168
+#: analyze.cpp:170
 #, c-format
 msgid "There have been %d warnings."
 msgstr ""
 
-#: analyze.cpp:170
+#: analyze.cpp:172
 msgid "Please review"
 msgstr ""
 
-#: analyze.cpp:175 analyze.cpp:176
+#: analyze.cpp:177 analyze.cpp:178
 msgid "Warning"
 msgstr "Warnung"
 
-#: analyze.cpp:200
+#: analyze.cpp:202
 msgid "Could not start web server!"
 msgstr ""
 
-#: analyze.cpp:225
+#: analyze.cpp:227
 msgid "Error: library file does not exist: "
 msgstr ""
 
-#: analyze.cpp:250
+#: analyze.cpp:252
 msgid "input file has to be specified!"
 msgstr "Eingabedatei muss angegeben werden!"
 
-#: analyze.cpp:258
+#: analyze.cpp:260
 msgid "only one single input file has to be specified!"
 msgstr "nur eine einzige Eingabedatei darf angegeben werden!"
 
-#: analyze.cpp:269
-msgid "Error: input file does not exist"
-msgstr "Fehler: Eingabedatei existiert nicht"
+#: analyze.cpp:272
+msgid "reading input parameter file"
+msgstr ""
 
-#: analyze.cpp:288
-msgid "Executing analysis in directory"
+#: analyze.cpp:283
+#, fuzzy, c-format
+msgid "Executing analysis of type '%s' in directory '%s'"
 msgstr "Führe Analyse aus im Verzeichnis"
 
-#: analyze.cpp:314
+#: analyze.cpp:312
 #, c-format
 msgid ""
 "merge command needs either one or three arguments!\n"
 "Got: %s"
 msgstr ""
 
-#: analyze.cpp:328
+#: analyze.cpp:326
 #, c-format
 msgid "Resizing array '%s' to %d"
 msgstr ""
 
-#: analyze.cpp:347
+#: analyze.cpp:345
 #, c-format
 msgid "Setting boolean '%s' = %d"
 msgstr ""
 
-#: analyze.cpp:361
+#: analyze.cpp:359
 #, c-format
 msgid "Setting string '%s' = \"%s\""
 msgstr ""
 
-#: analyze.cpp:375
+#: analyze.cpp:373
 #, c-format
 msgid "Setting selection '%s' = \"%s\""
 msgstr ""
 
-#: analyze.cpp:389
+#: analyze.cpp:387
 #, c-format
 msgid "Setting path '%s' = \"%s\""
 msgstr ""
 
-#: analyze.cpp:405
+#: analyze.cpp:403
 #, c-format
 msgid "Setting double '%s' = %g"
 msgstr ""
 
-#: analyze.cpp:421
+#: analyze.cpp:419
 #, c-format
 msgid "Setting vector '%s' = [%g %g %g]"
 msgstr ""
 
-#: analyze.cpp:436
+#: analyze.cpp:434
 #, c-format
 msgid "Setting int '%s'= %d"
 msgstr ""
 
-#: analyze.cpp:448
+#: analyze.cpp:446
 msgid "Applied Parameters for this run"
 msgstr "Für diesen Durchlauf angewendete Parameter"
 
-#: analyze.cpp:542
+#: analyze.cpp:540
 msgid "TeX input file was written but could not execute pdflatex successfully."
 msgstr ""
 "TeX-Eingabedatei wurde geschrieben, aber pdflatex wurde nicht erfolgreich "
 "ausgeführt."
 
-#: analyze.cpp:555
+#: analyze.cpp:553
 msgid "ANALYSIS FINISHED SUCCESSFULLY."
 msgstr "ANALYSE ERFOLGREICH AUSGEFÜHRT."
 
-#: analyze.cpp:561
+#: analyze.cpp:559
 msgid "ANALYSIS STOPPED WITHOUT RESULTS."
 msgstr "ANALYSE OHNE ERGEBNIS BEENDET."
 
-#: analyze.cpp:576
+#: analyze.cpp:574
 msgid "The analysis was stopped due to this error:"
 msgstr "Die Analyse wurde wegen der folgenden Fehler beendet:"
+
+#~ msgid "Error: input file does not exist"
+#~ msgstr "Fehler: Eingabedatei existiert nicht"

@@ -142,7 +142,8 @@ rapidxml::xml_node< char >* ResultElement::appendToNode
     return child;
 }
 
-void ResultElement::readBaseAttributesFromNode(const string &name, rapidxml::xml_node<> &node)
+void ResultElement::readBaseAttributesFromNode(
+    const string &name, const rapidxml::xml_node<> &node)
 {
   shortDescription_=SimpleLatex(node.first_attribute("shortDescription")->value());
   longDescription_=SimpleLatex(node.first_attribute("longDescription")->value());
@@ -150,7 +151,7 @@ void ResultElement::readBaseAttributesFromNode(const string &name, rapidxml::xml
   order_=boost::lexical_cast<double>(node.first_attribute("order")->value());
 }
 
-void ResultElement::readFromNode ( const string& name, rapidxml::xml_node< char >& )
+void ResultElement::readFromNode ( const string& name, const rapidxml::xml_node< >& )
 {
   insight::Warning("Not implemented: restoring result from XML file is not implemented for result element of type "+type()+" (appeared in node "+name+")");
 }

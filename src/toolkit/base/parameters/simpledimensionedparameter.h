@@ -139,13 +139,13 @@ public:
     void readFromNode
     (
         const std::string& name,
-        rapidxml::xml_node<>& node,
+        const rapidxml::xml_node<>& node,
         boost::filesystem::path
     ) override
     {
         using namespace rapidxml;
       using namespace boost::units;
-        xml_node<>* child = findNode ( node, name, type() );
+        auto* child = findNode ( node, name, type() );
         if ( child )
         {
           auto valueattr=child->first_attribute ( "value" );

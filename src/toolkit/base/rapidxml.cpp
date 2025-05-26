@@ -1,6 +1,9 @@
 #include "rapidxml.h"
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/translations.h"
+
+#include "rapidxml/rapidxml_print.hpp"
 
 namespace insight {
 
@@ -20,7 +23,7 @@ namespace insight {
 
 
 std::string
-getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
+getMandatoryAttribute(const rapidxml::xml_node<> &node, const std::string& attributeName)
 {
     if ( auto *fn = node.first_attribute(attributeName.c_str()) )
         return std::string(fn->value());
@@ -30,7 +33,7 @@ getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeNa
 
 
 std::shared_ptr<std::string>
-getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName)
+getOptionalAttribute(const rapidxml::xml_node<> &node, const std::string& attributeName)
 {
     if ( auto *fn = node.first_attribute(attributeName.c_str()) )
         return std::make_shared<std::string>(fn->value());
@@ -87,8 +90,9 @@ XMLDocument::XMLDocument(const boost::filesystem::path &file)
 
 
 
-rapidxml::xml_node<> *findNode(
-    rapidxml::xml_node<>& father,
+const rapidxml::xml_node<> *
+findNode(
+    const rapidxml::xml_node<>& father,
     const std::string& name,
     const std::string& typeName )
 {

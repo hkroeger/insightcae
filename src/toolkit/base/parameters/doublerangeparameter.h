@@ -92,11 +92,15 @@ public:
     std::unique_ptr<DoubleParameter> toDoubleParameter ( RangeList::const_iterator i ) const;
 
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override;
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath ) const override;
+
     void readFromNode (
         const std::string& name,
-        rapidxml::xml_node<>& node,
+        const rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath ) override;
 
     std::unique_ptr<Parameter> clone(bool initialize) const override;

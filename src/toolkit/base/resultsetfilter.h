@@ -18,7 +18,7 @@ public:
     bool matchesRegex(const std::string& path) const;
 
     void readFromNode (
-            rapidxml::xml_node<>& node );
+            const rapidxml::xml_node<>& node );
 
     /**
      * append the contents of this element to the given xml node

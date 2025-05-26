@@ -353,7 +353,7 @@ public:
     virtual void readFromNode
     (
         const std::string& name,
-        rapidxml::xml_node<>& node,
+        const rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath
     ) =0;
 
@@ -367,7 +367,7 @@ public:
     void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
 
     std::string readFromRootNode(
-        rapidxml::xml_node<>& rootNode,
+        const rapidxml::xml_node<>& rootNode,
         const boost::filesystem::path& parent_path,
         const std::string& startAtSubnode = std::string() );
 

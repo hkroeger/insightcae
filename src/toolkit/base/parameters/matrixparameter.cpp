@@ -105,12 +105,12 @@ rapidxml::xml_node< char >* MatrixParameter::appendToNode
 void MatrixParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_node< char >& node,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = findNode(node, name, type());
   if (child)
   {
     std::string value_str=child->value();

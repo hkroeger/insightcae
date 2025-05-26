@@ -353,12 +353,12 @@ rapidxml::xml_node<>* ParameterSet::appendToNode(
 
 void ParameterSet::readFromNode(
     const std::string& name,
-    rapidxml::xml_node<>& node,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
 
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = findNode(node, name, type());
 
   if (child)
   {

@@ -314,7 +314,7 @@ rapidxml::xml_node<>* Chart::appendToNode
     return child;
 }
 
-void Chart::readFromNode(const string &name, rapidxml::xml_node<> &node)
+void Chart::readFromNode(const string &name, const rapidxml::xml_node<> &node)
 {
   readBaseAttributesFromNode(name, node);
   xlabel_=node.first_attribute("xlabel")->value();

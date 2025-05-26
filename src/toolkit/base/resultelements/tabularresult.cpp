@@ -224,7 +224,7 @@ xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document
     return child;
 }
 
-void TabularResult::readFromNode(const string &name, rapidxml::xml_node<> &node)
+void TabularResult::readFromNode(const string &name, const rapidxml::xml_node<> &node)
 {
   readBaseAttributesFromNode(name, node);
 

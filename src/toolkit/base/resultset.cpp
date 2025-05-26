@@ -127,7 +127,7 @@ ResultSet::ResultSet ( const std::string& shortdesc, const std::string& longdesc
     : ResultSet( *ParameterSet::create(), shortdesc, longdesc )
 {}
 
-void ResultSet::readFromNode ( const std::string&, rapidxml::xml_node<>& node )
+void ResultSet::readFromNode ( const std::string&, const rapidxml::xml_node<>& node )
 {
   ResultElementCollection::readElementsFromNode(node);
 }

@@ -46,11 +46,14 @@ void appendAttribute(
 
 
 std::string
-getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
-
+getMandatoryAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName );
 
 std::shared_ptr<std::string>
-getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+getOptionalAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName );
 
 std::reference_wrapper<rapidxml::xml_node<> >
 appendRootNode(
@@ -64,15 +67,20 @@ appendNode(
         const std::string& label );
 
 
-struct XMLDocument
+
+
+class XMLDocument
     : public rapidxml::xml_document<>
 {
     XMLDocument(const boost::filesystem::path& file);
 };
 
 
-rapidxml::xml_node<> *findNode(
-    rapidxml::xml_node<>& father,
+
+
+const rapidxml::xml_node<> *
+findNode(
+    const rapidxml::xml_node<>& father,
     const std::string& name,
     const std::string& typeName
     );

@@ -38,7 +38,7 @@ void Comment::exportDataToFile ( const string& name, const path& outputdirectory
     f<<value_;
 }
 
-void Comment::readFromNode(const string &name, rapidxml::xml_node<> &node)
+void Comment::readFromNode(const string &name, const rapidxml::xml_node<> &node)
 {
   readBaseAttributesFromNode(name, node);
   value_=node.first_attribute("value")->value();

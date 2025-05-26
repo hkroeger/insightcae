@@ -489,14 +489,14 @@ void Parameter::saveToString(std::string &s, const boost::filesystem::path& file
 
 
 std::string Parameter::readFromRootNode(
-    xml_node<>& rootNode,
+    const xml_node<>& rootNode,
     const boost::filesystem::path& parent_path,
     const std::string& startAtSubnode )
 {
     CurrentExceptionContext ex("reading parameter %s from XML node", type().c_str());
 
     std::string analysisName;
-    xml_node<> *analysisnamenode = rootNode.first_node("analysis");
+    auto *analysisnamenode = rootNode.first_node("analysis");
     if (analysisnamenode)
     {
         analysisName = analysisnamenode->first_attribute("name")->value();

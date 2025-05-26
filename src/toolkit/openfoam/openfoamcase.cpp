@@ -742,13 +742,22 @@ const
 
 std::string mpirunCommand(int np)
 {
-    std::string execmd="mpirun -np "+lexical_cast<string>(np);
+    std::string execmd("mpirun");
 
-    std::string envvarname="INSIGHT_ADDITIONAL_MPIRUN_ARGS";
-    if ( char *addargs=getenv ( envvarname.c_str() ) )
+    if ( char *alternative_mpirun_cmd =
+            getenv ( "INSIGHT_MPIRUN_CMD" ) )
+    {
+        execmd = alternative_mpirun_cmd;
+    }
+
+    execmd += str(format(" -np %d") % np);
+
+    if ( char *addargs =
+            getenv ( "INSIGHT_ADDITIONAL_MPIRUN_ARGS" ) )
     {
         execmd += " "+std::string(addargs);
     }
+
     return execmd;
 }
 

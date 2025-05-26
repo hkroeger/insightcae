@@ -127,25 +127,11 @@ int main(int argc, char *argv[])
     {
         std::string fn = vm["input-file"].as<std::string>();
 
-        if (!boost::filesystem::exists(fn))
-        {
-            std::cerr << std::endl
-                << "Error: input file does not exist: "<<fn
-                <<std::endl<<std::endl;
-            exit(-1);
-        }
-
-        std::string contents;
-        readFileIntoString(fn, contents);
-
-        xml_document<> doc;
-        doc.parse<0>(&contents[0]);
-
-        xml_node<> *rootnode = doc.first_node("root");
+        insight::XMLDocument doc(fn);
 
         std::string analysisName;
-        xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-        if (analysisnamenode)
+
+        if (auto *analysisnamenode = doc.rootNode->first_node("analysis"))
         {
             analysisName = analysisnamenode->first_attribute("name")->value();
         }
@@ -154,7 +140,7 @@ int main(int argc, char *argv[])
             insight::Analysis::defaultParameters()(analysisName);
 
         parameters->readFromNode(
-            std::string(), *rootnode,
+            std::string(), *doc.rootNode,
             boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
 
         if (vm.count("unpackexternals"))

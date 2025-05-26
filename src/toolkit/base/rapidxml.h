@@ -72,7 +72,46 @@ appendNode(
 class XMLDocument
     : public rapidxml::xml_document<>
 {
+    std::string buffer_; // needs to persist during the lifetime of xml_document
+    void parseBuffer();
+
+public:
+    xml_node<> *rootNode = nullptr;
+
+    /**
+     * @brief XMLDocument
+     * create empty XML document with a single rootNode named "root"
+     */
+    XMLDocument();
+
+    /**
+     * @brief XMLDocument
+     * parse the specified string. Find the top level node named "root", if it exists.
+     * @param file
+     */
+    template<class Iterator>
+    XMLDocument(Iterator beg, Iterator end)
+        : buffer_(beg, end)
+    {
+        parseBuffer();
+    }
+
+    /**
+     * @brief XMLDocument
+     * parse the specified stream. Find the top level node named "root", if it exists.
+     * @param file
+     */
+    XMLDocument(std::istream& ons);
+
+    /**
+     * @brief XMLDocument
+     * parse the specified file. Find the top level node named "root", if it exists.
+     * @param file
+     */
     XMLDocument(const boost::filesystem::path& file);
+
+    void saveToStream(std::ostream& os) const;
+    void saveToFile(const boost::filesystem::path& file) const;
 };
 
 

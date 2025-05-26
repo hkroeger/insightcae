@@ -69,23 +69,68 @@ appendNode(
 }
 
 
+
+
+void XMLDocument::parseBuffer()
+{
+    this->parse<0>(const_cast<char*>(buffer_.c_str()));
+    rootNode = this->first_node("root");
+}
+
+XMLDocument::XMLDocument()
+{
+    using namespace rapidxml;
+    xml_node<>* decl = allocate_node(node_declaration);
+    decl->append_attribute(allocate_attribute("version", "1.0"));
+    decl->append_attribute(allocate_attribute("encoding", "utf-8"));
+    append_node(decl);
+
+    rootNode = allocate_node(node_element, "root");
+    append_node(rootNode);
+}
+
+
+
+XMLDocument::XMLDocument(std::istream& ins)
+{
+    insight::CurrentExceptionContext ex(
+        "parsing XML from stream" );
+
+    readStreamIntoString(ins, buffer_);
+    parseBuffer();
+}
+
+
 XMLDocument::XMLDocument(const boost::filesystem::path &file)
 {
     insight::CurrentExceptionContext ex(
         "parsing XML from file %s", file.c_str() );
 
-    std::string content;
-    readFileIntoString(file, content);
-
-    try {
-        parse<0>(&content[0]);
-    }
-    catch (...)
+    if (!boost::filesystem::exists(file))
     {
-        throw insight::Exception(
-            "Failed to parse XML from file %s",
-            file.string().c_str() );
+        std::cerr << std::endl
+                  << _("Error: input file does not exist")<<": "<<file
+                  <<std::endl<<std::endl;
+        exit(-1);
     }
+
+    readFileIntoString(file, buffer_);
+    parseBuffer();
+}
+
+void XMLDocument::saveToStream(std::ostream &os) const
+{
+    os << (*this);
+    os << std::endl;
+    os << std::flush;
+}
+
+
+void XMLDocument::saveToFile(const boost::filesystem::path& file) const
+{
+    std::ofstream f(file.string());
+    saveToStream(f);
+    f.close();
 }
 
 

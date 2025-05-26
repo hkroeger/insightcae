@@ -475,46 +475,40 @@ isofCaseBuilderWindow::~isofCaseBuilderWindow()
 void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool skipBCs)
 {
 
-    std::string contents;
-    readFileIntoString(file, contents);
+    insight::XMLDocument doc(file);
 
-    xml_document<> doc;
-    doc.parse<0>(&contents[0]);
-    
-    xml_node<> *rootnode = doc.first_node("root");
-
-    if (xml_node<> *OFEnode = rootnode->first_node("OFE"))
+    if (xml_node<> *OFEnode = doc.rootNode->first_node("OFE"))
     {
       std::string name = OFEnode->first_attribute("name")->value();
       ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
       ui->saveOFversion->setChecked(true);
     }
-    if (xml_node<> *script_node = rootnode->first_node("script_pre"))
+    if (xml_node<> *script_node = doc.rootNode->first_node("script_pre"))
     {
       script_pre_=QString(script_node->first_attribute("code")->value());
     }
-    if ( xml_node<> *script_node = rootnode->first_node("script_mesh") )
+    if ( xml_node<> *script_node = doc.rootNode->first_node("script_mesh") )
     {
       script_mesh_=QString(script_node->first_attribute("code")->value());
     }
-    if ( xml_node<> *script_node = rootnode->first_node("script_case") )
+    if ( xml_node<> *script_node = doc.rootNode->first_node("script_case") )
     {
       script_case_=QString(script_node->first_attribute("code")->value());
     }
 
 
     caseConfigModel_->readFromNode(
-          doc, rootnode,
+          doc, *doc.rootNode,
           multiVizSources_, this,
           file.parent_path() );
 
     if (!skipBCs)
     {
-      xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
+      auto *BCnode = doc.rootNode->first_node("BoundaryConditions");
       if (BCnode)
       {
         BCConfigModel_->readFromNode(
-              doc, BCnode,
+              doc, *BCnode,
               multiVizSources_, this,
               file.parent_path() );
       }

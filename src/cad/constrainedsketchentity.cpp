@@ -173,13 +173,8 @@ void ConstrainedSketchEntity::parseParameterSet(
 {
     if (!s.empty())
     {
-        using namespace rapidxml;
-        xml_document<> doc;
-        doc.parse<0>(const_cast<char*>(&s[0]));
-        xml_node<> *rootnode = doc.first_node("root");
-
-        parametersRef().readFromNode(std::string(), *rootnode, inputFileParentPath );
-//        std::cout<<parameters_<<std::endl;
+        insight::XMLDocument doc(s.begin(), s.end());
+        parametersRef().readFromNode(std::string(), *doc.rootNode, inputFileParentPath );
     }
 }
 

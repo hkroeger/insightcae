@@ -2,6 +2,7 @@
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
 
 #include "boost/range/adaptor/indexed.hpp"
@@ -1025,13 +1026,11 @@ void ConstrainedSketch::parseLayerProperties(
 
     if (s && !s->empty())
     {
-        using namespace rapidxml;
-        xml_document<> doc;
-        doc.parse<0>(const_cast<char*>(&(*s)[0]));
-        xml_node<> *rootnode = doc.first_node("root");
+        insight::XMLDocument doc(
+            s->begin(), s->end() );
 
         auto p=layerProperties(layerName).cloneLayerProperties();
-        p->readFromNode(std::string(), *rootnode, "." );
+        p->readFromNode(std::string(), *doc.rootNode, "." );
         setLayerProperties(layerName, *p);
     }
 }
@@ -1148,9 +1147,6 @@ void ConstrainedSketch::build()
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
 }
-
-
-
 
 
 

@@ -58,7 +58,7 @@ double TangentConstraint::getConstraintError(unsigned int iConstraint) const
     arma::mat d2 = normalized(line2_->end()->value() - line2_->start()->value());
     //auto err = pow(arma::dot(d1, d2),2) - 1.; // bad convergence
     auto err=arma::norm(arma::cross(d1, d2), 2);
-    std::cout<<"d1="<<d1.t()<<" d2="<<d2.t()<<" err="<<err<<std::endl;
+    // std::cout<<"d1="<<d1.t()<<" d2="<<d2.t()<<" err="<<err<<std::endl;
     return err;
 }
 

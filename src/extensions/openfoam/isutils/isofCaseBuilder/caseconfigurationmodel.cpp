@@ -232,15 +232,14 @@ void CaseConfigurationModel::appendConfigurationToNode(
 }
 
 void CaseConfigurationModel::readFromNode(
-    rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<> *rootnode,
+    const rapidxml::xml_node<> &rootnode,
     insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
     MultivisualizationGenerator* visGen,
     const boost::filesystem::path& fileParentPath )
 {
   clear();
 
-  for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement");
+  for (auto *e = rootnode.first_node("OpenFOAMCaseElement");
        e;  e = e->next_sibling("OpenFOAMCaseElement"))
   {
     auto typeattr = e->first_attribute("type");

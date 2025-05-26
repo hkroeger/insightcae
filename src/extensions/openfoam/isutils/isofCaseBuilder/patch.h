@@ -33,8 +33,7 @@ public:
         );
 
     Patch(
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node,
+        const rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath,
         insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
         MultivisualizationGenerator* visGen,
@@ -65,8 +64,7 @@ public:
         );
 
     DefaultPatch(
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node,
+        const rapidxml::xml_node<>& node,
         boost::filesystem::path inputfilepath,
         insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
         MultivisualizationGenerator* visGen,

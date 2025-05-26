@@ -33,8 +33,7 @@ Patch::Patch(
 }
 
 
-Patch::Patch(rapidxml::xml_document<>& doc,
-             rapidxml::xml_node<>& node,
+Patch::Patch(const rapidxml::xml_node<>& node,
              boost::filesystem::path inputfilepath,
              insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
              MultivisualizationGenerator* visGen,
@@ -121,13 +120,12 @@ DefaultPatch::DefaultPatch(
 {}
 
 DefaultPatch::DefaultPatch(
-    rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath,
     insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
     MultivisualizationGenerator* visGen,
     QObject* parent )
-: Patch(doc, node, inputfilepath, mvl, visGen, parent)
+: Patch(node, inputfilepath, mvl, visGen, parent)
 {}
 
 bool DefaultPatch::insertElement ( insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict ) const

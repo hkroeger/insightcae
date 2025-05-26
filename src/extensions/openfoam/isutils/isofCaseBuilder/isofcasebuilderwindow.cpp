@@ -498,7 +498,7 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 
 
     caseConfigModel_->readFromNode(
-          doc, *doc.rootNode,
+          *doc.rootNode,
           multiVizSources_, this,
           file.parent_path() );
 
@@ -508,7 +508,7 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       if (BCnode)
       {
         BCConfigModel_->readFromNode(
-              doc, *BCnode,
+              *BCnode,
               multiVizSources_, this,
               file.parent_path() );
       }

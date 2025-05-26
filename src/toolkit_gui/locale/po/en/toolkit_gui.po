@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-12 22:37+0200\n"
+"POT-Creation-Date: 2025-05-26 15:08+0200\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -51,11 +51,11 @@ msgstr "Change Item Label"
 msgid "New label:"
 msgstr "New label:"
 
-#: iqresultsetdisplayerwidget.cpp:150
+#: iqresultsetdisplayerwidget.cpp:151
 msgid "Load result set"
 msgstr ""
 
-#: iqresultsetdisplayerwidget.cpp:152
+#: iqresultsetdisplayerwidget.cpp:153
 msgid "InsightCAE Result Set"
 msgstr ""
 

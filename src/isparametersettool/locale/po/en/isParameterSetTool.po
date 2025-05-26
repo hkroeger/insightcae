@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: isParameterSetTool \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-09 08:44+0000\n"
+"POT-Creation-Date: 2025-05-26 15:08+0200\n"
 "PO-Revision-Date: 2024-11-19 12:06+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -17,47 +17,47 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: isparametersettool.cpp:52
+#: isparametersettool.cpp:53
 msgid "Allowed options"
 msgstr "Allowed options"
 
-#: isparametersettool.cpp:54
+#: isparametersettool.cpp:55
 msgid "produce help message"
 msgstr "produce help message"
 
-#: isparametersettool.cpp:55
+#: isparametersettool.cpp:56
 msgid "print version and exit"
 msgstr "print version and exit"
 
-#: isparametersettool.cpp:56
+#: isparametersettool.cpp:57
 msgid "boolean variable assignment"
 msgstr "boolean variable assignment"
 
-#: isparametersettool.cpp:57
+#: isparametersettool.cpp:58
 msgid "selection variable assignment"
 msgstr "selection variable assignment"
 
-#: isparametersettool.cpp:58
+#: isparametersettool.cpp:59
 msgid "string variable assignment"
 msgstr "string variable assignment"
 
-#: isparametersettool.cpp:59
+#: isparametersettool.cpp:60
 msgid "path variable assignment"
 msgstr "path variable assignment"
 
-#: isparametersettool.cpp:60
+#: isparametersettool.cpp:61
 msgid "double variable assignment"
 msgstr "double variable assignment"
 
-#: isparametersettool.cpp:61
+#: isparametersettool.cpp:62
 msgid "vector variable assignment"
 msgstr "vector variable assignment"
 
-#: isparametersettool.cpp:62
+#: isparametersettool.cpp:63
 msgid "int variable assignment"
 msgstr "int variable assignment"
 
-#: isparametersettool.cpp:63
+#: isparametersettool.cpp:64
 msgid ""
 "additional input file to merge into analysis parameters before variable "
 "assignments"
@@ -65,35 +65,31 @@ msgstr ""
 "additional input file to merge into analysis parameters before variable "
 "assignments"
 
-#: isparametersettool.cpp:64
+#: isparametersettool.cpp:65
 msgid "Additional libraries with analysis modules to load"
 msgstr "Additional libraries with analysis modules to load"
 
-#: isparametersettool.cpp:65
+#: isparametersettool.cpp:66
 msgid "Specifies input file."
 msgstr "Specifies input file."
 
-#: isparametersettool.cpp:74
+#: isparametersettool.cpp:75
 msgid "Usage:"
 msgstr "Usage:"
 
-#: isparametersettool.cpp:75
+#: isparametersettool.cpp:76
 msgid "options"
 msgstr "options"
 
-#: isparametersettool.cpp:95
+#: isparametersettool.cpp:96
 msgid "Could not parse command line"
 msgstr "Could not parse command line"
 
-#: isparametersettool.cpp:116
+#: isparametersettool.cpp:117
 msgid "an input file has to be specified!"
 msgstr "an input file has to be specified!"
 
-#: isparametersettool.cpp:129
-msgid "Error: input file does not exist"
-msgstr "Error: input file does not exist"
-
-#: isparametersettool.cpp:171
+#: isparametersettool.cpp:157
 #, c-format
 msgid ""
 "merge command needs either one or three arguments!\n"
@@ -101,3 +97,6 @@ msgid ""
 msgstr ""
 "merge command needs either one or three arguments!\n"
 "Got: %s"
+
+#~ msgid "Error: input file does not exist"
+#~ msgstr "Error: input file does not exist"

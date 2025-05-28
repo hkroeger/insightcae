@@ -90,7 +90,7 @@ class SolverOutputAnalyzer;
 class AnalysisForm
 : public QWidget, //QMdiSubWindow,
   public IQExecutionWorkspace,
-  public EditorWithSavableState
+  public AutosavableEditor
 {
   Q_OBJECT
 
@@ -133,45 +133,43 @@ protected:
 
   QPointer<QAction> act_save_, act_pack_;
 
-
   /**
-   * @brief ist_file_
-   * currently opened file
-   */
-  boost::filesystem::path ist_file_;
-
-  /** if (checkAndUpdateWorkingDir(newDir, true))
-              lastValidLocalWorkDirSetting_=newDir;
-            else
-              ui->leL
    * @brief pack_parameterset_
    * store preference for pack/not packing the parameter set during saving
    */
   bool pack_parameterset_;
 
-  /**
-   * @brief is_modified_
-   * whether PS was modified since last save
-   */
-  bool is_modified_;
-
   std::set<insight::JobPtr> externalProcesses_;
+
+  // ====================================================================================
+  // ======== current action objects
+
+  QScopedPointer<WorkbenchAction> currentWorkbenchAction_;
+
+  /**
+   * @brief autosaveMaxWaitInterval
+   * maximum time between first modification trigger and autosave
+   */
+  const int autosaveMaxWaitInterval=30000;
+
+  /**
+   * @brief autosaveMinInterval
+   * minimum wait time between autosavings (defining maximum autosave frequency)
+   */
+  const int autosaveMinInterval=1000;
+
+  mutable QTimer autosaveMinIntervalTimer_, autosaveMaxWaitTimer_;
+
+
   void cleanFinishedExternalProcesses();
 
   void connectLocalActions();
   void connectRemoteActions();
 
   void updateSaveMenuLabel();
-  void updateWindowTitle();
 
   bool checkAnalysisExecutionPreconditions();
 
-
-  // ====================================================================================
-  // ======== current action objects
-
-
-  QScopedPointer<WorkbenchAction> currentWorkbenchAction_;
 
 
   // ================================================================================
@@ -201,6 +199,7 @@ protected:
 
   void downloadFromRemote( std::function<void()> completionCallback = [](){} );
 
+
 public:
   AnalysisForm(
       QWidget* parent,
@@ -216,12 +215,10 @@ public:
   // ===== general logic
 
   WidgetWithDynamicMenuEntries* createMenus(WorkbenchMainWindow* mw);
+  void updateWindowTitle();
+
 //  void insertMenu(QMenuBar* mainMenu) override;
 //  void removeMenu() override;
-
-  void loadParameters(const boost::filesystem::path& fp);
-  void saveParameters(bool *cancelled=nullptr);
-  void saveParametersAs(bool *cancelled=nullptr);
 
 
   // ================================================================================
@@ -250,6 +247,11 @@ public:
       const rapidxml::xml_node<>& rootNode,
       const boost::filesystem::path& parentPath ) override;
 
+  void scheduleAutosave() const override;
+
+  void loadParameters(
+      boost::optional<boost::filesystem::path> fn =
+        boost::optional<boost::filesystem::path>() );
 
 protected:
   void	closeEvent ( QCloseEvent * event ) override;
@@ -269,8 +271,6 @@ private Q_SLOTS:
   void onAnalysisError(std::exception_ptr e);
   void onAnalysisCancelled();
 
-
-
   void onStartPV();
   void onStartPVLocal();
   void onStartPVRemote();
@@ -286,13 +286,10 @@ private Q_SLOTS:
 
   void onShowParameterXML();
 
-  void onConfigModification();
-
   void onUpdateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
 
 
 Q_SIGNALS:
-//  void apply();
   void update();
   void statusMessage(const QString& message, int timeout=0);
   

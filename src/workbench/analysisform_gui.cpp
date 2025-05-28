@@ -53,19 +53,33 @@ void AnalysisForm::updateSaveMenuLabel()
 
 void AnalysisForm::updateWindowTitle()
 {
-  QString t = QString::fromStdString(analysisName_);
+    QString newTitle =
+        QString::fromStdString(analysisName_);
 
-  QString pf = QString::fromStdString(ist_file_.parent_path().string());
+    if (isModified())
+    {
+        newTitle = "*"+newTitle;
+    }
 
-  if (!ist_file_.empty())
-    t+=" ("+QString::fromStdString(ist_file_.filename().string());
+    if (currentFileNameIsSet())
+    {
+        auto istFile=currentFileName();
 
-  if (!pf.isEmpty() && pf!=".")
-    t+=" in "+pf;
+        newTitle+=" ("+QString::fromStdString(
+                 istFile.filename().string());
 
-  t+=")";
+        QString pf = QString::fromStdString(
+            istFile.parent_path().string());
 
-  this->setWindowTitle(t);
+        if (!pf.isEmpty() && pf!=".")
+            newTitle+=" in "+pf;
+
+        newTitle+=")";
+    }
+
+    this
+        ->topLevelWidget()
+        ->setWindowTitle(newTitle);
 }
 
 

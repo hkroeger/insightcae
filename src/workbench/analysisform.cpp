@@ -392,6 +392,9 @@ AnalysisForm::AnalysisForm(
             updateWindowTitle();
         }
     );
+
+    peditor_->viewer()->modificationMade.connect(
+        this->modificationMade );
 }
 
 

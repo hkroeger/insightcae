@@ -2089,6 +2089,10 @@ void IQVTKCADModel3DViewer::editSketch(
             ske->setPathToEditedParameter(
                 *parameterPath );
 
+        connect(ske.get(), &IQVTKConstrainedSketchEditor::sketchChanged,
+                this, [this]() {
+                    this->modificationMade();
+                } );
         launchAction(std::move(ske));
     }
 }

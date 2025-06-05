@@ -215,6 +215,8 @@ namespace si {
 
  typedef quantity<unit<thermal_capacitance_dimension,system>, double> ThermalCapacitance;
 
+ typedef quantity<decltype(square_meter*square_meter)::unit_type, double> SecondAreaMoment;
+
 }}}
 
 

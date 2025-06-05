@@ -7,7 +7,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vtk2key \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-09 07:09+0000\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,60 +16,47 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: vtk2key.cpp:59
 msgid "Allowed options"
 msgstr ""
 
-#: vtk2key.cpp:61
 msgid "produce help message"
 msgstr ""
 
-#: vtk2key.cpp:62
 msgid "print version and exit"
 msgstr ""
 
-#: vtk2key.cpp:63
 msgid ""
 "<part id:set id>. part id to be converted to set (both a node set and a "
 "shell/solid set will be created)."
 msgstr ""
 
-#: vtk2key.cpp:64
 msgid ""
 "<STl file path:set id>. elements and nodes inside given STL will be added to "
 "set (both a node set and a shell/solid set will be created)."
 msgstr ""
 
-#: vtk2key.cpp:65
 msgid "A list (comma separated) of parts to be skipped when writing output"
 msgstr ""
 
-#: vtk2key.cpp:66
 msgid ""
 "Specifies input file and the part ID for all its elements (separated yby "
 "colon)"
 msgstr ""
 
-#: vtk2key.cpp:67
 msgid "set output format (LSDyna or Radioss)"
 msgstr ""
 
-#: vtk2key.cpp:68
 msgid "Specifies output file."
 msgstr ""
 
-#: vtk2key.cpp:77
 msgid "Usage:"
 msgstr ""
 
-#: vtk2key.cpp:78
 msgid "options"
 msgstr ""
 
-#: vtk2key.cpp:100
 msgid "Could not parse command line"
 msgstr ""
 
-#: vtk2key.cpp:133
 msgid "exactly one output file name has to be given!"
 msgstr ""

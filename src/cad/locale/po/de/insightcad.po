@@ -7,7 +7,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-26 15:08+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,11 +16,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: cadfeatures/singlevertex.cpp:57
 msgid "Creates a topological vertex at the specified location."
 msgstr ""
 
-#: cadfeatures/arc.cpp:162
 msgid ""
 "Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
 "vector et0."
@@ -29,18 +26,14 @@ msgstr ""
 "Erzeugt einen Kreisbogen zwischen den Punkten p0 und p1. Am Punkt p0 ist der "
 "Bogen tangential zum Vektor et0."
 
-#: cadfeatures/arc.cpp:251
 msgid "Creates an arc between point p0 and p1 through intermediate point pm."
 msgstr ""
 "Erzeugt einen Kreisbogen zwischen den Punkten p0 und p1 durch einen "
 "mittleren Punkt pm"
 
-#: cadfeatures/airfoil.cpp:723 cadfeatures/boundedflatface.cpp:165
-#: cadfeatures/nacafourdigit.cpp:234 cadfeatures/gear.cpp:183
 msgid "Failed to generate planar face!"
 msgstr ""
 
-#: cadfeatures/airfoil.cpp:780
 msgid ""
 "Creates an airfoil section with specified camber c and thickness t. The "
 "camber and thickness distribution are selected by the name argument."
@@ -50,23 +43,18 @@ msgid ""
 "e. spanwise direction of the wing, is given by vector ez."
 msgstr ""
 
-#: cadfeatures/bar.cpp:120
 msgid "Bar: length of vertical direction is zero!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:129
 msgid "Bar: invalid definition of bar end points!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:135
 msgid "the bar length must not be zero!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:159
 msgid "Bar: invalid definition of vertical direction!"
 msgstr ""
 
-#: cadfeatures/bar.cpp:602
 msgid ""
 "This command creates a straight extruded volume from a planar section.\n"
 "The location of the bar is specified by its start point p0 and end point p1. "
@@ -77,7 +65,6 @@ msgid ""
 "(vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
 msgstr ""
 
-#: cadfeatures/bar.cpp:620
 msgid ""
 "This command creates a straight extruded volume from a planar section.The "
 "section is expected comprise only of lines and the resulting bar will be of "
@@ -91,72 +78,56 @@ msgid ""
 "(vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
 msgstr ""
 
-#: cadfeatures/booleanintersection.cpp:102
 msgid "Could not perform intersection operation."
 msgstr ""
 
-#: cadfeatures/booleanintersection.cpp:116
 msgid "intersection: given reference does not provide planar reference!"
 msgstr ""
 
-#: cadfeatures/booleanintersection.cpp:135
 msgid "intersection: edge intersection not successful!"
 msgstr ""
 
-#: cadfeatures/booleanintersection.cpp:157
 msgid "could not perform shape/plane intersection operation."
 msgstr ""
 
-#: cadfeatures/booleanintersection.cpp:168
 msgid "intersection: tool object undefined!"
 msgstr ""
 
-#: cadfeatures/booleansubtract.cpp:78
 msgid "Boolean subtract: invalid base shape"
 msgstr ""
 
-#: cadfeatures/booleansubtract.cpp:79
 msgid "Boolean subtract: invalid tool shape"
 msgstr ""
 
-#: cadfeatures/booleansubtract.cpp:89 cadfeatures/cone.cpp:112
 msgid "could not perform cut operation."
 msgstr ""
 
-#: cadfeatures/booleanunion.cpp:101
 msgid "could not perform fuse operation."
 msgstr ""
 
-#: cadfeatures/booleanunion.cpp:135
 msgid "could not perform merge operation."
 msgstr ""
 
-#: cadfeatures/booleanunion.cpp:145
 msgid "no valid base feature for fuse operation provided."
 msgstr ""
 
-#: cadfeatures/booleanunion.cpp:192
 msgid ""
 "Creates a boolean union of all (possibly intersecting) volumes of the given "
 "feature."
 msgstr ""
 
-#: cadfeatures/boundedflatface.cpp:109
 msgid "No valid edge given!"
 msgstr ""
 
-#: cadfeatures/boundedflatface.cpp:111
 #, c-format
 msgid "Only %d out of %d given edges were valid!"
 msgstr ""
 
-#: cadfeatures/boundedflatface.cpp:241
 msgid ""
 "Creates a flat face from a number of edges. Edges are taken from one or more "
 "features or from one or more edge selection sets."
 msgstr ""
 
-#: cadfeatures/box.cpp:183
 msgid ""
 "Creates a box volume. The box is located at point p0 and edge directions and "
 "lengths are defined by the vectors L1, L2, L3.\n"
@@ -175,34 +146,28 @@ msgstr ""
 "'centered') oder nur ausgewählte Richtungen (Option 'center' [x][y][z], "
 "wobei x,y,z mit L1, L2 bzw. L3 verknüpft ist)."
 
-#: cadfeatures/chamfer.cpp:122
 msgid ""
 "Creates chamfers at selected edges of a solid. All edges in the selection "
 "set edges are chamfered with width l."
 msgstr ""
 
-#: cadfeatures/circle.cpp:121
 msgid ""
 "Creates a circular face. The circle is centered at p0, the axis vector is n "
 "and the diameter D."
 msgstr ""
 
-#: cadfeatures/clipwire.cpp:77
 msgid "Given feature is not a wire! ClipWire can only operate on wires."
 msgstr ""
 
-#: cadfeatures/clipwire.cpp:215
 msgid ""
 "Modifies an open wire feature by clipping its ends. From the beginning, a "
 "segment of length Ls is removed and from the end a segment of length Le."
 msgstr ""
 
-#: cadfeatures/circularpattern.cpp:149
 #, c-format
 msgid "CircularPattern: invalid filter expression! (was '%s')"
 msgstr ""
 
-#: cadfeatures/circularpattern.cpp:224
 msgid ""
 "Copies the bease feature base into a circular pattern. The copies are "
 "rotated around the axis which goes through the point p0 and has the "
@@ -214,45 +179,36 @@ msgid ""
 "other_pattern."
 msgstr ""
 
-#: cadfeatures/compound.cpp:188
 msgid "Creates a compound (assembly) of multiple features c0 to cn"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:104
 msgid "Cutaway: Given datum does not provide a planar reference!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:115
 msgid "Cutaway: origin and normal direction undefined!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:158
 msgid "Could not create cutting surface!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:164
 msgid "Could not create cut!"
 msgstr ""
 
-#: cadfeatures/cutaway.cpp:223
 msgid ""
 "Removes a halfspace from a feature. The halfspace is either specified by a "
 "point p0 and the normal vector n or by a datum plane. In the latter case, "
 "the removal side of plane can be toggled by giving the option inverted."
 msgstr ""
 
-#: cadfeatures/cutup.cpp:68
 msgid "normal vector must not be zero"
 msgstr ""
 
-#: cadfeatures/cutup.cpp:166
 msgid ""
 "Cuts up the base feature into several pieces with planar cuts at p0 to pn "
 "with normal n and cut thickness t. The result pieces are stored in subshapes "
 "of name \"cut_<int:i>\"."
 msgstr ""
 
-#: cadfeatures/cylinder.cpp:197
 msgid ""
 "Creates a cylinder based on point p0. The cylinder extends up to point "
 "p1_or_axis or, if the keyword ax is given, along the length vector "
@@ -261,127 +217,101 @@ msgid ""
 "respect to p0, if the keyword centered is supplied."
 msgstr ""
 
-#: cadfeatures/cone.cpp:157
 msgid ""
 "Creates a cone between point p0 and p1. At point p0, the diameter is D0 and "
 "at p1 it is D1."
 msgstr ""
 
-#: cadfeatures/torus.cpp:131
 msgid ""
 "Creates a torus around center point p0. The axis is specified by the "
 "direction of axisTimesD and the torus diameter by its magnitude. The tube "
 "diameter is d."
 msgstr ""
 
-#: cadfeatures/extrusion.cpp:185
 msgid ""
 "Creates an extrusion of the planar feature sec. The direction and length of "
 "the extrusion is given by the vector L. If the keyword centered is given, "
 "the extrusion is centered around the base feature."
 msgstr ""
 
-#: cadfeatures/ellipse.cpp:141
 msgid ""
 "Creates an ellipse around point p0. The major axis has length and direction "
 "of axmaj. The minor axis length is that of axmin. Its direction is corrected "
 "to be orthogonal to axmaj."
 msgstr ""
 
-#: cadfeatures/fillet.cpp:114
 msgid ""
 "Creates fillets at selected edges of a solid. All edges in the selection set "
 "edges are rounded with width r."
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:104
 msgid "first edge feature is not a single edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:111
 msgid "first feature set has to contain only 1 edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:131
 msgid "second edge feature is not a single edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:138
 msgid "second feature set has to contain only 1 edge!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:169
 msgid "Failed to generate face!"
 msgstr ""
 
-#: cadfeatures/fillingface.cpp:235
 msgid ""
 "Creates an interpolated surface between two edges. The two edges e0 and e1 "
 "can be given either as edge features or edge selection sets."
 msgstr ""
 
-#: cadfeatures/fixshape.cpp:117
 msgid "Runs some repair operations on output shape of feature in."
 msgstr ""
 
-#: cadfeatures/faceisocurve.cpp:131
 msgid "Creates a curve in all selected faces along a constant parameter value."
 msgstr ""
 
-#: cadfeatures/importsolidmodel.cpp:138
 #, c-format
 msgid "File not found: %s"
 msgstr ""
 
-#: cadfeatures/importsolidmodel.cpp:256
 msgid ""
 "Imports a feature from a file. The format is recognized from the filename "
 "extension. Supported formats are IGS, STP, BREP."
 msgstr ""
 
-#: cadfeatures/linearpattern.cpp:177
 msgid ""
 "Copies the bease feature base into a linear pattern. The copies of the base "
 "feature are shifted in increments of delta_l. The number of copies is n."
 msgstr ""
 
-#: cadfeatures/line.cpp:305
 msgid "Creates a line between point p0 and p1."
 msgstr ""
 
-#: cadfeatures/mirror.cpp:89
 msgid "Mirror: planar reference required!"
 msgstr ""
 
-#: cadfeatures/mirror.cpp:166
 msgid "Mirrors the base feature base over the given datum plane."
 msgstr ""
 
-#: cadfeatures/mirror.cpp:172
 msgid "Mirrors the base feature over the YZ plane."
 msgstr ""
 
-#: cadfeatures/mirror.cpp:178
 msgid "Mirrors the base feature over the XZ plane."
 msgstr ""
 
-#: cadfeatures/mirror.cpp:184
 msgid "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
 msgstr ""
 
-#: cadfeatures/pipe.cpp:87
 msgid "spine feature has to provide a single edge or a singly connected wire!"
 msgstr ""
 
-#: cadfeatures/pipe.cpp:91
 msgid "xsec feature has to provide a face or wire!"
 msgstr ""
 
-#: cadfeatures/pipe.cpp:106
 msgid "Pipe: reapproximation of spine failed!"
 msgstr ""
 
-#: cadfeatures/pipe.cpp:202
 msgid ""
 "Sweeps the planar section xsec along the curve feature spine. The xsec is "
 "expected at global origin [0,0,0] and is moved to the beginning of the "
@@ -393,7 +323,6 @@ msgid ""
 "wire into a single b-spline curve (experimental)."
 msgstr ""
 
-#: cadfeatures/place.cpp:183
 msgid ""
 "Places the feature base in a new coordinate system. The new origin is at "
 "point p0, the new x-axis along vector ex and the new z-direction is ez. "
@@ -402,40 +331,33 @@ msgid ""
 "other_place."
 msgstr ""
 
-#: cadfeatures/projected.cpp:130
 msgid ""
 "Projects the feature base onto the feature target. The direction has to be "
 "prescribed by vector dir."
 msgstr ""
 
-#: cadfeatures/projectedoutline.cpp:64 cadfeatures/projectedoutline.cpp:102
 msgid "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:107
 #, c-format
 msgid "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:110
 #, c-format
 msgid "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:157
 #, c-format
 msgid ""
 "Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:160
 #, c-format
 msgid ""
 "Invalid parameter: Wall thickness of quad is larger than half width or half "
 "height (%g > %g)!"
 msgstr ""
 
-#: cadfeatures/quad.cpp:275
 msgid ""
 "Creates a quad face. The quad is located at point p0 and direction and edge "
 "lengths are defined by the vector Lx, Ly.\n"
@@ -452,25 +374,21 @@ msgstr ""
 "'centered') oder nur ausgewählte Richtungen (Option 'center' [x][y][z], "
 "wobei x,y,z mit L1, L2 bzw. L3 verknüpft ist)."
 
-#: cadfeatures/regpoly.cpp:132
 msgid ""
 "Creates a regular polygon. Center of the polygon is at point p0. Normal "
 "vector is n. The number of edges is ne. Radius of the outer circle is a. The "
 "direction from p0 to the first edge center is ez."
 msgstr ""
 
-#: cadfeatures/polygon.cpp:124
 msgid ""
 "Creates a polygon wire from a number of corners, connected by straight edges."
 msgstr ""
 
-#: cadfeatures/polygon.cpp:130
 msgid ""
 "Creates a polyline wire from a number of corners, connected by straight "
 "edges."
 msgstr ""
 
-#: cadfeatures/revolution.cpp:131
 msgid ""
 "Creates a revolution of the planar feature xsec. The rotation axis is "
 "specified by origin point p0 and the direction vector axis. Revolution angle "
@@ -478,90 +396,69 @@ msgid ""
 "created symmetrically around the base feature."
 msgstr ""
 
-#: cadfeatures/sphere.cpp:107
 msgid "Creates a sphere around point p0 with diameter D."
 msgstr ""
 
-#: cadfeatures/splinecurve.cpp:130
 msgid "Creates a spline curve through all given points p0 to pn."
 msgstr ""
 
-#: cadfeatures/splinesurface.cpp:74
 msgid "SplineSurface: not enough rows of point specified!"
 msgstr ""
 
-#: cadfeatures/splinesurface.cpp:78
 msgid "SplineSurface: not enough cols of point specified!"
 msgstr ""
 
-#: cadfeatures/splinesurface.cpp:84
 msgid "SplineSurface: all rows need to have an equal number of points!"
 msgstr ""
 
-#: cadfeatures/splinesurface.cpp:134
 msgid ""
 "Creates an spline surface through all the given points. Note that all rows "
 "need to have the same number of columns."
 msgstr ""
 
-#: cadfeatures/sinewave.cpp:122
 msgid ""
 "Creates a sine curve (single period) with wave length l and amplitude A."
 msgstr ""
 
-#: cadfeatures/stitchedcompound.cpp:90 cadfeatures/stitchedshell.cpp:104
 msgid "Create stitched shell from selected faces."
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:87
 msgid "Could not create a closed shell (B)!"
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:90
 msgid "Orientation Error!"
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:95 cadfeatures/pyramid.cpp:101
 msgid "Creation of solid failed!"
 msgstr ""
 
-#: cadfeatures/stitchedsolid.cpp:138
 msgid "Create stitched solid from all faces of the provided features."
 msgstr ""
 
-#: cadfeatures/stringer.cpp:179
 msgid "Creates a stringer along a curve or a wire on a surface."
 msgstr ""
 
-#: cadfeatures/stl.cpp:149
 msgid "reading STL geometry"
 msgstr ""
 
-#: cadfeatures/stl.cpp:180
 msgid "creating Poly_Triangulation"
 msgstr ""
 
-#: cadfeatures/stl.cpp:206
 msgid "STL mesh cell needs to have exactly 3 corners"
 msgstr ""
 
-#: cadfeatures/stl.cpp:236
 msgid "applying transformation"
 msgstr ""
 
-#: cadfeatures/stl.cpp:254
 msgid "computing STL bounding box"
 msgstr ""
 
-#: cadfeatures/stl.cpp:269
 msgid "creating TopoDS_Shape"
 msgstr ""
 
-#: cadfeatures/stl.cpp:285
 msgid "insert proxy geometry in place of empty STL"
 msgstr ""
 
-#: cadfeatures/stl.cpp:333
 msgid ""
 "Import a triangulated surface for display. The result can only be used for "
 "display, no operations can be performed on it.Transformations can be reused "
@@ -569,85 +466,67 @@ msgid ""
 "be provided optionally."
 msgstr ""
 
-#: cadfeatures/sweep.cpp:77
 msgid "Insufficient number of sections given!"
 msgstr ""
 
-#: cadfeatures/sweep.cpp:109
 msgid "Incompatible section shape for Sweep!"
 msgstr ""
 
-#: cadfeatures/sweep.cpp:146
 msgid "Interpolates a solid through the planar sections xsec0 to xsecn."
 msgstr ""
 
-#: cadfeatures/sheet.cpp:143
 msgid "Creates a solid from a shell feature by adding thickness t."
 msgstr ""
 
-#: cadfeatures/transform.cpp:330
 msgid ""
 "Transforms the base feature by translating it by vector trans and rotates it "
 "around vector rot (magnitude gives angle, axis goes through global origin). "
 "Optionally scale the base feature by scale factor scale."
 msgstr ""
 
-#: cadfeatures/transform.cpp:337
 msgid ""
 "Rotates the base feature around vector rot (magnitude gives angle), the axis "
 "goes through point origin."
 msgstr ""
 
-#: cadfeatures/tri.cpp:129
 msgid "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
 msgstr ""
 
-#: cadfeatures/tongue.cpp:158
 msgid ""
 "Creates a tongue extension along a section curve between two surface parts."
 msgstr ""
 
-#: cadfeatures/wire.cpp:152
 msgid "Creates a wire from a number of edges."
 msgstr ""
 
-#: cadfeatures/wirefillet.cpp:209
 msgid ""
 "Creates fillets at selected vertices of a wire. All vertices in the "
 "selection set vertices are rounded with width r."
 msgstr ""
 
-#: cadfeatures/modelfeature.cpp:58
 #, c-format
 msgid "datum value %s already present!"
 msgstr ""
 
-#: cadfeatures/modelfeature.cpp:66
 #, c-format
 msgid "datum point %s already present!"
 msgstr ""
 
-#: cadfeatures/modelfeature.cpp:74
 #, c-format
 msgid "datum direction %s already present!"
 msgstr ""
 
-#: cadfeatures/modelfeature.cpp:82
 #, c-format
 msgid "datum %s already present!"
 msgstr ""
 
-#: cadfeatures/modelfeature.cpp:178
 #, c-format
 msgid "building model %s"
 msgstr "erzeuge Modell %s"
 
-#: cadfeatures/modelfeature.cpp:195 cadfeatures/modelfeature.cpp:248
-#: cadfeatures/modelfeature.cpp:266
 msgid "ModelFeature: Model input unspecified!"
 msgstr ""
 
-#: cadfeatures/modelfeature.cpp:342
 msgid ""
 "Imports a submodel. It is read from the file modelname.iscad. The file is "
 "searched first in the directory of the current model and then throughout the "
@@ -655,22 +534,18 @@ msgid ""
 "the current model into the submodel."
 msgstr ""
 
-#: cadfeatures/maxsurfacecurvature.cpp:275
 msgid "Building 2D spline failed!"
 msgstr ""
 
-#: cadfeatures/maxsurfacecurvature.cpp:346
 msgid ""
 "Computes the maximum curvature line on a surface originating from the point "
 "of maximum curvature in the selected faces. Returns a compound."
 msgstr ""
 
-#: cadfeatures/nacafourdigit.cpp:135
 #, c-format
 msgid "Invalid NACA code! (was %s)"
 msgstr ""
 
-#: cadfeatures/nacafourdigit.cpp:301
 msgid ""
 "Creates an airfoil section from the NACA four digit series. The four digit "
 "code is passed as a string. The leading edge is positioned at point p0. "
@@ -679,57 +554,46 @@ msgid ""
 "by vector ez."
 msgstr ""
 
-#: cadfeatures/coil.cpp:115
 msgid "Discretization of arc failed!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:150
 #, c-format
 msgid "Negative coil length (L=%g) is invalid!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:155
 #, c-format
 msgid "Negative coil core width (dcore=%g) is invalid!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:160
 #, c-format
 msgid "Negative conductor distance (d=%g) is invalid!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:165
 #, c-format
 msgid "number of turn has to be integer! (n=%g)"
 msgstr ""
 
-#: cadfeatures/coil.cpp:171
 #, c-format
 msgid "Negative yoke radius radius (R=%g) is invalid!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:176
 #, c-format
 msgid "Negative coil bending radius (rmin=%g) is invalid!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:179
 #, c-format
 msgid ""
 "Core width must be larger than 2x coil bending radius (dcore=%g, rmin=%g)!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:184
 #, c-format
 msgid "number of layers has to be integer! (n=%g)"
 msgstr ""
 
-#: cadfeatures/coil.cpp:192
 #, c-format
 msgid "Multiple layers were requested (nl=%d) but radial spacing is undefined!"
 msgstr ""
 
-#: cadfeatures/coil.cpp:307
 msgid ""
 "Creates a wire which represents the path of a coil in an electric motor. The "
 "straight part of the windings has length l, the core width is dcore, the "
@@ -741,59 +605,48 @@ msgid ""
 "The motor axis is along EZ while the radial direction is EX."
 msgstr ""
 
-#: cadfeatures/freecadmodel.cpp:108
 msgid "Internal error: zero length of parameter path!"
 msgstr ""
 
-#: cadfeatures/freecadmodel.cpp:144
 #, c-format
 msgid "Conversion of FreeCAD file %s into BREP %s failed!"
 msgstr ""
 
-#: cadfeatures/freecadmodel.cpp:190
 msgid ""
 "Rebuild a model in FreeCAD and imports the result. An arbitrary number of "
 "parameter/value pairs can be passed into FreeCAD."
 msgstr ""
 
-#: cadfeatures/pyramid.cpp:136
 msgid "Creates a pyramid from the planar base feature and the tip point ptip."
 msgstr ""
 
-#: cadfeatures/closedpolyline.cpp:120
 msgid "Creates a closed polyline from the given list of points p0 to pn."
 msgstr ""
 
-#: cadfeatures/gear.cpp:326
 #, c-format
 msgid "number of teeth (%g) is lower than the minimum number of teeth (%g)!"
 msgstr ""
 
-#: cadfeatures/gear.cpp:506
 msgid ""
 "Creates a spur gear with thickness t. The diameter follows from module m and "
 "tooth number z. Optionally, the clearance (as a fraction of module) can be "
 "specified. If not specified, 0.2 is used."
 msgstr ""
 
-#: cadfeatures/curvepattern.cpp:77
 msgid "curve feature does not represent a single wire!"
 msgstr ""
 
-#: cadfeatures/curvepattern.cpp:89
 #, c-format
 msgid ""
 "Could not divide curve into enough segments (request was %d, possible is %d)!"
 msgstr ""
 
-#: cadfeatures/curvepattern.cpp:166
 msgid ""
 "Copies the bease feature base into a linear pattern along a curve feature "
 "(curve). The distance between subsequent copies is delta and n copies are "
 "created."
 msgstr ""
 
-#: cadfeatures/refplace.cpp:455
 msgid ""
 "Places the feature base by solving a set of placement conditions numerically "
 "(experimental).\n"
@@ -809,27 +662,22 @@ msgid ""
 " - <vector> onaxis <datum>\n"
 msgstr ""
 
-#: cadfeatures/exploded.cpp:111
 msgid "Exploded: datum does not provide axis reference!"
 msgstr ""
 
-#: cadfeatures/exploded.cpp:212
 msgid ""
 "Creates an exploded state from the supplied list of features. The components "
 "are translated along the direction of refaxis."
 msgstr ""
 
-#: cadfeatures/partition.cpp:122
 msgid "Partionates of the base feature by the tool feature."
 msgstr ""
 
-#: cadfeatures/offset.cpp:145
 msgid ""
 "Creates an offset surface from a shell feature by displacing the surfaces in "
 "normal direction by distance t."
 msgstr ""
 
-#: cadfeatures/alignwithboundingbox.cpp:157
 msgid ""
 "align the extremities of the first object with those of other, measured "
 "along direction."

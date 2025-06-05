@@ -81,8 +81,7 @@ int main ( int argc, char** argv )
 
 
   bool batch = false;
-
-  InsightCAEApplication app ( argc, argv, "isofCaseBuilder" );
+  std::unique_ptr<InsightCAEApplication> app;
 
   try
   {
@@ -148,6 +147,19 @@ int main ( int argc, char** argv )
 
       batch = vm.count("batch") || vm.count("batch-run");
 
+      if (batch)
+      {
+          int iargc = 3;
+          char* iargv[3];
+          iargv[0] = const_cast<char*>(argv[0]);
+          iargv[1] = const_cast<char*>("-platform");
+          iargv[2] = const_cast<char*>("offscreen");
+          app.reset(new InsightCAEApplication( iargc, iargv, "isofCaseBuilder" ));
+      }
+      else
+      {
+          app.reset(new InsightCAEApplication( argc, argv, "isofCaseBuilder" ));
+      }
 
       // After creation of application object!
       std::locale::global ( std::locale::classic() );
@@ -280,7 +292,7 @@ int main ( int argc, char** argv )
     if ( !batch )
     {
         window.show();
-        return app.exec();
+        return app->exec();
     }
     else
         return 0;

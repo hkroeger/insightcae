@@ -282,12 +282,19 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
      TARGET_NAME ${GETTEXT_TARGET}
      SOURCES ${ARGN}
      POTFILE_DESTINATION ${GETTEXT_OUTPUT_DIR}
+
      XGETTEXT_ARGS
       "--keyword=_"
       "--add-comments=TRANSLATORS:"
       "--package-name=${GETTEXT_DOMAIN}"
       "--package-version=${PROJECT_VERSION}"
       "--copyright-holder=hkroeger"
+      "--no-location"
+
+    MSGMERGE_ARGS
+      "--no-location"
+
+
      LANGUAGES ${GETTEXT_LANGUAGES}
      BUILD_DESTINATION ${CMAKE_BINARY_DIR}/share/insight/${GETTEXT_OUTPUT_DIR}
      INSTALL_DESTINATION share/insight/${GETTEXT_OUTPUT_DIR}

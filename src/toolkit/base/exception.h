@@ -55,6 +55,8 @@ public:
 };
 
 
+int requestedVerbosityLevel();
+
 std::ostream& dbg(int verbosityLevel = 1);
 
 

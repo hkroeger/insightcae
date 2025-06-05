@@ -359,20 +359,26 @@ public:
 
 
 
+int requestedVerbosityLevel()
+{
+    int vl=0;
+    if (getenv("INSIGHT_VERBOSE"))
+    {
+        vl = atoi(getenv("INSIGHT_VERBOSE"));
+    }
+    return vl;
+}
+
 
 std::ostream& dbg(int verbosityLevel)
 {
   static NullBuffer nullBuffer;
   static std::ostream nullOstream(&nullBuffer);
 
-  if (getenv("INSIGHT_VERBOSE"))
+  if (requestedVerbosityLevel()>=verbosityLevel)
   {
-      int vl = atoi(getenv("INSIGHT_VERBOSE"));
-      if (vl>=verbosityLevel)
-      {
-        std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
-        return std::cerr;
-      }
+    std::cerr<<"[DBG, " << std::this_thread::get_id() <<"]: ";
+    return std::cerr;
   }
 
   return nullOstream;

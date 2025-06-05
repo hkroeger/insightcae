@@ -78,11 +78,17 @@ class XMLDocument
 public:
     xml_node<> *rootNode = nullptr;
 
+    struct RootNodeProperties
+    {
+        std::string name;
+        std::vector<std::pair<std::string, std::string> > attributes;
+    };
+
     /**
      * @brief XMLDocument
      * create empty XML document with a single rootNode named "root"
      */
-    XMLDocument();
+    XMLDocument(const RootNodeProperties& rootNode = { "root", {} });
 
     /**
      * @brief XMLDocument

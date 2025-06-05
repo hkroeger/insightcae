@@ -2,6 +2,7 @@
 #define INSIGHT_LSDYNAMESH_H
 
 #include "base/linearalgebra.h"
+#include "base/boost_include.h"
 
 #include <array>
 #include <vector>
@@ -12,9 +13,9 @@
 #include "vtkQuad.h"
 #include "vtkTetra.h"
 #include "vtkTriangle.h"
+#include "vtkLine.h"
 #include "vtkPoints.h"
 
-#include "boost/lexical_cast.hpp"
 #include "boost/algorithm/string.hpp"
 
 namespace insight {
@@ -35,6 +36,9 @@ public:
         std::array<vtkIdType, N> n;
     };
 
+    static const std::array<int,2> lineNodeMapping;
+    typedef Element<2, lineNodeMapping> Line;
+
     static const std::array<int,3> triNodeMapping;
     typedef Element<3, triNodeMapping> Tri;
 
@@ -53,7 +57,7 @@ public:
 
     struct PartStatistics
     {
-        int nTris, nQuads, nTets;
+        int nTris, nQuads, nTets, nLines;
 
         PartStatistics();
         void print(std::ostream& os, int partId) const;
@@ -65,6 +69,7 @@ private:
     std::vector<Tri> tris_;
     std::vector<Quad> quads_;
     std::vector<Tetraeder> tets_;
+    std::vector<Line> lines_;
     bool elementsAreNumbered;
 
     std::map<int, IdSet> nodeSets_, shellSets_;
@@ -73,6 +78,13 @@ public:
     FEMMesh()
         : elementsAreNumbered(false)
     {}
+
+    void addVTK(
+        const boost::filesystem::path& f,
+        int partId
+        );
+
+    void partToSet(int partId, int setId);
 
     template<class VTKCell, class TargetElement>
     void addElement(vtkDataSet* ds, VTKCell* q, int part_id, std::vector<TargetElement>& cellList, vtkIdType nodeIdOfs=0)
@@ -114,6 +126,7 @@ public:
     void addQuadElement(vtkDataSet* ds, vtkQuad* q, int part_id, vtkIdType nodeIdOfs=0);
     void addTriElement(vtkDataSet* ds, vtkTriangle* t, int part_id, vtkIdType nodeIdOfs=0);
     void addTetElement(vtkDataSet* ds, vtkTetra* t, int part_id, vtkIdType nodeIdOfs=0);
+    void addLineElement(vtkDataSet* ds, vtkLine* l, int part_id, vtkIdType nodeIdOfs=0);
 
     template<class TargetElement>
     void numberElements(
@@ -142,6 +155,7 @@ public:
 
     void findNodesOfPart(std::set<int>& nodeSet, int part_id) const;
     void findShellsOfPart(std::set<int>& shellSet, int part_id) const;
+    int findNodeAt(const arma::mat& x, double tol = insight::SMALL) const;
 
     IdSet& nodeSet(int setId);
     IdSet& shellSet(int setId);

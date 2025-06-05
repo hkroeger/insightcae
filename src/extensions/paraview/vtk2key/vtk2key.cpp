@@ -18,7 +18,7 @@
  *
  */
 
-#include "femmesh.h"
+#include "lsdyna/femmesh.h"
 
 #include "base/boost_include.h"
 #include "base/translations.h"
@@ -205,61 +205,7 @@ int main(int argc, char *argv[])
 
                 std::cout<<"Processing mesh in "<<fn.string()<<", storing elements in part "<<partId<<std::endl;
 
-                auto reader = vtkSmartPointer<vtkGenericDataObjectReader>::New();
-                reader->SetFileName(fn.string().c_str());
-                reader->Update();
-
-                std::map<int, int> unhandledCells;
-                vtkIdType nodeIdsOfs=tmesh.maxNodeId();
-                if (auto *smesh = vtkDataSet::SafeDownCast(reader->GetOutput()))
-                {
-                    auto cei = smesh->GetCellData()->GetArray("CellEntityIds");
-
-                    for (int i=0; i<smesh->GetNumberOfCells(); ++i)
-                    {
-
-                        int effectivePartId=partId;
-                        if (cei)
-                        {
-                            effectivePartId+=cei->GetTuple1(i);
-                        }
-
-                        auto *c=smesh->GetCell(i);
-                        if (auto *q = vtkQuad::SafeDownCast(c))
-                        {
-                            tmesh.addQuadElement(smesh, q, effectivePartId, nodeIdsOfs);
-                        }
-                        else if (auto *t = vtkTriangle::SafeDownCast(c))
-                        {
-                            tmesh.addTriElement(smesh, t, effectivePartId, nodeIdsOfs);
-                        }
-                        else if (auto *t = vtkTetra::SafeDownCast(c))
-                        {
-                            tmesh.addTetElement(smesh, t, effectivePartId, nodeIdsOfs);
-                        }
-                        else
-                        {
-                            int ct=c->GetCellType();
-                            if (unhandledCells.find(ct)==unhandledCells.end())
-                                unhandledCells[ct]=1;
-                            else
-                                unhandledCells[ct]++;
-                        }
-                    }
-                }
-                else
-                {
-                    throw insight::Exception("Unhandled data set type:", reader->GetOutput()->GetDataObjectType());
-                }
-
-                if (unhandledCells.size()>0)
-                {
-                    std::cerr<<"Unhandled cells:\n";
-                    for (const auto& uhc: unhandledCells)
-                    {
-                        std::cerr<<" type "<<uhc.first<<": "<<uhc.second<<"\n";
-                    }
-                }
+                tmesh.addVTK(fn, partId);
             }
         }
 
@@ -276,8 +222,7 @@ int main(int argc, char *argv[])
                 int partId=toNumber<int>(partId_setId[0]);
                 int setId=toNumber<int>(partId_setId[1]);
 
-                tmesh.findNodesOfPart( tmesh.nodeSet(setId), partId );
-                tmesh.findShellsOfPart( tmesh.shellSet(setId), partId );
+                tmesh.partToSet(partId, setId);
             }
         }
 

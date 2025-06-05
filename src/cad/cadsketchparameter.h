@@ -70,6 +70,8 @@ public:
     ~CADSketchParameter();
 
 
+    std::shared_ptr<insight::cad::ConstrainedSketch> createEmpty() const;
+
     void setReferences(const std::map<int, std::string>& references);
 
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties() const;
@@ -97,9 +99,9 @@ public:
     void readFromNode
         (
             const std::string& name,
-            rapidxml::xml_node<>& node,
+            const rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath
-            ) override;
+        ) override;
 
     std::unique_ptr<CADSketchParameter>
         cloneCADSketchParameter(

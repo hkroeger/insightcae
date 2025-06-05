@@ -64,19 +64,20 @@ AnalysisThread::AnalysisThread(
                 boost::mutex::scoped_lock lck(dataAccess_);
                 executionPath_ = std::get<1>(*pap);
               }
+              auto psp=std::get<0>(*pap);
               sid =
                 insight::Analysis::supplementedInputDatas()(
-                    analysisName, ParameterSetInput(*std::get<0>(*pap)), executionPath_, *pd );
+                    analysisName, ParameterSetInput(*psp), executionPath_, *pd );
           }
-          else if (auto *pap =
+          else if (auto *sibp =
                      boost::get<insight::supplementedInputDataBasePtr>(
                          &input ) )
           {
               {
                   boost::mutex::scoped_lock lck(dataAccess_);
-                  executionPath_ = (*pap)->executionPath();
+                  executionPath_ = (*sibp)->executionPath();
               }
-              sid = *pap;
+              sid = *sibp;
           }
 
           auto analysis = insight::Analysis::analyses()(

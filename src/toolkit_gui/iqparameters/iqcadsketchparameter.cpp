@@ -93,44 +93,111 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
         auto editFunction = [=]()
         {
-            auto&p = this->parameterRef();
+            viewer->editSketchParameter(
+                this->parameter().path() );
 
-            auto sk = p.featureGeometryRef();
+            // auto&p = this->parameterRef();
 
-            viewer->editSketch(
+            // auto sk = p.featureGeometryRef();
 
-                *sk,
+            // viewer->editSketch(
 
-                p.entityProperties(),
-                p.presentationDelegateKey(),
+            //     *sk,
 
-                [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
-                {
-                    auto& tp = this->parameterRef();
+            //     p.entityProperties(),
+            //     p.presentationDelegateKey(),
 
-                    {
-                        auto blocker{parameterRef().blockUpdateValueSignal()};
-                        *sk = *accSk;
+            //     [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
+            //     {
+            //         auto& tp = this->parameterRef();
 
-                        std::ostringstream os;
-                        sk->generateScript(os);
+            //         {
+            //             auto blocker{parameterRef().blockUpdateValueSignal()};
+            //             *sk = *accSk;
 
-                        tp.setScript(os.str());
-                        tp.featureGeometry(); //trigger rebuild
-                    }
+            //             std::ostringstream os;
+            //             sk->generateScript(os);
 
-                    tp.triggerValueChanged();
+            //             tp.setScript(os.str());
+            //             tp.featureGeometry(); //trigger rebuild
+            //         }
 
-                    teScript->document()->setPlainText(
-                        QString::fromStdString(tp.script()) );
-                },
+            //         tp.triggerValueChanged();
 
-                [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
+            //         teScript->document()->setPlainText(
+            //             QString::fromStdString(tp.script()) );
+            //     },
 
-                );
+            //     [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
+
+            //     );
         };
         connect(edit, &QPushButton::pressed, editFunction);
     }
 
     return layout;
 }
+
+
+/*
+IQCADSketchDelegate::IQCADSketchDelegate(QObject * parent)
+    : QStyledItemDelegate(parent)
+{}
+
+QWidget * IQCADSketchDelegate::createEditor(
+    QWidget * parent,
+    const QStyleOptionViewItem & option,
+    const QModelIndex & index) const
+{
+    auto *iqp=static_cast<IQParameter*>(
+        index.siblingAtColumn(IQParameterSetModel::iqParamCol)
+            .data().value<void*>() );
+    auto&p = *dynamic_cast<insight::CADSketchParameter*>(iqp->get());
+
+    auto sk = p.featureGeometryRef();
+
+    viewer->editSketch(
+
+        *sk,
+
+        p.entityProperties(),
+        p.presentationDelegateKey(),
+
+        [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
+        {
+            auto& tp = this->parameterRef();
+
+            {
+                auto blocker{parameterRef().blockUpdateValueSignal()};
+                *sk = *accSk;
+
+                std::ostringstream os;
+                sk->generateScript(os);
+
+                tp.setScript(os.str());
+                tp.featureGeometry(); //trigger rebuild
+            }
+
+            tp.triggerValueChanged();
+
+            teScript->document()->setPlainText(
+                QString::fromStdString(tp.script()) );
+        },
+
+        [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
+
+        );
+    return nullptr;
+}
+
+void IQCADSketchDelegate::setEditorData(
+    QWidget *editor,
+    const QModelIndex &index ) const
+{}
+
+void IQCADSketchDelegate::setModelData(
+    QWidget *editor,
+    QAbstractItemModel *model,
+    const QModelIndex &index ) const
+{}
+*/

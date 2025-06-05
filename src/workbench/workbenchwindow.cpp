@@ -31,6 +31,7 @@
 #include <QPushButton>
 #include <QTabWidget>
 
+#include "base/rapidxml.h"
 #include "cadparametersetvisualizer.h"
 #include "newanalysisdlg.h"
 #include "analysisform.h"
@@ -124,12 +125,16 @@ AnalysisForm* WorkbenchMainWindow::addAnalysisTabWithDefaults(const std::string 
 }
 
 
+void WorkbenchMainWindow::setDefaultTitle()
+{
+    this->setWindowTitle("InsightCAE Workbench");
+}
 
 WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
   : logToConsole_(logToConsole)
 {
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
-  this->setWindowTitle("InsightCAE Workbench");
+  setDefaultTitle();
 
   tw=new QTabWidget;
   tw->setTabsClosable(true);
@@ -137,8 +142,15 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
   setCentralWidget( tw );
   connect(tw, &QTabWidget::currentChanged, tw,
           [this](int i) { onAnalysisFormActivated(tw->widget(i)); } );
-  connect(tw, &QTabWidget::tabCloseRequested,
-          tw, [this](int i){ if (i>0) tw->removeTab(i); } );
+  connect(tw, &QTabWidget::tabCloseRequested, tw,
+          [this](int i)
+          {
+            if (i>0)
+            {
+                tw->widget(i)->close();
+                // DeleteOnClose needs to have been set
+            }
+          } );
 
   auto cw=new QWidget(this);
   auto vl=new QVBoxLayout;
@@ -303,7 +315,10 @@ void WorkbenchMainWindow::openRecentFile()
 {
   QAction *action = qobject_cast<QAction *>(sender());
   if (action)
-    openAnalysis(action->data().toString());
+    openAnalysis(
+          action->data()
+              .toString()
+              .toStdString() );
 }
 
 
@@ -321,33 +336,26 @@ void WorkbenchMainWindow::checkInstallation(bool reportSummary)
 
 
 
-void WorkbenchMainWindow::openAnalysis(const QString& fn)
+void WorkbenchMainWindow::openAnalysis(
+    const boost::filesystem::path& fn )
 {
 
   QSettings settings;
   QStringList files = settings.value("recentFileList").toStringList();
-  files.removeAll(fn);
-  files.prepend(fn);
+
+  auto qfn=QString::fromStdString(fn.string());
+  files.removeAll(qfn);
+  files.prepend(qfn);
   while (files.size() > recentFileActs_.size())
       files.removeLast();
   settings.setValue("recentFileList", files);
   updateRecentFileActions();
 
-  using namespace rapidxml;
-  
-  boost::filesystem::path fp(fn.toStdString());
-  
-  std::string contents;
-  insight::readFileIntoString(fp, contents);
 
-  xml_document<> doc;
-  doc.parse<0>(&contents[0]);
-  
-  xml_node<> *rootnode = doc.first_node("root");
-  
+  insight::XMLDocument doc(fn);
   std::string analysisName;
-  xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-  if (analysisnamenode)
+  if (auto *analysisnamenode =
+      doc.rootNode->first_node("analysis"))
   {
     analysisName = analysisnamenode->first_attribute("name")->value();
   }
@@ -365,7 +373,7 @@ void WorkbenchMainWindow::openAnalysis(const QString& fn)
           "Error information: %s\n"), analysisName.c_str(), e.what());
   }
   //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
-  form->loadParameters(fp);
+  form->loadParameters(fn);
   Q_EMIT update();
   form->showMaximized();
 }
@@ -423,10 +431,12 @@ void WorkbenchMainWindow::onAnalysisFormActivated( QWidget * widget )
     if (auto* newactive = dynamic_cast<AnalysisForm*>(widget))
     {
         lastActive_=newactive->createMenus(this);
+        newactive->updateWindowTitle();
     }
     else
     {
         lastActive_=nullptr;
+        setDefaultTitle();
     }
 }
 

@@ -186,12 +186,12 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 void PathParameter::readFromNode
 (
   const std::string& name,
-  rapidxml::xml_node<>& node,
+  const rapidxml::xml_node<>& node,
   boost::filesystem::path inputfilepath
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = findNode(node, name, type());
   if (child)
   {
     FileContainer::readFromNode(*child, inputfilepath);
@@ -327,12 +327,12 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
 void DirectoryParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_node<>& node,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = findNode(node, name, type());
   if (child)
   {
     originalFilePath_=boost::filesystem::path(child->first_attribute("value")->value());

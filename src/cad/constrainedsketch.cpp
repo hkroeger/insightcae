@@ -2,11 +2,13 @@
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
 
 #include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "cadfeatures/wire.h"
+#include "cadfeatures/line.h"
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
@@ -374,6 +376,11 @@ ConstrainedSketch::insertGeometry(
                 propertiesParent_.get());
         }
         geometry_.insert({key, geomEntity});
+        geomEntity->notifyAboutParameterChanges(
+            this,
+            [this, key](const ParameterSet&) {
+                geometryChanged(key);
+            } );
         geometryAdded(key);
     }
     else
@@ -406,6 +413,11 @@ ConstrainedSketch::setExternalReference(
     if (i==geometry_.end())
     {
         geometry_.insert({ key, extRef });
+        extRef->notifyAboutParameterChanges(
+            this,
+            [this, key](const ParameterSet&) {
+                geometryChanged(key);
+            } );
         geometryAdded(key);
     }
     else
@@ -1024,13 +1036,11 @@ void ConstrainedSketch::parseLayerProperties(
 
     if (s && !s->empty())
     {
-        using namespace rapidxml;
-        xml_document<> doc;
-        doc.parse<0>(const_cast<char*>(&(*s)[0]));
-        xml_node<> *rootnode = doc.first_node("root");
+        insight::XMLDocument doc(
+            s->begin(), s->end() );
 
         auto p=layerProperties(layerName).cloneLayerProperties();
-        p->readFromNode(std::string(), *rootnode, "." );
+        p->readFromNode(std::string(), *doc.rootNode, "." );
         setLayerProperties(layerName, *p);
     }
 }
@@ -1043,6 +1053,41 @@ void ConstrainedSketch::removeLayer(const std::string &layerName)
         throw insight::Exception(
             "cannot remove layer properties for layer %s, it is still in use",
             layerName.c_str() );
+}
+
+bool ConstrainedSketch::LineUnderPoint::operator<(
+    const ConstrainedSketch::LineUnderPoint& o) const
+{
+    return (line<o.line);
+}
+
+ConstrainedSketch::LinesUnderPointSearchResult
+ConstrainedSketch::findLinesUnderPoint(const arma::mat &p3d)
+{
+    LinesUnderPointSearchResult r;
+    for (const auto& ig: *this)
+    {
+        auto g=ig.second;
+        if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(g))
+        {
+
+            if (l->pointIsOnLine(p3d))
+            {
+                LineUnderPoint h;
+                h.line=l;
+
+                if ((arma::norm(l->start()->value()-p3d,2)<insight::SMALL)
+                        ||
+                    (arma::norm(l->end()->value()-p3d,2)<insight::SMALL))
+                    h.lupt=OnEnd;
+                else
+                    h.lupt=OnMiddle;
+
+                r.insert(h);
+            }
+        }
+    }
+    return r;
 }
 
 std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
@@ -1112,9 +1157,6 @@ void ConstrainedSketch::build()
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
 }
-
-
-
 
 
 

@@ -48,6 +48,8 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
 
+ editorwithsavablestate.h editorwithsavablestate.cpp
+
  iqundoredostack.h iqundoredostack.cpp
  iqcadmodel3dviewer/iqvtkviewerstate.h iqcadmodel3dviewer/iqvtkviewerstate.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.h iqcadmodel3dviewer/iqvtkcadmodel3dviewerrotation.cpp
@@ -87,7 +89,7 @@ set(toolkit_gui_SRCS
  iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.cpp
  iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.cpp
  iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.cpp
-
+ iqvtkconstrainedsketcheditor/iqvtksplitline.h iqvtkconstrainedsketcheditor/iqvtksplitline.cpp
 
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
  iqvectordirectioncommand.h iqvectordirectioncommand.cpp

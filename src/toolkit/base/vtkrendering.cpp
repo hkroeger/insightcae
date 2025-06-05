@@ -6,6 +6,7 @@
 #include <vtkAppendPolyData.h>
 #include <vtkTransform.h>
 
+#include "boost/concept_check.hpp"
 #include "boost/range/adaptor/indexed.hpp"
 #include "vtkSmartPointer.h"
 #include "vtkOpenFOAMReader.h"
@@ -72,7 +73,10 @@
 #include "base/translations.h"
 
 #include "base/resultset.h"
+#include "base/resultelementcollection.h"
 #include "base/resultelements/attributeresulttable.h"
+#include "base/resultelements/image.h"
+
 
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
@@ -1507,7 +1511,7 @@ vtkSmartPointer<vtkScalarBarActor> VTKOffscreenScene::addColorBar(
   return cb;
 }
 
-void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file)
+void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file) const
 {
   auto x3d=vtkSmartPointer<vtkX3DExporter>::New();
   x3d->SetInput(renderWindow_);
@@ -1517,7 +1521,7 @@ void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file)
   x3d->Write();
 }
 
-void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile)
+void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile) const
 {
   renderWindow_->Render();
   auto windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
@@ -1542,10 +1546,26 @@ vtkCamera* VTKOffscreenScene::activeCamera()
 
 void VTKOffscreenScene::setupActiveCamera(const View &view)
 {
-  auto camera = activeCamera();
+  vtkCamera* camera = activeCamera();
+
+  camera->SetPosition( toArray(view.cameraLocation()) );
+  renderer_->ResetCameraClippingRange();
+
   camera->SetFocalPoint( toArray(view.focalPoint()) );
   camera->SetViewUp( toArray(view.upwardDirection()) );
-  camera->SetPosition( toArray(view.cameraLocation()) );
+
+  if (view.parallelScale)
+  {
+      camera->SetParallelScale(*view.parallelScale);
+  }
+  camera->ParallelProjectionOn();
+
+  if (insight::requestedVerbosityLevel()>=1)
+  {
+      view.savePVCC("camera_"+view.title+".pvcc");
+  }
+
+  currentViewTitle_ = view.title;
 }
 
 
@@ -1621,6 +1641,8 @@ void VTKOffscreenScene::fitAll(double mult)
   double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
 
   setParallelScale(std::pair<double,double>(mult*w, mult*h));
+
+  renderer_->ResetCameraClippingRange();
 }
 
 void VTKOffscreenScene::clearScene()
@@ -1650,6 +1672,36 @@ void VTKOffscreenScene::removeActor(vtkActor *act)
 void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 {
   renderer_->RemoveActor2D(act);
+}
+
+
+void VTKOffscreenScene::addSnapshotToResults(
+    ResultElementCollection &results,
+    const boost::filesystem::path& fileTemplate,
+    const std::string& shortDesc,
+    const std::string& longDesc ) const
+{
+    auto name =
+        fileTemplate.filename().stem().string();
+
+
+    if (!currentViewTitle_.empty())
+    {
+        name += "_"+currentViewTitle_;
+    }
+
+    boost::filesystem::path fname = name;
+
+    fname += fileTemplate.extension();
+
+    exportImage(fname);
+
+    results.insert(
+        name,
+        std::make_unique<Image>(
+            fileTemplate.parent_path(), fname,
+            shortDesc, longDesc
+            ) );
 }
 
 

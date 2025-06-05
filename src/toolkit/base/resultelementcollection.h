@@ -80,12 +80,15 @@ public:
     /**
      * append the result elements to the given xml node
      */
-    virtual void appendElementsToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) const;
+    virtual void appendElementsToNode (
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node ) const;
 
     /**
      * restore the result elements from the given node
      */
-    virtual void readElementsFromNode ( rapidxml::xml_node<>& node );
+    virtual void readElementsFromNode (
+        const rapidxml::xml_node<>& node );
 
 };
 

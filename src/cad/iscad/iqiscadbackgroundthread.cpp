@@ -23,7 +23,7 @@
 #include "cadmodel.h"
 
 #include <thread>
-
+#include <QDebug>
 
 
 
@@ -69,10 +69,15 @@ void IQISCADBackgroundThread::run()
     std::unique_ptr<IQISCADModelRebuilder> mrb;
     if (model_ && finalTask_>=IQISCADScriptModelGenerator::Rebuild)
     {
-        mrb.reset(new IQISCADModelRebuilder(model_, {&mgen}));
+        mrb.reset(new IQISCADModelRebuilder(model_, {&mgen}));        
     }
 
     syn_elem_dir_ = mgen.generate(script_, finalTask_);
+
+    if (model_ && finalTask_>=IQISCADScriptModelGenerator::Rebuild)
+    {
+        Q_EMIT modelRebuilt();
+    }
 }
 
 

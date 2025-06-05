@@ -1,5 +1,6 @@
 #include "gmshcase.h"
 
+#include "base/exception.h"
 #include "boost/process.hpp"
 #include "base/softwareenvironment.h"
 
@@ -68,6 +69,52 @@ void GmshCase::insertLinesBefore(
     insert(i, *j);
   }
 }
+
+std::vector<std::string>
+GmshCase::findNamedDefinitions(const std::string &keyword) const
+{
+    std::vector<std::string> result;
+
+    boost::regex re(keyword+" *\\(\"(.*)\"\\) *= *{(.*)}");
+    for (const auto& l: *this)
+    {
+        boost::smatch m;
+        if (regex_search(l, m, re))
+        {
+            result.push_back(m[1]);
+        }
+    }
+
+    return result;
+}
+
+
+std::set<int> GmshCase::findNamedDefinition(const std::string &keyword, const std::string &name) const
+{
+    std::set<int> result;
+
+    boost::regex re(keyword+" *\\(\"(.*)\"\\) *= *{(.*)}");
+    for (const auto& l: *this)
+    {
+        boost::smatch m;
+        if (regex_search(l, m, re))
+        {
+            if (m[1]==name)
+            {
+                std::vector<std::string> nums;
+                boost::split(nums, m[2], boost::is_any_of(","));
+                std::transform(nums.begin(), nums.end(),
+                               std::inserter(result, result.begin()),
+                               [](const std::string& n)
+                               { return boost::lexical_cast<int>(n); });
+                return result;
+            }
+        }
+    }
+
+    return result;
+}
+
 
 GmshCase::GmshCase(
     insight::cad::ConstFeaturePtr part,
@@ -190,31 +237,7 @@ void GmshCase::setMinimumCirclePoints(int mp)
   });
 }
 
-std::set<int> GmshCase::findNamedDefinition(const std::string &keyword, const std::string &name) const
-{
-  std::set<int> result;
 
-  boost::regex re(keyword+" *\\(\"(.*)\"\\) *= *{(.*)}");
-  for (const auto& l: *this)
-  {
-    boost::smatch m;
-    if (regex_search(l, m, re))
-    {
-      if (m[1]==name)
-      {
-        std::vector<std::string> nums;
-        boost::split(nums, m[2], boost::is_any_of(","));
-        std::transform(nums.begin(), nums.end(),
-                       std::inserter(result, result.begin()),
-                       [](const std::string& n)
-                       { return boost::lexical_cast<int>(n); });
-        return result;
-      }
-    }
-  }
-
-  return result;
-}
 
 std::set<int> GmshCase::findNamedEdges(const std::string &name) const
 {
@@ -229,6 +252,18 @@ std::set<int> GmshCase::findNamedFaces(const std::string &name) const
 std::set<int> GmshCase::findNamedSolids(const std::string &name) const
 {
     return findNamedDefinition("Physical Volume", name);
+}
+
+std::set<int> GmshCase::getLSDynaBeamPartIDs(const std::string &namedEdgeName) const
+{
+    auto eIDs = findNamedEdges(namedEdgeName);
+
+    std::set<int> partIDs;
+    std::transform(
+        eIDs.begin(), eIDs.end(),
+        std::inserter(partIDs, partIDs.begin()),
+        [](int eID) { return 1*1000000+eID; } );
+    return partIDs;
 }
 
 std::set<int> GmshCase::getLSDynaShellPartIDs(const std::string &namedFaceName) const
@@ -254,6 +289,37 @@ std::set<int> GmshCase::getLSDynaSolidPartIDs(const std::string &namedSolidName)
                 std::inserter(partIDs, partIDs.begin()),
                 [](int sID) { return 3*1000000+sID; } );
     return partIDs;
+}
+
+int GmshCase::getUniqueLSDynaBeamPartID(const std::string &namedEdgeName) const
+{
+    auto ids=getLSDynaBeamPartIDs(namedEdgeName);
+    insight::assertion(
+        ids.size()==1,
+        "expected a single beam part, found %d", ids.size()
+        );
+    return *ids.begin();
+}
+
+int GmshCase::getUniqueLSDynaShellPartID(const std::string &namedFaceName) const
+{
+    auto ids=getLSDynaShellPartIDs(namedFaceName);
+    insight::assertion(
+        ids.size()==1,
+        "expected a single shell part, found %d", ids.size()
+        );
+    return *ids.begin();
+}
+
+int GmshCase::calcLSDynaEdgeNodeSetID(const std::string &namedEdgeName) const
+{
+    int i0 = findNamedDefinitions("Physical Point").size();
+    auto nl = findNamedDefinitions("Physical Line");
+    auto nei = std::find(nl.begin(), nl.end(), namedEdgeName);
+    insight::assertion(
+        nei!=nl.end(),
+        "named edge %s not found", namedEdgeName.c_str() );
+    return i0+std::distance(nl.begin(), nei);
 }
 
 void GmshCase::nameVertices(const std::string& name, const FeatureSet& vertices)
@@ -432,6 +498,14 @@ void GmshCase::insertMeshingCommand()
     "Mesh.SmoothNormals = 1",
     "Mesh.Explode = 1"
   });
+
+
+  if (outputType()==51) // *.key
+  {
+      insertLinesBefore(endOfMeshingOptions_, {
+          "Mesh.SaveGroupsOfNodes = 1;"
+      });
+  }
 
 
   if (outputType()==27)

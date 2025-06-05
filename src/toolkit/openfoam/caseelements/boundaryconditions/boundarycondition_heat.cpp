@@ -177,15 +177,15 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
                        &p().heatflux))
           {
             BC["mode"]="flux";
-            BC["q"]=boost::str(boost::format("uniform %g")%const_q->q );
+            BC["q"]=OFDictData::toUniformField( const_q->q );
           }
         else if (const auto* conv_q =
                      boost::get<Parameters::heatflux_fixedHeatTransferCoeff_type>(
                          &p().heatflux))
           {
             BC["mode"]="coefficient";
-            BC["Ta"]=boost::str(boost::format("uniform %g") % conv_q->Ta );
-            BC["h"]=boost::str(boost::format("uniform %g") % conv_q->h );
+            BC["Ta"]=OFDictData::toUniformField( conv_q->Ta );
+            BC["h"]=OFDictData::toUniformField( conv_q->h );
           }
 
         OFDictData::list tL, kL;
@@ -197,7 +197,7 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
         BC["thicknessLayers"]=tL;
         BC["kappaLayers"]=kL;
 
-        BC["value"]=boost::str(boost::format("uniform %g") % 300.0 );
+        BC["value"]=OFDictData::toUniformField( 300.0 );
       return true;
     }
     else
@@ -257,7 +257,7 @@ bool CHTCoupledWall::addIntoFieldDictionary(const string& fieldname, const Field
         BC["alphaAni"]="none";
 
 
-        BC["value"]=boost::str(boost::format("uniform %g") % 300.0 );
+        BC["value"]=OFDictData::toUniformField( 300.0 );
       return true;
     }
     else

@@ -497,9 +497,6 @@ int predictInsertionLocation(const Container& org_data, const KeyType& newKey)
 
 
 
-std::string getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
-std::shared_ptr<std::string> getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
-
 /**
  * @brief ensureDefaultFileExtension
  * @param path
@@ -567,6 +564,7 @@ public:
     }
 };
 
+int realNp(int userInputNp);
 
 }
 

@@ -40,7 +40,11 @@
 class vtkCompositeDataSet;
 class vtkAppendFilter;
 class vtkMultiProcessController;
+
+namespace insight {
 class ResultSection;
+class ResultElementCollection;
+}
 
 class vtkCleanArrays : public vtkPassInputTypeAlgorithm
 {
@@ -285,6 +289,8 @@ protected:
   vtkSmartPointer<vtkRenderer> renderer_;
   vtkSmartPointer<vtkRenderWindow> renderWindow_;
 
+  mutable std::string currentViewTitle_;
+
 public:
   VTKOffscreenScene();
   ~VTKOffscreenScene();
@@ -406,8 +412,8 @@ public:
       );
 
 
-  void exportX3D(const boost::filesystem::path& file);
-  void exportImage(const boost::filesystem::path& pngfile);
+  void exportX3D(const boost::filesystem::path& file) const;
+  void exportImage(const boost::filesystem::path& pngfile) const;
 
   vtkCamera* activeCamera();
   void setupActiveCamera(const insight::View& view);
@@ -426,6 +432,13 @@ public:
 
   void removeActor(vtkActor* act);
   void removeActor2D(vtkActor2D* act);
+
+  void addSnapshotToResults(
+      ResultElementCollection& results,
+      const boost::filesystem::path& fileTemplate,
+      const std::string& shortDesc,
+      const std::string& longDesc = std::string()
+      ) const;
 };
 
 

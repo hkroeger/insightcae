@@ -630,14 +630,17 @@ void FileContainer::appendToNode
 
 void FileContainer::readFromNode
 (
-  rapidxml::xml_node<>& node,
+  const rapidxml::xml_node<>& node,
   boost::filesystem::path inputfilepath,
   const std::string& fileNameAttribName,
   const std::string& contentAttribName
 )
 {
   using namespace rapidxml;
-  boost::filesystem::path abspath(node.first_attribute(fileNameAttribName.c_str())->value());
+  boost::filesystem::path abspath(
+      node.first_attribute(
+              fileNameAttribName.c_str()
+              )->value());
 
   if (!abspath.empty())
   {

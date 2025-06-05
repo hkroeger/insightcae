@@ -78,12 +78,12 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             {
                 if ( p().prohibitInflow ) {
                     BC["type"]=OFDictData::data ( "inletOutlet" );
-                    BC["inletValue"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+                    BC["inletValue"]=OFDictData::toUniformField(vec3Zero());
                 } else {
                     BC["type"]=OFDictData::data ( "zeroGradient" );
                 }
             }
-            BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+            BC["value"]=OFDictData::toUniformField(vec3Zero());
         } else if (
             ( field.first=="T" )
             &&
@@ -99,7 +99,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             if ( (field.first=="p") && OFcase().hasPrghPressureField() )
               {
                 BC["type"]=OFDictData::data ( "calculated" );
-                BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( /*p.pressure*/ 1e5 ) );
+                BC["value"]=OFDictData::toUniformField( 1e5 );
               }
             else
               {
@@ -108,8 +108,6 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                           &p().behaviour) )
                 {
                     FieldData(unif->pressure).setDirichletBC(BC, dictionaries);
-//                    BC["type"]=OFDictData::data ( "fixedValue" );
-//                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( unif->pressure ) );
                 }
                 else if ( const auto* fixmean =
                            boost::get<Parameters::behaviour_fixMeanValue_type>(
@@ -117,7 +115,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 {
                     BC["type"]=OFDictData::data ( "fixedMeanValue" );
                     BC["meanValue"]=OFDictData::data ( fixmean->pressure );
-                    BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( fixmean->pressure ) );
+                    BC["value"]=OFDictData::toUniformField( fixmean->pressure );
                 }
                 else if ( const auto* tvu =
                            boost::get<Parameters::behaviour_timeVaryingUniform_type>(
@@ -127,7 +125,6 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     boost::filesystem::path filename = patchName_ + "_pressureOutlet.txt";
                     BC["fileName"]= "\"" + ( boost::filesystem::path("$FOAM_CASE")/filename ).string() + "\"";
                     BC["outOfBounds"]="clamp";
-                    //BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( fixmean->pressure ) );
 
                     auto& sd = dictionaries.lookupDict(filename.string());
                     sd.no_header=true;
@@ -155,9 +152,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     BC["gamma"]=wt->kappa;
                     BC["lInf"]=wt->L;
                     BC["fieldInf"]=OFDictData::data ( wt->pressure );
-                    BC["value"]=OFDictData::data (
-                        "uniform "
-                        +boost::lexical_cast<std::string> ( wt->pressure ) );
+                    BC["value"]=OFDictData::toUniformField( wt->pressure );
                 }
                 else if ( const auto* wt =
                            boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(
@@ -166,12 +161,12 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     if (wt->pressure==Parameters::behaviour_removePRGHHydrostaticPressure_type::totalPressure)
                     {
                         BC["type"]=OFDictData::data ( "prghTotalPressure" );
-                        BC["p0"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( wt->pressure ) );
+                        BC["p0"]=OFDictData::toUniformField( wt->pressure );
                     }
                     else if (wt->pressureType==Parameters::behaviour_removePRGHHydrostaticPressure_type::staticPressure)
                     {
                         BC["type"]=OFDictData::data ( "prghPressure" );
-                        BC["p"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( wt->pressure ) );
+                        BC["p"]=OFDictData::toUniformField( wt->pressure );
                     }
                 }
                 else if ( const auto* extrapol =
@@ -184,9 +179,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]=OFDictData::data (
-                "uniform "
-                +boost::lexical_cast<std::string> ( p().rho ) );
+            BC["value"]=OFDictData::toUniformField( p().rho );
         } else if
         (
             (

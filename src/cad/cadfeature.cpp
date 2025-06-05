@@ -1725,7 +1725,7 @@ void Feature::exportEMesh
    <<"("<<endl;
   for (const arma::mat& p: points)
   {
-    f<<OFDictData::to_OF(p)<<endl;
+    f<<OFDictData::vector3(p)<<endl;
   }
   f<<")"<<endl;
 

@@ -27,6 +27,7 @@
         <file>icon_bgimage.svg</file>
         <file>icon_sketch_undo.svg</file>
         <file>icon_sketch_redo.svg</file>
+        <file>icon_sketch_splitline.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

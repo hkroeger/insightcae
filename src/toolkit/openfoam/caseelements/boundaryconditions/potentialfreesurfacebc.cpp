@@ -40,7 +40,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("pressureInletOutletParSlipVelocity");
-      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+      BC["value"]=OFDictData::toUniformField(vec3Zero());
     }
     else if (
       (field.first=="T")
@@ -57,7 +57,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     )
     {
         BC["type"]=OFDictData::data("waveSurfacePressure");
-        BC["value"]=OFDictData::data("uniform 0");
+        BC["value"]=OFDictData::toUniformField(0.);
     }
     else if (
       ( (field.first=="p") )
@@ -66,7 +66,6 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     )
     {
         BC["type"]=OFDictData::data("zeroGradient");
-        //BC["value"]=OFDictData::data("uniform 0");
     }
     else if
     (

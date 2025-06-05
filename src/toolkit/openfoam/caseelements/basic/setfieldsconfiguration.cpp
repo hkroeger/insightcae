@@ -35,7 +35,7 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
         {
           dfvs.push_back(
                 boost::str(boost::format("volVectorFieldValue %s %s\n")
-                           % vdfv->name % OFDictData::to_OF(vdfv->value)));
+                           % vdfv->name % OFDictData::toString(OFDictData::vector3(vdfv->value))));
         }
       else throw insight::UnhandledSelection();
     }
@@ -62,13 +62,14 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
               {
                 vl.push_back(
                       boost::str(boost::format("volVectorFieldValue %s %s\n")
-                                 % v->name % OFDictData::to_OF(v->value)));
+                                 % v->name % OFDictData::toString(OFDictData::vector3(v->value))));
               }
             else throw insight::UnhandledSelection();
 
             OFDictData::dict fs;
             fs["box"]=boost::str(boost::format("%s %s")
-                                   % OFDictData::to_OF(box->p0) % OFDictData::to_OF(box->p1) );
+                                   % OFDictData::toString(OFDictData::vector3(box->p0))
+                                   % OFDictData::toString(OFDictData::vector3(box->p1)) );
             fs["fieldValues"]=vl;
 
             if (box->selectcells)

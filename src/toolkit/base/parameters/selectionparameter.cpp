@@ -160,12 +160,12 @@ rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, 
 void SelectionParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_node<>& node,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = findNode(node, name, type());
   if (child)
   {
     //value_=boost::lexical_cast<int>(child->first_attribute("value")->value());

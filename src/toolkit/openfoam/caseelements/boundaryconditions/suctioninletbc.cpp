@@ -64,47 +64,46 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             double dmag=arma::norm(directed->inflowDirection,2);
             if (dmag<1e-10)
               throw insight::Exception("SuctionInletBC: direction vector magnitude must not be zero!");
-            BC["inletDirection"]=OFDictData::data ( "uniform " + OFDictData::to_OF(directed->inflowDirection/dmag) );
+            BC["inletDirection"]=OFDictData::toUniformField(directed->inflowDirection/dmag);
           }
-          BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+          BC["value"]=OFDictData::toUniformField(vec3Zero());
         } else if (
             ( field.first=="T" )
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "inletOutletTotalTemperature" );
-            BC["inletValue"]="uniform "+boost::lexical_cast<std::string> ( p().T );
-            BC["T0"]="uniform "+boost::lexical_cast<std::string> ( p().T );
+            BC["inletValue"]=OFDictData::toUniformField( p().T );
+            BC["T0"]=OFDictData::toUniformField( p().T );
             BC["U"]=OFDictData::data ( p().UName );
             BC["phi"]=OFDictData::data ( p().phiName );
             BC["psi"]=OFDictData::data ( p().psiName );
             BC["gamma"]=OFDictData::data ( p().gamma );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p().T );
+            BC["value"]=OFDictData::toUniformField( p().T );
         } else if (
             ( ( field.first=="p" ) || isPrghPressureField(field) )
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "totalPressure" );
-            BC["p0"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p().pressure ) );
+            BC["p0"]=OFDictData::toUniformField( p().pressure );
             BC["U"]=OFDictData::data ( p().UName );
             BC["phi"]=OFDictData::data ( p().phiName );
             BC["rho"]=OFDictData::data ( p().rhoName );
             BC["psi"]=OFDictData::data ( p().psiName );
             BC["gamma"]=OFDictData::data ( p().gamma );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p().pressure ) );
+            BC["value"]=OFDictData::toUniformField( p().pressure );
         }
         else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]=OFDictData::data ( "uniform "
-                                           +boost::lexical_cast<std::string> ( p().rho ) );
+            BC["value"]=OFDictData::toUniformField( p().rho );
           }
         else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "turbulentIntensityKineticEnergyInlet" );
             BC["intensity"]=p().turb_I;
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 0.1 ) );
+            BC["value"]=OFDictData::toUniformField( 0.1 );
           }
         else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
@@ -112,7 +111,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 (compressible_case&&(OFversion()<300) ? "compressible::" : "")
                 + std::string("turbulentMixingLengthFrequencyInlet");
             BC["mixingLength"]=p().turb_L;
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 1.0 ) );
+            BC["value"]=OFDictData::toUniformField( 1.0 );
           }
         else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
           {
@@ -120,7 +119,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 (compressible_case&&(OFversion()<300) ? "compressible::" : "")
                 + std::string("turbulentMixingLengthDissipationRateInlet");
             BC["mixingLength"]=p().turb_L;
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 1.0 ) );
+            BC["value"]=OFDictData::toUniformField( 1.0 );
           }
         else if ( (
                     ( field.first=="nut" ) ||
@@ -128,7 +127,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                    ) && ( get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "calculated" );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( 0.0 ) );
+            BC["value"]=OFDictData::toUniformField( 0.0 );
           }
         else if
           (

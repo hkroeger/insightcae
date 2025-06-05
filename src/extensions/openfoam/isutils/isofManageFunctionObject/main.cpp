@@ -18,6 +18,7 @@
  *
  */
 
+#include "base/rapidxml.h"
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
 #include "base/exception.h"
@@ -27,8 +28,6 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include "rapidxml/rapidxml.hpp"
-#include "rapidxml/rapidxml_print.hpp"
 #endif
 
 using namespace boost;
@@ -38,13 +37,7 @@ using namespace rapidxml;
 void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
 {
 
-  std::string contents;
-  readFileIntoString(cfgfile, contents);
-
-    xml_document<> doc;
-    doc.parse<0>(&contents[0]);
-    
-    xml_node<> *rootnode = doc.first_node("root");
+    insight::XMLDocument doc(cfgfile);
     
     OpenFOAMCase cm(OFEs::getCurrentOrPreferred());
     
@@ -52,10 +45,12 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
     Ordering o;
   
     // go through all defined case elements. Evaluate all FOs
-    for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
+    for (auto *e = doc.rootNode->first_node("OpenFOAMCaseElement");
+         e; e = e->next_sibling("OpenFOAMCaseElement"))
     {
         std::string FOtype = e->first_attribute("type")->value();
-	if (outputFilterFunctionObject::factories_->find(FOtype) != outputFilterFunctionObject::factories_->end())
+    if (outputFilterFunctionObject::factories_->find(FOtype) !=
+            outputFilterFunctionObject::factories_->end())
 	{
       auto ps = outputFilterFunctionObject::defaultParametersFor(FOtype);
       ps->readFromNode( std::string(), *e, cfgfile.parent_path() );

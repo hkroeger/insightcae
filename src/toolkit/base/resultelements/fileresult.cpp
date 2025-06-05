@@ -72,7 +72,7 @@ path FileResult::filePath(path baseDirectory) const
 
 
 
-void FileResult::readFromNode(const string &name, rapidxml::xml_node<> &node)
+void FileResult::readFromNode(const string &name, const rapidxml::xml_node<> &node)
 {
  readBaseAttributesFromNode(name, node);
  FileContainer::readFromNode( node, ".", "originalFileName", "data");

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-05 11:02+0200\n"
+"POT-Creation-Date: 2025-05-26 15:08+0200\n"
 "PO-Revision-Date: 2024-11-04 14:35+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -17,53 +17,70 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: base/rapidxml.cpp:112
+msgid "Error: input file does not exist"
+msgstr ""
+
+#: base/parameters/arrayparameter.cpp:461
+#: base/parameters/labeledarrayparameter.cpp:599
 #, c-format
 msgid ""
 "No xml node found with type '%s' and name '%s', default value '%s' is used."
 msgstr ""
 "No xml node found with type '%s' and name '%s', default value '%s' is used."
 
+#: base/parameters/subsetparameter.cpp:513
 #, c-format
 msgid "relative path given (%s) but no parent parameter container set!"
 msgstr "relative path given (%s) but no parent parameter container set!"
 
+#: base/parameters/propertylibraryselectionparameter.cpp:101
 #, c-format
 msgid ""
 "property library does not contain selection \"%s\"!\n"
 " Available values are: %s"
 msgstr ""
 
+#: base/vtkrendering.cpp:1766
 #, c-format
 msgid "no lower bound found for t=%g!"
 msgstr "no lower bound found for t=%g!"
 
+#: base/vtkrendering.cpp:2101
 #, c-format
 msgid "center of gravity of region %d"
 msgstr "center of gravity of region %d"
 
+#: openfoam/openfoamanalysis.h:159
 #, c-format
 msgid "creating OpenFOAM dictionaries in memory for case \"%s\""
 msgstr "creating OpenFOAM dictionaries in memory for case \"%s\""
 
+#: openfoam/openfoamanalysis.h:168
 #, c-format
 msgid "writing OpenFOAM dictionaries to case \"%s\""
 msgstr "writing OpenFOAM dictionaries to case \"%s\""
 
+#: openfoam/openfoamanalysis.h:184
 #, c-format
 msgid "applying custom options to OpenFOAM case configuration for case \"%s\""
 msgstr "applying custom options to OpenFOAM case configuration for case \"%s\""
 
+#: openfoam/openfoamanalysis.h:239
 #, c-format
 msgid "mapping existing CFD solution from case \"%s\" to case \"%s\""
 msgstr "mapping existing CFD solution from case \"%s\" to case \"%s\""
 
+#: openfoam/openfoamanalysis.h:301
 #, c-format
 msgid "creating OpenFOAM case in directory \"%s\""
 msgstr "creating OpenFOAM case in directory \"%s\""
 
+#: openfoam/openfoamanalysis.h:307
 msgid "Computing derived input quantities"
 msgstr "Computing derived input quantities"
 
+#: openfoam/openfoamanalysis.h:314
 msgid ""
 "Parameter \"run/evaluateonly\" is set.\n"
 "SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!"
@@ -71,35 +88,45 @@ msgstr ""
 "Parameter \"run/evaluateonly\" is set.\n"
 "SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!"
 
+#: openfoam/openfoamanalysis.h:330
 #, c-format
 msgid "Linking the mesh to OpenFOAM case in directory %s."
 msgstr "Linking the mesh to OpenFOAM case in directory %s."
 
+#: openfoam/openfoamanalysis.h:336
 msgid "Creating the mesh."
 msgstr "Creating the mesh."
 
+#: openfoam/openfoamanalysis.h:343
 #, c-format
 msgid "case in \"%s\": mesh is already there, skipping mesh creation."
 msgstr "case in \"%s\": mesh is already there, skipping mesh creation."
 
+#: openfoam/openfoamanalysis.h:361
 msgid "Creating the case setup."
 msgstr "Creating the case setup."
 
+#: openfoam/openfoamanalysis.h:366
 msgid "Creating the dictionaries."
 msgstr "Creating the dictionaries."
 
+#: openfoam/openfoamanalysis.h:369
 msgid "Applying custom modifications to dictionaries."
 msgstr "Applying custom modifications to dictionaries."
 
+#: openfoam/openfoamanalysis.h:383
 msgid "Applying custom modifications mesh."
 msgstr "Applying custom modifications mesh."
 
+#: openfoam/openfoamanalysis.h:387
 msgid "Writing dictionaries to disk."
 msgstr "Writing dictionaries to disk."
 
+#: openfoam/openfoamanalysis.h:390
 msgid "Applying custom preprocessing steps to OpenFOAM case."
 msgstr "Applying custom preprocessing steps to OpenFOAM case."
 
+#: openfoam/openfoamanalysis.h:396
 #, c-format
 msgid ""
 "case in \"%s\": skipping case recreation because there are already output "
@@ -108,19 +135,23 @@ msgstr ""
 "case in \"%s\": skipping case recreation because there are already output "
 "time directories present."
 
+#: openfoam/openfoamanalysis.h:411
 #, c-format
 msgid "initializing solver run for case \"%s\""
 msgstr "initializing solver run for case \"%s\""
 
+#: openfoam/openfoamanalysis.h:431
 msgid "Executing decomposePar"
 msgstr "Executing decomposePar"
 
+#: openfoam/openfoamanalysis.h:455
 #, c-format
 msgid ""
 "case in \"%s\": solution was mapped from other case, skipping potentialFoam."
 msgstr ""
 "case in \"%s\": solution was mapped from other case, skipping potentialFoam."
 
+#: openfoam/openfoamanalysis.h:458
 msgid ""
 "A potentialFoam initialization was configured although a solution was mapped "
 "from another case.\n"
@@ -132,32 +163,40 @@ msgstr ""
 "The potentialFoam run was skipped in order not to destroy the mapped "
 "solution!"
 
+#: openfoam/openfoamanalysis.h:464
 msgid "Executing potentialFoam"
 msgstr "Executing potentialFoam"
 
+#: openfoam/openfoamanalysis.h:474
 #, c-format
 msgid ""
 "case in \"%s\": output timestep are already there, skipping initialization."
 msgstr ""
 "case in \"%s\": output timestep are already there, skipping initialization."
 
+#: openfoam/openfoamanalysis.h:487
 msgid "running solver"
 msgstr "running solver"
 
+#: openfoam/openfoamanalysis.h:515
 #, c-format
 msgid "Executing application %s until end time %g."
 msgstr "Executing application %s until end time %g."
 
+#: openfoam/openfoamanalysis.h:531
 #, c-format
 msgid "finalizing solver run for case \"%s\""
 msgstr "finalizing solver run for case \"%s\""
 
+#: openfoam/openfoamanalysis.h:542
 msgid "Running reconstructPar for latest time step"
 msgstr "Running reconstructPar for latest time step"
 
+#: openfoam/openfoamanalysis.h:552
 msgid "No reconstruct needed"
 msgstr "No reconstruct needed"
 
+#: openfoam/openfoamanalysis.h:557
 msgid ""
 "A parallel run is configured, but not processor directory is present!\n"
 "Proceeding anyway."
@@ -165,71 +204,90 @@ msgstr ""
 "A parallel run is configured, but not processor directory is present!\n"
 "Proceeding anyway."
 
+#: openfoam/openfoamanalysis.h:572
 #, c-format
 msgid "evaluating the results for case \"%s\""
 msgstr "evaluating the results for case \"%s\""
 
+#: openfoam/openfoamanalysis.h:607
 msgid "running OpenFOAM analysis"
 msgstr "running OpenFOAM analysis"
 
+#: openfoam/openfoamanalysis.h:615
 msgid "Preparing case creation"
 msgstr "Preparing case creation"
 
+#: openfoam/openfoamanalysis.h:620
 msgid "Creating case on disk"
 msgstr "Creating case on disk"
 
+#: openfoam/openfoamanalysis.h:634
 msgid "Initializing solver run"
 msgstr "Initializing solver run"
 
+#: openfoam/openfoamanalysis.h:641
 msgid "Running solver"
 msgstr "Running solver"
 
+#: openfoam/openfoamanalysis.h:649
 msgid "Finalizing solver run"
 msgstr "Finalizing solver run"
 
+#: openfoam/openfoamanalysis.h:653
 msgid "Evaluating results"
 msgstr "Evaluating results"
 
+#: openfoam/openfoamanalysis.h:683
 msgid "inserting turbulence model configuration into OpenFOAM case"
 msgstr "inserting turbulence model configuration into OpenFOAM case"
 
+#: openfoam/openfoamanalysis.h:690
 #, c-format
 msgid "Unrecognized RASModel selection: %s"
 msgstr "Unrecognized RASModel selection: %s"
 
+#: openfoam/openfoamtools.cpp:102
 #, c-format
 msgid "No time directories present in case %s"
 msgstr ""
 
+#: openfoam/snappyhexmeshoutputanalyzer.cpp:68
 #, c-format
 msgid "Surface refinement #%s: %s cells"
 msgstr "Surface refinement #%s: %s cells"
 
+#: openfoam/snappyhexmeshoutputanalyzer.cpp:78
 #, c-format
 msgid "Shell refinement #%s: %s cells"
 msgstr "Shell refinement #%s: %s cells"
 
+#: openfoam/snappyhexmeshoutputanalyzer.cpp:89
 #, c-format
 msgid "Removed unreachable cells, now %s remain"
 msgstr "Removed unreachable cells, now %s remain"
 
+#: openfoam/snappyhexmeshoutputanalyzer.cpp:100
 #, c-format
 msgid "Morph iteration %s"
 msgstr "Morph iteration %s"
 
+#: openfoam/snappyhexmeshoutputanalyzer.cpp:129
 #, c-format
 msgid "Layer iter #%d: %d illegal faces, extruded %s faces out of %d (%0.2g%%)"
 msgstr ""
 "Layer iter #%d: %d illegal faces, extruded %s faces out of %d (%0.2g%%)"
 
+#: openfoam/caseelements/analysiscaseelements.cpp:82
 #, c-format
 msgid "no valid output file was found in time directory %s!"
 msgstr "no valid output file was found in time directory %s!"
 
+#: openfoam/caseelements/analysiscaseelements.cpp:239
 #, c-format
 msgid "data path %s of function object %s does not exist!"
 msgstr "data path %s of function object %s does not exist!"
 
+#: openfoam/caseelements/analysiscaseelements.cpp:258
 #, c-format
 msgid ""
 "Possible inconsistency in solver output data detected!File %s from time "

@@ -53,10 +53,16 @@ public:
     std::string latexRepresentation() const override;
     std::string plainTextRepresentation(int indent=0) const override;
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath ) override;
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath ) const override;
+
+    void readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath ) override;
 
     std::unique_ptr<Parameter> clone(bool initialize) const override;
     void copyFrom(const Parameter& p) override;

@@ -77,14 +77,14 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
             BC["setAverage"]=true;
             BC["interpolationScheme"]="cell";
             BC["average"]=OFDictData::vector3(p().average);
-            BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+            BC["value"]=OFDictData::toUniformField( vec3Zero() );
         } else if (
             ( field.first=="T" )
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]="uniform "+boost::lexical_cast<std::string> ( p().T );
+            BC["value"]=OFDictData::toUniformField( p().T );
         } else if (
             ( ( field.first=="p" ) || isPrghPressureField(field) )
             &&
@@ -93,7 +93,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
-            BC["value"]=OFDictData::data ( "uniform "+boost::lexical_cast<std::string> ( p().rho ) );
+            BC["value"]=OFDictData::toUniformField( p().rho );
         } else if
         (
             (

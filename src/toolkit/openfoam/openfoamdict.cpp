@@ -20,6 +20,7 @@
 
 
 #include "openfoamdict.h"
+#include <sstream>
 
 #define BOOST_SPIRIT_DEBUG
 
@@ -534,19 +535,6 @@ void OFDictData::dictFile::write(const boost::filesystem::path& dictPath) const
   }
 }
 
-std::string to_OF(const arma::mat& v)
-{
-  std::string ret="";
-  if (v.n_elem>1) ret="(";
-  for (int i=0; i<v.n_elem; i++)
-  {
-    ret+=lexical_cast<string>(v(i));
-    if (i != (v.n_elem-1) )
-      ret+=" ";
-  }
-  if (v.n_elem>1) ret+=")";
-  return ret;
-}
 
 OFDictData::list vector3(const arma::mat& v)
 {
@@ -597,22 +585,6 @@ std::ostream& operator<<(std::ostream& os, const dimensionedData& d)
 std::ostream& operator<<(std::ostream& os, const dict& d)
 {
   d.write(os);
-//   os << "{\n";
-//   for(dict::const_iterator i=d.begin(); i!=d.end(); i++)
-//   {
-//     os << i->first << SPACE;
-//     if (const dict *d = boost::get<dict>(&i->second))
-//     {
-//       //os << "\n{\n";
-//       os << *d;
-//       //os << "}\n";
-//     }
-//     else
-//     {
-//       os << i->second << ";\n";
-//     }
-//   }
-//   os << "}\n";
   return os;
 }
 
@@ -629,6 +601,25 @@ std::ostream& operator<<(std::ostream& os, const list& l)
   }
   os<<")";
   return os;
+}
+
+
+string toString(const data &d)
+{
+    std::ostringstream os;
+    os << d;
+    return os.str();
+}
+
+
+std::string toUniformField(const data& d)
+{
+    return "uniform "+toString(d);
+}
+
+std::string toUniformField(const arma::mat& v)
+{
+    return toUniformField(vectorSpace(v));
 }
 
 }

@@ -65,6 +65,7 @@ protected:
     QSize sizehint_;
 
     int fontSize_;
+    bool hasBeenRebuilt_;
 
     void setFontSize(int fontSize);
     
@@ -253,6 +254,8 @@ Q_SIGNALS:
 
     void focus(insight::cad::FeaturePtr feat);
     void unfocus();
+
+    void displayNeedsRefit();
 
 //     // insert new features
 //     void addFeature(const QString& sn, insight::cad::FeaturePtr sm, bool is_component);

@@ -20,6 +20,8 @@
 
 #include <boost/concept_check.hpp>
 
+#include "base/exception.h"
+#include "base/parameters/subsetparameter.h"
 #include "base/tools.h"
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
@@ -230,7 +232,7 @@ int main(int argc, char *argv[])
             }
         }
         
-        std::string contents;
+        boost::filesystem::path fn;
 
         if (!vm.count("input-file"))
         {
@@ -259,39 +261,35 @@ int main(int argc, char *argv[])
             exit(-1);
           }
 
-          boost::filesystem::path fn = vm["input-file"].as<std::string>();
+          fn = vm["input-file"].as<std::string>();
           inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
           filestem = fn.stem().string();
-
-          if (!boost::filesystem::exists(fn))
-          {
-              std::cerr << std::endl
-                      << _("Error: input file does not exist")<<": "<<fn
-                  <<std::endl<<std::endl;
-              exit(-1);
-          }
-
-          readFileIntoString(fn, contents);
         }
 
-        xml_document<> doc;
-        doc.parse<0>(&contents[0]);
+        std::unique_ptr<insight::ParameterSet> parameters;
 
-        xml_node<> *rootnode = doc.first_node("root");
-
-        xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-        if (analysisnamenode)
         {
-            analysisName = analysisnamenode->first_attribute("name")->value();
+            insight::CurrentExceptionContext ex(_("reading input parameter file"));
+
+            insight::XMLDocument doc(fn); // checks for existence
+
+            if ( auto *analysisnamenode
+                 = doc.rootNode->first_node("analysis") )
+            {
+                analysisName = analysisnamenode->first_attribute("name")->value();
+            }
+
+            cout<< str(format(
+                    _("Executing analysis of type '%s' in directory '%s'"))
+                        % analysisName % workdir.string()
+                ) << endl;
+
+            parameters =
+                // insight::Analysis::defaultParametersFor(analysisName);
+                insight::Analysis::defaultParameters()(analysisName);
+
+            parameters->readFromNode( std::string(), *doc.rootNode, inputFileParentPath );
         }
-
-        cout<< _("Executing analysis in directory")<<" "<<workdir<<endl;
-
-        auto parameters =
-            // insight::Analysis::defaultParametersFor(analysisName);
-            insight::Analysis::defaultParameters()(analysisName);
-        
-        parameters->readFromNode( std::string(), *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {

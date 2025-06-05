@@ -6,6 +6,7 @@
 #include "base/cppextensions.h"
 
 #include "base/parameterset.h"
+#include "boost/signals2/connection.hpp"
 #include "cadtypes.h"
 
 #include "constrainedsketchgrammar.h"
@@ -36,12 +37,32 @@ public:
         bool isInside(double x, double y) const;
     };
 
+#ifndef SWIG
+    typedef boost::signals2::signal<void(const insight::ParameterSet&)> ParameterChangedSignal;
+    ParameterChangedSignal parametersChanged;
+#endif
+
 private:
     std::unique_ptr<insight::ParameterSet> parameters_, defaultParameters_;
 
     std::string layerName_;
 
+    std::map<std::shared_ptr<boost::signals2::scoped_connection>, const void*> connectedNotifiers_;
+
 public:
+    template<class Receiver, typename OPCFunction>
+    void notifyAboutParameterChanges(
+        const Receiver * recv,
+        OPCFunction onParametersChangedFunction )
+    {
+        auto c1=std::make_shared<boost::signals2::scoped_connection>(
+            parametersChanged.connect(
+                std::bind(onParametersChangedFunction, std::ref(*parameters_) )
+                ));
+        connectedNotifiers_.insert( { c1, static_cast<const void*>(recv) } );
+    }
+
+
     declareType("ConstrainedSketchEntity");
 
     declareStaticFunctionTableWithArgs(

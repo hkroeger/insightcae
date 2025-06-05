@@ -34,7 +34,9 @@ std::string HorizontalConstraint::symbolText() const
 arma::mat HorizontalConstraint::symbolLocation() const
 {
     return 0.5*
-           (line_->getDatumPoint("p0")+line_->getDatumPoint("p1"));
+           ( line_->start()->value()
+                  +
+             line_->end()->value() );
 }
 
 

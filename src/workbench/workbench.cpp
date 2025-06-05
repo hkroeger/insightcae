@@ -147,7 +147,7 @@ int main(int argc, char** argv)
           {
             throw insight::Exception(_("Input file does not exist: %s"), fn.string().c_str());
           }
-          window.openAnalysis( QString::fromStdString(boost::filesystem::absolute(fn).string()) );
+          window.openAnalysis( boost::filesystem::absolute(fn) );
       }
 
       if (vm.count("new"))

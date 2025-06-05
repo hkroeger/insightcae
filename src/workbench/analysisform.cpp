@@ -19,6 +19,7 @@
  */
 
 #include "cadparametersetvisualizer.h"
+#include <boost/filesystem/operations.hpp>
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
@@ -33,7 +34,6 @@
 #include "base/remoteserverlist.h"
 #include "base/translations.h"
 #include "base/rapidxml.h"
-#include "rapidxml/rapidxml_print.hpp"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
@@ -81,17 +81,80 @@ namespace fs = boost::filesystem;
 
 
 
+
+void AnalysisForm::saveState(
+    rapidxml::xml_document<> &doc,
+    rapidxml::xml_node<> &rootNode,
+    const boost::filesystem::path &parentPath ) const
+{
+    {
+        // current parameter set
+        auto p = parameters().cloneParameterSet();
+
+        if (pack_parameterset_)
+        {
+            p->pack();
+        }
+        else
+        {
+            p->clearPackedData();
+        }
+
+        p->saveToNode(doc, rootNode, parentPath, analysisName_);
+    }
+
+    {
+        auto vs = insight::appendNode(doc, rootNode, "viewerState");
+        peditor_->viewer()->saveState(doc, vs, parentPath);
+    }
+}
+
+
+void AnalysisForm::restoreState(
+    const rapidxml::xml_node<>& rootNode,
+    const boost::filesystem::path& parentPath )
+{
+    auto ps = parameters().cloneParameterSet();
+    ps->readFromRootNode(rootNode, parentPath);
+    psmodel_->resetParameterValues( *ps );
+
+    if (auto *vs = rootNode.first_node("viewerState"))
+    {
+        peditor_->viewer()->restoreState(*vs, parentPath);
+    }
+}
+
+void AnalysisForm::scheduleAutosave() const
+{
+    if ( !autosaveMinIntervalTimer_.isActive()
+         ||
+         (autosaveMaxWaitTimer_.interval()
+            < autosaveMaxWaitInterval) )
+    {
+        autosaveMinIntervalTimer_.stop();
+        autosaveMinIntervalTimer_.singleShot(
+            autosaveMinInterval, this,
+            [this]()
+            {
+                autosave();
+                autosaveMaxWaitTimer_.start();
+            }
+            );
+    }
+}
+
+
+
 AnalysisForm::AnalysisForm(
     QWidget* parent,
     const std::string& analysisName,
     bool logToConsole
     )
-: /*QMdiSubWindow*/ QWidget(parent),
+: QWidget(parent),
   IQExecutionWorkspace(this),
   analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
-  pack_parameterset_(true),
-  is_modified_(false)
+  pack_parameterset_(true)
 {
     insight::CurrentExceptionContext ex(_("creating analysis form for analysis %s"), analysisName.c_str());
 
@@ -250,8 +313,8 @@ AnalysisForm::AnalysisForm(
 
 
 
-    connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
-            this, &AnalysisForm::onConfigModification);
+    connect(peditor_, &ParameterEditorWidget::parameterSetChanged, peditor_,
+            [this]() { modificationMade(); } );
 
     QSettings settings("silentdynamics", "workbench");
 
@@ -311,6 +374,27 @@ AnalysisForm::AnalysisForm(
         ui->outputTab->layout()->addWidget(resultsViewer_);
     }
 
+    fileNameChanged.connect(
+        [this](const boost::filesystem::path& newfn)
+        {
+            auto ist_file=boost::filesystem::absolute(newfn);
+            if (!hasLocalWorkspace())
+            {
+                resetExecutionEnvironment(ist_file.parent_path());
+            }
+            updateWindowTitle();
+        }
+    );
+
+    modificationStateChanged.connect(
+        [this]()
+        {
+            updateWindowTitle();
+        }
+    );
+
+    peditor_->viewer()->modificationMade.connect(
+        this->modificationMade );
 }
 
 
@@ -456,7 +540,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 
 void AnalysisForm::closeEvent(QCloseEvent * event)
 {
-    if (is_modified_)
+    if (isModified())
     {
 
       auto answer=QMessageBox::question(
@@ -467,9 +551,13 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
       if (answer==QMessageBox::Yes)
       {
-        bool cancelled=false;
-        saveParameters(&cancelled);
-        if (cancelled) event->ignore();
+        onSaveParameters();
+
+        if (isModified())
+        {
+            // still modified => user must have cancelled
+            event->ignore();
+        }
       }
       else if (answer==QMessageBox::Cancel)
       {
@@ -494,7 +582,7 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
           settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
-          /*QMdiSubWindow*/QWidget::closeEvent(event);
+          QWidget::closeEvent(event);
       }
     }
 
@@ -505,73 +593,23 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
 void AnalysisForm::onSaveParameters()
 {
-  saveParameters();
-}
-
-
-
-
-void AnalysisForm::saveParameters(bool *cancelled)
-{
-  if (ist_file_.empty())
-  {
-    saveParametersAs(cancelled);
-  }
-  else
-  {
-    auto p = parameters().cloneParameterSet();
-
-    if (pack_parameterset_)
+    if (currentFileNameIsSet())
     {
-      p->pack();
+        save();
     }
     else
     {
-      p->clearPackedData();
+        onSaveParametersAs();
     }
-
-    // prepare XML document
-    using namespace rapidxml;
-    xml_document<> doc;
-    xml_node<>* decl = doc.allocate_node(node_declaration);
-    decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-    decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-    doc.append_node(decl);
-    xml_node<> *rootNode = doc.allocate_node(node_element, "root");
-    doc.append_node(rootNode);
-
-    p->saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
-
-    {
-     auto vs = insight::appendNode(doc, *rootNode, "viewerState");
-     peditor_->viewer()->writeViewerState(doc, vs);
-    }
-
-    std::ofstream f(ist_file_.c_str());
-    f << doc;
-    f << std::endl;
-    f << std::flush;
-    f.close();
-
-    //p.saveToFile(ist_file_, analysisName_);
-
-    is_modified_=false;
-    updateWindowTitle();
-  }
 }
+
 
 
 
 
 void AnalysisForm::onSaveParametersAs()
 {
-  saveParametersAs();
-}
 
-
-
-void AnalysisForm::saveParametersAs(bool *cancelled)
-{
   if (auto fn = getFileName(
           this, _("Save input parameters"),
           GetFileMode::Save,
@@ -597,54 +635,8 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
   {
     updateSaveMenuLabel();
 
-    ist_file_ = fn.asFilesystemPath();
-
-    if (!hasLocalWorkspace())
-    {
-      resetExecutionEnvironment(ist_file_.parent_path());
-    }
-
-    saveParameters(cancelled);
-
-    if (cancelled) *cancelled=false;
+    saveAs(fn.asFilesystemPath());
   }
-  else
-  {
-    if (cancelled) *cancelled=true;
-  }
-}
-
-
-
-
-
-void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
-{
-  ist_file_=boost::filesystem::absolute(fp);
-
-  if (!hasLocalWorkspace())
-  {
-    resetExecutionEnvironment(ist_file_.parent_path());
-  }
-
-  auto ps = parameters().cloneParameterSet();
-
-  std::string contents;
-  insight::readFileIntoString(ist_file_, contents);
-
-  using namespace rapidxml;
-  xml_document<> doc;
-  doc.parse<0>(&contents[0]);
-
-  xml_node<> *rootnode = doc.first_node("root");
-  ps->readFromRootNode(*rootnode, ist_file_.parent_path());
-
-  if (auto *vs = rootnode->first_node("viewerState"))
-  {
-    peditor_->viewer()->restoreViewerState(*vs);
-  }
-
-  psmodel_->resetParameterValues( *ps );
 }
 
 
@@ -652,7 +644,16 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 
 void AnalysisForm::onLoadParameters()
 {
-  if (is_modified_)
+    loadParameters();
+}
+
+
+
+
+void AnalysisForm::loadParameters(
+        boost::optional<boost::filesystem::path> fn)
+{
+  if (isModified())
   {
     auto answer = QMessageBox::question(
         this, _("Parameters unsaved"),
@@ -670,14 +671,50 @@ void AnalysisForm::onLoadParameters()
     }
   }
 
-  if (auto fn = getFileName(
-    this, _("Open Parameters"),
-    GetFileMode::Open,
-    {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
+  if (!fn)
   {
-    loadParameters(fn);
+      if (auto fnd = getFileName(
+        this, _("Open Parameters"),
+        GetFileMode::Open,
+        {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
+      {
+          fn = fnd;
+      }
+  }
+
+  if (fn)
+  {
+      auto asfn = AutosavableEditor
+          ::autosaveFileName(*fn);
+      std::cout<<asfn<<std::endl;
+
+      auto fnToLoad= *fn;
+      bool removeFromFile=false;
+
+      using namespace boost::filesystem;
+      if (exists(asfn)
+          && (last_write_time(asfn) > last_write_time(*fn)))
+      {
+          auto answer = QMessageBox::question(
+              this, _("Autosaved Parameters found"),
+              _("There is an automatically saved version of the selected file available.\n"
+                "Do you wish to load this instead of the selected file?"),
+              QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+          if (answer == QMessageBox::Yes)
+          {
+              fnToLoad=asfn;
+              removeFromFile=true;
+          }
+          else if (answer == QMessageBox::Cancel)
+          {
+              return;
+          }
+      }
+
+      load(fnToLoad, *fn, removeFromFile);
   }
 }
+
 
 
 
@@ -693,9 +730,9 @@ void AnalysisForm::onShowParameterXML()
 //    Q_EMIT apply(); // apply all changes into parameter set
 
     boost::filesystem::path refPath = boost::filesystem::current_path();
-    if (!ist_file_.empty())
+    if (currentFileNameIsSet())
     {
-      refPath=ist_file_.parent_path();
+      refPath=currentFileName().parent_path();
     }
     std::ostringstream os;
     parameters().saveToStream(os, refPath, analysisName_);
@@ -705,12 +742,6 @@ void AnalysisForm::onShowParameterXML()
 }
 
 
-
-
-void AnalysisForm::onConfigModification()
-{
-  is_modified_=true;
-}
 
 
 

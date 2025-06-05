@@ -177,10 +177,12 @@ void Line::replaceDependency(
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_) == entity )
         {
             p0_ = p;
+            invalidate();
         }
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity )
         {
             p1_ = p;
+            invalidate();
         }
     }
 }
@@ -191,6 +193,27 @@ bool Line::isInside( SelectionRect r) const
     return
         r.isInside(p0_->value())
            && r.isInside(p1_->value());
+}
+
+bool Line::pointIsOnLine(const arma::mat &p3d) const
+{
+    arma::mat L=p1_->value()-p0_->value();
+    double ll=arma::norm(L,2);
+    L=L/ll;
+    arma::mat l=(p3d - p0_->value())/ll;
+    double d=arma::dot(l, L);
+    double n=arma::norm(arma::cross(l, L), 2);
+    std::cout<<"check d="<<d<<", n="<<n<<std::endl;
+    return (d<=1.) && (d>=-insight::SMALL) && (fabs(n)<insight::SMALL);
+}
+
+
+arma::mat Line::projectOntoLine(const arma::mat &p) const
+{
+    arma::mat AB = end()->value() - start()->value();
+    arma::mat AC = p - start()->value();
+    arma::mat AD = AB* arma::dot(AB,AC)/arma::dot(AB, AB);
+    return start()->value() + AD;
 }
 
 

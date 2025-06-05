@@ -3,6 +3,7 @@
 #include "constrainedsketch.h"
 
 #include "base/exception.h"
+#include "base/rapidxml.h"
 
 #include "boost/functional/hash.hpp"
 
@@ -50,7 +51,14 @@ ConstrainedSketchEntity::ConstrainedSketchEntity(
             : layerName ),
     defaultParameters_(ParameterSet::create()),
     parameters_(ParameterSet::create())
-{}
+{
+    parameters_->valueChanged.connect(
+        [this]() { parametersChanged(*parameters_); }
+        );
+    parameters_->childValueChanged.connect(
+        [this]() { parametersChanged(*parameters_); }
+        );
+}
 
 
 
@@ -173,13 +181,8 @@ void ConstrainedSketchEntity::parseParameterSet(
 {
     if (!s.empty())
     {
-        using namespace rapidxml;
-        xml_document<> doc;
-        doc.parse<0>(const_cast<char*>(&s[0]));
-        xml_node<> *rootnode = doc.first_node("root");
-
-        parametersRef().readFromNode(std::string(), *rootnode, inputFileParentPath );
-//        std::cout<<parameters_<<std::endl;
+        insight::XMLDocument doc(s.begin(), s.end());
+        parametersRef().readFromNode(std::string(), *doc.rootNode, inputFileParentPath );
     }
 }
 

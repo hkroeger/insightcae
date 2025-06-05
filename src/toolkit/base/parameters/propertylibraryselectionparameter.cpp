@@ -130,7 +130,7 @@ std::string PropertyLibrarySelectionParameter::iconPathForKey(const std::string 
 
 void PropertyLibrarySelectionParameter::readFromNode(
     const std::string &name,
-    rapidxml::xml_node<> &node,
+    const rapidxml::xml_node<> &node,
     boost::filesystem::path p )
 {
     StringParameter::readFromNode(name, node, p);

@@ -5,6 +5,7 @@
 #include "vtkTransformPolyDataFilter.h"
 
 #include "openfoam/openfoamcase.h"
+#include <fstream>
 
 namespace insight {
 
@@ -240,9 +241,9 @@ void SpatialTransformation::executeOFTransforms(
             {
               geofile.string(),
               geofile.string(),
-              "-translate", OFDictData::to_OF( translate() ),
-              "-rollPitchYaw", OFDictData::to_OF( rollPitchYaw() ),
-              "-scale", OFDictData::to_OF( vec3(1,1,1)*scale() )
+              "-translate", OFDictData::toString(OFDictData::vector3( translate() )),
+              "-rollPitchYaw", OFDictData::toString(OFDictData::vector3( rollPitchYaw() )),
+              "-scale", OFDictData::toString(OFDictData::vector3( vec3(1,1,1)*scale() ))
             }
           );
     }
@@ -371,11 +372,85 @@ View::View(
     const arma::mat &ctr,
     const arma::mat &cameraOffset,
     const arma::mat &up,
-    const std::string &t )
+    const std::string &t,
+    boost::optional<double> ps )
     : CoordinateSystem(ctr, cameraOffset, up),
     cameraDistance(arma::norm(cameraOffset, 2)),
-    title(t)
+    title(t), parallelScale(ps)
 {}
+
+
+
+View::View(const boost::filesystem::path &pvccFile)
+{
+    throw insight::Exception("not implemented");
+}
+
+void View::savePVCC(const boost::filesystem::path &file) const
+{
+    std::ofstream f(file.string());
+    savePVCC(f);
+}
+
+void View::savePVCC(std::ostream& os) const
+{
+    XMLDocument doc( XMLDocument::RootNodeProperties{
+        "PVCameraConfiguration",
+        {
+         { "description", "ParaView camera configuration" },
+         { "version", "1.0" }
+        } } );
+    auto view = insight::appendNode(doc, *doc.rootNode, "Proxy");
+    insight::appendAttribute(doc, view, "group", "views");
+    insight::appendAttribute(doc, view, "type", "RenderView");
+    insight::appendAttribute(doc, view, "id", 1);
+    insight::appendAttribute(doc, view, "servers", 1);
+
+    auto appendProperty = [&](const std::string& label, const arma::mat& vec)
+    {
+        auto prop = insight::appendNode(doc, view, "Property");
+        insight::appendAttribute(doc, prop, "name", label);
+        insight::appendAttribute(doc, prop, "id", "1."+label);
+        insight::appendAttribute(doc, prop, "number_of_elements", 3);
+
+        for (int i=0; i<3; ++i)
+        {
+            auto element = insight::appendNode(doc, prop, "Element");
+            insight::appendAttribute(doc, element, "index", i);
+            insight::appendAttribute(doc, element, "value", vec[i]);
+        }
+    };
+
+    appendProperty("CameraPosition", cameraLocation());
+    appendProperty("CameraFocalPoint", focalPoint());
+    appendProperty("CameraViewUp", upwardDirection());
+
+    if (parallelScale)
+    {
+        auto prop = insight::appendNode(doc, view, "Property");
+        insight::appendAttribute(doc, prop, "name", "CameraParallelScale");
+        insight::appendAttribute(doc, prop, "id", "1.CameraParallelScale");
+        insight::appendAttribute(doc, prop, "number_of_elements", 1);
+        auto element = insight::appendNode(doc, prop, "Element");
+        insight::appendAttribute(doc, element, "index", 0);
+        insight::appendAttribute(doc, element, "value", *parallelScale);
+    }
+
+    {
+        auto prop = insight::appendNode(doc, view, "Property");
+        insight::appendAttribute(doc, prop, "name", "CameraParallelProjection");
+        insight::appendAttribute(doc, prop, "id", "1.CameraParallelProjection");
+        insight::appendAttribute(doc, prop, "number_of_elements", 1);
+        auto element = insight::appendNode(doc, prop, "Element");
+        insight::appendAttribute(doc, element, "index", 0);
+        insight::appendAttribute(doc, element, "value", 1);
+        auto dom = insight::appendNode(doc, prop, "Domain");
+        insight::appendAttribute(doc, dom, "name", "bool");
+        insight::appendAttribute(doc, dom, "id", "1.CameraParallelProjection.bool");
+    }
+
+    doc.saveToStream(os);
+}
 
 
 

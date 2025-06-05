@@ -48,9 +48,9 @@ bool ResultSetFilter::matchesRegex(const std::string &path) const
 
 
 void ResultSetFilter::readFromNode (
-        rapidxml::xml_node<>& node )
+        const rapidxml::xml_node<>& node )
 {
-    for (rapidxml::xml_node<> *e = node.first_node();
+    for (auto *e = node.first_node();
          e; e = e->next_sibling())
     {
         std::string type(e->first_attribute("type")->value());

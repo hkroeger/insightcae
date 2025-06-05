@@ -84,6 +84,8 @@ private:
 
   AnalysisForm* addAnalysisTabWithDefaults(const std::string& analysisType);
 
+  void setDefaultTitle();
+
 public:
   QMenu* settingsMenu_;
 
@@ -93,7 +95,7 @@ public:
     WorkbenchMainWindow(bool logToConsole=false);
     virtual ~WorkbenchMainWindow();
 
-    void openAnalysis(const QString& fn);
+    void openAnalysis(const boost::filesystem::path& fn);
     void closeEvent(QCloseEvent *event);
     void readSettings();
     void show();

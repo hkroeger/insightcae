@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-05 11:12+0200\n"
+"POT-Creation-Date: 2025-05-26 15:08+0200\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -17,40 +17,52 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: qtextensions.cpp:112
 msgid "Save file"
 msgstr ""
 
+#: qtextensions.cpp:120
 msgid "Open file"
 msgstr ""
 
+#: iqundoredostack.cpp:75
 msgid "undo sketch editing step"
 msgstr ""
 
+#: iqundoredostack.cpp:80
 #, c-format
 msgid "undo step %s"
 msgstr ""
 
+#: iqundoredostack.cpp:108
 msgid "redo sketch editing step"
 msgstr ""
 
+#: iqundoredostack.cpp:113
 #, c-format
 msgid "redo step %s"
 msgstr ""
 
+#: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "Change Item Label"
 msgstr "Change Item Label"
 
+#: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "New label:"
 msgstr "New label:"
 
+#: iqresultsetdisplayerwidget.cpp:151
 msgid "Load result set"
 msgstr ""
 
+#: iqresultsetdisplayerwidget.cpp:153
 msgid "InsightCAE Result Set"
 msgstr ""
 
+#: logviewerwidget.cpp:136
 msgid "Create file failed"
 msgstr ""
 
+#: logviewerwidget.cpp:137
 msgid "Could not create file %1"
 msgstr ""

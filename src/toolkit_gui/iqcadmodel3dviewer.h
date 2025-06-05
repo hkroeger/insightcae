@@ -40,7 +40,7 @@ private:
 
 protected:
     QAbstractItemModel* model_;
-    QLabel *userMessage_, *currentActionDesc_;
+    QLabel *userMessage_, *currentActionDesc_, *mouseCoordinateDisplay_;
 
 public:
     IQCADModel3DViewer(QWidget* parent=nullptr);
@@ -63,12 +63,6 @@ public:
     virtual QColor getBackgroundColor() const =0;
 
     virtual void setSelectionModel(QItemSelectionModel *selmodel);
-
-    virtual void writeViewerState(
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node) const =0;
-    virtual void restoreViewerState(
-        rapidxml::xml_node<>& node) =0;
 
 public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
@@ -119,11 +113,17 @@ public Q_SLOT:
             std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
             const std::string& presentationDelegateKey,
             SketchCompletionCallback onAccept,
-            SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
+            SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {},
+            boost::optional<std::string> parameterPath = boost::optional<std::string>()
         ) =0;
+
+    virtual void editSketchParameter(
+        const std::string& parameterPath,
+        std::shared_ptr<insight::cad::ConstrainedSketch> sketchOvr = nullptr );
 
     void showCurrentActionDescription(const QString& desc);
     void showUserPrompt(const QString& text);
+    void updateMouseCoordinateDisplay(double x, double y);
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

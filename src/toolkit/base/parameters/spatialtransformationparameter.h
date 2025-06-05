@@ -51,7 +51,7 @@ public:
 
     void readFromNode (
             const std::string& name,
-            rapidxml::xml_node<>& node,
+            const rapidxml::xml_node<>& node,
             boost::filesystem::path inputfilepath ) override;
 
     std::unique_ptr<Parameter> clone(bool initialize) const override;

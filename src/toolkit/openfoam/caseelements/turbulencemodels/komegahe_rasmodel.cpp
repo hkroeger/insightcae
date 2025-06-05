@@ -42,19 +42,19 @@ bool kOmegaHe_RASModel::addIntoFieldDictionary(const std::string& fieldname, con
   if (fieldname == "k")
   {
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform "+str(format("%g") % 1e-10);
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   else if ( fieldname == "omega")
   {
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform "+str(format("%g") % 1e-10);
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   else if ( fieldname == "nut")
   {
     BC["type"]=OFDictData::data("calculated");
-    BC["value"]="uniform "+str(format("%g") % 1e-10);
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   return false;

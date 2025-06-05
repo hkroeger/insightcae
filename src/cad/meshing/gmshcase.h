@@ -81,13 +81,23 @@ public:
       const std::vector<std::string>& lines
       );
 
+  std::vector<std::string>
+  findNamedDefinitions(const std::string& keyword) const;
+
   std::set<int> findNamedDefinition(const std::string& keyword, const std::string& name) const;
+
   std::set<int> findNamedEdges(const std::string& name) const;
   std::set<int> findNamedFaces(const std::string& name) const;
   std::set<int> findNamedSolids(const std::string& name) const;
 
+  std::set<int> getLSDynaBeamPartIDs(const std::string& namedEdgeName) const;
   std::set<int> getLSDynaShellPartIDs(const std::string& namedFaceName) const;
   std::set<int> getLSDynaSolidPartIDs(const std::string& namedSolidName) const;
+
+  int getUniqueLSDynaBeamPartID(const std::string& namedEdgeName) const;
+  int getUniqueLSDynaShellPartID(const std::string& namedFaceName) const;
+
+  int calcLSDynaEdgeNodeSetID(const std::string& namedEdgeName) const;
 
   void setLinear();
   void setQuadratic();

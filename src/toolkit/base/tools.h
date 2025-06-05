@@ -564,6 +564,7 @@ public:
     }
 };
 
+int realNp(int userInputNp);
 
 }
 

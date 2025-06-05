@@ -60,7 +60,6 @@ namespace insight {
 
 class ConvergenceAnalysisDisplayer;
 
-int realNp(int userInputNp);
 
 template<class Base>
 class OpenFOAMAnalysisTemplate : public Base

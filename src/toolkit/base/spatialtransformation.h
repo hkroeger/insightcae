@@ -281,17 +281,35 @@ struct CoordinateSystem
 struct View : public CoordinateSystem
 {
     double cameraDistance;
+    boost::optional<double> parallelScale;
     std::string title;
 
+    /**
+     * @brief View
+     * @param ctr
+     * @param cameraOffset
+     * @param up
+     * @param title
+     * @param parallelScale
+     * the half of the height of the viewport in world-coordinate distances
+     */
     View(
         const arma::mat& ctr,
         const arma::mat& cameraOffset,
         const arma::mat& up,
-        const std::string& title );
+        const std::string& title,
+        boost::optional<double> parallelScale =
+            boost::optional<double>() );
+
+    View(
+        const boost::filesystem::path& pvccFile );
 
     inline arma::mat cameraLocation() const { return origin + cameraDistance*ex; }
     inline arma::mat focalPoint() const { return origin; }
     inline arma::mat upwardDirection() const { return ez; }
+
+    void savePVCC(const boost::filesystem::path& file) const;
+    void savePVCC(std::ostream& os) const;
 };
 
 

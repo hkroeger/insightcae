@@ -77,7 +77,9 @@ void XMLDocument::parseBuffer()
     rootNode = this->first_node("root");
 }
 
-XMLDocument::XMLDocument()
+
+
+XMLDocument::XMLDocument(const RootNodeProperties& rootNodeProps)
 {
     using namespace rapidxml;
     xml_node<>* decl = allocate_node(node_declaration);
@@ -85,7 +87,16 @@ XMLDocument::XMLDocument()
     decl->append_attribute(allocate_attribute("encoding", "utf-8"));
     append_node(decl);
 
-    rootNode = allocate_node(node_element, "root");
+    rootNode = allocate_node(
+        node_element,
+        allocate_string(rootNodeProps.name.c_str()) );
+    for (auto& attr: rootNodeProps.attributes)
+    {
+        rootNode->append_attribute(
+            allocate_attribute(
+                allocate_string(attr.first.c_str()),
+                allocate_string(attr.second.c_str())));
+    }
     append_node(rootNode);
 }
 

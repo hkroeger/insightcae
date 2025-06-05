@@ -295,6 +295,7 @@ set(toolkit_SOURCES
     code_aster/caseelements/shellpart.h code_aster/caseelements/shellpart.cpp
     code_aster/caseelements/gluedconnection.h code_aster/caseelements/gluedconnection.cpp
 
+    lsdyna/femmesh.h lsdyna/femmesh.cpp
     lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
     lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp
     lsdyna/control.h lsdyna/control.cpp

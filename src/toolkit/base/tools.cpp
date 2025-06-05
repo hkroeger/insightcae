@@ -1205,4 +1205,20 @@ OperatingSystem currentOperatingSystem =
 #endif
 ;
 
+int realNp(int userInputNp)
+{
+    if (userInputNp>0)
+    {
+        return userInputNp;
+    }
+    else
+    {
+        return std::max<int>(
+            1,
+            boost::thread::physical_concurrency()+userInputNp
+            );
+    }
+}
+
+
 }

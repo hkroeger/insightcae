@@ -74,6 +74,79 @@ public:
 
 
 
+
+class BoundarySPC
+    : public LSDynaInputCard
+{
+public:
+    struct Node {
+        int nodeID;
+    };
+
+    struct NodeSet {
+        int setID;
+    };
+
+    enum DOF {
+
+        X = 0,
+        //X translation.
+        Y = 1,
+        //Y translation.
+        Z = 2,
+        //Z translation.
+        RX = 3,
+        //XX rotation.
+        RY = 4,
+        //YY rotation.
+        RZ = 5
+    };
+private:
+    boost::variant<Node,NodeSet> subject_;
+    std::set<DOF> dofs_;
+    int cid_;
+
+public:
+    BoundarySPC(
+        boost::variant<Node,NodeSet> subject,
+        std::set<DOF> dofs,
+        int cid = -1
+    );
+
+    void write(std::ostream& os) const override;
+};
+
+
+
+class LoadShell
+    : public LSDynaInputCard
+{
+public:
+    struct Element {
+        int elementID;
+    };
+
+    struct ElementSet {
+        int setID;
+    };
+
+private:
+    boost::variant<Element,ElementSet> subject_;
+    const Curve *curve_;
+    double fScale_;
+    si::Time Tstart_;
+
+public:
+    LoadShell(
+        boost::variant<Element,ElementSet> subject,
+        const Curve *curve,
+        double fScale = 1.,
+        si::Time Tstart = 0.*si::seconds );
+
+    void write(std::ostream& os) const override;
+};
+
+
 } // namespace LSDynaInputCards
 } // namespace insight
 

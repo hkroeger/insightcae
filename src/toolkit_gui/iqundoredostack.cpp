@@ -25,8 +25,58 @@ const QString &IQUndoRedoStackState::description() const
 
 
 
-IQUndoRedoStack::IQUndoRedoStack(QObject *parent)
-    : QObject(parent)
+void IQUndoRedoStack::setNoUndoAction()
+{
+    undoAction_->setText(initialUndoActionText_);
+    undoAction_->setEnabled(false);
+    undoAction_->setToolTip(_("Nothing to be undone"));
+}
+
+
+
+
+void IQUndoRedoStack::setNoRedoAction()
+{
+    redoAction_->setText(initialRedoActionText_);
+    redoAction_->setEnabled(false);
+    redoAction_->setToolTip(_("Nothing to be redone"));
+}
+
+
+
+
+void IQUndoRedoStack::setNextUndoAction()
+{
+    undoAction_->setText(
+        initialUndoActionText_
+        + " ("
+        + undoStates_.top()->description()
+        + ")" );
+    undoAction_->setEnabled(true);
+    undoAction_->setToolTip(
+        undoStates_.top()->description() );
+}
+
+
+
+
+void IQUndoRedoStack::setNextRedoAction()
+{
+    redoAction_->setText(
+        initialRedoActionText_
+        + " ("
+        + redoStates_.top()->description()
+        + ")" );
+
+    redoAction_->setEnabled(true);
+    redoAction_->setToolTip(
+        redoStates_.top()->description() );
+}
+
+
+
+
+IQUndoRedoStack::IQUndoRedoStack()
 {}
 
 
@@ -35,36 +85,39 @@ IQUndoRedoStack::IQUndoRedoStack(QObject *parent)
 void IQUndoRedoStack::addUndoAction(QAction* act)
 {
     undoAction_=act;
-    connect(act, &QAction::triggered,
-            this, &IQUndoRedoStack::undo);
-    undoAction_->setEnabled(false);
-    undoAction_->setToolTip("Nothing to be undone");
+    initialUndoActionText_=act->text();
+
+    QObject::connect(act, &QAction::triggered, act,
+            std::bind(&IQUndoRedoStack::undo, this) );
+
+    setNoUndoAction();
 }
 
 
 void IQUndoRedoStack::addRedoAction(QAction* act)
 {
     redoAction_=act;
-    connect(act, &QAction::triggered,
-                     this, &IQUndoRedoStack::redo);
-    redoAction_->setEnabled(false);
-    redoAction_->setToolTip("Nothing to be redone");
+    initialRedoActionText_=act->text();
+
+    QObject::connect(act, &QAction::triggered, act,
+                     std::bind(&IQUndoRedoStack::redo, this) );
+
+    setNoRedoAction();
 }
 
 
 
 void IQUndoRedoStack::storeUndoState(const QString &description)
 {
+    insight::CurrentExceptionContext ex(
+        "store undo state " + description.toStdString());
+
     auto state=createUndoState(description);
 
     undoStates_.push(state);
 
-    undoAction_->setEnabled(true);
-    undoAction_->setToolTip(
-        undoStates_.top()->description());
-
-    redoAction_->setEnabled(false);
-    redoAction_->setToolTip("Nothing to be redone");
+    setNextUndoAction();
+    setNoRedoAction();
 }
 
 
@@ -72,7 +125,7 @@ void IQUndoRedoStack::storeUndoState(const QString &description)
 
 void IQUndoRedoStack::undo()
 {
-    insight::CurrentExceptionContext ex(_("undo sketch editing step"));
+    insight::CurrentExceptionContext ex(_("perform undo step"));
     if (undoStates_.size())
     {
         auto stateToRestore = undoStates_.top();
@@ -86,26 +139,25 @@ void IQUndoRedoStack::undo()
 
         applyUndoState(*stateToRestore);
 
-        redoAction_->setEnabled(true);
-        redoAction_->setToolTip(redoStates_.top()->description());
+        setNextRedoAction();
     }
 
     if (!undoStates_.size())
     {
-        undoAction_->setEnabled(false);
-        undoAction_->setToolTip("Nothing to be undone");
+        setNoUndoAction();
     }
     else
     {
-        undoAction_->setEnabled(true);
-        undoAction_->setToolTip(undoStates_.top()->description());
+        setNextUndoAction();
     }
 }
 
 
+
+
 void IQUndoRedoStack::redo()
 {
-    insight::CurrentExceptionContext ex(_("redo sketch editing step"));
+    insight::CurrentExceptionContext ex(_("perform redo step"));
     if (redoStates_.size())
     {
         auto stateToRestore = redoStates_.top();
@@ -118,19 +170,16 @@ void IQUndoRedoStack::redo()
 
         applyUndoState(*stateToRestore);
 
-        undoAction_->setEnabled(true);
-        undoAction_->setToolTip(undoStates_.top()->description());
+        setNextUndoAction();
     }
 
     if (!redoStates_.size())
     {
-        redoAction_->setEnabled(false);
-        redoAction_->setToolTip("Nothing to be redone");
+        setNoRedoAction();
     }
     else
     {
-        redoAction_->setEnabled(true);
-        redoAction_->setToolTip(redoStates_.top()->description());
+        setNextRedoAction();
     }
 }
 

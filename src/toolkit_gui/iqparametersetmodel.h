@@ -2,6 +2,7 @@
 #define IQPARAMETERSETMODEL_H
 
 #include "base/parameter.h"
+#include "base/parameters/subsetparameter.h"
 #include "toolkit_gui_export.h"
 
 #include <QSet>
@@ -12,7 +13,7 @@
 
 #include "base/parameterset.h"
 #include "iqparameter.h"
-
+#include "iqundoredostack.h"
 
 
 
@@ -33,7 +34,8 @@ class LabeledArrayParameter;
 
 
 class TOOLKIT_GUI_EXPORT IQParameterSetModel
-    : public QAbstractItemModel
+    : public QAbstractItemModel,
+      public IQUndoRedoStack
 {
   Q_OBJECT
 
@@ -43,6 +45,24 @@ public:
       valueCol=1,
       stringPathCol=2,
       iqParamCol=3;
+
+    class UndoState
+        : public IQUndoRedoStackState,
+          public std::shared_ptr<insight::ParameterSet>
+    {
+    public:
+        UndoState(
+            const QString& description,
+            std::shared_ptr<insight::ParameterSet> sk );
+    };
+protected:
+    void applyUndoState(const IQUndoRedoStackState& state) override;
+    IQUndoRedoStackStatePtr createUndoState(const QString& description) const override;
+protected Q_SLOTS:
+    void handleDataChangeForUndo(
+        const QModelIndex &topLeft,
+        const QModelIndex &bottomRight,
+        const QVector<int> &roles = QVector<int>() );
 
 private:
 
@@ -55,6 +75,7 @@ private:
   friend class IQArrayElementParameter;
 
   std::unique_ptr<insight::ParameterSet> parameterSet_;
+  mutable std::shared_ptr<insight::ParameterSet> parameterSetBeforeLastChange_;
 
   std::unique_ptr<insight::ParameterSet> defaultParameterSet_;
   std::string analysisName_; // reqd for parameter proposition engine

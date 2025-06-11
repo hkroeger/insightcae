@@ -50,7 +50,8 @@ extern std::string defaultGUIConstrainedSketchPresentationDelegate;
 
 
 class TOOLKIT_GUI_EXPORT IQVTKConstrainedSketchEditor
-      : public IQUndoRedoStack,
+      : public QObject,
+        public IQUndoRedoStack,
         public ViewWidgetAction<IQVTKCADModel3DViewer>,
         public insight::cad::ConstrainedSketchPtr
 {

@@ -30,24 +30,28 @@ typedef
 
 
 class IQUndoRedoStack
-: public QObject
 {
-    Q_OBJECT
 
     QAction *undoAction_, *redoAction_;
+    QString initialUndoActionText_, initialRedoActionText_;
+
     std::stack<IQUndoRedoStackStatePtr> undoStates_, redoStates_;
 
 protected:
     virtual void applyUndoState(const IQUndoRedoStackState& state) =0;
     virtual IQUndoRedoStackStatePtr createUndoState(const QString& description) const =0;
 
+    void setNoUndoAction();
+    void setNoRedoAction();
+    void setNextUndoAction();
+    void setNextRedoAction();
+
 public:
-    IQUndoRedoStack(QObject *parent=nullptr);
+    IQUndoRedoStack();
     void addUndoAction(QAction* act);
     void addRedoAction(QAction* act);
 
 
-public Q_SLOTS:
     void storeUndoState(const QString& description);
 
     void undo();

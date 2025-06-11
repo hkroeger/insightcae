@@ -77,6 +77,33 @@ msgstr ""
 "the current operating system.\n"
 " Therefore the execution is locked to a WSL backend or a remote host."
 
+#, fuzzy
+msgid "&Open..."
+msgstr "Open..."
+
+#, fuzzy
+msgid "&Create selected..."
+msgstr "Create &report..."
+
+#, fuzzy
+msgid "Analysis"
+msgstr "&Analysis"
+
+msgid "Description"
+msgstr ""
+
+msgid "Available Analyses"
+msgstr "Available Analyses"
+
+msgid "Uncategorized"
+msgstr "Uncategorized"
+
+msgid "Create New Analysis"
+msgstr "Create New Analysis"
+
+msgid "Cancel"
+msgstr ""
+
 #, c-format
 msgid "creating analysis form for analysis %s"
 msgstr "creating analysis form for analysis %s"
@@ -129,6 +156,14 @@ msgstr "&Tools"
 msgid "3D &viewer settings..."
 msgstr ""
 
+#, fuzzy
+msgid "&Undo parameter change"
+msgstr "&Parameters"
+
+#, fuzzy
+msgid "&Redo parameter change"
+msgstr "&Save parameter set"
+
 msgid "&Save parameter set as..."
 msgstr "&Save parameter set as..."
 
@@ -138,7 +173,8 @@ msgstr "&Pack external files into parameter file"
 msgid "&Merge other parameter set into current..."
 msgstr "&Merge other parameter set into current..."
 
-msgid "&Show in XML format"
+#, fuzzy
+msgid "Show in &XML format..."
 msgstr "&Show in XML format"
 
 msgid "&Run Analysis"
@@ -307,7 +343,8 @@ msgstr "Transfer from remote location to local directory finished"
 msgid "Transfer from remote location to local directory started"
 msgstr "Transfer from remote location to local directory started"
 
-msgid "Create New Analysis"
+#, fuzzy
+msgid "New Analysis"
 msgstr "Create New Analysis"
 
 msgid "&Analysis"
@@ -461,12 +498,6 @@ msgstr "remote run cancelled"
 
 #~ msgid "Pack: embed externally referenced files into parameterset"
 #~ msgstr "Pack: embed externally referenced files into parameterset"
-
-#~ msgid "Available Analyses"
-#~ msgstr "Available Analyses"
-
-#~ msgid "Uncategorized"
-#~ msgstr "Uncategorized"
 
 #~ msgid "Transmitting input data and starting analysis..."
 #~ msgstr "Transmitting input data and starting analysis..."

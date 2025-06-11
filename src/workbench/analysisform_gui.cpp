@@ -113,7 +113,6 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 
 
 
-
 void AnalysisForm::onRunAnalysis()
 {
   if (currentWorkbenchAction_)

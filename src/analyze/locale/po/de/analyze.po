@@ -68,17 +68,21 @@ msgid ""
 "additional input file to merge into analysis parameters before variable "
 "assignments"
 msgstr ""
+"Weitere Input-Dateien, die vor den Variablenzuweisungen in den Parametersatz "
+"der aktuellen Analyse eingefügt werden."
 
 msgid "Additional libraries with analysis modules to load"
-msgstr ""
+msgstr "Weitere Bibliotheken mit Analyse-Apps, die geladen werden sollen"
 
 msgid "Specifies input file."
-msgstr ""
+msgstr "Gibt die Eingabedatei an"
 
 msgid ""
 "Specifies output file. May be a PDF report or an ISR InsightCAE XML result "
 "set."
 msgstr ""
+"Gibt die Ausgabedatei an. Kann ein PDF-Bericht oder ein InsightCAE XML "
+"Result-File (ISR) sein."
 
 msgid ""
 "Start with REST API server. Keeps the application running after the analysis "
@@ -87,10 +91,10 @@ msgid ""
 msgstr ""
 
 msgid "Server address"
-msgstr ""
+msgstr "Adresse des Servers"
 
 msgid "Server port"
-msgstr ""
+msgstr "Port auf dem Server"
 
 msgid "Broadcast listen port"
 msgstr ""
@@ -102,23 +106,23 @@ msgid "options"
 msgstr "Optionen"
 
 msgid "Could not parse command line"
-msgstr ""
+msgstr "Konnte die Kommandzeile nicht auswerten"
 
 #, c-format
 msgid "There have been %d warnings."
-msgstr ""
+msgstr "Es gab %d Warnungen"
 
 msgid "Please review"
-msgstr ""
+msgstr "Bitte überprüfen"
 
 msgid "Warning"
 msgstr "Warnung"
 
 msgid "Could not start web server!"
-msgstr ""
+msgstr "Konnte den Webserver nicht starten!"
 
 msgid "Error: library file does not exist: "
-msgstr ""
+msgstr "Fehler: die Bibliothek existiert nicht: "
 
 msgid "input file has to be specified!"
 msgstr "Eingabedatei muss angegeben werden!"
@@ -127,7 +131,7 @@ msgid "only one single input file has to be specified!"
 msgstr "nur eine einzige Eingabedatei darf angegeben werden!"
 
 msgid "reading input parameter file"
-msgstr ""
+msgstr "lese die Parameter-Eingabedatei"
 
 #, fuzzy, c-format
 msgid "Executing analysis of type '%s' in directory '%s'"
@@ -138,38 +142,40 @@ msgid ""
 "merge command needs either one or three arguments!\n"
 "Got: %s"
 msgstr ""
+"Der merge-Befehl benötigt entweder einen oder drei Argumente!\n"
+"Gegeben: %s"
 
 #, c-format
 msgid "Resizing array '%s' to %d"
-msgstr ""
+msgstr "Verändere die Größe des Arrays '%s' auf %d"
 
 #, c-format
 msgid "Setting boolean '%s' = %d"
-msgstr ""
+msgstr "Setze den Wahrheitswert '%s' = %d"
 
 #, c-format
 msgid "Setting string '%s' = \"%s\""
-msgstr ""
+msgstr "Setze den String '%s' = \"%s\""
 
 #, c-format
 msgid "Setting selection '%s' = \"%s\""
-msgstr ""
+msgstr "Setze den Auswahlparameter '%s' = \"%s\""
 
 #, c-format
 msgid "Setting path '%s' = \"%s\""
-msgstr ""
+msgstr "Setze den Pfad '%s' = \"%s\""
 
 #, c-format
 msgid "Setting double '%s' = %g"
-msgstr ""
+msgstr "Setze den Double-Wert '%s' = %g"
 
 #, c-format
 msgid "Setting vector '%s' = [%g %g %g]"
-msgstr ""
+msgstr "Setze den Vektorparameter '%s' = [%g %g %g]"
 
 #, c-format
 msgid "Setting int '%s'= %d"
-msgstr ""
+msgstr "Setze die Ganzzahl '%s'= %d"
 
 msgid "Applied Parameters for this run"
 msgstr "Für diesen Durchlauf angewendete Parameter"

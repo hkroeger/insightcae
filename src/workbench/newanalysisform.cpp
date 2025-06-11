@@ -7,19 +7,31 @@
 #include "base/analysis.h"
 #include "base/translations.h"
 
+
+
+
 NewAnalysisForm::NewAnalysisForm(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::NewAnalysisForm)
 {
     ui->setupUi(this);
 
+    ui->openBtn->setText(_("&Open..."));
+    ui->createBtn->setText(_("&Create selected..."));
+
     fillAnalysisList(ui->treeWidget);
 }
+
+
+
 
 NewAnalysisForm::~NewAnalysisForm()
 {
     delete ui;
 }
+
+
+
 
 void NewAnalysisForm::replaceLoadButton(QPushButton *b)
 {
@@ -68,9 +80,12 @@ void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
     treeWidget->setIconSize(QSize(80,80));
     treeWidget->setWordWrap(true);
     treeWidget->setIndentation(5);
-    treeWidget->setHeaderLabels(QStringList() << "Analysis" << "Description" );
+    QStringList hdr;
+    hdr << _("Analysis") << _("Description") ;
+    treeWidget->setHeaderLabels(hdr);
 
-    QTreeWidgetItem *topitem = new QTreeWidgetItem ( treeWidget, QStringList() << _("Available Analyses") );
+    QTreeWidgetItem *topitem =
+        new QTreeWidgetItem ( treeWidget, QStringList() << _("Available Analyses") );
     { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+5); topitem->setFont(0, f); }
     HierarchyLevel toplevel ( topitem );
 

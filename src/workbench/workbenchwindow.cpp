@@ -162,7 +162,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
   connect(availableAnalysesGallery_, &NewAnalysisForm::openAnalysis,
           this, &WorkbenchMainWindow::onOpenAnalysis);
   vl->addWidget(availableAnalysesGallery_);
-  tw->addTab(cw, "New Analysis");
+  tw->addTab(cw, _("New Analysis") );
 
   tw->tabBar()->tabButton(0, QTabBar::RightSide)->hide();
 

@@ -54,19 +54,19 @@ msgid "Input file does not exist: %s"
 msgstr "Eingabedatei existiert nicht: %s"
 
 msgid "launch in local location"
-msgstr ""
+msgstr "in lokalem Ordner ausführen"
 
 msgid "launch in remote workspace"
-msgstr ""
+msgstr "in entferntem Workspace ausführen"
 
 msgid "(none)"
-msgstr ""
+msgstr "(kein)"
 
 msgid "temporary directory"
-msgstr ""
+msgstr "temporäres Verzeichnis"
 
 msgid "directory %1"
-msgstr ""
+msgstr "Verzeichnis %1"
 
 msgid ""
 "Please note: the local execution of the selected analysis is not possible on "
@@ -74,9 +74,33 @@ msgid ""
 " Therefore the execution is locked to a WSL backend or a remote host."
 msgstr ""
 
+msgid "&Open..."
+msgstr "Ö&ffnen..."
+
+msgid "&Create selected..."
+msgstr "Ausgewählte e&rzeugen..."
+
+msgid "Analysis"
+msgstr "Analyse"
+
+msgid "Description"
+msgstr "Beschreibung"
+
+msgid "Available Analyses"
+msgstr "Verfügbare Analysen"
+
+msgid "Uncategorized"
+msgstr "Unkategorisiert"
+
+msgid "Create New Analysis"
+msgstr "Neue Analyse erzeugen"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
 #, c-format
 msgid "creating analysis form for analysis %s"
-msgstr ""
+msgstr "Erzeuge Eingabeformular für Analysis %s"
 
 msgid "setup user interface"
 msgstr ""
@@ -85,19 +109,19 @@ msgid "enable OpenFOAM controls"
 msgstr ""
 
 msgid "Save..."
-msgstr ""
+msgstr "Speichern..."
 
 msgid "Email..."
-msgstr ""
+msgstr "E-Mail..."
 
 msgid "Clear"
-msgstr ""
+msgstr "Leeren"
 
 msgid "Auto Scroll"
-msgstr ""
+msgstr "Autom. Scrollen"
 
 msgid "redirect console"
-msgstr ""
+msgstr "Auf Konsole umleiten"
 
 msgid "create parameter set visualizer"
 msgstr ""
@@ -112,31 +136,37 @@ msgid "create menus"
 msgstr ""
 
 msgid "&Parameters"
-msgstr ""
+msgstr "&Parameter"
 
 msgid "&Actions"
-msgstr ""
+msgstr "&Aktionen"
 
 msgid "&Results"
-msgstr ""
+msgstr "E&rgebnisse"
 
 msgid "&Tools"
-msgstr ""
+msgstr "&Werkzeuge"
 
 msgid "3D &viewer settings..."
-msgstr ""
+msgstr "Einstellungen des 3D-&Viewers..."
+
+msgid "&Undo parameter change"
+msgstr "&Rückgängig"
+
+msgid "&Redo parameter change"
+msgstr "&Wiederherstellen"
 
 msgid "&Save parameter set as..."
-msgstr ""
+msgstr "Parameter &speichern als..."
 
 msgid "&Pack external files into parameter file"
-msgstr ""
+msgstr "Externe Dateien in Parameterdatei einbetten"
 
 msgid "&Merge other parameter set into current..."
-msgstr ""
+msgstr "Anderen Parametersatz in Aktuellen einfügen"
 
-msgid "&Show in XML format"
-msgstr ""
+msgid "Show in &XML format..."
+msgstr "In &XML-Format anzeigen..."
 
 msgid "&Run Analysis"
 msgstr "&Analyse starten"
@@ -145,69 +175,79 @@ msgid "&Stop Analysis"
 msgstr "&Analyse stoppen"
 
 msgid "&Load results..."
-msgstr ""
+msgstr "Ergebnisse &laden..."
 
 msgid "&Save results as..."
-msgstr ""
+msgstr "Ergebnisse &speichern als..."
 
 msgid "Create &report..."
-msgstr ""
+msgstr "Report e&rzeugen..."
 
 msgid "Load &filter..."
-msgstr ""
+msgstr "&Filter laden..."
 
 msgid "Sa&ve filter..."
-msgstr ""
+msgstr "Filter spei&chern..."
 
 msgid "Start ParaView in execution directory"
-msgstr ""
+msgstr "Paraview in Arbeitsverzeichnis starten"
 
 msgid "Clean OpenFOAM case..."
-msgstr ""
+msgstr "OpenFOAM-Case bereinigen..."
 
 msgid "Parameters unsaved"
-msgstr ""
+msgstr "Parameter nicht gespeichert"
 
 msgid ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 msgstr ""
+"Die aktuellen Parameter sind geändert aber nicht gespeichert.\n"
+"Möchten Sie sie vor dem Beenden speichern?"
 
 msgid "Save input parameters"
-msgstr ""
+msgstr "Eingabeparameter speichern"
 
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
 "Do you wish to save them before continue?"
 msgstr ""
+"Die aktuellen Parameter sind nicht gespeichert und werden überschrieben.\n"
+"Möchten Sie sie speichern bevor Sie weitermachen?"
 
 msgid "Open Parameters"
-msgstr ""
+msgstr "Parameter öffnen"
 
 msgid "Insight parameter sets (*.ist)"
-msgstr ""
+msgstr "InsightCAE Parametersatz (*.ist)"
 
 msgid "Autosaved Parameters found"
-msgstr ""
+msgstr "Automatisch gespeicherte Parameter gefunden"
 
 msgid ""
 "There is an automatically saved version of the selected file available.\n"
 "Do you wish to load this instead of the selected file?"
 msgstr ""
+"Es ist eine automatisch gespeicherte Version der ausgewählten Datei "
+"vorhanden.\n"
+"Möchten Sie diese anstelle der gewählten Datei laden?"
 
 msgid "(packed)"
-msgstr ""
+msgstr "(gepackt)"
 
 msgid "&Save parameter set"
-msgstr ""
+msgstr "Parameter &speichern"
 
 msgid "There is currently a result set in memory!"
-msgstr ""
+msgstr "Es ist aktuell ein Ergebnisdatensatz im Speicher!"
 
 msgid ""
 "If you continue, the results will be deleted and the execution directory on "
 "disk will be removed (only if it was created). Continue?"
 msgstr ""
+"Wenn Sie fortsetzen, werden die Ergebnisse gelöscht und das "
+"Arbeitsverzeichniswird entfernt (falls es automatisch erzeugt wurde). "
+"Fortsetzen?"
 
 msgid "Internal error: there is an action running currently!"
 msgstr ""
@@ -216,13 +256,13 @@ msgid "Internal error: there is no action running currently!"
 msgstr ""
 
 msgid "Finished!"
-msgstr ""
+msgstr "Fertig!"
 
 msgid "The analysis has finished"
-msgstr ""
+msgstr "Die Analyse ist beendet"
 
 msgid "Stopped!"
-msgstr ""
+msgstr "Gestoppt!"
 
 msgid "The analysis has been interrupted upon user request!"
 msgstr ""
@@ -262,7 +302,7 @@ msgid ""
 msgstr ""
 
 msgid "Not possible"
-msgstr ""
+msgstr "Nicht möglich"
 
 msgid ""
 "There is currently a remote analysis running.\n"
@@ -281,7 +321,7 @@ msgstr ""
 msgid "Transfer from remote location to local directory started"
 msgstr ""
 
-msgid "Create New Analysis"
+msgid "New Analysis"
 msgstr "Neue Analyse"
 
 msgid "&Analysis"
@@ -294,25 +334,25 @@ msgid "Open..."
 msgstr "Öffnen..."
 
 msgid "&Settings"
-msgstr ""
+msgstr "Ein&stellungen"
 
 msgid "Remote servers..."
-msgstr ""
+msgstr "Entfernte Server..."
 
 msgid "Configure paths to external programs..."
-msgstr ""
+msgstr "Die Pfade zu externen Programmen konfigurieren..."
 
 msgid "Manage report templates..."
-msgstr ""
+msgstr "Report Templates verwalten..."
 
 msgid "&Help"
-msgstr ""
+msgstr "&Hilfe"
 
 msgid "About..."
-msgstr ""
+msgstr "Über..."
 
 msgid "Workbench Information"
-msgstr ""
+msgstr "Workbench Informationen"
 
 msgid ""
 "InsightCAE Analysis Workbench\n"
@@ -329,7 +369,7 @@ msgid ""
 msgstr ""
 
 msgid "Insight parameter sets"
-msgstr ""
+msgstr "Insight Parametersätze"
 
 #, c-format
 msgid ""
@@ -405,13 +445,13 @@ msgid "stop server"
 msgstr ""
 
 msgid "was"
-msgstr ""
+msgstr "war"
 
 msgid "was not"
-msgstr ""
+msgstr "war nicht"
 
 msgid "successful"
-msgstr ""
+msgstr "erfolgreich"
 
 msgid "timeout while stopping remote analysis server"
 msgstr ""

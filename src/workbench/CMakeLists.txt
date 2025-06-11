@@ -16,13 +16,14 @@ set(workbench_SRCS
     iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
     iqexecutionworkspace.h iqexecutionworkspace.cpp
 
+    newanalysisform.h newanalysisform.cpp
+    newanalysisdlg.h newanalysisdlg.cpp
+
     analysisform.cpp
     analysisform.h
     analysisform_gui.cpp
     analysisform_localactions.cpp
     analysisform_remoteactions.cpp
-    newanalysisdlg.cpp
-    newanalysisdlg.h
     workbenchwindow.cpp
     workbenchwindow.h
 
@@ -45,7 +46,9 @@ SET(workbench_FORMS
     analysisform.ui
     xml_display.ui
     qsetupremotedialog.ui
-    qexecutionworkspacedialog.ui)
+    qexecutionworkspacedialog.ui
+    newanalysisform.ui)
+
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
     toolkit_gui
@@ -67,8 +70,7 @@ else()
 endif()
 
 
-add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS}
-  newanalysisform.h newanalysisform.cpp newanalysisform.ui)
+add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
 target_link_libraries(workbench ${workbench_LIBS})
 linkToolkitVtk(workbench Onscreen)

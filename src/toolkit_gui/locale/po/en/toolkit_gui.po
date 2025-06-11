@@ -22,14 +22,20 @@ msgstr ""
 msgid "Open file"
 msgstr ""
 
-msgid "undo sketch editing step"
+msgid "Nothing to be undone"
+msgstr ""
+
+msgid "Nothing to be redone"
+msgstr ""
+
+msgid "perform undo step"
 msgstr ""
 
 #, c-format
 msgid "undo step %s"
 msgstr ""
 
-msgid "redo sketch editing step"
+msgid "perform redo step"
 msgstr ""
 
 #, c-format

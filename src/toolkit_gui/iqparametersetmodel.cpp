@@ -8,6 +8,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <iterator>
+#include <qnamespace.h>
 
 #include "iqparametersetmodel.h"
 #include "base/parameter.h"
@@ -28,6 +29,86 @@
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
+
+
+
+
+IQParameterSetModel::UndoState::UndoState(
+    const QString &description,
+    std::shared_ptr<insight::ParameterSet> sk)
+: IQUndoRedoStackState(description),
+  std::shared_ptr<insight::ParameterSet>(sk)
+{}
+
+
+
+
+void IQParameterSetModel::applyUndoState(
+    const IQUndoRedoStackState& state )
+{
+    auto& s=dynamic_cast<const UndoState&>(state);
+    insight::CurrentExceptionContext ex(
+        "applying undo state %s", s.description().toStdString().c_str() );
+
+
+    disconnect(
+        this, &IQParameterSetModel::dataChanged,
+        this, &IQParameterSetModel::handleDataChangeForUndo
+        );
+
+    *parameterSet_ = *s;
+
+    parameterSetBeforeLastChange_ =
+        parameterSet_->cloneParameterSet();
+
+    connect(
+        this, &IQParameterSetModel::dataChanged,
+        this, &IQParameterSetModel::handleDataChangeForUndo
+        );
+}
+
+
+
+
+IQUndoRedoStackStatePtr
+IQParameterSetModel::createUndoState(
+    const QString& description ) const
+{
+    return std::make_shared<UndoState>(
+        description, parameterSetBeforeLastChange_);
+}
+
+
+
+
+void IQParameterSetModel::handleDataChangeForUndo(
+    const QModelIndex &topLeft,
+    const QModelIndex &bottomRight,
+    const QVector<int> &roles )
+{
+    qDebug() << "store undo "<<topLeft<<bottomRight<<roles;
+    qDebug()<<data(topLeft.siblingAtColumn(labelCol), Qt::DisplayRole);
+    qDebug()<<data(bottomRight.siblingAtColumn(labelCol), Qt::DisplayRole);
+
+    QString description  =
+            "modification of "+
+            data(topLeft.siblingAtColumn(labelCol), Qt::DisplayRole)
+                .toString()
+            ;
+
+    if (topLeft.row()==bottomRight.row())
+    {
+        storeUndoState(description);
+    }
+    else
+    {
+        storeUndoState(description+" and more");
+    }
+
+    parameterSetBeforeLastChange_ =
+        parameterSet_->cloneParameterSet();
+}
+
 
 
 
@@ -136,6 +217,11 @@ IQParameterSetModel::IQParameterSetModel(
     {
         *defaultParameterSet_ = *defaultps;
     }
+
+    connect(
+        this, &IQParameterSetModel::dataChanged,
+        this, &IQParameterSetModel::handleDataChangeForUndo
+        );
 }
 
 
@@ -574,12 +660,7 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
         if (index.column()==valueCol) // data
         {
             auto *iqp=iqIndexData(index);
-            bool ok = iqp->setValue(value);
-            if (ok)
-            {
-                Q_EMIT dataChanged(index, index, {role});
-            }
-            return ok;
+            return iqp->setValue(value);
         }
         else if (index.column()==labelCol) // data
         {
@@ -600,12 +681,8 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
         {
           if (auto *bp = dynamic_cast<insight::BoolParameter*>(p))
           {
-            auto *iqp=iqIndexData(index);
-            if (iqp->setValue(value))
-            {
-                Q_EMIT dataChanged(index, index, {role});
-                return true;
-            }
+              auto *iqp=iqIndexData(index);
+              return iqp->setValue(value);
           }
         }
         break;
@@ -685,101 +762,15 @@ void IQParameterSetModel::contextMenu(QWidget *pw, const QModelIndex& index, con
 
 
 
-
-// QList<IQParameter*> IQParameterSetModel::decorateChildren(QObject* parent, insight::Parameter& curParam)
-// {
-//   if (auto* ap = dynamic_cast<insight::ArrayParameterBase*>(&curParam))
-//   {
-//     return decorateArrayContent(parent, *ap);
-//   }
-//   else if (auto* ap = dynamic_cast<insight::LabeledArrayParameter*>(&curParam))
-//   {
-//       return decorateLabeledArrayContent(parent, *ap);
-//   }
-//   else
-//   {
-//     QList<IQParameter*> children;
-//     for (auto childParam=curParam.begin(); childParam!=curParam.end(); ++childParam)
-//     {
-//       auto name = QString::fromStdString(childParam.name());
-//       auto iqp = IQParameter::create(parent, this, name, *childParam, defaultParameterSet_);
-
-//       decorateChildren(iqp, *childParam);
-//       children.append(iqp);
-//     }
-//     if (auto* ciqp = dynamic_cast<IQParameter*>(parent))
-//     {
-//       ciqp->append(children);
-//     }
-//     return children;
-//   }
-// }
-
-
-
-
-
-// IQParameter* IQParameterSetModel::decorateArrayElement(QObject* parent, int i, insight::Parameter& cp)
-// {
-//   auto name = QString("%1").arg(i);
-//   auto iqp = IQArrayElementParameterBase::create(parent, this, name, cp, defaultParameterSet_);
-
-//   decorateChildren(iqp, cp);
-//   return iqp;
-// }
-
-
-
-
-// QList<IQParameter*> IQParameterSetModel::decorateArrayContent(QObject* parent, insight::ArrayParameterBase& ap)
-// {
-//   QList<IQParameter*> children;
-//   for (int i=0; i<ap.size(); ++i)
-//   {
-//     auto iqp=decorateArrayElement(parent, i, ap.elementRef(i));
-//     children.append(iqp);
-//   }
-//   if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
-//   {
-//     ciqp->append(children);
-//   }
-//   return children;
-// };
-
-
-
-// IQParameter *IQParameterSetModel::decorateLabeledArrayElement(QObject *parent, const std::string& name, insight::Parameter &cp)
-// {
-//     auto iqp = IQLabeledArrayElementParameterBase::create(parent, this, QString::fromStdString(name), cp, defaultParameterSet_);
-
-//     decorateChildren(iqp, cp);
-//     return iqp;
-// }
-
-// QList<IQParameter *> IQParameterSetModel::decorateLabeledArrayContent(QObject *parent, insight::LabeledArrayParameter &ap)
-// {
-//     QList<IQParameter*> children;
-//     for (int i=0; i<ap.size(); ++i)
-//     {
-//         auto iqp=decorateLabeledArrayElement(parent, ap.childParameterName(i), ap.childParameterRef(i));
-//         children.append(iqp);
-//     }
-//     if (IQParameter* ciqp = dynamic_cast<IQParameter*>(parent))
-//     {
-//         ciqp->append(children);
-//     }
-//     return children;
-// }
-
-
-
-
 void IQParameterSetModel::clearParameters()
 {
   beginResetModel();
   parameterSet_=insight::ParameterSet::create();
   defaultParameterSet_=insight::ParameterSet::create();
   endResetModel();
+
+  parameterSetBeforeLastChange_ =
+      parameterSet_->cloneParameterSet();
 }
 
 
@@ -796,6 +787,9 @@ void IQParameterSetModel::resetParameters(
     defaultParameterSet_ = ps->cloneParameterSet();
     parameterSet_ = std::move(ps);
     endInsertRows();
+
+    parameterSetBeforeLastChange_ =
+        parameterSet_->cloneParameterSet();
 }
 
 
@@ -820,6 +814,9 @@ void IQParameterSetModel::resetParameterValues(
   }
 
   *parameterSet_ = ps;
+
+  parameterSetBeforeLastChange_ =
+      parameterSet_->cloneParameterSet();
 
   endInsertRows();
 }
@@ -891,10 +888,14 @@ IQParameterSetModel::parameterRef(const QModelIndex &index)
 }
 
 
+
+
 insight::Parameter& IQParameterSetModel::parameterRef(const std::string &path)
 {
     return parameterSet_->get<insight::Parameter>(path);
 }
+
+
 
 
 void IQParameterSetModel::notifyParameterChange(const insight::Parameter& p)
@@ -1142,4 +1143,5 @@ const std::string &getAnalysisName(QAbstractItemModel *model)
 {
     return parameterSetModel(model)->getAnalysisName();
 }
+
 

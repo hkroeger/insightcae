@@ -149,6 +149,7 @@ struct Replacements
   virtual void appendInlineFormula(const std::string& latex_formula) =0;
   virtual void appendDisplayFormula(const std::string& latex_formula) =0;
   virtual void appendFormattedText(const std::string& text, Format fmt) =0;
+  virtual void appendFootnote(const std::string& footnotetext) =0;
 
 };
 
@@ -164,31 +165,36 @@ struct PlainTextReplacements
 
   PlainTextReplacements();
 
-  virtual void appendImage(double, const std::string& imagename)
+  void appendImage(double, const std::string& imagename) override
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
 
     reformatted_ += str(format("\nfile://%s\n") % fname.string() );
   }
 
-  virtual void appendSvgImage(double, const std::string& imagename)
+  void appendSvgImage(double, const std::string& imagename) override
   {
       return appendImage(0., imagename);
   }
 
-  virtual void appendInlineFormula(const std::string& latex_formula)
+  void appendInlineFormula(const std::string& latex_formula) override
   {
     reformatted_ += latex_formula;
   }
 
-  virtual void appendDisplayFormula(const std::string& latex_formula)
+  void appendDisplayFormula(const std::string& latex_formula) override
   {
     reformatted_ += "\n  "+latex_formula+"\n";
   }
 
-  virtual void appendFormattedText(const std::string& text, Format)
+  void appendFormattedText(const std::string& text, Format) override
   {
     reformatted_ += text;
+  }
+
+  void appendFootnote(const std::string& footnotetext) override
+  {
+      reformatted_ += " (" + footnotetext + ")";
   }
 };
 
@@ -202,31 +208,35 @@ struct LaTeXReplacements
 
   LaTeXReplacements();
 
-  virtual void appendImage(double width, const std::string& imagename)
+  void appendImage(double width, const std::string& imagename) override
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
     fname = boost::filesystem::change_extension(fname, "");
     reformatted_ += str(format("\\includegraphics[keepaspectratio,width=%d\\linewidth]{%s}") % width % fname.string() );
   }
 
-  virtual void appendSvgImage(double width, const std::string& imagename)
+  void appendSvgImage(double width, const std::string& imagename) override
   {
       boost::filesystem::path fname = findSharedImageFile(imagename);
       fname = boost::filesystem::change_extension(fname, "");
       reformatted_ += str(format("\\includesvg[width=%d\\linewidth]{%s}") % width % fname.string() );
   }
 
-  virtual void appendInlineFormula(const std::string& latex_formula)
+  void appendInlineFormula(const std::string& latex_formula) override
   {
     reformatted_ += "$"+latex_formula+"$";
   }
-  virtual void appendDisplayFormula(const std::string& latex_formula)
+  void appendDisplayFormula(const std::string& latex_formula) override
   {
     reformatted_ += "$$"+latex_formula+"$$";
   }
-  virtual void appendFormattedText(const std::string& text, Format)
+  void appendFormattedText(const std::string& text, Format) override
   {
     reformatted_ += "{\bf "+text+"}";
+  }
+  void appendFootnote(const std::string& footnotetext) override
+  {
+      reformatted_ += "\\footnote{" + footnotetext + "}";
   }
 
 };
@@ -370,7 +380,7 @@ struct HTMLReplacements
 
   HTMLReplacements(int imageWidth);
   
-  virtual void appendImage(double width, const std::string& imagename)
+  void appendImage(double width, const std::string& imagename) override
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
     std::string code =
@@ -380,12 +390,12 @@ struct HTMLReplacements
     reformatted_ += code;
   }
 
-  virtual void appendSvgImage(double width, const std::string& imagename)
+  void appendSvgImage(double width, const std::string& imagename) override
   {
       return appendImage(width, imagename);
   }
 
-  virtual void appendInlineFormula(const std::string& latex_formula)
+  void appendInlineFormula(const std::string& latex_formula) override
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
     std::string code = "<img src=\"file:///"+rff.generic_path().string()+"\">";
@@ -393,7 +403,7 @@ struct HTMLReplacements
     reformatted_ += code;
   }
 
-  virtual void appendDisplayFormula(const std::string& latex_formula)
+  void appendDisplayFormula(const std::string& latex_formula) override
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
     std::string code = "<br>\n  <img src=\"file:///"+rff.generic_path().string()+"\"><br>\n";
@@ -401,9 +411,14 @@ struct HTMLReplacements
     reformatted_ += code;
   }
 
-  virtual void appendFormattedText(const std::string& text, Format)
+  void appendFormattedText(const std::string& text, Format) override
   {
     reformatted_ += "<b>"+text+"</b>";
+  }
+
+  void appendFootnote(const std::string& footnotetext) override
+  {
+      reformatted_ += " ("+footnotetext+")";
   }
 };
 
@@ -462,6 +477,12 @@ struct StringParser
           ;
 
       start = *(
+        ( qi::lit("\\footnote")
+           > '{'
+           > qi::as_string[ *(qi::char_ - qi::char_('}')) ]
+                          [ phx::bind(&Replacements::appendFootnote, &rep, qi::_1) ]
+           > '}' )
+        |
         verbatimtext
           [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
         |
@@ -474,18 +495,20 @@ struct StringParser
         )
         |
         qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ]
-	  [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
-	|
-    image|svgimage
+          [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
+        |
+        image
+        |
+        svgimage
         |
         displayformula
           [ phx::bind(&Replacements::appendDisplayFormula, &rep, qi::_1) ]
         |
-	inlineformula 
-	  [ phx::bind(&Replacements::appendInlineFormula, &rep, qi::_1) ]
-        |
-        rep.simple_replacements_ [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
-      )
+        inlineformula
+          [ phx::bind(&Replacements::appendInlineFormula, &rep, qi::_1) ]
+            |
+            rep.simple_replacements_ [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
+          )
       ; 
       
 //       text = "Text{" >> content >> "};";  

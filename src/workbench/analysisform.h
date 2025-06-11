@@ -64,6 +64,7 @@
 #include "iqresultsetdisplayerwidget.h"
 #include "editorwithsavablestate.h"
 
+
 #include <set>
 
 #ifdef WIN32
@@ -100,7 +101,7 @@ class AnalysisForm
   friend class WSLRun;
   friend class IQCaseDirectoryState;
   friend class IQWorkbenchRemoteExecutionState;
-  
+
 protected:
 
   // ====================================================================================
@@ -161,6 +162,7 @@ protected:
   mutable QTimer autosaveMinIntervalTimer_, autosaveMaxWaitTimer_;
 
 
+
   void cleanFinishedExternalProcesses();
 
   void connectLocalActions();
@@ -169,7 +171,6 @@ protected:
   void updateSaveMenuLabel();
 
   bool checkAnalysisExecutionPreconditions();
-
 
 
   // ================================================================================

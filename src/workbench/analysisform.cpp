@@ -82,6 +82,8 @@ namespace fs = boost::filesystem;
 
 
 
+
+
 void AnalysisForm::saveState(
     rapidxml::xml_document<> &doc,
     rapidxml::xml_node<> &rootNode,
@@ -378,10 +380,7 @@ AnalysisForm::AnalysisForm(
         [this](const boost::filesystem::path& newfn)
         {
             auto ist_file=boost::filesystem::absolute(newfn);
-            if (!hasLocalWorkspace())
-            {
-                resetExecutionEnvironment(ist_file.parent_path());
-            }
+            resetExecutionEnvironment(ist_file.parent_path());
             updateWindowTitle();
         }
     );
@@ -442,6 +441,15 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
     }
 
 
+    auto act_undo=new QAction(_("&Undo parameter change"), this);
+    menu_parameters->addAction( act_undo );
+    psmodel_->addUndoAction(act_undo);
+
+    auto act_redo=new QAction(_("&Redo parameter change"), this);
+    menu_parameters->addAction( act_redo );
+    psmodel_->addRedoAction(act_redo);
+
+
     act_save_=new QAction("&S", this);
     act_save_->setShortcut(Qt::CTRL + Qt::Key_S);
     menu_parameters->addAction( act_save_ );
@@ -471,7 +479,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
     menu_parameters->addAction( act_merge_ );
     connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onLoadParameters );
 
-    auto act_param_show_=new QAction(_("&Show in XML format"), this);
+    auto act_param_show_=new QAction(_("Show in &XML format..."), this);
     menu_parameters->addAction( act_param_show_ );
     connect( act_param_show_, &QAction::triggered, this, &AnalysisForm::onShowParameterXML );
 

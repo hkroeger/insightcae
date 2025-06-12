@@ -115,7 +115,7 @@ public:
             arma::mat ctr=vec3Zero();
             for (int i=0; i<c.n.size(); ++i)
             {
-                ctr+=nodes_[c.n[i]];
+                ctr+=nodes_.at(c.n[i]);
             }
             ctr/=double(c.n.size());
             ctrs->SetPoint(c.idx-1, ctr.memptr());

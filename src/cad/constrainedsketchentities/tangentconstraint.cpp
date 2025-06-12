@@ -120,7 +120,8 @@ void TangentConstraint::addParserRule(
                      phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_3),
                     qi::_4 ),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
+                    boost::filesystem::path(".")),
 
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(
                         qi::_1, qi::_a)

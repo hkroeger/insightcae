@@ -20,31 +20,51 @@ class globalRegistry
     {}
 
 public:
+    typedef T RegisteredObjectType;
+
     void registerObject(T* o)
     {
-        if (this->find(o)==this->end())
+        if (o==nullptr)
         {
-            insert(o);
+            WarningIn("void globalRegistry::registerObject")
+            << "attempt to register null pointer!"
+            << endl;
         }
         else
         {
-            WarningIn("void globalRegistry::registerObject")
-                    << "attempt to register object twice!"
-                    << endl;
+            if (this->find(o)==this->end())
+            {
+                this->insert(o);
+            }
+            else
+            {
+                WarningIn("void globalRegistry::registerObject")
+                        << "attempt to register object twice!"
+                        << endl;
+            }
         }
     }
 
     void unregisterObject(T* o)
     {
-        if (this->find(o)!=this->end())
+        if (o==nullptr)
         {
-            this->erase(o);
+            WarningIn("void globalRegistry::unregisterObject")
+            << "attempt to unregister null pointer!"
+            << endl;
         }
         else
         {
-            WarningIn("void globalRegistry::unregisterObject")
-                    << "attempt to unregister object which was not registered!"
-                    << endl;
+            if (this->find(o)!=this->end())
+            {
+                this->erase(o);
+            }
+            else
+            {
+                WarningIn("void globalRegistry::unregisterObject")
+                        << "attempt to unregister object which was not registered!"
+                        << endl;
+            }
         }
     }
 

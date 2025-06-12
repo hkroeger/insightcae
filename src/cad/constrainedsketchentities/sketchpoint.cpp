@@ -132,7 +132,8 @@ void SketchPoint::addParserRule(
                  &SketchPoint::create<DatumPtr, double, double, const std::string&>,
                    ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, phx::ref(*qi::_a)),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
+                    boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }

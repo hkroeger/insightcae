@@ -97,13 +97,13 @@ namespace snappyHexMeshFeats
 {
 
 
-static boost::filesystem::path
+boost::filesystem::path
 geometryDir(const OFEnvironment& ofe, const boost::filesystem::path& caseDir)
 {
     return caseDir/"constant"/"triSurface";
 }
 
-static boost::filesystem::path
+boost::filesystem::path
 geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir)
 {
     return geometryDir(cm.ofe(), caseDir);

@@ -104,6 +104,9 @@ void SubsetGenerator::writeCppTypeDeclConstructors(
     }
     os<<"{ get(*makeDefault()); }\n";
 
+    // produce virtual destructor
+    os << "virtual ~" << cppTypeName() << "()\n";
+    os<<"{}\n";
 
     if (value.size()>0)
     {

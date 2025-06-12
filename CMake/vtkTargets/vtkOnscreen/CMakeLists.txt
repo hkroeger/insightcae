@@ -92,9 +92,9 @@ get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
 
 
 if (WIN32)
-  set(LIBNAME lib/libvtkDICOM-pvis.dll.a)
+  set(LIBNAME libvtkDICOM-pvis.dll.a)
 else()
-  set(LIBNAME lib/libvtkDICOM-pvis.so.0.8.15)
+  set(LIBNAME libvtkDICOM-pvis.so.0.8.17)
 endif()
 
 
@@ -119,7 +119,7 @@ ExternalProject_Add( vtkdicom-onscreen
      -DCMAKE_INSTALL_LIBDIR=lib
      ${VTK_CMAKE_ADDARGS}
 
-   BUILD_BYPRODUCTS <INSTALL_DIR>/${LIBNAME}
+   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/${LIBNAME}
 )
 
 
@@ -132,7 +132,8 @@ if (WIN32)
 else()
   set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
 endif()
-set(VTKDICOMONSCREEN_LIBRARY ${INSTALL_DIR}/${LIBNAME})
+set(VTKDICOMONSCREEN_LIBDIR ${INSTALL_DIR}/lib)
+set(VTKDICOMONSCREEN_LIBRARY ${VTKDICOMONSCREEN_LIBDIR}/${LIBNAME})
 
 if (WIN32)
   install(DIRECTORY ${INSTALL_DIR}/bin/
@@ -142,7 +143,7 @@ if (WIN32)
     DESTINATION lib
     FILES_MATCHING PATTERN "libvtkDICOM*.dll*")
 else()
-  install(DIRECTORY ${INSTALL_DIR}/lib/
+  install(DIRECTORY ${VTKDICOMONSCREEN_LIBDIR}/
     DESTINATION lib
     FILES_MATCHING PATTERN "libvtkDICOM*.so*")
 endif()

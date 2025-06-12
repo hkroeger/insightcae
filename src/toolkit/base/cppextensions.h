@@ -141,6 +141,7 @@ protected:
 public:
     observer_ptr_base();
     observer_ptr_base(const observer_ptr_base& o);
+    observer_ptr_base(const observable *o);
     observer_ptr_base(observable *o);
     virtual ~observer_ptr_base();
 

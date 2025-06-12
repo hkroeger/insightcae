@@ -162,7 +162,7 @@ AnalyzeRESTServer::AnalyzeRESTServer(
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
   auto mmrs = boost::lexical_cast<string>(32 * 1024*1024);
-  auto mrs = boost::lexical_cast<string>(512 * 1024*1024*1024);
+  auto mrs = boost::lexical_cast<string>(512 * 1024*1024);
   const char *cargv[]={
     srvname.c_str(),
     "--docroot", ".",

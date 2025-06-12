@@ -144,7 +144,7 @@ public:
     }
 
     template<class A = ViewWidgetAction<Viewer> >
-    A* runningAction() const
+    const A* runningAction() const
     {
         return dynamic_cast<const A*>(currentAction_.get());
     }

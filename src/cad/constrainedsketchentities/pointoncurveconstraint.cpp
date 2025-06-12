@@ -139,7 +139,8 @@ void PointOnCurveConstraint::addParserRule(
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_3),
                  phx::bind(&ConstrainedSketch::get<Feature>, ruleset.sketch, qi::_2), qi::_4 ),
              phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
+             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
+                       boost::filesystem::path(".") ),
              qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }

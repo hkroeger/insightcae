@@ -243,7 +243,8 @@ void FixedAngleConstraint::addParserRule(
                          VectorPtr, VectorPtr, VectorPtr, const std::string&>,
                      qi::_2, qi::_3, qi::_4, qi::_5),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6,
+                       boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }

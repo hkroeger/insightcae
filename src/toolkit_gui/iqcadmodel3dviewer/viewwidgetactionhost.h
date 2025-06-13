@@ -149,6 +149,12 @@ public:
         return dynamic_cast<const A*>(currentAction_.get());
     }
 
+    template<class A = ViewWidgetAction<Viewer> >
+    A* runningAction()
+    {
+        return dynamic_cast<A*>(currentAction_.get());
+    }
+
     void cancelCurrentAction(bool launchDefaultAction=true)
     {
         if (isRunning() && !isDefaultAction())

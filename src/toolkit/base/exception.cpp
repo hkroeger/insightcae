@@ -193,7 +193,7 @@ Exception::Exception(std::string fmt, ...)
     message_=str;
     saveContext(true);
 
-    dbg(2)<<message_<<"\n"<<context_<<std::endl;
+    dbg(insight::BasicBusiness)<<message_<<"\n"<<context_<<std::endl;
 }
 
 

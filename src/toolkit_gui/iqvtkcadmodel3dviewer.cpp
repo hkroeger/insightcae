@@ -103,7 +103,7 @@ MyVTKWidget::MyVTKWidget(QWidget *parent)
 
 void MyVTKWidget::leaveEvent(QEvent *event)
 {
-    dbg(3)<<"leave event"<<std::endl;
+    dbg(insight::GUIEvents)<<"leave event"<<std::endl;
 
     VTKWidget::leaveEvent(event);
     Q_EMIT mouseLeavesViewer();

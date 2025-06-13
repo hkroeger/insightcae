@@ -445,7 +445,7 @@ public:
 
     bool hasSelectionCandidate() const
     {
-        insight::dbg(3)
+        insight::dbg(insight::GUIEvents)
             <<"nextSelectionCandidates:"
             <<(bool(nextSelectionCandidates_)?nextSelectionCandidates_->size():0)
             <<std::endl;

@@ -35,7 +35,16 @@
 #include <memory>
 
 namespace insight {
-  
+
+
+enum VerbosityLevel
+{
+    BasicBusiness = 1,
+    DetailedBusiness = 2,
+    DeepDetail = 3,
+    GUIEvents = 10,
+    Loops = 11
+};
 
 
 class CurrentExceptionContext

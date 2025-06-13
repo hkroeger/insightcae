@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "base/exception.h"
 #include "cadfeature.h"
 #include "pointdistance.h"
 
@@ -52,7 +53,7 @@ size_t Distance::calcHash() const
 
 arma::mat Distance::measureDirection() const
 {
-    insight::CurrentExceptionContext ex("determining direction of distance measurement");
+    insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "determining direction of distance measurement");
 
     arma::mat delta=vec3Zero();
     if (distanceAlong_)

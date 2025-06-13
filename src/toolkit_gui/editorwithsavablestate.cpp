@@ -110,7 +110,7 @@ void AutosavableEditor::autosave() const
     }
     if (!savefn.empty())
     {
-        insight::dbg()
+        insight::dbg(insight::BasicBusiness)
             << "autosave into "
             << savefn.string()
             << std::endl;

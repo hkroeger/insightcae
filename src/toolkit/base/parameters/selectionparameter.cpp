@@ -6,11 +6,23 @@
 namespace insight
 {
 
+
+
+
+SelectionParameterInterface::~SelectionParameterInterface()
+{}
+
+
+
+
 bool SelectionParameterInterface::contains(const std::string &value) const
 {
     auto l = selectionKeys();
     return ( std::find(l.begin(), l.end(), value) != l.end() );
 }
+
+
+
 
 int SelectionParameterInterface::indexOfSelection(const std::string& key) const
 {
@@ -86,9 +98,7 @@ SelectionParameter::SelectionParameter(
     value_ = 0;
 }
 
-SelectionParameter::~SelectionParameter()
-{
-}
+
 
 bool SelectionParameter::isDifferent(const Parameter& p) const
 {
@@ -144,7 +154,7 @@ std::string SelectionParameter::plainTextRepresentation(int) const
 rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
-    insight::CurrentExceptionContext ex(3, "appending selection "+name+" to node "+node.name());
+    insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending selection "+name+" to node "+node.name());
 
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);

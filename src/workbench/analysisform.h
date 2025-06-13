@@ -157,9 +157,9 @@ protected:
    * @brief autosaveMinInterval
    * minimum wait time between autosavings (defining maximum autosave frequency)
    */
-  const int autosaveMinInterval=1000;
+  const int autosaveMinInterval=5000;
 
-  mutable QTimer autosaveMinIntervalTimer_, autosaveMaxWaitTimer_;
+  mutable QTimer autosaveMinIntervalTimer_, autosaveLastWriteTimer_;
 
 
 

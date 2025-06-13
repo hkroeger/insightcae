@@ -651,7 +651,7 @@ void Feature::checkForBuildDuringAccess() const
   {
     if (!valid())
       {
-        dbg(2)<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+        dbg(insight::DetailedBusiness)<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
       }
     ASTBase::checkForBuildDuringAccess();
   }
@@ -1342,7 +1342,7 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f
     bool ok=f->checkMatch(i);
     if (ok) res.insert(i);
   }
-  insight::dbg(2)<<"QUERY_FACES RESULT = "<<res<<endl;
+  insight::dbg(insight::DetailedBusiness)<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1378,7 +1378,7 @@ FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr 
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  insight::dbg(2)<<"QUERY_SOLIDS RESULT = "<<res<<endl;
+  insight::dbg(insight::DetailedBusiness)<<"QUERY_SOLIDS RESULT = "<<res<<endl;
   return res;
 }
 

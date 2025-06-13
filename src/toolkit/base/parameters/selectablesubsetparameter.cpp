@@ -320,7 +320,7 @@ SelectableSubsetParameter::appendToNode(
     rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath) const
 {
-  insight::CurrentExceptionContext ex(3, "appending selectable subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending selectable subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
 

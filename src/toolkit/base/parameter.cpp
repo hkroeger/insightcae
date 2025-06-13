@@ -420,7 +420,7 @@ void Parameter::saveToNode(
     std::string analysisName ) const
 {
     CurrentExceptionContext ex(
-        3,
+        Loops,
         "writing parameter %s content into XML node"
         " (parent path %s, analysis name %s",
         type().c_str(), parent_path.string().c_str(), analysisName.c_str());
@@ -450,7 +450,7 @@ void Parameter::saveToStream(
     const boost::filesystem::path& parent_path,
     std::string analysisName ) const
 {
-  CurrentExceptionContext ex(3,
+  CurrentExceptionContext ex(Loops,
       "writing parameter %s content into output stream (parent path %s, analysis name %s",
       type().c_str(), parent_path.string().c_str(), analysisName.c_str());
 
@@ -470,7 +470,7 @@ void Parameter::saveToStream(
 
 void Parameter::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
-  CurrentExceptionContext ex(3, "writing parameter set to file "+file.string());
+  CurrentExceptionContext ex(insight::VerbosityLevel::BasicBusiness, "writing parameter set to file "+file.string());
   std::ofstream f(file.c_str());
   saveToStream( f, file.parent_path(), analysisName );
   f << std::endl;
@@ -833,7 +833,7 @@ std::string valueToString(const boost::posix_time::ptime &datetime)
 
 void stringToValue(const std::string& s, arma::mat& v)
 {
-  CurrentExceptionContext ex("converting string \""+s+"\" into vector", false);
+  CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "converting string \""+s+"\" into vector", false);
 
   std::vector<std::string> cmpts;
   auto st = boost::trim_copy(s);

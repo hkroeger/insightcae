@@ -27,9 +27,12 @@ const QString &IQUndoRedoStackState::description() const
 
 void IQUndoRedoStack::setNoUndoAction()
 {
-    undoAction_->setText(initialUndoActionText_);
-    undoAction_->setEnabled(false);
-    undoAction_->setToolTip(_("Nothing to be undone"));
+    if (undoAction_)
+    {
+        undoAction_->setText(initialUndoActionText_);
+        undoAction_->setEnabled(false);
+        undoAction_->setToolTip(_("Nothing to be undone"));
+    }
 }
 
 
@@ -37,9 +40,12 @@ void IQUndoRedoStack::setNoUndoAction()
 
 void IQUndoRedoStack::setNoRedoAction()
 {
-    redoAction_->setText(initialRedoActionText_);
-    redoAction_->setEnabled(false);
-    redoAction_->setToolTip(_("Nothing to be redone"));
+    if (redoAction_)
+    {
+        redoAction_->setText(initialRedoActionText_);
+        redoAction_->setEnabled(false);
+        redoAction_->setToolTip(_("Nothing to be redone"));
+    }
 }
 
 
@@ -47,14 +53,17 @@ void IQUndoRedoStack::setNoRedoAction()
 
 void IQUndoRedoStack::setNextUndoAction()
 {
-    undoAction_->setText(
-        initialUndoActionText_
-        + " ("
-        + undoStates_.top()->description()
-        + ")" );
-    undoAction_->setEnabled(true);
-    undoAction_->setToolTip(
-        undoStates_.top()->description() );
+    if (undoAction_)
+    {
+        undoAction_->setText(
+            initialUndoActionText_
+            + " ("
+            + undoStates_.top()->description()
+            + ")" );
+        undoAction_->setEnabled(true);
+        undoAction_->setToolTip(
+            undoStates_.top()->description() );
+    }
 }
 
 
@@ -62,21 +71,25 @@ void IQUndoRedoStack::setNextUndoAction()
 
 void IQUndoRedoStack::setNextRedoAction()
 {
-    redoAction_->setText(
-        initialRedoActionText_
-        + " ("
-        + redoStates_.top()->description()
-        + ")" );
+    if (redoAction_)
+    {
+        redoAction_->setText(
+            initialRedoActionText_
+            + " ("
+            + redoStates_.top()->description()
+            + ")" );
 
-    redoAction_->setEnabled(true);
-    redoAction_->setToolTip(
-        redoStates_.top()->description() );
+        redoAction_->setEnabled(true);
+        redoAction_->setToolTip(
+            redoStates_.top()->description() );
+    }
 }
 
 
 
 
 IQUndoRedoStack::IQUndoRedoStack()
+    : undoAction_(nullptr), redoAction_(nullptr)
 {}
 
 
@@ -84,25 +97,45 @@ IQUndoRedoStack::IQUndoRedoStack()
 
 void IQUndoRedoStack::addUndoAction(QAction* act)
 {
-    undoAction_=act;
-    initialUndoActionText_=act->text();
+    if (act)
+    {
+        undoAction_=act;
+        initialUndoActionText_=act->text();
 
-    QObject::connect(act, &QAction::triggered, act,
-            std::bind(&IQUndoRedoStack::undo, this) );
+        QObject::connect(act, &QAction::triggered, act,
+                std::bind(&IQUndoRedoStack::undo, this) );
 
-    setNoUndoAction();
+        setNoUndoAction();
+    }
+    else
+    {
+        undoAction_=nullptr;
+        initialUndoActionText_="";
+
+        setNoUndoAction();
+    }
 }
 
 
 void IQUndoRedoStack::addRedoAction(QAction* act)
 {
-    redoAction_=act;
-    initialRedoActionText_=act->text();
+    if (act)
+    {
+        redoAction_=act;
+        initialRedoActionText_=act->text();
 
-    QObject::connect(act, &QAction::triggered, act,
-                     std::bind(&IQUndoRedoStack::redo, this) );
+        QObject::connect(act, &QAction::triggered, act,
+                         std::bind(&IQUndoRedoStack::redo, this) );
 
-    setNoRedoAction();
+        setNoRedoAction();
+    }
+    else
+    {
+        redoAction_=nullptr;
+        initialRedoActionText_="";
+
+        setNoRedoAction();
+    }
 }
 
 

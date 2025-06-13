@@ -1523,6 +1523,7 @@ void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file) const
 
 void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile) const
 {
+  renderer_->ResetCameraClippingRange();
   renderWindow_->Render();
   auto windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
   windowToImageFilter->SetInput(renderWindow_);
@@ -1544,7 +1545,13 @@ vtkCamera* VTKOffscreenScene::activeCamera()
 
 
 
-void VTKOffscreenScene::setupActiveCamera(const View &view)
+void VTKOffscreenScene::setupActiveCamera(
+    const View &view,
+    boost::variant<
+        boost::blank,
+        double,
+        std::pair<double, double>
+    > scaleOrSize )
 {
   vtkCamera* camera = activeCamera();
 
@@ -1554,11 +1561,23 @@ void VTKOffscreenScene::setupActiveCamera(const View &view)
   camera->SetFocalPoint( toArray(view.focalPoint()) );
   camera->SetViewUp( toArray(view.upwardDirection()) );
 
-  if (view.parallelScale)
+  camera->ParallelProjectionOn();
+
+  if (auto *sf = boost::get<double>(
+          &scaleOrSize))
+  {
+      setParallelScale(*sf);
+  }
+  else if (auto *sf2 =
+             boost::get<std::pair<double, double> >(
+                 &scaleOrSize))
+  {
+      setParallelScale(*sf2);
+  }
+  else if (view.parallelScale)
   {
       camera->SetParallelScale(*view.parallelScale);
   }
-  camera->ParallelProjectionOn();
 
   if (insight::requestedVerbosityLevel()>=1)
   {

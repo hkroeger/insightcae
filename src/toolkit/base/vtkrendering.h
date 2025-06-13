@@ -416,7 +416,13 @@ public:
   void exportImage(const boost::filesystem::path& pngfile) const;
 
   vtkCamera* activeCamera();
-  void setupActiveCamera(const insight::View& view);
+  void setupActiveCamera(
+      const insight::View& view,
+      boost::variant<
+         boost::blank,
+         double, // scale
+         std::pair<double,double> // Lh, Lv
+        > scaleOrSize = boost::blank() );
 
 
   void setParallelScale(

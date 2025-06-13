@@ -60,7 +60,7 @@ void CADParameterSetVisualizerGenerator::addPoint(
     const arma::mat& p,
     bool initialVisibility)
 {
-    CurrentExceptionContext ec("adding visualizer point "+name);
+    CurrentExceptionContext ec(GUIEvents, "adding visualizer point "+name);
     Q_EMIT createdVariable(
         QString::fromStdString(name),
         cad::matconst(p),
@@ -74,7 +74,7 @@ void CADParameterSetVisualizerGenerator::addDatum(
     insight::cad::DatumPtr dat,
     bool initialVisibility )
 {
-  CurrentExceptionContext ec("adding visualizer datum "+name);
+  CurrentExceptionContext ec(GUIEvents, "adding visualizer datum "+name);
   Q_EMIT createdDatum(QString::fromStdString(name), dat, initialVisibility);
 }
 
@@ -86,7 +86,7 @@ void CADParameterSetVisualizerGenerator::addFeature(
     insight::cad::FeaturePtr feat,
     const insight::cad::FeatureVisualizationStyle& fvs )
 {
-  CurrentExceptionContext ec("adding visualizer feature "+name);
+  CurrentExceptionContext ec(GUIEvents, "adding visualizer feature "+name);
   Q_EMIT createdFeature( QString::fromStdString(name), feat, true, fvs );
 }
 
@@ -97,7 +97,7 @@ void CADParameterSetVisualizerGenerator::addDataset(
     const std::string &name,
     vtkSmartPointer<vtkDataObject> ds )
 {
-  CurrentExceptionContext ec("adding visualizer dataset "+name);
+  CurrentExceptionContext ec(GUIEvents, "adding visualizer dataset "+name);
   Q_EMIT createdDataset( QString::fromStdString(name), ds, true );
 }
 
@@ -286,7 +286,7 @@ void CADParameterSetModelVisualizer::stopVisualizationComputation()
     {
         rebuildThread_->interrupt();
 
-        dbg()<<"waiting for visualizer thread to finish..."<<std::endl;
+        dbg(DeepDetail)<<"waiting for visualizer thread to finish..."<<std::endl;
 
         rebuildThread_->join();
 

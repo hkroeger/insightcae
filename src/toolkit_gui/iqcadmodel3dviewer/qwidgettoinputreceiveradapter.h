@@ -49,7 +49,7 @@ protected:
 
     void mouseDoubleClickEvent(QMouseEvent* e) override
     {
-        insight::dbg(3)<<">>> mouse double click " << e->buttons() <<std::endl;
+        insight::dbg(insight::GUIEvents)<<">>> mouse double click " << e->buttons() <<std::endl;
 
         Widget::mouseDoubleClickEvent(e);
 
@@ -63,7 +63,7 @@ protected:
 
     void mousePressEvent(QMouseEvent* e) override
     {
-        insight::dbg(3)<<">>> mouse press " << e->buttons() <<std::endl;
+        insight::dbg(insight::GUIEvents)<<">>> mouse press " << e->buttons() <<std::endl;
 
         Widget::mousePressEvent(e);
 
@@ -73,7 +73,7 @@ protected:
 
     void mouseReleaseEvent(QMouseEvent* e) override
     {
-        insight::dbg(3)<<">>> mouse release " << e->buttons() <<std::endl;
+        insight::dbg(insight::GUIEvents)<<">>> mouse release " << e->buttons() <<std::endl;
 
         Widget::mouseReleaseEvent(e);
 
@@ -174,7 +174,7 @@ protected:
 
     void wheelEvent(QWheelEvent* e) override
     {
-        insight::dbg(3)<<"wheel"<<std::endl;
+        insight::dbg(insight::GUIEvents)<<"wheel"<<std::endl;
 
         Widget::wheelEvent(e);
 
@@ -187,7 +187,7 @@ protected:
 
     void keyPressEvent(QKeyEvent* e) override
     {
-        insight::dbg(3)<<"key press"<<std::endl;
+        insight::dbg(insight::GUIEvents)<<"key press"<<std::endl;
 
         Widget::keyPressEvent(e);
 
@@ -200,7 +200,7 @@ protected:
 
     void keyReleaseEvent(QKeyEvent* e) override
     {
-        insight::dbg(3)<<"key release"<<std::endl;
+        insight::dbg(insight::GUIEvents)<<"key release"<<std::endl;
 
         Widget::keyReleaseEvent(e);
 

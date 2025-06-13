@@ -35,6 +35,8 @@ class SelectionParameterInterface
 public:
     typedef std::string key_type;
 
+    virtual ~SelectionParameterInterface();
+
     virtual std::vector<std::string> selectionKeys() const =0;
     virtual void setSelection(const key_type& nk) =0;
     virtual const key_type& selection() const =0;
@@ -64,7 +66,6 @@ public:
     SelectionParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     SelectionParameter ( const int& value, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    ~SelectionParameter() override;
 
     bool isDifferent(const Parameter& p) const override;
 

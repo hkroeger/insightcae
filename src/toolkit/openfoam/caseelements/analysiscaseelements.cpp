@@ -134,7 +134,7 @@ readSingleTabularFile(
     while ( getline ( f, line ) )
     {
       lineNo++;
-      CurrentExceptionContext ex(3, str(format("reading line %d of file %s")%lineNo%ffp.string()));
+      CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d of file %s")%lineNo%ffp.string()));
 
       trim(line);
 
@@ -1312,11 +1312,11 @@ arma::mat forces::readForces
           {
             std::vector<double> r1, r2;
             {
-              CurrentExceptionContext ex(3, str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
+              CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
               readForcesLine ( f, ncexp, skip, r1 );
             }
             {
-              CurrentExceptionContext ex(3, str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
+              CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
               readForcesLine ( f2, ncexp, skip, r2 );
             }
 
@@ -1337,7 +1337,7 @@ arma::mat forces::readForces
           }
         else
           {
-            CurrentExceptionContext ex(3, str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
+            CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
             readForcesLine ( f, ncexp, skip, row );
             if ( row.size()==0 )
             {

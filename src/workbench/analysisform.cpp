@@ -128,20 +128,21 @@ void AnalysisForm::restoreState(
 
 void AnalysisForm::scheduleAutosave() const
 {
-    if ( !autosaveMinIntervalTimer_.isActive()
-         ||
-         (autosaveMaxWaitTimer_.interval()
-            < autosaveMaxWaitInterval) )
+    insight::dbg(insight::DetailedBusiness)<<"schedule autosave "
+        <<autosaveLastWriteTimer_.isActive()<<" "<<autosaveLastWriteTimer_.remainingTime()
+        <<" "
+        <<autosaveMinIntervalTimer_.isActive()<<" "<<autosaveMinIntervalTimer_.remainingTime()
+        <<std::endl;
+
+    if ( autosaveLastWriteTimer_.isActive() )
     {
+        // last write was recently, wait a little before write
         autosaveMinIntervalTimer_.stop();
-        autosaveMinIntervalTimer_.singleShot(
-            autosaveMinInterval, this,
-            [this]()
-            {
-                autosave();
-                autosaveMaxWaitTimer_.start();
-            }
-            );
+    }
+
+    if (!autosaveMinIntervalTimer_.isActive())
+    {
+        autosaveMinIntervalTimer_.start();
     }
 }
 
@@ -158,6 +159,17 @@ AnalysisForm::AnalysisForm(
   isOpenFOAMAnalysis_(false),
   pack_parameterset_(true)
 {
+    autosaveLastWriteTimer_.setSingleShot(true);
+    autosaveLastWriteTimer_.setInterval(autosaveMaxWaitInterval);
+    autosaveMinIntervalTimer_.setSingleShot(true);
+    autosaveMinIntervalTimer_.setInterval(autosaveMinInterval);
+    autosaveMinIntervalTimer_.callOnTimeout(
+        [this]()
+        {
+            autosaveLastWriteTimer_.start();
+            autosave();
+        });
+
     insight::CurrentExceptionContext ex(_("creating analysis form for analysis %s"), analysisName.c_str());
 
     setAttribute(Qt::WA_DeleteOnClose, true);

@@ -1,5 +1,6 @@
 #include "iqvtkviewer.h"
 
+#include "base/exception.h"
 #include "vtkRenderWindow.h"
 #include "vtkRenderer.h"
 #include "vtkCamera.h"
@@ -52,7 +53,9 @@ arma::mat IQVTKViewer::pointInPlane3D(
     const arma::mat &p0,
     const QPoint &screenPos) const
 {
-    insight::CurrentExceptionContext ex("mapping screen position to 3D position in plane (point and normal)");
+    insight::CurrentExceptionContext ex(
+        insight::GUIEvents,
+        "mapping screen position to 3D position in plane (point and normal)");
 
     using namespace insight;
 

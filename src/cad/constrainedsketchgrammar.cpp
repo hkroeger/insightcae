@@ -72,7 +72,7 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
     r_sketch =
         r_layerProps
         >>
-        r_entity % ',';
+        -( r_entity % ',' );
 
 
     for (const auto& apr : *ConstrainedSketchEntity::addParserRuleFunctions_)

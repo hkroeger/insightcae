@@ -185,10 +185,11 @@ std::string CADSketchParameter::script() const
 
 void CADSketchParameter::setScript(const std::string& script)
 {
+    CADGeometry_.reset();
+
     if (script.empty())
     {
         script_.reset();
-        CADGeometry_.reset();
     }
     else
     {

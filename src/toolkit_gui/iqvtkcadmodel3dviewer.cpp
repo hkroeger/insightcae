@@ -1,4 +1,5 @@
 #include "iqvtkcadmodel3dviewer.h"
+#include "armadillo"
 #include "base/exception.h"
 #include "base/factory.h"
 #include "base/linearalgebra.h"
@@ -1262,20 +1263,24 @@ void IQVTKCADModel3DViewer::redrawNow(bool force)
             // push cam along axis to boundary of scene
             auto p0=vec3FromComponents(cam->GetFocalPoint());
             auto pc=vec3FromComponents(cam->GetPosition());
-            arma::mat dir=normalized(pc-p0);
-            double bounds[6];
-            ren_->ComputeVisiblePropBounds(bounds);
-            auto L=vec3(
-                bounds[1]-bounds[0],
-                bounds[3]-bounds[2],
-                bounds[5]-bounds[4]);
+            double dist=arma::norm(pc-p0);
+            if (dist>SMALL)
+            {
+                arma::mat dir=(pc-p0)/dist;
+                double bounds[6];
+                ren_->ComputeVisiblePropBounds(bounds);
+                auto L=vec3(
+                    bounds[1]-bounds[0],
+                    bounds[3]-bounds[2],
+                    bounds[5]-bounds[4]);
 
-            cam->SetPosition(
-                arma::mat(
-                    p0+std::max(insight::LSMALL,L.max())*dir
-                    ).memptr()
-                );
-            ren_->ResetCameraClippingRange();
+                cam->SetPosition(
+                    arma::mat(
+                        p0+std::max(insight::LSMALL,L.max())*dir
+                        ).memptr()
+                    );
+                ren_->ResetCameraClippingRange();
+            }
         }
         renWin()->Render();
         redrawRequestedWithinWaitPeriod_=false;
@@ -2209,9 +2214,22 @@ void IQVTKCADModel3DViewer::setCameraState(
         camState.isParallelProjection );
     camera->SetParallelScale(
         camState.parallelScale );
-    camera->SetPosition(camState.cameraPosition.memptr());
     camera->SetFocalPoint(camState.focalPosition.memptr());
     camera->SetViewUp(camState.viewUp.memptr());
+
+    arma::mat p=camState.cameraPosition;
+    if (arma::norm(p-camState.focalPosition,2)<SMALL)
+    {
+        arma::mat ez=arma::cross(
+            vec3X(1), camState.viewUp);
+        if (arma::norm(ez,2)<SMALL)
+        {
+            ez=arma::cross(
+                vec3Y(1), camState.viewUp);
+        }
+        p=normalized(camState.focalPosition + ez);
+    }
+    camera->SetPosition(p.memptr());
 
     ren_->ResetCameraClippingRange();
 
@@ -2289,34 +2307,32 @@ void IQVTKCADModel3DViewer::restoreState(
     auto* camera = ren_->GetActiveCamera();
     if (auto *camNode = node.first_node("camera"))
     {
+        insight::CameraState cs;
+
         if (auto *pp = camNode->first_attribute("parallelProjection"))
-            camera->SetParallelProjection(
-                boost::lexical_cast<bool>(pp->value()) );
+            cs.isParallelProjection=
+                boost::lexical_cast<bool>(pp->value());
 
         if (auto *pp = camNode->first_attribute("parallelScale"))
-            camera->SetParallelScale(
-                boost::lexical_cast<double>(pp->value()) );
+            cs.parallelScale=
+                boost::lexical_cast<double>(pp->value());
 
         if (auto *pos = camNode->first_attribute("position"))
         {
-            arma::mat p;
-            insight::stringToValue(pos->value(), p);
-            camera->SetPosition(p.memptr());
+            insight::stringToValue(pos->value(), cs.cameraPosition);
         }
 
         if (auto *fp = camNode->first_attribute("focalPoint"))
         {
-            arma::mat p;
-            insight::stringToValue(fp->value(), p);
-            camera->SetFocalPoint(p.memptr());
+            insight::stringToValue(fp->value(), cs.focalPosition);
         }
 
         if (auto *vu = camNode->first_attribute("viewUp"))
         {
-            arma::mat v;
-            insight::stringToValue(vu->value(), v);
-            camera->SetViewUp(v.memptr());
+            insight::stringToValue(vu->value(), cs.viewUp);
         }
+
+        setCameraState(cs);
     }
 
     backgroundImages_.clear();

@@ -1205,7 +1205,14 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
               if (i!=sketchGeometryActors_.end())
               {
                 removeActors(g, false);
-                addActors(g);
+                if (layerIsVisible(g->layerName()))
+                {
+                    addActors(g);
+                }
+                else
+                {
+                    this->viewer().scheduleRedraw();
+                }
               }
               onSketchSizeChanged();
         });

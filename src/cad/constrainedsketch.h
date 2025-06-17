@@ -276,8 +276,10 @@ public:
 
     arma::mat sketchBoundingBox() const;
 
+    std::set<std::string> unUsedLayerNames() const;
     std::set<std::string> usedLayerNames() const;
     std::set<std::string> layerNames() const;
+    bool removeUnusedLayers();
 
     bool hasLayer(const std::string& layerName) const;
     bool layerIsUsed(const std::string& layerName) const;

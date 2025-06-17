@@ -68,7 +68,18 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
 
     auto *teScript = new QTextEdit(editControlsContainer);
-    teScript->document()->setPlainText(QString::fromStdString(parameter().script()));
+    auto updateScriptEdit = [this,teScript]() {
+        teScript->document()->setPlainText(
+            QString::fromStdString(parameter().script()));
+    };
+
+    updateScriptEdit();
+    disconnectAtEOL(
+        (*this)->valueChanged.connect(
+            updateScriptEdit
+            )
+        );
+
     layout->addWidget(teScript);
 
 

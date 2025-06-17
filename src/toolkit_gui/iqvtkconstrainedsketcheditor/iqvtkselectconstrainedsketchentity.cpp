@@ -1,6 +1,7 @@
 #include "iqvtkselectconstrainedsketchentity.h"
 
 #include "base/cppextensions.h"
+#include "base/exception.h"
 #include "iqfilteredparametersetmodel.h"
 #include "iqvtkconstrainedsketcheditor.h"
 #include "parametereditorwidget.h"
@@ -58,6 +59,8 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
             [this,layEd]()
             {
                 auto newLayerName = layEd->currentText().toStdString();
+                insight::dbg(insight::BasicBusiness) << "new layer name = "<<newLayerName<<std::endl;
+
                 bool anythingDone=false;
                 for (auto& ee: *this)
                 {
@@ -70,9 +73,12 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
                     if (e->layerName()!=newLayerName)
                     {
                         e->setLayerName(newLayerName);
+                        (*editor_).geometryChanged(
+                            editor_->findGeometry(e)->first );
                         anythingDone=true;
                     }
                 }
+
                 if (anythingDone)
                 {
                     Q_EMIT editor_.sketchChanged();

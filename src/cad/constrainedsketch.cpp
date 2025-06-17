@@ -960,7 +960,16 @@ arma::mat ConstrainedSketch::sketchBoundingBox() const
 }
 
 
-
+std::set<std::string> ConstrainedSketch::unUsedLayerNames() const
+{
+    auto all=layerNames(), used=usedLayerNames();
+    std::set<std::string> unused;
+    std::set_difference(
+        all.begin(), all.end(),
+        used.begin(), used.end(),
+        std::inserter(unused, unused.begin()) );
+    return unused;
+}
 
 std::set<std::string> ConstrainedSketch::usedLayerNames() const
 {
@@ -986,6 +995,19 @@ std::set<std::string> ConstrainedSketch::layerNames() const
         { return lp.first; }
         );
     return l;
+}
+
+bool ConstrainedSketch::removeUnusedLayers()
+{
+    auto unusedLayers=unUsedLayerNames();
+    if (unusedLayers.size())
+    {
+        for (auto& l: unusedLayers)
+            removeLayer(l);
+        return true;
+    }
+    else
+        return false;
 }
 
 bool ConstrainedSketch::hasLayer(

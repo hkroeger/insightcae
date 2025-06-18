@@ -1,6 +1,8 @@
 #include "iqconstrainedsketchlayerlistmodel.h"
 
+#include "base/translations.h"
 
+#include <QInputDialog>
 
 
 IQConstrainedSketchLayerListModel::IQConstrainedSketchLayerListModel(
@@ -58,9 +60,9 @@ QVariant IQConstrainedSketchLayerListModel::headerData(int section, Qt::Orientat
             switch (section)
             {
             case 0:
-                return "Visible";
+                return _("Visible");
             case 1:
-                return "Layer name";
+                return _("Layer name");
             }
         }
     }
@@ -68,6 +70,59 @@ QVariant IQConstrainedSketchLayerListModel::headerData(int section, Qt::Orientat
 }
 
 
+void IQConstrainedSketchLayerListModel::contextMenu(
+    QWidget* pw, const QModelIndex& index, const QPoint& p)
+{
+    if (index.isValid())
+    {
+        QMenu ctxMenu;
+
+        {
+            auto *removeAct = new QAction(_("Remove"));
+            connect(removeAct, &QAction::triggered, removeAct,
+                    [index,this]()
+            {
+                removeLayer(index);
+            });
+            ctxMenu.addAction(removeAct);
+        }
+        {
+            auto *renameAct = new QAction(_("Rename..."));
+            connect(
+                renameAct, &QAction::triggered, renameAct,
+                [index,pw,this]()
+                {
+                    auto newName=QInputDialog::getText(
+                        pw,
+                        _("Rename layer"),
+                        _("Please enter new layer name:"),
+                        QLineEdit::Normal,
+                        data(index.siblingAtColumn(1)).toString() );
+                    if (!newName.isEmpty())
+                    {
+                        setData(index.siblingAtColumn(1), newName);
+                    }
+                });
+            ctxMenu.addAction(renameAct);
+        }
+
+        ctxMenu.exec(pw->mapToGlobal(p));
+    }
+}
+
+void IQConstrainedSketchLayerListModel::removeLayer(QModelIndex index)
+{
+    if (index.isValid())
+    {
+        int r=index.row();
+        auto i=layers_.begin();
+        std::advance(i, r);
+
+        (*sketchEditor_)->removeLayer(*i);
+
+        update();
+    }
+}
 
 
 QVariant IQConstrainedSketchLayerListModel::data(

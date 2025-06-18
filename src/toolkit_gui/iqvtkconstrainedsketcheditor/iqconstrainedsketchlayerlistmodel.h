@@ -25,12 +25,15 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
+    void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
+
 Q_SIGNALS:
     void hideLayer(const std::string& layerName);
     void showLayer(const std::string& layerName);
     void renameLayer(const std::string& currentLayerName, const std::string& newLayerName);
 
 public Q_SLOTS:
+    void removeLayer(QModelIndex index);
     void update();
 };
 

@@ -160,6 +160,20 @@ QVariant IQConstrainedSketchLayerListModel::data(
                 }
             }
         }
+        else if (role == Qt::BackgroundRole)
+        {
+            int r=index.row();
+            if (r>=0 && r<layers_.size())
+            {
+                auto i=layers_.begin();
+                std::advance(i, r);
+                auto &c=(*sketchEditor_)->layerProperties(*i).color;
+                if (c.n_elem==3)
+                {
+                    return QColor( 255.*c[0], 255.*c[1], 255.*c[2] );
+                }
+            }
+        }
     }
     return QVariant();
 }

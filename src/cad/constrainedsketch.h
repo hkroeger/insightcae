@@ -38,16 +38,23 @@ public:
 struct LayerProperties
     : public insight::ParameterSet
 {
-    using insight::ParameterSet::ParameterSet;
+    arma::mat color;
 
-    static std::unique_ptr<LayerProperties> create();
+    // using insight::ParameterSet::ParameterSet;
+
     static std::unique_ptr<LayerProperties> create(
-        const ParameterSet& parameters );
+        const arma::mat& c );
+    static std::unique_ptr<LayerProperties> create(
+        const ParameterSet& parameters, const arma::mat& c );
 
     std::unique_ptr<LayerProperties> cloneLayerProperties() const
     {
-        return create(*this);
+        return create(*this, color);
     }
+
+private:
+    LayerProperties(const arma::mat& c);
+    LayerProperties(Entries &&defaultValue, const arma::mat& c);
 };
 
 

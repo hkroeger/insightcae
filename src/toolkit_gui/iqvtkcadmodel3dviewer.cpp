@@ -84,6 +84,7 @@
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
 #include <QDebug>
+#include "base/translations.h"
 
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
@@ -163,7 +164,7 @@ BackgroundImage::BackgroundImage(
 {
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
-        "image file has to exist!" );
+        _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
     auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
     vtkSmartPointer<vtkImageReader2> imageReader;
@@ -171,7 +172,7 @@ BackgroundImage::BackgroundImage(
 
     insight::assertion(
         ir!=nullptr,
-        "could not create reader for file "+imageFileName_.string() );
+        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
 
     imageReader.TakeReference(ir);
     imageReader->SetFileName(imageFileName_.string().c_str());
@@ -280,7 +281,7 @@ BackgroundImage::BackgroundImage(
 
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
-        "image file has to exist!" );
+        _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
     auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
     vtkSmartPointer<vtkImageReader2> imageReader;
@@ -288,7 +289,7 @@ BackgroundImage::BackgroundImage(
 
     insight::assertion(
         ir!=nullptr,
-        "could not create reader for file "+imageFileName_.string() );
+        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
 
     imageReader.TakeReference(ir);
     imageReader->SetFileName(imageFileName_.string().c_str());
@@ -2338,9 +2339,21 @@ void IQVTKCADModel3DViewer::restoreState(
     backgroundImages_.clear();
     for (auto *n=node.first_node(bgiNodeName); n; n=n->next_sibling(bgiNodeName))
     {
-        auto *bgi=new BackgroundImage(*n, *this);
-        backgroundImages_.append(bgi);
-        connectBackgroundImageCommands(bgi);
+        try
+        {
+            auto *bgi=new BackgroundImage(*n, *this);
+            backgroundImages_.append(bgi);
+            connectBackgroundImageCommands(bgi);
+        }
+        catch (std::exception& ex)
+        {
+            QMessageBox::information(
+                this, _("Could not load background image"),
+                QString(
+                    QString(_("A background image could not be restored."))
+                    +"\n" + _("Reason:") + " %1\n")
+                    .arg(ex.what())) ;
+        }
     }
 
     ren_->ResetCameraClippingRange();

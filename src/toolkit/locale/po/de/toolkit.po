@@ -36,6 +36,12 @@ msgid ""
 " Available values are: %s"
 msgstr ""
 
+msgid "The problem occurred"
+msgstr "Das Problem ist aufgetreten"
+
+msgid "while"
+msgstr "während"
+
 #, c-format
 msgid "no lower bound found for t=%g!"
 msgstr ""

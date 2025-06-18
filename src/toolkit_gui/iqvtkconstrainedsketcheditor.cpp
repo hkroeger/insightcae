@@ -1056,6 +1056,15 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 this, &IQVTKConstrainedSketchEditor::renameLayer);
         layerlist->setModel(model);
 
+        layerlist->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(
+            layerlist, &QTableView::customContextMenuRequested,
+            model, [model,layerlist](const QPoint &pos)
+            {
+                model->contextMenu(layerlist, layerlist->indexAt(pos), pos);
+            }
+        );
+
         connect(
             layerlist->selectionModel(),
             &QItemSelectionModel::currentChanged,

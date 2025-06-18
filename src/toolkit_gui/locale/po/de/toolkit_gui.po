@@ -22,25 +22,63 @@ msgstr "Datei speichern"
 msgid "Open file"
 msgstr "Datei öffnen"
 
+#, c-format
+msgid "image file \"%s\" does not exist"
+msgstr "die Bitmap-Datei \"%s\" existiert nicht"
+
+#, c-format
+msgid "could not create reader for file \"%s\""
+msgstr "konnte die Datei %1 nicht erzeugen"
+
+msgid "Could not load background image"
+msgstr "Konnte das Hintergrundbild nicht laden"
+
+msgid "A background image could not be restored."
+msgstr "Ein Hintergrundbild konnte nicht wiederhergestellt werden."
+
+msgid "Reason:"
+msgstr "Grund:"
+
 msgid "Nothing to be undone"
-msgstr ""
+msgstr "Nichts rückgängig zu machen"
 
 msgid "Nothing to be redone"
-msgstr ""
+msgstr "Nichts wiederherzustellen"
 
 msgid "perform undo step"
-msgstr ""
+msgstr "Rückgängig machen"
 
 #, c-format
 msgid "undo step %s"
-msgstr ""
+msgstr "%s rückgängig machen"
 
 msgid "perform redo step"
-msgstr ""
+msgstr "Wiederherstellen"
 
 #, c-format
 msgid "redo step %s"
-msgstr ""
+msgstr "%s wiederherstellen"
+
+msgid "Visible"
+msgstr "Sichtbar"
+
+msgid "Layer name"
+msgstr "Layername"
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "Rename..."
+msgstr "Umbenennen..."
+
+msgid "Rename layer"
+msgstr "Layer umbenennen"
+
+msgid "Please enter new layer name:"
+msgstr "Neuen Layernamen eingeben:"
+
+msgid "The visualization could not be generated."
+msgstr "Die Visualisierung konnte nicht erzeugt werden."
 
 msgid "Change Item Label"
 msgstr "Bezeichner ändern"
@@ -49,10 +87,10 @@ msgid "New label:"
 msgstr "Neuer Bezeichner:"
 
 msgid "Load result set"
-msgstr ""
+msgstr "Ergebnisse laden"
 
 msgid "InsightCAE Result Set"
-msgstr ""
+msgstr "InsightCAE Ergebnisdaten"
 
 msgid "Create file failed"
 msgstr "Erzeugen der Datei fehlgeschlagen"

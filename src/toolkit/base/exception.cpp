@@ -34,6 +34,7 @@
 #include "boost/stacktrace.hpp"
 #include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
+#include "base/translations.h"
 
 #define DEBUG
 
@@ -153,10 +154,10 @@ void Exception::saveContext(bool strace)
 
   if (context_list.size()>0)
   {
-    context_="The problem occurred";
+    context_=_("The problem occurred");
     for (const std::string& c: context_list)
       {
-        context_+= "\nwhile "+c;
+        context_+= std::string("\n") + _("while") + " " + c;
       }
   }
 

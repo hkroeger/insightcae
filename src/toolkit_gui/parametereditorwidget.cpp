@@ -34,6 +34,7 @@
 #include "qnamespace.h"
 #include "qtextensions.h"
 
+#include "base/translations.h"
 
 
 using namespace std;
@@ -430,9 +431,11 @@ void ParameterEditorWidget::rebuildVisualization()
             {
                 overlayText_->setTextFormat(Qt::MarkdownText);
                 overlayText_->setText(QString::fromStdString(
-                    "The visualization could not be generated.\n\n"
-                    "Reason:\n\n"
-                    "**"+ex.description()+"**\n\n"+
+                    std::string(_("The visualization could not be generated."))
+                    +"\n\n"
+                    +_("Reason:")
+                    +"\n\n"
+                    +"**"+ex.description()+"**\n\n"+
                     boost::replace_all_copy(ex.context(), "\n", "\n\n")
                     ));
                 overlayText_->show();

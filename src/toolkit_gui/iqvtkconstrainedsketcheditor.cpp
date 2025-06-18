@@ -216,6 +216,16 @@ void IQVTKConstrainedSketchEditor::addActors(
         if (vtkSmartPointer<vtkActor> aa = vtkActor::SafeDownCast(a))
         {
             presentation_->setEntityAppearance(*sg, aa->GetProperty());
+
+            // override with layer color, if some was defined
+            if (std::dynamic_pointer_cast<insight::cad::Feature>(sg))
+            {
+                auto &c = (*this)->layerProperties(sg->layerName()).color;
+                if (c.n_elem==3)
+                {
+                    aa->GetProperty()->SetColor(c[0], c[1], c[2]);
+                }
+            }
         }
         if (auto follower=vtkFollower::SafeDownCast(a))
         {

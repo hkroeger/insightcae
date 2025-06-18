@@ -42,17 +42,33 @@ size_t ConstrainedSketch::calcHash() const
 
 
 
-std::unique_ptr<LayerProperties> LayerProperties::create()
+std::unique_ptr<LayerProperties> LayerProperties::create(
+    const arma::mat& c )
 {
-    return std::unique_ptr<LayerProperties>(new LayerProperties);
+    return std::unique_ptr<LayerProperties>(
+        new LayerProperties(c) );
 }
 
 std::unique_ptr<LayerProperties> LayerProperties::create(
-    const ParameterSet& parameters )
+    const ParameterSet& parameters, const arma::mat& c )
 {
     return std::unique_ptr<LayerProperties>(
-        new LayerProperties(parameters.copyEntries(), "") );
+        new LayerProperties(parameters.copyEntries(), c) );
 }
+
+
+LayerProperties::LayerProperties(
+    const arma::mat& c )
+    : ParameterSet(),
+    color(c)
+{}
+
+
+LayerProperties::LayerProperties(
+    Entries &&defaultValue, const arma::mat& c)
+    : ParameterSet(std::move(defaultValue), ""),
+    color(c)
+{}
 
 
 
@@ -65,7 +81,13 @@ std::unique_ptr<LayerProperties>
 ConstrainedSketchParametersDelegate::createDefaultLayerProperties(
     const std::string &layerName) const
 {
-    return LayerProperties::create();
+
+    arma::mat c; // unspecified color
+    if (layerName!=insight::cad::ConstrainedSketch::defaultLayerName)
+        c=insight::vec3(std::rand(), std::rand(), std::rand())
+            /double(RAND_MAX);
+
+    return LayerProperties::create(c);
 }
 
 

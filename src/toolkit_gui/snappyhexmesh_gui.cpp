@@ -1,5 +1,6 @@
 
 #include "snappyhexmesh_gui.h"
+#include "occtools.h"
 #include "openfoam/openfoamtools.h"
 
 #include "cadfeatures.h"
@@ -43,23 +44,11 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 
       if (gp.fileName->isValid())
       {
-        gp_Trsf trans;
-        trans.SetTranslation(to_Vec(gp.translate));
-
-        gp_Trsf t2a;
-        t2a.SetRotation(gp::OX(), gp.rollPitchYaw(0)*SI::deg);
-        gp_Trsf t2b;
-        t2b.SetRotation(gp::OY(), gp.rollPitchYaw(1)*SI::deg);
-        gp_Trsf t2c;
-        t2c.SetRotation(gp::OZ(), gp.rollPitchYaw(2)*SI::deg);
-
-        gp_Trsf scale;
-        scale.SetScale(gp::Origin(), gp.scale[0]);
+          cad::is_gp_Trsf tr(gp.translate, gp.rollPitchYaw, gp.scale);
 
         addFeature(
               "geometry:"+gp.name,
-              cad::STL::create(gp.fileName->filePath(),
-                                    scale*t2c*t2b*t2a*trans)
+              cad::STL::create(gp.fileName->filePath(), tr)
               );
       }
     } else if ( const auto* refbox = dynamic_cast<snappyHexMeshFeats::RefinementBox*>(feat.get()) )
@@ -99,14 +88,10 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
 
       if (gp.fileName->isValid())
       {
-        gp_Trsf trans;
-        trans.SetTranslation(to_Vec(gp.translate));
-
-        gp_Trsf scale;
-        scale.SetScale(gp::Origin(), gp.scale[0]);
-
         addFeature( "refinement:"+gp.name,
-                    cad::STL::create(gp.fileName->filePath(), trans*scale)
+                    cad::STL::create(
+                       gp.fileName->filePath(),
+                        cad::is_gp_Trsf(gp.translate, gp.rollPitchYaw, gp.scale))
                     );
       }
     }

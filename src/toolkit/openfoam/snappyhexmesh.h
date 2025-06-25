@@ -34,6 +34,8 @@
 #include "snappyhexmesh__ExternalGeometryFile__Parameters_headers.h"
 
 #include "openfoam/openfoamtools.h"
+#include "base/spatialtransformation.h"
+#include "base/vtktransformation.h"
 
 namespace insight {
 
@@ -79,7 +81,6 @@ public:
             std::isalpha(fname[0]),
             "filename must not start with a number or special char (got %s)",
             fname.c_str() );
-        //  std::cout<<"added \""<<p_.fileName<<"\""<<std::endl;
     }
   
   std::string fileName() const
@@ -98,15 +99,34 @@ public:
         if (!exists(to.parent_path()))
             create_directories(to.parent_path());
 
-        ofc.executeCommand(location, "surfaceTransformPoints",
-                           {
-                               absolute(from).string(),
-                               absolute(to).string(),
-                               "-scale", OFDictData::toString(OFDictData::vector3(p().scale)),
-                               "-translate", OFDictData::toString(OFDictData::vector3(p().translate)),
-                               "-rollPitchYaw", OFDictData::toString(OFDictData::vector3(p().rollPitchYaw))
-                           }
-                           );
+        double s=p().scale[0];
+        insight::assertion(
+            (fabs(p().scale[1]-p().scale[0])<SMALL)
+                && (fabs(p().scale[2]-p().scale[0])<SMALL),
+            "unequal scaling factors for different directions are not supported" );
+
+        insight::SpatialTransformation trsf(
+            p().translate, p().rollPitchYaw, s );
+
+        std::cout
+            << "reading STL file from " << from
+            << ", transforming by " << trsf
+            << " and writing to " << to
+            << std::endl;
+
+        writeSTL(
+            readSTL(from, {&trsf}),
+            to );
+
+        // ofc.executeCommand(location, "surfaceTransformPoints",
+        //                    {
+        //                        absolute(from).string(),
+        //                        absolute(to).string(),
+        //                        "-scale", OFDictData::toString(OFDictData::vector3(p().scale)),
+        //                        "-translate", OFDictData::toString(OFDictData::vector3(p().translate)),
+        //                        "-rollPitchYaw", OFDictData::toString(OFDictData::vector3(p().rollPitchYaw))
+        //                    }
+        //                    );
     }
 
 

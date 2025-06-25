@@ -175,7 +175,15 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
                 }
 
 
-                finishAction();
+                //finishAction();
+
+                //restart
+                p1_.reset();
+                p2_.reset();
+                previewLine_->SetVisibility(false);
+                viewer().renderer()->RemoveActor(previewLine_);
+                previewLine_=nullptr;
+                prevLine_=nullptr;
             }
         }
         );
@@ -222,4 +230,9 @@ bool IQVTKCADModel3DViewerDrawRectangle::onMouseClick  (
     else
         return IQVTKCADModel3DViewerPlanePointBasedAction
             ::onMouseClick( btn, nFlags, point );
+}
+
+QString IQVTKCADModel3DViewerDrawRectangle::description() const
+{
+    return "Draw rectangle";
 }

@@ -46,3 +46,9 @@ bool IQVTKCADModel3DViewerDrawPoint::onMouseClick  (
         return IQVTKCADModel3DViewerPlanePointBasedAction
             ::onMouseClick( btn, nFlags, point );
 }
+
+
+QString IQVTKCADModel3DViewerDrawPoint::description() const
+{
+    return "Draw point";
+}

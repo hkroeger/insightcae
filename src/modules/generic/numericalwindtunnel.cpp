@@ -130,7 +130,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       toValue(
           p().geometry.attitude.yaw*si::angle_deg,
           si::radians));
-  gp_Trsf att=yaw
+  cad::is_gp_Trsf att=yaw
             .Multiplied(trim)
             .Multiplied(roll);
 
@@ -146,7 +146,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     bb = p().geometryscale
          * STLBndBox(geopositioned);
 
-    auto geofinal = cad::OCCtransformToOF(att)
+    auto geofinal = att
+                        .toSpatialTransformation()
                         .apply_VTK_Transform(geopositioned);
     bbAtt = p().geometryscale
             * STLBndBox( geofinal );

@@ -18,7 +18,7 @@ vtk_Transformer::~vtk_Transformer()
 std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st)
 {
     os << "translate = "<<st.translate().t();
-    os << "euler angles = "<<st.rollPitchYaw().t();
+    os << "euler angles (z>y>x) = "<<st.rollPitchYaw().t();
     os << "scale = "<<st.scale()<<std::endl;
     return os;
 }
@@ -28,7 +28,10 @@ SpatialTransformation::SpatialTransformation()
     setIdentity();
 }
 
-SpatialTransformation::SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale)
+SpatialTransformation::SpatialTransformation(
+    const arma::mat& translate,
+    const arma::mat& rollPitchYaw,
+    double scale )
 {
     setTranslation(translate);
     setRollPitchYaw(rollPitchYaw);
@@ -93,7 +96,7 @@ void SpatialTransformation::setRotationMatrix(const arma::mat &R)
 
 void SpatialTransformation::setRollPitchYaw(const arma::mat& rollPitchYaw)
 {
-    R_=rollPitchYawToRotationMatrix(rollPitchYaw);
+    R_ = rollPitchYawToRotationMatrix( rollPitchYaw );
 }
 
 void SpatialTransformation::setScale(double scale)
@@ -201,9 +204,9 @@ vtkSmartPointer<vtkTransform> SpatialTransformation::toVTKTransform() const
   auto t = vtkSmartPointer<vtkTransform>::New();
   t->PostMultiply();
   t->Translate( translate()(0), translate()(1), translate()(2) );
-  t->RotateX( rollPitchYaw()(0) );
-  t->RotateY( rollPitchYaw()(1) );
   t->RotateZ( rollPitchYaw()(2) );
+  t->RotateY( rollPitchYaw()(1) );
+  t->RotateX( rollPitchYaw()(0) );
   t->Scale( scale(), scale(), scale() );
   return t;
 }
@@ -250,15 +253,20 @@ void SpatialTransformation::executeOFTransforms(
 }
 
 
-bool SpatialTransformation::operator!=(const SpatialTransformation &o) const
+bool SpatialTransformation::operator==(const SpatialTransformation &o) const
 {
     return
-            ( arma::norm(o.translate_-translate_,2)>SMALL)
-            ||
-            ( arma::norm(o.R_-R_,2)>SMALL )
-            ||
-            (fabs(o.scale_-scale_)>SMALL)
+            ( arma::norm( o.translate_ - translate_, 2) < SMALL)
+            &&
+            ( arma::norm( o.R_ - R_, 2) < SMALL )
+            &&
+            ( fabs( o.scale_ - scale_ ) < SMALL)
             ;
+}
+
+bool SpatialTransformation::operator!=(const SpatialTransformation &o) const
+{
+    return !operator==(o);
 }
 
 void SpatialTransformation::invert()

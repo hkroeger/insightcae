@@ -48,6 +48,8 @@ public:
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override;
 
+    QString description() const override;
+
 Q_SIGNALS:
     void updateActors();
     void rectangleAdded(

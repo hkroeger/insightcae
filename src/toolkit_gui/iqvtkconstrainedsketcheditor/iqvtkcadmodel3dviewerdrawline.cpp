@@ -170,7 +170,15 @@ void IQVTKCADModel3DViewerDrawLine::start()
                 p1_=p2_;
                 p2_.reset();
 
-                if (p1_->isAnExistingPoint) finishAction();
+                if (p1_->isAnExistingPoint)
+                {
+                    // end line here, restart
+                    previewLine_->SetVisibility(false);
+                    viewer().renderer()->RemoveActor(previewLine_);
+                    previewLine_=nullptr;
+                    prevLine_=nullptr;
+                    p1_.reset();
+                }
             }
         }
         );
@@ -220,4 +228,11 @@ bool IQVTKCADModel3DViewerDrawLine::onMouseClick  (
 
     return IQVTKCADModel3DViewerPlanePointBasedAction
         ::onMouseClick(btn, nFlags, point);
+}
+
+
+
+QString IQVTKCADModel3DViewerDrawLine::description() const
+{
+    return "Draw line";
 }

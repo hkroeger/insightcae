@@ -1,6 +1,7 @@
 
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
+#include "base/boost_include.h"
 
 #include "vtkTransform.h"
 
@@ -10,6 +11,39 @@ int main(int /*argc*/, char*/*argv*/[])
 {
   try
   {
+        int nWrong=0, nTried=0;
+        for (int i=-180; i<180; i+=10)
+        {
+            for (int j=-180; j<180; j+=10)
+            {
+                for (int k=-180; k<180; k+=10)
+                {
+                    nTried++;
+
+                    arma::mat rpy=vec3(i,j,k);
+
+                    SpatialTransformation t(vec3Zero(), rpy);
+
+                    arma::mat rpyp=t.rollPitchYaw();
+
+                    SpatialTransformation t2(vec3Zero(), rpyp);
+
+                    if (t!=t2)
+                    {
+                        nWrong++;
+                        std::cout
+                            <<boost::str(boost::format("wrong roll/pitch/yaw conversion for (%g, %g, %g): back conversion yields (%g, %g, %g)")
+                                    %rpy(0)%rpy(1)%rpy(2)
+                                    %rpyp(0)%rpyp(1)%rpyp(2))
+                                  <<std::endl;
+                    }
+                }
+            }
+        }
+        insight::assertion(
+            nWrong==0,
+            "%d of %d roll/pitch/yaw conversions failed", nWrong, nTried);
+
         {
             SpatialTransformation t(vec3(1,2,3), vec3(0,0,0));
             std::cout<<t<<std::endl;
@@ -18,18 +52,22 @@ int main(int /*argc*/, char*/*argv*/[])
                         "error in translation" );
         }
         {
-            SpatialTransformation t(vec3(0,0,0), vec3(0,0,90));
-            std::cout<<t<<std::endl;
-            insight::assertion(
-                        arma::norm( t(vec3(1,0,0))-vec3(0,1,0), 2)< SMALL,
-                        "error in rotation" );
-        }
-        {
             SpatialTransformation t(vec3(0,0,0), vec3(0,0,0), 2.);
             std::cout<<t<<std::endl;
             insight::assertion(
-                        arma::norm( t(vec3(1,0,0))-vec3(2,0,0), 2)< SMALL,
-                        "error in scaling" );
+                arma::norm( t(vec3(1,0,0))-vec3(2,0,0), 2)< SMALL,
+                "error in scaling" );
+        }
+        {
+            SpatialTransformation t(vec3(0,0,0), vec3(0,0,90));
+            std::cout
+                <<t
+                <<t(vec3(1,0,0)).t()
+                <<t.R()
+                <<std::endl;
+            insight::assertion(
+                        arma::norm( t(vec3(1,0,0))-vec3(0,1,0), 2)< SMALL,
+                        "error in rotation" );
         }
 
         {

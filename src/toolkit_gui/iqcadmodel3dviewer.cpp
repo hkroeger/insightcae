@@ -216,7 +216,7 @@ void IQCADModel3DViewer::showUserPrompt(const QString &text)
 
 void IQCADModel3DViewer::updateMouseCoordinateDisplay(double x, double y)
 {
-    currentActionDesc_->setText(
+    mouseCoordinateDisplay_->setText(
         QString("X=%1, Y=%2")
             .arg(x,6)
             .arg(y,6)

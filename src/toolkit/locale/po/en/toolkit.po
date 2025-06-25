@@ -42,6 +42,10 @@ msgid "while"
 msgstr ""
 
 #, c-format
+msgid "the argument is not a rotation matrix, residual=%e"
+msgstr ""
+
+#, c-format
 msgid "no lower bound found for t=%g!"
 msgstr "no lower bound found for t=%g!"
 

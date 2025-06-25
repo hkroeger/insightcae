@@ -87,7 +87,10 @@ public:
      * angles in degrees!
      * @param scale
      */
-    SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw=vec3(0,0,0), double scale=1.);
+    SpatialTransformation(
+        const arma::mat& translate,
+        const arma::mat& rollPitchYaw=vec3(0,0,0),
+        double scale=1. );
 
     /**
      * @brief SpatialTransformation
@@ -101,7 +104,7 @@ public:
         const arma::mat& ex,
         const arma::mat& ey,
         const arma::mat& ez,
-        const arma::mat& O = vec3Zero()
+        const arma::mat& O
         );
 
     /**
@@ -236,6 +239,7 @@ public:
             const boost::filesystem::path& geofile) const;
 
 
+    bool operator==(const SpatialTransformation& o) const;
     bool operator!=(const SpatialTransformation& o) const;
 
     void invert();

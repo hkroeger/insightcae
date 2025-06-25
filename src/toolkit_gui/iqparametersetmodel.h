@@ -10,6 +10,7 @@
 #include <QAbstractItemModel>
 #include <QAbstractProxyModel>
 #include <QScopedPointer>
+#include <atomic>
 
 #include "base/parameterset.h"
 #include "iqparameter.h"
@@ -82,6 +83,11 @@ private:
 
   mutable std::map<std::string, insight::cad::FeaturePtr> transformedGeometry_;
   mutable std::key_observer_map<IQParameter, int> wrappers_;
+
+  std::atomic<bool> editingIsDisabled_;
+
+  void editingOff();
+  void editingOn();
 
   IQParameter* findWrapper(const insight::Parameter& p) const;
   int countDisplayedChildren(const QModelIndex& index) const;
@@ -207,6 +213,19 @@ public:
   void resetParameters(
       std::unique_ptr<insight::ParameterSet>&& ps );
 
+
+  class EditingDisabler
+  {
+      IQParameterSetModel& psm_;
+  public:
+      std::function<void()> additionalCleanup;
+
+      EditingDisabler(IQParameterSetModel& psm);
+      ~EditingDisabler();
+  };
+  std::shared_ptr<EditingDisabler> disableEditing();
+
+
 public Q_SLOTS:
   void clearParameters();
 
@@ -214,6 +233,7 @@ public Q_SLOTS:
       const insight::ParameterSet& ps,
       boost::optional<const insight::ParameterSet&> defaultps
       = boost::optional<const insight::ParameterSet&>() );
+
 
 };
 

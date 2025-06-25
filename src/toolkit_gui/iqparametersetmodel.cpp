@@ -109,6 +109,16 @@ void IQParameterSetModel::handleDataChangeForUndo(
         parameterSet_->cloneParameterSet();
 }
 
+void IQParameterSetModel::editingOff()
+{
+    editingIsDisabled_=true;
+}
+
+void IQParameterSetModel::editingOn()
+{
+    editingIsDisabled_=false;
+}
+
 
 
 
@@ -210,7 +220,8 @@ IQParameterSetModel::IQParameterSetModel(
     boost::optional<const insight::ParameterSet&> defaultps,
     QObject *parent
     )
-  : QAbstractItemModel(parent)
+  : QAbstractItemModel(parent),
+    editingIsDisabled_(false)
 {
     resetParameters( std::move(ps) );
     if (defaultps)
@@ -395,31 +406,35 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
 
 
   flags |= Qt::ItemIsDragEnabled;
-  flags |= Qt::ItemIsDropEnabled;
 
-  if (index.column()==valueCol)
+  if (!editingIsDisabled_)
   {
-    if (dynamic_cast<const insight::DoubleParameter*>(p)
-        ||dynamic_cast<const insight::IntParameter*>(p)
-        ||dynamic_cast<const insight::StringParameter*>(p)
-        )
-        flags |= Qt::ItemIsEditable;
+      flags |= Qt::ItemIsDropEnabled;
 
-    if (dynamic_cast<const insight::BoolParameter*>(p))
-        flags |= Qt::ItemIsUserCheckable;
-
-    if (IQParameterGridViewDelegateEditorWidget::has_createDelegate(iqp->type()))
-    {
-        flags |= Qt::ItemIsEditable;
-    }
-  }
-  else if (index.column()==labelCol)
-  {
-      if (auto *lap = dynamic_cast<const insight::LabeledArrayParameter*>(&p->parent())
-          )
+      if (index.column()==valueCol)
       {
-          if (!lap->keysAreLocked())
+        if ( dynamic_cast<const insight::DoubleParameter*>(p)
+            ||dynamic_cast<const insight::IntParameter*>(p)
+            ||dynamic_cast<const insight::StringParameter*>(p)
+            )
             flags |= Qt::ItemIsEditable;
+
+        if (dynamic_cast<const insight::BoolParameter*>(p))
+            flags |= Qt::ItemIsUserCheckable;
+
+        if (IQParameterGridViewDelegateEditorWidget::has_createDelegate(iqp->type()))
+        {
+            flags |= Qt::ItemIsEditable;
+        }
+      }
+      else if (index.column()==labelCol)
+      {
+          if (auto *lap = dynamic_cast<const insight::LabeledArrayParameter*>(&p->parent())
+              )
+          {
+              if (!lap->keysAreLocked())
+                flags |= Qt::ItemIsEditable;
+          }
       }
   }
 
@@ -431,7 +446,12 @@ Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
 
 Qt::DropActions IQParameterSetModel::supportedDropActions() const
 {
-  return Qt::CopyAction | Qt::MoveAction;
+    if (!editingIsDisabled_)
+    {
+        return Qt::CopyAction | Qt::MoveAction;
+    }
+    else
+        return 0;
 }
 
 
@@ -651,44 +671,48 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
 
 bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-  if (auto *p = indexData(index))
-  {
-    switch (role)
+    if (!!editingIsDisabled_)
     {
+      if (auto *p = indexData(index))
+      {
+        switch (role)
+        {
 
-    case Qt::EditRole:
-        if (index.column()==valueCol) // data
-        {
-            auto *iqp=iqIndexData(index);
-            return iqp->setValue(value);
-        }
-        else if (index.column()==labelCol) // data
-        {
-            auto *me = iqIndexData(index);
-            auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(me->parentParameter());
-            auto &pp = dynamic_cast<insight::LabeledArrayParameter&>(iqp->parameterRef());
-            auto label = p->name();
-            auto newl = value.toString();
-            if (!newl.isEmpty())
+        case Qt::EditRole:
+            if (index.column()==valueCol) // data
             {
-                pp.changeLabel(label, newl.toStdString());
+                auto *iqp=iqIndexData(index);
+                return iqp->setValue(value);
             }
-        }
-        break;
+            else if (index.column()==labelCol) // data
+            {
+                auto *me = iqIndexData(index);
+                auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(me->parentParameter());
+                auto &pp = dynamic_cast<insight::LabeledArrayParameter&>(iqp->parameterRef());
+                auto label = p->name();
+                auto newl = value.toString();
+                if (!newl.isEmpty())
+                {
+                    pp.changeLabel(label, newl.toStdString());
+                }
+            }
+            break;
 
-    case Qt::CheckStateRole:
-        if (index.column()==valueCol) // data
-        {
-          if (auto *bp = dynamic_cast<insight::BoolParameter*>(p))
-          {
-              auto *iqp=iqIndexData(index);
-              return iqp->setValue(value);
-          }
+        case Qt::CheckStateRole:
+            if (index.column()==valueCol) // data
+            {
+              if (auto *bp = dynamic_cast<insight::BoolParameter*>(p))
+              {
+                  auto *iqp=iqIndexData(index);
+                  return iqp->setValue(value);
+              }
+            }
+            break;
         }
-        break;
+      }
     }
-  }
-  return false;
+
+    return false;
 }
 
 
@@ -705,18 +729,21 @@ void IQParameterSetModel::copy(const QModelIndexList &indexes) const
 
 void IQParameterSetModel::paste(const QModelIndexList &indexes)
 {
-  insight::assertion(indexes.size()==1, "only single paste op supported");
+    insight::assertion(indexes.size()==1, "only single paste op supported");
 
-  const QMimeData *mimeData = qApp->clipboard()->mimeData();
+    if (!editingIsDisabled_)
+    {
+      const QMimeData *mimeData = qApp->clipboard()->mimeData();
 
-  auto index=indexes.first();
+      auto index=indexes.first();
 
-  if (canDropMimeData(mimeData, Qt::CopyAction,
-                      index.row(), 0, index.parent()))
-  {
-    dropMimeData(mimeData, Qt::CopyAction,
-                 index.row(), 0, index.parent());
-  }
+      if (canDropMimeData(mimeData, Qt::CopyAction,
+                          index.row(), 0, index.parent()))
+      {
+        dropMimeData(mimeData, Qt::CopyAction,
+                     index.row(), 0, index.parent());
+      }
+    }
 }
 
 
@@ -794,6 +821,30 @@ void IQParameterSetModel::resetParameters(
 
 
 
+IQParameterSetModel::EditingDisabler::EditingDisabler(IQParameterSetModel &psm)
+    : psm_(psm)
+{
+    insight::dbg(insight::DetailedBusiness)<<"parameter set model: editing disabled";
+    psm_.editingOff();
+}
+
+IQParameterSetModel::EditingDisabler::~EditingDisabler()
+{
+    insight::dbg(insight::DetailedBusiness)<<"parameter set model: editing enabled";
+    psm_.editingOn();
+    if (additionalCleanup) additionalCleanup();
+}
+
+
+
+std::shared_ptr<IQParameterSetModel::EditingDisabler>
+IQParameterSetModel::disableEditing()
+{
+    return std::make_shared<EditingDisabler>(*this);
+}
+
+
+
 void IQParameterSetModel::resetParameterValues(
     const insight::ParameterSet &ps,
     boost::optional<const insight::ParameterSet&> defaultps )
@@ -820,7 +871,6 @@ void IQParameterSetModel::resetParameterValues(
 
   endInsertRows();
 }
-
 
 
 

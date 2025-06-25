@@ -12,7 +12,7 @@
 
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
-
+#include "iqparametersetmodel.h"
 
 
 
@@ -106,9 +106,11 @@ public Q_SLOT:
             boost::optional<std::string> parameterPath = boost::optional<std::string>()
         ) =0;
 
-    virtual void editSketchParameter(
-        const std::string& parameterPath,
-        std::shared_ptr<insight::cad::ConstrainedSketch> sketchOvr = nullptr );
+    virtual
+        std::shared_ptr<IQParameterSetModel::EditingDisabler>
+        editSketchParameter(
+            const std::string& parameterPath,
+            std::shared_ptr<insight::cad::ConstrainedSketch> sketchOvr = nullptr );
 
     void showCurrentActionDescription(const QString& desc);
     void showUserPrompt(const QString& text);

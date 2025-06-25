@@ -104,44 +104,13 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
         auto editFunction = [=]()
         {
-            viewer->editSketchParameter(
-                this->parameter().path() );
-
-            // auto&p = this->parameterRef();
-
-            // auto sk = p.featureGeometryRef();
-
-            // viewer->editSketch(
-
-            //     *sk,
-
-            //     p.entityProperties(),
-            //     p.presentationDelegateKey(),
-
-            //     [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
-            //     {
-            //         auto& tp = this->parameterRef();
-
-            //         {
-            //             auto blocker{parameterRef().blockUpdateValueSignal()};
-            //             *sk = *accSk;
-
-            //             std::ostringstream os;
-            //             sk->generateScript(os);
-
-            //             tp.setScript(os.str());
-            //             tp.featureGeometry(); //trigger rebuild
-            //         }
-
-            //         tp.triggerValueChanged();
-
-            //         teScript->document()->setPlainText(
-            //             QString::fromStdString(tp.script()) );
-            //     },
-
-            //     [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
-
-            //     );
+            if (auto editctrl = viewer->editSketchParameter(
+                    this->parameter().path() ))
+            {
+                this->setControlsEnabled(false);
+                editctrl->additionalCleanup=[this]() {
+                    this->setControlsEnabled(true); };
+            }
         };
         connect(edit, &QPushButton::pressed, editFunction);
     }

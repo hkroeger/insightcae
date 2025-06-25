@@ -10,6 +10,8 @@
 #include <QMenu>
 #include <QStyledItemDelegate>
 
+
+
 #include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
@@ -131,6 +133,11 @@ public:
       const std::string& selectProposition );
 
   static QAbstractItemDelegate* createIQParameterGridViewDelegate(QWidget *parent);
+
+  void checkEnabledOrDisabled();
+
+Q_SIGNALS:
+  void setControlsEnabled(bool isEnabled);
 };
 
 

@@ -11,7 +11,7 @@
 #include <qnamespace.h>
 
 #include "cadsketchparameter.h"
-#include "iqparametersetmodel.h"
+
 
 uint
 IQCADModel3DViewer::QPersistentModelIndexHash::operator()
@@ -158,15 +158,20 @@ void IQCADModel3DViewer::selectBackgroundColor()
     }
 }
 
-void IQCADModel3DViewer::editSketchParameter(
+std::shared_ptr<IQParameterSetModel::EditingDisabler>
+IQCADModel3DViewer::editSketchParameter(
     const std::string& parameterPath,
     std::shared_ptr<insight::cad::ConstrainedSketch> sketchOvr )
 {
+    std::shared_ptr<IQParameterSetModel::EditingDisabler> editctrl;
+
     if ( auto psm = dynamic_cast<IQParameterSetModel*>(
             cadmodel()->associatedParameterSetModel()) )
     {
         auto &skp = dynamic_cast<insight::CADSketchParameter&>(
             psm->parameterRef(parameterPath) );
+
+        editctrl = psm->disableEditing();
 
         editSketch(
 
@@ -175,10 +180,10 @@ void IQCADModel3DViewer::editSketchParameter(
             skp.entityProperties(),
             skp.presentationDelegateKey(),
 
-            [this,parameterPath](insight::cad::ConstrainedSketchPtr accSk) // on accept
+            [this,parameterPath,psm,
+             editctrl /*capture handle, shall be deleted, when this function is deleted, i.e. sketch editor finshed*/]
+            (insight::cad::ConstrainedSketchPtr accSk) // on accept
             {
-                auto psm = dynamic_cast<IQParameterSetModel*>(
-                    cadmodel()->associatedParameterSetModel());
                 auto &skp = dynamic_cast<insight::CADSketchParameter&>(
                     psm->parameterRef(parameterPath) );
 
@@ -195,12 +200,14 @@ void IQCADModel3DViewer::editSketchParameter(
                 skp.triggerValueChanged();
             },
 
-            [](insight::cad::ConstrainedSketchPtr) {}, // on cancel: just nothing to do
+            [](insight::cad::ConstrainedSketchPtr) // on cancel
+            {},
 
             parameterPath
         );
     }
 
+    return editctrl;
 }
 
 void IQCADModel3DViewer::showCurrentActionDescription(const QString& desc)

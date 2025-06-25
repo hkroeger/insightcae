@@ -281,9 +281,11 @@ QVBoxLayout* IQParameter::populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer * )
 {
+
+
   QVBoxLayout *layout=new QVBoxLayout;
 
-  QLabel *nameLabel = new QLabel(
+  auto *nameLabel = new QLabel(
       QString::fromStdString((*this)->name()),
       editControlsContainer );
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
@@ -292,6 +294,21 @@ QVBoxLayout* IQParameter::populateEditControls(
   auto *shortDescLabel =
     new IQSimpleLatexView( (*this)->description(), editControlsContainer );
   layout->addWidget(shortDescLabel);
+
+  connect(
+      this,
+      &IQParameter::setControlsEnabled,
+      editControlsContainer,
+      [this,editControlsContainer](bool isEnabled)
+      {
+          for (auto *c: editControlsContainer->children())
+          {
+              if (auto *w = dynamic_cast<QWidget*>(c))
+              {
+                  w->setEnabled(isEnabled);
+              }
+          }
+      });
 
   auto analysisName = model_->getAnalysisName();
   if (!analysisName.empty())
@@ -339,6 +356,13 @@ void IQParameter::applyProposition(
 {
 #warning does nothing yet, should be abstract
 }
+
+void IQParameter::checkEnabledOrDisabled()
+{
+    Q_EMIT setControlsEnabled(!model_->editingIsDisabled_);
+}
+
+
 
 defineStaticFunctionTableWithArgs(
     IQParameterGridViewDelegateEditorWidget,

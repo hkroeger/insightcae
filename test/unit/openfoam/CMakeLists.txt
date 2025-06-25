@@ -12,4 +12,13 @@ macro(createAllOpenFOAMTests TESTNAME CMD)
 endmacro()
 
 
+macro(createOFTest name)
+    add_executable(testexe_openfoam_${name} test_${name}.cpp)
+    linkToolkitVtk(testexe_openfoam_${name} Offscreen)
+    createAllOpenFOAMTests(unit_openfoam_${name} testexe_openfoam_${name} "")
+endmacro()
+
+
 add_subdirectory(caseelements)
+
+createOFTest(OFtransformation)

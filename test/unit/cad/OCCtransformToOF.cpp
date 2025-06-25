@@ -10,13 +10,6 @@
 
 using namespace insight;
 
-std::ostream& operator<<(std::ostream& os, const insight::cad::OCCtransformToOF& tr)
-{
-    os<<"1) translate by "<<tr.translate().t();
-    os<<"2) rotate (roll>pitch>yaw) by "<<tr.rollPitchYaw().t();
-    os<<"3) scale by "<<tr.scale()<<std::endl;
-    return os;
-}
 
 int main(int, char*[])
 {
@@ -27,26 +20,26 @@ int main(int, char*[])
             gp_Trsf t2; t2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), gp_Dir(0,0,1)), 0.25*M_PI);
             gp_Trsf t2q; t2q.SetRotation(gp_Ax1(gp_Pnt(1,0,0), gp_Dir(0,1,0)), 0.25*M_PI);
             gp_Trsf t3; t3.SetScale(gp::Origin(), 1000);
-
+            insight::cad::is_gp_Trsf it1(t1);
             std::cout
                    <<"pure translation:\n"
-                   <<insight::cad::OCCtransformToOF(t1)<<std::endl;
+                   <<insight::cad::is_gp_Trsf(t1)<<std::endl;
 
             std::cout
                    <<"pure rotation:\n"
-                   <<insight::cad::OCCtransformToOF(t2)<<std::endl;
+                   <<insight::cad::is_gp_Trsf(t2)<<std::endl;
 
             std::cout
                    <<"translation, then rotation:\n"
-                   <<insight::cad::OCCtransformToOF(t2*t1)<<std::endl;
+                   <<insight::cad::is_gp_Trsf(t2*t1)<<std::endl;
 
             std::cout
                    <<"translation, then rotation, then scale:\n"
-                   <<insight::cad::OCCtransformToOF(t3*t2*t1)<<std::endl;
+                   <<insight::cad::is_gp_Trsf(t3*t2*t1)<<std::endl;
 
             std::cout
                    <<"translation, then rotation (off center), then scale:\n"
-                   <<insight::cad::OCCtransformToOF(t3*t2q*t1)<<std::endl;
+                   <<insight::cad::is_gp_Trsf(t3*t2q*t1)<<std::endl;
         }
 
         {
@@ -62,7 +55,7 @@ int main(int, char*[])
             arma::mat pdash_t=vec3Zero();
             t->TransformPoint(p.memptr(), pdash_t.memptr());
 
-            auto t2 = cad::OFtransformToOCC(insight::SpatialTransformation(t));
+            auto t2 = cad::is_gp_Trsf(insight::SpatialTransformation(t));
             arma::mat pdash_t2 = Vector(to_Pnt(p).Transformed(t2));
             std::cout<<pdash_t.t()<<" <=> "<<pdash_t2.t()<<std::endl;
             insight::assertion(

@@ -4,9 +4,9 @@ target_link_libraries(openfoamcasewithcylindermesh openfoamtestcase)
 
 
 macro(test_solver TESTCPPNAME)
-    add_executable(testexe_${TESTCPPNAME} ${TESTCPPNAME}.cpp)
-    target_link_libraries(testexe_${TESTCPPNAME} openfoamcasewithcylindermesh)
-    createAllOpenFOAMTests(unit_openfoam_${TESTCPPNAME} testexe_${TESTCPPNAME} ${ARGN})
+    add_executable(testexe_openfoam_${TESTCPPNAME} ${TESTCPPNAME}.cpp)
+    target_link_libraries(testexe_openfoam_${TESTCPPNAME} openfoamcasewithcylindermesh)
+    createAllOpenFOAMTests(unit_openfoam_${TESTCPPNAME} testexe_openfoam_${TESTCPPNAME} ${ARGN})
 endmacro()
 
 

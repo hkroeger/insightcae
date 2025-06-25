@@ -1161,6 +1161,44 @@ void IQVTKCADModel3DViewer::fitAll()
     scheduleRedraw();
 }
 
+void IQVTKCADModel3DViewer::centerRotation()
+{
+
+    auto *curCam = ren_->GetActiveCamera();
+    auto cp = insight::vec3FromComponents(curCam->GetPosition());
+    auto fp = insight::vec3FromComponents(curCam->GetFocalPoint());
+    arma::mat dir = normalized(fp-cp);
+
+    auto s = vtkWidget_.size();
+    auto pscr=QPoint(s.width()/2, s.height()/2);
+    auto p = widgetCoordsToVTK(pscr);
+
+    arma::mat newFocalPt = fp;
+
+    if (auto *ske = runningAction<IQVTKConstrainedSketchEditor>())
+    {
+        newFocalPt=pointInPlane3D((*ske)->plane()->plane(), pscr);
+    }
+    else
+    {
+#warning needs improvement
+        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        picker3d->Pick(p.x(), p.y(), 0, ren_);
+        auto pp = picker3d->GetPickedPositions();
+
+        if (pp->GetNumberOfPoints())
+        {
+            newFocalPt=insight::vec3FromComponents(pp->GetPoint(0));
+        }
+    }
+
+    arma::mat nfp=arma::dot(newFocalPt-cp, dir)*dir + cp;
+    insight::dbg(DetailedBusiness) << "new focal pt = "<<nfp.t()<< "(old "<<fp.t()<<")";
+    curCam->SetFocalPoint(nfp.memptr());
+
+    scheduleRedraw();
+}
+
 void IQVTKCADModel3DViewer::view(
         const arma::mat &viewDir,
         const arma::mat &upDir )
@@ -1439,6 +1477,10 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 QPixmap(":/icons/icon_minusz.svg"), "-Z",
                 this, &IQCADModel3DViewer::viewTop );
 
+    btntb->addAction(
+        QPixmap(":/icons/icon_center_rotation.svg"), "Center rotation on view",
+        this, &IQVTKCADModel3DViewer::centerRotation);
+
     auto addBGAction = btntb->addAction(
         QPixmap(":/icons/icon_bgimage.svg"), "Add Background Image");
 
@@ -1648,7 +1690,6 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
     const std::set<vtkProp*>& restrictPicking ) const
 {
     auto p = widgetCoordsToVTK(clickPos);
-
 
 //    vtkActor2D *act2=nullptr;
 //    {

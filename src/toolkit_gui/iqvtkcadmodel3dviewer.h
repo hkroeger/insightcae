@@ -446,6 +446,7 @@ public:
     void toggleClip(const arma::mat& p, const arma::mat& n) override;
 
     void fitAll() override;
+    void centerRotation();
 
     void view( const arma::mat& viewDir, const arma::mat& upDir ) override;
 

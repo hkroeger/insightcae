@@ -115,6 +115,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                     {
                                         QDialog dlg;
                                         ip->populateEditControls(&dlg, viewer);
+                                        ip->checkEnabledOrDisabled();
                                         dlg.exec();
                                     }
                                     );

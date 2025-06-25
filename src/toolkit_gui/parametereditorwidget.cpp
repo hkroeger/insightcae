@@ -130,6 +130,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                     auto l = p->populateEditControls(
                         inputContents_,
                         viewer_ );
+                    p->checkEnabledOrDisabled();
 
                     // connect(this, &ParameterEditorWidget::adaptEditControlsLayout, l,
                     //         [](QSize s){

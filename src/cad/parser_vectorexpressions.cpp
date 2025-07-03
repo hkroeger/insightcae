@@ -60,11 +60,14 @@ using namespace insight::cad;
 
 void ISCADParser::createVectorExpressions()
 {
-    r_vectorFunction %=
+    r_vectorFunction =
         ( current_pos.current_pos
          >> omit[ vectorFunctionRules [ qi::_a = qi::_1 ] ]
-         >> current_pos.current_pos
-         >> qi::lazy(*qi::_a) )
+         >> current_pos.current_pos )
+            [ phx::at_c<0>(qi::_val) = qi::_1,
+              phx::at_c<1>(qi::_val) = qi::_2 ]
+         > qi::lazy(*qi::_a)
+            [ phx::at_c<2>(qi::_val) = qi::_1 ]
         ;
     r_vectorFunction.name("vector function");
 
@@ -76,9 +79,10 @@ void ISCADParser::createVectorExpressions()
     ADD_VECTOR_FUNCTION(
         "rot",
         ('('
-         >> r_vectorExpression
-         >> lit("by") >> r_scalarExpression
-         >> ( (lit("around") >> r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) ) >> ')' ),
+         > r_vectorExpression
+         > lit("by") > r_scalarExpression
+         > ( (lit("around") > r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) )
+         > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<RotatedVector>(qi::_1, qi::_2, qi::_3)) ]
     );
 
@@ -86,79 +90,77 @@ void ISCADParser::createVectorExpressions()
     ADD_VECTOR_FUNCTION(
         "Mechanism_CrankDrive",
         ( '('
-         >> r_scalarExpression >> ','
-         >> r_vectorExpression >> ','
-         >> r_scalarExpression >> ','
-         >> r_vectorExpression >> ','
-         >> r_vectorExpression
-         >> ')' ),
+         > r_scalarExpression > ','
+         > r_vectorExpression > ','
+         > r_scalarExpression > ','
+         > r_vectorExpression > ','
+         > r_vectorExpression
+         > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_CrankDrive>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "Mechanism_Slider",
         ( '('
-         >> r_scalarExpression >> ','
-         >> r_vectorExpression >> ','
-         >> r_vectorExpression >> ','
-         >> r_vectorExpression
-         >> ')' ),
+         > r_scalarExpression > ','
+         > r_vectorExpression > ','
+         > r_vectorExpression > ','
+         > r_vectorExpression
+         > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_Slider>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "coord",
-        ( '(' >> r_vertexFeaturesExpression >> ')' ),
+        ( '(' > r_vertexFeaturesExpression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "bbmin",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<BBMin>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "bbmax",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<BBMax>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "cog",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<COG>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "surfcog",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceCOG>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "surfinert1",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 0)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "surfinert2",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "surfinert3",
-        ( '(' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 2)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "scoord",
-        ( '(' >>
-         r_solidmodel_expression
-         >> ')' ),
+        ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
             phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))
             )) ]
@@ -166,7 +168,7 @@ void ISCADParser::createVectorExpressions()
 
     ADD_VECTOR_FUNCTION(
         "refpt",
-        ( '(' >> r_datumExpression >> ')' ),
+        ( '(' > r_datumExpression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
     );
 
@@ -178,37 +180,38 @@ void ISCADParser::createVectorExpressions()
 
     ADD_VECTOR_FUNCTION(
         "plnorm",
-        ( '(' >> r_datumExpression >> ')' )
+        ( '(' > r_datumExpression > ')' )
         ,[ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneNormal>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "plx",
-        ( '(' >> r_datumExpression >> ')' ),
+        ( '(' > r_datumExpression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneX>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "ply",
-        ( '(' >> r_datumExpression >> ')' ),
+        ( '(' > r_datumExpression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneY>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "circcenter",
-        ( '(' >> r_edgeFeaturesExpression >> ')' ),
+        ( '(' > r_edgeFeaturesExpression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<CircleEdgeCenterCoords>(qi::_1)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "xsec_cc",
-        ( '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' ),
+        ( '(' > r_solidmodel_expression > ','
+              > r_solidmodel_expression > ')' ),
         [ _val = construct<VectorPtr>(new_<XsecCurveCurve>(qi::_1, qi::_2)) ]
     );
 
     ADD_VECTOR_FUNCTION(
         "normalized",
-        ( "(" >> r_vectorExpression >> ")" ),
+        ( "(" > r_vectorExpression > ")" ),
         [ _val = phx::construct<VectorPtr>(phx::new_<NormalizedVector>(qi::_1)) ]
     );
 

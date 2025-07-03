@@ -141,22 +141,21 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "LinearPattern",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> 
-      ',' >> ruleset.r_vectorExpression >> 
-      ',' >> ruleset.r_scalarExpression >> ')' ) 
+    '(' > ruleset.r_solidmodel_expression [qi::_val = qi::_1 ]  >  ','
+      >
+    (  ruleset.r_vectorExpression >  ','
+      > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &LinearPattern::create<FeaturePtr, VectorPtr, ScalarPtr>,
-                         qi::_1, qi::_2, qi::_3) ]
+                         qi::_val, qi::_1, qi::_2) ]
     |
     (
-     '(' >>
-       ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression
-      >> ')'
+     ruleset.r_solidmodel_expression > ')'
     ) [ qi::_val = phx::bind(
                           &LinearPattern::create<FeaturePtr, FeaturePtr>,
-                          qi::_1, qi::_2) ]
+                          qi::_val, qi::_1) ]
 
     ))
   );

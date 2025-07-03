@@ -69,7 +69,9 @@ void StitchedCompound::insertrule(parser::ISCADParser& ruleset)
     "StitchedCompound",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_faceFeaturesExpression  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
+    ( '(' > ruleset.r_faceFeaturesExpression
+             > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) )
+             > ')' )
                   [ qi::_val = phx::bind(
                        &StitchedCompound::create<FeatureSetPtr, ScalarPtr>,
                        qi::_1, qi::_2) ]

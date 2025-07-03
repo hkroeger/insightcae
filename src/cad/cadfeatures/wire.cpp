@@ -130,7 +130,7 @@ void Wire::insertrule(parser::ISCADParser& ruleset)
                              &Wire::create<FeatureSetPtr>,
                              qi::_1) ]
         |
-        ( ruleset.r_modelstep % ',' )
+        ( ruleset.r_solidmodel_expression % ',' )
             [ qi::_val = phx::bind(
                              &Wire::create<const std::vector<FeaturePtr>&>,
                              qi::_1) ]

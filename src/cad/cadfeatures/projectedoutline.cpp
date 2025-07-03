@@ -153,7 +153,8 @@ void ProjectedOutline::insertrule(parser::ISCADParser& ruleset)
     "ProjectedOutline",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_datumExpression > ')' )
                   [ qi::_val = phx::bind(
                        &ProjectedOutline::create<FeaturePtr, DatumPtr>,
                        qi::_1, qi::_2) ]

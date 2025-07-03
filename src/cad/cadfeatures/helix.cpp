@@ -92,11 +92,11 @@ void Helix::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Helix",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-      ( '(' >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-        >> ruleset.r_scalarExpression >> ')' )
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+      ( '(' > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ')' )
                   [ qi::_val = phx::bind(
                        &Helix::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4) ]

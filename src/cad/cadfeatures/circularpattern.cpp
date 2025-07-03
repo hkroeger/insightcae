@@ -182,29 +182,30 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "CircularPattern",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "CircularPattern",
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-      (
       '(' 
-        >> ruleset.r_solidmodel_expression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_scalarExpression 
-        >> ( ( ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
-        >> ( ( ',' >> qi::lit("not") >> ruleset.r_string ) | qi::attr(std::string()) ) 
-        >> ')' 
+        > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ]
+        > ',' >
+      ( (
+          ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression
+                         > ( ( ',' >> qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+                         > ( ( ',' >> qi::lit("not") > ruleset.r_string ) | qi::attr(std::string()) )
+        > ')'
       ) [ qi::_val = phx::bind(
                           &CircularPattern::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool, const std::string&>,
-                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
+                          qi::_val, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       |
       (
-      '(' >> 
-          ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression 
-        >> ')' 
+        ruleset.r_solidmodel_expression
+        > ')'
       ) [ qi::_val = phx::bind(
                           &CircularPattern::create<FeaturePtr, FeaturePtr>,
-                          qi::_1, qi::_2) ]
+                          qi::_val, qi::_1) ]
+      )
     ))
   );
 }

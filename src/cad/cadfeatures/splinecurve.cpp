@@ -106,9 +106,9 @@ void SplineCurve::insertrule(parser::ISCADParser& ruleset)
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
-        > ruleset.r_vectorExpression % ',' 
-        >> ( (',' >> qi::lit("der") >> ruleset.r_vectorExpression >> ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) ) 
-        >> ')' ) 
+        > ruleset.r_vectorExpression % ','
+        > ( (',' > qi::lit("der") > ruleset.r_vectorExpression > ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) )
+        > ')' )
     [ qi::_val = phx::bind(
                          &SplineCurve::create<const std::vector<VectorPtr>&, VectorPtr, VectorPtr>,
                          qi::_1, phx::at_c<0>(qi::_2), phx::at_c<1>(qi::_2) ) ]

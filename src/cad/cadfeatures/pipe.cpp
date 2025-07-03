@@ -175,12 +175,12 @@ void Pipe::insertrule(parser::ISCADParser& ruleset)
         "Pipe",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-                    ( '(' >> ruleset.r_solidmodel_expression >> ','
-                      >> ruleset.r_solidmodel_expression
-                      >> ( ( ',' >> qi::lit("fixedbinormal") >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) ) 
-                      >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) 
-                      >> ( ( ',' >> qi::lit("reapprox") >> qi::attr(true) ) | qi::attr(false) ) 
-                      >> ')' )
+                    ( '(' > ruleset.r_solidmodel_expression > ','
+                      > ruleset.r_solidmodel_expression
+             > ( ( ',' >> qi::lit("fixedbinormal") > ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
+             > ( ( ',' >> qi::lit("orient") > qi::attr(true) ) | qi::attr(false) )
+             > ( ( ',' >> qi::lit("reapprox") > qi::attr(true) ) | qi::attr(false) )
+                      > ')' )
                     [ qi::_val = phx::bind(
                          &Pipe::create<FeaturePtr, FeaturePtr, VectorPtr, bool, bool>,
                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

@@ -147,14 +147,14 @@ void Stringer::insertrule(parser::ISCADParser& ruleset)
       std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                   ( '('
-                    >> ruleset.r_solidmodel_expression >> ',' // 1
-                    >> ruleset.r_vectorExpression >> ',' // 2
-                    >> ruleset.r_scalarExpression >> ',' // 3
-                    >> ruleset.r_scalarExpression >> ',' // 4
-                    >> ruleset.r_scalarExpression // 5
-                    >> ( ( ',' >> qi::lit("ext0") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
-                    >> ( ( ',' >> qi::lit("ext1") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
-                    >> ')' )
+                    > ruleset.r_solidmodel_expression > ',' // 1
+                    > ruleset.r_vectorExpression > ',' // 2
+                    > ruleset.r_scalarExpression > ',' // 3
+                    > ruleset.r_scalarExpression > ',' // 4
+                    > ruleset.r_scalarExpression // 5
+             > ( ( ',' >> qi::lit("ext0") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
+             > ( ( ',' >> qi::lit("ext1") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
+                    > ')' )
                   [ qi::_val = phx::bind(
                        &Stringer::create<FeaturePtr, VectorPtr, ScalarPtr,
                                          ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,

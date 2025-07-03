@@ -217,10 +217,10 @@ void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset)
     "BoundedFlatFace",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
+    ( '(' > ( ruleset.r_solidmodel_expression % ',' ) > ')' )
                   [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeaturePtr>&>, qi::_1) ]
     |
-    ( '(' >> ( ruleset.r_edgeFeaturesExpression % ',' ) >> ')' )
+    ( '(' > ( ruleset.r_edgeFeaturesExpression % ',' ) > ')' )
                   [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeatureSetPtr>&>, qi::_1) ]
       
     ))

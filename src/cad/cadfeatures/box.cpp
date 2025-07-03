@@ -141,24 +141,24 @@ void Box::insertrule(parser::ISCADParser& ruleset)
     "Box",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression 
-        >> ( ( ',' >> (
-            (  qi::lit("centered") >> qi::attr(true) >> qi::attr(true) >> qi::attr(true) )
+    ( '('
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression
+        > ( ( ',' > (
+            (  qi::lit("centered") > qi::attr(true) > qi::attr(true) > qi::attr(true) )
             |
             (  qi::lit("center") 
-            >> (( 'x' >> qi::attr(true) )|qi::attr(false))
-            >> (( 'y' >> qi::attr(true) )|qi::attr(false))
-            >> (( 'z' >> qi::attr(true) )|qi::attr(false))
+            > (( 'x' > qi::attr(true) )|qi::attr(false))
+            > (( 'y' > qi::attr(true) )|qi::attr(false))
+            > (( 'z' > qi::attr(true) )|qi::attr(false))
             )
             ) )
             |
-            ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
+            ( qi::attr(false) > qi::attr(false) > qi::attr(false) )
           )
-        >> ')' ) 
+        > ')' )
       [ qi::_val = phx::bind(
                        &Box::create<VectorPtr, VectorPtr, VectorPtr, VectorPtr, BoxCentering>,
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

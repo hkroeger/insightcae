@@ -431,9 +431,8 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset)
         "RefPlace",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-                    ( '(' >> ruleset.r_solidmodel_expression >>
-                      ',' >> r_condition % ','  >>
-                      ')' )
+                    ( '(' > ruleset.r_solidmodel_expression >
+                      ',' > r_condition % ','  > ')' )
                     [ qi::_val = phx::bind(
                          &RefPlace::create<FeaturePtr, ConditionList>,
                          qi::_1, qi::_2) ]

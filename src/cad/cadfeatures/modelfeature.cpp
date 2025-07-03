@@ -300,31 +300,34 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "loadmodel",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-     '(' >>
-      ( 
-	( ruleset.r_identifier >>
-          *(',' >> ( ruleset.r_identifier >> (
-                      ('=' >> ruleset.r_solidmodel_expression)|
-                      ('=' >> ruleset.r_datumExpression)|
-                      ('=' >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Point) )|
-                      (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
-                      ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
+     '(' >
+    ( ruleset.r_identifier >
+          *(',' > ruleset.r_identifier > '=' > (
+                        // order of rules must match order of definitions in "typedef ... ModelVariable"
+                       ( ruleset.r_solidmodel_expression)
+                      |( ruleset.r_datumExpression)
+                      |( ruleset.r_vectorExpression > qi::attr(VectorVariableType::Point) )
+                      |( '!' > ruleset.r_vectorExpression > qi::attr(VectorVariableType::Direction) )
+                      |( ruleset.r_scalarExpression)
+                    ) )
+          > ')' )
     [ qi::_val = phx::bind(
                            &ModelFeature::create<const std::string&, const ModelVariableTable&>,
                            qi::_1, qi::_2) ]
-	|
-	( ruleset.r_path >> 
-          *(',' >> (ruleset.r_identifier >> (
-                      ('=' >> ruleset.r_solidmodel_expression)|
-                      ('=' >> ruleset.r_datumExpression)|
-                      (qi::lit("!=") >> ruleset.r_vectorExpression >> qi::attr(VectorVariableType::Direction) )|
-                      ('=' >> ruleset.r_scalarExpression) ) ) ) >> ')' )
+    |
+    ( ruleset.r_path >
+          *(',' > ruleset.r_identifier > '=' > (
+                       ( ruleset.r_solidmodel_expression)
+                      |( ruleset.r_datumExpression)
+                      |( ruleset.r_vectorExpression > qi::attr(VectorVariableType::Point) )
+                      |( '!' > ruleset.r_vectorExpression > qi::attr(VectorVariableType::Direction) )
+                      |( ruleset.r_scalarExpression)
+                    ) ) > ')' )
     [ qi::_val = phx::bind(
                            &ModelFeature::create<const boost::filesystem::path&, const ModelVariableTable&>,
                            qi::_1, qi::_2) ]
-      )
     ))
   );
 }

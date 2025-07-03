@@ -22,6 +22,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadexception.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -75,15 +76,15 @@ void BooleanSubtract::build()
 
   if (!cache.contains(hash()))
   {
-    if (!m1_) throw insight::cad::CADException(shared_from_this(), _("Boolean subtract: invalid base shape") );
-    if (!m2_) throw insight::cad::CADException(shared_from_this(), _("Boolean subtract: invalid tool shape") );
+    if (!m1_) throw insight::CADException(shared_from_this(), _("Boolean subtract: invalid base shape") );
+    if (!m2_) throw insight::CADException(shared_from_this(), _("Boolean subtract: invalid tool shape") );
 
     BRepAlgoAPI_Cut cutter(*m1_, *m2_);
     cutter.Build();
 
     if (!cutter.IsDone())
     {
-        throw insight::cad::CADException
+        throw insight::CADException
         (
             shared_from_this(),
             _("could not perform cut operation.")

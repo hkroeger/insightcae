@@ -18,7 +18,7 @@
  */
 
 #include "bar.h"
-#include "base/exception.h"
+#include "cadexception.h"
 #include "feature.h"
 #include "quad.h"
 #include "line.h"
@@ -504,20 +504,20 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
 
                     ( '(' > (
                       (
-                             ruleset.r_vectorExpression // 1
-                          >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
-                          >> ','
-                          >> ruleset.r_vectorExpression // 3
-                          >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
-                          >> ','
-                          >> ruleset.r_solidmodel_expression >> ',' // 5
-                          >> ruleset.r_vectorExpression // 6
-                        >> ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) >> // 7
-                          ')' )
+                        ruleset.r_vectorExpression // 1
+                          > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                          > ','
+                          > ruleset.r_vectorExpression // 3
+                          > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                          > ','
+                          > ruleset.r_solidmodel_expression > ',' // 5
+                          > ruleset.r_vectorExpression // 6
+                          > ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) // 7
+                          >  ')' )
                         [ qi::_val = phx::bind(&Bar::create<
                                                   EndPoints,
                                                   FeaturePtr, VectorPtr,
@@ -557,20 +557,20 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                 ( '(' >
                      (
                          ruleset.r_vectorExpression // 1
-                         >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
-                         >> ','
-                         >> ruleset.r_vectorExpression // 3
-                         >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
-                         >> ','
-                         >> ruleset.r_solidmodel_expression >> ',' // 5
-                         >> ruleset.r_scalarExpression >> ',' // 6
-                         >> ruleset.r_vectorExpression // 7
-                         >> ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) >> // 8
-                         ')' )
+                         > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                         > ','
+                         > ruleset.r_vectorExpression // 3
+                         > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                         > ','
+                         > ruleset.r_solidmodel_expression >> ',' // 5
+                         > ruleset.r_scalarExpression >> ',' // 6
+                         > ruleset.r_vectorExpression // 7
+                         > ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) // 8
+                         > ')' )
                         [ qi::_val = phx::bind(&Bar::create<
                                                   EndPoints, FeaturePtr,
                                                   ScalarPtr, VectorPtr,

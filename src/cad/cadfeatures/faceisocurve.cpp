@@ -105,9 +105,9 @@ void FaceIsoCurve::insertrule(parser::ISCADParser& ruleset)
     "FaceIsoCurve",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_faceFeaturesExpression >> ','
-          >> ( ( qi::lit("u")>>qi::attr(UV::U) ) | ( qi::lit("v")>>qi::attr(UV::V) ) )  >> ','
-          >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_faceFeaturesExpression > ','
+          > ( ( qi::lit("u")>qi::attr(UV::U) ) | ( qi::lit("v")>qi::attr(UV::V) ) )  > ','
+          > ruleset.r_scalarExpression > ')' )
         [ qi::_val = phx::bind(
                       &FaceIsoCurve::create<FeatureSetPtr, UV, ScalarPtr>,
                       qi::_1, qi::_2, qi::_3) ]

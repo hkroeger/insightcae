@@ -116,8 +116,9 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset)
     "StitchedSolid",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> (ruleset.r_solidmodel_expression % ',') 
-	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
+    ( '(' > (ruleset.r_solidmodel_expression % ',')
+      > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) )
+      > ')' )
       [ qi::_val = phx::bind(
                        &StitchedSolid::create<const std::vector<FeaturePtr>&, ScalarPtr>,
                        qi::_1, qi::_2) ]

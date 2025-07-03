@@ -262,11 +262,14 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
   (
     "Naca4",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-    ( '('  >> ruleset.r_string >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
-           >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ')' ) 
+    '('  >
+    (  ruleset.r_string > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression
+                   > ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+                   > ( (',' >> qi::lit("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+           > ')' )
     [ qi::_val = phx::bind(
                        &NacaFourDigit::create<const std::string&,
                                               VectorPtr, VectorPtr, VectorPtr,
@@ -274,11 +277,15 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
       
     |
-      ( '('  >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ','
-             >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
-             >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-             >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-             >> ')' )
+      (  ruleset.r_scalarExpression > ','
+               > ruleset.r_scalarExpression > ','
+               > ruleset.r_scalarExpression > ','
+             > ruleset.r_vectorExpression > ','
+               > ruleset.r_vectorExpression > ','
+               > ruleset.r_vectorExpression
+             > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' > qi::lit("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ')' )
       [ qi::_val = phx::bind(
                        &NacaFourDigit::create<ScalarPtr, ScalarPtr, ScalarPtr,
                                               VectorPtr, VectorPtr, VectorPtr,

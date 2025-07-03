@@ -146,26 +146,21 @@ void Place::insertrule(parser::ISCADParser& ruleset)
   (
     "Place",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-    ( '(' 
-       >> ruleset.r_solidmodel_expression >> ',' 
-       >> ruleset.r_vectorExpression >> ',' 
-       >> ruleset.r_vectorExpression >> ',' 
-       >> ruleset.r_vectorExpression >>
-      ( ( ',' >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
-       >> ')' )
+    '(' > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ]  > ','
+    > ( (  ruleset.r_vectorExpression > ','
+       > ruleset.r_vectorExpression > ','
+       > ruleset.r_vectorExpression >
+      ( ( ',' > ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
+       > ')' )
        [ qi::_val = phx::bind(
                        &Place::create<FeaturePtr, VectorPtr, VectorPtr, VectorPtr, VectorPtr>,
-                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+                       qi::_val, qi::_1, qi::_2, qi::_3, qi::_4) ]
     |
-    ( '(' 
-       >> ruleset.r_solidmodel_expression >> ',' 
-       >> ruleset.r_solidmodel_expression 
-       >> ')' )
+    ( ruleset.r_solidmodel_expression > ')' )
          [ qi::_val = phx::bind(
                        &Place::create<FeaturePtr, FeaturePtr>,
-                       qi::_1, qi::_2) ]
-      
+                       qi::_val, qi::_1 ) ]
+       )
     )
   );
 }

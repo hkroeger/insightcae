@@ -465,13 +465,13 @@ void Coil::insertrule(parser::ISCADParser& ruleset)
   (
     "Coil",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-        >> ruleset.r_scalarExpression >> ')' )
+      ( '(' > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ')' )
     [ qi::_val = phx::bind(
                 &Coil::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
                               ScalarPtr, ScalarPtr, ScalarPtr>,

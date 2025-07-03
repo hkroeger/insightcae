@@ -237,26 +237,25 @@ void Quad::insertrule(parser::ISCADParser& ruleset)
     (
         "Quad",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-                    ( '(' >> ruleset.r_vectorExpression
-                      >> ',' >> ruleset.r_vectorExpression
-                      >> ',' >> ruleset.r_vectorExpression
-                      >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
-                      >> ( ( ',' >> (
-                                 ( qi::lit ( "centered" ) >> qi::attr ( true ) >> qi::attr ( true ) )
-                                 |
-                                 ( qi::lit ( "center" )
-                                   >> ( ( 'x' >> qi::attr ( true ) ) |qi::attr ( false ) )
-                                   >> ( ( 'y' >> qi::attr ( true ) ) |qi::attr ( false ) )
-                                 )
-                             ) )
-                           |
-                           ( qi::attr ( false ) >> qi::attr ( false ) )
-                         )
-                      >> ')' )
-                    [ qi::_val = phx::bind (
-                       &Quad::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr, QuadCentering>,
-                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+            ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression
+             > ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
+             > ( ( ',' >> (
+                     ( qi::lit ( "centered" ) > qi::attr ( true ) > qi::attr ( true ) )
+                     |
+                     ( qi::lit ( "center" )
+                      > ( ( 'x' > qi::attr ( true ) ) |qi::attr ( false ) )
+                      > ( ( 'y' > qi::attr ( true ) ) |qi::attr ( false ) )
+                      )
+                     ) )
+                |
+                ( qi::attr ( false ) > qi::attr ( false ) )
+                )
+             > ')' )
+                [ qi::_val = phx::bind (
+                     &Quad::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr, QuadCentering>,
+                     qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
                 )
     );

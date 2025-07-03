@@ -233,9 +233,9 @@ int main(int argc, char *argv[])
 
         return 0;
     }
-    catch (std::exception& ex)
+    catch (...)
     {
-        insight::printException(ex);
+        insight::printCurrentException();
         return -1;
     }
 }

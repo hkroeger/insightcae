@@ -110,9 +110,9 @@ void SplineSurface::insertrule(parser::ISCADParser& ruleset)
     "SplineSurface",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> 
-	  ( ( '(' >> ( ruleset.r_vectorExpression % ',' ) >> ')' ) % ',' )
-	  >> ')' ) 
+    ( '(' >
+      ( ( '(' > ( ruleset.r_vectorExpression % ',' ) > ')' ) % ',' )
+      > ')' )
     [ qi::_val = phx::bind(
                        &SplineSurface::create<const std::vector< std::vector<VectorPtr> >&>,
                        qi::_1) ]

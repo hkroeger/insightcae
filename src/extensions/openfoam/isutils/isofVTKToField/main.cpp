@@ -91,9 +91,9 @@ int main(int argc, char* argv[])
     if (os!=&std::cout) delete os;
 
   }
-  catch (const std::exception& e)
+  catch (...)
   {
-    insight::printException(e);
+    insight::printCurrentException();
     return -1;
   }
 

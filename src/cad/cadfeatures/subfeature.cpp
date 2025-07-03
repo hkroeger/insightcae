@@ -18,6 +18,8 @@
  */
 
 #include "subfeature.h"
+#include "cadfeature.h"
+#include "cadexception.h"
 
 namespace insight 
 {
@@ -41,13 +43,26 @@ Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
     subfeatname_(subfeatname)
 {}
 
+const std::string &Subfeature::subfeatname() const
+{
+    return subfeatname_;
+}
+
 
 void Subfeature::build()
 {
-  FeaturePtr f=basefeat_->subshape(subfeatname_);
-  setBaseFeat(f);
-  setShape(f->shape());
-  copyDatums(*f);
+    try
+    {
+        FeaturePtr f=basefeat_->subshape(subfeatname_);
+        setBaseFeat(f);
+        setShape(f->shape());
+        copyDatums(*f);
+    }
+    catch (SubElementNotFound& ex)
+    {
+        ex.description()->geometryInError_ = shared_from_this();
+        throw ex;
+    }
 }
   
 }

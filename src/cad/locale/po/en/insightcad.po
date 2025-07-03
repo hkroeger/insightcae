@@ -16,6 +16,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "An error has occurred during CAD geometry processing."
+msgstr ""
+
 msgid "Creates a topological vertex at the specified location."
 msgstr "Creates a topological vertex at the specified location."
 

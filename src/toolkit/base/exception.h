@@ -34,6 +34,12 @@
 #include <armadillo>
 #include <memory>
 
+
+#include "stdarg.h"
+
+class QWidget;
+
+
 namespace insight {
 
 
@@ -83,55 +89,100 @@ std::string splitMessage
 
 
 
-class Exception;
-  
-
-
-
-std::ostream& operator<<(std::ostream& os, const Exception& ex);
-
-
-
-
-namespace cad
+struct ErrorDescription
+    : public std::string // general description
 {
-class Feature;
-typedef std::shared_ptr<Feature> FeaturePtr;
-typedef std::shared_ptr<const Feature> ConstFeaturePtr;
-}
+    ErrorDescription(const std::string& msg);
+    virtual ~ErrorDescription();
+
+    std::string thread_id_;
+    std::string errorDetails_;
+    std::string context_, strace_;
+};
+
+typedef std::shared_ptr<ErrorDescription> ErrorDescriptionPtr; // might be made polymorph
+
+
+class ExceptionBase;
+
+
+std::ostream& operator<<(std::ostream& os, const ExceptionBase& ex);
 
 
 
 
-class Exception
-: public std::exception
+class ExceptionBase
+    : public std::exception
 {
 
-  std::string message_, context_;
-  std::string strace_;
+    mutable std::string whatMessage_;
 
-  void saveContext(bool strace);
+protected:
+    void saveContext(bool strace);
 
-  mutable std::string whatMessage_;
+  std::shared_ptr<ErrorDescription> errorDescription_;
   
 public:
-  Exception();
-  Exception(std::string msgfmt, ...);
 
-  const std::string& description() const;
-  const std::string& context() const;
 
-  virtual std::string message() const;
-  inline std::string& messageRef() { return message_; }
+    const std::string& message() const;
+    const std::string& context() const;
+    const std::string& strace() const;
 
-  inline std::string as_string() const { return static_cast<std::string>(*this); }
-  operator std::string() const;
-  inline const std::string& strace() const { return strace_; }
+    ErrorDescriptionPtr description() const;
 
-  const char* what() const noexcept override;
+    inline std::string as_string() const;
 
-  friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
+    operator std::string() const;
+
+    const char* what() const noexcept override;
+
+    friend std::ostream& operator<<(std::ostream& os, const ExceptionBase& ex);
+
 };
+
+
+template<class ErrorDescriptionType>
+class SpecializedException
+    : public ExceptionBase
+{
+
+public:
+    SpecializedException()
+    {
+        errorDescription_=
+            std::make_shared<ErrorDescriptionType>(
+                "" );
+        saveContext(true);
+    }
+
+    SpecializedException(std::string fmt, ...)
+    {
+        char str[5000];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(str, sizeof(str), fmt.c_str(), args);
+        va_end(args);
+        int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
+
+        errorDescription_=
+            std::make_shared<ErrorDescriptionType>(
+                str );
+
+        saveContext(true);
+
+        dbg(insight::BasicBusiness)<<message()<<"\n"<<context()<<std::endl;
+    }
+
+    std::shared_ptr<ErrorDescriptionType> description() const
+    {
+        return std::dynamic_pointer_cast<ErrorDescriptionType>(
+            errorDescription_ );
+    }
+};
+
+
+typedef SpecializedException<ErrorDescription> Exception;
 
 
 class IntendedBreak
@@ -141,26 +192,6 @@ public:
     IntendedBreak(const std::string& msg="deliberate stop encountered");
 };
 
-
-
-
-class CADException
-    : public Exception
-{
-
-    std::map<std::string, cad::ConstFeaturePtr> contextGeometry_;
-
-public:
-    template<class ...Args>
-    CADException(
-        const std::map<std::string, cad::ConstFeaturePtr>& contextGeometry,
-        Args&&... addArgs )
-      : Exception( std::forward<Args>(addArgs)... ),
-        contextGeometry_(contextGeometry)
-    {}
-
-    const std::map<std::string, cad::ConstFeaturePtr>& contextGeometry() const;
-};
 
 
 
@@ -175,7 +206,6 @@ public:
   ExternalProcessFailed();
   ExternalProcessFailed(int retcode, const std::string& exename, const std::string& errout);
 
-  std::string message() const override;
   const std::string& exeName() const;
 };
 
@@ -262,15 +292,6 @@ public:
 
 
 
-//extern
-//#ifndef WIN32
-//thread_local
-//#endif
-//ExceptionContext exceptionContext;
-
-
-
-
 class WarningDispatcher
 {
 
@@ -293,11 +314,6 @@ public:
 
 };
 
-//extern
-//#ifndef WIN32
-//thread_local
-//#endif
-//WarningDispatcher warnings;
 
 void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
 
@@ -316,7 +332,26 @@ public:
 
 
 
-void printException(const std::exception& e);
+
+
+
+class ExceptionHandler
+{
+public:
+    ExceptionHandler(int priority);
+    std::string title() const;
+
+    virtual ErrorDescriptionPtr describeProblem() const;
+
+    static std::multimap<int, ExceptionHandler*>& exceptionHandlers();
+};
+
+
+
+
+ErrorDescriptionPtr describeCurrentException();
+
+void printCurrentException(std::ostream& os = std::cerr);
 
 
 }

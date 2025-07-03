@@ -192,18 +192,22 @@ void Cutaway::insertrule(parser::ISCADParser& ruleset)
   (
     "Cutaway",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-    ( '(' >> (
-     ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression )
+    ( '('
+        > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ] > ','
+        > (
+     ( ruleset.r_datumExpression // datum can be a vector => try datum first
+      > ( (',' > qi::lit("inverted") > qi::attr(true) ) | (qi::attr(false)) )
+      > ')' )
+         [ qi::_val = phx::bind(
+              &Cutaway::create<FeaturePtr, ConstDatumPtr, bool>,
+              qi::_val, qi::_1, qi::_2) ]
+                |
+     (
+        ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' )
       [ qi::_val = phx::bind(
                               &Cutaway::create<FeaturePtr, VectorPtr, VectorPtr>,
-                              qi::_1, qi::_2, qi::_3) ]
-      |
-     ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression 
-        >> ( (',' >> qi::lit("inverted") >> qi::attr(true) ) | (qi::attr(false)) ) )
-      [ qi::_val = phx::bind(
-                              &Cutaway::create<FeaturePtr, ConstDatumPtr, bool>,
-                              qi::_1, qi::_2, qi::_3) ]
-     ) >> ')' )
+                              qi::_val, qi::_1, qi::_2) ]
+     ) )
     )
   );
 }

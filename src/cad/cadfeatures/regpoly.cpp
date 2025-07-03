@@ -106,11 +106,14 @@ void RegPoly::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "RegPoly",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression 
-			      >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression 
-			      >> ( (',' >> ruleset.r_vectorExpression)|qi::attr(matconst(arma::mat())) ) >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression
+             > ( (',' > ruleset.r_vectorExpression)|qi::attr(matconst(arma::mat())) )
+             > ')' )
     [ qi::_val = phx::bind(
                          &RegPoly::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, VectorPtr>,
                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

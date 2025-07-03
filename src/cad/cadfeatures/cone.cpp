@@ -20,6 +20,7 @@
 #include "cone.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
+#include "cadexception.h"
 
 #include "BRepPrimAPI_MakeCone.hxx"
 
@@ -106,7 +107,7 @@ void Cone::build()
 
         if (!cutter.IsDone())
         {
-            throw insight::cad::CADException
+            throw insight::CADException
                 (
                     shared_from_this(),
                     _("could not perform cut operation.")

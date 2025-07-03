@@ -107,7 +107,7 @@ GSLExceptionHandling::~GSLExceptionHandling()
 
 GSLException::GSLException(const char *reason, const char *file, int line, int gsl_errno)
     : insight::Exception(
-          "Error in GSL subroutine: %s (errno %d)",
+          _("Error in GSL subroutine: %s (errno %d)"),
           reason, gsl_errno
           ),
       gsl_reason_(reason),
@@ -748,7 +748,7 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
   catch (GSLException& ex)
   {
       gsl_root_fsolver_free(workspace_f);
-      ex.messageRef() +=
+      ex.description()->errorDetails_ +=
               str(format("\ny(x_min)=%g, y(x_max)=%g, y(0.5*(x_min+x_max))=%g")
                   % model(x_min) % model(x_max) % model(0.5*(x_min+x_max)) );
       throw ex;

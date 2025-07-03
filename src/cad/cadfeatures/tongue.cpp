@@ -126,14 +126,14 @@ void Tongue::insertrule(parser::ISCADParser& ruleset)
       std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                   ( '('
-                    >> ruleset.r_solidmodel_expression >> ',' // 1
-                    >> ruleset.r_vectorExpression >> ',' // 2
-                    >> ruleset.r_vectorExpression >> ',' // 3
-                    >> ruleset.r_scalarExpression >> ',' // 4
-                    >> ruleset.r_scalarExpression >> ',' // 5
-                    >> ruleset.r_scalarExpression >> ',' // 6
-                    >> ruleset.r_scalarExpression // 7
-                    >> ')' )
+                    > ruleset.r_solidmodel_expression > ',' // 1
+                    > ruleset.r_vectorExpression > ',' // 2
+                    > ruleset.r_vectorExpression > ',' // 3
+                    > ruleset.r_scalarExpression > ',' // 4
+                    > ruleset.r_scalarExpression > ',' // 5
+                    > ruleset.r_scalarExpression > ',' // 6
+                    > ruleset.r_scalarExpression // 7
+                    > ')' )
                   [ qi::_val = phx::bind(
                            &Tongue::create<FeaturePtr, VectorPtr, VectorPtr,
                                        ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,

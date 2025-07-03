@@ -20,6 +20,7 @@
 
 
 #include "exception.h"
+#include <exception>
 #include <sstream>
 #include <cstdlib>
 #include <thread>
@@ -29,12 +30,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "stdarg.h"
+#include "boost/lexical_cast.hpp"
+
 
 #include "boost/stacktrace.hpp"
 #include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
 #include "base/translations.h"
+#include "base/cppextensions.h"
 
 #define DEBUG
 
@@ -46,7 +49,7 @@ namespace insight
 
 
 
-std::ostream& operator<<(std::ostream& os, const Exception& ex)
+std::ostream& operator<<(std::ostream& os, const ExceptionBase& ex)
 {
   os<<static_cast<std::string>(ex);
   return os;
@@ -147,17 +150,29 @@ std::string splitMessage(
 
 
 
-void Exception::saveContext(bool strace)
+ErrorDescription::ErrorDescription(const std::string &msg)
+  : std::string(msg),
+    thread_id_(boost::lexical_cast<std::string>(
+        std::this_thread::get_id()))
+{}
+
+ErrorDescription::~ErrorDescription()
+{}
+
+
+
+
+void ExceptionBase::saveContext(bool strace)
 {
   std::vector<std::string> context_list;
   ExceptionContext::getCurrent().snapshot(context_list);
 
   if (context_list.size()>0)
   {
-    context_=_("The problem occurred");
+    errorDescription_->context_=_("The problem occurred");
     for (const std::string& c: context_list)
       {
-        context_+= std::string("\n") + _("while") + " " + c;
+        errorDescription_->context_+= std::string("\n") + _("while") + " " + c;
       }
   }
 
@@ -165,37 +180,13 @@ void Exception::saveContext(bool strace)
   {
     ostringstream trace_buf;
     trace_buf  << boost::stacktrace::stacktrace();
-    strace_=trace_buf.str();
+    errorDescription_->strace_=trace_buf.str();
   }
   else
-    strace_="";
+    errorDescription_->strace_="";
 }
 
 
-
-
-Exception::Exception()
-{
-  saveContext(true);
-}
-
-
-
-
-Exception::Exception(std::string fmt, ...)
-{
-    char str[5000];
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(str, sizeof(str), fmt.c_str(), args);
-    va_end(args);
-    int l = strlen(str); if(str[l-1] == '\n') str[l-1] = '\0';
-
-    message_=str;
-    saveContext(true);
-
-    dbg(insight::BasicBusiness)<<message_<<"\n"<<context_<<std::endl;
-}
 
 
 
@@ -209,33 +200,37 @@ Exception::Exception(std::string fmt, ...)
 
 
 
-Exception::operator std::string() const
+
+const std::string& ExceptionBase::message() const
 {
-  return message();
+    return *errorDescription_;
 }
 
 
-const std::string& Exception::description() const
+const std::string& ExceptionBase::context() const
 {
-    return message_;
-}
-
-const std::string& Exception::context() const
-{
-    return context_;
+    return errorDescription_->context_;
 }
 
 
-
-string Exception::message() const
+const std::string& ExceptionBase::strace() const
 {
-   return message_+"\n"+context_;
+    return errorDescription_->strace_;
 }
 
 
+ErrorDescriptionPtr ExceptionBase::description() const
+{
+    return errorDescription_;
+}
 
 
-const char* Exception::what() const noexcept
+ExceptionBase::operator std::string() const
+{
+    return message();
+}
+
+const char* ExceptionBase::what() const noexcept
 {
    whatMessage_=message();
    return whatMessage_.c_str();
@@ -246,12 +241,6 @@ IntendedBreak::IntendedBreak(const std::string& msg)
     : Exception(msg)
 {}
 
-
-
-const std::map<string, cad::ConstFeaturePtr> &CADException::contextGeometry() const
-{
-  return contextGeometry_;
-}
 
 
 
@@ -363,9 +352,9 @@ public:
 int requestedVerbosityLevel()
 {
     int vl=0;
-    if (getenv("INSIGHT_VERBOSE"))
+    if (auto *verbev=getenv("INSIGHT_VERBOSE"))
     {
-        vl = atoi(getenv("INSIGHT_VERBOSE"));
+        vl = atoi(verbev);
     }
     return vl;
 }
@@ -538,26 +527,116 @@ UnhandledExceptionHandling::UnhandledExceptionHandling()
 
 
 
-
-
-void printException(const std::exception& e)
+string ExceptionHandler::title() const
 {
-  std::ostringstream title;
-  title<<"*** ERROR ["<< std::this_thread::get_id() <<"] ***";
+    std::ostringstream t;
+    t<<"*** ERROR ["<< std::this_thread::get_id() <<"] ***";
+    return t.str();
+}
 
-  if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
-  {
-    displayFramed(title.str(), ie->message(), '=', std::cerr);
-    if (getenv("INSIGHT_STACKTRACE"))
+
+
+ExceptionHandler::ExceptionHandler(int priority)
+{
+    exceptionHandlers().insert({priority, this});
+}
+
+ErrorDescriptionPtr ExceptionHandler::describeProblem() const
+{
+    throw;
+    return nullptr;
+}
+
+
+std::multimap<int, ExceptionHandler*>&
+ExceptionHandler::exceptionHandlers()
+{
+    static std::multimap<int, ExceptionHandler*> theExceptionHandlers;
+    return theExceptionHandlers;
+}
+
+
+class InsightExceptionHandler
+    : public ExceptionHandler
+{
+public:
+    InsightExceptionHandler() : ExceptionHandler(INT_MAX) {}
+
+    ErrorDescriptionPtr describeProblem() const override
     {
-      std::cerr << "Stack trace:" << std::endl
-                << ie->strace() <<std::endl;
+        try { throw; }
+
+        catch (insight::Exception& e)
+        {
+            return e.description();
+        }
+
+        catch (...)
+        {
+            auto desc =
+                std::make_unique<insight::ErrorDescription>(
+                    "unknown error" );
+
+            return desc;
+        }
     }
-  }
-  else
-  {
-      displayFramed(title.str(), e.what(), '=', std::cerr);
-  }
+} insightExceptionHandler;
+
+
+
+
+ErrorDescriptionPtr describeCurrentException()
+{
+    auto handler =
+        ExceptionHandler::exceptionHandlers().begin();
+
+    std::function<ErrorDescriptionPtr()> tryNextHandler;
+
+    tryNextHandler = [&]() {
+        try
+        {
+            return handler->second->describeProblem();
+        }
+        catch (...)
+        {
+            // not handled
+
+            // try next
+            handler++;
+            if (handler !=
+                ExceptionHandler::exceptionHandlers().end())
+            {
+                return tryNextHandler();
+            }
+            else
+            {
+                // no more
+                throw; // give up
+            }
+        }
+    };
+
+    return tryNextHandler();
+}
+
+
+
+
+
+
+void printCurrentException(std::ostream& os)
+{
+    auto desc=describeCurrentException();
+
+    displayFramed(
+        "*** ERROR ["+desc->thread_id_+"] ***",
+        (*desc) + (
+            !desc->errorDetails_.empty() ?
+             (std::string("\n") + _("Further details:") + "\n" + desc->errorDetails_) :
+             std::string("")
+        ),
+        '=', os
+    );
 }
 
 string vector_to_string(const arma::mat &vals, bool addMag)
@@ -590,23 +669,19 @@ ExternalProcessFailed::ExternalProcessFailed(
 
   : Exception(
         str(boost::format(
-                "Execution of external application \"%s\" failed with return code %d!\n")
+            _("Execution of external application \"%s\" failed with return code %d!") )
             % exename % retcode),
         true),
     retcode_(retcode),
     exename_(exename),
     errout_(errout)
-{}
-
-
-string ExternalProcessFailed::message() const
 {
-  return Exception::message()
-         + ( errout_.size()>0 ?
-                ( "Error output was:\n " + errout_ + "\n" )
-                               :
-                ( "There was no error output." )
-            );
+    errorDescription_->errorDetails_=
+        ( errout_.size()>0 ?
+            ( std::string(_("Error output was:")) + "\n "+errout_+"\n" )
+                            :
+            ( _("There was no error output.") )
+         );
 }
 
 const string &ExternalProcessFailed::exeName() const
@@ -620,6 +695,7 @@ const string &ExternalProcessFailed::exeName() const
 UnsupportedFeature::UnsupportedFeature()
 {}
 
+
 UnsupportedFeature::UnsupportedFeature(const string &msg, bool strace)
     : Exception(msg, strace)
 {}
@@ -632,14 +708,6 @@ UnhandledSelection::UnhandledSelection(const std::string &contextMsg)
         ((!contextMsg.empty())?(" in "+contextMsg):std::string())
     )
 {}
-
-
-
-
-
-
-
-
 
 
 

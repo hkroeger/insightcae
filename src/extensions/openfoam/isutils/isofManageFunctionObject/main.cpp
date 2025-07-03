@@ -149,9 +149,9 @@ int main(int argc, char*argv[])
         evaluateFO(cfgfile, vm.count("skiplatex"));
       }
   }
-  catch ( const std::exception& e )
+  catch (...)
   {
-    insight::printException(e);
+    insight::printCurrentException();
     return -1;
   }
 

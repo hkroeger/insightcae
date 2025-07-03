@@ -322,7 +322,7 @@ void MaxSurfaceCurvature::insertrule(parser::ISCADParser& ruleset)
     "MaxSurfaceCurvature",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_faceFeaturesExpression >> ')' )
+    ( '(' > ruleset.r_faceFeaturesExpression > ')' )
         [ qi::_val = phx::bind(
                        &MaxSurfaceCurvature::create<FeatureSetPtr>,
                        qi::_1) ]

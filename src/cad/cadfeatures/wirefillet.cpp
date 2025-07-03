@@ -185,7 +185,8 @@ void WireFillet::insertrule(parser::ISCADParser& ruleset)
     "WireFillet",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vertexFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_vertexFeaturesExpression > ','
+             > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &WireFillet::create<FeatureSetPtr, ScalarPtr>,
                          qi::_1, qi::_2) ]

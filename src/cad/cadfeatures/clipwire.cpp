@@ -192,7 +192,9 @@ void ClipWire::insertrule(parser::ISCADParser& ruleset)
     "ClipWire",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression > ')' )
                     [ qi::_val = phx::bind(
                          &ClipWire::create<FeaturePtr, ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3) ]

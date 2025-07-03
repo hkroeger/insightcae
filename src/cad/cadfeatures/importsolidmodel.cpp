@@ -222,9 +222,8 @@ void Import::insertrule(parser::ISCADParser& ruleset)
   (
     "import",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> 
-            ruleset.r_path
-            >> ')' )
+      ( '(' > ruleset.r_path
+            > ')' )
        [ qi::_val = phx::bind(
                        &Import::create<const filesystem::path&>,
                        qi::_1) ]
@@ -236,7 +235,7 @@ void Import::insertrule(parser::ISCADParser& ruleset)
         "asModel",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-            ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' )
+            ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) > ')' )
                 [ qi::_val = phx::bind(Import::create<FeatureSetPtr>, qi::_1) ]
 
             )

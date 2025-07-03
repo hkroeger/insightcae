@@ -107,7 +107,9 @@ void Tri::insertrule(parser::ISCADParser& ruleset)
     "Tri",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ')' )
     [ qi::_val = phx::bind(
                        &Tri::create<VectorPtr, VectorPtr, VectorPtr>,
                        qi::_1, qi::_2, qi::_3) ]

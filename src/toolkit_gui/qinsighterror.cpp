@@ -2,67 +2,68 @@
 
 #include <QMessageBox>
 #include "Standard_Failure.hxx"
+#include "base/exception.h"
+#include "base/translations.h"
+#include "cadexception.h"
+
 #include "iqcadexceptiondisplaydialog.h"
 
-void displayException(const std::exception& e)
+
+
+
+void displayCurrentException(QWidget *parentWidget)
 {
-  // put it to console as well...
-  insight::printException(e);
+    auto desc = insight::describeCurrentException();
 
-  if (const auto* ie = dynamic_cast<const insight::CADException*>(&e))
-  {
-      IQCADExceptionDisplayDialog msg;
-      msg.displayException(*ie);
-      msg.exec();
-  }
-
-  else if (const auto* ie = dynamic_cast<const insight::Exception*>(&e))
-  {
-    QMessageBox msgBox;
-    msgBox.setIcon(QMessageBox::Critical);
-    msgBox.setText
-        (
-          QString("An error has occurred:\n")
-          + QString::fromStdString(ie->as_string())
-        );
-
-    if (ie->strace()!="")
+    if (auto cadex =
+            std::dynamic_pointer_cast<insight::CADException>(
+                desc ))
     {
-      msgBox.setInformativeText("See stack trace for more details on error origin.");
-      msgBox.setDetailedText(ie->strace().c_str());
+        IQCADExceptionDisplayDialog msg;
+        msg.displayException(*cadex->description());
+        msg.exec();
     }
+    else
+    {
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Critical);
 
-    msgBox.exec();
-  }
+        QString text=
+            QString(_("An error has occurred"))+":\n"
+            + QString::fromStdString(*desc)
+            ;
 
-  else if (const auto* ie = dynamic_cast<const Standard_Failure*>(&e))
-  {
-    // this is not handled in "printException"
-    std::cerr << std::endl
-              << "An error has occurred during CAD geometry processing:" << std::endl
-              << ie->GetMessageString() << std::endl
-                 ;
+        if (!desc->context_.empty())
+        {
+            text += "\n"
+              + QString::fromStdString(desc->context_);
+        }
 
-    QMessageBox msgBox;
-    msgBox.setIcon(QMessageBox::Critical);
-    msgBox.setText
-        (
-          QString("An error has occurred during CAD geometry processing:\n")+ie->GetMessageString()
-        );
+        msgBox.setText(text);
 
-    msgBox.exec();
-  }
+        QString details;
 
-  else
-  {
-    QMessageBox msgBox;
-    msgBox.setIcon(QMessageBox::Critical);
-    msgBox.setText
-        (
-          QString("An error has occurred:\n")+e.what()
-        );
+        if (desc->errorDetails_!="")
+        {
+            details +=
+                QString::fromStdString(desc->errorDetails_);
+        }
 
-    msgBox.exec();
-  }
+        if (desc->strace_!="")
+        {
+            if (!details.isEmpty()) details += "\n\n";
 
+            details +=
+                QString(_("Stack trace"))+"\n"
+                + QString::fromStdString(desc->strace_);
+        }
+
+        if (!details.isEmpty())
+        {
+            msgBox.setInformativeText(_("More details on error origin."));
+            msgBox.setDetailedText(details);
+        }
+
+        msgBox.exec();
+    }
 }

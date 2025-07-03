@@ -134,9 +134,9 @@ int main(int argc, char *argv[])
     }
     return app.exec();
   }
-  catch (const std::exception& e)
+  catch (...)
   {
-    displayException(e);;
+    displayCurrentException();
     return -1;
   }
 }

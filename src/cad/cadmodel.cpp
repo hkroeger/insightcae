@@ -34,6 +34,44 @@ namespace insight
 namespace cad
 {
 
+
+std::ostream& operator<<(std::ostream& os, const Model& m)
+{
+    os << "Scalars:\n";
+    for (auto & s: m.scalars())
+    {
+        os << " " << s.first << "=" << s.second->value() << "\n";
+    }
+
+    os << "Points:\n";
+    for (auto & p: m.points())
+    {
+        os << " " << p.first << "=" << p.second->value().t();
+    }
+
+    os << "Directions:\n";
+    for (auto & d: m.directions())
+    {
+        os << " " << d.first << "=" << d.second->value().t();
+    }
+
+    os << "Datums:\n";
+    for (auto & d: m.datums())
+    {
+        os << " " << d.first << "\n";
+    }
+
+    os << "Modelsteps:\n";
+    for (auto & d: m.modelsteps())
+    {
+        os << " " << d.first << " (" << d.second->type() << ")\n";
+    }
+
+    return os;
+}
+
+
+
 void Model::defaultVariables()
 {
     addScalar   ( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));

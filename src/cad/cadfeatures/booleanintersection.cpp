@@ -23,6 +23,7 @@
 #include "base/tools.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadexception.h"
 
 #include "datum.h"
 

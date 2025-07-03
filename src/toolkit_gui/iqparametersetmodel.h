@@ -11,6 +11,7 @@
 #include <QAbstractProxyModel>
 #include <QScopedPointer>
 #include <atomic>
+#include <memory>
 
 #include "base/parameterset.h"
 #include "iqparameter.h"
@@ -30,6 +31,10 @@ class IQParameterSetModel;
 namespace insight {
 class CADParameterSetModelVisualizer;
 class LabeledArrayParameter;
+namespace cad {
+class Feature;
+typedef std::shared_ptr<Feature> FeaturePtr;
+}
 }
 
 

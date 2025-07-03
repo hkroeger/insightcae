@@ -100,7 +100,8 @@ void SineWave::insertrule(parser::ISCADParser& ruleset)
     "SineWave",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' > ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression > ')' )
         [ qi::_val = phx::bind(
                          &SineWave::create<ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2 ) ]

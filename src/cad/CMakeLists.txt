@@ -10,6 +10,7 @@ if (MED_FOUND)
 endif()
 
 set(insightcad_SOURCES 
+  cadexception.h cadexception.cpp
   translations.cpp
   astbase.cpp
   cadpostprocaction.cpp

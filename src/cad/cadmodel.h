@@ -46,12 +46,15 @@ namespace parser {
 class SyntaxElementDirectory;
 typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
 }
-    
+
+std::ostream& operator<<(std::ostream& os, const Model& m);
     
 class Model
 : public ASTBase
 {
 public:
+
+    friend std::ostream& operator<<(std::ostream& os, const Model& m);
 
     typedef std::map<std::string, ScalarPtr> 	ScalarTableContents;
     typedef std::map<std::string, VectorPtr> 	VectorTableContents;
@@ -151,8 +154,12 @@ public:
     void addDirectionIfNotPresent(const std::string& name, VectorPtr value);
     void addDatum(const std::string& name, DatumPtr value);
     void addDatumIfNotPresent(const std::string& name, DatumPtr value);
-    void addModelstep(const std::string& name, FeaturePtr value, bool isComponent, const std::string& featureDescription = std::string() );
-    void addModelstepIfNotPresent(const std::string& name, FeaturePtr value, bool isComponent, const std::string& featureDescription = std::string() );
+    void addModelstep(const std::string& name, FeaturePtr value,
+                      bool isComponent,
+                      const std::string& featureDescription = std::string() );
+    void addModelstepIfNotPresent(const std::string& name, FeaturePtr value,
+                                  bool isComponent,
+                                  const std::string& featureDescription = std::string() );
 
     void removeScalar(const std::string& name);
     void removePoint(const std::string& name);
@@ -221,8 +228,8 @@ public:
     ModelTableContents models() const;
     PostprocActionTableContents postprocActions() const;
 
-};
 
+};
 
 
 }

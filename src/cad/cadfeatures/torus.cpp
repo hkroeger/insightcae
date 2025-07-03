@@ -105,11 +105,11 @@ void Torus::insertrule(parser::ISCADParser& ruleset)
     "Torus",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' 
-      >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_scalarExpression 
-      >> ')' ) 
+    ( '('
+      > ruleset.r_vectorExpression > ','
+      > ruleset.r_vectorExpression > ','
+      > ruleset.r_scalarExpression
+      > ')' )
      [ qi::_val = phx::bind(
                          &Torus::create<VectorPtr, VectorPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3) ]

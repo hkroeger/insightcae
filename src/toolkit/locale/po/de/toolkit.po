@@ -42,6 +42,23 @@ msgstr "Das Problem ist aufgetreten"
 msgid "while"
 msgstr "während"
 
+msgid "Further details:"
+msgstr ""
+
+#, c-format
+msgid "Execution of external application \"%s\" failed with return code %d!"
+msgstr ""
+
+msgid "Error output was:"
+msgstr ""
+
+msgid "There was no error output."
+msgstr ""
+
+#, c-format
+msgid "Error in GSL subroutine: %s (errno %d)"
+msgstr ""
+
 #, c-format
 msgid "the argument is not a rotation matrix, residual=%e"
 msgstr ""

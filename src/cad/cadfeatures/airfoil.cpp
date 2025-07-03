@@ -752,13 +752,15 @@ void Airfoil::insertrule(parser::ISCADParser& ruleset)
     "Airfoil",
           std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '('  >> ruleset.r_string >> ',' 
-           >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
-           >> ',' >> ruleset.r_scalarExpression //c 
-           >> ',' >> ruleset.r_scalarExpression //t 
-           >> ( (',' >> qi::lit("r_EK") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ( (',' >> qi::lit("r_AK") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ')' ) 
+    ( '('  > ruleset.r_string > ','
+           > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression > ',' //c
+             > ruleset.r_scalarExpression //t
+             > ( (',' >> qi::lit("r_EK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' >> qi::lit("r_AK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+           > ')' )
     [ qi::_val = phx::bind(
                        &Airfoil::create<const std::string&, VectorPtr, VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8) ]

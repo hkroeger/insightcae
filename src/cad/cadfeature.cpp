@@ -30,7 +30,7 @@
 #include "cadfeatures/transform.h"
 #include "base/tools.h"
 
-#include <base/exception.h>
+#include "cadexception.h"
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 #include "boost/make_shared.hpp"
@@ -658,7 +658,7 @@ void Feature::checkForBuildDuringAccess() const
   catch (const Standard_Failure& e)
   {
     dbg()<<"exception during feature rebuild"<<std::endl;
-    throw insight::cad::CADException(
+    throw insight::CADException(
           shared_from_this(),
           e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
   }
@@ -674,7 +674,9 @@ FeaturePtr Feature::subshape(const std::string& name)
   SubfeatureMap::iterator i = providedSubshapes_.find(name);
   if (i==providedSubshapes_.end())
   {
-    throw insight::Exception("Subfeature "+name+" is not present!");
+    throw SubElementNotFound(
+          shared_from_this(),
+          "Subfeature "+name+" is not present!" );
     return FeaturePtr();
   }
   else
@@ -690,7 +692,9 @@ FeatureSetPtr Feature::providedFeatureSet(const std::string& name)
   FeatureSetPtrMap::iterator i = providedFeatureSets_.find(name);
   if (i==providedFeatureSets_.end())
   {
-    throw insight::Exception("Feature set "+name+" is not present!");
+    throw SubElementNotFound(
+          shared_from_this(),
+          "Feature set "+name+" is not present!");
     return FeatureSetPtr();
   }
   else
@@ -1748,7 +1752,7 @@ Feature::operator const TopoDS_Shape& () const
 const TopoDS_Shape& Feature::shape() const
 {
   if (building())
-    throw insight::cad::CADException(shared_from_this(), "Internal error: recursion during build!");
+    throw insight::CADException(shared_from_this(), "Internal error: recursion during build!");
 
   checkForBuildDuringAccess();
 

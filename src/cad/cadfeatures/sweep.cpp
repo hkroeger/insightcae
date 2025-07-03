@@ -124,7 +124,7 @@ void Sweep::insertrule(parser::ISCADParser& ruleset)
     "Sweep",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
+    ( '(' > (ruleset.r_solidmodel_expression % ',' ) > ')' )
       [ qi::_val = phx::bind(
                          &Sweep::create<const std::vector<FeaturePtr>&>,
                          qi::_1) ]

@@ -92,6 +92,15 @@ msgstr "Ergebnisse laden"
 msgid "InsightCAE Result Set"
 msgstr "InsightCAE Ergebnisdaten"
 
+msgid "An error has occurred"
+msgstr ""
+
+msgid "Stack trace"
+msgstr ""
+
+msgid "More details on error origin."
+msgstr ""
+
 msgid "Create file failed"
 msgstr "Erzeugen der Datei fehlgeschlagen"
 

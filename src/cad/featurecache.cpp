@@ -1,5 +1,6 @@
 #include "cadfeature.h"
 #include "featurecache.h"
+#include "cadexception.h"
 
 namespace insight {
 namespace cad {
@@ -72,7 +73,7 @@ void FeatureCache::insert(FeaturePtr p)
       msg<<"Internal error: trying to insert feature into CAD feature cache twice!\n";
       msg<<"feature to insert: hash="<<h<<" (of type "<<p->type()<<" named \""<<p->featureSymbolName()<<"\")\n";
       msg<<"present feature: "<<featureInfo(sp)<<"\n";
-      throw insight::cad::CADException(p, msg.str());
+      throw insight::CADException(p, msg.str());
     }
   (*this)[h]=p;
 }

@@ -96,11 +96,12 @@ void Spiral::insertrule(parser::ISCADParser& ruleset)
   (
     "Spiral",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> ruleset.r_vectorExpression >> ','
-            >> ruleset.r_vectorExpression >> ','
-            >> ruleset.r_scalarExpression >> ','
-            >> ruleset.r_scalarExpression
-            >> (( ',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(0.0))) >> ')' )
+      ( '(' > ruleset.r_vectorExpression > ','
+            > ruleset.r_vectorExpression > ','
+            > ruleset.r_scalarExpression > ','
+            > ruleset.r_scalarExpression
+            > (( ',' > ruleset.r_scalarExpression)|qi::attr(scalarconst(0.0)))
+            > ')' )
                     [ qi::_val = phx::bind(
                          &Spiral::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

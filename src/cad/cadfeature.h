@@ -35,7 +35,6 @@
 #endif
 
 #include "base/linearalgebra.h"
-#include "base/exception.h"
 #include "base/factory.h"
 
 #include "occinclude.h"
@@ -187,6 +186,7 @@ public:
 
 
 typedef std::vector<vtkSmartPointer<vtkProp> >  VTKActorList;
+
  
 /**
  * Base class of all CAD modelling features

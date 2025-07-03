@@ -64,6 +64,8 @@ typedef std::vector<modelstep> model;
 typedef std::pair<long, long> SyntaxElementPos;
 typedef std::pair<boost::filesystem::path, SyntaxElementPos> SyntaxElementLocation;
 
+std::ostream& operator<<(std::ostream& os, const SyntaxElementLocation& sel);
+
 class SyntaxElementDirectory
 : public std::map<SyntaxElementLocation, FeaturePtr>
 {
@@ -129,8 +131,33 @@ struct ISCADParser
     boost::filesystem::path filenameinfo_;
     SyntaxElementDirectoryPtr syntax_element_locations;
 
+
     typedef qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> ModelstepRule;
     typedef std::shared_ptr<ModelstepRule> ModelstepRulePtr;
+    qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;
+    qi::rule<std::string::iterator,
+             boost::fusion::vector3<std::size_t, std::size_t, FeaturePtr>(),
+             skip_grammar,
+             qi::locals<ModelstepRulePtr> > r_modelstepFunction;
+
+
+    typedef qi::rule<std::string::iterator, ScalarPtr(), skip_grammar> ScalarFunctionRule;
+    typedef std::shared_ptr<ScalarFunctionRule> ScalarFunctionRulePtr;
+    qi::symbols<char, ScalarFunctionRulePtr> scalarFunctionRules;
+    qi::rule<std::string::iterator,
+             boost::fusion::vector3<std::size_t, std::size_t, ScalarPtr>(),
+             skip_grammar,
+             qi::locals<ScalarFunctionRulePtr> > r_scalarFunction;
+
+
+    typedef qi::rule<std::string::iterator, VectorPtr(), skip_grammar> VectorFunctionRule;
+    typedef std::shared_ptr<VectorFunctionRule> VectorFunctionRulePtr;
+    qi::symbols<char, VectorFunctionRulePtr> vectorFunctionRules;
+    qi::rule<std::string::iterator,
+             boost::fusion::vector3<std::size_t, std::size_t, VectorPtr>(),
+             skip_grammar,
+             qi::locals<VectorFunctionRulePtr> > r_vectorFunction;
+
 
     Model* model_;
 
@@ -144,13 +171,12 @@ struct ISCADParser
     qi::rule<std::string::iterator, DatumPtr(), skip_grammar> r_datumExpression;
     
     qi::rule<std::string::iterator, skip_grammar> r_model;
-    qi::rule<std::string::iterator, skip_grammar> r_assignment;
+    qi::rule<std::string::iterator, skip_grammar, qi::locals<std::string,SyntaxElementPos> > r_assignment;
     qi::rule<std::string::iterator, qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_propertyAssignment;
     qi::rule<std::string::iterator, skip_grammar> r_postproc, r_doc;
     qi::rule<std::string::iterator, DrawingViewDefinition(), skip_grammar> r_viewDef;
-    qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;
-    qi::rule<std::string::iterator, boost::fusion::vector3<std::size_t, std::size_t, FeaturePtr>(), skip_grammar, qi::locals<ModelstepRulePtr> > r_modelstepFunction;
-    ModelstepRule r_modelstep;
+
+    // ModelstepRule r_modelstep;
     qi::rule<std::string::iterator, boost::fusion::vector3<std::size_t, FeaturePtr, std::size_t>(), skip_grammar > r_modelstepSymbol;
     qi::rule<std::string::iterator, std::string()> r_identifier;
     qi::rule<std::string::iterator, std::string()> r_string;

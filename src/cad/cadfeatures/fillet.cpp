@@ -88,9 +88,10 @@ void Fillet::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Fillet",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+    ( '(' > ruleset.r_edgeFeaturesExpression > ','
+          > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &Fillet::create<FeatureSetPtr, ScalarPtr>,
                          qi::_1, qi::_2) ]

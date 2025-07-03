@@ -94,9 +94,9 @@ void ClosedPolyline::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "ClosedPolyline",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vectorExpression%',' >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression%',' > ')' )
     [ qi::_val = phx::bind(
                          &ClosedPolyline::create<const std::vector<VectorPtr>&>,
                          qi::_1) ]

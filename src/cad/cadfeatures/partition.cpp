@@ -98,7 +98,8 @@ void Partition::insertrule(parser::ISCADParser& ruleset)
     "Partition",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_solidmodel_expression > ')' )
     [ qi::_val = phx::bind(
                        &Partition::create<FeaturePtr, FeaturePtr>,
                        qi::_1, qi::_2) ]

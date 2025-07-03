@@ -150,23 +150,23 @@ void Extrusion::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Extrusion",
-    std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression
-      >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
-      >> ')' )
-      [ qi::_val = phx::bind(
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
+            '(' > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ] > ','
+                > ( ruleset.r_vectorExpression
+                   > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+                   > ')' )
+                    [ qi::_val = phx::bind(
                          &Extrusion::create<FeaturePtr, VectorPtr, bool>,
-                         qi::_1, qi::_2, qi::_3) ]
-    |
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression
-      >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) )
-      >> ')' )
-      [ qi::_val = phx::bind(
-                         &Extrusion::create<FeaturePtr, ScalarPtr, bool>,
-                         qi::_1, qi::_2, qi::_3) ]
+                         qi::_val, qi::_1, qi::_2) ]
+            |
+            ( ruleset.r_scalarExpression
+             > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+             > ')' )
+                [ qi::_val = phx::bind(
+                     &Extrusion::create<FeaturePtr, ScalarPtr, bool>,
+                     qi::_val, qi::_1, qi::_2) ]
 
-    )
+            )
   );
 }
 

@@ -42,6 +42,8 @@ public:
     declareType("Subfeature");
 
     CREATE_FUNCTION(Subfeature);
+
+    const std::string& subfeatname() const;
 };
 
 }

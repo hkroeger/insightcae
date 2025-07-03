@@ -22,6 +22,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadexception.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

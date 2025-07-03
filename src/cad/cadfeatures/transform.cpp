@@ -277,24 +277,20 @@ void Transform::insertrule(parser::ISCADParser& ruleset)
   (
     "Transform",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-       ( '(' 
-        >> ruleset.r_solidmodel_expression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression 
-        >> ( (',' >> ruleset.r_scalarExpression ) | qi::attr(ScalarPtr( new ConstantScalar(1.0))) ) 
-        >> ')' 
+    '(' > ruleset.r_solidmodel_expression [qi::_val = qi::_1 ] > ',' >
+       (
+           ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression
+        > ( (',' > ruleset.r_scalarExpression ) | qi::attr(ScalarPtr( new ConstantScalar(1.0))) )
+        > ')'
        ) [ qi::_val = phx::bind(
                        &Transform::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr>,
-                       qi::_1, qi::_2, qi::_3, qi::_4) ]
+                       qi::_val, qi::_1, qi::_2, qi::_3) ]
        |
-       ( '(' 
-        >> ruleset.r_solidmodel_expression >> ',' 
-        >> ruleset.r_solidmodel_expression
-        >> ')' 
+       ( ruleset.r_solidmodel_expression > ')'
        ) [ qi::_val = phx::bind(
                        &Transform::create<FeaturePtr, FeaturePtr>,
-                       qi::_1, qi::_2) ]
+                       qi::_val, qi::_1) ]
       
     )
   );

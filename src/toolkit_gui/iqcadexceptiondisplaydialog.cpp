@@ -41,15 +41,15 @@ IQCADExceptionDisplayDialog::~IQCADExceptionDisplayDialog()
 
 
 void IQCADExceptionDisplayDialog::displayException(
-    const insight::CADException &e )
+    const insight::CADErrorDescription &e )
 {
     ui->message->setText(
        QString("An error has occurred:")
       +"\n"
-      +QString::fromStdString(e.as_string())
+      +QString::fromStdString(e)
       );
 
-    for (const auto& cg: e.contextGeometry())
+    for (const auto& cg: e.contextGeometry_)
     {
         display_->model()->addModelstep(
             cg.first, std::const_pointer_cast<insight::cad::Feature>(cg.second), true

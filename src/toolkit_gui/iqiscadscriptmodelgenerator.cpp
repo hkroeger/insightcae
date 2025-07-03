@@ -1,6 +1,7 @@
 #include "iqiscadscriptmodelgenerator.h"
 
 #include "cadfeature.h"
+#include "cadexception.h"
 #include "datum.h"
 
 insight::cad::parser::SyntaxElementDirectoryPtr
@@ -15,7 +16,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
     int failloc=-1;
 
 
-    bool r=false;
+    bool success=false;
 
     try
     {
@@ -23,20 +24,24 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
 
       try
       {
-          r=insight::cad::parseISCADModelStream(instream, model_.get(), &failloc, &syn_elem_dir_);
+          success=insight::cad::parseISCADModelStream(
+              instream, model_.get(), &failloc, &syn_elem_dir_);
+
+          if (!success) // fail if we did not get a full match
+          {
+              Q_EMIT scriptError(finalTask >= Rebuild ? failloc : -1, "Parsing of model script failed", 1);
+          }
       }
       catch (const insight::cad::parser::iscadParserException& e)
       {
           reason="Expected: "+e.message();
           failloc=e.from_pos();
-          Q_EMIT scriptError(finalTask >= Rebuild ? failloc : -1, QString::fromStdString(reason), 1);
+          Q_EMIT scriptError(
+              finalTask >= Rebuild ? failloc : -1,
+              QString::fromStdString(reason), 1);
       }
 
-      if (!r) // fail if we did not get a full match
-      {
-          Q_EMIT scriptError(finalTask >= Rebuild ? failloc : -1, "Syntax error", 1);
-      }
-      else
+      if (success)
       {
 
           Q_EMIT statusMessage("Model parsed successfully.");
@@ -138,12 +143,13 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
           }
       }
     }
-    catch (const insight::cad::CADException& e)
+    catch (const insight::CADException& e)
     {
-      auto loc=syn_elem_dir_->findElement(e.feature());
+      auto loc=syn_elem_dir_->findElement(
+            e.description()->geometryInError_ );
       auto fn = loc.first;
       auto p = loc.second;
-      Q_EMIT scriptError( p.first, QString::fromStdString(e.as_string()), p.second-p.first);
+      Q_EMIT scriptError( p.first, QString::fromStdString(e), p.second-p.first);
     }
     catch (const insight::cad::RebuildCancelException& e)
     {
@@ -151,7 +157,7 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
     }
     catch (const insight::Exception& e)
     {
-      Q_EMIT scriptError(-1, QString::fromStdString(e.as_string()), 0 );
+      Q_EMIT scriptError(-1, QString::fromStdString(e), 0 );
     }
 
     return syn_elem_dir_;

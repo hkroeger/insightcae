@@ -139,11 +139,6 @@ ostream &operator<<(ostream &os, const SyntaxElementLocation &sel)
 void SyntaxElementDirectory::addEntry(
     SyntaxElementLocation location, FeaturePtr element)
 {
-    if (auto sf=std::dynamic_pointer_cast<Subfeature>(element))
-    {
-        std::cout<<"encountered subfeat "<<sf->subfeatname()<<" ("<<sf.get()<<") at "<<location<<std::endl;
-    }
-
     // remove, if already contained
     if (count(location)) erase(location);
 

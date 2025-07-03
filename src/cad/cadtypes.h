@@ -157,40 +157,6 @@ boost::filesystem::path sharedModelFilePath(const std::string& name);
 
 
 
-
-class OCCException
-        : public insight::Exception
-{
-    typedef std::map<std::string, TopoDS_Shape> InvolvedShapesList;
-    InvolvedShapesList involvedShapes_;
-
-public:
-    OCCException(const std::string message);
-
-    OCCException& addInvolvedShape(const std::string& label, TopoDS_Shape shape);
-    OCCException& addInvolvedShape(TopoDS_Shape shape);
-
-    const std::map<std::string, TopoDS_Shape>& involvedShapes() const;
-
-    void saveInvolvedShapes(const boost::filesystem::path& outFile) const;
-};
-
-
-
-
-class CADException
-: public OCCException
-{
-  ConstFeaturePtr errorfeat_;
-public:
-    CADException(ConstFeaturePtr errorfeat, const std::string message);
-
-    inline ConstFeaturePtr feature() const { return errorfeat_; }
-};
-
-
-
-
 }
 }
 

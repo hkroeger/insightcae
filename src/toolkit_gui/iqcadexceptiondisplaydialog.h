@@ -3,7 +3,7 @@
 
 #include <QDialog>
 
-#include "base/exception.h"
+#include "cadexception.h"
 
 namespace Ui {
 class IQCADExceptionDisplayDialog;
@@ -21,7 +21,7 @@ public:
     explicit IQCADExceptionDisplayDialog(QWidget *parent = nullptr);
     ~IQCADExceptionDisplayDialog();
 
-    void displayException(const insight::CADException &e);
+    void displayException(const insight::CADErrorDescription &e);
 
 private:
     Ui::IQCADExceptionDisplayDialog *ui;

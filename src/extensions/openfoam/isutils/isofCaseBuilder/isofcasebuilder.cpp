@@ -297,15 +297,15 @@ int main ( int argc, char** argv )
     else
         return 0;
   }
-  catch ( const std::exception& e )
+  catch ( ... )
   {
     if (batch)
     {
-      insight::printException_CAD(e);
+      insight::printCurrentException();
     }
     else
     {
-      displayException(e);
+      displayCurrentException();
     }
     return -1;
   }

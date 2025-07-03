@@ -567,12 +567,12 @@ int main(int argc, char *argv[])
         }
 #endif
     }
-    catch (const std::exception& e)
+    catch (...)
     {
       summarizeWarnings();
 
       std::cerr<<"*** "<<_("The analysis was stopped due to this error:")<<"\n\n";
-      printException(e);
+      insight::printCurrentException();
       return -1;
     }
 

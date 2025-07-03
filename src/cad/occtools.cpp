@@ -19,7 +19,7 @@
  */
 
 #include "occtools.h"
-#include "base/exception.h"
+#include "cadexception.h"
 #include "base/linearalgebra.h"
 #include "base/spatialtransformation.h"
 #include "base/units.h"

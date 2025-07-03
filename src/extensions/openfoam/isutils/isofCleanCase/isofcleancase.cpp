@@ -192,9 +192,9 @@ int main(int argc, char *argv[])
         }
 
     }
-    catch (const std::exception& e)
+    catch (...)
     {
-        printException(e);
+        insight::printCurrentException();
         exit(-1);
     }
 

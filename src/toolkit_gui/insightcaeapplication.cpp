@@ -66,9 +66,9 @@ bool InsightCAEApplication::notify(QObject *rec, QEvent *ev)
     return QApplication::notify(rec, ev);
   }
 
-  catch (const std::exception& e)
+  catch (...)
   {
-    displayException(e);
+    displayCurrentException();
   }
 
   return true;

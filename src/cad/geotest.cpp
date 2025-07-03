@@ -19,7 +19,7 @@
  */
 
 #include "geotest.h"
-#include "base/exception.h"
+#include "cadexception.h"
 
 #include "BRepClass_FaceClassifier.hxx"
 #include "cadfeatures/importsolidmodel.h"

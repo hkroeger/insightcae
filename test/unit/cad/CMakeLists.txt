@@ -17,6 +17,7 @@ if (INSIGHT_BUILD_CAD)
       endif()
     endmacro(add_cad_gui_test)
 
+    add_cad_test(cad_parser)
     add_cad_test(OCCtransformToOF)
     add_cad_test(gmshLSDynaExport)
     add_cad_test(sketchsolver)

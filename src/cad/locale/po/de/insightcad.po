@@ -19,8 +19,17 @@ msgstr ""
 msgid "An error has occurred during CAD geometry processing."
 msgstr ""
 
+#, c-format
+msgid "searching %s with name %s"
+msgstr ""
+
 msgid "Creates a topological vertex at the specified location."
 msgstr ""
+
+msgid "Creates an arc between point p0 and p1 through intermediate point pm."
+msgstr ""
+"Erzeugt einen Kreisbogen zwischen den Punkten p0 und p1 durch einen "
+"mittleren Punkt pm"
 
 msgid ""
 "Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
@@ -28,11 +37,6 @@ msgid ""
 msgstr ""
 "Erzeugt einen Kreisbogen zwischen den Punkten p0 und p1. Am Punkt p0 ist der "
 "Bogen tangential zum Vektor et0."
-
-msgid "Creates an arc between point p0 and p1 through intermediate point pm."
-msgstr ""
-"Erzeugt einen Kreisbogen zwischen den Punkten p0 und p1 durch einen "
-"mittleren Punkt pm"
 
 msgid "Failed to generate planar face!"
 msgstr ""
@@ -157,6 +161,9 @@ msgstr ""
 msgid ""
 "Creates a circular face. The circle is centered at p0, the axis vector is n "
 "and the diameter D."
+msgstr ""
+
+msgid "Optionally, an internal hole is cout out with a diameter d."
 msgstr ""
 
 msgid "Given feature is not a wire! ClipWire can only operate on wires."
@@ -419,6 +426,9 @@ msgid ""
 "need to have the same number of columns."
 msgstr ""
 
+msgid "Creation of solid failed!"
+msgstr ""
+
 msgid ""
 "Creates a sine curve (single period) with wave length l and amplitude A."
 msgstr ""
@@ -430,9 +440,6 @@ msgid "Could not create a closed shell (B)!"
 msgstr ""
 
 msgid "Orientation Error!"
-msgstr ""
-
-msgid "Creation of solid failed!"
 msgstr ""
 
 msgid "Create stitched solid from all faces of the provided features."

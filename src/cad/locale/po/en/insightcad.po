@@ -19,8 +19,15 @@ msgstr ""
 msgid "An error has occurred during CAD geometry processing."
 msgstr ""
 
+#, c-format
+msgid "searching %s with name %s"
+msgstr ""
+
 msgid "Creates a topological vertex at the specified location."
 msgstr "Creates a topological vertex at the specified location."
+
+msgid "Creates an arc between point p0 and p1 through intermediate point pm."
+msgstr "Creates an arc between point p0 and p1 through intermediate point pm."
 
 msgid ""
 "Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
@@ -28,9 +35,6 @@ msgid ""
 msgstr ""
 "Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
 "vector et0."
-
-msgid "Creates an arc between point p0 and p1 through intermediate point pm."
-msgstr "Creates an arc between point p0 and p1 through intermediate point pm."
 
 msgid "Failed to generate planar face!"
 msgstr "Failed to generate planar face!"
@@ -186,6 +190,9 @@ msgid ""
 msgstr ""
 "Creates a circular face. The circle is centered at p0, the axis vector is n "
 "and the diameter D."
+
+msgid "Optionally, an internal hole is cout out with a diameter d."
+msgstr ""
 
 msgid "Given feature is not a wire! ClipWire can only operate on wires."
 msgstr "Given feature is not a wire! ClipWire can only operate on wires."
@@ -515,6 +522,9 @@ msgstr ""
 "Creates an spline surface through all the given points. Note that all rows "
 "need to have the same number of columns."
 
+msgid "Creation of solid failed!"
+msgstr "Creation of solid failed!"
+
 msgid ""
 "Creates a sine curve (single period) with wave length l and amplitude A."
 msgstr ""
@@ -528,9 +538,6 @@ msgstr "Could not create a closed shell (B)!"
 
 msgid "Orientation Error!"
 msgstr "Orientation Error!"
-
-msgid "Creation of solid failed!"
-msgstr "Creation of solid failed!"
 
 msgid "Create stitched solid from all faces of the provided features."
 msgstr "Create stitched solid from all faces of the provided features."

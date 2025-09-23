@@ -143,6 +143,9 @@ void IQISCADMainWindow::connectMenuToModel(IQISCADModelWindow* me, IQISCADModelW
 //        connect(act_[reset_shading], &QAction::triggered,
 //                me->modeltree(), &QModelTree::resetViz);
 
+        connect(act_[measure_pointcoordinates], &QAction::triggered,
+                me->viewer(), &IQISCADModelWindow::Model3DViewer::onMeasurePointCoordinates);
+
         connect(act_[measure_distance], &QAction::triggered,
                 me->viewer(), &IQISCADModelWindow::Model3DViewer::onMeasureDistance);
 
@@ -446,6 +449,9 @@ IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
 //     act->setShortcut(Qt::ControlModifier + Qt::Key_A);
     vmenu->addAction(act_[reset_shading]);
 
+    act_[measure_pointcoordinates]=new QAction(_("Measure point coordinates"), this);
+    act_[measure_pointcoordinates]->setShortcut(Qt::ControlModifier + Qt::Key_P);
+    msmenu->addAction(act_[measure_pointcoordinates]);
 
     act_[measure_distance]=new QAction(_("Distance between points"), this);
     act_[measure_distance]->setShortcut(Qt::ControlModifier + Qt::Key_D);
@@ -521,7 +527,7 @@ void IQISCADMainWindow::updateProgress(int step, int totalSteps)
 
 IQISCADModelWindow* IQISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
-    auto *me = new IQISCADModelWindow();
+    auto *me = new IQISCADModelWindow(bgparsing);
 
   int idx = modelTabs_->addTab(me, QString("(")+_("unnamed")+")");
     modelTabs_->setCurrentIndex(idx);

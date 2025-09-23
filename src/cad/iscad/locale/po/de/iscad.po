@@ -176,6 +176,9 @@ msgstr "Alles als Drahtgitter anzeigen"
 msgid "&Reset shading and visibility"
 msgstr "Schattierung und Sichtbarkeit zu&rücksetzen"
 
+msgid "Measure point coordinates"
+msgstr ""
+
 msgid "Distance between points"
 msgstr "Abstand zwischen Punkten"
 

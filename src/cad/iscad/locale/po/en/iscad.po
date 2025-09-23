@@ -178,6 +178,9 @@ msgstr "Display all &wireframe"
 msgid "&Reset shading and visibility"
 msgstr "&Reset shading and visibility"
 
+msgid "Measure point coordinates"
+msgstr ""
+
 msgid "Distance between points"
 msgstr "Distance between points"
 

@@ -30,7 +30,7 @@ protected:
     QTextEdit* notepad_;
 
 public:
-    IQISCADModelWindow(QWidget* parent = 0);
+    IQISCADModelWindow(bool bgParsing, QWidget* parent = 0);
 
     IQCADItemModel* model();
     IQISCADModelScriptEdit* modelEdit();

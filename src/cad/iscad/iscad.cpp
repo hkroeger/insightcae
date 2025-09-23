@@ -35,6 +35,7 @@
 #include <boost/program_options/variables_map.hpp>
 #endif
 
+#include "cadfeatures.h"
 #include "parser.h"
 
 #include <locale>

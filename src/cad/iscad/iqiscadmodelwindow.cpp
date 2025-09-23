@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <qnamespace.h>
 
 #include "iqcaditemmodel.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -15,7 +16,7 @@
 #include "base/translations.h"
 #include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
 
-IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
+IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
 : QWidget(parent),
   model_(new IQCADItemModel(insight::cad::ModelPtr(), this))
 {
@@ -27,7 +28,7 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
     viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     splitterHoriz->addWidget(viewer_);
 
-    modelEdit_=new IQISCADModelScriptEdit(splitterHoriz);
+    modelEdit_=new IQISCADModelScriptEdit(splitterHoriz, bgParsing);
 
     connect(modelEdit_, &IQISCADModelScriptEdit::displayNeedsRefit,
             viewer_, &Model3DViewer::fitAll);
@@ -53,7 +54,7 @@ IQISCADModelWindow::IQISCADModelWindow(QWidget* parent)
 
         auto *tglHBox = new QHBoxLayout;
         QCheckBox *toggleBgParse=new QCheckBox(_("Do BG parsing"), gb);
-        toggleBgParse->setCheckState( Qt::Checked );
+        toggleBgParse->setCheckState( bgParsing ? Qt::Checked : Qt::Unchecked );
         tglHBox->addWidget(toggleBgParse);
 
         QCheckBox *toggleSkipPostprocActions=new QCheckBox(_("Skip Postproc Actions"), gb);

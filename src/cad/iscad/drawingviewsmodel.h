@@ -4,7 +4,7 @@
 #include <QAbstractListModel>
 
 #include "cadpostprocactions/drawingexport.h"
-
+#include "cadfeatures.h"
 #include "viewdefinitiondialog.h"
 
 std::string generateViewDefinitionExpression

@@ -436,6 +436,7 @@ public:
     void exposeItem( insight::cad::FeaturePtr feat ) override;
     void undoExposeItem() override;
 
+    void onMeasurePointCoordinates() override;
     void onMeasureDistance() override;
     void onMeasureDiameter() override;
     void onSelectPoints() override;
@@ -492,6 +493,7 @@ public:
     arma::mat pointInPlane2D(const gp_Ax3& plane, const arma::mat& pip3d) const;
 
     void onlyOneShaded(QPersistentModelIndex idx) override;
+    void showOnlyOne(QPersistentModelIndex idx) override;
     void resetRepresentations() override;
 
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;

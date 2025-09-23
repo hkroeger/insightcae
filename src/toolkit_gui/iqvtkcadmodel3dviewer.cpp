@@ -1,3 +1,4 @@
+#include "cadfeatures.h"
 #include "iqvtkcadmodel3dviewer.h"
 #include "armadillo"
 #include "base/exception.h"
@@ -11,6 +12,7 @@
 
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
 
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
@@ -1078,6 +1080,13 @@ void IQVTKCADModel3DViewer::closeEvent(QCloseEvent *ev)
 
 
 
+void IQVTKCADModel3DViewer::onMeasurePointCoordinates()
+{
+    launchAction(
+        make_viewWidgetAction<IQVTKCADModel3DViewerPickPoint>(*this),
+        true );
+}
+
 
 
 void IQVTKCADModel3DViewer::onMeasureDistance()
@@ -2052,6 +2061,25 @@ void IQVTKCADModel3DViewer::onlyOneShaded(QPersistentModelIndex pidx)
     scheduleRedraw();
 }
 
+
+
+void IQVTKCADModel3DViewer::showOnlyOne(QPersistentModelIndex pidx)
+{
+    for (const auto& de: displayedData_)
+    {
+        auto idx=de.first;
+        QModelIndex visi=model()->index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+        if (model()->flags(visi)&Qt::ItemIsUserCheckable)
+        {
+            if (de.first==pidx)
+                model()->setData(visi, Qt::Checked, Qt::CheckStateRole);
+            else
+                model()->setData(visi, Qt::Unchecked, Qt::CheckStateRole);
+        }
+    }
+
+    scheduleRedraw();
+}
 
 
 

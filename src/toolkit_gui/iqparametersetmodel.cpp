@@ -671,7 +671,7 @@ QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
 
 bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (!!editingIsDisabled_)
+    if (!editingIsDisabled_)
     {
       if (auto *p = indexData(index))
       {

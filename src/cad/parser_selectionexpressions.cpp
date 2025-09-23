@@ -77,7 +77,9 @@ void ISCADParser::createSelectionExpressions()
                   |
                   ( '('
                    > r_string
-                   > *( ',' > (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+                   > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                |r_vectorExpression|r_scalarExpression) )
                    > ')'
                   ) [ _val = phx::bind(
                         &DeferredFeatureSet::create
@@ -106,7 +108,9 @@ void ISCADParser::createSelectionExpressions()
             > (lit("vertices")|lit("vertex"))
             > '('
             > r_string
-            > *( ',' > (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                                |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                                |r_vectorExpression|r_scalarExpression) )
             > ')'
         ) [ _val = phx::bind(
                 &DeferredFeatureSet::create
@@ -132,7 +136,9 @@ void ISCADParser::createSelectionExpressions()
                                 phx::bind( &Feature::allEdges, qi::_1)) ) ]
                    |
                    ( '(' > r_string
-                    > *( ',' > ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
+                    > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                                           |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                                           |r_vectorExpression|r_scalarExpression) )
                     > ')'
                     ) [ _val = phx::bind(
                             &DeferredFeatureSet::create
@@ -160,7 +166,9 @@ void ISCADParser::createSelectionExpressions()
             > (lit("edges")|lit("edge"))
             > '('
             > r_string
-            > *( ',' > ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
+            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                              |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                              |r_vectorExpression|r_scalarExpression) )
             > ')'
         )
         [ _val = phx::bind(
@@ -175,7 +183,7 @@ void ISCADParser::createSelectionExpressions()
             model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> '?' ) [qi::_a=qi::_1]
-             >> (
+            >> (
                  ( (lit("faces")|lit("face"))
                   > (
                       ( lit("from") > r_solidmodel_expression
@@ -189,7 +197,9 @@ void ISCADParser::createSelectionExpressions()
                       |
                       (
                         '(' > r_string
-                       > *( ',' > (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+                       > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                                           |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                                           |r_vectorExpression|r_scalarExpression) )
                        > ')' )
                        [ _val = phx::bind(
                                &DeferredFeatureSet::create
@@ -216,7 +226,9 @@ void ISCADParser::createSelectionExpressions()
             > (lit("faces")|lit("face"))
             > '('
             > r_string
-            > *( ',' > (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                              |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                              |r_vectorExpression|r_scalarExpression) )
             > ')'
         )
         [ _val = phx::bind(
@@ -231,11 +243,12 @@ void ISCADParser::createSelectionExpressions()
             model_->solidFeatureSymbols()[ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> '?' ) [ _a=qi::_1 ]
-             >> (
+            >> (
               ( (lit("solids")|lit("solid"))
-               > '('
-               > r_string
-               > *( ',' > (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+               > '(' > r_string
+               > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                                      |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                                      |r_vectorExpression|r_scalarExpression) )
                > ')'
               ) [ _val = phx::bind(
                        &DeferredFeatureSet::create
@@ -261,7 +274,9 @@ void ISCADParser::createSelectionExpressions()
             > (lit("solids")|lit("solid"))
             > '('
             > r_string
-            > *( ',' > (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+                                               |r_edgeFeaturesExpression|r_vertexFeaturesExpression
+                                               |r_vectorExpression|r_scalarExpression) )
             > ')'
         )
         [ _val = _val = phx::bind(

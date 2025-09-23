@@ -49,6 +49,10 @@
 
 namespace insight {
 namespace cad {
+
+class ModelFeature;
+
+
 namespace parser {
 
 
@@ -122,7 +126,8 @@ public:
 };
 
 
-
+class SubmodelRule;
+typedef std::shared_ptr<SubmodelRule> SubmodelRulePtr;
 
 struct ISCADParser
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >
@@ -161,6 +166,8 @@ struct ISCADParser
 
     Model* model_;
 
+
+
     qi::rule<std::string::iterator, ScalarPtr(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<std::string::iterator, VectorPtr(), qi::locals<FeaturePtr>, skip_grammar > r_vector_primary, r_vector_term, r_vectorExpression;
     
@@ -183,6 +190,11 @@ struct ISCADParser
     qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
     qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
 
+    qi::rule<std::string::iterator,
+             std::shared_ptr<ModelFeature>(ModelVariableTable),
+             skip_grammar, qi::locals<SubmodelRulePtr> >
+        r_submodel;
+
 
     ISCADParser(Model* model, const boost::filesystem::path& filenameinfo="");
     
@@ -194,6 +206,23 @@ struct ISCADParser
     void createDatumExpressions();
     void createSelectionExpressions();
 };
+
+
+
+
+class SubmodelRule
+{
+public:
+    std::shared_ptr<insight::cad::Model> model_;
+    ISCADParser parser_;
+
+    SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars);
+
+    const qi::rule<std::string::iterator, skip_grammar>&
+    rule() const;
+};
+
+
 
 }
 

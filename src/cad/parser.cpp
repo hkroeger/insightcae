@@ -42,6 +42,8 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "cadfeatures/modelfeature.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -199,6 +201,18 @@ skip_grammar::skip_grammar()
 
 
 
+SubmodelRule::SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars)
+: model_(std::make_shared<Model>(
+             mergeMVTs(parentModel.allVariables(), addVars) ) ),
+    parser_(model_.get())
+{}
+
+const qi::rule<std::string::iterator, skip_grammar>&
+SubmodelRule::rule() const
+{
+    return parser_.r_model;
+}
+
 
 
 /** \page iscad ISCAD
@@ -221,6 +235,7 @@ skip_grammar::skip_grammar()
 
 
 
+
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenameinfo)
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >(r_model),
@@ -230,9 +245,11 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 {
     r_model =
 //      current_pos.save_start_pos >>
-        ( r_string | qi::attr(std::string()) ) [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
+        ( r_string | qi::attr(std::string()) )
+            [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
         >>
-        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) ) [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
+        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) )
+            [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
         >>
         *(
             r_assignment

@@ -86,6 +86,12 @@ void ISCADParser::createScalarExpressions()
         );
 
     ADD_SCALAR_FUNCTION(
+        "surfacearea",
+        ( '(' > r_solidmodel_expression > ')' ),
+        [ _val = phx::construct<ScalarPtr>(phx::new_<FeatureSurfaceArea>(qi::_1)) ]
+        );
+
+    ADD_SCALAR_FUNCTION(
         "cumedgelen",
         ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<ScalarPtr>(phx::new_<CumulativeEdgeLength>(qi::_1)) ] );

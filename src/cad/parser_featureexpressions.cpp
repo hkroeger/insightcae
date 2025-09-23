@@ -139,6 +139,18 @@ void ISCADParser::createFeatureExpressions()
         ;
     r_modelstepSymbol.name("feature symbol");
 
+    r_submodel =
+        '{'
+        >> qi::eps
+            [ qi::_a= phx::bind(
+                &std::make_shared<SubmodelRule, const cad::Model&, const ModelVariableTable&>,
+                    *model_, qi::_r1 ) ]
+        >> qi::lazy( phx::bind(&SubmodelRule::rule, qi::_a) )
+            [ qi::_val = phx::bind(&cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
+                    phx::bind(&SubmodelRule::model_, qi::_a), qi::_r1) ]
+        >> '}';
+    r_submodel.name("in-situ submodel");
+
     r_solidmodel_primary =
         ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) )
             [ qi::_val = phx::bind(&Import::create<FeatureSetPtr>, qi::_1) ]
@@ -172,8 +184,14 @@ void ISCADParser::createFeatureExpressions()
         ( '(' >> r_solidmodel_expression >> ')' )
         [ _val = qi::_1]
         // try identifiers last, since exceptions are generated, if symbols don't exist
+
+        |
+        r_submodel(phx::val(ModelVariableTable())) [ _val = qi::_1]
         ;
     r_solidmodel_primary.name("feature primary");
+
+
+
 
     r_solidmodel_propertyAssignment =
         qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ]

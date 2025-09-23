@@ -1,6 +1,8 @@
 #include "gmshcase.h"
 
 #include "base/exception.h"
+#include "base/tools.h"
+#include "base/translations.h"
 #include "boost/process.hpp"
 #include "base/softwareenvironment.h"
 
@@ -91,6 +93,8 @@ GmshCase::findNamedDefinitions(const std::string &keyword) const
 
 std::set<int> GmshCase::findNamedDefinition(const std::string &keyword, const std::string &name) const
 {
+    insight::CurrentExceptionContext ex(
+        _("searching %s with name %s"), keyword.c_str(), name.c_str());
     std::set<int> result;
 
     boost::regex re(keyword+" *\\(\"(.*)\"\\) *= *{(.*)}");
@@ -99,14 +103,14 @@ std::set<int> GmshCase::findNamedDefinition(const std::string &keyword, const st
         boost::smatch m;
         if (regex_search(l, m, re))
         {
-            if (m[1]==name)
+            if ( m[1]==name && !std::string(m[2]).empty() )
             {
                 std::vector<std::string> nums;
                 boost::split(nums, m[2], boost::is_any_of(","));
                 std::transform(nums.begin(), nums.end(),
                                std::inserter(result, result.begin()),
                                [](const std::string& n)
-                               { return boost::lexical_cast<int>(n); });
+                               { return insight::toNumber<int>(n); });
                 return result;
             }
         }

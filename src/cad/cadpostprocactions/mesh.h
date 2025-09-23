@@ -40,6 +40,17 @@ typedef std::vector<GroupDesc> GroupsDesc;
 typedef boost::fusion::vector2<std::string, VectorPtr> NamedVertex;
 typedef std::vector<NamedVertex> NamedVertices;
 
+typedef boost::fusion::vector<std::string, FeaturePtr, boost::optional<std::string>, boost::optional<ScalarPtr> > ScrewHead;
+typedef std::vector<ScrewHead> ScrewHeads;
+
+typedef boost::fusion::vector<std::string, FeaturePtr, boost::optional<std::string>, boost::optional<ScalarPtr> > ScrewBase;
+typedef std::vector<ScrewBase> ScrewBases;
+
+typedef boost::fusion::vector<std::string, FeaturePtr, boost::optional<std::string> > ScrewBody;
+typedef std::vector<ScrewBody> ScrewBodies;
+
+typedef boost::fusion::vector<ScrewHeads, ScrewBases, ScrewBodies> ScrewInfos;
+
 typedef boost::fusion::vector<
     insight::cad::GroupsDesc, //vertexGroups,
     insight::cad::GroupsDesc, //edgeGroups,
@@ -66,6 +77,9 @@ protected:
   GroupsDesc solidGroups_;
   NamedVertices namedVertices_;
   std::vector<MeshSizeBall> meshSizeBalls_;
+  ScrewHeads screwHeads_;
+  ScrewBases screwBases_;
+  ScrewBodies screwBodies_;
   bool keepTmpDir_;
   
   size_t calcHash() const override;
@@ -84,6 +98,7 @@ public:
     const GroupDefinitions& v_e_f_s_groups,
     const NamedVertices& namedVertices,
     const std::vector<MeshSizeBall>& meshSizeBalls,
+    const ScrewInfos& screwInfos,
     bool keepTmpDir=false
   );
   

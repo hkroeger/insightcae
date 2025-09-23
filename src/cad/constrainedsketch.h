@@ -193,6 +193,7 @@ private:
 
     std::map<std::string, std::unique_ptr<LayerProperties> > layerProperties_;
 
+    ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm);
     ConstrainedSketch( DatumPtr pl, const ConstrainedSketchParametersDelegate& pd );
     ConstrainedSketch( const ConstrainedSketch& other );
 
@@ -200,6 +201,9 @@ private:
     void build() override;
 
 public:
+    void replaceDependency(const DependencyReplacement& repl) override;
+    CLONEABLE(ConstrainedSketch);
+
     // required to make boost::adaptors::index work
     using iterator = typename GeometryMap::iterator;
     using const_iterator = typename GeometryMap::const_iterator;
@@ -224,6 +228,8 @@ public:
 
     const DatumPtr& plane() const;
     VectorPtr sketchPlaneNormal() const;
+
+    static arma::mat p3Dto2D(const gp_Ax3& plane, const arma::mat& p3d);
     arma::mat p3Dto2D(const arma::mat& p3d) const;
 
     GeometryMap::key_type findUnusedID(int direction=1) const;

@@ -3,6 +3,7 @@
 #include "base/exception.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
+#include <memory>
 
 
 namespace insight
@@ -14,22 +15,23 @@ namespace cad
 defineType(TangentConstraint);
 
 
-Vector *TangentConstraint::commonPoint() const
+std::pair<TangentConstraint::Attachment,TangentConstraint::Attachment>
+TangentConstraint::commonPoint() const
 {
     auto cp = line1_->start();
-    if (cp==line2_->start()) return cp.get();
-    if (cp==line2_->end()) return cp.get();
+    if (cp==line2_->start()) return {Start, Start};
+    if (cp==line2_->end()) return {Start, End};
     cp = line1_->end();
-    if (cp==line2_->start()) return cp.get();
-    if (cp==line2_->end()) return cp.get();
+    if (cp==line2_->start()) return {End, Start};
+    if (cp==line2_->end()) return {End, End};
     throw insight::Exception("lines do not have a common point!");
-    return nullptr;
+    return {Start,Start};
 }
 
 
 TangentConstraint::TangentConstraint(
-    std::shared_ptr<Line> line1,
-    std::shared_ptr<Line> line2,
+    std::shared_ptr<SingleEdgeFeature> line1,
+    std::shared_ptr<SingleEdgeFeature> line2,
     const std::string& layerName)
 : SingleSymbolConstraint(layerName),
   line1_(line1), line2_(line2)
@@ -42,7 +44,10 @@ std::string TangentConstraint::symbolText() const
 
 arma::mat TangentConstraint::symbolLocation() const
 {
-    return commonPoint()->value();
+    return (( commonPoint().first==Start) ?
+                line1_->start()
+              : line1_->end()
+            )->value() ;
 }
 
 
@@ -53,9 +58,14 @@ int TangentConstraint::nConstraints() const
 
 double TangentConstraint::getConstraintError(unsigned int iConstraint) const
 {
-#warning needs to be generalized for curves
-    arma::mat d1 = normalized(line1_->end()->value() - line1_->start()->value());
-    arma::mat d2 = normalized(line2_->end()->value() - line2_->start()->value());
+    arma::mat d1 = commonPoint().first == Start ?
+                       line1_->startTangent()->value()
+                     : line1_->endTangent()->value();
+
+    arma::mat d2 = commonPoint().second == Start ?
+                       line2_->startTangent()->value()
+                     : line2_->endTangent()->value();
+
     //auto err = pow(arma::dot(d1, d2),2) - 1.; // bad convergence
     auto err=arma::norm(arma::cross(d1, d2), 2);
     // std::cout<<"d1="<<d1.t()<<" d2="<<d2.t()<<" err="<<err<<std::endl;
@@ -72,15 +82,18 @@ void TangentConstraint::generateScriptCommand(
 {
     int myLabel=entityLabels.at(this);
 
-    line1_->generateScriptCommand(script, entityLabels);
-    line2_->generateScriptCommand(script, entityLabels);
+    auto l1=std::dynamic_pointer_cast<ConstrainedSketchEntity>(line1_);
+    auto l2=std::dynamic_pointer_cast<ConstrainedSketchEntity>(line2_);
+
+    l1->generateScriptCommand(script, entityLabels);
+    l2->generateScriptCommand(script, entityLabels);
 
     script.insertCommandFor(
         myLabel,
         type() + "( "
             + boost::lexical_cast<std::string>(myLabel) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(line1_.get())) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(line2_.get()))
+            + boost::lexical_cast<std::string>(entityLabels.at(l1.get())) + ", "
+            + boost::lexical_cast<std::string>(entityLabels.at(l2.get()))
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -113,11 +126,11 @@ void TangentConstraint::addParserRule(
                 [
                  qi::_a = phx::bind(
                      &TangentConstraint::create<
-                        std::shared_ptr<Line>,
-                        std::shared_ptr<Line>,
+                        std::shared_ptr<SingleEdgeFeature>,
+                        std::shared_ptr<SingleEdgeFeature>,
                         const std::string& >,
-                     phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2),
-                     phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_3),
+                     phx::bind(&ConstrainedSketch::get<SingleEdgeFeature>, ruleset.sketch, qi::_2),
+                     phx::bind(&ConstrainedSketch::get<SingleEdgeFeature>, ruleset.sketch, qi::_3),
                     qi::_4 ),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
@@ -133,7 +146,10 @@ void TangentConstraint::addParserRule(
 std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
 TangentConstraint::dependencies() const
 {
-    return { line1_, line2_ };
+    auto l1 = std::dynamic_pointer_cast<ConstrainedSketchEntity>(line1_);
+    auto l2 = std::dynamic_pointer_cast<ConstrainedSketchEntity>(line2_);
+    insight::assertion( l1 && l2, "both curves have to be constrained sketch entities");
+    return { l1, l2 };
 }
 
 
@@ -141,7 +157,7 @@ void TangentConstraint::replaceDependency(
     const std::weak_ptr<ConstrainedSketchEntity>& entity,
     const std::shared_ptr<ConstrainedSketchEntity>& newEntity)
 {
-    if (auto l = std::dynamic_pointer_cast<Line>(newEntity))
+    if (auto l = std::dynamic_pointer_cast<SingleEdgeFeature>(newEntity))
     {
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(line1_) == entity)
         {

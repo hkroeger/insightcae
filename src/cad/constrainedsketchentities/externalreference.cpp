@@ -1,3 +1,4 @@
+#include "cadfeature.h"
 #include "externalreference.h"
 
 namespace insight {
@@ -15,6 +16,10 @@ void ExternalReference::build()
     extRef_->checkForBuildDuringAccess();
     Feature::operator=(*extRef_);
 }
+
+ExternalReference::ExternalReference(const ExternalReference &o, TreeCloneMap &tcm)
+    : CL(extRef_)
+{}
 
 ExternalReference::ExternalReference (
     FeaturePtr extRef, const std::string& layerName )

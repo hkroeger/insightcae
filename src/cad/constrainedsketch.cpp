@@ -126,7 +126,28 @@ void ConstrainedSketchPresentationDelegate::setEntityAppearance(
 
 
 
-
+ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm)
+    :CL(pl_),
+    propertiesParent_(o.propertiesParent_),
+    solverSettings_(o.solverSettings_)
+{
+    for (auto& g: o.geometry_)
+    {
+        if (dynamic_cast<const DependencySource*>(g.second.get()))
+        {
+            geometry_[g.first]=tcm.clone(g.second);
+        }
+        else
+        {
+            geometry_[g.first]=g.second->clone();
+        }
+    }
+#warning replace internal references missing ??
+    for (auto& lc: o.layerProperties_)
+    {
+        layerProperties_[lc.first]=lc.second->cloneLayerProperties();
+    }
+}
 
 ConstrainedSketch::ConstrainedSketch(
     DatumPtr pl,
@@ -277,7 +298,11 @@ VectorPtr ConstrainedSketch::sketchPlaneNormal() const
 
 arma::mat ConstrainedSketch::p3Dto2D(const arma::mat &p3d) const
 {
-    auto pl=plane()->plane();
+    return p3Dto2D(plane()->plane(), p3d);
+}
+
+arma::mat ConstrainedSketch::p3Dto2D(const gp_Ax3& pl, const arma::mat& p3d)
+{
     auto p0=vec3(pl.Location());
     auto ex=vec3(pl.XDirection());
     auto ey=vec3(pl.YDirection());
@@ -1200,6 +1225,16 @@ void ConstrainedSketch::build()
     {
         this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
     }
+}
+
+void ConstrainedSketch::replaceDependency(const DependencyReplacement &repl)
+{
+    repl(pl_);
+    for (auto& geom: geometry_)
+    {
+        repl(geom.second);
+    }
+    invalidate();
 }
 
 

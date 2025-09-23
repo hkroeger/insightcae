@@ -13,12 +13,17 @@ class ExternalReference
 {
     FeaturePtr extRef_;
 
+    ExternalReference(const ExternalReference&o, TreeCloneMap& tcm);
     ExternalReference ( FeaturePtr extRef, const std::string& layerName = std::string() );
 
     size_t calcHash() const override;
     void build() override;
 
 public:
+#ifndef SWIG
+    DEPENDS((extRef_));
+#endif
+    CLONEABLE(ExternalReference);
     declareType ( "ExternalReference" );
 
     CREATE_FUNCTION(ExternalReference);

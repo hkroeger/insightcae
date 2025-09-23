@@ -19,17 +19,25 @@ class SketchPoint
     DatumPtr plane_;
     double x_, y_;
 
+protected:
+    SketchPoint(const SketchPoint&o, TreeCloneMap& tcm);
     SketchPoint(DatumPtr plane, const arma::mat& xy, const std::string& layerName = std::string());
     SketchPoint(DatumPtr plane, double x, double y, const std::string& layerName = std::string());
 
 public:
     declareType("SketchPoint");
-
+#ifndef SWIG
+    DEPENDS((plane_));
+#endif
+    CLONEABLE(SketchPoint);
     CREATE_FUNCTION(SketchPoint);
 
-    void setCoords2D(double x, double y);
-    arma::mat coords2D() const;
+    virtual void setCoords2D(double x, double y);
+    void setCoords2D(const arma::mat& xy);
+    virtual arma::mat coords2D() const;
+
     arma::mat value() const override;
+    DatumPtr plane() const;
 
     int nDoF() const override;
     double getDoFValue(unsigned int iDoF) const override;

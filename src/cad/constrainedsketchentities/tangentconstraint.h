@@ -2,7 +2,7 @@
 #define TANGENTCONSTRAINT_H
 
 #include "singlesymbolconstraint.h"
-#include "cadfeatures/line.h"
+#include "cadfeatures/singleedgefeature.h"
 
 
 namespace insight
@@ -13,13 +13,15 @@ namespace cad
 class TangentConstraint
     : public SingleSymbolConstraint
 {
-    std::shared_ptr<Line> line1_, line2_;
+    std::shared_ptr<SingleEdgeFeature> line1_, line2_;
 
-    Vector* commonPoint() const;
+    enum Attachment { Start, End };
+
+    std::pair<Attachment,Attachment> commonPoint() const;
 
     TangentConstraint(
-        std::shared_ptr<Line> line1,
-        std::shared_ptr<Line> line2,
+        std::shared_ptr<SingleEdgeFeature> line1,
+        std::shared_ptr<SingleEdgeFeature> line2,
         const std::string& layerName = std::string());
 
 public:

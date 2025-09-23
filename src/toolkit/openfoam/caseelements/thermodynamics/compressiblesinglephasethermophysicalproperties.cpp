@@ -67,6 +67,10 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
             tt="heRhoThermo";
         }
     }
+    else if (dynamic_cast<const chtMultiRegionSolidNumerics*>(&nce))
+    {
+        tt="heSolidThermo";
+    }
     else if (const auto t = dynamic_cast<const unsteadyCompressibleNumerics*>(&nce) )
     {
         if (OFversion()<170)

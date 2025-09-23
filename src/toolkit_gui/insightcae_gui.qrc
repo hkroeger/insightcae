@@ -29,6 +29,7 @@
         <file>icon_sketch_redo.svg</file>
         <file>icon_sketch_splitline.svg</file>
         <file>icon_center_rotation.svg</file>
+        <file>icon_sketch_drawarc.svg</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

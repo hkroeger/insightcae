@@ -68,6 +68,7 @@ public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
     virtual void undoExposeItem() =0;
 
+    virtual void onMeasurePointCoordinates() =0;
     virtual void onMeasureDistance() =0;
     virtual void onMeasureDiameter() =0;
     virtual void onSelectPoints() =0;
@@ -94,6 +95,7 @@ public Q_SLOT:
     virtual void selectBackgroundColor();
 
     virtual void onlyOneShaded(QPersistentModelIndex idx) =0;
+    virtual void showOnlyOne(QPersistentModelIndex idx) =0;
     virtual void resetRepresentations() =0;
 
     virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;

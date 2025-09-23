@@ -7,8 +7,8 @@
    viewBox="0 0 54.504173 49.212502"
    version="1.1"
    id="svg8"
-   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
-   sodipodi:docname="icon_sketch_drawline.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="icon_sketch_drawarc.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -34,8 +34,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
-     inkscape:cx="99.464286"
-     inkscape:cy="78.392857"
+     inkscape:cx="93.571429"
+     inkscape:cy="79.107143"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -48,7 +48,9 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:pagecheckerboard="0">
+     inkscape:pagecheckerboard="0"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#d1d1d1">
     <inkscape:grid
        type="xygrid"
        id="grid4558"
@@ -72,28 +74,29 @@
      id="layer1"
      transform="translate(-56.75312,-75.940625)">
     <path
-       style="fill:none;stroke:#000000;stroke-width:1.32292;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 66.145835,84.01041 14.552083,25.13541 22.489582,5.29167"
-       id="path1268" />
+       style="fill:none;stroke:#000000;stroke-width:2.11666667;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="M 63.432006,87.867665 C 89.050505,76.497541 104.44242,94.482249 99.150752,116.97183"
+       id="path348"
+       sodipodi:nodetypes="cc" />
     <ellipse
        style="fill:#ff0000;stroke:#ff0000;stroke-width:1.32292;stroke-miterlimit:4;stroke-dasharray:none"
        id="path1338"
-       cx="66.575439"
-       cy="84.790115"
+       cx="63.5"
+       cy="87.899017"
        rx="2.7163305"
        ry="2.5656891" />
     <ellipse
        style="fill:#ff0000;stroke:#ff0000;stroke-width:1.32292;stroke-miterlimit:4;stroke-dasharray:none"
        id="path1338-0"
-       cx="80.178131"
-       cy="108.70458"
+       cx="92.604164"
+       cy="89.382225"
        rx="2.7163305"
        ry="2.5656891" />
     <ellipse
        style="fill:#ff0000;stroke:#ff0000;stroke-width:1.32292;stroke-miterlimit:4;stroke-dasharray:none"
        id="path1338-4"
-       cx="102.33229"
-       cy="114.23574"
+       cx="99.21875"
+       cy="115.84055"
        rx="2.7163305"
        ry="2.5656891" />
   </g>

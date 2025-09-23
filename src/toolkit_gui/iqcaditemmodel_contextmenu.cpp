@@ -256,6 +256,12 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     std::bind(&IQCADModel3DViewer::onlyOneShaded, viewer,
                               QPersistentModelIndex(idx) ) );
 
+            a = new QAction(("Show only this"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    std::bind(&IQCADModel3DViewer::showOnlyOne, viewer,
+                              QPersistentModelIndex(idx) ) );
+
             a = new QAction(("Reset shading"), this);
             cm.addAction(a);
             connect(a, &QAction::triggered,

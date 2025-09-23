@@ -224,4 +224,9 @@ inline gp_Vec to_Vec(const arma::mat& xyz)
   return gp_Vec(xyz(0), xyz(1), xyz(2));
 }
 
+inline gp_Dir to_Dir(const arma::mat& xyz)
+{
+    return gp_Dir(xyz(0), xyz(1), xyz(2));
+}
+
 #endif

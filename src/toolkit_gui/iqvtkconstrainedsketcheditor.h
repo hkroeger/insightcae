@@ -115,6 +115,7 @@ private:
 private Q_SLOTS:
     void drawPoint();
     void drawLine();
+    void drawArc();
     void drawRectangle();
     void splitLine();
     void solve();

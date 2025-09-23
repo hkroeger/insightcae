@@ -21,6 +21,7 @@
 #include "iqvtkconstrainedsketcheditor/iqvtkdragpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawarc.h"
 #include "iqvtkconstrainedsketcheditor/iqvtksplitline.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 #include "base/parameters/simpleparameter.h"
@@ -440,6 +441,14 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
 
 
+void IQVTKConstrainedSketchEditor::drawArc()
+{
+    auto da = make_viewWidgetAction<IQVTKCADModel3DViewerDrawArc>(*this);
+    storeUndoState("Draw Arc");
+    launchAction(std::move(da));
+}
+
+
 
 void IQVTKConstrainedSketchEditor::splitLine()
 {
@@ -637,6 +646,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
                         this, &IQVTKConstrainedSketchEditor::drawLine);
 
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawarc.svg"), "Arc",
+                        this, &IQVTKConstrainedSketchEditor::drawArc);
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawrectangle.svg"), "Rectangle",
                         this, &IQVTKConstrainedSketchEditor::drawRectangle);
 
@@ -705,9 +717,9 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         selact->currentSelection().size()==2,
                         "exactly two entities should be selected!");
 
-                    auto l1=std::dynamic_pointer_cast<insight::cad::Line>(
+                    auto l1=std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
                         selact->currentSelection().begin()->lock() );
-                    auto l2=std::dynamic_pointer_cast<insight::cad::Line>(
+                    auto l2=std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
                         (++selact->currentSelection().begin())->lock() );
 
                     auto c = TangentConstraint::create(

@@ -541,6 +541,9 @@ ExceptionHandler::ExceptionHandler(int priority)
     exceptionHandlers().insert({priority, this});
 }
 
+ExceptionHandler::~ExceptionHandler()
+{}
+
 ErrorDescriptionPtr ExceptionHandler::describeProblem() const
 {
     throw;

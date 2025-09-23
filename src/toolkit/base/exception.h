@@ -339,6 +339,8 @@ class ExceptionHandler
 {
 public:
     ExceptionHandler(int priority);
+    virtual ~ExceptionHandler();
+
     std::string title() const;
 
     virtual ErrorDescriptionPtr describeProblem() const;

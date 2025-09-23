@@ -19,9 +19,7 @@ public:
     {
         if (autoRegister)
         {
-            Registry::registry().registerObject(
-                dynamic_cast<typename Registry::RegisteredObjectType*>(
-                    this ) );
+            Registry::registry().registerObject(this);
             registered_=true;
         }
         else
@@ -34,9 +32,7 @@ public:
     {
         if (registered_)
         {
-            Registry::registry().unregisterObject(
-                dynamic_cast<typename Registry::RegisteredObjectType*>(
-                    this ) );
+            Registry::registry().unregisterObject(this);
         }
     }
 

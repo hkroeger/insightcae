@@ -245,19 +245,23 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                         recreateVisualizationElements();
                         success_=true;
                     }
+                    catch (insight::Exception& ex)
+                    {
+                        status_=Finished;
+                        Q_EMIT visualizationComputationError(ex);
+                        return;
+                    }
                     catch (...)
                     {
-                        auto errdesc = insight::describeCurrentException();
-
                         status_=Finished;
+                        auto errdesc = insight::describeCurrentException();
 
                         std::ostringstream os;
                         os
-                            << "Could not rebuild visualization.\n"
-                            << " Error was:\n"
                             << *(errdesc) << "\n"
                             << errdesc->errorDetails_;
                         Q_EMIT visualizationComputationError(os.str());
+                        return;
                     }
 
                     status_=Finished;

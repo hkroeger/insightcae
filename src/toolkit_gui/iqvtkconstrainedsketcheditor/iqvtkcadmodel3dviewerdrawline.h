@@ -37,6 +37,7 @@ protected:
 public:
     IQVTKCADModel3DViewerDrawLine(
             IQVTKConstrainedSketchEditor &editor );
+
     ~IQVTKCADModel3DViewerDrawLine();
 
     void start() override;

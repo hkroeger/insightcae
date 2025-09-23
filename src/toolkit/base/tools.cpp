@@ -1122,19 +1122,30 @@ void RSyncOutputAnalyzer::update(const std::string& line)
 }
 
 
-
+template <typename T>
+bool is_only_a(const std::string& str)
+{
+    std::stringstream ss(str);
+    T x;
+    return (ss >> x && ss.rdbuf()->in_avail() ==0);
+}
 
 
 bool isNumber(const string &s)
 {
-  try {
-    auto result = boost::lexical_cast<double>(s);
-    return true;
-  }
-  catch (const boost::bad_lexical_cast&)
-  {
-    return false;
-    }
+    return
+       is_only_a<unsigned long>(s)
+    || is_only_a<int>(s)
+    || is_only_a<float>(s);
+
+  // try {
+  //   auto result = boost::lexical_cast<double>(s);
+  //   return true;
+  // }
+  // catch (const boost::bad_lexical_cast&)
+  // {
+  //   return false;
+  //   }
 }
 
 

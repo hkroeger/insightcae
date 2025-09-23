@@ -33,7 +33,7 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
         rbmc["rhoInf"]=rhoc->rhoInf;
       }
 
-    rbmc["accelerationRelaxation"]=0.4;
+    rbmc["accelerationRelaxation"]=p().accelerationRelaxation;
 
     OFDictData::dict bl;
     for (auto& body: p().bodies)

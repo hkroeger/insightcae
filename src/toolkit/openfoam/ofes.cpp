@@ -46,13 +46,31 @@ const OFEnvironment& OFEs::get(const std::string& name)
 
 
 
-std::string OFEs::detectCurrentOFE()
+std::string OFEs::detectCurrentOFE(bool *currentOFEDefined)
 {
   const char *envvar=getenv("CURRENT_OFE");
   if (!envvar)
   {
-    throw insight::Exception("Environment variable CURRENT_OFE not set. Check, if OpenFOAM environment is loaded.");
+      if (currentOFEDefined)
+      {
+          *currentOFEDefined=false;
+          return std::string();
+      }
+      else
+      {
+        throw insight::Exception(
+              "Environment variable CURRENT_OFE not set."
+              " Check, if OpenFOAM environment is loaded." );
+      }
   }
+  else
+  {
+      if (currentOFEDefined)
+      {
+          *currentOFEDefined=true;
+      }
+  }
+
   for (OFEs::value_type ofe: list)
   {
     if (ofe.first==envvar)
@@ -69,13 +87,15 @@ std::string OFEs::detectCurrentOFE()
 
 std::string OFEs::currentOrPreferredOFE()
 {
-  try {
-    return detectCurrentOFE();
-  }
-  catch (const std::exception& /*e*/)
-  {
-    return "OFesi2112";
-  }
+    bool currentDefined=true;
+
+    auto ce=detectCurrentOFE(&currentDefined);
+
+    if (!currentDefined)
+    {
+        ce="OFesi2112";
+    }
+    return ce;
 }
 
 

@@ -105,7 +105,7 @@ public:
         const std::map<std::string, double>& fieldRelax
     ) const;
 
-    std::string lqGradSchemeIfPossible() const;
+    virtual std::string lqGradSchemeIfPossible() const;
     void insertStandardGradientConfig(OFdicts& dictionaries) const;
 
     std::string gradNameOrScheme(OFdicts& dictionaries, const std::string& key) const;

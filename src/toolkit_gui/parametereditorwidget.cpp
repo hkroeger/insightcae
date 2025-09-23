@@ -276,7 +276,7 @@ ParameterEditorWidget::ParameterEditorWidget
         // {
         //     connect(
         //         viz_.get(), &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_.get(),
-        //         [this](insight::Exception ex)
+        //         [this](const insight::Exception& ex)
         //         {
         //             overlayText_->setTextFormat(Qt::MarkdownText);
         //             std::ostringstream msg;
@@ -417,33 +417,36 @@ void ParameterEditorWidget::rebuildVisualization()
                 dynamic_cast<IQParameterSetModel*>(model_)
             );
 
-        connect(
-            viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
-            this, &ParameterEditorWidget::updateSupplementedInputData
+        if (viz_ && !viz_->isFinished())
+        {
+            connect(
+                viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
+                this, &ParameterEditorWidget::updateSupplementedInputData
+                );
+            connect(
+                viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
+                [this](bool success)
+                { if (success) overlayText_->hide(); } );
+
+            connect(
+                viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
+                [this](const insight::Exception& ex)
+                {
+                    overlayText_->setTextFormat(Qt::MarkdownText);
+                    overlayText_->setText(QString::fromStdString(
+                        std::string(_("The visualization could not be generated."))
+                        +"\n\n"
+                        +_("Reason:")
+                        +"\n\n"
+                        +"**"+(ex.message())+"**\n\n"
+                        +boost::replace_all_copy(ex.context(), "\n", "\n\n")
+                        ));
+                    overlayText_->show();
+                }
             );
-        connect(
-            viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
-            [this](bool success)
-            { if (success) overlayText_->hide(); } );
 
-        connect(
-            viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
-            [this](insight::Exception ex)
-            {
-                overlayText_->setTextFormat(Qt::MarkdownText);
-                overlayText_->setText(QString::fromStdString(
-                    std::string(_("The visualization could not be generated."))
-                    +"\n\n"
-                    +_("Reason:")
-                    +"\n\n"
-                    +"**"+(*ex.description())+"**\n\n"+
-                    boost::replace_all_copy(ex.context(), "\n", "\n\n")
-                    ));
-                overlayText_->show();
-            }
-        );
-
-        viz_->launch(display_->model());
+            viz_->launch(display_->model());
+        }
     }
 }
 

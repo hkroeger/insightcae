@@ -18,8 +18,10 @@
  *
  */
 
+#include "base/parameterset.h"
 #include "cadparametersetvisualizer.h"
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
@@ -265,7 +267,10 @@ AnalysisForm::AnalysisForm(
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
 
-    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb;
+    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb =
+        []( QObject*, IQParameterSetModel *, const boost::filesystem::path&, insight::ProgressDisplayer&)
+        { return nullptr; };
+
     insight::ParameterSet_ValidatorPtr vali;
 
     auto& atab = insight::CADParameterSetModelVisualizer::visualizerForAnalysis();
@@ -294,9 +299,9 @@ AnalysisForm::AnalysisForm(
                IQParameterSetModel *_2)
             {
                 return vizb(
-                    _1, _2,
-                    localCaseDirectory(),
-                    progressDisplayer_ );
+                        _1, _2,
+                        localCaseDirectory(),
+                        progressDisplayer_ );
             },
             [](
                  const std::string&,

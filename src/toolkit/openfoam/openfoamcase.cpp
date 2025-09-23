@@ -336,7 +336,7 @@ void OpenFOAMCase::createOnDisk
 (
     const boost::filesystem::path& location, 
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
-)
+) const
 {
 
   if (!restrictToFiles)
@@ -354,7 +354,7 @@ void OpenFOAMCase::createOnDisk
     const boost::filesystem::path& location, 
     std::shared_ptr<OFdicts> dictionaries, 
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
-)
+) const
 {
   boost::filesystem::path basepath(location);
 
@@ -664,6 +664,18 @@ OpenFOAMCase::~OpenFOAMCase()
 }
 
 
+bool OpenFOAMCase::hasParentRegion() const
+{
+    return parentRegion_!=nullptr;
+}
+
+OpenFOAMCase &OpenFOAMCase::parentRegion() const
+{
+    insight::assertion(hasParentRegion(), "no parent region assigned");
+    return *parentRegion_;
+}
+
+
 
 
 void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<OpenFOAMCase> regionCase)
@@ -674,6 +686,7 @@ void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<
         );
 
   regions_.emplace(regionName, regionCase);
+  regionCase->setParentRegion(this);
 }
 
 
@@ -894,7 +907,7 @@ void OpenFOAMCase::runBlockMesh
     const boost::filesystem::path& location,
     int nBlocks,
     ProgressDisplayer* progressDisplayer
-)
+) const
 {
   BlockMeshOutputAnalyzer bma(progressDisplayer, nBlocks);
   runSolver(location, bma, "blockMesh");

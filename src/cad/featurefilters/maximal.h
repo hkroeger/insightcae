@@ -20,30 +20,22 @@
 #ifndef INSIGHT_CAD_MAXIMAL_H
 #define INSIGHT_CAD_MAXIMAL_H
 
-#include "feature.h"
-#include <map>
+#include "extremal.h"
 
 namespace insight {
 namespace cad {
 
 class maximal
-    : public Filter
+    : public extremal
 {
-public:
-  typedef std::pair<double, FeatureID>  RankEntry;
 
 protected:
-    int rank_, lrank_;
-    std::shared_ptr<scalarQuantityComputer> qtc_;
-    std::vector<RankEntry> ranking_;
+    double criterion(FeatureID feature) override;
 
 public:
     maximal(const scalarQuantityComputer& qtc, int rank=0, int lrank=-1);
-    virtual void firstPass(FeatureID feature);
-    virtual void initialize(ConstFeaturePtr m);
-    virtual bool checkMatch(FeatureID feature) const;
 
-    virtual FilterPtr clone() const;
+    FilterPtr clone() const override;
 };
 
 }

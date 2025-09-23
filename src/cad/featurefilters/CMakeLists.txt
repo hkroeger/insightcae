@@ -3,6 +3,7 @@ add_sources(insightcad_SOURCES
   everything.cpp
   booleanfilters.cpp
   everything.cpp
+  extremal.cpp
   minimal.cpp
   maximal.cpp
   

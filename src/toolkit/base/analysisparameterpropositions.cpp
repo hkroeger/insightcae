@@ -165,16 +165,10 @@ struct SharedLibraryFunction
 
 AnalysisParameterPropositions::AnalysisParameterPropositions()
 {
-    boost::filesystem::path fp;
-    try
-    {
-        fp =  SharedPathList::global().getSharedFilePath(
-            "parameterPropositionSources.xml" );
-    }
-    catch (...)
-    {
-        return;
-    }
+    bool found=false;
+    boost::filesystem::path fp =  SharedPathList::global().getSharedFilePath(
+            "parameterPropositionSources.xml", &found );
+    if (!found) return;
 
     CurrentExceptionContext ex("reading external parameter proposition sources from "+fp.string());
 

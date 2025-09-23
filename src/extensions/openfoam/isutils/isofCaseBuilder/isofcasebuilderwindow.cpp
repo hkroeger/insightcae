@@ -1185,7 +1185,7 @@ void isofCaseBuilderWindow::rebuildVisualization()
 
     // connect(
     //     viz_, &insight::CADParameterSetVisualizer::visualizationComputationError, viz_,
-    //     [this](insight::Exception ex)
+    //     [this](const insight::Exception& ex)
     //     {
     //         overlayText_->setTextFormat(Qt::MarkdownText);
     //         overlayText_->setText(QString::fromStdString(

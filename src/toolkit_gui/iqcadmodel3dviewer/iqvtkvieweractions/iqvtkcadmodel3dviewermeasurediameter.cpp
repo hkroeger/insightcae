@@ -11,7 +11,7 @@
 IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(
     IQVTKCADModel3DViewer &viewWidget)
     : ViewWidgetAction<IQVTKCADModel3DViewer>(
-          viewWidget)
+          viewWidget, false)
 {
     aboutToBeDestroyed.connect(
         [this](){
@@ -56,4 +56,20 @@ void IQVTKCADModel3DViewerMeasureDiameter::start()
         );
 
     launchAction(std::move(sel));
+}
+
+
+bool IQVTKCADModel3DViewerMeasureDiameter::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onMouseClick(btn, nFlags, point);
 }

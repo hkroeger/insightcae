@@ -16,6 +16,12 @@ public:
   QString description() const override;
 
   void start() override;
+
+
+  bool onMouseClick  (
+      Qt::MouseButtons btn,
+      Qt::KeyboardModifiers nFlags,
+      const QPoint point ) override;
 };
 
 

@@ -73,3 +73,19 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
 
   launchAction(std::move(sel));
 }
+
+
+bool IQVTKCADModel3DViewerMeasurePoints::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onMouseClick(btn, nFlags, point);
+}

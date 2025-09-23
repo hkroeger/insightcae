@@ -54,6 +54,12 @@ size_t Shoulder::calcHash() const
 }
 
 
+
+Shoulder::Shoulder(const Shoulder&o, TreeCloneMap& tcm)
+: CL(p0_), CL(dir_), CL(d_), CL(Dmax_)
+{}
+
+
 Shoulder::Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax)
 : p0_(p0), dir_(dir), d_(d), Dmax_(Dmax)
 {}

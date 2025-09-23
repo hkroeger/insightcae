@@ -36,12 +36,16 @@ class Helix
   size_t calcHash() const override;
   void build() override;
   
+  Helix(const Helix&o, TreeCloneMap& tcm);
   Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
 
 public:
   declareType("Helix");
-
+#ifndef SWIG
+  DEPENDS((p0_,p1_,d_,winds_));
+#endif
   CREATE_FUNCTION(Helix);
+  CLONEABLE(Helix);
   
   static void insertrule(parser::ISCADParser& ruleset);
 

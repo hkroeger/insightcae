@@ -53,6 +53,11 @@ size_t Sphere::calcHash() const
 
 
 
+Sphere::Sphere(const Sphere&o, TreeCloneMap& tcm)
+    : CL(p_), CL(D_)
+{}
+
+
   
 Sphere::Sphere(VectorPtr p, ScalarPtr D)
 : p_(p), D_(D)
@@ -110,6 +115,12 @@ FeatureCmdInfoList Sphere::ruleDocumentation()
     };
 }
 
+
+void Sphere::print(std::ostream& os) const
+{
+    os << "   p="<<p_->value().t() <<" ("<<p_<<")\n";
+    os << "   D="<<D_->value()<<" ("<<D_<<")\n";
+}
 
 
 }

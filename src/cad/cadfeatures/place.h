@@ -43,6 +43,7 @@ class Place
 
     std::shared_ptr<gp_Trsf> trsf_;
 
+    Place(const Place&o, TreeCloneMap& tcm);
     Place ( FeaturePtr m, const gp_Ax2& cs );
     Place ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez, VectorPtr refpt = VectorPtr() );
     Place ( FeaturePtr m, FeaturePtr other );
@@ -52,8 +53,11 @@ class Place
 
 public:
     declareType ( "Place" );
-
+#ifndef SWIG
+    DEPENDS((m_, p0_, ex_,ez_, refpt_, other_));
+#endif
     CREATE_FUNCTION(Place);
+    CLONEABLE(Place);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

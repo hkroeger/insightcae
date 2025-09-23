@@ -37,6 +37,7 @@ class RegPoly
     ScalarPtr a_;
     VectorPtr ez_;
 
+    RegPoly(const RegPoly&o, TreeCloneMap& tcm);
     RegPoly ( VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
               VectorPtr ez = matconst ( arma::mat() ) );
 
@@ -45,8 +46,11 @@ class RegPoly
 
 public:
     declareType ( "RegPoly" );
-
+#ifndef SWIG
+    DEPENDS((p0_, n_, ne_, a_, ez_));
+#endif
     CREATE_FUNCTION(RegPoly);
+    CLONEABLE(RegPoly);
 
     operator const TopoDS_Face& () const;
 

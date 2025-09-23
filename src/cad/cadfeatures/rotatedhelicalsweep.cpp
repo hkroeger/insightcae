@@ -120,9 +120,17 @@ TopoDS_Shape makeRotatedHelicalSweep(const Feature& sk, const arma::mat& p0, con
 }
 
 
+RotatedHelicalSweep::RotatedHelicalSweep(const RotatedHelicalSweep&o, TreeCloneMap& tcm)
+: CL(sk_), CL(p0_), CL(axis_), CL(P_), CL(revoffset_)
+{}
+
+
+
 RotatedHelicalSweep::RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset)
 : sk_(sk), p0_(p0), axis_(axis), P_(P), revoffset_(revoffset)
 {}
+
+
 
 void RotatedHelicalSweep::build()
 {
@@ -130,6 +138,8 @@ void RotatedHelicalSweep::build()
 
   setShape(makeRotatedHelicalSweep(*sk_, p0_->value(), axis_->value(), P_->value(), revoffset_->value()));
 }
+
+
 
 void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset)
 {

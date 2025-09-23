@@ -134,6 +134,12 @@ TopoDS_Shape makeOutlineProjectionEdges
   return allVisible;
 }
 
+
+ProjectedOutline::ProjectedOutline(const ProjectedOutline&o, TreeCloneMap& tcm)
+    : CL(source_), CL(target_)
+{}
+
+
 ProjectedOutline::ProjectedOutline(FeaturePtr source, DatumPtr target)
 : source_(source), target_(target)
 {}

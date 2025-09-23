@@ -29,7 +29,11 @@
 
 namespace insight {
 namespace cad {
-  
+
+ProjectedPoint::ProjectedPoint(const ProjectedPoint &o, TreeCloneMap &tcm)
+: CL(p0_), CL(plane_), CL(along_)
+{}
+
 ProjectedPoint::ProjectedPoint(VectorPtr p0, DatumPtr plane)
 : p0_(p0), plane_(plane)
 {}
@@ -91,6 +95,10 @@ arma::mat ProjectedPoint::value() const
     throw insight::Exception("Unhandled operators for projection!");
 }
 
+
+ProjectedPointOnFeature::ProjectedPointOnFeature(const ProjectedPointOnFeature &o, TreeCloneMap &tcm)
+    : CL(p0_), CL(along_), CL(targ_)
+{}
 
 ProjectedPointOnFeature::ProjectedPointOnFeature(VectorPtr p0, VectorPtr along, FeaturePtr targ)
     : p0_(p0), along_(along), targ_(targ)

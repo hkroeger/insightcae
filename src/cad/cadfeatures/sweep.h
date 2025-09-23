@@ -35,6 +35,7 @@ class Sweep
 {
     std::vector<FeaturePtr> secs_;
 
+    Sweep(const Sweep&o, TreeCloneMap& tcm);
     Sweep ( const std::vector<FeaturePtr>& secs );
 
     size_t calcHash() const override;
@@ -42,7 +43,11 @@ class Sweep
 
 public:
     declareType ( "Sweep" );
+#ifndef SWIG
+    DEPENDS((secs_));
+#endif
     CREATE_FUNCTION(Sweep);
+    CLONEABLE(Sweep);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

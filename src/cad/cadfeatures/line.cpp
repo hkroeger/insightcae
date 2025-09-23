@@ -66,6 +66,11 @@ size_t Line::calcHash() const
 
 
 
+Line::Line(const Line&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(p1_), second_is_dir_(o.second_is_dir_)
+{}
+
+
 
 Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir, const std::string& layerName)
   : ConstrainedSketchEntity(layerName),
@@ -185,6 +190,7 @@ void Line::replaceDependency(
             invalidate();
         }
     }
+    invalidate();
 }
 
 

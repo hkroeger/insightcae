@@ -18,12 +18,17 @@
  */
 
 #include "modelfeature.h"
+#include "base/exception.h"
+#include "boost/phoenix/stl/algorithm/transformation.hpp"
+#include <boost/phoenix/stl/algorithm/iteration.hpp>
 #include "cadfeature.h"
 #include "cadmodel.h"
 #include "datum.h"
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "cadexception.h"
+#include <memory>
 
 #include "base/translations.h"
 
@@ -49,7 +54,7 @@ addToStaticFunctionTable(Feature, ModelFeature, ruleDocumentation);
 
 
 
-void ModelFeature::copyModelDatums()
+void ModelFeature::copyModelDatums(ModelPtr model_)
 {
   auto scalars=model_->scalars();
   for (decltype(scalars)::value_type const& v: scalars)
@@ -103,7 +108,8 @@ size_t ModelFeature::calcHash() const
   // build the parameter hash
   ParameterListHash p;
   p+=this->type();
-  if (const std::string* mn = boost::get<std::string>(&modelinput_))
+
+  if (auto* mn = boost::get<std::string>(&modelinput_))
     {
       std::string fname=(*mn)+".iscad";
       try
@@ -117,29 +123,34 @@ size_t ModelFeature::calcHash() const
         p+=fname;
       }
     }
-  else if (const boost::filesystem::path* mp = boost::get<boost::filesystem::path>(&modelinput_))
+  else if (auto* mp = boost::get<boost::filesystem::path>(&modelinput_))
     {
       p+=(*mp);
     }
+  else if (auto* mp = boost::get<ModelPtr>(&modelinput_))
+    {
+        p+=size_t(mp->get());  //(*mp)->hash();
+    }
 
-  for (ModelVariableTable::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+  for (auto& nv: vars_)
   {
-    p+=boost::fusion::at_c<0>(*it);
-    auto v=boost::fusion::at_c<1>(*it);
-    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
+    p+=boost::fusion::at_c<0>(nv);
+
+    auto& v=boost::fusion::at_c<1>(nv);
+    if (auto* fp = boost::get<FeaturePtr>(&v))
     {
-        p+=*(*fp);
+        p+=**fp;
     }
-    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
+    else if (auto* dp = boost::get<DatumPtr>(&v))
     {
-        p+=*(*dp);
+        p+=**dp;
     }
-    else if (VectorPtrAndType* vp = boost::get<VectorPtrAndType>(&v))
+    else if (auto* vp = boost::get<VectorPtrAndType>(&v))
     {
         p+=boost::fusion::at_c<0>(*vp)->value();
         p+=int(boost::fusion::at_c<1>(*vp));
     }
-    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
+    else if (auto* sp = boost::get<ScalarPtr>(&v))
     {
         p+=(*sp)->value();
     }
@@ -150,6 +161,54 @@ size_t ModelFeature::calcHash() const
 
 
 
+
+ModelFeature::ModelFeature ( const ModelFeature& o, TreeCloneMap& tcm )
+{
+    if (auto *mp=boost::get<ModelPtr>(&o.modelinput_))
+    {
+        modelinput_=tcm.clone(*mp);
+    }
+    else
+    {
+        modelinput_=o.modelinput_;
+    }
+
+    struct ModelVariableCloner
+        : public boost::static_visitor<ModelVariable>
+    {
+        TreeCloneMap& tcm_;
+
+        ModelVariableCloner(TreeCloneMap& tcm) : tcm_(tcm) {};
+
+        ModelVariable operator()(FeaturePtr ft) const
+        {
+            return tcm_.clone(ft);
+        }
+        ModelVariable operator()(DatumPtr d) const
+        {
+            return tcm_.clone(d);
+        }
+        ModelVariable operator()(VectorPtrAndType vt) const
+        {
+            return VectorPtrAndType{
+                tcm_.clone(boost::fusion::get<0>(vt)),
+                boost::fusion::get<1>(vt) };
+        }
+        ModelVariable operator()(ScalarPtr s) const
+        {
+            return tcm_.clone(s);
+        }
+    };
+
+    ModelVariableCloner mvc(tcm);
+    for (auto v: o.vars_)
+    {
+        vars_.push_back(ModelVariableAndName{
+            boost::fusion::get<0>(v),
+            boost::fusion::get<1>(v).apply_visitor(mvc)
+        });
+    }
+}
 
 
 ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
@@ -166,8 +225,8 @@ ModelFeature::ModelFeature(const boost::filesystem::path& modelfile, const Model
 
 
 
-ModelFeature::ModelFeature(ModelPtr model)
-: model_(model)
+ModelFeature::ModelFeature(ModelPtr model, const ModelVariableTable& vars)
+: modelinput_(model), vars_(vars)
 {}
 
 
@@ -180,30 +239,35 @@ void ModelFeature::build()
 
     if (!cache.contains(hash()))
     {
-        if (!model_)
+        ModelPtr model;
+
+        if (auto* fp = boost::get<boost::filesystem::path>(&modelinput_))
         {
-          if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
-          {
             ex += " from file \""+fp->string()+"\"";
-            model_.reset(new Model(*fp, vars_));
-          } else if (std::string* mn = boost::get<std::string>(&modelinput_))
-          {
-            ex += " named "+*mn;
-            model_.reset(new Model(*mn, vars_));
-          } else
-          {
-            throw insight::Exception(_("ModelFeature: Model input unspecified!"));
-          }
+            model.reset(new Model(*fp, vars_));
         }
-
-        model_->checkForBuildDuringAccess();
-
-        for (const Model::ComponentSet::value_type& c: model_->components())
+        else if (auto* mn = boost::get<std::string>(&modelinput_))
         {
-            components_[c]=model_->lookupModelstep(c);
+            ex += " named "+*mn;
+            model.reset(new Model(*mn, vars_));
+        }
+        else if (auto* mn = boost::get<ModelPtr>(&modelinput_))
+        {
+            ex += " supplied model";
+            model=*mn;
+        }
+        else
+        {
+            throw insight::Exception(_("ModelFeature: Model input unspecified!"));
+        }
+        model->checkForBuildDuringAccess();    
+
+        for (auto& c: model->components())
+        {
+            components_[c]=model->lookupModelstep(c);
         }
 
-        auto modelsteps=model_->modelsteps();
+        auto modelsteps=model->modelsteps();
         for (decltype(modelsteps)::value_type const& c: modelsteps)
         {
             std::string name=c.first;
@@ -212,13 +276,13 @@ void ModelFeature::build()
             {
                 FeaturePtr p=c.second;
 
-//                 copyDatums(*p, name+"_");
+                //                 copyDatums(*p, name+"_");
                 providedSubshapes_[name]=p;
             }
         }
 
 
-        copyModelDatums();
+        copyModelDatums(model);
 
         Compound::build();
 
@@ -230,6 +294,38 @@ void ModelFeature::build()
     }
 }
 
+
+void ModelFeature::replaceDependency(const DependencyReplacement& repl)
+{
+    for (auto& nv: vars_)
+    {
+        auto &v = boost::fusion::get<1>(nv);
+
+        if (auto* fp=boost::get<FeaturePtr>(&v))
+        {
+            repl(*fp);
+        }
+        else if (auto* fp=boost::get<DatumPtr>(&v))
+        {
+            repl(*fp);
+        }
+        else if (auto* fp=boost::get<VectorPtrAndType>(&v))
+        {
+            repl(boost::fusion::get<0>(*fp));
+        }
+        else if (auto* fp=boost::get<ScalarPtr>(&v))
+        {
+            repl(*fp);
+        }
+
+    }
+    if (auto *mp=boost::get<ModelPtr>(&modelinput_))
+    {
+        repl(*mp);
+    }
+
+    invalidate();
+}
 
 std::string ModelFeature::modelname() const
 {
@@ -292,44 +388,122 @@ void ModelFeature::executeEditor()
   ::system( ("iscad "+fp.string()+" &").c_str() );
 }
 
+ModelVariable *ModelFeature::findInputVariable(const std::string &name)
+{
+    for (auto& v: vars_)
+    {
+        if (boost::fusion::get<0>(v)==name)
+            return &boost::fusion::get<1>(v);
+    }
+    return nullptr;
+}
+
+
+FeaturePtr ModelFeature::findModelstep(const std::string &name)
+{
+
+    //     //return subshape(name); // will crash
+
+    if (auto* fp=boost::get<ModelPtr>(&modelinput_))
+    {
+        if (auto *ms = (*fp)->modelstepSymbols().find(name))
+        {
+            return *ms;
+        }
+    }
+    return nullptr;
+}
+
+
+
+
+
+
+
+
+
+const ModelFeature::ModelFeatureArgRule&
+ModelFeature::rule(
+    parser::ISCADParser& ruleset )
+{
+    const std::string rn="sub model name and variable overrides";
+
+    if (auto r=ruleset.findAdditionalRule<ModelFeatureArgRule>(rn))
+    {
+        return *r;
+    }
+    else
+    {
+
+        auto &r_modelvar = ruleset.addAdditionalRule(
+            new qi::rule<
+                std::string::iterator,
+                ModelVariable(),
+                insight::cad::parser::skip_grammar
+                >
+            (
+                // order of rules must match order of definitions in "typedef ... ModelVariable"
+                 ( ruleset.r_vectorExpression > qi::attr(VectorVariableType::Point) )
+                |( '!' > ruleset.r_vectorExpression > qi::attr(VectorVariableType::Direction) )
+                |( ruleset.r_scalarExpression)
+                |( ruleset.r_solidmodel_expression)
+                |( ruleset.r_datumExpression)
+            ));
+        r_modelvar.name("variable value");
+
+
+        auto &r_modelvars = ruleset.addAdditionalRule(
+            new qi::rule<
+                std::string::iterator,
+                ModelVariableTable(),
+                insight::cad::parser::skip_grammar
+                >
+            (
+                *(',' > ruleset.r_identifier > '=' > r_modelvar )
+            ));
+        r_modelvars.name("model variable list");
+
+
+
+        auto &myrule =ruleset.addAdditionalRule(
+            new qi::rule<
+                std::string::iterator,
+                std::shared_ptr<ModelFeature>(ModelVariableTable),
+                insight::cad::parser::skip_grammar
+                >
+            (
+
+                ( ruleset.r_identifier > r_modelvars )
+                    [ qi::_val = phx::bind(
+                         & ModelFeature::create<const std::string&, const ModelVariableTable&>,
+                         qi::_1, phx::bind(&mergeMVTs, qi::_r1, qi::_2) ) ]
+                |
+                ( ruleset.r_path > r_modelvars )
+                    [ qi::_val = phx::bind(
+                         &ModelFeature::create<const boost::filesystem::path&, const ModelVariableTable&>,
+                         qi::_1, phx::bind(&mergeMVTs, qi::_r1, qi::_2) ) ]
+            ));
+        myrule.name(rn);
+
+        return myrule;
+    }
+}
 
 
 
 void ModelFeature::insertrule(parser::ISCADParser& ruleset)
 {
-  ruleset.modelstepFunctionRules.add
-  (
-    "loadmodel",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+    typename parser::ISCADParser::ModelstepRulePtr rule(
+        new typename parser::ISCADParser::ModelstepRule(
+            ( '('
+                > ModelFeature::rule(ruleset)
+                    ( phx::val(ModelVariableTable()) )
+                > ')' )
+             [ qi::_val = qi::_1 ]
+        ));
+    rule->name("loadmodel");
 
-     '(' >
-    ( ruleset.r_identifier >
-          *(',' > ruleset.r_identifier > '=' > (
-                        // order of rules must match order of definitions in "typedef ... ModelVariable"
-                       ( ruleset.r_solidmodel_expression)
-                      |( ruleset.r_datumExpression)
-                      |( ruleset.r_vectorExpression > qi::attr(VectorVariableType::Point) )
-                      |( '!' > ruleset.r_vectorExpression > qi::attr(VectorVariableType::Direction) )
-                      |( ruleset.r_scalarExpression)
-                    ) )
-          > ')' )
-    [ qi::_val = phx::bind(
-                           &ModelFeature::create<const std::string&, const ModelVariableTable&>,
-                           qi::_1, qi::_2) ]
-    |
-    ( ruleset.r_path >
-          *(',' > ruleset.r_identifier > '=' > (
-                       ( ruleset.r_solidmodel_expression)
-                      |( ruleset.r_datumExpression)
-                      |( ruleset.r_vectorExpression > qi::attr(VectorVariableType::Point) )
-                      |( '!' > ruleset.r_vectorExpression > qi::attr(VectorVariableType::Direction) )
-                      |( ruleset.r_scalarExpression)
-                    ) ) > ')' )
-    [ qi::_val = phx::bind(
-                           &ModelFeature::create<const boost::filesystem::path&, const ModelVariableTable&>,
-                           qi::_1, qi::_2) ]
-    ))
-  );
+  ruleset.modelstepFunctionRules.add( "loadmodel", rule );
 }
 
 

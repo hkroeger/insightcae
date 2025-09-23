@@ -19,6 +19,7 @@
  */
 
 #include "TopAbs_State.hxx"
+#include "base/exception.h"
 #include "base/linearalgebra.h"
 #include "geotest.h"
 
@@ -756,11 +757,17 @@ bool Feature::operator==(const Feature& o) const
 
 GeomAbs_CurveType Feature::edgeType(FeatureID i) const
 {
+    try
+    {
   const TopoDS_Edge& e = edge(i);
   double t0, t1;
   Handle_Geom_Curve crv=BRep_Tool::Curve(e, t0, t1);
   GeomAdaptor_Curve adapt(crv);
   return adapt.GetType();
+    }
+    catch (...)
+    { }
+    return GeomAbs_OtherCurve;
 }
 
 GeomAbs_SurfaceType Feature::faceType(FeatureID i) const
@@ -2067,12 +2074,44 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<
 
     for (const auto& fs: m1.providedFeatureSets_)
     {
-        providedFeatureSets_[prefix+fs.first]=
-            // same IDs but on this model
-            std::make_shared<FeatureSet>(
-                shared_from_this(),
-                fs.second->shape(),
-                fs.second->data());
+        providedFeatureSets_[prefix+fs.first]=fs.second;
+        // switch (fs.second->shape())
+        // {
+        //     case Vertex:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //         // same IDs but on this model
+        //         makeFeatureSet<Vertex>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     case Edge:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //             // same IDs but on this model
+        //             makeFeatureSet<Edge>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     case Face:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //             // same IDs but on this model
+        //             makeFeatureSet<Face>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     case Solid:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //             // same IDs but on this model
+        //             makeFeatureSet<Solid>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     default:
+        //         throw insight::UnhandledSelection();
+        // }
     };
 
 }
@@ -2743,6 +2782,7 @@ bool SingleVolumeFeature::isSingleVolume() const
 {
     return true;
 }
+
 
 
 

@@ -37,6 +37,7 @@ class Cone
     ScalarPtr D2_;
     ScalarPtr di_;
 
+    Cone(const Cone&o, TreeCloneMap& tcm);
     Cone ( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di = ScalarPtr() );
 
     size_t calcHash() const override;
@@ -44,8 +45,11 @@ class Cone
 
 public:
     declareType ( "Cone" );
-
+#ifndef SWIG
+    DEPENDS((p1_, p2_, D1_, D2_, di_));
+#endif
     CREATE_FUNCTION(Cone);
+    CLONEABLE(Cone);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

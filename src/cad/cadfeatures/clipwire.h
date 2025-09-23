@@ -29,9 +29,9 @@ namespace cad {
 class ClipWire
     : public DerivedFeature
 {
-    FeaturePtr m1_;
     ScalarPtr ls_, le_;
 
+    ClipWire(const ClipWire&o, TreeCloneMap& tcm);
     ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
 
 protected:
@@ -40,8 +40,11 @@ protected:
 
 public:
     declareType("ClipWire");
-
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (ls_, le_));
+#endif
     CREATE_FUNCTION(ClipWire);
+    CLONEABLE(ClipWire);
 
     static void insertrule(parser::ISCADParser& ruleset);
     static FeatureCmdInfoList ruleDocumentation();

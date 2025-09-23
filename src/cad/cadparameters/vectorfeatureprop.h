@@ -36,10 +36,16 @@ class PointFeatureProp
 {
   FeaturePtr model_;
   std::string name_;
-  
+
+  PointFeatureProp(const PointFeatureProp&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(PointFeatureProp);
+
   PointFeatureProp(FeaturePtr model, const std::string& name);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -51,9 +57,15 @@ class VectorFeatureProp
   FeaturePtr model_;
   std::string name_;
   
+  VectorFeatureProp(const VectorFeatureProp&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(VectorFeatureProp);
+
   VectorFeatureProp(FeaturePtr model, const std::string& name);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -63,10 +75,16 @@ class SinglePointCoords
 : public insight::cad::Vector
 {
   ConstFeatureSetPtr pfs_;
-  
+
+    SinglePointCoords(const SinglePointCoords&o, TreeCloneMap& tcm);
 public:
-  SinglePointCoords(ConstFeatureSetPtr pfs);
-  virtual arma::mat value() const;
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(SinglePointCoords);
+
+    SinglePointCoords(ConstFeatureSetPtr pfs);
+  arma::mat value() const override;
 };
 
 
@@ -76,8 +94,14 @@ class CircleEdgeCenterCoords
 : public insight::cad::Vector
 {
   ConstFeatureSetPtr pfs_;
-  
+
+    CircleEdgeCenterCoords(const CircleEdgeCenterCoords&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(CircleEdgeCenterCoords);
+
   CircleEdgeCenterCoords(ConstFeatureSetPtr pfs);
   void compute(arma::mat& pc, double& D, arma::mat& ex) const;
   arma::mat value() const override;
@@ -90,10 +114,16 @@ class DatumPointCoord
 : public insight::cad::Vector
 {
   ConstDatumPtr pfs_;
-  
+
+    DatumPointCoord(const DatumPointCoord&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(DatumPointCoord);
+
   DatumPointCoord(ConstDatumPtr pfs);
-  virtual arma::mat value() const;
+   arma::mat value() const override;
 };
 
 
@@ -103,10 +133,16 @@ class DatumDir
 : public insight::cad::Vector
 {
   ConstDatumPtr pfs_;
-  
+
+    DatumDir(const DatumDir&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(DatumDir);
+
   DatumDir(ConstDatumPtr pfs);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -115,9 +151,15 @@ class XsecCurveCurve
 {
   ConstFeaturePtr c1_, c2_;
 
+    XsecCurveCurve(const XsecCurveCurve&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((c1_, c2_));
+#endif
+    CLONEABLE(XsecCurveCurve);
+
   XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -126,10 +168,16 @@ class DatumPlaneNormal
 : public insight::cad::Vector
 {
   ConstDatumPtr pfs_;
-  
+
+    DatumPlaneNormal(const DatumPlaneNormal&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(DatumPlaneNormal);
+
   DatumPlaneNormal(ConstDatumPtr pfs);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -139,9 +187,15 @@ class DatumPlaneX
 {
     ConstDatumPtr pfs_;
 
+    DatumPlaneX(const DatumPlaneX&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(DatumPlaneX);
+
     DatumPlaneX(ConstDatumPtr pfs);
-    virtual arma::mat value() const;
+    arma::mat value() const override;
 };
 
 
@@ -151,9 +205,15 @@ class DatumPlaneY
 {
     ConstDatumPtr pfs_;
 
+    DatumPlaneY(const DatumPlaneY&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(DatumPlaneY);
+
     DatumPlaneY(ConstDatumPtr pfs);
-    virtual arma::mat value() const;
+    arma::mat value() const override;
 };
 
 
@@ -162,10 +222,16 @@ class BBMin
 : public insight::cad::Vector
 {
   FeaturePtr model_;
-  
+
+    BBMin(const BBMin&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+    CLONEABLE(BBMin);
+
   BBMin(FeaturePtr model);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -175,10 +241,16 @@ class BBMax
 : public insight::cad::Vector
 {
   FeaturePtr model_;
-  
+
+    BBMax(const BBMax&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+    CLONEABLE(BBMax);
+
   BBMax(FeaturePtr model);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -188,10 +260,16 @@ class COG
 : public insight::cad::Vector
 {
   FeaturePtr model_;
-  
+
+    COG(const COG&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+    CLONEABLE(COG);
+
   COG(FeaturePtr model);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -201,10 +279,16 @@ class SurfaceCOG
 : public insight::cad::Vector
 {
   FeaturePtr model_;
-  
+
+   SurfaceCOG (const SurfaceCOG&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+    CLONEABLE(SurfaceCOG);
+
   SurfaceCOG(FeaturePtr model);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -216,9 +300,15 @@ class SurfaceInertiaAxis
   FeaturePtr model_;
   int axis_;
   
+  SurfaceInertiaAxis(const SurfaceInertiaAxis&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(SurfaceInertiaAxis);
+
   SurfaceInertiaAxis(FeaturePtr model, int axis);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -229,9 +319,15 @@ class PointInFeatureCS
     FeaturePtr model_;
     VectorPtr locP_;
 
+    PointInFeatureCS(const PointInFeatureCS&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_,locP_));
+#endif
+    CLONEABLE(PointInFeatureCS);
+
     PointInFeatureCS(FeaturePtr model, VectorPtr locP);
-    virtual arma::mat value() const;
+    arma::mat value() const override;
 };
 
 

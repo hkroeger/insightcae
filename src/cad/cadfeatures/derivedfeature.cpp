@@ -38,11 +38,25 @@ namespace cad
   
 defineType(DerivedFeature);
 
+size_t DerivedFeature::calcHash() const
+{
+    ParameterListHash h;
+    h+=*basefeat_;
+    return h.getHash();
+}
 
+DerivedFeature::DerivedFeature(const DerivedFeature&o, TreeCloneMap& tcm)
+    : CL(basefeat_)
+{}
 
 DerivedFeature::DerivedFeature(ConstFeaturePtr basefeat)
 : basefeat_(basefeat)
 {}
+
+ConstFeaturePtr DerivedFeature::baseFeature() const
+{
+    return basefeat_;
+}
 
 
 double DerivedFeature::density() const 
@@ -152,6 +166,11 @@ bool DerivedFeature::isSingleVolume() const
     return basefeat_->isSingleVolume();
 }
 
+void DerivedFeature::operator=(const DerivedFeature& o)
+{
+    basefeat_=o.basefeat_;
+    Feature::operator=(o);
+}
 
 }
 }

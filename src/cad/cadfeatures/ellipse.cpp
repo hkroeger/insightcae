@@ -98,6 +98,10 @@ void Ellipse::build()
 }
 
 
+Ellipse::Ellipse(const Ellipse&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(axmaj_), CL(axmin_)
+{}
+
 
 
 Ellipse::Ellipse(VectorPtr p0, VectorPtr axmaj, VectorPtr axmin)

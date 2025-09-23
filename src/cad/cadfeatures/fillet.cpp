@@ -46,12 +46,17 @@ size_t Fillet::calcHash() const
   ParameterListHash h;
   h+=*edges_;
   h+=r_->value();
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
   
-  
+Fillet::Fillet(const Fillet&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(edges_), CL(r_)
+{}
+
+
 Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
 : DerivedFeature(edges->model()), edges_(edges), r_(r)
 {}

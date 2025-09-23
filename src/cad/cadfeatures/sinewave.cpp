@@ -58,6 +58,11 @@ size_t SineWave::calcHash() const
 
 
 
+SineWave::SineWave(const SineWave&o, TreeCloneMap& tcm)
+: CL(l_), CL(A_)
+{}
+
+
 
 
 SineWave::SineWave(ScalarPtr l, ScalarPtr A )

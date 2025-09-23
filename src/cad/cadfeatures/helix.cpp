@@ -48,7 +48,9 @@ size_t Helix::calcHash() const
 }
 
 
-
+Helix::Helix(const Helix&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(p1_), CL(d_), CL(winds_)
+{}
 
 
 Helix::Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)

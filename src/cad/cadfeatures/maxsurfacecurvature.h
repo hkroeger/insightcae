@@ -13,6 +13,7 @@ class MaxSurfaceCurvature
 {
     FeatureSetPtr faces_;
 
+    MaxSurfaceCurvature(const MaxSurfaceCurvature&o, TreeCloneMap& tcm);
     MaxSurfaceCurvature(FeatureSetPtr faces);
 
 protected:
@@ -21,8 +22,11 @@ protected:
 
 public:
     declareType("MaxSurfaceCurvature");
-
+#ifndef SWIG
+    DEPENDS((faces_));
+#endif
     CREATE_FUNCTION(MaxSurfaceCurvature);
+    CLONEABLE(MaxSurfaceCurvature);
 
     operator const TopoDS_Edge& () const;
 

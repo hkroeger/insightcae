@@ -16,7 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
+#include "cadfeature.h"
 #include "parser.h"
 #include "lookuptablescalar.h"
 #include "base/tools.h"
@@ -28,6 +28,14 @@ namespace insight
 {
 namespace cad 
 {
+
+LookupTableScalar::LookupTableScalar(const LookupTableScalar& o, TreeCloneMap& tcm)
+   : name_(o.name_),
+    keycol_(o.keycol_),
+    CL(keyval_),
+    depcol_(o.depcol_),
+    select_nearest_(o.select_nearest_)
+{}
   
 LookupTableScalar::LookupTableScalar
 (

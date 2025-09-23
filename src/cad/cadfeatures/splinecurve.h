@@ -36,6 +36,7 @@ class SplineCurve
     std::vector<VectorPtr> pts_;
     VectorPtr tan0_, tan1_;
 
+    SplineCurve(const SplineCurve&o, TreeCloneMap& tcm);
     SplineCurve ( const std::vector<VectorPtr>& pts, VectorPtr tan0 = VectorPtr(), VectorPtr tan1 = VectorPtr() );
 
     size_t calcHash() const override;
@@ -43,7 +44,11 @@ class SplineCurve
 
 public:
     declareType ( "SplineCurve" );
+#ifndef SWIG
+    DEPENDS((pts_,tan0_, tan1_));
+#endif
     CREATE_FUNCTION(SplineCurve);
+    CLONEABLE(SplineCurve);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

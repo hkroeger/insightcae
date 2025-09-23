@@ -306,7 +306,25 @@ void Bar::build()
 }
 
 
-
+Bar::Bar(const Bar&o, TreeCloneMap& tcm)
+    : CL(xsec_), CL(thickness_), CL(vert_),
+    CL(ext0_) , CL(ext1_) ,
+    CL(miterangle0_vert_) , CL(miterangle1_vert_) ,
+    CL(miterangle0_hor_) , CL(miterangle1_hor_) ,
+    CL(attractPt_)
+{
+    if (auto* fp=boost::get<FeaturePtr>(&o.endPts_))
+    {
+        endPts_=tcm.clone(*fp);
+    }
+    else if (auto* tp=boost::get<TwoPoints>(&o.endPts_))
+    {
+        endPts_=TwoPoints{
+            tcm.clone(tp->first),
+            tcm.clone(tp->second)
+        };
+    }
+}
 
 
 

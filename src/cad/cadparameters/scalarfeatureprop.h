@@ -22,9 +22,12 @@
 
 #include "cadparameter.h"
 #include "cadtypes.h"
+#include "datum.h"
 
 namespace insight {
 namespace cad {
+
+
 
 class ScalarFeatureProp 
 : public Scalar
@@ -32,40 +35,86 @@ class ScalarFeatureProp
   FeaturePtr model_;
   std::string name_;
   
+  ScalarFeatureProp(const ScalarFeatureProp&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(ScalarFeatureProp);
+#ifndef SWIG
+  DEPENDS((model_));
+#endif
   ScalarFeatureProp(FeaturePtr model, const std::string& name);
-  virtual double value() const;
+  double value() const override;
 };
+
+
 
 class FeatureVolume 
 : public Scalar
 {
   FeaturePtr model_;
   
+  FeatureVolume(const FeatureVolume&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(FeatureVolume);
+
   FeatureVolume(FeaturePtr model);
-  virtual double value() const;
+  double value() const override;
 };
+
+class FeatureSurfaceArea
+    : public Scalar
+{
+    FeaturePtr model_;
+
+    FeatureSurfaceArea(const FeatureSurfaceArea&o, TreeCloneMap& tcm);
+public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+    CLONEABLE(FeatureSurfaceArea);
+
+    FeatureSurfaceArea(FeaturePtr model);
+    double value() const override;
+};
+
 
 class CumulativeEdgeLength 
 : public Scalar
 {
   FeaturePtr model_;
   
+  CumulativeEdgeLength(const CumulativeEdgeLength&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(CumulativeEdgeLength);
+
   CumulativeEdgeLength(FeaturePtr model);
-  virtual double value() const;
+  double value() const override;
 };
+
+
 
 class CircleDiameter
 : public Scalar
 {
   ConstFeatureSetPtr pfs_;
 
+  CircleDiameter(const CircleDiameter&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+  CLONEABLE(CircleDiameter);
+
   CircleDiameter(ConstFeatureSetPtr pfs);
-  virtual double value() const;
+  double value() const override;
 };
+
+
 
 }
 }

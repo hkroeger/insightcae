@@ -36,11 +36,16 @@ class Spring
   size_t calcHash() const override;
   void build() override;
   
+  Spring(const Spring&o, TreeCloneMap& tcm);
   Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
 
 public:
   declareType("Spring");
+#ifndef SWIG
+  DEPENDS((p0_, p1_, d_, winds_));
+#endif
   CREATE_FUNCTION(Spring);
+  CLONEABLE(Spring);
   
   static void insertrule(parser::ISCADParser& ruleset);
 };

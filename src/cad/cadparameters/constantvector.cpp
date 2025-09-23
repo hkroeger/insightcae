@@ -25,6 +25,10 @@ namespace insight
 namespace cad
 {
 
+void ConstantVector::replaceDependency(const DependencyReplacement& repl)
+{}
+
+
 insight::cad::ConstantVector::ConstantVector(const arma::mat& value)
 : value_(value)
 {}
@@ -33,6 +37,14 @@ insight::cad::ConstantVector::ConstantVector(const arma::mat& value)
 arma::mat insight::cad::ConstantVector::value() const
 {
   return value_;
+}
+
+std::shared_ptr<DependencySource>
+ConstantVector::shallowClone(TreeCloneMap &tcm) const
+{
+    return std::shared_ptr<DependencySource>(
+        new ConstantVector(value_)
+        );
 }
 
 VectorPtr matconst(const arma::mat& m)

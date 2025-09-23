@@ -54,6 +54,11 @@ size_t Pyramid::calcHash() const
 
 
 
+Pyramid::Pyramid(const Pyramid&o, TreeCloneMap& tcm)
+    : CL(base_), CL(ptip_)
+{}
+
+
 
 Pyramid::Pyramid(FeaturePtr base, VectorPtr ptip)
 : Feature(),

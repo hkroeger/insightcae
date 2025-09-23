@@ -52,6 +52,10 @@ size_t Ring::calcHash() const
 }
 
 
+Ring::Ring(const Ring&o, TreeCloneMap& tcm)
+: CL(p1_), CL(p2_), CL(Da_), CL(Di_)
+{}
+
 
 Ring::Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
 : p1_(p1), p2_(p2), Da_(Da), Di_(Di)

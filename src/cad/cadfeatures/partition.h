@@ -35,6 +35,7 @@ class Partition
 {
   FeaturePtr m1_, m2_;
   
+  Partition(const Partition&o, TreeCloneMap& tcm);
   Partition(FeaturePtr m1, FeaturePtr m2);
 
   size_t calcHash() const override;
@@ -42,8 +43,11 @@ class Partition
 
 public:
   declareType("Partition");
-
+#ifndef SWIG
+  DEPENDS(( m1_, m2_));
+#endif
   CREATE_FUNCTION(Partition);
+  CLONEABLE(Partition);
   
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();

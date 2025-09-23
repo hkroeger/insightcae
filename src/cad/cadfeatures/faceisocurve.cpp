@@ -44,7 +44,9 @@ size_t FaceIsoCurve::calcHash() const
 
 
 
-
+FaceIsoCurve::FaceIsoCurve(const FaceIsoCurve&o, TreeCloneMap& tcm)
+    : CL(faces_), coord_(o.coord_), CL(iso_value_)
+{}
 
 FaceIsoCurve::FaceIsoCurve(FeatureSetPtr faces, UV coord, ScalarPtr iso_value)
 : faces_(faces), coord_(coord), iso_value_(iso_value)

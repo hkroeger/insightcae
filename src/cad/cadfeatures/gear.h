@@ -37,6 +37,7 @@ class SpurGear
     ScalarPtr t_;
     ScalarPtr clearance_;
 
+    SpurGear(const SpurGear&o, TreeCloneMap& tcm);
     SpurGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
     size_t calcHash() const override;
@@ -44,8 +45,11 @@ class SpurGear
 
 public:
     declareType ( "SpurGear" );
-
+#ifndef SWIG
+    DEPENDS((m_, z_, t_, clearance_));
+#endif
     CREATE_FUNCTION(SpurGear);
+    CLONEABLE(SpurGear);
 
     operator const TopoDS_Face& () const;
 
@@ -64,6 +68,7 @@ class BevelGear
     ScalarPtr t_;
     ScalarPtr clearance_;
 
+    BevelGear(const BevelGear&o, TreeCloneMap& tcm);
     BevelGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
     size_t calcHash() const override;
@@ -71,8 +76,11 @@ class BevelGear
 
 public:
     declareType ( "BevelGear" );
-
+#ifndef SWIG
+    DEPENDS((m_, z_, t_, clearance_));
+#endif
     CREATE_FUNCTION(BevelGear);
+    CLONEABLE(BevelGear);
 
     operator const TopoDS_Face& () const;
 

@@ -100,6 +100,14 @@ void Tongue::build()
   setShape(result);
 }
 
+
+Tongue::Tongue(const Tongue&o, TreeCloneMap& tcm)
+: CL(spine_), CL(direction_), CL(insidePt_),
+  CL(t_), CL(w_), CL(ovl_), CL(delta_)
+{}
+
+
+
 Tongue::Tongue(
     FeaturePtr spine,
     VectorPtr direction,

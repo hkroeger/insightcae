@@ -63,6 +63,15 @@ size_t SplineCurve::calcHash() const
 
 
 
+SplineCurve::SplineCurve(const SplineCurve&o, TreeCloneMap& tcm)
+    : CL(tan0_), CL(tan1_)
+{
+    for (auto& p: o.pts_)
+    {
+        pts_.push_back(tcm.clone(p));
+    }
+}
+
 
 
 SplineCurve::SplineCurve(const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1)

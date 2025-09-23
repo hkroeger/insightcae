@@ -30,9 +30,13 @@ class ConstantScalar
 {
   double value_;
 public:
+  void replaceDependency(const DependencyReplacement& repl) override;
   ConstantScalar(double value);
-  virtual double value() const;
+
+  double value() const override;
   void setValue(double v);
+
+  std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const override;
 };
 
 ScalarPtr scalarconst(double);

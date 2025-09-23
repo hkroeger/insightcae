@@ -32,6 +32,7 @@ class Chamfer
     ScalarPtr l_;
     ScalarPtr angle_;
 
+    Chamfer(const Chamfer&o, TreeCloneMap& tcm);
     Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
 
 protected:
@@ -40,8 +41,11 @@ protected:
 
 public:
     declareType("Chamfer");
-
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (edges_, l_, angle_));
+#endif
     CREATE_FUNCTION(Chamfer);
+    CLONEABLE(Chamfer);
 
     static void insertrule(parser::ISCADParser& ruleset);
     static FeatureCmdInfoList ruleDocumentation();

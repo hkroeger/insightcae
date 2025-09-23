@@ -55,7 +55,10 @@ size_t CurvePattern::calcHash() const
 
 
 
-  
+CurvePattern::CurvePattern(const CurvePattern&o, TreeCloneMap& tcm)
+    : Compound(o, tcm),
+    CL(m1_), CL(curve_), CL(delta_), CL(n_)
+{}
   
 CurvePattern::CurvePattern(FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n)
 : m1_(m1), curve_(curve), delta_(delta), n_(n)

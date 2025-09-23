@@ -22,6 +22,11 @@ size_t SingleVertex::calcHash() const
     return h.getHash();
 }
 
+
+SingleVertex::SingleVertex(const SingleVertex&o, TreeCloneMap& tcm)
+    : CL(p_)
+{}
+
 SingleVertex::SingleVertex(VectorPtr p)
     : p_(p)
 {}

@@ -31,9 +31,11 @@ class Bar
 : public Feature
 {
 public:
+    typedef std::pair<VectorPtr,VectorPtr> TwoPoints;
+
   typedef boost::variant<
     FeaturePtr,
-    std::pair<VectorPtr,VectorPtr>
+    TwoPoints
   > EndPoints;
 
   typedef boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr> boost_EndPointMod;
@@ -61,6 +63,7 @@ private:
   size_t calcHash() const override;
   void build() override;
 
+  Bar(const Bar&o, TreeCloneMap& tcm);
  /**
    * crate bar between p0 and p1. Cross section's xsec (single face) y-axis will be aligned with vertical direction vert.
    * bar is elongated at p0 by ext0 and at p1 by ext1, respectively.
@@ -102,8 +105,14 @@ private:
 
 public:
   declareType("Bar");
+#ifndef SWIG
+  DEPENDS((endPts_, xsec_, thickness_, vert_, ext0_, ext1_,
+           miterangle0_vert_, miterangle1_vert_, miterangle0_hor_, miterangle1_hor_,
+           attractPt_));
+#endif
 
   CREATE_FUNCTION(Bar);
+  CLONEABLE(Bar);
 
   static std::shared_ptr<Bar> create_derived
   (

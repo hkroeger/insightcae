@@ -33,9 +33,17 @@ size_t StitchedCompound::calcHash() const
 }
 
 
+StitchedCompound::StitchedCompound(const StitchedCompound&o, TreeCloneMap& tcm)
+    : CL(faces_), CL(tol_)
+{}
+
+
+
 StitchedCompound::StitchedCompound(FeatureSetPtr faces, ScalarPtr tol)
 :faces_(faces), tol_(tol)
 {}
+
+
 
 void StitchedCompound::build()
 {

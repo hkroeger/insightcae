@@ -74,6 +74,19 @@ addToStaticFunctionTable(Feature, Import, ruleDocumentation);
 
 
 
+Import::Import(const Import&o, TreeCloneMap& tcm)
+{
+    if (auto* fp=boost::get<FeatureSetPtr>(&o.importSource_))
+    {
+        importSource_=tcm.clone(*fp);
+    }
+    else
+    {
+        importSource_=o.importSource_;
+    }
+}
+
+
 
 Import::Import ( const TopoDS_Shape& shape )
 : importSource_(shape)
@@ -211,6 +224,15 @@ void Import::build()
       this->operator=(*cache.markAsUsed<Import>(hash()));
   }
 
+}
+
+void Import::replaceDependency(const DependencyReplacement &repl)
+{
+    if (auto* dep_fsp = boost::get<FeatureSetPtr>(&importSource_))
+    {
+        repl(*dep_fsp);
+    }
+    invalidate();
 }
 
 

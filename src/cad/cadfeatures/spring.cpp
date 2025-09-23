@@ -50,6 +50,12 @@ size_t Spring::calcHash() const
 
 
 
+Spring::Spring(const Spring&o, TreeCloneMap& tcm)
+: CL(p0_), CL(p1_), CL(d_), CL(winds_)
+{}
+
+
+
 Spring::Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)
 : p0_(p0), p1_(p1), d_(d), winds_(winds)
 {}

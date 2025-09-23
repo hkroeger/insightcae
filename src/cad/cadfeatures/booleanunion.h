@@ -31,8 +31,9 @@ namespace cad
 class BooleanUnion
     : public DerivedFeature
 {
-    FeaturePtr m1_, m2_;
+    FeaturePtr m2_;
 
+    BooleanUnion(const BooleanUnion&o, TreeCloneMap& tcm);
     BooleanUnion(FeaturePtr m1);
     BooleanUnion(FeaturePtr m1, FeaturePtr m2);
 
@@ -41,8 +42,11 @@ class BooleanUnion
 
 public:
     declareType("BooleanUnion");
-
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (m2_));
+#endif
     CREATE_FUNCTION(BooleanUnion);
+    CLONEABLE(BooleanUnion);
 
     static void insertrule(parser::ISCADParser& ruleset);
     static FeatureCmdInfoList ruleDocumentation();

@@ -23,6 +23,18 @@ VectorPtr SingleEdgeFeature::end() const
     return matconst(refpoints_.at("p1"));
 }
 
+VectorPtr SingleEdgeFeature::startTangent() const
+{
+    checkForBuildDuringAccess();
+    return matconst(refvectors_.at("et0"));
+}
+
+VectorPtr SingleEdgeFeature::endTangent() const
+{
+    checkForBuildDuringAccess();
+    return matconst(refvectors_.at("et1"));
+}
+
 void SingleEdgeFeature::setShape(const TopoDS_Shape &shape)
 {
     Feature::setShape(shape);
@@ -50,6 +62,19 @@ bool SingleEdgeFeature::isSingleEdge() const
 bool SingleEdgeFeature::isSingleOpenWire() const
 {
   return true;
+}
+
+ImportedSingleEdgeFeature::ImportedSingleEdgeFeature(
+    const ImportedSingleEdgeFeature&o, TreeCloneMap& tcm)
+{
+    if (auto *fp=boost::get<FeatureSetPtr>(&o.importSource_))
+    {
+        importSource_=tcm.clone(*fp);
+    }
+    else
+    {
+        importSource_=o.importSource_;
+    }
 }
 
 
@@ -122,6 +147,15 @@ void ImportedSingleEdgeFeature::build()
     {
         this->operator=(*cache.markAsUsed<ImportedSingleEdgeFeature>(hash()));
     }
+}
+
+void ImportedSingleEdgeFeature::replaceDependency(const DependencyReplacement &repl)
+{
+    if (auto* fsd=boost::get<FeatureSetPtr>(&importSource_))
+    {
+        repl(*fsd);
+    }
+    invalidate();
 }
 
 } // namespace cad

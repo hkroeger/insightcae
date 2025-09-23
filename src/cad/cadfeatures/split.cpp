@@ -37,9 +37,7 @@ namespace cad {
 
 
 defineType(Split);
-//addToFactoryTable(Feature, Split);
 addToStaticFunctionTable(Feature, Split, insertrule);
-//addToStaticFunctionTable(Feature, Split, ruleDocumentation);
 
 
 size_t Split::calcHash() const
@@ -66,14 +64,27 @@ TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
   return spl.Shape();
 }
 
+
+
+Split::Split(const Split&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(source_), CL(target_)
+{}
+
+
 Split::Split(FeaturePtr source, FeaturePtr target)
 : DerivedFeature(target), source_(source), target_(target)
 {}
+
+
+
 
 void Split::build()
 {
   setShape(makeSplit(*source_, *target_));
 }
+
+
 
 
 /*! \page Split Split

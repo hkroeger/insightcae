@@ -63,6 +63,10 @@ size_t Mirror::calcHash() const
 
 
 
+Mirror::Mirror(const Mirror&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(m1_), CL(pl_), s_(o.s_), tr_(o.tr_)
+{}
 
 
 Mirror::Mirror(FeaturePtr m1, DatumPtr pl)

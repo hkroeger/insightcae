@@ -53,6 +53,9 @@ size_t FixShape::calcHash() const
 
 
 
+FixShape::FixShape(const FixShape&o, TreeCloneMap& tcm)
+    : CL(in_)
+{}
 
 
 FixShape::FixShape ( FeaturePtr in )

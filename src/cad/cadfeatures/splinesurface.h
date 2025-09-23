@@ -33,6 +33,7 @@ class SplineSurface
 {
     std::vector<std::vector<VectorPtr> > pts_;
 
+    SplineSurface(const SplineSurface&o, TreeCloneMap& tcm);
     SplineSurface ( const std::vector<std::vector<VectorPtr> >& pts );
 
     size_t calcHash() const override;
@@ -40,7 +41,11 @@ class SplineSurface
 
 public:
     declareType ( "SplineSurface" );
+#ifndef SWIG
+    DEPENDS((pts_));
+#endif
     CREATE_FUNCTION(SplineSurface);
+    CLONEABLE(SplineSurface);
 
     operator const TopoDS_Face& () const;
 

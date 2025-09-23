@@ -35,11 +35,16 @@ class StitchedShell
   size_t calcHash() const override;
   void build() override;
   
+  StitchedShell(const StitchedShell&o, TreeCloneMap& tcm);
   StitchedShell(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
 
 public:
   declareType("StitchedShell");
+#ifndef SWIG
+  DEPENDS((faces_,tol_));
+#endif
   CREATE_FUNCTION(StitchedShell);
+  CLONEABLE(StitchedShell);
   
   static FeatureCmdInfoList ruleDocumentation();
   static void insertrule(parser::ISCADParser& ruleset);

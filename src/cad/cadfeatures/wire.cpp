@@ -63,6 +63,22 @@ size_t Wire::calcHash() const
 
 
 
+Wire::Wire(const Wire&o, TreeCloneMap& tcm)
+{
+    if (auto* fsp=boost::get<FeatureSetPtr>(&o.edges_))
+    {
+        edges_=tcm.clone(*fsp);
+    }
+    else if (auto* fpv=boost::get<std::vector<FeaturePtr> >(&o.edges_))
+    {
+        std::vector<FeaturePtr> nv;
+        for (auto& fp: *fpv)
+        {
+            nv.push_back(tcm.clone(fp));
+        }
+        edges_=nv;
+    }
+}
 
 
 

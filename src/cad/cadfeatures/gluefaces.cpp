@@ -56,6 +56,11 @@ size_t GlueFaces::calcHash() const
 }
 
 
+GlueFaces::GlueFaces(const GlueFaces&o, TreeCloneMap& tcm)
+    : CL(feat_), CL(tol_)
+{}
+
+
 GlueFaces::GlueFaces(FeaturePtr feat, ScalarPtr tol)
 : feat_(feat), tol_(tol)
 {

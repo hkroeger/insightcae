@@ -22,6 +22,7 @@
 #define INSIGHT_CAD_FEATURE_H
 
 #include "base/factory.h"
+#include "base/cppextensions.h"
 #include "cadtypes.h"
 #include "astbase.h"
 
@@ -103,6 +104,7 @@ protected:
     ConstFeaturePtr model_;
 
 public:
+
     QuantityComputer()
     {}
 
@@ -149,6 +151,7 @@ std::ostream& operator<<(std::ostream& os, const FeatureSetData& fs);
 
 
 class FeatureSet
+: public DependencySource
 {
 // #warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
   
@@ -161,7 +164,15 @@ class FeatureSet
   
   FeatureSetData data_;
 
+protected:
+  FeatureSet(const FeatureSet&o, TreeCloneMap& tcm);
+
 public:
+#ifndef SWIG
+  DEPENDS_NOINVALIDATE((model_));
+#endif
+  CLONEABLE(FeatureSet);
+
   FeatureSet(const FeatureSet& o);
   FeatureSet(ConstFeaturePtr m, EntityType shape);
   FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id);
@@ -189,9 +200,7 @@ public:
   
   void write() const;
 
-
   virtual size_t calcFeatureSetHash() const;
-
 };
 
 
@@ -212,6 +221,8 @@ class DeferredFeatureSet
 
     size_t calcHash() const override;
     void build() override;
+
+    DeferredFeatureSet(const DeferredFeatureSet&o, TreeCloneMap& tcm);
 
   /**
    * query an entire feature
@@ -234,9 +245,12 @@ class DeferredFeatureSet
         const FeatureSetParserArgList& refs = FeatureSetParserArgList()
     );
 
-
 public:
     CREATE_FUNCTION(DeferredFeatureSet);
+    CLONEABLE(DeferredFeatureSet);
+#ifndef SWIG
+    DEPENDS((baseSet_, refs_));
+#endif
 
     inline ConstFeatureSetPtr baseSet() const { return baseSet_; }
 

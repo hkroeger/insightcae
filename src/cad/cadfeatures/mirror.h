@@ -41,6 +41,7 @@ protected:
 
     gp_Trsf tr_;
 
+    Mirror(const Mirror&o, TreeCloneMap& tcm);
     Mirror ( FeaturePtr m1, DatumPtr pl );
     Mirror ( FeaturePtr m1, Mirror::Shortcut s );
 
@@ -50,8 +51,11 @@ protected:
 public:
 
     declareType ( "Mirror" );
-
+#ifndef SWIG
+    DEPENDS((m1_,pl_));
+#endif
     CREATE_FUNCTION(Mirror);
+    CLONEABLE(Mirror);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

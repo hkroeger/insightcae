@@ -16,11 +16,15 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
+#include "cadfeature.h"
 #include "scalarfeatureprop.h"
 #include "cadfeature.h"
 #include "geotest.h"
 
+
+insight::cad::ScalarFeatureProp::ScalarFeatureProp(const ScalarFeatureProp &o, TreeCloneMap &tcm)
+    :CL(model_), name_(o.name_)
+{}
 
 insight::cad::ScalarFeatureProp::ScalarFeatureProp
 (
@@ -37,6 +41,10 @@ double insight::cad::ScalarFeatureProp::value() const
 }
 
 
+insight::cad::FeatureVolume::FeatureVolume(const FeatureVolume &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::FeatureVolume::FeatureVolume(insight::cad::FeaturePtr model)
 : model_(model)
 {}
@@ -46,6 +54,27 @@ double insight::cad::FeatureVolume::value() const
 {
   return model_->modelVolume();
 }
+
+
+insight::cad::FeatureSurfaceArea::FeatureSurfaceArea(const FeatureSurfaceArea &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
+insight::cad::FeatureSurfaceArea::FeatureSurfaceArea(insight::cad::FeaturePtr model)
+    : model_(model)
+{}
+
+
+double insight::cad::FeatureSurfaceArea::value() const
+{
+    return model_->modelSurfaceArea();
+}
+
+
+
+insight::cad::CumulativeEdgeLength::CumulativeEdgeLength(const CumulativeEdgeLength &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
 
 insight::cad::CumulativeEdgeLength::CumulativeEdgeLength(insight::cad::FeaturePtr model)
 : model_(model)
@@ -63,6 +92,10 @@ double insight::cad::CumulativeEdgeLength::value() const
 }
 
 
+
+insight::cad::CircleDiameter::CircleDiameter(const CircleDiameter &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
 
 insight::cad::CircleDiameter::CircleDiameter(insight::cad::ConstFeatureSetPtr pfs)
 : pfs_(pfs)

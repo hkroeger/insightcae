@@ -56,6 +56,10 @@ size_t Spiral::calcHash() const
 
 
 
+Spiral::Spiral(const Spiral&o, TreeCloneMap& tcm)
+: CL(p0_), CL(axis_), CL(n_), CL(a_), CL(P_)
+{}
+
 
 
 Spiral::Spiral(VectorPtr p0, VectorPtr axis, ScalarPtr n, ScalarPtr a, ScalarPtr P)

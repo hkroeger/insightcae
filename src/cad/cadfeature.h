@@ -187,12 +187,16 @@ public:
 
 typedef std::vector<vtkSmartPointer<vtkProp> >  VTKActorList;
 
+
+
+
  
 /**
  * Base class of all CAD modelling features
  */
 class Feature
 : public ASTBase,
+  public DependencySource,
   public std::enable_shared_from_this<Feature>
 {
   
@@ -432,7 +436,7 @@ public:
   void saveAs
   (
     const boost::filesystem::path& filename,
-    const std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >& namedfeats 
+    const std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >& namedfeats
       = std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >()
   ) const;
   

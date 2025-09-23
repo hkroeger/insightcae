@@ -25,6 +25,9 @@
 #include "parser.h"
 
 #include "base/boost_include.h"
+#include <memory>
+
+#include "cadfeatures/sphere.h"
 
 using namespace boost;
 using namespace std;
@@ -65,6 +68,10 @@ std::ostream& operator<<(std::ostream& os, const Model& m)
     for (auto & d: m.modelsteps())
     {
         os << " " << d.first << " (" << d.second->type() << ")\n";
+        if (auto s=std::dynamic_pointer_cast<Sphere>(d.second))
+        {
+            s->print(os);
+        }
     }
 
     return os;
@@ -130,6 +137,33 @@ size_t Model::calcHash() const
 }
 
 
+
+Model::Model(const Model& o, TreeCloneMap& tcm)
+  : description_(o.description_),
+    cost_(o.cost_),
+    components_(o.components_),
+#warning implement dep source API
+    // syn_elem_dir_(o.syn_elem_dir_)
+    modelfile_(o.modelfile_)
+{
+    tcm.clone(o.scalars_, scalars_);
+    tcm.clone(o.points_, points_);
+    tcm.clone(o.directions_, directions_);
+    tcm.clone(o.datums_, datums_);
+    tcm.clone(o.modelsteps_, modelsteps_);
+    tcm.clone(o.vertexFeatures_, vertexFeatures_);
+    tcm.clone(o.edgeFeatures_, edgeFeatures_);
+    tcm.clone(o.faceFeatures_, faceFeatures_);
+    tcm.clone(o.solidFeatures_, solidFeatures_);
+    tcm.clone(o.models_, models_);
+    tcm.clone(o.postprocActions_, postprocActions_);
+
+#warning implement
+    //datasets_;
+}
+
+
+
 Model::Model(const ModelVariableTable& vars)
   : cost_(0.0)
 {
@@ -173,25 +207,62 @@ void Model::setCost(double cost)
   cost_=cost;
 }
 
+ModelVariableTable Model::allVariables() const
+{
+    ModelVariableTable mvt;
+
+    scalarSymbols().for_each(
+        [&](const std::string& name, ScalarPtr v)
+        {
+            mvt.push_back(ModelVariableTable::value_type{name, v});
+        });
+
+    pointSymbols().for_each(
+        [&](const std::string& name, VectorPtr v)
+        {
+            mvt.push_back(ModelVariableTable::value_type{name, VectorPtrAndType{v, Point}});
+        });
+
+    directionSymbols().for_each(
+        [&](const std::string& name, VectorPtr v)
+        {
+            mvt.push_back(ModelVariableTable::value_type{name, VectorPtrAndType{v, Direction}});
+        });
+
+    datumSymbols().for_each(
+        [&](const std::string& name, DatumPtr v)
+        {
+            mvt.push_back(ModelVariableTable::value_type{name, v});
+        });
+
+    modelstepSymbols().for_each(
+        [&](const std::string& name, FeaturePtr v)
+        {
+            mvt.push_back(ModelVariableTable::value_type{name, v});
+        });
+
+    return mvt;
+}
+
 
 void Model::build()
 {
-    ExecTimer t("Model::build() [file "+modelfile_.string()+"]");
+    if (!modelfile_.empty())
+    {
+        ExecTimer t("Model::build() [file "+modelfile_.string()+"]");
 
-    int failloc=-1;
-    if (!parseISCADModelFile(modelfile_, this, &failloc, &syn_elem_dir_))
-    {
-        throw insight::Exception
-        (
-            "Failed to parse model "
-            +modelfile_.string()+
-            str(format(". Stopped at %d.")%failloc)
-        );
+        int failloc=-1;
+        if (!parseISCADModelFile(modelfile_, this, &failloc, &syn_elem_dir_))
+        {
+            throw insight::Exception
+            (
+                "Failed to parse model "
+                +modelfile_.string()+
+                str(format(". Stopped at %d.")%failloc)
+            );
+        }
     }
-    else
-    {
-        setValid();
-    }
+    setValid();
 }
 
 
@@ -606,6 +677,15 @@ Model::PostprocActionTableContents Model::postprocActions() const
   PostprocActionTableContents result;
   postprocActions_.for_each(SymbolTableContentsInserter<PostprocActionPtr>(result));
   return result;
+}
+
+
+std::shared_ptr<DependencySource>
+Model::shallowClone(TreeCloneMap& tcm) const
+{
+    return std::shared_ptr<DependencySource>(
+        new Model(*this, tcm)
+        );
 }
 
 

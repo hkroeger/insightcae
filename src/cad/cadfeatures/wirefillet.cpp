@@ -53,6 +53,11 @@ size_t WireFillet::calcHash() const
 
 
 
+WireFillet::WireFillet(const WireFillet&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(vertices_), CL(r_)
+{}
+
+
 
 
 WireFillet::WireFillet(FeatureSetPtr vertices, ScalarPtr r)

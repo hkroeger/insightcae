@@ -56,6 +56,15 @@ size_t ClosedPolyline::calcHash() const
 
 
 
+ClosedPolyline::ClosedPolyline(const ClosedPolyline&o, TreeCloneMap& tcm)
+{
+    for (auto& p: o.pts_)
+    {
+        pts_.push_back(
+            tcm.clone(p));
+    }
+}
+
 
 ClosedPolyline::ClosedPolyline(const std::vector<VectorPtr>& pts)
 : pts_(pts)

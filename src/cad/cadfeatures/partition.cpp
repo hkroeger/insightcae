@@ -57,6 +57,11 @@ size_t Partition::calcHash() const
 
 
 
+Partition::Partition(const Partition&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(m1_), CL(m2_)
+{}
+
 
 
 Partition::Partition(FeaturePtr m1, FeaturePtr m2)

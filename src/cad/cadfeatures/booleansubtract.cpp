@@ -48,18 +48,18 @@ size_t BooleanSubtract::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*m1_;
   h+=*m2_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
+BooleanSubtract::BooleanSubtract(const BooleanSubtract&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(m2_)
+{}
 
 
-
-BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
+BooleanSubtract::BooleanSubtract(ConstFeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
-  m1_(m1),
   m2_(m2)
 {
   setFeatureSymbolName( "("+m1->featureSymbolName()+" - "+m2->featureSymbolName()+")" );
@@ -76,10 +76,10 @@ void BooleanSubtract::build()
 
   if (!cache.contains(hash()))
   {
-    if (!m1_) throw insight::CADException(shared_from_this(), _("Boolean subtract: invalid base shape") );
+    if (!baseFeature()) throw insight::CADException(shared_from_this(), _("Boolean subtract: invalid base shape") );
     if (!m2_) throw insight::CADException(shared_from_this(), _("Boolean subtract: invalid tool shape") );
 
-    BRepAlgoAPI_Cut cutter(*m1_, *m2_);
+    BRepAlgoAPI_Cut cutter(*baseFeature(), *m2_);
     cutter.Build();
 
     if (!cutter.IsDone())
@@ -94,23 +94,22 @@ void BooleanSubtract::build()
     TopoDS_Shape subs=cutter.Shape();
     setShape(subs);
   
-    copyDatums(*m1_);
+    copyDatums(*baseFeature());
     cache.insert(shared_from_this());
   }
   else
   {
       this->operator=(*cache.markAsUsed<BooleanSubtract>(hash()));
   }
-  m1_->unsetLeaf();
+  baseFeature()->unsetLeaf();
   m2_->unsetLeaf();
 }
 
 
 void BooleanSubtract::operator=(const BooleanSubtract& o)
 {
-    m1_=o.m1_;
+    DerivedFeature::operator=(o);
     m2_=o.m2_;
-    Feature::operator=(o);
 }
 
 

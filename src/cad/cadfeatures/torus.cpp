@@ -57,6 +57,11 @@ size_t Torus::calcHash() const
 
 
 
+Torus::Torus(const Torus&o, TreeCloneMap& tcm)
+: CL(p0_), CL(axisTimesD_), CL(d_)
+{}
+
+
 
 
 Torus::Torus(VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d)

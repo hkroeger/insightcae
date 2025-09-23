@@ -34,6 +34,7 @@ class FixShape
     FeaturePtr in_;
 
 
+    FixShape(const FixShape&o, TreeCloneMap& tcm);
     FixShape ( FeaturePtr in );
 
     size_t calcHash() const override;
@@ -41,8 +42,11 @@ class FixShape
 
 public:
     declareType ( "FixShape" );
-
+#ifndef SWIG
+    DEPENDS((in_));
+#endif
     CREATE_FUNCTION(FixShape);
+    CLONEABLE(FixShape);
 
     operator const TopoDS_Shape& () const;
 

@@ -65,7 +65,20 @@ size_t Exploded::calcHash() const
 
 
 
-
+Exploded::Exploded(const Exploded&o, TreeCloneMap& tcm)
+    : CL(axis_)
+{
+    for (auto& ec: o.components_)
+    {
+        auto& fp=boost::fusion::get<0>(ec);
+        auto& ed=boost::fusion::get<1>(ec);
+        auto& vp=boost::fusion::get<2>(ec);
+        auto& sp=boost::fusion::get<3>(ec);
+        components_.push_back(ExplosionComponent{
+            tcm.clone(fp), ed, tcm.clone(vp), tcm.clone(sp)
+        });
+    }
+}
 
 Exploded::Exploded( DatumPtr axis, const ExplosionComponentList& m1)
 : axis_(axis),
@@ -160,6 +173,20 @@ void Exploded::build()
     }
     
     setShape ( result );
+}
+
+
+
+void Exploded::replaceDependency(const DependencyReplacement &repl)
+{
+    repl(axis_);
+    for (auto& ec: components_)
+    {
+        repl(boost::fusion::get<0>(ec));
+        repl(boost::fusion::get<2>(ec));
+        repl(boost::fusion::get<3>(ec));
+    }
+    invalidate();
 }
 
 

@@ -77,6 +77,25 @@ size_t FillingFace::calcHash() const
 
 
 
+FillingFace::FillingFace(const FillingFace&o, TreeCloneMap& tcm)
+    : inverted_(o.inverted_)
+{
+    auto cl = [&](const EdgeInput& ei) -> EdgeInput
+    {
+        if (auto*fp = boost::get<FeaturePtr>(&ei))
+        {
+            return tcm.clone(*fp);
+        }
+        else if (auto*fsp = boost::get<FeatureSetPtr>(&ei))
+        {
+            return tcm.clone(*fsp);
+        }
+    };
+
+    e1_=cl(o.e1_);
+    e2_=cl(o.e2_);
+}
+
 
 
 FillingFace::FillingFace ( EdgeInput e1, EdgeInput e2, bool inverted )

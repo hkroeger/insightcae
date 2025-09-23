@@ -20,6 +20,9 @@ public:
     virtual VectorPtr start() const;
     virtual VectorPtr end() const;
 
+    virtual VectorPtr startTangent() const;
+    virtual VectorPtr endTangent() const;
+
     void setShape(const TopoDS_Shape& shape) override;
 
     bool isSingleEdge() const override;
@@ -32,6 +35,7 @@ class ImportedSingleEdgeFeature
 {
     boost::variant<TopoDS_Edge,FeatureSetPtr> importSource_;
 
+    ImportedSingleEdgeFeature(const ImportedSingleEdgeFeature&o, TreeCloneMap& tcm);
     ImportedSingleEdgeFeature(TopoDS_Edge e);
     ImportedSingleEdgeFeature(FeatureSetPtr creashapes);
 
@@ -41,7 +45,8 @@ class ImportedSingleEdgeFeature
 
 public:
     CREATE_FUNCTION(ImportedSingleEdgeFeature);
-
+    CLONEABLE(ImportedSingleEdgeFeature);
+    void replaceDependency(const DependencyReplacement& repl) override;
 };
 
 } // namespace cad

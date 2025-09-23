@@ -32,10 +32,17 @@ size_t Subfeature::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*basefeat_;
   h+=subfeatname_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
+
+
+Subfeature::Subfeature(const Subfeature&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(basefeat_), subfeatname_(o.subfeatname_)
+{}
+
+
 
 Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
   : DerivedFeature(basefeat),
@@ -43,10 +50,15 @@ Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
     subfeatname_(subfeatname)
 {}
 
+
+
+
 const std::string &Subfeature::subfeatname() const
 {
     return subfeatname_;
 }
+
+
 
 
 void Subfeature::build()

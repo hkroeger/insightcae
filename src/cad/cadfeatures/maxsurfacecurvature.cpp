@@ -297,6 +297,12 @@ void MaxSurfaceCurvature::build()
 
 
 
+MaxSurfaceCurvature::MaxSurfaceCurvature(
+    const MaxSurfaceCurvature&o, TreeCloneMap& tcm)
+    : CL(faces_)
+{}
+
+
 
 MaxSurfaceCurvature::MaxSurfaceCurvature(FeatureSetPtr faces)
 : faces_(faces)

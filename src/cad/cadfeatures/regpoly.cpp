@@ -62,6 +62,11 @@ size_t RegPoly::calcHash() const
 
 
 
+RegPoly::RegPoly(const RegPoly&o, TreeCloneMap& tcm)
+: CL(p0_), CL(n_), CL(ne_), CL(a_), CL(ez_)
+{}
+
+
 
 RegPoly::RegPoly(VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a, 
 	  VectorPtr ez)

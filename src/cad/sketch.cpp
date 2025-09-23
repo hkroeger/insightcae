@@ -99,7 +99,28 @@ Sketch::Sketch
 
 
 
+Sketch::Sketch(const Sketch&o, TreeCloneMap& tcm)
+    : CL(pl_), fn_(o.fn_), ln_(o.ln_), tol_(o.tol_)
+{
+    for (auto& v: o.vars_)
+    {
+        vars_.push_back(SketchVar{
+            boost::fusion::get<0>(v),
+            tcm.clone(boost::fusion::get<1>(v))
+        });
+    }
+}
 
+
+void Sketch::replaceDependency(const DependencyReplacement& repl)
+{
+    repl(pl_);
+    for (auto& v: vars_)
+    {
+        repl(boost::fusion::get<1>(v));
+    }
+    invalidate();
+}
 
 
 

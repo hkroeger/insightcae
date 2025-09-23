@@ -68,6 +68,12 @@ size_t NacaFourDigit::calcHash() const
 
 
 
+NacaFourDigit::NacaFourDigit(const NacaFourDigit&o, TreeCloneMap& tcm)
+: code_(o.code_), CL(tc_), CL(m_), CL(p_),
+  CL(p0_), CL(ez_), CL(ex_), CL(tofs_), CL(clipte_)
+{}
+
+
 
 NacaFourDigit::NacaFourDigit
 (
@@ -76,6 +82,8 @@ NacaFourDigit::NacaFourDigit
 )
 : code_(code), p0_(p0), ez_(ez), ex_(ex), tofs_(tofs), clipte_(clipte)
 {}
+
+
 
 NacaFourDigit::NacaFourDigit
 (

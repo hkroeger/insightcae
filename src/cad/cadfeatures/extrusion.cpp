@@ -64,7 +64,18 @@ size_t Extrusion::calcHash() const
 }
 
 
-
+Extrusion::Extrusion(const Extrusion&o, TreeCloneMap& tcm)
+    : CL(sk_), centered_(o.centered_)
+{
+    if (auto *vp=boost::get<VectorPtr>(&o.L_))
+    {
+        L_=tcm.clone(*vp);
+    }
+    else if (auto *sp=boost::get<ScalarPtr>(&o.L_))
+    {
+        L_=tcm.clone(*sp);
+    }
+}
 
 Extrusion::Extrusion(FeaturePtr sk, ScalarPtr L, bool centered)
     : sk_(sk), L_(L), centered_(centered)
@@ -122,18 +133,18 @@ void Extrusion::build()
         providedSubshapes_["frontEdge"]=f;
         providedSubshapes_["backEdge"]=b;
         providedFeatureSets_["frontEdge"]=makeEdgeFeatureSet(
-            shared_from_this(), "isSame(%0)", {f->allEdges()});
+            shared_from_this(), "isIdentical(%0)", {f->allEdges()});
         providedFeatureSets_["backEdge"]=makeEdgeFeatureSet(
-            shared_from_this(), "isSame(%0)", {b->allEdges()});
+            shared_from_this(), "isIdentical(%0)", {b->allEdges()});
     }
     else
     {
         providedSubshapes_["frontFace"]=f;
         providedSubshapes_["backFace"]=b;
         providedFeatureSets_["frontFace"]=makeFaceFeatureSet(
-            shared_from_this(), "isSame(%0)", {f->allFaces()});
+            shared_from_this(), "isIdentical(%0)", {f->allFaces()});
         providedFeatureSets_["backFace"]=makeFaceFeatureSet(
-            shared_from_this(), "isSame(%0)", {b->allFaces()});
+            shared_from_this(), "isIdentical(%0)", {b->allFaces()});
     }
 
     setShape ( mkp.Shape() );

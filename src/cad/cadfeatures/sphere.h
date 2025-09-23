@@ -21,12 +21,10 @@
 #define INSIGHT_CAD_SPHERE_H
 
 #include "cadfeature.h"
+#include <ostream>
 
 namespace insight {
 namespace cad {
-
-
-    
     
 class Sphere
     : public SingleVolumeFeature
@@ -34,6 +32,7 @@ class Sphere
     VectorPtr p_;
     ScalarPtr D_;
 
+    Sphere(const Sphere&o, TreeCloneMap& tcm);
     Sphere ( VectorPtr p, ScalarPtr D );
 
     size_t calcHash() const override;
@@ -41,11 +40,16 @@ class Sphere
 
 public:
     declareType ( "Sphere" );
-
+#ifndef SWIG
+    DEPENDS((p_,D_));
+#endif
     CREATE_FUNCTION(Sphere);
+    CLONEABLE(Sphere);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
+
+    void print(std::ostream& os) const;
 };
 
 

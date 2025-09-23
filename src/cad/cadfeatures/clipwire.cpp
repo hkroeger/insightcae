@@ -48,20 +48,21 @@ addToStaticFunctionTable(Feature, ClipWire, ruleDocumentation);
 size_t ClipWire::calcHash() const
 {
   ParameterListHash h;
-  h+=m1_;
   h+=ls_->value();
   h+=le_->value();
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
-
+ClipWire::ClipWire(const ClipWire&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(ls_), CL(le_)
+{}
 
 
 ClipWire::ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
 : DerivedFeature(wire),
-  m1_(wire), ls_(ls), le_(le)
+  ls_(ls), le_(le)
 {
 }
 
@@ -72,12 +73,12 @@ ClipWire::ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
 
 void ClipWire::build()
 {
-    if (!m1_->isSingleOpenWire())
+    if (!baseFeature()->isSingleOpenWire())
     {
       throw insight::Exception(_("Given feature is not a wire! ClipWire can only operate on wires."));
     }
 
-    TopoDS_Wire w = m1_->asSingleOpenWire();
+    TopoDS_Wire w = baseFeature()->asSingleOpenWire();
 
     double Ls=ls_->value();
     double Le=le_->value();

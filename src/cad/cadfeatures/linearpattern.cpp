@@ -60,6 +60,12 @@ size_t LinearPattern::calcHash() const
 }
 
 
+LinearPattern::LinearPattern(const LinearPattern&o, TreeCloneMap& tcm)
+    : Compound(o, tcm),
+    CL(m1_), CL(axis_), CL(n_),
+    CL(otherpat_)
+{}
+
 
   
 LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)

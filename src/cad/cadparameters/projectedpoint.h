@@ -34,10 +34,17 @@ class ProjectedPoint
 
   VectorPtr along_;
   
+  ProjectedPoint(const ProjectedPoint&o, TreeCloneMap& tcm);
+
 public:
+#ifndef SWIG
+    DEPENDS((p0_, plane_, along_));
+#endif
+  CLONEABLE(ProjectedPoint);
+
   ProjectedPoint(VectorPtr p0, DatumPtr plane);
   ProjectedPoint(VectorPtr p0, DatumPtr plane, VectorPtr along);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -48,10 +55,17 @@ class ProjectedPointOnFeature
   VectorPtr p0_;
   VectorPtr along_;
   FeaturePtr targ_;
-  
+
+  ProjectedPointOnFeature(const ProjectedPointOnFeature&o, TreeCloneMap& tcm);
+
 public:
+#ifndef SWIG
+    DEPENDS((p0_, along_, targ_));
+#endif
+  CLONEABLE(ProjectedPointOnFeature);
+
   ProjectedPointOnFeature(VectorPtr p0, VectorPtr along, FeaturePtr targ);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 

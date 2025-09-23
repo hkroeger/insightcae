@@ -35,6 +35,7 @@ class Projected
     FeaturePtr target_;
     VectorPtr dir_;
 
+    Projected(const Projected&o, TreeCloneMap& tcm);
     Projected ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
 
     size_t calcHash() const override;
@@ -42,8 +43,11 @@ class Projected
 
 public:
     declareType ( "Projected" );
-
+#ifndef SWIG
+    DEPENDS((source_, target_, dir_));
+#endif
     CREATE_FUNCTION(Projected);
+    CLONEABLE(Projected);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

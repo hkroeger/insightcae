@@ -50,7 +50,8 @@ typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
 std::ostream& operator<<(std::ostream& os, const Model& m);
     
 class Model
-: public ASTBase
+: public ASTBase,
+  public DependencySource
 {
 public:
 
@@ -84,21 +85,21 @@ public:
     typedef DatasetTableContents                                DatasetTable;
 
 protected:
-    std::string                 description_;
-    double                      cost_;
+    std::string         description_;
+    double              cost_;
 
     ScalarTable 		scalars_;
     VectorTable 		points_, directions_;
-    DatumTable                  datums_;
-    ModelstepTable              modelsteps_;
+    DatumTable          datums_;
+    ModelstepTable      modelsteps_;
     ComponentSet		components_;
-    VertexFeatureTable          vertexFeatures_;
-    EdgeFeatureTable            edgeFeatures_;
-    FaceFeatureTable            faceFeatures_;
-    SolidFeatureTable           solidFeatures_;
-    ModelTable                  models_;
-    PostprocActionTable         postprocActions_;
-    DatasetTable                datasets_;
+    VertexFeatureTable  vertexFeatures_;
+    EdgeFeatureTable    edgeFeatures_;
+    FaceFeatureTable    faceFeatures_;
+    SolidFeatureTable   solidFeatures_;
+    ModelTable          models_;
+    PostprocActionTable postprocActions_;
+    DatasetTable        datasets_;
 
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     boost::filesystem::path modelfile_;
@@ -107,11 +108,15 @@ protected:
     void defaultVariables();
     void copyVariables(const ModelVariableTable& vars);
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
+
+    Model(const Model& o, TreeCloneMap& tcm);
 
 public:
-
+    DEPENDS_NOINVALIDATE((scalars_,points_, directions_,datums_,modelsteps_,
+             vertexFeatures_,edgeFeatures_,faceFeatures_,solidFeatures_,
+             models_));
     Model(const ModelVariableTable& vars = ModelVariableTable());
     Model(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
     Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
@@ -131,6 +136,8 @@ public:
     const ModelTable& 	modelSymbols() const;
     const PostprocActionTable& 	postprocActionSymbols() const;
     const DatasetTable& 	datasets() const;
+
+    ModelVariableTable allVariables() const;
 
 
     /**
@@ -228,7 +235,8 @@ public:
     ModelTableContents models() const;
     PostprocActionTableContents postprocActions() const;
 
-
+    std::shared_ptr<DependencySource>
+    shallowClone(TreeCloneMap& tcm) const override;
 };
 
 

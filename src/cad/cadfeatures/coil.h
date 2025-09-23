@@ -72,6 +72,7 @@ class CoilPath
      */
     ScalarPtr dr_;
 
+    CoilPath(const CoilPath&o, TreeCloneMap& tcm);
     CoilPath
     (
         ScalarPtr l,
@@ -89,8 +90,11 @@ class CoilPath
 
 public:
     declareType ( "CoilPath" );
-
+#ifndef SWIG
+    DEPENDS((l_,dcore_, n_, d_, R_, rmin_, nl_, dr_));
+#endif
     CREATE_FUNCTION(CoilPath);
+    CLONEABLE(CoilPath);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
@@ -128,6 +132,7 @@ class Coil
     size_t calcHash() const override;
     void build() override;
 
+    Coil(const Coil&o, TreeCloneMap& tcm);
     Coil
         (
             VectorPtr p0,
@@ -141,8 +146,11 @@ class Coil
 
 public:
     declareType ( "Coil" );
-
+#ifndef SWIG
+    DEPENDS((p0_, b_, l_, r_, d_, nv_, nr_));
+#endif
     CREATE_FUNCTION(Coil);
+    CLONEABLE(Coil);
 
     static void insertrule ( parser::ISCADParser& ruleset );
 

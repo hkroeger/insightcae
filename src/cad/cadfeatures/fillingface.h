@@ -38,6 +38,7 @@ private:
     EdgeInput e2_;
     bool inverted_;
 
+    FillingFace(const FillingFace&o, TreeCloneMap& tcm);
     FillingFace ( EdgeInput e1, EdgeInput e2, bool inverted=false );
 
     size_t calcHash() const override;
@@ -45,8 +46,11 @@ private:
 
 public:
     declareType ( "FillingFace" );
-
+#ifndef SWIG
+    DEPENDS((e1_, e2_));
+#endif
     CREATE_FUNCTION(FillingFace);
+    CLONEABLE(FillingFace);
 
     operator const TopoDS_Face& () const;
 

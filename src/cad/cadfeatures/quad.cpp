@@ -62,6 +62,11 @@ size_t Quad::calcHash() const
 
 
 
+Quad::Quad(const Quad&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(L_), CL(W_), CL(t_), center_(o.center_)
+{}
+
+
 
 
 Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)

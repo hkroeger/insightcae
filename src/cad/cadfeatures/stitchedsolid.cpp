@@ -57,6 +57,15 @@ size_t StitchedSolid::calcHash() const
 }
 
 
+StitchedSolid::StitchedSolid(const StitchedSolid&o, TreeCloneMap& tcm)
+    : CL(tol_)
+{
+    for (auto& f: o.faces_)
+    {
+        faces_.push_back(tcm.clone(f));
+    }
+}
+
 
 StitchedSolid::StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol)
 : faces_(faces), tol_(tol)

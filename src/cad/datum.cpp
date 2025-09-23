@@ -42,6 +42,12 @@ using namespace std;
 namespace insight {
 namespace cad {
 
+Datum::Datum(const Datum &o)
+: providesPointReference_(o.providesPointReference_),
+    providesAxisReference_(o.providesAxisReference_),
+    providesPlanarReference_(o.providesPlanarReference_)
+{}
+
 Datum::Datum(bool point, bool axis, bool planar)
 : providesPointReference_(point),
   providesAxisReference_(axis),
@@ -162,6 +168,10 @@ void TransformedDatum::build()
     tr_.SetTranslation(to_Vec(translation_->value()));
   }
 }
+
+TransformedDatum::TransformedDatum(const TransformedDatum &o, TreeCloneMap &tcm)
+    : Datum(o), CL(base_), tr_(o.tr_), CL(translation_)
+{}
     
 gp_Pnt TransformedDatum::point() const
 {
@@ -199,6 +209,10 @@ DatumPtr TransformedDatum::baseDatum() const
 //    return ais;
 //}
 
+
+DatumPoint::DatumPoint(const DatumPoint &o)
+    : Datum(o), p_(o.p_)
+{}
 
 DatumPoint::DatumPoint()
 : Datum(true, false, false)
@@ -253,6 +267,10 @@ void ProvidedDatum::build()
   providesPlanarReference_=dat_->providesPlanarReference();
 }
 
+ProvidedDatum::ProvidedDatum(const ProvidedDatum &o, TreeCloneMap &tcm)
+    : Datum(o), CL(feat_), name_(o.name_), CL(dat_)
+{}
+
 gp_Pnt ProvidedDatum::point() const
 {
   checkForBuildDuringAccess();
@@ -300,6 +318,14 @@ void ExplicitDatumPoint::build()
     p_=to_Pnt(coord_->value());
 }
 
+ExplicitDatumPoint::ExplicitDatumPoint(const ExplicitDatumPoint &o, TreeCloneMap &tcm)
+    : DatumPoint(o), CL(coord_)
+{}
+
+
+DatumAxis::DatumAxis(const DatumAxis &o)
+    : Datum(o), ax_(o.ax_)
+{}
 
 DatumAxis::DatumAxis()
 : Datum(true, true, false)
@@ -350,6 +376,14 @@ void ExplicitDatumAxis::build()
     ax_ = gp_Ax1( to_Pnt(p0_->value()), gp_Dir(to_Vec(ex_->value())) );
 }
 
+ExplicitDatumAxis::ExplicitDatumAxis(const ExplicitDatumAxis &o, TreeCloneMap &tcm)
+    : DatumAxis(o), CL(p0_), CL(ex_)
+{}
+
+
+DatumPlaneData::DatumPlaneData(const DatumPlaneData &o)
+    : Datum(o), cs_(o.cs_)
+{}
 
 DatumPlaneData::DatumPlaneData()
 : Datum(true, false, true)
@@ -479,7 +513,11 @@ size_t DatumPlane::calcHash() const
   return plh.getHash();
 }
 
-  
+
+DatumPlane::DatumPlane(const DatumPlane& o, TreeCloneMap& tcm)
+    : DatumPlaneData(o), CL(p0_), CL(n_), CL(up_), CL(p1_), CL(p2_)
+{}
+
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni)
 : p0_(p0),
   n_(ni)
@@ -539,7 +577,11 @@ size_t XsecPlanePlane::calcHash() const
   return plh.getHash();
 }
 
-XsecPlanePlane::XsecPlanePlane(ConstDatumPtr pl1, ConstDatumPtr pl2)
+XsecPlanePlane::XsecPlanePlane(const XsecPlanePlane&o, TreeCloneMap& tcm)
+    : DatumAxis(o), CL(pl1_), CL(pl2_)
+{}
+
+XsecPlanePlane::XsecPlanePlane(DatumPtr pl1, DatumPtr pl2)
 : pl1_(pl1), pl2_(pl2)
 {}
 
@@ -579,7 +621,12 @@ size_t XsecAxisPlane::calcHash() const
   return plh.getHash();
 }
 
-XsecAxisPlane::XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl)
+XsecAxisPlane::XsecAxisPlane(const XsecAxisPlane&o, TreeCloneMap& tcm)
+    : DatumPoint(o),
+    CL(ax_), CL(pl_)
+{}
+
+XsecAxisPlane::XsecAxisPlane(DatumPtr ax, DatumPtr pl)
 : ax_(ax), pl_(pl)
 {}
 

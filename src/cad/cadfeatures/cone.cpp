@@ -58,7 +58,9 @@ size_t Cone::calcHash() const
 }
 
 
-
+Cone::Cone(const Cone&o, TreeCloneMap& tcm)
+    : CL(p1_), CL(p2_), CL(D1_), CL(D2_), CL(di_)
+{}
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di)
     : p1_(p1), p2_(p2), D1_(D1), D2_(D2), di_(di)

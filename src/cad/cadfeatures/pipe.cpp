@@ -59,6 +59,13 @@ size_t Pipe::calcHash() const
 
 
 
+Pipe::Pipe(const Pipe&o, TreeCloneMap& tcm)
+    : CL(spine_), CL(xsec_),
+    orient_(o.orient_),
+    reapprox_spine_(o.reapprox_spine_),
+    CL(fixed_binormal_)
+{}
+
 
 
 Pipe::Pipe(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal, bool orient, bool reapprox_spine)

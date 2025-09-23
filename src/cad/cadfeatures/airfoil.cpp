@@ -57,7 +57,18 @@ size_t Airfoil::calcHash() const
   return h.getHash();
 }
 
+Airfoil::Airfoil(const Airfoil&o, TreeCloneMap& tcm)
+    : name_(o.name_),
+    p0_(tcm.clone(o.p0_)),
+    ez_(tcm.clone(o.ez_)),
+    ex_(tcm.clone(o.ex_)),
 
+    c_(tcm.clone(o.c_)),
+    t_(tcm.clone(o.t_)),
+
+    r_EK_(tcm.clone(o.r_EK_)),
+    r_AK_(tcm.clone(o.r_AK_))
+{}
 
 
 Airfoil::Airfoil

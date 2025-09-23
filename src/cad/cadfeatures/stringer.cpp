@@ -120,6 +120,16 @@ void Stringer::build()
   setShape(result);
 }
 
+
+Stringer::Stringer(const Stringer&o, TreeCloneMap& tcm)
+  : CL(spine_),
+    CL(normal_),
+    CL(t_), CL(w_), CL(delta_),
+    CL(ext0_), CL(ext1_)
+{}
+
+
+
 Stringer::Stringer(
     FeaturePtr spine,
     VectorPtr normal,

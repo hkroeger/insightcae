@@ -40,6 +40,7 @@ class NacaFourDigit
     VectorPtr ex_;
     ScalarPtr tofs_, clipte_;
 
+    NacaFourDigit(const NacaFourDigit&o, TreeCloneMap& tcm);
     NacaFourDigit 
     ( 
         const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez, 
@@ -59,8 +60,11 @@ class NacaFourDigit
 
 public:
     declareType ( "Naca4" );
-
+#ifndef SWIG
+    DEPENDS((tc_, m_, p_, p0_, ez_,ex_,tofs_, clipte_));
+#endif
     CREATE_FUNCTION(NacaFourDigit);
+    CLONEABLE(NacaFourDigit);
 
     void calcProfile(double xc, double tc, double m, double p, double& t, double& yc, double& dycdx) const;
 

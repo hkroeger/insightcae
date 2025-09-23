@@ -44,6 +44,14 @@ size_t CutUp::calcHash() const
 
 
 
+CutUp::CutUp(const CutUp&o, TreeCloneMap& tcm)
+    :CL(model_), CL(n_), CL(t_)
+{
+    for (auto& cl: o.clips_)
+    {
+        clips_.push_back(tcm.clone(cl));
+    }
+}
 
 
 CutUp::CutUp(FeaturePtr model, VectorPtr n, ScalarPtr t, Clips clips)

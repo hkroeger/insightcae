@@ -117,7 +117,18 @@ size_t STL::calcHash() const
 
 
 
-
+STL::STL(const STL&o, TreeCloneMap& tcm)
+    : geometry_(o.geometry_)
+{
+    if (auto *fp=boost::get<FeaturePtr>(&o.transform_))
+    {
+        transform_=tcm.clone(*fp);
+    }
+    else
+    {
+        transform_=o.transform_;
+    }
+}
 
 
 STL::STL(GeometrySpecification geometry)
@@ -298,6 +309,14 @@ void STL::build()
 }
 
 
+void STL::replaceDependency(const DependencyReplacement& repl)
+{
+    if (auto*of=boost::get<FeaturePtr>(&transform_))
+    {
+        repl(*of);
+    }
+    invalidate();
+}
 
 
 void STL::insertrule(parser::ISCADParser& ruleset)

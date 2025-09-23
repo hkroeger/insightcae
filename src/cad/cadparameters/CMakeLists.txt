@@ -1,12 +1,12 @@
 add_sources(insightcad_SOURCES 
- constantscalar.cpp
- constantvector.cpp
- lookuptablescalar.cpp
- projectedpoint.cpp
- scalarfeatureprop.cpp
- vectorfeatureprop.cpp
- scalarops.cpp
- vectorops.cpp
+ constantscalar.h constantscalar.cpp
+ constantvector.h constantvector.cpp
+ lookuptablescalar.h lookuptablescalar.cpp
+ projectedpoint.h projectedpoint.cpp
+ scalarfeatureprop.h scalarfeatureprop.cpp
+ vectorfeatureprop.h vectorfeatureprop.cpp
+ scalarops.h scalarops.cpp
+ vectorops.h vectorops.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

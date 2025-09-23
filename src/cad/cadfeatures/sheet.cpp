@@ -60,6 +60,10 @@ size_t Sheet::calcHash() const
 
 
 
+Sheet::Sheet(const Sheet&o, TreeCloneMap& tcm)
+: CL(shell_), CL(thickness_), CL(tol_)
+{}
+
 
 
 

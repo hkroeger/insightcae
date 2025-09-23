@@ -28,7 +28,7 @@ namespace cad {
     
     
 
-class Condition
+class Condition : public DependencySource
 {
 public:
     double residual ( const arma::mat& values ) const;
@@ -42,9 +42,16 @@ class CoincidentPoint
     : public Condition
 {
     VectorPtr p_org_,  p_targ_;
+
+    CoincidentPoint(const CoincidentPoint&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((p_org_,  p_targ_));
+#endif
+    CLONEABLE(CoincidentPoint);
+
     CoincidentPoint ( VectorPtr p_org, VectorPtr p_targ );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -54,9 +61,14 @@ class ParallelAxis
     : public Condition
 {
     VectorPtr dir_org_,  dir_targ_;
+    ParallelAxis(const ParallelAxis&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((dir_org_,  dir_targ_));
+#endif
+    CLONEABLE(ParallelAxis);
     ParallelAxis ( VectorPtr dir_org, VectorPtr dir_targ );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -71,9 +83,14 @@ public:
 protected:
     DatumPtr pl_org_,  pl_targ_;
     Orientation orient_;
+    ParallelPlanes(const ParallelPlanes&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((pl_org_,  pl_targ_));
+#endif
+    CLONEABLE(ParallelPlanes);
     ParallelPlanes ( DatumPtr pl_org, DatumPtr pl_targ, Orientation orient=Same );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -82,10 +99,11 @@ public:
 class AlignedPlanes
     : public ParallelPlanes
 {
-
+    AlignedPlanes(const AlignedPlanes&o, TreeCloneMap& tcm);
 public:
+    CLONEABLE(AlignedPlanes);
     AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, Orientation orient=Same );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -95,9 +113,14 @@ class InclinedPlanes
 {
     DatumPtr pl_org_,  pl_targ_;
     ScalarPtr angle_;
+    InclinedPlanes(const InclinedPlanes&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((pl_org_,pl_targ_,angle_));
+#endif
+    CLONEABLE(InclinedPlanes);
     InclinedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, ScalarPtr angle );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -108,9 +131,14 @@ class Coaxial
 {
     DatumPtr ax_org_,  ax_targ_;
     bool inv_;
+    Coaxial(const Coaxial&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((ax_org_,  ax_targ_));
+#endif
+    CLONEABLE(Coaxial);
     Coaxial ( DatumPtr ax_org, DatumPtr ax_targ, bool inv=false );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -121,9 +149,14 @@ class PointInPlane
 {
     VectorPtr p_org_;
     DatumPtr pl_targ_;
+    PointInPlane(const PointInPlane&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((p_org_,pl_targ_));
+#endif
+    CLONEABLE(PointInPlane);
     PointInPlane ( VectorPtr p_org, DatumPtr pl_targ );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -134,9 +167,14 @@ class PointOnAxis
 {
     VectorPtr p_org_;
     DatumPtr ax_targ_;
+    PointOnAxis(const PointOnAxis&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS_NOINVALIDATE((p_org_, ax_targ_));
+#endif
+    CLONEABLE(PointOnAxis);
     PointOnAxis ( VectorPtr p_org, DatumPtr ax_targ );
-    virtual double residual ( const gp_Trsf& tr ) const;
+    double residual ( const gp_Trsf& tr ) const override;
 };
 
 
@@ -151,21 +189,23 @@ typedef std::vector<ConditionPtr> ConditionList;
 class RefPlace
     : public DerivedFeature
 {
-    FeaturePtr m_;
-
     ConditionList conditions_;
 
     std::shared_ptr<gp_Trsf> trsf_;
 
-    RefPlace ( FeaturePtr m, const gp_Ax2& cs );
-    RefPlace ( FeaturePtr m, ConditionList conditions );
+    RefPlace(const RefPlace&o, TreeCloneMap& tcm);
+    RefPlace ( ConstFeaturePtr m, const gp_Ax2& cs );
+    RefPlace ( ConstFeaturePtr m, ConditionList conditions );
 
     size_t calcHash() const override;
     void build() override;
 
 public:
+    CLONEABLE(RefPlace);
     declareType ( "RefPlace" );
-
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (conditions_));
+#endif
     CREATE_FUNCTION(RefPlace);
 
     static void insertrule ( parser::ISCADParser& ruleset );

@@ -34,6 +34,7 @@ class SineWave
 {
     ScalarPtr l_, A_;
 
+    SineWave(const SineWave&o, TreeCloneMap& tcm);
     SineWave ( ScalarPtr l, ScalarPtr A );
 
     size_t calcHash() const override;
@@ -41,8 +42,11 @@ class SineWave
 
 public:
     declareType ( "SineWave" );
-
+#ifndef SWIG
+    DEPENDS((l_, A_));
+#endif
     CREATE_FUNCTION(SineWave);
+    CLONEABLE(SineWave);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

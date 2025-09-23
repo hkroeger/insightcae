@@ -63,6 +63,10 @@ size_t Offset::calcHash() const
 
 
 
+Offset::Offset(const Offset&o, TreeCloneMap& tcm)
+    : CL(shell_), CL(thickness_), CL(tol_)
+{}
+
 
 
 Offset::Offset(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)

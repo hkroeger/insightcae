@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_VECTOROPS_H
 
 #include "cadparameter.h"
+#include "base/cppextensions.h"
 
 namespace insight 
 {
@@ -31,9 +32,17 @@ class VectorFromComponents
 : public insight::cad::Vector
 {
   ScalarPtr p1_, p2_, p3_;
+
+
+  VectorFromComponents(const VectorFromComponents&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(VectorFromComponents);
+#ifndef SWIG
+  DEPENDS((p1_, p2_, p3_));
+#endif
+
   VectorFromComponents(ScalarPtr p1, ScalarPtr p2, ScalarPtr p3);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -43,9 +52,16 @@ class CrossMultipliedVector
 : public insight::cad::Vector
 {
   VectorPtr p1_, p2_;
+
+    CrossMultipliedVector(const CrossMultipliedVector&o, TreeCloneMap& tcm);
 public:
+    CLONEABLE(CrossMultipliedVector);
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+
   CrossMultipliedVector(VectorPtr p1, VectorPtr p2);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -55,9 +71,15 @@ class DotMultipliedVector
 : public insight::cad::Scalar
 {
   VectorPtr p1_, p2_;
+    DotMultipliedVector(const DotMultipliedVector&o, TreeCloneMap& tcm);
 public:
+    CLONEABLE(DotMultipliedVector);
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+
   DotMultipliedVector(VectorPtr p1, VectorPtr p2);
-  virtual double value() const;
+  double value() const override;
 };
 
 
@@ -68,9 +90,16 @@ class ScalarMultipliedVector
 {
   ScalarPtr p1_;
   VectorPtr p2_;
+
+  ScalarMultipliedVector(const ScalarMultipliedVector&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(ScalarMultipliedVector);
+#ifndef SWIG
+  DEPENDS((p1_, p2_));
+#endif
+
   ScalarMultipliedVector(ScalarPtr p1, VectorPtr p2);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -81,9 +110,15 @@ class ScalarDividedVector
 {
   VectorPtr p1_;
   ScalarPtr p2_;
+  ScalarDividedVector(const ScalarDividedVector&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(ScalarDividedVector);
+#ifndef SWIG
+  DEPENDS((p1_, p2_));
+#endif
+
   ScalarDividedVector(VectorPtr p1, ScalarPtr p2);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -93,7 +128,14 @@ class AddedVector
 : public insight::cad::Vector
 {
   VectorPtr p1_, p2_;
+
+    AddedVector(const AddedVector&o, TreeCloneMap& tcm);
 public:
+    CLONEABLE(AddedVector);
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+
   AddedVector(VectorPtr p1, VectorPtr p2);
 
   inline VectorPtr& p1() __attribute__((deprecated("using this might break updating!")))
@@ -102,7 +144,7 @@ public:
   inline VectorPtr& p2() __attribute__((deprecated("using this might break updating!")))
   { return p2_; }
 
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -111,9 +153,16 @@ class SubtractedVector
 : public insight::cad::Vector
 {
   VectorPtr p1_, p2_;
+
+    SubtractedVector(const SubtractedVector&o, TreeCloneMap& tcm);
 public:
+    CLONEABLE(SubtractedVector);
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+
   SubtractedVector(VectorPtr p1, VectorPtr p2);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -122,9 +171,16 @@ class RotatedVector
 {
   ScalarPtr ang_;
   VectorPtr v_, ax_;
+
+  RotatedVector(const RotatedVector&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(RotatedVector);
+#ifndef SWIG
+  DEPENDS((ang_, v_, ax_));
+#endif
+
   RotatedVector(VectorPtr v, ScalarPtr ang, VectorPtr ax);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -132,9 +188,16 @@ class NormalizedVector
     : public insight::cad::Vector
 {
   VectorPtr v_;
+
+    NormalizedVector(const NormalizedVector&o, TreeCloneMap& tcm);
 public:
+    CLONEABLE(NormalizedVector);
+#ifndef SWIG
+    DEPENDS((v_));
+#endif
+
   NormalizedVector(VectorPtr v);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -145,7 +208,14 @@ class Mechanism_CrankDrive
   VectorPtr c2_; 
   ScalarPtr r2_;
   VectorPtr p1_, eax_;
+
+  Mechanism_CrankDrive(const Mechanism_CrankDrive&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(Mechanism_CrankDrive);
+#ifndef SWIG
+  DEPENDS((L_, c2_, r2_, p1_, eax_));
+#endif
+
   /**
   * @L con rod length
   * @c2 crank shaft center
@@ -154,7 +224,7 @@ public:
   * @eax direction of crank shaft axis
   */
   Mechanism_CrankDrive(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 
@@ -164,10 +234,17 @@ class Mechanism_Slider
   ScalarPtr L_;
   VectorPtr p0_; 
   VectorPtr psl_; 
-  VectorPtr esl_; 
+  VectorPtr esl_;
+  Mechanism_Slider(const Mechanism_Slider&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(Mechanism_Slider);
+#ifndef SWIG
+  DEPENDS((L_, p0_, psl_, esl_));
+#endif
+
+
   Mechanism_Slider(ScalarPtr L, VectorPtr p0, VectorPtr psl, VectorPtr esl);
-  virtual arma::mat value() const;
+  arma::mat value() const override;
 };
 
 

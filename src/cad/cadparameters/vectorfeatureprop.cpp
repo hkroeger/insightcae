@@ -25,6 +25,10 @@
 #include "GeomAPI_ExtremaCurveCurve.hxx"
 
 
+insight::cad::PointFeatureProp::PointFeatureProp(const PointFeatureProp &o, TreeCloneMap &tcm)
+    : CL(model_), name_(o.name_)
+{}
+
 insight::cad::PointFeatureProp::PointFeatureProp
 (
   insight::cad::FeaturePtr model, 
@@ -43,6 +47,9 @@ arma::mat insight::cad::PointFeatureProp::value() const
 }
 
 
+insight::cad::VectorFeatureProp::VectorFeatureProp(const VectorFeatureProp&o, TreeCloneMap& tcm)
+    : CL(model_), name_(o.name_)
+{}
 
 
 insight::cad::VectorFeatureProp::VectorFeatureProp
@@ -62,6 +69,10 @@ arma::mat insight::cad::VectorFeatureProp::value() const
   return model_->getDatumVector(name_);
 }
 
+insight::cad::SinglePointCoords::SinglePointCoords(const SinglePointCoords &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::SinglePointCoords::SinglePointCoords(insight::cad::ConstFeatureSetPtr pfs)
 : pfs_(pfs)
 {}
@@ -80,6 +91,10 @@ arma::mat insight::cad::SinglePointCoords::value() const
 
 
 
+
+insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(const CircleEdgeCenterCoords &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
 
 insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(insight::cad::ConstFeatureSetPtr pfs)
     : pfs_(pfs)
@@ -153,6 +168,10 @@ arma::mat insight::cad::CircleEdgeCenterCoords::value() const
 
 
 
+insight::cad::DatumPointCoord::DatumPointCoord(const DatumPointCoord &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPointCoord::DatumPointCoord(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
@@ -176,6 +195,10 @@ arma::mat insight::cad::DatumPointCoord::value() const
 
 
 
+insight::cad::DatumDir::DatumDir(const DatumDir &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumDir::DatumDir(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
@@ -197,6 +220,10 @@ arma::mat insight::cad::DatumDir::value() const
 }
 
 
+
+insight::cad::XsecCurveCurve::XsecCurveCurve(const XsecCurveCurve &o, TreeCloneMap &tcm)
+    : CL(c1_), CL(c2_)
+{}
 
 insight::cad::XsecCurveCurve::XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2)
     : c1_(c1), c2_(c2)
@@ -225,6 +252,10 @@ arma::mat insight::cad::XsecCurveCurve::value() const
 
 
 
+insight::cad::DatumPlaneNormal::DatumPlaneNormal(const DatumPlaneNormal &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
@@ -245,6 +276,10 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   }
   return vec3(0,0,0);
 }
+
+insight::cad::DatumPlaneX::DatumPlaneX(const DatumPlaneX &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
 
 insight::cad::DatumPlaneX::DatumPlaneX(insight::cad::ConstDatumPtr pfs)
     : pfs_(pfs)
@@ -268,6 +303,10 @@ arma::mat insight::cad::DatumPlaneX::value() const
 }
 
 
+insight::cad::DatumPlaneY::DatumPlaneY(const DatumPlaneY &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPlaneY::DatumPlaneY(insight::cad::ConstDatumPtr pfs)
     : pfs_(pfs)
 {}
@@ -290,6 +329,10 @@ arma::mat insight::cad::DatumPlaneY::value() const
 }
 
 
+insight::cad::BBMin::BBMin(const BBMin &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::BBMin::BBMin(FeaturePtr model)
 : model_(model)
 {}
@@ -304,6 +347,10 @@ arma::mat insight::cad::BBMin::value() const
 
 
 
+
+insight::cad::BBMax::BBMax(const BBMax &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
 
 insight::cad::BBMax::BBMax(FeaturePtr model)
 : model_(model)
@@ -320,6 +367,10 @@ arma::mat insight::cad::BBMax::value() const
 
 
 
+insight::cad::COG::COG(const COG &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::COG::COG(FeaturePtr model)
 : model_(model)
 {}
@@ -334,6 +385,10 @@ arma::mat insight::cad::COG::value() const
 
 
 
+
+insight::cad::SurfaceCOG::SurfaceCOG(const SurfaceCOG &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
 
 insight::cad::SurfaceCOG::SurfaceCOG(FeaturePtr model)
 : model_(model)
@@ -350,6 +405,10 @@ arma::mat insight::cad::SurfaceCOG::value() const
 
 
 
+insight::cad::SurfaceInertiaAxis::SurfaceInertiaAxis(const SurfaceInertiaAxis &o, TreeCloneMap &tcm)
+    : CL(model_), axis_(o.axis_)
+{}
+
 insight::cad::SurfaceInertiaAxis::SurfaceInertiaAxis(FeaturePtr model, int axis)
 : model_(model), axis_(axis)
 {}
@@ -362,6 +421,10 @@ arma::mat insight::cad::SurfaceInertiaAxis::value() const
   return model_->surfaceInertia(axis_);
 }
 
+
+insight::cad::PointInFeatureCS::PointInFeatureCS(const PointInFeatureCS &o, TreeCloneMap &tcm)
+    : CL(model_), CL(locP_)
+{}
 
 insight::cad::PointInFeatureCS::PointInFeatureCS(
     FeaturePtr model,

@@ -58,6 +58,21 @@ size_t SplineSurface::calcHash() const
 
 
 
+SplineSurface::SplineSurface(const SplineSurface&o, TreeCloneMap& tcm)
+{
+    for (auto& opv: o.pts_)
+    {
+        pts_.push_back(std::vector<VectorPtr>());
+        auto &pv = pts_.back();
+
+        for (auto& p: opv)
+        {
+            pv.push_back(tcm.clone(p));
+        }
+    }
+}
+
+
 
 SplineSurface::SplineSurface(const std::vector< std::vector<VectorPtr> >& pts)
 : pts_(pts)

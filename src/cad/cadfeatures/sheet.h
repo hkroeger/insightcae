@@ -35,6 +35,7 @@ class Sheet
     ScalarPtr thickness_;
     ScalarPtr tol_;
 
+    Sheet(const Sheet&o, TreeCloneMap& tcm);
     Sheet ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
 
     size_t calcHash() const override;
@@ -42,7 +43,11 @@ class Sheet
 
 public:
     declareType ( "Sheet" );
+#ifndef SWIG
+    DEPENDS((shell_,thickness_,tol_));
+#endif
     CREATE_FUNCTION(Sheet);
+    CLONEABLE(Sheet);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

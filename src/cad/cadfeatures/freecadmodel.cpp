@@ -54,7 +54,10 @@ size_t FreeCADModel::calcHash() const
   h+=solidname_;
   for (const FreeCADModelVar& v: vars_)
   {
-      h+=boost::fusion::at_c<0>(v);
+      for (auto &n: boost::fusion::at_c<0>(v))
+      {
+        h+=n;
+      }
       h+=boost::fusion::at_c<1>(v)->value();
   }
   return h.getHash();
@@ -63,7 +66,18 @@ size_t FreeCADModel::calcHash() const
 
 
 
-
+FreeCADModel::FreeCADModel(const FreeCADModel&o, TreeCloneMap& tcm)
+    : filename_(o.filename_), solidname_(o.solidname_)
+{
+    for (auto& v: o.vars_)
+    {
+        auto& name=boost::fusion::get<0>(v);
+        auto& val=boost::fusion::get<1>(v);
+        vars_.push_back(FreeCADModelVar{
+            name, tcm.clone(val)
+        });
+    }
+}
 
 
 FreeCADModel::FreeCADModel
@@ -151,6 +165,14 @@ void FreeCADModel::build()
 }
 
 
+void FreeCADModel::replaceDependency(const DependencyReplacement& repl)
+{
+    for (auto& fcv: vars_)
+    {
+        repl(boost::fusion::get<1>(fcv));
+    }
+    invalidate();
+}
 
 
 void FreeCADModel::insertrule ( parser::ISCADParser& ruleset )

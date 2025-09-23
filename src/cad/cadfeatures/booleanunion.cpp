@@ -48,18 +48,19 @@ size_t BooleanUnion::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*m1_;
   if (m2_) h+=*m2_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
+BooleanUnion::BooleanUnion(const BooleanUnion&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(m2_)
+{}
 
 
 BooleanUnion::BooleanUnion(FeaturePtr m1)
-: DerivedFeature(m1), 
-  m1_(m1)
+: DerivedFeature(m1)
 {
     setFeatureSymbolName( "merged("+m1->featureSymbolName()+")" );
 }
@@ -69,7 +70,6 @@ BooleanUnion::BooleanUnion(FeaturePtr m1)
 
 BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
-  m1_(m1),
   m2_(m2)
 {
     setFeatureSymbolName( "("+m1->featureSymbolName()+" | "+m2->featureSymbolName()+")" );
@@ -85,14 +85,14 @@ void BooleanUnion::build()
 {
     ExecTimer t("BooleanUnion::build() ["+featureSymbolName()+"]");
     
-    if (m1_ && m2_)
+    if (m2_)
     {
 
         if (!cache.contains(hash()))
         {
-            copyDatums(*m1_, "m1_");
+            copyDatums(*baseFeature(), "m1_");
             copyDatums(*m2_, "m2_");
-            BRepAlgoAPI_Fuse fuser(*m1_, *m2_);
+            BRepAlgoAPI_Fuse fuser(*baseFeature(), *m2_);
             fuser.Build();
             if (!fuser.IsDone())
             {
@@ -109,16 +109,16 @@ void BooleanUnion::build()
         {
             this->operator=(*cache.markAsUsed<BooleanUnion>(hash()));
         }
-        m1_->unsetLeaf();
+        baseFeature()->unsetLeaf();
         m2_->unsetLeaf();
     }
-    else if (m1_)
+    else if (baseFeature())
     {
-        copyDatums(*m1_);
-        m1_->unsetLeaf();
+        copyDatums(*baseFeature());
+        baseFeature()->unsetLeaf();
 
         TopoDS_Shape res;
-        for (TopExp_Explorer ex(*m1_, TopAbs_SOLID); ex.More(); ex.Next())
+        for (TopExp_Explorer ex(*baseFeature(), TopAbs_SOLID); ex.More(); ex.Next())
         {
             if (res.IsNull())
             {
@@ -197,9 +197,8 @@ FeatureCmdInfoList BooleanUnion::ruleDocumentation()
 
 void BooleanUnion::operator=(const BooleanUnion& o)
 {
-    m1_=o.m1_;
+    DerivedFeature::operator=(o);
     m2_=o.m2_;
-    Feature::operator=(o);
 }
 
 

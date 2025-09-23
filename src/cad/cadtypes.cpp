@@ -84,6 +84,19 @@ FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
 }
 
 
+DependencySource::~DependencySource()
+{}
+
+void DependencySource::replaceAllDependencies(const TreeCloneMap &tcm)
+{
+    for (auto& dep: tcm)
+    {
+        DependencyReplacement dr(dep.first, dep.second);
+        this->replaceDependency(dr);
+    }
+}
+
+
 
 // CADException::CADException(ConstFeaturePtr feat, const std::string message)
 // : OCCException(
@@ -91,6 +104,17 @@ FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
 //     + message),
 //   errorfeat_(feat)
 // {}
+
+ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariableTable& mvt2)
+{
+    ModelVariableTable rmvt(mvt1.begin(), mvt1.end());
+
+    std::copy(mvt2.begin(), mvt2.end(),
+              std::back_inserter(rmvt) );
+
+    return rmvt;
+}
+
 
 }
 }

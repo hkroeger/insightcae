@@ -37,12 +37,16 @@ class Ring
   size_t calcHash() const override;
   void build() override;
   
+  Ring(const Ring&o, TreeCloneMap& tcm);
   Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di);
 
 public:
   declareType("Ring");
-
+#ifndef SWIG
+  DEPENDS((p1_, p2_, Da_, Di_));
+#endif
   CREATE_FUNCTION(Ring);
+  CLONEABLE(Ring);
 
   static void insertrule(parser::ISCADParser& ruleset);
 };

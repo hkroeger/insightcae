@@ -24,6 +24,7 @@
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
 
+
 using namespace std;
 using namespace boost;
 
@@ -52,20 +53,24 @@ void Filter::firstPass(FeatureID feature)
 }
 
 
+FeatureSet::FeatureSet(const FeatureSet& o, TreeCloneMap& tcm)
+: CL(model_),
+  shape_(o.shape_),
+  data_( o.data() )
+{}
+
 
 FeatureSet::FeatureSet(const FeatureSet& o)
 : model_(o.model_),
-  shape_(o.shape_)
-{
-  data_.insert( o.data().begin(), o.data().end() );
-}
+  shape_(o.shape_),
+  data_( o.data() )
+{}
 
-  
+
 FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape)
 : model_(m),
   shape_(shape)
-{
-}
+{}
 
 FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id)
 : model_(m),
@@ -169,7 +174,7 @@ void FeatureSet::write() const
 size_t FeatureSet::calcFeatureSetHash() const
 {
     ParameterListHash h;
-
+    h += "FeatureSet";
     h += *model();
     h += int(shape());
 
@@ -180,7 +185,6 @@ size_t FeatureSet::calcFeatureSetHash() const
 
     return h.getHash();
 }
-
 
 std::ostream& operator<<(std::ostream& os, const FeatureSetData& fsd)
 {
@@ -287,6 +291,30 @@ void DeferredFeatureSet::build()
         break;
     default:
         throw insight::Exception("Unknown feature type");
+    }
+}
+
+
+DeferredFeatureSet::DeferredFeatureSet(const DeferredFeatureSet&o, TreeCloneMap& tcm)
+  : FeatureSet(o, tcm),
+    CL(baseSet_), filterexpr_(o.filterexpr_)
+{
+    for (auto& r: o.refs_)
+    {
+        FeatureSetParserArg na;
+        if (auto *fsp=boost::get<FeatureSetPtr>(&r))
+        {
+            na=tcm.clone(*fsp);
+        }
+        else if (auto *vp=boost::get<VectorPtr>(&r))
+        {
+            na=tcm.clone(*vp);
+        }
+        else if (auto *sp=boost::get<ScalarPtr>(&r))
+        {
+            na=tcm.clone(*sp);
+        }
+        refs_.push_back(na);
     }
 }
 

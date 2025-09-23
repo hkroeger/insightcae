@@ -19,9 +19,15 @@
 
 #include "scalarops.h"
 
+insight::cad::MultipliedScalar::MultipliedScalar(const MultipliedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
+
 insight::cad::MultipliedScalar::MultipliedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
-{}
+{
+    // registerDependencies({&p1_, &p2_});
+}
 
 double insight::cad::MultipliedScalar::value() const
 {
@@ -30,6 +36,10 @@ double insight::cad::MultipliedScalar::value() const
 
 
 
+
+insight::cad::DividedScalar::DividedScalar(const DividedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::DividedScalar::DividedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
@@ -44,6 +54,10 @@ double insight::cad::DividedScalar::value() const
 
 
 
+insight::cad::AddedScalar::AddedScalar(const AddedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
+
 insight::cad::AddedScalar::AddedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
 {}
@@ -56,6 +70,10 @@ double insight::cad::AddedScalar::value() const
 
 
 
+insight::cad::SubtractedScalar::SubtractedScalar(const SubtractedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
+
 insight::cad::SubtractedScalar::SubtractedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
 {}
@@ -67,6 +85,10 @@ double insight::cad::SubtractedScalar::value() const
 
 
 
+insight::cad::VectorComponent::VectorComponent(const VectorComponent &o, TreeCloneMap &tcm)
+    : CL(p1_), cmpt_(o.cmpt_)
+{}
+
 insight::cad::VectorComponent::VectorComponent(insight::cad::VectorPtr p1, int cmpt)
 : p1_(p1),
   cmpt_(cmpt)
@@ -76,6 +98,10 @@ double insight::cad::VectorComponent::value() const
 {
   return p1_->value()(cmpt_);
 }
+
+insight::cad::VectorMag::VectorMag(const VectorMag &o, TreeCloneMap &tcm)
+    : CL(p1_)
+{}
 
 insight::cad::VectorMag::VectorMag(insight::cad::VectorPtr p1)
 : p1_(p1)

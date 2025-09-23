@@ -22,6 +22,9 @@
 
 #include "cadparameter.h"
 
+#include <tuple>
+#include "base/cppextensions.h"
+
 namespace insight {
 namespace cad {
 
@@ -29,9 +32,15 @@ class MultipliedScalar
 : public insight::cad::Scalar
 {
   ScalarPtr p1_, p2_;
+  MultipliedScalar(const MultipliedScalar&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((p1_, p2_))
+#endif
+  CLONEABLE(MultipliedScalar);
+
   MultipliedScalar(ScalarPtr p1, ScalarPtr p2);
-  virtual double value() const;
+  double value() const override;
 };
 
 
@@ -41,9 +50,15 @@ class DividedScalar
 : public insight::cad::Scalar
 {
   ScalarPtr p1_, p2_;
+    DividedScalar(const DividedScalar&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+  CLONEABLE(DividedScalar);
+
   DividedScalar(ScalarPtr p1, ScalarPtr p2);
-  virtual double value() const;
+  double value() const override;
 };
 
 
@@ -53,9 +68,15 @@ class AddedScalar
 : public insight::cad::Scalar
 {
   ScalarPtr p1_, p2_;
+    AddedScalar(const AddedScalar&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+  CLONEABLE(AddedScalar);
+
   AddedScalar(ScalarPtr p1, ScalarPtr p2);
-  virtual double value() const;
+  double value() const override;
 };
 
 
@@ -64,9 +85,15 @@ class SubtractedScalar
 : public insight::cad::Scalar
 {
   ScalarPtr p1_, p2_;
+    SubtractedScalar(const SubtractedScalar&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((p1_, p2_));
+#endif
+  CLONEABLE(SubtractedScalar);
+
   SubtractedScalar(ScalarPtr p1, ScalarPtr p2);
-  virtual double value() const;
+  double value() const override;
 };
 
 
@@ -77,30 +104,51 @@ class VectorComponent
   VectorPtr p1_;
   int cmpt_;
   
+  VectorComponent(const VectorComponent&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((p1_));
+#endif
+  CLONEABLE(VectorComponent);
+
   VectorComponent(VectorPtr p1, int cmpt);
-  virtual double value() const;
+  double value() const override;
 };
+
+
 
 class VectorMag
 : public insight::cad::Scalar
 {
   VectorPtr p1_;
-  
+
+  VectorMag(const VectorMag&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((p1_));
+#endif
+  CLONEABLE(VectorMag);
+
   VectorMag(VectorPtr p1);
-  virtual double value() const;
+  double value() const override;
 };
+
+
 
 #define INSIGHT_CAD_UNARY_FUNCTION_WITH_NAME(FUNCTION, NAME) \
 class Scalar_##NAME\
 : public insight::cad::Scalar\
 {\
   ScalarPtr p1_;\
+  Scalar_##NAME(const Scalar_##NAME&o, TreeCloneMap& tcm)\
+  : CL(p1_) \
+  {}\
 public:\
+  DEPENDS((p1_));\
+  CLONEABLE(Scalar_##NAME);\
   Scalar_##NAME(ScalarPtr p1)\
   : p1_(p1) {} \
-  virtual double value() const\
+  double value() const override\
   { return ::FUNCTION ( p1_->value() ); }\
 };
 
@@ -126,10 +174,15 @@ class Scalar_##FUNCTION\
 : public insight::cad::Scalar\
 {\
   ScalarPtr p1_, p2_;\
+  Scalar_##FUNCTION(const Scalar_##FUNCTION&o, TreeCloneMap& tcm)\
+    : CL(p1_), CL(p2_) \
+  {}\
 public:\
+  DEPENDS((p1_, p2_)); \
+  CLONEABLE(Scalar_##FUNCTION);\
   Scalar_##FUNCTION(ScalarPtr p1, ScalarPtr p2)\
   : p1_(p1), p2_(p2) {} \
-  virtual double value() const\
+  double value() const override\
   { return ::FUNCTION ( p1_->value(), p2_->value() ); }\
 };
 

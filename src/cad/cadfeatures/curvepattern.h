@@ -36,6 +36,7 @@ class CurvePattern
     ScalarPtr delta_;
     ScalarPtr n_;
 
+    CurvePattern(const CurvePattern&o, TreeCloneMap& tcm);
     CurvePattern ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
 
     size_t calcHash() const override;
@@ -43,8 +44,11 @@ class CurvePattern
 
 public:
     declareType ( "CurvePattern" );
-
+#ifndef SWIG
+    DEPENDS_W_BASE(Compound, (m1_, curve_, delta_, n_));
+#endif
     CREATE_FUNCTION(CurvePattern);
+    CLONEABLE(CurvePattern);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

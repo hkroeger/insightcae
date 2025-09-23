@@ -35,6 +35,7 @@ class Tri
     VectorPtr e1_;
     VectorPtr e2_;
 
+    Tri(const Tri&o, TreeCloneMap& tcm);
     Tri ( VectorPtr p0, VectorPtr e1, VectorPtr e2 );
 
     size_t calcHash() const override;
@@ -42,7 +43,11 @@ class Tri
 
 public:
     declareType ( "Tri" );
+#ifndef SWIG
+    DEPENDS((p0_,e1_,e2_));
+#endif
     CREATE_FUNCTION(Tri);
+    CLONEABLE(Tri);
 
     operator const TopoDS_Face& () const;
 

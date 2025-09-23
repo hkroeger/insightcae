@@ -48,24 +48,34 @@ size_t Transform::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*m1_;
   if (trans_) h+=trans_->value();
   if (rot_) h+=rot_->value();
   if (rotorg_) h+=rotorg_->value();
   if (sf_) h+=sf_->value();
   if (other_) h+=*other_;
   if (trsf_) h+=*trsf_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 
 
+Transform::Transform(const Transform&o, TreeCloneMap& tcm)
+: DerivedFeature(o, tcm),
+    CL(trans_),
+    CL(rotorg_),
+    CL(rot_),
+    CL(sf_),
+    CL(other_),
+    trsf_(bool(o.trsf_) ? new gp_Trsf(*o.trsf_) : nullptr)
+{}
 
-Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr scale)
+
+
+
+Transform::Transform(ConstFeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr scale)
 : DerivedFeature(m1),
-  m1_(m1),
   trans_(trans),
   rot_(rot),
   sf_(scale)
@@ -74,9 +84,8 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sc
 
 
 
-Transform::Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
+Transform::Transform(ConstFeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
 : DerivedFeature(m1),
-  m1_(m1),
   rotorg_(rotorg),
   rot_(rot)
 {}
@@ -84,27 +93,25 @@ Transform::Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
 
 
 
-Transform::Transform(FeaturePtr m1, VectorPtr trans)
+Transform::Transform(ConstFeaturePtr m1, VectorPtr trans)
 : DerivedFeature(m1),
-  m1_(m1),
   trans_(trans)
 {}
 
 
 
 
-Transform::Transform(FeaturePtr m1, ScalarPtr sf)
+Transform::Transform(ConstFeaturePtr m1, ScalarPtr sf)
 : DerivedFeature(m1),
-  m1_(m1),
   sf_(sf)
 {}
 
 
 
 
-Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
+Transform::Transform(ConstFeaturePtr m1, const gp_Trsf& trsf)
 : DerivedFeature(m1),
-  m1_(m1), trsf_(new gp_Trsf)
+  trsf_(new gp_Trsf)
 {
   *trsf_=trsf;
 }
@@ -112,9 +119,9 @@ Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
 
 
 
-Transform::Transform(FeaturePtr m1, FeaturePtr other)
+Transform::Transform(ConstFeaturePtr m1, FeaturePtr other)
 : DerivedFeature(m1),
-  m1_(m1), other_(other)
+  other_(other)
 {}
 
 
@@ -224,15 +231,16 @@ void Transform::build()
     }
 
 
-    setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
+    setShape(BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape());
 
     // Transform all ref points and ref vectors
     copyDatumsTransformed(
-                *m1_, *trsf_, "",
+                *baseFeature(), *trsf_, "",
                 { "scaleFactor", "translation", "rotationOrigin", "rotation" }
                 );
 
-    providedSubshapes_["basefeat"]=m1_; // overwrite existing basefeat, if there
+    providedSubshapes_["basefeat"]=
+        std::const_pointer_cast<Feature>(baseFeature()); // overwrite existing basefeat, if there
 
     cache.insert(shared_from_this());
   }

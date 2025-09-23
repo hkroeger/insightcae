@@ -19,6 +19,11 @@
 
 #include "constantscalar.h"
 
+
+void insight::cad::ConstantScalar::replaceDependency(const DependencyReplacement& repl)
+{}
+
+
 insight::cad::ConstantScalar::ConstantScalar(double value)
 : value_(value)
 {}
@@ -32,6 +37,14 @@ double insight::cad::ConstantScalar::value() const
 void insight::cad::ConstantScalar::setValue(double v)
 {
     value_=v;
+}
+
+std::shared_ptr<insight::cad::DependencySource>
+insight::cad::ConstantScalar::shallowClone(TreeCloneMap &tcm) const
+{
+    return std::shared_ptr<insight::cad::DependencySource>(
+        new ConstantScalar(value_)
+        );
 }
 
 insight::cad::ScalarPtr insight::cad::scalarconst(double v)

@@ -432,7 +432,9 @@ size_t SpurGear::calcHash() const
 }
 
 
-
+SpurGear::SpurGear(const SpurGear&o, TreeCloneMap& tcm)
+    : CL(m_), CL(z_), CL(t_), CL(clearance_)
+{}
 
 SpurGear::SpurGear(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
 : m_(m), z_(z), t_(t), clearance_(clearance)
@@ -971,7 +973,9 @@ size_t BevelGear::calcHash() const
 }
 
 
-
+BevelGear::BevelGear(const BevelGear&o, TreeCloneMap& tcm)
+    : CL(m_), CL(z_), CL(t_), CL(clearance_)
+{}
 
 
 BevelGear::BevelGear(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)

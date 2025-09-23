@@ -41,7 +41,8 @@ namespace cad {
 
 
 
-typedef std::vector<boost::fusion::vector2<std::string, ScalarPtr> > SketchVarList;
+typedef boost::fusion::vector2<std::string, ScalarPtr> SketchVar;
+typedef std::vector<SketchVar> SketchVarList;
 
 class Sketch
 : public Feature
@@ -64,8 +65,12 @@ class Sketch
   size_t calcHash() const override;
   void build() override;
 
+  Sketch(const Sketch&o, TreeCloneMap& tcm);
 public:
+  void replaceDependency(const DependencyReplacement& repl) override;
+  CLONEABLE(Sketch);
   declareType("Sketch");
+
   CREATE_FUNCTION(Sketch);
   
   void operator=(const Sketch& o);

@@ -59,6 +59,16 @@ size_t Sweep::calcHash() const
 
 
 
+Sweep::Sweep(const Sweep&o, TreeCloneMap& tcm)
+{
+    for (auto& s: o.secs_)
+    {
+        secs_.push_back(tcm.clone(s));
+    }
+}
+
+
+
 
 Sweep::Sweep(const std::vector<FeaturePtr>& secs)
 : secs_(secs)

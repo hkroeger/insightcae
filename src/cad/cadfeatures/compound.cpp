@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "compound.h"
 #include "base/boost_include.h"
@@ -58,6 +59,14 @@ size_t Compound::calcHash() const
 
 
 
+Compound::Compound(const Compound&o, TreeCloneMap& tcm)
+{
+    for (auto& c: o.components_)
+    {
+        components_.insert({c.first, tcm.clone(c.second)});
+    }
+}
+
 Compound::Compound()
     : Feature()
 {}
@@ -88,10 +97,14 @@ Compound::Compound(const CompoundFeatureMap& m1)
 std::shared_ptr<Compound> Compound::create_named( const CompoundFeatureMapData& m1 )
 {
     CompoundFeatureMap items;
-    for (const auto& i: m1)
+    for (auto i: boost::adaptors::index(m1))
     {
-        items[boost::fusion::get<0>(i)]
-                = boost::fusion::get<1>(i);
+        auto name = boost::fusion::get<1>(i.value());
+
+        if (name.empty())
+            name=str( format("component%d") % (i.index()+1) );
+
+        items[name] = boost::fusion::get<0>(i.value());
     }
     return Compound::create(items);
 }
@@ -127,17 +140,17 @@ void Compound::build()
         // delayed evaluation: will be evaluated upon first use
         auto f = DeferredFeatureSet::create(
                     shared_from_this(), Face,
-                    "isSame(%0)",
+                    "isIdentical(%0)",
                     FeatureSetParserArgList{
                         makeFaceFeatureSet(p)
                     } );
 //        auto f = find( p->allFaces() ); // find not usable during rebuild!
 
-        providedFeatureSets_[c.first] = f;
+        providedFeatureSets_[c.first+"_faces"] = f;
         providedFeatureSets_[c.first+"_edges"] =
             DeferredFeatureSet::create(
                 shared_from_this(), Edge,
-                "isSame(%0)",
+                "isIdentical(%0)",
                 FeatureSetParserArgList{
                     makeEdgeFeatureSet(p)
                 } );
@@ -149,6 +162,15 @@ void Compound::build()
     }
 }
 
+void Compound::replaceDependency(const DependencyReplacement &repl)
+{
+    for (auto i=components_.begin(); i!=components_.end(); ++i)
+    {
+        repl(components_.at(i->first)); // need a reference here, not value
+    }
+    invalidate();
+}
+
 
 
 
@@ -158,17 +180,10 @@ void Compound::insertrule(parser::ISCADParser& ruleset)
     (
         "Compound",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
-                    '(' >
-                      (
-                          ( ruleset.r_solidmodel_expression % ',' )
-                           [ qi::_val = phx::bind(&Compound::create<const CompoundFeatureList&>, qi::_1) ]
-                        |
-                          ('{' > (
-                            ( ruleset.r_identifier > ':' > ruleset.r_solidmodel_expression )
-                              % ',' )
-                           [ qi::_val = phx::bind(&Compound::create_named, qi::_1) ] > '}')
-                      )
-                      > ')'
+                '(' >
+            (( ruleset.r_solidmodel_expression > ( ( ':' > ruleset.r_identifier ) | qi::attr(std::string())))  % ',' )
+                        [ qi::_val = phx::bind(&Compound::create_named, qi::_1) ]
+                    > ')'
                 )
     );
 }

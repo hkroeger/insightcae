@@ -22,6 +22,7 @@ private:
     UV coord_;
     ScalarPtr iso_value_;
 
+    FaceIsoCurve(const FaceIsoCurve&o, TreeCloneMap& tcm);
     FaceIsoCurve ( FeatureSetPtr faces, UV coord, ScalarPtr iso_value );
 
     size_t calcHash() const override;
@@ -29,8 +30,11 @@ private:
 
 public:
     declareType ( "FaceIsoCurve" );
-
+#ifndef SWIG
+    DEPENDS((faces_, iso_value_));
+#endif
     CREATE_FUNCTION(FaceIsoCurve);
+    CLONEABLE(FaceIsoCurve);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

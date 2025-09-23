@@ -64,7 +64,9 @@ size_t CoilPath::calcHash() const
 }
 
 
-
+CoilPath::CoilPath(const CoilPath&o, TreeCloneMap& tcm)
+    : CL(l_), CL(dcore_), CL(n_), CL(d_), CL(R_), CL(rmin_), CL(nl_), CL(dr_)
+{}
 
 
 CoilPath::CoilPath
@@ -355,6 +357,9 @@ size_t Coil::calcHash() const
 }
 
 
+Coil::Coil(const Coil&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(b_), CL(l_), CL(r_), CL(d_), CL(nv_), CL(nr_)
+{}
 
 Coil::Coil
 (

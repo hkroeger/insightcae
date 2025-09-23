@@ -62,6 +62,17 @@ size_t Place::calcHash() const
 
 
 
+Place::Place(const Place&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(m_),
+    CL(p0_),
+    CL(ex_),
+    CL(ez_),
+    CL(refpt_),
+    CL(other_),
+    trsf_(o.trsf_)
+{}
+
 
 
 

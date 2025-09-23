@@ -31,9 +31,10 @@ class Circle
 {
     VectorPtr p0_;
     VectorPtr n_;
-    ScalarPtr D_;
+    ScalarPtr D_, d_;
 
-    Circle(VectorPtr p0, VectorPtr n, ScalarPtr D);
+    Circle(const Circle&o, TreeCloneMap& tcm);
+    Circle(VectorPtr p0, VectorPtr n, ScalarPtr D, ScalarPtr d=ScalarPtr());
 
 protected:
     size_t calcHash() const override;
@@ -41,8 +42,11 @@ protected:
 
 public:
     declareType("Circle");
-
+#ifndef SWIG
+    DEPENDS((p0_, n_, D_, d_));
+#endif
     CREATE_FUNCTION(Circle);
+    CLONEABLE(Circle);
 
     operator const TopoDS_Face& () const;
 

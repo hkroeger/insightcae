@@ -58,6 +58,9 @@ size_t Box::calcHash() const
 
 
 
+Box::Box(const Box&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(L1_), CL(L2_), CL(L3_), center_(o.center_)
+{}
   
 Box::Box
 (

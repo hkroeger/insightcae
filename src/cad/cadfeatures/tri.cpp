@@ -56,7 +56,9 @@ size_t Tri::calcHash() const
 
 
 
-
+Tri::Tri(const Tri&o, TreeCloneMap& tcm)
+: CL(p0_), CL(e1_), CL(e2_)
+{}
 
 
 Tri::Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2)

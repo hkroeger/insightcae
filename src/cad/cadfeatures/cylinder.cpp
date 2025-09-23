@@ -59,7 +59,11 @@ size_t Cylinder::calcHash() const
 
 
 
-
+Cylinder::Cylinder(const Cylinder&o, TreeCloneMap& tcm)
+    : p2isAxis_(o.p2isAxis_),
+    CL(p1_), CL(p2_), CL(D_), CL(Di_),
+    centered_(o.centered_)
+{}
 
 Cylinder::Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered )
     : p2isAxis_ ( p2isAxis ), p1_ ( p1 ), p2_ ( p2 ), D_ ( D ), centered_ ( centered )
@@ -166,19 +170,19 @@ void Cylinder::insertrule ( parser::ISCADParser& ruleset )
         "Cylinder",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-                    ( '('
-                      >> ruleset.r_vectorExpression >> ','
-                      >> ( ( qi::lit ( "ax" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
-                      >> ruleset.r_vectorExpression >> ','
-                      >> ruleset.r_scalarExpression
-                      >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
-                      >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
-                      >> ')' )
-                    [ qi::_val = phx::bind (
-                       &Cylinder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, bool, bool>,
-                       qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
+            ( '('
+              > ruleset.r_vectorExpression > ','
+              > ( ( qi::lit ( "ax" ) > qi::attr ( true ) ) | qi::attr ( false ) )
+              > ruleset.r_vectorExpression > ','
+              > ruleset.r_scalarExpression
+              > ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
+              > ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
+              > ')' )
+            [ qi::_val = phx::bind (
+               &Cylinder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, bool, bool>,
+               qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
 
-                )
+        )
     );
 }
 

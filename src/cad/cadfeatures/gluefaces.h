@@ -34,12 +34,16 @@ class GlueFaces
   size_t calcHash() const override;
   void build() override;
 
+  GlueFaces(const GlueFaces&o, TreeCloneMap& tcm);
   GlueFaces(FeaturePtr faces, ScalarPtr tol=scalarconst(1e-7));
 
 public:
   declareType("GlueFaces");
-
+#ifndef SWIG
+  DEPENDS((feat_,tol_));
+#endif
   CREATE_FUNCTION(GlueFaces);
+  CLONEABLE(GlueFaces);
 
   static void insertrule(parser::ISCADParser& ruleset);
 };

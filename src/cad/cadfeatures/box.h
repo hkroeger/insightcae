@@ -36,6 +36,7 @@ class Box
     VectorPtr L3_;
     BoxCentering center_;
 
+    Box(const Box&o, TreeCloneMap& tcm);
     Box
     (
         VectorPtr p0,
@@ -51,8 +52,11 @@ protected:
 
 public:
     declareType("Box");
-
+#ifndef SWIG
+    DEPENDS((p0_, L1_, L2_, L3_));
+#endif
     CREATE_FUNCTION(Box);
+    CLONEABLE(Box);
 
     static void insertrule(parser::ISCADParser& ruleset);
     static FeatureCmdInfoList ruleDocumentation();

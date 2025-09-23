@@ -37,6 +37,7 @@ class Torus
     VectorPtr axisTimesD_;
     ScalarPtr d_;
 
+    Torus(const Torus&o, TreeCloneMap& tcm);
     Torus ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d );
 
     size_t calcHash() const override;
@@ -44,7 +45,11 @@ class Torus
 
 public:
     declareType ( "Torus" );
+#ifndef SWIG
+    DEPENDS((p0_,axisTimesD_,d_));
+#endif
     CREATE_FUNCTION(Torus);
+    CLONEABLE(Torus);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

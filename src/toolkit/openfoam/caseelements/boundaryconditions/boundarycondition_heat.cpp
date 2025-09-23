@@ -257,7 +257,7 @@ bool CHTCoupledWall::addIntoFieldDictionary(const string& fieldname, const Field
         BC["alphaAni"]="none";
 
 
-        BC["value"]=OFDictData::toUniformField( 300.0 );
+        BC["value"]=OFDictData::toUniformField( p().Tinitial );
       return true;
     }
     else

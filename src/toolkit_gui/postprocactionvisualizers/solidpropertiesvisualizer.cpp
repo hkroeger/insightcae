@@ -1,4 +1,4 @@
-
+#include "cadfeatures.h"
 #include "postprocactionvisualizer.h"
 #include "base/boost_include.h"
 #include "cadpostprocactions/solidproperties.h"

@@ -523,6 +523,13 @@ std::string SpeciesData::transportType() const
     {
         return "WLF";
     }
+    else if (const auto *st = boost::get<Parameters::properties_custom_type::transport_constIso_type>(&p_.transport))
+    {
+        return "constIso";
+    }
+    else
+        throw insight::UnhandledSelection("transport type");
+
     return "";
 }
 
@@ -688,6 +695,13 @@ void SpeciesData::insertTransportEntries(OFDictData::dict& d) const
         transport["C2"]=wl->C2;
         transport["Pr"]=wl->Pr;
     }
+    else if (const auto *ci = boost::get<Parameters::properties_custom_type::transport_constIso_type>(&p_.transport))
+    {
+        transport["kappa"]=ci->kappa;
+    }
+    else
+        throw insight::UnhandledSelection("transport entries");
+
     d["transport"]=transport;
 }
 

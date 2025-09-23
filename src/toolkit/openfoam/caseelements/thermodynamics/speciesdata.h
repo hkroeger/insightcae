@@ -86,6 +86,11 @@ transport = selectablesubset {{
    Pr = double 1 "Prandtl number"
  }
 
+ constIso
+ set {
+   kappa = double 200. "[W/mK] thermal conductivity"
+ }
+
 }} constant "Transport properties"
 
 

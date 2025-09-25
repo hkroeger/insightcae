@@ -17,7 +17,9 @@ addToFactoryTable ( ResultElement, Image );
 
 Image::Image ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
     : FileResult ( shortdesc, longdesc, unit )
-{}
+{
+    setDisplayFullPage(true);
+}
 
 
 
@@ -31,7 +33,9 @@ Image::Image
     std::shared_ptr<std::string> base64_content
 )
     : FileResult ( location, value, shortDesc, longDesc, base64_content )
-{}
+{
+    setDisplayFullPage(true);
+}
 
 
 

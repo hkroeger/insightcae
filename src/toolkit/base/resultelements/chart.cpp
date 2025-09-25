@@ -156,6 +156,7 @@ addToFactoryTable(ResultElement, Chart);
 Chart::Chart(const std::string& shortdesc, const std::string& longdesc, const std::string& unit)
 : ResultElement(shortdesc, longdesc, unit)
 {
+    setDisplayFullPage(true);
 }
 
 
@@ -171,6 +172,7 @@ Chart::Chart
 : ResultElement(shortDesc, longDesc, ""),
   ChartData{xlabel, ylabel, plc, addinit}
 {
+    setDisplayFullPage(true);
 }
 
 const ChartData* Chart::chartData() const

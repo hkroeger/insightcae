@@ -119,6 +119,9 @@ void ResultElementCollection::writeLatexCodeOfElements
         }
         else
         {
+            if (r->displayFullPage())
+                f<<"\\newpage\n";
+
             f << latex_subsection ( level+1 ) << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
 
             f << r->shortDescription().toLaTeX() << "\n\n";

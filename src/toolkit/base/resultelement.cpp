@@ -59,7 +59,8 @@ ResultElement::ResultElement ( const std::string& shortdesc, const std::string& 
     : shortDescription_ ( shortdesc ),
       longDescription_ ( longdesc ),
       unit_ ( unit ),
-      order_ ( 0 )
+      order_ ( 0 ),
+      displayFullPage_(false)
 {}
 
 
@@ -82,6 +83,16 @@ const SimpleLatex& ResultElement::longDescription() const
 const SimpleLatex& ResultElement::unit() const
 {
   return unit_;
+}
+
+void ResultElement::setDisplayFullPage(bool displayFullPage)
+{
+    displayFullPage_=displayFullPage;
+}
+
+bool ResultElement::displayFullPage() const
+{
+    return displayFullPage_;
 }
 
 

@@ -52,6 +52,8 @@ protected:
      */
     double order_;
 
+    bool displayFullPage_;
+
 public:
     declareType ( "ResultElement" );
 
@@ -72,6 +74,9 @@ public:
    * unit of result quantity
    */
   const SimpleLatex& unit() const;
+
+  void setDisplayFullPage(bool displayFullPage);
+  bool displayFullPage() const;
 
   inline ResultElement& setOrder ( double o ) { order_=o; return *this; }
     inline double order() const { return order_; }

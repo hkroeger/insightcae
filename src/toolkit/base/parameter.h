@@ -65,7 +65,11 @@ join(const std::vector<std::string>& ps);
 
 }
 
-
+/**
+ * @brief The PrimitiveStaticValueWrap class
+ * Wraps a parameter value along with its path
+ * into the parameter set, which contains it.
+ */
 template<class T>
 struct PrimitiveStaticValueWrap
 {
@@ -96,7 +100,11 @@ struct PrimitiveStaticValueWrap
 
 
 
-
+/**
+ * @brief The StaticValueWrap class
+ * Wraps a parameter value along with its path
+ * into the parameter set, which contains it.
+ */
 template<class T>
 class StaticValueWrap
     : public T
@@ -136,6 +144,46 @@ public:
 };
 
 
+
+template<class P>
+class ParametersReference
+    : public std::reference_wrapper<const P>
+{
+public:
+    boost::optional<std::string> parameterPath;
+
+    ParametersReference(const P& o, const boost::optional<std::string>& explicitPath)
+        : std::reference_wrapper<const P>(o),
+        parameterPath(explicitPath)
+    {}
+
+    ParametersReference(const ParametersReference<P>& o)
+        : std::reference_wrapper<const P>(o),
+        parameterPath(o.parameterPath)
+    {}
+
+    template<class DerivedP>
+    ParametersReference(const ParametersReference<DerivedP>& o)
+      : std::reference_wrapper<const P>(dynamic_cast<const P&>(o.get())),
+        parameterPath(o.parameterPath)
+    {}
+
+    ParametersReference(const StaticValueWrap<P>& parameter)
+        : std::reference_wrapper<const P>(parameter),
+        parameterPath(parameter.parameterPath)
+    {}
+
+    template<class DerivedP>
+    ParametersReference(const StaticValueWrap<DerivedP>& parameter)
+        : std::reference_wrapper<const P>(parameter),
+        parameterPath(parameter.parameterPath)
+    {}
+
+    const P& parameters() const
+    {
+        return this->get();
+    }
+};
 
 
 }

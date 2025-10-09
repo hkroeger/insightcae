@@ -22,10 +22,15 @@
 #define INSIGHT_TEST_PDL_H
 
 #include "base/boost_include.h"
+#include "base/propertylibrary.h"
 #include "base/parameterset.h"
 #include "base/parameters.h"
-#include "test_pdl__TestPDL__Parameters_headers.h"
+#include "base/parameters/spatialtransformationparameter.h"
+#include "base/parameters/simpledimensionedparameter.h"
 #include "openfoam/caseelements/turbulencemodel.h"
+
+#include "test_pdl__SubPS__Parameters_headers.h"
+#include "test_pdl__TestPDL__Parameters_headers.h"
 
 namespace insight {
 
@@ -46,6 +51,26 @@ defineType(BrakePad);
 typedef PropertyLibrary<BrakePad, &libSubDir> BrakePads;
 
 
+
+class SubPS
+{
+public:
+#include "test_pdl__SubPS__Parameters.h"
+/*
+PARAMETERSET>>> SubPS Parameters
+
+W = dimensionedScalar Length millimeters 1.0 "One millimeter"
+
+subsub = set {
+ sarr = array [ double 1. "" ] *2 ""
+} ""
+
+<<<PARAMETERSET
+*/
+
+};
+
+
 class TestPDL
 {
 
@@ -53,6 +78,8 @@ public:
 #include "test_pdl__TestPDL__Parameters.h"
 /*
 PARAMETERSET>>> TestPDL Parameters
+
+subps = includedset "insight::SubPS::Parameters" ""
 
 L = dimensionedScalar Length millimeters 1.0 "One millimeter"
 

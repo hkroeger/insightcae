@@ -8,15 +8,15 @@ namespace insight {
 
 
 
-porousZoneConfig::porousZoneConfig( OpenFOAMCase& c, const Parameters& p )
-: pzp_(p)
+porousZoneConfig::porousZoneConfig( OpenFOAMCase& c, const std::string& name, const Parameters& p )
+    : pzp_(p), name_(name)
 {}
 
 void porousZoneConfig::addIntoDict(OFDictData::dict &pc) const
 {
     pc["type"]="DarcyForchheimer";
     pc["selectionMode"]="cellZone";
-    pc["cellZone"]=pzp_.name;
+    pc["cellZone"]=name_;
     OFDictData::dict dfc;
     dfc["d"]=OFDictData::vector3(pzp_.d);
     dfc["f"]=OFDictData::vector3(pzp_.f);
@@ -41,7 +41,7 @@ addToOpenFOAMCaseElementFactoryTable(porousZone);
 
 porousZone::porousZone( OpenFOAMCase& c, ParameterSetInput ip )
     : OpenFOAMCaseElement(c, ip.forward<Parameters>()),
-    porousZoneConfig(c, p().porousZone)
+    porousZoneConfig(c, name(), p().porousZone)
 {
     // name_="porousZone"+p_.name;
 }
@@ -54,7 +54,7 @@ void porousZone::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict pc;
   addIntoDict(pc);
-  porosityProperties[p().porousZone.name]=pc;
+  porosityProperties[name()]=pc;
 
 }
 
@@ -70,7 +70,7 @@ porousZoneOption::porousZoneOption (
           c,
           // "porousZoneOption"+ps.getString("name"),
           ip.forward<Parameters>() ),
-    porousZoneConfig(c, p().porousZone)
+    porousZoneConfig(c, name(), p().porousZone)
 {}
 
 
@@ -86,7 +86,7 @@ void porousZoneOption::addIntoFvOptionDictionary(
     addIntoDict(cfg);
     d["explicitPorositySourceCoeffs"]=cfg;
 
-    fvo[p().name]=d;
+    fvo[name()]=d;
 
     cellSetFvOption::addIntoFvOptionDictionary(fvo, od);
 }

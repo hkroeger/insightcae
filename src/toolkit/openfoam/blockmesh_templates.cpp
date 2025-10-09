@@ -369,10 +369,10 @@ void blockMeshDict_Box::create_bmd()
         Xm->addFace ( bl.face ( "0473" ) );
     }
     if ( Yp ) {
-        Yp->addFace ( bl.face ( "0154" ) );
+        Yp->addFace ( bl.face ( "2376" ) );
     }
     if ( Ym ) {
-        Ym->addFace ( bl.face ( "2376" ) );
+        Ym->addFace ( bl.face ( "0154" ) );
     }
     if ( Zp ) {
         Zp->addFace ( bl.face ( "4567" ) );

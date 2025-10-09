@@ -16,7 +16,6 @@ public:
 /*
 PARAMETERSET>>> porousZoneConfig Parameters
 
-name = string "porosity" "Name of the porous cell zone. It needs to exist for this configuration to work."
 d = vector (1 1 1) "Darcy coefficients for each direction"
 f = vector (0 0 0) "Forchheimer coefficients for each direction"
 
@@ -29,9 +28,10 @@ direction_y = vector (0 1 0) "Y direction of the porosity coordinate system"
 
 private:
     Parameters pzp_;
+    std::string name_;
 
 public:
-    porousZoneConfig ( OpenFOAMCase& c, const porousZoneConfig::Parameters& p );
+    porousZoneConfig ( OpenFOAMCase& c, const std::string& name, const porousZoneConfig::Parameters& p );
     void addIntoDict ( OFDictData::dict& dict) const;
 };
 

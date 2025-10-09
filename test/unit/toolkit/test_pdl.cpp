@@ -3,7 +3,6 @@
 #include "base/parameters/pathparameter.h"
 #include "base/units.h"
 #include "boost/signals2/connection.hpp"
-#include "test_pdl__TestPDL__Parameters_headers.h"
 #include <memory>
 #include <string>
 
@@ -205,10 +204,11 @@ int main()
 
   c.check<scalarLengthParameter>("L", c.ps_static.L, si::Length(555.*si::meter) );
 
-  c.check<DoubleParameter>("run/regime/endTime",
-                           boost::get<TestPDL::Parameters::run_type::regime_unsteady_type>(
-                               c.ps_static.run.regime).endTime,
-                           20.);
+  c.check<DoubleParameter>(
+      "run/regime/endTime",
+       boost::get<TestPDL::Parameters::run_type::regime_unsteady_type>(
+           c.ps_static.run.regime).endTime,
+       20.);
 
   c.check<DoubleParameter>("ap/1", c.ps_static.ap[1], 555. );
   c.check<ArrayParameter>("ap", c.ps_static.ap, std::vector<PrimitiveStaticValueWrap<double> >{{5.},{5.},{5.}} );
@@ -260,6 +260,28 @@ int main()
 
   auto &mp = ae.parentSet().get<MatrixParameter>("../../../../../matrix");
   cout<<"matrix="<<mp()<<std::endl;
+
+  std::cout<<"subps/W => "<<p_test.subps.W.parameterPath<<std::endl;
+  std::cout<<"subps/subsub/sarr => "<<p_test.subps.subsub.sarr.parameterPath<<std::endl;
+
+
+  ParametersReference<SubPS::Parameters> psub(p_test.subps);
+
+  insight::assertion(
+      *psub.get().W.parameterPath=="subps/W",
+      "unexpected path");
+  insight::assertion(
+      *psub.get().subsub.sarr.parameterPath=="subps/subsub/sarr",
+      "unexpected path");
+
+
+  const ParametersBase& ps = p_test.subps;
+
+  std::cout<<*dynamic_cast<const SubPS::Parameters&>(ps).W.parameterPath<<std::endl;
+  insight::assertion(
+      *dynamic_cast<const SubPS::Parameters&>(ps).W.parameterPath=="subps/W",
+      "unexpected path");
+
 
   return 0;
 }

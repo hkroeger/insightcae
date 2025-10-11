@@ -59,6 +59,7 @@ class ASTBase;
 class Feature;
 class Datum;
 class FeatureSet;
+class DeferredFeatureSet;
 class Filter;
 class Model;
 class PostprocAction;

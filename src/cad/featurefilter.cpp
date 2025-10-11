@@ -580,13 +580,16 @@ struct FaceFeatureFilterExprParser
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
 	( lit("cylAxis") ) 
 	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<cylAxis>()) ]
-	|
-        ( lit("normal") ) 
-	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
-        |
-        ( lit("CoG") ) 
-	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
-      ;
+    |
+    ( lit("cylCenter") )
+       [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<cylCenter>()) ]
+    |
+    ( lit("normal") )
+      [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
+    |
+    ( lit("CoG") )
+      [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
+  ;
     
   }
 };

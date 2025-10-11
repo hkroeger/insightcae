@@ -36,7 +36,8 @@ public:
     void setCoords2D(const arma::mat& xy);
     virtual arma::mat coords2D() const;
 
-    arma::mat value() const override;
+    size_t calcHash() const override;
+    arma::mat calcValue() const override;
     DatumPtr plane() const;
 
     int nDoF() const override;

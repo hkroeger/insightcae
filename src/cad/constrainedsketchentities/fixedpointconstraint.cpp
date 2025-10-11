@@ -1,5 +1,6 @@
 #include "fixedpointconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 
 #include "base/parameters/subsetparameter.h"
 #include "base/parameterset.h"

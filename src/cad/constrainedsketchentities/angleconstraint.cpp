@@ -1,5 +1,6 @@
 #include "angleconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/units.h"
 #include "base/parameterset.h"
 #include "base/parameters/simpleparameter.h"
@@ -15,9 +16,9 @@ defineType(AngleConstraint);
 size_t AngleConstraint::calcHash() const
 {
     ParameterListHash h;
-    h+=p1_->value();
-    h+=p2_->value();
-    h+=pCtr_->value();
+    h+=*p1_;
+    h+=*p2_;
+    h+=*pCtr_;
     h+=targetValue();
     return h.getHash();
 }

@@ -1,5 +1,6 @@
 #include "pointoncurveconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadfeatures/line.h"
 
 #include "vtkCaptionActor2D.h"

@@ -1,6 +1,7 @@
 #include "sketchpoint.h"
-
+#include "cadfeature.h"
 #include "datum.h"
+#include "feature.h"
 #include "constrainedsketch.h"
 
 #include <vtkSmartPointer.h>
@@ -56,7 +57,17 @@ arma::mat SketchPoint::coords2D() const
     return vec2(x_, y_);
 }
 
-arma::mat SketchPoint::value() const
+
+size_t SketchPoint::calcHash() const
+{
+    ParameterListHash h;
+    h+=*plane_;
+    h+=x_;
+    h+=y_;
+    return h.getHash();
+}
+
+arma::mat SketchPoint::calcValue() const
 {
     auto pl=plane_->plane();
     return vec3(

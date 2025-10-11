@@ -52,9 +52,16 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
                               model!=nullptr,
                               "invalid model type" );
 
+
+                          auto existingActions = model->postprocActions();
+                          auto lbl = insight::findUnusedLabel(
+                              existingActions.begin(), existingActions.end(),
+                              std::string("distance measurement"),
+                              [](decltype(existingActions)::const_iterator i)
+                              { return i->first; } );
                           model->addPostprocAction
                               (
-                                  "distance measurement",
+                                  lbl,
                                   insight::cad::PostprocActionPtr
                                   (
                                       new insight::cad::Distance(p1_, p2_)

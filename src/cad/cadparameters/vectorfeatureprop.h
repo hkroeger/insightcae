@@ -45,7 +45,8 @@ public:
   CLONEABLE(PointFeatureProp);
 
   PointFeatureProp(FeaturePtr model, const std::string& name);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -65,7 +66,8 @@ public:
   CLONEABLE(VectorFeatureProp);
 
   VectorFeatureProp(FeaturePtr model, const std::string& name);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -84,7 +86,8 @@ public:
     CLONEABLE(SinglePointCoords);
 
     SinglePointCoords(ConstFeatureSetPtr pfs);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -104,7 +107,8 @@ public:
 
   CircleEdgeCenterCoords(ConstFeatureSetPtr pfs);
   void compute(arma::mat& pc, double& D, arma::mat& ex) const;
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -123,7 +127,8 @@ public:
     CLONEABLE(DatumPointCoord);
 
   DatumPointCoord(ConstDatumPtr pfs);
-   arma::mat value() const override;
+    size_t calcHash() const override;
+   arma::mat calcValue() const override;
 };
 
 
@@ -142,7 +147,8 @@ public:
     CLONEABLE(DatumDir);
 
   DatumDir(ConstDatumPtr pfs);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -159,7 +165,8 @@ public:
     CLONEABLE(XsecCurveCurve);
 
   XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -177,7 +184,8 @@ public:
     CLONEABLE(DatumPlaneNormal);
 
   DatumPlaneNormal(ConstDatumPtr pfs);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -195,7 +203,8 @@ public:
     CLONEABLE(DatumPlaneX);
 
     DatumPlaneX(ConstDatumPtr pfs);
-    arma::mat value() const override;
+    size_t calcHash() const override;
+    arma::mat calcValue() const override;
 };
 
 
@@ -213,7 +222,8 @@ public:
     CLONEABLE(DatumPlaneY);
 
     DatumPlaneY(ConstDatumPtr pfs);
-    arma::mat value() const override;
+    size_t calcHash() const override;
+    arma::mat calcValue() const override;
 };
 
 
@@ -231,7 +241,8 @@ public:
     CLONEABLE(BBMin);
 
   BBMin(FeaturePtr model);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -250,7 +261,8 @@ public:
     CLONEABLE(BBMax);
 
   BBMax(FeaturePtr model);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -269,7 +281,8 @@ public:
     CLONEABLE(COG);
 
   COG(FeaturePtr model);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -288,7 +301,8 @@ public:
     CLONEABLE(SurfaceCOG);
 
   SurfaceCOG(FeaturePtr model);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -308,7 +322,8 @@ public:
   CLONEABLE(SurfaceInertiaAxis);
 
   SurfaceInertiaAxis(FeaturePtr model, int axis);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -327,7 +342,8 @@ public:
     CLONEABLE(PointInFeatureCS);
 
     PointInFeatureCS(FeaturePtr model, VectorPtr locP);
-    arma::mat value() const override;
+    size_t calcHash() const override;
+    arma::mat calcValue() const override;
 };
 
 

@@ -42,7 +42,8 @@ public:
 #endif
 
   VectorFromComponents(ScalarPtr p1, ScalarPtr p2, ScalarPtr p3);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -61,7 +62,8 @@ public:
 #endif
 
   CrossMultipliedVector(VectorPtr p1, VectorPtr p2);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -79,7 +81,8 @@ public:
 #endif
 
   DotMultipliedVector(VectorPtr p1, VectorPtr p2);
-  double value() const override;
+    size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -99,7 +102,8 @@ public:
 #endif
 
   ScalarMultipliedVector(ScalarPtr p1, VectorPtr p2);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -118,7 +122,8 @@ public:
 #endif
 
   ScalarDividedVector(VectorPtr p1, ScalarPtr p2);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -144,7 +149,8 @@ public:
   inline VectorPtr& p2() __attribute__((deprecated("using this might break updating!")))
   { return p2_; }
 
-  arma::mat value() const override;
+   size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -162,7 +168,8 @@ public:
 #endif
 
   SubtractedVector(VectorPtr p1, VectorPtr p2);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -180,7 +187,8 @@ public:
 #endif
 
   RotatedVector(VectorPtr v, ScalarPtr ang, VectorPtr ax);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -197,7 +205,8 @@ public:
 #endif
 
   NormalizedVector(VectorPtr v);
-  arma::mat value() const override;
+    size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -224,7 +233,8 @@ public:
   * @eax direction of crank shaft axis
   */
   Mechanism_CrankDrive(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -244,7 +254,8 @@ public:
 
 
   Mechanism_Slider(ScalarPtr L, VectorPtr p0, VectorPtr psl, VectorPtr esl);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 

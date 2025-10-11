@@ -33,8 +33,8 @@ public:
   void replaceDependency(const DependencyReplacement& repl) override;
   ConstantScalar(double value);
 
-  double value() const override;
-  void setValue(double v);
+  size_t calcHash() const override;
+  double calcValue() const override;
 
   std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const override;
 };

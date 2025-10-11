@@ -18,6 +18,9 @@
  */
 
 #include "vectorops.h"
+#include "parameterlisthash.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 insight::cad::VectorFromComponents::VectorFromComponents(const VectorFromComponents &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_), CL(p3_)
@@ -34,7 +37,16 @@ insight::cad::VectorFromComponents::VectorFromComponents
 
 }
 
-arma::mat insight::cad::VectorFromComponents::value() const
+size_t insight::cad::VectorFromComponents::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    h+=*p3_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::VectorFromComponents::calcValue() const
 {
   return vec3(p1_->value(), p2_->value(), p3_->value());
 }
@@ -50,7 +62,15 @@ insight::cad::CrossMultipliedVector::CrossMultipliedVector(insight::cad::VectorP
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::CrossMultipliedVector::value() const
+size_t insight::cad::CrossMultipliedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::CrossMultipliedVector::calcValue() const
 {
   return arma::cross(p1_->value(), p2_->value());
 }
@@ -66,7 +86,15 @@ insight::cad::DotMultipliedVector::DotMultipliedVector(insight::cad::VectorPtr p
 : p1_(p1), p2_(p2)
 {}
 
-double insight::cad::DotMultipliedVector::value() const
+size_t insight::cad::DotMultipliedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::DotMultipliedVector::calcValue() const
 {
   return arma::dot(p1_->value(), p2_->value());
 }
@@ -81,7 +109,15 @@ insight::cad::ScalarMultipliedVector::ScalarMultipliedVector(insight::cad::Scala
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::ScalarMultipliedVector::value() const
+size_t insight::cad::ScalarMultipliedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::ScalarMultipliedVector::calcValue() const
 {
   return p1_->value()*p2_->value();
 }
@@ -96,7 +132,15 @@ insight::cad::ScalarDividedVector::ScalarDividedVector(insight::cad::VectorPtr p
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::ScalarDividedVector::value() const
+size_t insight::cad::ScalarDividedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::ScalarDividedVector::calcValue() const
 {
   return p1_->value() / p2_->value();
 }
@@ -111,7 +155,15 @@ insight::cad::AddedVector::AddedVector(insight::cad::VectorPtr p1, insight::cad:
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::AddedVector::value() const
+size_t insight::cad::AddedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::AddedVector::calcValue() const
 {
   return p1_->value() + p2_->value();
 }
@@ -126,7 +178,15 @@ insight::cad::SubtractedVector::SubtractedVector(insight::cad::VectorPtr p1, ins
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::SubtractedVector::value() const
+size_t insight::cad::SubtractedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::SubtractedVector::calcValue() const
 {
   return p1_->value() - p2_->value();
 }
@@ -145,8 +205,16 @@ insight::cad::RotatedVector::RotatedVector
 : v_(v), ang_(ang), ax_(ax)
 {}
 
+size_t insight::cad::RotatedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*v_;
+    h+=*ang_;
+    h+=*ax_;
+    return h.getHash();
+}
 
-arma::mat insight::cad::RotatedVector::value() const
+arma::mat insight::cad::RotatedVector::calcValue() const
 {
   return rotMatrix(ang_->value(), ax_->value()) * v_->value();
 }
@@ -162,7 +230,15 @@ insight::cad::NormalizedVector::NormalizedVector(VectorPtr v)
     : v_(v)
 {}
 
-arma::mat insight::cad::NormalizedVector::value() const
+
+size_t insight::cad::NormalizedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=*v_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::NormalizedVector::calcValue() const
 {
   return insight::normalized(v_->value());
 }
@@ -177,7 +253,18 @@ insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(ScalarPtr L, VectorPtr 
 {
 }
 
-arma::mat insight::cad::Mechanism_CrankDrive::value() const
+size_t insight::cad::Mechanism_CrankDrive::calcHash() const
+{
+    ParameterListHash h;
+    h+=*L_;
+    h+=*c2_;
+    h+=*r2_;
+    h+=*p1_;
+    h+=*eax_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::Mechanism_CrankDrive::calcValue() const
 {
   arma::mat edelta = c2_->value() - p1_->value();
   arma::mat eax=eax_->value();
@@ -204,7 +291,17 @@ insight::cad::Mechanism_Slider::Mechanism_Slider(ScalarPtr L, VectorPtr p0, Vect
 : L_(L), p0_(p0), psl_(psl), esl_(esl)
 {}
 
-arma::mat insight::cad::Mechanism_Slider::value() const
+size_t insight::cad::Mechanism_Slider::calcHash() const
+{
+    ParameterListHash h;
+    h+=*L_;
+    h+=*p0_;
+    h+=*psl_;
+    h+=*esl_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::Mechanism_Slider::calcValue() const
 {
   arma::mat edelta=p0_->value()-psl_->value();
   double delta=arma::norm(edelta,2);

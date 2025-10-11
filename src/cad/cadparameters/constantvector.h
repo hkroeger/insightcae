@@ -34,7 +34,10 @@ class ConstantVector
 public:
   void replaceDependency(const DependencyReplacement& repl) override;
   ConstantVector(const arma::mat& value);
-  arma::mat value() const override;
+
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
+
   std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const override;
 };
 

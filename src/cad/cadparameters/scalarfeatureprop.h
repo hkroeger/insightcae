@@ -22,7 +22,6 @@
 
 #include "cadparameter.h"
 #include "cadtypes.h"
-#include "datum.h"
 
 namespace insight {
 namespace cad {
@@ -42,7 +41,8 @@ public:
   DEPENDS((model_));
 #endif
   ScalarFeatureProp(FeaturePtr model, const std::string& name);
-  double value() const override;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -60,7 +60,8 @@ public:
   CLONEABLE(FeatureVolume);
 
   FeatureVolume(FeaturePtr model);
-  double value() const override;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 class FeatureSurfaceArea
@@ -76,7 +77,8 @@ public:
     CLONEABLE(FeatureSurfaceArea);
 
     FeatureSurfaceArea(FeaturePtr model);
-    double value() const override;
+    size_t calcHash() const override;
+    double calcValue() const override;
 };
 
 
@@ -93,7 +95,8 @@ public:
   CLONEABLE(CumulativeEdgeLength);
 
   CumulativeEdgeLength(FeaturePtr model);
-  double value() const override;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -111,7 +114,27 @@ public:
   CLONEABLE(CircleDiameter);
 
   CircleDiameter(ConstFeatureSetPtr pfs);
-  double value() const override;
+  size_t calcHash() const override;
+  double calcValue() const override;
+};
+
+
+
+class CylinderDiameter
+    : public Scalar
+{
+    ConstFeatureSetPtr pfs_;
+
+    CylinderDiameter(const CylinderDiameter&o, TreeCloneMap& tcm);
+public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(CylinderDiameter);
+
+    CylinderDiameter(ConstFeatureSetPtr pfs);
+    size_t calcHash() const override;
+    double calcValue() const override;
 };
 
 

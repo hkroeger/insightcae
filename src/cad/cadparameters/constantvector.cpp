@@ -19,6 +19,8 @@
 
 #include "constantvector.h"
 #include "base/linearalgebra.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 namespace insight 
 {
@@ -33,8 +35,15 @@ insight::cad::ConstantVector::ConstantVector(const arma::mat& value)
 : value_(value)
 {}
 
+size_t insight::cad::ConstantVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=value_;
+    return h.getHash();
+}
 
-arma::mat insight::cad::ConstantVector::value() const
+
+arma::mat insight::cad::ConstantVector::calcValue() const
 {
   return value_;
 }

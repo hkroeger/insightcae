@@ -16,8 +16,10 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#include "cadfeature.h"
+
 #include "edgemidtangent.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 using namespace std;
 using namespace boost;

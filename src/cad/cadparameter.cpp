@@ -25,10 +25,16 @@ namespace insight
 namespace cad
 {
 
+
+
 defineType(Scalar);
 
-Scalar::~Scalar()
-{}
+Scalar::~Scalar() {}
+
+void Scalar::build()
+{
+    value_=calcValue();
+}
 
 Scalar::operator double() const
 {
@@ -36,10 +42,16 @@ Scalar::operator double() const
 }
 
 
+
+
 defineType(Vector);
 
-Vector::~Vector()
-{}
+Vector::~Vector() {}
+
+void Vector::build()
+{
+    value_=calcValue();
+}
 
 Vector::operator arma::mat() const
 {

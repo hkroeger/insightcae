@@ -22,7 +22,7 @@
 
 #include "cadtypes.h"
 #include "base/exception.h"
-#include "cadparameters.h"
+#include "cadparameter.h"
 #include "mapkey_parser.h"
 #include "astbase.h"
 

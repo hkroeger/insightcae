@@ -18,6 +18,7 @@
  */
 
 #include "cadfeature.h"
+#include "datum.h"
 #include "solidproperties.h"
 
 #include "AIS_Point.hxx"

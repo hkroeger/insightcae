@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_DRAWINGEXPORT_H
 #define INSIGHT_CAD_DRAWINGEXPORT_H
 
-#include "cadparameters.h"
+#include "cadparameter.h"
 #include "cadpostprocaction.h"
 #include "base/boost_include.h"
 

@@ -19,6 +19,7 @@
 
 #include "base/exception.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "pointdistance.h"
 
 #include "vtkActor.h"
@@ -46,8 +47,8 @@ defineType(Distance);
 size_t Distance::calcHash() const
 {
   ParameterListHash h;
-  h+=p1_->value();
-  h+=p2_->value();
+  h+=*p1_;
+  h+=*p2_;
   return h.getHash();
 }
 

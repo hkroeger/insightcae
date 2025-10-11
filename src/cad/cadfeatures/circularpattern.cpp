@@ -19,6 +19,8 @@
 
 #include "circularpattern.h"
 #include "transform.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -77,9 +79,9 @@ size_t CircularPattern::calcHash() const
   else if (auto* extrsf =
              boost::get<ExplicitTransformation>(&transformation_))
     {
-      h+=extrsf->p0_->value();
-      h+=extrsf->axis_->value();
-      h+=extrsf->n_->value();
+      h+=*extrsf->p0_;
+      h+=*extrsf->axis_;
+      h+=*extrsf->n_;
       h+=extrsf->center_;
       h+=filterrule_;
     }

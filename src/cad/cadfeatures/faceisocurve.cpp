@@ -1,5 +1,6 @@
 #include "faceisocurve.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -36,7 +37,7 @@ size_t FaceIsoCurve::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*faces_;
-  h+=iso_value_->value();
+  h+=*iso_value_;
   h+=int(coord_);
   return h.getHash();
 }

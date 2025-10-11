@@ -19,6 +19,8 @@
  */
 
 #include "curvepattern.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -48,8 +50,8 @@ size_t CurvePattern::calcHash() const
   h+=this->type();
   h+=*m1_;
   h+=*curve_;
-  h+=delta_->value();
-  h+=n_->value();
+  h+=*delta_;
+  h+=*n_;
   return h.getHash();
 }
 

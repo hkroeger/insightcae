@@ -1,5 +1,7 @@
 #include "cadfeatures/transform.h"
 #include "alignwithboundingbox.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/tools.h"
 #include "base/translations.h"
 #include "cadtypes.h"
@@ -61,7 +63,7 @@ size_t AlignWithBoundingBox::calcHash() const
     for (auto& a: alignments_)
     {
         h+=*a.other_;
-        h+=a.direction_->value();
+        h+=*a.direction_;
         h+=int(a.atOther_);
         h+=int(a.atThis_);
     }

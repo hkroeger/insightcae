@@ -18,6 +18,8 @@
  */
 
 #include "box.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -46,10 +48,10 @@ size_t Box::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=L1_->value();
-  h+=L2_->value();
-  h+=L3_->value();
+  h+=*p0_;
+  h+=*L1_;
+  h+=*L2_;
+  h+=*L3_;
   h+=boost::fusion::at_c<0>(center_);
   h+=boost::fusion::at_c<1>(center_);
   h+=boost::fusion::at_c<2>(center_);

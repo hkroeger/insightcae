@@ -18,6 +18,8 @@
  */
 
 #include "spring.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -41,10 +43,10 @@ size_t Spring::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
-  h+=d_->value();
-  h+=winds_->value();
+  h+=*p0_;
+  h+=*p1_;
+  h+=*d_;
+  h+=*winds_;
   return h.getHash();
 }
 

@@ -18,10 +18,13 @@
  */
 
 #include "rotatedhelicalsweep.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 
 namespace qi = boost::spirit::qi;
@@ -48,10 +51,10 @@ size_t RotatedHelicalSweep::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*sk_;
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=P_->value();
-  h+=revoffset_->value();
+  h+=*p0_;
+  h+=*axis_;
+  h+=*P_;
+  h+=*revoffset_;
   return h.getHash();
 }
 

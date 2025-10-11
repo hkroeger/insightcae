@@ -18,6 +18,8 @@
  */
 
 #include "bar.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadexception.h"
 #include "feature.h"
 #include "quad.h"
@@ -63,8 +65,8 @@ size_t Bar::calcHash() const
   if (const auto* p0p1 =
           boost::get<std::pair<VectorPtr,VectorPtr>>(&endPts_))
   {
-      h+=p0p1->first->value();
-      h+=p0p1->second->value();
+      h+=*p0p1->first;
+      h+=*p0p1->second;
   }
   else if (const auto* feat =
            boost::get<FeaturePtr>(&endPts_))
@@ -72,15 +74,15 @@ size_t Bar::calcHash() const
       h+=**feat;
   }
   h+=*xsec_;
-  if (thickness_) h+=thickness_->value();
-  h+=vert_->value();
-  h+=ext0_->value();
-  h+=ext1_->value();
-  h+=miterangle0_vert_->value();
-  h+=miterangle1_vert_->value();
-  h+=miterangle0_hor_->value();
-  h+=miterangle1_hor_->value();
-  if (attractPt_) h+=attractPt_->value();
+  if (thickness_) h+=*thickness_;
+  h+=*vert_;
+  h+=*ext0_;
+  h+=*ext1_;
+  h+=*miterangle0_vert_;
+  h+=*miterangle1_vert_;
+  h+=*miterangle0_hor_;
+  h+=*miterangle1_hor_;
+  if (attractPt_) h+=*attractPt_;
   return h.getHash();
 }
 

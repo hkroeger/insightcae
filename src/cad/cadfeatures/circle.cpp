@@ -18,7 +18,8 @@
  */
 
 #include "circle.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -47,10 +48,10 @@ size_t Circle::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=n_->value();
-  h+=D_->value();
-  if (d_) h+=d_->value();
+  h+=*p0_;
+  h+=*n_;
+  h+=*D_;
+  if (d_) h+=*d_;
   return h.getHash();
 }
 

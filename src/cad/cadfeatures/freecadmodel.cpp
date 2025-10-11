@@ -18,6 +18,8 @@
  */
 
 #include "freecadmodel.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include "base/translations.h"
@@ -58,7 +60,7 @@ size_t FreeCADModel::calcHash() const
       {
         h+=n;
       }
-      h+=boost::fusion::at_c<1>(v)->value();
+      h+=*boost::fusion::at_c<1>(v);
   }
   return h.getHash();
 }

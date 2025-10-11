@@ -1,5 +1,6 @@
 #include "stringer.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include <memory>
 
 #include "base/boost_include.h"
@@ -26,12 +27,12 @@ size_t Stringer::calcHash() const
 {
   ParameterListHash h;
   h+=*spine_;
-  h+=normal_->value();
-  h+=t_->value();
-  h+=w_->value();
-  h+=delta_->value();
-  h+=ext0_->value();
-  h+=ext1_->value();
+  h+=*normal_;
+  h+=*t_;
+  h+=*w_;
+  h+=*delta_;
+  h+=*ext0_;
+  h+=*ext1_;
   return h.getHash();
 }
 

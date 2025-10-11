@@ -18,6 +18,8 @@
  */
 
 #include "chamfer.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
 #include "base/tools.h"
@@ -48,8 +50,8 @@ size_t Chamfer::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*edges_;
-  h+=l_->value();
-  h+=angle_->value();
+  h+=*l_;
+  h+=*angle_;
   return h.getHash()+DerivedFeature::calcHash();
 }
 

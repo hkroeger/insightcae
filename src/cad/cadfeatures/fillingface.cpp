@@ -18,6 +18,9 @@
  */
 
 #include "fillingface.h"
+#include "base/exception.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -90,6 +93,8 @@ FillingFace::FillingFace(const FillingFace&o, TreeCloneMap& tcm)
         {
             return tcm.clone(*fsp);
         }
+        else throw UnhandledSelection();
+        return EdgeInput();
     };
 
     e1_=cl(o.e1_);

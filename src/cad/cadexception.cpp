@@ -1,6 +1,7 @@
-#include "cadexception.h"
 #include "cadtypes.h"
-
+#include "cadexception.h"
+#include "feature.h"
+#include "datum.h"
 #include "cadfeatures/compound.h"
 
 #include <thread>

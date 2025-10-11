@@ -19,6 +19,7 @@
 
 #include "quad.h"
 #include "datum.h"
+#include "cadparameters.h"
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
@@ -51,10 +52,10 @@ size_t Quad::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=L_->value();
-  h+=W_->value();
-  if (t_) h+=t_->value();
+  h+=*p0_;
+  h+=*L_;
+  h+=*W_;
+  if (t_) h+=*t_;
   h+=boost::fusion::at_c<0>(center_);
   h+=boost::fusion::at_c<1>(center_);
   return h.getHash();

@@ -1,7 +1,10 @@
 #include "singleedgefeature.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/exception.h"
 #include "base/tools.h"
+#include "cadparameters.h"
+
 
 namespace insight {
 namespace cad {

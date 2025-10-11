@@ -18,6 +18,8 @@
  */
 
 #include "sinewave.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/fusion.hpp>
@@ -50,8 +52,8 @@ size_t SineWave::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=l_->value();
-  h+=A_->value();
+  h+=*l_;
+  h+=*A_;
   return h.getHash();
 }
 

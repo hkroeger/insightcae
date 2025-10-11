@@ -19,6 +19,7 @@
 
 #include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
+#include "datum.h"
 #include "compound.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>

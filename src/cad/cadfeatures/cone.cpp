@@ -18,6 +18,8 @@
  */
 
 #include "cone.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
 #include "cadexception.h"
@@ -49,11 +51,11 @@ size_t Cone::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=D1_->value();
-  h+=D2_->value();
-  if (di_) h+=di_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*D1_;
+  h+=*D2_;
+  if (di_) h+=*di_;
   return h.getHash();
 }
 

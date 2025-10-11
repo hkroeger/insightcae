@@ -23,6 +23,9 @@
 
 #include "base/translations.h"
 #include "cadfeatures/importsolidmodel.h"
+#include "cadfeature.h"
+#include "datum.h"
+#include "cadparameters.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -47,13 +50,13 @@ size_t Airfoil::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=name_;
-  h+=p0_->value();
-  h+=ez_->value();
-  h+=ex_->value();
-  h+=c_->value();
-  h+=t_->value();
-  h+=r_EK_->value();
-  h+=r_AK_->value();
+  h+=*p0_;
+  h+=*ez_;
+  h+=*ex_;
+  h+=*c_;
+  h+=*t_;
+  h+=*r_EK_;
+  h+=*r_AK_;
   return h.getHash();
 }
 

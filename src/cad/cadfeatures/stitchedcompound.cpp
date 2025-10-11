@@ -1,10 +1,12 @@
 #include "stitchedcompound.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "occinclude.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -28,7 +30,7 @@ size_t StitchedCompound::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*faces_;
-  h+=tol_->value();
+  h+=*tol_;
   return h.getHash();
 }
 

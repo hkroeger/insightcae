@@ -18,6 +18,8 @@
  */
 
 #include "ring.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -44,10 +46,10 @@ size_t Ring::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=Da_->value();
-  h+=Di_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*Da_;
+  h+=*Di_;
   return h.getHash();
 }
 

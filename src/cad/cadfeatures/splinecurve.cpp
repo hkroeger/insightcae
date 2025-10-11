@@ -18,6 +18,8 @@
  */
 
 #include "splinecurve.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/fusion.hpp>
@@ -53,10 +55,10 @@ size_t SplineCurve::calcHash() const
   h+=this->type();
   for (const VectorPtr& p: pts_)
   {
-      h+=p->value();
+      h+=*p;
   }
-  if (tan0_) h+=tan0_->value();
-  if (tan1_) h+=tan1_->value();
+  if (tan0_) h+=*tan0_;
+  if (tan1_) h+=*tan1_;
   return h.getHash();
 }
 

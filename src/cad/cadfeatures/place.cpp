@@ -18,6 +18,8 @@
  */
 
 #include "place.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -46,16 +48,16 @@ size_t Place::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*m_;
-  if (refpt_) h+=refpt_->value();
+  if (refpt_) h+=*refpt_;
   if (other_)
     {
       h+=*other_;
     }
   else
     {
-      h+=p0_->value();
-      h+=ex_->value();
-      h+=ez_->value();
+      h+=*p0_;
+      h+=*ex_;
+      h+=*ez_;
     }
   return h.getHash();
 }

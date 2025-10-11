@@ -18,6 +18,8 @@
  */
 
 #include "tri.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -48,9 +50,9 @@ size_t Tri::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=e1_->value();
-  h+=e2_->value();
+  h+=*p0_;
+  h+=*e1_;
+  h+=*e2_;
   return h.getHash();
 }
 

@@ -1,5 +1,6 @@
 #include "polygon.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
 
@@ -26,7 +27,7 @@ size_t Polygon::calcHash() const
     h+=close_;
     for (const auto& c: corners_)
     {
-        h+=c->value();
+        h+=*c;
     }
     return h.getHash();
 }

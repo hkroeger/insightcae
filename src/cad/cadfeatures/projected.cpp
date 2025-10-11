@@ -18,6 +18,8 @@
  */
 
 #include "projected.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -47,7 +49,7 @@ size_t Projected::calcHash() const
   h+=this->type();
   h+=*source_;
   h+=*target_;
-  h+=dir_->value();
+  h+=*dir_;
   return h.getHash();
 }
 

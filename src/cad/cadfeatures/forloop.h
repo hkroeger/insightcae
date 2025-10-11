@@ -2,6 +2,7 @@
 #define FORLOOP_H
 
 #include "modelfeature.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {

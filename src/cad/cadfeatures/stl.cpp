@@ -18,7 +18,8 @@
  */
 
 #include "stl.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "StlAPI.hxx"
 
 #include <StlAPI_Reader.hxx>

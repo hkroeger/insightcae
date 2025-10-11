@@ -21,7 +21,8 @@
 #include "GCPnts_AbscissaPoint.hxx"
 
 #include "clipwire.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -48,8 +49,8 @@ addToStaticFunctionTable(Feature, ClipWire, ruleDocumentation);
 size_t ClipWire::calcHash() const
 {
   ParameterListHash h;
-  h+=ls_->value();
-  h+=le_->value();
+  h+=*ls_;
+  h+=*le_;
   return h.getHash()+DerivedFeature::calcHash();
 }
 

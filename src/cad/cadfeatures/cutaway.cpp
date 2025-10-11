@@ -56,8 +56,8 @@ size_t Cutaway::calcHash() const
   h+=this->type();
   if (p0_ && n_)
     {
-      h+=p0_->value();
-      h+=n_->value();
+      h+=*p0_;
+      h+=*n_;
     }
   else
     {

@@ -23,7 +23,8 @@
 #include "base/tools.h"
 #include "base/translations.h"
 #include "cadexception.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;

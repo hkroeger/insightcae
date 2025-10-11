@@ -18,6 +18,8 @@
  */
 
 #include "transform.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -48,10 +50,10 @@ size_t Transform::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  if (trans_) h+=trans_->value();
-  if (rot_) h+=rot_->value();
-  if (rotorg_) h+=rotorg_->value();
-  if (sf_) h+=sf_->value();
+  if (trans_) h+=*trans_;
+  if (rot_) h+=*rot_;
+  if (rotorg_) h+=*rotorg_;
+  if (sf_) h+=*sf_;
   if (other_) h+=*other_;
   if (trsf_) h+=*trsf_;
   return h.getHash()+DerivedFeature::calcHash();

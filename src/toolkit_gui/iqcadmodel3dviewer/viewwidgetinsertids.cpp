@@ -1,5 +1,6 @@
 #include "viewwidgetinsertids.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 
 //ViewWidgetInsertIDs::ViewWidgetInsertIDs(QoccViewWidget *viewWidget)
 //  : viewWidget_(viewWidget)

@@ -56,6 +56,8 @@
 #include "occguitools.h"
 #include "pointertransient.h"
 #include "cadtypes.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadpostprocactions.h"
 #include "qmodeltree.h"
 #include "qdatumitem.h"

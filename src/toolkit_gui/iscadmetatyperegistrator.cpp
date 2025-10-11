@@ -1,4 +1,6 @@
 #include "iscadmetatyperegistrator.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 ISCADMetaTypeRegistrator::ISCADMetaTypeRegistrator()
 {

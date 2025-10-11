@@ -1,6 +1,8 @@
 #include "cadfeature.h"
 #include "featurecache.h"
 #include "cadexception.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 namespace insight {
 namespace cad {

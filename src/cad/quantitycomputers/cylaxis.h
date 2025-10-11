@@ -38,6 +38,19 @@ public:
     virtual QuantityComputer<arma::mat>::Ptr clone() const;
 };
 
+class cylCenter
+    : public QuantityComputer<arma::mat>
+{
+public:
+    cylCenter();
+    virtual ~cylCenter();
+
+    virtual bool isValidForFeature(FeatureID) const;
+    virtual arma::mat evaluate(FeatureID fi);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
 }
 }
 

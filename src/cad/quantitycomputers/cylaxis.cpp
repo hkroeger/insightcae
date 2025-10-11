@@ -19,6 +19,7 @@
 
 #include "cylaxis.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 using namespace std;
 using namespace boost;
@@ -54,6 +55,36 @@ QuantityComputer<arma::mat>::Ptr cylAxis::clone() const
 {
   return QuantityComputer<arma::mat>::Ptr(new cylAxis());
 }
+
+
+
+cylCenter::cylCenter()
+{}
+
+cylCenter::~cylCenter()
+{}
+
+bool cylCenter::isValidForFeature(FeatureID f) const
+{
+    return model_->faceType(f) == GeomAbs_Cylinder;
+}
+
+arma::mat cylCenter::evaluate(FeatureID fi)
+{
+    if (model_->faceType(fi)==GeomAbs_Cylinder)
+    {
+        GeomAdaptor_Surface adapt(BRep_Tool::Surface(model_->face(fi)));
+        gp_Cylinder icyl=adapt.Cylinder();
+        return vec3(icyl.Location());
+    }
+    else return arma::mat();
+}
+
+QuantityComputer<arma::mat>::Ptr cylCenter::clone() const
+{
+    return QuantityComputer<arma::mat>::Ptr(new cylCenter());
+}
+
 
 }
 }

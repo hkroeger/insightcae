@@ -1,5 +1,7 @@
 #include "cadfeature.h"
 #include "externalreference.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 namespace insight {
 namespace cad {

@@ -1,5 +1,6 @@
 #include "gmshcase.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/exception.h"
 #include "base/tools.h"
 #include "base/translations.h"
@@ -536,11 +537,13 @@ void GmshCase::doMeshing(int nthread)
   std::string ext=outputMeshFile_.extension().string();
 
   int otype = outputType();
-  if (otype==27) // STL
+  if (otype==GmshCase::meshFormats.at(".stl")) // STL
   {
-    insertLinesBefore(endOfMeshingOptions_, {
-                        "Mesh.Binary=1"
-                      });
+    insertLinesBefore(
+          endOfMeshingOptions_,
+          {
+           "Mesh.Binary=1"
+          });
     setMinimumCirclePoints(20);
   }
   else if (otype==1)
@@ -555,14 +558,26 @@ void GmshCase::doMeshing(int nthread)
       case v40: versionOption="4.0"; break;
       case v41: versionOption="4.1"; break;
     }
-    insertLinesBefore(endOfMeshingOptions_, {
-                        "Mesh.MshFileVersion="+versionOption
-                      });
+    insertLinesBefore(
+        endOfMeshingOptions_,
+        {
+         "Mesh.MshFileVersion="+versionOption
+        });
+  }
+  else if (otype==GmshCase::meshFormats.at(".med"))
+  {
+      insertLinesBefore(
+          endOfMeshingOptions_,
+          {
+           "Mesh.MedFileMinorVersion=0"
+          });
   }
 
-  insertLinesBefore(endOfMeshingOptions_, {
-                      "Mesh.Format="+boost::lexical_cast<std::string>(otype)
-                    });
+  insertLinesBefore(
+      endOfMeshingOptions_,
+      {
+          "Mesh.Format="+boost::lexical_cast<std::string>(otype)
+      });
 
   insertMeshingCommand();
 

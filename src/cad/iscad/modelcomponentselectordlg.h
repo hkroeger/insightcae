@@ -23,6 +23,8 @@
 #include <QDialog>
 #ifndef Q_MOC_RUN
 #include "cadtypes.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadmodel.h"
 #endif
 

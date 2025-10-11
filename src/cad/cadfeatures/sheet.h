@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_THICKEN_H
 
 #include "cadfeature.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {

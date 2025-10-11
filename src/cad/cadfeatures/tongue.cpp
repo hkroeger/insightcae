@@ -1,5 +1,6 @@
 #include "tongue.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -24,12 +25,12 @@ size_t Tongue::calcHash() const
 {
   ParameterListHash h;
   h+=*spine_;
-  h+=direction_->value();
-  h+=insidePt_->value();
-  h+=t_->value();
-  h+=w_->value();
-  h+=ovl_->value();
-  h+=delta_->value();
+  h+=*direction_;
+  h+=*insidePt_;
+  h+=*t_;
+  h+=*w_;
+  h+=*ovl_;
+  h+=*delta_;
   return h.getHash();
 }
 

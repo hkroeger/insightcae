@@ -20,6 +20,8 @@
 #include "BRepAdaptor_HCompCurve.hxx"
 #include "Approx_Curve3d.hxx"
 #include "pipe.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/translations.h"
 #include "cadfeatures/importsolidmodel.h"
 
@@ -51,7 +53,7 @@ size_t Pipe::calcHash() const
   h+=this->type();
   h+=*spine_;
   h+=*xsec_;
-  if (fixed_binormal_) h+=fixed_binormal_->value();
+  if (fixed_binormal_) h+=*fixed_binormal_;
   h+=orient_;
   h+=reapprox_spine_;
   return h.getHash();

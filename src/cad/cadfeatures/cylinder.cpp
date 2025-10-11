@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include "datum.h"
+#include "cadparameters.h"
+
 #include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
@@ -49,10 +51,10 @@ size_t Cylinder::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=p2isAxis_;
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=D_->value();
-  if (Di_) h+=Di_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*D_;
+  if (Di_) h+=*Di_;
   h+=centered_;
   return h.getHash();
 }

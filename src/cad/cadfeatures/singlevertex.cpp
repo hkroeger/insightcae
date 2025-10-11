@@ -1,7 +1,8 @@
 #include "singlevertex.h"
 #include "base/translations.h"
 #include "BRepBuilderAPI_MakeVertex.hxx"
-
+#include "cadfeature.h"
+#include "datum.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -18,7 +19,7 @@ size_t SingleVertex::calcHash() const
 {
     ParameterListHash h;
     h+=this->type();
-    h+=p_->value();
+    h+=*p_;
     return h.getHash();
 }
 

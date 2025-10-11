@@ -20,6 +20,7 @@
 #include "iqiscadbackgroundthread.h"
 
 #include "cadfeature.h"
+#include "datum.h"
 #include "cadmodel.h"
 
 #include <thread>

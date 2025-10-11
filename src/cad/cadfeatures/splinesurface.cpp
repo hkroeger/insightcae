@@ -18,6 +18,8 @@
  */
 
 #include "splinesurface.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "Geom_BSplineSurface.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -50,7 +52,7 @@ size_t SplineSurface::calcHash() const
   {
       for (const VectorPtr& p: ipts)
       {
-          h+=p->value();
+          h+=*p;
       }
   }
   return h.getHash();

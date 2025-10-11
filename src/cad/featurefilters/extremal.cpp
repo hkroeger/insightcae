@@ -1,4 +1,5 @@
 #include "cadfeature.h"
+#include "datum.h"
 #include "extremal.h"
 
 namespace insight {

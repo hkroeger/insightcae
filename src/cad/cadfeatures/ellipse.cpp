@@ -18,6 +18,8 @@
  */
 
 #include "ellipse.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -72,9 +74,9 @@ size_t Ellipse::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=axmaj_->value();
-  h+=axmin_->value();
+  h+=*p0_;
+  h+=*axmaj_;
+  h+=*axmin_;
   return h.getHash();
 }
 

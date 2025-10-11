@@ -18,9 +18,12 @@
  */
 
 #include "spiral.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadparameters.h"
 
 #include "TColgp_HArray1OfPnt.hxx"
 #include "GeomAPI_Interpolate.hxx"
@@ -46,11 +49,11 @@ size_t Spiral::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=n_->value();
-  h+=a_->value();
-  h+=P_->value();
+  h+=*p0_;
+  h+=*axis_;
+  h+=*n_;
+  h+=*a_;
+  h+=*P_;
   return h.getHash();
 }
 

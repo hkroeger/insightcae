@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "cadfeature.h"
+#include "datum.h"
 #include "in.h"
 
 using namespace std;

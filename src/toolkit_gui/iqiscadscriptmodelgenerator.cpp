@@ -145,8 +145,8 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
     }
     catch (const insight::CADException& e)
     {
-      auto loc=syn_elem_dir_->findElement(
-            e.description()->geometryInError_ );
+      auto loc=syn_elem_dir_->findLocation(
+            std::const_pointer_cast<insight::cad::Feature>(e.description()->geometryInError_) );
       auto fn = loc.first;
       auto p = loc.second;
       Q_EMIT scriptError( p.first, QString::fromStdString(e), p.second-p.first);

@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "cadfeature.h"
+#include "datum.h"
 #include "parser.h"
 #include "lookuptablescalar.h"
 #include "base/tools.h"
@@ -52,8 +53,18 @@ LookupTableScalar::LookupTableScalar
   select_nearest_(select_nearest)
 {}
 
+size_t LookupTableScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=name_;
+    h+=keycol_;
+    h+=keyval_;
+    h+=depcol_;
+    h+=select_nearest_;
+    return h.getHash();
+}
 
-double LookupTableScalar::value() const
+double LookupTableScalar::calcValue() const
 {
     boost::filesystem::path fp = sharedModelFilePath(name_+".csv");
     

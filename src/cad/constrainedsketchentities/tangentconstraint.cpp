@@ -1,5 +1,6 @@
 #include "tangentconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/exception.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"

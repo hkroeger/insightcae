@@ -39,9 +39,16 @@ insight::cad::PointFeatureProp::PointFeatureProp
 {}
 
 
+size_t insight::cad::PointFeatureProp::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=name_;
+    return h.getHash();
+}
 
 
-arma::mat insight::cad::PointFeatureProp::value() const
+arma::mat insight::cad::PointFeatureProp::calcValue() const
 {
   return model_->getDatumPoint(name_);
 }
@@ -62,9 +69,15 @@ insight::cad::VectorFeatureProp::VectorFeatureProp
 {}
 
 
+size_t insight::cad::VectorFeatureProp::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=name_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::VectorFeatureProp::value() const
+arma::mat insight::cad::VectorFeatureProp::calcValue() const
 {
   return model_->getDatumVector(name_);
 }
@@ -78,9 +91,14 @@ insight::cad::SinglePointCoords::SinglePointCoords(insight::cad::ConstFeatureSet
 {}
 
 
+size_t insight::cad::SinglePointCoords::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::SinglePointCoords::value() const
+arma::mat insight::cad::SinglePointCoords::calcValue() const
 {
   if (!(pfs_->size()==1))
     throw insight::Exception("vertex feature set must not contain more than one point for coordinate extraction!");
@@ -155,9 +173,14 @@ void insight::cad::CircleEdgeCenterCoords::compute(arma::mat &pc, double &D, arm
 }
 
 
+size_t insight::cad::CircleEdgeCenterCoords::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::CircleEdgeCenterCoords::value() const
+arma::mat insight::cad::CircleEdgeCenterCoords::calcValue() const
 {
   arma::mat pc, ex;
   double D;
@@ -177,9 +200,14 @@ insight::cad::DatumPointCoord::DatumPointCoord(insight::cad::ConstDatumPtr pfs)
 {}
 
 
+size_t insight::cad::DatumPointCoord::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumPointCoord::value() const
+arma::mat insight::cad::DatumPointCoord::calcValue() const
 {
   if ( pfs_->providesPointReference() )
   {
@@ -204,9 +232,14 @@ insight::cad::DatumDir::DatumDir(insight::cad::ConstDatumPtr pfs)
 {}
 
 
+size_t insight::cad::DatumDir::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumDir::value() const
+arma::mat insight::cad::DatumDir::calcValue() const
 {
   if ( pfs_->providesAxisReference() )
   {
@@ -230,8 +263,14 @@ insight::cad::XsecCurveCurve::XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr
 {}
 
 
-
-arma::mat insight::cad::XsecCurveCurve::value() const
+size_t insight::cad::XsecCurveCurve::calcHash() const
+{
+    ParameterListHash h;
+    h+=*c1_;
+    h+=*c2_;
+    return h.getHash();
+}
+arma::mat insight::cad::XsecCurveCurve::calcValue() const
 {
     TopoDS_Edge e1=TopoDS::Edge(c1_->shape());
     TopoDS_Edge e2=TopoDS::Edge(c2_->shape());
@@ -261,9 +300,14 @@ insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs
 {}
 
 
+size_t insight::cad::DatumPlaneNormal::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumPlaneNormal::value() const
+arma::mat insight::cad::DatumPlaneNormal::calcValue() const
 {
 //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
   if (pfs_->providesPlanarReference())
@@ -287,8 +331,14 @@ insight::cad::DatumPlaneX::DatumPlaneX(insight::cad::ConstDatumPtr pfs)
 
 
 
+size_t insight::cad::DatumPlaneX::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-arma::mat insight::cad::DatumPlaneX::value() const
+arma::mat insight::cad::DatumPlaneX::calcValue() const
 {
     //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
     if (pfs_->providesPlanarReference())
@@ -312,9 +362,14 @@ insight::cad::DatumPlaneY::DatumPlaneY(insight::cad::ConstDatumPtr pfs)
 {}
 
 
+size_t insight::cad::DatumPlaneY::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumPlaneY::value() const
+arma::mat insight::cad::DatumPlaneY::calcValue() const
 {
     //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
     if (pfs_->providesPlanarReference())
@@ -338,9 +393,14 @@ insight::cad::BBMin::BBMin(FeaturePtr model)
 {}
 
 
+size_t insight::cad::BBMin::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::BBMin::value() const
+arma::mat insight::cad::BBMin::calcValue() const
 {
   return model_->modelBndBox().col(0);
 }
@@ -357,9 +417,14 @@ insight::cad::BBMax::BBMax(FeaturePtr model)
 {}
 
 
+size_t insight::cad::BBMax::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::BBMax::value() const
+arma::mat insight::cad::BBMax::calcValue() const
 {
   return model_->modelBndBox().col(1);
 }
@@ -376,9 +441,14 @@ insight::cad::COG::COG(FeaturePtr model)
 {}
 
 
+size_t insight::cad::COG::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::COG::value() const
+arma::mat insight::cad::COG::calcValue() const
 {
   return model_->modelCoG();
 }
@@ -395,9 +465,14 @@ insight::cad::SurfaceCOG::SurfaceCOG(FeaturePtr model)
 {}
 
 
+size_t insight::cad::SurfaceCOG::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::SurfaceCOG::value() const
+arma::mat insight::cad::SurfaceCOG::calcValue() const
 {
   return model_->surfaceCoG();
 }
@@ -414,9 +489,15 @@ insight::cad::SurfaceInertiaAxis::SurfaceInertiaAxis(FeaturePtr model, int axis)
 {}
 
 
+size_t insight::cad::SurfaceInertiaAxis::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=axis_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::SurfaceInertiaAxis::value() const
+arma::mat insight::cad::SurfaceInertiaAxis::calcValue() const
 {
   return model_->surfaceInertia(axis_);
 }
@@ -433,7 +514,16 @@ insight::cad::PointInFeatureCS::PointInFeatureCS(
     locP_(locP)
 {}
 
-arma::mat insight::cad::PointInFeatureCS::value() const
+size_t insight::cad::PointInFeatureCS::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=*locP_;
+    return h.getHash();
+}
+
+
+arma::mat insight::cad::PointInFeatureCS::calcValue() const
 {
     arma::mat locP=locP_->value();
     auto& dp=model_->getDatumPoints();

@@ -19,6 +19,7 @@
 
 #include "hydrostatics.h"
 #include "cadfeatures.h"
+#include "datum.h"
 
 #include "AIS_Point.hxx"
 // #include "AIS_Drawer.hxx"
@@ -40,10 +41,10 @@ size_t Hydrostatics::calcHash() const
   ParameterListHash h;
   h+=*hullvolume_;
   h+=*shipmodel_;
-  h+=psurf_->value();
-  h+=nsurf_->value();
-  h+=elong_->value();
-  h+=evert_->value();
+  h+=*psurf_;
+  h+=*nsurf_;
+  h+=*elong_;
+  h+=*evert_;
   return h.getHash();
 }
   

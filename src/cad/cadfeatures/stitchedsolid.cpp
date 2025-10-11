@@ -18,6 +18,8 @@
  */
 
 #include "stitchedsolid.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "ShapeFix_Solid.hxx"
 #include "occinclude.h"
 #include "BRepCheck_Shell.hxx"
@@ -26,6 +28,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -52,7 +55,7 @@ size_t StitchedSolid::calcHash() const
   {
       h+=*f;
   }
-  h+=tol_->value();
+  h+=*tol_;
   return h.getHash();
 }
 

@@ -44,6 +44,8 @@ set(insightcad_SOURCES
   constrainedsketchgrammar.h constrainedsketchgrammar.cpp
 
   geotest.cpp 
+
+  parameterlisthash.h parameterlisthash.cpp
   cadparameter.cpp
   cadfeature.cpp 
   featurecache.cpp

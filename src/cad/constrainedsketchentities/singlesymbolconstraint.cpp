@@ -1,5 +1,6 @@
 #include "singlesymbolconstraint.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "vtkCaptionActor2D.h"
 #include "vtkTextActor.h"
 #include "vtkTextProperty.h"

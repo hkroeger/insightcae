@@ -6,7 +6,8 @@
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelgenerator.h"
 #include "qnamespace.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 
 
 IQISCADModelRebuilder::IQISCADModelRebuilder(

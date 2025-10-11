@@ -42,7 +42,16 @@ ProjectedPoint::ProjectedPoint(VectorPtr p0, DatumPtr plane, VectorPtr along)
 : p0_(p0), plane_(plane), along_(along)
 {}
 
-arma::mat ProjectedPoint::value() const
+size_t ProjectedPoint::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p0_;
+    h+=*plane_;
+    h+=*along_;
+    return h.getHash();
+}
+
+arma::mat ProjectedPoint::calcValue() const
 {
   if (plane_->providesPlanarReference())
   {
@@ -104,7 +113,16 @@ ProjectedPointOnFeature::ProjectedPointOnFeature(VectorPtr p0, VectorPtr along, 
     : p0_(p0), along_(along), targ_(targ)
 {}
 
-arma::mat ProjectedPointOnFeature::value() const
+size_t ProjectedPointOnFeature::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p0_;
+    h+=*along_;
+    h+=*targ_;
+    return h.getHash();
+}
+
+arma::mat ProjectedPointOnFeature::calcValue() const
 {
     gp_Pnt p0=to_Pnt(p0_->value());
     gp_Pnt pproj;

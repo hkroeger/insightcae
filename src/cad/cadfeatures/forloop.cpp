@@ -96,9 +96,9 @@ size_t ForLoop::calcHash() const
 {
     ParameterListHash h;
     h+=loopVarName_;
-    h+=i0_->value();
-    h+=imax_->value();
-    h+=increment_->value();
+    h+=*i0_;
+    h+=*imax_;
+    h+=*increment_;
     return h.getHash()+Compound::calcHash();
 }
 

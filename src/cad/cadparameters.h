@@ -21,6 +21,9 @@
 #define INSIGHT_CAD_PARAMETERS_H
 
 #include "cadtypes.h"
+#include "cadfeature.h"
+#include "features.h"
+#include "datum.h"
 #include "cadparameter.h"
 
 #include "cadparameters/constantscalar.h"

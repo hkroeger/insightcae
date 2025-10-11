@@ -18,6 +18,8 @@
  */
 
 #include "constantscalar.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 
 void insight::cad::ConstantScalar::replaceDependency(const DependencyReplacement& repl)
@@ -28,16 +30,18 @@ insight::cad::ConstantScalar::ConstantScalar(double value)
 : value_(value)
 {}
 
+size_t insight::cad::ConstantScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=value_;
+    return h.getHash();
+}
 
-double insight::cad::ConstantScalar::value() const
+double insight::cad::ConstantScalar::calcValue() const
 {
     return value_;
 }
 
-void insight::cad::ConstantScalar::setValue(double v)
-{
-    value_=v;
-}
 
 std::shared_ptr<insight::cad::DependencySource>
 insight::cad::ConstantScalar::shallowClone(TreeCloneMap &tcm) const

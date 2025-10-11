@@ -19,6 +19,8 @@
 
 #include "scalarops.h"
 
+#include "parameterlisthash.h"
+
 insight::cad::MultipliedScalar::MultipliedScalar(const MultipliedScalar &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
 {}
@@ -29,7 +31,15 @@ insight::cad::MultipliedScalar::MultipliedScalar(insight::cad::ScalarPtr p1, ins
     // registerDependencies({&p1_, &p2_});
 }
 
-double insight::cad::MultipliedScalar::value() const
+size_t insight::cad::MultipliedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::MultipliedScalar::calcValue() const
 {
   return p1_->value() * p2_->value();
 }
@@ -45,8 +55,15 @@ insight::cad::DividedScalar::DividedScalar(insight::cad::ScalarPtr p1, insight::
 : p1_(p1), p2_(p2)
 {}
 
+size_t insight::cad::DividedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
 
-double insight::cad::DividedScalar::value() const
+double insight::cad::DividedScalar::calcValue() const
 {
   return p1_->value() / p2_->value();
 }
@@ -62,7 +79,15 @@ insight::cad::AddedScalar::AddedScalar(insight::cad::ScalarPtr p1, insight::cad:
 : p1_(p1), p2_(p2)
 {}
 
-double insight::cad::AddedScalar::value() const
+size_t insight::cad::AddedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::AddedScalar::calcValue() const
 {
   return p1_->value() + p2_->value();
 }
@@ -78,7 +103,15 @@ insight::cad::SubtractedScalar::SubtractedScalar(insight::cad::ScalarPtr p1, ins
 : p1_(p1), p2_(p2)
 {}
 
-double insight::cad::SubtractedScalar::value() const
+size_t insight::cad::SubtractedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::SubtractedScalar::calcValue() const
 {
   return p1_->value() - p2_->value();
 }
@@ -94,7 +127,15 @@ insight::cad::VectorComponent::VectorComponent(insight::cad::VectorPtr p1, int c
   cmpt_(cmpt)
 {}
 
-double insight::cad::VectorComponent::value() const
+size_t insight::cad::VectorComponent::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=cmpt_;
+    return h.getHash();
+}
+
+double insight::cad::VectorComponent::calcValue() const
 {
   return p1_->value()(cmpt_);
 }
@@ -107,7 +148,14 @@ insight::cad::VectorMag::VectorMag(insight::cad::VectorPtr p1)
 : p1_(p1)
 {}
 
-double insight::cad::VectorMag::value() const
+size_t insight::cad::VectorMag::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    return h.getHash();
+}
+
+double insight::cad::VectorMag::calcValue() const
 {
   return arma::norm(p1_->value(),2);
 }

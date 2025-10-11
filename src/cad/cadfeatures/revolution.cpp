@@ -18,6 +18,8 @@
  */
 
 #include "revolution.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -50,9 +52,9 @@ size_t Revolution::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*sk_;
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=angle_->value();
+  h+=*p0_;
+  h+=*axis_;
+  h+=*angle_;
   h+=centered_;
   return h.getHash();
 }

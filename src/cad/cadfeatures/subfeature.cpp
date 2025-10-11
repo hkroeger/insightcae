@@ -19,6 +19,7 @@
 
 #include "subfeature.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "cadexception.h"
 
 namespace insight 

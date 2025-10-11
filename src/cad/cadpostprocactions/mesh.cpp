@@ -24,6 +24,7 @@
 #include "boost/regex/v4/regex.hpp"
 #include "boost/regex/v4/regex_fwd.hpp"
 #include "cadfeature.h"
+#include "datum.h"
 #include "cadfeatures/subfeature.h"
 #include "cadtypes.h"
 #include "meshing.h"

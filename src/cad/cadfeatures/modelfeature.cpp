@@ -147,12 +147,12 @@ size_t ModelFeature::calcHash() const
     }
     else if (auto* vp = boost::get<VectorPtrAndType>(&v))
     {
-        p+=boost::fusion::at_c<0>(*vp)->value();
+        p+=*boost::fusion::at_c<0>(*vp);
         p+=int(boost::fusion::at_c<1>(*vp));
     }
     else if (auto* sp = boost::get<ScalarPtr>(&v))
     {
-        p+=(*sp)->value();
+        p+=**sp;
     }
   }
 
@@ -447,7 +447,7 @@ ModelFeature::rule(
                 |( '!' > ruleset.r_vectorExpression > qi::attr(VectorVariableType::Direction) )
                 |( ruleset.r_scalarExpression)
                 |( ruleset.r_solidmodel_expression)
-                |( ruleset.r_datumExpression)
+                |( '%' > ruleset.r_datumExpression)
             ));
         r_modelvar.name("variable value");
 

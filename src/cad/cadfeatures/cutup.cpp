@@ -35,10 +35,10 @@ size_t CutUp::calcHash() const
   h+=*model_;
   for (const auto& c: clips_)
   {
-    h+=c->value();
+    h+=*c;
   }
-  h+=n_->value();
-  h+=t_->value();
+  h+=*n_;
+  h+=*t_;
   return h.getHash();
 }
 

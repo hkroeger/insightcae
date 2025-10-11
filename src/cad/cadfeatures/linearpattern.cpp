@@ -18,6 +18,8 @@
  */
 
 #include "linearpattern.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -53,8 +55,8 @@ size_t LinearPattern::calcHash() const
     }
   else
   {
-      h+=axis_->value();
-      h+=n_->value();
+      h+=*axis_;
+      h+=*n_;
   }
   return h.getHash();
 }

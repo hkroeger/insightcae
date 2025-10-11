@@ -1,5 +1,6 @@
 #include "verticalconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
 

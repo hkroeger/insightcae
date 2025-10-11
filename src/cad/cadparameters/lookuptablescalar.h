@@ -54,7 +54,8 @@ public:
     bool select_nearest=false
   );
   
-  double value() const override;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
 }
 }

@@ -20,6 +20,7 @@
 #include "base/exception.h"
 #include "base/tools.h"
 #include "cadmodel.h"
+#include "cadparameters.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "parser.h"

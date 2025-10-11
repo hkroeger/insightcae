@@ -44,7 +44,8 @@ public:
 
   ProjectedPoint(VectorPtr p0, DatumPtr plane);
   ProjectedPoint(VectorPtr p0, DatumPtr plane, VectorPtr along);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 
@@ -65,7 +66,8 @@ public:
   CLONEABLE(ProjectedPointOnFeature);
 
   ProjectedPointOnFeature(VectorPtr p0, VectorPtr along, FeaturePtr targ);
-  arma::mat value() const override;
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
 };
 
 

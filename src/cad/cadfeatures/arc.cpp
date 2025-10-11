@@ -78,10 +78,10 @@ size_t Arc::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
+  h+=*p0_;
+  h+=*p1_;
   h+=avType_;
-  h+=av_->value();
+  h+=*av_;
   return h.getHash();
 }
 

@@ -27,6 +27,7 @@
 #include "cadfeature.h"
 
 #include "datum.h"
+#include "feature.h"
 #include "sketch.h"
 #include "cadpostprocactions.h"
 
@@ -100,6 +101,12 @@ void ISCADParser::createScalarExpressions()
         "circdiameter",
         ('(' > r_edgeFeaturesExpression > ')' ),
         [ _val = phx::construct<ScalarPtr>(phx::new_<CircleDiameter>(qi::_1)) ] );
+
+    ADD_SCALAR_FUNCTION(
+        "cyldiameter",
+        ('(' > r_faceFeaturesExpression > ')' ),
+        [ _val = phx::construct<ScalarPtr>(phx::new_<CylinderDiameter>(qi::_1)) ] );
+
 
     ADD_SCALAR_FUNCTION(
         "mag",

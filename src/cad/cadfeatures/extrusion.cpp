@@ -18,11 +18,13 @@
  */
 
 #include "extrusion.h"
+
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
@@ -52,11 +54,11 @@ size_t Extrusion::calcHash() const
 
   if (const auto* Lvec = boost::get<VectorPtr>(&L_))
   {
-      h+=(*Lvec)->value();
+      h+=**Lvec;
   }
   else if (const auto* Lsc = boost::get<ScalarPtr>(&L_))
   {
-      h+=(*Lsc)->value();
+      h+=**Lsc;
   }
 
   h+=centered_;

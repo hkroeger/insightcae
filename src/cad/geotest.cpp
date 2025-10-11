@@ -20,7 +20,8 @@
 
 #include "geotest.h"
 #include "cadexception.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "BRepClass_FaceClassifier.hxx"
 #include "cadfeatures/importsolidmodel.h"
 

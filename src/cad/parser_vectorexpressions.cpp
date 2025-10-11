@@ -285,8 +285,8 @@ void ISCADParser::createVectorExpressions()
         | r_vectorFunction
           [ _val = phx::at_c<2>(qi::_1) ]
 
-        | r_datumExpression
-          [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
+        // | r_datumExpression // creates ambiguities
+        //   [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
 
         | ( r_solidmodel_expression >> '@' >> r_identifier  )
           [ _val = phx::construct<VectorPtr>(phx::new_<PointFeatureProp>(qi::_1, qi::_2)) ]

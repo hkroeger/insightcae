@@ -18,6 +18,8 @@
  */
 
 #include "gluefaces.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "occinclude.h"
 
 #include "BRepCheck_Shell.hxx"
@@ -51,7 +53,7 @@ size_t GlueFaces::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*feat_;
-  h+=tol_->value();
+  h+=*tol_;
   return h.getHash();
 }
 

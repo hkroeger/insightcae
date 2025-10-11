@@ -20,6 +20,7 @@
 
 #include "cadtypes.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 #include "cadfeatures/compound.h"
 #include "cadfeatures/importsolidmodel.h"

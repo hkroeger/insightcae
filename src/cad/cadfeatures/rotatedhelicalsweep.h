@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_ROTATEDHELICALSWEEP_H
 
 #include "cadfeature.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {

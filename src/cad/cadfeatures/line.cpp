@@ -58,8 +58,8 @@ size_t Line::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
+  h+=*p0_;
+  h+=*p1_;
   h+=second_is_dir_;
   return h.getHash();
 }

@@ -18,6 +18,8 @@
  */
 
 #include "nacafourdigit.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/translations.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -50,19 +52,19 @@ size_t NacaFourDigit::calcHash() const
   h+=this->type();
   if (tc_)
   {
-      h+=tc_->value();
-      h+=m_->value();
-      h+=p_->value();
+      h+=*tc_;
+      h+=*m_;
+      h+=*p_;
   }
   else
   {
     h+=code_;
   }
-  h+=p0_->value();
-  h+=ez_->value();
-  h+=ex_->value();
-  h+=tofs_->value();
-  h+=clipte_->value();
+  h+=*p0_;
+  h+=*ez_;
+  h+=*ex_;
+  h+=*tofs_;
+  h+=*clipte_;
   return h.getHash();
 }
 

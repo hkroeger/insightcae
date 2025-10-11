@@ -19,6 +19,8 @@
  */
 
 #include "cadfeaturetransient.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 namespace insight
 {

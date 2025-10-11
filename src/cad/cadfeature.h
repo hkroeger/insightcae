@@ -40,15 +40,13 @@
 #include "occinclude.h"
 #include "TopTools_ListOfShape.hxx"
 
-#include "cadtypes.h"
 #include "astbase.h"
 
 #include "feature.h"
-//#include "featurefilter.h"
 
 #include "parser.h"
 
-#include "base/cacheableentityhashes.h"
+#include "parameterlisthash.h"
 #include "featurecache.h"
 #include "subshapenumbering.h"
 
@@ -64,78 +62,12 @@ namespace cad
 }
 }
 
-namespace boost
-{
-  
-template<> struct hash<TopoDS_Shape>
-{
-  std::size_t operator()(const TopoDS_Shape& shape) const;
-};
-
-template<> struct hash<gp_Pnt>
-{
-  std::size_t operator()(const gp_Pnt& v) const;
-};
-
-template<> struct hash<gp_Trsf>
-{
-  std::size_t operator()(const gp_Trsf& v) const;
-};
-
-template<> struct hash<insight::cad::ASTBase>
-{
-  std::size_t operator()(const insight::cad::ASTBase& m) const;
-};
-
-template<> struct hash<insight::cad::Feature>
-{
-    std::size_t operator()(const insight::cad::Feature& m) const;
-};
-
-template<> struct hash<insight::cad::FeatureSet>
-{
-    std::size_t operator()(const insight::cad::FeatureSet& m) const;
-};
-
-template<> struct hash<insight::cad::DeferredFeatureSet>
-{
-    std::size_t operator()(const insight::cad::DeferredFeatureSet& m) const;
-};
-
-template<> struct hash<insight::cad::Datum>
-{
-    std::size_t operator()(const insight::cad::Datum& m) const;
-};
-
-
-
-}
-
 namespace insight 
 {
 namespace cad 
 {
   
-class ParameterListHash
-{
-  size_t hash_;
-  
-public:
-  ParameterListHash();
-  
-  template<class T>
-  void addParameter(const T& p);
 
-  template<class T>
-  void operator+=(const T& p)
-  {
-    addParameter(p);
-  }
-  
-  operator size_t ();
-
-  size_t getHash() const;
-};
 
 
   
@@ -531,11 +463,7 @@ arma::mat rotTrsf(const gp_Trsf& tr);
 arma::mat transTrsf(const gp_Trsf& tr);
 
 
-template<class T>
-void ParameterListHash::addParameter(const T& p)
-{
-  boost::hash_combine<T>(hash_, p);
-}
+
 
 class SingleFaceFeature
 : public Feature

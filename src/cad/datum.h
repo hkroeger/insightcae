@@ -28,7 +28,7 @@
 #include "occinclude.h"
 #include "cadtypes.h"
 #include "astbase.h"
-#include "cadparameters.h"
+#include "cadparameter.h"
 
 namespace insight {
 namespace cad {

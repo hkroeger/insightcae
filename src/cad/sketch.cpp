@@ -25,6 +25,7 @@
 #include "base/tools.h"
 
 #include "datum.h"
+#include "feature.h"
 #include "cadfeatures/importsolidmodel.h"
 
 #include "TColStd_Array1OfInteger.hxx"

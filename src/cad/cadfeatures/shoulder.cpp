@@ -18,9 +18,12 @@
  */
 
 #include "shoulder.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadparameters.h"
 
 
 namespace qi = boost::spirit::qi;
@@ -46,10 +49,10 @@ size_t Shoulder::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=dir_->value();
-  h+=d_->value();
-  h+=Dmax_->value();
+  h+=*p0_;
+  h+=*dir_;
+  h+=*d_;
+  h+=*Dmax_;
   return h.getHash();
 }
 

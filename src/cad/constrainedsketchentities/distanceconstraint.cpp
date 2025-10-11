@@ -1,5 +1,6 @@
 #include "distanceconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadparameters.h"
 
 #include "AIS_Point.hxx"
@@ -27,9 +28,9 @@ defineType(DistanceConstraint);
 size_t DistanceConstraint::calcHash() const
 {
     ParameterListHash h;
-    h+=p1_->value();
-    h+=p2_->value();
-    if (distanceAlong_) h+=distanceAlong_->value();
+    h+=*p1_;
+    h+=*p2_;
+    if (distanceAlong_) h+=*distanceAlong_;
     h+=targetValue();
     return h.getHash();
 }

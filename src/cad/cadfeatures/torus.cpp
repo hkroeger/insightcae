@@ -18,6 +18,8 @@
  */
 
 #include "torus.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
 
@@ -47,9 +49,9 @@ size_t Torus::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=axisTimesD_->value();
-  h+=d_->value();
+  h+=*p0_;
+  h+=*axisTimesD_;
+  h+=*d_;
   return h.getHash();
 }
 

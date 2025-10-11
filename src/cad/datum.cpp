@@ -20,6 +20,7 @@
 
 #include "cadfeature.h"
 #include "datum.h"
+#include "feature.h"
 #include "occtools.h"
 #include "base/boost_include.h"
 
@@ -304,7 +305,7 @@ DatumPtr ProvidedDatum::baseDatum() const
 size_t ExplicitDatumPoint::calcHash() const
 {
   ParameterListHash plh;
-  plh+=coord_->value();
+  plh+=*coord_;
   return plh.getHash();
 }
 
@@ -362,8 +363,8 @@ gp_Ax1 DatumAxis::axis() const
 size_t ExplicitDatumAxis::calcHash() const
 {
   ParameterListHash plh;
-  plh+=p0_->value();
-  plh+=ex_->value();
+  plh+=*p0_;
+  plh+=*ex_;
   return plh.getHash();
 }
 
@@ -505,11 +506,11 @@ void DatumPlane::build()
 size_t DatumPlane::calcHash() const
 {
   ParameterListHash plh;
-  plh+=p0_->value();
-  if (n_) plh+=n_->value();
-  if (up_) plh+=up_->value();
-  if (p1_) plh+=p1_->value();
-  if (p2_) plh+=p2_->value();
+  plh+=*p0_;
+  if (n_) plh+=*n_;
+  if (up_) plh+=*up_;
+  if (p1_) plh+=*p1_;
+  if (p2_) plh+=*p2_;
   return plh.getHash();
 }
 

@@ -23,6 +23,7 @@
 #include "cadparameter.h"
 
 #include <tuple>
+#include "parameterlisthash.h"
 #include "base/cppextensions.h"
 
 namespace insight {
@@ -40,7 +41,8 @@ public:
   CLONEABLE(MultipliedScalar);
 
   MultipliedScalar(ScalarPtr p1, ScalarPtr p2);
-  double value() const override;
+   size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -58,7 +60,8 @@ public:
   CLONEABLE(DividedScalar);
 
   DividedScalar(ScalarPtr p1, ScalarPtr p2);
-  double value() const override;
+   size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -76,7 +79,8 @@ public:
   CLONEABLE(AddedScalar);
 
   AddedScalar(ScalarPtr p1, ScalarPtr p2);
-  double value() const override;
+   size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -93,7 +97,8 @@ public:
   CLONEABLE(SubtractedScalar);
 
   SubtractedScalar(ScalarPtr p1, ScalarPtr p2);
-  double value() const override;
+   size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -112,7 +117,8 @@ public:
   CLONEABLE(VectorComponent);
 
   VectorComponent(VectorPtr p1, int cmpt);
-  double value() const override;
+   size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -130,7 +136,8 @@ public:
   CLONEABLE(VectorMag);
 
   VectorMag(VectorPtr p1);
-  double value() const override;
+   size_t calcHash() const override;
+  double calcValue() const override;
 };
 
 
@@ -148,7 +155,9 @@ public:\
   CLONEABLE(Scalar_##NAME);\
   Scalar_##NAME(ScalarPtr p1)\
   : p1_(p1) {} \
-  double value() const override\
+ size_t calcHash() const override\
+{ ParameterListHash h; h+=*p1_; return h.getHash(); }\
+  double calcValue() const override\
   { return ::FUNCTION ( p1_->value() ); }\
 };
 
@@ -182,7 +191,9 @@ public:\
   CLONEABLE(Scalar_##FUNCTION);\
   Scalar_##FUNCTION(ScalarPtr p1, ScalarPtr p2)\
   : p1_(p1), p2_(p2) {} \
-  double value() const override\
+  size_t calcHash() const override \
+  { ParameterListHash h; h+=*p1_; h+=*p2_; return h.getHash(); } \
+  double calcValue() const override\
   { return ::FUNCTION ( p1_->value(), p2_->value() ); }\
 };
 

@@ -23,6 +23,7 @@
 #include "gp_Quaternion.hxx"
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 //#include <dlib/optimization.h>
 

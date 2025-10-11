@@ -23,6 +23,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "datum.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 
 #include <limits.h>
@@ -57,8 +58,8 @@ size_t Exploded::calcHash() const
   {
       h+=*boost::fusion::at_c<0>(ec);
       h+=int(boost::fusion::at_c<1>(ec));
-      h+=boost::fusion::at_c<2>(ec)->value();
-      h+=boost::fusion::at_c<3>(ec)->value();
+      h+=*boost::fusion::at_c<2>(ec);
+      h+=*boost::fusion::at_c<3>(ec);
   }
   return h.getHash();
 }

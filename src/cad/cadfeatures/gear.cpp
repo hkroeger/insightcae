@@ -19,6 +19,8 @@
  */
 
 #include "gear.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "circle.h"
 
 #include "cadparameters/constantvector.h"
@@ -424,10 +426,10 @@ size_t SpurGear::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=m_->value();
-  h+=z_->value();
-  h+=t_->value();
-  h+=clearance_->value();
+  h+=*m_;
+  h+=*z_;
+  h+=*t_;
+  h+=*clearance_;
   return h.getHash();
 }
 
@@ -965,10 +967,10 @@ size_t BevelGear::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=m_->value();
-  h+=z_->value();
-  h+=t_->value();
-  h+=clearance_->value();
+  h+=*m_;
+  h+=*z_;
+  h+=*t_;
+  h+=*clearance_;
   return h.getHash();
 }
 

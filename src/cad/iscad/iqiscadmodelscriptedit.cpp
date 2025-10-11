@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "cadtypes.h"
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelscriptedit.h"
 #include "iqiscadsyntaxhighlighter.h"
@@ -270,14 +271,28 @@ void IQISCADModelScriptEdit::onEditorSelectionChanged()
 
     if (syn_elem_dir_)
     {
-      insight::cad::FeaturePtr fp=syn_elem_dir_->findElement( textCursor().position() );
-      if (fp)
+        bool somethingFocussed=false;
+      auto sde=syn_elem_dir_->findElement( textCursor().position() );
+      if (auto fp=boost::get<insight::cad::FeaturePtr>(&sde))
       {
-        emit focus(fp);
+          if (*fp)
+          {
+            Q_EMIT focus(*fp);
+              somethingFocussed=true;
+          }
       }
-      else
+      else if (auto fsp=boost::get<insight::cad::FeatureSetPtr>(&sde))
       {
-        emit unfocus();
+          if (*fsp)
+          {
+            Q_EMIT focus(insight::cad::Import::create(*fsp));
+              somethingFocussed=true;
+          }
+      }
+
+      if (!somethingFocussed)
+      {
+        Q_EMIT unfocus();
       }
     }
 
@@ -639,16 +654,16 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
         QTextCursor cursor = cursorForPosition(pt);
 
         std::size_t po=/*editor_->textCursor()*/cursor.position();
-        insight::cad::FeaturePtr fp=syn_elem_dir_->findElement(po);
-        if (fp)
+        auto se=syn_elem_dir_->findElement(po);
+        if (auto fpp=boost::get<insight::cad::FeaturePtr>(&se))
         {
 //            QSignalMapper *signalMapper = new QSignalMapper(this);
             QAction *act=nullptr;
 
-            insight::cad::Feature* fpp=fp.get();
+            insight::cad::Feature* fp=fpp->get();
 
             std::function<void()> slotFunction;
-            if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fpp))
+            if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fp))
             {
                 act=new QAction(_("Edit Sketch..."), this);
                 slotFunction=[this,sk]()
@@ -659,7 +674,7 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
 //                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
 //                        this, &ISCADModel::editSketch);
             }
-            else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
+            else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fp))
             {
                 act=new QAction(_("Edit Model..."), this);
                 slotFunction=[this,mo]()

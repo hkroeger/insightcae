@@ -200,7 +200,33 @@ public:
   
   void write() const;
 
+  void operator=(const FeatureSet& fs);
+
   virtual size_t calcFeatureSetHash() const;
+};
+
+
+
+
+class ProvidedFeatureSet
+    : public ASTBase,
+      public FeatureSet
+{
+    ConstFeaturePtr model_;
+    std::string label_;
+
+public:
+    size_t calcHash() const override;
+    void build() override;
+
+    ProvidedFeatureSet(const ProvidedFeatureSet&o, TreeCloneMap& tcm);
+    ProvidedFeatureSet(
+        ConstFeaturePtr m, EntityType shape,
+        const std::string& label );
+
+    const FeatureSetData& data() const override;
+
+    size_t calcFeatureSetHash() const override;
 };
 
 

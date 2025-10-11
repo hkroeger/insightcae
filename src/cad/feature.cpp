@@ -20,6 +20,7 @@
 
 #include "base/exception.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "feature.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
@@ -171,6 +172,14 @@ void FeatureSet::write() const
 }
 
 
+void FeatureSet::operator=(const FeatureSet& o)
+{
+    model_=o.model_;
+    shape_=o.shape_;
+    data_=o.data();
+}
+
+
 size_t FeatureSet::calcFeatureSetHash() const
 {
     ParameterListHash h;
@@ -202,6 +211,54 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
   os << fs.data();
   return os;
 }
+
+
+
+
+size_t ProvidedFeatureSet::calcHash() const
+{
+    ParameterListHash h;
+    h += *model_;
+    h += label_;
+    h+=shape();
+    return h.getHash();
+}
+
+
+void ProvidedFeatureSet::build()
+{
+    FeatureSet::operator=(
+        *model_->featureSymbols(shape()).at(label_)
+    );
+}
+
+ProvidedFeatureSet::ProvidedFeatureSet(
+    const ProvidedFeatureSet&o, TreeCloneMap& tcm )
+: FeatureSet(o, tcm),
+  CL(model_), label_(o.label_)
+{}
+
+ProvidedFeatureSet::ProvidedFeatureSet(
+    ConstFeaturePtr m, EntityType shape,
+    const std::string& label )
+    : FeatureSet(nullptr, shape), model_(m), label_(label)
+{}
+
+const FeatureSetData& ProvidedFeatureSet::data() const
+{
+    checkForBuildDuringAccess();
+    return data();
+}
+
+size_t ProvidedFeatureSet::calcFeatureSetHash() const
+{
+    return calcHash();
+}
+
+
+
+
+
 
 
 size_t DeferredFeatureSet::calcHash() const

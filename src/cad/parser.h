@@ -70,13 +70,41 @@ typedef std::pair<boost::filesystem::path, SyntaxElementPos> SyntaxElementLocati
 
 std::ostream& operator<<(std::ostream& os, const SyntaxElementLocation& sel);
 
+typedef boost::variant<FeaturePtr,FeatureSetPtr> SyntaxElement;
+
 class SyntaxElementDirectory
-: public std::map<SyntaxElementLocation, FeaturePtr>
+: public std::map<SyntaxElementLocation, SyntaxElement>
 {
 public:
     void addEntry(SyntaxElementLocation location, FeaturePtr element);
-    FeaturePtr findElement(long location, const boost::filesystem::path& file="") const;
-    SyntaxElementLocation findElement(ConstFeaturePtr element) const;
+    void addFSEntry(SyntaxElementLocation location, FeatureSetPtr element);
+
+    SyntaxElement findElement(long location, const boost::filesystem::path& file="") const;
+
+    template<class T>
+    SyntaxElementLocation findLocation(const T& element) const
+    {
+        if (element)
+        {
+            const_iterator it = std::find_if
+                (
+                    this->begin(),
+                    this->end(),
+                    [&element](const value_type & t) -> bool
+                    {
+                        if (auto *fp = boost::get<T>(&t.second))
+                        {
+                            return *fp == element;
+                        }
+                        else return false;
+                    }
+                    );
+            if (it!=end())
+                return it->first;
+        }
+        return SyntaxElementLocation("", SyntaxElementPos(-1, -1));
+    }
+
 };
 
 typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
@@ -135,7 +163,7 @@ struct ISCADParser
     CurrentPos<std::string::iterator> current_pos;
     boost::filesystem::path filenameinfo_;
     SyntaxElementDirectoryPtr syntax_element_locations;
-
+    boost::spirit::qi::symbols<char> selectionkeywords;
 
     typedef qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> ModelstepRule;
     typedef std::shared_ptr<ModelstepRule> ModelstepRulePtr;
@@ -171,10 +199,10 @@ struct ISCADParser
     qi::rule<std::string::iterator, ScalarPtr(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<std::string::iterator, VectorPtr(), qi::locals<FeaturePtr>, skip_grammar > r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_vertexFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_edgeFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_faceFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_solidFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_vertexFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_edgeFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_faceFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_solidFeaturesExpression;
     qi::rule<std::string::iterator, DatumPtr(), skip_grammar> r_datumExpression;
     
     qi::rule<std::string::iterator, skip_grammar> r_model;

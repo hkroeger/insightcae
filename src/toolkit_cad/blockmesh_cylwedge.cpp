@@ -18,7 +18,8 @@
  */
 
 #include "blockmesh_cylwedge.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 
 #include "base/units.h"

@@ -19,6 +19,7 @@
 
 #include "ispartofsolid.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 #include "occtools.h"
 #include "geotest.h"

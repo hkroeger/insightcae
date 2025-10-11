@@ -20,6 +20,8 @@
 
 #include "occtools.h"
 #include "cadexception.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/linearalgebra.h"
 #include "base/spatialtransformation.h"
 #include "base/units.h"

@@ -1,5 +1,6 @@
 #include "sheetextrusiongmshcase.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadfeature.h"
 
 namespace insight {

@@ -24,7 +24,7 @@
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 #include "base/translations.h"
-#include "feature.h"
+#include "featureset.h"
 #include "cadfeatures/importsolidmodel.h"
 
 #include <boost/spirit/include/qi.hpp>

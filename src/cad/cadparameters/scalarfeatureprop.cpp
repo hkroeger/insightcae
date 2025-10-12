@@ -19,7 +19,7 @@
 #include "cadfeature.h"
 #include "scalarfeatureprop.h"
 #include "cadfeature.h"
-#include "feature.h"
+#include "featureset.h"
 #include "datum.h"
 #include "geotest.h"
 

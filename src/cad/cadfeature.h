@@ -42,8 +42,8 @@
 
 #include "astbase.h"
 
-#include "feature.h"
-
+#include "featureset.h"
+#include "datum.h"
 #include "parser.h"
 
 #include "parameterlisthash.h"

@@ -22,7 +22,6 @@
 
 #include "cadtypes.h"
 #include "cadfeature.h"
-#include "features.h"
 #include "datum.h"
 #include "cadparameter.h"
 

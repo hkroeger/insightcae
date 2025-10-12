@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_ISPARTOFSOLID_H
 
 #include "cadfeature.h"
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 
 namespace insight {

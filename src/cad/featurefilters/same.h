@@ -2,7 +2,7 @@
 #define INSIGHT_CAD_SAMEENTITY_H
 
 #include "cadfeature.h"
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 
 

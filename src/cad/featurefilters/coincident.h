@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_COINCIDENT_H
 #define INSIGHT_CAD_COINCIDENT_H
 
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 #include "quantitycomputers/constantquantity.h"
 

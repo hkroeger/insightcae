@@ -1,7 +1,7 @@
 #include "sketchpoint.h"
 #include "cadfeature.h"
 #include "datum.h"
-#include "feature.h"
+#include "featureset.h"
 #include "constrainedsketch.h"
 
 #include <vtkSmartPointer.h>

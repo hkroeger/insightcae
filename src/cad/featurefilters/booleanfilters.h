@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_BOOLEANFILTERS_H
 #define INSIGHT_CAD_BOOLEANFILTERS_H
 
-#include "feature.h"
+#include "featureset.h"
 
 namespace insight {
 namespace cad {

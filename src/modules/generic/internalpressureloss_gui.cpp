@@ -1,4 +1,5 @@
 #include "cadfeature.h"
+#include "cadparameters.h"
 #include "cadparametersetvisualizer.h"
 #include "internalpressureloss.h"
 

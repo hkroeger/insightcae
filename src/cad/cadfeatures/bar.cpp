@@ -21,7 +21,7 @@
 #include "cadfeature.h"
 #include "datum.h"
 #include "cadexception.h"
-#include "feature.h"
+#include "featureset.h"
 #include "quad.h"
 #include "line.h"
 #include "transform.h"

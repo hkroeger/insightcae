@@ -28,7 +28,7 @@
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
-#include "feature.h"
+#include "featureset.h"
 
 // quantity computers
 #include "quantitycomputers/constantquantity.h"

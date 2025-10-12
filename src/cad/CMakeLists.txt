@@ -55,7 +55,7 @@ set(insightcad_SOURCES
   meshing/surfacegmshcase.h meshing/surfacegmshcase.cpp
   meshing/sheetextrusiongmshcase.h meshing/sheetextrusiongmshcase.cpp
   featurefilter.cpp 
-  feature.cpp
+  featureset.h featureset.cpp
   occtools.cpp
   caddocitem.cpp
   cadtypes.cpp

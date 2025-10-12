@@ -25,7 +25,7 @@
 #include "base/tools.h"
 
 #include "datum.h"
-#include "feature.h"
+#include "featureset.h"
 #include "datum.h"
 #include "TColStd_Array1OfInteger.hxx"
 #include "GC_MakeArcOfCircle.hxx"

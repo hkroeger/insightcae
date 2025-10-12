@@ -5,7 +5,7 @@
 
 
 #include "cadtypes.h"
-#include "feature.h"
+#include "featureset.h"
 
 #include <memory>
 

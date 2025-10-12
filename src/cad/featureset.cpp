@@ -21,7 +21,7 @@
 #include "base/exception.h"
 #include "cadfeature.h"
 #include "datum.h"
-#include "feature.h"
+#include "featureset.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
 

@@ -2,7 +2,7 @@
 #define EXTREMAL_H
 
 
-#include "feature.h"
+#include "featureset.h"
 #include <map>
 
 namespace insight {

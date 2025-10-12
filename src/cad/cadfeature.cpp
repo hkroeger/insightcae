@@ -38,7 +38,7 @@
 
 #include "dxfwriter.h"
 #include "featurefilter.h"
-#include "feature.h"
+#include "featureset.h"
 #include "gp_Cylinder.hxx"
 
 #include <BRepLib_FindSurface.hxx>

@@ -19,7 +19,7 @@
  */
 
 #include "dxfwriter.h"
-#include "feature.h"
+#include "featureset.h"
 #include "datum.h"
 
 #include "boost/foreach.hpp"

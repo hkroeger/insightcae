@@ -21,7 +21,7 @@
 #ifndef INSIGHT_CAD_FACETOPOLOGY_H
 #define INSIGHT_CAD_FACETOPOLOGY_H
 
-#include "feature.h"
+#include "featureset.h"
 
 namespace insight {
 namespace cad {

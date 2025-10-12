@@ -20,7 +20,7 @@
 
 #include "cadfeature.h"
 #include "datum.h"
-#include "feature.h"
+#include "featureset.h"
 #include "occtools.h"
 #include "base/boost_include.h"
 

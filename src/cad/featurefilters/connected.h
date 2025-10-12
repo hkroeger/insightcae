@@ -1,7 +1,7 @@
 #ifndef CONNECTED_H
 #define CONNECTED_H
 
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 #include "quantitycomputers/constantquantity.h"
 

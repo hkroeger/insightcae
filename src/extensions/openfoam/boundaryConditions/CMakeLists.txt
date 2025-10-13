@@ -1,5 +1,6 @@
 
 add_subdirectory(extendedFixedValueBC)
+add_subdirectory(finiteAreaExtendedFixedValueBC)
 add_subdirectory(fixedMeanValueBC)
 add_subdirectory(flatPlateBLMappedFixedValue)
 add_subdirectory(mappedWithSwirl)

@@ -170,10 +170,10 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
             for (const auto& coeffs: inst.component_coeffs)
             {
-                os << " [";
+                os << " (";
                 for (size_t cc=0; cc<coeffs.n_elem; cc++)
                     os<<" "<< str( format("%g") % coeffs[cc] );
-                os<<" ]";
+                os<<" )";
             }
         }
     }
@@ -194,10 +194,10 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
             for (const auto& coeffs: inst.component_coeffs)
             {
-                os << " [";
+                os << " (";
                 for (size_t cc=0; cc<coeffs.n_elem; cc++)
                     os<<" "<< str( format("%g") % coeffs[cc] );
-                os<<" ]";
+                os<<" )";
             }
         }
     }
@@ -403,6 +403,19 @@ double FieldData::calcRepresentativeValueMag() const
       avg/=double(fd->values.size());
       return sqrt(arma::as_scalar(arma::sum(avg)));
   }
+  else if (const auto *fp =
+           boost::get<Parameters::fielddata_fittedProfile_type>(
+               &p().fielddata ) )
+  {
+      insight::Warning("no reasonable method implemented yet for determining a representative value from polynomial.");
+      double vsq=0.;
+      for (int c=0; c<p().n_cmpt; ++c)
+      {
+          vsq+=pow(fp->values.begin()->component_coeffs[c][
+                         fp->values.begin()->component_coeffs[c].n_elem-1], 2);
+      }
+      return sqrt(vsq);
+  }
   else
   {
     throw insight::Exception("not yet implemented!");
@@ -479,6 +492,19 @@ double FieldData::calcMaxValueMag() const
                 arma::as_scalar(arma::max(sqrt(d.second)))
                 );
         }
+    }
+    else if (const auto *fp =
+             boost::get<Parameters::fielddata_fittedProfile_type>(
+                 &p().fielddata ) )
+    {
+        insight::Warning("no reasonable method implemented yet for determining a maximum representative value from polynomial.");
+        double vsq=0.;
+        for (int c=0; c<p().n_cmpt; ++c)
+        {
+            vsq+=pow(fp->values.begin()->component_coeffs[c][
+                           fp->values.begin()->component_coeffs[c].n_elem-1], 2);
+        }
+        return sqrt(vsq);
     }
     else
     {

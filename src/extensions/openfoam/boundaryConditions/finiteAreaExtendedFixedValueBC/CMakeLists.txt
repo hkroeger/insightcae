@@ -1,10 +1,11 @@
-set(PRJ extendedFixedValueBC)
+set(PRJ finiteAreaExtendedFixedValueBC)
 
 set(SRC 
- extendedFixedValueFvPatchFields.C 
+ extendedFixedValueFaPatchFields.C
 )
 
 set(OF_INCLUDE_DIRS
+  finiteArea/lnInclude
 )
 
 set(OF_LIBS 
@@ -24,5 +25,5 @@ set(LIBS
 set(IS_OF_LIBS 
  fieldDataProvider
 )
-
+set(OF_VERSIONS OFesi2112)
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "${IS_OF_LIBS}")

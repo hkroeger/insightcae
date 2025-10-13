@@ -5,6 +5,7 @@
 #include "cadfeatures/quad.h"
 #include "cadfeatures/box.h"
 #include "meshing.h"
+#include "cadparameters.h"
 
 using namespace insight;
 using namespace insight::cad;

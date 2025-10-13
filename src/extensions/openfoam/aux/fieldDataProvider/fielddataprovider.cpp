@@ -39,6 +39,8 @@
 #include "vtkUnstructuredGrid.h"
 #include "vtkCompositeDataSet.h"
 
+#include "vtkIdTypeArray.h"
+
 
 using namespace boost;
 using namespace insight;
@@ -650,9 +652,9 @@ void fittedProfile<T>::appendInstant(Istream& is)
     for (int c=0; c<pTraits<T>::nComponents; c++)
     {
         token ct(is);
-        if (ct.pToken()!=token::BEGIN_SQR)
+        if (ct.pToken()!=token::BEGIN_LIST)
         {
-            FatalErrorIn("appendInstant") << "Expected "<<token::BEGIN_SQR << abort(FatalError);
+            FatalErrorIn("appendInstant") << "Expected "<<token::BEGIN_LIST << abort(FatalError);
         }
         std::vector<double> coeff;
         do
@@ -665,7 +667,7 @@ void fittedProfile<T>::appendInstant(Istream& is)
             coeff.push_back(nt.number());
             {
                 token nt2(is);
-                if (nt2.isPunctuation() && (nt2.pToken()==token::END_SQR))
+                if (nt2.isPunctuation() && (nt2.pToken()==token::END_LIST))
                 {
                     break;
                 }
@@ -688,10 +690,10 @@ void fittedProfile<T>::writeInstant(int i, Ostream& is) const
     const std::vector<arma::mat>& ccoeffs=coeffs_[i];
     for(const auto& c: ccoeffs)
     {
-        is << token::BEGIN_SQR << token::SPACE;
+        is << token::BEGIN_LIST << token::SPACE;
         for (unsigned int j=0; j<c.n_elem; j++)
             is << c(j) << token::SPACE;
-        is << token::END_SQR << token::SPACE;
+        is << token::END_LIST << token::SPACE;
     }
 }
 
@@ -763,10 +765,10 @@ void vtkField<T>::appendInstant(Istream& is)
 
     fn.expand();
 
-    autoPtr<token> order;
-    if (!is.eof()) order.reset(new token(is));
+    autoPtr<token> nextToken;
+    if (!is.eof()) nextToken.reset(new token(is));
 
-    if (order.valid() && order->isWord() && order->wordToken()=="componentOrder" )
+    if (nextToken.valid() && nextToken->isWord() && nextToken->wordToken()=="componentOrder" )
     {
         word orderType;
         is >> orderType;
@@ -775,8 +777,8 @@ void vtkField<T>::appendInstant(Istream& is)
     }
     else
     {
-        if (order.valid())
-            is.putBack(order());
+        if (nextToken.valid())
+            is.putBack(nextToken());
 
         setComponentMap();
     }
@@ -855,6 +857,19 @@ tmp<Field<T> > vtkField<T>::atInstant(int i, const pointField& target) const
     ip->SetSourceData(ii->second);
 
     ip->Update();
+
+    auto vpm = ip->GetValidPoints();
+    int validPts=vpm->GetSize();
+
+    if (validPts==0)
+    {
+        WarningIn("vtkField<T>::atInstant")
+            << "no point could be interpolated!" << endl;
+    }
+    else
+    {
+        Info<<"Successfully interpolated "<<validPts<<" of "<<int(targ->GetNumberOfPoints())<<" points."<<endl;
+    }
 
     auto out = ip->GetOutput();
     if (!out->GetPointData()->HasArray(fieldNames_[i].c_str()))

@@ -52,7 +52,7 @@ QVariant IQSupplementedInputDataModel::data(const QModelIndex &index, int role) 
         if (auto* v = boost::get<double>(&vv))
           return QString::number(*v);
         else if (auto* v = boost::get<arma::mat>(&vv))
-          return QString::fromStdString(insight::toStr(*v));
+          return QString::fromStdString(insight::toString(*v));
         else if (auto* v = boost::get<std::string>(&vv))
           return QString::fromStdString(*v);
         else

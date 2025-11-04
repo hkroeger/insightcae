@@ -104,7 +104,7 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
                     for (auto& ee: *this)
                     {
                         auto e = ee.lock();
-                        e->parametersRef().merge(
+                        e->parametersRef().copyMatching(
                             getParameterSet(pe_->model())
                             );
                     }

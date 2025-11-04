@@ -15,30 +15,16 @@ addToFactoryTable(IQParameter, IQIntParameter);
 IQIntParameter::IQIntParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::IntParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
-QString IQIntParameter::valueText() const
-{
-  return QString::number( parameter()() );
-}
 
-bool IQIntParameter::setValue(QVariant value)
-{
-    if (value.canConvert<int>())
-    {
-        bool ok;
-        parameterRef().set(value.toInt(&ok));
-        return ok;
-    }
-    return false;
-}
+
 
 
 QVBoxLayout* IQIntParameter::populateEditControls(

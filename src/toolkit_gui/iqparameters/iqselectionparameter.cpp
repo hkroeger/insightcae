@@ -16,7 +16,7 @@ addToFactoryTable(IQParameter, IQSelectionParameter);
 
 
 addFunctionToStaticFunctionTable(
-    IQParameterGridViewDelegateEditorWidget, IQSelectionParameter,
+    IQHierarchicalDataGridViewDelegateEditorWidget, IQSelectionParameter,
     createDelegate,
     [](QObject* parent) { return new IQSelectionDelegate(parent); }
     );

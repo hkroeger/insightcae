@@ -19,21 +19,14 @@ addToFactoryTable(IQParameter, IQVectorParameter);
 IQVectorParameter::IQVectorParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 ) : IQSpecializedParameter<insight::VectorParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
-QString IQVectorParameter::valueText() const
-{
-  return QString("[%1]")
-        .arg(QString::fromStdString(
-            insight::valueToString(parameter()())
-            ));
-}
+
 
 
 
@@ -50,7 +43,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   lineEdit=new QLineEdit(editControlsContainer);
 
   lineEdit->setText( QString::fromStdString(
-      insight::valueToString(parameter()()) ));
+      insight::toString(parameter()()) ));
 
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
@@ -68,9 +61,10 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-      arma::mat v;
-      insight::stringToValue(lineEdit->text().toStdString(), v);
-      parameterRef().set(v);
+      parameterRef().set(
+          insight::toValue<arma::mat>(
+              lineEdit->text()
+                  .toStdString()));
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -84,7 +78,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
           {
 
             if (auto bp =
-              model()->getVectorBasePoint(parameter().path()))
+              psModel()->getVectorBasePoint(parameter().path()))
             {
                 // auto curMod =
                 //       new IQVectorDirectionCommand(
@@ -140,10 +134,10 @@ void IQVectorParameter::applyProposition(
         propositions.get<insight::VectorParameter>(
         selectedProposition);
 
-    parameterRef()=pp;
+    parameterRef().assignFrom(pp);
 
     lineEdit->setText(
         QString::fromStdString(
-            insight::valueToString(
+            insight::toString(
                 parameter()())) );
 }

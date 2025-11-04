@@ -15,17 +15,16 @@ addToFactoryTable(IQParameter, IQDoubleRangeParameter);
 IQDoubleRangeParameter::IQDoubleRangeParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::DoubleRangeParameter>(
-          parent, psmodel, parameter, defaultParameterSet )
+          parent, hdmodel, element )
 {
 }
 
 
-QString IQDoubleRangeParameter::valueText() const
+QVariant IQDoubleRangeParameter::value() const
 {
   return QString("%1 values")
         .arg( parameter().values().size() );

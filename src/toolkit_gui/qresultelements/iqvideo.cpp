@@ -1,4 +1,5 @@
 #include "iqvideo.h"
+#include "base/exception.h"
 
 #include <QApplication>
 #include <QFont>
@@ -12,6 +13,7 @@
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
 #include <QVideoWidget>
+#include <memory>
 
 
 namespace insight {
@@ -52,6 +54,28 @@ IQVideo::IQVideo(QObject *parent, const QString &label, insight::ResultElementPt
 
 
 
+boost::filesystem::path
+IQVideo::ensureFileIsLocallyAvailable() const
+{
+    if (auto im = resultElementAs<insight::Video>())
+    {
+        if (!localFile_)
+        {
+            localFile_=std::make_unique<TemporaryFile>(
+                "%%%%%"+
+                im->fileName().extension().string() );
+            im->copyTo(localFile_->path());
+        }
+        return localFile_->path();
+    }
+
+    throw insight::Exception("unexpected result element type wrapped");
+
+    return boost::filesystem::path();
+}
+
+
+
 void IQVideo::setPreviewImage(const QPixmap &pm)
 {
     previewImage_=pm;
@@ -89,7 +113,10 @@ void IQVideo::createFullDisplay(QVBoxLayout *layout)
     auto playlist = new QMediaPlaylist(player);
 
     auto im = resultElementAs<insight::Video>();
-    playlist->addMedia(QUrl::fromLocalFile(im->filePath().string().c_str()));
+    playlist->addMedia(
+        QUrl::fromLocalFile(
+            ensureFileIsLocallyAvailable()
+                .string().c_str() ) );
 
     auto videoWidget = new QVideoWidget;
     player->setVideoOutput(videoWidget);

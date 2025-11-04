@@ -275,11 +275,11 @@ BackgroundImage::BackgroundImage(
 
   : QObject(&v)
 {
-    label_= QString(
-        node.first_attribute("label")->value() );
+    label_= QString::fromStdString(
+        getMandatoryAttribute(node,"label") );
 
     imageFileName_= boost::filesystem::path(
-        node.first_attribute("imageFileName")->value() );
+        getMandatoryAttribute(node, "imageFileName") );
 
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
@@ -300,19 +300,11 @@ BackgroundImage::BackgroundImage(
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
 
-    double rotationAngle = toNumber<double>(
-        node.first_attribute("rotationAngle")->value() );
-    imageActor_->SetOrientation(0, 0, rotationAngle);
+    imageActor_->SetOrientation(0, 0, getMandatoryAttribute<double>(node, "rotationAngle"));
 
-    double scale = toNumber<double>(
-        node.first_attribute("scale")->value() );
-    imageActor_->SetScale( scale );
+    imageActor_->SetScale( getMandatoryAttribute<double>(node, "scale") );
 
-    arma::mat position;
-    stringToValue(
-        node.first_attribute("position")->value(),
-        position );
-    imageActor_->SetPosition( position.memptr() );
+    imageActor_->SetPosition( getMandatoryAttribute<arma::mat>(node, "position").memptr() );
 
     imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
 
@@ -356,19 +348,19 @@ void BackgroundImage::write(
     insight::appendAttribute(
         doc, node,
         "rotationAngle",
-        boost::lexical_cast<std::string>(imageActor_->GetOrientation()[2]) );
+        imageActor_->GetOrientation()[2] );
 
     insight::appendAttribute(
         doc, node,
         "scale",
-        boost::lexical_cast<std::string>(imageActor_->GetScale()[0]) );
+        imageActor_->GetScale()[0] );
 
 
     arma::mat position = vec3Zero();
     imageActor_->GetPosition(position.memptr());
     insight::appendAttribute(
         doc, node,
-        "position", valueToString(position) );
+        "position", position );
 }
 
 
@@ -2332,19 +2324,19 @@ void IQVTKCADModel3DViewer::saveState(
     appendAttribute(
         doc, camNode,
         "position",
-        insight::valueToString(vec3FromComponents(
+        insight::toString(vec3FromComponents(
             camera->GetPosition() )) );
 
     appendAttribute(
         doc, camNode,
         "focalPoint",
-        insight::valueToString(vec3FromComponents(
+        insight::toString(vec3FromComponents(
             camera->GetFocalPoint() )) );
 
     appendAttribute(
         doc, camNode,
         "viewUp",
-        insight::valueToString(vec3FromComponents(
+        insight::toString(vec3FromComponents(
             camera->GetViewUp() )) );
 
     for (const auto& bgi: backgroundImages_)
@@ -2379,27 +2371,29 @@ void IQVTKCADModel3DViewer::restoreState(
     {
         insight::CameraState cs;
 
-        if (auto *pp = camNode->first_attribute("parallelProjection"))
-            cs.isParallelProjection=
-                boost::lexical_cast<bool>(pp->value());
-
-        if (auto *pp = camNode->first_attribute("parallelScale"))
-            cs.parallelScale=
-                boost::lexical_cast<double>(pp->value());
-
-        if (auto *pos = camNode->first_attribute("position"))
+        if (auto pp = insight::getOptionalAttribute<bool>(*camNode, "parallelProjection"))
         {
-            insight::stringToValue(pos->value(), cs.cameraPosition);
+            cs.isParallelProjection=*pp;
         }
 
-        if (auto *fp = camNode->first_attribute("focalPoint"))
+        if (auto ps = insight::getOptionalAttribute<double>(*camNode, "parallelScale"))
         {
-            insight::stringToValue(fp->value(), cs.focalPosition);
+            cs.parallelScale=*ps;
         }
 
-        if (auto *vu = camNode->first_attribute("viewUp"))
+        if (auto pos = insight::getOptionalAttribute<arma::mat>(*camNode, "position"))
         {
-            insight::stringToValue(vu->value(), cs.viewUp);
+            cs.cameraPosition=*pos;
+        }
+
+        if (auto fp = insight::getOptionalAttribute<arma::mat>(*camNode, "focalPoint"))
+        {
+            cs.focalPosition=*fp;
+        }
+
+        if (auto vu = insight::getOptionalAttribute<arma::mat>(*camNode, "viewUp"))
+        {
+            cs.viewUp=*vu;
         }
 
         setCameraState(cs);

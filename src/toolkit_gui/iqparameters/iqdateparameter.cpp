@@ -19,23 +19,15 @@ addToFactoryTable(IQParameter, IQDateParameter);
 IQDateParameter::IQDateParameter
     (
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element
         )
     : IQSpecializedParameter<insight::DateParameter>(
-          parent, psmodel, parameter, defaultParameterSet )
+          parent, hdmodel, element )
 {
 }
 
 
-QString IQDateParameter::valueText() const
-{
-    return QString::fromStdString(
-        boost::gregorian::to_simple_string(
-            parameter()()
-            ) );
-}
 
 
 QVBoxLayout* IQDateParameter::populateEditControls(

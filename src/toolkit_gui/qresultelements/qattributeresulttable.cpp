@@ -45,7 +45,7 @@ class QAttributeTableView
       for (size_t i=0; i<tab_->names().size(); i++)
       {
           auto attr_name = QString::fromStdString(tab_->names()[i].toHTML(width));
-          QString attr_val(boost::lexical_cast<std::string>(tab_->values()[i]).c_str());
+          QString attr_val(toString(tab_->values()[i]).c_str());
           setItem(i, 0, new QTableWidgetItem( attr_name ));
           setItem(i, 1, new QTableWidgetItem( attr_val ));
       }

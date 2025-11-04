@@ -6,6 +6,7 @@
 #include "iqparametersetmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
+#include "qtextensions.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -25,12 +26,11 @@ addToFactoryTable(IQParameter, IQCADSketchParameter);
 IQCADSketchParameter::IQCADSketchParameter
     (
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element
         )
     : IQSpecializedParameter<insight::CADSketchParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
@@ -42,18 +42,18 @@ void IQCADSketchParameter::connectSignals()
         parameterRef().childValueChanged.connect(
             [this]() {
                 auto blocker = block_all();
-                model()->notifyParameterChange( *this );
+                model()->notifyElementChange( *this );
             }
-            )
-        );
+        )
+    );
 }
 
 
 
 
-QString IQCADSketchParameter::valueText() const
+QVariant IQCADSketchParameter::value() const
 {
-    return "sketch";
+    return "(sketch)";
 }
 
 
@@ -74,7 +74,9 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
     };
 
     updateScriptEdit();
-    disconnectAtEOL(
+
+    ::disconnectAtEOL(
+        teScript,
         (*this)->valueChanged.connect(
             updateScriptEdit
             )

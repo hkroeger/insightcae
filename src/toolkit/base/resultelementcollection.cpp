@@ -15,14 +15,11 @@ namespace insight {
 
 
 
-ResultElementCollection::~ResultElementCollection()
-{}
-
-
 ResultElement& ResultElementCollection::insert ( const string& key, ResultElement* elem )
 {
-    std::pair< iterator, bool > res=
-        std::map<std::string, ResultElementPtr>::insert ( ResultElementCollection::value_type ( key, ResultElementPtr ( elem ) ) );
+    auto res=
+        ResultElementMap::insert (
+            value_type ( key, ResultElementPtr ( elem ) ) );
     return * ( *res.first ).second;
 }
 
@@ -36,9 +33,9 @@ ResultElement& ResultElementCollection::insert (
     const string& key,
     ResultElementPtr elem )
 {
-    std::pair< iterator, bool > res=
-        std::map<std::string, ResultElementPtr>::insert (
-        ResultElementCollection::value_type ( key, elem ) );
+    auto res=
+        ResultElementMap::insert (
+            ResultElementCollection::value_type ( key, elem ) );
 
     return * ( *res.first ).second;
 }
@@ -48,9 +45,9 @@ ResultElement& ResultElementCollection::insert (
     const string& key,
     const ResultElement& elem )
 {
-    std::pair< iterator, bool > res=
-        std::map<std::string, ResultElementPtr>::insert (
-        ResultElementCollection::value_type ( key, elem.clone() ) );
+    auto res=
+        ResultElementMap::insert (
+            value_type ( key, elem.cloneAs<ResultElement>() ) );
 
     return * ( *res.first ).second;
 }
@@ -58,21 +55,18 @@ ResultElement& ResultElementCollection::insert (
 
 void ResultElementCollection::copyFrom(const ResultElementCollection& other)
 {
-    for (const auto& oe: other)
+    for (auto& oe: static_cast<const ResultElementMap&>(other))
     {
-        insight::assertion( this->find(oe.first)==this->end(),
+        insight::assertion( this->find(oe.first)==this->ResultElementMap::end(),
                             "inserting the element "+oe.first+" from other result set would overwrite existing entry in current!" );
-        insert(oe.first, oe.second->clone());
+        insert(oe.first, oe.second->cloneAs<ResultElement>());
     }
 }
 
-void ResultElementCollection::writeLatexCodeOfElements
-(
-    std::ostream& f,
-    const string& name,
-    int level,
-    const boost::filesystem::path& outputfilepath
-) const
+std::string ResultElementCollection::latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const
 {
     std::vector<std::pair<key_type,mapped_type> > items;
 
@@ -86,8 +80,8 @@ void ResultElementCollection::writeLatexCodeOfElements
 
     std::for_each
     (
-        begin(),
-        end(),
+        ResultElementMap::begin(),
+        ResultElementMap::end(),
         [&items] ( const value_type& p ) {
             items.push_back ( p );
         }
@@ -102,7 +96,9 @@ void ResultElementCollection::writeLatexCodeOfElements
           }
     );
 
-    for ( const value_type& re: items ) {
+    std::ostringstream f;
+    for ( auto& re: items )
+    {
         const ResultElement* r = & ( *re.second );
 
 //         std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
@@ -115,24 +111,26 @@ void ResultElementCollection::writeLatexCodeOfElements
 
         if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) )
         {
-            se->writeLatexCode ( f, subelemname, level+1, outputfilepath );
+            f << se->latexRepresentation ( subelemname, documentHierarchyLevel+1, fsi );
         }
         else
         {
             if (r->displayFullPage())
                 f<<"\\newpage\n";
 
-            f << latex_subsection ( level+1 ) << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
+            f << latex_subsection ( documentHierarchyLevel+1 )
+              << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
 
             f << r->shortDescription().toLaTeX() << "\n\n";
 
             //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
-            r->writeLatexCode ( f, subelemname, level+2, outputfilepath );
+            f << r->latexRepresentation ( subelemname, documentHierarchyLevel+2, fsi );
 
             f << "\n\n" << r->longDescription().toLaTeX() << "\n\n";
             f << endl;
         }
     }
+    return f.str();
 }
 
 std::set<string> ResultElementCollection::contents(bool onlyLeafs) const
@@ -147,7 +145,7 @@ std::set<string> ResultElementCollection::contents(bool onlyLeafs) const
             = [&](const ResultElementCollection& el, const std::string& parentPath) -> std::set<std::string>
     {
         std::set<std::string> result;
-        for (const auto& rel: el)
+        for (auto& rel: static_cast<const ResultElementMap&>(el))
         {
           if (const auto* sub = dynamic_cast<const ResultElementCollection*>(rel.second.get()))
           {
@@ -174,24 +172,35 @@ double ResultElementCollection::getScalar(const std::string& path) const
     return this->get<NumericalResult<double> >(path).value();
 }
 
-void ResultElementCollection::appendElementsToNode (
+
+
+
+rapidxml::xml_node<>* ResultElementCollection::appendToNode(
+    const std::string& name,
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node ) const
 {
-    for ( const_iterator i=begin(); i!= end(); i++ ) {
-        i->second->appendToNode ( i->first, doc, node );
+    auto child = ResultElement::appendToNode ( name, doc, node );
+    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
+    {
+        i.second->appendToNode ( i.first, doc, *child );
     }
+    return child;
 }
 
-void ResultElementCollection::readElementsFromNode (
-    const rapidxml::xml_node<>& node )
+
+
+const rapidxml::xml_node<>*
+ResultElementCollection::readFromNode (
+    const std::string& name,
+    const rapidxml::xml_node<>& parentNode)
 {
-    for ( auto *e = node.first_node();
+    auto *child=ResultElement::readFromNode(name, parentNode);
+    for ( auto *e = child->first_node();
          e; e = e->next_sibling() )
     {
         std::string tname ( e->name() );
-        std::string name ( e->first_attribute ( "name" )->value() );
-//         std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;
+        std::string name ( getMandatoryAttribute(*e, "name") );
 
         ResultElementPtr re
         (
@@ -202,15 +211,77 @@ void ResultElementCollection::readElementsFromNode (
             )
         );
 
-        re->readFromNode ( name, *e );
+        re->readFromNode ( std::string(), *e );
         insert ( name, re );
     }
-//   for( iterator i=begin(); i!= end(); i++)
-//   {
-//     i->second->readFromNode(i->first, doc, node);
-//   }
+    return child;
+}
+
+bool ResultElementCollection::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const ResultElementCollection*>(&op))
+    {
+        if (size()!=oa->size()) return false;
+        auto i=ResultElementMap::begin();
+        auto j=oa->ResultElementMap::begin();
+        while (i!=ResultElementMap::end())
+        {
+            if (i->first!=j->first)
+                return false;
+            if (!j->second->isEqual(*j->second))
+                return false;
+
+            ++i; ++j;
+        }
+        return true;
+    }
+    else
+        return false;
 }
 
 
+
+
+int ResultElementCollection::nChildren() const
+{
+    return size();
+}
+
+
+std::string ResultElementCollection::childElementName(
+    int i,
+    bool redirectArrayElementsToDefault ) const
+{
+    auto iter=ResultElementMap::begin();
+    std::advance(iter, i);
+    return iter->first;
+}
+
+
+
+std::string ResultElementCollection::childElementName(
+    const Element *p,
+    bool redirectArrayElementsToDefault ) const
+{
+    return ResultElement::childElementName(p, redirectArrayElementsToDefault);
+}
+
+
+
+hierarchicalData::Element& ResultElementCollection::childElementRef ( int i )
+{
+    auto iter=ResultElementMap::begin();
+    std::advance(iter, i);
+    return *iter->second;
+}
+
+
+
+const hierarchicalData::Element& ResultElementCollection::childElement( int i ) const
+{
+    auto iter=ResultElementMap::begin();
+    std::advance(iter, i);
+    return *iter->second;
+}
 
 } // namespace insight

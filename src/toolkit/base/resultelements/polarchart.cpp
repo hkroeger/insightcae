@@ -42,7 +42,7 @@ PolarChart::PolarChart
 
 
 
-void PolarChart::generatePlotImage(const path &imagepath) const
+void PolarChart::generatePlotImage(const boost::filesystem::path &imagepath) const
 {
   std::shared_ptr<PolarChartRenderer> renderer;
 
@@ -76,11 +76,26 @@ void PolarChart::generatePlotImage(const path &imagepath) const
 
 
 
-ResultElementPtr PolarChart::clone() const
+std::unique_ptr<hierarchicalData::Element> PolarChart::clone() const
 {
-    ResultElementPtr res ( new PolarChart ( ylabel_, plc_, shortDescription().simpleLatex(), longDescription().simpleLatex(), phi_unit_, addinit_ ) );
+    auto res = std::make_unique<PolarChart> (
+        ylabel_, plc_,
+        shortDescription().simpleLatex(), longDescription().simpleLatex(),
+        phi_unit_, addinit_ );
     res->setOrder ( order() );
     return res;
+}
+
+bool PolarChart::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const PolarChart*>(&op))
+    {
+        if (phi_unit_!=oa->phi_unit_)
+            return false;
+        return Chart::isEqual(*oa);
+    }
+    else
+        return false;
 }
 
 

@@ -85,8 +85,8 @@ void HorizontalConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(line_.get()))
+            + toString(myLabel) + ", "
+            + toString(entityLabels.at(line_.get()))
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -171,7 +171,7 @@ ConstrainedSketchEntityPtr HorizontalConstraint::clone() const
     auto cl=HorizontalConstraint::create( line_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

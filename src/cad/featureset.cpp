@@ -103,7 +103,7 @@ FeatureSet::operator TopAbs_ShapeEnum () const
   else if (shape_==Face) return TopAbs_FACE;
   else if (shape_==Vertex) return TopAbs_VERTEX;
   else if (shape_==Solid) return TopAbs_SOLID;
-  else throw insight::Exception("Unknown EntityType:"+lexical_cast<std::string>(shape_));
+  else throw insight::Exception("Unknown EntityType: %d", shape_);
 }
 
 const FeatureSetData& FeatureSet::data() const

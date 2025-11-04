@@ -294,7 +294,7 @@ void Arc::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "("
-            + lexical_cast<std::string>(myLabel) +", "
+            + toString(myLabel) +", "
             + pointSpec(p0_, script, entityLabels) + ", "
             + pointSpec(av_, script, entityLabels) + ", "
             + pointSpec(p1_, script, entityLabels) + ", "
@@ -458,7 +458,7 @@ ConstrainedSketchEntityPtr Arc::clone() const
         layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 
@@ -583,7 +583,7 @@ void ArcCenterPoint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + str(boost::format("%g, %g")%v(0)%v(1))
             + ", layer " + layerName()
             + parameterString()
@@ -637,7 +637,7 @@ ConstrainedSketchEntityPtr ArcCenterPoint::clone() const
         layerName() );
     cl->linktoArc(arc_);
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

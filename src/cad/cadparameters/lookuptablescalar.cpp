@@ -69,26 +69,40 @@ double LookupTableScalar::calcValue() const
     boost::filesystem::path fp = sharedModelFilePath(name_+".csv");
     
     if (!boost::filesystem::exists(fp))
-        throw insight::Exception("lookup table "+fp.string()+" does not exists!");
+    {
+        throw insight::Exception(
+            "lookup table %s does not exists!", fp.c_str());
+    }
     
     std::ifstream f( fp.c_str() );
     std::string line;
     std::vector<std::string> cols;
+
     do
     {
         getline(f, line);
-    } while (boost::algorithm::starts_with(line, "#"));
+    }
+    while (boost::algorithm::starts_with(line, "#"));
+
     boost::split(cols, line, boost::is_any_of(";,"));
     size_t nc=cols.size();
     
     auto keycolit=find(cols.begin(), cols.end(), keycol_);
+
     if (keycolit==cols.end())
-        throw insight::Exception("key column "+keycol_+" not found in lookup table "+fp.string()+"!");
+        throw insight::Exception(
+            "key column %s not found in lookup table %s!",
+            keycol_.c_str(), fp.c_str() );
+
     int ik= keycolit - cols.begin();
     
     auto depcolit=find(cols.begin(), cols.end(), depcol_);
+
     if (depcolit==cols.end())
-        throw insight::Exception("column with depending value "+depcol_+" not found in lookup table "+fp.string()+"!");
+        throw insight::Exception(
+            "column with depending value %s not found in lookup table %s!",
+            depcol_.c_str(), fp.c_str() );
+
     int id=depcolit - cols.begin();
     
     double tkeyval=*keyval_;
@@ -107,8 +121,11 @@ double LookupTableScalar::calcValue() const
             boost::split(cols, line, boost::is_any_of(";,"));
             
             if (nc!=cols.size())
-                throw insight::Exception(boost::str(boost::format("lookup table %s: unexpected number of columns (%d, expected %d) in line %d!")
-                        % fp.string() % cols.size() % nc % ln ));
+            {
+                throw insight::Exception(
+                        "lookup table %s: unexpected number of columns (%d, expected %d) in line %d!",
+                        fp.c_str(), cols.size(), nc, ln );
+            }
             
             double kv;
             try 
@@ -117,8 +134,9 @@ double LookupTableScalar::calcValue() const
             }
             catch (...)
             {
-                throw insight::Exception(boost::str(boost::format("lookup table %s: could not read key value in line %d! (found %s)")
-                        % fp.string() % ln % cols[ik] ));
+                throw insight::Exception(
+                        "lookup table %s: could not read key value in line %d! (found %s)",
+                        fp.c_str(), ln, cols[ik].c_str() );
             }
             
             double mq=fabs(kv-tkeyval);
@@ -138,8 +156,9 @@ double LookupTableScalar::calcValue() const
                 }
                 catch (...)
                 {
-                    throw insight::Exception(boost::str(boost::format("lookup table %s: could not read value in line %d! (found %s)")
-                            % fp.string() % ln % cols[id] ));
+                    throw insight::Exception(
+                        "lookup table %s: could not read value in line %d! (found %s)",
+                         fp.c_str(), ln, cols[id].c_str() );
                 }
                 rvalue=dv;
                 found=true;
@@ -151,8 +170,7 @@ double LookupTableScalar::calcValue() const
         return rvalue;
 
     throw insight::Exception(
-        "Table lookup of value "+lexical_cast<std::string>(tkeyval)+
-        " in column "+keycol_+" failed!");
+        "Table lookup of value %g in column %s failed!", tkeyval, keycol_.c_str());
     
     return 0.0;
 }

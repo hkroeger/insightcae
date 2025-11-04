@@ -308,7 +308,7 @@ void Mesh::build()
       auto location = boost::fusion::get<0>(func.value())->value();
       auto D = boost::fusion::get<1>(func.value())->value();
       auto Linside = boost::fusion::get<2>(func.value())->value();
-      fis.push_back( boost::lexical_cast<std::string>(func.index()+1) );
+      fis.push_back( toString(func.index()+1) );
       auto fi = "Field["+fis.back()+"]";
       addcode.insert(
           addcode.end(),
@@ -323,7 +323,7 @@ void Mesh::build()
           });
   }
   {
-      auto fii=boost::lexical_cast<std::string>(meshSizeBalls_.size()+1);
+      auto fii=toString(meshSizeBalls_.size()+1);
       auto fi = "Field["+fii+"]";
       addcode.insert(
           addcode.end(),

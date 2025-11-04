@@ -835,7 +835,7 @@ void ConstrainedSketch::resolveConstraints(
                     if (ex.zeroCols().count(i))
                     {
                         auto i=std::distance(geometry_.cbegin(), dm.entityIt);
-                        ucdofs.insert(boost::lexical_cast<std::string>(i));
+                        ucdofs.insert(toString(i));
                     }
                 }
 
@@ -959,7 +959,7 @@ void ConstrainedSketch::generateScript(ostream &os) const
         std::string s;
         if (lp.second->size())
         {
-            lp.second->saveToString(s, boost::filesystem::current_path()/"outfile");
+            lp.second->saveToString(s);
             s=" "+s;
         }
         sb.appendLayerProp("layer "+lp.first+s);
@@ -1091,7 +1091,7 @@ void ConstrainedSketch::setLayerProperties(
     const std::string& layerName,
     const ParameterSet &ps)
 {
-    layerProperties_.at(layerName)->ParameterSet::operator=(ps);
+    layerProperties_.at(layerName)->ParameterSet::assignFrom(ps);
 }
 
 
@@ -1109,7 +1109,7 @@ void ConstrainedSketch::parseLayerProperties(
             s->begin(), s->end() );
 
         auto p=layerProperties(layerName).cloneLayerProperties();
-        p->readFromNode(std::string(), *doc.rootNode, "." );
+        p->readFromNode(std::string(), *doc.rootNode );
         setLayerProperties(layerName, *p);
     }
 }

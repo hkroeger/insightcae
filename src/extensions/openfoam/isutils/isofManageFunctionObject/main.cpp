@@ -41,8 +41,8 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
     
     OpenFOAMCase cm(OFEs::getCurrentOrPreferred());
     
-    ResultSetPtr results(new ResultSet(*ParameterSet::create(), "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
-    Ordering o;
+    ResultSetPtr results(new ResultSet(nullptr, "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
+    hierarchicalData::Ordering o;
   
     // go through all defined case elements. Evaluate all FOs
     for (auto *e = doc.rootNode->first_node("OpenFOAMCaseElement");
@@ -53,7 +53,8 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
             outputFilterFunctionObject::factories_->end())
 	{
       auto ps = outputFilterFunctionObject::defaultParametersFor(FOtype);
-      ps->readFromNode( std::string(), *e, cfgfile.parent_path() );
+      ps->readFromNode( std::string(), *e);
+      ps->resolveRelativePaths( cfgfile.parent_path() );
       std::shared_ptr<outputFilterFunctionObject> fo(outputFilterFunctionObject::lookup(FOtype, cm, *ps));
 	  fo->evaluate
 	  (

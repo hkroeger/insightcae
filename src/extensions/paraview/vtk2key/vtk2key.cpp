@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 
                 std::transform(sl.begin(), sl.end(),
                     std::inserter(tbSkipped, tbSkipped.begin()),
-                    std::bind(&boost::lexical_cast<int,std::string>, std::placeholders::_1)
+                    std::bind(&toValue<int>, std::placeholders::_1)
                 );
             }
         }

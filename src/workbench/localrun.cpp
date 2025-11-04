@@ -11,7 +11,7 @@
 LocalRun::LocalRun(AnalysisForm *af)
   : WorkbenchAction(af),
     workerThread_(
-          af_->analysisName_,
+          af_->psmodel_->getAnalysisName(),
 #warning wait for visualization run to finish, if is running
           bool(af_->sid_) ?
             insight::AnalysisThread::ParameterInput( af_->sid_ )

@@ -54,7 +54,7 @@ void AnalysisForm::updateSaveMenuLabel()
 void AnalysisForm::updateWindowTitle()
 {
     QString newTitle =
-        QString::fromStdString(analysisName_);
+        QString::fromStdString(psmodel_->getAnalysisName());
 
     if (isModified())
     {

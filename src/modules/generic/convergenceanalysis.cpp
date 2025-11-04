@@ -21,6 +21,7 @@
 #include "convergenceanalysis.h"
 
 #include "base/boost_include.h"
+#include <string>
 
 using namespace boost;
 using namespace std;
@@ -68,7 +69,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
 //       ) % name)
 //     )
 //   );
-  Ordering so;
+  hierarchicalData::Ordering so;
 
   double
   r1=p().solutions[1].deltax / p().solutions[2].deltax,
@@ -127,20 +128,18 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
         << 2 << S2 << epsilon32 << 1e2*epsilon32/S2 << arma::endr
         << 3 << S3 << NAN << NAN << arma::endr;
 
-    results->insert
+    results->insert<TabularResult>
     (
       "tableDataSummary",
-      new TabularResult
-      (
-        {
+        TabularResult::Headings{
          "Grid $i$ (1=finest)",
          "Solution ($S_i$)",
          "Diff. ($\\epsilon_{i+1,i}=S_{i+1}-S_i$)",
          "$\\epsilon_{i+1,i}$ / \\%"
         },
         tabdata,
-        "The following table repeats the input data for the convergence analysis of the solution quantity "+p().name+".", "", ""
-      )
+        "The following table repeats the input data for the convergence analysis of the solution quantity"
+        +p().name+".", "", ""
     ).setOrder ( so.next() );
   }
 

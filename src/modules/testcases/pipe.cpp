@@ -369,7 +369,7 @@ void PipeBase::evaluateAtSection(
     .set_start( vec3(x, 0,  0.01* 0.5*p().geometry.D))
     .set_end(   vec3(x, 0, 0.997* 0.5*p().geometry.D))
     .set_axis(vec3(1,0,0))
-    .set_name("section"+lexical_cast<string>(i))
+    .set_name("section"+toString(i))
   ));
   
   sample(cm, executionPath(), 
@@ -461,7 +461,7 @@ void PipeBase::evaluateAtSection(
         PlotCurve( refdata_Rww, "Rwwref", "w l lt 2 lc 3 t '$R_{ww,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'" )
       },
       "Radial profiles of averaged reynolds stresses",
-      "set yrange [:"+lexical_cast<string>(fac_Rp*max(data.col(c)))+"];"
+      "set yrange [:"+toString(fac_Rp*max(data.col(c)))+"];"
     );
     
 //     Gnuplot gp;
@@ -502,7 +502,7 @@ void PipeBase::evaluateAtSection(
     cm, executionPath(), list_of<std::string>
     (
       init+
-      "eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
+      "eb = planarSlice(cbi, ["+toString(x)+",0,1e-6], [1,0,0])\n"
       "Show(eb)\n"
       "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
       "setCam([-10,0,0], [0,0,0], [0,1,0])\n"
@@ -526,7 +526,7 @@ void PipeBase::evaluateAtSection(
       cm, executionPath(), list_of<std::string>
       (
 	init+
-	"eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
+    "eb = planarSlice(cbi, ["+toString(x)+",0,1e-6], [1,0,0])\n"
 	"Show(eb)\n"
 	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
 	"setCam([-10,0,0], [0,0,0], [0,1,0])\n"
@@ -661,8 +661,8 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& p
     
     cm.executeCommand(executionPath(), "perturbU", 
                       {
-                       lexical_cast<string>(p().operation.Re_tau),
-                       "("+lexical_cast<string>(sp().Ubulk_)+" 0 0)"
+                       toString(p().operation.Re_tau),
+                       "("+toString(sp().Ubulk_)+" 0 0)"
                       }
 		    );
   }
@@ -820,7 +820,7 @@ Analysis::Add<PipeCyclic> addPipeCyclic;
 //    if (!tpcs)
 //      throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
 //    tpcs->evaluate(cm, executionPath(), results,
-//      "two-point correlation of velocity at different radii at x/L="+lexical_cast<string>(tpc_xlocs_[i]+1e-6)
+//      "two-point correlation of velocity at different radii at x/L="+toString(tpc_xlocs_[i]+1e-6)
 //    );
 //  }
   
@@ -841,7 +841,7 @@ Analysis::Add<PipeCyclic> addPipeCyclic;
 //      .set_start( vec3(0.001*L, 0, r*0.5*D))
 //      .set_end(   vec3(0.999*L, 0, r*0.5*D))
 //      .set_axis(vec3(1,0,0))
-//      .set_name("longitudinal"+lexical_cast<string>(i))
+//      .set_name("longitudinal"+toString(i))
 //    ));
     
 //    sample(cm, executionPath(),
@@ -929,7 +929,7 @@ Analysis::Add<PipeCyclic> addPipeCyclic;
   
 //  setFields(cm, executionPath(),
 //            {
-//              "volVectorFieldValue U ("+lexical_cast<string>(sp().Ubulk_)+" 0 0)"
+//              "volVectorFieldValue U ("+toString(sp().Ubulk_)+" 0 0)"
 //            },
 //	    ptr_vector<setFieldOps::setFieldOperator>()
 //  );

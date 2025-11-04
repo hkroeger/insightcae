@@ -226,7 +226,7 @@ void CaseConfigurationModel::appendConfigurationToNode(
             elem->parameterSetModel()->clearPackedData();
           }
           elem->parameterSetModel()->getParameterSet()
-              .appendToNode(std::string(), doc, *elemnode, fileParentPath);
+              .appendToNode(std::string(), doc, *elemnode);
       }
   }
 }
@@ -250,8 +250,9 @@ void CaseConfigurationModel::readFromNode(
           type_name, mvl, visGen
           );
 
-    auto np = ice->parameterSetModel()->getParameterSet().cloneParameterSet();
-    np->readFromNode(std::string(), *e, fileParentPath);
+    auto np = ice->parameterSetModel()->getParameterSet().cloneAs<ParameterSet>();
+    np->readFromNode(std::string(), *e);
+    np->resolveRelativePaths(fileParentPath);
     ice->parameterSetModel()->resetParameterValues(*np);
 
     addCaseElement( ice );

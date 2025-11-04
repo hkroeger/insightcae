@@ -50,7 +50,7 @@ using namespace std;
 using namespace insight;
 using namespace boost;
 
-void listContents(const ResultElementCollection& el, const std::string indent="")
+void listContents(const ResultElementMap& el, const std::string indent="")
 {
   for (const auto& rel: el)
   {
@@ -349,10 +349,12 @@ int main(int argc, char *argv[])
             fns=vm["input-file"].as<StringList>();
         std::vector<ResultSetPtr> results;
 
-        std::string analysisName;
+        std::unique_ptr<ParameterSet> deflPtr;
         if (vm.count("analysis"))
         {
-          analysisName=vm["analysis"].as<std::string>();
+          deflPtr =
+                Analysis::defaultParameters()(
+                    vm["analysis"].as<std::string>() );
         }
 
 
@@ -365,7 +367,10 @@ int main(int argc, char *argv[])
                               "input file "+inpath.string()+" does not exist!" );
 
           cout<<"Reading results file "<<inpath<<"..."<<flush;
-          auto result=ResultSet::createFromFile(boost::filesystem::path(fn), analysisName);
+          auto result=ResultSet::createFromFile(
+              boost::filesystem::path(fn),
+              std::move(deflPtr) );
+
           results.push_back( result );
           cout<<"done."<<endl;
 
@@ -479,8 +484,8 @@ int main(int argc, char *argv[])
             {
                 title=vm["title"].as<std::string>();
             }
-            auto r = std::make_shared<ResultSet>(*ParameterSet::create(), title, "");
-            Ordering o;
+            auto r = std::make_shared<ResultSet>(nullptr, title, "");
+            hierarchicalData::Ordering o;
 
             auto i=cargs.begin();
             i+=1;
@@ -500,7 +505,10 @@ int main(int argc, char *argv[])
                 auto path = ccargs[1];
 
                 auto& rr = results[idx]->get<ResultElement>(path);
-                r->insert( ccargs[2], rr.clone() ).setOrder(o.next());
+                r->insert(
+                     ccargs[2],
+                     rr.cloneAs<ResultElement>()
+                     ).setOrder(o.next());
             }
 
             r->saveAs(cargs[0]);

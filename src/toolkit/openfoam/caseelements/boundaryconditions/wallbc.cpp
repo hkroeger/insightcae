@@ -59,7 +59,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
                 BC["origin"]=OFDictData::vector3(p().CofR);
                 double om=norm(p().wallVelocity, 2);
                 BC["axis"]=OFDictData::vector3(p().wallVelocity/om);
-                BC["omega"]=boost::lexical_cast<std::string>(om);
+                BC["omega"]=toString(om);
             }
             else
             {
@@ -107,7 +107,6 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
             if (!handled)
             {
-                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
                 BC["type"]=OFDictData::data("zeroGradient");
             }
         }

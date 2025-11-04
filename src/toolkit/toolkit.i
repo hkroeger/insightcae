@@ -5,6 +5,7 @@
 #include "base/boost_include.h"
 #include "boost/filesystem/path.hpp"
 #include "base/factory.h"
+#include "base/hierarchicalelement.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
 #include "base/supplementedinputdata.h"
@@ -157,6 +158,7 @@
 #include "base/exception.h"
 
 using namespace insight;
+using namespace insight::hierarchicalData;
 using namespace insight::bmd;
 using namespace insight::multiphaseBC;
 using namespace insight::createPatchOps;
@@ -196,6 +198,7 @@ using namespace insight::createPatchOps;
 // %feature("director") Analysis;
 %include "base/boost_include.h"
 %include "base/factory.h"
+%include "base/hierarchicalelement.h"
 %include "base/parameter.h"
 %include "base/parameterset.h"
 

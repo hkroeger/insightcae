@@ -20,15 +20,15 @@ msgid "Error: input file does not exist"
 msgstr ""
 
 #, c-format
+msgid "relative path given (%s) but no parent parameter container set!"
+msgstr ""
+
+#, c-format
 msgid ""
 "No xml node found with type '%s' and name '%s', default value '%s' is used."
 msgstr ""
 "Kein xml-Node vom Typ '%s' mit Namen '%s' gefunden, Default-Wert '%s' wird "
 "benutzt."
-
-#, c-format
-msgid "relative path given (%s) but no parent parameter container set!"
-msgstr ""
 
 #, c-format
 msgid ""

@@ -2,8 +2,10 @@
 #define INSIGHT_FILECONTAINER_H
 
 #include <ostream>
-#include "base/boost_include.h"
+#include "base/filestorageinfo.h"
+#include "base/exception.h"
 #include <openssl/md5.h>
+#include <string>
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -39,62 +41,112 @@ bool operator<(const timespec& lhs, const timespec& rhs);
 bool operator==(const timespec& lhs, const timespec& rhs);
 std::ostream& operator<<(std::ostream& os, const timespec& ts);
 
+
+
+
+class UnsetBaseDirectory
+    : public Exception
+{
+public:
+    UnsetBaseDirectory(const std::string& msg);
+};
+
+
+
 /**
  * @brief The FileContainer class
  * stores a file path and optionally its content.
  */
 class FileContainer
 {
-  friend class PathParameter;
+    /**
+   * @brief originalFileName_
+   * the path to the file
+   * a relative path or an absolute path.
+   * Relative paths are resolved with the baseDirectory,
+   * which might change later.
+   */
+  boost::filesystem::path fileName_;
 
-protected:
+
   /**
-     * @brief value_
-     * original file name
-     */
-  boost::filesystem::path originalFilePath_;
+   * @brief baseDirectory_
+   * for relative paths: base directory for resolution
+   */
+  boost::optional<boost::filesystem::path> baseDirectory_;
+
 
   /**
    * @brief file_content_
    * Store content of file, if packed.
    * Contains plain file content, not encoded.
    */
-  std::shared_ptr<std::string> file_content_;
-  timespec fileContentTimestamp_;
-//  MD5HashPtr fileContentHash_;
+    std::shared_ptr<std::string> file_content_;
+    timespec fileContentTimestamp_;
+    //  MD5HashPtr fileContentHash_;
 
-  mutable std::unique_ptr<std::istream> file_content_stream_;
+    mutable std::unique_ptr<std::istream> file_content_stream_;
 
 protected:
-  /**
-   * @brief unpackFilePath
-   * creates a path below baseDirectory (if required within a unique subdirectory)
-   * @param baseDirectory
-   * @return
-   */
-  boost::filesystem::path unpackFilePath(boost::filesystem::path baseDirectory = "") const;
+    virtual void signalContentChange();
 
-  bool needsUnpack(const boost::filesystem::path& unpackPath) const;
-
-  virtual void signalContentChange();
+    inline const boost::optional<boost::filesystem::path> baseDirectory() const
+    {
+        return baseDirectory_;
+    }
 
 public:
   FileContainer();
 
+    /**
+   * @brief FileContainer
+   * copy contents from other
+   * @param other
+   */
   FileContainer(
       const FileContainer& other );
 
+  /**
+   * @brief FileContainer
+   * create from local file
+   * The contents will only be read in later,
+   * if packing is requested.
+   * @param fileName
+   */
   FileContainer(
-      const boost::filesystem::path& originalFileName,
-      std::shared_ptr<std::string> binary_content = std::shared_ptr<std::string>() );
+      const boost::filesystem::path& fileName );
 
+  /**
+   * @brief FileContainer
+   * copy contents from temporary file and use with given name
+   * @param originalFileName
+   * @param tf
+   */
   FileContainer(
-      const boost::filesystem::path& originalFileName,
-      const TemporaryFile& tf );
+      const TemporaryFile& tf,
+      const boost::filesystem::path& fileName );
 
+  /**
+   * @brief FileContainer
+   * create from given buffer
+   * @param binaryFileContent
+   * @param size
+   * @param fileName
+   */
   FileContainer(
       const char *binaryFileContent, size_t size,
-      const boost::filesystem::path& originalFileName );
+      const boost::filesystem::path& fileName );
+
+  /**
+   * @brief FileContainer
+   * create from content
+   * @param content
+   * @param fileName
+   */
+  FileContainer(
+      std::shared_ptr<std::string> content,
+      const boost::filesystem::path& fileName );
+
 
   virtual ~FileContainer();
 
@@ -103,57 +155,20 @@ public:
   bool isValid() const;
 
   /**
-   * @brief filePath
-   * Get the path of the file.
-   * It will be created, if it does not exist on the filesystem yet
-   * but its content is available in memory.
-   * @param baseDirectory
-   * The working directory. If the file is only in memory,
-   * it will be created in a temporary directory under this path.
-   * @return
-   */
-//  boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
-
-  /**
-   * @brief originalFilePath
-   * The path of the originally referenced file.
-   * Since the file might have been packed into the parameter set,
-   * this file must not necessarily be present under the specified path.
-   * @return
-   */
-  const boost::filesystem::path& originalFilePath() const;
-
-  /**
    * @brief fileName
    * @return returns the file name component only
    */
-  boost::filesystem::path fileName() const;
+  const boost::filesystem::path& fileName() const;
 
-  void setOriginalFilePath(const boost::filesystem::path& value);
+  void setFileName(const boost::filesystem::path& fn);
 
 
   std::istream& stream() const;
   const char* binaryFileContent() const;
 
+  void resolveRelativePath(const boost::filesystem::path& baseDirectory);
 
-//  /**
-//   * @brief isPacked
-//   * check, if contains file contents
-//   * @return
-//   */
-//  bool isPacked() const;
-
-//  /**
-//   * @brief pack
-//   * pack the external file. Replace stored content, if present.
-//   */
-//  void pack();
-
-//  /**
-//   * @brief unpack
-//   * restore file contents on disk, if file is not there
-//   */
-//  void unpack(const boost::filesystem::path& basePath);
+  boost::filesystem::path localFilePath() const;
 
   /**
    * @brief copyTo
@@ -181,20 +196,19 @@ public:
   void appendToNode (
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath,
       const std::string& fileNameAttribName = "value",
       const std::string& contentAttribName = "content" ) const;
 
   void readFromNode (
       const rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath,
       const std::string& fileNameAttribName = "value",
       const std::string& contentAttribName = "content" );
 
   const timespec& contentModificationTime() const;
 
-};
+  bool operator==(const FileContainer&) const;
 
+};
 
 
 

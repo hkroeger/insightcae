@@ -1028,9 +1028,6 @@ arma::mat readTextFile(std::istream& f)
 
 arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers)
 {
-//   boost::filesystem::path file=filetemplate.parent_path() 
-//     / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
-
   cout << "Reading "<<file<<endl;
     
   std::ifstream f(file.c_str());
@@ -1079,17 +1076,7 @@ bool equal_columns(const ColumnDescription& c1, const ColumnDescription& c2)
 }
 
 std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetemplate, ColumnDescription* headers)
-{
-//   if (num<0)
-//     throw insight::Exception("readParaviewCSV: Reading and combining all files is not yet supported!");
-//   
-//   boost::filesystem::path file=filetemplate.parent_path() 
-//     / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
-// 
-  
-//   ColumnDescription header;
-//   std::vector<arma::mat> result;
-  
+{  
   typedef std::map<std::string, std::vector< arma::mat> > AllData;
   AllData alldata;
   
@@ -1497,7 +1484,7 @@ arma::mat viscousForceProfile
   opts.push_back("(viscousForce viscousForceMean)");
   opts.push_back("-walls");
   opts.push_back("-n");
-  opts.push_back(lexical_cast<string>(n));
+  opts.push_back(toString(n));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
@@ -1874,7 +1861,7 @@ arma::mat interiorPressureFluctuationProfile
   opts.push_back("(pPrime2Mean)");
   opts.push_back("-interior");
   opts.push_back("-n");
-  opts.push_back(lexical_cast<string>(n));
+  opts.push_back(toString(n));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   std::vector<std::string> output;
   cm.executeCommand(location, "binningProfile", opts, &output);
@@ -2056,7 +2043,7 @@ arma::mat surfaceProjectLine
   opts.push_back(surfaceFile.string());
   opts.push_back(OFDictData::toString(OFDictData::vector3(start)));
   opts.push_back(OFDictData::toString(OFDictData::vector3(end)));
-  opts.push_back(lexical_cast<std::string>(npts));
+  opts.push_back(toString(npts));
   opts.push_back(OFDictData::toString(OFDictData::vector3(projdir)));
 //   copy(addopts.begin(), addopts.end(), back_inserter(opts));
 
@@ -2187,7 +2174,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     .set_name(p().profile_name)
   ));
 
-  auto casepath = p().casepath->filePath(executionPath());
+  auto casepath = p().casepath->localFilePath();
 
   sample(
       cm, casepath,
@@ -2200,7 +2187,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     -> readSamples(cm, casepath, &cd);
 
   auto results = createResultSet();
-  Ordering so;
+  hierarchicalData::Ordering so;
   
   for (const std::string& fieldname: p().fields)
   {

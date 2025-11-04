@@ -1131,6 +1131,39 @@ bool is_only_a(const std::string& str)
 }
 
 
+template<>
+std::string toString(const arma::mat&value)
+{
+    std::string s;
+    for (arma::uword i=0; i<value.n_elem; i++)
+    {
+        if (i>0) s+=" ";
+        s += toString<double>(value(i));
+    }
+    return s;
+}
+
+template<>
+std::string toString(const std::string& s)
+{
+    return s;
+}
+
+template<>
+std::string toString(const boost::gregorian::date &date)
+{
+    return boost::gregorian::to_simple_string(date);
+}
+
+template<>
+std::string toString(const boost::posix_time::ptime &datetime)
+{
+    return boost::posix_time::to_simple_string(datetime);
+}
+
+
+
+
 bool isNumber(const string &s)
 {
     return
@@ -1147,6 +1180,51 @@ bool isNumber(const string &s)
   //   return false;
   //   }
 }
+
+
+
+
+template<>
+arma::mat toValue(const std::string& s)
+{
+    CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "converting string \""+s+"\" into vector", false);
+
+    std::vector<std::string> cmpts;
+    auto st = boost::trim_copy(s);
+    boost::split(
+        cmpts,
+        st,
+        boost::is_any_of(" \t\n,;"),
+        token_compress_on
+        );
+    std::vector<double> vals;
+    for (size_t i=0; i<cmpts.size(); i++)
+    {
+        vals.push_back( toNumber<double>(cmpts[i]) );
+    }
+
+    return arma::mat(vals.data(), vals.size(), 1);
+}
+
+template<>
+std::string toValue(const std::string& s)
+{
+    return s;
+}
+
+template<>
+boost::gregorian::date toValue(const std::string& s)
+{
+    return boost::gregorian::from_simple_string(s);
+}
+
+
+template<>
+boost::posix_time::ptime toValue(const std::string& s)
+{
+    return boost::posix_time::time_from_string(s);
+}
+
 
 
 

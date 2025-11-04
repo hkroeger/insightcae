@@ -21,6 +21,7 @@
 #include "parameterstudy.h"
 
 
+#include "base/cppextensions.h"
 #include "base/resultset.h"
 #include "boost/filesystem/operations.hpp"
 #include "parameterstudy.h"
@@ -31,6 +32,7 @@
 #include "boost/ptr_container/ptr_deque.hpp"
 #include "boost/thread.hpp"
 #include "boost/assign/ptr_map_inserter.hpp"
+#include <iterator>
 
 
 
@@ -133,7 +135,7 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
 {
     std::ostringstream n; n<<"subcase";
 
-    auto newp = templ.cloneParameterSet();
+    auto newp = templ.cloneAs<ParameterSet>();
     for (int j=0; j<var_params.size(); j++)
     {
       // Replace RangeParameter by actual single value
@@ -149,7 +151,8 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
 
     //append instance
     auto emptyresset = std::make_shared<ResultSet>(
-        *newp, BaseAnalysis::description().name,
+        newp->cloneAs<ParameterSet>(),
+        BaseAnalysis::description().name,
         "Computation instance "+n.str() );
 
     modifyInstanceParameters(n.str(), *newp);
@@ -261,14 +264,16 @@ ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
     tab.push_back( row );    
   }
   
-  std::vector<std::string> heads;
+  TabularResult::Headings heads;
   if (headers) 
   {
-    heads=*headers;
+      std::copy(headers->begin(), headers->end(),
+                std::back_inserter(heads));
   }
   else
   {
-    heads=res;
+      std::copy(res.begin(), res.end(),
+                std::back_inserter(heads));
     heads.insert(heads.begin(), varp);
   }
   
@@ -363,12 +368,15 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
           ai_sort_pred()
       );
 
-  Ordering o(1000);
+  hierarchicalData::Ordering o(1000);
   for( const AnalysisInstance& ai:  processed_analyses)
   {
       if (!ai.exception)
       {
-          results->insert( ai.name, ai.results->clone() ).setOrder(o.next());
+          results->insert(
+                     ai.name,
+                     ai.results->cloneAs<ResultElement>()
+                     ).setOrder(o.next());
       }
       else
       {

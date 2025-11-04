@@ -169,7 +169,7 @@ void BoundaryCondition::insertIntoBoundaryDict
   bl.insert( j+1, bndsubd );
 
   OFDictData::dict::iterator oe=boundaryDict.begin();
-  std::swap( boundaryDict[boost::lexical_cast<std::string>(bl.size()/2)], oe->second );
+  std::swap( boundaryDict[toString(bl.size()/2)], oe->second );
   boundaryDict.erase(oe);
 }
 

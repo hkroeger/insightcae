@@ -537,15 +537,6 @@ arma::mat rotated(
 
 
 
-std::string toStr(const arma::mat& v3)
-{
-  std::string s="";
-  for (arma::uword i=0; i<3; i++)
-    s+=" "+lexical_cast<std::string>(v3(i));
-  return s+" ";
-}
-
-
 
 
 arma::mat linearRegression(const arma::mat& y, const arma::mat& x)
@@ -1196,7 +1187,11 @@ arma::mat nonlinearSolveND(
 }
 
 
-arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
+arma::mat movingAverage(
+    const arma::mat& timeProfs,
+    double fraction,
+    bool first_col_is_time,
+    bool centerwindow)
 {
   std::ostringstream msg;
   msg<<"Computing moving average for "
@@ -1209,8 +1204,10 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
     throw insight::Exception("Internal error: moving average without time column is currently unsupported!");
 
   if (timeProfs.n_cols<2)
-    throw insight::Exception("movingAverage: only dataset with "
-      +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
+    throw insight::Exception(
+          "movingAverage: only dataset with %d columns given."
+          " There is no data to average.",
+          timeProfs.n_cols);
 
   const arma::uword n_raw_max=10000;
   const arma::uword n_avg_max=1000;
@@ -1628,6 +1625,12 @@ bool operator!=(const arma::mat &m1, const arma::mat &m2)
 
   return false;
 }
+
+bool operator==(const arma::mat &m1, const arma::mat &m2)
+{
+    return !(m1!=m2);
+}
+
 
 arma::mat vec3Zero()
 {

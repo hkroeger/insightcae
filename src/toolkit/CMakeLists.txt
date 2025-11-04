@@ -90,6 +90,7 @@ set(toolkit_SOURCES
     base/taskspoolerinterface.cpp base/taskspoolerinterface.h
     base/mountremote.cpp base/mountremote.h
     base/outputanalyzer.cpp base/outputanalyzer.h
+    base/filestorageinfo.h base/filestorageinfo.cpp
     base/filecontainer.cpp base/filecontainer.h
     base/streamredirector.h base/streamredirector.cpp
     base/streamtoprogressdisplayer.h base/streamtoprogressdisplayer.cpp

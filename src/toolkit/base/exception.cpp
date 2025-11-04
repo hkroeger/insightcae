@@ -713,5 +713,11 @@ UnhandledSelection::UnhandledSelection(const std::string &contextMsg)
 {}
 
 
+ElementNotFoundException::ElementNotFoundException(
+    const std::string &msg)
+    : Exception(msg)
+{}
+
+
 
 }

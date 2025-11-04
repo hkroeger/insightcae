@@ -96,7 +96,7 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& /
   if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
   {
     BC["type"]= OFDictData::data("FEMDisplacement");
-    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p().FEMScratchDir->originalFilePath().string()+"\"");
+    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p().FEMScratchDir->localFilePath().string()+"\"");
     BC["pressureScale"]=  OFDictData::data(p().pressureScale);
     BC["minPressure"]=  OFDictData::data(p().clipPressure);
     BC["nSmoothIter"]=  OFDictData::data(4);

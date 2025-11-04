@@ -262,7 +262,6 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
         {
           BC["type"]=OFDictData::data("zeroGradient");
         }
-        //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }
 }

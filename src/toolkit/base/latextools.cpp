@@ -571,7 +571,9 @@ SimpleLatex::SimpleLatex(const std::string &slt)
     : simpleLatex_code_(slt)
 {}
 
-
+SimpleLatex::SimpleLatex(const char * simpleLatex)
+    : simpleLatex_code_(simpleLatex)
+{}
 
 const std::string& SimpleLatex::simpleLatex() const
 {

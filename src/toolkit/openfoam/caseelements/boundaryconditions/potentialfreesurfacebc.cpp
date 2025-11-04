@@ -90,7 +90,6 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
 /*	  ||
           p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
           ))
-        //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
         {
           BC["type"]=OFDictData::data("zeroGradient");
         }

@@ -22,7 +22,7 @@ int main(int /*argc*/, char*/*argv*/[])
   boost::filesystem::path fp, fp2;
 
   {
-    FileContainer fc( boost::filesystem::path("x")/"y"/"test.txt", std::make_shared<std::string>(content1+"\n") );
+    FileContainer fc( std::make_shared<std::string>(content1+"\n"), boost::filesystem::path("x")/"y"/"test.txt" );
     PathParameter pp( fc, "test file" );
 
     fp=pp.filePath();

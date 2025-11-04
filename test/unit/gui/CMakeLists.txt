@@ -8,6 +8,17 @@ if (INSIGHT_BUILD_CAD)
 
     find_package(Qt5Test CONFIG REQUIRED)
 
+    add_executable(IQHierarchicalDataModel iqhierarchicaldatamodeltest.cpp)
+    target_link_libraries(IQHierarchicalDataModel
+    toolkit_gui genericmodules
+    Qt5::Test
+    )
+    add_dependencies(IQHierarchicalDataModel testexe_pdl)
+    target_include_directories(IQHierarchicalDataModel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../toolkit)
+    target_include_directories(IQHierarchicalDataModel PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../toolkit)
+    linkToolkitVtk(IQHierarchicalDataModel Offscreen)
+    add_test(NAME gui_IQHierarchicalDataModel COMMAND IQHierarchicalDataModel)
+
     add_executable(IQParameterSetModel IQParameterSetModel.cpp)
     target_link_libraries(IQParameterSetModel
     toolkit_gui genericmodules

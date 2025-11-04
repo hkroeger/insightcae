@@ -22,6 +22,10 @@ add_toolkit_test(toolkit_parameterset)
 add_dependencies(testexe_toolkit_parameterset testexe_pdl)
 target_link_libraries(testexe_toolkit_parameterset insightcad) # for cadsketchparameter
 
+add_toolkit_test(toolkit_resultset)
+add_dependencies(testexe_toolkit_resultset testexe_pdl)
+target_link_libraries(testexe_toolkit_resultset insightcad) # for cadsketchparameter
+
 add_toolkit_test(toolkit_simplelatex)
 add_toolkit_test(toolkit_meminfo)
 add_toolkit_test(toolkit_execution)

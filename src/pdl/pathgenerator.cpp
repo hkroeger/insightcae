@@ -54,7 +54,7 @@ void PathGenerator::cppWriteSetStatement
     const std::string& staticname
 ) const
 {
-    os<<varname<<" = *"<<staticname<<";"<<std::endl;
+    os<<varname<<".assignFrom(*"<<staticname<<");"<<std::endl;
 }
 
 /**

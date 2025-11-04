@@ -31,13 +31,13 @@ template<> defineType(DateTimeParameter);
 
 
 
-addToFactoryTable(Parameter, DoubleParameter);
-addToFactoryTable(Parameter, IntParameter);
-addToFactoryTable(Parameter, BoolParameter);
-addToFactoryTable(Parameter, VectorParameter);
-addToFactoryTable(Parameter, StringParameter);
-addToFactoryTable(Parameter, DateParameter);
-addToFactoryTable(Parameter, DateTimeParameter);
+addParameterFactories(DoubleParameter);
+addParameterFactories(IntParameter);
+addParameterFactories(BoolParameter);
+addParameterFactories(VectorParameter);
+addParameterFactories(StringParameter);
+addParameterFactories(DateParameter);
+addParameterFactories(DateTimeParameter);
 
 
 }

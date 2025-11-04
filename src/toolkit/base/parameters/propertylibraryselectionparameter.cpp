@@ -8,6 +8,7 @@ namespace insight {
 
 
 defineType ( PropertyLibrarySelectionParameter );
+addParameterFactories(PropertyLibrarySelectionParameter);
 
 
 
@@ -128,21 +129,29 @@ std::string PropertyLibrarySelectionParameter::iconPathForKey(const std::string 
 
 
 
-void PropertyLibrarySelectionParameter::readFromNode(
+const rapidxml::xml_node<>*
+PropertyLibrarySelectionParameter::readFromNode(
     const std::string &name,
-    const rapidxml::xml_node<> &node,
-    boost::filesystem::path p )
+    const rapidxml::xml_node<> &node )
 {
-    StringParameter::readFromNode(name, node, p);
+    auto *child=StringParameter::readFromNode(name, node);
+
     insight::assertion(
         contains(value_),
         "invalid selection %s read from input data", value_.c_str() );
+
+    return child;
 }
 
 
+PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
+    const rapidxml::xml_node<> &node)
+    : StringParameter(node)
+{}
 
 
-std::unique_ptr<Parameter> PropertyLibrarySelectionParameter::clone(bool init) const
+
+std::unique_ptr<hierarchicalData::Element> PropertyLibrarySelectionParameter::clone() const
 {
     std::unique_ptr<Parameter> p;
     if (propertyLibrary_)
@@ -163,26 +172,21 @@ std::unique_ptr<Parameter> PropertyLibrarySelectionParameter::clone(bool init) c
             order()
             );
     }
-    if (init) p->initialize();
     return p;
 }
 
 
 
 
-void PropertyLibrarySelectionParameter::copyFrom(const Parameter& p)
+
+
+void PropertyLibrarySelectionParameter::assignFrom(const Element& e)
 {
-    operator=(dynamic_cast<const PropertyLibrarySelectionParameter&>(p));
-}
+    auto& op=dynamic_cast<const PropertyLibrarySelectionParameter&>(e);
 
-
-
-
-void PropertyLibrarySelectionParameter::operator=(const PropertyLibrarySelectionParameter& op)
-{
     propertyLibrary_ = op.propertyLibrary_;
 
-    StringParameter::copyFrom(op);
+    StringParameter::assignFrom(op);
 }
 
 

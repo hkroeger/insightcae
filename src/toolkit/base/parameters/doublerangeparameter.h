@@ -30,18 +30,6 @@ namespace insight
 {
 
 
-template<class Container>
-std::string toStringList(const Container& vals, const std::string& fmt, const std::string& sep = "; " )
-{
-    std::vector<std::string> strVals;
-    std::transform(
-                vals.begin(), vals.end(),
-                std::back_inserter(strVals),
-                [&fmt](const typename Container::value_type& v) { return str(boost::format(fmt)%v); }
-    );
-    return boost::join(strVals, sep);
-}
-
 
 
 class DoubleRangeParameter
@@ -58,6 +46,7 @@ public:
 
     declareType ( "doubleRange" );
 
+    DoubleRangeParameter (const rapidxml::xml_node<> & node);
     DoubleRangeParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     DoubleRangeParameter ( const RangeList& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     DoubleRangeParameter ( double defaultFrom, double defaultTo, int defaultNum, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
@@ -86,8 +75,12 @@ public:
 
     void clear();
 
-    std::string latexRepresentation() const override;
-    std::string plainTextRepresentation(int indent=0) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    std::string plainTextRepresentation(int indent) const override;
 
     std::unique_ptr<DoubleParameter> toDoubleParameter ( RangeList::const_iterator i ) const;
 
@@ -95,17 +88,16 @@ public:
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) const override;
+        rapidxml::xml_node<>& node ) const override;
 
-    void readFromNode (
+    const rapidxml::xml_node<>* readFromNode (
         const std::string& name,
-        const rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) override;
+        const rapidxml::xml_node<>& node ) override;
 
-    std::unique_ptr<Parameter> clone(bool initialize) const override;
-    void copyFrom(const Parameter& p) override;
-    void operator=(const DoubleRangeParameter& p);
+    std::unique_ptr<Element> clone() const override;
+    void assignFrom(const Element& p) override;
+    bool isEqual(const Element& op) const override;
+
     int nChildren() const override;
 };
 

@@ -46,7 +46,6 @@ protected:
 public:
     declareType ( N );
 
-
     SimpleParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
         : Parameter ( description, isHidden, isExpert, isNecessary, order )
     {}
@@ -88,25 +87,44 @@ public:
     }
 
 
-    std::string latexRepresentation() const override
+    std::string latexRepresentation(
+        const std::string&,
+        int,
+        const FileStorageInfo& ) const override
     {
-        return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
+        return SimpleLatex( toString ( value_ ) ).toLaTeX();
+    }
+
+    bool canSetDataFromString() const override
+    {
+        return true;
+    }
+
+    void setDataFromString(const std::string& newValue, bool* ok = nullptr) override
+    {
+        try
+        {
+            set(toValue<T>(newValue));
+            if (ok) *ok=true;
+        }
+        catch (...)
+        {
+            if (ok) *ok=false;
+        }
+    }
+
+    std::string plainTextRepresentation(int /*indent*/) const override
+    {
+        return SimpleLatex( toString ( value_ ) ).toPlainText();
     }
 
 
-    std::string plainTextRepresentation(int /*indent*/=0) const override
-    {
-        return SimpleLatex( valueToString ( value_ ) ).toPlainText();
-    }
-
-
-    std::unique_ptr<Parameter> clone(bool init) const override
+    std::unique_ptr<Element> clone() const override
     {
         auto p= std::make_unique<SimpleParameter<T, N> >(
             value_,
             description().simpleLatex(),
             isHidden(), isExpert(), isNecessary(), order() );
-        if (init) p->initialize();
         return p;
     }
 
@@ -114,39 +132,29 @@ public:
     rapidxml::xml_node<>* appendToNode (
             const std::string& name,
             rapidxml::xml_document<>& doc,
-            rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override
+            rapidxml::xml_node<>& node) const override
     {
-        insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending simple parameter "+name+" to node "+node.name());
+        insight::CurrentExceptionContext ex(
+            insight::VerbosityLevel::Loops,
+            "appending simple parameter %s to node %s", name.c_str(), node.name());
 
         using namespace rapidxml;
-        xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
-        child->append_attribute
-        (
-            doc.allocate_attribute
-            (
-                "value",
-                doc.allocate_string ( valueToString ( value_ ).c_str() )
-            )
-        );
+        xml_node<>* child = Parameter::appendToNode ( name, doc, node );
+        appendAttribute(doc, *child, "value", value_ );
         return child;
     }
 
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
     (
-        const std::string& name,
-        const rapidxml::xml_node<>& node,
-        boost::filesystem::path
+        const std::string &name,
+        const rapidxml::xml_node<> &node
     ) override
     {
-        using namespace rapidxml;
-        auto *child = findNode ( node, name, type() );
+        auto *child = Parameter::readFromNode( name, node );
         if ( child )
         {
-          auto valueattr=child->first_attribute ( "value" );
-          insight::assertion(valueattr, "No value attribute present in "+name+"!");
-          stringToValue ( valueattr->value(), value_ );
+          value_=getMandatoryAttribute<T>(*child, "value");
           triggerValueChanged();
         }
         else
@@ -155,26 +163,40 @@ public:
                 boost::str(
                   boost::format(
                    "No xml node found with type '%s' and name '%s', default value '%s' is used."
-                   ) % type() % name % plainTextRepresentation()
+                   ) % type() % name % plainTextRepresentation(0)
                  )
               );
         }
+        return child;
     }
 
 
-    void copyFrom(const Parameter& p) override
+    SimpleParameter(const rapidxml::xml_node<> & node, bool skipValueRead=false)
+        : Parameter(node)
     {
-        operator=(dynamic_cast<const SimpleParameter<T,N>&>(p));
+        if (!skipValueRead)
+            value_=getMandatoryAttribute<T>(node, "value");
     }
 
 
-    void operator=(const SimpleParameter& op)
+    void assignFrom(const Element& e)
     {
+        auto& op = dynamic_cast<const SimpleParameter&>(e);
+
         value_=op.value_;
 
-        Parameter::copyFrom(op);
+        Parameter::assignFrom(op);
     }
 
+    bool isEqual(const Element &op) const override
+    {
+        if (auto *oa = dynamic_cast<const SimpleParameter*>(&op))
+        {
+            return value_==oa->value_;
+        }
+        else
+            return false;
+    }
 
     int nChildren() const override
     {

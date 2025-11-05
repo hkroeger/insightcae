@@ -16,5 +16,9 @@ set(LIBS
     uniof
 )
 
-setup_exe_target_OF(setProfile "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
+set(IS_OF_LIBS
+ fieldDataProvider
+)
+
+setup_exe_target_OF(setProfile "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "${IS_OF_LIBS}")
 linkToolkit_OF_Exe( setProfile )

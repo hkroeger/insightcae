@@ -29,71 +29,52 @@
 
 #include "uniof.h"
 
+#include "fielddataprovider.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
 
 using namespace Foam;
 
+
+
 template<class T>
-void setProfileLinear
+void setProfile
 (
     GeometricField<T, fvPatchField, volMesh>& field,
-    point p0, 
-    vector ey,
-    vector ex,
-    Istream& ascii_data
+    double t,
+    const string& source
 )
 {
-    List<Tuple2<scalar, T> > data(ascii_data);
-    interpolationTable<T> ip(data,
-                         #if (OF_VERSION>=060000) //defined(OFesi1806)
-                             bounds::repeatableBounding::CLAMP
-                         #else
-                             interpolationTable<T>::CLAMP
-                         #endif
-                             , "no_filename");
-    
-    vector ez=ex^ey;
-    ez/=mag(ez);
-    
-    tensor TT(ex, ey, ez);
-    
-    const fvMesh& mesh=field.mesh();
-    forAll(field, i)
-    {
-        point p=mesh.C()[i];
-        scalar x = ((p-p0)&ey);
-        
-        T y = ip(x);
-        
-        field[i]=transform(TT, y);
-    }
+    auto fdp = FieldDataProvider<T>::New(
+        IStringStream(source)());
+
+    UNIOF_INTERNALFIELD_NONCONST(field)
+        = fdp()(t, field.mesh().C());
 }
+
+
 
 int main(int argc, char *argv[])
 {
     argList::validArgs.append("fieldname");    
-    argList::validArgs.append("p0");
-    argList::validArgs.append("profileDir_y");
-    argList::validArgs.append("axialDir_x");
-    argList::validArgs.append("data");
-    argList::validOptions.insert("cylindrical", "");
+    argList::validArgs.append("sourceExpression");
+    argList::validOptions.insert("t", "time");
 
 #   include "setRootCase.H"
 #   include "createTime.H"
 #   include "createMesh.H"
 
     word fieldname( UNIOF_ADDARG(args, 0) );
-    
-    point p0(IStringStream( UNIOF_ADDARG(args, 1))());
-    
-    vector ey(IStringStream( UNIOF_ADDARG(args, 2) )());
-    
-    ey/=mag(ey);
-    
-    vector ex(IStringStream( UNIOF_ADDARG(args, 3) )());
-    
-    ex/=mag(ex);
-    
+    string source( UNIOF_ADDARG(args, 1) );
+
+    double t=runTime.value();
+    if (UNIOF_OPTIONFOUND(args, "t"))
+    {
+        t=args.optionRead<scalar>("t");
+    }
+        
     IOobject header
 	(
 	    fieldname,
@@ -107,14 +88,14 @@ int main(int argc, char *argv[])
     if (UNIOF_HEADEROK(header, volScalarField))
     {
         volScalarField field(header, mesh);
-        setProfileLinear<scalar>(field, p0, ey, ex, IStringStream( UNIOF_ADDARG(args, 4) )());
+        setProfile<Foam::scalar>(field, t, source);
         field.write();
     }
     else 
     if (UNIOF_HEADEROK(header, volVectorField))
     {
         volVectorField field(header, mesh);
-        setProfileLinear<vector>(field, p0, ey, ex, IStringStream( UNIOF_ADDARG(args, 4) )());
+        setProfile<Foam::vector>(field, t, source);
         field.write();
     }
     else

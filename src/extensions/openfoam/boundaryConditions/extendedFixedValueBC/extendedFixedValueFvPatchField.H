@@ -24,7 +24,7 @@
 #include "Random.H"
 #include "fixedValueFvPatchFields.H"
 
-#include "fielddataprovider.h"
+#include "fielddataproviders.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

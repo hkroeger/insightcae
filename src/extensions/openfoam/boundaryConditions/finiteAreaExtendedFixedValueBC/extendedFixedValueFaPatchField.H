@@ -24,7 +24,7 @@
 #include "faPatchFields.H"
 #include "fixedValueFaPatchFields.H"
 
-#include "fielddataprovider.h"
+#include "fielddataproviders.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

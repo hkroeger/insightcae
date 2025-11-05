@@ -23,6 +23,7 @@
 #include "boost/algorithm/string.hpp"
 #include "boost/format.hpp"
 #include "base/tools.h"
+#include "base/casedirectory.h"
 
 #include "datum.h"
 #include "featureset.h"
@@ -147,41 +148,46 @@ void Sketch::build()
         boost::algorithm::to_lower(ext);
         //   cout<<ext<<endl;
 
+        Handle_TopTools_HSequenceOfShape ws;
+
         if (ext==".fcstd")
         {
+            // don't use /tmp as FreeCAD might be in a snap
+            // and from within a snap, the hosts /tmp is inaccessible
+            CaseDirectory tmpdir(false);
+
             filename =
-                boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+                boost::filesystem::unique_path( tmpdir / "%%%%-%%%%-%%%%-%%%%.dxf" );
             boost::filesystem::path macrofilename =
-                boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
+                boost::filesystem::unique_path( tmpdir / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
 #warning behaviour in freecad has changed
             //layername="0";
 
+            std::string vargs="";
+            for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
             {
-
-                std::string vargs="";
-                for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+                std::string vname=boost::fusion::at_c<0>(*it);
+                double vval=boost::fusion::at_c<1>(*it)->value();
+                if (starts_with(vname, "Constraint"))
                 {
-                    std::string vname=boost::fusion::at_c<0>(*it);
-                    double vval=boost::fusion::at_c<1>(*it)->value();
-                    if (starts_with(vname, "Constraint"))
+                    try
                     {
-                        try
-                        {
-                            int vid;
-                            vname.erase(0,10);
-                            vid=lexical_cast<int>(vname);
-                            vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
-                        }
-                        catch (...)
-                        {
-                        }
+                        int vid;
+                        vname.erase(0,10);
+                        vid=lexical_cast<int>(vname);
+                        vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
                     }
-                    else
+                    catch (...)
                     {
-                        vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
                     }
                 }
+                else
+                {
+                    vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
+                }
+            }
 
+            {
                 std::ofstream mf(macrofilename.c_str());
                 mf << str( format(
                                "import FreeCAD\n"
@@ -197,7 +203,7 @@ void Sketch::build()
                                "  obj=o\n"
                                +vargs+
                                "  break\n"
-                               //"print obj\n"
+                               "\n"
                                "__objs__.append(obj)\n"
                                "doc.recompute()\n"
                                "importDXF.export(__objs__, \"%s\")\n"
@@ -211,16 +217,20 @@ void Sketch::build()
 
             std::string cmd1 = str( format("FreeCADCmd %s") % macrofilename );
             std::string cmd2 = str( format("freecadcmd %s") % macrofilename );  // system-installed in debian..
+            std::string cmd3 = str( format("freecad --console < %s") % macrofilename );
 
             if ( ::system( cmd1.c_str() ) || !boost::filesystem::exists(filename) )
             {
                 if ( ::system( cmd2.c_str() ) || !boost::filesystem::exists(filename) )
                 {
-                    throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
+                    if ( ::system( cmd3.c_str() ) || !boost::filesystem::exists(filename) )
+                    {
+                        throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
+                    }
                 }
             }
-            boost::filesystem::remove(macrofilename);
 
+            ws = DXFReader(filename, ".*").Wires(tol_);
         }
         else if (ext==".psketch")
         {
@@ -241,11 +251,12 @@ void Sketch::build()
             {
                 throw insight::Exception("Conversion of pSketch file "+infilename.string()+" into DXF "+filename.string()+" failed!");
             }
+
+            ws = DXFReader(filename, ".*").Wires(tol_);
         }
 
 //        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
 //        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
-        auto ws = DXFReader(filename, ".*").Wires(tol_);
         if (ws->Length()==1)
         {
             providedSubshapes_["OuterWire"]=Import::create(ws->Value(1));

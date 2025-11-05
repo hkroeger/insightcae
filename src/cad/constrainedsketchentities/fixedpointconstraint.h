@@ -21,7 +21,7 @@ class FixedPointConstraint
 public:
     declareType("FixedPoint");
 
-    CREATE_FUNCTION(FixedPointConstraint);
+    CREATE_FUNCTION_W_INIT(FixedPointConstraint, ensureRequiredParameters);
 
     std::string symbolText() const override;
     arma::mat symbolLocation() const override;
@@ -45,6 +45,7 @@ public:
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
+    void ensureRequiredParameters() override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedPointConstraint& other);

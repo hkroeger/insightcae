@@ -37,12 +37,7 @@ AngleConstraint::AngleConstraint(
                 pCtr,
                 insight::cad::vec3const(1,0,0) ),
         pCtr )
-{
-    ParameterSet::Entries e;
-    e.emplace("dimLineRadius", std::make_unique<DoubleParameter>(1., "dimension line radius"));
-    e.emplace("arrowSize", std::make_unique<DoubleParameter>(1., "arrow size"));
-    changeDefaultParameters(*ParameterSet::create(std::move(e), ""));
-}
+{}
 
 
 
@@ -106,6 +101,14 @@ void AngleConstraint::replaceDependency(
         }
     }
 }
+
+void AngleConstraint::ensureRequiredParameters()
+{
+    ConstraintWithDimensionLines::ensureRequiredParameters();
+    parametersRef().getOrInsert<DoubleParameter>("dimLineRadius", 1., "dimension line radius");
+    parametersRef().getOrInsert<DoubleParameter>("arrowSize", 1., "arrow size");
+}
+
 
 double AngleConstraint::dimLineRadius() const
 {
@@ -173,16 +176,7 @@ FixedAngleConstraint::FixedAngleConstraint(
     const std::string& layerName
     )
     : AngleConstraint(p1, p2, pCtr, layerName)
-{
-    auto ps = defaultParameters().cloneAs<ParameterSet>();
-    ps->insert(
-        "angle", std::make_unique<DoubleParameter>(
-                  calculate(
-                    p1_->value(),
-                    p2_->value(),
-                    pCtr_->value() )/SI::deg, "[deg] target value"));
-    changeDefaultParameters(*ps);
-}
+{}
 
 
 
@@ -249,6 +243,19 @@ void FixedAngleConstraint::addParserRule(
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
+
+void FixedAngleConstraint::ensureRequiredParameters()
+{
+    AngleConstraint::ensureRequiredParameters();
+
+    parametersRef().getOrInsert<DoubleParameter>(
+        "angle",  calculate(
+                p1_->value(),
+                p2_->value(),
+                pCtr_->value() )/SI::deg, "[deg] target value"
+        );
+}
+
 
 
 
@@ -381,6 +388,11 @@ void LinkedAngleConstraint::addParserRule(
 
         ruleset.entityRules.add(typeName, rule);
     }
+}
+
+void LinkedAngleConstraint::ensureRequiredParameters()
+{
+    AngleConstraint::ensureRequiredParameters();
 }
 
 

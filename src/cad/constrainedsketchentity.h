@@ -93,7 +93,8 @@ public:
     const insight::ParameterSet& defaultParameters() const;
 
 
-    void changeDefaultParameters(
+    virtual void ensureRequiredParameters();
+    virtual void changeDefaultParameters(
         const insight::ParameterSet& ps);
 
     void parseParameterSet(

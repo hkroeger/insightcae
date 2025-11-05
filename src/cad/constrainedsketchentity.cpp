@@ -163,6 +163,11 @@ const insight::ParameterSet& ConstrainedSketchEntity::defaultParameters() const
 
 
 
+void ConstrainedSketchEntity::ensureRequiredParameters()
+{}
+
+
+
 void ConstrainedSketchEntity::changeDefaultParameters(
     const insight::ParameterSet& ps )
 {
@@ -172,8 +177,7 @@ void ConstrainedSketchEntity::changeDefaultParameters(
     // ParameterSet oldps=parameters_;
     parameters_->assignFrom(*defaultParameters_);
 
-#warning copy values from old; merge is not the right function
-    //parameters_.merge(oldps);
+    ensureRequiredParameters();
 }
 
 

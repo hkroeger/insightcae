@@ -44,6 +44,8 @@ public:
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
+    void ensureRequiredParameters() override;
+
     double dimLineRadius() const override;
     void setDimLineRadius(double r);
 
@@ -72,7 +74,7 @@ class FixedAngleConstraint
 public:
     declareType("AngleConstraint");
 
-    CREATE_FUNCTION(FixedAngleConstraint);
+    CREATE_FUNCTION_W_INIT(FixedAngleConstraint, ensureRequiredParameters);
 
 
     double targetValue() const override;
@@ -85,6 +87,8 @@ public:
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
         const ConstrainedSketchParametersDelegate& pd );
+
+    void ensureRequiredParameters() override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedAngleConstraint& other);
@@ -110,7 +114,7 @@ class LinkedAngleConstraint
 public:
     declareType("Angle");
 
-    CREATE_FUNCTION(LinkedAngleConstraint);
+    CREATE_FUNCTION_W_INIT(LinkedAngleConstraint, ensureRequiredParameters);
 
     double targetValue() const override;
 
@@ -121,6 +125,8 @@ public:
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
         const ConstrainedSketchParametersDelegate& pd );
+
+    void ensureRequiredParameters() override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const LinkedAngleConstraint& other);

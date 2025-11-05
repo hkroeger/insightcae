@@ -132,7 +132,8 @@ void IQArrayElementParameter<IQBaseParameter, N>::deleteFromArray()
 
 
 template<class IQBaseParameter, const char *N>
-void IQArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
+void IQArrayElementParameter<IQBaseParameter, N>
+    ::populateContextMenu(QMenu *cm, IQCADModel3DViewer *)
 {
   auto *removeAction = new QAction("Remove this array element");
   cm->addAction(removeAction);

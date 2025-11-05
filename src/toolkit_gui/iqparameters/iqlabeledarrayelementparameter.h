@@ -64,7 +64,7 @@ public:
         return dynamic_cast<IQLabeledArrayParameter*>(this->parentElement());
     }
 
-    virtual void populateContextMenu(QMenu* m);
+    virtual void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer);
 };
 
 

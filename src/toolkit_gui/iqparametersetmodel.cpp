@@ -336,14 +336,18 @@ void IQParameterSetModel::paste(const QModelIndexList &indexes)
 
 
 
-void IQParameterSetModel::contextMenu(QWidget *pw, const QModelIndex& index, const QPoint &p)
+void IQParameterSetModel::contextMenu(
+    QWidget *pw,
+    const QModelIndex& index,
+    const QPoint &p,
+    IQCADModel3DViewer *viewer )
 {
   if (index.isValid())
   {
     if (auto* iqp=parameterFromIndex(index))
     {
       QMenu ctxMenu;
-      iqp->populateContextMenu(&ctxMenu);
+      iqp->populateContextMenu(&ctxMenu, viewer);
 
 #warning reenable
 //      // copy/paste

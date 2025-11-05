@@ -98,7 +98,9 @@ IQHierarchicalDataElement *IQLabeledArrayParameter::createForChild(
 }
 
 template<class IQBaseParameter, const char *N>
-void IQLabeledArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
+void IQLabeledArrayElementParameter<IQBaseParameter, N>
+    ::populateContextMenu(
+        QMenu *cm, IQCADModel3DViewer *viewer)
 {
     if (!arrayParameter()->parameter().keysAreLocked())
     {

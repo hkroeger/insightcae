@@ -60,7 +60,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
             IQParameterSetModel::contextMenu(
                 parameterTreeView_,
                 parameterTreeView_->indexAt(p),
-                p );
+                p,
+                viewer_ );
         }
         );
 

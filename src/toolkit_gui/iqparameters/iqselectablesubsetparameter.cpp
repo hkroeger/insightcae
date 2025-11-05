@@ -47,7 +47,8 @@ IQSelectableSubsetParameter::IQSelectableSubsetParameter
 
 
 
-void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
+void IQSelectableSubsetParameter::populateContextMenu(
+    QMenu *cm, IQCADModel3DViewer *viewer )
 {
   auto *saveAction = new QAction("Save to file...");
   cm->addAction(saveAction);

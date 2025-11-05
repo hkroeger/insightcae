@@ -241,7 +241,8 @@ QVariant IQHierarchicalDataElement::textFont() const
 }
 
 void IQHierarchicalDataElement::populateContextMenu(
-    QMenu* /*cm*/)
+    QMenu* /*cm*/,
+    IQCADModel3DViewer */*viewer*/)
 {}
 
 

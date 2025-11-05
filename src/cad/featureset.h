@@ -181,8 +181,8 @@ public:
 
   virtual ~FeatureSet();
 
-  inline ConstFeaturePtr model() const { return model_; }
-  inline EntityType shape() const { return shape_; }
+  ConstFeaturePtr model() const;
+  EntityType shape() const;
 
   size_t size() const;
   
@@ -206,11 +206,17 @@ public:
 };
 
 
+class ASTBasedFeatureSet
+    : public ASTBase,
+      public FeatureSet
+{
+public:
+    using FeatureSet::FeatureSet;
+};
 
 
 class ProvidedFeatureSet
-    : public ASTBase,
-      public FeatureSet
+    : public ASTBasedFeatureSet
 {
     ConstFeaturePtr model_;
     std::string label_;
@@ -233,8 +239,7 @@ public:
 
 
 class DeferredFeatureSet
-    : public ASTBase,
-      public FeatureSet
+    : public ASTBasedFeatureSet
 {
   /**
    * basis for subset query

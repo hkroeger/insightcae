@@ -95,50 +95,53 @@ std::vector<std::string> SelectableSubsetParameter::selectionKeys() const
 
 void SelectableSubsetParameter::setSelection(const key_type &nk)
 {
-    insight::assertion(
-        value_.count(nk),
-        "selection \"%s\" is not valid ", nk.c_str() );
-
-    int nBefore=0, nAfter=0;
-    if (!selection_.empty())
+    if (!nk.empty())
     {
-        nBefore=operator()().size();
+        insight::assertion(
+            value_.count(nk),
+            "selection \"%s\" is not valid ", nk.c_str() );
+
+        int nBefore=0, nAfter=0;
+        if (!selection_.empty())
+        {
+            nBefore=operator()().size();
+        }
+        nAfter=value_.at(nk)->size();
+
+        // if (nAfter>nBefore)
+        // {
+        //     beforeChildInsertion(nBefore, nAfter-1);
+        // }
+        // else if (nAfter<nBefore)
+        // {
+        //     beforeChildRemoval(nAfter, nBefore-1);
+        // }
+
+        beforeChildRemoval(0, nBefore-1);
+        selection_=std::string();
+        childRemovalDone(0, nBefore-1);
+
+        if (nAfter>0)
+        {
+            beforeChildInsertion(0, nAfter-1);
+        }
+        selection_=nk;
+        if (nAfter>0)
+        {
+            childInsertionDone(0, nAfter-1);
+        }
+
+        // if (nAfter>nBefore)
+        // {
+        //     childInsertionDone(nBefore, nAfter-1);
+        // }
+        // else if (nAfter<nBefore)
+        // {
+        //     childRemovalDone(nAfter, nBefore-1);
+        // }
+
+        triggerValueChanged();
     }
-    nAfter=value_.at(nk)->size();
-
-    // if (nAfter>nBefore)
-    // {
-    //     beforeChildInsertion(nBefore, nAfter-1);
-    // }
-    // else if (nAfter<nBefore)
-    // {
-    //     beforeChildRemoval(nAfter, nBefore-1);
-    // }
-
-    beforeChildRemoval(0, nBefore-1);
-    selection_=std::string();
-    childRemovalDone(0, nBefore-1);
-
-    if (nAfter>0)
-    {
-        beforeChildInsertion(0, nAfter-1);
-    }
-    selection_=nk;
-    if (nAfter>0)
-    {
-        childInsertionDone(0, nAfter-1);
-    }
-
-    // if (nAfter>nBefore)
-    // {
-    //     childInsertionDone(nBefore, nAfter-1);
-    // }
-    // else if (nAfter<nBefore)
-    // {
-    //     childRemovalDone(nAfter, nBefore-1);
-    // }
-
-    triggerValueChanged();
 }
 
 
@@ -146,9 +149,9 @@ void SelectableSubsetParameter::setSelection(const key_type &nk)
 
 const SelectableSubsetParameter::key_type &SelectableSubsetParameter::selection() const
 {
-    insight::assertion(
-        !selection_.empty(),
-        "internal error: attempt to access during value change" );
+    // insight::assertion(
+    //     !selection_.empty(),
+    //     "internal error: attempt to access during value change" );
     return selection_;
 }
 
@@ -437,7 +440,10 @@ void SelectableSubsetParameter::copyMatching(
     auto& ossp =dynamic_cast<const SelectableSubsetParameter&>(p);
 
     setSelection( ossp.selection() );
-    operator()().copyMatching(ossp());
+    if (!ossp.selection().empty())
+    {
+        operator()().copyMatching(ossp());
+    }
 
     Parameter::assignFrom(ossp);
 }

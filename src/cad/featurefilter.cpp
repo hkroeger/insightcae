@@ -31,6 +31,7 @@
 
 #include "cadfeature.h"
 #include "featurefilters/same.h"
+#include "featurefilters/commonfacearea.h"
 #include "featurefilters/edgeconnectingvertices.h"
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
@@ -541,6 +542,9 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("isOtherSurface") ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
+    |
+    ( lit("hasCommonArea") > '(' > FeatureFilterExprParser<Iterator>::r_featureset  > ')')
+      [ qi::_val = phx::construct<FilterPtr>(new_<hasCommonFaceArea>(qi::_1)) ]
     |
     ( lit("isPartOfFace") > '(' > FeatureFilterExprParser<Iterator>::r_featureset  > ')')
       [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfFaceFace>(*qi::_1)) ]

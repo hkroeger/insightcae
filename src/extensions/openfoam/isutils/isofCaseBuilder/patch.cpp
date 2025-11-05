@@ -55,8 +55,9 @@ Patch::Patch(const rapidxml::xml_node<>& node,
   {
       set_bc_type(type_name_);
 
-      auto np = parameterSetModel()->getParameterSet().cloneParameterSet();
-      np->readFromNode(std::string(), node, inputfilepath);
+      auto np = parameterSetModel()->getParameterSet().cloneAs<ParameterSet>();
+      np->readFromNode(std::string(), node);
+      np->resolveRelativePaths(inputfilepath);
 
       parameterSetModel()->resetParameterValues(*np);
   }
@@ -75,7 +76,7 @@ Patch::Patch(const rapidxml::xml_node<>& node,
 void Patch::set_bc_type(const std::string& type_name)
 {
     type_name_=type_name;
-    curp_->resetParameters(
+    curp_->resetData(
         BoundaryCondition::defaultParametersFor(type_name_) );
     Q_EMIT visualizationUpdateRequired();
 }
@@ -106,7 +107,7 @@ void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& 
     node.append_attribute ( doc.allocate_attribute ( "patchName", patch_name_.c_str() ) );
     node.append_attribute ( doc.allocate_attribute ( "BCtype", type_name_.c_str() ) );
 
-    curp_->getParameterSet().appendToNode ( std::string(), doc, node, inputfilepath.parent_path() );
+    curp_->getParameterSet().appendToNode ( std::string(), doc, node );
 }
 
 

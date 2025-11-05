@@ -187,7 +187,9 @@ double insight::cad::CircleDiameter::calcValue() const
     D=ic.Radius()*2.;
   }
   else
-    throw insight::Exception("selected edge is not a circle or BSplineCurve! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
+    throw insight::Exception(
+          "selected edge is not a circle or BSplineCurve! (instead is of type %d)",
+          adapt.GetType());
 
   return D;
 }

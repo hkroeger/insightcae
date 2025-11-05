@@ -266,29 +266,19 @@ int main(int argc, char *argv[])
           filestem = fn.stem().string();
         }
 
-        std::unique_ptr<insight::ParameterSet> parameters;
+        std::unique_ptr<AnalysisParameterSet> parameters;
 
         {
             insight::CurrentExceptionContext ex(_("reading input parameter file"));
 
-            insight::XMLDocument doc(fn); // checks for existence
+            parameters = std::make_unique<AnalysisParameterSet>();
+            parameters->readFromFile(fn);
 
-            if ( auto *analysisnamenode
-                 = doc.rootNode->first_node("analysis") )
-            {
-                analysisName = analysisnamenode->first_attribute("name")->value();
-            }
 
             cout<< str(format(
                     _("Executing analysis of type '%s' in directory '%s'"))
                         % analysisName % workdir.string()
                 ) << endl;
-
-            parameters =
-                // insight::Analysis::defaultParametersFor(analysisName);
-                insight::Analysis::defaultParameters()(analysisName);
-
-            parameters->readFromNode( std::string(), *doc.rootNode, inputFileParentPath );
         }
 
         if (vm.count("merge"))
@@ -298,14 +288,20 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> cargs;
                 boost::split(cargs, ist, boost::is_any_of(":"));
-                if (cargs.size()==1)
+                if (cargs.size()>0)
                 {
-                  // 	ParameterSet to_merge;
-                  parameters->readFromFile(ist);
-                }
-                else if (cargs.size()==3)
-                {
-                    parameters->getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
+                    insight::assertion(
+                        cargs.size()==1 || cargs.size()==3,
+                        _("merge command needs either one or three arguments!\nGot: %s"),
+                        ist.c_str() );
+
+                    boost::optional<AnalysisParameterSet::ParameterPath_SubNodePath> subset;
+                    if (cargs.size()==3)
+                    {
+                        subset=AnalysisParameterSet::ParameterPath_SubNodePath
+                            {cargs[1], cargs[2]};
+                    }
+                    parameters->mergeIncompatibleParameterSet(cargs[0], subset);
                 }
                 else
                 {
@@ -321,7 +317,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                int ns=boost::lexical_cast<int>(pair[1]);
+                int ns=toNumber<int>(pair[1]);
                 cout << boost::str(boost::format(
                                        _("Resizing array '%s' to %d")
                                        ) % pair[0] % ns )<<endl;
@@ -340,7 +336,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                bool v=boost::lexical_cast<bool>(pair[1]);
+                bool v=toValue<bool>(pair[1]);
                 cout << boost::str(boost::format(
                                        _("Setting boolean '%s' = %d")
                                        )% pair[0] % v) <<endl;
@@ -413,8 +409,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                arma::mat v;
-                stringToValue(pair[1], v);
+                arma::mat v=toValue<arma::mat>(pair[1]);
                 cout << boost::str(boost::format(
                                         _("Setting vector '%s' = [%g %g %g]")
                                        ) % pair[0] % v(0) % v(1) % v(2)) <<endl;
@@ -439,7 +434,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("savecfg"))
         {
-            parameters->saveToFile( workdir/ vm["savecfg"].as<std::string>(), analysisName );
+            parameters->saveToFile( workdir/ vm["savecfg"].as<std::string>() );
         }
 
         std::cout<<std::string(80, '=')+'\n';

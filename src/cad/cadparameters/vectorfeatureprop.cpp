@@ -165,7 +165,9 @@ void insight::cad::CircleEdgeCenterCoords::compute(arma::mat &pc, double &D, arm
     }
   }
   else
-    throw insight::Exception("selected edge is not a circle or BSplineCurve! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
+    throw insight::Exception(
+          "selected edge is not a circle or BSplineCurve! (instead is of type %d)",
+          adapt.GetType());
 
   pc=vec3(icyl.Location());
   D=icyl.Radius()*2.;

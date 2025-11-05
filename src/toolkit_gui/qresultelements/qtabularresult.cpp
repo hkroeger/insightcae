@@ -31,9 +31,9 @@ void QTabularResult::createFullDisplay(QVBoxLayout* layout)
   auto tw=new QTableWidget(res.rows().size(), res.headings().size()/*, this*/);
 
   QStringList headers;
-  for (const std::string& h: res.headings() )
+  for (auto& h: res.headings() )
   {
-    headers << QString::fromStdString(h);
+    headers << QString::fromStdString(h.toPlainText());
   }
   tw->setHorizontalHeaderLabels( headers );
   tw->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

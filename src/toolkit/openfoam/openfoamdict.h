@@ -108,17 +108,17 @@ struct dict
     dict::iterator i=this->find(key);
     if (i==this->end())
     {
-        std::string keys=" ";
-        for (const value_type& it: *this) { keys+=it.first+" "; }
-        throw Exception("key "+key+" not found! Available keys:"+keys);
+        throw Exception(
+            "key %s not found! Available keys: %s",
+            key.c_str(), containerKeyList_to_string(*this, 99).c_str() );
     }
     if (T *d = boost::get<T>(&i->second))
       return *d;
     else
-      throw Exception("entry "+key+" is there but not of the requested type!"
-                 " (actual type:"+boost::lexical_cast<std::string>(i->second.which())+")"
-//               "(requested: "+std::string(typeid(T)::name())+", actual: "+std::string(typeid(i->second)::name())+")" 
-                );
+      throw Exception(
+            "entry %s is there but not of the requested type! (actual type: %d)",
+            key.c_str(), i->second.which()
+        );
   }
   
   template<class T>
@@ -127,16 +127,17 @@ struct dict
     dict::const_iterator i=this->find(key);
     if (i==this->end())
     {
-        std::string keys=" ";
-        for (const value_type& it: *this) { keys+=it.first+" "; }
-        throw Exception("key "+key+" not found! Available: "+keys);
+        throw Exception(
+            "key %s not found! Available: %s",
+            key.c_str(), containerKeyList_to_string(*this, 99).c_str() );
     }
     if (const T *d = boost::get<T>(&i->second))
       return *d;
     else
-      throw Exception("entry "+key+" is there but not of the requested type!"
-                 " (actual type:"+boost::lexical_cast<std::string>(i->second.which())+")"
-                );
+      throw Exception(
+            "entry %s is there but not of the requested type! (actual type: %d)",
+            key.c_str(), i->second.which()
+        );
   }
   
   /**
@@ -178,9 +179,10 @@ struct dict
      else if (auto v = boost::get<int>(&i->second))
       return *v;
      else
-      throw Exception("entry "+key+" is there but not of the requested type!"
-                      " (actual type:"+boost::lexical_cast<std::string>(i->second.which())+")"
-                      );
+      throw Exception(
+             "entry %s is there but not of the requested type! (actual type: %d)",
+             key.c_str(), i->second.which()
+            );
   }
 
   inline int& getIntRef(const std::string& key)

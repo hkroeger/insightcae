@@ -373,7 +373,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 
     parameterTreeView_->setModel(model_);
     parameterTreeView_->setItemDelegate(
-        new IQParameterGridViewSelectorDelegate);
+        new IQHierarchicalDataGridViewSelectorDelegate);
 
     if (display_)
     {

@@ -175,7 +175,7 @@ IQCADModel3DViewer::editSketchParameter(
 
         editSketch(
 
-            sketchOvr ? *sketchOvr : skp.featureGeometry(),
+            sketchOvr ? *sketchOvr : skp.sketch(),
 
             skp.entityProperties(),
             skp.presentationDelegateKey(),
@@ -194,7 +194,7 @@ IQCADModel3DViewer::editSketchParameter(
                     accSk->generateScript(os);
 
                     skp.setScript(os.str());
-                    skp.featureGeometry(); //trigger rebuild
+                    skp.sketch(); //trigger rebuild
                 }
 
                 skp.triggerValueChanged();

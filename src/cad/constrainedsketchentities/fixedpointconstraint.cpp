@@ -86,7 +86,7 @@ void FixedPointConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p_, script, entityLabels)
             + ", layer " + layerName()
             + parameterString()
@@ -156,7 +156,7 @@ ConstrainedSketchEntityPtr FixedPointConstraint::clone() const
     auto cl=FixedPointConstraint::create( p_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

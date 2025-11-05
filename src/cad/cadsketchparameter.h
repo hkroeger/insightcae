@@ -1,6 +1,7 @@
 #ifndef INSIGHT_CADSKETCHPARAMETER_H
 #define INSIGHT_CADSKETCHPARAMETER_H
 
+#include "base/hierarchicalelement.h"
 #include "boost/signals2/connection.hpp"
 #include "cadtypes.h"
 #include "base/parameter.h"
@@ -9,6 +10,7 @@
 #include "cadgeometryparameter.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchentity.h"
+#include <memory>
 
 namespace insight {
 
@@ -16,8 +18,48 @@ namespace cad {
 class ConstrainedSketch;
 }
 
+
+/**
+ * @brief The DelayedCreatedSketch class
+ * keeps a script and converts it into a sketch when needed first
+ * (i.e. when sketchRef() is called)
+ */
+class DelayedCreatedSketch
+{
+    mutable std::unique_ptr<std::string> script_;
+    std::shared_ptr<insight::cad::ConstrainedSketch> sketch_;
+
+    virtual void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch) =0;
+    virtual cad::ConstrainedSketchPtr createSketch(const std::string& script) const =0;
+
+public:
+    virtual cad::ConstrainedSketchPtr createEmpty() const =0;
+
+    insight::cad::ConstrainedSketch& sketchRef();
+
+    inline const insight::cad::ConstrainedSketch& sketch() const
+    { return const_cast<DelayedCreatedSketch&>(*this).sketchRef(); }
+
+    inline cad::FeaturePtr featureGeometry() const
+    { return const_cast<DelayedCreatedSketch&>(*this).featureGeometry(); }
+
+    inline cad::FeaturePtr featureGeometryRef() const
+    {
+        sketch(); // trigger creation
+        return sketch_;
+    }
+
+    void setScript(const std::string& script);
+    std::string script() const;
+
+    void assignFrom(const DelayedCreatedSketch& dcs);
+};
+
+
+
 class CADSketchParameter
-: public CADGeometryParameter
+: public CADGeometryParameter,
+  public DelayedCreatedSketch
 {
 
 public:
@@ -29,17 +71,18 @@ protected:
 
     std::map<int, std::string> references_;
 
-    mutable std::unique_ptr<std::string> script_;
-    mutable std::shared_ptr<insight::cad::ConstrainedSketch> CADGeometry_;
-
     boost::signals2::scoped_connection
         addSlotConn_, removeSlotConn_, changeSlotConn_;
 
-    void regenerateScript();
-    void resetCADGeometry();
+
+    void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch) override;
+    cad::ConstrainedSketchPtr createSketch(const std::string& script) const override;
 
 public:
     declareType ( "cadsketch" );
+
+    CADSketchParameter (
+        const rapidxml::xml_node<>& node );
 
     CADSketchParameter (
         const std::string& description,
@@ -69,56 +112,55 @@ public:
 
     ~CADSketchParameter();
 
-
-    std::shared_ptr<insight::cad::ConstrainedSketch> createEmpty() const;
+    std::shared_ptr<insight::cad::ConstrainedSketch> createEmpty() const override;
 
     void setReferences(const std::map<int, std::string>& references);
 
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties() const;
     const std::string& presentationDelegateKey() const;
 
-    std::string script() const;
     void setScript(const std::string& script);
-
-    const insight::cad::ConstrainedSketch& featureGeometry() const;
-    std::shared_ptr<insight::cad::ConstrainedSketch> featureGeometryRef();
 
     cad::FeaturePtr geometry() const override;
 
-    std::string latexRepresentation() const override;
-    std::string plainTextRepresentation(int indent=0) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    std::string plainTextRepresentation(int indent) const override;
 
     rapidxml::xml_node<>* appendToNode
         (
             const std::string& name,
             rapidxml::xml_document<>& doc,
-            rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath
+            rapidxml::xml_node<>& node
             ) const override;
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
         (
             const std::string& name,
-            const rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath
+            const rapidxml::xml_node<>& node
         ) override;
 
     std::unique_ptr<CADSketchParameter>
         cloneCADSketchParameter(
             bool keepParentRef=false ) const;
-    std::unique_ptr<Parameter> clone(bool initialize) const override;
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 
-    void copyFrom(const Parameter& op) override;
-    void operator=(const CADSketchParameter& op);
+    void assignFrom( const Element& rhs ) override;
+    void copyMatching( const Element& rhs ) override;
+    void extend( const Element& op ) override;
+    bool isEqual(const Element& op) const override;
 
     bool isDifferent(const Parameter &) const override;
 
     int nChildren() const override;
-    std::string childParameterName(
+    std::string childElementName(
         int i,
         bool redirectArrayElementsToDefault=false ) const override;
-    Parameter& childParameterRef ( int i ) override;
-    const Parameter& childParameter( int i ) const override;
+    Parameter& childElementRef ( int i ) override;
+    const Parameter& childElement( int i ) const override;
 
 };
 

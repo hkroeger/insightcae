@@ -1,5 +1,6 @@
 #include "boundaryconditions.h"
 
+#include "base/tools.h"
 #include "boost/lexical_cast.hpp"
 #include "lsdyna/mesh.h"
 #include "lsdynainputdeck.h"
@@ -77,7 +78,7 @@ void BoundarySPC::write(std::ostream& os) const
             << subns->setID<<",";
     }
 
-    os << ((cid_>=0)?boost::lexical_cast<std::string>(cid_):"")<<","
+    os << ((cid_>=0)?toString(cid_):"")<<","
        << dofs_.count(X) << ","
        << dofs_.count(Y) << ","
        << dofs_.count(Z) << ","

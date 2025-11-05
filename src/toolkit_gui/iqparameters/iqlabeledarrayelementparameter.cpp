@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "base/hierarchicalelement.h"
 #include "base/translations.h"
 
 #include "iqlabeledarrayelementparameter.h"
@@ -11,6 +12,7 @@
 #include "iqvectorparameter.h"
 #include "iqstringparameter.h"
 #include "iqpathparameter.h"
+#include "iqsubsetparameter.h"
 #include "iqdirectoryparameter.h"
 
 #include "iqlabeledarrayparameter.h"
@@ -33,19 +35,17 @@ defineFactoryTable
         IQLabeledArrayElementParameterBase,
         LIST(
             QObject* parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter* parameter,
-            const insight::ParameterSet& defaultParameterSet ),
-        LIST(parent, psmodel, parameter, defaultParameterSet)
+            IQHierarchicalDataModel* psmodel,
+            insight::hierarchicalData::Element* parameter ),
+        LIST(parent, psmodel, parameter)
         );
 
 
 
 IQLabeledArrayElementParameterBase::IQLabeledArrayElementParameterBase(
     QObject *,
-    IQParameterSetModel*,
-    insight::Parameter *,
-    const insight::ParameterSet &)
+    IQHierarchicalDataModel*,
+    insight::hierarchicalData::Element *)
 {}
 
 #define createIQLabeledArrayElement(BaseT, NAME) \
@@ -66,28 +66,29 @@ createIQLabeledArrayElement(IQDirectoryParameter, "directory");
 createIQLabeledArrayElement(IQArrayParameter, "array");
 createIQLabeledArrayElement(IQMatrixParameter, "matrix");
 createIQLabeledArrayElement(IQSelectionParameter, "selection");
+createIQLabeledArrayElement(IQSubsetParameter, "subset");
 createIQLabeledArrayElement(IQSelectableSubsetParameter, "selectableSubset");
 createIQLabeledArrayElement(IQDoubleRangeParameter, "doubleRange");
 createIQLabeledArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
 
 
-IQParameter *IQLabeledArrayElementParameterBase::create(
-    QObject *parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter *p,
-    const insight::ParameterSet &defaultParameterSet )
+
+
+
+IQHierarchicalDataElement *IQLabeledArrayParameter::createForChild(
+    IQHierarchicalDataModel *model, insight::hierarchicalData::Element *p)
 {
     IQParameter *np;
     if (IQLabeledArrayElementParameterBase::has_factory(p->type()))
     {
         np=dynamic_cast<IQParameter*>(
-            IQLabeledArrayElementParameterBase::lookup(p->type(), parent, psmodel, p, defaultParameterSet)
+            IQLabeledArrayElementParameterBase::lookup(p->type(), this, model, p)
             );
     }
     else
     {
         np=dynamic_cast<IQParameter*>(
-            new IQParameterLabeledArrayElement(parent, psmodel, p, defaultParameterSet)
+            new IQParameterLabeledArrayElement(this, model, p)
             );
     }
 
@@ -95,9 +96,6 @@ IQParameter *IQLabeledArrayElementParameterBase::create(
 
     return np;
 }
-
-
-
 
 template<class IQBaseParameter, const char *N>
 void IQLabeledArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
@@ -112,11 +110,11 @@ void IQLabeledArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMe
              [this]()
              {
 
-                 auto *array = dynamic_cast<IQLabeledArrayParameter*>(this->parentParameter());
+                 auto *array = dynamic_cast<IQLabeledArrayParameter*>(this->parentElement());
                  auto row = array->children().indexOf(this);
 
                  auto &arrayp = dynamic_cast<insight::LabeledArrayParameter&>(array->parameterRef());
-                 arrayp.eraseValue(arrayp.childParameterName(row));
+                 arrayp.eraseValue(arrayp.childElementName(row));
              }
              );
     }
@@ -130,10 +128,10 @@ void IQLabeledArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMe
             renameAction, &QAction::triggered, this,
              [this,cm]()
              {
-                 auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(this->parentParameter());
+                 auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(this->parentElement());
                  auto row = iqp->children().indexOf(this);
                  auto &p = dynamic_cast<insight::LabeledArrayParameter&>(iqp->parameterRef());
-                 auto label = p.childParameterName(row);
+                 auto label = p.childElementName(row);
                  auto newl = QInputDialog::getText(
                      cm->parentWidget(),
                      _("Change Item Label"), _("New label:"),

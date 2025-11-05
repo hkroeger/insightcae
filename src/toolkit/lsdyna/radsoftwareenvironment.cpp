@@ -1,4 +1,5 @@
 #include "radsoftwareenvironment.h"
+#include "base/tools.h"
 
 namespace insight {
 
@@ -14,7 +15,7 @@ boost::filesystem::path RADSoftwareEnvironment::preprocessLSDynaInput(
                 "starter_linux64_gf",
                 {
                     "-i", caseFile.string(),
-                    "-np", boost::lexical_cast<std::string>(np),
+                    "-np", toString(np),
                     "-nt", "1"
                 },
                 nullptr, caseFile.parent_path() );
@@ -59,7 +60,7 @@ void RADSoftwareEnvironment::runSolver(
         job = forkCommand(
                 "mpirun",
                 {
-                    "-np", boost::lexical_cast<std::string>(np),
+                    "-np", toString(np),
                     "engine_linux64_gf_ompi",
                     "-i", radFile.string(),
                     "-nt", "1"

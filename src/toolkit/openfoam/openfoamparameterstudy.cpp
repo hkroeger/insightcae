@@ -75,7 +75,7 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
       newmf="";
     }
   }
-  newp.get<PathParameter>("run/mapFrom").setOriginalFilePath(newmf);
+  newp.get<PathParameter>("run/mapFrom").setFileName(newmf);
 }
 
 
@@ -105,9 +105,9 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
 
         path exep=this->executionPath();
 
-        // Generate a valid parameterset with actual values for mesh mesh genration
+        // Generate a valid parameterset with actual values for mesh mesh generation
         // use first value from each range
-        auto defp = ps.cloneParameterSet();
+        auto defp = ps.template cloneAs<ParameterSet>();
         for (int j=0; j<var_params.size(); j++)
         {
             // Replace RangeParameter by first actual single value
@@ -140,12 +140,12 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
         }
     }
 
-    path old_lp=ps.template get<PathParameter>("mesh/linkmesh").originalFilePath();
+    path old_lp=ps.template get<PathParameter>("mesh/linkmesh").filePath(true);
     if (!subcasesRemesh_)
-        ps.template get<PathParameter>("mesh/linkmesh").setOriginalFilePath(
+        ps.template get<PathParameter>("mesh/linkmesh").setFileName(
             boost::filesystem::absolute(this->executionPath()) );
     this->setupQueue();
-    ps.template get<PathParameter>("mesh/linkmesh").setOriginalFilePath( old_lp );
+    ps.template get<PathParameter>("mesh/linkmesh").setFileName( old_lp );
 
     this->processQueue(displayer);
     ResultSetPtr results = this->evaluateRuns();

@@ -210,7 +210,7 @@ FixedDistanceConstraint::FixedDistanceConstraint(
     )
     : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
 {
-    auto ps = defaultParameters().cloneParameterSet();
+    auto ps = defaultParameters().cloneAs<ParameterSet>();
     ps->insert(
         "distance",
         std::make_unique<DoubleParameter>(
@@ -250,7 +250,7 @@ void FixedDistanceConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p1_, script, entityLabels)
             + ", "
             + pointSpec(p2_, script, entityLabels)
@@ -316,7 +316,7 @@ ConstrainedSketchEntityPtr FixedDistanceConstraint::clone() const
         layerName(), distanceAlong_ );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 
@@ -377,7 +377,7 @@ void LinkedDistanceConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p1_, script, entityLabels) + ", "
             + pointSpec(p2_, script, entityLabels) + ", "
             + distExpr_
@@ -459,7 +459,7 @@ ConstrainedSketchEntityPtr LinkedDistanceConstraint::clone() const
         distanceAlong_ );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

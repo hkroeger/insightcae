@@ -48,85 +48,46 @@ class QIcon;
 
 
 namespace insight {
-  
-
-
-
-//class SubsetParameter;
-class SelectableSubsetParameter;
-
-
-
-
-///**
-// * @brief The SubParameterSet class
-// * common base class for parameters that contain a set of parameters
-// */
-//class SubParameterSet
-//{
-//public:
-//  virtual ~SubParameterSet();
-
-//  ParameterSet& subsetRef();
-//  virtual const ParameterSet& subset() const =0;
-
-//  virtual void merge(const SubParameterSet& other, bool allowInsertion) =0;
-//  virtual Parameter* intersection(const SubParameterSet& other) const =0;
-//};
 
 
 
 
 
 
-// class ParameterSet
-//     : public SubsetParameter
-// {
+class AnalysisParameterSet
+: public ParameterSet
+{
+    std::string analysisTypeName_;
 
-// public:
-//     ParameterSet();
+public:
+    AnalysisParameterSet();
 
-//     ParameterSet(
-//         SubsetParameter::Entries &&defaultValue,
-//         const std::string& description = std::string() );
+    AnalysisParameterSet(
+        const std::string& analysisTypeName );
 
-//     ParameterSet(
-//         const SubsetParameter::EntryReferences &defaultValue,
-//         const std::string& description = std::string() );
+    const std::string& analysisTypeName() const;
 
-//     virtual ~ParameterSet();
+    void readFromRootNode(
+        const rapidxml::xml_node<>& rootNode,
+        const std::string& startAtSubnode = std::string() ) override;
 
-//     void copyFrom(const Parameter& o) override;
-//     void operator=(const ParameterSet& o);
+    typedef std::pair<std::string,std::string>
+        ParameterPath_SubNodePath;
 
-//     /**
-//    * insert values from other, where matching. Ignore non-matching parameters.
-//    * return a non-const reference to this PS to anable call chains like PS.merge().merge()...
-//    */
-//     ParameterSet& merge ( const ParameterSet& other );
+    void mergeIncompatibleParameterSet(
+        const boost::filesystem::path &f,
+        boost::optional<ParameterPath_SubNodePath>  subset =
+            boost::optional<ParameterPath_SubNodePath>() );
 
-//     /**
-//    * @brief intersection
-//    * construct a ParameterSet which contains only elements
-//    * that are present both in this set and "other"
-//    * @param other
-//    * @return a new ParameterSet with the common elements
-//    */
-//     std::unique_ptr<ParameterSet>
-//     intersection(const ParameterSet& other) const;
+    rapidxml::xml_node<>* appendToNode
+        (
+            const std::string& name,
+            rapidxml::xml_document<>& doc,
+            rapidxml::xml_node<>& node
+            ) const override;
 
-//     virtual std::unique_ptr<ParameterSet> cloneParameterSet() const;
-
-//     virtual void appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-//                               boost::filesystem::path inputfilepath ) const;
-//     virtual void readFromNode ( rapidxml::xml_node<>& node,
-//                               boost::filesystem::path inputfilepath );
-
-
-// };
-
-
-
+    std::unique_ptr<Element> clone() const override;
+};
 
 
 
@@ -169,30 +130,6 @@ typedef std::shared_ptr<ParameterSet_Validator> ParameterSet_ValidatorPtr;
 
 
 
-
-
-
-
-
-//template<class T>
-//T& ParameterSet::get ( const std::string& name )
-//{
-//  typedef T PT;
-
-//  auto& p = this->getParameter(name);
-
-//  if ( PT* const pt=dynamic_cast<PT* const>(&p) )
-//  {
-//    return *pt;
-//  }
-//  else
-//  {
-//    throw insight::Exception(
-//          "Parameter "+name+" not of requested type!"
-//          " (actual type is "+p.type()+")"
-//          );
-//  }
-//}
 
 }
 

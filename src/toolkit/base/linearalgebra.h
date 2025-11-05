@@ -186,6 +186,7 @@ arma::mat vec3(const T& t)
 }
 
 bool operator!=(const arma::mat& m1, const arma::mat& m2);
+bool operator==(const arma::mat& m1, const arma::mat& m2);
 
 
 // ====================================================================================
@@ -209,7 +210,6 @@ T toMat(const arma::mat& m)
 
 double* toArray(const arma::mat& v); // !non-const! return value to match VTK functions
 
-std::string toStr(const arma::mat& v3);
 
 /**
  * @brief rotMatrix

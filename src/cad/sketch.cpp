@@ -242,7 +242,7 @@ void Sketch::build()
             {
                 std::string vname=boost::fusion::at_c<0>(*it);
                 double vval=boost::fusion::at_c<1>(*it)->value();
-                vargs+=" -v"+vname+"="+lexical_cast<std::string>(vval);
+                vargs+=" -v"+vname+"="+toString(vval);
             }
 
             std::string cmd = str( format("psketchercmd %s -o %s") % infilename % filename ) + vargs;

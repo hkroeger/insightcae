@@ -2,11 +2,15 @@
 #include "filecontainer.h"
 
 
+#include "base/exception.h"
+#include "base/rapidxml.h"
 #include "boost/archive/iterators/base64_from_binary.hpp"
 #include <boost/archive/iterators/transform_width.hpp>
 
 
 #include "base/tools.h"
+#include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -71,6 +75,41 @@ make_relative(
   // Now navigate down the directory branch
   ret.append( itrTo, a_To.end() );
   return ret;
+}
+
+
+// from Rob Kennedy
+// https://stackoverflow.com/users/33732/rob-kennedy
+bool path_contains_file(path dir, path file)
+{
+    // If dir ends with "/" and isn't the root directory, then the final
+    // component returned by iterators will include "." and will interfere
+    // with the std::equal check below, so we strip it before proceeding.
+    if (dir.filename() == ".")
+        dir.remove_filename();
+    // We're also not interested in the file's name.
+    assert(file.has_filename());
+    file.remove_filename();
+
+    // If dir has more components than file, then file can't possibly
+    // reside in dir.
+    auto dir_len = std::distance(dir.begin(), dir.end());
+    auto file_len = std::distance(file.begin(), file.end());
+    if (dir_len > file_len)
+        return false;
+
+    // This stops checking when it reaches dir.end(), so it's OK if file
+    // has more directory components afterward. They won't be checked.
+    return std::equal(dir.begin(), dir.end(), file.begin());
+}
+
+
+bool weakly_equivalent(path first, path second)
+{
+    auto fullpath1=weakly_canonical(absolute(first));
+    auto fullpath2=weakly_canonical(absolute(second));
+
+    return fullpath1 == fullpath2;
 }
 
 
@@ -168,31 +207,37 @@ std::ostream& operator<<(std::ostream& os, const timespec& ts)
 
 
 
-boost::filesystem::path FileContainer::unpackFilePath(boost::filesystem::path baseDir) const
+// boost::filesystem::path FileContainer::unpackFilePath(
+//     boost::filesystem::path baseDir ) const
+// {
+//   if (!hasFileContent()
+//         || boost::filesystem::exists(originalFilePath()))
+//   {
+//     return originalFilePath();
+//   }
+//   else
+//   {
+//     if (baseDir.empty())
+//     {
+//       baseDir=GlobalTemporaryDirectory::path();
+//     }
+//     if (!boost::filesystem::exists(baseDir))
+//     {
+//       throw insight::Exception("Error while trying to unpack embedded file: target path "+baseDir.string()+"does not exist!");
+//     }
+
+//     auto dirHash = std::hash<std::string>()(
+//         originalFilePath().parent_path().string());
+//     auto rp = baseDir / "embeddedFiles" / toString(dirHash) / fileName();
+
+//     return rp;
+//   }
+// }
+
+UnsetBaseDirectory::UnsetBaseDirectory(const std::string& msg)
+    : Exception(msg)
 {
-  if (!hasFileContent() || boost::filesystem::exists(originalFilePath_))
-  {
-    return originalFilePath_;
-  }
-  else
-  {
-    if (baseDir.empty())
-    {
-      baseDir=GlobalTemporaryDirectory::path();
-    }
-    if (!boost::filesystem::exists(baseDir))
-    {
-      throw insight::Exception("Error while trying to unpack embedded file: target path "+baseDir.string()+"does not exist!");
-    }
-
-    auto dirHash = std::hash<std::string>()(originalFilePath_.parent_path().string());
-    auto rp = baseDir / "embeddedFiles" / boost::lexical_cast<std::string>(dirHash) / fileName();
-
-    return rp;
-  }
 }
-
-
 
 
 FileContainer::FileContainer()
@@ -202,7 +247,8 @@ FileContainer::FileContainer()
 
 
 FileContainer::FileContainer(const FileContainer& other)
-  : originalFilePath_(other.originalFilePath_),
+    : fileName_(other.fileName_),
+    baseDirectory_(other.baseDirectory_),
     file_content_(other.file_content_), // get reference to the same content for performance reasons
     fileContentTimestamp_(other.fileContentTimestamp_)/*,
     fileContentHash_(other.fileContentHash_)*/
@@ -213,24 +259,25 @@ FileContainer::FileContainer(const FileContainer& other)
 
 
 FileContainer::FileContainer(
-    const boost::filesystem::path& originalFileName,
-    std::shared_ptr<std::string> binary_content )
-  : originalFilePath_(originalFileName.generic_path()),
-    file_content_(binary_content)
-
+    const boost::filesystem::path& fileName )
+  : fileName_(fileName)
 {
-  clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
+    clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
 }
 
 
 
 
 FileContainer::FileContainer(
-    const boost::filesystem::path &originalFileName,
-    const TemporaryFile &tf )
-  : originalFilePath_(originalFileName.generic_path())
+    const TemporaryFile& tf,
+    const boost::filesystem::path &fileName )
+    : fileName_(fileName)
 {
-  replaceContent(tf.path());
+    if (!fileName_.has_extension())
+    {
+        fileName_.replace_extension(tf.path().filename().extension());
+    }
+    replaceContent(tf.path());
 }
 
 
@@ -238,12 +285,25 @@ FileContainer::FileContainer(
 
 FileContainer::FileContainer(
     const char *binaryFileContent, size_t size,
-    const boost::filesystem::path &originalFileName )
-  : originalFilePath_(originalFileName.generic_path()),
-    file_content_(new std::string(binaryFileContent, size))
+    const boost::filesystem::path &fileName )
+    : fileName_(fileName)
 {
-    clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
+    replaceContentBuffer(
+        std::make_shared<std::string>(
+            binaryFileContent, size ) );
 }
+
+
+
+
+FileContainer::FileContainer(
+    std::shared_ptr<std::string> content,
+    const boost::filesystem::path& fileName )
+    : fileName_(fileName)
+{
+    replaceContentBuffer(content);
+}
+
 
 
 
@@ -259,62 +319,57 @@ bool FileContainer::hasFileContent() const
 
 
 
-
 bool FileContainer::isValid() const
 {
-  return
-      !originalFilePath_.empty() &&
-      ( boost::filesystem::exists(originalFilePath_) || file_content_ ) ;
+  return  !fileName_.empty();
 }
 
 
 
-//boost::filesystem::path FileContainer::filePath(boost::filesystem::path baseDir) const
-//{
-//  if (hasFileContent())
-//  {
-//    const_cast<FileContainer*>(this)->unpack(baseDir); // does nothing, if already unpacked
-//    return unpackFilePath(baseDir);
-//  }
 
-//  return originalFilePath_;
-//}
 
-const boost::filesystem::path &FileContainer::originalFilePath() const
+const boost::filesystem::path& FileContainer::fileName() const
 {
-  return originalFilePath_;
+    return fileName_;
 }
 
-boost::filesystem::path FileContainer::fileName() const
+void FileContainer::setFileName(const boost::filesystem::path &fn)
 {
-  return originalFilePath_.filename();
+    fileName_=fn;
 }
 
 
-void FileContainer::setOriginalFilePath(const boost::filesystem::path &value)
-{
-  originalFilePath_=value.generic_path();
-  clearPackedData();
-  signalContentChange();
-}
 
 
 
 
 std::istream& FileContainer::stream() const
 {
-  if (hasFileContent())
+  auto lfp=localFilePath();
+
+  if (boost::filesystem::exists(lfp))
   {
-    file_content_stream_.reset(new std::istringstream(*file_content_));
+    file_content_stream_.reset(new std::ifstream(lfp.string()));
+    if (! (*file_content_stream_) )
+    {
+      throw insight::Exception(
+            "Could not open file %s for reading",
+            lfp.c_str());
+    }
   }
   else
   {
-    file_content_stream_.reset(new std::ifstream(originalFilePath_.string()));
-    if (! (*file_content_stream_) )
-    {
-      throw insight::Exception("Could not open file "+originalFilePath_.string()+" for reading!");
-    }
+      if (hasFileContent())
+      {
+          file_content_stream_.reset(new std::istringstream(*file_content_));
+      }
+      else
+      {
+          // empty
+          file_content_stream_.reset(new std::istringstream());
+      }
   }
+
 
   return *file_content_stream_;
 }
@@ -329,17 +384,36 @@ const char *FileContainer::binaryFileContent() const
 }
 
 
+void FileContainer::resolveRelativePath(
+    const boost::filesystem::path &baseDirectory)
+{
+    baseDirectory_=baseDirectory;
 
-//bool FileContainer::isPacked() const
-//{
-//  return bool(file_content_);
-//}
+}
 
-//void FileContainer::pack()
-//{
-//  // read and store file
-//  replaceContent(originalFilePath_);
-//}
+boost::filesystem::path
+FileContainer::localFilePath() const
+{
+    if (fileName_.is_relative())
+    {
+        if (baseDirectory_)
+        {
+            return (*baseDirectory_)/fileName_;
+        }
+        else
+        {
+            throw insight::UnsetBaseDirectory(
+                str(boost::format("only a relative path (%s) was given"
+                " but no base directory for full path resolution has been set")
+                    % fileName_.string())
+                );
+        }
+    }
+    else
+        return fileName_;
+}
+
+
 
 
 timespec highres_last_write_time(const boost::filesystem::path& file)
@@ -364,50 +438,52 @@ timespec highres_last_write_time(const boost::filesystem::path& file)
 
 
 
-bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
-{
-  insight::CurrentExceptionContext ex("checking, if file content needs to be unpacked into "+unpackPath.string());
-  if (!originalFilePath_.empty())
-  {
-    bool needUnpack = false;
+// bool FileContainer::needsUnpack(const boost::filesystem::path& unpackPath) const
+// {
+//   insight::CurrentExceptionContext ex("checking, if file content needs to be unpacked into "+unpackPath.string());
+//   if (!originalFilePath().empty())
+//   {
+//     bool needUnpack = false;
 
-    if (file_content_) // unpack, if we have content
-    {
-      if (!exists(unpackPath)) // unpack only, if not already done
-      {
-        insight::dbg() << "needUnpack: target file does not exist"<< std::endl;
-        needUnpack = true;
-      }
-      else
-      {
-        // only consider unpacking, if the data we have is newer than what is on disk
-        auto lastWriteTime = highres_last_write_time(unpackPath);
+//     if (file_content_) // unpack, if we have content
+//     {
+//       if (!exists(unpackPath)) // unpack only, if not already done
+//       {
+//         insight::dbg() << "needUnpack: target file does not exist"<< std::endl;
+//         needUnpack = true;
+//       }
+//       else
+//       {
+//         // only consider unpacking, if the data we have is newer than what is on disk
+//         auto lastWriteTime = highres_last_write_time(unpackPath);
 
-        if (lastWriteTime < fileContentTimestamp_)
-        {
-            insight::dbg() << "needUnpack: target file time stamp is older than buffer time stamp"<< std::endl;
-            insight::dbg() << "  "<<lastWriteTime<<" < "<<fileContentTimestamp_<<std::endl;
+//         if (lastWriteTime < fileContentTimestamp_)
+//         {
+//             insight::dbg() << "needUnpack: target file time stamp is older than buffer time stamp"<< std::endl;
+//             insight::dbg() << "  "<<lastWriteTime<<" < "<<fileContentTimestamp_<<std::endl;
 
-//          // check if the file on disk is actually different
-//          auto cmd5 = calcFileHash(unpackPath);
-//          if (*cmd5 != *fileContentHash_)
-//          {
-            needUnpack = true;
-//          }
-        }
-      }
-    }
+// //          // check if the file on disk is actually different
+// //          auto cmd5 = calcFileHash(unpackPath);
+// //          if (*cmd5 != *fileContentHash_)
+// //          {
+//             needUnpack = true;
+// //          }
+//         }
+//       }
+//     }
 
-    insight::dbg() << "needUnpack = " << needUnpack << std::endl;
-    return needUnpack;
-  }
-  else
-  {
-    insight::dbg() << " original file path is empty" << std::endl;
-    insight::dbg() << "needUnpack = " << false << std::endl;
-    return false;
-  }
-}
+//     insight::dbg() << "needUnpack = " << needUnpack << std::endl;
+//     return needUnpack;
+//   }
+//   else
+//   {
+//     insight::dbg() << " original file path is empty" << std::endl;
+//     insight::dbg() << "needUnpack = " << false << std::endl;
+//     return false;
+//   }
+// }
+
+
 
 
 
@@ -438,39 +514,54 @@ void FileContainer::signalContentChange()
 //}
 
 
-void FileContainer::copyTo(const boost::filesystem::path &filePath, bool createParentPath) const
+void FileContainer::copyTo(
+    const boost::filesystem::path &filePath,
+    bool createParentPath ) const
 {
   insight::CurrentExceptionContext ex(
         boost::str(boost::format(
-            "writing file content into %d (create parent path %d)"
+            "writing file content into %s (create parent path %d)"
         ) % filePath.string() % createParentPath ) );
 
-  if (createParentPath)
-  {
     if (!exists(filePath.parent_path()) )
     {
-      boost::filesystem::create_directories( filePath.parent_path() );
+      if (createParentPath)
+      {
+        boost::filesystem::create_directories( filePath.parent_path() );
+      }
     }
-  }
+    if (!exists(filePath.parent_path()) )
+    {
+        throw insight::Exception(
+            "parent path %s for unpacking of file %s does not exist!",
+            filePath.parent_path().c_str(), fileName().c_str());
+    }
 
-  if (file_content_)
-  {
-      writeStringIntoFile(file_content_, filePath);
-//    std::ofstream file( filePath.c_str(), std::ios::out | std::ios::binary);
-//    if (file.good())
-//    {
-//        file.write(file_content_->c_str(), long(file_content_->size()) );
-//        file.close();
-//    }
-//    else
-//    {
-//      throw insight::Exception("could not write to file "+filePath.string());
-//    }
-  }
-  else
-  {
-    boost::filesystem::copy_file(originalFilePath_, filePath, boost::filesystem::copy_option::overwrite_if_exists);
-  }
+    if (file_content_)
+    {
+        writeStringIntoFile(file_content_, filePath);
+    }
+    else
+    {
+        auto lfp = localFilePath();
+
+        if (boost::filesystem::exists(lfp))
+        {
+            if (!boost::filesystem::weakly_equivalent(lfp, filePath))
+            {
+                boost::filesystem::copy_file(
+                    lfp, filePath,
+                    boost::filesystem::copy_option::overwrite_if_exists);
+            }
+        }
+        else
+        {
+            throw insight::Exception(
+                "cannot copy file %s to %s."
+                " There is no content available and also no local copy",
+                fileName().c_str(), filePath.c_str() );
+        }
+    }
 }
 
 
@@ -478,21 +569,15 @@ void FileContainer::replaceContent(const boost::filesystem::path& filePath)
 {
   if (exists(filePath) && is_regular_file(filePath) )
   {
-    insight::CurrentExceptionContext ex("reading file "+filePath.string()+" content into buffer");
+    insight::CurrentExceptionContext ex(
+          "reading file %s content into buffer",
+          filePath.c_str() );
 
     // read raw file into buffer
     auto newContent = std::make_shared<std::string>();
 
-//    std::ifstream in(filePath.string());
-//    std::istreambuf_iterator<char> inputBegin(in), inputEnd;
-//    std::back_insert_iterator<std::string> stringInsert(*newContent);
-
-//    copy(inputBegin, inputEnd, stringInsert);
-
     readFileIntoString(filePath, *newContent);
     replaceContentBuffer(newContent);
-
-    signalContentChange();
   }
 }
 
@@ -537,8 +622,10 @@ void FileContainer::clearPackedData()
 
 void FileContainer::operator=(const FileContainer& oc)
 {
-  originalFilePath_ = oc.originalFilePath_;
+  fileName_ = oc.fileName_;
+  baseDirectory_ = oc.baseDirectory_;
   file_content_ = oc.file_content_;
+  fileContentTimestamp_ = oc.fileContentTimestamp_;
   signalContentChange();
 }
 
@@ -547,23 +634,20 @@ void FileContainer::appendToNode
 (
     rapidxml::xml_document<> &doc,
     rapidxml::xml_node<> &node,
-    boost::filesystem::path inputfilepath,
     const std::string& fileNameAttribName,
     const std::string& contentAttribName
 ) const
 {
-  using namespace rapidxml;
-
-  std::string relpath="";
-  if (!originalFilePath_.empty())
+  auto fn=fileName_;
+  if (baseDirectory_)
   {
-    relpath=make_relative(inputfilepath, originalFilePath_).generic_path().string();
+      if (!fn.is_relative() && path_contains_file(*baseDirectory_, fileName_))
+      {
+          fn=make_relative(fileName_, *baseDirectory_);
+      }
   }
-  node.append_attribute(doc.allocate_attribute
-  (
-    doc.allocate_string(fileNameAttribName.c_str()),
-    doc.allocate_string(relpath.c_str())
-  ));
+
+  appendAttribute(doc, node, fileNameAttribName, fn.string());
 
   if (hasFileContent())
   {
@@ -631,32 +715,13 @@ void FileContainer::appendToNode
 void FileContainer::readFromNode
 (
   const rapidxml::xml_node<>& node,
-  boost::filesystem::path inputfilepath,
   const std::string& fileNameAttribName,
   const std::string& contentAttribName
 )
 {
-  using namespace rapidxml;
-  boost::filesystem::path abspath(
-      node.first_attribute(
-              fileNameAttribName.c_str()
-              )->value());
 
-  if (!abspath.empty())
-  {
-    if (abspath.is_relative())
-    {
-      abspath = boost::filesystem::absolute(inputfilepath / abspath);
-    }
-#if BOOST_VERSION < 104800
-#warning Conversion into canonical paths disabled!
-#else
-    if (boost::filesystem::exists(abspath)) // avoid throwing errors during read of parameterset
-        abspath=boost::filesystem::canonical(abspath);
-#endif
-  }
-
-  originalFilePath_=abspath;
+  fileName_ =
+      getMandatoryAttribute(node, fileNameAttribName);
 
   if (auto* a = node.first_attribute(contentAttribName.c_str()))
   {
@@ -670,5 +735,25 @@ const timespec &FileContainer::contentModificationTime() const
 {
   return fileContentTimestamp_;
 }
+
+
+bool FileContainer::operator==(const FileContainer& o) const
+{
+    if (!boost::filesystem::weakly_equivalent(fileName_, o.fileName_))
+        return false;
+
+    if (file_content_ && o.file_content_)
+    {
+        if (file_content_->size()
+            != o.file_content_->size())
+            return false;
+    }
+
+    //timespec fileContentTimestamp_;  // ignore for now
+
+    return true;
+}
+
+
 
 } // namespace insight

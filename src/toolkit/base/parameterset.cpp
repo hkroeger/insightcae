@@ -22,6 +22,7 @@
 #include "parameterset.h"
 #include "base/parameters.h"
 #include "base/latextools.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
 
 #include "rapidxml/rapidxml.hpp"
@@ -30,6 +31,9 @@
 
 #include <fstream>
 #include <numeric>
+
+#include "base/analysis.h"
+
 
 using namespace std;
 using namespace rapidxml;
@@ -175,6 +179,96 @@ const ParameterSet_Validator::ErrorList& ParameterSet_Validator::ParameterSet_Va
     return errors_;
 }
 
+
+
+
+AnalysisParameterSet::AnalysisParameterSet()
+{}
+
+
+AnalysisParameterSet::AnalysisParameterSet(
+    const std::string& analysisTypeName )
+  : ParameterSet(
+          Analysis::defaultParameters()
+              .lookup(analysisTypeName)()
+          ->entries(),
+          "Parameters of "+ analysisTypeName),
+    analysisTypeName_(analysisTypeName)
+{}
+
+
+
+const std::string&
+AnalysisParameterSet::analysisTypeName() const
+{
+    return analysisTypeName_;
+}
+
+
+
+void AnalysisParameterSet::readFromRootNode(
+    const rapidxml::xml_node<>& rootNode,
+    const std::string& startAtSubnode )
+{
+    if (startAtSubnode.empty())
+    {
+        auto *analysisnamenode = rootNode.first_node("analysis");
+        analysisTypeName_ = getMandatoryAttribute(*analysisnamenode, "name");
+
+        assignFrom(
+            *Analysis::defaultParameters()
+                 .lookup(analysisTypeName_)() );
+    }
+
+    ParameterSet::readFromRootNode(rootNode, startAtSubnode);
+}
+
+
+
+
+void AnalysisParameterSet::mergeIncompatibleParameterSet(
+    const boost::filesystem::path &f,
+    boost::optional<ParameterPath_SubNodePath> subset )
+{
+    XMLDocument doc(f.string());
+    if (!subset.is_initialized())
+    {
+        // 	skip reading analysisTypeName
+        ParameterSet::readFromRootNode(*doc.rootNode);
+    }
+    else
+    {
+        getByPath(subset->second)
+            .readFromRootNode(*doc.rootNode, subset->first);
+    }
+}
+
+
+
+rapidxml::xml_node<> *AnalysisParameterSet::appendToNode(
+    const std::string &name,
+    rapidxml::xml_document<> &doc,
+    rapidxml::xml_node<> &node) const
+{
+    auto rootNode = ParameterSet::appendToNode(
+        name, doc, node );
+
+    appendAttribute(
+        doc,
+        appendNode(doc, *rootNode, "analysis"),
+        "name", analysisTypeName_
+        );
+
+    return rootNode;
+}
+
+
+std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::clone() const
+{
+    auto res = std::make_unique<AnalysisParameterSet>(analysisTypeName_);
+    res->assignFrom(*this);
+    return res;
+}
 
 
 

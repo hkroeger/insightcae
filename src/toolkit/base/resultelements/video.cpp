@@ -15,25 +15,6 @@ addToFactoryTable ( ResultElement, Video );
 
 
 
-Video::Video ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
-    : FileResult ( shortdesc, longdesc, unit )
-{}
-
-
-
-
-Video::Video
-    (
-        const boost::filesystem::path& location,
-        const boost::filesystem::path& value,
-        const std::string& shortDesc,
-        const std::string& longDesc,
-        std::shared_ptr<std::string> base64_content
-        )
-    : FileResult ( location, value, shortDesc, longDesc, base64_content )
-{}
-
-
 
 
 void Video::insertLatexHeaderCode ( std::set<std::string>& h ) const
@@ -43,11 +24,10 @@ void Video::insertLatexHeaderCode ( std::set<std::string>& h ) const
 
 
 
-void Video::writeLatexCode (
-    std::ostream& f,
-    const std::string& ,
-    int ,
-    const boost::filesystem::path& outputfilepath ) const
+std::string Video::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
     // auto up=unpackFilePath(outputfilepath);
     // if (needsUnpack(up))
@@ -62,21 +42,20 @@ void Video::writeLatexCode (
     //                                                                                                       "\\end{figure}"
     //                                                                                                       "\\FloatBarrier"
     //     ;
+    return "";
 }
 
 
 
 
-ResultElementPtr Video::clone() const
+std::unique_ptr<hierarchicalData::Element> Video::clone() const
 {
-    ResultElementPtr res =
-        std::make_shared<Video>
+    auto res =
+        std::make_unique<Video>
         (
-            originalFilePath_.parent_path(),
-            originalFilePath_,
+            *this,
             shortDescription_.simpleLatex(),
-            longDescription_.simpleLatex(),
-            file_content_
+            longDescription_.simpleLatex()
             );
     res->setOrder ( order() );
     return res;

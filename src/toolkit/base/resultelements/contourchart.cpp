@@ -1,11 +1,13 @@
 #include "contourchart.h"
 
+#include "base/hierarchicalelement.h"
 #include "gnuplot-iostream.h"
 #include "base/rapidxml.h"
 #include "base/resultelements/image.h"
 #include "base/resultelements/latexgnuplotrenderer.h"
 
 #include "base/parameters/doublerangeparameter.h"
+#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -83,9 +85,9 @@ void GnuplotPolarContourChartRenderer::gnuplotCommand(gnuplotio::Gnuplot &gp) co
     gp<<"set isosamples 500,500;"<<endl;
     gp<<"set cblabel '"+pcc_.cblabel_+"';"<<endl;
     gp<<"set cbrange ["<<
-         (pcc_.zClipMin_?lexical_cast<std::string>(*pcc_.zClipMin_):"")
+         (pcc_.zClipMin_?toString(*pcc_.zClipMin_):"")
          <<":"<<
-         (pcc_.zClipMax_?lexical_cast<std::string>(*pcc_.zClipMax_):"")
+         (pcc_.zClipMax_?toString(*pcc_.zClipMax_):"")
          <<"];"<<endl;
 
     gp<<"unset key;"<<endl;
@@ -102,7 +104,7 @@ void GnuplotPolarContourChartRenderer::gnuplotCommand(gnuplotio::Gnuplot &gp) co
     if (pcc_.contourLines_.size()>0)
     {
       gp<<"set cntrparam levels discrete "
-         <<toStringList(pcc_.contourLines_, "%g", ", ")<<";"<<endl;
+         <<toStringList(pcc_.contourLines_, ", ")<<";"<<endl;
     }
 
     gp<<"set multiplot;"<<endl;
@@ -188,25 +190,26 @@ void PolarContourChart::insertLatexHeaderCode ( std::set<std::string>& hc ) cons
 }
 
 
-void PolarContourChart::writeLatexCode (
-        std::ostream& f,
-        const std::string& name,
-        int level,
-        const boost::filesystem::path& outputfilepath ) const
+std::string PolarContourChart::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
-    path chart_file=cleanLatexImageFileName ( outputfilepath/ ( name+".png" ) ).string();
+    auto chart_file=cleanLatexImageFileName ( name+".png" );
 
-    generatePlotImage ( chart_file );
+    generatePlotImage ( fsi.additionalFiles->directory/chart_file );
 
     //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+    std::ostringstream f;
     f<<
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-        << make_relative ( outputfilepath, chart_file ).generic_path().string() << "}\n"
+        << ( fsi.additionalFiles->directoryRelativePath/chart_file ).string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";
+    return f.str();
 }
 
 
@@ -226,6 +229,7 @@ void PolarContourChart::exportDataToFile (
         }
     xyz.save ( fname.string(), arma::raw_ascii );
 }
+
 
 rapidxml::xml_node<>* PolarContourChart::appendToNode
 (
@@ -274,28 +278,29 @@ rapidxml::xml_node<>* PolarContourChart::appendToNode
 }
 
 
-void PolarContourChart::readFromNode
-    (
-        const std::string& name,
-        const rapidxml::xml_node<>& node
-    )
+const rapidxml::xml_node<>*
+PolarContourChart::readFromNode(
+    const std::string& name,
+    const rapidxml::xml_node<>& parentNode
+)
 {
-    readBaseAttributesFromNode(name, node);
-    rlabel_=node.first_attribute("rlabel")->value();
-    rmax_=toNumber<double>(node.first_attribute("rmax")->value());
-    cblabel_=node.first_attribute("cblabel")->value();
-    if (auto * n=node.first_attribute("zClipMax"))
+    auto child=ResultElement::readFromNode(name, parentNode);
+
+    rlabel_=child->first_attribute("rlabel")->value();
+    rmax_=toNumber<double>(child->first_attribute("rmax")->value());
+    cblabel_=child->first_attribute("cblabel")->value();
+    if (auto * n=child->first_attribute("zClipMax"))
     {
         zClipMax_=boost::lexical_cast<double>(n->value());
     }
-    if (auto * n=node.first_attribute("zClipMin"))
+    if (auto * n=child->first_attribute("zClipMin"))
     {
         zClipMin_=boost::lexical_cast<double>(n->value());
     }
 
-    if (auto * n=node.first_node("contourLines"))
+    if (auto * n=child->first_node("contourLines"))
     {
-        for (auto *e = node.first_node("contourLine");
+        for (auto *e = child->first_node("contourLine");
              e; e = e->next_sibling("contourLine"))
         {
             contourLines_.push_back(
@@ -305,26 +310,34 @@ void PolarContourChart::readFromNode
         }
     }
 
-    if (auto * n=node.first_node("x"))
+    if (auto * n=child->first_node("x"))
     {
         std::istringstream iss(n->value());
         x_.load(iss, arma::raw_ascii);
     }
-    if (auto * n=node.first_node("y"))
+    if (auto * n=child->first_node("y"))
     {
         std::istringstream iss(n->value());
         y_.load(iss, arma::raw_ascii);
     }
-    if (auto * n=node.first_node("data"))
+    if (auto * n=child->first_node("data"))
     {
         std::istringstream iss(n->value());
         data_.load(iss, arma::raw_ascii);
     }
+
+    return child;
 }
 
-ResultElementPtr PolarContourChart::clone() const
+
+int PolarContourChart::nChildren() const
 {
-    auto res = std::make_shared<PolarContourChart>(
+    return 0;
+}
+
+std::unique_ptr<hierarchicalData::Element> PolarContourChart::clone() const
+{
+    auto res = std::make_unique<PolarContourChart>(
                 rlabel_, cblabel_,
                 rmax_, *this,
                 shortDescription().simpleLatex(),

@@ -95,6 +95,10 @@ trsf = spatialTransformation (0 0 0) ( 0 0 0) 1 ""
 
 mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
 
+relFile = path "hull.stl" "A relative path to some file"
+
+absFile = path "/hull.stl" "An absolute path to some file"
+
 turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 
 sketch = cadsketch

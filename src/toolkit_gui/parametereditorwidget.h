@@ -165,6 +165,8 @@ public:
 
     bool hasViewer() const;
     CADViewer *viewer() const;
+    inline ParameterSetDisplay* display()
+    { return display_; }
 
     void rebuildVisualization();
     

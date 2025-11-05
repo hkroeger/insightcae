@@ -293,7 +293,7 @@ void SubsetGenerator::cppWriteInsertStatement
       this->cppWriteCreateStatement(os, name/*, extendtype(thisscope, name+"_type")*/);
       os<<"if ("<<psvarname<<".contains(key)) {"<<endl;
         os<<psvarname<<".getSubset(key).extend(*"<<name<<");\n";
-        os<<psvarname<<".getSubset(key).merge(*"<<name<<");\n";
+        os<<psvarname<<".getSubset(key).copyMatching(*"<<name<<");\n";
       os<<"} else {"<<endl;
         os<<psvarname<<".insert(key, std::move("<<name<<")); ";
       os<<"}"<<endl;

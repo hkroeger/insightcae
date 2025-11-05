@@ -132,7 +132,7 @@ void SketchPoint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + str(boost::format("%g, %g")%v(0)%v(1))
             + ", layer " + layerName()
             + parameterString()
@@ -194,7 +194,7 @@ ConstrainedSketchEntityPtr SketchPoint::clone() const
         layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

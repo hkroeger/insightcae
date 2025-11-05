@@ -1,7 +1,10 @@
+#include "base/exception.h"
+#include "base/filecontainer.h"
 #include "base/parameterset.h"
 
 #include <iostream>
 
+#include "boost/filesystem/operations.hpp"
 #include "test_pdl.h"
 
 using namespace std;
@@ -37,6 +40,32 @@ int main()
             "expected another path with default redirection!") ;
 
 
+        std::cout<<ps->getPath("absFile")<<std::endl;
+
+        auto &afile = ps->get<PathParameter>("absFile");
+        std::cout<<afile.filePath(false)<<std::endl;
+
+        std::cout<<ps->getPath("relFile")<<std::endl;
+        try
+        {
+            std::cout<<ps->get<PathParameter>("relFile").filePath(false)<<std::endl;
+            throw insight::Exception("expected error during attempt to get full path of relative path without base directory set");
+        }
+        catch (const insight::UnsetBaseDirectory& ex)
+        {
+            // expected
+        }
+
+        // resolve relative paths
+        ps->resolveRelativePaths( boost::filesystem::current_path() );
+
+
+        auto rp = ps->get<PathParameter>("relFile").filePath(false);
+        std::cout<<rp<<std::endl;
+
+        insight::assertion(
+            rp==boost::filesystem::current_path()/ps->getPath("relFile"),
+            "unexpected path");
 
         return 0;
     }

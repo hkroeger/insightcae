@@ -167,10 +167,10 @@ void ConstrainedSketchEntity::changeDefaultParameters(
     const insight::ParameterSet& ps )
 {
     defaultParameters_
-        ->insight::ParameterSet::operator=(
+        ->insight::ParameterSet::assignFrom(
             ps);
     // ParameterSet oldps=parameters_;
-    *parameters_=*defaultParameters_;
+    parameters_->assignFrom(*defaultParameters_);
 
 #warning copy values from old; merge is not the right function
     //parameters_.merge(oldps);
@@ -184,7 +184,8 @@ void ConstrainedSketchEntity::parseParameterSet(
     if (!s.empty())
     {
         insight::XMLDocument doc(s.begin(), s.end());
-        parametersRef().readFromNode(std::string(), *doc.rootNode, inputFileParentPath );
+        parametersRef().readFromNode(std::string(), *doc.rootNode);
+        parametersRef().resolveRelativePaths(inputFileParentPath );
     }
 }
 
@@ -199,7 +200,7 @@ std::string ConstrainedSketchEntity::pointSpec(
     if (auto sp=std::dynamic_pointer_cast<ConstrainedSketchEntity>(p))
     {
         sp->generateScriptCommand(script, entityLabels);
-        return boost::lexical_cast<std::string>(entityLabels.at(sp.get()));
+        return toString(entityLabels.at(sp.get()));
     }
     else
     {
@@ -218,11 +219,7 @@ std::string ConstrainedSketchEntity::parameterString() const
     if (parameters().size())
     {
         s=", parameters ";
-        parameters().saveToString(
-            s,
-            boost::filesystem::current_path()
-                / "outfile"
-            );
+        parameters().saveToString(s);
     }
     return s;
 }
@@ -241,9 +238,9 @@ bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEnt
 
 void ConstrainedSketchEntity::operator=(const ConstrainedSketchEntity &other)
 {
-    *defaultParameters_ = *other.defaultParameters_;
+    defaultParameters_->assignFrom(*other.defaultParameters_);
     layerName_=other.layerName_;
-    parametersRef() = other.parameters();
+    parametersRef().assignFrom( other.parameters() );
 }
 
 

@@ -2,6 +2,7 @@
 #define INSIGHT_CHART_H
 
 
+#include "base/hierarchicalelement.h"
 #include "base/resultelementcollection.h"
 
 
@@ -30,8 +31,9 @@ struct PlotCurveStyle
   ADD(ax_y, y, int, 1)
 
   PlotCurveStyle& no_t() { title_=""; return *this; }
-
 #undef ADD
+
+  bool operator==(const PlotCurveStyle& o) const;
 };
 
 
@@ -84,6 +86,8 @@ struct PlotCurve {
     std::string title() const;
     const arma::mat& xy() const;
     const std::string& plaintextlabel() const;
+
+    bool operator==(const PlotCurve o) const;
 };
 
 
@@ -98,6 +102,8 @@ struct PlotCurveList
  PlotCurveList(std::vector<PlotCurve>::const_iterator begin, std::vector<PlotCurve>::const_iterator end);
 
  bool include_zero=true;
+
+ bool operator==(const PlotCurveList o) const;
 };
 
 
@@ -110,6 +116,8 @@ struct ChartData
   std::string ylabel_;
   PlotCurveList plc_;
   std::string addinit_;
+
+  bool operator==(const ChartData o) const;
 };
 
 
@@ -138,26 +146,36 @@ public:
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
     void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
     /**
      * append the contents of this element to the given xml node
      */
-    rapidxml::xml_node<>* appendToNode
-    (
-        const std::string& name,
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
-    ) const override;
+    rapidxml::xml_node<>*
+    appendToNode
+        (
+            const std::string& name,
+            rapidxml::xml_document<>& doc,
+            rapidxml::xml_node<>& node
+            ) const override;
 
-    void readFromNode
+    const rapidxml::xml_node<>*
+    readFromNode
         (
             const std::string& name,
             const rapidxml::xml_node<>& node
-        ) override;
+            ) override;
 
-    ResultElementPtr clone() const override;
+    int nChildren() const override;
+
+    bool isEqual(const Element& op) const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

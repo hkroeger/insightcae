@@ -186,7 +186,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<BoolParameter>(window, pair, s);
-                  bool v=boost::lexical_cast<bool>(pair[2]);
+                  bool v=toValue<bool>(pair[2]);
                   p.set(v);
               }
           }
@@ -220,7 +220,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<PathParameter>(window, pair, s);
-                  p.setOriginalFilePath(pair[2]);
+                  p.setFileName(pair[2]);
               }
           }
 
@@ -243,8 +243,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<VectorParameter>(window, pair, s);
-                  arma::mat v;
-                  stringToValue(pair[2], v);
+                  arma::mat v=toValue<arma::mat>(pair[2]);
                   p.set(v);
               }
           }

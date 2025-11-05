@@ -138,7 +138,8 @@ bool AnalysisForm::isOpenFOAMAnalysis() const
 insight::OperatingSystemSet
 AnalysisForm::compatibleOperatingSystems() const
 {
-    return insight::Analysis::compatibleOperatingSystemFunctions()(analysisName_);
+    return insight::Analysis::compatibleOperatingSystemFunctions()(
+        psmodel_->getAnalysisName() );
 }
 
 

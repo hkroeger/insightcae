@@ -22,26 +22,6 @@ namespace insight {
 
 
 
-std::string
-getMandatoryAttribute(const rapidxml::xml_node<> &node, const std::string& attributeName)
-{
-    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
-        return std::string(fn->value());
-    else
-        throw insight::Exception("node does not have mandatory attribute \""+attributeName+"\"!");
-}
-
-
-std::shared_ptr<std::string>
-getOptionalAttribute(const rapidxml::xml_node<> &node, const std::string& attributeName)
-{
-    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
-        return std::make_shared<std::string>(fn->value());
-    else
-        return std::shared_ptr<std::string>();
-}
-
-
 std::reference_wrapper<rapidxml::xml_node<> >
 appendRootNode(
     rapidxml::xml_document<> &doc,

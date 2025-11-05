@@ -6,6 +6,7 @@
 
 #include "base/tools.h"
 #include "base/boost_include.h"
+#include "base/rapidxml.h"
 #include <boost/range/adaptor/reversed.hpp>
 
 #include "rapidxml/rapidxml_print.hpp"
@@ -55,31 +56,17 @@ protected:
                 {
                     insight::dbg()<<"reading configuration data from "<<file<<std::endl;
 
-                    // read xml
-                    std::string content;
-                    readFileIntoString(file, content);
+                    XMLDocument doc(file);
 
-                    using namespace rapidxml;
-                    xml_document<> doc;
-
-                    try {
-                        doc.parse<0>(&content[0]);
-                    }
-                    catch (...)
-                    {
-                        throw insight::Exception("Failed to parse XML from file "+file.string());
-                    }
-
-                    auto *rootnode = doc.first_node("root");
-                    if (!rootnode)
-                        throw insight::Exception("No valid root node found in XML!");
-
-                    for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+                    for (auto *e = doc.rootNode->first_node(); e; e = e->next_sibling())
                     {
                         try
                         {
-                           ConfigItem newitem(e);
-                           this->insertItem(newitem);
+                            if ( std::string(e->name()) == "resultReport" )
+                            {
+                               ConfigItem newitem(e);
+                               this->insertItem(newitem);
+                            }
                         }
                         catch (InvalidConfigurationItem& ici)
                         {
@@ -89,7 +76,7 @@ protected:
                         }
                     }
 
-                    readAdditionalData(doc, rootnode);
+                    readAdditionalData(doc, doc.rootNode);
                 }
             }
         }

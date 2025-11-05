@@ -133,6 +133,9 @@ set(toolkit_gui_SRCS
 
     iqremoteexecutionstate.h iqremoteexecutionstate.cpp
 
+
+    iqhierarchicaldatamodel.h iqhierarchicaldatamodel.cpp
+    iqhierarchicaldataelement.h iqhierarchicaldataelement.cpp
     iqparametersetmodel.h iqparametersetmodel.cpp
     iqfilteredparametersetmodel.h iqfilteredparametersetmodel.cpp
 

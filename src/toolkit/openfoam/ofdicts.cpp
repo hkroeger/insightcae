@@ -24,7 +24,8 @@ OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, con
   else if (boost::fusion::get<3>(fi) == tetField )
     className="tetPoint";
   else
-    throw insight::Exception("Don't know the geotype of field "+boost::lexical_cast<std::string>(boost::fusion::get<3>(fi)));
+    throw insight::Exception(
+          "Don't know the geotype of field %d", boost::fusion::get<3>(fi));
 
   if (boost::fusion::get<0>(fi)==scalarField)
     className+="ScalarField";
@@ -33,7 +34,8 @@ OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, con
   else if (boost::fusion::get<0>(fi)==symmTensorField)
     className+="SymmTensorField";
   else
-    throw insight::Exception("Don't know the class name of field type "+boost::lexical_cast<std::string>(boost::fusion::get<0>(fi)));
+    throw insight::Exception(
+          "Don't know the class name of field type %d", boost::fusion::get<0>(fi));
 
   d.className=className;
 

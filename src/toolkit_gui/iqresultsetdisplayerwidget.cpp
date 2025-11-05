@@ -145,14 +145,14 @@ bool IQResultSetDisplayerWidget::hasResults() const
 }
 
 
-void IQResultSetDisplayerWidget::loadResultSet(const std::string& analysisName)
+void IQResultSetDisplayerWidget::loadResultSet()
 {
     if (auto f = getFileName(
             this, _("Load result set"),
             GetFileMode::Open,
             {{ "isr", _("InsightCAE Result Set") }} ) )
     {
-      auto r = insight::ResultSet::createFromFile(f, analysisName);
+      auto r = insight::ResultSet::createFromFile(f);
       loadResults(r);
     }
 }

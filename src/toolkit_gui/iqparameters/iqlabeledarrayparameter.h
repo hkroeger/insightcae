@@ -14,17 +14,20 @@ public:
     IQLabeledArrayParameter
         (
             QObject* parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter* parameter,
-            const insight::ParameterSet& defaultParameterSet
+            IQHierarchicalDataModel* hdmodel,
+            insight::hierarchicalData::Element* element
             );
 
-    QString valueText() const override;
+    QVariant value() const override;
 
 
     QVBoxLayout* populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer ) override;
+
+    IQHierarchicalDataElement *createForChild(
+        IQHierarchicalDataModel *model,
+        insight::hierarchicalData::Element *ce ) override;
 };
 
 #endif // IQLABELEDARRAYPARAMETER_H

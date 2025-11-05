@@ -192,7 +192,9 @@ void IQResultSetModel::addResultElements(const ResultElementCollection &rec, IQR
 
   // sort according to stored "order" field
   std::vector<std::pair<ResultElementCollection::key_type,ResultElementCollection::mapped_type> > sortedrec;
-  std::copy(rec.begin(), rec.end(), back_inserter(sortedrec));
+  std::copy(rec.ResultElementMap::begin(), rec.ResultElementMap::end(),
+            back_inserter(sortedrec));
+
   std::sort
   (
       sortedrec.begin(), sortedrec.end(),
@@ -691,7 +693,8 @@ void IQFilteredResultSetModel::addChildren(
         {
 //            if (e->isChecked()==Qt::Checked || e->isChecked()==Qt::PartiallyChecked)
             {
-                auto toBeInserted = e->resultElement()->clone();
+                ResultElementPtr toBeInserted =
+                    e->resultElement()->cloneAs<ResultElement>();
                 if ( auto rec =
                      dynamic_cast<insight::ResultElementCollection*>(toBeInserted.get()) )
                 {
@@ -713,7 +716,7 @@ ResultSetPtr IQFilteredResultSetModel::filteredResultSet() const
     std::string author = orgResultSet->author();
     std::string date = orgResultSet->date();
     auto fr = std::make_shared<ResultSet>(
-                orgResultSet->parameters(),
+                orgResultSet->parameters().cloneAs<ParameterSet>(),
                 orgResultSet->title(),
                 orgResultSet->subtitle(),
                 &author, &date

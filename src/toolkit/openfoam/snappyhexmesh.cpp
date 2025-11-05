@@ -254,7 +254,7 @@ void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 
 void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
-  boost::filesystem::path from(p().fileName->filePath(location));
+  boost::filesystem::path from(p().fileName->localFilePath());
 
   if (!exists(from))
   {

@@ -7,14 +7,15 @@
 
 namespace insight {
 
+typedef std::map<std::string, ResultElementPtr> ResultElementMap;
 
 class ResultElementCollection
-    : public std::map<std::string, ResultElementPtr>
+    : public ResultElement,
+      public ResultElementMap
 {
 
 public:
-//     ResultElementCollection(const boost::filesystem::path & file);
-    virtual ~ResultElementCollection();
+    using ResultElement::ResultElement;
 
 #ifndef SWIG
     /**
@@ -25,6 +26,15 @@ public:
 
 //   void insert(const std::string& key, std::unique_ptr<ResultElement> elem);
     ResultElement& insert ( const std::string& key, ResultElementPtr elem );
+
+    template<class RT, class ...Args>
+    RT& insert(const std::string& key,
+               Args&&... addArgs )
+    {
+        return dynamic_cast<RT&>(
+            insert(key, std::make_unique<RT>(std::forward<Args>(addArgs)...))
+            );
+    }
 #endif
 
     /**
@@ -40,7 +50,10 @@ public:
      */
     void copyFrom(const ResultElementCollection& other);
 
-    void writeLatexCodeOfElements ( std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath ) const;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
 
     template<class T>
     T& get ( const std::string& name );
@@ -80,15 +93,35 @@ public:
     /**
      * append the result elements to the given xml node
      */
-    virtual void appendElementsToNode (
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const;
+        rapidxml::xml_node<>& node ) const override;
 
     /**
      * restore the result elements from the given node
      */
-    virtual void readElementsFromNode (
-        const rapidxml::xml_node<>& node );
+    const rapidxml::xml_node<>*
+    readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node ) override;
+
+
+    bool isEqual(const Element& op) const override;
+
+    int nChildren() const override;
+
+    std::string childElementName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
+
+    std::string childElementName(
+        const Element *p,
+        bool redirectArrayElementsToDefault=false ) const override;
+
+    Element& childElementRef ( int i ) override;
+
+    const Element& childElement( int i ) const override;
 
 };
 
@@ -119,8 +152,8 @@ T& ResultElementCollection::get ( const std::string& name )
     }
   else
     {
-      iterator i = find ( name );
-      if ( i==end() )
+      auto i = ResultElementMap::find ( name );
+      if ( i==ResultElementMap::end() )
         {
           throw insight::Exception ( "Result "+name+" not found in result set" );
         }

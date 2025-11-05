@@ -2,6 +2,7 @@
 #define INSIGHT_LSDYNAMESH_H
 
 #include "base/linearalgebra.h"
+#include "base/tools.h"
 #include "base/boost_include.h"
 
 #include <array>
@@ -174,7 +175,7 @@ public:
             {
                 std::vector<std::string> nodeIds;
                 for (auto& ni: c.n)
-                    nodeIds.push_back(boost::lexical_cast<std::string>(ni));
+                    nodeIds.push_back(toString(ni));
 #warning dirty hack for triangles
                 if (c.n.size()==3)
                     nodeIds.push_back(nodeIds.back());
@@ -204,7 +205,7 @@ public:
 
                 std::vector<std::string> nodeIds;
                 for (auto& ni: c.n)
-                    nodeIds.push_back(boost::lexical_cast<std::string>(ni));
+                    nodeIds.push_back(toString(ni));
                 if (c.n.size()==3)
                     nodeIds.push_back(nodeIds.back());
                 auto nodeIdList = boost::join(nodeIds, ", ");

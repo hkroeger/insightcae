@@ -2686,7 +2686,7 @@ std::shared_ptr<PathParameter> make_filepath(
                 );
     ft->saveAs( tf.path() );
     return std::make_shared<PathParameter>(
-          FileContainer(originalFilePath, tf),
+          FileContainer(tf, originalFilePath),
           "temporary file path" );
 }
 

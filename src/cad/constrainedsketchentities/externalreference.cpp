@@ -69,7 +69,7 @@ ConstrainedSketchEntityPtr ExternalReference::clone() const
     auto cl=ExternalReference::create(extRef_, layerName());
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

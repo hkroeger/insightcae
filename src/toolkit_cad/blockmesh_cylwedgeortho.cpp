@@ -23,6 +23,7 @@
 #include "base/boost_include.h"
 
 #include "base/units.h"
+#include "base/tools.h"
 
 #include "occinclude.h"
 #include "geotest.h"
@@ -531,7 +532,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   double dr;
   {
     CurrentExceptionContext ex(
-          str(format("Creating intermediate blocks between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating intermediate blocks between %s and %s")
+              % toString(vL0) % toString(vL1))
           );
 
     arma::mat
@@ -644,7 +646,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   if (g_begin.collapse_pt_loc == Gusset::Rvs )
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at inner gusset (reverse orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at inner gusset (reverse orientation) between %s and %s")
+              % toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -755,7 +758,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   else if (g_begin.collapse_pt_loc == Gusset::Fwd )
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at inner gusset (forward orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at inner gusset (forward orientation) between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -862,7 +866,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   else if (g_begin.collapse_pt_loc == Gusset::None )
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at inner gusset (radial orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at inner gusset (radial orientation) between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -892,7 +897,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   if (do_pro_inner_blocks)
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at inner protrusion between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at inner protrusion between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -974,7 +980,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   if (g_end.collapse_pt_loc == Gusset::Fwd )
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at outer gusset (forward orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at outer gusset (forward orientation) between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -1077,7 +1084,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   else if (g_end.collapse_pt_loc == Gusset::Rvs )
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at outer gusset (reverse orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at outer gusset (reverse orientation) between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -1171,7 +1179,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   else if (g_end.collapse_pt_loc == Gusset::None )
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at outer gusset (radial orientation) between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at outer gusset (radial orientation) between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt
@@ -1202,7 +1211,8 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
   if (do_pro_outer_blocks)
   {
     CurrentExceptionContext ex(
-          str(format("Creating blocks at outer protrusion between %s and %s")%toStr(vL0)%toStr(vL1))
+          str(format("Creating blocks at outer protrusion between %s and %s")
+              %toString(vL0)%toString(vL1))
           );
 
     gp_Pnt

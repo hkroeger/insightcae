@@ -76,6 +76,7 @@
 
 #include "iqvtkcadmodel3dviewer.h"
 #include "qtextensions.h"
+#include "parametereditorwidget.h"
 
 #include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
 
@@ -93,7 +94,8 @@ void AnalysisForm::saveState(
 {
     {
         // current parameter set
-        auto p = parameters().cloneParameterSet();
+        auto p = parameters()
+                     .cloneAs<insight::ParameterSet>();
 
         if (pack_parameterset_)
         {
@@ -104,7 +106,7 @@ void AnalysisForm::saveState(
             p->clearPackedData();
         }
 
-        p->saveToNode(doc, rootNode, parentPath, analysisName_);
+        p->saveToNode(doc, rootNode);
     }
 
     {
@@ -118,8 +120,8 @@ void AnalysisForm::restoreState(
     const rapidxml::xml_node<>& rootNode,
     const boost::filesystem::path& parentPath )
 {
-    auto ps = parameters().cloneParameterSet();
-    ps->readFromRootNode(rootNode, parentPath);
+    auto ps = parameters().cloneAs<insight::ParameterSet>();
+    ps->readFromRootNode(rootNode);
     psmodel_->resetParameterValues( *ps );
 
     if (auto *vs = rootNode.first_node("viewerState"))
@@ -157,7 +159,6 @@ AnalysisForm::AnalysisForm(
     )
 : QWidget(parent),
   IQExecutionWorkspace(this),
-  analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
   pack_parameterset_(true)
 {
@@ -172,16 +173,18 @@ AnalysisForm::AnalysisForm(
             autosave();
         });
 
-    insight::CurrentExceptionContext ex(_("creating analysis form for analysis %s"), analysisName.c_str());
+    insight::CurrentExceptionContext ex(
+        _("creating analysis form for analysis %s"), analysisName.c_str());
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
     // load default parameters
     auto defaultParams =
-        insight::Analysis::defaultParameters()(analysisName_);
+        std::make_unique<insight::AnalysisParameterSet>(
+          analysisName);
 
     isOpenFOAMAnalysis_ =
-        defaultParams->hasParameter("run/OFEname");
+        defaultParams->hasPath("run/OFEname");
 
 
     ui = new Ui::AnalysisForm;
@@ -261,8 +264,6 @@ AnalysisForm::AnalysisForm(
               log_, &LogViewerWidget::appendErrorLine);
     }
 
-    insight::dbg()<<"update title"<<std::endl;
-    updateWindowTitle();
     connect(ui->btnRun, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
@@ -275,15 +276,15 @@ AnalysisForm::AnalysisForm(
 
     auto& atab = insight::CADParameterSetModelVisualizer::visualizerForAnalysis();
     std::cout<<"table of "<<atab.description()<<" of size "<<atab.size()<<std::endl;
-    if (atab.count(analysisName_))
+    if (atab.count(analysisName))
     {
         insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
-        vizb = atab.lookup(analysisName_);
+        vizb = atab.lookup(analysisName);
     }
 
-    if (insight::Analysis::validators().count(analysisName_))
+    if (insight::Analysis::validators().count(analysisName))
     {
-        vali = insight::Analysis::validators()(analysisName_);
+        vali = insight::Analysis::validators()(analysisName);
     }
 
     auto vsplit = new QSplitter;
@@ -319,11 +320,10 @@ AnalysisForm::AnalysisForm(
 
         //vsplit->addWidget(peditor_); // add later, depending on wizard or not
     }
-    psmodel_->setAnalysisName(analysisName_);
 
     insight::CameraState cs;
     if (insight::CADParameterSetModelVisualizer
-        ::defaultCameraStateForAnalysis().count(analysisName_))
+        ::defaultCameraStateForAnalysis().count(analysisName))
     {
         cs=insight::CADParameterSetModelVisualizer
             ::defaultCameraStateForAnalysis()(analysisName);
@@ -358,12 +358,12 @@ AnalysisForm::AnalysisForm(
     IQExecutionWorkspace::initializeToDefaults();
 
     if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis().count(
-            analysisName_ ))
+            analysisName ))
     {
 #warning check StaticFunctionTable parameter: r-value ref?
         auto ppm=psmodel_;
         auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis()(
-            analysisName_, std::move(ppm)
+            analysisName, std::move(ppm)
             );
 
         auto *container=new QSplitter;
@@ -411,6 +411,9 @@ AnalysisForm::AnalysisForm(
 
     peditor_->viewer()->modificationMade.connect(
         this->modificationMade );
+
+    insight::dbg()<<"update title"<<std::endl;
+    updateWindowTitle();
 }
 
 
@@ -516,7 +519,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         connect( act, &QAction::triggered, resultsViewer_,
                  [this]() {
                 ui->tabWidget->setCurrentWidget(ui->outputTab);
-                    this->resultsViewer_->loadResultSet(analysisName_);
+                    this->resultsViewer_->loadResultSet();
         } );
     }
 
@@ -736,7 +739,14 @@ void AnalysisForm::loadParameters(
           }
       }
 
-      load(fnToLoad, *fn, removeFromFile);
+      {
+          std::shared_ptr<IQHierarchicalDataModel::UndoRecordingBlocker> blocker;
+          if (auto *m = dynamic_cast<IQHierarchicalDataModel*>(peditor_->model()))
+          {
+              blocker=m->blockUndoRecording();
+          }
+          load(fnToLoad, *fn, removeFromFile);
+      }
   }
 }
 
@@ -754,13 +764,8 @@ void AnalysisForm::onShowParameterXML()
 
 //    Q_EMIT apply(); // apply all changes into parameter set
 
-    boost::filesystem::path refPath = boost::filesystem::current_path();
-    if (currentFileNameIsSet())
-    {
-      refPath=currentFileName().parent_path();
-    }
     std::ostringstream os;
-    parameters().saveToStream(os, refPath, analysisName_);
+    parameters().saveToStream(os);
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();

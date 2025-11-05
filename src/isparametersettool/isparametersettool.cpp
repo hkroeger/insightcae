@@ -124,17 +124,10 @@ int main(int argc, char *argv[])
         auto inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
         auto filestem = fn.stem().string();
 
-        insight::XMLDocument doc(fn);
 
-        if (auto *analysisnamenode = doc.rootNode->first_node("analysis"))
-        {
-            analysisName = analysisnamenode->first_attribute("name")->value();
-        }
+        auto parameters = std::make_unique<AnalysisParameterSet>();
+        parameters->readFromFile(fn);
 
-        auto parameters =
-            insight::Analysis::defaultParameters()(analysisName);
-
-        parameters->readFromNode( std::string(), *doc.rootNode, inputFileParentPath );
 
         if (vm.count("merge"))
         {
@@ -143,19 +136,24 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> cargs;
                 boost::split(cargs, ist, boost::is_any_of(":"));
-                if (cargs.size()==1)
+                if (cargs.size()>0)
                 {
-                    // 	ParameterSet to_merge;
-                    parameters->readFromFile(ist);
-                }
-                else if (cargs.size()==3)
-                {
-                    parameters->getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
+                    insight::assertion(
+                        cargs.size()==1 || cargs.size()==3,
+                        _("merge command needs either one or three arguments!\nGot: %s"),
+                        ist.c_str() );
+
+                    boost::optional<AnalysisParameterSet::ParameterPath_SubNodePath> subset;
+                    if (cargs.size()==3)
+                    {
+                        subset=AnalysisParameterSet::ParameterPath_SubNodePath
+                            {cargs[1], cargs[2]};
+                    }
+                    parameters->mergeIncompatibleParameterSet(cargs[0], subset);
                 }
                 else
                 {
-                    throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"),
-                                             ist.c_str());
+                    throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"), ist.c_str());
                 }
             }
         }

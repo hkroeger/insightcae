@@ -983,7 +983,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                       auto img = executionPath() /
                                  ("temperature_outlet_"
                                     +lv.first
-                                    +(i>=0?"_"+lexical_cast<std::string>(i+1):"")
+                                    +(i>=0?"_"+toString(i+1):"")
                                     +".png");
 
                       scene.exportImage(img);
@@ -1035,7 +1035,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                           auto img = executionPath() /
                                      ("streamlines_outlet_"
                                       +lv.first
-                                      +(i>=0?"_"+lexical_cast<std::string>(i+1):"")
+                                      +(i>=0?"_"+toString(i+1):"")
                                       +".png");
 
                           scene.exportImage(img);
@@ -1116,7 +1116,7 @@ InternalPressureLossCharacteristics::InternalPressureLossCharacteristics(
 
 void InternalPressureLossCharacteristics::evaluateCombinedResults(ResultSetPtr &results)
 {
-    Ordering o(0.1);
+    hierarchicalData::Ordering o(0.1);
     std::vector<std::string> headers = { "delta_p" };
 
     std::string key="deltaPTable";

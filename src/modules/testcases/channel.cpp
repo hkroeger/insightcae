@@ -119,7 +119,10 @@ ChannelBase::supplementedInputData::supplementedInputData(
   if (p().mesh.fixbuf>0)
   {
     if (nh_-nhbuf_<=1)
-      throw insight::Exception("Cannot fix cell height inside buffer layer: too few cells in vertical direction allowed! (min "+lexical_cast<string>(nhbuf_+1)+")");
+      throw insight::Exception(
+            "Cannot fix cell height inside buffer layer:"
+            " too few cells in vertical direction allowed! (min %d)",
+            nhbuf_+1);
 
     nhbuf_=p().mesh.nl;
 
@@ -516,7 +519,7 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>&
 void ChannelBase::evaluateAtSection(
   OpenFOAMCase& cm, 
   ResultSetPtr results, double x, int /*i*/,
-  Ordering& o,
+  hierarchicalData::Ordering& o,
   bool includeRefDataInCharts,
   bool includeAllComponentsInCharts,
   const std::string& vertical_probes_array_name
@@ -534,7 +537,7 @@ void ChannelBase::evaluateAtSection(
       ""
     )
   );
-  Ordering so;
+  hierarchicalData::Ordering so;
   
   string title="section__xByH_" + str(format("%04.2f") % xByH);
   replace_all(title, ".", "_");
@@ -917,7 +920,7 @@ void ChannelBase::evaluateAtSection(
     std::string maxRp;
     if (includeRefDataInCharts)
     {
-        maxRp="set yrange [:"+lexical_cast<string>(std::max( max(axial.col(1)), max(refdata_Ruu590.col(1)) ))+"]";
+        maxRp="set yrange [:"+toString(std::max( max(axial.col(1)), max(refdata_Ruu590.col(1)) ))+"]";
     }
     else
     {
@@ -929,7 +932,7 @@ void ChannelBase::evaluateAtSection(
       section, executionPath(), chart_name,
       "$y^+$", "$\\langle R^+ \\rangle$",
       plotcurves,
-      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
+      "Wall normal profiles of averaged reynolds stresses at x/H=" + toString(xByH),
       maxRp
     )
     .setOrder(so.next());
@@ -982,7 +985,7 @@ void ChannelBase::evaluateAtSection(
     if (isfirstslice)
       extractSliceCmd="eb = extractPatches(cbi, '"+sp().cycl_in_+"')\n";
     else      
-      extractSliceCmd="eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n";
+      extractSliceCmd="eb = planarSlice(cbi, ["+toString(x)+",0,1e-6], [1,0,0])\n";
     
     try 
     {
@@ -1060,7 +1063,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
   }
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
-  Ordering o;
+  hierarchicalData::Ordering o;
   
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
@@ -1166,7 +1169,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
     ))) .setOrder(o.next());
   }
 
-  Ordering xseco(10.);
+  hierarchicalData::Ordering xseco(10.);
   evaluateAtSection(cm, results, 1e-4, 0, xseco);
 
   return results;
@@ -1222,8 +1225,8 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer
     {
         cm.executeCommand(executionPath(), "perturbU", 
                 {
-                 { lexical_cast<string>(p().operation.Re_tau) },
-                 { "("+lexical_cast<string>(sp().Ubulk_)+" 0 0)" }
+                 { toString(p().operation.Re_tau) },
+                 { "("+toString(sp().Ubulk_)+" 0 0)" }
                 } );
     }
   }

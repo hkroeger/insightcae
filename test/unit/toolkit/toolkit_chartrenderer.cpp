@@ -7,7 +7,7 @@ using namespace insight;
 
 int main(int, char*[])
 {
-  ResultSetPtr res = std::make_shared<ResultSet>(*ParameterSet::create(), "Chart Renderer Test", "");
+  ResultSetPtr res = std::make_shared<ResultSet>(nullptr, "Chart Renderer Test", "");
 
   arma::mat x = arma::linspace(0, M_PI, 50);
   arma::mat y = sin(pow(x,2));

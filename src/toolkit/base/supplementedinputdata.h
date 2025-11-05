@@ -168,7 +168,7 @@ public:
           name,
           toValue(q, u),
           description,
-          boost::lexical_cast<std::string>(u)
+          toString(u)
           );
   }
 

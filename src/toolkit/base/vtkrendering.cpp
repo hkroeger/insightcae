@@ -1537,6 +1537,16 @@ void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile) cons
 
 
 
+std::unique_ptr<TemporaryFile> VTKOffscreenScene::exportImage() const
+{
+    auto result=std::make_unique<TemporaryFile>("exportedImage-%%%%%%.png");
+    exportImage(result->path());
+    return result;
+}
+
+
+
+
 vtkCamera* VTKOffscreenScene::activeCamera()
 {
   return renderer_->GetActiveCamera();
@@ -2178,7 +2188,7 @@ void forEachUnconnectedPart(
                 subsec );
 
             rowLabels[r]=regionPrefix;
-            for (const auto& q: *subsec)
+            for (auto& q: static_cast<const ResultElementMap&>(*subsec))
             {
                 if (auto s = std::dynamic_pointer_cast<ScalarResult>(q.second))
                 {

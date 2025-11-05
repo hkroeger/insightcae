@@ -148,7 +148,8 @@ ResultSetPtr Analysis::createResultSet() const
 {
     auto desc=Analysis::descriptions()(type());
     auto results=std::make_shared<ResultSet>(
-        parameters(), desc.name, "Result Report");
+        parameters().cloneAs<ParameterSet>(),
+        desc.name, "Result Report" );
     results->introduction() = desc.description;
     return results;
 }

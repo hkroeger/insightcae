@@ -1,6 +1,7 @@
 #include "iqvtkiscadmodeldisplay.h"
 
 #include <QItemSelectionModel>
+#include <QHeaderView>
 
 #include "iqgroupingitemmodel.h"
 
@@ -45,6 +46,7 @@ IQVTKISCADModelDisplay::IQVTKISCADModelDisplay
     auto selmodel = new QItemSelectionModel(model_);
     viewer_->setSelectionModel(selmodel);
     modeltree_->setSelectionModel(selmodel);
+    modeltree_->header()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
 }
 
 IQVTKISCADModelDisplay::~IQVTKISCADModelDisplay()

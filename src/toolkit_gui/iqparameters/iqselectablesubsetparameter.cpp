@@ -26,7 +26,7 @@ addToFactoryTable(IQParameter, IQSelectableSubsetParameter);
 
 
 addFunctionToStaticFunctionTable(
-    IQParameterGridViewDelegateEditorWidget, IQSelectableSubsetParameter,
+    IQHierarchicalDataGridViewDelegateEditorWidget, IQSelectableSubsetParameter,
     createDelegate,
     [](QObject* parent) { return new IQSelectionDelegate(parent); }
     );
@@ -37,12 +37,11 @@ addFunctionToStaticFunctionTable(
 IQSelectableSubsetParameter::IQSelectableSubsetParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSelectionParameterBase<insight::SelectableSubsetParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
@@ -82,7 +81,7 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
               doc.append_node(rootnode);
 
               // store parameters
-              parameter().appendToNode(this->name().toStdString(), doc, *rootnode, "");
+              parameter().appendToNode(this->name().toStdString(), doc, *rootnode);
 
               f << doc;
               f << std::endl;
@@ -111,10 +110,15 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
 
 
               // store parameters
-              parameterRef().readFromNode(this->name().toStdString(), *rootnode, "");
+              parameterRef().readFromNode(this->name().toStdString(), *rootnode);
           }
       }
       );
+}
+
+QVariant IQSelectableSubsetParameter::value() const
+{
+    return QString::fromStdString(parameter().selection());
 }
 
 

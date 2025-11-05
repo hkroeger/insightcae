@@ -92,9 +92,9 @@ void TangentConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(l1.get())) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(l2.get()))
+            + toString(myLabel) + ", "
+            + toString(entityLabels.at(l1.get())) + ", "
+            + toString(entityLabels.at(l2.get()))
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -191,7 +191,7 @@ ConstrainedSketchEntityPtr TangentConstraint::clone() const
     auto cl=TangentConstraint::create( line1_, line2_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

@@ -9,8 +9,7 @@ namespace insight {
 
 
 class ResultSection
-    : public ResultElementCollection,
-      public ResultElement
+    : public ResultElementCollection
 {
     std::string sectionName_, introduction_;
 
@@ -24,7 +23,10 @@ public:
     const std::string& introduction() const;
 
     void insertLatexHeaderCode ( std::set<std::string>& h ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
     /**
@@ -37,13 +39,14 @@ public:
         rapidxml::xml_node<>& node
     ) const override;
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
         (
             const std::string& name,
             const rapidxml::xml_node<>& node
         ) override;
 
-    std::shared_ptr<ResultElement> clone() const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

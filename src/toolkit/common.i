@@ -1,5 +1,6 @@
 %include <stl.i>
 %include <std_auto_ptr.i>
+%include <std_unique_ptr.i>
 %include <std_shared_ptr.i>
 %include <boost_shared_ptr.i>
 
@@ -19,6 +20,10 @@
 %shared_ptr(insight::ResultSet);
 %shared_ptr(insight::PlotField);
 %shared_ptr(insight::PolarContourChart);
+
+%unique_ptr(insight::ParameterSet);
+%unique_ptr(insight::hierarchicalData::Element);
+%unique_ptr(insight::hierarchicalData::Element::UpdateValueSignalBlockage);
 
 %typemap(in) boost::optional<double> %{
     if($input == Py_None)

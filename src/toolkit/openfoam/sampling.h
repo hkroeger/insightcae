@@ -193,7 +193,7 @@ public:
     virtual set* clone() const;
 
     arma::mat rotMatrix(int i, double angularOffset=0) const;
-    inline std::string setname(int i) const { return p().name+"-"+boost::lexical_cast<std::string>(i); }
+    inline std::string setname(int i) const { return p().name+"-"+toString(i); }
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
                           const std::string& time="", // empty string means latest
@@ -232,7 +232,7 @@ public:
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 
-    inline std::string setname(int i, int j) const { return p().name+"-"+boost::lexical_cast<std::string>(i*p().nd1+j); }
+    inline std::string setname(int i, int j) const { return p().name+"-"+toString(i*p().nd1+j); }
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
                           const std::string& time="", // empty string means latest

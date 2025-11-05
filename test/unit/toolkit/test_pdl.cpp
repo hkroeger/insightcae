@@ -250,13 +250,12 @@ int main()
             auto &ae = ps_test.get<DoubleParameter>("run/initialization/preRuns/resolutions/1/nax_parameter");
             cout<<"naxp1="<<ae()<<std::endl;
 
-<<<<<<< HEAD
-  c.check<DoubleParameter>(
-      "run/regime/endTime",
-       boost::get<TestPDL::Parameters::run_type::regime_unsteady_type>(
-           c.ps_static.run.regime).endTime,
-       20.);
-=======
+            c.check<DoubleParameter>(
+                  "run/regime/endTime",
+                   boost::get<TestPDL::Parameters::run_type::regime_unsteady_type>(
+                       c.ps_static.run.regime).endTime,
+                   20.);
+
             bool failed=false;
             try
             {
@@ -267,14 +266,34 @@ int main()
                 failed=true;
             }
             if (!failed)
-                throw insight::Exception("access should have failed!");
->>>>>>> 40b46e9f (update/add tests)
+                throw insight::Exception("acces should have failed!");
 
             auto &ae2 = ae.parentSet().get<DoubleParameter>("../0/nax_parameter");
             cout<<"naxp0="<<ae2()<<std::endl;
 
             auto &mp = ae.parentSet().get<MatrixParameter>("../../../../../matrix");
             cout<<"matrix="<<mp()<<std::endl;
+
+            std::cout<<"subps/W => "<<p_test.subps.W.parameterPath<<std::endl;
+            std::cout<<"subps/subsub/sarr => "<<p_test.subps.subsub.sarr.parameterPath<<std::endl;
+
+
+            ParametersReference<SubPS::Parameters> psub(p_test.subps);
+
+            insight::assertion(
+                *psub.get().W.parameterPath=="subps/W",
+                "unexpected path");
+            insight::assertion(
+                *psub.get().subsub.sarr.parameterPath=="subps/subsub/sarr",
+                "unexpected path");
+
+
+            const ParametersBase& ps = p_test.subps;
+
+            std::cout<<*dynamic_cast<const SubPS::Parameters&>(ps).W.parameterPath<<std::endl;
+            insight::assertion(
+                *dynamic_cast<const SubPS::Parameters&>(ps).W.parameterPath=="subps/W",
+                "unexpected path");
         }
 
 
@@ -283,6 +302,7 @@ int main()
         //   save and restore
         //
         //
+
         {
             CaseDirectory tmp(false);
 
@@ -305,50 +325,8 @@ int main()
         return -1;
     }
 
-<<<<<<< HEAD
-  bool failed=false;
-  try
-  {
-      ae.parentSet().get<DoubleParameter>("../../../0/nax_parameter");
-  }
-  catch (...)
-  {
-      failed=true;
-  }
-  if (!failed)
-      throw insight::Exception("acces should have failed!");
-
-  auto &ae2 = ae.parentSet().get<DoubleParameter>("../0/nax_parameter");
-  cout<<"naxp0="<<ae2()<<std::endl;
-
-  auto &mp = ae.parentSet().get<MatrixParameter>("../../../../../matrix");
-  cout<<"matrix="<<mp()<<std::endl;
-
-  std::cout<<"subps/W => "<<p_test.subps.W.parameterPath<<std::endl;
-  std::cout<<"subps/subsub/sarr => "<<p_test.subps.subsub.sarr.parameterPath<<std::endl;
 
 
-  ParametersReference<SubPS::Parameters> psub(p_test.subps);
-
-  insight::assertion(
-      *psub.get().W.parameterPath=="subps/W",
-      "unexpected path");
-  insight::assertion(
-      *psub.get().subsub.sarr.parameterPath=="subps/subsub/sarr",
-      "unexpected path");
-
-
-  const ParametersBase& ps = p_test.subps;
-
-  std::cout<<*dynamic_cast<const SubPS::Parameters&>(ps).W.parameterPath<<std::endl;
-  insight::assertion(
-      *dynamic_cast<const SubPS::Parameters&>(ps).W.parameterPath=="subps/W",
-      "unexpected path");
-
-
-  return 0;
-=======
     std::cout<<"Test successful"<<std::endl;
     return 0;
->>>>>>> 40b46e9f (update/add tests)
 }

@@ -1211,7 +1211,8 @@ void ChannelCyclic::createCase
   cm.insert(new PressureGradientSource(
               cm,
               PressureGradientSource::Parameters()
-              .set_Ubar(vec3(sp().Ubulk_, 0, 0))
+               .set_Ubar(vec3(sp().Ubulk_, 0, 0))
+               .set_name("forceMeanVelocity")
               ));
 }
 

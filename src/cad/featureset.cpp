@@ -96,6 +96,16 @@ FeatureSet::~FeatureSet()
 {}
 
 
+ConstFeaturePtr FeatureSet::model() const
+{
+    return model_;
+}
+
+
+EntityType FeatureSet::shape() const
+{
+    return shape_;
+}
 
 FeatureSet::operator TopAbs_ShapeEnum () const
 {
@@ -227,27 +237,30 @@ size_t ProvidedFeatureSet::calcHash() const
 
 void ProvidedFeatureSet::build()
 {
-    FeatureSet::operator=(
-        *model_->featureSymbols(shape()).at(label_)
-    );
+    auto fs = model_->featureSymbols(shape());
+    auto ofs = fs.find(label_);
+    insight::assertion(
+        ofs!=nullptr,
+        "model has not feature set with label %s", label_.c_str());
+    FeatureSet::operator=(**ofs);
 }
 
 ProvidedFeatureSet::ProvidedFeatureSet(
     const ProvidedFeatureSet&o, TreeCloneMap& tcm )
-: FeatureSet(o, tcm),
+: ASTBasedFeatureSet(o, tcm),
   CL(model_), label_(o.label_)
 {}
 
 ProvidedFeatureSet::ProvidedFeatureSet(
     ConstFeaturePtr m, EntityType shape,
     const std::string& label )
-    : FeatureSet(nullptr, shape), model_(m), label_(label)
+    : ASTBasedFeatureSet(nullptr, shape), model_(m), label_(label)
 {}
 
 const FeatureSetData& ProvidedFeatureSet::data() const
 {
     checkForBuildDuringAccess();
-    return data();
+    return FeatureSet::data();
 }
 
 size_t ProvidedFeatureSet::calcFeatureSetHash() const
@@ -353,7 +366,7 @@ void DeferredFeatureSet::build()
 
 
 DeferredFeatureSet::DeferredFeatureSet(const DeferredFeatureSet&o, TreeCloneMap& tcm)
-  : FeatureSet(o, tcm),
+  : ASTBasedFeatureSet(o, tcm),
     CL(baseSet_), filterexpr_(o.filterexpr_)
 {
     for (auto& r: o.refs_)
@@ -383,7 +396,7 @@ DeferredFeatureSet::DeferredFeatureSet
         const string& filterexpr,
         const FeatureSetParserArgList& refs
         )
-: FeatureSet(m, shape),
+: ASTBasedFeatureSet(m, shape),
     filterexpr_(filterexpr),
     refs_(refs)
 {}
@@ -395,7 +408,7 @@ DeferredFeatureSet::DeferredFeatureSet
         const string& filterexpr,
         const FeatureSetParserArgList& refs
         )
-: FeatureSet(q->model(), q->shape()),
+: ASTBasedFeatureSet(q->model(), q->shape()),
     baseSet_(q),
     filterexpr_(filterexpr),
     refs_(refs)

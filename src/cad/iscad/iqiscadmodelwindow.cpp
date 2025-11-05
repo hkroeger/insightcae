@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <qlayoutitem.h>
 #include <qnamespace.h>
 
 #include "iqcaditemmodel.h"
@@ -47,6 +48,7 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
         auto *rebuildBtnUTC = new QPushButton(_("Rbld to Cursor"), gb);
         shbox->addWidget(rebuildBtn);
         shbox->addWidget(rebuildBtnUTC);
+        shbox->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Minimum));
         controlWidget->setLayout(shbox);
 
         auto *vbox = new QVBoxLayout;
@@ -60,6 +62,9 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
         QCheckBox *toggleSkipPostprocActions=new QCheckBox(_("Skip Postproc Actions"), gb);
         toggleSkipPostprocActions->setCheckState( Qt::Checked );
         tglHBox->addWidget(toggleSkipPostprocActions);
+
+        tglHBox->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
         vbox->addLayout(tglHBox);
 
         gb->setLayout(vbox);

@@ -71,6 +71,21 @@ public:
 
 
 
+class Linear2DVectorSpaceBase
+    : public VectorSpaceBase
+{
+protected:
+    vector ep_, ev_;
+
+public:
+
+    void read(Istream&is) override;
+    void writeSup(Ostream& os) const override;
+
+    scalar t(const point& p) const;
+    scalar u(const point& p) const;
+};
+
 
 class CylCoordVectorSpaceBase
 : public VectorSpaceBase

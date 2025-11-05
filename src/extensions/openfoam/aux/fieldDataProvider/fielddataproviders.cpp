@@ -17,8 +17,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "fielddataprovider.h"
+#include "fielddataproviders.h"
 #include "addToRunTimeSelectionTable.H"
+
+
+#define makeFieldDataProvider(Type)                                           \
+typedef FieldDataProvider<Type> Type##FieldDataProvider;                      \
+    defineNamedTemplateTypeNameAndDebug(Type##FieldDataProvider, 0);          \
+                                                                              \
+    defineTemplateRunTimeSelectionTable                                       \
+    (                                                                         \
+      Type##FieldDataProvider,                                              \
+      Istream                                                               \
+        )
+
+
+#define makeFieldDataProviderType(SS, Type)                                   \
+typedef SS<Type> Type##SS;                                                    \
+    defineNamedTemplateTypeNameAndDebug(Type##SS, 0);                         \
+                                                                              \
+    Type##FieldDataProvider::addIstreamConstructorToTable<SS<Type> >          \
+    add##SS##Type##ConstructorToTable_;
+
+
 
 namespace Foam
 {
@@ -66,6 +87,7 @@ makeProviders(linearProfile);
 makeProviders(radialProfile);
 makeProviders(circumferentialProfile);
 makeProviders(fittedProfile);
+makeProviders(fitted2DProfile);
 makeProviders(vtkField);
 
 }

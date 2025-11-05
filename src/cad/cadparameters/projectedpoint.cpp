@@ -47,7 +47,7 @@ size_t ProjectedPoint::calcHash() const
     ParameterListHash h;
     h+=*p0_;
     h+=*plane_;
-    h+=*along_;
+    if (along_) h+=*along_;
     return h.getHash();
 }
 

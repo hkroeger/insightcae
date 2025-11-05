@@ -25,6 +25,9 @@ add_sources(insightcad_SOURCES
   faceadjacenttofaces.cpp
   boundaryofface.cpp
   cylfaceorientation.cpp
+
+
+  commonfacearea.h commonfacearea.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

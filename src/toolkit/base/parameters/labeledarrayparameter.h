@@ -77,6 +77,7 @@ public:
     bool keysAreLocked() const;
 
     std::set<std::string> keys() const;
+    bool hasKey(const std::string& label) const;
     value_type& value();
     const value_type& value() const;
 

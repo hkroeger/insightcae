@@ -195,6 +195,11 @@ std::set<std::string> LabeledArrayParameter::keys() const
     return r;
 }
 
+bool LabeledArrayParameter::hasKey(const std::string &label) const
+{
+    return value().count(label)>0;
+}
+
 LabeledArrayParameter::value_type &LabeledArrayParameter::value()
 {
     ensureInitialization();
@@ -336,7 +341,7 @@ void LabeledArrayParameter::insertValueImpl(
 Parameter &LabeledArrayParameter::getOrInsertDefaultValue(const std::string &label)
 {
     insight::assertion(
-        !keysAreLocked(),
+        !(keysAreLocked()&&(!hasKey(label))),
         "attempt to insert %s entry to synchronized array", label.c_str());
     ensureInitialization();
     return getOrInsertDefaultValueImpl(label);

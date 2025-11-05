@@ -445,7 +445,8 @@ bool checkNormalsOrientation(vtkPolyData* vpm, const arma::mat& pFar, bool modif
 }
 
 
-vtkSmartPointer<vtkUnstructuredGrid> multiBlockDataSetToUnstructuredGrid(vtkDataObject *input)
+vtkSmartPointer<vtkUnstructuredGrid>
+multiBlockDataSetToUnstructuredGrid(vtkDataObject *input)
 {
     auto output = vtkSmartPointer<vtkUnstructuredGrid>::New();
 

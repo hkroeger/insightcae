@@ -686,7 +686,9 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const P& tmp )
       tmp.selection, cm, ParameterSetInput(*tmp.parameters) );
 
   if (!model)
-      throw insight::Exception(_("Unrecognized RASModel selection: %s"), tmp.selection);
+      throw insight::Exception(
+          _("Unrecognized RASModel selection: %s"),
+            tmp.selection.c_str());
 
   return cm.insert(model);
 }

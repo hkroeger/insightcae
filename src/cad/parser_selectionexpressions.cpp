@@ -220,6 +220,19 @@ void ISCADParser::createSelectionExpressions()
                                         ),
                                     phx::ref(qi::_val)
                                     ) ]
+                   |
+                   ( r_identifier > current_pos.current_pos )
+                       [ _val = phx::construct<FeatureSetPtr>(
+                            phx::new_<ProvidedFeatureSet>(
+                                qi::_a, insight::cad::Edge, qi::_1 )),
+
+                           phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                                     phx::construct<SyntaxElementLocation>(
+                                         filenameinfo_,
+                                         phx::construct<SyntaxElementPos>(qi::_b, qi::_2)
+                                         ),
+                                     phx::ref(qi::_val)
+                                     ) ]
                   )
                 )
                 |
@@ -234,27 +247,21 @@ void ISCADParser::createSelectionExpressions()
                                   ),
                               phx::ref(qi::_val)
                               ) ]
-                |
-                ( lit("alledges") > current_pos.current_pos )
-                 [ _val = phx::bind(
-                       &DeferredFeatureSet::create
-                       <ConstFeaturePtr,EntityType>,
-                       qi::_a, insight::cad::Edge ),
-
-                       phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
-                                 phx::construct<SyntaxElementLocation>(
-                                     filenameinfo_,
-                                     phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
-                                     ),
-                                 phx::ref(qi::_val)
-                                 ) ]
-                |
-              ( !(selectionkeywords) >> r_identifier
-                  [ _val = phx::construct<FeatureSetPtr>(
-                       phx::new_<ProvidedFeatureSet>(
-                           qi::_a, insight::cad::Edge, qi::_1 )) ] )
-                //qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Edge)) [ qi::_val = qi::_1 ]
               )
+            |
+            ( lit("alledges") > current_pos.current_pos )
+                [ _val = phx::bind(
+                     &DeferredFeatureSet::create
+                     <ConstFeaturePtr,EntityType>,
+                     qi::_a, insight::cad::Edge ),
+
+                 phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                           phx::construct<SyntaxElementLocation>(
+                               filenameinfo_,
+                               phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
+                               ),
+                           phx::ref(qi::_val)
+                           ) ]
         )
         >>
         *(
@@ -289,7 +296,16 @@ void ISCADParser::createSelectionExpressions()
 
     r_faceFeaturesExpression =
         (
-            model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
+            ( current_pos.current_pos >> model_->faceFeatureSymbols() >> current_pos.current_pos ) [
+                                    qi::_val = qi::_2,
+
+                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                               phx::construct<SyntaxElementLocation>(
+                                   filenameinfo_,
+                                   phx::construct<SyntaxElementPos>(qi::_1, qi::_3)
+                                   ),
+                               phx::ref(qi::_val)
+                               ) ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' )
                     [qi::_a=qi::_1, qi::_b=qi::_2]
@@ -331,6 +347,19 @@ void ISCADParser::createSelectionExpressions()
                                          ),
                                      phx::ref(qi::_val)
                                      )  ]
+                      |
+                      ( r_identifier > current_pos.current_pos )
+                           [ _val = phx::construct<FeatureSetPtr>(
+                                phx::new_<ProvidedFeatureSet>(
+                                    qi::_a, insight::cad::Face, qi::_1 )),
+
+                               phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                                         phx::construct<SyntaxElementLocation>(
+                                             filenameinfo_,
+                                             phx::construct<SyntaxElementPos>(qi::_b, qi::_2)
+                                             ),
+                                         phx::ref(qi::_val)
+                                         ) ]
                     )
                )
                |
@@ -344,26 +373,22 @@ void ISCADParser::createSelectionExpressions()
                                   ),
                               phx::ref(qi::_val)
                               ) ]
-               |
-               ( lit("allfaces") > current_pos.current_pos
-               ) [ _val = phx::bind(
-                              &DeferredFeatureSet::create
-                              <ConstFeaturePtr,EntityType>,
-                              qi::_a, insight::cad::Face ),
 
-                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
-                              phx::construct<SyntaxElementLocation>(
-                                  filenameinfo_,
-                                  phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
-                                  ),
-                              phx::ref(qi::_val)
-                              ) ]
-               |
-              ( !(selectionkeywords) >> r_identifier
-                  [ _val = phx::construct<FeatureSetPtr>(
-                       phx::new_<ProvidedFeatureSet>(
-                           qi::_a, insight::cad::Face, qi::_1 )) ] )
                 //qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Face)) [ qi::_val = qi::_1 ]
+              |
+              ( lit("allfaces") > current_pos.current_pos
+               ) [ _val = phx::bind(
+                           &DeferredFeatureSet::create
+                           <ConstFeaturePtr,EntityType>,
+                           qi::_a, insight::cad::Face ),
+
+                       phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                                 phx::construct<SyntaxElementLocation>(
+                                     filenameinfo_,
+                                     phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
+                                     ),
+                                 phx::ref(qi::_val)
+                                 ) ]
             )
         )
         >>
@@ -401,58 +426,67 @@ void ISCADParser::createSelectionExpressions()
             model_->solidFeatureSymbols()[ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [ _a=qi::_1, _b=qi::_2 ]
-            >> (
-              ( (lit("solids")|lit("solid"))
-               > '(' > r_string
-               > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
+            >> ( ( (lit("solids")|lit("solid"))
+               > (
+                   ('(' > r_string
+                    > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
                                                       |r_edgeFeaturesExpression|r_vertexFeaturesExpression
                                                       |r_vectorExpression|r_scalarExpression) )
-               > ')' > current_pos.current_pos
-              ) [ _val = phx::bind(
-                       &DeferredFeatureSet::create
-                       <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>,
-                       qi::_a, insight::cad::Solid, qi::_1, qi::_2),
+                    > ')' > current_pos.current_pos )
+                   [ _val = phx::bind(
+                           &DeferredFeatureSet::create
+                           <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>,
+                           qi::_a, insight::cad::Solid, qi::_1, qi::_2),
 
-                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
-                               phx::construct<SyntaxElementLocation>(
-                                   filenameinfo_,
-                                   phx::construct<SyntaxElementPos>(qi::_b, qi::_3)
-                                   ),
-                               phx::ref(qi::_val)
-                               ) ]
-              |
-              ( lit("allsolids")> current_pos.current_pos
-              ) [ _val = phx::bind(
-                        &DeferredFeatureSet::create
-                        <ConstFeaturePtr,EntityType>,
-                        qi::_a, insight::cad::Solid ),
+                         phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                                   phx::construct<SyntaxElementLocation>(
+                                       filenameinfo_,
+                                       phx::construct<SyntaxElementPos>(qi::_b, qi::_3)
+                                       ),
+                                   phx::ref(qi::_val)
+                                   ) ]
+                |
+                   ( r_identifier > current_pos.current_pos )
+                     [ _val = phx::construct<FeatureSetPtr>(
+                          phx::new_<ProvidedFeatureSet>(
+                              qi::_a, insight::cad::Solid, qi::_1 )),
+
+                         phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                                   phx::construct<SyntaxElementLocation>(
+                                       filenameinfo_,
+                                       phx::construct<SyntaxElementPos>(qi::_b, qi::_2)
+                                       ),
+                                   phx::ref(qi::_val)
+                                   ) ]
+                )
+             )
+             |
+             ( lit("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'> current_pos.current_pos
+              )
+                 [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1)),
 
                   phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                             phx::construct<SyntaxElementLocation>(
                                 filenameinfo_,
-                                phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
+                                phx::construct<SyntaxElementPos>(qi::_b, qi::_2)
                                 ),
                             phx::ref(qi::_val)
                             ) ]
-              |
-              ( lit("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'> current_pos.current_pos
-              )
-              [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1)),
+             |
+             ( lit("allsolids")> current_pos.current_pos
+              ) [ _val = phx::bind(
+                          &DeferredFeatureSet::create
+                          <ConstFeaturePtr,EntityType>,
+                          qi::_a, insight::cad::Solid ),
 
-                phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
-                          phx::construct<SyntaxElementLocation>(
-                              filenameinfo_,
-                              phx::construct<SyntaxElementPos>(qi::_b, qi::_2)
-                              ),
-                          phx::ref(qi::_val)
-                          ) ]
-              |
-              // qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Solid)) [ qi::_val = qi::_1 ]
-               ( !(selectionkeywords) >> r_identifier
-                   [ _val = phx::construct<FeatureSetPtr>(
-                        phx::new_<ProvidedFeatureSet>(
-                            qi::_a, insight::cad::Solid, qi::_1 )) ] )
-            )
+                      phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                                phx::construct<SyntaxElementLocation>(
+                                    filenameinfo_,
+                                    phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
+                                    ),
+                                phx::ref(qi::_val)
+                                ) ]
+             )
         )
         >>
         *(

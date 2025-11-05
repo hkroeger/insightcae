@@ -206,6 +206,7 @@ public:
 };
 
 
+#ifndef SWIG
 class ASTBasedFeatureSet
     : public ASTBase,
       public FeatureSet
@@ -213,7 +214,7 @@ class ASTBasedFeatureSet
 public:
     using FeatureSet::FeatureSet;
 };
-
+#endif
 
 class ProvidedFeatureSet
     : public ASTBasedFeatureSet

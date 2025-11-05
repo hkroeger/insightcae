@@ -26,6 +26,7 @@
 #include <functional>
 #include <vector>
 #include <set>
+#include <iterator>
 #include "base/exception.h"
 #include "base/factory.h"
 
@@ -95,6 +96,80 @@ std::vector<T> vector_cast(
 {
     return std::container_type_cast<std::vector<T> >(c1);
 }
+
+
+// taken from https://stackoverflow.com/a/3611374
+
+template<class Container>
+class last_inserter_iterator
+/*: public std::_Outit*/
+: public std::iterator<std::output_iterator_tag,
+                           void, void, void, void>
+{
+public:
+    typedef last_inserter_iterator<Container> _Myt;
+    typedef Container container_type;
+    typedef typename Container::const_reference const_reference;
+    typedef typename Container::value_type _Valty;
+
+    last_inserter_iterator(Container& cont)
+        : container(cont)
+    {
+    }
+
+    _Myt& operator=(const _Valty& _Val)
+    {
+        container.insert(get_insert_hint(), _Val);
+        return (*this);
+    }
+
+    _Myt& operator=(_Valty&& _Val)
+    {
+        container.insert(get_insert_hint(), std::forward<_Valty>(_Val));
+        return (*this);
+    }
+
+    _Myt& operator*()
+    {
+        return (*this);
+    }
+
+    _Myt& operator++()
+    {
+        return (*this);
+    }
+
+    _Myt& operator++(int)
+    {
+        return (*this);
+    }
+
+protected:
+    Container& container;
+
+    typename Container::iterator get_insert_hint() const
+    {
+        // Container is empty: no last element to insert ahead of; just insert at begin.
+        if (container.empty())
+            return container.begin();
+        else
+        {
+            // Otherwise return iterator to last element in the container.  std::set wants the
+            // element *preceding* the insert position as a hint, so this should be an iterator
+            // to the last actual element, not end().
+            return (--container.end());
+        }
+    }
+};
+
+template<typename Container>
+inline last_inserter_iterator<Container> last_inserter(Container& cont)
+{
+    return last_inserter_iterator<Container>(cont);
+}
+
+
+
 
 class observer_ptr_base;
 
@@ -626,7 +701,6 @@ public:
 
     std::vector<boost::signals2::shared_connection_block> block_all();
 };
-
 
 
 

@@ -33,6 +33,8 @@
 #include "boost/iostreams/filtering_stream.hpp"
 #include "boost/iostreams/filter/gzip.hpp"
 
+#include "base/tools.h"
+
 using namespace std;
 using namespace boost;
 
@@ -254,7 +256,7 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
   out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" version     "+toString(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
        <<" class       "+d.className+";"<<endl
        <<" object      " << objname << ";"<<endl
@@ -337,7 +339,7 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d,
   out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" version     "+toString(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
        <<" class       "+d.className+";"<<endl
        <<" object      boundary;"<<endl
@@ -365,7 +367,7 @@ void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& 
   {
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" version     "+toString(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
        <<" class       "+d.className+";"<<endl
        <<" object      " << objname << ";"<<endl

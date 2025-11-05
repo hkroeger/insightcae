@@ -76,7 +76,7 @@ public:
   ExternalGeometryFile( ParameterSetInput ip = Parameters() )
         : Base(ip.forward<Parameters>())
   {
-        auto fname=p().fileName->originalFilePath().filename().string();
+        auto fname=p().fileName->fileName().filename().string();
         insight::assertion(
             std::isalpha(fname[0]),
             "filename must not start with a number or special char (got %s)",
@@ -93,7 +93,7 @@ public:
       const boost::filesystem::path& location
       ) const
     {
-        boost::filesystem::path from( p().fileName->filePath(location) );
+        boost::filesystem::path from( p().fileName->localFilePath() );
         boost::filesystem::path to( snappyHexMeshFeats::geometryDir(ofc, location)/from.filename() );
 
         if (!exists(to.parent_path()))

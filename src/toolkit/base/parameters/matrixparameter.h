@@ -42,6 +42,7 @@ protected:
 public:
     declareType ( "matrix" );
 
+    MatrixParameter (const rapidxml::xml_node<> & node);
     MatrixParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     MatrixParameter ( const arma::mat& defaultValue, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
@@ -50,23 +51,26 @@ public:
     void set(const arma::mat& nv);
     const arma::mat& operator() () const;
 
-    std::string latexRepresentation() const override;
-    std::string plainTextRepresentation(int indent=0) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    std::string plainTextRepresentation(int indent) const override;
 
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) const override;
+        rapidxml::xml_node<>& node ) const override;
 
-    void readFromNode (
+    const rapidxml::xml_node<>* readFromNode (
         const std::string& name,
-        const rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) override;
+        const rapidxml::xml_node<>& node ) override;
 
-    std::unique_ptr<Parameter> clone(bool initialize) const override;
-    void copyFrom(const Parameter& p) override;
-    void operator=(const MatrixParameter& p);
+    std::unique_ptr<Element> clone() const override;
+    void assignFrom(const Element& p) override;
+    bool isEqual(const Element& op) const override;
+
     int nChildren() const override;
 };
 

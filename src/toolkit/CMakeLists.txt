@@ -41,6 +41,9 @@ set(toolkit_SOURCES
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h
 
+
+    base/hierarchicalelement.h base/hierarchicalelement.cpp
+
     base/parameter.cpp base/parameter.h
     base/parameters/simpleparameter.cpp base/parameters/simpleparameter.h
     base/parameters/pathparameter.cpp base/parameters/pathparameter.h
@@ -87,6 +90,7 @@ set(toolkit_SOURCES
     base/taskspoolerinterface.cpp base/taskspoolerinterface.h
     base/mountremote.cpp base/mountremote.h
     base/outputanalyzer.cpp base/outputanalyzer.h
+    base/filestorageinfo.h base/filestorageinfo.cpp
     base/filecontainer.cpp base/filecontainer.h
     base/streamredirector.h base/streamredirector.cpp
     base/streamtoprogressdisplayer.h base/streamtoprogressdisplayer.cpp

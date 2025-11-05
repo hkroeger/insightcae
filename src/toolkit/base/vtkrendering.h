@@ -10,6 +10,7 @@
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 #include "base/spatialtransformation.h"
+#include "base/tools.h"
 
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
@@ -414,6 +415,7 @@ public:
 
   void exportX3D(const boost::filesystem::path& file) const;
   void exportImage(const boost::filesystem::path& pngfile) const;
+  std::unique_ptr<TemporaryFile> exportImage() const;
 
   vtkCamera* activeCamera();
   void setupActiveCamera(

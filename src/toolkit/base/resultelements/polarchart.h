@@ -29,7 +29,9 @@ public:
 
  void generatePlotImage ( const boost::filesystem::path& imagepath ) const override;
 
- ResultElementPtr clone() const override;
+ std::unique_ptr<hierarchicalData::Element> clone() const override;
+
+ bool isEqual(const Element& op) const override;
 };
 
 

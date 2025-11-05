@@ -22,6 +22,7 @@
 #define INSIGHT_SIMPLEDIMENSIONEDPARAMETER_H
 
 
+#include "base/tools.h"
 #include "base/parameter.h"
 #include "base/units.h"
 #include "base/rapidxml.h"
@@ -95,18 +96,23 @@ public:
       return value_.value();
     }
 
-    std::string latexRepresentation() const override
+    std::string latexRepresentation(
+        const std::string&,
+        int,
+        const FileStorageInfo& ) const override
     {
-        return SimpleLatex( valueToString ( value_.value() ) + boost::units::symbol_string(unit_type()) ).toLaTeX();
+        return SimpleLatex( toString ( value_.value() )
+                           + boost::units::symbol_string(unit_type()) ).toLaTeX();
     }
 
-    std::string plainTextRepresentation(int /*indent*/=0) const override
+    std::string plainTextRepresentation(int /*indent*/) const override
     {
-        return SimpleLatex( valueToString ( value_.value() ) + boost::units::symbol_string(unit_type()) ).toPlainText();
+        return SimpleLatex( toString ( value_.value() )
+                           + boost::units::symbol_string(unit_type()) ).toPlainText();
     }
 
 
-    std::unique_ptr<Parameter> clone(bool init) const override
+    std::unique_ptr<Element> clone() const override
     {
         using namespace boost::units;
         auto p = std::make_unique<SimpleDimensionedParameter<T, Unit, N> >
@@ -115,44 +121,32 @@ public:
               description().simpleLatex(),
               isHidden(), isExpert(), isNecessary(), order()
             );
-        if (init) p->initialize();
         return p;
     }
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node ) const override
     {
         using namespace rapidxml;
-        xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
-        base_value_type nv = value_.value();
-        child->append_attribute
-        (
-            doc.allocate_attribute
-            (
-                "value",
-                doc.allocate_string ( valueToString ( nv ).c_str() )
-            )
-        );
+        xml_node<>* child = Parameter::appendToNode ( name, doc, node );
+        appendAttribute(doc, *child, "value", value_.value() );
         return child;
     }
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
     (
         const std::string& name,
-        const rapidxml::xml_node<>& node,
-        boost::filesystem::path
+        const rapidxml::xml_node<>& node
     ) override
     {
         using namespace rapidxml;
       using namespace boost::units;
-        auto* child = findNode ( node, name, type() );
+        auto* child = Parameter::readFromNode ( name, node );
         if ( child )
         {
-          auto valueattr=child->first_attribute ( "value" );
-          insight::assertion(valueattr, "No value attribute present in "+name+"!");
-          base_value_type nv;
-          stringToValue ( valueattr->value(), nv );
-          value_ = value_type(nv * Unit());
+          value_ = value_type(getMandatoryAttribute<base_value_type>(*child, "value") * Unit());
           triggerValueChanged();
         }
         else
@@ -161,23 +155,39 @@ public:
                 boost::str(
                   boost::format(
                    "No xml node found with type '%s' and name '%s', default value '%s' is used."
-                   ) % type() % name % plainTextRepresentation()
+                   ) % type() % name % plainTextRepresentation(0)
                  )
               );
         }
+        return child;
     }
 
-    void copyFrom(const Parameter& p) override
-    {
-        operator=(dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>&>(p));
 
+    SimpleDimensionedParameter(const rapidxml::xml_node<> & node)
+        : Parameter(node)
+    {
+#warning need to restore unit
+        value_ = value_type(getMandatoryAttribute<base_value_type>(node, "value") * Unit());
     }
 
-    void operator=(const SimpleDimensionedParameter& op)
+
+    void assignFrom(const Element& e)
     {
+        auto&op=dynamic_cast<const SimpleDimensionedParameter&>(e);
+
         value_=op.value_;
 
-        Parameter::copyFrom(op);
+        Parameter::assignFrom(op);
+    }
+
+    bool isEqual(const Element& op) const  override
+    {
+        if (auto *oa = dynamic_cast<const SimpleDimensionedParameter*>(&op))
+        {
+            return (value_==oa->value_);
+        }
+        else
+            return false;
     }
 
     int nChildren() const override
@@ -205,7 +215,7 @@ public:
 #define defineDimensionedParameter(baseType, baseTypeName, dimensionTypeName) \
   char baseTypeName##dimensionTypeName[] = #baseTypeName#dimensionTypeName; \
   template<> defineType(baseTypeName##dimensionTypeName##Parameter);\
-  addToFactoryTable(Parameter, baseTypeName##dimensionTypeName##Parameter)
+  addParameterFactories(baseTypeName##dimensionTypeName##Parameter)
 
 
 

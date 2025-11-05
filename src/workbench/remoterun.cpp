@@ -82,7 +82,7 @@ void RemoteRun::launch()
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
   ac_ = std::make_unique<insight::AnalyzeClient>(
-      af_->analysisName_,
+      af_->psmodel_->getAnalysisName(),
       str(format("http://127.0.0.1:%d")
           % portMappings_->localListenerPort(remote_->exeConfig().port()) ),
       &af_->progressDisplayer_
@@ -159,13 +159,15 @@ void RemoteRun::uploadInputFile()
 
         insight::dbg()<<"upload input file"<<std::endl;
 
-        auto p = af_->parameters().cloneParameterSet();
+        auto p = af_->parameters()
+                     .cloneAs<insight::ParameterSet>();
+
         p->pack(); // pack
 
         {
             auto rs = remote_->exeConfig().remoteOFStream(
                 "param.ist", 0 );
-            p->saveToStream(*rs, ".", af_->analysisName_);
+            p->saveToStream(*rs);
         }
 
         launchProgress_.stepTo(2);

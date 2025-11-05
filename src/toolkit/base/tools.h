@@ -33,6 +33,7 @@ class vtkCellArray;
 #include "boost/process/args.hpp"
 #include "base/linearalgebra.h"
 #include "base/outputanalyzer.h"
+#include "base/cppextensions.h"
 
 #include <istream>
 
@@ -43,6 +44,11 @@ class vtkCellArray;
 
 namespace insight
 {
+
+
+
+
+
 
 std::string base64_encode(const std::string& s);
 std::string base64_encode(const boost::filesystem::path& f);
@@ -56,6 +62,12 @@ void base64_decode(
 void base64_decode(
         const std::string& sourceBuffer,
         std::shared_ptr<std::string>& targetBuffer );
+
+
+
+
+
+
 
 /**
  * wrapper for calling virtual functions before destruction
@@ -208,6 +220,8 @@ std::string timeCodePrefix();
 
 
 
+
+
 class TemporaryFile
 {
   boost::filesystem::path tempFilePath_;
@@ -223,6 +237,8 @@ public:
   void closeStream();
   const boost::filesystem::path& path() const;
 };
+
+
 
 
 /**
@@ -242,6 +258,8 @@ public:
 };
 
 
+
+
 class RSYNCCommand
 {
   std::vector<std::string> args_;
@@ -252,6 +270,8 @@ public:
   boost::filesystem::path command() const;
   std::vector<std::string> arguments() const;
 };
+
+
 
 
 /**
@@ -281,6 +301,8 @@ public:
 };
 
 
+
+
 class ExecTimer
 : public boost::timer::auto_cpu_timer
 {
@@ -291,20 +313,113 @@ public:
 };
 
 
+
+
 void copyDirectoryRecursively(const boost::filesystem::path& sourceDir, const boost::filesystem::path& destinationDir);
+
+
+
+
+template<class V>
+std::string toString(const V& value)
+{
+    std::ostringstream os;
+    os.imbue(std::locale::classic());
+    os.precision(12);
+    os << value;
+    return os.str();
+}
+
+template<>
+std::string toString(const std::string& value);
+
+template<>
+std::string toString(const arma::mat& value);
+
+template<>
+std::string toString(const boost::gregorian::date& value);
+
+template<>
+std::string toString(const boost::posix_time::ptime& value);
+
+
+
 
 
 template<class T = double>
 T toNumber(const std::string& s)
 {
-  try {
-    return boost::lexical_cast<T>( boost::algorithm::trim_copy(s) );
-  } catch (const boost::bad_lexical_cast& e) {
-    throw insight::Exception("expected a number, got \""+s+"\"");
-  }
+    try
+    {
+        return boost::lexical_cast<T>(
+            boost::algorithm::trim_copy(s) );
+    }
+    catch (const boost::bad_lexical_cast& e)
+    {
+        throw insight::Exception("expected a number, got \""+s+"\"");
+    }
 }
 
 bool isNumber(const std::string& s);
+
+
+
+template<class Container>
+std::string toStringList(
+    const Container& vals,
+    const std::string& sep = "; " )
+{
+    std::vector<std::string> strVals;
+    std::transform(
+        vals.begin(), vals.end(),
+        std::back_inserter(strVals),
+        &toString<double>
+        );
+    return boost::join(strVals, sep);
+}
+
+
+template<class Container>
+Container toNumberList(
+    const std::string& listStr,
+    const std::string& sep = "; " )
+{
+    std::vector<std::string> strVals;
+    boost::split(
+        strVals, listStr,
+        boost::is_any_of(sep),
+        boost::algorithm::token_compress_on);
+
+    Container vals;
+    std::transform(
+        strVals.begin(), strVals.end(),
+        std::last_inserter<Container>(vals),
+        &toNumber<double>
+        );
+    return vals;
+}
+
+
+template<class V>
+V toValue(const std::string& s)
+{
+    return toNumber<V>(s);
+}
+
+template<>
+std::string toValue(const std::string& s);
+
+template<>
+arma::mat toValue(const std::string& s);
+
+template<>
+boost::gregorian::date toValue(const std::string& s);
+
+template<>
+boost::posix_time::ptime toValue(const std::string& s);
+
+
+
 
 
 class LineMesh_to_OrderedPointTable
@@ -433,7 +548,7 @@ public:
   template<class T>
   void replaceValue(const std::string& keyword, const T& content)
   {
-      replace(keyword, boost::lexical_cast<std::string>(content));
+      replace(keyword, toString<T>(content));
   }
 
   void write(std::ostream& os) const;

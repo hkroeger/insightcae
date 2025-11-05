@@ -238,7 +238,7 @@ void GmshCase::setMinimumCirclePoints(int mp)
 {
   insertLinesBefore(endOfMeshingOptions_, {
     "Mesh.CharacteristicLengthFromCurvature=1",
-    "Mesh.MinimumCirclePoints="+boost::lexical_cast<std::string>(mp)
+    "Mesh.MinimumCirclePoints="+toString(mp)
   });
 }
 
@@ -339,8 +339,7 @@ void GmshCase::nameVertices(const std::string& name, const FeatureSet& vertices)
               vertices.data().begin(),
               vertices.data().end(),
               std::back_inserter(nums),
-              [](int i)
-                { return boost::lexical_cast<std::string>(i); }
+              &toString<int>
   );
 
   insertLinesBefore(endOfNamedVerticesDefinition_, {
@@ -361,8 +360,7 @@ void GmshCase::nameEdges(const std::string& name, const FeatureSet& edges)
               edges.data().begin(),
               edges.data().end(),
               std::back_inserter(nums),
-              [](int i)
-                { return boost::lexical_cast<std::string>(i); }
+              &toString<int>
   );
 
   insertLinesBefore(endOfNamedVerticesDefinition_, {
@@ -382,8 +380,7 @@ void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
               faces.data().begin(),
               faces.data().end(),
               std::back_inserter(nums),
-              [](int i)
-                { return boost::lexical_cast<std::string>(i); }
+              &toString<int>
   );
 
   insertLinesBefore(endOfNamedVerticesDefinition_, {
@@ -403,8 +400,7 @@ void GmshCase::nameSolids(const std::string& name, const FeatureSet& solids)
               solids.data().begin(),
               solids.data().end(),
               std::back_inserter(nums),
-              [](int i)
-                { return boost::lexical_cast<std::string>(i); }
+              &toString<int>
   );
 
   insertLinesBefore(endOfNamedVerticesDefinition_, {
@@ -428,7 +424,7 @@ void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
 void GmshCase::setVertexLen(const std::string& vn, double L)
 {
   insertLinesBefore(endOfGeometryDefinition_, {
-    "Characteristic Length{\""+vn+"\"}="+boost::lexical_cast<std::string>(L)
+    "Characteristic Length{\""+vn+"\"}="+toString(L)
   });
 }
 
@@ -444,11 +440,11 @@ void GmshCase::setEdgeLen(const std::string& en, double L)
   std::vector<std::string> nums;
   std::transform(vs.data().begin(), vs.data().end(),
                  std::back_inserter(nums),
-                 [](int i) { return boost::lexical_cast<std::string>(i); });
+                 &toString<int>);
 
   insertLinesBefore(endOfGeometryDefinition_, {
     "Characteristic Length{"+boost::join(nums, ",")+"}="
-                        +boost::lexical_cast<std::string>(L)
+                        +toString(L)
                     });
 }
 
@@ -464,10 +460,10 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
   std::vector<std::string> nums;
   std::transform(vs.data().begin(), vs.data().end(),
                  std::back_inserter(nums),
-                 [](int i) { return boost::lexical_cast<std::string>(i); });
+                 &toString<int>);
 
   insertLinesBefore(endOfGeometryDefinition_, {
-    "Characteristic Length{"+boost::join(nums, ",")+"}="+boost::lexical_cast<std::string>(L)
+    "Characteristic Length{"+boost::join(nums, ",")+"}="+toString(L)
                     });
 }
 
@@ -494,10 +490,10 @@ int GmshCase::outputType() const
 void GmshCase::insertMeshingCommand()
 {
   insertLinesBefore(endOfMeshingOptions_, {
-    "Mesh.Algorithm = "+boost::lexical_cast<std::string>(algo2D_), /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */
-    "Mesh.Algorithm3D = "+boost::lexical_cast<std::string>(algo3D_), /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
-    "Mesh.CharacteristicLengthMin = "+boost::lexical_cast<std::string>(Lmin_),
-    "Mesh.CharacteristicLengthMax = "+boost::lexical_cast<std::string>(Lmax_),
+    "Mesh.Algorithm = "+toString(algo2D_), /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */
+    "Mesh.Algorithm3D = "+toString(algo3D_), /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
+    "Mesh.CharacteristicLengthMin = "+toString(Lmin_),
+    "Mesh.CharacteristicLengthMax = "+toString(Lmax_),
 
     "Mesh.Smoothing = 10",
     "Mesh.SmoothNormals = 1",
@@ -573,11 +569,10 @@ void GmshCase::doMeshing(int nthread)
           });
   }
 
-  insertLinesBefore(
-      endOfMeshingOptions_,
-      {
-          "Mesh.Format="+boost::lexical_cast<std::string>(otype)
-      });
+
+  insertLinesBefore(endOfMeshingOptions_, {
+                      "Mesh.Format="+toString(otype)
+                    });
 
   insertMeshingCommand();
 
@@ -603,7 +598,7 @@ void GmshCase::doMeshing(int nthread)
 
     argv.insert(argv.end(), {
                   "-v", "10",
-                  "-nt", boost::lexical_cast<std::string>(nthread),
+                  "-nt", toString(nthread),
                   boost::filesystem::absolute(inputFile).string(),
                   "-"
                 });

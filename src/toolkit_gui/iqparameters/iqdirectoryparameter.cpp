@@ -13,21 +13,15 @@ addToFactoryTable(IQParameter, IQDirectoryParameter);
 IQDirectoryParameter::IQDirectoryParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::DirectoryParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {
 }
 
 
-QString IQDirectoryParameter::valueText() const
-{
-  return QString::fromStdString(
-        parameter().originalFilePath().string() );
-}
 
 
 
@@ -43,7 +37,7 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
   lineEdit->setText(QString::fromStdString(
-      parameter().originalFilePath().string()));
+      parameter().fileName().string()));
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
 
@@ -52,7 +46,7 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    parameterRef().setOriginalFilePath( lineEdit->text().toStdString() );
+    parameterRef().setFileName( lineEdit->text().toStdString() );
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

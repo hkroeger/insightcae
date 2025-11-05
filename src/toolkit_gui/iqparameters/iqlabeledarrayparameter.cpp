@@ -9,15 +9,14 @@ addToFactoryTable(IQParameter, IQLabeledArrayParameter);
 IQLabeledArrayParameter::IQLabeledArrayParameter
     (
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element
         ) : IQSpecializedParameter<insight::LabeledArrayParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
-QString IQLabeledArrayParameter::valueText() const
+QVariant IQLabeledArrayParameter::value() const
 {
     return QString( "labeledarray[%1]" )
         .arg(parameter().size());
@@ -65,3 +64,5 @@ QVBoxLayout* IQLabeledArrayParameter::populateEditControls(
 
     return layout;
 }
+
+

@@ -39,7 +39,8 @@ void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& pref
       else if (data.n_cols==3)
           Udict["a"]=OFDictData::vector3(vec3(0,0,0));
       else
-          throw insight::Exception("Unhandled number of components: "+boost::lexical_cast<std::string>(data.n_cols));
+          throw insight::Exception(
+              "Unhandled number of components: %d", data.n_cols);
   }
   else
   {

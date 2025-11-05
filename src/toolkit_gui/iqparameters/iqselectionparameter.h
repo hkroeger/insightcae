@@ -60,21 +60,14 @@ public:
   IQSelectionParameterBase
   (
       QObject* parent,
-      IQParameterSetModel* psmodel,
-      insight::Parameter* parameter,
-      const insight::ParameterSet& defaultParameterSet
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element
   )
     : IQSpecializedParameter<SP>(
-            parent, psmodel, parameter, defaultParameterSet)
+            parent, hdmodel, element)
   {}
 
 
-
-  QString valueText() const override
-  {
-      return QString::fromStdString(
-          selectionParameter().selection() );
-  }
 
 
 

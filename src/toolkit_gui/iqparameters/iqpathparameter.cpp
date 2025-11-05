@@ -20,21 +20,15 @@ addToFactoryTable(IQParameter, IQPathParameter);
 IQPathParameter::IQPathParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::PathParameter>(
-          parent, psmodel, parameter, defaultParameterSet )
+          parent, hdmodel, element )
 {
 }
 
 
-QString IQPathParameter::valueText() const
-{
-  return QString::fromStdString(
-        parameter().originalFilePath().filename().string() );
-}
 
 
 
@@ -51,7 +45,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
   auto *lineEdit = new QLineEdit(editControlsContainer);
 //  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
   lineEdit->setText(QString::fromStdString(
-      parameter().originalFilePath().string()));
+      parameter().fileName().string()));
   layout2->addWidget(lineEdit);
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
@@ -68,7 +62,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    parameterRef().setOriginalFilePath( lineEdit->text().toStdString() );
+    parameterRef().setFileName( lineEdit->text().toStdString() );
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -142,7 +136,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
   connect(saveBtn, &QPushButton::clicked, [=]()
   {
     boost::filesystem::path orgfn(
-          parameter().originalFilePath() );
+          parameter().fileName() );
 
     if (auto fn = getFileName(
           editControlsContainer,

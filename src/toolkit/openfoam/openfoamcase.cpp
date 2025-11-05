@@ -501,7 +501,8 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
       std::string type_name = e->first_attribute ( "type" )->value();
 
       auto cp = OpenFOAMCaseElement::defaultParametersFor(type_name);
-      cp->readFromNode ( std::string(), *e, file.parent_path() );
+      cp->readFromNode ( std::string(), *e );
+      cp->resolveRelativePaths(file.parent_path());
       this->insert(OpenFOAMCaseElement::lookup(type_name, *this, *cp));
     }
 
@@ -543,7 +544,8 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
                     {
                       auto curp =
                           BoundaryCondition::defaultParametersFor( bc_type );
-                      curp->readFromNode ( std::string(), *e, file.parent_path() );
+                      curp->readFromNode ( std::string(), *e);
+                      curp->resolveRelativePaths(file.parent_path());
                       this->insert ( insight::BoundaryCondition::lookup (
                           bc_type, *this, patch_name, boundaryDict, *curp ) );
                     }

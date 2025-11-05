@@ -76,8 +76,8 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetParserArgList& fl, size_t id)
   if (id>=fl.size())
     throw insight::Exception
     (
-      "Feature set #"+lexical_cast<std::string>(id)
-     +" is not present in list of size "+lexical_cast<std::string>(fl.size())
+      "Feature set #%d is not present in list of size %d",
+          id, fl.size()
     );
   
   
@@ -89,7 +89,7 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetParserArgList& fl, size_t id)
   {
     throw insight::Exception
     (
-      "Argument #"+lexical_cast<std::string>(id)+" is not a FeatureSet"
+      "Argument #%d is not a FeatureSet", id
     );
   }
   return FeatureSetPtr();
@@ -101,8 +101,8 @@ arma::mat lookupMat(const FeatureSetParserArgList& fl, size_t id)
   if (id>=fl.size())
     throw insight::Exception
     (
-      "Vector entry #"+lexical_cast<std::string>(id)
-     +" is not present in list of size "+lexical_cast<std::string>(fl.size())
+      "Vector entry #%d is not present in list of size %d",
+          id, fl.size()
     );
   
   
@@ -114,7 +114,8 @@ arma::mat lookupMat(const FeatureSetParserArgList& fl, size_t id)
   {
     throw insight::Exception
     (
-      "Argument #"+lexical_cast<std::string>(id)+" is not a vector/matrix"
+      "Argument #%d is not a vector/matrix",
+          id
     );
   }
   return arma::mat();
@@ -125,8 +126,8 @@ double lookupScalar(const FeatureSetParserArgList& fl, size_t id)
   if (id>=fl.size())
     throw insight::Exception
     (
-      "scalar entry #"+lexical_cast<std::string>(id)
-     +" is not present in list of size "+lexical_cast<std::string>(fl.size())
+      "scalar entry #%d is not present in list of size %d",
+          id, fl.size()
     );
   
   
@@ -138,7 +139,8 @@ double lookupScalar(const FeatureSetParserArgList& fl, size_t id)
   {
     throw insight::Exception
     (
-      "Argument #"+lexical_cast<std::string>(id)+" is not a scalar"
+      "Argument #%d is not a scalar",
+          id
     );
   }
   return 0.0;

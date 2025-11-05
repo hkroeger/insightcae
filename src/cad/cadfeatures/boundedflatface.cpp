@@ -97,14 +97,24 @@ BoundedFlatFace::BoundedFlatFace(const BoundedFlatFace&o, TreeCloneMap& tcm)
 
 BoundedFlatFace::BoundedFlatFace(const std::vector<FeaturePtr>& edges)
 : edges_(edges)
-{}
+{
+    for (auto& e: edges)
+    {
+        insight::assertion(bool(e), "invalid feature pointer supplied");
+    }
+}
 
 
 
 
 BoundedFlatFace::BoundedFlatFace(const std::vector<FeatureSetPtr>& edges)
 : edges_(edges)
-{}
+{
+    for (auto& e: edges)
+    {
+        insight::assertion(bool(e), "invalid feature set pointer supplied");
+    }
+}
 
 
  

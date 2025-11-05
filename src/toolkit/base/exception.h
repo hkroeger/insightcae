@@ -227,6 +227,14 @@ public:
 };
 
 
+class ElementNotFoundException
+: public Exception
+{
+public:
+    ElementNotFoundException( const std::string &msg);
+};
+
+
 
 void assertion(bool condition, std::string context_message = "internal error", ...);
 

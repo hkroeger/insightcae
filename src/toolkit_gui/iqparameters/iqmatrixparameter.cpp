@@ -15,17 +15,16 @@ addToFactoryTable(IQParameter, IQMatrixParameter);
 IQMatrixParameter::IQMatrixParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::MatrixParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {
 }
 
 
-QString IQMatrixParameter::valueText() const
+QVariant IQMatrixParameter::value() const
 {
   const auto& p = parameter();
   return

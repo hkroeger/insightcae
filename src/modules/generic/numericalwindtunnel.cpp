@@ -938,16 +938,13 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
       camera->SetViewUp( toArray(vec3(0,0,1)) );
       camera->SetPosition( toArray(viewctr+vec3(0,-10.0*sp().w_,0)) );
 
-      auto img = executionPath() / "streamLines_side.png";
-//      scene.fitAll();
+      auto name = "streamLines_side";
+
       scene.setParallelScale(std::pair<double,double>(2.*sp().l_, 2.*sp().h_));
-      scene.exportImage(img);
-      results->insert(img.filename().stem().string(),
-        std::unique_ptr<Image>(new Image
-        (
-        executionPath(), img.filename(),
-        "Stream lines (side view)", ""
-      )));
+
+      results->insert<Image>(name,
+            FileContainer(*scene.exportImage(), name),
+            "Stream lines (side view)", "" );
     }
   ++ap;
 

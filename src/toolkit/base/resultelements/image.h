@@ -13,22 +13,37 @@ class Image
 public:
     declareType ( "Image" );
 
-    Image ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
     Image
-    (
-        const boost::filesystem::path& location,
-        const boost::filesystem::path& value,
-        const std::string& shortDesc,
-        const std::string& longDesc,
-        std::shared_ptr<std::string> base64_content = std::shared_ptr<std::string>()
-    );
+        (
+            const std::string& shortdesc,
+            const std::string& longdesc,
+            const std::string& unit
+            );
+
+    Image
+        (
+            const boost::filesystem::path& location,
+            const boost::filesystem::path& value,
+            const std::string& shortDesc,
+            const std::string& longDesc
+            );
+
+    Image
+        (
+            const FileContainer& fc,
+            const std::string& shortDesc,
+            const std::string& longDesc
+            );
 
 
     void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
 
-
-    ResultElementPtr clone() const override;
+    int nChildren() const override;
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

@@ -103,7 +103,7 @@ void generateLatexTable(
 
 
     auto lxlabel=SimpleLatex(label).toLaTeX();
-    auto lxdesc=p->description().toLaTeX();
+    auto lxdesc=dynamic_cast<const Parameter*>(&*p)->description().toLaTeX();
 
     if (const auto* subp = dynamic_cast<const ParameterSet*>(&*p))
     {

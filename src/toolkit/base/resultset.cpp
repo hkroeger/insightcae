@@ -20,6 +20,7 @@
 
 
 #include "resultset.h"
+#include "base/rapidxml.h"
 #include "base/resultreporttemplates.h"
 
 #include "base/latextools.h"
@@ -31,9 +32,11 @@
 #include <fstream>
 #include <algorithm>
 #include <memory>
+#include <sstream>
 
 #include "base/boost_include.h"
 
+#include "boost/filesystem/operations.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
 
@@ -50,36 +53,34 @@ namespace insight
 
 
 defineType ( ResultSet );
-addToFactoryTable ( ResultElement, ResultSet );
+// addToFactoryTable ( ResultElement, ResultSet );
 
 
 
-ResultSet::ResultSet(const std::string& analysisName)
-  : ResultElement ( "", "", "" )
+
+ResultSetPtr ResultSet::createFromFile(
+    const boost::filesystem::path& fileName,
+    std::unique_ptr<ParameterSet> p )
 {
-  if (analysisName!="")
-  {
-        p_ = Analysis::defaultParameters()(analysisName);
-  }
-}
-
-ResultSetPtr ResultSet::createFromFile( const boost::filesystem::path& fileName, const std::string& analysisName )
-{
-    auto r = std::make_shared<ResultSet>(analysisName);
+    auto r = std::make_shared<ResultSet>(std::move(p));
     r->readFromFile(fileName);
     return r;
 }
 
-ResultSetPtr ResultSet::createFromStream( std::istream& is, const std::string& analysisName )
+ResultSetPtr ResultSet::createFromStream(
+    std::istream& is,
+    std::unique_ptr<ParameterSet> p )
 {
-    auto r = std::make_shared<ResultSet>(analysisName);
+    auto r = std::make_shared<ResultSet>(std::move(p));
     r->readFromStream(is);
     return r;
 }
 
-ResultSetPtr ResultSet::createFromString( const std::string& cont, const std::string& analysisName )
+ResultSetPtr ResultSet::createFromString(
+    const std::string& cont,
+    std::unique_ptr<ParameterSet> p )
 {
-    auto r = std::make_shared<ResultSet>(analysisName);
+    auto r = std::make_shared<ResultSet>(std::move(p));
     r->readFromString(cont);
     return r;
 }
@@ -87,75 +88,79 @@ ResultSetPtr ResultSet::createFromString( const std::string& cont, const std::st
 
 ResultSet::ResultSet
 (
-    const ParameterSet& p,
+    std::unique_ptr<ParameterSet> p,
     const std::string& title,
     const std::string& subtitle,
     const std::string* date,
     const std::string* author
 )
-    : ResultElement ( "", "", "" ),
-      p_ ( p.cloneParameterSet() ),
+    : ResultElementCollection ( "", "", "" ),
+      p_ ( std::move(p) ),
       title_ ( title ),
       subtitle_ ( subtitle ),
       introduction_()
 {
-    if ( date ) {
-        date_=*date;
-    } else {
+    if ( date )
+    {
+        date_ = *date;
+    }
+    else
+    {
         using namespace boost::gregorian;
-        date_=to_iso_extended_string ( day_clock::local_day() );
+        date_ = to_iso_extended_string ( day_clock::local_day() );
     }
 
-    if ( author ) {
-        author_=*author;
-    } else {
-        char  *iu=getenv ( "INSIGHT_REPORT_AUTHOR" );
-        if ( iu ) {
-            author_=iu;
-        } else {
-            char* iua=getenv ( "USER" );
-            if ( iua ) {
-                author_=iua;
-            } else {
-                author_="";
+    if ( author )
+    {
+        author_ = *author;
+    }
+    else
+    {
+        if ( char *iu = getenv("INSIGHT_REPORT_AUTHOR") )
+        {
+            author_ = iu;
+        }
+        else
+        {
+            if ( char* iua = getenv("USER") )
+            {
+                author_ = iua;
+            }
+            else
+            {
+                author_ = "";
             }
         }
     }
 }
 
-ResultSet::ResultSet ( const std::string& shortdesc, const std::string& longdesc, const std::string& )
-    : ResultSet( *ParameterSet::create(), shortdesc, longdesc )
-{}
-
-void ResultSet::readFromNode ( const std::string&, const rapidxml::xml_node<>& node )
-{
-  ResultElementCollection::readElementsFromNode(node);
-}
 
 
 ResultSet::~ResultSet()
 {}
 
 
-ResultSet::ResultSet ( const ResultSet& other )
-    : //ptr_map< std::string, ResultElement>(other),
-    ResultElementCollection ( other ),
-    ResultElement ( "", "", "" ),
-    p_ ( other.p_ ),
-    title_ ( other.title_ ),
-    subtitle_ ( other.subtitle_ ),
-    date_ ( other.date_ ),
-    author_ ( other.author_ ),
-    introduction_ ( other.introduction_ )
-{
-}
+// ResultSet::ResultSet ( const ResultSet& other )
+//     : //ptr_map< std::string, ResultElement>(other),
+//     ResultElementCollection ( other ),
+//     p_ ( other.p_ ),
+//     title_ ( other.title_ ),
+//     subtitle_ ( other.subtitle_ ),
+//     date_ ( other.date_ ),
+//     author_ ( other.author_ ),
+//     introduction_ ( other.introduction_ )
+// {
+// }
 
 
 void ResultSet::transfer ( const ResultSet& other )
 {
 //   ptr_map< std::string, ResultElement>::operator=(other);
     std::map< std::string, ResultElementPtr>::operator= ( other );
-    p_=other.p_;
+    if (other.p_)
+    {
+        p_=other.p_->cloneAs<ParameterSet>();
+    }
     title_=other.title_;
     subtitle_=other.subtitle_;
     author_=other.author_;
@@ -171,181 +176,73 @@ void ResultSet::clearInputParameters()
 
 void ResultSet::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
-    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ )
+    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
     {
-        i->second->insertLatexHeaderCode(hc);
+        i.second->insertLatexHeaderCode(hc);
     }
 }
 
 
-void ResultSet::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
+std::string ResultSet::latexRepresentation(
+    const std::string& name,
+    int level,
+    const FileStorageInfo& fsi ) const
 {
-    if ( level>0 ) {
+    std::ostringstream f;
+
+    if ( level>0 )
+    {
         f << title_ << "\n\n";
 
         f << subtitle_ << "\n\n";
     }
 
-    if ( !introduction_.empty() ) {
+    if ( !introduction_.empty() )
+    {
         f << latex_subsection ( level ) << "{Introduction}\n";
 
         f<<introduction_;
     }
 
-    if ( p_ && p_->size() >0 ) {
+    if ( p_ && p_->size()>0 ) {
         f << latex_subsection ( level ) << "{Input Parameters}\n";
 
-        f<<p_->latexRepresentation();
+        f << p_->latexRepresentation("inputParameters", level, fsi);
     }
 
     f << latex_subsection ( level ) << "{Numerical Result Summary}\n";
 
-    writeLatexCodeOfElements ( f, name, level, outputfilepath );
+    f << ResultElementCollection::latexRepresentation ( name, level, fsi );
 
-//   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-//   {
-//     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
-//     f << cleanSymbols(i->second->shortDescription()) << "\n\n";
-//
-//     std::string subelemname=i->first;
-//     if (name!="")
-//       subelemname=name+"__"+i->first;
-//
-//     i->second->writeLatexCode(f, subelemname, level+2, outputfilepath);
-//
-//     f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
-//     f << endl;
-//   }
+    return f.str();
+}
+
+boost::filesystem::path
+ResultSet::reportDataPath(const boost::filesystem::path &outFileName)
+{
+    return
+        outFileName.parent_path() /
+        ( "report_data_"+outFileName.stem().string() )
+        ;
 }
 
 
-xml_node< char >* ResultSet::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
+
+
+void ResultSet::exportDataToFile (
+    const std::string& name,
+    const boost::filesystem::path& outputdirectory ) const
 {
-    using namespace rapidxml;
-    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
-
-    ResultElementCollection::appendElementsToNode ( doc, *child );
-
-    return child;
-}
-
-
-void ResultSet::exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const
-{
-    path outsubdir ( outputdirectory/name );
+    auto outsubdir = outputdirectory/name;
     create_directory ( outsubdir );
-    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-        i->second->exportDataToFile ( i->first, outsubdir );
+    for ( auto& i: static_cast<const ResultElementMap&>(*this) ) {
+        i.second->exportDataToFile ( i.first, outsubdir );
     }
 }
 
 
-void ResultSet::readFromFile ( const boost::filesystem::path& file )
-{
-  CurrentExceptionContext ex("reading results set from file "+file.string());
-  std::string contents;
-  readFileIntoString(file, contents);
-  readFromString(contents);
-}
-
-void ResultSet::readFromStream ( std::istream& is )
-{
-  CurrentExceptionContext ex("reading result set from input stream");
-
-  std::string contents;
-  readStreamIntoString(is, contents);
-  readFromString(contents);
-}
-
-void ResultSet::readFromString ( const std::string& contents )
-{
-  CurrentExceptionContext ex("reading result set from content string");
 
 
-  char* startChar = const_cast<char*>(&contents[0]);
-  xml_document<> doc;
-  doc.parse<0> ( startChar );
-
-  xml_node<> *rootnode = doc.first_node ( "root" );
-
-  auto *pn = rootnode->first_node("parameters");
-  if (!p_) p_=ParameterSet::create();
-  p_->readFromNode( std::string(), *pn, "/" );
-
-  auto *rn = rootnode->first_node("results");
-  title_=rn->first_attribute("title")->value();
-  subtitle_=rn->first_attribute("subtitle")->value();
-  date_=rn->first_attribute("date")->value();
-  author_=rn->first_attribute("author")->value();
-  introduction_=rn->first_attribute("introduction")->value();
-  ResultElementCollection::readElementsFromNode ( *rn );
-}
-
-
-
-
-void ResultSet::saveToFile ( const boost::filesystem::path& file ) const
-{
-  std::ofstream f ( file.c_str() );
-  saveToStream(f);
-}
-
-void ResultSet::saveToStream(ostream &os) const
-{
-  xml_document<> doc;
-
-  // xml declaration
-  xml_node<>* decl = doc.allocate_node ( node_declaration );
-  decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
-  decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
-  doc.append_node ( decl );
-
-  xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
-  doc.append_node ( rootnode );
-
-  if (p_)
-  {
-      xml_node<>* pc = doc.allocate_node ( node_element, doc.allocate_string ( "parameters" ) );
-      p_->appendToNode(std::string(), doc, *pc, "/");
-      rootnode->append_node ( pc );
-  }
-
-  xml_node<>* rc = doc.allocate_node ( node_element, doc.allocate_string ( "results" ) );
-  rc->append_attribute(
-        doc.allocate_attribute(
-          "title",
-          doc.allocate_string ( title_.c_str() )
-          )
-        );
-  rc->append_attribute(
-        doc.allocate_attribute(
-          "subtitle",
-          doc.allocate_string ( subtitle_.c_str() )
-          )
-        );
-  rc->append_attribute(
-        doc.allocate_attribute(
-          "date",
-          doc.allocate_string ( date_.c_str() )
-          )
-        );
-  rc->append_attribute(
-        doc.allocate_attribute(
-          "author",
-          doc.allocate_string ( author_.c_str() )
-          )
-        );
-  rc->append_attribute(
-        doc.allocate_attribute(
-          "introduction",
-          doc.allocate_string ( introduction_.c_str() )
-          )
-        );
-  ResultElementCollection::appendElementsToNode ( doc, *rc );
-  rootnode->append_node ( rc );
-
-  os << doc << std::endl;
-}
 
 
 
@@ -382,7 +279,7 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
               "writing latex representation of result set into file "
               + file.string() );
 
-    path filepath ( absolute ( file ) );
+    auto filepath = boost::filesystem::absolute ( file );
 
     std::ostringstream header, content;
 
@@ -405,7 +302,13 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
         header << hc << std::endl;
     }
 
-    writeLatexCode ( content, "", 0, filepath.parent_path() );
+    auto reportData = reportDataPath(filepath);
+    create_directory ( reportData );
+
+    content << latexRepresentation (
+        "", 0,
+        FileStorageInfo(filepath.parent_path(), reportData)
+    );
 
     auto &reportTemplate =
             ResultReportTemplates::globalInstance().defaultItem();
@@ -427,44 +330,120 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
     reportInput->write(filepath);
     reportTemplate.writeAdditionalFiles(filepath.parent_path());
 
+    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
     {
-        path outdir (
-                    filepath.parent_path() /
-                    ( "report_data_"+filepath.stem().string() )
-                    );
-        create_directory ( outdir );
-        for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-            i->second->exportDataToFile ( i->first, outdir );
-        }
+        i.second->exportDataToFile ( i.first, reportData );
     }
 }
+
+
+
 
 void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 {
   std::string stem = file.filename().stem().string();
 
+  boost::filesystem::path report_src = (stem+".tex");
+
   {
-      path outdir ( file.parent_path() / ( "report_data_"+stem ) );
+      CaseDirectory tmp(false);
+
+      auto report_src_out = tmp/report_src;
+      auto outdir = reportDataPath(report_src_out);
+
       create_directory ( outdir );
-      for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-          i->second->exportDataToFile ( i->first, outdir );
-      }
-  }
-
-  CaseDirectory gendir(false);
-  boost::filesystem::path outpath = gendir / (stem+".tex");
-  writeLatexFile( outpath );
-
-  for (int i=0; i<2; i++)
-  {
-      if ( ::system( str( format("cd \"%s\" && pdflatex -interaction=batchmode \"%s\"") % gendir.string() % outpath.filename().string() ).c_str() ))
+      for ( auto& i: static_cast<const ResultElementMap&>(*this) )
       {
-          throw insight::Exception("TeX input file was written but could not execute pdflatex successfully.");
+          i.second->exportDataToFile ( i.first, outdir );
       }
+
+      writeLatexFile( report_src_out );
+
+      bool success=true;
+      for (int i=0; i<2; i++)
+      {
+          if ( ::system( str( format(
+                               "cd \"%s\" && pdflatex -interaction=batchmode \"%s\""
+                               ) % tmp.string() % report_src_out.filename().string()
+                           ).c_str() ))
+          {
+              success=false;
+          }
+      }
+
+      boost::filesystem::copy_file(
+          tmp/ (report_src.filename().stem().string()+".pdf"),
+          file, copy_option::overwrite_if_exists );
+
+      copyDirectoryRecursively( outdir, file.parent_path()/outdir.filename() );
+
+      if (!success)
+        throw insight::Exception(
+              "TeX input file was written but could not execute pdflatex successfully.");
   }
 
-  boost::filesystem::copy_file( gendir/ (stem+".pdf"), file, copy_option::overwrite_if_exists );
 
+
+
+}
+
+
+
+
+rapidxml::xml_node<> *ResultSet::appendToNode(
+    const std::string &name,
+    rapidxml::xml_document<> &doc,
+    rapidxml::xml_node<> &node) const
+{
+
+    if (p_)
+    {
+        auto pc = appendNode(doc, node, "parameters");
+        p_->appendToNode(std::string(), doc, pc);
+    }
+
+    auto rc=appendNode(doc, node, "results" );
+    appendAttribute(doc, rc, "title", title_ );
+    appendAttribute(doc, rc, "subtitle", subtitle_ );
+    appendAttribute(doc, rc, "date", date_ );
+    appendAttribute(doc, rc, "author", author_ );
+    appendAttribute(doc, rc, "introduction", introduction_ );
+
+    return ResultElementCollection::appendToNode("", doc, rc);
+}
+
+
+
+const rapidxml::xml_node<>* ResultSet::readFromNode(
+    const std::string &name,
+    const rapidxml::xml_node<> &node )
+{
+    if (auto *pn = node.first_node("parameters"))
+    {
+        if (p_)
+        {
+            p_->readFromNode(std::string(), *pn);
+        }
+        else
+        {
+            p_=std::make_unique<ParameterSet>(*pn);
+        }
+    }
+
+
+    auto *rn = node.first_node("results");
+    insight::assertion(
+        rn, "mandatory XML node 'results' is missing" );
+
+    title_=getMandatoryAttribute(*rn, "title");
+    subtitle_=getMandatoryAttribute(*rn, "subtitle");
+    date_=getMandatoryAttribute(*rn, "date");
+    author_=getMandatoryAttribute(*rn, "author");
+    introduction_=getMandatoryAttribute(*rn, "introduction");
+
+    ResultElementCollection::readFromNode(name, *rn);
+
+    return &node;
 }
 
 
@@ -473,7 +452,7 @@ std::unique_ptr<ParameterSet> ResultSet::convertIntoParameterSet() const
 {
     auto ps =ParameterSet::create();
 
-    for ( const_iterator::value_type rp: *this )
+    for ( auto& rp: static_cast<const ResultElementMap&>(*this) )
     {
         if ( auto p=rp.second->convertIntoParameter() )
         {
@@ -495,21 +474,21 @@ std::unique_ptr<Parameter> ResultSet::convertIntoParameter() const
 
 
 
-ResultElementPtr ResultSet::clone() const
+std::unique_ptr<hierarchicalData::Element> ResultSet::clone() const
 {
-    std::unique_ptr<ResultSet> nr (
-        new ResultSet (
-            p_ ? *p_ : *ParameterSet::create(),
-            title_, subtitle_, &author_, &date_ ) );
+     auto nr =std::make_unique<ResultSet> (
+            p_ ? p_->cloneAs<ParameterSet>() : std::unique_ptr<ParameterSet>(),
+            title_, subtitle_, &author_, &date_ );
 
-    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
+    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
+     {
 //         cout<<i->first<<endl;
-        std::string key ( i->first );
-        nr->insert ( key, i->second->clone() );
+        std::string key ( i.first );
+        nr->insert ( key, i.second->cloneAs<ResultElement>() );
     }
     nr->setOrder ( order() );
     nr->introduction() =introduction_;
-    return ResultElementPtr ( nr.release() );
+    return nr;
 }
 
 

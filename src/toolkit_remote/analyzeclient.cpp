@@ -293,9 +293,8 @@ void ControlRequestAction::handleHttpResponse(
 
 LaunchAnalysisAction::LaunchAnalysisAction(
         AnalyzeClient& cl,
-        const ParameterSet& input,
+        const AnalysisParameterSet& input,
         const boost::filesystem::path& parent_path,
-        const std::string& analysisName,
         ReportSuccessCallback callback,
         AnalyzeClientAction::SimpleCallBack onTimeout )
     : AnalyzeClientAction(cl, onTimeout),
@@ -304,7 +303,7 @@ LaunchAnalysisAction::LaunchAnalysisAction(
     CurrentExceptionContext ex("composing parameter set message to server");
     msg_.setHeader("Content-Type", "application/xml");
     std::ostringstream cs;
-    input.saveToStream(cs, parent_path, analysisName);
+    input.saveToStream(cs);
     msg_.addBodyText(cs.str());
 }
 
@@ -366,7 +365,7 @@ void QueryResultsAction::handleHttpResponse(
 
       if ( (*ct)=="application/xml")
       {
-        r = ResultSet::createFromString( response.body(), cl_.analysisName() );
+        r = ResultSet::createFromString( response.body() );
       }
     }
 
@@ -523,16 +522,15 @@ void AnalyzeClient::queryExepath(
 
 
 void AnalyzeClient::launchAnalysis(
-    const ParameterSet& input,
+    const AnalysisParameterSet& input,
     const boost::filesystem::path& parent_path,
-    const std::string& analysisName,
     AnalyzeClientAction::ReportSuccessCallback onCompletion,
     AnalyzeClientAction::SimpleCallBack onTimeout
     )
 {
    launchAction( std::make_shared<LaunchAnalysisAction>(
                      *this,
-                     input, parent_path, analysisName,
+                     input, parent_path,
                      onCompletion, onTimeout ) );
 }
 

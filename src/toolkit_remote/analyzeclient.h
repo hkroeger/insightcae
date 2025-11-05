@@ -160,9 +160,8 @@ private:
 public:
     LaunchAnalysisAction(
             AnalyzeClient& cl,
-            const ParameterSet& input,
+            const AnalysisParameterSet& input,
             const boost::filesystem::path& parent_path,
-            const std::string& analysisName,
             ReportSuccessCallback callback,
             SimpleCallBack onTimeout );
 
@@ -277,9 +276,8 @@ public:
           AnalyzeClientAction::SimpleCallBack onTimeout );
 
   void launchAnalysis(
-      const ParameterSet& input,
+      const AnalysisParameterSet& input,
       const boost::filesystem::path& parent_path,
-      const std::string& analysisName,
       AnalyzeClientAction::ReportSuccessCallback onCompletion,
       AnalyzeClientAction::SimpleCallBack onTimeout
       );

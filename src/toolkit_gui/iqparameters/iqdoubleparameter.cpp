@@ -15,29 +15,14 @@ addToFactoryTable(IQParameter, IQDoubleParameter);
 IQDoubleParameter::IQDoubleParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
     : IQSpecializedParameter<insight::DoubleParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
-QString IQDoubleParameter::valueText() const
-{
-  return QString::number( parameter()() );
-}
 
-bool IQDoubleParameter::setValue(QVariant value)
-{
-    if (value.canConvert<double>())
-    {
-        bool ok;
-        parameterRef().set(value.toDouble(&ok));
-        return ok;
-    }
-    return false;
-}
 
 QVBoxLayout* IQDoubleParameter::populateEditControls(
         QWidget* editControlsContainer,

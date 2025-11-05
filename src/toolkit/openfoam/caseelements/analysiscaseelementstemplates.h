@@ -101,7 +101,7 @@ void TPCArray<TPC,TypeName>::evaluate(
     const std::string& shortDescription
 ) const
 {
-    Ordering so;
+    hierarchicalData::Ordering so;
     evaluateSingle(cm, location, results,
                    p().name+"_tan",
                    p().tanSpan, axisTitleTan(),
@@ -129,7 +129,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
     const std::string& axisLabel,
     const boost::ptr_vector<TPC>& tpcarray,
     const std::string& shortDescription,
-    Ordering& so
+    hierarchicalData::Ordering& so
 ) const
 {
     using namespace std;

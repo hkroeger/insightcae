@@ -27,19 +27,18 @@ addToFactoryTable(IQParameter, IQSpatialTransformationParameter);
 IQSpatialTransformationParameter::IQSpatialTransformationParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::SpatialTransformationParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {
 }
 
 
 
 
-QString IQSpatialTransformationParameter::valueText() const
+QVariant IQSpatialTransformationParameter::value() const
 {
   if (parameter()().isIdentityTransform())
       return QString("identity");
@@ -133,14 +132,14 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
   auto applyFunction = [=]()
   {
 
-    arma::mat m;
-
     insight::SpatialTransformation st;
-    insight::stringToValue(translateLE->text().toStdString(), m);
-    st.setTranslation(m);
+    st.setTranslation(
+        insight::toValue<arma::mat>(
+            translateLE->text().toStdString()));
 
-    insight::stringToValue(rpyLE->text().toStdString(), m);
-    st.setRollPitchYaw(m);
+    st.setRollPitchYaw(
+        insight::toValue<arma::mat>(
+            rpyLE->text().toStdString()));
 
     bool ok;
     st.setScale(scaleLE->text().toDouble(&ok));
@@ -160,7 +159,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
           [this,translateLE,v,setValuesToControls,apply]()
           {
             if (insight::cad::FeaturePtr geom =
-              model()->getGeometryToSpatialTransformationParameter(get()->path()))
+              psModel()->getGeometryToSpatialTransformationParameter(get()->path()))
             {
                 vtkNew<ivtkOCCShape> shape;
                 shape->SetShape( geom->shape() );

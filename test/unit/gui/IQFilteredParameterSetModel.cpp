@@ -19,7 +19,7 @@ int main(int argc, char*argv[])
     auto ps = TestPS::defaultParameters();
 
     auto& skp = ps->get<insight::CADSketchParameter>("outline");
-    auto sk = skp.featureGeometryRef();
+    auto& sk = skp.sketchRef();
 
     /*auto wallDeflParam=std::make_unique<insight::ParameterSet>();
     wallDeflParam->insert("value", std::make_unique<insight::DoubleParameter>(1.33, "some dbl"));
@@ -40,25 +40,25 @@ int main(int argc, char*argv[])
     auto deflGeoP2=ParameterSet::create();
     deflGeoP2->insert("intval", std::make_unique<insight::IntParameter>(5, "some int"));
 
-    auto p1=insight::cad::SketchPoint::create(sk->plane(), 0, 0);
+    auto p1=insight::cad::SketchPoint::create(sk.plane(), 0, 0);
     p1->changeDefaultParameters(*deflGeoP2);
-    sk->insertGeometry(p1);
-    auto p2=insight::cad::SketchPoint::create(sk->plane(), 10, 0);
+    sk.insertGeometry(p1);
+    auto p2=insight::cad::SketchPoint::create(sk.plane(), 10, 0);
     p2->changeDefaultParameters(*deflGeoP2);
-    sk->insertGeometry(p2);
+    sk.insertGeometry(p2);
     auto l = insight::cad::Line::create(p1, p2);
     l->changeDefaultParameters(*deflGeoP);
-    sk->insertGeometry(l);
+    sk.insertGeometry(l);
 
     TestPS::Parameters p(*ps);
 
-    auto L=ps->get<CADSketchParameter>("outline").featureGeometry().get<insight::cad::Line>(2);
+    auto L=ps->get<CADSketchParameter>("outline").sketch().get<insight::cad::Line>(2);
     SubPS::Parameters sp(L->parameters());
     auto wp=boost::get<SubPS::Parameters::type_wall_type>(&sp.type);
     std::cout<<"path="<<wp->L2.parameterPath<<std::endl;
 
     IQParameterSetModel baseForModelToBeTested(
-        ps->cloneParameterSet(), *TestPS::defaultParameters());
+        ps->cloneAs<ParameterSet>(), *TestPS::defaultParameters());
 
     // QAbstractItemModelTester tester(
     //     &baseForModelToBeTested,
@@ -84,7 +84,7 @@ int main(int argc, char*argv[])
         QDialog dlg;
         auto *l=new QVBoxLayout;
         auto *tv=new QTreeView;
-        tv->setItemDelegate(new IQParameterGridViewSelectorDelegate);
+        tv->setItemDelegate(new IQHierarchicalDataGridViewSelectorDelegate);
         l->addWidget(tv);
 #ifdef TEST_BASE_MODEL
         tv->setModel(&baseForModelToBeTested);

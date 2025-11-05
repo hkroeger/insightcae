@@ -161,8 +161,8 @@ AnalyzeRESTServer::AnalyzeRESTServer(
 {
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
-  auto mmrs = boost::lexical_cast<string>(32 * 1024*1024);
-  auto mrs = boost::lexical_cast<string>(512 * 1024*1024);
+  auto mmrs = insight::toString(32 * 1024*1024);
+  auto mrs = insight::toString(512 * 1024*1024);
   const char *cargv[]={
     srvname.c_str(),
     "--docroot", ".",
@@ -375,9 +375,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
             response.setStatus(200);
             response.setMimeType("application/xml");
             analysis->parameters().saveToStream(
-                response.out(),
-                inputFileParentPath_,
-                analysis->type() );
+                response.out() );
 
             return;
         }

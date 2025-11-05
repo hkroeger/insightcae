@@ -114,7 +114,7 @@ void Line::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "("
-            + lexical_cast<std::string>(myLabel)
+            + toString(myLabel)
             +", "
             + pointSpec(p0_, script, entityLabels)
             + ", "
@@ -332,7 +332,7 @@ ConstrainedSketchEntityPtr Line::clone() const
         layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

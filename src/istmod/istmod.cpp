@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <vector>
 #include <string>
 #include "rapidxml/rapidxml.hpp"
@@ -127,21 +128,8 @@ int main(int argc, char *argv[])
     {
         std::string fn = vm["input-file"].as<std::string>();
 
-        insight::XMLDocument doc(fn);
-
-        std::string analysisName;
-
-        if (auto *analysisnamenode = doc.rootNode->first_node("analysis"))
-        {
-            analysisName = analysisnamenode->first_attribute("name")->value();
-        }
-
-        auto parameters =
-            insight::Analysis::defaultParameters()(analysisName);
-
-        parameters->readFromNode(
-            std::string(), *doc.rootNode,
-            boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path() );
+        auto parameters = std::make_unique<AnalysisParameterSet>();
+        parameters->readFromFile(fn);
 
         if (vm.count("unpackexternals"))
         {
@@ -162,7 +150,7 @@ int main(int argc, char *argv[])
             {
                 std::cout<<"Merging..."<<ist <<std::endl;
                 // ParameterSet to_merge;
-                parameters->readFromFile(ist);
+                parameters->mergeIncompatibleParameterSet(ist);
             }
         }
 
@@ -173,7 +161,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                bool v=boost::lexical_cast<bool>(pair[1]);
+                bool v=toValue<bool>(pair[1]);
                 cout << "Setting boolean '"<<pair[0]<<"' = "<<v<<endl;
                 parameters->setBool(pair[0], v);
             }
@@ -236,8 +224,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                arma::mat v;
-                stringToValue(pair[1], v);
+                arma::mat v=toValue<arma::mat>(pair[1]);
                 cout << "Setting vector '"<<pair[0]<<"' = "<<v<<endl;
                 parameters->setVector(pair[0], v);
             }
@@ -258,7 +245,7 @@ int main(int argc, char *argv[])
 
         boost::filesystem::path outfile = vm["write"].as<std::string>();
         std::cout << "Saving modified input parameters to file "<<outfile<<std::endl;
-        parameters->saveToFile( outfile, analysisName );
+        parameters->saveToFile( outfile );
 
     }
     catch (insight::Exception e)

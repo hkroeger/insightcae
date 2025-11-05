@@ -11,35 +11,23 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 set(workbench_SRCS
     workbench.cpp
 
-    iqcasedirectorystate.h
-    iqcasedirectorystate.cpp
+    iqcasedirectorystate.h iqcasedirectorystate.cpp
     iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
     iqexecutionworkspace.h iqexecutionworkspace.cpp
 
     newanalysisform.h newanalysisform.cpp
     newanalysisdlg.h newanalysisdlg.cpp
 
-    analysisform.cpp
-    analysisform.h
+    analysisform.h analysisform.cpp
     analysisform_gui.cpp
     analysisform_localactions.cpp
     analysisform_remoteactions.cpp
-    workbenchwindow.cpp
-    workbenchwindow.h
+    workbenchwindow.h workbenchwindow.cpp
 
-    workbenchaction.cpp
-    workbenchaction.h
-    localrun.cpp
-    localrun.h
-    #wslrun.h
-    #wslrun.cpp
+    workbenchaction.h workbenchaction.cpp
+    localrun.h localrun.cpp
 
-    #qsetupremotedialog.cpp
-    #qsetupremotedialog.h
-
-    qexecutionworkspacedialog.h
-    qexecutionworkspacedialog.cpp
-
+    qexecutionworkspacedialog.h qexecutionworkspacedialog.cpp
 )
 SET(workbench_FORMS
     newanalysisdlg.ui

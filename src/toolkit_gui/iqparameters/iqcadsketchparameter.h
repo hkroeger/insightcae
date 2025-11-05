@@ -15,14 +15,13 @@ public:
     IQCADSketchParameter
         (
             QObject* parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter* parameter,
-            const insight::ParameterSet& defaultParameterSet
+            IQHierarchicalDataModel* hdmodel,
+            insight::hierarchicalData::Element* element
             );
 
     void connectSignals() override;
 
-    QString valueText() const override;
+    QVariant value() const override;
 
     QVBoxLayout* populateEditControls(
         QWidget* editControlsContainer,

@@ -152,7 +152,7 @@ void LabeledArrayGenerator::cppWriteSetStatement(
     os<<
         "for (int iii="<<dynvarname<<".nChildren()-1; iii>=0; --iii)\n"
         "{\n"
-          "auto key="<<dynvarname<<".childParameterName(iii);\n"
+          "auto key="<<dynvarname<<".childElementName(iii);\n"
           "if ("<<staticvarname<<".count(key)==0)"
             <<dynvarname<<".eraseValue(key);\n"
         "}\n";
@@ -173,8 +173,8 @@ void LabeledArrayGenerator::cppWriteGetStatement(
        << "{\n"
        <<  "const auto& "<<dynvarname<<"_cur = "
             "dynamic_cast<const "<< value->cppInsightType() <<"& >"
-             "("<<dynvarname<<".childParameter(k));\n"
-       <<  "const auto& label="<<dynvarname<<".childParameterName(k);\n"
+             "("<<dynvarname<<".childElement(k));\n"
+       <<  "const auto& label="<<dynvarname<<".childElementName(k);\n"
        <<  "auto& "<<dynvarname<<"_cur_static = "<<staticname<<"[label];\n";
        // <<  dynvarname<< "_cur_static.setPath( "<<dynvarname<<"_cur.path() );\n"
        // <<  dynvarname<< "_cur_static.get("<<dynvarname<<"_cur());\n"

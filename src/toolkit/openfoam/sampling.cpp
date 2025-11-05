@@ -326,7 +326,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
       else
       {
             for (size_t c=0; c<ci.ncmpt; c++)
-          f<<" "+fn.first+"_"+boost::lexical_cast<std::string>(c);
+          f<<" "+fn.first+"_"+toString(c);
       }
       //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
     }
@@ -376,13 +376,14 @@ arma::mat circumferentialAveragedUniformLine::readSamples
     }
     else
     {
-      throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity (name "
-        +fn.first+", col="+boost::lexical_cast<std::string>(ci.col)+") with "
-          +boost::lexical_cast<std::string>(ci.ncmpt)+" components. Don't know how to handle.");
+      throw insight::Exception(
+            "circumferentialAveragedUniformLine::readSamples:"
+            " encountered quantity (name %s, col=%d) with %d components."
+            " Don't know how to handle.",
+            fn.first.c_str(), ci.col, ci.ncmpt
+            );
     }
       }
-
-      //datai.save(p().name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
 
       if (data.n_cols==0)
     data=datai;

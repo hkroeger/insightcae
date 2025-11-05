@@ -125,14 +125,17 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                             auto ch=ip->children();
                             for (auto& cp: ch)
                             {
-                                addEditActions(cp);
+                                if (auto* pcp=dynamic_cast<IQParameter*>(cp))
+                                {
+                                    addEditActions(pcp);
+                                }
                             }
                         };
 
                         for (auto& ap: viz->second.assocParamPaths)
                         {
                             auto psm = parameterSetModel(associatedParameterSetModel_);
-                            auto pi = psm->indexFromParameterPath(ap, 0);
+                            auto pi = psm->indexOfPath(ap, 0);
                             auto iqp = psm->parameterFromIndex(pi);
 
                             addEditActions(iqp);

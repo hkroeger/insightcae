@@ -21,8 +21,16 @@ public:
 
     Comment ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
     Comment ( const std::string& value, const std::string& shortDesc );
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
-    void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
+
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    std::string plainTextRepresentation(int indent) const override;
+
+    void exportDataToFile (
+        const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
     /**
      * append the contents of this element to the given xml node
@@ -34,7 +42,7 @@ public:
         rapidxml::xml_node<>& node
     ) const override;
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
         (
             const std::string& name,
             const rapidxml::xml_node<>& node
@@ -45,7 +53,11 @@ public:
         return value_;
     }
 
-    ResultElementPtr clone() const override;
+    int nChildren() const override;
+
+    bool isEqual(const Element& op) const override;
+
+    std::unique_ptr<Element> clone() const override;
 };
 
 

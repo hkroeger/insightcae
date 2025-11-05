@@ -70,7 +70,7 @@ DefaultGUIConstrainedSketchPresentationDelegate::setupSketchEntityParameterSetMo
 {
     if (e.parameters().size()>0)
         return new IQParameterSetModel(
-            e.parameters().cloneParameterSet());
+            e.parameters().cloneAs<ParameterSet>());
     else
         return nullptr;
 }
@@ -83,7 +83,7 @@ DefaultGUIConstrainedSketchPresentationDelegate::setupLayerParameterSetModel(
     if (curP.size()>0)
     {
         return new IQParameterSetModel(
-            curP.cloneParameterSet());
+            curP.cloneAs<ParameterSet>());
     }
     else
     {

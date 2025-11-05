@@ -691,7 +691,7 @@ public:
     const std::string& axisLabel,
     const boost::ptr_vector<TPC>& tpcarray,
     const std::string& shortDescription,
-    Ordering& so
+    hierarchicalData::Ordering& so
   ) const;
 
 

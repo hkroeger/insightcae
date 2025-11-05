@@ -177,6 +177,38 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
             }
         }
     }
+    else if ( const auto *fp =
+             boost::get<Parameters::fielddata_fitted2DProfile_type>(
+                 &p().fielddata ) )
+    {
+        os<<" fitted2DProfile "
+           <<OFDictData::vector3(fp->p0)
+           <<" "
+           <<OFDictData::vector3(fp->ep)
+           <<" "
+           <<OFDictData::vector3(fp->ev)
+           <<" "
+           <<"unsteady";
+
+        for (const auto& inst: fp->values)
+        {
+            os << " " << inst.time;
+
+            for (const auto& comp: inst.component_coeffs)
+            {
+                auto append = [&](const arma::mat& coeffs, double lo, double hi)
+                {
+                    os << " " << lo << " " << hi;
+                    os << " (";
+                    for (size_t cc=0; cc<coeffs.n_elem; cc++)
+                        os<<" "<< str( format("%g") % coeffs[cc] );
+                    os<<" )";
+                };
+                append(comp.coeffs_t, comp.tmin, comp.tmax);
+                append(comp.coeffs_u, comp.umin, comp.umax);
+            }
+        }
+    }
     else if (const auto *fd =
                boost::get<Parameters::fielddata_fittedProfile_type>(
                    &p().fielddata ) )
@@ -315,6 +347,9 @@ readVTKData(
 }
 
 
+
+
+
 double FieldData::calcRepresentativeValueMag() const
 {
   if (const auto *fd =
@@ -416,6 +451,21 @@ double FieldData::calcRepresentativeValueMag() const
       }
       return sqrt(vsq);
   }
+  else if (const auto *fp =
+           boost::get<Parameters::fielddata_fitted2DProfile_type>(
+               &p().fielddata ) )
+  {
+      insight::Warning("no reasonable method implemented yet for determining a representative value from polynomial.");
+      double vsq=0.;
+      for (int c=0; c<p().n_cmpt; ++c)
+      {
+          vsq+=pow(fp->values.begin()->component_coeffs[c].coeffs_t[
+                         fp->values.begin()->component_coeffs[c].coeffs_t.n_elem-1]
+                     *fp->values.begin()->component_coeffs[c].coeffs_u[
+                             fp->values.begin()->component_coeffs[c].coeffs_u.n_elem-1], 2);
+      }
+      return sqrt(vsq);
+  }
   else
   {
     throw insight::Exception("not yet implemented!");
@@ -503,6 +553,21 @@ double FieldData::calcMaxValueMag() const
         {
             vsq+=pow(fp->values.begin()->component_coeffs[c][
                            fp->values.begin()->component_coeffs[c].n_elem-1], 2);
+        }
+        return sqrt(vsq);
+    }
+    else if (const auto *fp =
+             boost::get<Parameters::fielddata_fitted2DProfile_type>(
+                 &p().fielddata ) )
+    {
+        insight::Warning("no reasonable method implemented yet for determining a maximum representative value from polynomial.");
+        double vsq=0.;
+        for (int c=0; c<p().n_cmpt; ++c)
+        {
+            vsq+=pow(fp->values.begin()->component_coeffs[c].coeffs_t[
+                           fp->values.begin()->component_coeffs[c].coeffs_t.n_elem-1]
+                       *fp->values.begin()->component_coeffs[c].coeffs_u[
+                               fp->values.begin()->component_coeffs[c].coeffs_u.n_elem-1], 2);
         }
         return sqrt(vsq);
     }

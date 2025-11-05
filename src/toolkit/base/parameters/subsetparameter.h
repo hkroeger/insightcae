@@ -110,7 +110,34 @@ public:
   bool isDifferent(const Parameter& p) const override;
 
 
-  void insert(const std::string &name, std::unique_ptr<Parameter>&& p);
+  Parameter& insert(const std::string &name, std::unique_ptr<Parameter>&& p);
+
+  template<class RT, class ...Args>
+  RT& insert(
+      const std::string& key, Args&&... addArgs )
+  {
+      return dynamic_cast<RT&>(
+          insert(key, std::make_unique<RT>(std::forward<Args>(addArgs)...))
+          );
+  }
+
+  template<class RT, class ...Args>
+  RT& getOrInsert(
+      const std::string& key, Args&&... addArgs )
+  {
+      auto existing=value_.find(key);
+      if (existing==value_.end())
+      {
+          return dynamic_cast<RT&>(
+              insert(key, std::make_unique<RT>(std::forward<Args>(addArgs)...))
+              );
+      }
+      else
+      {
+          return dynamic_cast<RT&>(*existing->second);
+      }
+  }
+
   void remove(const std::string& name);
 
   // for interchangeability in arrays with selectablesubset

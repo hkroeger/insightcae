@@ -58,6 +58,9 @@ LaTeXRepresentableValue::LaTeXRepresentableValue()
     : displayFullPage_(false)
 {}
 
+LaTeXRepresentableValue::~LaTeXRepresentableValue()
+{}
+
 void LaTeXRepresentableValue::setDisplayFullPage(bool displayFullPage)
 {
     displayFullPage_=displayFullPage;
@@ -918,6 +921,9 @@ void Element::setUpdateValueSignalBlockage(bool block)
         childElementRef(i).setUpdateValueSignalBlockage(block);
     }
 }
+
+PlaintextRepresentableValue::~PlaintextRepresentableValue()
+{}
 
 
 

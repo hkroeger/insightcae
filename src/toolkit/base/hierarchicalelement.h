@@ -45,6 +45,7 @@ class LaTeXRepresentableValue
 
 public:
     LaTeXRepresentableValue();
+    virtual ~LaTeXRepresentableValue();
 
     void setDisplayFullPage(bool displayFullPage);
     bool displayFullPage() const;
@@ -71,6 +72,7 @@ public:
 class PlaintextRepresentableValue
 {
 public:
+    virtual ~PlaintextRepresentableValue();
     /**
      * @brief plainTextRepresentation
      * return the value described in plain text

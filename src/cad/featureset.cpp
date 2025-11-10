@@ -245,6 +245,11 @@ void ProvidedFeatureSet::build()
     FeatureSet::operator=(**ofs);
 }
 
+FeatureSetPtr ProvidedFeatureSet::clone() const
+{
+    return ProvidedFeatureSet::create(model_, shape(), label_);
+}
+
 ProvidedFeatureSet::ProvidedFeatureSet(
     const ProvidedFeatureSet&o, TreeCloneMap& tcm )
 : ASTBasedFeatureSet(o, tcm),

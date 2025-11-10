@@ -30,7 +30,7 @@ namespace insight
 namespace cad 
 {
 
-faceAdjacentToEdges::faceAdjacentToEdges(FeatureSet edges)
+faceAdjacentToEdges::faceAdjacentToEdges(ConstFeatureSetPtr edges)
 : edges_(edges)
 {
 }
@@ -41,9 +41,9 @@ bool faceAdjacentToEdges::checkMatch(FeatureID feature) const
   for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
   {
     TopoDS_Edge e=TopoDS::Edge(ex.Current());
-    for (FeatureID ei: edges_.data())
+    for (FeatureID ei: edges_->data())
     {
-      TopoDS_Edge e2=edges_.model()->edge(ei);
+      TopoDS_Edge e2=edges_->model()->edge(ei);
       if (e.IsSame(e2))
 	return true;
     }

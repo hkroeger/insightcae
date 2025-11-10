@@ -1072,34 +1072,22 @@ FeatureSetPtr Feature::vertexAt(const arma::mat& p) const
 
 FeatureSetPtr Feature::allVertices() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
-    f->setData(allVerticesSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Vertex);
 }
 
 FeatureSetPtr Feature::allEdges() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
-    f->setData(allEdgesSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Edge);
 }
 
 FeatureSetPtr Feature::allFaces() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Face);
-    f->setData(allFacesSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Face);
 }
 
 FeatureSetPtr Feature::allSolids() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
-    f->setData(allSolidsSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Solid);
 }
 
 FeatureSetPtr Feature::find(FeatureSetPtr fs) const

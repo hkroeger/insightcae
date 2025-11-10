@@ -246,6 +246,38 @@ void SelectableSubsetParameter::addItem(
     // }
 }
 
+void SelectableSubsetParameter::removeItem(key_type key)
+{
+    if (selection_==key)
+    {
+        // to be removing selected item, switch to next possibility
+        auto k=selectionKeys();
+        auto i=std::find(k.begin(), k.end(), key);
+        auto j=i;
+
+        j++;
+        if (j==k.end()) // already at the end; try previous
+        {
+            j=i;
+            j--;
+            if (j==k.end()) // already at the end; nothing left
+            {
+                throw insight::Exception(
+                    "tried to remove last selection entry"
+                    );
+            }
+        }
+
+        setSelection(*j);
+    }
+
+    if (value_.count(key))
+    {
+        auto i=value_.find(key);
+        value_.erase(i);
+    }
+}
+
 
 void SelectableSubsetParameter::setParametersForSelection(
     const key_type& key, const ParameterSet& ps)
@@ -426,8 +458,34 @@ void SelectableSubsetParameter::assignFrom(const Element &p)
 {
     auto& ossp =dynamic_cast<const SelectableSubsetParameter&>(p);
 
+
+    std::set<std::string> unmatchedKeys;
+    std::transform(
+        value_.begin(), value_.end(),
+        std::last_inserter(unmatchedKeys),
+        [](const decltype(value_)::value_type& e) { return e.first; }
+        );
+
+    for (auto &ov: ossp.value_)
+    {
+        if (value_.count(ov.first))
+        {
+            value_.at(ov.first)->assignFrom(*ov.second);
+            unmatchedKeys.erase(ov.first);
+        }
+        else
+        {
+            addItem(ov.first, ov.second->cloneAs<ParameterSet>());
+        }
+    }
+
     setSelection( ossp.selection() );
-    operator()().assignFrom(ossp());
+
+    for (auto& um: unmatchedKeys)
+    {
+        removeItem(um);
+    }
+
 
     Parameter::assignFrom(ossp);
 }

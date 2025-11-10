@@ -10,8 +10,10 @@
 
 
 IQVTKCADModel3DViewerPickPoint::IQVTKCADModel3DViewerPickPoint(
-    ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent )
-: ViewWidgetAction<IQVTKCADModel3DViewer>(parent, false)
+    ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
+    bool finishAfterFirstClick )
+: ViewWidgetAction<IQVTKCADModel3DViewer>(parent, false),
+  finishAfterFirstClick_(finishAfterFirstClick)
 {
     aboutToBeDestroyed.connect(
         [this](){
@@ -45,6 +47,10 @@ void IQVTKCADModel3DViewerPickPoint::start()
                     QString("[%1, %2, %3]")
                         .arg(p[0]).arg(p[1]).arg(p[2])
                     );
+
+                Q_EMIT pickedPoint(p);
+
+                if (finishAfterFirstClick_) finishAction();
             }
         }
         );

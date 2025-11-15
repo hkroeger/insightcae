@@ -122,7 +122,8 @@ void Cutaway::build()
         }
 
       arma::mat bb=baseFeature()->modelBndBox ( 0.1 );
-      double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 ), 2 );
+      double delta=arma::norm(p0-0.5*(bb.col(0)+bb.col(1)),2);
+      double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 ), 2 ) + delta;
 
       arma::mat ex=cross ( n, vec3 ( 1,0,0 ) );
       if ( norm ( ex,2 ) <1e-8 ) {

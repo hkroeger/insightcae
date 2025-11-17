@@ -85,7 +85,7 @@ public:
   
   std::string fileName() const
     {
-        return p().fileName->fileName().string();
+        return p().fileName->fileName().filename().string();
     }
   
   virtual void putIntoConstantTrisurface(
@@ -94,7 +94,9 @@ public:
       ) const
     {
         boost::filesystem::path from( p().fileName->localFilePath() );
-        boost::filesystem::path to( snappyHexMeshFeats::geometryDir(ofc, location)/from.filename() );
+        boost::filesystem::path to(
+            snappyHexMeshFeats::geometryDir(ofc, location)
+            /fileName() );
 
         if (!exists(to.parent_path()))
             create_directories(to.parent_path());
@@ -117,16 +119,6 @@ public:
         writeSTL(
             readSTL(from, {&trsf}),
             to );
-
-        // ofc.executeCommand(location, "surfaceTransformPoints",
-        //                    {
-        //                        absolute(from).string(),
-        //                        absolute(to).string(),
-        //                        "-scale", OFDictData::toString(OFDictData::vector3(p().scale)),
-        //                        "-translate", OFDictData::toString(OFDictData::vector3(p().translate)),
-        //                        "-rollPitchYaw", OFDictData::toString(OFDictData::vector3(p().rollPitchYaw))
-        //                    }
-        //                    );
     }
 
 

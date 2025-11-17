@@ -37,60 +37,6 @@ namespace insight
 enum trimmedMesher {sHM, cfM};
 
 
-// ExternalGeometryFile::ExternalGeometryFile(ParameterSetInput ip)
-//     : ps_(&ip.parameterSet()), p_(ip.create<Parameters>())
-// {
-//     auto fname=p().fileName->originalFilePath().filename().string();
-//     insight::assertion(
-//         std::isalpha(fname[0]),
-//         "filename must not start with a number or special char (got %s)",
-//         fname.c_str() );
-// //  std::cout<<"added \""<<p_.fileName<<"\""<<std::endl;
-// }
-
-// std::string ExternalGeometryFile::fileName() const
-// {
-//     return p().fileName->fileName().string();
-// }
-
-
-// void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
-// {
-//   boost::filesystem::path from( p().fileName->filePath(location) );
-//   boost::filesystem::path to( ExternalGeometryFile::geometryDir(ofc, location)/from.filename() );
-  
-//   if (!exists(to.parent_path()))
-//     create_directories(to.parent_path());
-
-//   ofc.executeCommand(location, "surfaceTransformPoints",
-//     {
-//      absolute(from).string(),
-//      absolute(to).string(),
-//      "-scale", OFDictData::to_OF(p().scale),
-//      "-translate", OFDictData::to_OF(p().translate),
-//      "-rollPitchYaw", OFDictData::to_OF(p().rollPitchYaw)
-//     }
-//   );
-// }
-
-
-// boost::filesystem::path
-// ExternalGeometryFile::geometryDir(
-//     const OFEnvironment& /*ofe*/,
-//     const boost::filesystem::path& caseDir )
-// {
-//     return caseDir/"constant"/"triSurface";
-// }
-
-// boost::filesystem::path
-// ExternalGeometryFile::geometryDir(
-//     const OpenFOAMCase &cm, // to be able to check version
-//     const boost::filesystem::path &caseDir )
-// {
-//     return geometryDir(cm.ofe(), caseDir);
-// }
-
-  
   
   
 namespace snappyHexMeshFeats
@@ -148,10 +94,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict geodict;
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p().name;
-    //boost::filesystem::path x; x.f
-  std::string fn=p().fileName->fileName().string();
-  if (!isalpha(fn[0]))
-    fn="\""+fn+"\"";
+  std::string fn="\""+fileName()+"\"";
   sHMDict.subDict("geometry")[fn]=geodict;
 
   OFDictData::dict castdict;
@@ -175,7 +118,6 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
       rrl.push_back(rr.minLevel);
       rrl.push_back(rr.maxLevel);
       ld["level"]=rrl;
-      //rrd[p_.name()+"_"+boost::get<0>(rr)] = ld;
       rrd[rr.regionname] = ld;
     }
     castdict["regions"]=rrd;
@@ -246,7 +188,7 @@ ExplicitFeatureCurve::ExplicitFeatureCurve(ParameterSetInput ip)
 void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
-  refdict["file"]=std::string("\"")+p().fileName->fileName().string()+"\"";
+  refdict["file"]="\""+p().fileName->fileName().filename().string()+"\"";
   refdict["levels"]=OFDictData::list( {OFDictData::list({p().distance, p().level}) });
   sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
@@ -395,30 +337,12 @@ RefinementGeometry::RefinementGeometry(ParameterSetInput ip)
 : ExternalGeometryFile<RefinementRegion>(ip.forward<Parameters>())
 {}
 
-// void RefinementGeometry::addIntoDictionary(OFDictData::dict& sHMDict) const
-// {
-//   OFDictData::dict geodict;
-//   if (setGeometrySubdict(geodict))
-//     sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
-// 
-//   OFDictData::dict castdict;
-//   castdict["mode"]=p_.mode();
-//   OFDictData::list level;
-//   level.push_back(p_.distance());
-//   level.push_back(p_.level());
-//   OFDictData::list levels;
-//   levels.push_back(level);
-//   castdict["levels"]=levels;
-//   sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name()]=castdict;
-// }
 
 bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
 {
-  entryTitle=fileName().c_str();
+  entryTitle="\""+fileName()+"\"";
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p().name;
-//   //boost::filesystem::path x; x.f
-//   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
   return true;
 }
 

@@ -16,11 +16,11 @@ class TOOLKIT_GUI_EXPORT IQAddFilterDialog
 {
     Q_OBJECT
 
-    insight::ResultSetPtr resultSet_;
+    const insight::ResultSet& resultSet_;
 
 public:
     explicit IQAddFilterDialog(
-            insight::ResultSetPtr resultSet,
+            const insight::ResultSet& resultSet,
             QWidget *parent = nullptr
             );
     ~IQAddFilterDialog();

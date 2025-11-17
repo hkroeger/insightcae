@@ -37,7 +37,7 @@ public:
 
 insight::ResultElement& addPolarPlot
 (
-    std::shared_ptr<ResultElementCollection> results,
+    ResultElementCollection& results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& rlabel,

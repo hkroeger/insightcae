@@ -1,6 +1,7 @@
 #include "base/resultset.h"
 
 #include <iostream>
+#include <memory>
 #include <vector>
 
 #include "base/units.h"
@@ -76,6 +77,11 @@ int main()
             FileContainer(smileyImageBase64, "fileresult.jpeg"),
             "the smiley image file", "");
 
+        r.insert<FileResult>(
+            "textfileresult",
+            FileContainer(std::make_shared<std::string>("Hallo\nDu Da\n"), "textfile.txt"),
+            "a file with text in it", "");
+
         {
             arma::mat phi, y, data;
             phi       << 0. << 90. << 180. << 270. << 360. << arma::endr;
@@ -131,6 +137,21 @@ int main()
             "This subsection contains all elements from above the section again.");
         insertAll(sec);
 
+
+        // test read file from stream
+        {
+            auto &fr=result->get<FileResult>("textfileresult");
+            auto readstream = [](std::istream& is) {
+                std::string line;
+                while (getline(is, line))
+                {
+                    std::cout<<line<<std::endl;
+                }
+            };
+
+            readstream( *fr.stream() );
+        }
+
         // test report creation
         std::unique_ptr<CaseDirectory> tmp1, tmp2;
         {
@@ -151,6 +172,7 @@ int main()
 
             result->saveToFile(*tmp2/"result.isr");
 
+            // test load from XML
             auto result_in = ResultSet::createFromFile(*tmp2/"result.isr");
 
             insight::assertion(
@@ -165,7 +187,7 @@ int main()
                 "failed to create PDF report %s from stored result set", pdfFile2.c_str() );
         }
 
-        // test load from XML
+
 
         return 0;
     }

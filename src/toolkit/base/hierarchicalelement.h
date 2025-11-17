@@ -203,9 +203,10 @@ private:
 
     bool requiresInit_;
 
-protected:
+public: // needs to be accessible from ResultElementCollection
     virtual void setParent(Element* parent);
 
+protected:
     void markAsInitialized();
     void ensureInitialization() const;
     void resetInitialization();

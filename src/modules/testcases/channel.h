@@ -235,7 +235,7 @@ public:
   
   virtual void evaluateAtSection(
     OpenFOAMCase& cm,
-    ResultSetPtr results, double x, int i,
+    ResultSet& results, double x, int i,
     hierarchicalData::Ordering& o,
     bool includeRefDataInCharts = true,
     bool includeAllComponentsInCharts = false,

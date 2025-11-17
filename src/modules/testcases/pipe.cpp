@@ -352,9 +352,12 @@ void PipeBase::createCase
 
 }
 
+
+
+
 void PipeBase::evaluateAtSection(
   OpenFOAMCase& cm, 
-  ResultSetPtr results, double x, int i
+  ResultSet& results, double x, int i
 )
 {
   
@@ -509,7 +512,7 @@ void PipeBase::evaluateAtSection(
       "WriteImage('"+pressure_contour_filename+"')\n"
     )
   );
-  results->insert(pressure_contour_name,
+  results.insert(pressure_contour_name,
     std::unique_ptr<Image>(new Image
     (
     executionPath(), pressure_contour_filename, 
@@ -533,7 +536,7 @@ void PipeBase::evaluateAtSection(
 	"WriteImage('"+velocity_contour_filename+"')\n"
       )
     );
-    results->insert(velocity_contour_name,
+    results.insert(velocity_contour_name,
       std::unique_ptr<Image>(new Image
       (
       executionPath(), velocity_contour_filename, 
@@ -551,12 +554,12 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& prog
   boost::ptr_vector<sampleOps::set> sets;*/
   
   //double x=L*0.5;
-  evaluateAtSection(cm, results, 0.5*p().geometry.L, 0);
+  evaluateAtSection(cm, *results, 0.5*p().geometry.L, 0);
 
   const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
     throw insight::Exception("tpc FO array not found in case!");
-  tpcs->evaluate(cm, executionPath(), results,
+  tpcs->evaluate(cm, executionPath(), *results,
     "two-point correlation of velocity at different radii at x/L=0.5"
   );
   

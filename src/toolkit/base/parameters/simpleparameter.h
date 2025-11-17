@@ -179,7 +179,7 @@ public:
     }
 
 
-    void assignFrom(const Element& e)
+    void assignFrom(const Element& e) override
     {
         auto& op = dynamic_cast<const SimpleParameter&>(e);
 
@@ -209,10 +209,61 @@ public:
 
 
 
+extern char VectorBaseName[];
+extern char VectorName[];
+
+class VectorParameter
+    : public SimpleParameter<arma::mat, VectorBaseName >
+{
+public:
+    enum VectorType {
+        NonSpatial, Point, Direction
+    };
+
+private:
+    VectorType vectorType_;
+
+public:
+    declareType ( VectorName );
+
+    VectorParameter (
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    VectorParameter (
+        const arma::mat& value, const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    VectorParameter (
+        VectorType vt, const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    VectorParameter (
+        VectorType vt, const arma::mat& value,
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node) const override;
+
+    VectorParameter(const rapidxml::xml_node<> & node, bool skipValueRead=false);
+
+    inline VectorType vectorType() const
+    {
+        return vectorType_;
+    }
+
+    std::unique_ptr<Element> clone() const override;
+};
+
+
+
+
 extern char DoubleName[];
 extern char IntName[];
 extern char BoolName[];
-extern char VectorName[];
 extern char StringName[];
 extern char DateName[];
 extern char DateTimeName[];
@@ -223,7 +274,7 @@ extern char DateTimeName[];
 typedef SimpleParameter<double, DoubleName> DoubleParameter;
 typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
-typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
+// typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 typedef SimpleParameter<boost::gregorian::date, DateName> DateParameter;
 typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParameter;
@@ -235,7 +286,7 @@ typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParamete
 %template(DoubleParameter) SimpleParameter<double, DoubleName>;
 %template(IntParameter) SimpleParameter<int, IntName>;
 %template(BoolParameter) SimpleParameter<bool, BoolName>;
-%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
+//%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
 %template(StringParameter) SimpleParameter<std::string, StringName>;
 %template(DateParameter) SimpleParameter<boost::gregorian::date, DateName>;
 %template(DateTimeParameter) SimpleParameter<boost::posix_time::ptime, DateTimeName>;

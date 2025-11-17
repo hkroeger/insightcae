@@ -122,6 +122,7 @@ void AnalysisForm::restoreState(
 {
     auto ps = parameters().cloneAs<insight::ParameterSet>();
     ps->readFromRootNode(rootNode);
+    ps->resolveRelativePaths(parentPath);
     psmodel_->resetParameterValues( *ps );
 
     if (auto *vs = rootNode.first_node("viewerState"))
@@ -275,7 +276,7 @@ AnalysisForm::AnalysisForm(
     insight::ParameterSet_ValidatorPtr vali;
 
     auto& atab = insight::CADParameterSetModelVisualizer::visualizerForAnalysis();
-    std::cout<<"table of "<<atab.description()<<" of size "<<atab.size()<<std::endl;
+
     if (atab.count(analysisName))
     {
         insight::CurrentExceptionContext ex(_("create parameter set visualizer"));

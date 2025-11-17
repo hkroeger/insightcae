@@ -206,7 +206,7 @@ public:
    * @param descr Description
    * @param qtylabel Label (formula symbol) of the quantity. Will be interpreted as latex math expression
    */
-  void insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const;
+  void insertGraphsToResultSet(ResultSet& results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const;
 
   bool isAConstantValue(arma::mat& value) const;
 };

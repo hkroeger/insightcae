@@ -41,6 +41,8 @@ void IQCADSketchParameter::connectSignals()
     disconnectAtEOL(
         parameterRef().childValueChanged.connect(
             [this]() {
+                DBG_LOC(insight::DetailedBusiness)
+                 << "received childValueChanged => call notifyElementChange from IQCADSketchParameter" << std::endl;
                 auto blocker = block_all();
                 model()->notifyElementChange( *this );
             }
@@ -53,7 +55,8 @@ void IQCADSketchParameter::connectSignals()
 
 QVariant IQCADSketchParameter::value() const
 {
-    return "(sketch)";
+    // return "(sketch)";
+    return QString("(sketch with %1 entities)").arg(parameter().sketch().size());
 }
 
 

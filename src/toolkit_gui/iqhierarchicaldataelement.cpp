@@ -29,7 +29,7 @@ defineFactoryTable
 
 
 
-
+// used in createForChild and for root element
 IQHierarchicalDataElement* IQHierarchicalDataElement::create(
     QObject *parent,
     IQHierarchicalDataModel* model,
@@ -132,6 +132,9 @@ void IQHierarchicalDataElement::connectSignals()
     disconnectAtEOL(
         (*this)->valueChanged.connect(
             [this]() {
+                insight::dbg(insight::DetailedBusiness)
+                    << "received valueChanged from "<<(*this)->name()
+                    <<" => call notifyElementChange from IQHierarchicalDataElement" << std::endl;
                 model_->notifyElementChange( *this );
             }
             )
@@ -141,6 +144,8 @@ void IQHierarchicalDataElement::connectSignals()
         (*this)->beforeChildInsertion.connect(
             [this](int r0, int r1)
             {
+                insight::dbg(insight::DetailedBusiness)
+                << "received beforeChildInsertion => call beginInsertRows from IQHierarchicalDataElement" << std::endl;
                 QModelIndex idx=model_->indexOfElement(*this, 0);
                 model_->beginInsertRows( idx, r0, r1 );
             }
@@ -151,6 +156,8 @@ void IQHierarchicalDataElement::connectSignals()
         (*this)->childInsertionDone.connect(
             [this](int, int)
             {
+                insight::dbg(insight::DetailedBusiness)
+                << "received childInsertionDone => call endInsertRows from IQHierarchicalDataElement" << std::endl;
                 model_->endInsertRows();
             }
             )
@@ -160,6 +167,8 @@ void IQHierarchicalDataElement::connectSignals()
         (*this)->beforeChildRemoval.connect(
             [this](int r0, int r1)
             {
+                insight::dbg(insight::DetailedBusiness)
+                << "received beforeChildRemoval => call beginRemoveRows from IQHierarchicalDataElement" << std::endl;
                 QModelIndex idx=model_->indexOfElement(*this, 0);
                 model_->beginRemoveRows( idx, r0, r1 );
             }
@@ -170,6 +179,8 @@ void IQHierarchicalDataElement::connectSignals()
         (*this)->childRemovalDone.connect(
             [this](int, int)
             {
+                insight::dbg(insight::DetailedBusiness)
+                << "received childRemovalDone => call endRemoveRows from IQHierarchicalDataElement" << std::endl;
                 model_->endRemoveRows();
             }
             )

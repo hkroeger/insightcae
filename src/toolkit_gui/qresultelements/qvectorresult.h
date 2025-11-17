@@ -37,7 +37,10 @@ class TOOLKIT_GUI_EXPORT QVectorResult : public IQResultElement
 public:
     declareType ( insight::VectorResult::typeName_() );
 
-    QVectorResult(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QVectorResult(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;

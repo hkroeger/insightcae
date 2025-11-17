@@ -55,10 +55,18 @@ ConstrainedSketchEntity::ConstrainedSketchEntity(
     parameters_(ParameterSet::create())
 {
     parameters_->valueChanged.connect(
-        [this]() { parametersChanged(*parameters_); }
+        [this]() {
+            insight::dbg(DetailedBusiness)
+                << "received valueChanged from parameters_ => emit parametersChanged from ConstrainedSketchEntity" <<std::endl;
+            parametersChanged(*parameters_);
+        }
         );
     parameters_->childValueChanged.connect(
-        [this]() { parametersChanged(*parameters_); }
+        [this]() {
+            insight::dbg(DetailedBusiness)
+                << "received childValueChanged from parameters_ => emit parametersChanged from ConstrainedSketchEntity" <<std::endl;
+            parametersChanged(*parameters_);
+        }
         );
 }
 

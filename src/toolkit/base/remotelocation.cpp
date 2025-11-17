@@ -515,7 +515,7 @@ void RemoteLocation::syncToLocal
 
 
 void RemoteLocation::writeConfigFile(
-    const filesystem::path &cfgf
+    const boost::filesystem::path &cfgf
     ) const
 {
   using namespace rapidxml;

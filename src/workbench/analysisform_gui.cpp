@@ -145,10 +145,11 @@ void AnalysisForm::onKillAnalysis()
 
 
 
-void AnalysisForm::onResultReady(insight::ResultSetPtr results)
+void AnalysisForm::onResultReady()
 {
-    ui->tabWidget->setCurrentWidget(ui->outputTab);
-  resultsViewer_->loadResults(results);
+  ui->tabWidget->setCurrentWidget(ui->outputTab);
+    resultsViewer_->loadResults(
+      currentWorkbenchAction_->moveResults() );
 
   currentWorkbenchAction_.reset();
 

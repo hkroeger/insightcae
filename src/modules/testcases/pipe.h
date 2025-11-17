@@ -153,8 +153,8 @@ public:
   );
 
   virtual void evaluateAtSection(
-    OpenFOAMCase& cm, 
-    ResultSetPtr results, double x, int i
+    OpenFOAMCase& cm,
+    ResultSet& results, double x, int i
   );
 
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);

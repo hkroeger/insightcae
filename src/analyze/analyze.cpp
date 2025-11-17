@@ -158,8 +158,6 @@ int main(int argc, char *argv[])
 
     boost::filesystem::path inputFileParentPath = workdir;
 
-    std::string analysisName = "";
-
     auto summarizeWarnings = [&]()
     {
       if (WarningDispatcher::getCurrent().nWarnings()>0)
@@ -277,7 +275,7 @@ int main(int argc, char *argv[])
 
             cout<< str(format(
                     _("Executing analysis of type '%s' in directory '%s'"))
-                        % analysisName % workdir.string()
+                        % parameters->analysisTypeName() % workdir.string()
                 ) << endl;
         }
 
@@ -468,7 +466,7 @@ int main(int argc, char *argv[])
           // run analysis
 
           AnalysisThread solver_thread(
-              analysisName,
+              parameters->analysisTypeName(),
               AnalysisThread::ParameterSetAndExePath{parameters.get(), workdir},
               pd);
 
@@ -479,7 +477,9 @@ int main(int argc, char *argv[])
           }
 #endif
 
-          results = solver_thread.join();
+          solver_thread.join();
+
+          results=std::move(solver_thread);
         }
         catch (insight::Exception& ex)
         {
@@ -507,7 +507,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_WT
           if (server)
           {
-            server->setResults(results);
+            server->setResults(std::move(results));
             server->waitForShutdown();
           }
           else

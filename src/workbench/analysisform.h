@@ -268,7 +268,7 @@ private Q_SLOTS:
   // ================================================================================
   // ================================================================================
   // ===== error handling
-  void onResultReady(insight::ResultSetPtr);
+  void onResultReady();
   void onAnalysisError(std::exception_ptr e);
   void onAnalysisCancelled();
 

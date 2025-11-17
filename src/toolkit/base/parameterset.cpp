@@ -262,6 +262,16 @@ rapidxml::xml_node<> *AnalysisParameterSet::appendToNode(
     return rootNode;
 }
 
+void AnalysisParameterSet::assignFrom(const Element &rhs)
+{
+    auto &ops=dynamic_cast<const ParameterSet&>(rhs);
+    ParameterSet::assignFrom(ops);
+    if (auto *oaps=dynamic_cast<const AnalysisParameterSet*>(&rhs))
+    {
+        analysisTypeName_=oaps->analysisTypeName_;
+    }
+}
+
 
 std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::clone() const
 {

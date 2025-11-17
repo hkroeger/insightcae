@@ -37,7 +37,10 @@ class TOOLKIT_GUI_EXPORT QTabularResult
 public:
     declareType ( insight::TabularResult::typeName_() );
 
-    QTabularResult(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QTabularResult(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;

@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "base/resultset.h"
 #include "workbenchaction.h"
 #include "analyzeclient.h"
 #include "iqexecutionworkspace.h"
@@ -37,7 +38,8 @@ public:
 
 
 class RemoteRun
-    : public WorkbenchAction,
+    : public QObject,
+      public WorkbenchAction,
       protected UndoSteps
 {
   Q_OBJECT
@@ -50,7 +52,7 @@ class RemoteRun
   bool killRequested_, disconnectRequested_;
   insight::ActionProgress launchProgress_;
 
-  insight::ResultSetPtr results_;
+  std::unique_ptr<insight::ResultSet> results_;
 
 
 protected:
@@ -103,10 +105,20 @@ public:
 
   ~RemoteRun();
 
+  std::unique_ptr<insight::ResultSet> moveResults() override;
+
   inline insight::AnalyzeClient& analyzeClient() { return *ac_; }
 
 public Q_SLOTS:
   void onCancel() override;
+
+Q_SIGNALS:
+  void logMessage(const QString& logmsg);
+  void statusMessage(const QString& msg);
+
+  void finished();
+  void failed(::std::exception_ptr e);
+  void cancelled();
 };
 
 #endif // REMOTERUN_H

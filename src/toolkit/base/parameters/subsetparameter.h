@@ -209,7 +209,7 @@ public:
 
   bool contains ( const std::string& name ) const;
 
-  std::istream& getFileStream ( const std::string& name );
+  std::unique_ptr<std::istream> getFileStream ( const std::string& name );
 
   ParameterSet& setInt ( const std::string& name, int v );
   ParameterSet& setDouble ( const std::string& name, double v );

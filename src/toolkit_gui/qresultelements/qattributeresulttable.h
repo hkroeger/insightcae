@@ -38,7 +38,10 @@ class TOOLKIT_GUI_EXPORT QAttributeResultTable
 
 public:
     declareType ( insight::AttributeTableResult::typeName_() );
-    QAttributeResultTable(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QAttributeResultTable(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;

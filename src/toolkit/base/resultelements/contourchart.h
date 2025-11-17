@@ -118,7 +118,7 @@ public:
 
 void addPolarContourPlot
 (
-        std::shared_ptr<ResultElementCollection> results,
+        ResultElementCollection& results,
         const std::string& resultelementname,
         const std::string& rlabel,
         const std::string& cblabel,

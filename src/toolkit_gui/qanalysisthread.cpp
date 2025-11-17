@@ -23,7 +23,7 @@ QAnalysisThread::QAnalysisThread(
 
       [this,postAction]() {
         postAction();
-        Q_EMIT finished(results_);
+        Q_EMIT finished();
       },
 
       [this,exHdlr](std::exception_ptr e) {
@@ -54,7 +54,7 @@ QAnalysisThread::QAnalysisThread(
     (
       [this,action]() {
         action();
-        Q_EMIT finished(results_);
+        Q_EMIT finished();
       },
 
       [this,exHdlr](std::exception_ptr e) {

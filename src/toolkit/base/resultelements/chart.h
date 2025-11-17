@@ -109,7 +109,7 @@ struct PlotCurveList
 
 
 
-
+#ifndef SWIG
 struct ChartData
 {
   std::string xlabel_;
@@ -119,7 +119,7 @@ struct ChartData
 
   bool operator==(const ChartData o) const;
 };
-
+#endif
 
 
 
@@ -182,18 +182,6 @@ public:
 std::string yRangeExpression(double mi, double ma, double boundaryBySpan=0.2);
 
 
-insight::ResultElement& addPlot
-(
-    std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& workdir,
-    const std::string& resultelementname,
-    const std::string& xlabel,
-    const std::string& ylabel,
-    const PlotCurveList& plc,
-    const std::string& shortDescription,
-    const std::string& addinit = "",
-    const std::string& watermarktext = ""
-);
 
 
 insight::ResultElement& addPlot

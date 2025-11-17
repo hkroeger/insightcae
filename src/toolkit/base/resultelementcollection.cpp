@@ -15,29 +15,19 @@ namespace insight {
 
 
 
-ResultElement& ResultElementCollection::insert ( const string& key, ResultElement* elem )
-{
-    auto res=
-        ResultElementMap::insert (
-            value_type ( key, ResultElementPtr ( elem ) ) );
-    return * ( *res.first ).second;
-}
-
-// void ResultSet::insert(const string& key, unique_ptr< ResultElement > elem)
-// {
-//   this->insert(ResultSet::value_type(key, ResultElementPtr(elem.release())));
-// }
-
-
 ResultElement& ResultElementCollection::insert (
     const string& key,
-    ResultElementPtr elem )
+    std::unique_ptr<ResultElement> elem )
 {
     auto res=
         ResultElementMap::insert (
-            ResultElementCollection::value_type ( key, elem ) );
+            { key, std::move(elem) } );
 
-    return * ( *res.first ).second;
+    auto &inse=* ( *res.first ).second;
+
+    inse.setParent(this);
+
+    return inse;
 }
 
 
@@ -45,11 +35,7 @@ ResultElement& ResultElementCollection::insert (
     const string& key,
     const ResultElement& elem )
 {
-    auto res=
-        ResultElementMap::insert (
-            value_type ( key, elem.cloneAs<ResultElement>() ) );
-
-    return * ( *res.first ).second;
+    return insert(key, elem.cloneAs<ResultElement>() );
 }
 
 
@@ -68,7 +54,7 @@ std::string ResultElementCollection::latexRepresentation(
         int documentHierarchyLevel,
         const FileStorageInfo& fsi ) const
 {
-    std::vector<std::pair<key_type,mapped_type> > items;
+    std::vector<std::pair<key_type,ResultElement*> > items;
 
 //   std::transform
 //   (
@@ -83,7 +69,7 @@ std::string ResultElementCollection::latexRepresentation(
         ResultElementMap::begin(),
         ResultElementMap::end(),
         [&items] ( const value_type& p ) {
-            items.push_back ( p );
+            items.push_back ( {p.first, p.second.get()} );
         }
     );
 
@@ -91,7 +77,7 @@ std::string ResultElementCollection::latexRepresentation(
     (
         items.begin(),
         items.end(),
-        [] ( const value_type &left, const value_type &right ) {
+        [] ( const decltype(items)::value_type &left, const decltype(items)::value_type &right ) {
               return left.second->order() < right.second->order();
           }
     );
@@ -202,17 +188,13 @@ ResultElementCollection::readFromNode (
         std::string tname ( e->name() );
         std::string name ( getMandatoryAttribute(*e, "name") );
 
-        ResultElementPtr re
-        (
-            ResultElement::lookup
-            (
+        std::unique_ptr<ResultElement> re(
+            ResultElement::lookup(
                 tname,
-                "", "", ""
-            )
-        );
+                "", "", "" ) );
 
         re->readFromNode ( std::string(), *e );
-        insert ( name, re );
+        insert( name, std::move(re) );
     }
     return child;
 }
@@ -264,6 +246,19 @@ std::string ResultElementCollection::childElementName(
     bool redirectArrayElementsToDefault ) const
 {
     return ResultElement::childElementName(p, redirectArrayElementsToDefault);
+}
+
+
+
+void ResultElementCollection::transfer(ResultElementCollection &other)
+{
+    auto& oc=static_cast<ResultElementMap&>(other);
+    while (oc.size())
+    {
+        auto io=oc.begin();
+        insert(io->first, std::move(io->second));
+        oc.erase(io);
+    }
 }
 
 

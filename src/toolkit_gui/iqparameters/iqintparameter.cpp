@@ -60,7 +60,8 @@ QVBoxLayout* IQIntParameter::populateEditControls(
       parameterRef().valueChanged.connect(
           [=]()
           {
-              QSignalBlocker sb(lineEdit);
+              insight::dbg(insight::DetailedBusiness)
+              << "received valueChanged => call setText from IQIntParameter" << std::endl;              QSignalBlocker sb(lineEdit);
               lineEdit->setText(
                   QString::number(parameter()()));
           }

@@ -41,16 +41,19 @@ class TOOLKIT_GUI_EXPORT QImage
 {
   Q_OBJECT
 
-  QPixmap pm_;
+  std::unique_ptr<QPixmap> pm_;
   IQPixmapLabel *id_;
 
 protected:
-  void setImage(const QPixmap& pm);
+  void setImage(std::unique_ptr<QPixmap> pm);
 
 public:
   declareType ( insight::Image::typeName_() );
 
-  QImage(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+  QImage(
+      QObject* parent,
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element );
 
   QVariant previewInformation(int role) const override;
   void createFullDisplay(QVBoxLayout *layout) override;

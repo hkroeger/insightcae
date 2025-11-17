@@ -1361,17 +1361,19 @@ std::vector<MeshQualityInfo> getMeshQuality(const OpenFOAMCase& cm, const boost:
 
   return mqinfos;
 }
-  
-void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& location, 
-		       ResultSetPtr results,
-		       const std::vector<string>& addopts
-		      )
+
+void meshQualityReport(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    ResultSet& results,
+    const std::vector<string>& addopts
+    )
 {
   auto mqinfos=getMeshQuality(cm, location, addopts);
   
   for (const MeshQualityInfo& mq: mqinfos)
   {
-    results->insert
+    results.insert
     (
      "Mesh quality at time "+mq.time,
      std::make_unique<AttributeTableResult>
@@ -1422,8 +1424,8 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 void currentNumericalSettingsReport
 (
   const OpenFOAMCase& /*cm*/,
-  const boost::filesystem::path& location, 
-  ResultSetPtr results
+  const boost::filesystem::path& location,
+  ResultSet& results
 )
 {
   double order=990;
@@ -1451,7 +1453,7 @@ void currentNumericalSettingsReport
       
       std::string elemname=dictname.string();
       replace_all(elemname, "/", "_");
-      results->insert("dictionary_"+elemname,
+      results.insert("dictionary_"+elemname,
         std::unique_ptr<Comment>(new Comment
 	(
 	latexCode.str(), 
@@ -2208,7 +2210,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     
     addPlot
     (
-      results, casepath, "profiles_"+fieldname,
+      *results, casepath, "profiles_"+fieldname,
       "$x / m$", fieldname,
       crvs,
       "Profiles of field "+fieldname

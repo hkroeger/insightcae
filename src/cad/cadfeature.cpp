@@ -2204,7 +2204,7 @@ FeatureID Feature::vertexID(const TopoDS_Shape& v) const
 }
 
 
-void Feature::write(const filesystem::path& file) const
+void Feature::write(const boost::filesystem::path& file) const
 {
   std::ofstream f(file.c_str());
   write(f);
@@ -2251,7 +2251,7 @@ void Feature::write(std::ostream& f) const
   f<<areaWeight()<<endl;
 }
 
-void Feature::read(const filesystem::path& file)
+void Feature::read(const boost::filesystem::path& file)
 {
   cout<<"Reading model of type "<<type()<<" from cache file "<<file<<endl;
   std::ifstream f(file.c_str());

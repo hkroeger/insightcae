@@ -459,7 +459,8 @@ bool ParameterSet::contains(const std::string &name) const
 
 
 
-std::istream& ParameterSet::getFileStream ( const std::string& name )
+std::unique_ptr<std::istream>
+ParameterSet::getFileStream ( const std::string& name )
 {
   return this->get<PathParameter> ( name ) .stream();
 }

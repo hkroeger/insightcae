@@ -17,8 +17,11 @@ addToFactoryTable(IQResultElement, QResultSection);
 
 
 
-QResultSection::QResultSection(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : IQResultElement(parent, label, rep)
+QResultSection::QResultSection(
+    QObject* parent,
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element )
+    : IQResultElement(parent, hdmodel, element)
 {}
 
 
@@ -27,9 +30,9 @@ QVariant QResultSection::previewInformation(int role) const
 {
   if (role==Qt::DisplayRole)
   {
-    auto sec=resultElementAs<insight::ResultSection>();
+    auto &sec=elementAs<insight::ResultSection>();
 
-    auto pt=SimpleLatex(sec->secionName()).toPlainText();
+    auto pt=SimpleLatex(sec.secionName()).toPlainText();
 
     return QString::fromStdString(pt);
   }
@@ -43,8 +46,8 @@ void QResultSection::createFullDisplay(QVBoxLayout* layout)
 {
   IQResultElement::createFullDisplay(layout);
   te_=new IQSimpleLatexView(
-      resultElementAs<insight::ResultSection>()
-          ->introduction());
+      elementAs<insight::ResultSection>()
+          .introduction());
   layout->addWidget(te_);
 }
 

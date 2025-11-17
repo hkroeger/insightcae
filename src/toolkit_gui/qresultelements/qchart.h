@@ -36,7 +36,10 @@ class TOOLKIT_GUI_EXPORT QChart
 public:
     declareType ( insight::Chart::typeName_() );
 
-    QChart(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QChart(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 };
 
 } // namespace insight

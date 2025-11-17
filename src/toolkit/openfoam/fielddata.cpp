@@ -383,7 +383,7 @@ double FieldData::calcRepresentativeValueMag() const
     for (const auto& inst: fd->values)
     {
       arma::mat xy;
-      xy.load( inst.profile->stream(), arma::raw_ascii);
+      xy.load( *inst.profile->stream(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
@@ -407,7 +407,7 @@ double FieldData::calcRepresentativeValueMag() const
     for (const auto& inst: fd->values)
     {
       arma::mat xy;
-      xy.load( inst.profile->stream(), arma::raw_ascii);
+      xy.load( *inst.profile->stream(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
@@ -500,7 +500,7 @@ double FieldData::calcMaxValueMag() const
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( inst.profile->stream(), arma::raw_ascii);
+            xy.load( *inst.profile->stream(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
@@ -518,7 +518,7 @@ double FieldData::calcMaxValueMag() const
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( inst.profile->stream(), arma::raw_ascii);
+            xy.load( *inst.profile->stream(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
@@ -601,7 +601,7 @@ Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::stri
 
 
 
-void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const
+void FieldData::insertGraphsToResultSet(ResultSet& results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const
 {
     if (const auto *fd =
         boost::get<Parameters::fielddata_linearProfile_type>(
@@ -610,7 +610,7 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( inst.profile->stream(), arma::raw_ascii);
+            xy.load( *inst.profile->stream(), arma::raw_ascii);
 
             arma::uword ncmpt=xy.n_cols-1;
             PlotCurveList crvs(ncmpt);

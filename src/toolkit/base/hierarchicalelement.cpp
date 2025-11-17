@@ -721,7 +721,12 @@ void Element::copyMatching(const Element &rhs)
 {
     //just assign, if there are no children
     if (nChildren()==0)
-        assignFrom(rhs);
+    {
+        if (type()==rhs.type())
+        {
+            assignFrom(rhs);
+        }
+    }
     else
     {
         throw insight::Exception(

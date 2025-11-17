@@ -352,11 +352,11 @@ void QueryResultsAction::handleHttpResponse(
             const Wt::Http::Message& response )
 {
     AnalyzeClientAction::handleHttpResponse(err, response);
-    bool success = (!err && response.status() == 200);
 
-    ResultSetPtr r;
+    Result qrr;
+    qrr.success = (!err && response.status() == 200);
 
-    if (success)
+    if (qrr.success)
     {
       const auto *ct = response.getHeader("Content-Type");
 
@@ -365,14 +365,22 @@ void QueryResultsAction::handleHttpResponse(
 
       if ( (*ct)=="application/xml")
       {
-        r = ResultSet::createFromString( response.body() );
+        qrr.results = ResultSet::createFromString( response.body() );
       }
     }
 
-    Result qrr;
-    qrr.success=success;
-    qrr.results=r;
-    cl_.ioService().post( std::bind(callback_, qrr) );
+    callback_(std::move(qrr));
+    // //auto b=std::bind(callback_, qrr);
+    // auto b=[this,qrr](){
+    //     callback_(qrr);
+    // };
+    // struct CC
+    // {
+    //     std::unique_ptr<int> ii;
+    //     void operator()()
+    //     {}
+    // } cc;
+    // cl_.ioService().post(cc);
 }
 
 

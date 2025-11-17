@@ -17,6 +17,8 @@ class QTreeView;
 #include "base/resultset.h"
 #include "base/factory.h"
 
+#include "iqhierarchicaldatamodel.h"
+#include "iqhierarchicaldataelement.h"
 #include "qtextensions.h"
 
 
@@ -46,39 +48,25 @@ Q_SIGNALS:
 
 
 class TOOLKIT_GUI_EXPORT IQResultElement
- : public QObject
+ : public IQHierarchicalDataElement
 {
     Q_OBJECT
-
-  insight::ResultElementPtr resultElement_;
 
   IQSimpleLatexView *shortDesc_, *longDesc_;
 
   Qt::CheckState checkState_;
 
-public:
-    declareFactoryTable(
-        IQResultElement,
-        LIST(QObject* parent, const QString& label, insight::ResultElementPtr rep),
-        LIST(parent, label, rep)
-        );
+  IQHierarchicalDataElement* createForChild(
+      IQHierarchicalDataModel* model,
+      insight::hierarchicalData::Element *ce ) override;
 
 public:
     declareType("IQResultElement");
 
-    IQResultElement(QObject* parent, const QString& label, insight::ResultElementPtr rep);
-    IQResultElement* parentResultElement() const;
-    QList<IQResultElement*> children_;
-
-    QString label_;
-
-    insight::ResultElement* resultElement() const;
-
-    template<class T>
-    T* resultElementAs() const
-    {
-      return dynamic_cast<T*>(resultElement_.get());
-    }
+    IQResultElement(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element);
 
 
     virtual QVariant previewInformation(int role) const =0;
@@ -88,22 +76,6 @@ public:
     void setChecked( Qt::CheckState cs );
 };
 
-
-
-
-class TOOLKIT_GUI_EXPORT IQRootResultElement
- : public IQResultElement
-{
-    Q_OBJECT
-
-public:
-    declareType("IQRootResultElement");
-
-    IQRootResultElement(QObject* parent, const QString& label);
-
-    QVariant previewInformation(int role) const override;
-    void createFullDisplay(QVBoxLayout* layout) override;
-};
 
 
 
@@ -119,15 +91,17 @@ public:
     declareType("IQStaticTextResultElement");
 
     IQStaticTextResultElement(
-            QObject* parent,
-            const QString& label,
-            const QString& staticText,
-            const QString& staticDetailText,
-            insight::ResultElementPtr rep);
+        QObject* parent,
+        const QString& staticText,
+        const QString& staticDetailText,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;
 };
+
+
 
 
 class IQResultSetModelBase
@@ -138,17 +112,14 @@ public:
 
 
 class TOOLKIT_GUI_EXPORT IQResultSetModel
-        : public QAbstractItemModel,
+        : public IQHierarchicalDataModel,
           public IQResultSetModelBase
 {
     Q_OBJECT
 
-    ResultSetPtr orgResultSet_;
-    IQResultElement* root_;
     bool selectableElements_;
 
-
-    void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
+    // void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
 
     void setCheckState(const QModelIndex &idx, bool checked);
     void updateParentCheckState(const QModelIndex &idx);
@@ -161,26 +132,16 @@ class TOOLKIT_GUI_EXPORT IQResultSetModel
                           std::string parentPath );
 public:
 
-    IQResultSetModel(ResultSetPtr resultSet, bool selectableElements=false, QObject* parent=nullptr);
+    IQResultSetModel(std::unique_ptr<ResultSet> resultSet, bool selectableElements=false, QObject* parent=nullptr);
 
-    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-    QModelIndex parent(const QModelIndex &index) const  override;
-
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant headerData(int section, Qt::Orientation orient, int role) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
     IQResultElement* getResultElement(const QModelIndex& idx) override;
-    std::string path(const QModelIndex& idx) const;
 
-//    void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
-//    ResultSetPtr filteredResultSet() const;
-
-    insight::ResultSetPtr resultSet() const;
-    bool hasResults() const;
+    const insight::ResultSet& resultSet() const;
 
     ResultSetFilter filter() const;
     void resetFilter(const ResultSetFilter& filter);

@@ -705,7 +705,7 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
 
 ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
-  ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
+  auto results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
 
   auto ap = pp.forkNewAction(13, "Evaluation");
   
@@ -732,8 +732,8 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
   
   double Re=p().operation.v*sp().Lref_/p().fluid.nu;
-  ptr_map_insert<ScalarResult>(*results) ("Re", Re, "Reynolds number", "", "");
-  ptr_map_insert<ScalarResult>(*results) ("Afront", A, "Projected frontal area", "", "$m^2$");
+  results->insert<ScalarResult>("Re", Re, "Reynolds number", "", "");
+  results->insert<ScalarResult>("Afront", A, "Projected frontal area", "", "$m^2$");
     
   ap.message("Reading forces");
   arma::mat f=forces::readForces(cm, executionPath(), sp().FOname);
@@ -746,27 +746,27 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
   arma::mat Flat = (f.col(2)+f.col(5)) *mult;
   arma::mat L = (f.col(3)+f.col(6)) *mult;
   
-  ptr_map_insert<ScalarResult>(*results) ("Rtot", Rtot(Rtot.n_rows-1), "Total resistance", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("Flat", Flat(Flat.n_rows-1), "Lateral force", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("L", L(L.n_rows-1), "Lifting force", "", "N");
+  results->insert<ScalarResult>("Rtot", Rtot(Rtot.n_rows-1), "Total resistance", "", "N");
+  results->insert<ScalarResult>("Flat", Flat(Flat.n_rows-1), "Lateral force", "", "N");
+  results->insert<ScalarResult>("L", L(L.n_rows-1), "Lifting force", "", "N");
 
   double cr=Rtot(Rtot.n_rows-1) / (0.5*p().fluid.rho*pow(p().operation.v,2)*A);
-  ptr_map_insert<ScalarResult>(*results) ("cr", cr, "Resistance coefficient", "", "");
+  results->insert<ScalarResult>("cr", cr, "Resistance coefficient", "", "");
   
   double cl=L(L.n_rows-1) / (0.5*p().fluid.rho*pow(p().operation.v,2)*A);
-  ptr_map_insert<ScalarResult>(*results) ("cl", cl, "Lifting coefficient", "with respect to projected frontal area and forward velocity", "");
+  results->insert<ScalarResult>("cl", cl, "Lifting coefficient", "with respect to projected frontal area and forward velocity", "");
 
   double cs=Flat(Flat.n_rows-1) / (0.5*p().fluid.rho*pow(p().operation.v,2)*A);
-  ptr_map_insert<ScalarResult>(*results) ("cs", cs, "Lateral forces coefficient", "with respect to projected frontal area and forward velocity", "");
+  results->insert<ScalarResult>("cs", cs, "Lateral forces coefficient", "with respect to projected frontal area and forward velocity", "");
 
   double Pe=Rtot(Rtot.n_rows-1) * p().operation.v;
-  ptr_map_insert<ScalarResult>(*results) ("Pe", Pe, "Effective power $P_e=R_{tot} v$", "", "W");
+  results->insert<ScalarResult>("Pe", Pe, "Effective power $P_e=R_{tot} v$", "", "W");
 
   ap.message("Creating resistance plot");
   // Resistance convergence
   addPlot
   (
-    results, executionPath(), "chartResistance",
+    *results, executionPath(), "chartResistance",
     "Iteration", "F [N]",
     {
       PlotCurve( arma::mat(join_rows(t, Rtot)),  "Rtot", "w l lw 2 t 'Total resistance'"),

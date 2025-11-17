@@ -47,7 +47,7 @@ IQResultSetDisplayerWidget::IQResultSetDisplayerWidget(QWidget *parent) :
     connect(ui->btnAddFilter, &QPushButton::clicked, this,
             [this]()
             {
-                if (resultsModel_->resultSet())
+                if (resultsModel_->hasData())
                 {
                     IQAddFilterDialog dlg(resultsModel_->resultSet(), this);
                     if (dlg.exec() == QDialog::Accepted)
@@ -100,14 +100,15 @@ void IQResultSetDisplayerWidget::clear()
     loadResults(nullptr);
 }
 
-void IQResultSetDisplayerWidget::loadResults(insight::ResultSetPtr results)
+void IQResultSetDisplayerWidget::loadResults(
+    std::unique_ptr<insight::ResultSet> results)
 {
     auto oldrm = resultsModel_;
     auto foldrm = filteredResultsModel_;
 
     if (results)
     {
-        resultsModel_ = new insight::IQResultSetModel(results, false, this);
+        resultsModel_ = new insight::IQResultSetModel(std::move(results), false, this);
         filteredResultsModel_ = new insight::IQFilteredResultSetModel(this);
         filteredResultsModel_->resetFilter( filterModel_->filter() );
         filteredResultsModel_->setSourceModel(resultsModel_);
@@ -141,7 +142,7 @@ void IQResultSetDisplayerWidget::loadResults(insight::ResultSetPtr results)
 
 bool IQResultSetDisplayerWidget::hasResults() const
 {
-    return ((resultsModel_!=nullptr) && (resultsModel_->hasResults()));
+    return ((resultsModel_!=nullptr) && (resultsModel_->hasData()));
 }
 
 
@@ -152,8 +153,7 @@ void IQResultSetDisplayerWidget::loadResultSet()
             GetFileMode::Open,
             {{ "isr", _("InsightCAE Result Set") }} ) )
     {
-      auto r = insight::ResultSet::createFromFile(f);
-      loadResults(r);
+      loadResults( insight::ResultSet::createFromFile(f) );
     }
 }
 
@@ -192,7 +192,7 @@ void IQResultSetDisplayerWidget::saveResultSetAs()
           }
           else
           {
-              resultsModel_->resultSet()->saveToFile(outf);
+              resultsModel_->resultSet().saveToFile(outf);
           }
         }
     }
@@ -234,7 +234,7 @@ void IQResultSetDisplayerWidget::renderReport()
                   }
                   else
                   {
-                      resultsModel_->resultSet()->generatePDF(outf);
+                      resultsModel_->resultSet().generatePDF(outf);
                   }
             }
             else if (fd.selectedNameFilter()==TEX)
@@ -250,7 +250,7 @@ void IQResultSetDisplayerWidget::renderReport()
                 }
                 else
                 {
-                    resultsModel_->resultSet()->writeLatexFile(outf);
+                    resultsModel_->resultSet().writeLatexFile(outf);
                 }
             }
             else

@@ -138,7 +138,11 @@ public:
         }
     }
 
-    virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="")
+    virtual void reportIntermediateParameter(
+        const std::string& name,
+        double value,
+        const std::string& description="",
+        const std::string& unit="" )
     {
         initializeDerivedInputDataSection();
 
@@ -147,7 +151,7 @@ public:
             std::cout<<" ("<<description<<")";
         std::cout<<std::endl;
 
-        boost::assign::ptr_map_insert<ScalarResult>(*derivedInputData_) (name, value, description, "", unit);
+        derivedInputData_->insert<ScalarResult>(name, value, description, "", unit);
     }
     
     virtual void calcDerivedInputData(ProgressDisplayer& progress)
@@ -580,13 +584,13 @@ public:
         if (!p().eval.skipmeshquality)
         {
             parentActionProgress.message("Generating mesh quality report");
-            meshQualityReport(cm, exepath, results);
+            meshQualityReport(cm, exepath, *results);
         }
 
         if (p().eval.reportdicts)
         {
             parentActionProgress.message("Adding numerical settings to report");
-            currentNumericalSettingsReport(cm, exepath, results);
+            currentNumericalSettingsReport(cm, exepath, *results);
         }
 
         if (derivedInputData_)

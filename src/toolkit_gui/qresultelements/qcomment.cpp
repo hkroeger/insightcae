@@ -11,17 +11,20 @@ namespace insight
 defineType(QComment);
 addToFactoryTable(IQResultElement, QComment);
 
-QComment::QComment(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : IQResultElement(parent, label, rep)
+QComment::QComment(
+    QObject* parent,
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element )
+    : IQResultElement(parent, hdmodel, element)
 {}
 
 QVariant QComment::previewInformation(int role) const
 {
   if (role==Qt::DisplayRole)
   {
-    auto comment = resultElementAs<insight::Comment>();
+    auto &comment = elementAs<insight::Comment>();
 
-    auto plaintextcomment = SimpleLatex(comment->value()).toPlainText();
+    auto plaintextcomment = SimpleLatex(comment.value()).toPlainText();
     QString excerpt=QString::fromStdString(plaintextcomment);
     int cutoff=30;
     if (excerpt.size()>cutoff)
@@ -39,7 +42,7 @@ void QComment::createFullDisplay(QVBoxLayout* layout)
 {
   IQResultElement::createFullDisplay(layout);
   te_=new IQSimpleLatexView(
-      resultElementAs<insight::Comment>()->value());
+      elementAs<insight::Comment>().value());
   layout->addWidget(te_);
 }
 

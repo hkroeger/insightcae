@@ -97,7 +97,7 @@ Import::Import ( const TopoDS_Shape& shape )
 
 
 
-Import::Import(const filesystem::path& filepath)
+Import::Import(const boost::filesystem::path& filepath)
 : importSource_(filepath)
 {}
 
@@ -249,8 +249,8 @@ void Import::insertrule(parser::ISCADParser& ruleset)
       ( '(' > ruleset.r_path
             > ')' )
        [ qi::_val = phx::bind(
-                       &Import::create<const filesystem::path&>,
-                       qi::_1) ]
+           &Import::create<const boost::filesystem::path&>,
+           qi::_1) ]
     )
   );
 

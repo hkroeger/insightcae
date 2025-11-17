@@ -24,7 +24,7 @@ public:
     ~IQResultSetDisplayerWidget();
 
     void clear();
-    void loadResults(insight::ResultSetPtr results);
+    void loadResults(std::unique_ptr<insight::ResultSet> results);
 
     bool hasResults() const;
 

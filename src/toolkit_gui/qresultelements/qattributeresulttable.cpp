@@ -13,8 +13,11 @@ addToFactoryTable(IQResultElement, QAttributeResultTable);
 
 
 
-QAttributeResultTable::QAttributeResultTable(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : IQResultElement(parent, label, rep)
+QAttributeResultTable::QAttributeResultTable(
+    QObject* parent,
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element )
+    : IQResultElement(parent, hdmodel, element)
 {
 
 }
@@ -72,10 +75,10 @@ public:
 
 void QAttributeResultTable::createFullDisplay(QVBoxLayout* layout)
 {
-  auto res = resultElementAs<insight::AttributeTableResult>();
+  auto &res = elementAs<insight::AttributeTableResult>();
   IQResultElement::createFullDisplay(layout);
 
-  tw_ = new QAttributeTableView(res);
+  tw_ = new QAttributeTableView(&res);
   layout->addWidget(tw_);
 }
 

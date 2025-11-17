@@ -149,7 +149,7 @@ const RemoteServerPoolConfig &RemoteServerList::serverPool(const std::string &la
 
 
 
-filesystem::path RemoteServerList::firstWritableLocation() const
+boost::filesystem::path RemoteServerList::firstWritableLocation() const
 {
     return insight::SharedPathList::global()
             .findFirstWritableLocation( "remoteservers.list" );

@@ -517,8 +517,9 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>&
 
 
 void ChannelBase::evaluateAtSection(
-  OpenFOAMCase& cm, 
-  ResultSetPtr results, double x, int /*i*/,
+  OpenFOAMCase& cm,
+  ResultSet& results,
+  double x, int /*i*/,
   hierarchicalData::Ordering& o,
   bool includeRefDataInCharts,
   bool includeAllComponentsInCharts,
@@ -529,14 +530,11 @@ void ChannelBase::evaluateAtSection(
   bool isfirstslice=false;
   if (xByH<=1e-3) isfirstslice=true;
 
-  std::shared_ptr<ResultSection> section
-  (
-    new ResultSection
+  auto section=std::make_unique<ResultSection>
     (
       str(format("Section at x/H=%.2f")%xByH), 
       ""
-    )
-  );
+    );
   hierarchicalData::Ordering so;
   
   string title="section__xByH_" + str(format("%04.2f") % xByH);
@@ -569,7 +567,7 @@ void ChannelBase::evaluateAtSection(
         // output time history of u in centerline
         addPlot
         (
-            section, executionPath(), "chartUVarianceCenter",
+            *section, executionPath(), "chartUVarianceCenter",
             "$t$", "$U$",
             {
               PlotCurve( t, U[0].col(ictr),                          "Ux_vs_t", "w l lt -1 lc 1 t '$U_x$'" ),
@@ -594,7 +592,7 @@ void ChannelBase::evaluateAtSection(
         // output time history of u in centerline
         addPlot
         (
-            section, executionPath(), "chartUVariance",
+            *section, executionPath(), "chartUVariance",
             "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
             {
               PlotCurve( yp, U_var[0],  "Uxvar_vs_yp", "w l lt -1 lc 1 t '$\\langle u^{\\prime 2} \\rangle$'" ),
@@ -625,7 +623,7 @@ void ChannelBase::evaluateAtSection(
             
             addPlot
             (
-                section, executionPath(), "chartThetaVariance",
+                *section, executionPath(), "chartThetaVariance",
                 "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
                 {
                   PlotCurve( yp, s_var,            "svar_vs_yp",   "w l lt -1 lc 1 t '$\\langle \\vartheta^{\\prime 2}/\\vartheta_{max} \\rangle$'" ),
@@ -724,7 +722,7 @@ void ChannelBase::evaluateAtSection(
       
     addPlot
     (
-      section, executionPath(), "chartMeanVelocity_"+title,
+      *section, executionPath(), "chartMeanVelocity_"+title,
       "$y^+$", "$\\langle U^+ \\rangle$",
       plotcurves,
       "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH),
@@ -778,7 +776,7 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      section, executionPath(), "chartTurbulentLengthScale_"+title,
+      *section, executionPath(), "chartTurbulentLengthScale_"+title,
       "$y_{\\delta}$", "$ \\langle L_{\\delta_{RANS}} \\rangle$",
       {
        PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "cfdkO", "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"),
@@ -929,7 +927,7 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      section, executionPath(), chart_name,
+      *section, executionPath(), chart_name,
       "$y^+$", "$\\langle R^+ \\rangle$",
       plotcurves,
       "Wall normal profiles of averaged reynolds stresses at x/H=" + toString(xByH),
@@ -967,7 +965,7 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      section, executionPath(), chart_name,
+      *section, executionPath(), chart_name,
       "$y_{\\delta}$", "$\\langle k^+ \\rangle$",
       kplots,
      "Wall normal profiles of averaged turbulent kinetic energy ($1/2 R_{ii} + k_{model}$) at x/H=" + str(format("%g")%xByH)
@@ -1044,7 +1042,8 @@ void ChannelBase::evaluateAtSection(
   }
   
 
-  results->insert(title, section) .setOrder(o.next());
+  results.insert(title, std::move(section))
+      .setOrder(o.next());
 }
 
 
@@ -1074,7 +1073,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
   {
     tpcs->evaluate
     (
-      cm, executionPath(), results, 
+      cm, executionPath(), *results,
       "two-point correlation of velocity at different radii at x/H="
           +str( format("%g") % (0.5*p().geometry.L/p().geometry.H) )
     );
@@ -1102,7 +1101,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
 
     addPlot
     (
-      results, executionPath(), "chartMeanWallFriction",
+      *results, executionPath(), "chartMeanWallFriction",
       "$x^+$", "$\\langle C_f \\rangle$",
       {
         PlotCurve(Cf_vs_xp, "cfd", "w l lt 1 lc -1 lw 2 t 'CFD'"),
@@ -1170,7 +1169,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& p
   }
 
   hierarchicalData::Ordering xseco(10.);
-  evaluateAtSection(cm, results, 1e-4, 0, xseco);
+  evaluateAtSection(cm, *results, 1e-4, 0, xseco);
 
   return results;
 }

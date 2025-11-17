@@ -343,25 +343,27 @@ void FileContainer::setFileName(const boost::filesystem::path &fn)
 
 
 
-std::istream& FileContainer::stream() const
+std::unique_ptr<std::istream> FileContainer::stream() const
 {
-  auto lfp=localFilePath();
+  std::unique_ptr<std::istream> file_content_stream_;
 
-  if (boost::filesystem::exists(lfp))
+  if (hasFileContent())
   {
-    file_content_stream_.reset(new std::ifstream(lfp.string()));
-    if (! (*file_content_stream_) )
-    {
-      throw insight::Exception(
-            "Could not open file %s for reading",
-            lfp.c_str());
-    }
+      file_content_stream_.reset(new std::istringstream(*file_content_));
   }
   else
   {
-      if (hasFileContent())
+      auto lfp=localFilePath();
+
+      if (boost::filesystem::exists(lfp))
       {
-          file_content_stream_.reset(new std::istringstream(*file_content_));
+        file_content_stream_.reset(new std::ifstream(lfp.string()));
+        if (! (*file_content_stream_) )
+        {
+          throw insight::Exception(
+                "Could not open file %s for reading",
+                lfp.c_str());
+        }
       }
       else
       {
@@ -371,7 +373,7 @@ std::istream& FileContainer::stream() const
   }
 
 
-  return *file_content_stream_;
+  return file_content_stream_;
 }
 
 
@@ -388,7 +390,6 @@ void FileContainer::resolveRelativePath(
     const boost::filesystem::path &baseDirectory)
 {
     baseDirectory_=baseDirectory;
-
 }
 
 boost::filesystem::path

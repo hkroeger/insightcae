@@ -191,7 +191,8 @@ void ISCADParser::createSelectionExpressions()
         (
             model_->edgeFeatureSymbols() [ _val = qi::_1 ]
             |
-            (r_solidmodel_expression >> current_pos.current_pos >> '?') [ qi::_a=qi::_1, qi::_b=qi::_2 ]
+            (r_solidmodel_expression >> current_pos.current_pos >> '?')
+               [ qi::_a=qi::_1, qi::_b=qi::_2 ]
             >> (
                 ( (lit("edges")|lit("edge"))
                 > (
@@ -255,21 +256,21 @@ void ISCADParser::createSelectionExpressions()
                                   ),
                               phx::ref(qi::_val)
                               ) ]
-              )
-            |
-            ( lit("alledges") > current_pos.current_pos )
-                [ _val = phx::bind(
-                     &DeferredFeatureSet::create
-                     <ConstFeaturePtr,EntityType>,
-                     qi::_a, insight::cad::Edge ),
+                |
+                ( lit("alledges") > current_pos.current_pos )
+                  [ _val = phx::bind(
+                       &DeferredFeatureSet::create
+                       <ConstFeaturePtr,EntityType>,
+                       qi::_a, insight::cad::Edge ),
 
-                 phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
-                           phx::construct<SyntaxElementLocation>(
-                               filenameinfo_,
-                               phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
-                               ),
-                           phx::ref(qi::_val)
-                           ) ]
+                   phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                             phx::construct<SyntaxElementLocation>(
+                                 filenameinfo_,
+                                 phx::construct<SyntaxElementPos>(qi::_b, qi::_1)
+                                 ),
+                             phx::ref(qi::_val)
+                             ) ]
+              )
         )
         >>
         *(

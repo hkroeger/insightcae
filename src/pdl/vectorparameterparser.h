@@ -7,8 +7,10 @@ struct VectorParameterParser
 : public ParameterGenerator
 {
     arma::mat value;
+    enum VectorType { NonSpatial, Point, Direction };
+    VectorType vectorType_;
 
-    VectorParameterParser(const arma::mat& v, const std::string& d);
+    VectorParameterParser(const arma::mat& v, VectorType vt, const std::string& d);
 
     void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
@@ -26,10 +28,17 @@ struct VectorParameterParser
       typeName,
       std::make_shared<PDLParserRuleset::ParameterDataRule>(
 
-        ( "(" >> *qi::double_ >> ")" >> ruleset.r_description_string )
+              (
+                  (
+                      ( qi::lit("direction") > qi::attr(Direction) )
+                      | ( qi::lit("point") > qi::attr(Point) )
+                      | ( qi::attr(NonSpatial) )
+                      ) >>
+               "(" >> *qi::double_ >> ")" >>
+                ruleset.r_description_string )
           [ qi::_val = phx::construct<ParameterGeneratorPtr>(
              phx::new_<VectorParameterParser>(
-                           vec2mat_(qi::_1), qi::_2)
+                           vec2mat_(qi::_2), qi::_1, qi::_3)
             ) ]
 
       )

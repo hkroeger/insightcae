@@ -190,7 +190,7 @@ public:
         const std::shared_ptr<supplementedInputDataBase>& sp );
 
 //    virtual void evaluateForceFits(PlotCurveList& crv) const;
-    void evaluateCombinedResults(ResultSetPtr& results) override;
+    void evaluateCombinedResults(ResultSet& results) override;
 
     static AnalysisDescription description()
     { return { typeName,

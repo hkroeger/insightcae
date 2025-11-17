@@ -77,6 +77,8 @@ QVBoxLayout* IQBoolParameter::populateEditControls(
       p.valueChanged.connect(
           [&p,checkBox]()
           {
+              insight::dbg(insight::DetailedBusiness)
+              << "received valueChanged => call setCheckState from IQBoolParameter" << std::endl;
               QSignalBlocker sb(checkBox);
               checkBox->setCheckState(p()?Qt::Checked:Qt::Unchecked);
           }

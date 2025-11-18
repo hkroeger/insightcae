@@ -8,8 +8,8 @@ addToStaticFunctionTable(ParameterGenerator, VectorParameterParser, insertrule);
 
 
 VectorParameterParser::VectorParameterParser(
-    const arma::mat& v, const std::string& d)
-: ParameterGenerator(d), value(v)
+    const arma::mat& v, VectorType vt, const std::string& d)
+    : ParameterGenerator(d), value(v), vectorType_(vt)
 {}
 
 void VectorParameterParser::cppAddRequiredInclude(std::set<std::string>& headers) const
@@ -38,5 +38,9 @@ std::string VectorParameterParser::cppDefaultValueExpression() const
                 value(i) ) );
     }
 
-    return "arma::mat({"+boost::join(defCmpts, ", ")+"}).t()";
+    std::string typeExpr="NonSpatial";
+    if (vectorType_==Point) typeExpr="Point";
+    else if (vectorType_==Direction) typeExpr="Direction";
+
+    return "insight::VectorParameter::VectorType::"+typeExpr+", arma::mat({"+boost::join(defCmpts, ", ")+"}).t()";
 }

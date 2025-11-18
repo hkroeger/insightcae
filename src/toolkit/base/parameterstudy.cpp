@@ -20,7 +20,6 @@
 
 #include "parameterstudy.h"
 
-
 #include "base/cppextensions.h"
 #include "base/resultset.h"
 #include "boost/filesystem/operations.hpp"
@@ -123,6 +122,9 @@ void ParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
 
 
 
+
+
+
 template<
   class BaseAnalysis,
   const RangeParameterList& var_params
@@ -135,23 +137,36 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
 {
     std::ostringstream n; n<<"subcase";
 
-    auto newp = templ.cloneAs<ParameterSet>();
+    // auto newp = templ.cloneAs<ParameterSet>();
+    // for (int j=0; j<var_params.size(); j++)
+    // {
+    //   // Replace RangeParameter by actual single value
+    //   const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(var_params[j]);
+    //   auto p=rp.toDoubleParameter(i[j]);
+
+    //   std::string nameMod(var_params[j]);
+    //   boost::replace_all(nameMod, "/", "_");
+    //   n<<"__"<<nameMod<<"="<<(*p)();
+
+    //   newp->replace(var_params[j], std::move(p));
+    // }
+
+    auto newp=std::make_unique<AnalysisParameterSet>(BaseAnalysis::typeName);
+
+    newp->copyMatching(templ);
     for (int j=0; j<var_params.size(); j++)
     {
-      // Replace RangeParameter by actual single value
-      const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(var_params[j]);
-      auto p=rp.toDoubleParameter(i[j]);
+      double cv = *i[j];
+      newp->setDouble(var_params[j], cv);
 
       std::string nameMod(var_params[j]);
       boost::replace_all(nameMod, "/", "_");
-      n<<"__"<<nameMod<<"="<<(*p)();
-
-      newp->replace(var_params[j], std::move(p));
+      n<<"__"<<nameMod<<"="<<cv;
     }
 
     //append instance
-    auto emptyresset = std::make_shared<ResultSet>(
-        newp->cloneAs<ParameterSet>(),
+    auto emptyresset = std::make_unique<ResultSet>(
+        newp->template cloneAs<ParameterSet>(),
         BaseAnalysis::description().name,
         "Computation instance "+n.str() );
 
@@ -177,7 +192,7 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
             n.str(),
             std::move(newp),
             std::move(newinst),
-            emptyresset,
+            std::move(emptyresset),
             nullptr  } );
 }
 
@@ -203,7 +218,8 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstances
   }
   else
   {
-    const DoubleRangeParameter& crp = templ.get<DoubleRangeParameter>(var_params[myIdx]);
+    const DoubleRangeParameter& crp =
+          templ.get<DoubleRangeParameter>(var_params[myIdx]);
     for (i[myIdx] = crp.values().begin(); i[myIdx] != crp.values().end(); ++i[myIdx])
     {
         generateInstances(instances, templ, myIdx+1, i);
@@ -231,7 +247,8 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
+std::unique_ptr<ResultElement>
+ParameterStudy<BaseAnalysis,var_params>::table
 (
   std::string shortDescription,
   std::string longDescription,
@@ -259,7 +276,7 @@ ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
 
     for( const std::string& ren: res)
     {
-      row.push_back( dynamic_cast<ScalarResult*>(ai.results->at(ren).get())->value() );
+      row.push_back( ai.results->getScalar(ren) );
     }
     tab.push_back( row );    
   }
@@ -277,10 +294,8 @@ ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
     heads.insert(heads.begin(), varp);
   }
   
-  return ResultElementPtr
-  (
-    new TabularResult(heads, tab, shortDescription, longDescription, "")
-  );
+  return std::make_unique<TabularResult>(
+      heads, tab, shortDescription, longDescription, "" );
   
 }
 
@@ -336,7 +351,7 @@ void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisp
   }
   if (queue_.processed().size()-nFailed==0)
   {
-      throw insight::Exception("No analsis of any variant has been successful!");
+      throw insight::Exception("No analysis of any variant has been successful!");
   }
 }
 
@@ -361,16 +376,20 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
   auto results = createResultSet();
   
   TabularResult::Table force_data;
-  AnalysisInstanceList processed_analyses = queue_.processed();
-  sort(
-          processed_analyses.begin(),
-          processed_analyses.end(),
-          ai_sort_pred()
-      );
+  auto &processed_analyses = queue_.processed();
+
+  std::map<std::string,const AnalysisInstance*> sorted;
+  for (auto& ai: processed_analyses)
+  {
+      sorted[ai.name]=&ai;
+  }
+
 
   hierarchicalData::Ordering o(1000);
-  for( const AnalysisInstance& ai:  processed_analyses)
+  for(auto& sai: sorted)
   {
+      auto &ai=*sai.second;
+
       if (!ai.exception)
       {
           results->insert(

@@ -107,7 +107,10 @@ public:
     virtual QVariant textColor() const;
     virtual QVariant textFont() const;
 
-    virtual void populateContextMenu(QMenu* m);
+    virtual void populateContextMenu(
+        QMenu* m,
+        IQCADModel3DViewer *viewer );
+
     virtual QVBoxLayout* populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer );

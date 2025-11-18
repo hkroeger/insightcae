@@ -29,10 +29,10 @@ class faceAdjacentToFaces
     : public Filter
 {
 protected:
-    FeatureSet faces_;
+    ConstFeatureSetPtr faces_;
 
 public:
-    faceAdjacentToFaces(FeatureSet faces);
+    faceAdjacentToFaces(ConstFeatureSetPtr faces);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

@@ -196,13 +196,14 @@ public:
 
   virtual void evaluateAtSection
   (
-    OpenFOAMCase& cm, 
-    ResultSetPtr results, double x, int i,
+    OpenFOAMCase& cm,
+    ResultSet& results, double x, int i,
     const Interpolator& cf,
     const std::string& UMeanName,
     const std::string& RFieldName,
     const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section=NULL
-  );  
+  );
+
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& progress);
 
   

@@ -181,7 +181,7 @@ public:
     // success flag, result data
     struct Result : public ReportSuccessResult
     {
-      ResultSetPtr results;
+      std::unique_ptr<ResultSet> results;
     };
     typedef std::function<void(Result)> Callback;
 

@@ -93,7 +93,7 @@ public:
 
 
 
-ResultElementPtr polynomialFitResult
+std::unique_ptr<ResultElement> polynomialFitResult
 (
   const arma::mat& coeffs,
   const std::string& xvarName,

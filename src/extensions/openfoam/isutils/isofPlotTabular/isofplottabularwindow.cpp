@@ -49,7 +49,7 @@ IsofPlotTabularWindow::IsofPlotTabularWindow(const std::vector<boost::filesystem
 
   vector<string> filenames;
   transform(files_.begin(), files_.end(), back_inserter(filenames),
-            [](const filesystem::path& fp) { return fp.string(); } );
+            [](const boost::filesystem::path& fp) { return fp.string(); } );
 
   setWindowTitle( "PlotTabularData: CWD "+QString::fromStdString( boost::filesystem::current_path().string() )
                   +", displaying "+ QString::fromStdString( algorithm::join(filenames, ", ") ) );

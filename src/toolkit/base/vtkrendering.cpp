@@ -2166,7 +2166,7 @@ void forEachUnconnectedPart(
         {
             auto thr = regions[r];
 
-            auto subsec = std::make_shared<ResultSection>(
+            auto subsec = std::make_unique<ResultSection>(
                 str(boost::format("Region %d")%(r+1))
                 );
 
@@ -2175,27 +2175,27 @@ void forEachUnconnectedPart(
             scene.clearScene();
             displayRegion( thr, subsec.get(), r );
 
-            subsec->insert(
+            subsec->insert<VectorResult>(
                 "regionCoG",
-                new VectorResult(
                     regionCtrs[r],
-                    str(boost::format(_("center of gravity of region %d"))%r), "", "")
+                    str(boost::format(_("center of gravity of region %d"))%r), "", ""
                 );
 
             subsec->setOrder(10.*r);
             section->insert(
                 regionPrefix,
-                subsec );
+                std::move(subsec) );
 
             rowLabels[r]=regionPrefix;
-            for (auto& q: static_cast<const ResultElementMap&>(*subsec))
+            for (auto& q: static_cast<const ResultElement&>(*subsec))
             {
-                if (auto s = std::dynamic_pointer_cast<ScalarResult>(q.second))
+                if (auto s = dynamic_cast<const ScalarResult*>(&q))
                 {
-                    if (scalarQtys.count(q.first)<1)
-                        scalarQtys[q.first].resize(nregions, {"(n.a.)"});
+                    auto label=s->name();
+                    if (scalarQtys.count(label)<1)
+                        scalarQtys[label].resize(nregions, {"(n.a.)"});
 
-                    scalarQtys[q.first][r] = s->value();
+                    scalarQtys[label][r] = s->value();
                 }
             }
         }
@@ -2211,20 +2211,20 @@ void forEachUnconnectedPart(
                     }
                     );
             }
-            section->insert(
+            section->insert<TabularResult>(
                 "table_regionCoG",
-                new TabularResult({"regionId", "x", "y", "z"},
-                                  rows, "table of region CoGs", "", ""));
+                TabularResult::Headings{"regionId", "x", "y", "z"},
+                rows, "table of region CoGs", "", "" );
         }
 
         for (const auto& sq: boost::adaptors::index(scalarQtys))
         {
-            section->insert(
+            section->insert<AttributeTableResult>(
                        "table_"+sq.value().first,
-                       new AttributeTableResult(
-                           rowLabels, sq.value().second,
-                           "table of "+sq.value().first, "", "",
-                           SimpleLatex("region"), sq.value().first)
+                       rowLabels, sq.value().second,
+                       "table of "+sq.value().first, "", "",
+                       SimpleLatex("region"),
+                       sq.value().first
                        ).setOrder(10.*nregions+sq.index());
         }
 

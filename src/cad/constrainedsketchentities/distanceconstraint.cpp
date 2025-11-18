@@ -46,12 +46,7 @@ DistanceConstraint::DistanceConstraint(
     : ConstraintWithDimensionLines(layerName),
     Distance(p1, p2, distanceAlong),
     planeNormal_(planeNormal)
-{
-    ParameterSet::Entries e;
-    e.emplace("dimLineOfs", std::make_unique<DoubleParameter>(1., "dimension line offset"));
-    e.emplace("arrowSize", std::make_unique<DoubleParameter>(1., "arrow size"));
-    changeDefaultParameters(*ParameterSet::create(std::move(e), ""));
-}
+{}
 
 
 
@@ -169,6 +164,12 @@ bool DistanceConstraint::isInside(SelectionRect r) const
     return r.isInside(symbolLocation());
 }
 
+void DistanceConstraint::ensureRequiredParameters()
+{
+    parametersRef().getOrInsert<DoubleParameter>("dimLineOfs", 1., "dimension line offset");
+    parametersRef().getOrInsert<DoubleParameter>("arrowSize", 1., "arrow size");
+}
+
 
 
 
@@ -209,14 +210,7 @@ FixedDistanceConstraint::FixedDistanceConstraint(
     VectorPtr distanceAlong
     )
     : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
-{
-    auto ps = defaultParameters().cloneAs<ParameterSet>();
-    ps->insert(
-        "distance",
-        std::make_unique<DoubleParameter>(
-            calcDistance(), "target value") );
-    changeDefaultParameters(*ps);
-}
+{}
 
 
 
@@ -297,6 +291,14 @@ void FixedDistanceConstraint::addParserRule(
                        boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
+}
+
+void FixedDistanceConstraint::ensureRequiredParameters()
+{
+    DistanceConstraint::ensureRequiredParameters();
+
+    parametersRef().getOrInsert<DoubleParameter>(
+        "distance", calcDistance(), "target value" );
 }
 
 
@@ -439,6 +441,13 @@ void LinkedDistanceConstraint::addParserRule(
 
         ruleset.entityRules.add( typeName, rule );
     }
+}
+
+
+
+void LinkedDistanceConstraint::ensureRequiredParameters()
+{
+    DistanceConstraint::ensureRequiredParameters();
 }
 
 

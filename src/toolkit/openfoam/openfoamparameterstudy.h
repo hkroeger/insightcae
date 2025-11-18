@@ -51,7 +51,7 @@ public:
     virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSet& newp) const;
     ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 
-    virtual void evaluateCombinedResults(ResultSetPtr& results);
+    virtual void evaluateCombinedResults(ResultSet& results);
 };
 
 

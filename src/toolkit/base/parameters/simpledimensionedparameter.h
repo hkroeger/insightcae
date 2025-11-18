@@ -75,6 +75,18 @@ public:
           value_ ( value*unit_type() )
     {}
 
+    bool isDifferent(const Parameter& p) const override
+    {
+        if (const auto *sp = dynamic_cast<const SimpleDimensionedParameter<T,Unit,N>*>(&p))
+        {
+            return
+                (value_!=(*sp)())
+                ;
+        }
+        else
+            return true;
+    }
+
     virtual void set(const value_type& nv)
     {
         value_=nv;

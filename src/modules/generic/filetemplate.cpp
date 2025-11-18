@@ -124,13 +124,11 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
     }
     else
     {
-      results->insert(
-	"remark", 
-	new Comment(
+      results->insert<Comment>(
+    "remark",
 	  "The run script did not return result information by creating a file ``INSIGHT\\_RESULTS.isr''", 
 	  "", 
-	  ""
-	)
+      ""
       );
 
     }

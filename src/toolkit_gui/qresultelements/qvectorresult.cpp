@@ -8,11 +8,14 @@ namespace insight {
 defineType(QVectorResult);
 addToFactoryTable(IQResultElement, QVectorResult);
 
-QVectorResult::QVectorResult(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-: IQResultElement(parent, label, rep)
+QVectorResult::QVectorResult(
+    QObject* parent,
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element )
+    : IQResultElement(parent, hdmodel, element)
 {
-    auto res = resultElementAs<insight::VectorResult>();
-    auto v=res->value();
+    auto &res = elementAs<insight::VectorResult>();
+    auto v=res.value();
     v_=QString("(%1 %2 %3)").arg(v(0)).arg(v(1)).arg(v(2));
 }
 

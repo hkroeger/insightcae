@@ -1627,10 +1627,13 @@ ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
       arma::join_rows ( x, m.evaluateObjective(x) )
   );
 
-  results->insert( "L", new ScalarResult(m.lengthScale(), "Length scale", "", "m") );
+  results->insert<ScalarResult>(
+      "L",
+      m.lengthScale(), "Length scale", "", "m"
+      );
   addPlot
   (
-      results, executionPath(), "chartACF",
+      *results, executionPath(), "chartACF",
       "x", "$\\langle R \\rangle$",
       {
         PlotCurve(p().R_vs_x, "raw", "w p lt 1 t 'ACF'"),

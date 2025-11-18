@@ -7,25 +7,20 @@
 
 namespace insight {
 
-typedef std::map<std::string, ResultElementPtr> ResultElementMap;
+typedef std::map<std::string, std::unique_ptr<ResultElement> > ResultElementMap;
 
 class ResultElementCollection
     : public ResultElement,
-      public ResultElementMap
+      private ResultElementMap
 {
 
 public:
     using ResultElement::ResultElement;
 
 #ifndef SWIG
-    /**
-     * insert elem into the set.
-     * elem is put into a shared_ptr but not clone. So don't delete it!
-     */
-    ResultElement& insert ( const std::string& key, ResultElement* elem );
-
-//   void insert(const std::string& key, std::unique_ptr<ResultElement> elem);
-    ResultElement& insert ( const std::string& key, ResultElementPtr elem );
+    ResultElement& insert (
+        const std::string& key,
+        std::unique_ptr<insight::ResultElement> elem );
 
     template<class RT, class ...Args>
     RT& insert(const std::string& key,
@@ -123,6 +118,7 @@ public:
 
     const Element& childElement( int i ) const override;
 
+    void transfer ( ResultElementCollection& other );
 };
 
 
@@ -159,10 +155,7 @@ T& ResultElementCollection::get ( const std::string& name )
         }
       else
         {
-          std::shared_ptr<T> pt
-          (
-            std::dynamic_pointer_cast<T>( i->second )
-          );
+          T* pt = dynamic_cast<T*>( i->second.get() );
           if ( pt )
           {
             return ( *pt );

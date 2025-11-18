@@ -187,7 +187,7 @@ bool ParameterSet::isDifferent(const Parameter& p) const
 
 
 
-void ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& p)
+Parameter& ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& p)
 {
 
   auto ie = value_.find(name);
@@ -210,6 +210,8 @@ void ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& 
       ins.first->second->childValueChanged.connect( childValueChanged )));
 
   triggerValueChanged();
+
+  return *ins.first->second;
 }
 
 
@@ -457,7 +459,8 @@ bool ParameterSet::contains(const std::string &name) const
 
 
 
-std::istream& ParameterSet::getFileStream ( const std::string& name )
+std::unique_ptr<std::istream>
+ParameterSet::getFileStream ( const std::string& name )
 {
   return this->get<PathParameter> ( name ) .stream();
 }

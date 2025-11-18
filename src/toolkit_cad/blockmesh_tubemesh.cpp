@@ -34,7 +34,7 @@ void blockMeshDict_TubeMesh::create_bmd()
 
   TopoDS_Shape s;
   BRep_Builder sb;
-  BRepTools::Read(s, p().geometry.wire->stream(), sb);
+  BRepTools::Read(s, *p().geometry.wire->stream(), sb);
   TopoDS_Wire w = TopoDS::Wire(s);
 
   GProp_GProps prop;

@@ -160,7 +160,7 @@ public:
     AirfoilSectionPolar(
         const std::shared_ptr<supplementedInputDataBase>& sp );
 
-    virtual void evaluateCombinedResults(ResultSetPtr& results);
+    virtual void evaluateCombinedResults(ResultSet& results);
 
     static AnalysisDescription description()
     {

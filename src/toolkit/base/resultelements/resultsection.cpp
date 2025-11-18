@@ -61,9 +61,9 @@ ResultSection::latexRepresentation(
 void ResultSection::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
     for ( auto& i:
-            static_cast<const ResultElementMap&>(*this) )
+            static_cast<const ResultElement&>(*this) )
     {
-        i.second->insertLatexHeaderCode ( hc );
+        i.insertLatexHeaderCode ( hc );
     }
 }
 
@@ -77,9 +77,10 @@ void ResultSection::exportDataToFile (
         boost::filesystem::create_directories ( subdir );
     }
 
-    for ( const value_type& re:
-            static_cast<const ResultElementMap&>(*this)) {
-        re.second->exportDataToFile ( re.first, subdir );
+    for ( auto& e:
+            static_cast<const ResultElement&>(*this)) {
+        if (auto* re=dynamic_cast<const ResultElement*>(&e))
+            re->exportDataToFile ( re->name(), subdir );
     }
 }
 
@@ -117,8 +118,8 @@ xml_node< char >* ResultSection::appendToNode (
 std::unique_ptr<hierarchicalData::Element> ResultSection::clone() const
 {
     auto res = std::make_unique<ResultSection>( sectionName_ );
-    for ( auto& re: static_cast<const ResultElementMap&>(*this) ) {
-        ( *res ) [re.first] = re.second->cloneAs<ResultElement>();
+    for ( auto& re: static_cast<const ResultElement&>(*this) ) {
+        res->insert(re.name(), re.cloneAs<ResultElement>() );
     }
     res->setOrder ( order() );
     return res;

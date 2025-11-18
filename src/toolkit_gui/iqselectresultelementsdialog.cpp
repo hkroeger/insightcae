@@ -2,11 +2,11 @@
 #include "ui_iqselectresultelementsdialog.h"
 
 IQSelectResultElementsDialog::IQSelectResultElementsDialog(
-        const insight::ResultSetPtr& resultSet,
+        const insight::ResultSet& resultSet,
         QWidget *parent ) :
     QDialog(parent),
-    resultSet_(resultSet),
-    resultSetModel_(resultSet_, true),
+#warning too expensive?
+    resultSetModel_(resultSet.cloneAs<insight::ResultSet>(), true),
     ui(new Ui::IQSelectResultElementsDialog)
 {
     ui->setupUi(this);

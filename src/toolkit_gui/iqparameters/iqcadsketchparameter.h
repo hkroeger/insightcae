@@ -26,6 +26,10 @@ public:
     QVBoxLayout* populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer) override;
+
+    void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
+
+    void edit(IQCADModel3DViewer *viewer);
 };
 
 

@@ -71,11 +71,11 @@ std::unique_ptr<ParameterSet> PythonAnalysis::defaultParameters(
         );
         object o =  extract<object>(main_namespace["ps"]);
         ParameterSet *psp;
-        static void *descr = nullptr;
+        static swig_type_info *descr = nullptr;
         if (!descr)
         {
             descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
-            std::cout<<descr<<std::endl;
+            std::cerr<<descr<<std::endl;
             assert(descr);
         }
         if ((SWIG_ConvertPtr(o.ptr(), (void **) &psp, descr, 0) == -1))
@@ -137,7 +137,7 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer& )
     try
     {
         
-        static void *descr = nullptr;
+        static swig_type_info *descr = nullptr;
         if (!descr) {
             descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
             assert(descr);
@@ -176,7 +176,7 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer& )
         if ((SWIG_ConvertPtr(o.ptr(), (void **) &res, descr, 0) == -1)) {
             throw insight::Exception("Could not convert return value!");
         }
-        return ResultSetPtr(*res);
+        return std::move(*res);
     }
     catch (const error_already_set &)
     {

@@ -23,6 +23,7 @@
 #include <QPainter>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QHeaderView>
 
 #include "base/exception.h"
 #include "boost/algorithm/string/replace.hpp"
@@ -60,7 +61,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
             IQParameterSetModel::contextMenu(
                 parameterTreeView_,
                 parameterTreeView_->indexAt(p),
-                p );
+                p,
+                viewer_ );
         }
         );
 
@@ -183,21 +185,6 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 
 
 
-void ParameterEditorWidget::showEvent(QShowEvent *event)
-{
-    QSplitter::showEvent(event);
-
-    if (!firstShowOccurred_)
-    {
-        firstShowOccurred_=true;
-
-        parameterTreeView_->expandToDepth(2);
-        parameterTreeView_->resizeColumnToContents(0);
-        parameterTreeView_->resizeColumnToContents(1);
-    }
-}
-
-
 
 
 ParameterEditorWidget::ParameterEditorWidget
@@ -212,8 +199,7 @@ ParameterEditorWidget::ParameterEditorWidget
   model_(nullptr),
   vali_(vali),
   createVisualizer_(psvb),
-  createGUIActions_(cgaf),
-  firstShowOccurred_(false)
+  createGUIActions_(cgaf)
 {
 
     splitterV_ = new QSplitter(Qt::Vertical);
@@ -341,7 +327,6 @@ ParameterEditorWidget::ParameterEditorWidget
     vali_(nullptr),
     parameterTreeView_(parameterTreeView),
     inputContents_(contentEditorFrame),
-    firstShowOccurred_(false),
     viewer_(nullptr)
 {
     setup(nullptr);
@@ -381,8 +366,8 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     }
 
     parameterTreeView_->expandToDepth(2);
-    parameterTreeView_->resizeColumnToContents(0);
-    parameterTreeView_->resizeColumnToContents(1);
+    parameterTreeView_->header()->setSectionResizeMode(
+        QHeaderView::ResizeMode::ResizeToContents);
 }
 
 bool ParameterEditorWidget::hasViewer() const

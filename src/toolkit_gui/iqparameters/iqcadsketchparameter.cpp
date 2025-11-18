@@ -41,6 +41,8 @@ void IQCADSketchParameter::connectSignals()
     disconnectAtEOL(
         parameterRef().childValueChanged.connect(
             [this]() {
+                DBG_LOC(insight::DetailedBusiness)
+                 << "received childValueChanged => call notifyElementChange from IQCADSketchParameter" << std::endl;
                 auto blocker = block_all();
                 model()->notifyElementChange( *this );
             }
@@ -53,7 +55,8 @@ void IQCADSketchParameter::connectSignals()
 
 QVariant IQCADSketchParameter::value() const
 {
-    return "(sketch)";
+    // return "(sketch)";
+    return QString("(sketch with %1 entities)").arg(parameter().sketch().size());
 }
 
 
@@ -103,21 +106,40 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
         };
         connect(apply, &QPushButton::pressed, applyFunction);
 
-
-        auto editFunction = [=]()
-        {
-            if (auto editctrl = viewer->editSketchParameter(
-                    this->parameter().path() ))
-            {
-                this->setControlsEnabled(false);
-                editctrl->additionalCleanup=[this]() {
-                    this->setControlsEnabled(true); };
-            }
-        };
-        connect(edit, &QPushButton::pressed, editFunction);
+        connect(edit, &QPushButton::pressed,
+                std::bind(&IQCADSketchParameter::edit, this, viewer) );
     }
 
     return layout;
+}
+
+
+
+
+void IQCADSketchParameter::populateContextMenu(QMenu *cm, IQCADModel3DViewer *viewer)
+{
+    if (viewer)
+    {
+        auto *editAction = new QAction("Edit sketch...");
+        cm->addAction(editAction);
+
+        QObject::connect(editAction, &QAction::triggered,
+                         std::bind(&IQCADSketchParameter::edit, this, viewer) );
+    }
+}
+
+
+
+
+void IQCADSketchParameter::edit(IQCADModel3DViewer *viewer)
+{
+    if (auto editctrl = viewer->editSketchParameter(
+            this->parameter().path() ))
+    {
+        this->setControlsEnabled(false);
+        editctrl->additionalCleanup=[this]() {
+            this->setControlsEnabled(true); };
+    }
 }
 
 

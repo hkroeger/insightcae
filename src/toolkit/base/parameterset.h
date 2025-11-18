@@ -86,6 +86,8 @@ public:
             rapidxml::xml_node<>& node
             ) const override;
 
+    void assignFrom( const Element& rhs ) override;
+
     std::unique_ptr<Element> clone() const override;
 };
 

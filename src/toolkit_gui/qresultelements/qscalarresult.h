@@ -35,7 +35,10 @@ class TOOLKIT_GUI_EXPORT QScalarResult : public IQResultElement
 public:
     declareType ( insight::ScalarResult::typeName_() );
 
-    QScalarResult(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QScalarResult(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;

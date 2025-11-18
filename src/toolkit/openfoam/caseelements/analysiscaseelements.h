@@ -680,12 +680,16 @@ public:
   TPCArray(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   virtual OFDictData::dict functionObjectDict() const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
-  virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results,
-                        const std::string& shortDescription) const;
+  virtual void evaluate(
+      OpenFOAMCase& cm, const boost::filesystem::path& location,
+      ResultElementCollection& results,
+      const std::string& shortDescription
+      ) const;
+
   virtual void evaluateSingle
   (
-    OpenFOAMCase& cm, const boost::filesystem::path& location, 
-    ResultSetPtr& results, 
+    OpenFOAMCase& cm, const boost::filesystem::path& location,
+    ResultElementCollection& results,
     const std::string& name_prefix,
     double span,
     const std::string& axisLabel,

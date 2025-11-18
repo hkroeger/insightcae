@@ -161,6 +161,7 @@ ConstrainedSketch::ConstrainedSketch(
 
 ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
+    propertiesParent_(other.propertiesParent_),
     solverSettings_(other.solverSettings_)
 {
     for (auto &lp: other.layerProperties_)
@@ -728,7 +729,6 @@ void ConstrainedSketch::resolveConstraints(
         auto& dm=dofs[i];
         x0(i)=dm.entity->getDoFValue(dm.iLocal);
     }
-    std::cout<<"x0="<<x0.t()<<std::endl;
 
     auto setX = [&](const arma::mat& x)
     {

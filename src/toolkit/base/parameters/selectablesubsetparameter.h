@@ -97,6 +97,7 @@ public:
   Entries copyItems() const;
 
   void addItem(key_type key, std::unique_ptr<ParameterSet>&& ps );
+  void removeItem(key_type key);
 
   inline ParameterSet& operator() ()
   {

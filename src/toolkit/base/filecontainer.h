@@ -85,8 +85,6 @@ class FileContainer
     timespec fileContentTimestamp_;
     //  MD5HashPtr fileContentHash_;
 
-    mutable std::unique_ptr<std::istream> file_content_stream_;
-
 protected:
     virtual void signalContentChange();
 
@@ -163,7 +161,7 @@ public:
   void setFileName(const boost::filesystem::path& fn);
 
 
-  std::istream& stream() const;
+  std::unique_ptr<std::istream> stream() const;
   const char* binaryFileContent() const;
 
   void resolveRelativePath(const boost::filesystem::path& baseDirectory);

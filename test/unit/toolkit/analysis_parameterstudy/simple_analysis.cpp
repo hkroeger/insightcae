@@ -44,11 +44,11 @@ ResultSetPtr SimpleAnalysis::operator()(ProgressDisplayer& /*pd*/)
 {
     auto results = createResultSet();
     
-    results->insert("y", new ScalarResult( 
+    results->insert<ScalarResult>("y",
     
         3*pow(p().x,2),
         
-        "function value", "", ""));
+        "function value", "", "");
     
     return results;
 }
@@ -78,15 +78,14 @@ public:
         results->insert(key, table("", "", "x", 
                         list_of<std::string>("y")));
         
-        const TabularResult& tab = 
-            static_cast<const TabularResult&>(*(results->find(key)->second));
+        auto& tab = results->get<TabularResult>(key);
         
         arma::mat tabdat=tab.toMat();
         
         
         addPlot
         (
-            results, executionPath(), "chartFunction",
+            *results, executionPath(), "chartFunction",
             "$x$", "$y$",
             {
              PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"y_vs_x", "w lp t '$y=f(x)$")

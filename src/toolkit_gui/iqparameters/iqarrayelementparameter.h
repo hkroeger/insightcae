@@ -56,7 +56,7 @@ public:
       IQArrayElementParameterBase(parent, hdmodel, element)
   {}
 
-  void populateContextMenu(QMenu* m) override;
+  void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
 
   void deleteFromArray() override;
 };

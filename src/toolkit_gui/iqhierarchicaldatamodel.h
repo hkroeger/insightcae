@@ -167,6 +167,10 @@ public:
     void notifyElementChange(const QModelIndex &index);
 
     const insight::hierarchicalData::Element& getHierarchicalData() const;
+    inline bool hasData() const
+    {
+        return bool(data_);
+    }
 };
 
 

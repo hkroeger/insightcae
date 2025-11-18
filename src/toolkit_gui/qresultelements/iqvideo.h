@@ -32,7 +32,10 @@ protected:
 public:
     declareType ( insight::Video::typeName_() );
 
-    IQVideo(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    IQVideo(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout *layout) override;

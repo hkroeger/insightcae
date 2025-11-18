@@ -21,7 +21,10 @@ class TOOLKIT_GUI_EXPORT QResultSection
 public:
     declareType ( insight::ResultSection::typeName_() );
 
-    QResultSection(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QResultSection(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;

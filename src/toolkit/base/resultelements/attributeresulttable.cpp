@@ -250,7 +250,7 @@ AttributeTableResult::clone() const
 
 
 
-ResultElementPtr polynomialFitResult
+std::unique_ptr<ResultElement> polynomialFitResult
 (
     const arma::mat& coeffs,
     const std::string& xvarName,
@@ -275,7 +275,7 @@ ResultElementPtr polynomialFitResult
         values.push_back ( coeffs ( i ) );
     }
 
-    return std::make_shared<AttributeTableResult>
+    return std::make_unique<AttributeTableResult>
                (
                    names, values,
                    shortDesc, longDesc, ""

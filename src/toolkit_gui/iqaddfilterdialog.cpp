@@ -6,7 +6,7 @@
 #include <QInputDialog>
 
 IQAddFilterDialog::IQAddFilterDialog(
-        insight::ResultSetPtr resultSet,
+        const insight::ResultSet& resultSet,
         QWidget *parent
         ) :
     QDialog(parent),

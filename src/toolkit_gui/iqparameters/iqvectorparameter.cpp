@@ -2,6 +2,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include "qtextensions.h"
 #include <memory>
 
 #include "iqvectorparameter.h"
@@ -13,8 +14,14 @@
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.h"
 
+
+
+
 defineType(IQVectorParameter);
 addToFactoryTable(IQParameter, IQVectorParameter);
+
+
+
 
 IQVectorParameter::IQVectorParameter
 (
@@ -49,7 +56,8 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   layout->addLayout(layout2);
 
   QPushButton *dlgBtn_=nullptr;
-  if (viewer)
+  if (viewer &&
+      (parameter().vectorType()!=insight::VectorParameter::NonSpatial))
   {
       dlgBtn_ = new QPushButton("...", editControlsContainer);
       layout->addWidget(dlgBtn_);
@@ -70,58 +78,65 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
-#warning need generalized implementation
   if (auto *v = dynamic_cast<IQVTKCADModel3DViewer*>(viewer))
   {
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
           [this,v,apply,applyFunction]()
           {
 
-            if (auto bp =
-              psModel()->getVectorBasePoint(parameter().path()))
-            {
-                // auto curMod =
-                //       new IQVectorDirectionCommand(
-                //             v->interactor(),
-                //             (*bp), p() );
+          switch (parameter().vectorType())
+          {
+          case insight::VectorParameter::VectorType::Direction: {
+              arma::mat O=insight::vec3Zero();
+              if (auto bp =
+                  psModel()->getVectorBasePoint(parameter().path()))
+              {
+                  O=*bp;
+              }
 
-                // connect( apply, &QPushButton::pressed,
-                //          curMod, &QObject::deleteLater );
+              auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
+                  *v->topmostActionHost(), insight::CoordinateSystem(O, parameter()()), true );
+              connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
+                      [this,applyFunction](const insight::CoordinateSystem& cs)
+                      {
+                          parameterRef().set(cs.ex);
+                      }
+                      );
+              v->topmostActionHost()->launchAction(std::move(mani));
 
-                // connect( curMod, &IQVectorDirectionCommand::dataChanged, curMod,
-                //          [this,curMod]()
-                //          {
-                //            lineEdit->setText(
-                //                        QString::fromStdString(
-                //                            insight::valueToString(
-                //                                curMod->getVector()
-                //                                ) ) );
-                //          } );
-                auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
-                    *v->topmostActionHost(), insight::CoordinateSystem((*bp), parameter()()), true );
-                connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
-                        [this,applyFunction](const insight::CoordinateSystem& cs)
-                        {
-                            parameterRef().set(cs.ex);
-                        }
-                        );
-                v->topmostActionHost()->launchAction(std::move(mani));
-            }
-            else
-            {
+          } break;
+
+          case insight::VectorParameter::VectorType::Point: {
               auto ppc = make_viewWidgetAction<IQVTKCADModel3DViewerPickPoint>(
-                    *v->topmostActionHost() );
+                  *v->topmostActionHost(), true );
+
               connect(ppc.get(), &IQVTKCADModel3DViewerPickPoint::pickedPoint,
-                        [this,applyFunction](const arma::mat& pt)
-                        {
+                      [this](const arma::mat& pt)
+                      {
                           parameterRef().set(pt);
-                        }
+                      }
                       );
               v->topmostActionHost()->launchAction(std::move(ppc));
-            }
+          } break;
+
+          default: {}
           }
+      }
     );
   }
+
+  // handle external value change
+  ::disconnectAtEOL(
+      layout,
+      parameterRef().valueChanged.connect(
+          [this]()
+          {
+              QSignalBlocker sb(lineEdit);
+              lineEdit->setText( QString::fromStdString(
+                  insight::toString(parameter()()) ) );
+          }
+          )
+      );
 
   return layout;
 }

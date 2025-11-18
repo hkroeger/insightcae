@@ -43,7 +43,10 @@ class TOOLKIT_GUI_EXPORT QComment
 public:
     declareType ( insight::Comment::typeName_() );
 
-    QComment(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    QComment(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout* layout) override;

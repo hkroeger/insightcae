@@ -92,7 +92,11 @@ public:
   void copy(const QModelIndexList & indexes) const;
   void paste(const QModelIndexList & indexes);
 
-  static void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
+  static void contextMenu(
+      QWidget* pw,
+      const QModelIndex& index,
+      const QPoint& p,
+      IQCADModel3DViewer *viewer = nullptr );
 
   // class ParameterEditor
   // {

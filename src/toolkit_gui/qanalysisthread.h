@@ -18,6 +18,7 @@ class TOOLKIT_GUI_EXPORT QAnalysisThread
 {
   Q_OBJECT
 
+
 public:
   QAnalysisThread(
       const std::string& analysisName,
@@ -43,7 +44,7 @@ Q_SIGNALS:
    * @brief finished
    * this is only emitted, if action is successfully completed without exceptions
    */
-  void finished(insight::ResultSetPtr results);
+  void finished();
 
   /**
    * @brief failed
@@ -51,7 +52,7 @@ Q_SIGNALS:
    * @param exception
    * the exception, which occurred
    */
-  void failed(std::exception_ptr exception);
+  void failed(::std::exception_ptr exception);
 
   /**
    * @brief cancelled

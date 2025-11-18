@@ -351,7 +351,7 @@ std::unique_ptr<hierarchicalData::Element> PolarContourChart::clone() const
 
 void addPolarContourPlot
 (
-    std::shared_ptr<ResultElementCollection> results,
+    ResultElementCollection& results,
     const std::string& resultelementname,
     const std::string& rlabel,
     const std::string& cblabel,
@@ -363,18 +363,15 @@ void addPolarContourPlot
     boost::optional<double> zClipMax
 )
 {
-    results->insert (
-                resultelementname,
-                new PolarContourChart
-                (
-                    rlabel, cblabel,
-                    rmax,
-                    plf,
-                    shortDescription, "",
-                    contourLines,
-                    zClipMin, zClipMax
-                    )
-                );
+    results.insert<PolarContourChart> (
+        resultelementname,
+        rlabel, cblabel,
+        rmax,
+        plf,
+        shortDescription, "",
+        contourLines,
+        zClipMin, zClipMax
+        );
 }
 
 

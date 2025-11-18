@@ -348,10 +348,10 @@ compressibleMixtureThermophysicalProperties::compressibleMixtureThermophysicalPr
   }
   else if (const auto * file = boost::get<Parameters::composition_fromFile_type>(&p().composition))
   {
-    std::istream& tf = (file->foamChemistryThermoFile)->stream();
+    auto tf = (file->foamChemistryThermoFile)->stream();
 
     OFDictData::dict td;
-    readOpenFOAMDict(tf, td);
+    readOpenFOAMDict(*tf, td);
     for (auto de=td.begin(); de!=td.end(); ++de)
     {
       species_[de->first]=boost::blank();

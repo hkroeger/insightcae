@@ -22,15 +22,7 @@ FixedPointConstraint::FixedPointConstraint(
     insight::cad::SketchPointPtr p, const std::string& layerName )
     : SingleSymbolConstraint(layerName),
       p_(p)
-{
-    auto c=p->coords2D();
-
-    insight::ParameterSet::Entries ps;
-    ps.emplace("x", std::make_unique<insight::DoubleParameter>(c(0), "x location"));
-    ps.emplace("y", std::make_unique<insight::DoubleParameter>(c(1), "y location"));
-
-    changeDefaultParameters( *insight::ParameterSet::create(std::move(ps), "") );
-}
+{}
 
 
 std::string FixedPointConstraint::symbolText() const
@@ -143,6 +135,16 @@ void FixedPointConstraint::replaceDependency(
             p_ = p;
         }
     }
+}
+
+void FixedPointConstraint::ensureRequiredParameters()
+{
+    SingleSymbolConstraint::ensureRequiredParameters();
+
+    // ensure that there are our required parameters
+    auto c=p_->coords2D();
+    parametersRef().getOrInsert<DoubleParameter>("x", c(0), "x location");
+    parametersRef().getOrInsert<DoubleParameter>("y", c(1), "y location");
 }
 
 

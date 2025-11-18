@@ -150,7 +150,7 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
     this->processQueue(displayer);
     ResultSetPtr results = this->evaluateRuns();
 
-    evaluateCombinedResults(results);
+    evaluateCombinedResults(*results);
 
     return results;
 }
@@ -162,7 +162,7 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-void OpenFOAMParameterStudy<BaseAnalysis,var_params>::evaluateCombinedResults(ResultSetPtr&)
+void OpenFOAMParameterStudy<BaseAnalysis,var_params>::evaluateCombinedResults(ResultSet&)
 {
 }
 

@@ -30,10 +30,10 @@ class faceAdjacentToEdges
 : public Filter
 {
 protected:
-    FeatureSet edges_;
+    ConstFeatureSetPtr edges_;
 
 public:
-    faceAdjacentToEdges(FeatureSet edges);
+    faceAdjacentToEdges(ConstFeatureSetPtr edges);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

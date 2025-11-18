@@ -40,6 +40,7 @@ insight::cad::VectorFromComponents::VectorFromComponents
 size_t insight::cad::VectorFromComponents::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     h+=*p3_;
@@ -65,6 +66,7 @@ insight::cad::CrossMultipliedVector::CrossMultipliedVector(insight::cad::VectorP
 size_t insight::cad::CrossMultipliedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -89,6 +91,7 @@ insight::cad::DotMultipliedVector::DotMultipliedVector(insight::cad::VectorPtr p
 size_t insight::cad::DotMultipliedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -112,6 +115,7 @@ insight::cad::ScalarMultipliedVector::ScalarMultipliedVector(insight::cad::Scala
 size_t insight::cad::ScalarMultipliedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -135,6 +139,7 @@ insight::cad::ScalarDividedVector::ScalarDividedVector(insight::cad::VectorPtr p
 size_t insight::cad::ScalarDividedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -158,6 +163,7 @@ insight::cad::AddedVector::AddedVector(insight::cad::VectorPtr p1, insight::cad:
 size_t insight::cad::AddedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -181,6 +187,7 @@ insight::cad::SubtractedVector::SubtractedVector(insight::cad::VectorPtr p1, ins
 size_t insight::cad::SubtractedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -208,6 +215,7 @@ insight::cad::RotatedVector::RotatedVector
 size_t insight::cad::RotatedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*v_;
     h+=*ang_;
     h+=*ax_;
@@ -234,6 +242,7 @@ insight::cad::NormalizedVector::NormalizedVector(VectorPtr v)
 size_t insight::cad::NormalizedVector::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*v_;
     return h.getHash();
 }
@@ -256,6 +265,7 @@ insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(ScalarPtr L, VectorPtr 
 size_t insight::cad::Mechanism_CrankDrive::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*L_;
     h+=*c2_;
     h+=*r2_;
@@ -294,6 +304,7 @@ insight::cad::Mechanism_Slider::Mechanism_Slider(ScalarPtr L, VectorPtr p0, Vect
 size_t insight::cad::Mechanism_Slider::calcHash() const
 {
     ParameterListHash h;
+    h+=type();
     h+=*L_;
     h+=*p0_;
     h+=*psl_;

@@ -97,7 +97,7 @@ template<class TPC, const char* TypeName>
 void TPCArray<TPC,TypeName>::evaluate(
     OpenFOAMCase& cm,
     const boost::filesystem::path& location,
-    ResultSetPtr& results,
+    ResultElementCollection& results,
     const std::string& shortDescription
 ) const
 {
@@ -123,7 +123,7 @@ template<class TPC, const char* TypeName>
 void TPCArray<TPC,TypeName>::evaluateSingle
 (
     OpenFOAMCase& cm, const boost::filesystem::path& location,
-    ResultSetPtr& results,
+    ResultElementCollection& results,
     const std::string& name_prefix,
     double span,
     const std::string& axisLabel,
@@ -153,7 +153,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
         boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
         if (res[0].n_rows<1)
         {
-            results->insert(name_prefix,
+            results.insert(name_prefix,
                             std::unique_ptr<Comment>(new Comment
                                                    (
                                                            "(No data was available for evaluation)",

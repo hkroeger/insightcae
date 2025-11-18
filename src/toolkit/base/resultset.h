@@ -47,7 +47,7 @@ namespace insight
 
 class ResultSet;
 
-typedef std::shared_ptr<ResultSet> ResultSetPtr;
+typedef std::unique_ptr<insight::ResultSet> ResultSetPtr;
 
 
 class ResultSet
@@ -66,24 +66,27 @@ public:
         std::unique_ptr<ParameterSet> p = nullptr,
         const std::string& title = std::string(),
         const std::string& subtitle = std::string(),
-        const std::string *author = NULL,
-        const std::string *date = NULL
+        const std::string *author = nullptr,
+        const std::string *date = nullptr
     );
 
-    static ResultSetPtr createFromFile(
+    static std::unique_ptr<insight::ResultSet>
+    createFromFile(
         const boost::filesystem::path& fileName,
-        std::unique_ptr<ParameterSet> p = nullptr );
+        std::unique_ptr<ParameterSet> p = std::unique_ptr<ParameterSet>() );
 
     /**
      * stream needs to opened in binary!! (mode std::ios::in | std::ios::binary)
      */
-    static ResultSetPtr createFromStream(
+    static std::unique_ptr<insight::ResultSet>
+    createFromStream(
         std::istream& is,
-        std::unique_ptr<ParameterSet> p = nullptr );
+        std::unique_ptr<ParameterSet> p = std::unique_ptr<ParameterSet>() );
 
-    static ResultSetPtr createFromString(
+    static std::unique_ptr<insight::ResultSet>
+    createFromString(
         const std::string& cont,
-        std::unique_ptr<ParameterSet> p = nullptr );
+        std::unique_ptr<ParameterSet> p = std::unique_ptr<ParameterSet>() );
 
 
     /* =======================================================================================================*/
@@ -117,7 +120,7 @@ public:
     inline const std::string author() const { return author_; }
     inline const std::string date() const { return date_; }
 
-    void transfer ( const ResultSet& other );
+    void transfer ( ResultSet& other );
 
     inline const ParameterSet& parameters() const
     {

@@ -58,29 +58,32 @@ defineType ( ResultSet );
 
 
 
-ResultSetPtr ResultSet::createFromFile(
+std::unique_ptr<insight::ResultSet>
+ResultSet::createFromFile(
     const boost::filesystem::path& fileName,
     std::unique_ptr<ParameterSet> p )
 {
-    auto r = std::make_shared<ResultSet>(std::move(p));
+    auto r = std::make_unique<ResultSet>(std::move(p));
     r->readFromFile(fileName);
     return r;
 }
 
-ResultSetPtr ResultSet::createFromStream(
+std::unique_ptr<insight::ResultSet>
+ResultSet::createFromStream(
     std::istream& is,
     std::unique_ptr<ParameterSet> p )
 {
-    auto r = std::make_shared<ResultSet>(std::move(p));
+    auto r = std::make_unique<ResultSet>(std::move(p));
     r->readFromStream(is);
     return r;
 }
 
-ResultSetPtr ResultSet::createFromString(
+std::unique_ptr<insight::ResultSet>
+ResultSet::createFromString(
     const std::string& cont,
     std::unique_ptr<ParameterSet> p )
 {
-    auto r = std::make_shared<ResultSet>(std::move(p));
+    auto r = std::make_unique<ResultSet>(std::move(p));
     r->readFromString(cont);
     return r;
 }
@@ -153,10 +156,10 @@ ResultSet::~ResultSet()
 // }
 
 
-void ResultSet::transfer ( const ResultSet& other )
+void ResultSet::transfer ( ResultSet& other )
 {
 //   ptr_map< std::string, ResultElement>::operator=(other);
-    std::map< std::string, ResultElementPtr>::operator= ( other );
+    ResultElementCollection::transfer(other);
     if (other.p_)
     {
         p_=other.p_->cloneAs<ParameterSet>();
@@ -176,9 +179,9 @@ void ResultSet::clearInputParameters()
 
 void ResultSet::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 {
-    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
+    for ( auto& i: static_cast<const ResultElement&>(*this) )
     {
-        i.second->insertLatexHeaderCode(hc);
+        i.insertLatexHeaderCode(hc);
     }
 }
 
@@ -235,8 +238,10 @@ void ResultSet::exportDataToFile (
 {
     auto outsubdir = outputdirectory/name;
     create_directory ( outsubdir );
-    for ( auto& i: static_cast<const ResultElementMap&>(*this) ) {
-        i.second->exportDataToFile ( i.first, outsubdir );
+    for ( auto& i: static_cast<const ResultElement&>(*this) )
+    {
+        if (auto *re=dynamic_cast<const ResultElement*>(&i))
+            re->exportDataToFile ( re->name(), outsubdir );
     }
 }
 
@@ -330,9 +335,10 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
     reportInput->write(filepath);
     reportTemplate.writeAdditionalFiles(filepath.parent_path());
 
-    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
+    for ( auto& i: static_cast<const ResultElement&>(*this) )
     {
-        i.second->exportDataToFile ( i.first, reportData );
+        if (auto *re=dynamic_cast<const ResultElement*>(&i))
+            re->exportDataToFile ( re->name(), reportData );
     }
 }
 
@@ -352,9 +358,10 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
       auto outdir = reportDataPath(report_src_out);
 
       create_directory ( outdir );
-      for ( auto& i: static_cast<const ResultElementMap&>(*this) )
+      for ( auto& i: static_cast<const ResultElement&>(*this) )
       {
-          i.second->exportDataToFile ( i.first, outdir );
+          if (auto *re=dynamic_cast<const ResultElement*>(&i))
+            re->exportDataToFile ( re->name(), outdir );
       }
 
       writeLatexFile( report_src_out );
@@ -452,11 +459,14 @@ std::unique_ptr<ParameterSet> ResultSet::convertIntoParameterSet() const
 {
     auto ps =ParameterSet::create();
 
-    for ( auto& rp: static_cast<const ResultElementMap&>(*this) )
+    for ( auto& i: static_cast<const ResultElement&>(*this) )
     {
-        if ( auto p=rp.second->convertIntoParameter() )
+        if (auto *re=dynamic_cast<const ResultElement*>(&i))
         {
-            ps->insert( rp.first, std::move(p) );
+            if ( auto p=re->convertIntoParameter() )
+            {
+                ps->insert( re->name(), std::move(p) );
+            }
         }
     }
     return ps;
@@ -480,11 +490,10 @@ std::unique_ptr<hierarchicalData::Element> ResultSet::clone() const
             p_ ? p_->cloneAs<ParameterSet>() : std::unique_ptr<ParameterSet>(),
             title_, subtitle_, &author_, &date_ );
 
-    for ( auto& i: static_cast<const ResultElementMap&>(*this) )
-     {
-//         cout<<i->first<<endl;
-        std::string key ( i.first );
-        nr->insert ( key, i.second->cloneAs<ResultElement>() );
+    for ( auto& i: static_cast<const ResultElement&>(*this) )
+    {
+        if (auto *re=dynamic_cast<const ResultElement*>(&i))
+            nr->insert ( re->name(), re->cloneAs<ResultElement>() );
     }
     nr->setOrder ( order() );
     nr->introduction() =introduction_;

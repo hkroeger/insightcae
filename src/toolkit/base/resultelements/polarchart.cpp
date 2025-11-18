@@ -106,7 +106,7 @@ bool PolarChart::isEqual(const Element &op) const
 
 insight::ResultElement& addPolarPlot
 (
-    std::shared_ptr<ResultElementCollection> results,
+    ResultElementCollection& results,
     const boost::filesystem::path& ,
     const std::string& resultelementname,
     const std::string& rlabel,
@@ -126,14 +126,13 @@ insight::ResultElement& addPolarPlot
           ;
     }
 
-    return results->insert ( resultelementname,
-                             new PolarChart
-                             (
-                                 rlabel, plc,
-                                 shortDescription, "",
-                                 phi_unit,
-                                 precmd
-                               ) );
+    return results.insert<PolarChart>(
+        resultelementname,
+        rlabel, plc,
+        shortDescription, "",
+        phi_unit,
+        precmd
+      );
 }
 
 

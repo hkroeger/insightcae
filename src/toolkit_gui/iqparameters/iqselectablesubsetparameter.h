@@ -21,7 +21,7 @@ public:
       insight::hierarchicalData::Element* element
   );
 
-  void populateContextMenu(QMenu* m) override;
+  void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
 
   QVariant value() const override;
 };

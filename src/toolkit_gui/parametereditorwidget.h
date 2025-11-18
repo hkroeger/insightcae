@@ -102,9 +102,6 @@ protected:
         ParameterSetDisplay* display
         );
 
-    bool firstShowOccurred_;
-    void showEvent(QShowEvent *event) override;
-
     void resizeEvent(QResizeEvent*) override;
 
 public:

@@ -83,7 +83,7 @@ public:
   /**
    * return a table of results in case the study runs only over a single parameter
    */
-  virtual ResultElementPtr table
+  virtual std::unique_ptr<ResultElement> table
   (
     std::string shortDescription,
     std::string longDescription,

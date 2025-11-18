@@ -206,6 +206,7 @@ public:
 };
 
 
+#ifndef SWIG
 class ASTBasedFeatureSet
     : public ASTBase,
       public FeatureSet
@@ -213,7 +214,7 @@ class ASTBasedFeatureSet
 public:
     using FeatureSet::FeatureSet;
 };
-
+#endif
 
 class ProvidedFeatureSet
     : public ASTBasedFeatureSet
@@ -221,14 +222,22 @@ class ProvidedFeatureSet
     ConstFeaturePtr model_;
     std::string label_;
 
-public:
-    size_t calcHash() const override;
-    void build() override;
-
     ProvidedFeatureSet(const ProvidedFeatureSet&o, TreeCloneMap& tcm);
     ProvidedFeatureSet(
         ConstFeaturePtr m, EntityType shape,
         const std::string& label );
+
+public:
+    CREATE_FUNCTION(ProvidedFeatureSet);
+    CLONEABLE(ProvidedFeatureSet);
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+
+    size_t calcHash() const override;
+    void build() override;
+
+    FeatureSetPtr clone() const override;
 
     const FeatureSetData& data() const override;
 

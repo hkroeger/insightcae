@@ -56,7 +56,7 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
 
 
 
-void IQArrayParameter::populateContextMenu(QMenu *cm)
+void IQArrayParameter::populateContextMenu(QMenu *cm, IQCADModel3DViewer */*viewer*/)
 {
     auto *ca = new QAction("Clear array");
     cm->addAction(ca);

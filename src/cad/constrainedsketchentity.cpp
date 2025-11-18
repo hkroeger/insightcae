@@ -55,10 +55,18 @@ ConstrainedSketchEntity::ConstrainedSketchEntity(
     parameters_(ParameterSet::create())
 {
     parameters_->valueChanged.connect(
-        [this]() { parametersChanged(*parameters_); }
+        [this]() {
+            insight::dbg(DetailedBusiness)
+                << "received valueChanged from parameters_ => emit parametersChanged from ConstrainedSketchEntity" <<std::endl;
+            parametersChanged(*parameters_);
+        }
         );
     parameters_->childValueChanged.connect(
-        [this]() { parametersChanged(*parameters_); }
+        [this]() {
+            insight::dbg(DetailedBusiness)
+                << "received childValueChanged from parameters_ => emit parametersChanged from ConstrainedSketchEntity" <<std::endl;
+            parametersChanged(*parameters_);
+        }
         );
 }
 
@@ -163,6 +171,11 @@ const insight::ParameterSet& ConstrainedSketchEntity::defaultParameters() const
 
 
 
+void ConstrainedSketchEntity::ensureRequiredParameters()
+{}
+
+
+
 void ConstrainedSketchEntity::changeDefaultParameters(
     const insight::ParameterSet& ps )
 {
@@ -172,8 +185,7 @@ void ConstrainedSketchEntity::changeDefaultParameters(
     // ParameterSet oldps=parameters_;
     parameters_->assignFrom(*defaultParameters_);
 
-#warning copy values from old; merge is not the right function
-    //parameters_.merge(oldps);
+    ensureRequiredParameters();
 }
 
 

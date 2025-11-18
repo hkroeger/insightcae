@@ -74,6 +74,11 @@ int requestedVerbosityLevel();
 
 std::ostream& dbg(int verbosityLevel = 1);
 
+#define DBG_LOC_EXPL(VL,FILE,LINE) \
+insight::dbg(VL) << "In " FILE "@" << LINE << ": "
+
+#define DBG_LOC(VL) \
+DBG_LOC_EXPL(VL,__FILE__,__LINE__)
 
 
 

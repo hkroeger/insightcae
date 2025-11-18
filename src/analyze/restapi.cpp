@@ -195,7 +195,7 @@ void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
 
 void AnalyzeRESTServer::setResults(insight::ResultSetPtr results)
 {
-  results_=results;
+  results_=std::move(results);
 }
 
 void AnalyzeRESTServer::setException(const insight::Exception &ex)

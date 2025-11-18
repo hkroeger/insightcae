@@ -396,31 +396,6 @@ std::string yRangeExpression(double mi, double ma, double boundaryBySpan)
 
 
 
-insight::ResultElement& addPlot
-(
-    std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& workdir,
-    const std::string& resultelementname,
-    const std::string& xlabel,
-    const std::string& ylabel,
-    const PlotCurveList& plc,
-    const std::string& shortDescription,
-    const std::string& addinit,
-    const std::string& watermarktext
-)
-{
-    return addPlot
-    (
-        *results, workdir,
-        resultelementname,
-        xlabel, ylabel,
-        plc,
-        shortDescription, addinit, watermarktext
-    );
-}
-
-
-
 
 insight::ResultElement& addPlot
 (
@@ -444,15 +419,12 @@ insight::ResultElement& addPlot
           ;
     }
 
-    return results.insert (
-                resultelementname,
-                new Chart
-                (
-                    xlabel, ylabel, plc,
-                    shortDescription, "",
-                    precmd
-                    )
-                );
+    return results.insert<Chart> (
+        resultelementname,
+        xlabel, ylabel, plc,
+        shortDescription, "",
+        precmd
+        );
 }
 
 bool ChartData::operator==(const ChartData o) const

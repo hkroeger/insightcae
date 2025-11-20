@@ -315,7 +315,8 @@ ADD_DEFINITIONS(
     -Wno-old-style-cast
     -ftemplate-depth=900
     -fpermissive 
-    -Wno-deprecated 
+    -Wno-deprecated
+    -Wno-register # lots of warnings from fx32
     # Other flags
 )
 

@@ -73,12 +73,13 @@ public:
 int requestedVerbosityLevel();
 
 std::ostream& dbg(int verbosityLevel = 1);
+std::ostream& dbg_slot(const std::string& signalName);
 
-#define DBG_LOC_EXPL(VL,FILE,LINE) \
-insight::dbg(VL) << "In " FILE "@" << LINE << ": "
+#define DBG_LOC_EXPL(VL) \
+insight::dbg(VL) << "(in " __FILE__ "@" << __LINE__ << "): "
 
-#define DBG_LOC(VL) \
-DBG_LOC_EXPL(VL,__FILE__,__LINE__)
+#define DBG_SLOT(SIGNAME) \
+insight::dbg_slot(#SIGNAME) << "(in " __FILE__ "@" << __LINE__ << "): "
 
 
 

@@ -20,6 +20,8 @@ void IQVTKCADModel3DViewerDrawPoint::start()
     pointSelected.connect(
         [this](IQVTKCADModel3DViewerPlanePointBasedAction::PointProperty pp)
         {
+            DBG_SLOT(pointSelected);
+
             if (!pp.isAnExistingPoint)
             {
                 sketch().insertGeometry(

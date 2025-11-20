@@ -63,8 +63,9 @@ QVBoxLayout* IQDoubleParameter::populateEditControls(
       p.valueChanged.connect(
           [=]()
           {
-              insight::dbg(insight::DetailedBusiness)
-              << "received valueChanged => call setText from IQDoubleParameter" << std::endl;              QSignalBlocker sb(lineEdit);
+              DBG_SLOT(valueChanged);
+
+              QSignalBlocker sb(lineEdit);
               lineEdit->setText(QString::number(parameter()()));
           }
           )

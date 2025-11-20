@@ -58,6 +58,8 @@ IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(
 {
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             for (auto pAct: pAct_)
             {
                 viewer().renderer()->RemoveActor(pAct);

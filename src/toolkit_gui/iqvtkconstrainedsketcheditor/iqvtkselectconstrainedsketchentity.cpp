@@ -101,6 +101,8 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
         connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
                 [this]()
                 {
+                    DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
+
                     for (auto& ee: *this)
                     {
                         auto e = ee.lock();
@@ -317,6 +319,8 @@ bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
             dl->previewUpdated.connect(
                 [this](const arma::mat& p1_3d, const arma::mat& p2_3d)
                 {
+                    DBG_SLOT(previewUpdated);
+
                     auto p1=(*editor_).p3Dto2D(p1_3d);
                     auto p2=(*editor_).p3Dto2D(p2_3d);
 

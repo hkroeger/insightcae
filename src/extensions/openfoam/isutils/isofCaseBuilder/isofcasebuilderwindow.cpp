@@ -1012,7 +1012,11 @@ void isofCaseBuilderWindow::showParameterEditorForCaseElement(const QModelIndex&
 
     connect(caseElementParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
             caseElementParameterEditor_,
-            [&]() { onConfigModification(); } );
+            [&]() {
+                DBG_SLOT(parameterSetChanged);
+
+                onConfigModification();
+            } );
 
     pe_layout_->addWidget(caseElementParameterEditor_);
 
@@ -1042,14 +1046,22 @@ void isofCaseBuilderWindow::showParameterEditorForPatch(const QModelIndex& index
     if (patchParameterEditor_)
     {
 
-      connect(patchParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
-              patchParameterEditor_,
-              [&]() { onConfigModification(); } );
+        connect(patchParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
+                patchParameterEditor_,
+                [&]() {
+                    DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
 
-      auto* patch = BCConfigModel_->patch(index);
-      connect(patch, &QObject::destroyed,
-              patch,
-              [&]() { patchParameterEditor_->deleteLater(); } );
+                    onConfigModification();
+                } );
+
+        auto* patch = BCConfigModel_->patch(index);
+        connect(patch, &QObject::destroyed,
+                patch,
+                [&]() {
+                    DBG_SLOT(QObject::destroyed);
+
+                    patchParameterEditor_->deleteLater();
+                } );
 
       bc_pe_layout_->addWidget(patchParameterEditor_);
 

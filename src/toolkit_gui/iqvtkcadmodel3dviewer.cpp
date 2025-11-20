@@ -239,6 +239,8 @@ void BackgroundImage::reorientImage()
         obia->orientationSelected.connect(
             [this](OrientationSpec os)
             {
+                DBG_SLOT(orientationSelected);
+
                 arma::mat D=os.xy2_-os.xy1_;
                 arma::mat d=os.p2_-os.pCtr_;
                 double scale =

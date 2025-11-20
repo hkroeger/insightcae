@@ -61,6 +61,8 @@ IQVTKCADModel3DViewerPlanePointBasedAction
     entitySelected.connect(
         [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> e)
         {
+            DBG_SLOT(entitySelected);
+
             if (auto psel = std::dynamic_pointer_cast<insight::cad::SketchPoint>(e.lock()))
             {
                 // point under cursor hit: don't apply wizard just forward selection

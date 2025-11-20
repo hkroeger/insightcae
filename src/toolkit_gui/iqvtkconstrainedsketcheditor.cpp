@@ -1113,6 +1113,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             m,
                             [this,m,model,selectedLayerName]()
                             {
+                                DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
+
                                 (*this)->setLayerProperties(
                                         selectedLayerName,
                                         m->getParameterSet()
@@ -1189,6 +1191,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             cancelCurrentAction();
 
             transparency_.reset();
@@ -1219,17 +1223,20 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     (*this)->geometryAboutToBeRemoved.connect(
         [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+            DBG_SLOT(geometryAboutToBeRemoved);
             removeActors((*this)->get(geoId));
         });
 
     (*this)->geometryAdded.connect(
         [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+            DBG_SLOT(geometryAdded);
             addActors((*this)->get(geoId));
             onSketchSizeChanged();
         });
 
     (*this)->geometryChanged.connect(
         [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+                DBG_SLOT(geometryChanged);
               // redisplay, if displayed already
               auto g=(*this)->get(geoId);
               auto i=sketchGeometryActors_.find(g);

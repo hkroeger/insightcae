@@ -15,7 +15,9 @@ IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(
 {
     aboutToBeDestroyed.connect(
         [this](){
-        viewer().deactivateSubshapeSelectionAll();
+            DBG_SLOT(aboutToBeDestroyed);
+
+            viewer().deactivateSubshapeSelectionAll();
         });
 }
 
@@ -34,6 +36,8 @@ void IQVTKCADModel3DViewerMeasureDiameter::start()
     sel->entitySelected.connect(
         [this](IQVTKCADModel3DViewer::SubshapeData edg)
         {
+            DBG_SLOT(entitySelected);
+
             if (edg.subshapeType_ == insight::cad::Edge)
             {
                 insight::cad::CircleEdgeCenterCoords cecc(

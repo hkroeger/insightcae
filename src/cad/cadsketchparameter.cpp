@@ -22,6 +22,7 @@ insight::cad::ConstrainedSketch& DelayedCreatedSketch::sketchRef()
     if (!sketch_)
     {
         sketch_=createEmpty();
+        connectSignalsToSketch(sketch_);
     }
 
     if (script_)
@@ -29,7 +30,6 @@ insight::cad::ConstrainedSketch& DelayedCreatedSketch::sketchRef()
         if (!script_->empty())
         {
             *sketch_ = *createSketch(*script_);
-            connectSignalsToSketch(sketch_);
         }
         else
         {
@@ -84,6 +84,7 @@ void DelayedCreatedSketch::assignFrom(
         if (!sketch_)
         {
             sketch_=createEmpty();
+            connectSignalsToSketch(sketch_);
         }
         *sketch_ = *os.sketch_;
     }
@@ -136,14 +137,17 @@ void CADSketchParameter::connectSignalsToSketch(cad::ConstrainedSketchPtr s)
 
     cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
         [this](int) {
+            DBG_SLOT(geometryAdded);
             if (!valueChangeSignalBlocked()) childValueChanged();
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
         [this](int) {
+            DBG_SLOT(geometryRemoved);
             if (!valueChangeSignalBlocked()) childValueChanged();
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
         [this](int) {
+            DBG_SLOT(geometryChanged);
             if (!valueChangeSignalBlocked()) childValueChanged();
         };
 
@@ -308,32 +312,15 @@ CADSketchParameter::CADSketchParameter(
 
 
 
-std::unique_ptr<CADSketchParameter>
-CADSketchParameter::cloneCADSketchParameter(
-    bool keepParentRef
-    ) const
+std::unique_ptr<hierarchicalData::Element> CADSketchParameter::clone() const
 {
-    auto ncgp=std::make_unique<CADSketchParameter>(
+    return std::make_unique<CADSketchParameter>(
         script(),
         entityProperties_,
         presentationDelegateKey_,
         references_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order() );
-
-    if (keepParentRef)
-        ncgp->setParent(
-            const_cast<hierarchicalData::Element*>(
-                &parent() ) );
-
-    return ncgp;
-}
-
-
-std::unique_ptr<hierarchicalData::Element> CADSketchParameter::clone() const
-{
-    auto p=cloneCADSketchParameter();
-    return p;
 }
 
 
@@ -350,6 +337,8 @@ void CADSketchParameter::assignFrom(const Element& oe)
 
     Parameter::assignFrom(op);
 }
+
+
 
 void CADSketchParameter::copyMatching( const Element& rhs )
 {

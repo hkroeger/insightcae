@@ -2,14 +2,49 @@
 #include <QApplication>
 #include <QAbstractItemModelTester>
 #include <QTreeView>
-#include <QDialog>
+#include <QMainWindow>
 #include <QTimer>
 #include <QHeaderView>
 
+#include "cadfeatures/quad.h"
+#include "cadparameters/constantvector.h"
 #include "iqparametersetmodel.h"
+#include "parametereditorwidget.h"
 #include "test_pdl.h"
 
 using namespace insight;
+
+class TestPDL_ParameterSet_Visualizer
+    : public CADParameterSetModelVisualizer
+{
+public:
+    using CADParameterSetModelVisualizer::CADParameterSetModelVisualizer;
+
+    std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() override
+    {
+        return std::make_shared<supplementedInputDataFromParameters>(
+            ParameterSetInput(this->parameters()).forward<TestPDL::Parameters>(),
+            this->workDir_, this->progress_ );
+    }
+
+    const supplementedInputDataFromParameters& sp() const
+    {
+        return dynamic_cast<
+            const supplementedInputDataFromParameters&>(
+            *this->sid_ );
+    }
+
+
+    void recreateVisualizationElements() override
+    {
+        addFeature
+            (
+                "sketch",
+                sp().parameters().get<CADSketchParameter>("sketch").geometry(),
+                { insight::Wireframe }
+            );
+    }
+};
 
 int main(int argc, char*argv[])
 {
@@ -36,38 +71,44 @@ int main(int argc, char*argv[])
         if (argc<=1 || std::string(argv[1])!="nogui")
         {
             QApplication app(argc, argv);
-            QDialog dlg;
-            auto *l=new QVBoxLayout;
-            auto *tv=new QTreeView;
-            tv->setItemDelegate(new IQHierarchicalDataGridViewSelectorDelegate);
-            l->addWidget(tv);
-            tv->setModel(&modelToBeTested);
-            tv->setContextMenuPolicy(Qt::CustomContextMenu);
-            tv->setAlternatingRowColors(true);
-            tv->setDragDropMode(QAbstractItemView::DragDrop);
-            tv->setDefaultDropAction(Qt::MoveAction);
-            tv->header()->setSectionResizeMode(
-                QHeaderView::ResizeMode::ResizeToContents);
-            // tv->expandAll();
-            QObject::connect(
-                tv, &QTreeView::customContextMenuRequested,
-                [tv](const QPoint& p)
+            QMainWindow dlg;
+
+
+            insight::ParameterSet_ValidatorPtr vali;
+
+            auto peditor_=new ParameterEditorWidget(
+                &dlg,
+                [](QObject* _1, IQParameterSetModel *_2)
                 {
-                    IQParameterSetModel::contextMenu(
-                        tv,
-                        tv->indexAt(p),
-                        p );
-                }
+                    return new TestPDL_ParameterSet_Visualizer(
+                        _1, _2, "", insight::consoleProgressDisplayer);
+                },
+                [](
+                    const std::string&,
+                    QObject *,
+                    IQCADModel3DViewer *,
+                    IQParameterSetModel *
+                    ) -> insight::GUIActionList { return {}; },
+                vali
                 );
-            dlg.setLayout(l);
+            peditor_->setModel(&modelToBeTested);
+
+            dlg.setCentralWidget(peditor_);
+            dlg.show();
+
+            // connect(
+            //     peditor_, &ParameterEditorWidget::updateSupplementedInputData,
+            //     this, &AnalysisForm::onUpdateSupplementedInputData
+            //     );
 
 
-            QTimer::singleShot(
-                0,
-                [&]()
-                {
-                    tv->scrollToBottom();
-                });
+
+            // QTimer::singleShot(
+            //     0,
+            //     [&]()
+            //     {
+            //         tv->scrollToBottom();
+            //     });
 
             QTimer::singleShot(
                 0,
@@ -97,7 +138,7 @@ int main(int argc, char*argv[])
                     modelToBeTested.resetParameterValues(*tps2);
 
                 });
-            dlg.exec();
+            return app.exec();
         }
     }
     catch (std::exception& ex)

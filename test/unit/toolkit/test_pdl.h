@@ -71,6 +71,55 @@ subsub = set {
 };
 
 
+
+class Outline_SketchParameters
+    : public insight::cad::ConstrainedSketchParametersDelegate
+{
+public:
+public:
+#include "test_pdl__Outline_SketchParameters__Parameters.h"
+/*
+PARAMETERSET>>> Outline_SketchParameters Parameters
+
+L = double 1.0 "[mm] One millimeter"
+
+outlinesub = set {
+ karr = array [ double 1. "" ] *2 ""
+} ""
+
+<<<PARAMETERSET
+*/
+
+
+    void
+    changeDefaultParameters(insight::cad::ConstrainedSketchEntity& e) const override
+    {
+        if (dynamic_cast<const insight::cad::SketchPoint*>(&e))
+        {
+            e.changeDefaultParameters(
+                *defaultParameters() );
+        }
+    }
+
+    std::unique_ptr<insight::cad::LayerProperties>
+    createDefaultLayerProperties(const std::string& layerName) const override
+    {
+        auto defp=defaultParameters();
+
+        arma::mat c; // unspecified color
+        if (layerName!=insight::cad::ConstrainedSketch::defaultLayerName)
+            c=insight::vec3(std::rand(), std::rand(), std::rand())
+                /double(RAND_MAX);
+
+        return insight::cad::LayerProperties::create(
+            *defp, c);
+    }
+};
+
+static std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate>
+    outline_SketchParameters
+    = std::make_shared<Outline_SketchParameters>();
+
 class TestPDL
 {
 
@@ -103,7 +152,7 @@ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOm
 
 sketch = cadsketch
         ""
-        ""
+        "outline_SketchParameters"
         ""
         "contour to extrude"
 

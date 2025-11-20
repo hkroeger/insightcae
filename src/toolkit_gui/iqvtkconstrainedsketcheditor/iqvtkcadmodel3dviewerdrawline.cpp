@@ -131,6 +131,8 @@ void IQVTKCADModel3DViewerDrawLine::start()
     pointSelected.connect(
         [this](PointProperty pp)
         {
+            DBG_SLOT(pointSelected);
+
             if (!p1_)
             {
                 p1_=std::make_shared_aggr<PointProperty>(pp);
@@ -186,6 +188,8 @@ void IQVTKCADModel3DViewerDrawLine::start()
     newPreviewEntity.connect(
         [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> pP)
         {
+            DBG_SLOT(newPreviewEntity);
+
             if (auto p =
                 std::dynamic_pointer_cast<insight::cad::SketchPoint>(
                     pP.lock() ) )

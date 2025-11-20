@@ -75,8 +75,9 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
         parameterRef().valueChanged.connect(
             [=]()
             {
-                insight::dbg(insight::DetailedBusiness)
-                << "received valueChanged => call setDateTime from IQDateTimeParameter" << std::endl;                QSignalBlocker sb(de);
+                DBG_SLOT(valueChanged);
+
+                QSignalBlocker sb(de);
                 de->setDateTime(
                     QDateTime::fromString(
                         QString::fromStdString(

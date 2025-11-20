@@ -58,6 +58,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         parameterTreeView_, &QTreeView::customContextMenuRequested,
         [this](const QPoint& p)
         {
+            DBG_SLOT(QTreeView::customContextMenuRequested);
+
             IQParameterSetModel::contextMenu(
                 parameterTreeView_,
                 parameterTreeView_->indexAt(p),
@@ -109,6 +111,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
         [this](const QModelIndex& index)
         {
+            DBG_SLOT(QTreeView::clicked);
+
             if (index.isValid())
             {
                 if (auto* p=IQParameterSetModel::parameterFromIndex(index))
@@ -411,12 +415,18 @@ void ParameterEditorWidget::rebuildVisualization()
             connect(
                 viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
                 [this](bool success)
-                { if (success) overlayText_->hide(); } );
+                {
+                    DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationCalculationFinished);
+
+                    if (success) overlayText_->hide();
+                } );
 
             connect(
                 viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
                 [this](const insight::Exception& ex)
                 {
+                    DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
+
                     overlayText_->setTextFormat(Qt::MarkdownText);
                     overlayText_->setText(QString::fromStdString(
                         std::string(_("The visualization could not be generated."))
@@ -439,6 +449,8 @@ void ParameterEditorWidget::rebuildVisualization()
 
 void ParameterEditorWidget::onParameterSetChanged()
 {
+    DBG_SLOT(QAbstractItemModel::{dataChanged;rowsInserted;rowsRemoved});
+
     rebuildVisualization();
     Q_EMIT parameterSetChanged();
 }

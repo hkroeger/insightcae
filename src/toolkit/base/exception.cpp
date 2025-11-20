@@ -375,6 +375,12 @@ std::ostream& dbg(int verbosityLevel)
 }
 
 
+ostream &dbg_slot(const std::string &signalName)
+{
+    ostream& os=dbg(DetailedBusiness);
+    os << "handling signal " << signalName << ".\n";
+    return os;
+}
 
 
 void ExceptionContext::snapshot(std::vector<std::string>& context)
@@ -717,6 +723,7 @@ ElementNotFoundException::ElementNotFoundException(
     const std::string &msg)
     : Exception(msg)
 {}
+
 
 
 

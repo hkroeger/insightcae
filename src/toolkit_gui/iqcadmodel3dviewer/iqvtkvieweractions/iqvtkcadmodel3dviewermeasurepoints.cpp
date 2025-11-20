@@ -13,6 +13,8 @@ IQVTKCADModel3DViewerMeasurePoints::IQVTKCADModel3DViewerMeasurePoints(IQVTKCADM
 {
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             viewer().deactivateSubshapeSelectionAll();
         });
 }
@@ -31,6 +33,8 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
   sel->entitySelected.connect(
       [this](IQVTKCADModel3DViewer::SubshapeData p1)
       {
+          DBG_SLOT(entitySelected);
+
           if (p1.subshapeType_ == insight::cad::Vertex)
           {
               gp_Pnt p =BRep_Tool::Pnt(p1.feat->vertex(p1.id_));
@@ -41,6 +45,8 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
               sel2->entitySelected.connect(
                   [this](IQVTKCADModel3DViewer::SubshapeData p2)
                   {
+                      DBG_SLOT(entitySelected);
+
                       if (p2.subshapeType_ == insight::cad::Vertex)
                       {
                           gp_Pnt p =BRep_Tool::Pnt(p2.feat->vertex(p2.id_));

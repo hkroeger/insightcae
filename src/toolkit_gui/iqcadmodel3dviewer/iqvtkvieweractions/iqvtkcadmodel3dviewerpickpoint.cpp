@@ -17,6 +17,8 @@ IQVTKCADModel3DViewerPickPoint::IQVTKCADModel3DViewerPickPoint(
 {
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             viewer().deactivateSubshapeSelectionAll();
         });
 }
@@ -37,6 +39,8 @@ void IQVTKCADModel3DViewerPickPoint::start()
     sel->entitySelected.connect(
         [this](IQVTKCADModel3DViewer::SubshapeData p1)
         {
+            DBG_SLOT(entitySelected);
+
             if (p1.subshapeType_ == insight::cad::Vertex)
             {
                 gp_Pnt pt = BRep_Tool::Pnt(p1.feat->vertex(p1.id_));

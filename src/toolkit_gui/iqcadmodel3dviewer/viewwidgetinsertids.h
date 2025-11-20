@@ -31,6 +31,8 @@ public:
   {
       aboutToBeDestroyed.connect(
           [this](){
+              DBG_SLOT(aboutToBeDestroyed);
+
               insight::cad::DeactivateAll(viewer().getContext(), shapeEnum);
           });
   }

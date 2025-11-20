@@ -157,7 +157,11 @@ struct Checker
         auto conn = boost::signals2::scoped_connection(
             ip.valueChanged.connect(
                 [this,path,&gotSignal]()
-                { cout<<path<<" changed"<<endl; gotSignal=true; }));
+                {
+                    DBG_SLOT(valueChanged);
+
+                    gotSignal=true; }
+                ));
 
         // test if properly initialized
         insight::assertion(

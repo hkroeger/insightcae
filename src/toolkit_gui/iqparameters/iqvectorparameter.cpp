@@ -131,6 +131,8 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
       parameterRef().valueChanged.connect(
           [this]()
           {
+              DBG_SLOT(valueChanged);
+
               QSignalBlocker sb(lineEdit);
               lineEdit->setText( QString::fromStdString(
                   insight::toString(parameter()()) ) );

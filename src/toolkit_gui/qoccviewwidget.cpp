@@ -176,6 +176,8 @@ OCCViewWidgetWindowZooming::OCCViewWidgetWindowZooming(
 {
     aboutToBeDestroyed.connect(
         [this]() {
+            DBG_SLOT(aboutToBeDestroyed);
+
             auto r=rb_->rect();
             viewer().view().WindowFitAll(
                 r.topLeft().x(),
@@ -223,6 +225,8 @@ OCCViewWidgetMeasurePoints::OCCViewWidgetMeasurePoints(
 {
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             insight::cad::DeactivateAll(viewer().getContext(), TopAbs_VERTEX);
         });
 }

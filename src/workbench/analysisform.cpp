@@ -334,7 +334,11 @@ AnalysisForm::AnalysisForm(
 
 
     connect(peditor_, &ParameterEditorWidget::parameterSetChanged, peditor_,
-            [this]() { modificationMade(); } );
+            [this]() {
+                DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
+
+                modificationMade();
+            } );
 
     QSettings settings("silentdynamics", "workbench");
 
@@ -397,6 +401,8 @@ AnalysisForm::AnalysisForm(
     fileNameChanged.connect(
         [this](const boost::filesystem::path& newfn)
         {
+            DBG_SLOT(fileNameChanged);
+
             auto ist_file=boost::filesystem::absolute(newfn);
             resetExecutionEnvironment(ist_file.parent_path());
             updateWindowTitle();
@@ -406,6 +412,8 @@ AnalysisForm::AnalysisForm(
     modificationStateChanged.connect(
         [this]()
         {
+            DBG_SLOT(modificationStateChanged);
+
             updateWindowTitle();
         }
     );
@@ -456,6 +464,8 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         connect( cfgview, &QAction::triggered, cfgview,
                 [this]()
                 {
+                    DBG_SLOT(QAction::triggered);
+
                     IQVTKCADModel3DViewerSettingsDialog dlg(peditor_->viewer(), this);
                     dlg.exec();
                 } );
@@ -489,6 +499,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
     connect( act_pack_, &QAction::triggered, act_pack_,
              [&]()
              {
+                DBG_SLOT(QAction::triggered);
                pack_parameterset_ = act_pack_->isChecked();
                updateSaveMenuLabel();
              }
@@ -519,6 +530,8 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         menu_results->addAction( act );
         connect( act, &QAction::triggered, resultsViewer_,
                  [this]() {
+                    DBG_SLOT(QAction::triggere);
+
                 ui->tabWidget->setCurrentWidget(ui->outputTab);
                     this->resultsViewer_->loadResultSet();
         } );
@@ -658,7 +671,11 @@ void AnalysisForm::onSaveParametersAs()
 
               QObject::connect(cb, &QCheckBox::destroyed, cb,
                                [this,cb]()
-                               { pack_parameterset_=cb->isChecked(); } );
+                               {
+                  DBG_SLOT(QCheckBox::destroyed);
+
+                  pack_parameterset_=cb->isChecked();
+              } );
           }
           ))
   {
@@ -780,6 +797,8 @@ void AnalysisForm::onShowParameterXML()
 void AnalysisForm::onUpdateSupplementedInputData(
     insight::supplementedInputDataBasePtr sid)
 {
+    DBG_SLOT(ParameterEditorWidget::updateSupplementedInputData);
+
   sid_=sid;
   supplementedInputDataModel_.reset( sid_->reportedSupplementQuantities() );
   if (sid_->reportedSupplementQuantities().size())

@@ -52,6 +52,8 @@ void AnalysisForm::connectLocalActions()
   connect(ui->btnSetExecutionEnvironment, &QPushButton::clicked,
           this, [&]()
           {
+      DBG_SLOT(btnSetExecutionEnvironment::clicked);
+
               showSetupExecutionEnvironmentDialog();
           }
           );

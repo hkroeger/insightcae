@@ -26,6 +26,14 @@ if (INSIGHT_BUILD_CAD)
     linkToolkitVtk(IQParameterSetModel Offscreen)
     add_test(NAME gui_IQParameterSetModel COMMAND IQParameterSetModel)
 
+    add_executable(ParameterEditorWidget ParameterEditorWidget.cpp)
+    target_link_libraries(ParameterEditorWidget
+    toolkit_gui genericmodules test_pdl_header
+    Qt5::Test
+    )
+    linkToolkitVtk(ParameterEditorWidget Offscreen)
+    add_test(NAME gui_ParameterEditorWidget COMMAND ParameterEditorWidget)
+
     add_executable(IQFilteredParameterSetModel IQFilteredParameterSetModel.cpp sampleparameterset.h)
     target_link_libraries(IQFilteredParameterSetModel
     toolkit_gui genericmodules

@@ -258,7 +258,7 @@ void ConstrainedSketch::readFromStream(
         );
 
     insight::assertion(
-        success,
+        success && (first==last),
         "parsing of constrained sketch script was not successful!" );
 
     // add referenced layers, if not present
@@ -427,6 +427,7 @@ ConstrainedSketch::insertGeometry(
         geomEntity->notifyAboutParameterChanges(
             this,
             [this, key](const ParameterSet&) {
+                DBG_SLOT(parametersChanged);
                 geometryChanged(key);
             } );
         geometryAdded(key);
@@ -464,6 +465,7 @@ ConstrainedSketch::setExternalReference(
         extRef->notifyAboutParameterChanges(
             this,
             [this, key](const ParameterSet&) {
+                DBG_SLOT(parametersChanged);
                 geometryChanged(key);
             } );
         geometryAdded(key);

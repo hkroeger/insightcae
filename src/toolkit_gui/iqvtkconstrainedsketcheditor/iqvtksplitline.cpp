@@ -16,6 +16,8 @@ void IQVTKSplitLine::start()
     pointSelected.connect(
         [this](PointProperty pp)
         {
+            DBG_SLOT(pointSelected);
+
             auto sp = std::make_shared_aggr<PointProperty>(pp);
 
             if (auto hitLine = std::dynamic_pointer_cast<insight::cad::Line>(pp.onFeature))

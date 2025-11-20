@@ -44,6 +44,8 @@ protected:
     {
         this->aboutToBeDestroyed.connect(
             [this]() {
+                DBG_SLOT(aboutToBeDestroyed);
+
                 currentAction_.reset();
             } );
     }
@@ -108,6 +110,8 @@ public:
             currentAction_->connectActionIsFinished(
                 [this,cPtr](bool)
                 {
+                    DBG_SLOT(actionIsFinished);
+
                     InputReceiver<Viewer>::removeChildReceiver(
                         cPtr );
 

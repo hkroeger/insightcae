@@ -41,8 +41,8 @@ void IQCADSketchParameter::connectSignals()
     disconnectAtEOL(
         parameterRef().childValueChanged.connect(
             [this]() {
-                DBG_LOC(insight::DetailedBusiness)
-                 << "received childValueChanged => call notifyElementChange from IQCADSketchParameter" << std::endl;
+                DBG_SLOT(childValueChanged);
+
                 auto blocker = block_all();
                 model()->notifyElementChange( *this );
             }
@@ -72,6 +72,8 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
     auto *teScript = new QTextEdit(editControlsContainer);
     auto updateScriptEdit = [this,teScript]() {
+        DBG_SLOT(valueChanged);
+
         teScript->document()->setPlainText(
             QString::fromStdString(parameter().script()));
     };

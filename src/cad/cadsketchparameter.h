@@ -143,9 +143,6 @@ public:
             const rapidxml::xml_node<>& node
         ) override;
 
-    std::unique_ptr<CADSketchParameter>
-        cloneCADSketchParameter(
-            bool keepParentRef=false ) const;
     std::unique_ptr<hierarchicalData::Element> clone() const override;
 
     void assignFrom( const Element& rhs ) override;

@@ -74,6 +74,8 @@ void LabeledArrayParameter::initialize()
             op.newItemAdded.connect(
                 [this](const std::string& label, std::observer_ptr<Parameter>)
                 {
+                    DBG_SLOT(newItemAdded);
+
                     getOrInsertDefaultValueImpl(label);
                 })
             ));
@@ -81,6 +83,8 @@ void LabeledArrayParameter::initialize()
             op.itemRemoved.connect(
                 [this](const std::string& label)
                 {
+                    DBG_SLOT(itemRemoved);
+
                     if (value_.count(label))
                         eraseValueImpl(label);
                 })
@@ -90,6 +94,8 @@ void LabeledArrayParameter::initialize()
             op.itemRelabeled.connect(
                 [this](const std::string& label, const std::string& newLabel)
                 {
+                    DBG_SLOT(itemRelabeled);
+
                     if (value_.count(label))
                         changeLabelImpl(label, newLabel);
                 })

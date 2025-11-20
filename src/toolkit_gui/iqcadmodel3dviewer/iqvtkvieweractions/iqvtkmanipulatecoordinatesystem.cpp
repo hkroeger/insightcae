@@ -23,6 +23,8 @@ IQVTKManipulateCoordinateSystem::IQVTKManipulateCoordinateSystem(
 {
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             viewer().renderer()->RemoveActor(aP0_);
             viewer().renderer()->RemoveActor(aEx_);
             if (!showOnlyX_)

@@ -44,7 +44,13 @@ private:
 
     void prepareCleanup()
     {
-        aboutToBeDestroyed.connect([this](){cleanupDone_=true;});
+        aboutToBeDestroyed.connect(
+            [this](){
+                DBG_SLOT(aboutToBeDestroyed);
+
+                cleanupDone_=true;
+            }
+            );
     }
 
 protected:

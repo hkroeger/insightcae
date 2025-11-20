@@ -26,6 +26,8 @@ AutosavableEditor::AutosavableEditor()
         modificationMade.connect(
             [this]()
             {
+                DBG_SLOT(modificationMade);
+
                 isModified_=true;
                 modificationStateChanged();
                 scheduleAutosave();

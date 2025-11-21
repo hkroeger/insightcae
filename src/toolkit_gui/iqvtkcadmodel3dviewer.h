@@ -252,6 +252,9 @@ private:
         CADEntity entity_;
         std::shared_ptr<DisplayedEntity> de_;
         QPersistentModelIndex idx2highlight_;
+        std::map<vtkActor*,float> orgLineWidth_, orgPointSize_;
+
+        void setExposedDisplayProps(vtkActor* act, QColor hicol);
 
     public:
         ExposeItem(

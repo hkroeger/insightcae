@@ -197,8 +197,11 @@ void IQParameter::applyProposition(
 
 const insight::ParameterSet *IQParameter::defaultParameterSet() const
 {
-    auto &m = dynamic_cast<const IQParameterSetModel&>(*model());
-    return m.defaultParameterSet();
+    if (auto *m = dynamic_cast<const IQParameterSetModel*>(model()))
+    {
+        return m->defaultParameterSet();
+    }
+    return nullptr;
 }
 
 IQParameterSetModel* IQParameter::psModel() const

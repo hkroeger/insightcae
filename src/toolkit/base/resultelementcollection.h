@@ -110,12 +110,7 @@ public:
         int i,
         bool redirectArrayElementsToDefault=false ) const override;
 
-    std::string childElementName(
-        const Element *p,
-        bool redirectArrayElementsToDefault=false ) const override;
-
     Element& childElementRef ( int i ) override;
-
     const Element& childElement( int i ) const override;
 
     void transfer ( ResultElementCollection& other );

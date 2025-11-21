@@ -241,15 +241,6 @@ std::string ResultElementCollection::childElementName(
 
 
 
-std::string ResultElementCollection::childElementName(
-    const Element *p,
-    bool redirectArrayElementsToDefault ) const
-{
-    return ResultElement::childElementName(p, redirectArrayElementsToDefault);
-}
-
-
-
 void ResultElementCollection::transfer(ResultElementCollection &other)
 {
     auto& oc=static_cast<ResultElementMap&>(other);

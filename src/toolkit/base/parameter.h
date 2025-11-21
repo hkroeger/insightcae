@@ -246,7 +246,7 @@ public:
     addToFactoryTable2(Parameter, ParameterFromDescription, createParameter, PT);\
     addToFactoryTable2(Parameter, ParameterFromNode, createParameterFromNode, PT);
 
-protected:
+public:
     void setParent(Element* parent) override;
 
 private:

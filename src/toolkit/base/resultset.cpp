@@ -103,6 +103,11 @@ ResultSet::ResultSet
       subtitle_ ( subtitle ),
       introduction_()
 {
+    if (p_)
+    {
+        p_->setParent(this);
+    }
+
     if ( date )
     {
         date_ = *date;
@@ -163,6 +168,7 @@ void ResultSet::transfer ( ResultSet& other )
     if (other.p_)
     {
         p_=other.p_->cloneAs<ParameterSet>();
+        p_->setParent(this);
     }
     title_=other.title_;
     subtitle_=other.subtitle_;
@@ -435,6 +441,7 @@ const rapidxml::xml_node<>* ResultSet::readFromNode(
         {
             p_=std::make_unique<ParameterSet>(*pn);
         }
+        p_->setParent(this);
     }
 
 
@@ -480,7 +487,58 @@ std::unique_ptr<Parameter> ResultSet::convertIntoParameter() const
 
 
 
+int ResultSet::nChildren() const
+{
+    return ResultElementCollection::nChildren()+(p_?1:0);
+}
 
+std::string ResultSet::childElementName(
+    int i,
+    bool redir ) const
+{
+    if (p_)
+    {
+        if (i==0)
+            return "InputParameters";
+        else
+            return ResultElementCollection::childElementName(i-1, redir);
+    }
+    else
+    {
+        return ResultElementCollection::childElementName(i, redir);
+    }
+}
+
+hierarchicalData::Element& ResultSet::childElementRef ( int i )
+{
+    if (p_)
+    {
+        if (i==0)
+            return *p_;
+        else
+            return ResultElementCollection::childElementRef(i-1);
+    }
+    else
+    {
+        return ResultElementCollection::childElementRef(i);
+    }
+}
+
+
+const hierarchicalData::Element& ResultSet::childElement( int i ) const
+{
+    if (p_)
+    {
+        if (i==0)
+            return *p_;
+        else
+            return ResultElementCollection::childElement(i-1);
+    }
+    else
+    {
+        return ResultElementCollection::childElement(i);
+    }
+}
 
 
 

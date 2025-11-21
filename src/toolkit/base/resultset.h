@@ -162,6 +162,15 @@ public:
     std::unique_ptr<ParameterSet> convertIntoParameterSet() const;
     std::unique_ptr<Parameter> convertIntoParameter() const override;
 
+    int nChildren() const override;
+
+    std::string childElementName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
+
+    Element& childElementRef ( int i ) override;
+    const Element& childElement( int i ) const override;
+
     std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 

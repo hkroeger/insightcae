@@ -123,7 +123,7 @@ set(toolkit_SOURCES
     base/resultelements/gnuplotpolarchartrenderer.cpp base/resultelements/gnuplotpolarchartrenderer.h
     base/resultelements/fastgnuplotrenderer.h base/resultelements/fastgnuplotrenderer.cpp
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
-    base/resultsetfilter.h base/resultsetfilter.cpp
+    base/hierarchicaldatafilter.h base/hierarchicaldatafilter.cpp
     base/propertylibrary.h base/propertylibrary.cpp
     base/materialslibrary.h base/materialslibrary.cpp
     base/zipfile.h base/zipfile.cpp

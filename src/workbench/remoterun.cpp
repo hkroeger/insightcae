@@ -184,7 +184,9 @@ void RemoteRun::uploadInputFile()
         {
             auto rs = remote_->exeConfig().remoteOFStream(
                 "param.ist", 0 );
-            p->saveToStream(*rs);
+            p->saveToStream(
+                *rs,
+                insight::hierarchicalData::Element::OutputProperties());
         }
 
         launchProgress_.stepTo(2);

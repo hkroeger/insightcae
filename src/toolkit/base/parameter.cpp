@@ -370,10 +370,14 @@ void Parameter::readFromFile(
 rapidxml::xml_node<> *Parameter::appendToNode(
     const std::string &name,
     rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node) const
+    rapidxml::xml_node<> &node,
+    const OutputProperties& outProps) const
 {
-    auto c=Element::appendToNode(name, doc, node);
-    appendAttribute(doc, *c, "description", description_.simpleLatex());
+    auto c=Element::appendToNode(name, doc, node, outProps);
+    if (!outProps.skipParameterDescription)
+    {
+        appendAttribute(doc, *c, "description", description_.simpleLatex());
+    }
     return c;
 }
 

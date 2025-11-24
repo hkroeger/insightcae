@@ -284,7 +284,9 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
 
 
 
-void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
+void ResultSet::writeLatexFile (
+    const boost::filesystem::path& file,
+    const OutputProperties& outProps ) const
 {
   CurrentExceptionContext ec(
               "writing latex representation of result set into file "
@@ -316,10 +318,10 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
     auto reportData = reportDataPath(filepath);
     create_directory ( reportData );
 
+    FileStorageInfo fsi(filepath.parent_path(), reportData);
+    fsi.elementFilter=outProps.filter;
     content << latexRepresentation (
-        "", 0,
-        FileStorageInfo(filepath.parent_path(), reportData)
-    );
+        "", 0, fsi );
 
     auto &reportTemplate =
             ResultReportTemplates::globalInstance().defaultItem();
@@ -351,7 +353,9 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
 
 
-void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
+void ResultSet::generatePDF (
+    const boost::filesystem::path& file,
+    const OutputProperties& outProps ) const
 {
   std::string stem = file.filename().stem().string();
 
@@ -361,16 +365,16 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
       CaseDirectory tmp(false);
 
       auto report_src_out = tmp/report_src;
-      auto outdir = reportDataPath(report_src_out);
+      auto dataDir = reportDataPath(report_src_out);
 
-      create_directory ( outdir );
+      create_directory ( dataDir );
       for ( auto& i: static_cast<const ResultElement&>(*this) )
       {
           if (auto *re=dynamic_cast<const ResultElement*>(&i))
-            re->exportDataToFile ( re->name(), outdir );
+            re->exportDataToFile ( re->name(), dataDir );
       }
 
-      writeLatexFile( report_src_out );
+      writeLatexFile( report_src_out, outProps );
 
       bool success=true;
       for (int i=0; i<2; i++)
@@ -388,7 +392,7 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
           tmp/ (report_src.filename().stem().string()+".pdf"),
           file, copy_option::overwrite_if_exists );
 
-      copyDirectoryRecursively( outdir, file.parent_path()/outdir.filename() );
+      copyDirectoryRecursively( dataDir, file.parent_path()/dataDir.filename(), false );
 
       if (!success)
         throw insight::Exception(
@@ -406,13 +410,14 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 rapidxml::xml_node<> *ResultSet::appendToNode(
     const std::string &name,
     rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node) const
+    rapidxml::xml_node<> &node,
+    const OutputProperties& outProps) const
 {
 
     if (p_)
     {
         auto pc = appendNode(doc, node, "parameters");
-        p_->appendToNode(std::string(), doc, pc);
+        p_->appendToNode(std::string(), doc, pc, outProps);
     }
 
     auto rc=appendNode(doc, node, "results" );
@@ -422,7 +427,7 @@ rapidxml::xml_node<> *ResultSet::appendToNode(
     appendAttribute(doc, rc, "author", author_ );
     appendAttribute(doc, rc, "introduction", introduction_ );
 
-    return ResultElementCollection::appendToNode("", doc, rc);
+    return ResultElementCollection::appendToNode("", doc, rc, outProps);
 }
 
 

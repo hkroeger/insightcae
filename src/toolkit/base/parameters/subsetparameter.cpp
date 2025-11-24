@@ -242,6 +242,8 @@ std::string ParameterSet::latexRepresentation(
         "\\begin{enumerate}\n";
     for(auto i=value_.begin(); i!=value_.end(); i++)
     {
+        if (!fsi.elementFilter.matches(*i->second))
+        {
           auto ldesc=i->second->description().toLaTeX();
 
           result+="\\item ";
@@ -252,6 +254,7 @@ std::string ParameterSet::latexRepresentation(
               "\\textbf{"+SimpleLatex(i->first).toLaTeX()+"} = "
               +i->second->latexRepresentation(name, documentHierarchyLevel, fsi)
               +"\n";
+        }
     }
     result+="\\end{enumerate}\n";
   }
@@ -331,18 +334,22 @@ rapidxml::xml_node<>*
 ParameterSet::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
   insight::CurrentExceptionContext ex(
         insight::VerbosityLevel::Loops,
         "appending subset %s to node %s", name.c_str(), node.name());
 
   using namespace rapidxml;
-  xml_node<>*  child = Parameter::appendToNode(name, doc, node);
+  xml_node<>*  child = Parameter::appendToNode(name, doc, node, outProps);
 
   for( auto i=value_.begin(); i!= value_.end(); i++)
   {
-    i->second->appendToNode(i->first, doc, *child);
+      if (!outProps.filter.matches(*i->second))
+      {
+        i->second->appendToNode(i->first, doc, *child, outProps);
+      }
   }
 
   return child;
@@ -387,8 +394,11 @@ ParameterSet::ParameterSet(const rapidxml::xml_node<> &node)
 {
     for (auto* e=node.first_node(); e; e=e->next_sibling())
     {
-        auto name=getMandatoryAttribute(*e, "name");
-        insert(name, Parameter::createFromNode(*e));
+        if (std::string(e->name())!="analysis") // this is no element
+        {
+            auto name=getMandatoryAttribute(*e, "name");
+            insert(name, Parameter::createFromNode(*e));
+        }
     }
 }
 

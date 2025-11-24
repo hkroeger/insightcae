@@ -105,7 +105,7 @@ public:
     addParameterMembers_ParameterClass(OpenFOAMAnalysisTemplate::Parameters);
 
 protected:
-  ResultSetPtr derivedInputData_;
+  std::unique_ptr<ResultSection> derivedInputData_;
 
   std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
@@ -132,9 +132,7 @@ public:
         {
             auto empty_ps = ParameterSet::create();
             derivedInputData_.reset(
-                new ResultSet(
-                    std::unique_ptr<ParameterSet>(),
-                    "Derived Input Data", ""));
+                new ResultSection("Derived Input Data"));
         }
     }
 
@@ -596,11 +594,9 @@ public:
         if (derivedInputData_)
         {
             parentActionProgress.message("Inserting derived input quantities into report");
-            std::string key(derivedInputData_->title());
             results->insert(
-                       key,
-                       std::dynamic_unique_ptr_cast<ResultElement>(
-                           derivedInputData_->clone())
+                       "DerivedInputData",
+                       derivedInputData_->cloneAs<ResultElement>()
                        ) .setOrder(-1.);
         }
 

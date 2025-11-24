@@ -194,10 +194,11 @@ bool AttributeTableResult::isEqual(const Element &op) const
 xml_node< char >* AttributeTableResult::appendToNode (
     const string& name,
     xml_document< char >& doc,
-    xml_node< char >& node ) const
+    xml_node< char >& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
     if (labelColumnTitle()!=defaultLabelColumnTitle)
     {

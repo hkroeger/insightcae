@@ -72,7 +72,8 @@ public:
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+      const OutputProperties& outProps
     ) const override;
 
 

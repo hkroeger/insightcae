@@ -344,7 +344,8 @@ public:
     rapidxml::xml_node<>* appendToNode(
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const override;
+        rapidxml::xml_node<>& node,
+        const OutputProperties& outProps ) const override;
 
     /**
      * @brief createFromNode

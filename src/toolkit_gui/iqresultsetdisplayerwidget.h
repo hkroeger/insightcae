@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "iqresultsetmodel.h"
+#include "iqfilteredresultsetmodel.h"
 #include "iqresultsetfiltermodel.h"
 
 namespace Ui {

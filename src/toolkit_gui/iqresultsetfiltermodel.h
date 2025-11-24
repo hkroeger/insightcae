@@ -2,14 +2,14 @@
 #define IQRESULTSETFILTERMODEL_H
 
 #include <QAbstractListModel>
-#include "base/resultsetfilter.h"
+#include "base/hierarchicaldatafilter.h"
 
 
 class IQResultSetFilterModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    insight::ResultSetFilter rsf_;
+    insight::hierarchicalData::Filter rsf_;
 
 public:
     explicit IQResultSetFilterModel(
@@ -24,9 +24,9 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
-    void resetFilter(const insight::ResultSetFilter& rsf);
+    void resetFilter(const insight::hierarchicalData::Filter& rsf);
     void clear();
-    const insight::ResultSetFilter& filter() const;
+    const insight::hierarchicalData::Filter& filter() const;
 };
 
 #endif // IQRESULTSETFILTERMODEL_H

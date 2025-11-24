@@ -104,9 +104,10 @@ ResultSection::readFromNode(
 xml_node< char >* ResultSection::appendToNode (
     const string& name,
     xml_document< char >& doc,
-    xml_node< char >& node ) const
+    xml_node< char >& node,
+    const OutputProperties& outProps ) const
 {
-    auto child = ResultElementCollection::appendToNode ( name, doc, node );
+    auto child = ResultElementCollection::appendToNode ( name, doc, node, outProps );
 
     appendAttribute(doc, *child, "sectionName", sectionName_);
     appendAttribute(doc, *child, "introduction",  introduction_);

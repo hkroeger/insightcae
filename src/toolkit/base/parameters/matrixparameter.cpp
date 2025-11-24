@@ -98,11 +98,12 @@ rapidxml::xml_node< char >* MatrixParameter::appendToNode
 (
     const std::string& name,
     rapidxml::xml_document< char >& doc,
-    rapidxml::xml_node< char >& node
+    rapidxml::xml_node< char >& node,
+    const OutputProperties& outProps
  ) const
 {
   using namespace rapidxml;
-  xml_node<>* child = Parameter::appendToNode(name, doc, node);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
   writeMatToXMLNode(value_, doc, *child);
 

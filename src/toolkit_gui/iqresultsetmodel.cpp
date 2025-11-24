@@ -74,8 +74,7 @@ IQResultElement::IQResultElement(
     QObject* parent,
     IQHierarchicalDataModel* hdmodel,
     insight::hierarchicalData::Element* element )
-    : IQHierarchicalDataElement(parent, hdmodel, element),
-      checkState_(Qt::Checked)
+    : IQHierarchicalDataElement(parent, hdmodel, element)
 {}
 
 
@@ -100,20 +99,6 @@ void IQResultElement::createFullDisplay(QVBoxLayout* layout)
         layout->addWidget(longDesc_);
     }
 }
-
-
-
-
-Qt::CheckState IQResultElement::isChecked() const
-{
-    return checkState_;
-}
-
-void IQResultElement::setChecked( Qt::CheckState cs )
-{
-    checkState_=cs;
-}
-
 
 
 
@@ -219,89 +204,12 @@ void IQStaticTextResultElement::createFullDisplay(QVBoxLayout* layout)
 
 
 
-void IQResultSetModel::setCheckState(const QModelIndex &idx, bool checked)
-{
-    if (auto *e = dynamic_cast<IQResultElement*>(
-                static_cast<QObject*>(idx.internalPointer())))
-    {
-        e->setChecked( checked?Qt::Checked:Qt::Unchecked );
-        emit dataChanged(idx, idx);
-        setChildrenCheckstate( idx, checked );
-        updateParentCheckState( idx );
-    }
-}
-
-
-
-void IQResultSetModel::updateParentCheckState(const QModelIndex &idx)
-{
-    auto pidx=parent(idx);
-    if (pidx.isValid())
-    {
-        if (auto *e = dynamic_cast<IQResultElement*>(
-                    static_cast<QObject*>( pidx.internalPointer())))
-        {
-            int nChecked=0, nUnchecked=0, nPartChecked=0;
-            for (int row=0; row<rowCount(pidx); ++row)
-            {
-                auto cidx=index(row, 0, pidx);
-                if (auto *c = dynamic_cast<IQResultElement*>(
-                            static_cast<QObject*>( cidx.internalPointer())))
-                {
-                    switch(c->isChecked())
-                    {
-                        case Qt::Checked: nChecked++; break;
-                        case Qt::Unchecked: nUnchecked++; break;
-                        case Qt::PartiallyChecked: nPartChecked++; break;
-                    }
-                }
-            }
-
-            auto oldcs=e->isChecked();
-            Qt::CheckState newcs=oldcs;
-            if (nChecked>0 && nUnchecked==0 && nPartChecked==0)
-                newcs=Qt::Checked;
-            else if (nUnchecked>0 && nChecked==0 && nPartChecked==0)
-                newcs=Qt::Unchecked;
-            else
-                newcs=Qt::PartiallyChecked;
-            insight::dbg()<<oldcs<<" "<<nChecked<<" "<<nUnchecked<<" "<<nPartChecked<<" "<<newcs<<std::endl;
-            if (newcs!=oldcs)
-            {
-                e->setChecked(newcs);
-                emit dataChanged(pidx, pidx);
-                updateParentCheckState(pidx);
-            }
-        }
-    }
-}
-
-
-
-
-void IQResultSetModel::setChildrenCheckstate(const QModelIndex& idx, bool checked)
-{
-    for (int row=0; row<rowCount(idx); ++row)
-    {
-        auto cidx=index(row, 0, idx);
-        if (auto *c = dynamic_cast<IQResultElement*>(
-                    static_cast<QObject*>( cidx.internalPointer())))
-        {
-            c->setChecked( checked?Qt::Checked:Qt::Unchecked );
-            emit dataChanged(cidx, cidx);
-            setChildrenCheckstate(cidx, checked);
-        }
-    }
-}
-
-
 
 IQResultSetModel::IQResultSetModel(
     std::unique_ptr<ResultSet> resultSet,
     bool selectableElements,
     QObject* parent )
-    : IQHierarchicalDataModel(std::move(resultSet), parent),
-    selectableElements_(selectableElements)
+    : IQHierarchicalDataModel(std::move(resultSet), parent, selectableElements, true)
 {
     // root_=new IQRootResultElement(this, QString::fromStdString(resultSet->title()));
     // addResultElements(*resultSet, root_);
@@ -381,14 +289,14 @@ QVariant IQResultSetModel::data(const QModelIndex &index, int role) const
 {
     if (auto *e = dynamic_cast<const IQResultElement*>(iqElementOfIndex(index)))
     {
-        if (role == Qt::CheckStateRole)
+        /*if (role == Qt::CheckStateRole)
         {
             if ( index.column()==0 && selectableElements_)
             {
                 return QVariant( e->isChecked() );
             }
         }
-        else
+        else*/ if (role == Qt::DisplayRole)
         {
             if (index.column()==1)
             {
@@ -411,9 +319,6 @@ Qt::ItemFlags IQResultSetModel::flags(const QModelIndex &index) const
 
     Qt::ItemFlags flags = IQHierarchicalDataModel::flags(index);
 
-    if ( index.column() == 0 && selectableElements_ )
-        flags |= Qt::ItemIsUserCheckable;
-
     return flags;
 }
 
@@ -422,13 +327,13 @@ Qt::ItemFlags IQResultSetModel::flags(const QModelIndex &index) const
 
 bool IQResultSetModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (role == Qt::CheckStateRole && index.column()==0)
-     {
-         setCheckState(index, value.toBool()?Qt::Checked:Qt::Unchecked);
-         return true;
-     }
+    // if (role == Qt::CheckStateRole && index.column()==0)
+    //  {
+    //      setCheckState(index, value.toBool()?Qt::Checked:Qt::Unchecked);
+    //      return true;
+    //  }
 
-     return false;
+     return IQHierarchicalDataModel::setData(index, value, role);
 }
 
 IQResultElement *IQResultSetModel::getResultElement(const QModelIndex &idx)
@@ -507,25 +412,23 @@ const insight::ResultSet& IQResultSetModel::resultSet() const
 
 void IQResultSetModel::addUnselectedElementPaths(
         const QModelIndex& pidx,
-        ResultSetFilter& filter,
-        std::string parentPath) const
+        hierarchicalData::Filter& filter ) const
 {
     for (int row=0; row<rowCount(pidx); ++row)
     {
         auto cidx = index(row, 0, pidx);
         if (auto e = iqElementOfIndex(cidx))
         {
-            auto path = (*e)->path();
             if ( data(cidx.siblingAtColumn(0), Qt::CheckStateRole)
                     .value<Qt::CheckState>() == Qt::Unchecked )
             {
-                filter.insert(path);
+                filter.insert((*e)->path());
             }
             else
             {
                 if ( rowCount(cidx)>0 )
                 {
-                    addUnselectedElementPaths(cidx, filter, path);
+                    addUnselectedElementPaths(cidx, filter);
                 }
             }
         }
@@ -533,19 +436,19 @@ void IQResultSetModel::addUnselectedElementPaths(
 }
 
 
-ResultSetFilter IQResultSetModel::filter() const
+hierarchicalData::Filter IQResultSetModel::filter() const
 {
-    ResultSetFilter f;
-    addUnselectedElementPaths(index(0,0), f, "");
+    hierarchicalData::Filter f;
+    addUnselectedElementPaths(QModelIndex(), f);
     return f;
 }
 
 
 
 
-void IQResultSetModel::unselectElements(const QModelIndex& pidx,
-                                        const ResultSetFilter& filter,
-                                        std::string parentPath)
+void IQResultSetModel::unselectElements(
+    const QModelIndex& pidx,
+    const hierarchicalData::Filter& filter  )
 {
     for (int row=0; row<rowCount(pidx); ++row)
     {
@@ -561,7 +464,7 @@ void IQResultSetModel::unselectElements(const QModelIndex& pidx,
             {
                 if ( rowCount(cidx)>0 )
                 {
-                    unselectElements(cidx, filter, path);
+                    unselectElements(cidx, filter);
                 }
             }
         }
@@ -569,10 +472,12 @@ void IQResultSetModel::unselectElements(const QModelIndex& pidx,
 }
 
 
-void IQResultSetModel::resetFilter(const ResultSetFilter& filter)
+void IQResultSetModel::resetFilter(const hierarchicalData::Filter& filter)
 {
-    unselectElements(index(0,0), filter, "");
+    unselectElements(QModelIndex(), filter);
 }
+
+
 
 
 void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* contentDisplayWidget)
@@ -605,100 +510,6 @@ void connectToCWithContentsDisplay(QTreeView* ToCView, QWidget* contentDisplayWi
 
 
 
-
-
-IQFilteredResultSetModel::IQFilteredResultSetModel(QObject *parent)
-{}
-
-
-
-
-IQResultElement *IQFilteredResultSetModel::getResultElement(const QModelIndex &idx)
-{
-    if ( auto *rsm =
-            dynamic_cast<IQResultSetModel*>(sourceModel()) )
-    {
-        return rsm->getResultElement( mapToSource(idx) );
-    }
-    return nullptr;
-}
-
-
-
-void IQFilteredResultSetModel::resetFilter(const ResultSetFilter &filter)
-{
-    filter_=filter;
-    invalidateFilter();
-}
-
-
-void IQFilteredResultSetModel::addChildren(
-        const QModelIndex& pidx,
-        insight::ResultElementCollection* re) const
-{
-//     for (int row=0; row<rowCount(pidx); ++row)
-//     {
-//         auto cidx = index(row, 0, pidx);
-//         auto scidx = mapToSource(cidx);
-//         if (auto e = dynamic_cast<IQResultElement*>(
-//                     static_cast<QObject*>(scidx.internalPointer())))
-//         {
-// //            if (e->isChecked()==Qt::Checked || e->isChecked()==Qt::PartiallyChecked)
-//             {
-//                 auto toBeInserted = (*e)->cloneAs<ResultElement>();
-//                 if ( auto rec =
-//                      dynamic_cast<insight::ResultElementCollection*>(toBeInserted.get()) )
-//                 {
-//                     rec->clear();
-//                     addChildren(cidx, rec);
-//                 }
-//                 re->insert( e->name().toStdString(),  std::move(toBeInserted));
-//             }
-//         }
-//     }
-}
-
-ResultSetPtr IQFilteredResultSetModel::filteredResultSet() const
-{
-    auto *orgResultModel =
-               dynamic_cast<IQResultSetModel*>(sourceModel());
-    auto &orgResultSet = orgResultModel->resultSet();
-
-    std::string author = orgResultSet.author();
-    std::string date = orgResultSet.date();
-    auto fr = std::make_unique<ResultSet>(
-                orgResultSet.parameters().cloneAs<ParameterSet>(),
-                orgResultSet.title(),
-                orgResultSet.subtitle(),
-                &author, &date
-                );
-    addChildren( index(0,0), fr.get() );
-    return fr;
-}
-
-
-bool IQFilteredResultSetModel::filterAcceptsRow(
-        int sourceRow,
-        const QModelIndex &sourceParent ) const
-{
-    if ( auto *rsm =
-            dynamic_cast<IQResultSetModel*>(sourceModel()) )
-    {
-        QModelIndex index0 = rsm->index(sourceRow, 0, sourceParent);
-
-        bool isDisplayed = !filter_.matches(
-            rsm->elementOfIndex(index0)->path() );
-
-        if ( sourceParent.isValid() )
-        {
-            QModelIndex pindex0 = rsm->parent(index0);
-            isDisplayed = isDisplayed
-                    && filterAcceptsRow(pindex0.row(), rsm->parent(pindex0));
-        }
-        return isDisplayed;
-    }
-    return true;
-}
 
 
 

@@ -118,10 +118,11 @@ std::string SpatialTransformationParameter::plainTextRepresentation(int indent) 
 rapidxml::xml_node<>* SpatialTransformationParameter::appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const
+        rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
     xml_node<>* translateNode = doc.allocate_node(
                 node_element,

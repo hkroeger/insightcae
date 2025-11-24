@@ -52,9 +52,10 @@ public:
     std::string plainTextRepresentation(int indent) const override;
 
     rapidxml::xml_node<>* appendToNode (
-            const std::string& name,
-            rapidxml::xml_document<>& doc,
-            rapidxml::xml_node<>& node ) const override;
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
 
     const rapidxml::xml_node<>* readFromNode (
             const std::string& name,

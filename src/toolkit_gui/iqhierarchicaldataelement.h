@@ -51,6 +51,8 @@ public:
 private:
     IQHierarchicalDataModel *model_;
 
+    Qt::CheckState checkState_;
+
 public:
     declareType("IQHierarchicalDataElement");
 
@@ -102,6 +104,8 @@ public:
    */
     virtual bool setValue(QVariant value);
 
+    Qt::CheckState isChecked() const;
+    void setChecked( Qt::CheckState cs );
 
     virtual QVariant backgroundColor() const;
     virtual QVariant textColor() const;

@@ -375,7 +375,8 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
             response.setStatus(200);
             response.setMimeType("application/xml");
             analysis->parameters().saveToStream(
-                response.out() );
+                response.out(),
+                insight::hierarchicalData::Element::OutputProperties() );
 
             return;
         }
@@ -386,7 +387,9 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
       {
         response.setStatus(200);
         response.setMimeType("application/xml");
-        results_->saveToStream( response.out() );
+        results_->saveToStream(
+            response.out(),
+            insight::hierarchicalData::Element::OutputProperties() );
 
         return;
       }

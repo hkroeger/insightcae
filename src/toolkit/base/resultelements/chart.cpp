@@ -316,12 +316,13 @@ rapidxml::xml_node<>* Chart::appendToNode
 (
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps
 ) const
 {
     using namespace rapidxml;
     xml_node<>* child =
-        ResultElement::appendToNode ( name, doc, node );
+        ResultElement::appendToNode ( name, doc, node, outProps );
 
     appendAttribute(doc, *child, "xlabel", xlabel_ );
     appendAttribute(doc, *child, "ylabel", ylabel_ );

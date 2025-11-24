@@ -50,7 +50,8 @@ public:
     rapidxml::xml_node<>* appendToNode(
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
     ) const override;
 
     const rapidxml::xml_node< char >* readFromNode(

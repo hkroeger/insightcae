@@ -144,10 +144,13 @@ QMimeData *IQParameterSetModel::mimeData(const QModelIndexList &indexes) const
     {
         auto *ip=elementOfIndex(index);
 
-        ip->appendToNode(ip->name(), doc, *rootnode);
+        ip->appendToNode(
+            ip->name(), doc, *rootnode,
+            insight::hierarchicalData::Element::OutputProperties());
     }
   }
   os << doc;
+
 
   mimeData->setData(
       "application/xml",

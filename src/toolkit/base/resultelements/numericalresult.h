@@ -52,10 +52,11 @@ public:
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
     ) const override
     {
-        auto* child = ResultElement::appendToNode ( name, doc, node );
+        auto* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
         appendAttribute(doc, *child, "value", value_ );
 

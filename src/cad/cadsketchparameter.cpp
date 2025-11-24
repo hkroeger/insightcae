@@ -278,10 +278,11 @@ rapidxml::xml_node<>* CADSketchParameter::appendToNode
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+    const OutputProperties& outProps
         ) const
 {
-    auto n = Parameter::appendToNode(name, doc, node);
+    auto n = Parameter::appendToNode(name, doc, node, outProps);
     auto s=script();
     n->value(doc.allocate_string(s.c_str()));
     return n;

@@ -33,9 +33,9 @@ IQAddFilterDialog::~IQAddFilterDialog()
     delete ui;
 }
 
-insight::ResultSetFilter IQAddFilterDialog::filter() const
+insight::hierarchicalData::Filter IQAddFilterDialog::filter() const
 {
-    insight::ResultSetFilter rsf;
+    insight::hierarchicalData::Filter rsf;
     auto lines = ui->tePattern->document()->toPlainText().split("\n");
     for (const auto& line: lines)
     {

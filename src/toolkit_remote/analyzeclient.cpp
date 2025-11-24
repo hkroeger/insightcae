@@ -24,6 +24,7 @@
 #include "Wt/Json/Array.h"
 #include "Wt/Json/Parser.h"
 #include "Wt/Json/Serializer.h"
+#include "base/hierarchicalelement.h"
 
 #include <functional>
 
@@ -303,7 +304,7 @@ LaunchAnalysisAction::LaunchAnalysisAction(
     CurrentExceptionContext ex("composing parameter set message to server");
     msg_.setHeader("Content-Type", "application/xml");
     std::ostringstream cs;
-    input.saveToStream(cs);
+    input.saveToStream(cs, hierarchicalData::Element::OutputProperties());
     msg_.addBodyText(cs.str());
 }
 

@@ -313,23 +313,26 @@ std::string ArrayParameter::latexRepresentation(
     int documentHierarchyLevel,
     const FileStorageInfo& fsi ) const
 {
-  std::ostringstream os;
-  if (size()>0)
-  {
-    os<<"\\begin{enumerate}\n";
-
-    for(auto i=value_.begin(); i!=value_.end(); ++i)
+    std::ostringstream os;
+    if (size()>0)
     {
-      os << "\\item item " << (i-value_.begin()) << " :\\\\\n" <<
-            (*i)->latexRepresentation(name, documentHierarchyLevel, fsi);
+        os<<"\\begin{enumerate}\n";
+
+        for(auto i=value_.begin(); i!=value_.end(); ++i)
+        {
+            if (!fsi.elementFilter.matches(**i))
+            {
+                os << "\\item item " << (i-value_.begin()) << " :\\\\\n" <<
+                    (*i)->latexRepresentation(name, documentHierarchyLevel, fsi);
+            }
+        }
+        os << "\\end{enumerate}\n";
     }
-    os << "\\end{enumerate}\n";
-  }
-  else
-  {
-    os << "(empty)\n";
-  }
-  return os.str();
+    else
+    {
+        os << "(empty)\n";
+    }
+    return os.str();
 }
 
 
@@ -406,17 +409,21 @@ void ArrayParameter::clearPackedData()
 rapidxml::xml_node<>* ArrayParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
   insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending array "+name+" to node "+node.name());
   using namespace rapidxml;
-  xml_node<>* child = Parameter::appendToNode(name, doc, node);
-  defaultValue_->appendToNode("default", doc, *child);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
+  defaultValue_->appendToNode("default", doc, *child, outProps);
   for (int i=0; i<size(); i++)
   {
-    value_[i]->appendToNode(
-          toString(i),
-          doc, *child);
+      if (!outProps.filter.matches(*value_[i]))
+      {
+        value_[i]->appendToNode(
+              toString(i),
+              doc, *child, outProps);
+      }
   }
   return child;
 }
@@ -494,6 +501,7 @@ ArrayParameter::ArrayParameter(const rapidxml::xml_node<> &node)
             int i=boost::lexical_cast<int>(name);
             imax=std::max(imax,i);
             if (i>size()-1) resize(i+1, false);
+            v->setParent(this);
             value_[i]=std::move(v);
         }
     }

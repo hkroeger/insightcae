@@ -220,6 +220,7 @@ set(toolkit_gui_SRCS
     qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
     iqresultsetmodel.cpp iqresultsetmodel.h
+    iqfilteredresultsetmodel.h iqfilteredresultsetmodel.cpp
     qresultelements/qcomment.cpp qresultelements/qcomment.h
     qresultelements/qimage.cpp qresultelements/qimage.h
     qresultelements/iqvideo.cpp qresultelements/iqvideo.h

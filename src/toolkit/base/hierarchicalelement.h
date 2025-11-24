@@ -7,6 +7,7 @@
 #include "base/cppextensions.h"
 #include "base/boost_include.h"
 #include "base/filestorageinfo.h"
+#include "base/hierarchicaldatafilter.h"
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -258,6 +259,15 @@ public:
 
     // IO
 
+    struct OutputProperties
+    {
+        Filter filter;
+        bool skipParameterDescription;
+
+        OutputProperties();
+        OutputProperties(const Filter& f);
+    };
+
     /**
      * @brief appendToNode
      * creates a node for the current element with the given name under
@@ -273,7 +283,8 @@ public:
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& parentNode
+        rapidxml::xml_node<>& parentNode,
+        const OutputProperties& outProps
     ) const;
 
 
@@ -297,18 +308,26 @@ public:
 
     void saveToNode(
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& rootNode ) const;
+        rapidxml::xml_node<>& rootNode,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties() ) const;
 
 
     void saveToStream(
-        std::ostream& os ) const;
+        std::ostream& os,
+        const OutputProperties& outProps =
+        insight::hierarchicalData::Element::OutputProperties() ) const;
 
     void saveToFile (
-        const boost::filesystem::path& file
+        const boost::filesystem::path& file,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties()
         ) const;
 
     void saveToString (
-        std::string& s ) const;
+        std::string& s,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties() ) const;
 
 
 

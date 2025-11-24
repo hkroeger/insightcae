@@ -101,10 +101,11 @@ DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
 rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
     appendAttribute(
         doc, *child, "values",

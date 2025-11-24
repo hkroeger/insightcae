@@ -41,11 +41,6 @@ void IQVTKCADModel3DViewer::ExposeItem::
             act->GetProperty()->SetPointSize(oldPointSize_ + 6);
             orgPointSize_[act]=oldPointSize_;
         }
-        else
-        {
-            std::cout<<"Unknown:\n";
-            inp->PrintSelf(std::cout, vtkIndent());
-        }
     }
 }
 

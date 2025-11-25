@@ -85,35 +85,38 @@ std::string ResultElementCollection::latexRepresentation(
     std::ostringstream f;
     for ( auto& re: items )
     {
-        const ResultElement* r = & ( *re.second );
-
-//         std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
-
-        std::string subelemname=re.first;
-        if ( name!="" ) {
-            subelemname=name+"__"+re.first;
-        }
-
-
-        if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) )
+        if (!fsi.elementFilter.matches(*re.second))
         {
-            f << se->latexRepresentation ( subelemname, documentHierarchyLevel+1, fsi );
-        }
-        else
-        {
-            if (r->displayFullPage())
-                f<<"\\newpage\n";
+            const ResultElement* r = & ( *re.second );
 
-            f << latex_subsection ( documentHierarchyLevel+1 )
-              << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
+            //         std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
 
-            f << r->shortDescription().toLaTeX() << "\n\n";
+            std::string subelemname=re.first;
+            if ( name!="" ) {
+                subelemname=name+"__"+re.first;
+            }
 
-            //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
-            f << r->latexRepresentation ( subelemname, documentHierarchyLevel+2, fsi );
 
-            f << "\n\n" << r->longDescription().toLaTeX() << "\n\n";
-            f << endl;
+            if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) )
+            {
+                f << se->latexRepresentation ( subelemname, documentHierarchyLevel+1, fsi );
+            }
+            else
+            {
+                if (r->displayFullPage())
+                    f<<"\\newpage\n";
+
+                f << latex_subsection ( documentHierarchyLevel+1 )
+                  << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
+
+                f << r->shortDescription().toLaTeX() << "\n\n";
+
+                //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
+                f << r->latexRepresentation ( subelemname, documentHierarchyLevel+2, fsi );
+
+                f << "\n\n" << r->longDescription().toLaTeX() << "\n\n";
+                f << endl;
+            }
         }
     }
     return f.str();
@@ -164,12 +167,16 @@ double ResultElementCollection::getScalar(const std::string& path) const
 rapidxml::xml_node<>* ResultElementCollection::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
-    auto child = ResultElement::appendToNode ( name, doc, node );
+    auto child = ResultElement::appendToNode ( name, doc, node, outProps );
     for ( auto& i: static_cast<const ResultElementMap&>(*this) )
     {
-        i.second->appendToNode ( i.first, doc, *child );
+        if (!outProps.filter.matches(*i.second))
+        {
+            i.second->appendToNode ( i.first, doc, *child, outProps );
+        }
     }
     return child;
 }
@@ -237,15 +244,6 @@ std::string ResultElementCollection::childElementName(
     auto iter=ResultElementMap::begin();
     std::advance(iter, i);
     return iter->first;
-}
-
-
-
-std::string ResultElementCollection::childElementName(
-    const Element *p,
-    bool redirectArrayElementsToDefault ) const
-{
-    return ResultElement::childElementName(p, redirectArrayElementsToDefault);
 }
 
 

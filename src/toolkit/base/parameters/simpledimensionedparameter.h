@@ -139,11 +139,16 @@ public:
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const override
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override
     {
         using namespace rapidxml;
-        xml_node<>* child = Parameter::appendToNode ( name, doc, node );
+
+        xml_node<>* child = Parameter::appendToNode (
+            name, doc, node, outProps );
+
         appendAttribute(doc, *child, "value", value_.value() );
+
         return child;
     }
 

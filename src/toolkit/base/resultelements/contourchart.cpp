@@ -235,11 +235,12 @@ rapidxml::xml_node<>* PolarContourChart::appendToNode
 (
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps
 ) const
 {
     using namespace rapidxml;
-    auto* child = ResultElement::appendToNode ( name, doc, node );
+    auto* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
     {
         appendAttribute(doc, *child, "rlabel", rlabel_);

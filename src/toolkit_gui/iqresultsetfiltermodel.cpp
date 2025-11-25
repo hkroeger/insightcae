@@ -6,7 +6,8 @@ IQResultSetFilterModel::IQResultSetFilterModel(
 {
 }
 
-QVariant IQResultSetFilterModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant IQResultSetFilterModel::headerData(
+    int section, Qt::Orientation orientation, int role) const
 {
     if (role==Qt::DisplayRole)
     {
@@ -51,7 +52,9 @@ QVariant IQResultSetFilterModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-bool IQResultSetFilterModel::removeRows(int row, int count, const QModelIndex &parent)
+bool IQResultSetFilterModel::removeRows(
+    int row, int count,
+    const QModelIndex &parent )
 {
     if (parent.isValid())
         return false;
@@ -66,7 +69,8 @@ bool IQResultSetFilterModel::removeRows(int row, int count, const QModelIndex &p
 }
 
 
-void IQResultSetFilterModel::resetFilter(const insight::ResultSetFilter &rsf)
+void IQResultSetFilterModel::resetFilter(
+    const insight::hierarchicalData::Filter &rsf)
 {
     beginResetModel();
     rsf_=rsf;
@@ -80,7 +84,8 @@ void IQResultSetFilterModel::clear()
     endResetModel();
 }
 
-const insight::ResultSetFilter &IQResultSetFilterModel::filter() const
+const insight::hierarchicalData::Filter &
+IQResultSetFilterModel::filter() const
 {
     return rsf_;
 }

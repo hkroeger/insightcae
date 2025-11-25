@@ -248,10 +248,11 @@ void AnalysisParameterSet::mergeIncompatibleParameterSet(
 rapidxml::xml_node<> *AnalysisParameterSet::appendToNode(
     const std::string &name,
     rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node) const
+    rapidxml::xml_node<> &node,
+    const OutputProperties& outProps) const
 {
     auto rootNode = ParameterSet::appendToNode(
-        name, doc, node );
+        name, doc, node, outProps );
 
     appendAttribute(
         doc,

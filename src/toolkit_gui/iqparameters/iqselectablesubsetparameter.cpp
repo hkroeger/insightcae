@@ -67,6 +67,10 @@ void IQSelectableSubsetParameter::populateContextMenu(
               {{ "iss", "Selectable subset contents" }} ) )
           {
               insight::CurrentExceptionContext ex(3, "writing parameter set to file "+fn.asString());
+
+              parameter().saveToFile(fn.asString());
+
+              /*
               std::ofstream f(fn.asString());
 
               // prepare XML document
@@ -84,10 +88,12 @@ void IQSelectableSubsetParameter::populateContextMenu(
               // store parameters
               parameter().appendToNode(this->name().toStdString(), doc, *rootnode);
 
+
               f << doc;
               f << std::endl;
               f << std::flush;
               f.close();
+*/
           }
       }
       );

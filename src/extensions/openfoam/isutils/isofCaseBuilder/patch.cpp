@@ -1,5 +1,6 @@
 #include "patch.h"
 
+#include "base/hierarchicalelement.h"
 #include "openfoam/caseelements/boundarycondition.h"
 
 #include "iqparametersetmodel.h"
@@ -107,7 +108,9 @@ void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& 
     node.append_attribute ( doc.allocate_attribute ( "patchName", patch_name_.c_str() ) );
     node.append_attribute ( doc.allocate_attribute ( "BCtype", type_name_.c_str() ) );
 
-    curp_->getParameterSet().appendToNode ( std::string(), doc, node );
+    curp_->getParameterSet().appendToNode (
+        std::string(), doc, node,
+        insight::hierarchicalData::Element::OutputProperties() );
 }
 
 

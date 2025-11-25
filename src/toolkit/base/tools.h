@@ -315,7 +315,10 @@ public:
 
 
 
-void copyDirectoryRecursively(const boost::filesystem::path& sourceDir, const boost::filesystem::path& destinationDir);
+void copyDirectoryRecursively(
+    const boost::filesystem::path& sourceDir,
+    const boost::filesystem::path& destinationDir,
+    bool failIfTargetExists = true );
 
 
 

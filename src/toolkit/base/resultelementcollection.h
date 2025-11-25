@@ -91,7 +91,8 @@ public:
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const override;
+        rapidxml::xml_node<>& node,
+        const OutputProperties& outProps ) const override;
 
     /**
      * restore the result elements from the given node
@@ -110,12 +111,7 @@ public:
         int i,
         bool redirectArrayElementsToDefault=false ) const override;
 
-    std::string childElementName(
-        const Element *p,
-        bool redirectArrayElementsToDefault=false ) const override;
-
     Element& childElementRef ( int i ) override;
-
     const Element& childElement( int i ) const override;
 
     void transfer ( ResultElementCollection& other );

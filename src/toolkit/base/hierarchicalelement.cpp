@@ -516,7 +516,8 @@ std::string Element::name(bool redirectArrayElementsToDefault) const
 rapidxml::xml_node<>* Element::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
 
@@ -557,7 +558,7 @@ const rapidxml::xml_node<>* Element::readFromNode(
     {
         if (auto oa=getOptionalAttribute(*child, "order"))
         {
-            order_=insight::toNumber<int>(*oa);
+            order_=insight::toNumber<double>(*oa);
         }
     }
     return child;
@@ -567,7 +568,8 @@ const rapidxml::xml_node<>* Element::readFromNode(
 
 void Element::saveToNode(
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& rootNode ) const
+    rapidxml::xml_node<>& rootNode,
+    const OutputProperties& outProps ) const
 {
     CurrentExceptionContext ex(
         Loops,
@@ -575,14 +577,15 @@ void Element::saveToNode(
         type().c_str());
 
     // store parameters
-    appendToNode(std::string(), doc, rootNode);
+    appendToNode(std::string(), doc, rootNode, outProps);
 }
 
 
 
 
 void Element::saveToStream(
-    std::ostream& os ) const
+    std::ostream& os,
+    const OutputProperties& outProps ) const
 {
     CurrentExceptionContext ex(
         Loops,
@@ -592,7 +595,7 @@ void Element::saveToStream(
     // prepare XML document
     XMLDocument doc;
 
-    saveToNode(doc, *doc.rootNode);
+    saveToNode(doc, *doc.rootNode, outProps);
 
     doc.saveToStream(os);
 }
@@ -600,14 +603,15 @@ void Element::saveToStream(
 
 
 void Element::saveToFile(
-    const boost::filesystem::path& file) const
+    const boost::filesystem::path& file,
+    const OutputProperties& outProps ) const
 {
     CurrentExceptionContext ex(
         insight::VerbosityLevel::BasicBusiness,
         "writing parameter set to file %s", file.string().c_str());
 
     std::ofstream f(file.c_str());
-    saveToStream(f);
+    saveToStream(f, outProps);
     f << std::endl;
     f << std::flush;
     f.close();
@@ -615,10 +619,11 @@ void Element::saveToFile(
 
 
 void Element::saveToString(
-    std::string &s ) const
+    std::string &s,
+    const OutputProperties& outProps ) const
 {
     std::ostringstream os(s, std::ios_base::ate);
-    saveToStream( os );
+    saveToStream( os, outProps );
     s = os.str();
 }
 
@@ -928,6 +933,18 @@ void Element::setUpdateValueSignalBlockage(bool block)
 }
 
 PlaintextRepresentableValue::~PlaintextRepresentableValue()
+{}
+
+
+
+Element::OutputProperties::OutputProperties()
+    : skipParameterDescription(false)
+{}
+
+
+Element::OutputProperties::OutputProperties(const Filter &f)
+    : filter(f),
+      skipParameterDescription(false)
 {}
 
 

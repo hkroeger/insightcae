@@ -103,6 +103,11 @@ ResultSet::ResultSet
       subtitle_ ( subtitle ),
       introduction_()
 {
+    if (p_)
+    {
+        p_->setParent(this);
+    }
+
     if ( date )
     {
         date_ = *date;
@@ -163,6 +168,7 @@ void ResultSet::transfer ( ResultSet& other )
     if (other.p_)
     {
         p_=other.p_->cloneAs<ParameterSet>();
+        p_->setParent(this);
     }
     title_=other.title_;
     subtitle_=other.subtitle_;
@@ -278,7 +284,9 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
 
 
 
-void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
+void ResultSet::writeLatexFile (
+    const boost::filesystem::path& file,
+    const OutputProperties& outProps ) const
 {
   CurrentExceptionContext ec(
               "writing latex representation of result set into file "
@@ -310,10 +318,10 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
     auto reportData = reportDataPath(filepath);
     create_directory ( reportData );
 
+    FileStorageInfo fsi(filepath.parent_path(), reportData);
+    fsi.elementFilter=outProps.filter;
     content << latexRepresentation (
-        "", 0,
-        FileStorageInfo(filepath.parent_path(), reportData)
-    );
+        "", 0, fsi );
 
     auto &reportTemplate =
             ResultReportTemplates::globalInstance().defaultItem();
@@ -345,7 +353,9 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
 
 
-void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
+void ResultSet::generatePDF (
+    const boost::filesystem::path& file,
+    const OutputProperties& outProps ) const
 {
   std::string stem = file.filename().stem().string();
 
@@ -355,16 +365,16 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
       CaseDirectory tmp(false);
 
       auto report_src_out = tmp/report_src;
-      auto outdir = reportDataPath(report_src_out);
+      auto dataDir = reportDataPath(report_src_out);
 
-      create_directory ( outdir );
+      create_directory ( dataDir );
       for ( auto& i: static_cast<const ResultElement&>(*this) )
       {
           if (auto *re=dynamic_cast<const ResultElement*>(&i))
-            re->exportDataToFile ( re->name(), outdir );
+            re->exportDataToFile ( re->name(), dataDir );
       }
 
-      writeLatexFile( report_src_out );
+      writeLatexFile( report_src_out, outProps );
 
       bool success=true;
       for (int i=0; i<2; i++)
@@ -382,7 +392,7 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
           tmp/ (report_src.filename().stem().string()+".pdf"),
           file, copy_option::overwrite_if_exists );
 
-      copyDirectoryRecursively( outdir, file.parent_path()/outdir.filename() );
+      copyDirectoryRecursively( dataDir, file.parent_path()/dataDir.filename(), false );
 
       if (!success)
         throw insight::Exception(
@@ -400,13 +410,14 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 rapidxml::xml_node<> *ResultSet::appendToNode(
     const std::string &name,
     rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node) const
+    rapidxml::xml_node<> &node,
+    const OutputProperties& outProps) const
 {
 
     if (p_)
     {
         auto pc = appendNode(doc, node, "parameters");
-        p_->appendToNode(std::string(), doc, pc);
+        p_->appendToNode(std::string(), doc, pc, outProps);
     }
 
     auto rc=appendNode(doc, node, "results" );
@@ -416,7 +427,7 @@ rapidxml::xml_node<> *ResultSet::appendToNode(
     appendAttribute(doc, rc, "author", author_ );
     appendAttribute(doc, rc, "introduction", introduction_ );
 
-    return ResultElementCollection::appendToNode("", doc, rc);
+    return ResultElementCollection::appendToNode("", doc, rc, outProps);
 }
 
 
@@ -435,6 +446,7 @@ const rapidxml::xml_node<>* ResultSet::readFromNode(
         {
             p_=std::make_unique<ParameterSet>(*pn);
         }
+        p_->setParent(this);
     }
 
 
@@ -480,7 +492,58 @@ std::unique_ptr<Parameter> ResultSet::convertIntoParameter() const
 
 
 
+int ResultSet::nChildren() const
+{
+    return ResultElementCollection::nChildren()+(p_?1:0);
+}
 
+std::string ResultSet::childElementName(
+    int i,
+    bool redir ) const
+{
+    if (p_)
+    {
+        if (i==0)
+            return "InputParameters";
+        else
+            return ResultElementCollection::childElementName(i-1, redir);
+    }
+    else
+    {
+        return ResultElementCollection::childElementName(i, redir);
+    }
+}
+
+hierarchicalData::Element& ResultSet::childElementRef ( int i )
+{
+    if (p_)
+    {
+        if (i==0)
+            return *p_;
+        else
+            return ResultElementCollection::childElementRef(i-1);
+    }
+    else
+    {
+        return ResultElementCollection::childElementRef(i);
+    }
+}
+
+
+const hierarchicalData::Element& ResultSet::childElement( int i ) const
+{
+    if (p_)
+    {
+        if (i==0)
+            return *p_;
+        else
+            return ResultElementCollection::childElement(i-1);
+    }
+    else
+    {
+        return ResultElementCollection::childElement(i);
+    }
+}
 
 
 

@@ -89,10 +89,11 @@ ResultElement::appendToNode
 (
     const string& name,
     rapidxml::xml_document< char >& doc,
-    rapidxml::xml_node< char >& node
+    rapidxml::xml_node< char >& node,
+    const OutputProperties& outProps
 ) const
 {
-    auto child = Element::appendToNode(name, doc, node);
+    auto child = Element::appendToNode(name, doc, node, outProps);
 
     appendAttribute(doc, *child, "shortDescription", shortDescription_.simpleLatex());
     appendAttribute(doc, *child, "longDescription", longDescription_.simpleLatex());

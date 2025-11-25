@@ -783,7 +783,9 @@ void AnalysisForm::onShowParameterXML()
 //    Q_EMIT apply(); // apply all changes into parameter set
 
     std::ostringstream os;
-    parameters().saveToStream(os);
+    parameters().saveToStream(
+        os,
+        insight::hierarchicalData::Element::OutputProperties() );
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();

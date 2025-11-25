@@ -360,17 +360,18 @@ rapidxml::xml_node<>*
 SelectableSubsetParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps) const
 {
   insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending selectable subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
 
-  xml_node<>* child = Parameter::appendToNode(name, doc, node);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
   appendAttribute(doc, *child, "value", selection());
 
-  operator()().appendToNode(std::string(), doc, *child);
+  operator()().appendToNode(std::string(), doc, *child, outProps);
 
   return child;
 }

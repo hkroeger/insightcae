@@ -226,7 +226,8 @@ void CaseConfigurationModel::appendConfigurationToNode(
             elem->parameterSetModel()->clearPackedData();
           }
           elem->parameterSetModel()->getParameterSet()
-              .appendToNode(std::string(), doc, *elemnode);
+              .appendToNode(std::string(), doc, *elemnode,
+                insight::hierarchicalData::Element::OutputProperties());
       }
   }
 }

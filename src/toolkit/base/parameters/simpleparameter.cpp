@@ -38,9 +38,10 @@ VectorParameter::VectorParameter (
 rapidxml::xml_node<> *VectorParameter::appendToNode(
     const std::string &name,
     rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node) const
+    rapidxml::xml_node<> &node,
+    const OutputProperties& outProps) const
 {
-    auto c=SimpleParameter::appendToNode(name, doc, node);
+    auto c=SimpleParameter::appendToNode(name, doc, node, outProps);
     appendAttribute(doc, *c, "vectorType", vectorType());
     return c;
 }

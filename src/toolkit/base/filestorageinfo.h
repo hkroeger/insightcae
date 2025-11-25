@@ -2,6 +2,7 @@
 #define FILESTORAGEINFO_H
 
 #include "base/boost_include.h"
+#include "base/hierarchicaldatafilter.h"
 
 namespace insight {
 
@@ -9,6 +10,9 @@ namespace insight {
 struct FileStorageInfo
     : public boost::optional<boost::filesystem::path>
 {
+
+    hierarchicalData::Filter elementFilter;
+
     struct AdditionalFiles
     {
         /**

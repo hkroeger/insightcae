@@ -560,12 +560,15 @@ std::string LabeledArrayParameter::latexRepresentation(
 
         for(auto i=value().begin(); i!=value().end(); ++i)
         {
-            os
-                << "\\item "
-                << SimpleLatex(i->first).toLaTeX()
-                << " :\\\\\n"
-                << i->second->latexRepresentation(
-                       i->first, documentHierarchyLevel, fsi );
+            if (!fsi.elementFilter.matches(*i->second))
+            {
+                os
+                    << "\\item "
+                    << SimpleLatex(i->first).toLaTeX()
+                    << " :\\\\\n"
+                    << i->second->latexRepresentation(
+                           i->first, documentHierarchyLevel, fsi );
+            }
         }
         os << "\\end{itemize}\n";
     }
@@ -650,21 +653,25 @@ void LabeledArrayParameter::clearPackedData()
 rapidxml::xml_node<>* LabeledArrayParameter::appendToNode (
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     insight::CurrentExceptionContext ex(
         insight::VerbosityLevel::Loops,
         "appending labeled array %s to node %s", name.c_str(), node.name());
 
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
     // defaultValue_->appendToNode("default", doc, *child, inputfilepath);
     appendAttribute(doc, *child, "labelPattern", labelPattern_);
     for (auto& e: value())
     {
-        e.second->appendToNode(
-            e.first,
-            doc, *child );
+        if (!outProps.filter.matches(*e.second))
+        {
+            e.second->appendToNode(
+                e.first,
+                doc, *child, outProps );
+        }
     }
     return child;
 }

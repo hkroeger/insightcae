@@ -568,17 +568,24 @@ ExecTimer::~ExecTimer()
 
 
 
-void copyDirectoryRecursively(const path& sourceDir, const path& destinationDir)
+void copyDirectoryRecursively(
+    const path& sourceDir,
+    const path& destinationDir,
+    bool failIfTargetExists )
 {
     if (!exists(sourceDir) || !is_directory(sourceDir))
     {
         throw std::runtime_error("Source directory " + sourceDir.string() + " does not exist or is not a directory");
     }
+
     if (exists(destinationDir))
     {
-        throw std::runtime_error("Destination directory " + destinationDir.string() + " already exists");
+        if (failIfTargetExists)
+        {
+            throw std::runtime_error("Destination directory " + destinationDir.string() + " already exists");
+        }
     }
-    if (!create_directory(destinationDir))
+    else if (!create_directory(destinationDir))
     {
         throw std::runtime_error("Cannot create destination directory " + destinationDir.string());
     }

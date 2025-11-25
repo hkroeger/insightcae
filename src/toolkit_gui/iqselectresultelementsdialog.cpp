@@ -11,6 +11,10 @@ IQSelectResultElementsDialog::IQSelectResultElementsDialog(
 {
     ui->setupUi(this);
     ui->treeView->setModel(&resultSetModel_);
+    ui->treeView->setAlternatingRowColors(true);
+    ui->treeView->header()->setSectionResizeMode(
+        QHeaderView::ResizeMode::ResizeToContents);
+
 }
 
 IQSelectResultElementsDialog::~IQSelectResultElementsDialog()

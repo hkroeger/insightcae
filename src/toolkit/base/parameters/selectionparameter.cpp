@@ -174,14 +174,15 @@ rapidxml::xml_node<>*
 SelectionParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     insight::CurrentExceptionContext ex(
         insight::VerbosityLevel::Loops,
         "appending selection %s to node %s", name.c_str(), node.name());
 
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
     appendAttribute(doc, *child, "value", items_[size_t(value_)]);
     return child;
 }

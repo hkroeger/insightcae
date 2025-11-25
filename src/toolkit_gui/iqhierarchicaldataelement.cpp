@@ -66,7 +66,8 @@ IQHierarchicalDataElement::IQHierarchicalDataElement(
     insight::hierarchicalData::Element *element )
     : std::observer_ptr<insight::hierarchicalData::Element>(element),
     QObject(parent),
-    model_(model)
+    model_(model),
+    checkState_(Qt::Checked)
 {}
 
 
@@ -231,6 +232,19 @@ bool IQHierarchicalDataElement::setValue(QVariant value)
     }
 }
 
+
+
+Qt::CheckState IQHierarchicalDataElement::isChecked() const
+{
+    return checkState_;
+}
+
+
+
+void IQHierarchicalDataElement::setChecked( Qt::CheckState cs )
+{
+    checkState_=cs;
+}
 
 
 

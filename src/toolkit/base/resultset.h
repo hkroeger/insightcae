@@ -22,6 +22,7 @@
 #ifndef INSIGHT_RESULTSET_H
 #define INSIGHT_RESULTSET_H
 
+#include "base/hierarchicalelement.h"
 #include "base/units.h"
 #include "base/parameterset.h"
 
@@ -139,8 +140,14 @@ public:
 
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
-    virtual void writeLatexFile ( const boost::filesystem::path& file ) const;
-    virtual void generatePDF ( const boost::filesystem::path& file ) const;
+    virtual void writeLatexFile (
+        const boost::filesystem::path& file,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties() ) const;
+    virtual void generatePDF (
+        const boost::filesystem::path& file,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties() ) const;
 
     /**
      * append the result elements to the given xml node
@@ -148,7 +155,8 @@ public:
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node) const override;
+        rapidxml::xml_node<>& node,
+        const OutputProperties& outProps ) const override;
 
     /**
      * restore the result elements from the given node
@@ -161,6 +169,15 @@ public:
 
     std::unique_ptr<ParameterSet> convertIntoParameterSet() const;
     std::unique_ptr<Parameter> convertIntoParameter() const override;
+
+    int nChildren() const override;
+
+    std::string childElementName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
+
+    Element& childElementRef ( int i ) override;
+    const Element& childElement( int i ) const override;
 
     std::unique_ptr<hierarchicalData::Element> clone() const override;
 };

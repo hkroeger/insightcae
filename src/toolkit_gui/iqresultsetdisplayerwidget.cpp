@@ -188,7 +188,11 @@ void IQResultSetDisplayerWidget::saveResultSetAs()
 
           if (cb->isChecked())
           {
-              filteredResultsModel_->filteredResultSet()->saveToFile(outf);
+              resultsModel_->resultSet().saveToFile(
+                  outf,
+                  insight::hierarchicalData::Element::OutputProperties(
+                      filteredResultsModel_->filter() ) );
+              // filteredResultsModel_->filteredResultSet()->saveToFile(outf);
           }
           else
           {
@@ -230,7 +234,12 @@ void IQResultSetDisplayerWidget::renderReport()
                           );
                   if (cb->isChecked())
                   {
-                      filteredResultsModel_->filteredResultSet()->generatePDF(outf);
+                      resultsModel_->resultSet().generatePDF(outf,
+                        insight::hierarchicalData::Element::OutputProperties(
+                          filteredResultsModel_->filter() )
+                      );
+
+                      // filteredResultsModel_->filteredResultSet()->generatePDF(outf);
                   }
                   else
                   {
@@ -246,7 +255,12 @@ void IQResultSetDisplayerWidget::renderReport()
                         );
                 if (cb->isChecked())
                 {
-                    filteredResultsModel_->filteredResultSet()->writeLatexFile(outf);
+                    resultsModel_->resultSet().writeLatexFile(
+                        outf,
+                        insight::hierarchicalData::Element::OutputProperties(
+                            filteredResultsModel_->filter() )
+                    );
+                    //filteredResultsModel_->filteredResultSet()->writeLatexFile(outf);
                 }
                 else
                 {
@@ -270,7 +284,7 @@ void IQResultSetDisplayerWidget::loadFilter()
         insight::CurrentExceptionContext ex("reading result set filter from file "+inf.asString());
 
         insight::XMLDocument doc(inf);
-        insight::ResultSetFilter rsf;
+        insight::hierarchicalData::Filter rsf;
         rsf.readFromNode(*doc.rootNode);
         filterModel_->resetFilter(rsf);
     }

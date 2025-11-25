@@ -246,7 +246,7 @@ public:
     addToFactoryTable2(Parameter, ParameterFromDescription, createParameter, PT);\
     addToFactoryTable2(Parameter, ParameterFromNode, createParameterFromNode, PT);
 
-protected:
+public:
     void setParent(Element* parent) override;
 
 private:
@@ -344,7 +344,8 @@ public:
     rapidxml::xml_node<>* appendToNode(
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const override;
+        rapidxml::xml_node<>& node,
+        const OutputProperties& outProps ) const override;
 
     /**
      * @brief createFromNode

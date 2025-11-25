@@ -100,6 +100,84 @@ IQHierarchicalDataModel::createUndoState(
 
 
 
+
+void IQHierarchicalDataModel::setCheckState(const QModelIndex &idx, bool checked)
+{
+    if (auto *e = dynamic_cast<IQHierarchicalDataElement*>(
+            iqElementOfIndex(idx)))
+    {
+        e->setChecked( checked?Qt::Checked:Qt::Unchecked );
+        emit dataChanged(idx, idx);
+        setChildrenCheckstate( idx, checked );
+        updateParentCheckState( idx );
+    }
+}
+
+
+
+void IQHierarchicalDataModel::updateParentCheckState(const QModelIndex &idx)
+{
+    auto pidx=parent(idx);
+    if (pidx.isValid())
+    {
+        if (auto *e = dynamic_cast<IQHierarchicalDataElement*>(
+                iqElementOfIndex(pidx) ))
+        {
+            int nChecked=0, nUnchecked=0, nPartChecked=0;
+            for (int row=0; row<rowCount(pidx); ++row)
+            {
+                auto cidx=index(row, 0, pidx);
+                if (auto *c = dynamic_cast<IQHierarchicalDataElement*>(
+                        iqElementOfIndex(cidx)))
+                {
+                    switch(c->isChecked())
+                    {
+                    case Qt::Checked: nChecked++; break;
+                    case Qt::Unchecked: nUnchecked++; break;
+                    case Qt::PartiallyChecked: nPartChecked++; break;
+                    }
+                }
+            }
+
+            auto oldcs=e->isChecked();
+            Qt::CheckState newcs=oldcs;
+            if (nChecked>0 && nUnchecked==0 && nPartChecked==0)
+                newcs=Qt::Checked;
+            else if (nUnchecked>0 && nChecked==0 && nPartChecked==0)
+                newcs=Qt::Unchecked;
+            else
+                newcs=Qt::PartiallyChecked;
+            insight::dbg()<<oldcs<<" "<<nChecked<<" "<<nUnchecked<<" "<<nPartChecked<<" "<<newcs<<std::endl;
+            if (newcs!=oldcs)
+            {
+                e->setChecked(newcs);
+                emit dataChanged(pidx, pidx);
+                updateParentCheckState(pidx);
+            }
+        }
+    }
+}
+
+
+
+
+void IQHierarchicalDataModel::setChildrenCheckstate(const QModelIndex& idx, bool checked)
+{
+    for (int row=0; row<rowCount(idx); ++row)
+    {
+        auto cidx=index(row, 0, idx);
+        if (auto *c = dynamic_cast<IQHierarchicalDataElement*>(
+                iqElementOfIndex(cidx)) )
+        {
+            c->setChecked( checked?Qt::Checked:Qt::Unchecked );
+            emit dataChanged(cidx, cidx);
+            setChildrenCheckstate(cidx, checked);
+        }
+    }
+}
+
+
+
 void IQHierarchicalDataModel::handleDataChangeForUndo(
     const QModelIndex &topLeft,
     const QModelIndex &bottomRight,
@@ -265,9 +343,12 @@ void IQHierarchicalDataModel::resetValue(
 
 IQHierarchicalDataModel::IQHierarchicalDataModel(
     std::unique_ptr<insight::hierarchicalData::Element> &&data,
-    QObject *parent)
+    QObject *parent,
+    bool selectableElements,
+    bool editingIsDisabled )
 : QAbstractItemModel(parent),
-  editingIsDisabled_(false)
+  editingIsDisabled_(editingIsDisabled),
+  selectableElements_(selectableElements)
 {
     resetData( std::move(data) );
 
@@ -412,6 +493,9 @@ Qt::ItemFlags IQHierarchicalDataModel::flags(const QModelIndex &index) const
         }
     }
 
+    if ( index.column() == 0 && selectableElements_ )
+        flags |= Qt::ItemIsUserCheckable;
+
     return flags;
 }
 
@@ -446,7 +530,11 @@ QVariant IQHierarchicalDataModel::data(const QModelIndex &index, int role) const
             break;
 
         case Qt::CheckStateRole:
-            if (index.column()==valueCol) // data
+            if ( index.column()==0 && selectableElements_)
+            {
+                return QVariant( iqp->isChecked() );
+            }
+            else if (index.column()==valueCol) // data
             {
                 if (p->isBooleanData())
                     return p->getAsBoolean() ? Qt::Checked : Qt::Unchecked;
@@ -489,7 +577,12 @@ bool IQHierarchicalDataModel::setData(const QModelIndex &index, const QVariant &
                 break;
 
             case Qt::CheckStateRole:
-                if (index.column()==valueCol) // data
+                if ( (index.column()==0) && selectableElements_)
+                {
+                    setCheckState(index, value.toBool()?Qt::Checked:Qt::Unchecked);
+                    return true;
+                }
+                else if (index.column()==valueCol) // data
                 {
                     if (p->canSetFromBoolean())
                     {
@@ -499,6 +592,15 @@ bool IQHierarchicalDataModel::setData(const QModelIndex &index, const QVariant &
                 }
                 break;
             }
+        }
+    }
+
+    if (selectableElements_)
+    {
+        if ( (role==Qt::CheckStateRole) && (index.column()==0) )
+        {
+            setCheckState(index, value.toBool()?Qt::Checked:Qt::Unchecked);
+            return true;
         }
     }
 

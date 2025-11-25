@@ -124,9 +124,12 @@ bool PathParameter::isPacked() const
 
 void PathParameter::pack()
 {
-    auto lfp=localFilePath();
-    if (boost::filesystem::exists(lfp))
-        replaceContent(lfp);
+    if (isValid())
+    {
+        auto lfp=localFilePath();
+        if (boost::filesystem::exists(lfp))
+            replaceContent(lfp);
+    }
 }
 
 
@@ -202,7 +205,8 @@ rapidxml::xml_node<>* PathParameter::appendToNode
 (
   const std::string& name,
   rapidxml::xml_document<>& doc,
-  rapidxml::xml_node<>& node
+  rapidxml::xml_node<>& node,
+    const OutputProperties& outProps
 ) const
 {
     insight::CurrentExceptionContext ex(
@@ -210,7 +214,7 @@ rapidxml::xml_node<>* PathParameter::appendToNode
         "appending path %s to node %s", name.c_str(), node.name() );
 
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
     FileContainer::appendToNode( doc, *child );
 
@@ -373,10 +377,11 @@ void DirectoryParameter::unpack(const boost::filesystem::path &basePath)
 rapidxml::xml_node<>* DirectoryParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
     FileContainer::appendToNode(doc, *child);
     return child;
 }

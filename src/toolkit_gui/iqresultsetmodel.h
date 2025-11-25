@@ -8,7 +8,7 @@
 #include <QAbstractItemModel>
 #include <QSortFilterProxyModel>
 
-#include "base/resultsetfilter.h"
+#include "base/hierarchicaldatafilter.h"
 
 class QVBoxLayout;
 class QTextEdit;
@@ -54,8 +54,6 @@ class TOOLKIT_GUI_EXPORT IQResultElement
 
   IQSimpleLatexView *shortDesc_, *longDesc_;
 
-  Qt::CheckState checkState_;
-
   IQHierarchicalDataElement* createForChild(
       IQHierarchicalDataModel* model,
       insight::hierarchicalData::Element *ce ) override;
@@ -71,9 +69,6 @@ public:
 
     virtual QVariant previewInformation(int role) const =0;
     virtual void createFullDisplay(QVBoxLayout* layout);
-
-    Qt::CheckState isChecked() const;
-    void setChecked( Qt::CheckState cs );
 };
 
 
@@ -117,22 +112,20 @@ class TOOLKIT_GUI_EXPORT IQResultSetModel
 {
     Q_OBJECT
 
-    bool selectableElements_;
-
     // void addResultElements(const ResultElementCollection& rec, IQResultElement* parent);
 
-    void setCheckState(const QModelIndex &idx, bool checked);
-    void updateParentCheckState(const QModelIndex &idx);
-    void setChildrenCheckstate(const QModelIndex& idx, bool checked);
+
     void addUnselectedElementPaths(const QModelIndex& pidx,
-                                   ResultSetFilter& filter,
-                                   std::string parentPath ) const;
+                                   hierarchicalData::Filter& filter  ) const;
+
     void unselectElements(const QModelIndex& pidx,
-                          const ResultSetFilter& filter,
-                          std::string parentPath );
+                          const hierarchicalData::Filter& filter  );
 public:
 
-    IQResultSetModel(std::unique_ptr<ResultSet> resultSet, bool selectableElements=false, QObject* parent=nullptr);
+    IQResultSetModel(
+        std::unique_ptr<ResultSet> resultSet,
+        bool selectableElements=false,
+        QObject* parent=nullptr );
 
     QVariant headerData(int section, Qt::Orientation orient, int role) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -143,33 +136,8 @@ public:
 
     const insight::ResultSet& resultSet() const;
 
-    ResultSetFilter filter() const;
-    void resetFilter(const ResultSetFilter& filter);
-};
-
-
-
-
-class IQFilteredResultSetModel
-        : public QSortFilterProxyModel,
-          public IQResultSetModelBase
-{
-    Q_OBJECT
-
-    ResultSetFilter filter_;
-
-public:
-    IQFilteredResultSetModel(QObject *parent = 0);
-
-    IQResultElement* getResultElement(const QModelIndex& idx) override;
-
-    void resetFilter(const ResultSetFilter& filter);
-
-    void addChildren(const QModelIndex& pidx, insight::ResultElementCollection* re) const;
-    ResultSetPtr filteredResultSet() const;
-
-protected:
-    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+    hierarchicalData::Filter filter() const;
+    void resetFilter(const hierarchicalData::Filter& filter);
 };
 
 

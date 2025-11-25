@@ -160,8 +160,12 @@ public:
                 std::string nodeName(e->name());
                 if (nodeName=="entry")
                 {
-                    if (auto *l=e->first_attribute("label"))
+                    // create multiple entries with same value and different labels,
+                    // if multiple label attributes are present
+                    int nc=0;
+                    for (auto *l=e->first_attribute("label"); l; l=l->next_attribute("label"))
                     {
+                        nc++;
                         std::string label(l->value());
                         insight::CurrentExceptionContext ex("reading library entry "+label);
 
@@ -177,7 +181,8 @@ public:
 
                         anythingRead=true;
                     }
-                    else
+
+                    if (nc==0)
                     {
                         insight::Warning("Malformed entry node in "+fp.string()+": no label attribute!");
                     }

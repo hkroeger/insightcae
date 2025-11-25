@@ -55,6 +55,7 @@ private:
     void editingOff();
     void editingOn();
 
+    bool selectableElements_;
 
 public:
     bool editingIsEnabled() const;
@@ -73,6 +74,10 @@ public:
 protected:
     void applyUndoState(const IQUndoRedoStackState& state) override;
     IQUndoRedoStackStatePtr createUndoState(const QString& description) const override;
+
+    void setCheckState(const QModelIndex &idx, bool checked);
+    void updateParentCheckState(const QModelIndex &idx);
+    void setChildrenCheckstate(const QModelIndex& idx, bool checked);
 
 protected Q_SLOTS:
     void handleDataChangeForUndo(
@@ -126,7 +131,9 @@ public:
 
     IQHierarchicalDataModel(
         std::unique_ptr<insight::hierarchicalData::Element>&& data,
-        QObject *parent = nullptr
+        QObject *parent = nullptr,
+        bool selectableElements=false,
+        bool editingIsDisabled=false
     );
 
     int	columnCount(const QModelIndex &parent = QModelIndex()) const override;

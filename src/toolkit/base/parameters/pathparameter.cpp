@@ -124,9 +124,12 @@ bool PathParameter::isPacked() const
 
 void PathParameter::pack()
 {
-    auto lfp=localFilePath();
-    if (boost::filesystem::exists(lfp))
-        replaceContent(lfp);
+    if (isValid())
+    {
+        auto lfp=localFilePath();
+        if (boost::filesystem::exists(lfp))
+            replaceContent(lfp);
+    }
 }
 
 

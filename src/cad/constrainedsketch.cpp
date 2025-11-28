@@ -161,7 +161,7 @@ ConstrainedSketch::ConstrainedSketch(
 
 ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
-    propertiesParent_(other.propertiesParent_),
+    // propertiesParent_(other.propertiesParent_),
     solverSettings_(other.solverSettings_)
 {
     for (auto &lp: other.layerProperties_)
@@ -181,11 +181,11 @@ ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     for (const auto& g: other.geometry_)
     {
         auto clone = g.second->clone();
-        if (propertiesParent_)
-        {
-            clone->parametersRef().setParent(
-                propertiesParent_.get());
-        }
+        // if (propertiesParent_)
+        // {
+        //     clone->parametersRef().setParent(
+        //         propertiesParent_.get());
+        // }
         geometry_.insert({ g.first, clone });
         cem[g.second]=clone;
     }

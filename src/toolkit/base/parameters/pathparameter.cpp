@@ -99,7 +99,7 @@ std::string PathParameter::latexRepresentation(
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
-  return SimpleLatex( fileName().string() ).toPlainText();
+  return SimpleLatex( fileName().generic_string() ).toPlainText();
 }
 
 

@@ -112,7 +112,9 @@ public:
    * @param fileName
    */
   FileContainer(
-      const boost::filesystem::path& fileName );
+      const boost::filesystem::path& fileName,
+      const boost::optional<boost::filesystem::path>& baseDir
+        = boost::optional<boost::filesystem::path>() );
 
   /**
    * @brief FileContainer

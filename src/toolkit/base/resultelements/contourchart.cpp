@@ -205,7 +205,7 @@ std::string PolarContourChart::latexRepresentation(
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-        << ( fsi.additionalFiles->directoryRelativePath/chart_file ).string() << "}\n"
+        << ( fsi.additionalFiles->directoryRelativePath/chart_file ).generic_string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";

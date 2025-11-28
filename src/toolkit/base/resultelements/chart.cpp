@@ -271,7 +271,7 @@ std::string Chart::latexRepresentation (
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-        << (addf.directoryRelativePath/filename ).string() << "}\n"
+        << (addf.directoryRelativePath/filename ).generic_string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";

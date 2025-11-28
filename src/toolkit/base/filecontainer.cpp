@@ -259,8 +259,10 @@ FileContainer::FileContainer(const FileContainer& other)
 
 
 FileContainer::FileContainer(
-    const boost::filesystem::path& fileName )
-  : fileName_(fileName)
+    const boost::filesystem::path& fileName,
+    const boost::optional<boost::filesystem::path>& baseDir )
+  : fileName_(fileName),
+    baseDirectory_(baseDir)
 {
     clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
 }

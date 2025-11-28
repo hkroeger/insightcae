@@ -37,7 +37,7 @@ FileResult::FileResult
     const std::string& longDesc
 )
     : ResultElement ( shortDesc, longDesc, "" ),
-      FileContainer ( absolute ( value, location ) )
+      FileContainer ( value, location )
 {
   if (!hasFileContent())
   {
@@ -61,11 +61,12 @@ std::string FileResult::latexRepresentation (
     int documentHierarchyLevel,
     const FileStorageInfo& fsi ) const
 {
-  std::string fn=boost::filesystem::absolute(fileName()).string();
-  replace_all(fn , "\\", "/");
-
   std::ostringstream f;
-  f<<  "\\texttt{" <<  SimpleLatex( fn ).toLaTeX() << "}";
+  f<<  "\\texttt{" <<
+      SimpleLatex(
+        boost::filesystem::absolute(
+            fileName()).generic_string() )
+        .toLaTeX() << "}";
   return f.str();
 }
 

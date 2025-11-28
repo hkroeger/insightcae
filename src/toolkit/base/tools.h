@@ -47,6 +47,10 @@ namespace insight
 
 
 
+std::set<boost::filesystem::path>
+wildcardSearch(const boost::filesystem::path& pathWithRegex);
+
+
 
 
 

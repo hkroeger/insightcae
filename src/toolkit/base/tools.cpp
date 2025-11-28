@@ -62,6 +62,78 @@ namespace insight
 {
 
 
+std::set<boost::filesystem::path> wildcardSearch(
+    const boost::filesystem::path &rootPattern )
+{
+    std::set<fs::path> results;
+
+    std::vector<boost::regex> patternParts;
+    for (const auto& part : rootPattern)
+    {
+        patternParts.emplace_back(
+            boost::regex(part.string()) );
+    }
+
+    fs::path start;
+    int startIdx=0;
+    if (rootPattern.is_absolute())
+    {
+#ifdef WIN32
+        start = fs::path(rootPattern.root_path());
+        if (start.empty())
+        {
+            start = fs::current_path().root_path();
+        }
+        startIdx=2;
+#else
+        start = fs::path("/");
+#endif
+    }
+    else
+    {
+        start = fs::current_path();
+    }
+
+    std::cout<<start<<std::endl;
+
+    std::function<void(fs::path, size_t)> recurse;
+    recurse = [&](fs::path current, size_t depth)
+    {
+        if (depth == patternParts.size())
+        {
+            results.insert(current);
+            return;
+        }
+
+        if (!fs::exists(current) || !fs::is_directory(current))
+            return;
+
+        if (patternParts[depth].expression()==std::string("."))
+        {
+            recurse(current, depth + 1);
+        }
+        else
+        {
+            const boost::regex& r = patternParts[depth];
+
+            for (fs::directory_iterator it(current), end; it != end; ++it)
+            {
+                const std::string name = it->path().filename().string();
+
+                if (!boost::regex_match(name, r))
+                    continue;
+
+                recurse(it->path(), depth + 1);
+            }
+        }
+    };
+
+    recurse(start, startIdx);
+
+    return results;
+}
+
+
 const std::string base64_padding[] = {"", "==","="};
 
 
@@ -590,12 +662,30 @@ void copyDirectoryRecursively(
         throw std::runtime_error("Cannot create destination directory " + destinationDir.string());
     }
 
-    for (const auto& dirEnt : boost::make_iterator_range(recursive_directory_iterator{sourceDir}, {}))
+    for (const auto& dirEnt : boost::make_iterator_range(directory_iterator{sourceDir}, {}))
     {
         const auto& path = dirEnt.path();
         auto relativePathStr = path.string();
         boost::replace_first(relativePathStr, sourceDir.string(), "");
-        copy(path, destinationDir / relativePathStr);
+
+        auto from = path;
+        auto to = destinationDir / relativePathStr;
+
+        insight::dbg()<<"copy "<<from<<" to "<<to<<std::endl;
+
+        file_status s(symlink_status(from));
+        if (is_symlink(s))
+            copy_symlink(from, to);
+        else if (is_directory(s))
+        {
+            copyDirectoryRecursively(from, to, failIfTargetExists);
+        }
+        else if (is_regular_file(s))
+        {
+            copy_file(from, to,
+                      failIfTargetExists ? copy_option::fail_if_exists
+                                         : copy_option::overwrite_if_exists);
+        }
     }
 }
 
@@ -1068,12 +1158,13 @@ void TemplateFile::replace(const string &keyword, const string &content)
 
 void TemplateFile::write(ostream &os) const
 {
-  os.write(this->c_str(), long(this->size()) );
+  // os.write(this->c_str(), long(this->size()) );
+    os << *this << endl;
 }
 
 void TemplateFile::write(const path &outfile) const
 {
-  std::ofstream f(outfile.string(), ios::binary);
+  std::ofstream f(outfile.string()/*, ios::binary*/);
   write(f);
 }
 
@@ -1318,6 +1409,7 @@ int realNp(int userInputNp)
             );
     }
 }
+
 
 
 }

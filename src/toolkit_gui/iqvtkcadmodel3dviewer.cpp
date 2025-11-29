@@ -228,6 +228,7 @@ void BackgroundImage::reorientImage()
     // else if (answer==pButtonDynamic)
     // {
         imageActor_->SetScale( 1 );
+        imageActor_->SetOrientation(0, 0, 0);
         imageActor_->SetPosition( 0, 0, 0 );
         imageActor_->SetOpacity(1.0);// can't pick if opacity is lower than 1
 

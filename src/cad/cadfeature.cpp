@@ -984,6 +984,18 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
 }
 
 
+
+
+std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBoxSize(double deflection) const
+{
+    auto r=orientedModelBndBox(deflection);
+    r.second = r.second.col(1)-r.second.col(0);
+    return r;
+}
+
+
+
+
 arma::mat Feature::faceNormal(FeatureID i) const
 {
   BRepGProp_Face prop(face(i));

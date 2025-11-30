@@ -321,7 +321,8 @@ public:
   arma::mat modelBndBoxSize(double deflection=-1) const;
 
   std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
-  
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBoxSize(double deflection=-1) const;
+
   arma::mat faceNormal(FeatureID i) const;
   arma::mat averageFaceNormal() const;
 

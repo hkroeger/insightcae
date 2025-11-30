@@ -19,7 +19,7 @@ RUN apt-get install --ignore-missing -y hdf5-tools
 RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 RUN dpkg-reconfigure --frontend noninteractive tzdata
 
-RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg; add-apt-repository http://downloads.silentdynamics.de/ubuntu; apt-get update; apt-get install -y insightcae-dependencies
+RUN apt-key adv --fetch-keys http://downloads.silentdynamics.de/SD_REPOSITORIES_PUBLIC_KEY.gpg; add-apt-repository http://downloads.silentdynamics.de/ubuntu; apt-get update; apt-get install -y insightcae-*
 
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 10 && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \

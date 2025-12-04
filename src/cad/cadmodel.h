@@ -114,6 +114,7 @@ protected:
     Model(const Model& o, TreeCloneMap& tcm);
 
 public:
+    declareType("Model");
     DEPENDS_NOINVALIDATE((scalars_,points_, directions_,datums_,modelsteps_,
              vertexFeatures_,edgeFeatures_,faceFeatures_,solidFeatures_,
              models_));

@@ -22,6 +22,9 @@
 #include "cadfeature.h"
 #include "datum.h"
 
+
+defineType(insight::cad::VectorFromComponents);
+
 insight::cad::VectorFromComponents::VectorFromComponents(const VectorFromComponents &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_), CL(p3_)
 {}
@@ -54,6 +57,7 @@ arma::mat insight::cad::VectorFromComponents::calcValue() const
 
 
 
+defineType(insight::cad::CrossMultipliedVector);
 
 insight::cad::CrossMultipliedVector::CrossMultipliedVector(const CrossMultipliedVector &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -79,6 +83,7 @@ arma::mat insight::cad::CrossMultipliedVector::calcValue() const
 
 
 
+defineType(insight::cad::DotMultipliedVector);
 
 insight::cad::DotMultipliedVector::DotMultipliedVector(const DotMultipliedVector &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -103,6 +108,7 @@ double insight::cad::DotMultipliedVector::calcValue() const
 }
 
 
+defineType(insight::cad::ScalarMultipliedVector);
 
 insight::cad::ScalarMultipliedVector::ScalarMultipliedVector(const ScalarMultipliedVector &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -127,6 +133,7 @@ arma::mat insight::cad::ScalarMultipliedVector::calcValue() const
 }
 
 
+defineType(insight::cad::ScalarDividedVector);
 
 insight::cad::ScalarDividedVector::ScalarDividedVector(const ScalarDividedVector &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -151,6 +158,7 @@ arma::mat insight::cad::ScalarDividedVector::calcValue() const
 }
 
 
+defineType(insight::cad::AddedVector);
 
 insight::cad::AddedVector::AddedVector(const AddedVector &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -175,6 +183,7 @@ arma::mat insight::cad::AddedVector::calcValue() const
 }
 
 
+defineType(insight::cad::SubtractedVector);
 
 insight::cad::SubtractedVector::SubtractedVector(const SubtractedVector &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -198,6 +207,9 @@ arma::mat insight::cad::SubtractedVector::calcValue() const
   return p1_->value() - p2_->value();
 }
 
+
+
+defineType(insight::cad::RotatedVector);
 
 insight::cad::RotatedVector::RotatedVector(const RotatedVector &o, TreeCloneMap &tcm)
     : CL(ang_), CL(v_), CL(ax_)
@@ -229,6 +241,7 @@ arma::mat insight::cad::RotatedVector::calcValue() const
 
 
 
+defineType(insight::cad::NormalizedVector);
 
 insight::cad::NormalizedVector::NormalizedVector(const NormalizedVector &o, TreeCloneMap &tcm)
     : CL(v_)
@@ -252,6 +265,9 @@ arma::mat insight::cad::NormalizedVector::calcValue() const
   return insight::normalized(v_->value());
 }
 
+
+
+defineType(insight::cad::Mechanism_CrankDrive);
 
 insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(const Mechanism_CrankDrive &o, TreeCloneMap &tcm)
     : CL(L_), CL(c2_), CL(r2_), CL(p1_), CL(eax_)
@@ -292,6 +308,9 @@ arma::mat insight::cad::Mechanism_CrankDrive::calcValue() const
    
   return p1_->value() + L_->value()*(rotMatrix(phi, eax)*edelta);
 }
+
+
+defineType(insight::cad::Mechanism_Slider);
 
 insight::cad::Mechanism_Slider::Mechanism_Slider(const Mechanism_Slider &o, TreeCloneMap &tcm)
 : CL(L_), CL(p0_), CL(psl_), CL(esl_)

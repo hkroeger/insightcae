@@ -47,6 +47,9 @@ public:
       checkForBuildDuringAccess();
       return value_;
   }
+
+  std::string label() const override;
+
   operator double() const;
 };
 
@@ -70,6 +73,8 @@ public:
       checkForBuildDuringAccess();
       return value_;
   }
+
+  std::string label() const override;
 
   operator arma::mat() const;
 };

@@ -54,6 +54,7 @@ protected:
 public:
     declareType ( "Compound" );
     void replaceDependency(const DependencyReplacement& repl) override;
+    void printDependencies(DOT& dot) const override;
     CREATE_FUNCTION(Compound);
     CLONEABLE(Compound);
 

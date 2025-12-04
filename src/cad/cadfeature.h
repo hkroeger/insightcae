@@ -23,6 +23,7 @@
 
 #include <set>
 #include <map>
+#include <string>
 #include <vector>
 #include <memory>
 
@@ -230,6 +231,7 @@ public:
   void setFeatureSymbolName( const std::string& name);
   bool isAnonymous() const;
   std::string featureSymbolName() const;
+  std::string label() const override;
   
   virtual void setVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);

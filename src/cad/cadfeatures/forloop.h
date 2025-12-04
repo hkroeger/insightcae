@@ -16,6 +16,7 @@ class ForLoop
     mutable ModelFeaturePtr loopBodyTemplate_;
     ScalarPtr i0_, imax_, increment_;
     FeaturePtr lastInstance_;
+    std::vector<ScalarPtr> instanceVariables_;
 
     void createInstances();
 
@@ -32,7 +33,7 @@ class ForLoop
 public:
     declareType ( "for" );
 #ifndef SWIG
-    DEPENDS_W_BASE(Compound, (i0_, imax_, increment_));
+    DEPENDS_W_BASE(Compound, (i0_, imax_, increment_, lastInstance_, instanceVariables_));
 #endif
     template <typename... T>
     static std::shared_ptr<ForLoop> create(T...args)

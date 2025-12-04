@@ -327,6 +327,40 @@ void ModelFeature::replaceDependency(const DependencyReplacement& repl)
     invalidate();
 }
 
+void ModelFeature::printDependencies(DOT& dot) const
+{
+    DependencySource::printDependencies(dot);
+
+    for (auto& nv: vars_)
+    {
+        auto &lbl = boost::fusion::get<0>(nv);
+        auto &v = boost::fusion::get<1>(nv);
+
+        if (auto* fp=boost::get<FeaturePtr>(&v))
+        {
+            DependencySource::DependencyPrinter(dot, lbl, *this)(*fp);
+        }
+        else if (auto* fp=boost::get<DatumPtr>(&v))
+        {
+            DependencySource::DependencyPrinter(dot, lbl, *this)(*fp);
+        }
+        else if (auto* fp=boost::get<VectorPtrAndType>(&v))
+        {
+            DependencySource::DependencyPrinter(dot, lbl, *this)(
+                boost::fusion::get<0>(*fp));
+        }
+        else if (auto* fp=boost::get<ScalarPtr>(&v))
+        {
+            DependencySource::DependencyPrinter(dot, lbl, *this)(*fp);
+        }
+
+    }
+    if (auto *mp=boost::get<ModelPtr>(&modelinput_))
+    {
+        DependencySource::DependencyPrinter(dot, "modelinput_", *this)(*mp);
+    }
+}
+
 std::string ModelFeature::modelname() const
 {
     if (const boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))

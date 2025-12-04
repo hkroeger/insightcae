@@ -35,6 +35,7 @@ class MultipliedScalar
   ScalarPtr p1_, p2_;
   MultipliedScalar(const MultipliedScalar&o, TreeCloneMap& tcm);
 public:
+  declareType("MultipliedScalar");
 #ifndef SWIG
     DEPENDS((p1_, p2_))
 #endif
@@ -54,6 +55,7 @@ class DividedScalar
   ScalarPtr p1_, p2_;
     DividedScalar(const DividedScalar&o, TreeCloneMap& tcm);
 public:
+    declareType("DividedScalar");
 #ifndef SWIG
     DEPENDS((p1_, p2_));
 #endif
@@ -73,6 +75,7 @@ class AddedScalar
   ScalarPtr p1_, p2_;
     AddedScalar(const AddedScalar&o, TreeCloneMap& tcm);
 public:
+    declareType("AddedScalar");
 #ifndef SWIG
     DEPENDS((p1_, p2_));
 #endif
@@ -91,6 +94,7 @@ class SubtractedScalar
   ScalarPtr p1_, p2_;
     SubtractedScalar(const SubtractedScalar&o, TreeCloneMap& tcm);
 public:
+    declareType("SubtractedScalar");
 #ifndef SWIG
     DEPENDS((p1_, p2_));
 #endif
@@ -111,8 +115,9 @@ class VectorComponent
   
   VectorComponent(const VectorComponent&o, TreeCloneMap& tcm);
 public:
+  declareType("VectorComponent");
 #ifndef SWIG
-    DEPENDS((p1_));
+  DEPENDS((p1_));
 #endif
   CLONEABLE(VectorComponent);
 
@@ -130,8 +135,9 @@ class VectorMag
 
   VectorMag(const VectorMag&o, TreeCloneMap& tcm);
 public:
+  declareType("VectorMag");
 #ifndef SWIG
-    DEPENDS((p1_));
+  DEPENDS((p1_));
 #endif
   CLONEABLE(VectorMag);
 

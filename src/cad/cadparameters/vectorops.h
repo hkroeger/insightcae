@@ -36,6 +36,7 @@ class VectorFromComponents
 
   VectorFromComponents(const VectorFromComponents&o, TreeCloneMap& tcm);
 public:
+  declareType("VectorFromComponents");
   CLONEABLE(VectorFromComponents);
 #ifndef SWIG
   DEPENDS((p1_, p2_, p3_));
@@ -56,6 +57,7 @@ class CrossMultipliedVector
 
     CrossMultipliedVector(const CrossMultipliedVector&o, TreeCloneMap& tcm);
 public:
+    declareType("CrossMultipliedVector");
     CLONEABLE(CrossMultipliedVector);
 #ifndef SWIG
     DEPENDS((p1_, p2_));
@@ -75,6 +77,7 @@ class DotMultipliedVector
   VectorPtr p1_, p2_;
     DotMultipliedVector(const DotMultipliedVector&o, TreeCloneMap& tcm);
 public:
+    declareType("DotMultipliedVector");
     CLONEABLE(DotMultipliedVector);
 #ifndef SWIG
     DEPENDS((p1_, p2_));
@@ -96,6 +99,7 @@ class ScalarMultipliedVector
 
   ScalarMultipliedVector(const ScalarMultipliedVector&o, TreeCloneMap& tcm);
 public:
+  declareType("ScalarMultipliedVector");
   CLONEABLE(ScalarMultipliedVector);
 #ifndef SWIG
   DEPENDS((p1_, p2_));
@@ -116,6 +120,7 @@ class ScalarDividedVector
   ScalarPtr p2_;
   ScalarDividedVector(const ScalarDividedVector&o, TreeCloneMap& tcm);
 public:
+  declareType("ScalarDividedVector");
   CLONEABLE(ScalarDividedVector);
 #ifndef SWIG
   DEPENDS((p1_, p2_));
@@ -136,6 +141,7 @@ class AddedVector
 
     AddedVector(const AddedVector&o, TreeCloneMap& tcm);
 public:
+    declareType("AddedVector");
     CLONEABLE(AddedVector);
 #ifndef SWIG
     DEPENDS((p1_, p2_));
@@ -162,6 +168,7 @@ class SubtractedVector
 
     SubtractedVector(const SubtractedVector&o, TreeCloneMap& tcm);
 public:
+    declareType("SubtractedVector");
     CLONEABLE(SubtractedVector);
 #ifndef SWIG
     DEPENDS((p1_, p2_));
@@ -181,6 +188,7 @@ class RotatedVector
 
   RotatedVector(const RotatedVector&o, TreeCloneMap& tcm);
 public:
+  declareType("RotatedVector");
   CLONEABLE(RotatedVector);
 #ifndef SWIG
   DEPENDS((ang_, v_, ax_));
@@ -199,6 +207,7 @@ class NormalizedVector
 
     NormalizedVector(const NormalizedVector&o, TreeCloneMap& tcm);
 public:
+    declareType("NormalizedVector");
     CLONEABLE(NormalizedVector);
 #ifndef SWIG
     DEPENDS((v_));
@@ -220,6 +229,7 @@ class Mechanism_CrankDrive
 
   Mechanism_CrankDrive(const Mechanism_CrankDrive&o, TreeCloneMap& tcm);
 public:
+  declareType("Mechanism_CrankDrive");
   CLONEABLE(Mechanism_CrankDrive);
 #ifndef SWIG
   DEPENDS((L_, c2_, r2_, p1_, eax_));
@@ -247,6 +257,7 @@ class Mechanism_Slider
   VectorPtr esl_;
   Mechanism_Slider(const Mechanism_Slider&o, TreeCloneMap& tcm);
 public:
+  declareType("Mechanism_Slider");
   CLONEABLE(Mechanism_Slider);
 #ifndef SWIG
   DEPENDS((L_, p0_, psl_, esl_));

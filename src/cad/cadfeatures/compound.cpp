@@ -173,6 +173,16 @@ void Compound::replaceDependency(const DependencyReplacement &repl)
 }
 
 
+void Compound::printDependencies(DOT& dot) const
+{
+    DependencySource::printDependencies(dot);
+    for (auto&c: components_)
+    {
+        DependencySource::DependencyPrinter(dot, c.first, *this)
+            (*c.second);
+    }
+}
+
 
 
 void Compound::insertrule(parser::ISCADParser& ruleset)

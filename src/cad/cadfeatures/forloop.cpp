@@ -51,8 +51,11 @@ ForLoop::createInstances()
             auto v=boost::get<ScalarPtr>(inst->findInputVariable(loopVarName_));
             insight::assertion(
                 v, "requested variable %s not found in model", loopVarName_.c_str());
+
+            auto iv=cad::scalarconst(i);
             inst->replaceDependency(
-                DependencyReplacement(v->get(), cad::scalarconst(i)));
+                DependencyReplacement(v->get(), iv));
+            instanceVariables_.push_back(iv);
         }
 
         if (lastInstance_)
@@ -79,7 +82,11 @@ ForLoop::ForLoop(const ForLoop &o, TreeCloneMap &tcm)
     : Compound(o, tcm),
     loopVarName_(o.loopVarName_),
     CL(i0_), CL(imax_), CL(increment_)
-{}
+{
+    lastInstance_ =
+        std::dynamic_pointer_cast<Feature>(
+            tcm.find(o.lastInstance_.get())->second );
+}
 
 ForLoop::ForLoop (
     const std::string& varname,

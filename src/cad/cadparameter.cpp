@@ -18,6 +18,7 @@
  */
 
 #include "cadparameter.h"
+#include "base/tools.h"
 
 
 namespace insight
@@ -36,6 +37,11 @@ void Scalar::build()
     value_=calcValue();
 }
 
+std::string Scalar::label() const
+{
+    return insight::toString(static_cast<double>(*this));
+}
+
 Scalar::operator double() const
 {
   return value();
@@ -51,6 +57,11 @@ Vector::~Vector() {}
 void Vector::build()
 {
     value_=calcValue();
+}
+
+std::string Vector::label() const
+{
+    return insight::toString(static_cast<arma::mat>(*this));
 }
 
 Vector::operator arma::mat() const

@@ -85,6 +85,41 @@ FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
 }
 
 
+
+
+DOT::DOT(std::ostream& os)
+    : std::reference_wrapper<std::ostream>(os)
+{
+    this->get() << "digraph theGraph {" << std::endl;
+}
+
+DOT::~DOT()
+{
+    this->get() << "}" << std::endl;
+}
+
+bool DOT::needsOutput(const DependencySource* ds)
+{
+    if (alreadyProcessed_.count(ds))
+    {
+        return false;
+    }
+    else
+    {
+        alreadyProcessed_.insert(ds);
+        return true;
+    }
+}
+
+
+defineType(DependencySource);
+
+std::string DependencySource::label() const
+{
+    return std::string();
+}
+
+
 DependencySource::~DependencySource()
 {}
 
@@ -98,13 +133,35 @@ void DependencySource::replaceAllDependencies(const TreeCloneMap &tcm)
 }
 
 
+// void DependencySource::printDependency(
+//     DOT& dot, const std::string& label, const DependencySource& s) const
+// {
+//     dot.get() << "x"<<this << " -> " << "x"<<&s << "[label=\""<<label<<"\"];" << std::endl;
+//     if (dot.needsOutput(&s)) s.printDependencies(dot);
+// }
 
-// CADException::CADException(ConstFeaturePtr feat, const std::string message)
-// : OCCException(
-//     (feat ? "In feature "+feat->featureSymbolName()+": " : "without feature context: " )
-//     + message),
-//   errorfeat_(feat)
-// {}
+
+void DependencySource::printDependencies( DOT& dot ) const
+{
+    auto lbl=label();
+    if (!lbl.empty()) lbl+=" ";
+    dot.get() << "x"<<this << "[label=\""<<lbl<<"("<<type()<<")\";shape=box]"<<std::endl;
+    // will be extended in derived classes
+}
+
+
+DependencySource::DependencyPrinter::DependencyPrinter(
+    DOT& dot, const std::string& label, const DependencySource& source)
+    : dot_(dot), label_(label), source_(source)
+{}
+
+void DependencySource::DependencyPrinter::operator()(const DependencySource &s) const
+{
+    dot_.get() << "x"<<&source_ << " -> " << "x"<<&s << "[label=\""<<label_<<"\"];" << std::endl;
+    if (dot_.needsOutput(&s)) s.printDependencies(dot_);
+}
+
+
 
 ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariableTable& mvt2)
 {
@@ -115,6 +172,8 @@ ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariable
 
     return rmvt;
 }
+
+
 
 
 }

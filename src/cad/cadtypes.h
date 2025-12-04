@@ -23,6 +23,7 @@
 
 #include "base/cppextensions.h"
 #include "boost/variant/static_visitor.hpp"
+#include "boost/preprocessor.hpp"
 #include <algorithm>
 #include <memory>
 #define INSIGHT_CAD_DEBUG 1
@@ -191,13 +192,107 @@ public:
 
 
 
+class DOT
+    : public std::reference_wrapper<std::ostream>
+{
+    std::set<const DependencySource*> alreadyProcessed_;
+
+public:
+    DOT(std::ostream& os);
+    ~DOT();
+
+    bool needsOutput(const DependencySource* ds);
+};
+
+
+
 class DependencySource
 {
 public:
+    declareType("DependencySource");
+
+    virtual std::string label() const;
+
     virtual ~DependencySource();
 
     virtual void replaceDependency(const DependencyReplacement& repl) =0;
     void replaceAllDependencies(const TreeCloneMap& tcm);
+
+    // void printDependency(
+    //     DOT& dot, const std::string& label, const DependencySource& s) const;
+
+
+    class DependencyPrinter
+        : public boost::static_visitor<void>
+    {
+        DOT& dot_;
+        const std::string& label_;
+        const DependencySource& source_;
+
+    public:
+        DependencyPrinter(DOT& dot, const std::string& label, const DependencySource& source);
+
+        void operator()(const DependencySource& s) const;
+
+        template<class T>
+        void operator()(std::shared_ptr<const T> t) const
+        {
+            if (auto ds=std::dynamic_pointer_cast<const DependencySource>(t))
+            {
+                (*this)(*ds);
+            }
+        }
+
+        template<class T>
+        void operator()(std::shared_ptr<T> t) const
+        {
+            if (auto ds=std::dynamic_pointer_cast<DependencySource>(t))
+            {
+                (*this)(*ds);
+            }
+        }
+
+        // dispatch functions
+        template<typename... Args>
+        void operator()(const boost::variant<Args...>& t) const
+        {
+
+            t.apply_visitor(*this);
+        }
+
+        template<class X, class Y>
+        void operator()(const std::pair<X,Y>& p) const
+        {
+            (*this)(p.first);
+            (*this)(p.second);
+        }
+
+        template<class X>
+        void operator()(const std::vector<X>& v) const
+        {
+            // std::for_each(v.begin(), v.end(), *this);
+            for (auto x: boost::adaptors::index(v))
+            {
+                DependencyPrinter(dot_, label_+"["+toString(x.index())+"]", source_)
+                    (x.value());
+            }
+        }
+
+
+        template<class T, class C=char>
+        void operator()(const boost::spirit::qi::symbols<C, T>& v) const
+        {
+            v.for_each(
+                [this](const std::string& name, const T& v)
+                {
+                    DependencyPrinter(dot_, label_+"."+name, source_)(v);
+                }
+                );
+        }
+
+    };
+
+    virtual void printDependencies( DOT& dot ) const;
 
     virtual std::shared_ptr<DependencySource>
     shallowClone(TreeCloneMap& tcm) const =0;
@@ -345,6 +440,16 @@ public:
 };
 
 
+
+#define MAKE_PRINTDEPENDENCY_CALLBACK(r, data, elem)  \
+DependencySource::DependencyPrinter(dot, BOOST_PP_STRINGIZE(elem), *this)(elem);
+
+#define MAKE_PRINTDEPENDENCY_CALLS(...) \
+BOOST_PP_LIST_FOR_EACH( \
+MAKE_PRINTDEPENDENCY_CALLBACK, _, BOOST_PP_VARIADIC_TO_LIST(__VA_ARGS__) )
+
+
+
 #define CL(MBRNAME) \
 MBRNAME(tcm.clone(o.MBRNAME))
 
@@ -363,15 +468,37 @@ inline std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const o
 
 #define DEPENDS_NOINVALIDATE(VARS) \
 void replaceDependency(const DependencyReplacement& repl) override \
-{ std::for_each(std::tie VARS,repl); }
+{ std::for_each(std::tie VARS,repl); } \
+void printDependencies(DOT& dot) const override \
+{ DependencySource::printDependencies(dot); MAKE_PRINTDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_DECL \
+void replaceDependency(const DependencyReplacement& repl) override;\
+void printDependencies(DOT& dot) const override
+
+#define DEPENDS_IMPL(TYPE,VARS) \
+void TYPE::replaceDependency(const DependencyReplacement& repl) \
+{ std::for_each(std::tie VARS,repl); this->invalidate(); } \
+void TYPE::printDependencies(DOT& dot) const \
+{ DependencySource::printDependencies(dot); MAKE_PRINTDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_IMPL_NOINVALIDATE(TYPE,VARS) \
+void TYPE::replaceDependency(const DependencyReplacement& repl) \
+{ std::for_each(std::tie VARS,repl); } \
+void TYPE::printDependencies(DOT& dot) const \
+{ DependencySource::printDependencies(dot); MAKE_PRINTDEPENDENCY_CALLS VARS }
 
 #define DEPENDS(VARS) \
 void replaceDependency(const DependencyReplacement& repl) override \
-{ std::for_each(std::tie VARS,repl); this->invalidate(); }
+{ std::for_each(std::tie VARS,repl); this->invalidate(); } \
+void printDependencies(DOT& dot) const override \
+{ DependencySource::printDependencies(dot); MAKE_PRINTDEPENDENCY_CALLS VARS }
 
 #define DEPENDS_W_BASE(BASE, VARS) \
 void replaceDependency(const DependencyReplacement& repl) override \
-{ BASE::replaceDependency(repl); std::for_each(std::tie VARS, repl); this->invalidate(); }
+{ BASE::replaceDependency(repl); std::for_each(std::tie VARS, repl); this->invalidate(); } \
+void printDependencies(DOT& dot) const override \
+{ BASE::printDependencies(dot); MAKE_PRINTDEPENDENCY_CALLS VARS }
 
 
 

@@ -1240,6 +1240,15 @@ void ConstrainedSketch::replaceDependency(const DependencyReplacement &repl)
 }
 
 
+void ConstrainedSketch::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "pl_")(pl_);
+    for (auto& geom: geometry_)
+    {
+        DepListInserter(dl, toString(geom.first))(geom.second);
+    }
+}
+
 
 } // namespace cad
 } // namespace insight

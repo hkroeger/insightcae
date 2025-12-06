@@ -190,7 +190,18 @@ void Exploded::replaceDependency(const DependencyReplacement &repl)
     invalidate();
 }
 
+void Exploded::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "axis_")(axis_);
 
+    for (auto ec: boost::adaptors::index(components_))
+    {
+        auto idxPref = toString(ec.index())+".";
+        DepListInserter(dl, idxPref+"feature")(boost::fusion::get<0>(ec.value()));
+        DepListInserter(dl, idxPref+"direction")(boost::fusion::get<2>(ec.value()));
+        DepListInserter(dl, idxPref+"distance")(boost::fusion::get<3>(ec.value()));
+    }
+}
 
 
 void Exploded::insertrule(parser::ISCADParser& ruleset)

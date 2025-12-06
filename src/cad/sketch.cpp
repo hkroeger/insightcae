@@ -124,6 +124,16 @@ void Sketch::replaceDependency(const DependencyReplacement& repl)
     invalidate();
 }
 
+void Sketch::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "pl_")(pl_);
+    for (auto& v: vars_)
+    {
+        DepListInserter(dl, boost::fusion::get<0>(v))
+            (boost::fusion::get<1>(v));
+    }
+}
+
 
 
 

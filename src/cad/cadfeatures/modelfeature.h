@@ -50,7 +50,7 @@ class ModelFeature
 public:
     declareType ( "loadmodel" );
     void replaceDependency(const DependencyReplacement& repl) override;
-    void printDependencies(DOT& dot) const override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(ModelFeature);
     CLONEABLE(ModelFeature);
 

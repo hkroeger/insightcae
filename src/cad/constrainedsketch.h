@@ -202,6 +202,8 @@ private:
 
 public:
     void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
+
     CLONEABLE(ConstrainedSketch);
 
     // required to make boost::adaptors::index work

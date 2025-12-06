@@ -39,7 +39,7 @@ void Scalar::build()
 
 std::string Scalar::label() const
 {
-    return insight::toString(static_cast<double>(*this));
+    return "="+insight::toString(static_cast<double>(*this));
 }
 
 Scalar::operator double() const
@@ -61,7 +61,7 @@ void Vector::build()
 
 std::string Vector::label() const
 {
-    return insight::toString(static_cast<arma::mat>(*this));
+    return "=["+insight::toString(static_cast<arma::mat>(*this))+"]";
 }
 
 Vector::operator arma::mat() const

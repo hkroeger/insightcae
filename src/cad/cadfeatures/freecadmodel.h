@@ -49,6 +49,7 @@ class FreeCADModel
 public:
     declareType ( "FreeCADModel" );
     void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(FreeCADModel);
     CLONEABLE(FreeCADModel);
 

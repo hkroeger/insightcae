@@ -44,9 +44,10 @@ class ImportedSingleEdgeFeature
     void build() override;
 
 public:
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(ImportedSingleEdgeFeature);
     CLONEABLE(ImportedSingleEdgeFeature);
-    void replaceDependency(const DependencyReplacement& repl) override;
 };
 
 } // namespace cad

@@ -35,6 +35,11 @@ void
 ForLoop::createInstances()
 {
 
+    auto v=boost::get<ScalarPtr>
+        (loopBodyTemplate_->findInputVariable(loopVarName_));
+    insight::assertion(
+        v, "requested variable %s not found in model", loopVarName_.c_str());
+
     int j=0;
     for (
         double i = i0_->value();
@@ -43,14 +48,15 @@ ForLoop::createInstances()
         )
     {
         ModelFeaturePtr inst =
-            loopBodyTemplate_->deepClone<ModelFeature>();
-
+            loopBodyTemplate_->deepClone<ModelFeature>(
+                { v->get() } );
 
         {
             // rewire loop var
-            auto v=boost::get<ScalarPtr>(inst->findInputVariable(loopVarName_));
-            insight::assertion(
-                v, "requested variable %s not found in model", loopVarName_.c_str());
+            // auto v=boost::get<ScalarPtr>
+            //     (inst->findInputVariable(loopVarName_));
+            // insight::assertion(
+            //     v, "requested variable %s not found in model", loopVarName_.c_str());
 
             auto iv=cad::scalarconst(i);
             inst->replaceDependency(
@@ -81,11 +87,15 @@ ForLoop::createInstances()
 ForLoop::ForLoop(const ForLoop &o, TreeCloneMap &tcm)
     : Compound(o, tcm),
     loopVarName_(o.loopVarName_),
-    CL(i0_), CL(imax_), CL(increment_)
+    loopBodyTemplate_(o.loopBodyTemplate_ ? tcm.clone(o.loopBodyTemplate_) : nullptr ),
+    CL(i0_), CL(imax_), CL(increment_),
+    CL(lastInstance_)
 {
-    lastInstance_ =
-        std::dynamic_pointer_cast<Feature>(
-            tcm.find(o.lastInstance_.get())->second );
+    for (auto& iv: o.instanceVariables_)
+    {
+        instanceVariables_.push_back(
+            tcm.clone(iv));
+    }
 }
 
 ForLoop::ForLoop (

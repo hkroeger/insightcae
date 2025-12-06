@@ -205,7 +205,7 @@ void Import::build()
               BRep_Builder builder;
               builder.MakeCompound( comp );
 
-              for (auto ss: shapes)
+              for (auto& ss: shapes)
               {
                   builder.Add(comp, ss);
               }
@@ -235,6 +235,14 @@ void Import::replaceDependency(const DependencyReplacement &repl)
         repl(*dep_fsp);
     }
     invalidate();
+}
+
+void Import::addDependencies(DependencyList& dl) const
+{
+    if (auto* dep_fsp = boost::get<FeatureSetPtr>(&importSource_))
+    {
+        DepListInserter(dl, "importSource_")(*dep_fsp);
+    }
 }
 
 

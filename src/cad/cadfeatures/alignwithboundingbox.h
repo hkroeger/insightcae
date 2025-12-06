@@ -21,6 +21,7 @@ public:
         AlignLocation atOther_, atThis_;
 
         void replaceDependency(const DependencyReplacement& n) override;
+        void addDependencies(DependencyList& dl) const override;
         std::shared_ptr<DependencySource>
             shallowClone(TreeCloneMap& tcm) const override;
     };

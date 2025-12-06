@@ -176,6 +176,18 @@ void FreeCADModel::replaceDependency(const DependencyReplacement& repl)
     invalidate();
 }
 
+void FreeCADModel::addDependencies(DependencyList& dl) const
+{
+    for (auto& fcv: vars_)
+    {
+        auto name =
+            boost::join(boost::fusion::get<0>(fcv), ".");
+
+        DepListInserter(dl, name)
+            (boost::fusion::get<1>(fcv));
+    }
+}
+
 
 void FreeCADModel::insertrule ( parser::ISCADParser& ruleset )
 {

@@ -319,6 +319,14 @@ void STL::replaceDependency(const DependencyReplacement& repl)
     invalidate();
 }
 
+void STL::addDependencies(DependencyList& dl) const
+{
+    if (auto*of=boost::get<FeaturePtr>(&transform_))
+    {
+        return DepListInserter(dl, "transform_")(*of);
+    }
+}
+
 
 void STL::insertrule(parser::ISCADParser& ruleset)
 {

@@ -10,6 +10,11 @@ if (MED_FOUND)
 endif()
 
 set(insightcad_SOURCES 
+
+  treeclonemap.h treeclonemap.cpp
+  dependencysource.h dependencysource.cpp
+  dependencyreplacement.h dependencyreplacement.cpp
+
   cadexception.h cadexception.cpp
   translations.cpp
   astbase.cpp

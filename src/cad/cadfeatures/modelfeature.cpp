@@ -327,10 +327,8 @@ void ModelFeature::replaceDependency(const DependencyReplacement& repl)
     invalidate();
 }
 
-void ModelFeature::printDependencies(DOT& dot) const
+void ModelFeature::addDependencies(DependencyList& dl) const
 {
-    DependencySource::printDependencies(dot);
-
     for (auto& nv: vars_)
     {
         auto &lbl = boost::fusion::get<0>(nv);
@@ -338,26 +336,26 @@ void ModelFeature::printDependencies(DOT& dot) const
 
         if (auto* fp=boost::get<FeaturePtr>(&v))
         {
-            DependencySource::DependencyPrinter(dot, lbl, *this)(*fp);
+            DependencySource::DepListInserter(dl, lbl)(*fp);
         }
         else if (auto* fp=boost::get<DatumPtr>(&v))
         {
-            DependencySource::DependencyPrinter(dot, lbl, *this)(*fp);
+            DependencySource::DepListInserter(dl, lbl)(*fp);
         }
         else if (auto* fp=boost::get<VectorPtrAndType>(&v))
         {
-            DependencySource::DependencyPrinter(dot, lbl, *this)(
+            DependencySource::DepListInserter(dl, lbl)(
                 boost::fusion::get<0>(*fp));
         }
         else if (auto* fp=boost::get<ScalarPtr>(&v))
         {
-            DependencySource::DependencyPrinter(dot, lbl, *this)(*fp);
+            DependencySource::DepListInserter(dl, lbl)(*fp);
         }
 
     }
     if (auto *mp=boost::get<ModelPtr>(&modelinput_))
     {
-        DependencySource::DependencyPrinter(dot, "modelinput_", *this)(*mp);
+        DependencySource::DepListInserter(dl, "modelinput_")(*mp);
     }
 }
 
@@ -429,6 +427,7 @@ ModelVariable *ModelFeature::findInputVariable(const std::string &name)
         if (boost::fusion::get<0>(v)==name)
             return &boost::fusion::get<1>(v);
     }
+
     return nullptr;
 }
 

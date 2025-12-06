@@ -43,6 +43,9 @@ using namespace std;
 namespace insight {
 namespace cad {
 
+
+defineType(Datum);
+
 Datum::Datum(const Datum &o)
 : providesPointReference_(o.providesPointReference_),
     providesAxisReference_(o.providesAxisReference_),
@@ -149,6 +152,9 @@ size_t TransformedDatum::calcHash() const
   return plh.getHash();
 }
 
+
+defineType(TransformedDatum);
+
 TransformedDatum::TransformedDatum(DatumPtr datum, gp_Trsf tr)
 : Datum(datum->providesPointReference(), datum->providesAxisReference(), datum->providesPlanarReference()),
   base_(datum),
@@ -211,6 +217,8 @@ DatumPtr TransformedDatum::baseDatum() const
 //}
 
 
+defineType(DatumPoint);
+
 DatumPoint::DatumPoint(const DatumPoint &o)
     : Datum(o), p_(o.p_)
 {}
@@ -239,6 +247,9 @@ gp_Pnt DatumPoint::point() const
 //    ))
 //   });
 //}
+
+
+defineType(ProvidedDatum);
 
 
 size_t ProvidedDatum::calcHash() const
@@ -301,6 +312,7 @@ DatumPtr ProvidedDatum::baseDatum() const
 //    return dat_->createAISRepr(context, label, tr);
 //}
 
+defineType(ExplicitDatumPoint);
 
 size_t ExplicitDatumPoint::calcHash() const
 {
@@ -323,6 +335,7 @@ ExplicitDatumPoint::ExplicitDatumPoint(const ExplicitDatumPoint &o, TreeCloneMap
     : DatumPoint(o), CL(coord_)
 {}
 
+defineType(DatumAxis);
 
 DatumAxis::DatumAxis(const DatumAxis &o)
     : Datum(o), ax_(o.ax_)
@@ -359,6 +372,8 @@ gp_Ax1 DatumAxis::axis() const
 //  });
 //}
 
+defineType(ExplicitDatumAxis);
+
 
 size_t ExplicitDatumAxis::calcHash() const
 {
@@ -381,6 +396,7 @@ ExplicitDatumAxis::ExplicitDatumAxis(const ExplicitDatumAxis &o, TreeCloneMap &t
     : DatumAxis(o), CL(p0_), CL(ex_)
 {}
 
+defineType(DatumPlaneData);
 
 DatumPlaneData::DatumPlaneData(const DatumPlaneData &o)
     : Datum(o), cs_(o.cs_)
@@ -453,6 +469,7 @@ CoordinateSystem DatumPlaneData::coordinateSystem() const
 //  });
 //}
 
+defineType(DatumPlane);
 
 void DatumPlane::build()
 {
@@ -569,6 +586,7 @@ void DatumPlane::write(std::ostream& file) const
   insight::cad::Datum::write(file);
 }
 
+defineType(XsecPlanePlane);
 
 size_t XsecPlanePlane::calcHash() const
 {
@@ -613,6 +631,7 @@ void XsecPlanePlane::build()
 }
 
 
+defineType(XsecAxisPlane);
 
 size_t XsecAxisPlane::calcHash() const
 {

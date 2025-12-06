@@ -174,6 +174,16 @@ void Compound::replaceDependency(const DependencyReplacement &repl)
 
 
 
+void Compound::addDependencies(DependencyList& dl) const
+{
+    for (auto&c: components_)
+    {
+        DependencySource::DepListInserter(dl, c.first)
+            (*c.second);
+    }
+}
+
+
 
 void Compound::insertrule(parser::ISCADParser& ruleset)
 {

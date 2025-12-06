@@ -376,7 +376,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                     {"stl", "ASCII STL file"},
                                     {"stlb", "Binary STL file"},
                                     {"stp step", "STEP file", true},
-                                    {"igs iges", "IGES file"}
+                                    {"igs iges", "IGES file"},
+                                    {"dot", "dependency graph"}
                             }
                             ) )
                         {

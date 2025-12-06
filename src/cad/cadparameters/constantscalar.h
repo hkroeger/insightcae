@@ -31,6 +31,7 @@ class ConstantScalar
   double value_;
 public:
   void replaceDependency(const DependencyReplacement& repl) override;
+  void addDependencies(DependencyList& dl) const override;
   ConstantScalar(double value);
 
   size_t calcHash() const override;

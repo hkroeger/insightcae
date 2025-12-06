@@ -169,7 +169,8 @@ protected:
 
 public:
 #ifndef SWIG
-  DEPENDS_NOINVALIDATE((model_));
+  // DEPENDS_NOINVALIDATE((model_));
+  DEPENDS_DECL;
 #endif
   CLONEABLE(FeatureSet);
 
@@ -231,7 +232,8 @@ public:
     CREATE_FUNCTION(ProvidedFeatureSet);
     CLONEABLE(ProvidedFeatureSet);
 #ifndef SWIG
-    DEPENDS((model_));
+    DEPENDS_DECL;
+    // DEPENDS((model_));
 #endif
 
     size_t calcHash() const override;

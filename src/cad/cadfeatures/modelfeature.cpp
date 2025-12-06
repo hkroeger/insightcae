@@ -327,6 +327,38 @@ void ModelFeature::replaceDependency(const DependencyReplacement& repl)
     invalidate();
 }
 
+void ModelFeature::addDependencies(DependencyList& dl) const
+{
+    for (auto& nv: vars_)
+    {
+        auto &lbl = boost::fusion::get<0>(nv);
+        auto &v = boost::fusion::get<1>(nv);
+
+        if (auto* fp=boost::get<FeaturePtr>(&v))
+        {
+            DependencySource::DepListInserter(dl, lbl)(*fp);
+        }
+        else if (auto* fp=boost::get<DatumPtr>(&v))
+        {
+            DependencySource::DepListInserter(dl, lbl)(*fp);
+        }
+        else if (auto* fp=boost::get<VectorPtrAndType>(&v))
+        {
+            DependencySource::DepListInserter(dl, lbl)(
+                boost::fusion::get<0>(*fp));
+        }
+        else if (auto* fp=boost::get<ScalarPtr>(&v))
+        {
+            DependencySource::DepListInserter(dl, lbl)(*fp);
+        }
+
+    }
+    if (auto *mp=boost::get<ModelPtr>(&modelinput_))
+    {
+        DependencySource::DepListInserter(dl, "modelinput_")(*mp);
+    }
+}
+
 std::string ModelFeature::modelname() const
 {
     if (const boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
@@ -395,6 +427,7 @@ ModelVariable *ModelFeature::findInputVariable(const std::string &name)
         if (boost::fusion::get<0>(v)==name)
             return &boost::fusion::get<1>(v);
     }
+
     return nullptr;
 }
 

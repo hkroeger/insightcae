@@ -21,6 +21,8 @@
 
 #include "parameterlisthash.h"
 
+defineType(insight::cad::MultipliedScalar);
+
 insight::cad::MultipliedScalar::MultipliedScalar(const MultipliedScalar &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
 {}
@@ -45,7 +47,7 @@ double insight::cad::MultipliedScalar::calcValue() const
 }
 
 
-
+defineType(insight::cad::DividedScalar);
 
 insight::cad::DividedScalar::DividedScalar(const DividedScalar &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -70,6 +72,7 @@ double insight::cad::DividedScalar::calcValue() const
 
 
 
+defineType(insight::cad::AddedScalar);
 
 insight::cad::AddedScalar::AddedScalar(const AddedScalar &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -94,6 +97,7 @@ double insight::cad::AddedScalar::calcValue() const
 
 
 
+defineType(insight::cad::SubtractedScalar);
 
 insight::cad::SubtractedScalar::SubtractedScalar(const SubtractedScalar &o, TreeCloneMap &tcm)
     : CL(p1_), CL(p2_)
@@ -117,6 +121,7 @@ double insight::cad::SubtractedScalar::calcValue() const
 }
 
 
+defineType(insight::cad::VectorComponent);
 
 insight::cad::VectorComponent::VectorComponent(const VectorComponent &o, TreeCloneMap &tcm)
     : CL(p1_), cmpt_(o.cmpt_)
@@ -139,6 +144,10 @@ double insight::cad::VectorComponent::calcValue() const
 {
   return p1_->value()(cmpt_);
 }
+
+
+
+defineType(insight::cad::VectorMag);
 
 insight::cad::VectorMag::VectorMag(const VectorMag &o, TreeCloneMap &tcm)
     : CL(p1_)

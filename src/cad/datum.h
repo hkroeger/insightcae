@@ -49,6 +49,7 @@ protected:
   Datum(const Datum& o);
 
 public:
+  declareType("Datum");
   Datum(bool point, bool axis, bool planar);
   Datum(std::istream&);
   
@@ -98,6 +99,7 @@ protected:
     
     TransformedDatum(const TransformedDatum&o, TreeCloneMap& tcm);
 public:
+    declareType("TransformedDatum");
     CLONEABLE(TransformedDatum);
     DEPENDS((base_, translation_));
 
@@ -125,6 +127,7 @@ protected:
   
   DatumPoint(const DatumPoint& o);
 public:
+  declareType("DatumPoint");
   DatumPoint();
   
   gp_Pnt point() const override;
@@ -143,6 +146,7 @@ protected:
   
   DatumAxis(const DatumAxis& o);
 public:
+  declareType("DatumAxis");
   DatumAxis();
   
   gp_Pnt point() const override;
@@ -161,6 +165,7 @@ protected:
 
   DatumPlaneData(const DatumPlaneData& o);
 public:
+  declareType("DatumPlaneData");
   DatumPlaneData();
   
   gp_Pnt point() const override;
@@ -190,6 +195,7 @@ protected:
   
   ProvidedDatum(const ProvidedDatum&o, TreeCloneMap& tcm);
 public:
+  declareType("ProvidedDatum");
   CLONEABLE(ProvidedDatum);
 #ifndef SWIG
   DEPENDS((feat_, dat_));
@@ -220,6 +226,7 @@ class ExplicitDatumPoint
 
   ExplicitDatumPoint(const ExplicitDatumPoint&o, TreeCloneMap& tcm);
 public:
+  declareType("ExplicitDatumPoint");
   CLONEABLE(ExplicitDatumPoint);
 #ifndef SWIG
   DEPENDS((coord_));
@@ -240,6 +247,7 @@ class ExplicitDatumAxis
 
   ExplicitDatumAxis(const ExplicitDatumAxis&o, TreeCloneMap& tcm);
 public:
+  declareType("ExplicitDatumAxis");
   CLONEABLE(ExplicitDatumAxis);
 #ifndef SWIG
   DEPENDS((p0_, ex_));
@@ -262,6 +270,7 @@ class DatumPlane
   DatumPlane(const DatumPlane& o, TreeCloneMap& tcm);
 
 public:
+  declareType("DatumPlane");
   CLONEABLE(DatumPlane);
 #ifndef SWIG
   DEPENDS((p0_, n_, up_, p1_, p2_));
@@ -320,6 +329,7 @@ class XsecPlanePlane
 
   XsecPlanePlane(const XsecPlanePlane&o, TreeCloneMap& tcm);
 public:
+  declareType("XsecPlanePlane");
   CLONEABLE(XsecPlanePlane);
 #ifndef SWIG
   DEPENDS((pl1_, pl2_));
@@ -341,6 +351,7 @@ class XsecAxisPlane
 
   XsecAxisPlane(const XsecAxisPlane&o, TreeCloneMap& tcm);
 public:
+  declareType("XsecAxisPlane");
   CLONEABLE(XsecAxisPlane);
 #ifndef SWIG
   DEPENDS((ax_, pl_));

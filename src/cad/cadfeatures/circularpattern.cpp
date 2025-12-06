@@ -53,6 +53,12 @@ void CircularPattern::ExplicitTransformation::replaceDependency(
     repl(n_);
 }
 
+void CircularPattern::ExplicitTransformation::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "p0_")(p0_);
+    DepListInserter(dl, "axis_")(axis_);
+    DepListInserter(dl, "n_")(n_);
+}
 
 std::shared_ptr<DependencySource>
 CircularPattern::ExplicitTransformation::shallowClone(TreeCloneMap& tcm) const

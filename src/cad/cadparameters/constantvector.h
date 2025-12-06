@@ -33,6 +33,7 @@ class ConstantVector
   
 public:
   void replaceDependency(const DependencyReplacement& repl) override;
+  void addDependencies(DependencyList& dl) const override;
   ConstantVector(const arma::mat& value);
 
   size_t calcHash() const override;

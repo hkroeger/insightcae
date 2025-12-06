@@ -163,6 +163,7 @@ Model::Model(const Model& o, TreeCloneMap& tcm)
     //datasets_;
 }
 
+defineType(Model);
 
 
 Model::Model(const ModelVariableTable& vars)

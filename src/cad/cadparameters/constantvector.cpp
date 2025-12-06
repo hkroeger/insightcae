@@ -30,6 +30,9 @@ namespace cad
 void ConstantVector::replaceDependency(const DependencyReplacement& repl)
 {}
 
+void ConstantVector::addDependencies(DependencyList& dl) const
+{}
+
 
 insight::cad::ConstantVector::ConstantVector(const arma::mat& value)
 : value_(value)

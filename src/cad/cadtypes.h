@@ -23,9 +23,9 @@
 
 #include "base/cppextensions.h"
 #include "boost/variant/static_visitor.hpp"
+#include "boost/preprocessor.hpp"
 #include <algorithm>
 #include <memory>
-#define INSIGHT_CAD_DEBUG 1
 
 #include <set>
 #include <string>
@@ -45,6 +45,10 @@
 #include <boost/spirit/include/qi.hpp>
 #endif
 
+#include "treeclonemap.h"
+#include "dependencysource.h"
+#include "dependencyreplacement.h"
+
 namespace insight 
 {
 namespace cad 
@@ -63,7 +67,9 @@ class DeferredFeatureSet;
 class Filter;
 class Model;
 class PostprocAction;
-
+class DependencyReplacement;
+class DependencySource;
+class TreeCloneMap;
 
 
 
@@ -163,274 +169,116 @@ struct sharedModelLocations
 
 boost::filesystem::path sharedModelFilePath(const std::string& name);
 
-class DependencyReplacement;
-class DependencySource;
 
-class TreeCloneMap
-: public std::map<const DependencySource*, std::shared_ptr<DependencySource> >
-{
-public:
-    template<class T>
-    std::shared_ptr<T> clone(const std::shared_ptr<T>& old);
+#define MAKE_ADDDEPENDENCY_CALLBACK(r, data, elem)  \
+DependencySource::DepListInserter(dl, BOOST_PP_STRINGIZE(elem))(elem);
 
-    template<class PT, class C=char>
-    void clone(
-        const boost::spirit::qi::symbols<C, PT>& v,
-        boost::spirit::qi::symbols<C, PT>& out
-    )
-    {
-        out.clear();
-        v.for_each(
-            [&out,this](const std::string& name, const PT& v)
-            {
-                out.add(name, this->clone(v));
-            }
-            );
-    }
-};
+#define MAKE_ADDDEPENDENCY_CALLS(...) \
+BOOST_PP_LIST_FOR_EACH( \
+MAKE_ADDDEPENDENCY_CALLBACK, _, BOOST_PP_VARIADIC_TO_LIST(__VA_ARGS__) )
 
-
-
-class DependencySource
-{
-public:
-    virtual ~DependencySource();
-
-    virtual void replaceDependency(const DependencyReplacement& repl) =0;
-    void replaceAllDependencies(const TreeCloneMap& tcm);
-
-    virtual std::shared_ptr<DependencySource>
-    shallowClone(TreeCloneMap& tcm) const =0;
-
-    template<class T=DependencySource>
-    std::shared_ptr<T> deepClone() const
-    {
-        TreeCloneMap tcm;
-
-        auto sc=shallowClone(tcm);
-        sc->replaceAllDependencies(tcm);
-
-        auto tp=std::dynamic_pointer_cast<T>(sc);
-        insight::assertion(
-            bool(tp), "shallow clone return unexpected type");
-        return tp;
-    }
-};
-
-
-
-template<class T>
-std::shared_ptr<T> TreeCloneMap::clone(const std::shared_ptr<T>& old)
-{
-    auto oldptr=dynamic_cast<const DependencySource*>(old.get());
-    if (oldptr)
-    {
-        auto i=this->find(oldptr);
-        if (i!=end())
-        {
-            // already cloned elsewhere, replace with created clone
-            auto nv=std::dynamic_pointer_cast<T>(i->second);
-            insight::assertion(
-                bool(nv),
-                "unexpected type of previously cloned dependency");
-            return nv;
-        }
-        else
-        {
-            // create clone
-            auto cl = oldptr->shallowClone(*this);
-            emplace(oldptr, cl);
-            auto nv=std::dynamic_pointer_cast<T>(cl);
-            insight::assertion(
-                bool(nv),
-                "unexpected type of previously cloned dependency");
-            return nv;
-        }
-    }
-    else
-        return nullptr;
-}
-
-
-
-
-class DependencyReplacement
-    : public boost::static_visitor<void>
-{
-    const DependencySource* o;
-    std::shared_ptr<DependencySource> n;
-
-public:
-    DependencyReplacement(
-        const DependencySource* _o,
-        std::shared_ptr<DependencySource> _n )
-    : o(_o), n(_n)
-    {}
-
-    template<class T>
-    void operator()(std::shared_ptr<const T>& t) const
-    {
-        if (dynamic_cast<const DependencySource*>(t.get())==o)
-        {
-            auto ns=std::dynamic_pointer_cast<const T>(n);
-            insight::assertion(
-                bool(ns), "attempted to replace CAD dependency with different type!");
-            t=ns;
-        }
-        else
-        {
-            if (auto dep=dynamic_cast<const DependencySource*>(t.get()))
-            {
-                const_cast<DependencySource*>(dep)
-                    ->replaceDependency(*this);
-            }
-        }
-    }
-
-    template<class T>
-    void operator()(std::shared_ptr<T>& t) const
-    {
-        if (dynamic_cast<DependencySource*>(t.get())==o)
-        {
-            auto ns=std::dynamic_pointer_cast<T>(n);
-            insight::assertion(
-                bool(ns), "attempted to replace CAD dependency with different type!");
-            t=ns;
-        }
-        else
-        {
-            if (auto dep=std::dynamic_pointer_cast<DependencySource>(t))
-            {
-                dep->replaceDependency(*this);
-            }
-        }
-    }
-
-    void operator()(DependencySource& dsrc) const
-    {
-        dsrc.replaceDependency(*this);
-    }
-
-    // dispatch functions
-    template<typename... Args>
-    void operator()(boost::variant<Args...>& t) const
-    {
-        t.apply_visitor(*this);
-    }
-
-    template<class X, class Y>
-    void operator()(std::pair<X,Y>& p) const
-    {
-        (*this)(p.first);
-        (*this)(p.second);
-    }
-
-    template<class X>
-    void operator()(std::vector<X>& v) const
-    {
-        std::for_each(v.begin(), v.end(), *this);
-    }
-
-
-    template<class T, class C=char>
-    void operator()(boost::spirit::qi::symbols<C, T>& v) const
-    {
-        v.for_each(
-            [this](const std::string& name, T& v)
-            {
-                (*this)(v);
-            }
-            );
-    }
-};
 
 
 #define CL(MBRNAME) \
 MBRNAME(tcm.clone(o.MBRNAME))
 
-/*
-  (const &o, TreeCloneMap& tcm);
-public:
-  DEPENDS(());
-  CLONEABLE();
-*/
 
 #define CLONEABLE(TYPE) \
 inline std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const override \
-{\
-    return std::shared_ptr<DependencySource>(new TYPE(*this, tcm) );\
-}
+{ return std::shared_ptr<DependencySource>(new TYPE(*this, tcm) ); }
 
 #define DEPENDS_NOINVALIDATE(VARS) \
 void replaceDependency(const DependencyReplacement& repl) override \
-{ std::for_each(std::tie VARS,repl); }
+{ std::for_each(std::tie VARS,repl); } \
+void addDependencies(DependencyList& dl) const override \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_DECL \
+void replaceDependency(const DependencyReplacement& repl) override;\
+void addDependencies(DependencyList& dl) const override
+
+#define DEPENDS_IMPL(TYPE,VARS) \
+void TYPE::replaceDependency(const DependencyReplacement& repl) \
+{ std::for_each(std::tie VARS,repl); this->invalidate(); } \
+void TYPE::addDependencies(DependencySource::DependencyList& dl) const \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_IMPL_NOINVALIDATE(TYPE,VARS) \
+void TYPE::replaceDependency(const DependencyReplacement& repl) \
+{ std::for_each(std::tie VARS,repl); } \
+void TYPE::addDependencies(DependencySource::DependencyList& dl) const \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
 
 #define DEPENDS(VARS) \
 void replaceDependency(const DependencyReplacement& repl) override \
-{ std::for_each(std::tie VARS,repl); this->invalidate(); }
+{ std::for_each(std::tie VARS,repl); this->invalidate(); } \
+void addDependencies(DependencyList& dl) const override \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
 
 #define DEPENDS_W_BASE(BASE, VARS) \
 void replaceDependency(const DependencyReplacement& repl) override \
-{ BASE::replaceDependency(repl); std::for_each(std::tie VARS, repl); this->invalidate(); }
+{ BASE::replaceDependency(repl); std::for_each(std::tie VARS, repl); this->invalidate(); } \
+void addDependencies(DependencyList& dl) const override \
+{ BASE::addDependencies(dl); MAKE_ADDDEPENDENCY_CALLS VARS }
 
 
 
-template<class CloneResult>
-class Cloner
-    : public boost::static_visitor<CloneResult>
-{
-    TreeCloneMap& tcm_;
+// template<class CloneResult>
+// class Cloner
+//     : public boost::static_visitor<CloneResult>
+// {
+//     TreeCloneMap& tcm_;
 
-public:
-    Cloner(TreeCloneMap& tcm)
-        : tcm_(tcm)
-    {}
+// public:
+//     Cloner(TreeCloneMap& tcm)
+//         : tcm_(tcm)
+//     {}
 
-    template<class T>
-    void operator()(std::shared_ptr<const T>& t, std::shared_ptr<const T>& out) const
-    {
-        out=tcm_.clone(*t);
-    }
+//     template<class T>
+//     void operator()(std::shared_ptr<const T>& t, std::shared_ptr<const T>& out) const
+//     {
+//         out=tcm_.clone(*t);
+//     }
 
-    template<class T>
-    void operator()(std::shared_ptr<T>& t, std::shared_ptr<const T>& out) const
-    {
-        out=tcm_.clone(*t);
-    }
-
-
-    // dispatch functions
-    template<typename... Args>
-    void operator()(boost::variant<Args...>& t, boost::variant<Args...>& out) const
-    {
-        t.apply_visitor(*this);
-    }
-
-    template<class X, class Y>
-    void operator()(std::pair<X,Y>& p) const
-    {
-        (*this)(p.first);
-        (*this)(p.second);
-    }
-
-    template<class X>
-    void operator()(std::vector<X>& v) const
-    {
-        std::for_each(v.begin(), v.end(), *this);
-    }
+//     template<class T>
+//     void operator()(std::shared_ptr<T>& t, std::shared_ptr<const T>& out) const
+//     {
+//         out=tcm_.clone(*t);
+//     }
 
 
-    template<class T, class C=char>
-    void operator()(boost::spirit::qi::symbols<C, T>& v) const
-    {
-        v.for_each(
-            [this](const std::string& name, T& v)
-            {
-                (*this)(v);
-            }
-            );
-    }
-};
+//     // dispatch functions
+//     template<typename... Args>
+//     void operator()(boost::variant<Args...>& t, boost::variant<Args...>& out) const
+//     {
+//         t.apply_visitor(*this);
+//     }
+
+//     template<class X, class Y>
+//     void operator()(std::pair<X,Y>& p) const
+//     {
+//         (*this)(p.first);
+//         (*this)(p.second);
+//     }
+
+//     template<class X>
+//     void operator()(std::vector<X>& v) const
+//     {
+//         std::for_each(v.begin(), v.end(), *this);
+//     }
+
+
+//     template<class T, class C=char>
+//     void operator()(boost::spirit::qi::symbols<C, T>& v) const
+//     {
+//         v.for_each(
+//             [this](const std::string& name, T& v)
+//             {
+//                 (*this)(v);
+//             }
+//             );
+//     }
+// };
 
 }
 }

@@ -23,6 +23,7 @@
 #include "base/linearalgebra.h"
 #include "geotest.h"
 
+#include <fstream>
 #include <memory>
 
 #include "cadfeature.h"
@@ -473,6 +474,11 @@ std::string Feature::featureSymbolName() const
     return isAnonymous() ?
             ("anonymous_"+type()) :
              featureSymbolName_;
+}
+
+string Feature::label() const
+{
+    return featureSymbolName();
 }
 
 
@@ -1518,6 +1524,14 @@ void Feature::saveAs
     stlwriter.SetCoefficient(5e-5);
 #endif
     stlwriter.Write(shape(), filename.string().c_str());
+  }
+  else if ( (ext==".dot") )
+  {
+      std::ofstream f( filename.string() );
+      {
+        DOT dot(f);
+        printDependencies(dot);
+      }
   }
   else
   {

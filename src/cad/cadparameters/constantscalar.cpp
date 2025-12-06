@@ -25,6 +25,9 @@
 void insight::cad::ConstantScalar::replaceDependency(const DependencyReplacement& repl)
 {}
 
+void  insight::cad::ConstantScalar::addDependencies(DependencyList& dl) const
+{}
+
 
 insight::cad::ConstantScalar::ConstantScalar(double value)
 : value_(value)

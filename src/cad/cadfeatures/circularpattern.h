@@ -48,6 +48,7 @@ class CircularPattern
         bool center_;
 
         void replaceDependency(const DependencyReplacement& repl) override;
+        void addDependencies(DependencyList& dl) const override;
 
         std::shared_ptr<DependencySource>
             shallowClone(TreeCloneMap& tcm) const override;

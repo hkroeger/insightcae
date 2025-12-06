@@ -161,5 +161,13 @@ void ImportedSingleEdgeFeature::replaceDependency(const DependencyReplacement &r
     invalidate();
 }
 
+void ImportedSingleEdgeFeature::addDependencies(DependencyList& dl) const
+{
+    if (auto* fsd=boost::get<FeatureSetPtr>(&importSource_))
+    {
+        return DepListInserter(dl, "importSource_")(*fsd);
+    }
+}
+
 } // namespace cad
 } // namespace insight

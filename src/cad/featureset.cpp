@@ -60,6 +60,8 @@ FeatureSet::FeatureSet(const FeatureSet& o, TreeCloneMap& tcm)
   data_( o.data() )
 {}
 
+DEPENDS_IMPL_NOINVALIDATE(FeatureSet, (model_));
+
 
 FeatureSet::FeatureSet(const FeatureSet& o)
 : model_(o.model_),
@@ -261,6 +263,9 @@ ProvidedFeatureSet::ProvidedFeatureSet(
     const std::string& label )
     : ASTBasedFeatureSet(nullptr, shape), model_(m), label_(label)
 {}
+
+DEPENDS_IMPL(ProvidedFeatureSet, (model_));
+
 
 const FeatureSetData& ProvidedFeatureSet::data() const
 {

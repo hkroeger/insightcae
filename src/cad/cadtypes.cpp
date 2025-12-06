@@ -85,26 +85,8 @@ FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
 }
 
 
-DependencySource::~DependencySource()
-{}
-
-void DependencySource::replaceAllDependencies(const TreeCloneMap &tcm)
-{
-    for (auto& dep: tcm)
-    {
-        DependencyReplacement dr(dep.first, dep.second);
-        this->replaceDependency(dr);
-    }
-}
 
 
-
-// CADException::CADException(ConstFeaturePtr feat, const std::string message)
-// : OCCException(
-//     (feat ? "In feature "+feat->featureSymbolName()+": " : "without feature context: " )
-//     + message),
-//   errorfeat_(feat)
-// {}
 
 ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariableTable& mvt2)
 {
@@ -115,6 +97,8 @@ ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariable
 
     return rmvt;
 }
+
+
 
 
 }

@@ -1,0 +1,15 @@
+ni=3;
+nj=5;
+
+model:
+for (i,1,ni,{
+ iii=i;
+ sph:for(j,3,nj,{
+  ii=i;
+  jj=j;
+  p=i+j;
+ });
+});
+
+@post
+saveAs("/home/hannes/tmp/test2.dot") << model;

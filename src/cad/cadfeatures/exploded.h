@@ -56,6 +56,8 @@ protected:
 public:
     declareType ( "Exploded" );
     void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
+
     CREATE_FUNCTION(Exploded);
     CLONEABLE(Exploded);
 

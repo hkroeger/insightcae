@@ -200,6 +200,12 @@ void AlignWithBoundingBox::Alignment::replaceDependency(const DependencyReplacem
     repl(direction_);
 }
 
+void AlignWithBoundingBox::Alignment::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "other_")(other_);
+    DepListInserter(dl, "direction_")(direction_);
+}
+
 
 
 } // namespace cad

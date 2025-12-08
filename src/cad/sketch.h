@@ -68,7 +68,7 @@ class Sketch
   Sketch(const Sketch&o, TreeCloneMap& tcm);
 public:
   void replaceDependency(const DependencyReplacement& repl) override;
-  void addDependencies(DependencyList& dl) const override;
+  void addDependencies(DependencySource::DependencyList& dl) const override;
 
   CLONEABLE(Sketch);
   declareType("Sketch");

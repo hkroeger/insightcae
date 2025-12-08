@@ -88,7 +88,29 @@ template<> defineType(DateTimeParameter);
 defineType(VectorParameter);
 
 
+template<>
+bool BoolParameter::isBooleanData() const
+{
+    return true;
+}
 
+template<>
+bool BoolParameter::canSetFromBoolean() const
+{
+    return true;
+}
+
+template<>
+bool BoolParameter::getAsBoolean() const
+{
+    return operator()();
+}
+
+template<>
+void BoolParameter::setBoolean(bool b)
+{
+    set(b);
+}
 
 
 addParameterFactories(DoubleParameter);

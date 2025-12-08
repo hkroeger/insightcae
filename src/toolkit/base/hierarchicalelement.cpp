@@ -533,7 +533,11 @@ rapidxml::xml_node<>* Element::appendToNode(
 
         node.append_node(child);
         appendAttribute(doc, *child, "name", name);
-        appendAttribute(doc, *child, "order", order_);
+
+        if (!outProps.skipParameterDescription)
+        {
+            appendAttribute(doc, *child, "order", order_);
+        }
 
         return child;
     }

@@ -292,7 +292,9 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
     bool pack,
     const boost::filesystem::path& fileParentPath ) const
 {
-  xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
+  xml_node<> *unassignedBCnode =
+        doc.allocate_node ( node_element, "UnassignedPatches" );
+
   if (pack)
   {
     defaultPatch_->parameterSetModel()->pack();
@@ -301,6 +303,7 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
   {
     defaultPatch_->parameterSetModel()->clearPackedData();
   }
+
   defaultPatch_->appendToNode(doc, *unassignedBCnode, fileParentPath);
   BCnode->append_node ( unassignedBCnode );
 

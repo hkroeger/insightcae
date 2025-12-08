@@ -341,8 +341,7 @@ ParameterSet::appendToNode(
         insight::VerbosityLevel::Loops,
         "appending subset %s to node %s", name.c_str(), node.name());
 
-  using namespace rapidxml;
-  xml_node<>*  child = Parameter::appendToNode(name, doc, node, outProps);
+  auto child = Parameter::appendToNode(name, doc, node, outProps);
 
   for( auto i=value_.begin(); i!= value_.end(); i++)
   {

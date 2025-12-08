@@ -104,13 +104,13 @@ bool Patch::insertElement(insight::OpenFOAMCase& c, insight::OFDictData::dict& b
 
 void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath )
 {
-//     xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
     node.append_attribute ( doc.allocate_attribute ( "patchName", patch_name_.c_str() ) );
     node.append_attribute ( doc.allocate_attribute ( "BCtype", type_name_.c_str() ) );
 
+    insight::hierarchicalData::Element::OutputProperties op;
+    op.skipParameterDescription=true;
     curp_->getParameterSet().appendToNode (
-        std::string(), doc, node,
-        insight::hierarchicalData::Element::OutputProperties() );
+        std::string(), doc, node, op );
 }
 
 

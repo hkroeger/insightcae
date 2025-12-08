@@ -18,6 +18,25 @@ void EditorWithSavableState::loadFromFile(const boost::filesystem::path &file)
 }
 
 
+void AutosavableEditor::doCleanupOnRegularExit()
+{
+    boost::filesystem::path savefn;
+    if (currentFileNameIsSet())
+    {
+        savefn=autosaveFileName(
+            currentFileName() );
+    }
+    if (!savefn.empty() && boost::filesystem::exists(savefn) )
+    {
+        insight::dbg(insight::BasicBusiness)
+        << "deleting autosave file "
+        << savefn.string()
+        << std::endl;
+
+        boost::filesystem::remove(savefn);
+    }
+}
+
 
 AutosavableEditor::AutosavableEditor()
     : isModified_(false)

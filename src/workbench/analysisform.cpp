@@ -106,7 +106,9 @@ void AnalysisForm::saveState(
             p->clearPackedData();
         }
 
-        p->saveToNode(doc, rootNode);
+        insight::hierarchicalData::Element::OutputProperties op;
+        op.skipParameterDescription=true;
+        p->saveToNode(doc, rootNode, op);
     }
 
     {
@@ -624,6 +626,8 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
           settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
+          doCleanupOnRegularExit();
+
           QWidget::closeEvent(event);
       }
     }
@@ -732,7 +736,6 @@ void AnalysisForm::loadParameters(
   {
       auto asfn = AutosavableEditor
           ::autosaveFileName(*fn);
-      std::cout<<asfn<<std::endl;
 
       auto fnToLoad= *fn;
       bool removeFromFile=false;

@@ -81,8 +81,7 @@ int main ( int argc, char** argv )
 
 
   bool batch = false;
-
-  InsightCAEApplication app ( argc, argv, "isofCaseBuilder" );
+  std::unique_ptr<InsightCAEApplication> app;
 
   try
   {
@@ -148,6 +147,19 @@ int main ( int argc, char** argv )
 
       batch = vm.count("batch") || vm.count("batch-run");
 
+      if (batch)
+      {
+          int iargc = 3;
+          char* iargv[3];
+          iargv[0] = const_cast<char*>(argv[0]);
+          iargv[1] = const_cast<char*>("-platform");
+          iargv[2] = const_cast<char*>("offscreen");
+          app.reset(new InsightCAEApplication( iargc, iargv, "isofCaseBuilder" ));
+      }
+      else
+      {
+          app.reset(new InsightCAEApplication( argc, argv, "isofCaseBuilder" ));
+      }
 
       // After creation of application object!
       std::locale::global ( std::locale::classic() );
@@ -174,7 +186,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<BoolParameter>(window, pair, s);
-                  bool v=boost::lexical_cast<bool>(pair[2]);
+                  bool v=toValue<bool>(pair[2]);
                   p.set(v);
               }
           }
@@ -208,7 +220,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<PathParameter>(window, pair, s);
-                  p.setOriginalFilePath(pair[2]);
+                  p.setFileName(pair[2]);
               }
           }
 
@@ -231,8 +243,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<VectorParameter>(window, pair, s);
-                  arma::mat v;
-                  stringToValue(pair[2], v);
+                  arma::mat v=toValue<arma::mat>(pair[2]);
                   p.set(v);
               }
           }
@@ -280,20 +291,20 @@ int main ( int argc, char** argv )
     if ( !batch )
     {
         window.show();
-        return app.exec();
+        return app->exec();
     }
     else
         return 0;
   }
-  catch ( const std::exception& e )
+  catch ( ... )
   {
     if (batch)
     {
-      insight::printException_CAD(e);
+      insight::printCurrentException();
     }
     else
     {
-      displayException(e);
+      displayCurrentException();
     }
     return -1;
   }

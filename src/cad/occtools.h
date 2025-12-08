@@ -28,15 +28,36 @@ namespace insight {
 namespace cad {
 
 
-gp_Trsf OFtransformToOCC(const insight::SpatialTransformation& trsf);
-gp_Trsf OFtransformToOCC(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale);
 
-class OCCtransformToOF
-        : public insight::SpatialTransformation
+class is_gp_Trsf
+    : public gp_Trsf
 {
+    static
+        gp_Trsf OFtransformToOCC(
+            const arma::mat& translate,
+            const arma::mat& rollPitchYaw,
+            double scale );
 public:
-  OCCtransformToOF(const gp_Trsf& t);
+    is_gp_Trsf();
+    is_gp_Trsf(const gp_Trsf& trsf);
+    is_gp_Trsf(const insight::SpatialTransformation& trsf);
+    is_gp_Trsf(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale);
+    is_gp_Trsf(const arma::mat& translate, const arma::mat& rollPitchYaw, const arma::mat& scale);
+
+    insight::SpatialTransformation toSpatialTransformation() const;
+    operator insight::SpatialTransformation() const;
+
 };
+
+
+// gp_Trsf OFtransformToOCC(const insight::SpatialTransformation& trsf);
+
+// class OCCtransformToOF
+//         : public insight::SpatialTransformation
+// {
+// public:
+//   OCCtransformToOF(const gp_Trsf& t);
+// };
 
 
 std::vector<arma::mat> orderedCornerPoints(const TopoDS_Shape& f);

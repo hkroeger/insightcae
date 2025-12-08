@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_PARAMETER_H
 
 #include "cadtypes.h"
+#include "astbase.h"
 #include "base/linearalgebra.h"
 #include "base/factory.h"
 
@@ -29,22 +30,52 @@ namespace cad {
 
 
 class Scalar
+    : public ASTBase,
+      public DependencySource
 {
+    double value_;
 public:
   declareType("Scalar");
+
   virtual ~Scalar();
-  virtual double value() const =0;
+
+  virtual double calcValue() const =0;
+
+  void build() override;
+  inline double value() const
+  {
+      checkForBuildDuringAccess();
+      return value_;
+  }
+
+  std::string label() const override;
+
   operator double() const;
 };
 
 
 
 class Vector
+    : public ASTBase,
+      public DependencySource
 {
+    arma::mat value_;
 public:
   declareType("Vector");
+
   virtual ~Vector();
-  virtual arma::mat value() const =0;
+
+  virtual arma::mat calcValue() const =0;
+
+  void build() override;
+  inline arma::mat value() const
+  {
+      checkForBuildDuringAccess();
+      return value_;
+  }
+
+  std::string label() const override;
+
   operator arma::mat() const;
 };
 

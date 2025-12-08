@@ -1,21 +1,28 @@
-#include "resultsetfilter.h"
+#include "hierarchicaldatafilter.h"
 #include "base/exception.h"
+#include "hierarchicalelement.h"
 
 namespace insight {
+namespace hierarchicalData {
 
 
-
-
-bool ResultSetFilter::matches(const std::string &path) const
+bool Filter::matches(const Element &e) const
 {
-    dbg()<<"check match "<<path<<std::endl;
+    return matches(e.path());
+}
+
+
+
+bool Filter::matches(const std::string &path) const
+{
+    insight::dbg(DetailedBusiness)<<"check match "<<path<<std::endl;
     return matchesConstant(path) || matchesRegex(path);
 }
 
 
 
 
-bool ResultSetFilter::matchesConstant(const std::string &path) const
+bool Filter::matchesConstant(const std::string &path) const
 {
     for (const auto& e: *this)
     {
@@ -31,7 +38,7 @@ bool ResultSetFilter::matchesConstant(const std::string &path) const
 
 
 
-bool ResultSetFilter::matchesRegex(const std::string &path) const
+bool Filter::matchesRegex(const std::string &path) const
 {
     for (const auto& e: *this)
     {
@@ -47,10 +54,10 @@ bool ResultSetFilter::matchesRegex(const std::string &path) const
 
 
 
-void ResultSetFilter::readFromNode (
-        rapidxml::xml_node<>& node )
+void Filter::readFromNode (
+        const rapidxml::xml_node<>& node )
 {
-    for (rapidxml::xml_node<> *e = node.first_node();
+    for (auto *e = node.first_node();
          e; e = e->next_sibling())
     {
         std::string type(e->first_attribute("type")->value());
@@ -71,7 +78,7 @@ void ResultSetFilter::readFromNode (
 /**
  * append the contents of this element to the given xml node
  */
-void ResultSetFilter::appendToNode
+void Filter::appendToNode
 (
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node
@@ -107,4 +114,5 @@ void ResultSetFilter::appendToNode
 }
 
 
+}
 } // namespace insight

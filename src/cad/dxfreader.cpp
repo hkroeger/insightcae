@@ -25,7 +25,8 @@
 #include "base/tools.h"
 
 #include "datum.h"
-
+#include "featureset.h"
+#include "datum.h"
 #include "TColStd_Array1OfInteger.hxx"
 #include "GC_MakeArcOfCircle.hxx"
 #include "ShapeAnalysis_FreeBounds.hxx"

@@ -18,6 +18,8 @@
  */
 
 #include "sweep.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -56,6 +58,16 @@ size_t Sweep::calcHash() const
   return h.getHash();
 }
 
+
+
+
+Sweep::Sweep(const Sweep&o, TreeCloneMap& tcm)
+{
+    for (auto& s: o.secs_)
+    {
+        secs_.push_back(tcm.clone(s));
+    }
+}
 
 
 
@@ -124,7 +136,7 @@ void Sweep::insertrule(parser::ISCADParser& ruleset)
     "Sweep",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
+    ( '(' > (ruleset.r_solidmodel_expression % ',' ) > ')' )
       [ qi::_val = phx::bind(
                          &Sweep::create<const std::vector<FeaturePtr>&>,
                          qi::_1) ]

@@ -72,7 +72,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   if (fieldname == "k")
   {
     BC["type"]=OFDictData::data(turbpref+"kqRWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   else if (fieldname == "omega")
@@ -83,7 +83,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     BC["E"]=9.8;
     BC["beta1"]=0.075;
     BC["blended"]=true;
-    BC["value"]="uniform 1";
+    BC["value"]=OFDictData::toUniformField(1.);
     return true;
   }
   else if (fieldname == "nut")
@@ -97,31 +97,31 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
           BC["roughnessConstant"]=Cs;
           BC["roughnessHeight"]=roughness_z0*9.793/Cs;
           BC["roughnessFactor"]=1.0;
-          BC["value"]="uniform 1e-10";
+          BC["value"]=OFDictData::toUniformField(1e-10);
       }
       else
       {
         BC["type"]=turbpref+"nutUWallFunction";
-        BC["value"]=OFDictData::data("uniform 1e-10");
+        BC["value"]=OFDictData::toUniformField(1e-10);
       }
     }
     else
     {
       BC["type"]=turbpref+"nutWallFunction";
-      BC["value"]=OFDictData::data("uniform 1e-10");
+      BC["value"]=OFDictData::toUniformField(1e-10);
     }
     return true;
   }
   else if (fieldname == "mut")
   {
     BC["type"]=OFDictData::data("mutkWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
   else if (fieldname == "alphat")
   {
     BC["type"]=pref+"alphatWallFunction";
-    BC["value"]=OFDictData::data("uniform 1e-10");
+    BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
 

@@ -28,20 +28,6 @@ namespace insight
 {
 
 
-int realNp(int userInputNp)
-{
-    if (userInputNp>0)
-    {
-        return userInputNp;
-    }
-    else
-    {
-        return std::max<int>(
-            1,
-            boost::thread::physical_concurrency()+userInputNp
-            );
-    }
-}
 
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {
@@ -51,7 +37,7 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetP
       cm, P{
             ps.selection(),
             std::dynamic_unique_ptr_cast<ParameterSet>(
-                ps().cloneParameterSet()) }
+                ps().cloneAs<ParameterSet>()) }
       );
 }
 

@@ -43,6 +43,7 @@ class Quad
 
     QuadCentering center_;
 
+    Quad(const Quad&o, TreeCloneMap& tcm);
     Quad ( VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t = ScalarPtr(), QuadCentering center=QuadCentering ( false, false ) );
 
     size_t calcHash() const override;
@@ -50,8 +51,11 @@ class Quad
 
 public:
     declareType ( "Quad" );
-
+#ifndef SWIG
+    DEPENDS((p0_, L_, W_, t_));
+#endif
     CREATE_FUNCTION(Quad);
+    CLONEABLE(Quad);
 
     operator const TopoDS_Face& () const;
 

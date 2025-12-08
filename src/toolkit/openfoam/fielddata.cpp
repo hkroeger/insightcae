@@ -103,7 +103,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
         boost::get<Parameters::fielddata_uniformSteady_type>(
             &p().fielddata ) ) //(type=="uniform")
     {
-        os <<" uniform unsteady 0.0 " << OFDictData::to_OF(fd->value);
+        os <<" uniform unsteady 0.0 " << OFDictData::vector3(fd->value);
     }
 
     else if (const auto *fd =
@@ -114,7 +114,7 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
         for (const auto& inst: fd->values)
         {
-            os << " " << inst.time << " " << OFDictData::to_OF(inst.value);
+            os << " " << inst.time << " " << OFDictData::vector3(inst.value);
         }
     }
     else if ( const auto *fd =
@@ -122,9 +122,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                  &p().fielddata ) )
     {
         os<<" linearProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::vector3(fd->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::vector3(fd->ep)
           ;
 
         os<<" "
@@ -140,9 +140,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                  &p().fielddata) )
     {
         os<<" radialProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::vector3(fd->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::vector3(fd->ep)
           ;
 
         os<<" "
@@ -158,9 +158,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                  &p().fielddata ) )
     {
         os<<" fittedProfile "
-          <<OFDictData::to_OF(fp->p0)
+          <<OFDictData::vector3(fp->p0)
           <<" "
-          <<OFDictData::to_OF(fp->ep)
+          <<OFDictData::vector3(fp->ep)
           <<" "
           <<"unsteady";
 
@@ -170,10 +170,42 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
             for (const auto& coeffs: inst.component_coeffs)
             {
-                os << " [";
+                os << " (";
                 for (size_t cc=0; cc<coeffs.n_elem; cc++)
                     os<<" "<< str( format("%g") % coeffs[cc] );
-                os<<" ]";
+                os<<" )";
+            }
+        }
+    }
+    else if ( const auto *fp =
+             boost::get<Parameters::fielddata_fitted2DProfile_type>(
+                 &p().fielddata ) )
+    {
+        os<<" fitted2DProfile "
+           <<OFDictData::vector3(fp->p0)
+           <<" "
+           <<OFDictData::vector3(fp->ep)
+           <<" "
+           <<OFDictData::vector3(fp->ev)
+           <<" "
+           <<"unsteady";
+
+        for (const auto& inst: fp->values)
+        {
+            os << " " << inst.time;
+
+            for (const auto& comp: inst.component_coeffs)
+            {
+                auto append = [&](const arma::mat& coeffs, double lo, double hi)
+                {
+                    os << " " << lo << " " << hi;
+                    os << " (";
+                    for (size_t cc=0; cc<coeffs.n_elem; cc++)
+                        os<<" "<< str( format("%g") % coeffs[cc] );
+                    os<<" )";
+                };
+                append(comp.coeffs_t, comp.tmin, comp.tmax);
+                append(comp.coeffs_u, comp.umin, comp.umax);
             }
         }
     }
@@ -182,9 +214,9 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
                    &p().fielddata ) )
     {
         os<<" fittedProfile "
-          <<OFDictData::to_OF(fd->p0)
+          <<OFDictData::vector3(fd->p0)
           <<" "
-          <<OFDictData::to_OF(fd->ep)
+          <<OFDictData::vector3(fd->ep)
           <<" "
           <<"unsteady";
 
@@ -194,10 +226,10 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
             for (const auto& coeffs: inst.component_coeffs)
             {
-                os << " [";
+                os << " (";
                 for (size_t cc=0; cc<coeffs.n_elem; cc++)
                     os<<" "<< str( format("%g") % coeffs[cc] );
-                os<<" ]";
+                os<<" )";
             }
         }
     }
@@ -227,10 +259,11 @@ OFDictData::data FieldData::sourceEntry(OFdicts& dictionaries) const
 
 void FieldData::setDirichletBC(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
-  if (const Parameters::fielddata_uniformSteady_type *fd = boost::get<Parameters::fielddata_uniformSteady_type>(&p().fielddata) )
+  if (const auto *fd =
+        boost::get<Parameters::fielddata_uniformSteady_type>(&p().fielddata) )
   {
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]="uniform " + OFDictData::to_OF(fd->value);
+    BC["value"]=OFDictData::toUniformField(fd->value);
   }
   else
   {
@@ -314,6 +347,9 @@ readVTKData(
 }
 
 
+
+
+
 double FieldData::calcRepresentativeValueMag() const
 {
   if (const auto *fd =
@@ -347,7 +383,7 @@ double FieldData::calcRepresentativeValueMag() const
     for (const auto& inst: fd->values)
     {
       arma::mat xy;
-      xy.load( inst.profile->stream(), arma::raw_ascii);
+      xy.load( *inst.profile->stream(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
@@ -371,7 +407,7 @@ double FieldData::calcRepresentativeValueMag() const
     for (const auto& inst: fd->values)
     {
       arma::mat xy;
-      xy.load( inst.profile->stream(), arma::raw_ascii);
+      xy.load( *inst.profile->stream(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
       for (arma::uword c=0; c<I.n_cols-1; c++)
@@ -401,6 +437,34 @@ double FieldData::calcRepresentativeValueMag() const
       }
       avg/=double(fd->values.size());
       return sqrt(arma::as_scalar(arma::sum(avg)));
+  }
+  else if (const auto *fp =
+           boost::get<Parameters::fielddata_fittedProfile_type>(
+               &p().fielddata ) )
+  {
+      insight::Warning("no reasonable method implemented yet for determining a representative value from polynomial.");
+      double vsq=0.;
+      for (int c=0; c<p().n_cmpt; ++c)
+      {
+          vsq+=pow(fp->values.begin()->component_coeffs[c][
+                         fp->values.begin()->component_coeffs[c].n_elem-1], 2);
+      }
+      return sqrt(vsq);
+  }
+  else if (const auto *fp =
+           boost::get<Parameters::fielddata_fitted2DProfile_type>(
+               &p().fielddata ) )
+  {
+      insight::Warning("no reasonable method implemented yet for determining a representative value from polynomial.");
+      double vsq=0.;
+      for (int c=0; c<p().n_cmpt; ++c)
+      {
+          vsq+=pow(fp->values.begin()->component_coeffs[c].coeffs_t[
+                         fp->values.begin()->component_coeffs[c].coeffs_t.n_elem-1]
+                     *fp->values.begin()->component_coeffs[c].coeffs_u[
+                             fp->values.begin()->component_coeffs[c].coeffs_u.n_elem-1], 2);
+      }
+      return sqrt(vsq);
   }
   else
   {
@@ -436,7 +500,7 @@ double FieldData::calcMaxValueMag() const
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( inst.profile->stream(), arma::raw_ascii);
+            xy.load( *inst.profile->stream(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
@@ -454,7 +518,7 @@ double FieldData::calcMaxValueMag() const
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( inst.profile->stream(), arma::raw_ascii);
+            xy.load( *inst.profile->stream(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             arma::uword i=0;
             for (arma::uword c=0; c<mag_inst.n_cols-1; c++)
@@ -479,6 +543,34 @@ double FieldData::calcMaxValueMag() const
                 );
         }
     }
+    else if (const auto *fp =
+             boost::get<Parameters::fielddata_fittedProfile_type>(
+                 &p().fielddata ) )
+    {
+        insight::Warning("no reasonable method implemented yet for determining a maximum representative value from polynomial.");
+        double vsq=0.;
+        for (int c=0; c<p().n_cmpt; ++c)
+        {
+            vsq+=pow(fp->values.begin()->component_coeffs[c][
+                           fp->values.begin()->component_coeffs[c].n_elem-1], 2);
+        }
+        return sqrt(vsq);
+    }
+    else if (const auto *fp =
+             boost::get<Parameters::fielddata_fitted2DProfile_type>(
+                 &p().fielddata ) )
+    {
+        insight::Warning("no reasonable method implemented yet for determining a maximum representative value from polynomial.");
+        double vsq=0.;
+        for (int c=0; c<p().n_cmpt; ++c)
+        {
+            vsq+=pow(fp->values.begin()->component_coeffs[c].coeffs_t[
+                           fp->values.begin()->component_coeffs[c].coeffs_t.n_elem-1]
+                       *fp->values.begin()->component_coeffs[c].coeffs_u[
+                               fp->values.begin()->component_coeffs[c].coeffs_u.n_elem-1], 2);
+        }
+        return sqrt(vsq);
+    }
     else
     {
         throw insight::Exception("not yet implemented!");
@@ -491,12 +583,14 @@ double FieldData::calcMaxValueMag() const
 
 Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::string& )
 {
-  std::unique_ptr<Parameter> p(
-        Parameters::makeDefault()->get<ParameterSet>("fielddata").clone(false));
+  auto p = Parameters::makeDefault()
+                 ->get<ParameterSet>("fielddata")
+                 .cloneAs<Parameter>();
+
   auto opts = dynamic_cast<SelectableSubsetParameter*>(p.get());
 
   auto cp =
-    opts->getParametersForSelection("uniformSteady").cloneParameterSet();
+    opts->getParametersForSelection("uniformSteady").cloneAs<ParameterSet>();
 
   cp->get<VectorParameter>("value").set( def_val );
   opts->setParametersForSelection("uniformSteady", *cp);
@@ -507,7 +601,7 @@ Parameter* FieldData::defaultParameter(const arma::mat& def_val, const std::stri
 
 
 
-void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const
+void FieldData::insertGraphsToResultSet(ResultSet& results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const
 {
     if (const auto *fd =
         boost::get<Parameters::fielddata_linearProfile_type>(
@@ -516,7 +610,7 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
         for (const auto& inst: fd->values)
         {
             arma::mat xy;
-            xy.load( inst.profile->stream(), arma::raw_ascii);
+            xy.load( *inst.profile->stream(), arma::raw_ascii);
 
             arma::uword ncmpt=xy.n_cols-1;
             PlotCurveList crvs(ncmpt);

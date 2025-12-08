@@ -53,19 +53,33 @@ void AnalysisForm::updateSaveMenuLabel()
 
 void AnalysisForm::updateWindowTitle()
 {
-  QString t = QString::fromStdString(analysisName_);
+    QString newTitle =
+        QString::fromStdString(psmodel_->getAnalysisName());
 
-  QString pf = QString::fromStdString(ist_file_.parent_path().string());
+    if (isModified())
+    {
+        newTitle = "*"+newTitle;
+    }
 
-  if (!ist_file_.empty())
-    t+=" ("+QString::fromStdString(ist_file_.filename().string());
+    if (currentFileNameIsSet())
+    {
+        auto istFile=currentFileName();
 
-  if (!pf.isEmpty() && pf!=".")
-    t+=" in "+pf;
+        newTitle+=" ("+QString::fromStdString(
+                 istFile.filename().string());
 
-  t+=")";
+        QString pf = QString::fromStdString(
+            istFile.parent_path().string());
 
-  this->setWindowTitle(t);
+        if (!pf.isEmpty() && pf!=".")
+            newTitle+=" in "+pf;
+
+        newTitle+=")";
+    }
+
+    this
+        ->topLevelWidget()
+        ->setWindowTitle(newTitle);
 }
 
 
@@ -95,7 +109,6 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 
   return true;
 }
-
 
 
 
@@ -132,10 +145,11 @@ void AnalysisForm::onKillAnalysis()
 
 
 
-void AnalysisForm::onResultReady(insight::ResultSetPtr results)
+void AnalysisForm::onResultReady()
 {
-    ui->tabWidget->setCurrentWidget(ui->outputTab);
-  resultsViewer_->loadResults(results);
+  ui->tabWidget->setCurrentWidget(ui->outputTab);
+    resultsViewer_->loadResults(
+      currentWorkbenchAction_->moveResults() );
 
   currentWorkbenchAction_.reset();
 

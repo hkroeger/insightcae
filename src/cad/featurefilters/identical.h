@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_IDENTICAL_H
 
 
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 
 namespace insight 

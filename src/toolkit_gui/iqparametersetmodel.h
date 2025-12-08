@@ -2,6 +2,7 @@
 #define IQPARAMETERSETMODEL_H
 
 #include "base/parameter.h"
+#include "base/parameters/subsetparameter.h"
 #include "toolkit_gui_export.h"
 
 #include <QSet>
@@ -9,10 +10,12 @@
 #include <QAbstractItemModel>
 #include <QAbstractProxyModel>
 #include <QScopedPointer>
+#include <atomic>
+#include <memory>
 
 #include "base/parameterset.h"
 #include "iqparameter.h"
-
+#include "iqhierarchicaldatamodel.h"
 
 
 
@@ -28,21 +31,18 @@ class IQParameterSetModel;
 namespace insight {
 class CADParameterSetModelVisualizer;
 class LabeledArrayParameter;
+namespace cad {
+class Feature;
+typedef std::shared_ptr<Feature> FeaturePtr;
+}
 }
 
 
 
 class TOOLKIT_GUI_EXPORT IQParameterSetModel
-    : public QAbstractItemModel
+    : public IQHierarchicalDataModel
 {
   Q_OBJECT
-
-public:
-  static const int
-      labelCol=0,
-      valueCol=1,
-      stringPathCol=2,
-      iqParamCol=3;
 
 private:
 
@@ -54,16 +54,10 @@ private:
   template<class IQBaseParameter, const char* N>
   friend class IQArrayElementParameter;
 
-  std::unique_ptr<insight::ParameterSet> parameterSet_;
 
   std::unique_ptr<insight::ParameterSet> defaultParameterSet_;
-  std::string analysisName_; // reqd for parameter proposition engine
 
   mutable std::map<std::string, insight::cad::FeaturePtr> transformedGeometry_;
-  mutable std::key_observer_map<IQParameter, int> wrappers_;
-
-  IQParameter* findWrapper(const insight::Parameter& p) const;
-  int countDisplayedChildren(const QModelIndex& index) const;
 
   /**
    * @brief vectorBasePoints_
@@ -76,29 +70,12 @@ private:
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
 public:
-  static insight::Parameter* indexData(const QModelIndex& idx);
-  const IQParameter* iqIndexData(const QModelIndex& idx) const;
-  IQParameter* iqIndexData(const QModelIndex& idx);
-
   IQParameterSetModel(
       std::unique_ptr<insight::ParameterSet>&& ps,
       boost::optional<const insight::ParameterSet&> defaultps
         = boost::optional<const insight::ParameterSet&>(),
       QObject* parent=nullptr);
 
-    const insight::Parameter* visibleParent(const insight::Parameter&p, int& row) const;
-
-    // access functions
-    QModelIndex indexFromParameter(const insight::Parameter& p, int col) const;
-    QModelIndex indexFromParameterPath(const std::string& pp, int col) const;
-
-
-  int	columnCount(const QModelIndex &parent = QModelIndex()) const override;
-  QVariant	headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-
-  int	rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  QModelIndex	index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-  QModelIndex	parent(const QModelIndex &index) const override;
 
   Qt::ItemFlags flags(const QModelIndex &index) const override;
   Qt::DropActions supportedDropActions() const override;
@@ -106,7 +83,7 @@ public:
   QMimeData * mimeData(const QModelIndexList & indexes) const override;
   bool dropMimeData(const QMimeData * data, Qt::DropAction action, int row, int column, const QModelIndex & parent) override;
 
-  QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+  // QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
   // edit functions
@@ -115,21 +92,28 @@ public:
   void copy(const QModelIndexList & indexes) const;
   void paste(const QModelIndexList & indexes);
 
-  static void contextMenu(QWidget* pw, const QModelIndex& index, const QPoint& p);
+  static void contextMenu(
+      QWidget* pw,
+      const QModelIndex& index,
+      const QPoint& p,
+      IQCADModel3DViewer *viewer = nullptr );
 
-  class ParameterEditor
-  {
-      IQParameterSetModel& model_;
-      const QModelIndex index_;
-  public:
-      insight::Parameter& parameter;
-      ParameterEditor(IQParameterSetModel& psm, const std::string& parameterPath);
-      ~ParameterEditor();
-  };
-  friend class ParameterContext;
+  // class ParameterEditor
+  // {
+  //     IQParameterSetModel& model_;
+  //     const QModelIndex index_;
+  // public:
+  //     insight::Parameter& parameter;
+  //     ParameterEditor(IQParameterSetModel& psm, const std::string& parameterPath);
+  //     ~ParameterEditor();
+  // };
+  // friend class ParameterContext;
 
 
   const insight::ParameterSet& getParameterSet() const;
+
+  bool hasDefaultParameterSet() const;
+  const insight::ParameterSet* defaultParameterSet() const;
 
 //  IQParameter* iqParameter(const QModelIndex &index) const;
 
@@ -139,20 +123,6 @@ public:
   insight::Parameter& parameterRef(const std::string &path);
 
 
-  /**
-   * @brief notifyParameterChange
-   * update parameter and redecorate all children, if necessary
-   * @param path
-   * path (slash separated) to changed parameter
-   */
-  void notifyParameterChange(const insight::Parameter& p);
-
-  /**
-   * @brief notifyParameterChange
-   * update parameter and redecorate all children, if necessary
-   * @param index
-   */
-  void notifyParameterChange(const QModelIndex &index);
 
   void appendArrayElement(const QModelIndex &index, const insight::Parameter& elem);
   /**
@@ -180,19 +150,18 @@ public:
   void pack();
   void clearPackedData();
 
-  void setAnalysisName(const std::string& analysisName);
-  const std::string& getAnalysisName() const;
+  std::string getAnalysisName() const;
 
-  void resetParameters(
-      std::unique_ptr<insight::ParameterSet>&& ps );
+
+
 
 public Q_SLOTS:
-  void clearParameters();
 
   void resetParameterValues(
       const insight::ParameterSet& ps,
       boost::optional<const insight::ParameterSet&> defaultps
       = boost::optional<const insight::ParameterSet&>() );
+
 
 };
 

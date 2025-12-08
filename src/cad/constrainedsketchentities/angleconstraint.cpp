@@ -1,5 +1,6 @@
 #include "angleconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/units.h"
 #include "base/parameterset.h"
 #include "base/parameters/simpleparameter.h"
@@ -15,9 +16,9 @@ defineType(AngleConstraint);
 size_t AngleConstraint::calcHash() const
 {
     ParameterListHash h;
-    h+=p1_->value();
-    h+=p2_->value();
-    h+=pCtr_->value();
+    h+=*p1_;
+    h+=*p2_;
+    h+=*pCtr_;
     h+=targetValue();
     return h.getHash();
 }
@@ -36,12 +37,7 @@ AngleConstraint::AngleConstraint(
                 pCtr,
                 insight::cad::vec3const(1,0,0) ),
         pCtr )
-{
-    ParameterSet::Entries e;
-    e.emplace("dimLineRadius", std::make_unique<DoubleParameter>(1., "dimension line radius"));
-    e.emplace("arrowSize", std::make_unique<DoubleParameter>(1., "arrow size"));
-    changeDefaultParameters(*ParameterSet::create(std::move(e), ""));
-}
+{}
 
 
 
@@ -105,6 +101,14 @@ void AngleConstraint::replaceDependency(
         }
     }
 }
+
+void AngleConstraint::ensureRequiredParameters()
+{
+    ConstraintWithDimensionLines::ensureRequiredParameters();
+    parametersRef().getOrInsert<DoubleParameter>("dimLineRadius", 1., "dimension line radius");
+    parametersRef().getOrInsert<DoubleParameter>("arrowSize", 1., "arrow size");
+}
+
 
 double AngleConstraint::dimLineRadius() const
 {
@@ -172,16 +176,7 @@ FixedAngleConstraint::FixedAngleConstraint(
     const std::string& layerName
     )
     : AngleConstraint(p1, p2, pCtr, layerName)
-{
-    auto ps = defaultParameters().cloneParameterSet();
-    ps->insert(
-        "angle", std::make_unique<DoubleParameter>(
-                  calculate(
-                    p1_->value(),
-                    p2_->value(),
-                    pCtr_->value() )/SI::deg, "[deg] target value"));
-    changeDefaultParameters(*ps);
-}
+{}
 
 
 
@@ -207,7 +202,7 @@ void FixedAngleConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p1_, script, entityLabels) + ", "
             + ( std::dynamic_pointer_cast<AddedVector>(p2_) ?
                    "toHorizontal" :
@@ -243,10 +238,24 @@ void FixedAngleConstraint::addParserRule(
                          VectorPtr, VectorPtr, VectorPtr, const std::string&>,
                      qi::_2, qi::_3, qi::_4, qi::_5),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6,
+                       boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
+
+void FixedAngleConstraint::ensureRequiredParameters()
+{
+    AngleConstraint::ensureRequiredParameters();
+
+    parametersRef().getOrInsert<DoubleParameter>(
+        "angle",  calculate(
+                p1_->value(),
+                p2_->value(),
+                pCtr_->value() )/SI::deg, "[deg] target value"
+        );
+}
+
 
 
 
@@ -265,7 +274,7 @@ ConstrainedSketchEntityPtr FixedAngleConstraint::clone() const
         layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 
@@ -318,7 +327,7 @@ void LinkedAngleConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p1_, script, entityLabels) + ", "
             + pointSpec(p2_, script, entityLabels) + ", "
             + pointSpec(pCtr_, script, entityLabels) + ", "
@@ -381,6 +390,11 @@ void LinkedAngleConstraint::addParserRule(
     }
 }
 
+void LinkedAngleConstraint::ensureRequiredParameters()
+{
+    AngleConstraint::ensureRequiredParameters();
+}
+
 
 
 
@@ -399,7 +413,7 @@ ConstrainedSketchEntityPtr LinkedAngleConstraint::clone() const
         layerName(), angleExpr_ );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

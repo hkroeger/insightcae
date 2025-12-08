@@ -18,6 +18,8 @@
  */
 
 #include "spring.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -41,12 +43,18 @@ size_t Spring::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
-  h+=d_->value();
-  h+=winds_->value();
+  h+=*p0_;
+  h+=*p1_;
+  h+=*d_;
+  h+=*winds_;
   return h.getHash();
 }
+
+
+
+Spring::Spring(const Spring&o, TreeCloneMap& tcm)
+: CL(p0_), CL(p1_), CL(d_), CL(winds_)
+{}
 
 
 
@@ -96,10 +104,10 @@ void Spring::insertrule(parser::ISCADParser& ruleset)
   (
     "Spring",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-        >> ruleset.r_scalarExpression >> ')' )
+      ( '(' > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ')' )
     [ qi::_val = phx::bind(
                        &Spring::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4) ]

@@ -1,3 +1,4 @@
+#include "cadfeatures.h"
 #include "navigationmanager.h"
 
 #include "qoccviewwidget.h"

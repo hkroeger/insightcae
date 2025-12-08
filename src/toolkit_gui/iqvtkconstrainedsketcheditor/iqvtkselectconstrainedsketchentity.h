@@ -70,8 +70,6 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectConstrainedSketchEntity
 {
     Q_OBJECT
 
-    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity>> findEntitiesUnderCursor(
-        const QPoint& point) const override;
 
     IQVTKCADModel3DViewer::HighlightingHandleSet highlightEntity(
         std::weak_ptr<insight::cad::ConstrainedSketchEntity>, QColor hicol ) const override;
@@ -80,6 +78,10 @@ class TOOLKIT_GUI_EXPORT IQVTKSelectConstrainedSketchEntity
     QToolBar *toolBar_;
 
     bool allowBoxSelection_;
+
+protected:
+    std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> > findEntitiesUnderCursor(
+        const QPoint& point) const override;
 
 public:
     IQVTKSelectConstrainedSketchEntity(

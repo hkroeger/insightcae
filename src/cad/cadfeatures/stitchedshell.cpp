@@ -18,11 +18,14 @@
  */
 
 #include "stitchedshell.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "occinclude.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -46,10 +49,14 @@ size_t StitchedShell::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*faces_;
-  h+=tol_->value();
+  h+=*tol_;
   return h.getHash();
 }
 
+
+StitchedShell::StitchedShell(const StitchedShell&o, TreeCloneMap& tcm)
+    : CL(faces_), CL(tol_)
+{}
 
 StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)
 :faces_(faces), tol_(tol)
@@ -83,7 +90,9 @@ void StitchedShell::insertrule(parser::ISCADParser& ruleset)
     "StitchedShell",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_faceFeaturesExpression  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
+    ( '(' > ruleset.r_faceFeaturesExpression
+             > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) )
+             > ')' )
                   [ qi::_val = phx::bind(
                        &StitchedShell::create<FeatureSetPtr, ScalarPtr>,
                        qi::_1, qi::_2) ]

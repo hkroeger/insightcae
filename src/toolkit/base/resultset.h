@@ -22,6 +22,7 @@
 #ifndef INSIGHT_RESULTSET_H
 #define INSIGHT_RESULTSET_H
 
+#include "base/hierarchicalelement.h"
 #include "base/units.h"
 #include "base/parameterset.h"
 
@@ -40,47 +41,53 @@
 #include "base/resultelements/chart.h"
 #include "base/resultelements/polarchart.h"
 #include "base/resultelements/contourchart.h"
+#include "boost/filesystem/path.hpp"
 
 namespace insight 
 {
 
 class ResultSet;
 
-typedef std::shared_ptr<ResultSet> ResultSetPtr;
+typedef std::unique_ptr<insight::ResultSet> ResultSetPtr;
 
 
 class ResultSet
-    :
-    public ResultElementCollection,
-    public ResultElement
+: public ResultElementCollection
 {
 protected:
-    std::shared_ptr<ParameterSet> p_;
+    std::unique_ptr<ParameterSet> p_;
     std::string title_, subtitle_, date_, author_;
     std::string introduction_;
 
 public:
     declareType ( "ResultSet" );
 
-    ResultSet( const std::string& analysisName = "" );
-
     ResultSet
     (
-        const ParameterSet& p,
-        const std::string& title,
-        const std::string& subtitle,
-        const std::string *author = NULL,
-        const std::string *date = NULL
+        std::unique_ptr<ParameterSet> p = nullptr,
+        const std::string& title = std::string(),
+        const std::string& subtitle = std::string(),
+        const std::string *author = nullptr,
+        const std::string *date = nullptr
     );
 
-    static ResultSetPtr createFromFile( const boost::filesystem::path& fileName, const std::string& analysisName = "" );
+    static std::unique_ptr<insight::ResultSet>
+    createFromFile(
+        const boost::filesystem::path& fileName,
+        std::unique_ptr<ParameterSet> p = std::unique_ptr<ParameterSet>() );
 
     /**
      * stream needs to opened in binary!! (mode std::ios::in | std::ios::binary)
      */
-    static ResultSetPtr createFromStream( std::istream& is, const std::string& analysisName = "" );
+    static std::unique_ptr<insight::ResultSet>
+    createFromStream(
+        std::istream& is,
+        std::unique_ptr<ParameterSet> p = std::unique_ptr<ParameterSet>() );
 
-    static ResultSetPtr createFromString( const std::string& cont, const std::string& analysisName = "" );
+    static std::unique_ptr<insight::ResultSet>
+    createFromString(
+        const std::string& cont,
+        std::unique_ptr<ParameterSet> p = std::unique_ptr<ParameterSet>() );
 
 
     /* =======================================================================================================*/
@@ -88,16 +95,13 @@ public:
     /* =======================================================================================================*/
     //   Required, because ResultSet is inserted as subsection into some results,
     // consider removing but will break backwards compat..
-    ResultSet ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit="" );
-    /**
-     * restore the result elements from the given node
-     */
-    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node ) override;
+    // ResultSet ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit="" );
+
     /* =======================================================================================================*/
     /* =======================================================================================================*/
     /* =======================================================================================================*/
 
-    ResultSet ( const ResultSet& other );
+    // ResultSet ( const ResultSet& other );
     virtual ~ResultSet();
 
     inline std::string& introduction()
@@ -117,7 +121,8 @@ public:
     inline const std::string author() const { return author_; }
     inline const std::string date() const { return date_; }
 
-    void transfer ( const ResultSet& other );
+    void transfer ( ResultSet& other );
+
     inline const ParameterSet& parameters() const
     {
         return *p_;
@@ -125,42 +130,56 @@ public:
     void clearInputParameters();
 
     void insertLatexHeaderCode ( std::set<std::string>& hc ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    static boost::filesystem::path
+    reportDataPath(const boost::filesystem::path& outFileName);
 
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
-    virtual void writeLatexFile ( const boost::filesystem::path& file ) const;
-    virtual void generatePDF ( const boost::filesystem::path& file ) const;
+    virtual void writeLatexFile (
+        const boost::filesystem::path& file,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties() ) const;
+    virtual void generatePDF (
+        const boost::filesystem::path& file,
+        const OutputProperties& outProps =
+            insight::hierarchicalData::Element::OutputProperties() ) const;
 
     /**
-     * append the contents of this element to the given xml node
+     * append the result elements to the given xml node
      */
-    rapidxml::xml_node<>* appendToNode
-    (
+    rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
-    ) const override;
-
-
-    /**
-     * save result set to XML file
-     */
-    virtual void saveToFile ( const boost::filesystem::path& file ) const;
-    virtual void saveToStream( std::ostream& os ) const;
-    void saveAs( const boost::filesystem::path& file ) const;
+        rapidxml::xml_node<>& node,
+        const OutputProperties& outProps ) const override;
 
     /**
-     * read result set from xml file
+     * restore the result elements from the given node
      */
-    virtual void readFromFile ( const boost::filesystem::path& file );
-    virtual void readFromStream ( std::istream& is );
-    virtual void readFromString ( const std::string& contents );
+    const rapidxml::xml_node<>* readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node) override;
+
+    void saveAs(const boost::filesystem::path &outfile) const;
 
     std::unique_ptr<ParameterSet> convertIntoParameterSet() const;
     std::unique_ptr<Parameter> convertIntoParameter() const override;
 
-    ResultElementPtr clone() const override;
+    int nChildren() const override;
+
+    std::string childElementName(
+        int i,
+        bool redirectArrayElementsToDefault=false ) const override;
+
+    Element& childElementRef ( int i ) override;
+    const Element& childElement( int i ) const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

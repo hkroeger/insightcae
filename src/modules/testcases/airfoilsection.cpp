@@ -91,16 +91,16 @@ AirfoilSection::supplementedInputData::supplementedInputData(
     int lnr=0;
 
     {
-      auto& f = p().geometry.foilfile->stream();
+      auto f = p().geometry.foilfile->stream();
       if (ext==".dat") // xflr 5
         {
           std::string foil_name;
-          getline(f, foil_name);
+          getline(*f, foil_name);
           lnr++;
         }
 
       std::string line;
-      while (getline(f, line))
+      while (getline(*f, line))
         {
           lnr++;
 
@@ -324,7 +324,8 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
                                                    FieldData::Parameters::fielddata_uniformSteady_type(vec1(
                                                                                                          0.0
                                                                                                          ))
-                                                  )
+                                                  ),
+                                                false
                                                 ))
                                  ));
    
@@ -371,9 +372,9 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
   
   double Aref=1.*sp().c_, Re=sp().c_ * p().operation.vinf/p().fluid.nu;
   
-  ptr_map_insert<ScalarResult>(*results) 
+  results->insert<ScalarResult>
     ("Aref", Aref, "Reference area", "", "$m^2$");
-  ptr_map_insert<ScalarResult>(*results) 
+  results->insert<ScalarResult>
     ("Re", Re, "Reynolds number", "", "");
   
   arma::mat cl = (f_vs_iter.col(2)+f_vs_iter.col(5))
@@ -385,18 +386,18 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
   double minPbyrho=minPatchPressure(cm, executionPath(), "foil")(0,1);
   double cpmin=minPbyrho/(0.5*pow(p().operation.vinf,2));
   
-  ptr_map_insert<ScalarResult>(*results) 
+  results->insert<ScalarResult>
     ("cl", cl(cl.n_elem-1), "Lift coefficient", "", "");
-  ptr_map_insert<ScalarResult>(*results) 
+  results->insert<ScalarResult>
     ("cd", cd(cd.n_elem-1), "Drag coefficient", "", "");
-  ptr_map_insert<ScalarResult>(*results) 
+  results->insert<ScalarResult>
     ("eps", eps(eps.n_elem-1), "Lift-to-drag ratio", "", "");
-  ptr_map_insert<ScalarResult>(*results) 
+  results->insert<ScalarResult>
     ("cpmin", cpmin, "Minimum pressure", "", "");
     
   addPlot
   (
-    results, executionPath(), "chartCoefficientConvergence",
+    *results, executionPath(), "chartCoefficientConvergence",
     "Iteration", "$C_L$, $C_D$",
     {
      PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cl)), "CL", "w l t '$C_L$'" ),
@@ -495,14 +496,14 @@ AirfoilSectionPolar::AirfoilSectionPolar(
 : OpenFOAMParameterStudy( sp, true )
 {}
 
-void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
+void AirfoilSectionPolar::evaluateCombinedResults(ResultSet& results)
 {
 
   std::string key="coeffTable";
-  results->insert(key, table("", "", "geometry/alpha", 
-                             {"cl", "cd", "eps", "cpmin"}));
-  const TabularResult& tab = 
-    static_cast<const TabularResult&>(*(results->find(key)->second));
+  auto& tab = dynamic_cast<const TabularResult&>(
+      results.insert(key, table("", "", "geometry/alpha",
+                                 {"cl", "cd", "eps", "cpmin"}))
+      );
   
   arma::mat tabdat=tab.toMat();
   
@@ -515,9 +516,9 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
   cout<<"Regression cd: "<<cd_coeffs<<endl;
   cout<<"Regression cpmin: "<<cpmin_coeffs<<endl;
   
-  results->insert("RegressionCl", polynomialFitResult(cl_coeffs, "alpha", "Regression Coefficients for cl", ""));
-  results->insert("RegressionCd", polynomialFitResult(cd_coeffs, "alpha", "Regression Coefficients for cd", ""));
-  results->insert("RegressionCpmin", polynomialFitResult(cpmin_coeffs, "alpha", "Regression Coefficients for cpmin", ""));
+  results.insert("RegressionCl", polynomialFitResult(cl_coeffs, "alpha", "Regression Coefficients for cl", ""));
+  results.insert("RegressionCd", polynomialFitResult(cd_coeffs, "alpha", "Regression Coefficients for cd", ""));
+  results.insert("RegressionCpmin", polynomialFitResult(cpmin_coeffs, "alpha", "Regression Coefficients for cpmin", ""));
 
 //   PropellerCurves owc(arma::flipud(cl_coeffs), arma::flipud(cd_coeffs), arma::flipud(cpmin_coeffs));
 //   owc.saveToFile( executionPath()/"airfoilcurves.ist" );

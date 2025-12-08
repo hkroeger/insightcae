@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 
 #include "cadfeature.h"
+#include "datum.h"
 
 #include "insertfeaturedlg.h"
 #include "ui_insertfeaturedlg.h"

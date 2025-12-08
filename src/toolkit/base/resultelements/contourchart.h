@@ -2,6 +2,7 @@
 #define INSIGHT_CONTOURCHART_H
 
 
+#include "base/hierarchicalelement.h"
 #include "base/resultelements/chart.h"
 #include "base/resultelements/chartrenderer.h"
 #include "base/resultelements/latexgnuplotrenderer.h"
@@ -86,29 +87,39 @@ public:
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
     void insertLatexHeaderCode ( std::set<std::string>& hc ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
-    void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
+
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    void exportDataToFile (
+        const std::string& name,
+        const boost::filesystem::path& outputdirectory ) const override;
 
     rapidxml::xml_node<>* appendToNode
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
     ) const override;
 
-    void readFromNode
-        (
-            const std::string& name,
-            rapidxml::xml_node<>& node
-        ) override;
+    const rapidxml::xml_node<>* readFromNode
+    (
+        const std::string& name,
+        const rapidxml::xml_node<>& node
+    ) override;
 
-    ResultElementPtr clone() const override;
+    int nChildren() const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 
 void addPolarContourPlot
 (
-        std::shared_ptr<ResultElementCollection> results,
+        ResultElementCollection& results,
         const std::string& resultelementname,
         const std::string& rlabel,
         const std::string& cblabel,

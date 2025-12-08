@@ -1,4 +1,6 @@
+#include "cadfeatures.h"
 #include "iqvtkcadmodel3dviewer.h"
+#include "armadillo"
 #include "base/exception.h"
 #include "base/factory.h"
 #include "base/linearalgebra.h"
@@ -10,6 +12,7 @@
 
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurepoints.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewermeasurediameter.h"
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
 
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
@@ -33,6 +36,7 @@
 #include <QSettings>
 
 #include <boost/lexical_cast.hpp>
+#include <sstream>
 #include <vtkAxesActor.h>
 #include <vtkRenderWindow.h>
 #include <vtkPolyDataMapper.h>
@@ -77,10 +81,12 @@
 #include "iqvtkviewer.h"
 
 #include "qtextensions.h"
+#include "cadsketchparameter.h"
 
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
 #include <QDebug>
+#include "base/translations.h"
 
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2); //if render backen is OpenGL2, it should changes to vtkRenderingOpenGL2
@@ -101,7 +107,7 @@ MyVTKWidget::MyVTKWidget(QWidget *parent)
 
 void MyVTKWidget::leaveEvent(QEvent *event)
 {
-    dbg(3)<<"leave event"<<std::endl;
+    dbg(insight::GUIEvents)<<"leave event"<<std::endl;
 
     VTKWidget::leaveEvent(event);
     Q_EMIT mouseLeavesViewer();
@@ -160,7 +166,7 @@ BackgroundImage::BackgroundImage(
 {
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
-        "image file has to exist!" );
+        _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
     auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
     vtkSmartPointer<vtkImageReader2> imageReader;
@@ -168,7 +174,7 @@ BackgroundImage::BackgroundImage(
 
     insight::assertion(
         ir!=nullptr,
-        "could not create reader for file "+imageFileName_.string() );
+        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
 
     imageReader.TakeReference(ir);
     imageReader->SetFileName(imageFileName_.string().c_str());
@@ -222,6 +228,7 @@ void BackgroundImage::reorientImage()
     // else if (answer==pButtonDynamic)
     // {
         imageActor_->SetScale( 1 );
+        imageActor_->SetOrientation(0, 0, 0);
         imageActor_->SetPosition( 0, 0, 0 );
         imageActor_->SetOpacity(1.0);// can't pick if opacity is lower than 1
 
@@ -233,6 +240,8 @@ void BackgroundImage::reorientImage()
         obia->orientationSelected.connect(
             [this](OrientationSpec os)
             {
+                DBG_SLOT(orientationSelected);
+
                 arma::mat D=os.xy2_-os.xy1_;
                 arma::mat d=os.p2_-os.pCtr_;
                 double scale =
@@ -269,15 +278,15 @@ BackgroundImage::BackgroundImage(
 
   : QObject(&v)
 {
-    label_= QString(
-        node.first_attribute("label")->value() );
+    label_= QString::fromStdString(
+        getMandatoryAttribute(node,"label") );
 
     imageFileName_= boost::filesystem::path(
-        node.first_attribute("imageFileName")->value() );
+        getMandatoryAttribute(node, "imageFileName") );
 
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
-        "image file has to exist!" );
+        _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
     auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
     vtkSmartPointer<vtkImageReader2> imageReader;
@@ -285,7 +294,7 @@ BackgroundImage::BackgroundImage(
 
     insight::assertion(
         ir!=nullptr,
-        "could not create reader for file "+imageFileName_.string() );
+        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
 
     imageReader.TakeReference(ir);
     imageReader->SetFileName(imageFileName_.string().c_str());
@@ -294,19 +303,11 @@ BackgroundImage::BackgroundImage(
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
 
-    double rotationAngle = toNumber<double>(
-        node.first_attribute("rotationAngle")->value() );
-    imageActor_->SetOrientation(0, 0, rotationAngle);
+    imageActor_->SetOrientation(0, 0, getMandatoryAttribute<double>(node, "rotationAngle"));
 
-    double scale = toNumber<double>(
-        node.first_attribute("scale")->value() );
-    imageActor_->SetScale( scale );
+    imageActor_->SetScale( getMandatoryAttribute<double>(node, "scale") );
 
-    arma::mat position;
-    stringToValue(
-        node.first_attribute("position")->value(),
-        position );
-    imageActor_->SetPosition( position.memptr() );
+    imageActor_->SetPosition( getMandatoryAttribute<arma::mat>(node, "position").memptr() );
 
     imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
 
@@ -350,19 +351,19 @@ void BackgroundImage::write(
     insight::appendAttribute(
         doc, node,
         "rotationAngle",
-        boost::lexical_cast<std::string>(imageActor_->GetOrientation()[2]) );
+        imageActor_->GetOrientation()[2] );
 
     insight::appendAttribute(
         doc, node,
         "scale",
-        boost::lexical_cast<std::string>(imageActor_->GetScale()[0]) );
+        imageActor_->GetScale()[0] );
 
 
     arma::mat position = vec3Zero();
     imageActor_->GetPosition(position.memptr());
     insight::appendAttribute(
         doc, node,
-        "position", valueToString(position) );
+        "position", position );
 }
 
 
@@ -615,7 +616,7 @@ std::vector<vtkSmartPointer<vtkProp> > IQVTKCADModel3DViewer::createActor(CADEnt
     else if (const auto *ppPtr =
              boost::get<insight::cad::PostprocActionPtr>(&entity))
     {
-        (*ppPtr)->createVTKRepr();
+        return (*ppPtr)->createVTKRepr();
     }
     else if (const auto *dsPtr =
              boost::get<vtkSmartPointer<vtkDataObject> >(&entity))
@@ -919,12 +920,18 @@ void IQVTKCADModel3DViewer::onDataChanged(
             auto lbl = idx.siblingAtColumn(IQCADItemModel::labelCol).data().toString();
             auto feat = idx.siblingAtColumn(IQCADItemModel::entityCol).data();
 
-            auto colInRange = [&](int minCol, int maxCol=-1)
+            auto colInRange = [&](int col)
             {
-                if (maxCol<0) maxCol=minCol;
-                return (topLeft.column() <= minCol)
+                return (topLeft.column() <= col)
                         &&
-                       (bottomRight.column() >= maxCol);
+                       (bottomRight.column() >= col);
+            };
+
+            auto oneColInRange = [&](int col0, int col1)
+            {
+                for (int i=col0; i<=col1; ++i)
+                    if (colInRange(i)) return true;
+                return false;
             };
 
             if (roles.indexOf(Qt::EditRole)>=0 || roles.empty())
@@ -935,8 +942,8 @@ void IQVTKCADModel3DViewer::onDataChanged(
                     remove( pidx );
                     addChild(idx);
                 }
-                if ( colInRange(IQCADItemModel::datasetFieldNameCol,
-                                IQCADItemModel::datasetRepresentationCol) )
+                if ( oneColInRange(IQCADItemModel::datasetFieldNameCol,
+                                  IQCADItemModel::datasetRepresentationCol) )
                 {
                     resetDisplayProps(pidx);
                 }
@@ -1068,6 +1075,13 @@ void IQVTKCADModel3DViewer::closeEvent(QCloseEvent *ev)
 
 
 
+void IQVTKCADModel3DViewer::onMeasurePointCoordinates()
+{
+    launchAction(
+        make_viewWidgetAction<IQVTKCADModel3DViewerPickPoint>(*this),
+        true );
+}
+
 
 
 void IQVTKCADModel3DViewer::onMeasureDistance()
@@ -1148,6 +1162,44 @@ void IQVTKCADModel3DViewer::toggleClip(const arma::mat& p, const arma::mat& n)
 void IQVTKCADModel3DViewer::fitAll()
 {
     ren_->ResetCamera();
+    scheduleRedraw();
+}
+
+void IQVTKCADModel3DViewer::centerRotation()
+{
+
+    auto *curCam = ren_->GetActiveCamera();
+    auto cp = insight::vec3FromComponents(curCam->GetPosition());
+    auto fp = insight::vec3FromComponents(curCam->GetFocalPoint());
+    arma::mat dir = normalized(fp-cp);
+
+    auto s = vtkWidget_.size();
+    auto pscr=QPoint(s.width()/2, s.height()/2);
+    auto p = widgetCoordsToVTK(pscr);
+
+    arma::mat newFocalPt = fp;
+
+    if (auto *ske = runningAction<IQVTKConstrainedSketchEditor>())
+    {
+        newFocalPt=pointInPlane3D((*ske)->plane()->plane(), pscr);
+    }
+    else
+    {
+#warning needs improvement
+        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        picker3d->Pick(p.x(), p.y(), 0, ren_);
+        auto pp = picker3d->GetPickedPositions();
+
+        if (pp->GetNumberOfPoints())
+        {
+            newFocalPt=insight::vec3FromComponents(pp->GetPoint(0));
+        }
+    }
+
+    arma::mat nfp=arma::dot(newFocalPt-cp, dir)*dir + cp;
+    insight::dbg(DetailedBusiness) << "new focal pt = "<<nfp.t()<< "(old "<<fp.t()<<")";
+    curCam->SetFocalPoint(nfp.memptr());
+
     scheduleRedraw();
 }
 
@@ -1254,20 +1306,24 @@ void IQVTKCADModel3DViewer::redrawNow(bool force)
             // push cam along axis to boundary of scene
             auto p0=vec3FromComponents(cam->GetFocalPoint());
             auto pc=vec3FromComponents(cam->GetPosition());
-            arma::mat dir=normalized(pc-p0);
-            double bounds[6];
-            ren_->ComputeVisiblePropBounds(bounds);
-            auto L=vec3(
-                bounds[1]-bounds[0],
-                bounds[3]-bounds[2],
-                bounds[5]-bounds[4]);
+            double dist=arma::norm(pc-p0);
+            if (dist>SMALL)
+            {
+                arma::mat dir=(pc-p0)/dist;
+                double bounds[6];
+                ren_->ComputeVisiblePropBounds(bounds);
+                auto L=vec3(
+                    bounds[1]-bounds[0],
+                    bounds[3]-bounds[2],
+                    bounds[5]-bounds[4]);
 
-            cam->SetPosition(
-                arma::mat(
-                    p0+std::max(insight::LSMALL,L.max())*dir
-                    ).memptr()
-                );
-            ren_->ResetCameraClippingRange();
+                cam->SetPosition(
+                    arma::mat(
+                        p0+std::max(insight::LSMALL,L.max())*dir
+                        ).memptr()
+                    );
+                ren_->ResetCameraClippingRange();
+            }
         }
         renWin()->Render();
         redrawRequestedWithinWaitPeriod_=false;
@@ -1424,6 +1480,10 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     btntb->addAction(
                 QPixmap(":/icons/icon_minusz.svg"), "-Z",
                 this, &IQCADModel3DViewer::viewTop );
+
+    btntb->addAction(
+        QPixmap(":/icons/icon_center_rotation.svg"), "Center rotation on view",
+        this, &IQVTKCADModel3DViewer::centerRotation);
 
     auto addBGAction = btntb->addAction(
         QPixmap(":/icons/icon_bgimage.svg"), "Add Background Image");
@@ -1634,7 +1694,6 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
     const std::set<vtkProp*>& restrictPicking ) const
 {
     auto p = widgetCoordsToVTK(clickPos);
-
 
 //    vtkActor2D *act2=nullptr;
 //    {
@@ -1911,7 +1970,9 @@ IQVTKCADModel3DViewer::pointInPlane3D(
     const gp_Ax3& plane,
     const QPoint &screenPos ) const
 {
-    insight::CurrentExceptionContext ex("mapping screen position to 3D position in plane (gp_Ax3)");
+    insight::CurrentExceptionContext ex(
+        insight::GUIEvents,
+        "mapping screen position to 3D position in plane (gp_Ax3)");
 
     auto *renderer = const_cast<IQVTKCADModel3DViewer*>(this)->renderer();
     auto v = widgetCoordsToVTK(screenPos);
@@ -1997,6 +2058,25 @@ void IQVTKCADModel3DViewer::onlyOneShaded(QPersistentModelIndex pidx)
 
 
 
+void IQVTKCADModel3DViewer::showOnlyOne(QPersistentModelIndex pidx)
+{
+    for (const auto& de: displayedData_)
+    {
+        auto idx=de.first;
+        QModelIndex visi=model()->index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+        if (model()->flags(visi)&Qt::ItemIsUserCheckable)
+        {
+            if (de.first==pidx)
+                model()->setData(visi, Qt::Checked, Qt::CheckStateRole);
+            else
+                model()->setData(visi, Qt::Unchecked, Qt::CheckStateRole);
+        }
+    }
+
+    scheduleRedraw();
+}
+
+
 
 void IQVTKCADModel3DViewer::resetRepresentations()
 {
@@ -2055,7 +2135,8 @@ void IQVTKCADModel3DViewer::editSketch(
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
     const std::string& presentationDelegateKey,
     SketchCompletionCallback onAccept,
-    SketchCompletionCallback onCancel )
+    SketchCompletionCallback onCancel,
+    boost::optional<std::string> parameterPath )
 {
     if (isDefaultAction())
     {
@@ -2076,6 +2157,14 @@ void IQVTKCADModel3DViewer::editSketch(
             }
         );
 
+        if (parameterPath)
+            ske->setPathToEditedParameter(
+                *parameterPath );
+
+        connect(ske.get(), &IQVTKConstrainedSketchEditor::sketchChanged,
+                this, [this]() {
+                    this->modificationMade();
+                } );
         launchAction(std::move(ske));
     }
 }
@@ -2105,7 +2194,19 @@ QPointF IQVTKCADModel3DViewer::widgetCoordsToVTK(const QPoint &widgetCoords) con
         );
 }
 
-
+QPoint IQVTKCADModel3DViewer::VTKToWidgetCoords(const QPointF &VTKCoords) const
+{
+    double DevicePixelRatio=vtkWidget_.devicePixelRatioF();
+    QPoint pw
+        (
+        (VTKCoords.x()-DevicePixelRatioTolerance)
+            /DevicePixelRatio,
+        (vtkWidget_.size().height()-1-DevicePixelRatioTolerance-VTKCoords.y())
+            /DevicePixelRatio
+        );
+    auto widgetCoords=vtkWidget_.mapToParent(pw);
+    return widgetCoords;
+}
 
 IQVTKCADModel3DViewer::ViewWidgetActionPtr
 IQVTKCADModel3DViewer::setupDefaultAction()
@@ -2161,12 +2262,55 @@ const IQVTKCADModel3DViewer::Bounds &IQVTKCADModel3DViewer::sceneBounds() const
 
 
 const char IQVTKCADModel3DViewer::bgiNodeName[] = "backgroundImage";
+std::string sketcherNodeName = "constrainedSketchEditor";
+std::string sketcherPathAttributeName = "parameterPath";
+std::string sketcherScriptAttributeName = "script";
 
 
 
-void IQVTKCADModel3DViewer::writeViewerState(
+
+
+void IQVTKCADModel3DViewer::setCameraState(
+    const insight::CameraState &camState )
+{
+    auto* camera = ren_->GetActiveCamera();
+
+    camera->SetParallelProjection(
+        camState.isParallelProjection );
+    camera->SetParallelScale(
+        camState.parallelScale );
+    camera->SetFocalPoint(camState.focalPosition.memptr());
+    camera->SetViewUp(camState.viewUp.memptr());
+
+    arma::mat p=camState.cameraPosition;
+    if (arma::norm(p-camState.focalPosition,2)<SMALL)
+    {
+        arma::mat ez=arma::cross(
+            vec3X(1), camState.viewUp);
+        if (arma::norm(ez,2)<SMALL)
+        {
+            ez=arma::cross(
+                vec3Y(1), camState.viewUp);
+        }
+        p=normalized(camState.focalPosition + ez);
+    }
+    camera->SetPosition(p.memptr());
+
+    ren_->ResetCameraClippingRange();
+
+    if (interactor()->GetLightFollowCamera())
+    {
+        ren_->UpdateLightsGeometryToFollowCamera();
+    }
+
+    scheduleRedraw();
+}
+
+
+void IQVTKCADModel3DViewer::saveState(
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node ) const
+    rapidxml::xml_node<>& node,
+    const boost::filesystem::path& parentPath ) const
 {
     auto* camera = ren_->GetActiveCamera();
 
@@ -2183,19 +2327,19 @@ void IQVTKCADModel3DViewer::writeViewerState(
     appendAttribute(
         doc, camNode,
         "position",
-        insight::valueToString(vec3FromComponents(
+        insight::toString(vec3FromComponents(
             camera->GetPosition() )) );
 
     appendAttribute(
         doc, camNode,
         "focalPoint",
-        insight::valueToString(vec3FromComponents(
+        insight::toString(vec3FromComponents(
             camera->GetFocalPoint() )) );
 
     appendAttribute(
         doc, camNode,
         "viewUp",
-        insight::valueToString(vec3FromComponents(
+        insight::toString(vec3FromComponents(
             camera->GetViewUp() )) );
 
     for (const auto& bgi: backgroundImages_)
@@ -2203,51 +2347,79 @@ void IQVTKCADModel3DViewer::writeViewerState(
         auto bgin = insight::appendNode(doc, node, bgiNodeName);
         bgi->write(doc, bgin);
     }
+
+    if (auto sketcher = runningAction<IQVTKConstrainedSketchEditor>())
+    {
+        if (auto edp = sketcher->pathToEditedParameter())
+        {
+            auto skn = insight::appendNode(doc, node, sketcherNodeName);
+            insight::appendAttribute(doc, skn, sketcherPathAttributeName, *edp);
+
+            std::ostringstream os;
+            (*sketcher)->generateScript(os);
+            insight::appendAttribute(doc, skn, sketcherScriptAttributeName, os.str());
+        }
+    }
 }
 
 
-void IQVTKCADModel3DViewer::restoreViewerState(
-    rapidxml::xml_node<>& node )
+
+
+void IQVTKCADModel3DViewer::restoreState(
+    const rapidxml::xml_node<>& node,
+    const boost::filesystem::path& parentPath )
 {
     auto* camera = ren_->GetActiveCamera();
     if (auto *camNode = node.first_node("camera"))
     {
-        if (auto *pp = camNode->first_attribute("parallelProjection"))
-            camera->SetParallelProjection(
-                boost::lexical_cast<bool>(pp->value()) );
+        insight::CameraState cs;
 
-        if (auto *pp = camNode->first_attribute("parallelScale"))
-            camera->SetParallelScale(
-                boost::lexical_cast<double>(pp->value()) );
-
-        if (auto *pos = camNode->first_attribute("position"))
+        if (auto pp = insight::getOptionalAttribute<bool>(*camNode, "parallelProjection"))
         {
-            arma::mat p;
-            insight::stringToValue(pos->value(), p);
-            camera->SetPosition(p.memptr());
+            cs.isParallelProjection=*pp;
         }
 
-        if (auto *fp = camNode->first_attribute("focalPoint"))
+        if (auto ps = insight::getOptionalAttribute<double>(*camNode, "parallelScale"))
         {
-            arma::mat p;
-            insight::stringToValue(fp->value(), p);
-            camera->SetFocalPoint(p.memptr());
+            cs.parallelScale=*ps;
         }
 
-        if (auto *vu = camNode->first_attribute("viewUp"))
+        if (auto pos = insight::getOptionalAttribute<arma::mat>(*camNode, "position"))
         {
-            arma::mat v;
-            insight::stringToValue(vu->value(), v);
-            camera->SetViewUp(v.memptr());
+            cs.cameraPosition=*pos;
         }
+
+        if (auto fp = insight::getOptionalAttribute<arma::mat>(*camNode, "focalPoint"))
+        {
+            cs.focalPosition=*fp;
+        }
+
+        if (auto vu = insight::getOptionalAttribute<arma::mat>(*camNode, "viewUp"))
+        {
+            cs.viewUp=*vu;
+        }
+
+        setCameraState(cs);
     }
 
     backgroundImages_.clear();
     for (auto *n=node.first_node(bgiNodeName); n; n=n->next_sibling(bgiNodeName))
     {
-        auto *bgi=new BackgroundImage(*n, *this);
-        backgroundImages_.append(bgi);
-        connectBackgroundImageCommands(bgi);
+        try
+        {
+            auto *bgi=new BackgroundImage(*n, *this);
+            backgroundImages_.append(bgi);
+            connectBackgroundImageCommands(bgi);
+        }
+        catch (std::exception& ex)
+        {
+            QMessageBox::information(
+                this, _("Could not load background image"),
+                QString(
+                    QString(_("A background image could not be restored."))
+                    +"\n" + _("Reason:") + " %1\n")
+                    .arg(ex.what())) ;
+        }
     }
 
     ren_->ResetCameraClippingRange();
@@ -2259,32 +2431,27 @@ void IQVTKCADModel3DViewer::restoreViewerState(
 
     scheduleRedraw();
 
-}
-
-
-void IQVTKCADModel3DViewer::setCameraState(
-    const insight::CameraState &camState )
-{
-    auto* camera = ren_->GetActiveCamera();
-
-    camera->SetParallelProjection(
-        camState.isParallelProjection );
-    camera->SetParallelScale(
-        camState.parallelScale );
-    camera->SetPosition(camState.cameraPosition.memptr());
-    camera->SetFocalPoint(camState.focalPosition.memptr());
-    camera->SetViewUp(camState.viewUp.memptr());
-
-    ren_->ResetCameraClippingRange();
-
-    if (interactor()->GetLightFollowCamera())
+    if (auto* skn = node.first_node(sketcherNodeName.c_str()))
     {
-        ren_->UpdateLightsGeometryToFollowCamera();
+        auto pp = insight::getMandatoryAttribute(*skn, sketcherPathAttributeName);
+
+        auto psm = dynamic_cast<IQParameterSetModel*>(
+            cadmodel()->associatedParameterSetModel());
+        auto &skp = dynamic_cast<insight::CADSketchParameter&>(
+                psm->parameterRef(pp) );
+
+        auto sko=skp.createEmpty();
+
+        std::istringstream is(
+            insight::getMandatoryAttribute(*skn, sketcherScriptAttributeName));
+
+        sko->readFromStream(
+            is, *skp.entityProperties()
+            );
+
+        editSketchParameter(pp, sko);
     }
-
-    scheduleRedraw();
 }
-
 
 
 double IQVTKCADModel3DViewer::getScale() const

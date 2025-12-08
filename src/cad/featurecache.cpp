@@ -1,5 +1,8 @@
 #include "cadfeature.h"
 #include "featurecache.h"
+#include "cadexception.h"
+#include "datum.h"
+#include "base/tools.h"
 
 namespace insight {
 namespace cad {
@@ -31,7 +34,7 @@ void FeatureCache::cleanup()
 std::string FeatureCache::featureInfo(FeaturePtr fp)
 {
   return fp->featureSymbolName() +
-      " (type " + fp->type() + ", hash=" + boost::lexical_cast<std::string>(fp->hash()) + ")";
+      " (type " + fp->type() + ", hash=" + toString(fp->hash()) + ")";
 }
 
 
@@ -72,7 +75,7 @@ void FeatureCache::insert(FeaturePtr p)
       msg<<"Internal error: trying to insert feature into CAD feature cache twice!\n";
       msg<<"feature to insert: hash="<<h<<" (of type "<<p->type()<<" named \""<<p->featureSymbolName()<<"\")\n";
       msg<<"present feature: "<<featureInfo(sp)<<"\n";
-      throw insight::cad::CADException(p, msg.str());
+      throw insight::CADException(p, msg.str());
     }
   (*this)[h]=p;
 }

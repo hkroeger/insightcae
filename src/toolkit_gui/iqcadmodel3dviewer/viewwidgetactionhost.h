@@ -44,6 +44,8 @@ protected:
     {
         this->aboutToBeDestroyed.connect(
             [this]() {
+                DBG_SLOT(aboutToBeDestroyed);
+
                 currentAction_.reset();
             } );
     }
@@ -108,6 +110,8 @@ public:
             currentAction_->connectActionIsFinished(
                 [this,cPtr](bool)
                 {
+                    DBG_SLOT(actionIsFinished);
+
                     InputReceiver<Viewer>::removeChildReceiver(
                         cPtr );
 
@@ -144,9 +148,15 @@ public:
     }
 
     template<class A = ViewWidgetAction<Viewer> >
-    A* runningAction() const
+    const A* runningAction() const
     {
         return dynamic_cast<const A*>(currentAction_.get());
+    }
+
+    template<class A = ViewWidgetAction<Viewer> >
+    A* runningAction()
+    {
+        return dynamic_cast<A*>(currentAction_.get());
     }
 
     void cancelCurrentAction(bool launchDefaultAction=true)

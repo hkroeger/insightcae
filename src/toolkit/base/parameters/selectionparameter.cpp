@@ -6,11 +6,23 @@
 namespace insight
 {
 
+
+
+
+SelectionParameterInterface::~SelectionParameterInterface()
+{}
+
+
+
+
 bool SelectionParameterInterface::contains(const std::string &value) const
 {
     auto l = selectionKeys();
     return ( std::find(l.begin(), l.end(), value) != l.end() );
 }
+
+
+
 
 int SelectionParameterInterface::indexOfSelection(const std::string& key) const
 {
@@ -51,8 +63,13 @@ SelectionParameterInterface::iconPathForKey(
 }
 
 
+
+
 defineType(SelectionParameter);
-addToFactoryTable(Parameter, SelectionParameter);
+addParameterFactories(SelectionParameter);
+
+
+
 
 SelectionParameter::SelectionParameter(
     const std::string& description,
@@ -86,9 +103,7 @@ SelectionParameter::SelectionParameter(
     value_ = 0;
 }
 
-SelectionParameter::~SelectionParameter()
-{
-}
+
 
 bool SelectionParameter::isDifferent(const Parameter& p) const
 {
@@ -99,6 +114,8 @@ bool SelectionParameter::isDifferent(const Parameter& p) const
   else
     return true;
 }
+
+
 
 void SelectionParameter::resetItems(const ItemList &newItems)
 {
@@ -113,10 +130,14 @@ const SelectionParameter::ItemList& SelectionParameter::items() const
   return items_;
 }
 
+
+
 std::vector<std::string> SelectionParameter::selectionKeys() const
 {
     return items_;
 }
+
+
 
 void SelectionParameter::setSelection ( const std::string& sel )
 {
@@ -124,16 +145,24 @@ void SelectionParameter::setSelection ( const std::string& sel )
   triggerValueChanged();
 }
 
+
+
 const std::string &SelectionParameter::selection() const
 {
     return items_[value_];
 }
 
 
-std::string SelectionParameter::latexRepresentation() const
+
+std::string SelectionParameter::latexRepresentation(
+    const std::string&,
+    int,
+    const FileStorageInfo& ) const
 {
   return SimpleLatex(items_[size_t(value_)]).toLaTeX();
 }
+
+
 
 std::string SelectionParameter::plainTextRepresentation(int) const
 {
@@ -141,35 +170,36 @@ std::string SelectionParameter::plainTextRepresentation(int) const
 }
 
 
-rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath) const
+rapidxml::xml_node<>*
+SelectionParameter::appendToNode(
+    const std::string& name,
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
-    insight::CurrentExceptionContext ex(3, "appending selection "+name+" to node "+node.name());
+    insight::CurrentExceptionContext ex(
+        insight::VerbosityLevel::Loops,
+        "appending selection %s to node %s", name.c_str(), node.name());
 
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-    child->append_attribute(doc.allocate_attribute
-    (
-      "value",
-      //doc.allocate_string( boost::lexical_cast<std::string>(value_).c_str() )
-      doc.allocate_string( items_[size_t(value_)].c_str() )
-    ));
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
+    appendAttribute(doc, *child, "value", items_[size_t(value_)]);
     return child;
 }
 
-void SelectionParameter::readFromNode
-(
+
+
+const rapidxml::xml_node<>*
+SelectionParameter::readFromNode(
     const std::string& name,
-    rapidxml::xml_node<>& node,
-    boost::filesystem::path
-)
+    const rapidxml::xml_node<>& node )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = Parameter::readFromNode(name, node);
   if (child)
   {
     //value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
-    std::string key=child->first_attribute("value")->value();
+    auto key=getMandatoryAttribute(*child, "value");
     ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
     if (i != items_.end())
     {
@@ -199,34 +229,39 @@ void SelectionParameter::readFromNode
            )
         );
   }
+  return child;
 }
 
+SelectionParameter::SelectionParameter(const rapidxml::xml_node<> & node)
+    : IntParameter(node, true)
+{
+    auto key=getMandatoryAttribute(node, "value");
+    items_={key};
+    value_=0;
+}
 
-
-std::unique_ptr<Parameter> SelectionParameter::clone(bool init) const
+std::unique_ptr<hierarchicalData::Element> SelectionParameter::clone() const
 {
     auto p= std::make_unique<SelectionParameter>(
         value_, items_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order()
         );
-    if (init) p->initialize();
     return p;
 }
 
 
-void SelectionParameter::copyFrom(const Parameter& p)
-{
-  operator=(dynamic_cast<const SelectionParameter&>(p));
 
-}
-
-void SelectionParameter::operator=(const SelectionParameter& op)
+void SelectionParameter::assignFrom(const Element& e)
 {
+  auto &op=dynamic_cast<const SelectionParameter&>(e);
+
   items_ = op.items_;
 
-  IntParameter::copyFrom(op);
+  IntParameter::assignFrom(op);
 }
+
+
 
 int SelectionParameter::nChildren() const
 {

@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_CYLAXIS_H
 #define INSIGHT_CAD_CYLAXIS_H
 
-#include "feature.h"
+#include "featureset.h"
 
 namespace insight {
 namespace cad {
@@ -31,6 +31,19 @@ class cylAxis
 public:
     cylAxis();
     virtual ~cylAxis();
+
+    virtual bool isValidForFeature(FeatureID) const;
+    virtual arma::mat evaluate(FeatureID fi);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class cylCenter
+    : public QuantityComputer<arma::mat>
+{
+public:
+    cylCenter();
+    virtual ~cylCenter();
 
     virtual bool isValidForFeature(FeatureID) const;
     virtual arma::mat evaluate(FeatureID fi);

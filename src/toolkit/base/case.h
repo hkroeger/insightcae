@@ -188,7 +188,7 @@ public:
     (
         const boost::filesystem::path& location, 
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
-    ) =0;
+    ) const =0;
     
 //    virtual void run() =0;
 };

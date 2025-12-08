@@ -23,6 +23,9 @@
 
 #include "base/translations.h"
 #include "cadfeatures/importsolidmodel.h"
+#include "cadfeature.h"
+#include "datum.h"
+#include "cadparameters.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -47,17 +50,28 @@ size_t Airfoil::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=name_;
-  h+=p0_->value();
-  h+=ez_->value();
-  h+=ex_->value();
-  h+=c_->value();
-  h+=t_->value();
-  h+=r_EK_->value();
-  h+=r_AK_->value();
+  h+=*p0_;
+  h+=*ez_;
+  h+=*ex_;
+  h+=*c_;
+  h+=*t_;
+  h+=*r_EK_;
+  h+=*r_AK_;
   return h.getHash();
 }
 
+Airfoil::Airfoil(const Airfoil&o, TreeCloneMap& tcm)
+    : name_(o.name_),
+    p0_(tcm.clone(o.p0_)),
+    ez_(tcm.clone(o.ez_)),
+    ex_(tcm.clone(o.ex_)),
 
+    c_(tcm.clone(o.c_)),
+    t_(tcm.clone(o.t_)),
+
+    r_EK_(tcm.clone(o.r_EK_)),
+    r_AK_(tcm.clone(o.r_AK_))
+{}
 
 
 Airfoil::Airfoil
@@ -752,13 +766,15 @@ void Airfoil::insertrule(parser::ISCADParser& ruleset)
     "Airfoil",
           std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '('  >> ruleset.r_string >> ',' 
-           >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
-           >> ',' >> ruleset.r_scalarExpression //c 
-           >> ',' >> ruleset.r_scalarExpression //t 
-           >> ( (',' >> qi::lit("r_EK") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ( (',' >> qi::lit("r_AK") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ')' ) 
+    ( '('  > ruleset.r_string > ','
+           > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression > ',' //c
+             > ruleset.r_scalarExpression //t
+             > ( (',' >> qi::lit("r_EK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' >> qi::lit("r_AK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+           > ')' )
     [ qi::_val = phx::bind(
                        &Airfoil::create<const std::string&, VectorPtr, VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8) ]

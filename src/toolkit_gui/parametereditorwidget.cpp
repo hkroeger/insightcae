@@ -23,6 +23,7 @@
 #include <QPainter>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QHeaderView>
 
 #include "base/exception.h"
 #include "boost/algorithm/string/replace.hpp"
@@ -34,6 +35,7 @@
 #include "qnamespace.h"
 #include "qtextensions.h"
 
+#include "base/translations.h"
 
 
 using namespace std;
@@ -56,10 +58,13 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         parameterTreeView_, &QTreeView::customContextMenuRequested,
         [this](const QPoint& p)
         {
+            DBG_SLOT(QTreeView::customContextMenuRequested);
+
             IQParameterSetModel::contextMenu(
                 parameterTreeView_,
                 parameterTreeView_->indexAt(p),
-                p );
+                p,
+                viewer_ );
         }
         );
 
@@ -106,6 +111,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
         [this](const QModelIndex& index)
         {
+            DBG_SLOT(QTreeView::clicked);
+
             if (index.isValid())
             {
                 if (auto* p=IQParameterSetModel::parameterFromIndex(index))
@@ -129,6 +136,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                     auto l = p->populateEditControls(
                         inputContents_,
                         viewer_ );
+                    p->checkEnabledOrDisabled();
 
                     // connect(this, &ParameterEditorWidget::adaptEditControlsLayout, l,
                     //         [](QSize s){
@@ -181,21 +189,6 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 
 
 
-void ParameterEditorWidget::showEvent(QShowEvent *event)
-{
-    QSplitter::showEvent(event);
-
-    if (!firstShowOccurred_)
-    {
-        firstShowOccurred_=true;
-
-        parameterTreeView_->expandToDepth(2);
-        parameterTreeView_->resizeColumnToContents(0);
-        parameterTreeView_->resizeColumnToContents(1);
-    }
-}
-
-
 
 
 ParameterEditorWidget::ParameterEditorWidget
@@ -210,8 +203,7 @@ ParameterEditorWidget::ParameterEditorWidget
   model_(nullptr),
   vali_(vali),
   createVisualizer_(psvb),
-  createGUIActions_(cgaf),
-  firstShowOccurred_(false)
+  createGUIActions_(cgaf)
 {
 
     splitterV_ = new QSplitter(Qt::Vertical);
@@ -274,7 +266,7 @@ ParameterEditorWidget::ParameterEditorWidget
         // {
         //     connect(
         //         viz_.get(), &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_.get(),
-        //         [this](insight::Exception ex)
+        //         [this](const insight::Exception& ex)
         //         {
         //             overlayText_->setTextFormat(Qt::MarkdownText);
         //             std::ostringstream msg;
@@ -339,7 +331,6 @@ ParameterEditorWidget::ParameterEditorWidget
     vali_(nullptr),
     parameterTreeView_(parameterTreeView),
     inputContents_(contentEditorFrame),
-    firstShowOccurred_(false),
     viewer_(nullptr)
 {
     setup(nullptr);
@@ -371,7 +362,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 
     parameterTreeView_->setModel(model_);
     parameterTreeView_->setItemDelegate(
-        new IQParameterGridViewSelectorDelegate);
+        new IQHierarchicalDataGridViewSelectorDelegate);
 
     if (display_)
     {
@@ -379,8 +370,8 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     }
 
     parameterTreeView_->expandToDepth(2);
-    parameterTreeView_->resizeColumnToContents(0);
-    parameterTreeView_->resizeColumnToContents(1);
+    parameterTreeView_->header()->setSectionResizeMode(
+        QHeaderView::ResizeMode::ResizeToContents);
 }
 
 bool ParameterEditorWidget::hasViewer() const
@@ -415,31 +406,42 @@ void ParameterEditorWidget::rebuildVisualization()
                 dynamic_cast<IQParameterSetModel*>(model_)
             );
 
-        connect(
-            viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
-            this, &ParameterEditorWidget::updateSupplementedInputData
+        if (viz_ && !viz_->isFinished())
+        {
+            connect(
+                viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
+                this, &ParameterEditorWidget::updateSupplementedInputData
+                );
+            connect(
+                viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
+                [this](bool success)
+                {
+                    DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationCalculationFinished);
+
+                    if (success) overlayText_->hide();
+                } );
+
+            connect(
+                viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
+                [this](const insight::Exception& ex)
+                {
+                    DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
+
+                    overlayText_->setTextFormat(Qt::MarkdownText);
+                    overlayText_->setText(QString::fromStdString(
+                        std::string(_("The visualization could not be generated."))
+                        +"\n\n"
+                        +_("Reason:")
+                        +"\n\n"
+                        +"**"+(ex.message())+"**\n\n"
+                        +boost::replace_all_copy(ex.context(), "\n", "\n\n")
+                        ));
+                    overlayText_->show();
+                }
             );
-        connect(
-            viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
-            [this](bool success)
-            { if (success) overlayText_->hide(); } );
 
-        connect(
-            viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
-            [this](insight::Exception ex)
-            {
-                overlayText_->setTextFormat(Qt::MarkdownText);
-                overlayText_->setText(QString::fromStdString(
-                    "The visualization could not be generated.\n\n"
-                    "Reason:\n\n"
-                    "**"+ex.description()+"**\n\n"+
-                    boost::replace_all_copy(ex.context(), "\n", "\n\n")
-                    ));
-                overlayText_->show();
-            }
-        );
-
-        viz_->launch(display_->model());
+            viz_->launch(display_->model());
+        }
     }
 }
 
@@ -447,6 +449,8 @@ void ParameterEditorWidget::rebuildVisualization()
 
 void ParameterEditorWidget::onParameterSetChanged()
 {
+    DBG_SLOT(QAbstractItemModel::{dataChanged;rowsInserted;rowsRemoved});
+
     rebuildVisualization();
     Q_EMIT parameterSetChanged();
 }

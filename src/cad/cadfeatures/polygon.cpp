@@ -1,5 +1,6 @@
 #include "polygon.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
 
@@ -26,13 +27,23 @@ size_t Polygon::calcHash() const
     h+=close_;
     for (const auto& c: corners_)
     {
-        h+=c->value();
+        h+=*c;
     }
     return h.getHash();
 }
 
 
 
+
+Polygon::Polygon(const Polygon&o, TreeCloneMap& tcm)
+    : close_(o.close_)
+{
+    for (auto& c: o.corners_)
+    {
+        corners_.push_back(
+            tcm.clone(c) );
+    }
+}
 
 
 

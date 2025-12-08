@@ -1,5 +1,6 @@
 #include "pointoncurveconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadfeatures/line.h"
 
 #include "vtkCaptionActor2D.h"
@@ -98,8 +99,8 @@ void PointOnCurveConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(sc.get())) + ", "
+            + toString(myLabel) + ", "
+            + toString(entityLabels.at(sc.get())) + ", "
             + pointSpec(p_, script, entityLabels)
             + ", layer " + layerName()
             + parameterString()
@@ -139,7 +140,8 @@ void PointOnCurveConstraint::addParserRule(
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_3),
                  phx::bind(&ConstrainedSketch::get<Feature>, ruleset.sketch, qi::_2), qi::_4 ),
              phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
+             phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
+                       boost::filesystem::path(".") ),
              qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }
@@ -197,7 +199,7 @@ ConstrainedSketchEntityPtr PointOnCurveConstraint::clone() const
     auto cl=PointOnCurveConstraint::create( p_, curve_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

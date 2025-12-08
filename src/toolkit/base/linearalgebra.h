@@ -186,6 +186,7 @@ arma::mat vec3(const T& t)
 }
 
 bool operator!=(const arma::mat& m1, const arma::mat& m2);
+bool operator==(const arma::mat& m1, const arma::mat& m2);
 
 
 // ====================================================================================
@@ -209,7 +210,6 @@ T toMat(const arma::mat& m)
 
 double* toArray(const arma::mat& v); // !non-const! return value to match VTK functions
 
-std::string toStr(const arma::mat& v3);
 
 /**
  * @brief rotMatrix
@@ -228,10 +228,36 @@ arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0
  * @return
  * euler angles in degrees
  */
-arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R);
+enum EulerAngleSequence
+{
+    ZYX,
+    ZXY,
+    YXZ,
+    YZX,
+    XYZ,
+    XZY,
+    ZYZ,
+    ZXZ,
+    YZY,
+    YXY,
+    XZX,
+    XYX
+};
+arma::mat rotationMatrixToEulerAngles(
+    const arma::mat& R, EulerAngleSequence convention=ZYX);
 
+arma::mat eulerAnglesToRotationMatrix(
+    const arma::mat& phi_theta_psi, EulerAngleSequence convention=ZYX);
+
+
+arma::mat rotationMatrixToRollPitchYaw(
+    const arma::mat& R);
 /**
  * @brief rollPitchYawToRotationMatrix
+ * computes the rotation matrix matching a rotation as if produced
+ * by OpenFOAM "-rollPitchYaw" switch.
+ * Note that the order rotation is actually Yaw>Pitch>Roll!
+ * https://develop.openfoam.com/Development/openfoam/-/issues/1292
  * @param rollPitchYaw
  * angles in degrees!
  * @return

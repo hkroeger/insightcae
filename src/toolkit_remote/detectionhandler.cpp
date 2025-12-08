@@ -20,6 +20,7 @@
 
 #include "detectionhandler.h"
 
+#include "base/tools.h"
 #include "base/boost_include.h"
 
 using namespace std;
@@ -116,7 +117,7 @@ void DetectionHandler::receiveDone(const boost::system::error_code& /*error*/, s
 {
     std::cout << "Received detection broadcast " << std::endl;
 
-    std::string response = srvaddr_+":"+lexical_cast<string>(srvport_)+" \""+analysisName_+"\"";
+    std::string response = srvaddr_+":"+insight::toString(srvport_)+" \""+analysisName_+"\"";
 
     socket_.async_send_to
         (

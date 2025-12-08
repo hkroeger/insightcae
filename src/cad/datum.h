@@ -28,14 +28,15 @@
 #include "occinclude.h"
 #include "cadtypes.h"
 #include "astbase.h"
-#include "cadparameters.h"
+#include "cadparameter.h"
 
 namespace insight {
 namespace cad {
 
 #ifndef SWIG
 class Datum
-: public ASTBase
+: public ASTBase,
+  public DependencySource
 {
 public:
   typedef std::map<std::string, DatumPtr> Map;
@@ -45,7 +46,10 @@ protected:
   
   virtual size_t calcHash() const =0;
 
+  Datum(const Datum& o);
+
 public:
+  declareType("Datum");
   Datum(bool point, bool axis, bool planar);
   Datum(std::istream&);
   
@@ -90,17 +94,22 @@ protected:
     gp_Trsf tr_;
     VectorPtr translation_;
 
-    virtual size_t calcHash() const;
-    virtual void build();
+    size_t calcHash() const override;
+    void build() override;
     
+    TransformedDatum(const TransformedDatum&o, TreeCloneMap& tcm);
 public:
+    declareType("TransformedDatum");
+    CLONEABLE(TransformedDatum);
+    DEPENDS((base_, translation_));
+
     TransformedDatum(DatumPtr datum, gp_Trsf tr);
     TransformedDatum(DatumPtr datum, VectorPtr translation);
     
     
-    virtual gp_Pnt point() const;
-    virtual gp_Ax1 axis() const;
-    virtual gp_Ax3 plane() const;
+    gp_Pnt point() const override;
+    gp_Ax1 axis() const override;
+    gp_Ax3 plane() const override;
     gp_Trsf trsf() const;
     DatumPtr baseDatum() const;
     
@@ -116,10 +125,12 @@ class DatumPoint
 protected:
   gp_Pnt p_;
   
+  DatumPoint(const DatumPoint& o);
 public:
+  declareType("DatumPoint");
   DatumPoint();
   
-  virtual gp_Pnt point() const;
+  gp_Pnt point() const override;
 
 //  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
@@ -133,11 +144,13 @@ class DatumAxis
 protected:
   gp_Ax1 ax_;
   
+  DatumAxis(const DatumAxis& o);
 public:
+  declareType("DatumAxis");
   DatumAxis();
   
-  virtual gp_Pnt point() const;
-  virtual gp_Ax1 axis() const;
+  gp_Pnt point() const override;
+  gp_Ax1 axis() const override;
 
 //  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
@@ -150,11 +163,13 @@ class DatumPlaneData
 protected:
   gp_Ax3 cs_;
 
+  DatumPlaneData(const DatumPlaneData& o);
 public:
+  declareType("DatumPlaneData");
   DatumPlaneData();
   
-  virtual gp_Pnt point() const;
-  virtual gp_Ax3 plane() const;
+  gp_Pnt point() const override;
+  gp_Ax3 plane() const override;
 
   arma::mat origin() const;
   arma::mat normal() const;
@@ -162,8 +177,6 @@ public:
   arma::mat ey() const;
 
   CoordinateSystem coordinateSystem() const;
-
-//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 #endif
@@ -177,22 +190,27 @@ protected:
   std::string name_;
   DatumPtr dat_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
   
+  ProvidedDatum(const ProvidedDatum&o, TreeCloneMap& tcm);
 public:
+  declareType("ProvidedDatum");
+  CLONEABLE(ProvidedDatum);
+#ifndef SWIG
+  DEPENDS((feat_, dat_));
+#endif
+
   ProvidedDatum(FeaturePtr feat, std::string name);
   
-  virtual inline bool providesPointReference() const { checkForBuildDuringAccess(); return providesPointReference_; }
-  virtual inline bool providesAxisReference() const { checkForBuildDuringAccess(); return providesAxisReference_; }
-  virtual inline bool providesPlanarReference() const { checkForBuildDuringAccess(); return providesPlanarReference_; }
+  inline bool providesPointReference() const  override{ checkForBuildDuringAccess(); return providesPointReference_; }
+  inline bool providesAxisReference() const  override{ checkForBuildDuringAccess(); return providesAxisReference_; }
+  inline bool providesPlanarReference() const  override{ checkForBuildDuringAccess(); return providesPlanarReference_; }
 
-  virtual gp_Pnt point() const;
-  virtual gp_Ax1 axis() const;
-  virtual gp_Ax3 plane() const;
+  gp_Pnt point() const override;
+  gp_Ax1 axis() const override;
+  gp_Ax3 plane() const override;
   DatumPtr baseDatum() const;
-
-//  virtual Handle_AIS_InteractiveObject createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 
@@ -202,11 +220,18 @@ class ExplicitDatumPoint
 : public DatumPoint
 {
   VectorPtr coord_;
-  
-  virtual size_t calcHash() const;
-  virtual void build();
 
+  size_t calcHash() const override;
+  void build() override;
+
+  ExplicitDatumPoint(const ExplicitDatumPoint&o, TreeCloneMap& tcm);
 public:
+  declareType("ExplicitDatumPoint");
+  CLONEABLE(ExplicitDatumPoint);
+#ifndef SWIG
+  DEPENDS((coord_));
+#endif
+
   ExplicitDatumPoint(VectorPtr c);
   
 };
@@ -217,10 +242,17 @@ class ExplicitDatumAxis
 {
   VectorPtr p0_, ex_;
 
-  virtual size_t calcHash() const;
-  virtual void build();
-  
+  size_t calcHash() const override;
+  void build() override;
+
+  ExplicitDatumAxis(const ExplicitDatumAxis&o, TreeCloneMap& tcm);
 public:
+  declareType("ExplicitDatumAxis");
+  CLONEABLE(ExplicitDatumAxis);
+#ifndef SWIG
+  DEPENDS((p0_, ex_));
+#endif
+
   ExplicitDatumAxis(VectorPtr p0, VectorPtr ex);
   
 };
@@ -232,10 +264,19 @@ class DatumPlane
   VectorPtr p0_, n_, up_;
   VectorPtr p1_, p2_;
   
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
+
+  DatumPlane(const DatumPlane& o, TreeCloneMap& tcm);
 
 public:
+  declareType("DatumPlane");
+  CLONEABLE(DatumPlane);
+#ifndef SWIG
+  DEPENDS((p0_, n_, up_, p1_, p2_));
+#endif
+
+
   DatumPlane
   (
     VectorPtr p0, 
@@ -267,7 +308,7 @@ public:
   
   
 
-  virtual void write(std::ostream& file) const;
+  void write(std::ostream& file) const override;
 
 };
 
@@ -281,13 +322,20 @@ public:
 class XsecPlanePlane
 : public DatumAxis
 {
-  ConstDatumPtr pl1_, pl2_;
+  DatumPtr pl1_, pl2_;
   
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
+  XsecPlanePlane(const XsecPlanePlane&o, TreeCloneMap& tcm);
 public:
-  XsecPlanePlane(ConstDatumPtr pl1, ConstDatumPtr pl2);
+  declareType("XsecPlanePlane");
+  CLONEABLE(XsecPlanePlane);
+#ifndef SWIG
+  DEPENDS((pl1_, pl2_));
+#endif
+
+  XsecPlanePlane(DatumPtr pl1, DatumPtr pl2);
 };
 
 
@@ -296,13 +344,20 @@ public:
 class XsecAxisPlane
 : public DatumPoint
 {
-  ConstDatumPtr ax_, pl_;
+  DatumPtr ax_, pl_;
   
-  virtual size_t calcHash() const;
-  virtual void build();
+  size_t calcHash() const override;
+  void build() override;
 
+  XsecAxisPlane(const XsecAxisPlane&o, TreeCloneMap& tcm);
 public:
-  XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl);
+  declareType("XsecAxisPlane");
+  CLONEABLE(XsecAxisPlane);
+#ifndef SWIG
+  DEPENDS((ax_, pl_));
+#endif
+
+  XsecAxisPlane(DatumPtr ax, DatumPtr pl);
 
 };
 

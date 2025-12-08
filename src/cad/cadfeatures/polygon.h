@@ -13,6 +13,7 @@ public:
     std::vector<VectorPtr> corners_;
     bool close_;
 
+    Polygon(const Polygon&o, TreeCloneMap& tcm);
     Polygon ( const std::vector<VectorPtr>& corners, bool close = true );
 
     size_t calcHash() const override;
@@ -20,7 +21,11 @@ public:
 
 public:
     declareType ( "Polygon" );
+#ifndef SWIG
+    DEPENDS((corners_));
+#endif
     CREATE_FUNCTION(Polygon);
+    CLONEABLE(Polygon);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

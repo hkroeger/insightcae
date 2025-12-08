@@ -14,11 +14,16 @@ class SingleVertex
   size_t calcHash() const override;
   void build() override;
 
+  SingleVertex(const SingleVertex&o, TreeCloneMap& tcm);
   SingleVertex(VectorPtr p);
 
 public:
   declareType("SingleVertex");
+#ifndef SWIG
+  DEPENDS((p_));
+#endif
   CREATE_FUNCTION(SingleVertex);
+  CLONEABLE(SingleVertex);
 
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();

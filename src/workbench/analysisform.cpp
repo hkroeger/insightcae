@@ -18,7 +18,10 @@
  *
  */
 
+#include "base/parameterset.h"
 #include "cadparametersetvisualizer.h"
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
@@ -33,7 +36,6 @@
 #include "base/remoteserverlist.h"
 #include "base/translations.h"
 #include "base/rapidxml.h"
-#include "rapidxml/rapidxml_print.hpp"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
@@ -74,10 +76,82 @@
 
 #include "iqvtkcadmodel3dviewer.h"
 #include "qtextensions.h"
+#include "parametereditorwidget.h"
 
 #include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
 
 namespace fs = boost::filesystem;
+
+
+
+
+
+
+void AnalysisForm::saveState(
+    rapidxml::xml_document<> &doc,
+    rapidxml::xml_node<> &rootNode,
+    const boost::filesystem::path &parentPath ) const
+{
+    {
+        // current parameter set
+        auto p = parameters()
+                     .cloneAs<insight::ParameterSet>();
+
+        if (pack_parameterset_)
+        {
+            p->pack();
+        }
+        else
+        {
+            p->clearPackedData();
+        }
+
+        insight::hierarchicalData::Element::OutputProperties op;
+        op.skipParameterDescription=true;
+        p->saveToNode(doc, rootNode, op);
+    }
+
+    {
+        auto vs = insight::appendNode(doc, rootNode, "viewerState");
+        peditor_->viewer()->saveState(doc, vs, parentPath);
+    }
+}
+
+
+void AnalysisForm::restoreState(
+    const rapidxml::xml_node<>& rootNode,
+    const boost::filesystem::path& parentPath )
+{
+    auto ps = parameters().cloneAs<insight::ParameterSet>();
+    ps->readFromRootNode(rootNode);
+    ps->resolveRelativePaths(parentPath);
+    psmodel_->resetParameterValues( *ps );
+
+    if (auto *vs = rootNode.first_node("viewerState"))
+    {
+        peditor_->viewer()->restoreState(*vs, parentPath);
+    }
+}
+
+void AnalysisForm::scheduleAutosave() const
+{
+    insight::dbg(insight::DetailedBusiness)<<"schedule autosave "
+        <<autosaveLastWriteTimer_.isActive()<<" "<<autosaveLastWriteTimer_.remainingTime()
+        <<" "
+        <<autosaveMinIntervalTimer_.isActive()<<" "<<autosaveMinIntervalTimer_.remainingTime()
+        <<std::endl;
+
+    if ( autosaveLastWriteTimer_.isActive() )
+    {
+        // last write was recently, wait a little before write
+        autosaveMinIntervalTimer_.stop();
+    }
+
+    if (!autosaveMinIntervalTimer_.isActive())
+    {
+        autosaveMinIntervalTimer_.start();
+    }
+}
 
 
 
@@ -86,23 +160,34 @@ AnalysisForm::AnalysisForm(
     const std::string& analysisName,
     bool logToConsole
     )
-: /*QMdiSubWindow*/ QWidget(parent),
+: QWidget(parent),
   IQExecutionWorkspace(this),
-  analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
-  pack_parameterset_(true),
-  is_modified_(false)
+  pack_parameterset_(true)
 {
-    insight::CurrentExceptionContext ex(_("creating analysis form for analysis %s"), analysisName.c_str());
+    autosaveLastWriteTimer_.setSingleShot(true);
+    autosaveLastWriteTimer_.setInterval(autosaveMaxWaitInterval);
+    autosaveMinIntervalTimer_.setSingleShot(true);
+    autosaveMinIntervalTimer_.setInterval(autosaveMinInterval);
+    autosaveMinIntervalTimer_.callOnTimeout(
+        [this]()
+        {
+            autosaveLastWriteTimer_.start();
+            autosave();
+        });
+
+    insight::CurrentExceptionContext ex(
+        _("creating analysis form for analysis %s"), analysisName.c_str());
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
     // load default parameters
     auto defaultParams =
-        insight::Analysis::defaultParameters()(analysisName_);
+        std::make_unique<insight::AnalysisParameterSet>(
+          analysisName);
 
     isOpenFOAMAnalysis_ =
-        defaultParams->hasParameter("run/OFEname");
+        defaultParams->hasPath("run/OFEname");
 
 
     ui = new Ui::AnalysisForm;
@@ -182,26 +267,27 @@ AnalysisForm::AnalysisForm(
               log_, &LogViewerWidget::appendErrorLine);
     }
 
-    insight::dbg()<<"update title"<<std::endl;
-    updateWindowTitle();
     connect(ui->btnRun, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
     connect(ui->btnKill, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
 
-    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb;
+    insight::CADParameterSetModelVisualizer::VisualizerFunctions::Function vizb =
+        []( QObject*, IQParameterSetModel *, const boost::filesystem::path&, insight::ProgressDisplayer&)
+        { return nullptr; };
+
     insight::ParameterSet_ValidatorPtr vali;
 
     auto& atab = insight::CADParameterSetModelVisualizer::visualizerForAnalysis();
-    std::cout<<"table of "<<atab.description()<<" of size "<<atab.size()<<std::endl;
-    if (atab.count(analysisName_))
+
+    if (atab.count(analysisName))
     {
         insight::CurrentExceptionContext ex(_("create parameter set visualizer"));
-        vizb = atab.lookup(analysisName_);
+        vizb = atab.lookup(analysisName);
     }
 
-    if (insight::Analysis::validators().count(analysisName_))
+    if (insight::Analysis::validators().count(analysisName))
     {
-        vali = insight::Analysis::validators()(analysisName_);
+        vali = insight::Analysis::validators()(analysisName);
     }
 
     auto vsplit = new QSplitter;
@@ -217,9 +303,9 @@ AnalysisForm::AnalysisForm(
                IQParameterSetModel *_2)
             {
                 return vizb(
-                    _1, _2,
-                    localCaseDirectory(),
-                    progressDisplayer_ );
+                        _1, _2,
+                        localCaseDirectory(),
+                        progressDisplayer_ );
             },
             [](
                  const std::string&,
@@ -237,11 +323,10 @@ AnalysisForm::AnalysisForm(
 
         //vsplit->addWidget(peditor_); // add later, depending on wizard or not
     }
-    psmodel_->setAnalysisName(analysisName_);
 
     insight::CameraState cs;
     if (insight::CADParameterSetModelVisualizer
-        ::defaultCameraStateForAnalysis().count(analysisName_))
+        ::defaultCameraStateForAnalysis().count(analysisName))
     {
         cs=insight::CADParameterSetModelVisualizer
             ::defaultCameraStateForAnalysis()(analysisName);
@@ -250,8 +335,12 @@ AnalysisForm::AnalysisForm(
 
 
 
-    connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
-            this, &AnalysisForm::onConfigModification);
+    connect(peditor_, &ParameterEditorWidget::parameterSetChanged, peditor_,
+            [this]() {
+                DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
+
+                modificationMade();
+            } );
 
     QSettings settings("silentdynamics", "workbench");
 
@@ -276,12 +365,12 @@ AnalysisForm::AnalysisForm(
     IQExecutionWorkspace::initializeToDefaults();
 
     if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis().count(
-            analysisName_ ))
+            analysisName ))
     {
 #warning check StaticFunctionTable parameter: r-value ref?
         auto ppm=psmodel_;
         auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis()(
-            analysisName_, std::move(ppm)
+            analysisName, std::move(ppm)
             );
 
         auto *container=new QSplitter;
@@ -311,6 +400,31 @@ AnalysisForm::AnalysisForm(
         ui->outputTab->layout()->addWidget(resultsViewer_);
     }
 
+    fileNameChanged.connect(
+        [this](const boost::filesystem::path& newfn)
+        {
+            DBG_SLOT(fileNameChanged);
+
+            auto ist_file=boost::filesystem::absolute(newfn);
+            resetExecutionEnvironment(ist_file.parent_path());
+            updateWindowTitle();
+        }
+    );
+
+    modificationStateChanged.connect(
+        [this]()
+        {
+            DBG_SLOT(modificationStateChanged);
+
+            updateWindowTitle();
+        }
+    );
+
+    peditor_->viewer()->modificationMade.connect(
+        this->modificationMade );
+
+    insight::dbg()<<"update title"<<std::endl;
+    updateWindowTitle();
 }
 
 
@@ -352,10 +466,21 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         connect( cfgview, &QAction::triggered, cfgview,
                 [this]()
                 {
+                    DBG_SLOT(QAction::triggered);
+
                     IQVTKCADModel3DViewerSettingsDialog dlg(peditor_->viewer(), this);
                     dlg.exec();
                 } );
     }
+
+
+    auto act_undo=new QAction(_("&Undo parameter change"), this);
+    menu_parameters->addAction( act_undo );
+    psmodel_->addUndoAction(act_undo);
+
+    auto act_redo=new QAction(_("&Redo parameter change"), this);
+    menu_parameters->addAction( act_redo );
+    psmodel_->addRedoAction(act_redo);
 
 
     act_save_=new QAction("&S", this);
@@ -376,6 +501,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
     connect( act_pack_, &QAction::triggered, act_pack_,
              [&]()
              {
+                DBG_SLOT(QAction::triggered);
                pack_parameterset_ = act_pack_->isChecked();
                updateSaveMenuLabel();
              }
@@ -387,7 +513,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
     menu_parameters->addAction( act_merge_ );
     connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onLoadParameters );
 
-    auto act_param_show_=new QAction(_("&Show in XML format"), this);
+    auto act_param_show_=new QAction(_("Show in &XML format..."), this);
     menu_parameters->addAction( act_param_show_ );
     connect( act_param_show_, &QAction::triggered, this, &AnalysisForm::onShowParameterXML );
 
@@ -406,8 +532,10 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         menu_results->addAction( act );
         connect( act, &QAction::triggered, resultsViewer_,
                  [this]() {
+                    DBG_SLOT(QAction::triggere);
+
                 ui->tabWidget->setCurrentWidget(ui->outputTab);
-                    this->resultsViewer_->loadResultSet(analysisName_);
+                    this->resultsViewer_->loadResultSet();
         } );
     }
 
@@ -456,7 +584,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 
 void AnalysisForm::closeEvent(QCloseEvent * event)
 {
-    if (is_modified_)
+    if (isModified())
     {
 
       auto answer=QMessageBox::question(
@@ -467,9 +595,13 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
       if (answer==QMessageBox::Yes)
       {
-        bool cancelled=false;
-        saveParameters(&cancelled);
-        if (cancelled) event->ignore();
+        onSaveParameters();
+
+        if (isModified())
+        {
+            // still modified => user must have cancelled
+            event->ignore();
+        }
       }
       else if (answer==QMessageBox::Cancel)
       {
@@ -494,7 +626,9 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
           settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 
-          /*QMdiSubWindow*/QWidget::closeEvent(event);
+          doCleanupOnRegularExit();
+
+          QWidget::closeEvent(event);
       }
     }
 
@@ -505,73 +639,23 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
 
 void AnalysisForm::onSaveParameters()
 {
-  saveParameters();
-}
-
-
-
-
-void AnalysisForm::saveParameters(bool *cancelled)
-{
-  if (ist_file_.empty())
-  {
-    saveParametersAs(cancelled);
-  }
-  else
-  {
-    auto p = parameters().cloneParameterSet();
-
-    if (pack_parameterset_)
+    if (currentFileNameIsSet())
     {
-      p->pack();
+        save();
     }
     else
     {
-      p->clearPackedData();
+        onSaveParametersAs();
     }
-
-    // prepare XML document
-    using namespace rapidxml;
-    xml_document<> doc;
-    xml_node<>* decl = doc.allocate_node(node_declaration);
-    decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-    decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-    doc.append_node(decl);
-    xml_node<> *rootNode = doc.allocate_node(node_element, "root");
-    doc.append_node(rootNode);
-
-    p->saveToNode(doc, *rootNode, ist_file_.parent_path(), analysisName_);
-
-    {
-     auto vs = insight::appendNode(doc, *rootNode, "viewerState");
-     peditor_->viewer()->writeViewerState(doc, vs);
-    }
-
-    std::ofstream f(ist_file_.c_str());
-    f << doc;
-    f << std::endl;
-    f << std::flush;
-    f.close();
-
-    //p.saveToFile(ist_file_, analysisName_);
-
-    is_modified_=false;
-    updateWindowTitle();
-  }
 }
+
 
 
 
 
 void AnalysisForm::onSaveParametersAs()
 {
-  saveParametersAs();
-}
 
-
-
-void AnalysisForm::saveParametersAs(bool *cancelled)
-{
   if (auto fn = getFileName(
           this, _("Save input parameters"),
           GetFileMode::Save,
@@ -591,60 +675,18 @@ void AnalysisForm::saveParametersAs(bool *cancelled)
 
               QObject::connect(cb, &QCheckBox::destroyed, cb,
                                [this,cb]()
-                               { pack_parameterset_=cb->isChecked(); } );
+                               {
+                  DBG_SLOT(QCheckBox::destroyed);
+
+                  pack_parameterset_=cb->isChecked();
+              } );
           }
           ))
   {
     updateSaveMenuLabel();
 
-    ist_file_ = fn.asFilesystemPath();
-
-    if (!hasLocalWorkspace())
-    {
-      resetExecutionEnvironment(ist_file_.parent_path());
-    }
-
-    saveParameters(cancelled);
-
-    if (cancelled) *cancelled=false;
+    saveAs(fn.asFilesystemPath());
   }
-  else
-  {
-    if (cancelled) *cancelled=true;
-  }
-}
-
-
-
-
-
-void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
-{
-  ist_file_=boost::filesystem::absolute(fp);
-
-  if (!hasLocalWorkspace())
-  {
-    resetExecutionEnvironment(ist_file_.parent_path());
-  }
-
-  auto ps = parameters().cloneParameterSet();
-
-  std::string contents;
-  insight::readFileIntoString(ist_file_, contents);
-
-  using namespace rapidxml;
-  xml_document<> doc;
-  doc.parse<0>(&contents[0]);
-
-  xml_node<> *rootnode = doc.first_node("root");
-  ps->readFromRootNode(*rootnode, ist_file_.parent_path());
-
-  if (auto *vs = rootnode->first_node("viewerState"))
-  {
-    peditor_->viewer()->restoreViewerState(*vs);
-  }
-
-  psmodel_->resetParameterValues( *ps );
 }
 
 
@@ -652,7 +694,16 @@ void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
 
 void AnalysisForm::onLoadParameters()
 {
-  if (is_modified_)
+    loadParameters();
+}
+
+
+
+
+void AnalysisForm::loadParameters(
+        boost::optional<boost::filesystem::path> fn)
+{
+  if (isModified())
   {
     auto answer = QMessageBox::question(
         this, _("Parameters unsaved"),
@@ -670,14 +721,56 @@ void AnalysisForm::onLoadParameters()
     }
   }
 
-  if (auto fn = getFileName(
-    this, _("Open Parameters"),
-    GetFileMode::Open,
-    {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
+  if (!fn)
   {
-    loadParameters(fn);
+      if (auto fnd = getFileName(
+        this, _("Open Parameters"),
+        GetFileMode::Open,
+        {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
+      {
+          fn = fnd;
+      }
+  }
+
+  if (fn)
+  {
+      auto asfn = AutosavableEditor
+          ::autosaveFileName(*fn);
+
+      auto fnToLoad= *fn;
+      bool removeFromFile=false;
+
+      using namespace boost::filesystem;
+      if (exists(asfn)
+          && (last_write_time(asfn) > last_write_time(*fn)))
+      {
+          auto answer = QMessageBox::question(
+              this, _("Autosaved Parameters found"),
+              _("There is an automatically saved version of the selected file available.\n"
+                "Do you wish to load this instead of the selected file?"),
+              QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+          if (answer == QMessageBox::Yes)
+          {
+              fnToLoad=asfn;
+              removeFromFile=true;
+          }
+          else if (answer == QMessageBox::Cancel)
+          {
+              return;
+          }
+      }
+
+      {
+          std::shared_ptr<IQHierarchicalDataModel::UndoRecordingBlocker> blocker;
+          if (auto *m = dynamic_cast<IQHierarchicalDataModel*>(peditor_->model()))
+          {
+              blocker=m->blockUndoRecording();
+          }
+          load(fnToLoad, *fn, removeFromFile);
+      }
   }
 }
+
 
 
 
@@ -692,13 +785,10 @@ void AnalysisForm::onShowParameterXML()
 
 //    Q_EMIT apply(); // apply all changes into parameter set
 
-    boost::filesystem::path refPath = boost::filesystem::current_path();
-    if (!ist_file_.empty())
-    {
-      refPath=ist_file_.parent_path();
-    }
     std::ostringstream os;
-    parameters().saveToStream(os, refPath, analysisName_);
+    parameters().saveToStream(
+        os,
+        insight::hierarchicalData::Element::OutputProperties() );
     ui.textDisplay->setText(QString::fromStdString(os.str()));
 
     widget->exec();
@@ -707,17 +797,13 @@ void AnalysisForm::onShowParameterXML()
 
 
 
-void AnalysisForm::onConfigModification()
-{
-  is_modified_=true;
-}
-
-
 
 
 void AnalysisForm::onUpdateSupplementedInputData(
     insight::supplementedInputDataBasePtr sid)
 {
+    DBG_SLOT(ParameterEditorWidget::updateSupplementedInputData);
+
   sid_=sid;
   supplementedInputDataModel_.reset( sid_->reportedSupplementQuantities() );
   if (sid_->reportedSupplementQuantities().size())

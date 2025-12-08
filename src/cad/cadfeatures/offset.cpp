@@ -18,6 +18,8 @@
  */
 
 #include "offset.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -55,13 +57,17 @@ size_t Offset::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*shell_;
-  h+=thickness_->value();
-  h+=tol_->value();
+  h+=*thickness_;
+  h+=*tol_;
   return h.getHash();
 }
 
 
 
+
+Offset::Offset(const Offset&o, TreeCloneMap& tcm)
+    : CL(shell_), CL(thickness_), CL(tol_)
+{}
 
 
 
@@ -120,10 +126,10 @@ void Offset::insertrule(parser::ISCADParser& ruleset)
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '('
-        >> ruleset.r_solidmodel_expression >> ','
-        >> ruleset.r_scalarExpression
-        >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
-        >> ')' )
+        > ruleset.r_solidmodel_expression > ','
+        > ruleset.r_scalarExpression
+        > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
+        > ')' )
       [ qi::_val = phx::bind(
                        &Offset::create<FeaturePtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3) ]

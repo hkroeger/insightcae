@@ -6,6 +6,8 @@
 #include <set>
 #include <algorithm>
 
+#include "globalobject.h"
+
 namespace Foam
 {
 
@@ -13,38 +15,60 @@ namespace Foam
 
 template<class T>
 class globalRegistry
-        : private std::set<T*>
+    : private std::set< globalObject<globalRegistry<T> >*>
 {
 
     globalRegistry()
     {}
 
 public:
-    void registerObject(T* o)
+    typedef std::set< globalObject<globalRegistry<T> >*> BaseType;
+    typedef T RegisteredObjectType;
+    typedef globalObject<globalRegistry<T> > GlobalObjectType;
+
+    void registerObject(GlobalObjectType* o)
     {
-        if (this->find(o)==this->end())
+        if (o==nullptr)
         {
-            insert(o);
+            WarningIn("void globalRegistry::registerObject")
+            << "attempt to register null pointer!"
+            << endl;
         }
         else
         {
-            WarningIn("void globalRegistry::registerObject")
-                    << "attempt to register object twice!"
-                    << endl;
+            if (this->find(o)==this->end())
+            {
+                this->insert(o);
+            }
+            else
+            {
+                WarningIn("void globalRegistry::registerObject")
+                        << "attempt to register object twice!"
+                        << endl;
+            }
         }
     }
 
-    void unregisterObject(T* o)
+    void unregisterObject(GlobalObjectType* o)
     {
-        if (this->find(o)!=this->end())
+        if (o==nullptr)
         {
-            this->erase(o);
+            WarningIn("void globalRegistry::unregisterObject")
+            << "attempt to unregister null pointer!"
+            << endl;
         }
         else
         {
-            WarningIn("void globalRegistry::unregisterObject")
-                    << "attempt to unregister object which was not registered!"
-                    << endl;
+            if (this->find(o)!=this->end())
+            {
+                this->erase(o);
+            }
+            else
+            {
+                WarningIn("void globalRegistry::unregisterObject")
+                        << "attempt to unregister object which was not registered!"
+                        << endl;
+            }
         }
     }
 
@@ -52,7 +76,7 @@ public:
     {
         auto fi = std::find_if(
                     this->begin(), this->end(),
-                    [&lbl](const typename std::set<T*>::value_type& i)
+                    [&lbl](const typename BaseType::value_type& i)
                     {
                         return i->objectLabel()==lbl;
                     }
@@ -64,7 +88,7 @@ public:
     {
         auto fi = std::find_if(
                     this->begin(), this->end(),
-                    [&lbl](const typename std::set<T*>::value_type& i)
+                    [&lbl](const typename BaseType::value_type& i)
                     {
                         return i->objectLabel()==lbl;
                     }
@@ -84,7 +108,7 @@ public:
                    << "Registered objects are :"<<entries
                    <<abort(FatalError);
         }
-        return *fi;
+        return static_cast<T*>(*fi);
     }
 
     static globalRegistry<T>& registry()

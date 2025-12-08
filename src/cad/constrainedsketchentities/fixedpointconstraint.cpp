@@ -1,5 +1,6 @@
 #include "fixedpointconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 
 #include "base/parameters/subsetparameter.h"
 #include "base/parameterset.h"
@@ -21,15 +22,7 @@ FixedPointConstraint::FixedPointConstraint(
     insight::cad::SketchPointPtr p, const std::string& layerName )
     : SingleSymbolConstraint(layerName),
       p_(p)
-{
-    auto c=p->coords2D();
-
-    insight::ParameterSet::Entries ps;
-    ps.emplace("x", std::make_unique<insight::DoubleParameter>(c(0), "x location"));
-    ps.emplace("y", std::make_unique<insight::DoubleParameter>(c(1), "y location"));
-
-    changeDefaultParameters( *insight::ParameterSet::create(std::move(ps), "") );
-}
+{}
 
 
 std::string FixedPointConstraint::symbolText() const
@@ -85,7 +78,7 @@ void FixedPointConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p_, script, entityLabels)
             + ", layer " + layerName()
             + parameterString()
@@ -119,7 +112,8 @@ void FixedPointConstraint::addParserRule(
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2), qi::_3
                  ),
                 phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4,
+                    boost::filesystem::path(".")),
                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -143,6 +137,16 @@ void FixedPointConstraint::replaceDependency(
     }
 }
 
+void FixedPointConstraint::ensureRequiredParameters()
+{
+    SingleSymbolConstraint::ensureRequiredParameters();
+
+    // ensure that there are our required parameters
+    auto c=p_->coords2D();
+    parametersRef().getOrInsert<DoubleParameter>("x", c(0), "x location");
+    parametersRef().getOrInsert<DoubleParameter>("y", c(1), "y location");
+}
+
 
 void FixedPointConstraint::operator=(const ConstrainedSketchEntity& other)
 {
@@ -154,7 +158,7 @@ ConstrainedSketchEntityPtr FixedPointConstraint::clone() const
     auto cl=FixedPointConstraint::create( p_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

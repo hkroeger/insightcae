@@ -38,7 +38,7 @@ insight::BeamLocalCS::BeamLocalCS(const arma::mat& origin, const arma::mat& alon
 insight::SpatialTransformation insight::BeamLocalCS::MACRCARAPOUTRE() const
 {
     SpatialTransformation st(
-                vec3Y(1), vec3Z(1), vec3X(1) );
+                vec3Y(1), vec3Z(1), vec3X(1), vec3Zero() );
     st.appendTransformation(*this);
     return st;
 }

@@ -1,4 +1,5 @@
 #include "iqvideo.h"
+#include "base/exception.h"
 
 #include <QApplication>
 #include <QFont>
@@ -12,6 +13,7 @@
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
 #include <QVideoWidget>
+#include <memory>
 
 
 namespace insight {
@@ -24,11 +26,14 @@ addToFactoryTable(IQResultElement, IQVideo);
 
 
 
-IQVideo::IQVideo(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-    : IQResultElement(parent, label, rep),
+IQVideo::IQVideo(
+    QObject* parent,
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element )
+  : IQResultElement(parent, hdmodel, element),
     delta_w_(0)
 {
-    if (auto im = resultElementAs<insight::Video>())
+    auto &im = elementAs<insight::Video>();
     {
         // QByteArray data;
         // {
@@ -49,6 +54,28 @@ IQVideo::IQVideo(QObject *parent, const QString &label, insight::ResultElementPt
     }
 }
 
+
+
+
+boost::filesystem::path
+IQVideo::ensureFileIsLocallyAvailable() const
+{
+    auto &im = elementAs<insight::Video>();
+    {
+        if (!localFile_)
+        {
+            localFile_=std::make_unique<TemporaryFile>(
+                "%%%%%"+
+                im.fileName().extension().string() );
+            im.copyTo(localFile_->path());
+        }
+        return localFile_->path();
+    }
+
+    throw insight::Exception("unexpected result element type wrapped");
+
+    return boost::filesystem::path();
+}
 
 
 
@@ -88,8 +115,11 @@ void IQVideo::createFullDisplay(QVBoxLayout *layout)
 
     auto playlist = new QMediaPlaylist(player);
 
-    auto im = resultElementAs<insight::Video>();
-    playlist->addMedia(QUrl::fromLocalFile(im->filePath().string().c_str()));
+    auto &im = elementAs<insight::Video>();
+    playlist->addMedia(
+        QUrl::fromLocalFile(
+            ensureFileIsLocallyAvailable()
+                .string().c_str() ) );
 
     auto videoWidget = new QVideoWidget;
     player->setVideoOutput(videoWidget);

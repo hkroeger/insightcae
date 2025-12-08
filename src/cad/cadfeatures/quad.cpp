@@ -19,11 +19,12 @@
 
 #include "quad.h"
 #include "datum.h"
+#include "cadparameters.h"
 
 #include "base/boost_include.h"
 #include "base/linearalgebra.h"
 #include "base/translations.h"
-#include "feature.h"
+#include "featureset.h"
 #include "cadfeatures/importsolidmodel.h"
 
 #include <boost/spirit/include/qi.hpp>
@@ -51,15 +52,20 @@ size_t Quad::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=L_->value();
-  h+=W_->value();
-  if (t_) h+=t_->value();
+  h+=*p0_;
+  h+=*L_;
+  h+=*W_;
+  if (t_) h+=*t_;
   h+=boost::fusion::at_c<0>(center_);
   h+=boost::fusion::at_c<1>(center_);
   return h.getHash();
 }
 
+
+
+Quad::Quad(const Quad&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(L_), CL(W_), CL(t_), center_(o.center_)
+{}
 
 
 
@@ -237,26 +243,25 @@ void Quad::insertrule(parser::ISCADParser& ruleset)
     (
         "Quad",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-                    ( '(' >> ruleset.r_vectorExpression
-                      >> ',' >> ruleset.r_vectorExpression
-                      >> ',' >> ruleset.r_vectorExpression
-                      >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
-                      >> ( ( ',' >> (
-                                 ( qi::lit ( "centered" ) >> qi::attr ( true ) >> qi::attr ( true ) )
-                                 |
-                                 ( qi::lit ( "center" )
-                                   >> ( ( 'x' >> qi::attr ( true ) ) |qi::attr ( false ) )
-                                   >> ( ( 'y' >> qi::attr ( true ) ) |qi::attr ( false ) )
-                                 )
-                             ) )
-                           |
-                           ( qi::attr ( false ) >> qi::attr ( false ) )
-                         )
-                      >> ')' )
-                    [ qi::_val = phx::bind (
-                       &Quad::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr, QuadCentering>,
-                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+            ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression
+             > ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
+             > ( ( ',' >> (
+                     ( qi::lit ( "centered" ) > qi::attr ( true ) > qi::attr ( true ) )
+                     |
+                     ( qi::lit ( "center" )
+                      > ( ( 'x' > qi::attr ( true ) ) |qi::attr ( false ) )
+                      > ( ( 'y' > qi::attr ( true ) ) |qi::attr ( false ) )
+                      )
+                     ) )
+                |
+                ( qi::attr ( false ) > qi::attr ( false ) )
+                )
+             > ')' )
+                [ qi::_val = phx::bind (
+                     &Quad::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr, QuadCentering>,
+                     qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
                 )
     );

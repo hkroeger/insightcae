@@ -967,7 +967,7 @@ arma::mat readTextFile(std::istream& f)
   while (getline(f, line))
   {
     iline++;
-    CurrentExceptionContext ex(3, str(format("reading line %d (containing \"%s\")")%iline%line), false);
+    CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d (containing \"%s\")")%iline%line), false);
 
     algorithm::trim_left(line);
     char fc; istringstream(line) >> fc; // get first char
@@ -1028,9 +1028,6 @@ arma::mat readTextFile(std::istream& f)
 
 arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers)
 {
-//   boost::filesystem::path file=filetemplate.parent_path() 
-//     / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
-
   cout << "Reading "<<file<<endl;
     
   std::ifstream f(file.c_str());
@@ -1079,17 +1076,7 @@ bool equal_columns(const ColumnDescription& c1, const ColumnDescription& c2)
 }
 
 std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetemplate, ColumnDescription* headers)
-{
-//   if (num<0)
-//     throw insight::Exception("readParaviewCSV: Reading and combining all files is not yet supported!");
-//   
-//   boost::filesystem::path file=filetemplate.parent_path() 
-//     / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
-// 
-  
-//   ColumnDescription header;
-//   std::vector<arma::mat> result;
-  
+{  
   typedef std::map<std::string, std::vector< arma::mat> > AllData;
   AllData alldata;
   
@@ -1374,17 +1361,19 @@ std::vector<MeshQualityInfo> getMeshQuality(const OpenFOAMCase& cm, const boost:
 
   return mqinfos;
 }
-  
-void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& location, 
-		       ResultSetPtr results,
-		       const std::vector<string>& addopts
-		      )
+
+void meshQualityReport(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    ResultSet& results,
+    const std::vector<string>& addopts
+    )
 {
   auto mqinfos=getMeshQuality(cm, location, addopts);
   
   for (const MeshQualityInfo& mq: mqinfos)
   {
-    results->insert
+    results.insert
     (
      "Mesh quality at time "+mq.time,
      std::make_unique<AttributeTableResult>
@@ -1435,8 +1424,8 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 void currentNumericalSettingsReport
 (
   const OpenFOAMCase& /*cm*/,
-  const boost::filesystem::path& location, 
-  ResultSetPtr results
+  const boost::filesystem::path& location,
+  ResultSet& results
 )
 {
   double order=990;
@@ -1464,7 +1453,7 @@ void currentNumericalSettingsReport
       
       std::string elemname=dictname.string();
       replace_all(elemname, "/", "_");
-      results->insert("dictionary_"+elemname,
+      results.insert("dictionary_"+elemname,
         std::unique_ptr<Comment>(new Comment
 	(
 	latexCode.str(), 
@@ -1493,11 +1482,11 @@ arma::mat viscousForceProfile
 )
 {
   std::vector<std::string> opts;
-  opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(axis)));
   opts.push_back("(viscousForce viscousForceMean)");
   opts.push_back("-walls");
   opts.push_back("-n");
-  opts.push_back(lexical_cast<string>(n));
+  opts.push_back(toString(n));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
@@ -1532,7 +1521,7 @@ arma::mat projectedArea
   }
   pl+=")";
   opts.push_back(pl);
-  opts.push_back(OFDictData::to_OF(direction));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(direction)));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
@@ -1699,13 +1688,20 @@ void extrude2DMesh
   if (!wedgeInsteadOfPrism)
   {
     opt.clear();
-    opt=list_of<std::string>("-translate")(OFDictData::to_OF(offsetTranslation)).convert_to_container<std::vector<std::string> >();
+    opt={
+      "-translate",
+      OFDictData::toString(OFDictData::vector3(offsetTranslation))
+    };
     cm.executeCommand(location, "transformPoints", opt);
   }
   else
   {
     opt.clear();
-    opt=list_of<std::string> (OFDictData::to_OF(vec3(0,0,0))) (sourcePatchName) (sourcePatchName2).convert_to_container<std::vector<std::string> >();
+    opt={
+       OFDictData::toString(OFDictData::vector3(0,0,0)),
+       sourcePatchName,
+       sourcePatchName2
+    };
     cm.executeCommand(location, "flattenWedges", opt);
   }
 }
@@ -1863,11 +1859,11 @@ arma::mat interiorPressureFluctuationProfile
 )
 {
   std::vector<std::string> opts;
-  opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(axis)));
   opts.push_back("(pPrime2Mean)");
   opts.push_back("-interior");
   opts.push_back("-n");
-  opts.push_back(lexical_cast<string>(n));
+  opts.push_back(toString(n));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   std::vector<std::string> output;
   cm.executeCommand(location, "binningProfile", opts, &output);
@@ -2047,10 +2043,10 @@ arma::mat surfaceProjectLine
 {
   std::vector<std::string> opts;
   opts.push_back(surfaceFile.string());
-  opts.push_back(OFDictData::to_OF(start));
-  opts.push_back(OFDictData::to_OF(end));
-  opts.push_back(lexical_cast<std::string>(npts));
-  opts.push_back(OFDictData::to_OF(projdir));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(start)));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(end)));
+  opts.push_back(toString(npts));
+  opts.push_back(OFDictData::toString(OFDictData::vector3(projdir)));
 //   copy(addopts.begin(), addopts.end(), back_inserter(opts));
 
   std::vector<std::string> output;
@@ -2180,7 +2176,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     .set_name(p().profile_name)
   ));
 
-  auto casepath = p().casepath->filePath(executionPath());
+  auto casepath = p().casepath->localFilePath();
 
   sample(
       cm, casepath,
@@ -2193,7 +2189,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     -> readSamples(cm, casepath, &cd);
 
   auto results = createResultSet();
-  Ordering so;
+  hierarchicalData::Ordering so;
   
   for (const std::string& fieldname: p().fields)
   {
@@ -2214,7 +2210,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     
     addPlot
     (
-      results, casepath, "profiles_"+fieldname,
+      *results, casepath, "profiles_"+fieldname,
       "$x / m$", fieldname,
       crvs,
       "Profiles of field "+fieldname
@@ -2650,7 +2646,7 @@ void eMesh::write(std::ostream &f) const
      <<"("<<endl;
     for (const arma::mat& p: points_)
     {
-      f<<OFDictData::to_OF(p)<<endl;
+      f<<OFDictData::vector3(p)<<endl;
     }
     f<<")"<<endl;
 

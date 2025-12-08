@@ -1,5 +1,6 @@
 #include "horizontalconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
 
@@ -34,7 +35,9 @@ std::string HorizontalConstraint::symbolText() const
 arma::mat HorizontalConstraint::symbolLocation() const
 {
     return 0.5*
-           (line_->getDatumPoint("p0")+line_->getDatumPoint("p1"));
+           ( line_->start()->value()
+                  +
+             line_->end()->value() );
 }
 
 
@@ -82,8 +85,8 @@ void HorizontalConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(line_.get()))
+            + toString(myLabel) + ", "
+            + toString(entityLabels.at(line_.get()))
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -121,7 +124,8 @@ void HorizontalConstraint::addParserRule(
                  &HorizontalConstraint::create<std::shared_ptr<Line>, const std::string& >,
                  phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_3 ),
               phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-              phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+              phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4,
+                boost::filesystem::path(".") ),
               qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -167,7 +171,7 @@ ConstrainedSketchEntityPtr HorizontalConstraint::clone() const
     auto cl=HorizontalConstraint::create( line_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

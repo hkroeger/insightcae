@@ -16,7 +16,8 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "minimal.h"
 
 using namespace std;
@@ -26,22 +27,17 @@ namespace insight
 {
 namespace cad 
 {
- 
+
+
+double minimal::criterion(FeatureID feature)
+{
+    return qtc_->evaluate(feature);
+}
+
 minimal::minimal(const scalarQuantityComputer& qtc, int rank, int lrank)
-: maximal(qtc, rank, lrank)
+: extremal(qtc, rank, lrank)
 {}
 
-void minimal::firstPass(FeatureID feature)
-{
-  if (qtc_->isValidForFeature(feature))
-    {
-      ranking_.push_back(RankEntry(qtc_->evaluate(feature), feature));
-      std::sort( ranking_.begin(), ranking_.end(), [](const RankEntry& e1,const RankEntry& e2) -> bool
-       { return e1.first < e2.first; }
-      );
-    }
-    //    ranking_[qtc_->evaluate(feature)].insert(feature);
-}
 
 FilterPtr minimal::clone() const
 {

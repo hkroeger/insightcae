@@ -20,6 +20,8 @@
 
 #include <boost/concept_check.hpp>
 
+#include "base/exception.h"
+#include "base/parameters/subsetparameter.h"
 #include "base/tools.h"
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
@@ -156,8 +158,6 @@ int main(int argc, char *argv[])
 
     boost::filesystem::path inputFileParentPath = workdir;
 
-    std::string analysisName = "";
-
     auto summarizeWarnings = [&]()
     {
       if (WarningDispatcher::getCurrent().nWarnings()>0)
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
             }
         }
         
-        std::string contents;
+        boost::filesystem::path fn;
 
         if (!vm.count("input-file"))
         {
@@ -259,39 +259,25 @@ int main(int argc, char *argv[])
             exit(-1);
           }
 
-          boost::filesystem::path fn = vm["input-file"].as<std::string>();
+          fn = vm["input-file"].as<std::string>();
           inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
           filestem = fn.stem().string();
-
-          if (!boost::filesystem::exists(fn))
-          {
-              std::cerr << std::endl
-                      << _("Error: input file does not exist")<<": "<<fn
-                  <<std::endl<<std::endl;
-              exit(-1);
-          }
-
-          readFileIntoString(fn, contents);
         }
 
-        xml_document<> doc;
-        doc.parse<0>(&contents[0]);
+        std::unique_ptr<AnalysisParameterSet> parameters;
 
-        xml_node<> *rootnode = doc.first_node("root");
-
-        xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-        if (analysisnamenode)
         {
-            analysisName = analysisnamenode->first_attribute("name")->value();
+            insight::CurrentExceptionContext ex(_("reading input parameter file"));
+
+            parameters = std::make_unique<AnalysisParameterSet>();
+            parameters->readFromFile(fn);
+
+
+            cout<< str(format(
+                    _("Executing analysis of type '%s' in directory '%s'"))
+                        % parameters->analysisTypeName() % workdir.string()
+                ) << endl;
         }
-
-        cout<< _("Executing analysis in directory")<<" "<<workdir<<endl;
-
-        auto parameters =
-            // insight::Analysis::defaultParametersFor(analysisName);
-            insight::Analysis::defaultParameters()(analysisName);
-        
-        parameters->readFromNode( std::string(), *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {
@@ -300,14 +286,20 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> cargs;
                 boost::split(cargs, ist, boost::is_any_of(":"));
-                if (cargs.size()==1)
+                if (cargs.size()>0)
                 {
-                  // 	ParameterSet to_merge;
-                  parameters->readFromFile(ist);
-                }
-                else if (cargs.size()==3)
-                {
-                    parameters->getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
+                    insight::assertion(
+                        cargs.size()==1 || cargs.size()==3,
+                        _("merge command needs either one or three arguments!\nGot: %s"),
+                        ist.c_str() );
+
+                    boost::optional<AnalysisParameterSet::ParameterPath_SubNodePath> subset;
+                    if (cargs.size()==3)
+                    {
+                        subset=AnalysisParameterSet::ParameterPath_SubNodePath
+                            {cargs[1], cargs[2]};
+                    }
+                    parameters->mergeIncompatibleParameterSet(cargs[0], subset);
                 }
                 else
                 {
@@ -323,7 +315,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                int ns=boost::lexical_cast<int>(pair[1]);
+                int ns=toNumber<int>(pair[1]);
                 cout << boost::str(boost::format(
                                        _("Resizing array '%s' to %d")
                                        ) % pair[0] % ns )<<endl;
@@ -342,7 +334,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                bool v=boost::lexical_cast<bool>(pair[1]);
+                bool v=toValue<bool>(pair[1]);
                 cout << boost::str(boost::format(
                                        _("Setting boolean '%s' = %d")
                                        )% pair[0] % v) <<endl;
@@ -415,8 +407,7 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> pair;
                 boost::split(pair, s, boost::is_any_of(":"));
-                arma::mat v;
-                stringToValue(pair[1], v);
+                arma::mat v=toValue<arma::mat>(pair[1]);
                 cout << boost::str(boost::format(
                                         _("Setting vector '%s' = [%g %g %g]")
                                        ) % pair[0] % v(0) % v(1) % v(2)) <<endl;
@@ -441,7 +432,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("savecfg"))
         {
-            parameters->saveToFile( workdir/ vm["savecfg"].as<std::string>(), analysisName );
+            parameters->saveToFile( workdir/ vm["savecfg"].as<std::string>() );
         }
 
         std::cout<<std::string(80, '=')+'\n';
@@ -475,7 +466,7 @@ int main(int argc, char *argv[])
           // run analysis
 
           AnalysisThread solver_thread(
-              analysisName,
+              parameters->analysisTypeName(),
               AnalysisThread::ParameterSetAndExePath{parameters.get(), workdir},
               pd);
 
@@ -486,7 +477,9 @@ int main(int argc, char *argv[])
           }
 #endif
 
-          results = solver_thread.join();
+          solver_thread.join();
+
+          results=std::move(solver_thread);
         }
         catch (insight::Exception& ex)
         {
@@ -514,7 +507,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_WT
           if (server)
           {
-            server->setResults(results);
+            server->setResults(std::move(results));
             server->waitForShutdown();
           }
           else
@@ -569,12 +562,12 @@ int main(int argc, char *argv[])
         }
 #endif
     }
-    catch (const std::exception& e)
+    catch (...)
     {
       summarizeWarnings();
 
       std::cerr<<"*** "<<_("The analysis was stopped due to this error:")<<"\n\n";
-      printException(e);
+      insight::printCurrentException();
       return -1;
     }
 

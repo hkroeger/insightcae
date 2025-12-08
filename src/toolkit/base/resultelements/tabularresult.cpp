@@ -1,6 +1,7 @@
 #include "tabularresult.h"
 
 #include "base/rapidxml.h"
+#include <iterator>
 
 
 using namespace std;
@@ -16,29 +17,33 @@ defineType ( TabularResult );
 addToFactoryTable ( ResultElement, TabularResult );
 
 
-TabularResult::TabularResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+TabularResult::TabularResult (
+    const std::string& shortdesc,
+    const std::string& longdesc,
+    const std::string& unit )
     : ResultElement ( shortdesc, longdesc, unit )
 {
 }
 
 
 TabularResult::TabularResult
-(
-    const std::vector<std::string>& headings,
-    const Table& rows,
-    const std::string& shortDesc,
-    const std::string& longDesc,
-    const std::string& unit
-)
+    (
+        const Headings &headings,
+        const Table& rows,
+        const std::string& shortDesc,
+        const std::string& longDesc,
+        const std::string& unit
+        )
     : ResultElement ( shortDesc, longDesc, unit )
 {
     setTableData ( headings, rows );
 }
 
 
+
 TabularResult::TabularResult
 (
-    const std::vector<std::string>& headings,
+    const Headings& headings,
     const arma::mat& rows,
     const std::string& shortDesc,
     const std::string& longDesc,
@@ -60,12 +65,12 @@ TabularResult::TabularResult
 
 void TabularResult::setCellByName ( TabularResult::Row& r, const string& colname, double value )
 {
-    std::vector<std::string>::const_iterator ii=std::find ( headings_.begin(), headings_.end(), colname );
+    auto ii=std::find_if ( headings_.begin(), headings_.end(), [&](const SimpleLatex& h){ return h.simpleLatex()==colname; } );
     if ( ii==headings_.end() ) {
         std::ostringstream msg;
         msg<<"Tried to write into column "+colname+" but this does not exist! Existing columns are:"<<endl;
-        for ( const std::string& n: headings_ ) {
-            msg<<n<<endl;
+        for ( auto& n: headings_ ) {
+            msg<<n.simpleLatex()<<endl;
         }
         insight::Exception ( msg.str() );
     }
@@ -76,12 +81,12 @@ void TabularResult::setCellByName ( TabularResult::Row& r, const string& colname
 
 arma::mat TabularResult::getColByName ( const string& colname ) const
 {
-    std::vector<std::string>::const_iterator ii=std::find ( headings_.begin(), headings_.end(), colname );
+    auto ii=std::find_if ( headings_.begin(), headings_.end(), [&](const SimpleLatex& h){ return h.simpleLatex()==colname; } );
     if ( ii==headings_.end() ) {
         std::ostringstream msg;
         msg<<"Tried to get column "+colname+" but this does not exist! Existing columns are:"<<endl;
-        for ( const std::string& n: headings_ ) {
-            msg<<n<<endl;
+        for ( auto& n: headings_ ) {
+            msg<<n.simpleLatex()<<endl;
         }
         insight::Exception ( msg.str() );
     }
@@ -110,8 +115,8 @@ arma::mat TabularResult::toMat() const
 void TabularResult::writeGnuplotData ( std::ostream& f ) const
 {
     f<<"#";
-    for ( const std::string& head: headings_ ) {
-        f<<" \""<<head<<"\"";
+    for ( auto& head: headings_ ) {
+        f<<" \""<<head.toPlainText()<<"\"";
     }
     f<<std::endl;
 
@@ -125,9 +130,12 @@ void TabularResult::writeGnuplotData ( std::ostream& f ) const
 }
 
 
-ResultElementPtr TabularResult::clone() const
+std::unique_ptr<hierarchicalData::Element> TabularResult::clone() const
 {
-    ResultElementPtr res ( new TabularResult ( headings_, rows_, shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex() ) );
+    auto res=std::make_unique<TabularResult>(
+        headings_, rows_,
+        shortDescription_.simpleLatex(), longDescription_.simpleLatex(),
+        unit_.simpleLatex() );
     res->setOrder ( order() );
     return res;
 }
@@ -141,7 +149,10 @@ void TabularResult::insertLatexHeaderCode ( std::set<std::string>& hc ) const
 }
 
 
-void TabularResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path&  ) const
+std::string TabularResult::latexRepresentation(
+    const std::string&,
+    int,
+    const FileStorageInfo& ) const
 {
   std::vector<std::vector<int> > colsets;
   int i=0;
@@ -154,6 +165,7 @@ void TabularResult::writeLatexCode ( std::ostream& f, const std::string& , int ,
   }
   if (ccolset.size()>0) colsets.push_back(ccolset);
 
+  std::ostringstream f;
   for (const std::vector<int>& cols: colsets)
   {
     f<<
@@ -167,7 +179,7 @@ void TabularResult::writeLatexCode ( std::ostream& f, const std::string& , int ,
         if ( i!=0 ) {
             f<<" & ";
         }
-        f<<headings_[cols[i]];
+        f<<headings_[cols[i]].toLaTeX();
     }
     f<<
      "\\\\\n"
@@ -193,13 +205,20 @@ void TabularResult::writeLatexCode ( std::ostream& f, const std::string& , int ,
 //     "\\newpage\n"  // page break algorithm fails after too short "longtable"
         ;
   }
+  return f.str();
 }
 
 
-xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
+
+
+xml_node< char >* TabularResult::appendToNode (
+    const string& name,
+    xml_document< char >& doc,
+    xml_node< char >& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
     xml_node<>* heads = doc.allocate_node ( node_element, doc.allocate_string ( "headings" ) );
     child->append_node ( heads );
@@ -210,11 +229,7 @@ xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document
 
         heads->append_node ( chead );
 
-        chead->append_attribute ( doc.allocate_attribute
-                                  (
-                                      "title",
-                                      doc.allocate_string ( headings_[i].c_str() )
-                                  ) );
+        appendAttribute(doc, *chead, "title", headings_[i].simpleLatex() );
     }
 
     xml_node<>* values = doc.allocate_node ( node_element, doc.allocate_string ( "values" ) );
@@ -224,14 +239,21 @@ xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document
     return child;
 }
 
-void TabularResult::readFromNode(const string &name, rapidxml::xml_node<> &node)
+
+
+
+
+const rapidxml::xml_node<>*
+TabularResult::readFromNode(
+    const string &name,
+    const rapidxml::xml_node<> &parentNode )
 {
-  readBaseAttributesFromNode(name, node);
+  auto &node=*ResultElement::readFromNode(name, parentNode);
 
   auto* heads = node.first_node("headings");
   for (xml_node<> *e = heads->first_node(); e; e = e->next_sibling())
   {
-    headings_.push_back(e->first_attribute("title")->value());
+    headings_.push_back(SimpleLatex(getMandatoryAttribute(*e, "title")));
   }
 
   auto* vals = node.first_node("values");
@@ -247,16 +269,82 @@ void TabularResult::readFromNode(const string &name, rapidxml::xml_node<> &node)
     }
     rows_.push_back(r);
   }
+
+  return &node;
 }
 
-void TabularResult::exportDataToFile ( const string& name, const path& outputdirectory ) const
+
+
+
+bool TabularResult::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const TabularResult*>(&op))
+    {
+        if (headings_.size()!=oa->headings_.size())
+            return false;
+        if (rows_.size()!=oa->rows_.size())
+            return false;
+
+        {
+            auto i=headings_.begin();
+            auto j=oa->headings_.begin();
+
+            while (i!=headings_.end())
+            {
+                if (*i!=*j)
+                    return false;
+
+                ++i; ++j;
+            }
+        }
+
+        {
+            auto i=rows_.begin();
+            auto j=oa->rows_.begin();
+
+            while (i!=rows_.end())
+            {
+                if (i->size()!=j->size())
+                    return false;
+
+                {
+                    auto l=i->begin();
+                    auto m=j->begin();
+
+                    while (l!=i->end())
+                    {
+                        if (*l!=*m)
+                            return false;
+
+                        ++l; ++m;
+                    }
+                }
+                ++i; ++j;
+            }
+        }
+
+        return true;
+    }
+    else
+        return false;
+}
+
+
+int TabularResult::nChildren() const
+{
+    return 0;
+}
+
+void TabularResult::exportDataToFile (
+    const string& name,
+    const boost::filesystem::path& outputdirectory ) const
 {
     boost::filesystem::path fname ( outputdirectory/ ( name+".csv" ) );
     std::ofstream f ( fname.c_str() );
 
     std::string sep="";
-    for ( const std::string& h: headings_ ) {
-        f<<sep<<"\""<<h<<"\"";
+    for ( auto& h: headings_ ) {
+        f<<sep<<"\""<<h.toPlainText()<<"\"";
         sep=";";
     }
     f<<endl;

@@ -18,6 +18,8 @@
  */
 
 #include "sphere.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -45,12 +47,17 @@ size_t Sphere::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p_->value();
-  h+=D_->value();
+  h+=*p_;
+  h+=*D_;
   return h.getHash();
 }
 
 
+
+
+Sphere::Sphere(const Sphere&o, TreeCloneMap& tcm)
+    : CL(p_), CL(D_)
+{}
 
 
   
@@ -83,9 +90,10 @@ void Sphere::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Sphere",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression > ')' )
     [ qi::_val = phx::bind(
                        &Sphere::create<VectorPtr, ScalarPtr>,
                        qi::_1, qi::_2) ]
@@ -109,6 +117,12 @@ FeatureCmdInfoList Sphere::ruleDocumentation()
     };
 }
 
+
+void Sphere::print(std::ostream& os) const
+{
+    os << "   p="<<p_->value().t() <<" ("<<p_<<")\n";
+    os << "   D="<<D_->value()<<" ("<<D_<<")\n";
+}
 
 
 }

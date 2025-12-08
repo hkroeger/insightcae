@@ -6,6 +6,7 @@
 
 #include "openfoam/fielddata.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
 
 #include "pressureoutletbc__PressureOutletBC__Parameters_headers.h"
 
@@ -33,6 +34,7 @@ behaviour = selectablesubset {{
     selectablesubset fielddata = uniformSteady;
     vector fielddata/value = 0.0;
    }
+  enforceUniformMeanVelocity = bool false ""
  }
 
  fixMeanValue
@@ -71,6 +73,7 @@ behaviour = selectablesubset {{
 
 rho = double 1025.0 "Density"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
+heattransfer = dynamicclassconfig "insight::HeatBC::HeatBC" default "Adiabatic" "Definition of the heat transfer through the wall"
 
 createGetter
 <<<PARAMETERSET

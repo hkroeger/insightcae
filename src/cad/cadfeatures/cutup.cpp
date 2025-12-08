@@ -35,15 +35,23 @@ size_t CutUp::calcHash() const
   h+=*model_;
   for (const auto& c: clips_)
   {
-    h+=c->value();
+    h+=*c;
   }
-  h+=n_->value();
-  h+=t_->value();
+  h+=*n_;
+  h+=*t_;
   return h.getHash();
 }
 
 
 
+CutUp::CutUp(const CutUp&o, TreeCloneMap& tcm)
+    :CL(model_), CL(n_), CL(t_)
+{
+    for (auto& cl: o.clips_)
+    {
+        clips_.push_back(tcm.clone(cl));
+    }
+}
 
 
 CutUp::CutUp(FeaturePtr model, VectorPtr n, ScalarPtr t, Clips clips)
@@ -138,12 +146,12 @@ void CutUp::insertrule(parser::ISCADParser& ruleset)
     "CutUp",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >>
-        ruleset.r_solidmodel_expression >> ',' >>
-        ruleset.r_vectorExpression >> ',' >>
-        ruleset.r_scalarExpression >> ',' >>
+    ( '(' >
+        ruleset.r_solidmodel_expression > ',' >
+        ruleset.r_vectorExpression > ',' >
+        ruleset.r_scalarExpression > ',' >
         ruleset.r_vectorExpression % ','
-      >> ')' )
+      > ')' )
       [ qi::_val = phx::bind(
                        &CutUp::create<FeaturePtr, VectorPtr, ScalarPtr, Clips>,
                        qi::_1, qi::_2, qi::_3, qi::_4) ]

@@ -13,6 +13,7 @@
 #include "iqarrayparameter.h"
 #include "iqmatrixparameter.h"
 #include "iqselectionparameter.h"
+#include "iqsubsetparameter.h"
 #include "iqselectablesubsetparameter.h"
 #include "iqdoublerangeparameter.h"
 #include "iqspatialtransformationparameter.h"
@@ -31,10 +32,9 @@ defineFactoryTable
     IQArrayElementParameterBase,
       LIST(
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet ),
-      LIST(parent, psmodel, parameter, defaultParameterSet)
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element ),
+      LIST(parent, hdmodel, element)
 );
 
 
@@ -42,9 +42,8 @@ defineFactoryTable
 
 IQArrayElementParameterBase::IQArrayElementParameterBase(
     QObject *,
-    IQParameterSetModel*,
-    insight::Parameter *,
-    const insight::ParameterSet &)
+    IQHierarchicalDataModel*,
+    insight::hierarchicalData::Element *)
 {}
 
 
@@ -70,6 +69,7 @@ createIQArrayElement(IQDirectoryParameter, "directory");
 createIQArrayElement(IQArrayParameter, "array");
 createIQArrayElement(IQMatrixParameter, "matrix");
 createIQArrayElement(IQSelectionParameter, "selection");
+createIQArrayElement(IQSubsetParameter, "subset");
 createIQArrayElement(IQSelectableSubsetParameter, "selectableSubset");
 createIQArrayElement(IQDoubleRangeParameter, "doubleRange");
 createIQArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
@@ -77,30 +77,33 @@ createIQArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
 
 
 
-IQParameter *IQArrayElementParameterBase::create(
-    QObject *parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter *p,
-    const insight::ParameterSet &defaultParameterSet )
+IQHierarchicalDataElement *IQArrayParameter::createForChild(
+    IQHierarchicalDataModel *model,
+    insight::hierarchicalData::Element *ce )
 {
-  IQParameter *np;
-  if (IQArrayElementParameterBase::has_factory(p->type()))
-  {
-    np=dynamic_cast<IQParameter*>(
-        IQArrayElementParameterBase::lookup(p->type(), parent, psmodel, p, defaultParameterSet)
-        );
-  }
-  else
-  {
-    np=dynamic_cast<IQParameter*>(
-        new IQParameterArrayElement(parent, psmodel, p, defaultParameterSet)
-        );
-  }
+    IQHierarchicalDataElement *ne{ nullptr };
 
-  np->connectSignals();
+    if (IQArrayElementParameterBase::has_factory(ce->type()))
+    {
+        ne =  dynamic_cast<IQParameter*>(
+            IQArrayElementParameterBase::lookup(
+                ce->type(), this, model, ce)
+            );
+    }
+    else
+    {
+        ne = dynamic_cast<IQParameter*>(
+            new IQParameterArrayElement(
+                this, model, ce)
+            );
+    }
 
-  return np;
+    ne->connectSignals();
+
+    return ne;
 }
+
+
 
 
 
@@ -110,13 +113,13 @@ void IQArrayElementParameter<IQBaseParameter, N>::deleteFromArray()
 {
     auto *containingArray =
         dynamic_cast<IQArrayParameter*>(
-            this->parentParameter());
+            this->parentElement());
 
     auto& array_param =
         containingArray->parameterRef(); // array element must have a parent (the actual array)
 
     auto *m=this->model();
-    auto myIndex = m->indexFromParameter(**this, 0);
+    auto myIndex = m->indexOfElement(**this, 0);
     int row = myIndex.row();
 
     // this->removeFromViews(false);
@@ -129,7 +132,8 @@ void IQArrayElementParameter<IQBaseParameter, N>::deleteFromArray()
 
 
 template<class IQBaseParameter, const char *N>
-void IQArrayElementParameter<IQBaseParameter, N>::populateContextMenu(QMenu *cm)
+void IQArrayElementParameter<IQBaseParameter, N>
+    ::populateContextMenu(QMenu *cm, IQCADModel3DViewer *)
 {
   auto *removeAction = new QAction("Remove this array element");
   cm->addAction(removeAction);

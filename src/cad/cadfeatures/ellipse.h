@@ -38,6 +38,7 @@ class Ellipse
     VectorPtr axmaj_;
     VectorPtr axmin_;
 
+    Ellipse(const Ellipse&o, TreeCloneMap& tcm);
     Ellipse ( VectorPtr p0, VectorPtr axmaj, VectorPtr axmin );
 
     size_t calcHash() const override;
@@ -45,8 +46,11 @@ class Ellipse
 
 public:
     declareType ( "Ellipse" );
-
+#ifndef SWIG
+    DEPENDS((p0_, axmaj_, axmin_));
+#endif
     CREATE_FUNCTION(Ellipse);
+    CLONEABLE(Ellipse);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

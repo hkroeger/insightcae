@@ -23,6 +23,7 @@
 #include <set>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 
 namespace insight
@@ -41,7 +42,7 @@ class RebuildCancelException
 class ASTBase
 {
   bool valid_;
-  mutable bool building_;
+  mutable std::atomic<bool> building_;
 
   
   static std::mutex cancel_mtx_;

@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_SECANT_H
 #define INSIGHT_CAD_SECANT_H
 
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 
 namespace insight {

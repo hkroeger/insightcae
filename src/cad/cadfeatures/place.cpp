@@ -18,6 +18,8 @@
  */
 
 #include "place.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -46,21 +48,32 @@ size_t Place::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*m_;
-  if (refpt_) h+=refpt_->value();
+  if (refpt_) h+=*refpt_;
   if (other_)
     {
       h+=*other_;
     }
   else
     {
-      h+=p0_->value();
-      h+=ex_->value();
-      h+=ez_->value();
+      h+=*p0_;
+      h+=*ex_;
+      h+=*ez_;
     }
   return h.getHash();
 }
 
 
+
+Place::Place(const Place&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(m_),
+    CL(p0_),
+    CL(ex_),
+    CL(ez_),
+    CL(refpt_),
+    CL(other_),
+    trsf_(o.trsf_)
+{}
 
 
 
@@ -146,26 +159,21 @@ void Place::insertrule(parser::ISCADParser& ruleset)
   (
     "Place",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-    ( '(' 
-       >> ruleset.r_solidmodel_expression >> ',' 
-       >> ruleset.r_vectorExpression >> ',' 
-       >> ruleset.r_vectorExpression >> ',' 
-       >> ruleset.r_vectorExpression >>
-      ( ( ',' >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
-       >> ')' )
+    '(' > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ]  > ','
+    > ( (  ruleset.r_vectorExpression > ','
+       > ruleset.r_vectorExpression > ','
+       > ruleset.r_vectorExpression >
+      ( ( ',' > ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
+       > ')' )
        [ qi::_val = phx::bind(
                        &Place::create<FeaturePtr, VectorPtr, VectorPtr, VectorPtr, VectorPtr>,
-                       qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
+                       qi::_val, qi::_1, qi::_2, qi::_3, qi::_4) ]
     |
-    ( '(' 
-       >> ruleset.r_solidmodel_expression >> ',' 
-       >> ruleset.r_solidmodel_expression 
-       >> ')' )
+    ( ruleset.r_solidmodel_expression > ')' )
          [ qi::_val = phx::bind(
                        &Place::create<FeaturePtr, FeaturePtr>,
-                       qi::_1, qi::_2) ]
-      
+                       qi::_val, qi::_1 ) ]
+       )
     )
   );
 }

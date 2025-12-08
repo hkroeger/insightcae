@@ -18,6 +18,8 @@
  */
 
 #include "stitchedsolid.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "ShapeFix_Solid.hxx"
 #include "occinclude.h"
 #include "BRepCheck_Shell.hxx"
@@ -26,6 +28,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -52,10 +55,19 @@ size_t StitchedSolid::calcHash() const
   {
       h+=*f;
   }
-  h+=tol_->value();
+  h+=*tol_;
   return h.getHash();
 }
 
+
+StitchedSolid::StitchedSolid(const StitchedSolid&o, TreeCloneMap& tcm)
+    : CL(tol_)
+{
+    for (auto& f: o.faces_)
+    {
+        faces_.push_back(tcm.clone(f));
+    }
+}
 
 
 StitchedSolid::StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol)
@@ -116,8 +128,9 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset)
     "StitchedSolid",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> (ruleset.r_solidmodel_expression % ',') 
-	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
+    ( '(' > (ruleset.r_solidmodel_expression % ',')
+      > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) )
+      > ')' )
       [ qi::_val = phx::bind(
                        &StitchedSolid::create<const std::vector<FeaturePtr>&, ScalarPtr>,
                        qi::_1, qi::_2) ]

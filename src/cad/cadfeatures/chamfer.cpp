@@ -18,8 +18,11 @@
  */
 
 #include "chamfer.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
+#include "base/tools.h"
 
 #include <boost/spirit/include/qi.hpp>
 
@@ -47,12 +50,15 @@ size_t Chamfer::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*edges_;
-  h+=l_->value();
-  h+=angle_->value();
-  return h.getHash();
+  h+=*l_;
+  h+=*angle_;
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
+Chamfer::Chamfer(const Chamfer&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(edges_), CL(l_), CL(angle_)
+{}
 
 
 Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
@@ -66,25 +72,35 @@ Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
 
 void Chamfer::build()
 {
-    double l1=l_->value();
-    double l2=::tan(angle_->value())*l1;
+    ExecTimer t("Chamfer::build() ["+featureSymbolName()+"]");
 
-    const Feature& m1=*(edges_->model());
-
-    m1.unsetLeaf();
-    BRepFilletAPI_MakeChamfer fb(m1);
-
-    for (FeatureID f: edges_->data())
+    if (!cache.contains(hash()))
     {
-        TopoDS_Edge e = m1.edge(f);
-        TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
-        TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
-        int i = mapEdgeFace.FindIndex(e);
-        fb.Add(l1, l2, e, TopoDS::Face(mapEdgeFace(i).First()) );
-    }
+        double l1=l_->value();
+        double l2=::tan(angle_->value())*l1;
 
-    fb.Build();
-    setShape(fb.Shape());
+        const Feature& m1=*(baseFeature());
+
+        m1.unsetLeaf();
+        BRepFilletAPI_MakeChamfer fb(m1);
+
+        for (FeatureID f: edges_->data())
+        {
+            TopoDS_Edge e = m1.edge(f);
+            TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
+            TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
+            int i = mapEdgeFace.FindIndex(e);
+            fb.Add(l1, l2, e, TopoDS::Face(mapEdgeFace(i).First()) );
+        }
+
+        fb.Build();
+        setShape(fb.Shape());
+        cache.insert(shared_from_this());
+    }
+    else
+    {
+        this->operator=(*cache.markAsUsed<Chamfer>(hash()));
+    }
 }
 
 
@@ -96,11 +112,11 @@ void Chamfer::insertrule(parser::ISCADParser& ruleset)
     (
         "Chamfer",
             std::make_shared<parser::ISCADParser::ModelstepRule>(
-            ( '(' 
-                >> ruleset.r_edgeFeaturesExpression >> ',' 
-                >> ruleset.r_scalarExpression 
-                >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(45.*M_PI/180.)) ) 
-                >> ')' )
+            ( '('
+                > ruleset.r_edgeFeaturesExpression > ','
+                > ruleset.r_scalarExpression
+                > ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(45.*M_PI/180.)) )
+                > ')' )
             [ qi::_val = phx::bind(
                          &Chamfer::create<FeatureSetPtr, ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3) ]

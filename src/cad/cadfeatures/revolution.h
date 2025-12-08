@@ -37,6 +37,7 @@ class Revolution
     ScalarPtr angle_;
     bool centered_;
 
+    Revolution(const Revolution&o, TreeCloneMap& tcm);
     Revolution ( FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false );
 
     size_t calcHash() const override;
@@ -44,8 +45,11 @@ class Revolution
 
 public:
     declareType ( "Revolution" );
-
+#ifndef SWIG
+    DEPENDS((sk_, p0_, axis_, angle_));
+#endif
     CREATE_FUNCTION(Revolution);
+    CLONEABLE(Revolution);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

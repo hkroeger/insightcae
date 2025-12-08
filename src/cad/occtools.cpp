@@ -19,8 +19,11 @@
  */
 
 #include "occtools.h"
-#include "base/exception.h"
+#include "cadexception.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/linearalgebra.h"
+#include "base/spatialtransformation.h"
 #include "base/units.h"
 
 #include "cadfeatures/importsolidmodel.h"
@@ -30,37 +33,96 @@ namespace insight {
 namespace cad {
 
 
-gp_Trsf OFtransformToOCC(const insight::SpatialTransformation& trsf)
+is_gp_Trsf::is_gp_Trsf()
+{}
+
+
+is_gp_Trsf::is_gp_Trsf(const gp_Trsf &trsf)
 {
-    return OFtransformToOCC(trsf.translate(), trsf.rollPitchYaw(), trsf.scale());
+    gp_Trsf::operator=(trsf);
 }
 
-gp_Trsf OFtransformToOCC(const arma::mat &translate, const arma::mat &rollPitchYaw, double scale)
+is_gp_Trsf::is_gp_Trsf(const insight::SpatialTransformation& trsf)
+    : is_gp_Trsf(trsf.translate(), trsf.rollPitchYaw(), trsf.scale())
+{}
+
+is_gp_Trsf::is_gp_Trsf(const arma::mat& translate, const arma::mat& rollPitchYaw, double scale)
 {
-  gp_Trsf tr; tr.SetTranslation(to_Vec(translate));
-  gp_Trsf rx; rx.SetRotation(gp::OX(), rollPitchYaw(0)*SI::deg);
-  gp_Trsf ry; ry.SetRotation(gp::OY(), rollPitchYaw(1)*SI::deg);
-  gp_Trsf rz; rz.SetRotation(gp::OZ(), rollPitchYaw(2)*SI::deg);
-  gp_Trsf sc; sc.SetScaleFactor(scale);
-  return sc*rz*ry*rx*tr;
+    gp_Trsf::operator=(OFtransformToOCC(translate, rollPitchYaw, scale));
 }
 
-OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
+is_gp_Trsf::is_gp_Trsf(
+    const arma::mat& translate,
+    const arma::mat& rollPitchYaw,
+    const arma::mat& scale )
 {
-  scale_ = t.ScaleFactor();
+    double s=scale[0];
+    insight::assertion(
+      (fabs(scale[1]-scale[0])<SMALL)
+        && (fabs(scale[2]-scale[0])<SMALL),
+        "unequal scaling factors for different directions are not supported" );
 
-  arma::mat R = arma::zeros(3,3);
-  for (int i=0;i<3;i++)
-    for (int j=0;j<3;j++)
-      R(i,j)=t.Value(i+1,j+1);
-  R*=1./scale_;
-//  std::cout<<R<<std::endl;
-
-//  rollPitchYaw_ = rotationMatrixToRollPitchYaw(R);
-  R_ = R;
-//  std::cout<<Vector(t.TranslationPart())<<std::endl;
-  translate_ = (1./scale_)*inv(R)*insight::Vector(t.TranslationPart());
+    gp_Trsf::operator=(OFtransformToOCC(translate, rollPitchYaw, s));
 }
+
+
+insight::SpatialTransformation is_gp_Trsf::toSpatialTransformation() const
+{
+    double s = ScaleFactor();
+
+    arma::mat R = arma::zeros(3,3);
+    for (int i=0;i<3;i++)
+        for (int j=0;j<3;j++)
+            R(i,j)=Value(i+1,j+1);
+
+    R*=1./s;
+
+    insight::SpatialTransformation tt;
+    tt.setScale(s);
+    tt.setRotationMatrix(R);
+    tt.setTranslation(
+        (1./s)*inv(R)*insight::Vector(TranslationPart())
+    );
+    return tt;
+}
+
+is_gp_Trsf::operator insight::SpatialTransformation() const
+{
+    return toSpatialTransformation();
+}
+
+
+gp_Trsf is_gp_Trsf::OFtransformToOCC(
+    const arma::mat &translate,
+    const arma::mat &rollPitchYaw,
+    double scale )
+{
+    gp_Trsf tr; tr.SetTranslation(to_Vec(translate));
+    gp_Trsf rz; rz.SetRotation(gp::OZ(), rollPitchYaw(2)*SI::deg);
+    gp_Trsf ry; ry.SetRotation(gp::OY(), rollPitchYaw(1)*SI::deg);
+    gp_Trsf rx; rx.SetRotation(gp::OX(), rollPitchYaw(0)*SI::deg);
+    gp_Trsf sc; sc.SetScaleFactor(scale);
+    return sc*rx*ry*rz*tr;
+}
+
+
+
+
+// OCCtransformToOF::OCCtransformToOF(const gp_Trsf &t)
+// {
+//   scale_ = t.ScaleFactor();
+
+//   arma::mat R = arma::zeros(3,3);
+//   for (int i=0;i<3;i++)
+//     for (int j=0;j<3;j++)
+//       R(i,j)=t.Value(i+1,j+1);
+
+//   R*=1./scale_;
+
+//   R_ = R;
+
+//   translate_ = (1./scale_)*inv(R)*insight::Vector(t.TranslationPart());
+// }
 
 
 
@@ -105,24 +167,6 @@ TopoDS_Face asSingleFace(const TopoDS_Shape &shape)
 
     return f;
 }
-
-
-
-
-//OCCtransformToVTK::OCCtransformToVTK(const gp_Trsf& t)
-//  : OCCtransformToOF(t)
-//{}
-
-//vtkSmartPointer<vtkTransform> OCCtransformToVTK::operator()() const
-//{
-//  auto t = vtkSmartPointer<vtkTransform>::New();
-//  t->Translate( translate()(0), translate()(1), translate()(2) );
-//  t->RotateX( rollPitchYaw()(0) );
-//  t->RotateY( rollPitchYaw()(1) );
-//  t->RotateZ( rollPitchYaw()(2) );
-//  t->Scale( scale(), scale(), scale() );
-//  return t;
-//}
 
 
 

@@ -17,6 +17,8 @@
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "boost/atomic.hpp"
 #include "cadtypes.h"
+#include "datum.h"
+#include "cadfeature.h"
 #include "iqiscadmodelgenerator.h"
 #include "iqiscadmodelrebuilder.h"
 
@@ -268,7 +270,7 @@ public:
 Q_SIGNALS:
   void visualizationCalculationFinished(bool success);
   void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
-  void visualizationComputationError(insight::Exception ex);
+  void visualizationComputationError(const insight::Exception& ex);
 };
 
 

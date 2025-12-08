@@ -60,6 +60,17 @@ using namespace insight::cad;
 
 void ISCADParser::createFeatureExpressions()
 {
+    r_modelstepFunction =
+        ( current_pos.current_pos
+         >> omit[ modelstepFunctionRules [ qi::_a = qi::_1 ] ]
+         >> current_pos.current_pos )
+            [ phx::at_c<0>(qi::_val) = qi::_1,
+              phx::at_c<1>(qi::_val) = qi::_2 ]
+         > qi::lazy(*qi::_a)
+            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+        ;
+    r_modelstepFunction.name("feature function");
+
 
     r_solidmodel_expression =
         r_solidmodel_term [_val=qi::_1 ]
@@ -74,41 +85,52 @@ void ISCADParser::createFeatureExpressions()
         >>
         *( '.' >> ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
            [ (
-              _val = phx::bind(&Subfeature::create<FeaturePtr, const std::string&>, qi::_val, qi::_2),
+              _val = phx::bind(
+                    &Subfeature::create<FeaturePtr, const std::string&>,
+                        qi::_val, qi::_2 ),
               phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                          phx::construct<SyntaxElementLocation>(
                            filenameinfo_,
                            phx::construct<SyntaxElementPos>(qi::_1, qi::_3)
                          ),
-                         qi::_val
+                        phx::ref(qi::_val)
                     )
              )
            ] )
         >>
-        -( lit("<<") >> r_vectorExpression [ _val = phx::bind(&Transform::create<FeaturePtr, VectorPtr>, qi::_val, qi::_1) ] )
+        -( lit("<<") >> r_vectorExpression
+            [ _val = phx::bind(
+                    &Transform::create<FeaturePtr, VectorPtr>,
+                        qi::_val, qi::_1) ] )
         >>
-        -( lit("*") >> r_scalarExpression [ _val = phx::bind(&Transform::create<FeaturePtr, ScalarPtr>, qi::_val, qi::_1) ] )
+        -( lit("*") >> r_scalarExpression
+            [ _val = phx::bind(
+                    &Transform::create<FeaturePtr, ScalarPtr>,
+                        qi::_val, qi::_1) ] )
         >>
         *(
-            ('|' >> r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ] )
+            ('|' >> r_solidmodel_primary
+                [ _val = phx::bind(
+                    &BooleanUnion::create<FeaturePtr, FeaturePtr>,
+                        qi::_val, qi::_1) ] )
             |
             ('&' >> (
-                 r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ]
+                 r_solidmodel_primary
+                    [ _val = phx::bind(
+                        &BooleanIntersection::create<FeaturePtr, FeaturePtr>,
+                            qi::_val, qi::_1) ]
                  |
-                 r_datumExpression [ _val = phx::bind(&BooleanIntersection::create<FeaturePtr, DatumPtr>, qi::_val, qi::_1) ]
+                 r_datumExpression
+                    [ _val = phx::bind(
+                        &BooleanIntersection::create<FeaturePtr, DatumPtr>,
+                            qi::_val, qi::_1) ]
              )
             )
         )
         ;
     r_solidmodel_term.name("feature term");
 
-    r_modelstepFunction %=
-        ( current_pos.current_pos >>
-          omit[ modelstepFunctionRules [ qi::_a = qi::_1 ] ]
-          >> current_pos.current_pos
-          >>qi::lazy(*qi::_a) )
-        ;
-    r_modelstepFunction.name("feature function");
+
 
     r_modelstepSymbol =
         current_pos.current_pos
@@ -117,15 +139,24 @@ void ISCADParser::createFeatureExpressions()
         ;
     r_modelstepSymbol.name("feature symbol");
 
+    r_submodel =
+        '{'
+        >> qi::eps
+            [ qi::_a= phx::bind(
+                &std::make_shared<SubmodelRule, const cad::Model&, const ModelVariableTable&>,
+                    *model_, qi::_r1 ) ]
+        >> qi::lazy( phx::bind(&SubmodelRule::rule, qi::_a) )
+            [ qi::_val = phx::bind(&cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
+                    phx::bind(&SubmodelRule::model_, qi::_a), qi::_r1) ]
+        >> '}';
+    r_submodel.name("in-situ submodel");
 
     r_solidmodel_primary =
         ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) )
             [ qi::_val = phx::bind(&Import::create<FeatureSetPtr>, qi::_1) ]
 
-        |
-
-        r_modelstepFunction
-        [ ( _val = phx::at_c<2>(qi::_1),
+        | r_modelstepFunction
+         [ ( _val = phx::at_c<2>(qi::_1),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                        phx::construct<SyntaxElementLocation>(
                          filenameinfo_,
@@ -153,8 +184,14 @@ void ISCADParser::createFeatureExpressions()
         ( '(' >> r_solidmodel_expression >> ')' )
         [ _val = qi::_1]
         // try identifiers last, since exceptions are generated, if symbols don't exist
+
+        |
+        r_submodel(phx::val(ModelVariableTable())) [ _val = qi::_1]
         ;
     r_solidmodel_primary.name("feature primary");
+
+
+
 
     r_solidmodel_propertyAssignment =
         qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ]

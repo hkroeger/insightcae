@@ -15,17 +15,16 @@
 
 
 class LocalRun
-    : public WorkbenchAction
+    : public insight::QAnalysisThread,
+      public WorkbenchAction
 {
   Q_OBJECT
-
-  insight::ResultSetPtr results_;
-  insight::QAnalysisThread workerThread_;
 
 public:
   LocalRun(AnalysisForm *af);
   ~LocalRun();
 
+  std::unique_ptr<insight::ResultSet> moveResults() override;
 
 public Q_SLOTS:
   void onCancel() override;

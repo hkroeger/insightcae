@@ -60,6 +60,30 @@ scalar LinearVectorSpaceBase::t(const point& p) const
 
 
 
+void Linear2DVectorSpaceBase::read(Istream& is)
+{
+    VectorSpaceBase::read(is);
+    is >> ep_ >> ev_;
+}
+
+void Linear2DVectorSpaceBase::writeSup(Ostream& os) const
+{
+    VectorSpaceBase::writeSup(os);
+    os << token::SPACE << ep_ << token::SPACE << ev_;
+}
+
+scalar Linear2DVectorSpaceBase::t(const point& p) const
+{
+    return (p-origin())&ep_;
+}
+
+scalar Linear2DVectorSpaceBase::u(const point& p) const
+{
+    return (p-origin())&ev_;
+}
+
+
+
 
 void CylCoordVectorSpaceBase::read(Istream &is)
 {

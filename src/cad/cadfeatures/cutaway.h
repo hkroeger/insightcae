@@ -31,12 +31,12 @@ namespace cad {
 class Cutaway
     : public DerivedFeature
 {
-    FeaturePtr model_;
     VectorPtr p0_;
     VectorPtr n_;
     ConstDatumPtr pl_;
     bool inverted_;
 
+    Cutaway(const Cutaway&o, TreeCloneMap& tcm);
     Cutaway ( FeaturePtr model, VectorPtr p0, VectorPtr n );
     Cutaway ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
 
@@ -45,8 +45,11 @@ class Cutaway
 
 public:
     declareType ( "Cutaway" );
-
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (p0_, n_, pl_));
+#endif
     CREATE_FUNCTION(Cutaway);
+    CLONEABLE(Cutaway);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

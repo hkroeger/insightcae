@@ -1,6 +1,7 @@
 #ifndef INSIGHT_RESULTELEMENT_H
 #define INSIGHT_RESULTELEMENT_H
 
+#include "base/hierarchicalelement.h"
 #include "base/parameterset.h"
 
 namespace insight {
@@ -8,20 +9,11 @@ namespace insight {
 
 
 
-class Ordering
-{
-  double ordering_, step_;
-public:
-  Ordering(double ordering_base=1., double ordering_step_fraction=0.001);
-
-  double next();
-};
-
 std::string latex_subsection ( int level );
 
 
 class ResultElement
-    : public boost::noncopyable
+    : public hierarchicalData::Element
 {
 public:
     declareFactoryTable
@@ -47,12 +39,7 @@ protected:
    */
     SimpleLatex unit_;
 
-    /**
-     * numerical quantity which determines order relative to other result elements
-     */
-    double order_;
 
-    bool displayFullPage_;
 
 public:
     declareType ( "ResultElement" );
@@ -75,39 +62,29 @@ public:
    */
   const SimpleLatex& unit() const;
 
-  void setDisplayFullPage(bool displayFullPage);
-  bool displayFullPage() const;
 
-  inline ResultElement& setOrder ( double o ) { order_=o; return *this; }
-    inline double order() const { return order_; }
-
-    virtual void insertLatexHeaderCode ( std::set<std::string>& headerCode ) const;
-    virtual void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const;
-    virtual void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const;
+  virtual void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const;
 
     /**
      * append the contents of this element to the given xml node
      */
-    virtual rapidxml::xml_node<>* appendToNode
+    rapidxml::xml_node<>* appendToNode
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
-    ) const;
+        rapidxml::xml_node<>& node,
+      const OutputProperties& outProps
+    ) const override;
 
-    void readBaseAttributesFromNode
-        (
-            const std::string& name,
-            rapidxml::xml_node<>& node
-        );
+
     /**
      * restore the contents of this element from the given node
      */
-    virtual void readFromNode
+    const rapidxml::xml_node<>* readFromNode
     (
         const std::string& name,
-        rapidxml::xml_node<>& node
-    );
+        const rapidxml::xml_node<>& parentNode
+    ) override;
 
     /**
      * convert this result element into a parameter
@@ -116,18 +93,13 @@ public:
      */
     virtual std::unique_ptr<Parameter> convertIntoParameter() const;
 
-    virtual std::shared_ptr<ResultElement> clone() const =0;
+    bool isEqual(const Element& op) const override;
 };
 
 
 typedef std::shared_ptr<ResultElement> ResultElementPtr;
 
 
-
-inline ResultElement* new_clone(const ResultElement& e)
-{
-  return e.clone().get();
-}
 
 
 } // namespace insight

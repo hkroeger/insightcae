@@ -18,6 +18,16 @@
  */
 
 #include "vectorops.h"
+#include "parameterlisthash.h"
+#include "cadfeature.h"
+#include "datum.h"
+
+
+defineType(insight::cad::VectorFromComponents);
+
+insight::cad::VectorFromComponents::VectorFromComponents(const VectorFromComponents &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_), CL(p3_)
+{}
 
 insight::cad::VectorFromComponents::VectorFromComponents
 (
@@ -30,79 +40,180 @@ insight::cad::VectorFromComponents::VectorFromComponents
 
 }
 
-arma::mat insight::cad::VectorFromComponents::value() const
+size_t insight::cad::VectorFromComponents::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    h+=*p3_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::VectorFromComponents::calcValue() const
 {
   return vec3(p1_->value(), p2_->value(), p3_->value());
 }
 
 
 
+defineType(insight::cad::CrossMultipliedVector);
+
+insight::cad::CrossMultipliedVector::CrossMultipliedVector(const CrossMultipliedVector &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::CrossMultipliedVector::CrossMultipliedVector(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::CrossMultipliedVector::value() const
+size_t insight::cad::CrossMultipliedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::CrossMultipliedVector::calcValue() const
 {
   return arma::cross(p1_->value(), p2_->value());
 }
 
 
 
+defineType(insight::cad::DotMultipliedVector);
+
+insight::cad::DotMultipliedVector::DotMultipliedVector(const DotMultipliedVector &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::DotMultipliedVector::DotMultipliedVector(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-double insight::cad::DotMultipliedVector::value() const
+size_t insight::cad::DotMultipliedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::DotMultipliedVector::calcValue() const
 {
   return arma::dot(p1_->value(), p2_->value());
 }
 
 
+defineType(insight::cad::ScalarMultipliedVector);
+
+insight::cad::ScalarMultipliedVector::ScalarMultipliedVector(const ScalarMultipliedVector &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::ScalarMultipliedVector::ScalarMultipliedVector(insight::cad::ScalarPtr p1, insight::cad::VectorPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::ScalarMultipliedVector::value() const
+size_t insight::cad::ScalarMultipliedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::ScalarMultipliedVector::calcValue() const
 {
   return p1_->value()*p2_->value();
 }
 
 
+defineType(insight::cad::ScalarDividedVector);
+
+insight::cad::ScalarDividedVector::ScalarDividedVector(const ScalarDividedVector &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::ScalarDividedVector::ScalarDividedVector(insight::cad::VectorPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::ScalarDividedVector::value() const
+size_t insight::cad::ScalarDividedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::ScalarDividedVector::calcValue() const
 {
   return p1_->value() / p2_->value();
 }
 
 
+defineType(insight::cad::AddedVector);
+
+insight::cad::AddedVector::AddedVector(const AddedVector &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::AddedVector::AddedVector(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::AddedVector::value() const
+size_t insight::cad::AddedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::AddedVector::calcValue() const
 {
   return p1_->value() + p2_->value();
 }
 
 
+defineType(insight::cad::SubtractedVector);
+
+insight::cad::SubtractedVector::SubtractedVector(const SubtractedVector &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::SubtractedVector::SubtractedVector(insight::cad::VectorPtr p1, insight::cad::VectorPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-arma::mat insight::cad::SubtractedVector::value() const
+size_t insight::cad::SubtractedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::SubtractedVector::calcValue() const
 {
   return p1_->value() - p2_->value();
 }
 
+
+
+defineType(insight::cad::RotatedVector);
+
+insight::cad::RotatedVector::RotatedVector(const RotatedVector &o, TreeCloneMap &tcm)
+    : CL(ang_), CL(v_), CL(ax_)
+{}
 
 insight::cad::RotatedVector::RotatedVector
 (
@@ -113,31 +224,73 @@ insight::cad::RotatedVector::RotatedVector
 : v_(v), ang_(ang), ax_(ax)
 {}
 
+size_t insight::cad::RotatedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*v_;
+    h+=*ang_;
+    h+=*ax_;
+    return h.getHash();
+}
 
-arma::mat insight::cad::RotatedVector::value() const
+arma::mat insight::cad::RotatedVector::calcValue() const
 {
   return rotMatrix(ang_->value(), ax_->value()) * v_->value();
 }
 
 
 
+defineType(insight::cad::NormalizedVector);
+
+insight::cad::NormalizedVector::NormalizedVector(const NormalizedVector &o, TreeCloneMap &tcm)
+    : CL(v_)
+{}
 
 insight::cad::NormalizedVector::NormalizedVector(VectorPtr v)
     : v_(v)
 {}
 
-arma::mat insight::cad::NormalizedVector::value() const
+
+size_t insight::cad::NormalizedVector::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*v_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::NormalizedVector::calcValue() const
 {
   return insight::normalized(v_->value());
 }
 
+
+
+defineType(insight::cad::Mechanism_CrankDrive);
+
+insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(const Mechanism_CrankDrive &o, TreeCloneMap &tcm)
+    : CL(L_), CL(c2_), CL(r2_), CL(p1_), CL(eax_)
+{}
 
 insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax)
 : L_(L), c2_(c2), r2_(r2), p1_(p1), eax_(eax)
 {
 }
 
-arma::mat insight::cad::Mechanism_CrankDrive::value() const
+size_t insight::cad::Mechanism_CrankDrive::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*L_;
+    h+=*c2_;
+    h+=*r2_;
+    h+=*p1_;
+    h+=*eax_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::Mechanism_CrankDrive::calcValue() const
 {
   arma::mat edelta = c2_->value() - p1_->value();
   arma::mat eax=eax_->value();
@@ -156,11 +309,29 @@ arma::mat insight::cad::Mechanism_CrankDrive::value() const
   return p1_->value() + L_->value()*(rotMatrix(phi, eax)*edelta);
 }
 
+
+defineType(insight::cad::Mechanism_Slider);
+
+insight::cad::Mechanism_Slider::Mechanism_Slider(const Mechanism_Slider &o, TreeCloneMap &tcm)
+: CL(L_), CL(p0_), CL(psl_), CL(esl_)
+{}
+
 insight::cad::Mechanism_Slider::Mechanism_Slider(ScalarPtr L, VectorPtr p0, VectorPtr psl, VectorPtr esl)
 : L_(L), p0_(p0), psl_(psl), esl_(esl)
 {}
 
-arma::mat insight::cad::Mechanism_Slider::value() const
+size_t insight::cad::Mechanism_Slider::calcHash() const
+{
+    ParameterListHash h;
+    h+=type();
+    h+=*L_;
+    h+=*p0_;
+    h+=*psl_;
+    h+=*esl_;
+    return h.getHash();
+}
+
+arma::mat insight::cad::Mechanism_Slider::calcValue() const
 {
   arma::mat edelta=p0_->value()-psl_->value();
   double delta=arma::norm(edelta,2);

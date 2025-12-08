@@ -34,7 +34,7 @@
 %module(directors="1") cad
 %{
 #include "base/factory.h"
-#include "feature.h"
+#include "featureset.h"
 #include "featurefilter.h"
 #include "cadfeatures.h"
 #include "datum.h"
@@ -45,7 +45,7 @@ using namespace insight::cad;
 %}
 
 %include "base/factory.h"
-%include "feature.h"
+%include "featureset.h"
 %include "featurefilter.h"
 %include "cadfeatures.h"
 %include "datum.h"

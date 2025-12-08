@@ -6,6 +6,7 @@
 #include <vtkAppendPolyData.h>
 #include <vtkTransform.h>
 
+#include "boost/concept_check.hpp"
 #include "boost/range/adaptor/indexed.hpp"
 #include "vtkSmartPointer.h"
 #include "vtkOpenFOAMReader.h"
@@ -72,7 +73,10 @@
 #include "base/translations.h"
 
 #include "base/resultset.h"
+#include "base/resultelementcollection.h"
 #include "base/resultelements/attributeresulttable.h"
+#include "base/resultelements/image.h"
+
 
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
@@ -1507,7 +1511,7 @@ vtkSmartPointer<vtkScalarBarActor> VTKOffscreenScene::addColorBar(
   return cb;
 }
 
-void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file)
+void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file) const
 {
   auto x3d=vtkSmartPointer<vtkX3DExporter>::New();
   x3d->SetInput(renderWindow_);
@@ -1517,8 +1521,9 @@ void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file)
   x3d->Write();
 }
 
-void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile)
+void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile) const
 {
+  renderer_->ResetCameraClippingRange();
   renderWindow_->Render();
   auto windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
   windowToImageFilter->SetInput(renderWindow_);
@@ -1532,6 +1537,16 @@ void VTKOffscreenScene::exportImage(const boost::filesystem::path& pngfile)
 
 
 
+std::unique_ptr<TemporaryFile> VTKOffscreenScene::exportImage() const
+{
+    auto result=std::make_unique<TemporaryFile>("exportedImage-%%%%%%.png");
+    exportImage(result->path());
+    return result;
+}
+
+
+
+
 vtkCamera* VTKOffscreenScene::activeCamera()
 {
   return renderer_->GetActiveCamera();
@@ -1540,12 +1555,46 @@ vtkCamera* VTKOffscreenScene::activeCamera()
 
 
 
-void VTKOffscreenScene::setupActiveCamera(const View &view)
+void VTKOffscreenScene::setupActiveCamera(
+    const View &view,
+    boost::variant<
+        boost::blank,
+        double,
+        std::pair<double, double>
+    > scaleOrSize )
 {
-  auto camera = activeCamera();
+  vtkCamera* camera = activeCamera();
+
+  camera->SetPosition( toArray(view.cameraLocation()) );
+  renderer_->ResetCameraClippingRange();
+
   camera->SetFocalPoint( toArray(view.focalPoint()) );
   camera->SetViewUp( toArray(view.upwardDirection()) );
-  camera->SetPosition( toArray(view.cameraLocation()) );
+
+  camera->ParallelProjectionOn();
+
+  if (auto *sf = boost::get<double>(
+          &scaleOrSize))
+  {
+      setParallelScale(*sf);
+  }
+  else if (auto *sf2 =
+             boost::get<std::pair<double, double> >(
+                 &scaleOrSize))
+  {
+      setParallelScale(*sf2);
+  }
+  else if (view.parallelScale)
+  {
+      camera->SetParallelScale(*view.parallelScale);
+  }
+
+  if (insight::requestedVerbosityLevel()>=1)
+  {
+      view.savePVCC("camera_"+view.title+".pvcc");
+  }
+
+  currentViewTitle_ = view.title;
 }
 
 
@@ -1621,6 +1670,8 @@ void VTKOffscreenScene::fitAll(double mult)
   double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
 
   setParallelScale(std::pair<double,double>(mult*w, mult*h));
+
+  renderer_->ResetCameraClippingRange();
 }
 
 void VTKOffscreenScene::clearScene()
@@ -1650,6 +1701,36 @@ void VTKOffscreenScene::removeActor(vtkActor *act)
 void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 {
   renderer_->RemoveActor2D(act);
+}
+
+
+void VTKOffscreenScene::addSnapshotToResults(
+    ResultElementCollection &results,
+    const boost::filesystem::path& fileTemplate,
+    const std::string& shortDesc,
+    const std::string& longDesc ) const
+{
+    auto name =
+        fileTemplate.filename().stem().string();
+
+
+    if (!currentViewTitle_.empty())
+    {
+        name += "_"+currentViewTitle_;
+    }
+
+    boost::filesystem::path fname = name;
+
+    fname += fileTemplate.extension();
+
+    exportImage(fname);
+
+    results.insert(
+        name,
+        std::make_unique<Image>(
+            fileTemplate.parent_path(), fname,
+            shortDesc, longDesc
+            ) );
 }
 
 
@@ -2085,7 +2166,7 @@ void forEachUnconnectedPart(
         {
             auto thr = regions[r];
 
-            auto subsec = std::make_shared<ResultSection>(
+            auto subsec = std::make_unique<ResultSection>(
                 str(boost::format("Region %d")%(r+1))
                 );
 
@@ -2094,27 +2175,27 @@ void forEachUnconnectedPart(
             scene.clearScene();
             displayRegion( thr, subsec.get(), r );
 
-            subsec->insert(
+            subsec->insert<VectorResult>(
                 "regionCoG",
-                new VectorResult(
                     regionCtrs[r],
-                    str(boost::format(_("center of gravity of region %d"))%r), "", "")
+                    str(boost::format(_("center of gravity of region %d"))%r), "", ""
                 );
 
             subsec->setOrder(10.*r);
             section->insert(
                 regionPrefix,
-                subsec );
+                std::move(subsec) );
 
             rowLabels[r]=regionPrefix;
-            for (const auto& q: *subsec)
+            for (auto& q: static_cast<const ResultElement&>(*subsec))
             {
-                if (auto s = std::dynamic_pointer_cast<ScalarResult>(q.second))
+                if (auto s = dynamic_cast<const ScalarResult*>(&q))
                 {
-                    if (scalarQtys.count(q.first)<1)
-                        scalarQtys[q.first].resize(nregions, {"(n.a.)"});
+                    auto label=s->name();
+                    if (scalarQtys.count(label)<1)
+                        scalarQtys[label].resize(nregions, {"(n.a.)"});
 
-                    scalarQtys[q.first][r] = s->value();
+                    scalarQtys[label][r] = s->value();
                 }
             }
         }
@@ -2130,20 +2211,20 @@ void forEachUnconnectedPart(
                     }
                     );
             }
-            section->insert(
+            section->insert<TabularResult>(
                 "table_regionCoG",
-                new TabularResult({"regionId", "x", "y", "z"},
-                                  rows, "table of region CoGs", "", ""));
+                TabularResult::Headings{"regionId", "x", "y", "z"},
+                rows, "table of region CoGs", "", "" );
         }
 
         for (const auto& sq: boost::adaptors::index(scalarQtys))
         {
-            section->insert(
+            section->insert<AttributeTableResult>(
                        "table_"+sq.value().first,
-                       new AttributeTableResult(
-                           rowLabels, sq.value().second,
-                           "table of "+sq.value().first, "", "",
-                           SimpleLatex("region"), sq.value().first)
+                       rowLabels, sq.value().second,
+                       "table of "+sq.value().first, "", "",
+                       SimpleLatex("region"),
+                       sq.value().first
                        ).setOrder(10.*nregions+sq.index());
         }
 

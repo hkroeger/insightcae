@@ -475,46 +475,40 @@ isofCaseBuilderWindow::~isofCaseBuilderWindow()
 void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool skipBCs)
 {
 
-    std::string contents;
-    readFileIntoString(file, contents);
+    insight::XMLDocument doc(file);
 
-    xml_document<> doc;
-    doc.parse<0>(&contents[0]);
-    
-    xml_node<> *rootnode = doc.first_node("root");
-
-    if (xml_node<> *OFEnode = rootnode->first_node("OFE"))
+    if (xml_node<> *OFEnode = doc.rootNode->first_node("OFE"))
     {
       std::string name = OFEnode->first_attribute("name")->value();
       ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
       ui->saveOFversion->setChecked(true);
     }
-    if (xml_node<> *script_node = rootnode->first_node("script_pre"))
+    if (xml_node<> *script_node = doc.rootNode->first_node("script_pre"))
     {
       script_pre_=QString(script_node->first_attribute("code")->value());
     }
-    if ( xml_node<> *script_node = rootnode->first_node("script_mesh") )
+    if ( xml_node<> *script_node = doc.rootNode->first_node("script_mesh") )
     {
       script_mesh_=QString(script_node->first_attribute("code")->value());
     }
-    if ( xml_node<> *script_node = rootnode->first_node("script_case") )
+    if ( xml_node<> *script_node = doc.rootNode->first_node("script_case") )
     {
       script_case_=QString(script_node->first_attribute("code")->value());
     }
 
 
     caseConfigModel_->readFromNode(
-          doc, rootnode,
+          *doc.rootNode,
           multiVizSources_, this,
           file.parent_path() );
 
     if (!skipBCs)
     {
-      xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
+      auto *BCnode = doc.rootNode->first_node("BoundaryConditions");
       if (BCnode)
       {
         BCConfigModel_->readFromNode(
-              doc, BCnode,
+              *BCnode,
               multiVizSources_, this,
               file.parent_path() );
       }
@@ -699,139 +693,12 @@ QString isofCaseBuilderWindow::generateDefault_script_case()
   return cmds;
 }
 
+
+
 boost::filesystem::path isofCaseBuilderWindow::casepath() const
 {
   return boost::filesystem::path( ui->case_dir->text().toStdString() );
 }
-
-
-//void isofCaseBuilderWindow::onItemSelectionChanged()
-//{
-//    InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->currentItem());
-//    if (cur)
-//    {
-//        if (ped_)
-//        {
-//          last_pe_state_=ped_->saveState();
-//          ped_->deleteLater();
-//        }
-
-////        insight::ParameterSet_VisualizerPtr viz;
-//        insight::ParameterSet_ValidatorPtr vali;
-
-////        try {
-////            viz = insight::OpenFOAMCaseElement::visualizer(cur->type_name());
-////        } catch (const std::exception& e)
-////        { /* ignore, if non-existent */ }
-
-//        try {
-//            vali = insight::OpenFOAMCaseElement::validator(cur->type_name());
-//        } catch (const std::exception& e)
-//        { /* ignore, if non-existent */ }
-
-//        ped_ = new ParameterEditorWidget
-//               (
-//                 cur->parameters(),
-//                 cur->defaultParameters(),
-//                 ui->parameter_editor,
-//                 cur->visualizer(), vali,
-//                 display_
-//               );
-//        connect(ped_, &ParameterEditorWidget::parameterSetChanged, ped_,
-//                [&,cur]()
-//                {
-//                  cur->parameters() = ped_->model()->getParameterSet();
-//                  onConfigModification();
-//                }
-//        );
-//        pe_layout_->addWidget(ped_);
-
-//        if (!last_pe_state_.isEmpty())
-//        {
-//          ped_->restoreState(last_pe_state_);
-//        }
-//    //     ui->parameter_editor->setCentralWidget(ped_);
-        
-//    //     ParameterSet emptyps;
-//    //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
-//    }
-//}
-
-
-
-//void isofCaseBuilderWindow::onAddElement()
-//{
-//    QTreeWidgetItem* cur = ui->available_elements->currentItem();
-//    if (cur && (cur->childCount()==0))
-//    {
-//        std::string type_name = cur->text(0).toStdString();
-//        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name, display_);
-//        if (ice->visualizer())
-//          expandCAD();
-//    }
-//}
-
-
-//void isofCaseBuilderWindow::onRemoveElement()
-//{
-//  {
-//    InsertedCaseElement* cur
-//        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->currentItem() );
-//    bool neededCAD(cur->visualizer());
-//    if (cur)
-//    {
-//      delete cur;
-//    }
-//  }
-
-//  // check whether CAD view is still needed
-//  bool needsCAD=false;
-//  for ( int i=0; i < ui->selected_elements->count(); i++ )
-//  {
-//    InsertedCaseElement* cur
-//        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
-//    if ( cur )
-//    {
-//      needsCAD = needsCAD || cur->visualizer();
-//    }
-//  }
-
-
-
-//  if (needsCAD && CADisCollapsed()) expandCAD();
-//  if (!needsCAD) collapseCAD();
-
-//}
-
-//void isofCaseBuilderWindow::onMoveElementUp()
-//{
-//    QListWidgetItem* cur = ui->selected_elements->currentItem();
-//    if (cur)
-//    {
-//        int r=ui->selected_elements->currentRow();
-//        if (r>0)
-//        {
-//            QListWidgetItem* ci = ui->selected_elements->takeItem(r);
-//            ui->selected_elements->insertItem(r - 1, ci);
-//            ui->selected_elements->setCurrentRow(r-1);
-//        }
-//    }
-//}
-
-//void isofCaseBuilderWindow::onMoveElementDown()
-//{
-//    QListWidgetItem* cur = ui->selected_elements->currentItem();
-//    if (cur)
-//    {
-//        int r=ui->selected_elements->currentRow();
-//        if (r < ui->selected_elements->count())
-//        {
-//            QListWidgetItem* ci = ui->selected_elements->takeItem(r);
-//            ui->selected_elements->insertItem(r + 1, ci);
-//            ui->selected_elements->setCurrentRow(r+1);
-//        }
-//    }
-//}
 
 
 
@@ -896,69 +763,48 @@ void isofCaseBuilderWindow::saveToFile(const boost::filesystem::path& file)
 {
 
     // == prepare XML document
-    xml_document<> doc;
-
-    // xml declaration
-    xml_node<>* decl = doc.allocate_node ( node_declaration );
-    decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
-    decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
-    doc.append_node ( decl );
-
-    xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
-    doc.append_node ( rootnode );
+    XMLDocument doc;
 
     if (ui->saveOFversion->checkState()==Qt::Checked)
     {
-      xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
-      OFEnode->append_attribute(
-            doc.allocate_attribute(
-              "name",
-              doc.allocate_string(ui->OFversion->currentText().toStdString().c_str()))
-            );
-      rootnode->append_node ( OFEnode );
+      auto *OFEnode = doc.allocate_node ( node_element, "OFE" );
+      appendAttribute(doc, *OFEnode, "name", ui->OFversion->currentText().toStdString());
+      doc.rootNode->append_node ( OFEnode );
     }
 
     std::string code_pre, code_mesh, code_case; // store until XML file is written
     if (!script_pre_.isEmpty())
     {
-      xml_node<> *script_node = doc.allocate_node ( node_element, "script_pre" );
+      auto *script_node = doc.allocate_node ( node_element, "script_pre" );
       code_pre=script_pre_.toStdString();
       script_node->append_attribute(doc.allocate_attribute("code", code_pre.c_str()));
-      rootnode->append_node ( script_node );
+      doc.rootNode->append_node ( script_node );
     }
     if (!script_mesh_.isEmpty())
     {
-      xml_node<> *script_node = doc.allocate_node ( node_element, "script_mesh" );
-      code_mesh=script_mesh_.toStdString();
-      script_node->append_attribute(doc.allocate_attribute("code", code_mesh.c_str()));
-      rootnode->append_node ( script_node );
+      auto *script_node = doc.allocate_node ( node_element, "script_mesh" );
+      appendAttribute(doc, *script_node, "code", script_mesh_.toStdString());
+      doc.rootNode->append_node ( script_node );
     }
     if (!script_case_.isEmpty())
     {
-      xml_node<> *script_node = doc.allocate_node ( node_element, "script_case" );
-      code_case=script_case_.toStdString();
-      script_node->append_attribute(doc.allocate_attribute("code", code_case.c_str()));
-      rootnode->append_node ( script_node );
+      auto *script_node = doc.allocate_node ( node_element, "script_case" );
+      appendAttribute(doc, *script_node, "code", script_case_.toStdString());
+      doc.rootNode->append_node ( script_node );
     }
 
 
     // == insert selected case elements
-    caseConfigModel_->appendConfigurationToNode(doc, rootnode, pack_config_file_, file.parent_path());
+    caseConfigModel_->appendConfigurationToNode(doc, doc.rootNode, pack_config_file_, file.parent_path());
 
 
     // insert configured patches
-    xml_node<> *BCnode = doc.allocate_node ( node_element, "BoundaryConditions" );
-    rootnode->append_node ( BCnode );
+    auto *BCnode = doc.allocate_node ( node_element, "BoundaryConditions" );
+    doc.rootNode->append_node ( BCnode );
     BCConfigModel_->appendConfigurationToNode(doc, BCnode, pack_config_file_, file.parent_path());
 
 
-    {
-        std::ofstream f ( file.string() );
-        f << doc;
-        f << std::flush;
-        f.close();
-    }
-
+    doc.saveToFile(file);
 }
 
 
@@ -1018,7 +864,11 @@ void isofCaseBuilderWindow::showParameterEditorForCaseElement(const QModelIndex&
 
     connect(caseElementParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
             caseElementParameterEditor_,
-            [&]() { onConfigModification(); } );
+            [&]() {
+                DBG_SLOT(parameterSetChanged);
+
+                onConfigModification();
+            } );
 
     pe_layout_->addWidget(caseElementParameterEditor_);
 
@@ -1048,14 +898,22 @@ void isofCaseBuilderWindow::showParameterEditorForPatch(const QModelIndex& index
     if (patchParameterEditor_)
     {
 
-      connect(patchParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
-              patchParameterEditor_,
-              [&]() { onConfigModification(); } );
+        connect(patchParameterEditor_, &ParameterEditorWidget::parameterSetChanged,
+                patchParameterEditor_,
+                [&]() {
+                    DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
 
-      auto* patch = BCConfigModel_->patch(index);
-      connect(patch, &QObject::destroyed,
-              patch,
-              [&]() { patchParameterEditor_->deleteLater(); } );
+                    onConfigModification();
+                } );
+
+        auto* patch = BCConfigModel_->patch(index);
+        connect(patch, &QObject::destroyed,
+                patch,
+                [&]() {
+                    DBG_SLOT(QObject::destroyed);
+
+                    patchParameterEditor_->deleteLater();
+                } );
 
       bc_pe_layout_->addWidget(patchParameterEditor_);
 
@@ -1191,7 +1049,7 @@ void isofCaseBuilderWindow::rebuildVisualization()
 
     // connect(
     //     viz_, &insight::CADParameterSetVisualizer::visualizationComputationError, viz_,
-    //     [this](insight::Exception ex)
+    //     [this](const insight::Exception& ex)
     //     {
     //         overlayText_->setTextFormat(Qt::MarkdownText);
     //         overlayText_->setText(QString::fromStdString(

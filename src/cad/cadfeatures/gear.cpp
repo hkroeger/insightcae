@@ -19,6 +19,8 @@
  */
 
 #include "gear.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "circle.h"
 
 #include "cadparameters/constantvector.h"
@@ -424,15 +426,17 @@ size_t SpurGear::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=m_->value();
-  h+=z_->value();
-  h+=t_->value();
-  h+=clearance_->value();
+  h+=*m_;
+  h+=*z_;
+  h+=*t_;
+  h+=*clearance_;
   return h.getHash();
 }
 
 
-
+SpurGear::SpurGear(const SpurGear&o, TreeCloneMap& tcm)
+    : CL(m_), CL(z_), CL(t_), CL(clearance_)
+{}
 
 SpurGear::SpurGear(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
 : m_(m), z_(z), t_(t), clearance_(clearance)
@@ -475,13 +479,13 @@ void SpurGear::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "SpurGear",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_scalarExpression >> ',' 
-      >> ruleset.r_scalarExpression >> ',' 
-      >> ruleset.r_scalarExpression
-      >> ( ( ',' >> ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
-      >> ')'
+    ( '(' > ruleset.r_scalarExpression > ','
+      > ruleset.r_scalarExpression > ','
+      > ruleset.r_scalarExpression
+      > ( ( ',' > ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
+      > ')'
     ) 
     [ qi::_val = phx::bind(
                          &SpurGear::create<ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
@@ -963,15 +967,17 @@ size_t BevelGear::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=m_->value();
-  h+=z_->value();
-  h+=t_->value();
-  h+=clearance_->value();
+  h+=*m_;
+  h+=*z_;
+  h+=*t_;
+  h+=*clearance_;
   return h.getHash();
 }
 
 
-
+BevelGear::BevelGear(const BevelGear&o, TreeCloneMap& tcm)
+    : CL(m_), CL(z_), CL(t_), CL(clearance_)
+{}
 
 
 BevelGear::BevelGear(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
@@ -1015,11 +1021,11 @@ void BevelGear::insertrule(parser::ISCADParser& ruleset)
     "BevelGear",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_scalarExpression >> ',' 
-      >> ruleset.r_scalarExpression >> ',' 
-      >> ruleset.r_scalarExpression
-      >> ( ( ',' >> ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
-      >> ')'
+    ( '(' > ruleset.r_scalarExpression > ','
+      > ruleset.r_scalarExpression > ','
+      > ruleset.r_scalarExpression
+      > ( ( ',' > ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
+      > ')'
     ) 
     [ qi::_val = phx::bind(
                          &BevelGear::create<ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,

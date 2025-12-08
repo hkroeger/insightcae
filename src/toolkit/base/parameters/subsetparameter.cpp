@@ -4,23 +4,19 @@
 #include "base/cppextensions.h"
 #include "base/translations.h"
 #include "base/rapidxml.h"
+#include <algorithm>
 
 namespace insight
 {
 
 
 
-ParameterNotFoundException::ParameterNotFoundException(
-    const std::string &msg)
-    : Exception(msg)
-{}
-
 
 
 
 
 defineType(ParameterSet);
-addToFactoryTable(Parameter, ParameterSet);
+addParameterFactories(ParameterSet);
 
 
 
@@ -69,7 +65,7 @@ ParameterSet::ParameterSet(
     {
         insert(
             p.first,
-            p.second->clone(false) );
+            p.second->cloneAs<Parameter>() );
     }
 }
 
@@ -97,7 +93,6 @@ std::unique_ptr<ParameterSet> ParameterSet::create(
     auto p=create_uninitialized(
         description,
         isHidden, isExpert, isNecessary, order );
-    p->initialize();
     return p;
 }
 
@@ -109,7 +104,6 @@ std::unique_ptr<ParameterSet> ParameterSet::create(
     auto p=std::unique_ptr<ParameterSet>(new ParameterSet(
         std::move(defaultValue), description,
         isHidden, isExpert, isNecessary, order ));
-    p->initialize();
     return p;
 }
 
@@ -132,7 +126,6 @@ std::unique_ptr<ParameterSet> ParameterSet::create(
     auto p=create_uninitialized(
         defaultValue, description,
         isHidden, isExpert, isNecessary, order );
-    p->initialize();
     return p;
 }
 
@@ -157,7 +150,7 @@ ParameterSet::Entries ParameterSet::copyEntries() const
         result.insert(
             {
              p.first,
-             p.second->clone(false)
+             p.second->cloneAs<Parameter>()
             });
     }
     return result;
@@ -194,7 +187,7 @@ bool ParameterSet::isDifferent(const Parameter& p) const
 
 
 
-void ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& p)
+Parameter& ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& p)
 {
 
   auto ie = value_.find(name);
@@ -217,6 +210,8 @@ void ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& 
       ins.first->second->childValueChanged.connect( childValueChanged )));
 
   triggerValueChanged();
+
+  return *ins.first->second;
 }
 
 
@@ -235,7 +230,10 @@ void ParameterSet::remove(const std::string &name)
 
 
 
-std::string ParameterSet::latexRepresentation() const
+std::string ParameterSet::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
   std::string result="";
   if (value_.size()>0)
@@ -244,6 +242,8 @@ std::string ParameterSet::latexRepresentation() const
         "\\begin{enumerate}\n";
     for(auto i=value_.begin(); i!=value_.end(); i++)
     {
+        if (!fsi.elementFilter.matches(*i->second))
+        {
           auto ldesc=i->second->description().toLaTeX();
 
           result+="\\item ";
@@ -252,8 +252,9 @@ std::string ParameterSet::latexRepresentation() const
           result+=
               "\n"
               "\\textbf{"+SimpleLatex(i->first).toLaTeX()+"} = "
-              +i->second->latexRepresentation()
+              +i->second->latexRepresentation(name, documentHierarchyLevel, fsi)
               +"\n";
+        }
     }
     result+="\\end{enumerate}\n";
   }
@@ -329,20 +330,25 @@ void ParameterSet::clearPackedData()
 
 
 
-rapidxml::xml_node<>* ParameterSet::appendToNode(
+rapidxml::xml_node<>*
+ParameterSet::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath ) const
+    const OutputProperties& outProps ) const
 {
-  insight::CurrentExceptionContext ex(3, "appending subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(
+        insight::VerbosityLevel::Loops,
+        "appending subset %s to node %s", name.c_str(), node.name());
 
-  using namespace rapidxml;
-  xml_node<>*  child = Parameter::appendToNode(name, doc, node, inputfilepath);
+  auto child = Parameter::appendToNode(name, doc, node, outProps);
 
   for( auto i=value_.begin(); i!= value_.end(); i++)
   {
-    i->second->appendToNode(i->first, doc, *child, inputfilepath);
+      if (!outProps.filter.matches(*i->second))
+      {
+        i->second->appendToNode(i->first, doc, *child, outProps);
+      }
   }
 
   return child;
@@ -351,20 +357,20 @@ rapidxml::xml_node<>* ParameterSet::appendToNode(
 
 
 
-void ParameterSet::readFromNode(
+const rapidxml::xml_node<>*
+ParameterSet::readFromNode(
     const std::string& name,
-    rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath)
+    const rapidxml::xml_node<>& node )
 {
   using namespace rapidxml;
 
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = Parameter::readFromNode(name, node);
 
   if (child)
   {
     for( auto i=value_.begin(); i!= value_.end(); i++)
     {
-          i->second->readFromNode(i->first, *child, inputfilepath);
+          i->second->readFromNode(i->first, *child);
     }
   }
   else
@@ -373,13 +379,27 @@ void ParameterSet::readFromNode(
           boost::str(
             boost::format(
              "No xml node found with type '%s' and name '%s', default value '%s' is used."
-             ) % type() % name % plainTextRepresentation()
+             ) % type() % name % plainTextRepresentation(0)
            )
         );
   }
+
+  return child;
 }
 
 
+ParameterSet::ParameterSet(const rapidxml::xml_node<> &node)
+    : Parameter(node)
+{
+    for (auto* e=node.first_node(); e; e=e->next_sibling())
+    {
+        if (std::string(e->name())!="analysis") // this is no element
+        {
+            auto name=getMandatoryAttribute(*e, "name");
+            insert(name, Parameter::createFromNode(*e));
+        }
+    }
+}
 
 
 int ParameterSet::nChildren() const
@@ -390,7 +410,7 @@ int ParameterSet::nChildren() const
 
 
 
-std::string ParameterSet::childParameterName(int i, bool ) const
+std::string ParameterSet::childElementName(int i, bool ) const
 {
   auto iter=value_.begin();
   std::advance(iter, i);
@@ -399,15 +419,15 @@ std::string ParameterSet::childParameterName(int i, bool ) const
 
 // for any reason, g++ compiler emits warning of
 // typecast const Parameter* to int, if this redefinition is removed
-std::string ParameterSet::childParameterName(
-    const Parameter *p,
+std::string ParameterSet::childElementName(
+    const Element *p,
     bool redirectArrayElementsToDefault ) const
 {
-    return Parameter::childParameterName(p, redirectArrayElementsToDefault);
+    return Parameter::childElementName(p, redirectArrayElementsToDefault);
 }
 
 
-Parameter& ParameterSet::childParameterRef ( int i )
+hierarchicalData::Element& ParameterSet::childElementRef ( int i )
 {
   auto iter=value_.begin();
   std::advance(iter, i);
@@ -416,7 +436,7 @@ Parameter& ParameterSet::childParameterRef ( int i )
 
 
 
-const Parameter& ParameterSet::childParameter( int i ) const
+const hierarchicalData::Element& ParameterSet::childElement( int i ) const
 {
   auto iter=value_.begin();
   std::advance(iter, i);
@@ -434,102 +454,8 @@ size_t ParameterSet::size() const
 
 
 
-std::string splitOffFirstParameter(std::string& path, int& nRemaining)
-{
-  using namespace boost;
-  using namespace boost::algorithm;
-
-  if ( boost::contains ( path, "/" ) )
-  {
-    std::string prefix = copy_range<std::string> ( *make_split_iterator ( path, first_finder ( "/" ) ) );
-
-    std::string remain = path;
-    erase_head ( remain, prefix.size()+1 );
-
-    path=remain;
-    nRemaining = std::count(path.begin(), path.end(), '/')+1;
-    return prefix;
-  }
-  else
-  {
-    std::string prefix=path;
-    path="";
-    nRemaining=0;
-    return prefix;
-  }
-}
 
 
-
-
-bool ParameterSet::hasParameter(std::string path) const
-{
-
-  std::function<bool(const Parameter&, std::string)> checkChildren;
-
-  checkChildren = [&checkChildren](const Parameter& cp, std::string path)
-  {
-      int nRemaining=-1;
-      std::string parameterName = splitOffFirstParameter(path, nRemaining);
-      int i = cp.childParameterIndex(parameterName);
-      if (i==-1)
-      {
-        return false;
-      }
-      else if (nRemaining == 0)
-      {
-        return true;
-      }
-      else
-      {
-        return checkChildren(cp.childParameter(i), path);
-      }
-  };
-
-  return checkChildren(*this, path);
-}
-
-
-
-
-Parameter& ParameterSet::getParameter(std::string path)
-{
-
-  std::function<Parameter&(Parameter&, std::string)> getChild;
-
-  getChild = [&getChild,this](Parameter& cp, std::string path) -> Parameter&
-  {
-      int nRemaining=-1;
-      std::string parameterName = splitOffFirstParameter(path, nRemaining);
-      if (parameterName=="..")
-      {
-          if (cp.hasParent())
-          {
-              return getChild(cp.parent(), path);
-          }
-          else
-              throw insight::ParameterNotFoundException(
-                  str(boost::format(
-                     _("relative path given (%s) but no parent parameter container set!"))
-                   % path ) );
-      }
-      int i = cp.childParameterIndex(parameterName);
-      if (i==-1)
-      {
-          throw insight::ParameterNotFoundException("There is no parameter with name "+parameterName);
-      }
-      else if (nRemaining == 0)
-      {
-          return cp.childParameterRef(i);
-      }
-      else
-      {
-          return getChild(cp.childParameterRef(i), path);
-      }
-  };
-
-  return getChild(*this, path);
-}
 
 
 
@@ -542,7 +468,8 @@ bool ParameterSet::contains(const std::string &name) const
 
 
 
-std::istream& ParameterSet::getFileStream ( const std::string& name )
+std::unique_ptr<std::istream>
+ParameterSet::getFileStream ( const std::string& name )
 {
   return this->get<PathParameter> ( name ) .stream();
 }
@@ -607,7 +534,7 @@ ParameterSet& ParameterSet::setMatrix ( const std::string& name, const arma::mat
 
 ParameterSet& ParameterSet::setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp)
 {
-  this->get<PathParameter> ( name ).setOriginalFilePath(fp);
+  this->get<PathParameter> ( name ).setFileName(fp);
   return *this;
 }
 
@@ -654,7 +581,7 @@ const arma::mat& ParameterSet::getVector ( const std::string& name ) const
 
 const boost::filesystem::path ParameterSet::getPath ( const std::string& name, const boost::filesystem::path& basePath ) const
 {
-  return this->get<PathParameter> ( name ) .filePath(basePath);
+  return this->get<PathParameter> ( name ) .fileName();
 }
 
 
@@ -721,51 +648,76 @@ void ParameterSet::replace ( const std::string& key, std::unique_ptr<Parameter> 
 
 
 
-std::unique_ptr<Parameter> ParameterSet::clone(bool init) const
+std::unique_ptr<hierarchicalData::Element> ParameterSet::clone() const
 {
     auto p =std::unique_ptr<ParameterSet>(new ParameterSet(
         entries(),
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order()
         ));
-    if (init) p->initialize();
     return p;
 }
 
 
 
-
-void ParameterSet::copyFrom(const Parameter& o)
+void ParameterSet::assignFrom( const Element& rhs )
 {
-  operator=(dynamic_cast<const ParameterSet&>(o));
+    auto &osp = dynamic_cast<const ParameterSet&>(rhs);
+
+    std::set<std::string> nonMatching;
+    for (auto& te: value_) nonMatching.insert(te.first);
+
+    for (auto &p: osp.value_)
+    {
+        auto i = value_.find(p.first);
+        if (i!=value_.end())
+        {
+            i->second->assignFrom( *p.second );
+        }
+        else
+        {
+            insert(
+                p.first,
+                p.second->cloneAs<Parameter>() );
+        }
+        if (nonMatching.count(p.first))
+            nonMatching.erase(p.first);
+    }
+
+    for (auto& nm: nonMatching)
+    {
+        remove(nm);
+    }
+
+    Parameter::assignFrom(osp);
 }
 
 
 
 
-void ParameterSet::operator=(const ParameterSet& osp)
+void ParameterSet::copyMatching(const Element& rhs)
 {
-  for (auto &p: osp.value_)
-  {
-    auto i = value_.find(p.first);
-    if (i!=value_.end())
-          i->second->copyFrom( *p.second );
-    else
-          insert(
-            p.first,
-            std::unique_ptr<Parameter>(
-                p.second->clone(false) ) );
-  }
-  Parameter::copyFrom(osp);
-  initialize();
+    auto &osp = dynamic_cast<const ParameterSet&>(rhs);
+
+    for (auto &p: osp.value_)
+    {
+        auto i = value_.find(p.first);
+        if (i!=value_.end())
+        {
+            i->second->copyMatching( *p.second );
+        }
+    }
 }
 
 
 
 
-void ParameterSet::extend ( const Parameter& other )
+
+
+void ParameterSet::extend ( const Element& other )
 {
   auto &osp = dynamic_cast<const ParameterSet&>(other);
+
   for ( auto &i: osp.value_ )
   {
     if (contains(i.first))
@@ -774,34 +726,45 @@ void ParameterSet::extend ( const Parameter& other )
     }
     else
     {
-          insert( i.first, i.second->clone(false) );
+          insert(
+            i.first,
+            i.second->cloneAs<Parameter>() );
     }
   }
-  initialize();
 }
 
 
 
-
-void ParameterSet::merge ( const Parameter& other )
+bool ParameterSet::isEqual(const Element &op) const
 {
-  if (auto *osp = dynamic_cast<const ParameterSet*>(&other))
-  {
-      for ( auto &i: osp->value_ )
-      {
-        if (contains(i.first))
+    if (auto *oa = dynamic_cast<const ParameterSet*>(&op))
+    {
+        if (size()!=oa->size()) return false;
+        auto i=value_.begin();
+        auto j=oa->value_.begin();
+        while (i!=value_.end())
         {
-              value_.at(i.first)->merge(*i.second);
+            if (i->first!=j->first)
+                return false;
+            if (!i->second->isEqual(*j->second))
+                return false;
+
+            ++i; ++j;
         }
-      }
-  }
+        return true;
+    }
+    else
+        return false;
 }
+
+
+
 
 
 
 void ParameterSet::clear()
 {
-    operator=(*ParameterSet::create());
+    assignFrom(*ParameterSet::create());
 }
 
 

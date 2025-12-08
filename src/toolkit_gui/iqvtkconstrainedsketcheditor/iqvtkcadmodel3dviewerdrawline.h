@@ -37,6 +37,7 @@ protected:
 public:
     IQVTKCADModel3DViewerDrawLine(
             IQVTKConstrainedSketchEditor &editor );
+
     ~IQVTKCADModel3DViewerDrawLine();
 
     void start() override;
@@ -49,6 +50,8 @@ public:
         Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override;
+
+    QString description() const override;
 
 Q_SIGNALS:
     void endPointSelected(

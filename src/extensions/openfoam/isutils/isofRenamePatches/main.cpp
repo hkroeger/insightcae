@@ -139,9 +139,9 @@ int main(int argc, char *argv[])
 
         bd.write();
     }
-    catch (std::exception e)
+    catch (...)
     {
-        insight::printException(e);
+        insight::printCurrentException();
         return -1;
     }
 

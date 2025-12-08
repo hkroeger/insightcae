@@ -1380,33 +1380,36 @@ void IQCADItemModel::addSymbolsToSubmenu(
     menu->addMenu(sm);
     for (auto i: feat->providedSubshapes())
     {
-      QString subname=QString::fromStdString(i.first);
+        QString subname=QString::fromStdString(i.first);
+        if (subname!="PREV") // cause too deep recursion
+        {
 
-      QAction *a = new QAction(
-            subname + " to Notepad",
-            menu );
-      sm->addAction(a);
+            QAction *a = new QAction(
+                subname + " to Notepad",
+                menu );
+            sm->addAction(a);
 
-      connect(a, &QAction::triggered, this, [=]() {
-        Q_EMIT insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
-      });
+            connect(a, &QAction::triggered, this, [=]() {
+                Q_EMIT insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
+            });
 
-      connect(a, &QAction::hovered, this, [=]() {
-        Q_EMIT highlightInView(i.second);
-      });
+            connect(a, &QAction::hovered, this, [=]() {
+                Q_EMIT highlightInView(i.second);
+            });
 
-      bool someEntries=false;
-      QMenu* submenu=new QMenu(QString::fromStdString(i.first));
+            bool someEntries=false;
+            QMenu* submenu=new QMenu(QString::fromStdString(i.first));
 
-      addSymbolsToSubmenu(name+"."+subname, submenu, i.second, &someEntries);
-      if (someEntries)
-      {
-        sm->addMenu(submenu);
-      }
-      else
-      {
-        delete submenu;
-      }
+            addSymbolsToSubmenu(name+"."+subname, submenu, i.second, &someEntries);
+            if (someEntries)
+            {
+                sm->addMenu(submenu);
+            }
+            else
+            {
+                delete submenu;
+            }
+        }
 
       if (someHoverDisplay) *someHoverDisplay=true;
     }

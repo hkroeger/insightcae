@@ -52,8 +52,23 @@ protected:
 public:
     declareType ( "array" );
 
-    ArrayParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    ArrayParameter ( const Parameter& defaultValue, int size, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    ArrayParameter( const rapidxml::xml_node<>& node );
+
+    ArrayParameter (
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
+
+    ArrayParameter (
+        const Parameter& defaultValue,
+        int size,
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
 
     bool isDifferent(const Parameter& p) const override;
 
@@ -76,17 +91,20 @@ public:
 
     int nChildren() const override;
 
-    std::string childParameterName(
+    std::string childElementName(
         int i,
         bool redirectArrayElementsToDefault=false ) const override;
 
-    Parameter& childParameterRef ( int i ) override;
-    const Parameter& childParameter( int i ) const override;
-    int childParameterIndex( const std::string& name ) const override;
+    Element& childElementRef ( int i ) override;
+    const Element& childElement( int i ) const override;
+    int childElementIndex( const std::string& name ) const override;
 
     void clear();
 
-    std::string latexRepresentation() const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
     std::string plainTextRepresentation(int indent=0) const override;
 
     bool isPacked() const override;
@@ -99,17 +117,19 @@ public:
         const std::string& name,
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) const override;
-    void readFromNode (
-        const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) override;
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
 
-    std::unique_ptr<Parameter> clone (bool initialize) const override;
-    void copyFrom(const Parameter& p) override;
-    void operator=(const ArrayParameter& p);
-    void extend ( const Parameter& op ) override;
-    void merge ( const Parameter& other ) override;
+    const rapidxml::xml_node<>* readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node) override;
+
+
+    std::unique_ptr<Element> clone () const override;
+
+    void assignFrom( const Element& rhs ) override;
+    void copyMatching( const Element& rhs ) override;
+    void extend( const Element& op ) override;
+    bool isEqual(const Element& op) const override;
 };
 
 

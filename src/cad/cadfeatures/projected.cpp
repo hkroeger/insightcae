@@ -18,6 +18,8 @@
  */
 
 #include "projected.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -47,12 +49,16 @@ size_t Projected::calcHash() const
   h+=this->type();
   h+=*source_;
   h+=*target_;
-  h+=dir_->value();
+  h+=*dir_;
   return h.getHash();
 }
 
 
 
+
+Projected::Projected(const Projected&o, TreeCloneMap& tcm)
+    : CL(source_), CL(target_), CL(dir_)
+{}
 
 
 
@@ -108,7 +114,9 @@ void Projected::insertrule(parser::ISCADParser& ruleset)
     "Projected",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_vectorExpression > ')' )
       [ qi::_val = phx::bind(
                          &Projected::create<FeaturePtr, FeaturePtr, VectorPtr>,
                          qi::_1, qi::_2, qi::_3) ]

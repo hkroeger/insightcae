@@ -18,6 +18,8 @@
  */
 
 #include "split.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -37,9 +39,7 @@ namespace cad {
 
 
 defineType(Split);
-//addToFactoryTable(Feature, Split);
 addToStaticFunctionTable(Feature, Split, insertrule);
-//addToStaticFunctionTable(Feature, Split, ruleDocumentation);
 
 
 size_t Split::calcHash() const
@@ -66,14 +66,27 @@ TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
   return spl.Shape();
 }
 
+
+
+Split::Split(const Split&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(source_), CL(target_)
+{}
+
+
 Split::Split(FeaturePtr source, FeaturePtr target)
 : DerivedFeature(target), source_(source), target_(target)
 {}
+
+
+
 
 void Split::build()
 {
   setShape(makeSplit(*source_, *target_));
 }
+
+
 
 
 /*! \page Split Split
@@ -91,7 +104,8 @@ void Split::insertrule(parser::ISCADParser& ruleset)
     "Split",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_solidmodel_expression > ')' )
                   [ qi::_val = phx::bind(
                        &Split::create<FeaturePtr, FeaturePtr>,
                        qi::_1, qi::_2) ]

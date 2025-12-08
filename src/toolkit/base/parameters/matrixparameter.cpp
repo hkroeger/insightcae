@@ -1,4 +1,6 @@
 #include "matrixparameter.h"
+#include "base/hierarchicalelement.h"
+#include "base/linearalgebra.h"
 #include "base/rapidxml.h"
 
 namespace insight
@@ -7,7 +9,9 @@ namespace insight
 
 
 defineType(MatrixParameter);
-addToFactoryTable(Parameter, MatrixParameter);
+addParameterFactories(MatrixParameter);
+
+
 
 MatrixParameter::MatrixParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order)
@@ -44,7 +48,10 @@ const arma::mat& MatrixParameter::operator()() const
   return value_;
 }
 
-std::string MatrixParameter::latexRepresentation() const
+std::string MatrixParameter::latexRepresentation(
+    const std::string&,
+    int,
+    const FileStorageInfo& ) const
 {
   std::ostringstream oss;
 
@@ -86,31 +93,31 @@ std::string MatrixParameter::plainTextRepresentation(int indent) const
   return oss.str();
 }
 
+
 rapidxml::xml_node< char >* MatrixParameter::appendToNode
 (
     const std::string& name,
     rapidxml::xml_document< char >& doc,
     rapidxml::xml_node< char >& node,
-    boost::filesystem::path inputfilepath
+    const OutputProperties& outProps
  ) const
 {
   using namespace rapidxml;
-  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
   writeMatToXMLNode(value_, doc, *child);
 
   return child;
 }
 
-void MatrixParameter::readFromNode
+const rapidxml::xml_node<>* MatrixParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_node< char >& node,
-    boost::filesystem::path
+    const rapidxml::xml_node<>& node
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = Parameter::readFromNode(name, node);
   if (child)
   {
     std::string value_str=child->value();
@@ -124,35 +131,53 @@ void MatrixParameter::readFromNode
           boost::str(
             boost::format(
              "No xml node found with type '%s' and name '%s', default value '%s' is used."
-             ) % type() % name % plainTextRepresentation()
+             ) % type() % name % plainTextRepresentation(0)
            )
         );
   }
+  return child;
 }
 
-std::unique_ptr<Parameter> MatrixParameter::clone(bool init) const
+
+MatrixParameter::MatrixParameter(const rapidxml::xml_node<> &node)
+    :Parameter(node)
+{
+    std::string value_str=node.value();
+    std::istringstream iss(value_str);
+    value_.load(iss, arma::raw_ascii);
+    triggerValueChanged();
+}
+
+
+std::unique_ptr<hierarchicalData::Element> MatrixParameter::clone() const
 {
     auto p=std::make_unique<MatrixParameter>(
         value_,
         description().simpleLatex());
-    if (init) p->initialize();
     return p;
 }
 
 
-
-void MatrixParameter::copyFrom(const Parameter& p)
+void MatrixParameter::assignFrom(const Element& e)
 {
-  operator=(dynamic_cast<const MatrixParameter&>(p));
+    auto& op = dynamic_cast<const MatrixParameter&>(e);
 
+    value_ = op.value_;
+
+    Parameter::assignFrom(op);
 }
 
-void MatrixParameter::operator=(const MatrixParameter& op)
+bool MatrixParameter::isEqual(const Element &op) const
 {
-  value_ = op.value_;
-
-  Parameter::copyFrom(op);
+    if (auto *oa = dynamic_cast<const MatrixParameter*>(&op))
+    {
+        return value_==oa->value_;
+    }
+    else
+        return false;
 }
+
+
 
 
 int MatrixParameter::nChildren() const

@@ -282,12 +282,19 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
      TARGET_NAME ${GETTEXT_TARGET}
      SOURCES ${ARGN}
      POTFILE_DESTINATION ${GETTEXT_OUTPUT_DIR}
+
      XGETTEXT_ARGS
       "--keyword=_"
       "--add-comments=TRANSLATORS:"
       "--package-name=${GETTEXT_DOMAIN}"
       "--package-version=${PROJECT_VERSION}"
       "--copyright-holder=hkroeger"
+      "--no-location"
+
+    MSGMERGE_ARGS
+      "--no-location"
+
+
      LANGUAGES ${GETTEXT_LANGUAGES}
      BUILD_DESTINATION ${CMAKE_BINARY_DIR}/share/insight/${GETTEXT_OUTPUT_DIR}
      INSTALL_DESTINATION share/insight/${GETTEXT_OUTPUT_DIR}
@@ -303,12 +310,13 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   INCLUDE(${SWIG_USE_FILE})
 ENDIF()
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 ADD_DEFINITIONS(
     -Wno-old-style-cast
     -ftemplate-depth=900
     -fpermissive 
-    -Wno-deprecated 
+    -Wno-deprecated
+    -Wno-register # lots of warnings from fx32
     # Other flags
 )
 
@@ -1039,7 +1047,31 @@ else(DPKG_PROGRAM)
      OUTPUT_VARIABLE CPACK_RPM_PACKAGE_ARCHITECTURE
      OUTPUT_STRIP_TRAILING_WHITESPACE
    )
-   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}~${CPACK_RPM_SYSTEM_NAME}-${CPACK_RPM_SYSTEM_VERSION}.${CPACK_RPM_PACKAGE_ARCHITECTURE}.rpm")
+ elseif(EXISTS /etc/os-release)
+    SET(CPACK_GENERATOR "RPM")
+    execute_process(
+        COMMAND bash -c "grep '^ID=\\\".*\\\"' /etc/os-release|sed -e 's/ID=\\\"\\(.*\\)\\\"/\\1/g'"
+        OUTPUT_VARIABLE CPACK_RPM_SYSTEM_NAME
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (CPACK_RPM_SYSTEM_NAME STREQUAL "opensuse-leap")
+      set(CPACK_RPM_SYSTEM_NAME "leap")
+    endif()
+    
+    execute_process(
+        COMMAND bash -c "grep '^VERSION_ID=\\\".*\\\"' /etc/os-release|sed -e 's/VERSION_ID=\\\"\\(.*\\)\\\"/\\1/g'|cut -f 1 -d '.'"
+        OUTPUT_VARIABLE CPACK_RPM_SYSTEM_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND uname -m
+        OUTPUT_VARIABLE CPACK_RPM_PACKAGE_ARCHITECTURE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+ endif()
+ 
+ if (CPACK_RPM_SYSTEM_NAME)
+   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}~${CPACK_RPM_SYSTEM_NAME}-${CPACK_RPM_SYSTEM_VERSION}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
    set(CPACK_RPM_PACKAGE_REQUIRES "/opt/insightcae/bin/insight_setthirdpartyenv.sh")
    set(CPACK_RPM_SPEC_MORE_DEFINE "%define __python python3")
  endif()

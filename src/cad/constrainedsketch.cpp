@@ -2,11 +2,13 @@
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
 
 #include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "cadfeatures/wire.h"
+#include "cadfeatures/line.h"
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
@@ -40,17 +42,33 @@ size_t ConstrainedSketch::calcHash() const
 
 
 
-std::unique_ptr<LayerProperties> LayerProperties::create()
+std::unique_ptr<LayerProperties> LayerProperties::create(
+    const arma::mat& c )
 {
-    return std::unique_ptr<LayerProperties>(new LayerProperties);
+    return std::unique_ptr<LayerProperties>(
+        new LayerProperties(c) );
 }
 
 std::unique_ptr<LayerProperties> LayerProperties::create(
-    const ParameterSet& parameters )
+    const ParameterSet& parameters, const arma::mat& c )
 {
     return std::unique_ptr<LayerProperties>(
-        new LayerProperties(parameters.copyEntries(), "") );
+        new LayerProperties(parameters.copyEntries(), c) );
 }
+
+
+LayerProperties::LayerProperties(
+    const arma::mat& c )
+    : ParameterSet(),
+    color(c)
+{}
+
+
+LayerProperties::LayerProperties(
+    Entries &&defaultValue, const arma::mat& c)
+    : ParameterSet(std::move(defaultValue), ""),
+    color(c)
+{}
 
 
 
@@ -63,7 +81,13 @@ std::unique_ptr<LayerProperties>
 ConstrainedSketchParametersDelegate::createDefaultLayerProperties(
     const std::string &layerName) const
 {
-    return LayerProperties::create();
+
+    arma::mat c; // unspecified color
+    if (layerName!=insight::cad::ConstrainedSketch::defaultLayerName)
+        c=insight::vec3(std::rand(), std::rand(), std::rand())
+            /double(RAND_MAX);
+
+    return LayerProperties::create(c);
 }
 
 
@@ -102,7 +126,28 @@ void ConstrainedSketchPresentationDelegate::setEntityAppearance(
 
 
 
-
+ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm)
+    :CL(pl_),
+    propertiesParent_(o.propertiesParent_),
+    solverSettings_(o.solverSettings_)
+{
+    for (auto& g: o.geometry_)
+    {
+        if (dynamic_cast<const DependencySource*>(g.second.get()))
+        {
+            geometry_[g.first]=tcm.clone(g.second);
+        }
+        else
+        {
+            geometry_[g.first]=g.second->clone();
+        }
+    }
+#warning replace internal references missing ??
+    for (auto& lc: o.layerProperties_)
+    {
+        layerProperties_[lc.first]=lc.second->cloneLayerProperties();
+    }
+}
 
 ConstrainedSketch::ConstrainedSketch(
     DatumPtr pl,
@@ -116,6 +161,7 @@ ConstrainedSketch::ConstrainedSketch(
 
 ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
+    // propertiesParent_(other.propertiesParent_),
     solverSettings_(other.solverSettings_)
 {
     for (auto &lp: other.layerProperties_)
@@ -135,11 +181,11 @@ ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     for (const auto& g: other.geometry_)
     {
         auto clone = g.second->clone();
-        if (propertiesParent_)
-        {
-            clone->parametersRef().setParent(
-                propertiesParent_.get());
-        }
+        // if (propertiesParent_)
+        // {
+        //     clone->parametersRef().setParent(
+        //         propertiesParent_.get());
+        // }
         geometry_.insert({ g.first, clone });
         cem[g.second]=clone;
     }
@@ -212,7 +258,7 @@ void ConstrainedSketch::readFromStream(
         );
 
     insight::assertion(
-        success,
+        success && (first==last),
         "parsing of constrained sketch script was not successful!" );
 
     // add referenced layers, if not present
@@ -253,7 +299,11 @@ VectorPtr ConstrainedSketch::sketchPlaneNormal() const
 
 arma::mat ConstrainedSketch::p3Dto2D(const arma::mat &p3d) const
 {
-    auto pl=plane()->plane();
+    return p3Dto2D(plane()->plane(), p3d);
+}
+
+arma::mat ConstrainedSketch::p3Dto2D(const gp_Ax3& pl, const arma::mat& p3d)
+{
     auto p0=vec3(pl.Location());
     auto ex=vec3(pl.XDirection());
     auto ey=vec3(pl.YDirection());
@@ -374,6 +424,12 @@ ConstrainedSketch::insertGeometry(
                 propertiesParent_.get());
         }
         geometry_.insert({key, geomEntity});
+        geomEntity->notifyAboutParameterChanges(
+            this,
+            [this, key](const ParameterSet&) {
+                DBG_SLOT(parametersChanged);
+                geometryChanged(key);
+            } );
         geometryAdded(key);
     }
     else
@@ -406,6 +462,12 @@ ConstrainedSketch::setExternalReference(
     if (i==geometry_.end())
     {
         geometry_.insert({ key, extRef });
+        extRef->notifyAboutParameterChanges(
+            this,
+            [this, key](const ParameterSet&) {
+                DBG_SLOT(parametersChanged);
+                geometryChanged(key);
+            } );
         geometryAdded(key);
     }
     else
@@ -669,7 +731,6 @@ void ConstrainedSketch::resolveConstraints(
         auto& dm=dofs[i];
         x0(i)=dm.entity->getDoFValue(dm.iLocal);
     }
-    std::cout<<"x0="<<x0.t()<<std::endl;
 
     auto setX = [&](const arma::mat& x)
     {
@@ -776,7 +837,7 @@ void ConstrainedSketch::resolveConstraints(
                     if (ex.zeroCols().count(i))
                     {
                         auto i=std::distance(geometry_.cbegin(), dm.entityIt);
-                        ucdofs.insert(boost::lexical_cast<std::string>(i));
+                        ucdofs.insert(toString(i));
                     }
                 }
 
@@ -900,7 +961,7 @@ void ConstrainedSketch::generateScript(ostream &os) const
         std::string s;
         if (lp.second->size())
         {
-            lp.second->saveToString(s, boost::filesystem::current_path()/"outfile");
+            lp.second->saveToString(s);
             s=" "+s;
         }
         sb.appendLayerProp("layer "+lp.first+s);
@@ -948,7 +1009,16 @@ arma::mat ConstrainedSketch::sketchBoundingBox() const
 }
 
 
-
+std::set<std::string> ConstrainedSketch::unUsedLayerNames() const
+{
+    auto all=layerNames(), used=usedLayerNames();
+    std::set<std::string> unused;
+    std::set_difference(
+        all.begin(), all.end(),
+        used.begin(), used.end(),
+        std::inserter(unused, unused.begin()) );
+    return unused;
+}
 
 std::set<std::string> ConstrainedSketch::usedLayerNames() const
 {
@@ -974,6 +1044,19 @@ std::set<std::string> ConstrainedSketch::layerNames() const
         { return lp.first; }
         );
     return l;
+}
+
+bool ConstrainedSketch::removeUnusedLayers()
+{
+    auto unusedLayers=unUsedLayerNames();
+    if (unusedLayers.size())
+    {
+        for (auto& l: unusedLayers)
+            removeLayer(l);
+        return true;
+    }
+    else
+        return false;
 }
 
 bool ConstrainedSketch::hasLayer(
@@ -1010,7 +1093,7 @@ void ConstrainedSketch::setLayerProperties(
     const std::string& layerName,
     const ParameterSet &ps)
 {
-    layerProperties_.at(layerName)->ParameterSet::operator=(ps);
+    layerProperties_.at(layerName)->ParameterSet::assignFrom(ps);
 }
 
 
@@ -1024,13 +1107,11 @@ void ConstrainedSketch::parseLayerProperties(
 
     if (s && !s->empty())
     {
-        using namespace rapidxml;
-        xml_document<> doc;
-        doc.parse<0>(const_cast<char*>(&(*s)[0]));
-        xml_node<> *rootnode = doc.first_node("root");
+        insight::XMLDocument doc(
+            s->begin(), s->end() );
 
         auto p=layerProperties(layerName).cloneLayerProperties();
-        p->readFromNode(std::string(), *rootnode, "." );
+        p->readFromNode(std::string(), *doc.rootNode );
         setLayerProperties(layerName, *p);
     }
 }
@@ -1043,6 +1124,41 @@ void ConstrainedSketch::removeLayer(const std::string &layerName)
         throw insight::Exception(
             "cannot remove layer properties for layer %s, it is still in use",
             layerName.c_str() );
+}
+
+bool ConstrainedSketch::LineUnderPoint::operator<(
+    const ConstrainedSketch::LineUnderPoint& o) const
+{
+    return (line<o.line);
+}
+
+ConstrainedSketch::LinesUnderPointSearchResult
+ConstrainedSketch::findLinesUnderPoint(const arma::mat &p3d)
+{
+    LinesUnderPointSearchResult r;
+    for (const auto& ig: *this)
+    {
+        auto g=ig.second;
+        if (auto l = std::dynamic_pointer_cast<insight::cad::Line>(g))
+        {
+
+            if (l->pointIsOnLine(p3d))
+            {
+                LineUnderPoint h;
+                h.line=l;
+
+                if ((arma::norm(l->start()->value()-p3d,2)<insight::SMALL)
+                        ||
+                    (arma::norm(l->end()->value()-p3d,2)<insight::SMALL))
+                    h.lupt=OnEnd;
+                else
+                    h.lupt=OnMiddle;
+
+                r.insert(h);
+            }
+        }
+    }
+    return r;
 }
 
 std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
@@ -1113,9 +1229,25 @@ void ConstrainedSketch::build()
     }
 }
 
+void ConstrainedSketch::replaceDependency(const DependencyReplacement &repl)
+{
+    repl(pl_);
+    for (auto& geom: geometry_)
+    {
+        repl(geom.second);
+    }
+    invalidate();
+}
 
 
-
+void ConstrainedSketch::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "pl_")(pl_);
+    for (auto& geom: geometry_)
+    {
+        DepListInserter(dl, toString(geom.first))(geom.second);
+    }
+}
 
 
 } // namespace cad

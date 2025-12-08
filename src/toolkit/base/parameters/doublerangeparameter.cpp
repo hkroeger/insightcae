@@ -8,7 +8,9 @@ namespace insight
 
 
 defineType(DoubleRangeParameter);
-addToFactoryTable(Parameter, DoubleRangeParameter);
+addParameterFactories(DoubleRangeParameter);
+
+
 
 DoubleRangeParameter::DoubleRangeParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
 : Parameter(description, isHidden, isExpert, isNecessary, order)
@@ -75,15 +77,19 @@ void DoubleRangeParameter::clear()
 }
 
 
-std::string DoubleRangeParameter::latexRepresentation() const
+std::string DoubleRangeParameter::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
-  return toStringList(values_, "%g", "; ");
+  return toStringList(values_, "; ");
 }
 
 std::string DoubleRangeParameter::plainTextRepresentation(int indent) const
 {
-  return std::string(indent, ' ') + toStringList(values_, "%g", "; ") /*oss.str()*/ + '\n';
+  return std::string(indent, ' ') + toStringList(values_, "; ")  + '\n';
 }
+
 
 std::unique_ptr<DoubleParameter>
 DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
@@ -92,41 +98,37 @@ DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
 }
 
 
-rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath) const
+rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(
+    const std::string& name,
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
-    child->append_attribute(doc.allocate_attribute
-    (
-      "values",
-      doc.allocate_string( /*oss.str()*/toStringList(values_, "%g", " ").c_str() )
-    ));
+    appendAttribute(
+        doc, *child, "values",
+        toStringList(values_, " ") );
+
     return child;
 }
 
-void DoubleRangeParameter::readFromNode
+const rapidxml::xml_node<>*
+DoubleRangeParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_node<>& node,
-    boost::filesystem::path
+    const rapidxml::xml_node<>& node
 )
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = Parameter::readFromNode(name, node);
   if (child)
   {
-    values_.clear();
-    std::istringstream iss(child->first_attribute("values")->value());
-    while (!iss.eof())
-    {
-      double v;
-      iss >> v;
-      if (iss.fail()) break;
-      values_.insert(v);
-    }
-    triggerValueChanged();
+      values_ = toNumberList<std::set<double> >(
+          getMandatoryAttribute(*child, "values"), " ");
+
+      triggerValueChanged();
   }
   else
   {
@@ -134,35 +136,67 @@ void DoubleRangeParameter::readFromNode
           boost::str(
             boost::format(
              "No xml node found with type '%s' and name '%s', default value '%s' is used."
-             ) % type() % name % plainTextRepresentation()
+             ) % type() % name % plainTextRepresentation(0)
            )
         );
   }
+  return child;
 }
 
 
-std::unique_ptr<Parameter> DoubleRangeParameter::clone(bool init) const
+
+DoubleRangeParameter::DoubleRangeParameter(const rapidxml::xml_node<> &node)
+    : Parameter(node)
+{
+    values_ = toNumberList<std::set<double> >(
+        getMandatoryAttribute(node, "values"), " ");
+}
+
+
+std::unique_ptr<hierarchicalData::Element> DoubleRangeParameter::clone() const
 {
   auto p = std::make_unique<DoubleRangeParameter>(
         values_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order());
-    if (init) p->initialize();
     return p;
 }
 
 
 
-void DoubleRangeParameter::copyFrom(const Parameter& p)
-{
-  operator=(dynamic_cast<const DoubleRangeParameter&>(p));
-}
 
-void DoubleRangeParameter::operator=(const DoubleRangeParameter& op)
+void DoubleRangeParameter::assignFrom(const Element& rhs)
 {
+  auto &op =dynamic_cast<const DoubleRangeParameter&>(rhs);
+
   values_ = op.values_;
 
-  Parameter::copyFrom(op);
+  Parameter::assignFrom(op);
+}
+
+
+bool DoubleRangeParameter::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const DoubleRangeParameter*>(&op))
+    {
+        if (values_.size()!=oa->values_.size())
+            return false;
+
+        auto i=values_.begin();
+        auto j=oa->values_.begin();
+
+        while (i!=values_.end())
+        {
+            if (*i!=*j)
+                return false;
+
+            ++i; ++j;
+        }
+
+        return true;
+    }
+    else
+        return false;
 }
 
 

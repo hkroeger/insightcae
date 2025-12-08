@@ -19,12 +19,13 @@
 
 Q_DECLARE_METATYPE_TEMPLATE_1ARG(std::observer_ptr);
 // Q_DECLARE_METATYPE(const insight::ParameterSet&);
-Q_DECLARE_METATYPE(insight::ResultSetPtr);
+//Q_DECLARE_METATYPE(insight::ResultSetPtr);
 Q_DECLARE_METATYPE(insight::Exception);
 Q_DECLARE_METATYPE(insight::ProgressState);
 Q_DECLARE_METATYPE(insight::ProgressStatePtr);
 Q_DECLARE_METATYPE(insight::TaskSpoolerInterface::JobList);
 Q_DECLARE_METATYPE(arma::mat);
+Q_DECLARE_METATYPE(std::exception_ptr);
 Q_DECLARE_METATYPE(insight::supplementedInputDataBasePtr);
 
 class TOOLKIT_GUI_EXPORT ISMetaTypeRegistrator

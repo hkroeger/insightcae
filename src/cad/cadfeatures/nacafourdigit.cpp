@@ -18,6 +18,8 @@
  */
 
 #include "nacafourdigit.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/translations.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -50,22 +52,28 @@ size_t NacaFourDigit::calcHash() const
   h+=this->type();
   if (tc_)
   {
-      h+=tc_->value();
-      h+=m_->value();
-      h+=p_->value();
+      h+=*tc_;
+      h+=*m_;
+      h+=*p_;
   }
   else
   {
     h+=code_;
   }
-  h+=p0_->value();
-  h+=ez_->value();
-  h+=ex_->value();
-  h+=tofs_->value();
-  h+=clipte_->value();
+  h+=*p0_;
+  h+=*ez_;
+  h+=*ex_;
+  h+=*tofs_;
+  h+=*clipte_;
   return h.getHash();
 }
 
+
+
+NacaFourDigit::NacaFourDigit(const NacaFourDigit&o, TreeCloneMap& tcm)
+: code_(o.code_), CL(tc_), CL(m_), CL(p_),
+  CL(p0_), CL(ez_), CL(ex_), CL(tofs_), CL(clipte_)
+{}
 
 
 
@@ -76,6 +84,8 @@ NacaFourDigit::NacaFourDigit
 )
 : code_(code), p0_(p0), ez_(ez), ex_(ex), tofs_(tofs), clipte_(clipte)
 {}
+
+
 
 NacaFourDigit::NacaFourDigit
 (
@@ -262,11 +272,14 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
   (
     "Naca4",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-    ( '('  >> ruleset.r_string >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
-           >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) ) 
-           >> ')' ) 
+    '('  >
+    (  ruleset.r_string > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression
+                   > ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+                   > ( (',' >> qi::lit("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+           > ')' )
     [ qi::_val = phx::bind(
                        &NacaFourDigit::create<const std::string&,
                                               VectorPtr, VectorPtr, VectorPtr,
@@ -274,11 +287,15 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
       
     |
-      ( '('  >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ','
-             >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
-             >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-             >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-             >> ')' )
+      (  ruleset.r_scalarExpression > ','
+               > ruleset.r_scalarExpression > ','
+               > ruleset.r_scalarExpression > ','
+             > ruleset.r_vectorExpression > ','
+               > ruleset.r_vectorExpression > ','
+               > ruleset.r_vectorExpression
+             > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' > qi::lit("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ')' )
       [ qi::_val = phx::bind(
                        &NacaFourDigit::create<ScalarPtr, ScalarPtr, ScalarPtr,
                                               VectorPtr, VectorPtr, VectorPtr,

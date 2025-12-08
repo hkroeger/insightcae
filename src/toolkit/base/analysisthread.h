@@ -42,6 +42,7 @@ namespace insight {
  * to the main thread.
  */
 class AnalysisThread
+    : public std::unique_ptr<insight::ResultSet>
 {
 
   boost::thread thread_;
@@ -51,11 +52,6 @@ class AnalysisThread
   std::atomic<const Analysis*> analysis_;
 
 protected:
-  /**
-   * @brief results_
-   * stores the result set
-   */
-  ResultSetPtr results_;
 
   /**
    * @brief exception
@@ -103,7 +99,7 @@ public:
    * join thread and rethrow any exception, if there was no handler set
    * @return
    */
-  ResultSetPtr join();
+  void join();
 
   template <class Rep, class Period>
   bool try_join_for(const boost::chrono::duration<Rep, Period>& rel_time)

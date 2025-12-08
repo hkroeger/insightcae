@@ -36,6 +36,7 @@ class Line
     VectorPtr p0_, p1_;
     bool second_is_dir_;
 
+    Line(const Line&o, TreeCloneMap& tcm);
     Line (
         VectorPtr p0, VectorPtr p1,
         bool second_is_dir=false,
@@ -46,8 +47,12 @@ class Line
 
 public:
     declareType ( "Line" );
+#ifndef SWIG
+    DEPENDS((p0_, p1_));
+#endif
 
     CREATE_FUNCTION(Line);
+    CLONEABLE(Line);
 
     VectorPtr start() const override;
     VectorPtr end() const override;
@@ -73,6 +78,8 @@ public:
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
     bool isInside( SelectionRect r) const override;
+    bool pointIsOnLine(const arma::mat& p) const;
+    arma::mat projectOntoLine(const arma::mat& p) const;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const Line& other);

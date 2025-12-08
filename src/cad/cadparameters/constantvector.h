@@ -32,8 +32,14 @@ class ConstantVector
   arma::mat value_;
   
 public:
+  void replaceDependency(const DependencyReplacement& repl) override;
+  void addDependencies(DependencyList& dl) const override;
   ConstantVector(const arma::mat& value);
-  virtual arma::mat value() const;
+
+  size_t calcHash() const override;
+  arma::mat calcValue() const override;
+
+  std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const override;
 };
 
 VectorPtr matconst(const arma::mat& m);

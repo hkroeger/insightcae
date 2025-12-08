@@ -1,3 +1,5 @@
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadgeometryparameter.h"
 
 #include "cadmodel.h"

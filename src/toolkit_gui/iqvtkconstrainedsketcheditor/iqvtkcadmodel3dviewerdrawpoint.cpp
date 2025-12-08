@@ -20,6 +20,8 @@ void IQVTKCADModel3DViewerDrawPoint::start()
     pointSelected.connect(
         [this](IQVTKCADModel3DViewerPlanePointBasedAction::PointProperty pp)
         {
+            DBG_SLOT(pointSelected);
+
             if (!pp.isAnExistingPoint)
             {
                 sketch().insertGeometry(
@@ -45,4 +47,10 @@ bool IQVTKCADModel3DViewerDrawPoint::onMouseClick  (
     else
         return IQVTKCADModel3DViewerPlanePointBasedAction
             ::onMouseClick( btn, nFlags, point );
+}
+
+
+QString IQVTKCADModel3DViewerDrawPoint::description() const
+{
+    return "Draw point";
 }

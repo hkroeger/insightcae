@@ -19,6 +19,7 @@
 
 #include "export.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 namespace insight 
 {
@@ -72,8 +73,8 @@ size_t ExportEMesh::calcHash() const
   ParameterListHash h;
   h+=filename_;
   h+=*eMesh_featureSet_;
-  h+=eMesh_accuracy_->value();
-  h+=eMesh_accuracy_->value();
+  h+=*eMesh_accuracy_;
+  h+=*eMesh_accuracy_;
   return h.getHash();
 }
 
@@ -111,7 +112,7 @@ size_t ExportSTL::calcHash() const
   ParameterListHash h;
   h+=*model_;
   h+=filename_;
-  if (STL_accuracy_) h+=STL_accuracy_->value();
+  if (STL_accuracy_) h+=*STL_accuracy_;
   h+=force_binary_;
   return h.getHash();
 }

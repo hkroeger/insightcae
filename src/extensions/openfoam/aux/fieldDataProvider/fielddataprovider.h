@@ -21,19 +21,7 @@
 #define FOAM_FIELDDATAPROVIDER_H
 
 #include <limits>
-#include "vtkSmartPointer.h"
-#include "vtkUnstructuredGridReader.h"
-#include "vtkPointInterpolator.h"
-#include "vtkPolyData.h"
-#include "vtkPoints.h"
-#include "vtkDoubleArray.h"
-#include "vtkGaussianKernel.h"
-#include "vtkPointData.h"
-#include "vtkCellCenters.h"
-#include "vtkPolyDataReader.h"
-#include "vtkGenericDataObjectReader.h"
-#include "vtkProbeFilter.h"
-#include "vtkDelaunay2D.h"
+
 
 #include "fvCFD.H"
 
@@ -48,7 +36,7 @@
 
 #include "uniof.h"
 
-#include "vtkconversion.h"
+
 
 namespace Foam 
 {
@@ -124,6 +112,8 @@ public:
 };
 
 
+
+
 template<class T, class PointProvider>
 class FixedSizeFieldDataProvider
 {
@@ -136,142 +126,21 @@ public:
     typedef FieldDataProvider<T> input_type;
 
     FixedSizeFieldDataProvider(
-            const FixedSizeFieldDataProvider& o )
-        : fdp_(o.fdp_->clone()),
-          pp_(o.pp_),
-          lastUpdateTime_(o.lastUpdateTime_),
-          value_( o.value_ )
-    {}
+        const FixedSizeFieldDataProvider& o );
 
     FixedSizeFieldDataProvider(
-            const FieldDataProvider<T>& fp,
-            const PointProvider& pp )
-        : fdp_(fp.clone()),
-          pp_(pp),
-          lastUpdateTime_(-GREAT),
-          value_( pp_.size(), pTraits<T>::zero )
-    {}
+        const FieldDataProvider<T>& fp,
+        const PointProvider& pp );
 
     FixedSizeFieldDataProvider(
-            Istream& is,
-            const PointProvider& pp )
-        : fdp_(FieldDataProvider<T>::New(is)),
-          pp_(pp),
-          lastUpdateTime_(-GREAT),
-          value_( pp_.size(), pTraits<T>::zero )
-    {}
+        Istream& is,
+        const PointProvider& pp );
 
-    bool needsUpdate(scalar t) const
-    {
-        return lastUpdateTime_<t;
-    }
+    bool needsUpdate(scalar t) const;
 
-    const Field<T>& operator()(scalar t) const
-    {
-        if ( needsUpdate(t) )
-        {
-            auto * nc = const_cast<FixedSizeFieldDataProvider*>(this);
-            nc->lastUpdateTime_ = t;
-            nc->value_ =
-                    fdp_()( t, this->pp_.faceCentres() );
-        }
-        return value_;
-    }
+    const Field<T>& operator()(scalar t) const;
 
-    const FieldDataProvider<T>& fieldDataProvider() const
-    {
-        return fdp_();
-    }
-};
-
-
-template<class T>
-class uniformField
-: public FieldDataProvider<T>
-{
-  boost::ptr_vector<T> values_;
-  
-  virtual void appendInstant(Istream& is);
-  virtual void writeInstant(int i, Ostream& os) const;
-
-public:
-  //- Runtime type information
-  TypeName("uniform");
-  
-  uniformField(Istream& is);
-  uniformField(const uniformField<T>& o);
-  uniformField(const T& uv);
-
-  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
-  virtual autoPtr<FieldDataProvider<T> > clone() const;
-};
-
-
-
-
-template<class T>
-class nonuniformField
-: public FieldDataProvider<T>
-{
-  boost::ptr_vector<Field<T> > values_;
-  
-  virtual void appendInstant(Istream& is);
-  virtual void writeInstant(int i, Ostream& os) const;
-
-public:
-  //- Runtime type information
-  TypeName("nonuniform");
-  
-  nonuniformField(Istream& is);
-  nonuniformField(const nonuniformField<T>& o);
-  nonuniformField(const Field<T>& uf);
-  
-  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
-  virtual autoPtr<FieldDataProvider<T> > clone() const;
-
-  //- Map (and resize as needed) from self given a mapping object
-  void autoMap
-  (
-      const fvPatchFieldMapper&
-  );
-
-
-  //- Reverse map the given fvPatchField onto this fvPatchField
-  void rmap
-  (
-      const FieldDataProvider<T>&,
-      const labelList&
-  );
-};
-
-
-
-
-
-
-template<class T>
-class linearProfile
-: public FieldDataProvider<T>
-{
-  LinearVectorSpaceBase base_;
-  std::vector<fileName> filenames_;
-  mutable boost::ptr_map<int, insight::Interpolator> values_;
-  
-  virtual void appendInstant(Istream& is);
-  virtual void writeInstant(int i, Ostream& os) const;
-
-public:
-  //- Runtime type information
-  TypeName("linearProfile");
-  
-  linearProfile(Istream& is);
-  linearProfile(const linearProfile<T>& o);
-
-  virtual void read(Istream& is);
-  virtual void writeSup(Ostream& os) const;
-
-  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
-  virtual autoPtr<FieldDataProvider<T> > clone() const;
+    const FieldDataProvider<T>& fieldDataProvider() const;
 };
 
 
@@ -300,120 +169,9 @@ public:
 
 
 
-template<class T>
-class radialProfile
-: public CylCoordProfile<T,RadialCylCoordVectorSpaceBase>
-{
-public:
-  //- Runtime type information
-  TypeName("radialProfile");
-  
-  radialProfile(Istream& is);
-  radialProfile(const radialProfile<T>& o);
-
-  virtual autoPtr<FieldDataProvider<T> > clone() const;
-};
-
-
-
-template<class T>
-class circumferentialProfile
-    : public CylCoordProfile<T,CircumCylCoordVectorSpaceBase>
-{
-public:
-    //- Runtime type information
-    TypeName("circumferentialProfile");
-
-    circumferentialProfile(Istream& is);
-    circumferentialProfile(const circumferentialProfile<T>& o);
-
-    virtual autoPtr<FieldDataProvider<T> > clone() const;
-};
-
-
-
-template<class T>
-class fittedProfile
-: public FieldDataProvider<T>
-{
-  LinearVectorSpaceBase base_;
-  std::vector< std::vector<arma::mat> > coeffs_;
-  
-  virtual void appendInstant(Istream& is);
-  virtual void writeInstant(int i, Ostream& os) const;
-
-public:
-  //- Runtime type information
-  TypeName("fittedProfile");
-  
-  fittedProfile(Istream& is);
-  fittedProfile(const fittedProfile<T>& o);
-
-  virtual void read(Istream& is);
-  virtual void writeSup(Ostream& os) const;
-
-  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
-  virtual autoPtr<FieldDataProvider<T> > clone() const;
-};
-
-
-
-template<class T>
-class vtkField
-: public FieldDataProvider<T>
-{
-public:
-    typedef std::vector<int> ComponentMap;
-
-    static const ComponentMap VTKSymmTensorMap, OpenFOAMSymmTensorMap;
-
-private:
-  std::vector<fileName> vtkFiles_;
-  std::vector<string> fieldNames_;
-  ComponentMap componentMap_;
-  word componentOrderName_;
-
-  void setComponentMap(const word& mapSelection = word());
-
-  mutable std::map<int, vtkSmartPointer<vtkDataObject> > data_;
-  mutable std::map<long int, Field<T> > cache_;
-
-  virtual void appendInstant(Istream& is);
-  virtual void writeInstant(int i, Ostream& os) const;
-
-public:
-  //- Runtime type information
-  TypeName("vtkField");
-
-  vtkField(Istream& is);
-  vtkField(const vtkField<T>& o);
-
-  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
-  virtual autoPtr<FieldDataProvider<T> > clone() const;
-};
-
-template<>
-void vtkField<symmTensor>::setComponentMap(const word& orderType);
 
 }
 
-#define makeFieldDataProvider(Type)                                           \
-typedef FieldDataProvider<Type> Type##FieldDataProvider;                      \
-    defineNamedTemplateTypeNameAndDebug(Type##FieldDataProvider, 0);          \
-                                                                              \
-    defineTemplateRunTimeSelectionTable                                       \
-    (                                                                         \
-        Type##FieldDataProvider,                                              \
-        Istream                                                               \
-    )
-
-
-#define makeFieldDataProviderType(SS, Type)                                   \
-typedef SS<Type> Type##SS;                                                    \
-    defineNamedTemplateTypeNameAndDebug(Type##SS, 0);                         \
-                                                                              \
-    Type##FieldDataProvider::addIstreamConstructorToTable<SS<Type> >          \
-        add##SS##Type##ConstructorToTable_;
 
 
 #ifdef NoRepository

@@ -18,7 +18,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS
-  ${Boost_LIBRARIES}
+ # ${Boost_LIBRARIES}
 )
 
 set(IS_OF_LIBS 

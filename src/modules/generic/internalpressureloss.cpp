@@ -503,7 +503,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
     cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict, PressureOutletBC::Parameters()
               .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
                  FieldData::Parameters()
-                  .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(sp().pAmbient_)))
+                  .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(sp().pAmbient_))), false
                 ))
               ));
 
@@ -597,7 +597,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
     cm.parseBoundaryDict(executionPath(), boundaryDict);
     auto& numerics = cm.getUniqueElement<FVNumerics>();
 
-    ResultSetPtr results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
+    auto results=insight::OpenFOAMAnalysis::evaluateResults(cm, pp);
 
     auto ap = pp.forkNewAction(8, "Evaluation");
 
@@ -610,7 +610,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
     ap.message("Producing convergence history plot...");
     addPlot
     (
-      results, executionPath(), "chartPressureDifference",
+      *results, executionPath(), "chartPressureDifference",
       "Iteration", numerics.isCompressible()?"$p$":"$p/\\rho$",
       {
          PlotCurve(p_vs_t.col(0), p_vs_t.col(1), "pmean_vs_iter", "w l not")
@@ -627,7 +627,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
        -
       sp().pAmbient_;
 
-    ptr_map_insert<ScalarResult>(*results) ("delta_p", delta_p, "Pressure difference", "", "Pa");
+    results->insert<ScalarResult>("delta_p", delta_p, "Pressure difference", "", "Pa");
 
 
     if (const auto* thermsolve =
@@ -643,7 +643,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         ap.message("Producing temperature convergence history plot...");
         addPlot
             (
-                results, executionPath(), "chartTemperature",
+                *results, executionPath(), "chartTemperature",
                 "Iteration", "$T/K$",
                 {
                     PlotCurve(T_vs_t.col(0), T_vs_t.col(1), "Tmean_vs_iter", "w l not")
@@ -656,7 +656,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         ++ap;
 
         double Tfinal=T_vs_t(T_vs_t.n_rows-1,1);
-        ptr_map_insert<ScalarResult>(*results) ("Tfinal", Tfinal, "Temperature in outlet", "", "K");
+        results->insert<ScalarResult>("Tfinal", Tfinal, "Temperature in outlet", "", "K");
     }
 
     ap.message("Rendering images...");
@@ -733,7 +733,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       auto pa = scene.addAlgo<vtkDataSetMapper>(patches, vec3(0.7, 0.7, 0.7));
       pa->GetProperty()->SetOpacity(0.1);
 
-      auto sec_sl = std::make_shared<ResultSection>("Streamlines");
+      auto sec_sl = std::make_unique<ResultSection>("Streamlines");
       for (const auto& lv: views)
       {
         scene.setupActiveCamera(lv.second);
@@ -750,7 +750,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       ++ap;
       }
-      results->insert("streamlines", sec_sl);
+      results->insert("streamlines", std::move(sec_sl));
 
 
 
@@ -762,7 +762,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
           numerics.isCompressible() ? "Pressure\n[Pa]" : "Pressure\n[m^2/s^2]",
           p_fc.lookupTable());
 
-      auto sec_pres = std::make_shared<ResultSection>("Pressure on walls");
+      auto sec_pres = std::make_unique<ResultSection>("Pressure on walls");
       for (const auto& lv: views)
       {
         scene.setupActiveCamera(lv.second);
@@ -779,7 +779,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       ++ap;
       }
-      results->insert("pressure_walls", sec_pres);
+      results->insert("pressure_walls", std::move(sec_pres));
 
 
 
@@ -820,7 +820,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       scene.addColorBar("Velocity\n[m/s]", U_fc.lookupTable());
 
 
-      auto sec_u = std::make_shared<ResultSection>("Velocity in cut planes");
+      auto sec_u = std::make_unique<ResultSection>("Velocity in cut planes");
       for (const auto& lv: views)
       {
       scene.setupActiveCamera(lv.second);
@@ -837,7 +837,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       ++ap;
       }
-      results->insert("velocity_cutplanes", sec_u);
+      results->insert("velocity_cutplanes", std::move(sec_u));
 
 
       scene.clearScene();
@@ -847,7 +847,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       scene.addAlgo<vtkDataSetMapper>(cutplane3, p_fc);
       scene.addColorBar("Pressure\n[m^2/s^2]", p_fc.lookupTable());
 
-      auto sec_pc = std::make_shared<ResultSection>("Pressure in cut planes");
+      auto sec_pc = std::make_unique<ResultSection>("Pressure in cut planes");
       for (const auto& lv: views)
       {
       scene.setupActiveCamera(lv.second);
@@ -864,7 +864,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       ++ap;
       }
-      results->insert("pressure_cutplanes", sec_pc);
+      results->insert("pressure_cutplanes", std::move(sec_pc));
 
 
       if (const auto* thermsolve =
@@ -887,7 +887,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
           scene.addColorBar("Temperature\n[K]", T_fc.lookupTable());
 
 
-          auto sec_T = std::make_shared<ResultSection>("Temperature in cut planes");
+          auto sec_T = std::make_unique<ResultSection>("Temperature in cut planes");
           for (const auto& lv: views)
           {
               scene.setupActiveCamera(lv.second);
@@ -904,7 +904,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
               ++ap;
           }
-          results->insert("temperature_cutplanes", sec_T);
+          results->insert("temperature_cutplanes", std::move(sec_T));
 
           scene.clearScene();
 
@@ -934,7 +934,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
           auto pa = scene.addAlgo<vtkDataSetMapper>(patches, vec3(0.7, 0.7, 0.7));
           pa->GetProperty()->SetOpacity(0.1);
 
-          auto sec_slt = std::make_shared<ResultSection>("Streamlines with Temperature");
+          auto sec_slt = std::make_unique<ResultSection>("Streamlines with Temperature");
           for (const auto& lv: views)
           {
               scene.setupActiveCamera(lv.second);
@@ -951,7 +951,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
               ++ap;
           }
-          results->insert("streamlines_temperature", sec_slt);
+          results->insert("streamlines_temperature", std::move(sec_slt));
 
 
 
@@ -963,7 +963,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
 
 
-          auto sec_To = std::make_shared<ResultSection>("Temperature in outlet");
+          auto sec_To = std::make_unique<ResultSection>("Temperature in outlet");
 
           forEachUnconnectedPart(
               scene, executionPath(), sec_To.get(), outlet,
@@ -983,7 +983,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                       auto img = executionPath() /
                                  ("temperature_outlet_"
                                     +lv.first
-                                    +(i>=0?"_"+lexical_cast<std::string>(i+1):"")
+                                    +(i>=0?"_"+toString(i+1):"")
                                     +".png");
 
                       scene.exportImage(img);
@@ -1035,7 +1035,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                           auto img = executionPath() /
                                      ("streamlines_outlet_"
                                       +lv.first
-                                      +(i>=0?"_"+lexical_cast<std::string>(i+1):"")
+                                      +(i>=0?"_"+toString(i+1):"")
                                       +".png");
 
                           scene.exportImage(img);
@@ -1077,15 +1077,15 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                   integ->GetOutput()->GetCellData()->GetArray("T")->GetTuple1(0)
                   /
                   integ->GetOutput()->GetCellData()->GetArray("Area")->GetTuple1(0);
-              sec->insert("Tmean",
-                          new ScalarResult(Tmean, "mean temperature", "", "K") );
+              sec->insert<ScalarResult>("Tmean",
+                          Tmean, "mean temperature", "", "K");
 
               double flux = integ->GetOutput()->GetCellData()->GetArray("Flux")->GetTuple1(0);
-              sec->insert("flux",
-                          new ScalarResult(flux, "volume flux", "", "m^3/s") );
+              sec->insert<ScalarResult>("flux",
+                          flux, "volume flux", "", "m^3/s");
           });
 
-          results->insert("temperature_outlet", sec_To);
+          results->insert("temperature_outlet", std::move(sec_To));
       }
     }
 
@@ -1114,15 +1114,15 @@ InternalPressureLossCharacteristics::InternalPressureLossCharacteristics(
 
 
 
-void InternalPressureLossCharacteristics::evaluateCombinedResults(ResultSetPtr &results)
+void InternalPressureLossCharacteristics::evaluateCombinedResults(ResultSet &results)
 {
-    Ordering o(0.1);
+    hierarchicalData::Ordering o(0.1);
     std::vector<std::string> headers = { "delta_p" };
 
     std::string key="deltaPTable";
     const TabularResult& tab
         = static_cast<const TabularResult&>(
-            results->insert
+            results.insert
             (
                        key,
                        this->table(

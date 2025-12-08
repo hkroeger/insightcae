@@ -1,4 +1,6 @@
 #include "comment.h"
+#include "base/hierarchicalelement.h"
+#include "base/rapidxml.h"
 
 using namespace std;
 using namespace boost;
@@ -25,44 +27,77 @@ Comment::Comment ( const std::string& value, const std::string& shortDesc )
 }
 
 
-void Comment::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path&  ) const
+std::string Comment::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
-    f << value_ <<endl;
+    std::ostringstream f;
+    f << value_;
+    return f.str();
+}
+
+string Comment::plainTextRepresentation(int indent) const
+{
+    return value_;
 }
 
 
-void Comment::exportDataToFile ( const string& name, const path& outputdirectory ) const
+void Comment::exportDataToFile (
+    const string& name,
+    const boost::filesystem::path& outputdirectory ) const
 {
     boost::filesystem::path fname ( outputdirectory/ ( name+".txt" ) );
     std::ofstream f ( fname.c_str() );
     f<<value_;
 }
 
-void Comment::readFromNode(const string &name, rapidxml::xml_node<> &node)
+const rapidxml::xml_node<>*
+Comment::readFromNode(
+    const string &name,
+    const rapidxml::xml_node<> &node )
 {
-  readBaseAttributesFromNode(name, node);
-  value_=node.first_attribute("value")->value();
+  auto *child=ResultElement::readFromNode(name, node);
+  value_=getMandatoryAttribute(*child, "value");
+  return child;
+}
+
+int Comment::nChildren() const
+{
+    return 0;
+}
+
+bool Comment::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const Comment*>(&op))
+    {
+        if (value_!=oa->value_)
+            return false;
+        return true;
+    }
+    else
+        return false;
 }
 
 
-xml_node< char >* Comment::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
+xml_node< char >* Comment::appendToNode (
+    const string& name,
+    xml_document< char >& doc,
+    xml_node< char >& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "value",
-                                  doc.allocate_string ( value_.c_str() )
-                              ) );
+    appendAttribute(doc, *child, "value", value_);
 
     return child;
 }
 
 
-ResultElementPtr Comment::clone() const
+std::unique_ptr<hierarchicalData::Element> Comment::clone() const
 {
-    ResultElementPtr res ( new Comment ( value_, shortDescription_.simpleLatex() ) );
+    auto res = std::make_unique<Comment> ( value_, shortDescription_.simpleLatex() );
     res->setOrder ( order() );
     return res;
 }

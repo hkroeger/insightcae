@@ -52,16 +52,16 @@ using namespace boost;
 
 void listContents(const ResultElementCollection& el, const std::string indent="")
 {
-  for (const auto& rel: el)
+  for (const auto& rel: static_cast<const ResultElement&>(el))
   {
-    if (const auto* sub = dynamic_cast<const ResultElementCollection*>(rel.second.get()))
+    if (const auto* sub = dynamic_cast<const ResultElementCollection*>(&rel))
     {
-      cout<<indent<<rel.first<<"/"<<endl;
+      cout<<indent<<rel.name()<<"/"<<endl;
       listContents(*sub, indent+"\t");
     }
     else {
-      cout<<indent<<rel.first<<" ("<<rel.second->type()<<")"<<endl;
-      if (const auto* chart = dynamic_cast<const Chart*>(rel.second.get()))
+      cout<<indent<<rel.name()<<" ("<<rel.type()<<")"<<endl;
+      if (const auto* chart = dynamic_cast<const Chart*>(&rel))
       {
           auto* cd=chart->chartData();
           for (const auto& d: cd->plc_)
@@ -154,7 +154,7 @@ void plotCurves(
 
 
 
-void addCurveToPlot(ResultSetPtr results, const std::string& args)
+void addCurveToPlot(ResultSet& results, const std::string& args)
 {
     std::vector<std::string> p;
     boost::split(p, args, boost::is_any_of(":"));
@@ -180,7 +180,7 @@ void addCurveToPlot(ResultSetPtr results, const std::string& args)
         style=p[6];
     }
 
-    auto& chart = results->get<Chart>(path);
+    auto& chart = results.get<Chart>(path);
 
     insight::assertion(
                 boost::filesystem::exists(file),
@@ -206,14 +206,14 @@ void addCurveToPlot(ResultSetPtr results, const std::string& args)
 
 
 double comparePlotCurves(
-        ResultSetPtr results,
+        const ResultSet& results,
         const std::string& chartPath,
         const std::string& curveA,
         const std::string& curveB )
 {
     double Q=0;
 
-    auto& c = results->get<Chart>(chartPath);
+    auto& c = results.get<Chart>(chartPath);
     auto& cA = c.plotCurve(curveA).xy_;
     Interpolator cB(c.plotCurve(curveB).xy_, true);
     for (arma::uword i = 0; i<cA.n_rows; ++i)
@@ -347,12 +347,14 @@ int main(int argc, char *argv[])
         std::vector<string> fns;
         if (vm.count("input-file"))
             fns=vm["input-file"].as<StringList>();
-        std::vector<ResultSetPtr> results;
+        std::vector<std::unique_ptr<ResultSet> > results;
 
-        std::string analysisName;
+        std::unique_ptr<ParameterSet> deflPtr;
         if (vm.count("analysis"))
         {
-          analysisName=vm["analysis"].as<std::string>();
+          deflPtr =
+                Analysis::defaultParameters()(
+                    vm["analysis"].as<std::string>() );
         }
 
 
@@ -365,8 +367,11 @@ int main(int argc, char *argv[])
                               "input file "+inpath.string()+" does not exist!" );
 
           cout<<"Reading results file "<<inpath<<"..."<<flush;
-          auto result=ResultSet::createFromFile(boost::filesystem::path(fn), analysisName);
-          results.push_back( result );
+          auto result=ResultSet::createFromFile(
+              boost::filesystem::path(fn),
+              std::move(deflPtr) );
+
+          results.push_back( std::move(result) );
           cout<<"done."<<endl;
 
           if (vm.count("list"))
@@ -383,7 +388,7 @@ int main(int argc, char *argv[])
               auto acs=vm["add-curve"].as<StringList>();
               for (const auto& ac: acs)
               {
-                  addCurveToPlot(result, ac);
+                  addCurveToPlot(*result, ac);
               }
           }
 
@@ -447,7 +452,7 @@ int main(int argc, char *argv[])
                             idx<results.size(),
                             "index of result set out of range: \""+cargs[0]+"\"" );
 
-                cumulatedDistance += comparePlotCurves(results[idx], cargs[1], cargs[2], cargs[3]);
+                cumulatedDistance += comparePlotCurves(*results[idx], cargs[1], cargs[2], cargs[3]);
             }
 
             std::unique_ptr<std::ostream> osPtr;
@@ -479,8 +484,8 @@ int main(int argc, char *argv[])
             {
                 title=vm["title"].as<std::string>();
             }
-            auto r = std::make_shared<ResultSet>(*ParameterSet::create(), title, "");
-            Ordering o;
+            auto r = std::make_shared<ResultSet>(nullptr, title, "");
+            hierarchicalData::Ordering o;
 
             auto i=cargs.begin();
             i+=1;
@@ -500,7 +505,10 @@ int main(int argc, char *argv[])
                 auto path = ccargs[1];
 
                 auto& rr = results[idx]->get<ResultElement>(path);
-                r->insert( ccargs[2], rr.clone() ).setOrder(o.next());
+                r->insert(
+                     ccargs[2],
+                     rr.cloneAs<ResultElement>()
+                     ).setOrder(o.next());
             }
 
             r->saveAs(cargs[0]);
@@ -755,7 +763,7 @@ int main(int argc, char *argv[])
               {
                 auto& cr=results[i];
                 auto w=new ResultViewWindow();
-                w->loadResults(cr);
+                w->loadResults(std::move(cr));
                 w->setWindowTitle(w->windowTitle()+" - "+QString::fromStdString(fns[i]));
                 w->show();
               }
@@ -776,9 +784,9 @@ int main(int argc, char *argv[])
 
 
 
-    catch (const std::exception& e)
+    catch (...)
     {
-        insight::printException(e);
+        insight::printCurrentException();
         return -1;
     }
 

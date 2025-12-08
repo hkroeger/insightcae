@@ -1,5 +1,6 @@
 #include "tongue.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -24,12 +25,12 @@ size_t Tongue::calcHash() const
 {
   ParameterListHash h;
   h+=*spine_;
-  h+=direction_->value();
-  h+=insidePt_->value();
-  h+=t_->value();
-  h+=w_->value();
-  h+=ovl_->value();
-  h+=delta_->value();
+  h+=*direction_;
+  h+=*insidePt_;
+  h+=*t_;
+  h+=*w_;
+  h+=*ovl_;
+  h+=*delta_;
   return h.getHash();
 }
 
@@ -100,6 +101,14 @@ void Tongue::build()
   setShape(result);
 }
 
+
+Tongue::Tongue(const Tongue&o, TreeCloneMap& tcm)
+: CL(spine_), CL(direction_), CL(insidePt_),
+  CL(t_), CL(w_), CL(ovl_), CL(delta_)
+{}
+
+
+
 Tongue::Tongue(
     FeaturePtr spine,
     VectorPtr direction,
@@ -126,14 +135,14 @@ void Tongue::insertrule(parser::ISCADParser& ruleset)
       std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                   ( '('
-                    >> ruleset.r_solidmodel_expression >> ',' // 1
-                    >> ruleset.r_vectorExpression >> ',' // 2
-                    >> ruleset.r_vectorExpression >> ',' // 3
-                    >> ruleset.r_scalarExpression >> ',' // 4
-                    >> ruleset.r_scalarExpression >> ',' // 5
-                    >> ruleset.r_scalarExpression >> ',' // 6
-                    >> ruleset.r_scalarExpression // 7
-                    >> ')' )
+                    > ruleset.r_solidmodel_expression > ',' // 1
+                    > ruleset.r_vectorExpression > ',' // 2
+                    > ruleset.r_vectorExpression > ',' // 3
+                    > ruleset.r_scalarExpression > ',' // 4
+                    > ruleset.r_scalarExpression > ',' // 5
+                    > ruleset.r_scalarExpression > ',' // 6
+                    > ruleset.r_scalarExpression // 7
+                    > ')' )
                   [ qi::_val = phx::bind(
                            &Tongue::create<FeaturePtr, VectorPtr, VectorPtr,
                                        ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,

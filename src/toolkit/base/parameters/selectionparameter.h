@@ -35,6 +35,8 @@ class SelectionParameterInterface
 public:
     typedef std::string key_type;
 
+    virtual ~SelectionParameterInterface();
+
     virtual std::vector<std::string> selectionKeys() const =0;
     virtual void setSelection(const key_type& nk) =0;
     virtual const key_type& selection() const =0;
@@ -61,10 +63,10 @@ protected:
 public:
     declareType ( "selection" );
 
+    SelectionParameter(const rapidxml::xml_node<> & node);
     SelectionParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     SelectionParameter ( const int& value, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    ~SelectionParameter() override;
 
     bool isDifferent(const Parameter& p) const override;
 
@@ -85,18 +87,27 @@ public:
     //     return  std::find ( items_.begin(), items_.end(), key ) - items_.begin();
     // }
 
-    std::string latexRepresentation() const override;
-    std::string plainTextRepresentation(int indent=0) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    std::string plainTextRepresentation(
+        int indent) const override;
 
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath ) override;
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
 
-    std::unique_ptr<Parameter> clone(bool initialize) const override;
-    void copyFrom(const Parameter& p) override;
-    void operator=(const SelectionParameter& p);
+    const rapidxml::xml_node<>* readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node ) override;
+
+    std::unique_ptr<Element> clone() const override;
+    void assignFrom(const Element& p) override;
 
     int nChildren() const override;
 };

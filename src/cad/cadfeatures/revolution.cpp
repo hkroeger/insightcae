@@ -18,10 +18,14 @@
  */
 
 #include "revolution.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadexception.h"
 #include "cadfeatures/importsolidmodel.h"
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -48,16 +52,18 @@ size_t Revolution::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*sk_;
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=angle_->value();
+  h+=*p0_;
+  h+=*axis_;
+  h+=*angle_;
   h+=centered_;
   return h.getHash();
 }
 
 
 
-
+Revolution::Revolution(const Revolution&o, TreeCloneMap& tcm)
+: CL(sk_), CL(p0_), CL(axis_), CL(angle_), centered_(o.centered_)
+{}
 
 
 Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered)
@@ -70,27 +76,54 @@ Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr an
 
 void Revolution::build()
 {
-    if ( !centered_ ) {
-        BRepPrimAPI_MakeRevol mkr ( *sk_, gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( to_Vec ( axis_->value() ) ) ), angle_->value(), centered_ );
-        providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
-        providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
-        setShape ( mkr.Shape() );
-    } else {
-        gp_Trsf trsf;
-        gp_Vec ax=to_Vec ( axis_->value() );
-        ax.Normalize();
-        trsf.SetRotation ( gp_Ax1 ( to_Pnt ( p0_->value() ), ax ), -0.5*angle_->value() );
-        BRepPrimAPI_MakeRevol mkr
-        (
-            BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
-            gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
-        );
-        providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
-        providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
-        setShape ( mkr.Shape() );
-    }
+    ExecTimer t("Revolution::build() ["+featureSymbolName()+"]");
 
-    copyDatums ( *sk_ );
+    if (!cache.contains(hash()))
+    {
+
+        if ( !centered_ ) {
+            try {
+                BRepPrimAPI_MakeRevol mkr (
+                    *sk_,
+                    gp_Ax1 (
+                        to_Pnt ( p0_->value() ),
+                        gp_Dir ( to_Vec ( axis_->value() ) ) ),
+                    angle_->value(),
+                    centered_
+                    );
+                providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
+                providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
+                setShape ( mkr.Shape() );
+            }
+            catch (...)
+            {
+                throw insight::CADException({
+                                                {"base", sk_}
+                                            }, "could not revolve shape"
+                                            );
+            }
+        } else {
+            gp_Trsf trsf;
+            gp_Vec ax=to_Vec ( axis_->value() );
+            ax.Normalize();
+            trsf.SetRotation ( gp_Ax1 ( to_Pnt ( p0_->value() ), ax ), -0.5*angle_->value() );
+            BRepPrimAPI_MakeRevol mkr
+                (
+                    BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
+                    gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
+                    );
+            providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
+            providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
+            setShape ( mkr.Shape() );
+        }
+
+        copyDatums ( *sk_ );
+        cache.insert(shared_from_this());
+    }
+    else
+    {
+        this->operator=(*cache.markAsUsed<Revolution>(hash()));
+    }
 }
 
 
@@ -103,18 +136,18 @@ void Revolution::insertrule ( parser::ISCADParser& ruleset )
         "Revolution",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-                    ( '(' 
-                        >> ruleset.r_solidmodel_expression >> ',' 
-                        >> ruleset.r_vectorExpression >> ','
-                        >> ruleset.r_vectorExpression >> ',' 
-                        >> ruleset.r_scalarExpression
-                        >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
-                        >> ')' )
-                    [ qi::_val = phx::bind (
-                         &Revolution::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool>,
-                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+        ( '('
+            > ruleset.r_solidmodel_expression > ','
+            > ruleset.r_vectorExpression > ','
+            > ruleset.r_vectorExpression > ','
+            > ruleset.r_scalarExpression
+            > ( ( ',' > qi::lit ( "centered" ) > qi::attr ( true ) ) | qi::attr ( false ) )
+            > ')' )
+        [ qi::_val = phx::bind (
+             &Revolution::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool>,
+             qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
-                )
+        )
     );
 }
 

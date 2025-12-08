@@ -18,6 +18,8 @@
  */
 
 #include "regpoly.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -51,15 +53,20 @@ size_t RegPoly::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=n_->value();
-  h+=ne_->value();
-  h+=a_->value();
-  h+=ez_->value();
+  h+=*p0_;
+  h+=*n_;
+  h+=*ne_;
+  h+=*a_;
+  h+=*ez_;
   return h.getHash();
 }
 
 
+
+
+RegPoly::RegPoly(const RegPoly&o, TreeCloneMap& tcm)
+: CL(p0_), CL(n_), CL(ne_), CL(a_), CL(ez_)
+{}
 
 
 
@@ -106,11 +113,14 @@ void RegPoly::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "RegPoly",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression 
-			      >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression 
-			      >> ( (',' >> ruleset.r_vectorExpression)|qi::attr(matconst(arma::mat())) ) >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression
+             > ( (',' > ruleset.r_vectorExpression)|qi::attr(matconst(arma::mat())) )
+             > ')' )
     [ qi::_val = phx::bind(
                          &RegPoly::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, VectorPtr>,
                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

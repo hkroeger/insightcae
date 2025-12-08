@@ -19,6 +19,8 @@
 
 #include "circularpattern.h"
 #include "transform.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -43,21 +45,50 @@ addToStaticFunctionTable(Feature, CircularPattern, insertrule);
 addToStaticFunctionTable(Feature, CircularPattern, ruleDocumentation);
 
 
+void CircularPattern::ExplicitTransformation::replaceDependency(
+    const DependencyReplacement &repl )
+{
+    repl(p0_);
+    repl(axis_);
+    repl(n_);
+}
+
+void CircularPattern::ExplicitTransformation::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "p0_")(p0_);
+    DepListInserter(dl, "axis_")(axis_);
+    DepListInserter(dl, "n_")(n_);
+}
+
+std::shared_ptr<DependencySource>
+CircularPattern::ExplicitTransformation::shallowClone(TreeCloneMap& tcm) const
+{
+    auto a=std::make_shared<CircularPattern::ExplicitTransformation>();
+    a->p0_=tcm.clone(p0_);
+    a->axis_=tcm.clone(axis_);
+    a->n_=tcm.clone(n_);
+    a->center_=center_;
+    return a;
+}
+
+
 size_t CircularPattern::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
   h+=*m1_;
-  if (otherpat_)
+  if (auto* otherpat =
+      boost::get<FeaturePtr>(&transformation_))
+  {
+      h+=**otherpat;
+  }
+  else if (auto* extrsf =
+             boost::get<ExplicitTransformation>(&transformation_))
     {
-      h+=*otherpat_;
-    }
-  else
-    {
-      h+=p0_->value();
-      h+=axis_->value();
-      h+=n_->value();
-      h+=center_;
+      h+=*extrsf->p0_;
+      h+=*extrsf->axis_;
+      h+=*extrsf->n_;
+      h+=extrsf->center_;
       h+=filterrule_;
     }
   return h.getHash();
@@ -65,22 +96,40 @@ size_t CircularPattern::calcHash() const
 
 
 
+CircularPattern::CircularPattern(const CircularPattern&o, TreeCloneMap& tcm)
+    : Compound(o, tcm),
+    CL(m1_), filterrule_(o.filterrule_)
+{
+    if (auto * fp=boost::get<FeaturePtr>(&o.transformation_))
+    {
+        transformation_=tcm.clone(*fp);
+    }
+    else if (auto *et=boost::get<ExplicitTransformation>(&o.transformation_))
+    {
+        transformation_=
+            dynamic_cast<ExplicitTransformation&>(
+            *et->shallowClone(tcm));
+    }
+}
+
   
 CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center, const std::string& filterrule)
 : m1_(m1),
-  p0_(p0),
-  axis_(axis),
-  n_(n),
-  center_(center),
   filterrule_(filterrule)
 {
+    ExplicitTransformation et;
+    et.p0_=p0;
+    et.axis_=axis;
+    et.n_=n;
+    et.center_=center;
+    transformation_=et;
 }
 
 
 
 
 CircularPattern::CircularPattern(FeaturePtr m1, FeaturePtr otherpat)
-: m1_(m1), otherpat_(otherpat)
+: m1_(m1), transformation_(otherpat)
 {
 }
 
@@ -95,22 +144,22 @@ void CircularPattern::build()
     arma::mat p0, axis;
     double delta_phi, phi0;
     
-    if (otherpat_)
+    if (auto *otherpat=boost::get<FeaturePtr>(&transformation_))
     {
-        n=otherpat_->getDatumScalar("n");
-        p0=otherpat_->getDatumPoint("p0");
-        delta_phi=otherpat_->getDatumScalar("delta_phi");
-        axis=otherpat_->getDatumVector("axis");
-        phi0=otherpat_->getDatumScalar("phi0");
+        n=(*otherpat)->getDatumScalar("n");
+        p0=(*otherpat)->getDatumPoint("p0");
+        delta_phi=(*otherpat)->getDatumScalar("delta_phi");
+        axis=(*otherpat)->getDatumVector("axis");
+        phi0=(*otherpat)->getDatumScalar("phi0");
     }
-    else
+    else if (auto* et=boost::get<ExplicitTransformation>(&transformation_))
     {
-        n = n_->value();
-        p0=p0_->value();
-        delta_phi=norm(axis_->value(), 2);
-        axis=axis_->value()/delta_phi;
+        n = et->n_->value();
+        p0=et->p0_->value();
+        delta_phi=norm(et->axis_->value(), 2);
+        axis=et->axis_->value()/delta_phi;
         phi0=0.0;
-        if (center_) phi0=-0.5*delta_phi*double(n-1);
+        if (et->center_) phi0=-0.5*delta_phi*double(n-1);
     }
     
     gp_Ax1 ax(to_Pnt(p0), to_Vec(axis));
@@ -182,29 +231,30 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
   (
-    "CircularPattern",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "CircularPattern",
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-      (
       '(' 
-        >> ruleset.r_solidmodel_expression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_scalarExpression 
-        >> ( ( ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
-        >> ( ( ',' >> qi::lit("not") >> ruleset.r_string ) | qi::attr(std::string()) ) 
-        >> ')' 
+        > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ]
+        > ',' >
+      ( (
+          ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression
+                         > ( ( ',' >> qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+                         > ( ( ',' >> qi::lit("not") > ruleset.r_string ) | qi::attr(std::string()) )
+        > ')'
       ) [ qi::_val = phx::bind(
                           &CircularPattern::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool, const std::string&>,
-                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
+                          qi::_val, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       |
       (
-      '(' >> 
-          ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression 
-        >> ')' 
+        ruleset.r_solidmodel_expression
+        > ')'
       ) [ qi::_val = phx::bind(
                           &CircularPattern::create<FeaturePtr, FeaturePtr>,
-                          qi::_1, qi::_2) ]
+                          qi::_val, qi::_1) ]
+      )
     ))
   );
 }

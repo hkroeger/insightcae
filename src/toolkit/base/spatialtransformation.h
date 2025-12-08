@@ -87,7 +87,10 @@ public:
      * angles in degrees!
      * @param scale
      */
-    SpatialTransformation(const arma::mat& translate, const arma::mat& rollPitchYaw=vec3(0,0,0), double scale=1.);
+    SpatialTransformation(
+        const arma::mat& translate,
+        const arma::mat& rollPitchYaw=vec3(0,0,0),
+        double scale=1. );
 
     /**
      * @brief SpatialTransformation
@@ -101,7 +104,7 @@ public:
         const arma::mat& ex,
         const arma::mat& ey,
         const arma::mat& ez,
-        const arma::mat& O = vec3Zero()
+        const arma::mat& O
         );
 
     /**
@@ -236,6 +239,7 @@ public:
             const boost::filesystem::path& geofile) const;
 
 
+    bool operator==(const SpatialTransformation& o) const;
     bool operator!=(const SpatialTransformation& o) const;
 
     void invert();
@@ -281,17 +285,35 @@ struct CoordinateSystem
 struct View : public CoordinateSystem
 {
     double cameraDistance;
+    boost::optional<double> parallelScale;
     std::string title;
 
+    /**
+     * @brief View
+     * @param ctr
+     * @param cameraOffset
+     * @param up
+     * @param title
+     * @param parallelScale
+     * the half of the height of the viewport in world-coordinate distances
+     */
     View(
         const arma::mat& ctr,
         const arma::mat& cameraOffset,
         const arma::mat& up,
-        const std::string& title );
+        const std::string& title,
+        boost::optional<double> parallelScale =
+            boost::optional<double>() );
+
+    View(
+        const boost::filesystem::path& pvccFile );
 
     inline arma::mat cameraLocation() const { return origin + cameraDistance*ex; }
     inline arma::mat focalPoint() const { return origin; }
     inline arma::mat upwardDirection() const { return ez; }
+
+    void savePVCC(const boost::filesystem::path& file) const;
+    void savePVCC(std::ostream& os) const;
 };
 
 

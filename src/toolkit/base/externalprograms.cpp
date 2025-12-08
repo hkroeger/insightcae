@@ -2,29 +2,75 @@
 
 #include "base/tools.h"
 
+#include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
 #include <boost/range/adaptor/reversed.hpp>
 
 namespace insight {
 
-std::vector<std::string> requiredPrograms = {
-    "paraview",
-    "pdflatex",
-    "gnuplot",
-    "iscad",
+std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints = {
+    { "paraview",
+     {
 #ifdef WIN32
-    "plink"
+         "c:\\Program Files\\ParaView.*\\bin\\paraview.exe"
+#endif
+     }
+    },
+    { "pdflatex",
+     {}
+    },
+    { "gnuplot",
+     {
+#ifdef WIN32
+        "c:\\Program Files\\gnuplot.*\\bin\\gnuplot.exe"
+#endif
+     }
+    },
+    { "iscad",
+     {
+#ifdef WIN32
+        "c:\\Program Files (x86)\\silentdynamics.*\\.*\\bin\\iscad.exe",
+         ".\\iscad.exe"
+#endif
+     }
+    },
+#ifdef WIN32
+    { "plink",
+     {}
+    },
 #else
-    "ssh"
+    { "ssh",
+     {}
+    }
 #endif
 };
 
 ExternalPrograms::ExternalPrograms()
 {
-    for (const auto& exe: requiredPrograms)
+    std::cout << "checking required exe files"<<std::endl;
+
+    for (const auto& exe: requiredPrograms_hints)
     {
-        auto p = boost::process::search_path(exe);
-        emplace(exe, p);
+        auto p = boost::process::search_path(exe.first);
+        std::cout << "for required exe "<<exe.first<<" found in search path: "<<p<<std::endl;
+        if (p.empty())
+        {
+            for (auto&h: exe.second) // go through hints
+            {
+                std::cout << "trying hint "<<h<<std::endl;
+                auto matches=wildcardSearch(h);
+                for (auto& m: matches)
+                {
+                    std::cout << "found "<<m<<std::endl;
+                }
+                if (matches.size())
+                {
+                    p=*matches.begin();
+                    break;
+                }
+            }
+        }
+        emplace(exe.first, p);
     }
 
     auto paths = SharedPathList::global();
@@ -37,26 +83,14 @@ ExternalPrograms::ExternalPrograms()
             if ( exists(file) )
             {
                 insight::dbg()<<"reading external programs from "<<file<<std::endl;
-                // read xml
-                std::string content;
-                readFileIntoString(file, content);
 
-                using namespace rapidxml;
-                xml_document<> doc;
-
-                try {
-                    doc.parse<0>(&content[0]);
-                }
-                catch (...)
-                {
-                    throw insight::Exception("Failed to parse XML from file "+file.string());
-                }
+                XMLDocument doc(file);
 
                 auto *rootnode = doc.first_node("root");
                 if (!rootnode)
                     throw insight::Exception("No valid \"remote\" node found in XML!");
 
-                for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+                for (auto *e = rootnode->first_node(); e; e = e->next_sibling())
                 {
                     if (e->name()==std::string("externalProgram"))
                     {

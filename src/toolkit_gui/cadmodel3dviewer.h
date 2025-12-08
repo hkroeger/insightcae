@@ -1,12 +1,14 @@
 #ifndef CADMODEL3DVIEWER_H
 #define CADMODEL3DVIEWER_H
 
-#include "cadparametersetvisualizer.h"
 #include "toolkit_gui_export.h"
+#include "cadparametersetvisualizer.h"
 #include "cadtypes.h"
+#include "editorwithsavablestate.h"
 
 
 class TOOLKIT_GUI_EXPORT CADModel3DViewer
+: public EditorWithSavableState
 {
 public:
 

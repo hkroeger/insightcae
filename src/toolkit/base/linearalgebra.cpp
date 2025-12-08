@@ -29,6 +29,8 @@
 #include "base/units.h"
 #include "base/cppextensions.h"
 
+#include "base/translations.h"
+
 // #include "minpack.h"
 // #include <dlib/optimization.h>
 
@@ -105,7 +107,7 @@ GSLExceptionHandling::~GSLExceptionHandling()
 
 GSLException::GSLException(const char *reason, const char *file, int line, int gsl_errno)
     : insight::Exception(
-          "Error in GSL subroutine: %s (errno %d)",
+          _("Error in GSL subroutine: %s (errno %d)"),
           reason, gsl_errno
           ),
       gsl_reason_(reason),
@@ -209,6 +211,8 @@ bool isRotationMatrix(const arma::mat &R)
   return arma::norm(R.t()*R - arma::eye(3,3), 2) < 1e-6;
 }
 
+
+
 /**
 * @brief rotationMatrixToRollPitchYaw
 * computes euler angles from a rotation matrix
@@ -216,64 +220,332 @@ bool isRotationMatrix(const arma::mat &R)
 * @return
 * vector of euler angles in degrees
 */
-arma::mat rotationMatrixToRollPitchYaw(const arma::mat& R)
+arma::mat rotationMatrixToEulerAngles(const arma::mat& R, EulerAngleSequence convention)
 {
   std::ostringstream os; os<<R;
-  CurrentExceptionContext ex(3, "computing euler angles from rotation matrix ("+os.str()+")", false);
+  CurrentExceptionContext ex(
+      insight::VerbosityLevel::Loops,
+      "computing euler angles from rotation matrix (%s)", os.str().c_str() );
 
   insight::assertion(
               isRotationMatrix(R),
-              str(format("the argument is not a rotation matrix, residual=%e")
+              str(format(
+              _("the argument is not a rotation matrix, residual=%e"))
                   %(arma::norm(R.t()*R - arma::eye(3,3), 2)))
               );
 
-  double sy=sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0) );
-  bool singular = sy < 1e-10;
+  // taken from https://mattools.github.io/matGeom/api/matGeom/geom3d/rotation3dToEulerAngles.html
 
-  double x, y, z;
+  double phi, theta, psi;
 
-  if (!singular)
+  const auto eps=SMALL;
+  double cy=0;
+
+#define RCOMP(i,j) R(i-1,j-1)
+
+  switch (convention)
   {
-    x = atan2(R(2,1), R(2,2));
-    y = atan2(-R(2,0), sy);
-    z = atan2(R(1,0), R(0,0));
-  }
-  else
-  {
-    x = atan2(-R(1,2), R(1,1));
-    y = atan2(-R(2,0), sy);
-    z = 0;
-  }
-  return vec3(x/SI::deg, y/SI::deg, z/SI::deg);
+  case ZYX:
+      // extract |cos(theta)|
+      cy = hypot(RCOMP(1,1), RCOMP(2,1));
+      // avoid dividing by 0
+      if (cy > 16*eps)
+      {
+          // normal case: theta <> 0
+          phi   = atan2( RCOMP(2,1), RCOMP(1,1));
+          theta = atan2(-RCOMP(3,1), cy);
+          psi   = atan2( RCOMP(3,2), RCOMP(3,3));
+      }
+      else
+      {
+          phi   = 0;
+          theta = atan2(-RCOMP(3,1), cy);
+          psi   = atan2(-RCOMP(2,3), RCOMP(2,2));
+      }
+      break;
+  case ZXY:
+      cy = hypot(RCOMP(2,2), RCOMP(1,2));
+      if (cy > 16*eps)
+      {
+          phi   = -atan2( RCOMP(1,2), RCOMP(2,2));
+          theta = -atan2(-RCOMP(3,2), cy);
+          psi   = -atan2( RCOMP(3,1), RCOMP(3,3));
+      } else {
+          phi   = 0;
+          theta = -atan2(-RCOMP(3,2), cy);
+          psi   = -atan2(-RCOMP(1,3), RCOMP(1,1));
+      }
+      break;
+  case YXZ:
+      cy = hypot(RCOMP(3,3), RCOMP(1,3));
+      if (cy > 16*eps)
+      {
+          phi   = atan2( RCOMP(1,3), RCOMP(3,3));
+          theta = atan2(-RCOMP(2,3), cy);
+          psi   = atan2( RCOMP(2,1), RCOMP(2,2));
+      }
+      else
+      {
+          phi   = 0;
+          theta = atan2(-RCOMP(2,3), cy);
+          psi   = atan2(-RCOMP(1,2), RCOMP(1,1));
+      }
+      break;
+  case YZX:
+      cy = hypot(RCOMP(1,1), RCOMP(3,1));
+      if (cy > 16*eps)
+      {
+          phi   = -atan2( RCOMP(3,1), RCOMP(1,1));
+          theta = -atan2(-RCOMP(2,1), cy);
+          psi   = -atan2( RCOMP(2,3), RCOMP(2,2));
+      } else {
+          phi   = 0;
+          theta = -atan2(-RCOMP(2,1), cy);
+          psi   = -atan2(-RCOMP(3,2), RCOMP(3,3));
+      }
+      break;
+  case XYZ:
+      cy = hypot(RCOMP(3,3), RCOMP(2,3));
+      if (cy > 16*eps)
+      {
+          phi   = -atan2( RCOMP(2,3), RCOMP(3,3));
+          theta = -atan2(-RCOMP(1,3), cy);
+          psi   = -atan2( RCOMP(1,2), RCOMP(1,1));
+      } else {
+          phi   = 0;
+          theta = -atan2(-RCOMP(1,3), cy);
+          psi   = -atan2(-RCOMP(2,1), RCOMP(2,2));
+      }
+      break;
+  case XZY:
+      cy = hypot(RCOMP(2,2), RCOMP(3,2));
+      if (cy > 16*eps)
+      {
+          phi   = atan2( RCOMP(3,2), RCOMP(2,2));
+          theta = atan2(-RCOMP(1,2), cy);
+          psi   = atan2( RCOMP(1,3), RCOMP(1,1));
+      } else {
+          phi   = 0;
+          theta = atan2(-RCOMP(1,2), cy);
+          psi   = atan2(-RCOMP(3,1), RCOMP(3,3));
+      }
+      break;
+
+  case ZYZ:
+      cy = hypot(RCOMP(3,2), RCOMP(3,1));
+      if (cy > 16*eps)
+      {
+          phi   = -atan2(RCOMP(2,3), -RCOMP(1,3));
+          theta = -atan2(cy, RCOMP(3,3));
+          psi   = -atan2(RCOMP(3,2), RCOMP(3,1));
+      } else {
+          phi   = 0;
+          theta = -atan2(cy, RCOMP(3,3));
+          psi   = -atan2(-RCOMP(2,1), RCOMP(2,2));
+      }
+      break;
+  case ZXZ:
+      cy = hypot(RCOMP(3,2), RCOMP(3,1));
+      if (cy > 16*eps)
+      {
+          phi   = atan2(RCOMP(1,3), -RCOMP(2,3));
+          theta = atan2(cy, RCOMP(3,3));
+          psi   = atan2(RCOMP(3,1), RCOMP(3,2));
+      } else {
+          phi   = 0;
+          theta = atan2(cy, RCOMP(3,3));
+          psi   = atan2(-RCOMP(1,2), RCOMP(1,1));
+      }
+      break;
+  case YZY:
+      cy = hypot(RCOMP(2,3), RCOMP(2,1));
+      if (cy > 16*eps)
+      {
+          phi   = atan2(RCOMP(3,2), -RCOMP(1,2));
+          theta = atan2(cy, RCOMP(2,2));
+          psi   = atan2(RCOMP(2,3), RCOMP(2,1));
+      } else {
+          phi   = 0;
+          theta = atan2(cy, RCOMP(2,2));
+          psi   = atan2(-RCOMP(3,1), RCOMP(3,3));
+      }
+      break;
+  case YXY:
+      cy = hypot(RCOMP(2,3), RCOMP(2,1));
+      if (cy > 16*eps)
+      {
+          phi   = -atan2(RCOMP(1,2), -RCOMP(3,2));
+          theta = -atan2(cy, RCOMP(2,2));
+          psi   = -atan2(RCOMP(2,1), RCOMP(2,3));
+      } else {
+          phi   = 0;
+          theta = -atan2(cy, RCOMP(2,2));
+          psi   = -atan2(-RCOMP(1,3), RCOMP(1,1));
+      }
+      break;
+  case XZX:
+      cy = hypot(RCOMP(1,3), RCOMP(1,2));
+      if (cy > 16*eps)
+      {
+          phi   = -atan2(RCOMP(3,1), -RCOMP(2,1));
+          theta = -atan2(cy, RCOMP(1,1));
+          psi   = -atan2(RCOMP(1,3), RCOMP(1,2));
+      } else {
+          phi   = 0;
+          theta = -atan2(cy, RCOMP(1,1));
+          psi   = -atan2(-RCOMP(3,2), RCOMP(3,3));
+      }
+      break;
+  case XYX:
+      cy = hypot(RCOMP(1,2), RCOMP(1,3));
+      if (cy > 16*eps)
+      {
+          phi   = atan2(RCOMP(2,1), -RCOMP(3,1));
+          theta = atan2(cy, RCOMP(1,1));
+          psi   = atan2(RCOMP(1,2), RCOMP(1,3));
+      } else {
+          phi   = 0;
+          theta = atan2(cy, RCOMP(1,1));
+          psi   = atan2(-RCOMP(2,3), RCOMP(2,2));
+      }
+      break;
+ }
+#undef RCOMP
+  return vec3(phi/SI::deg, theta/SI::deg, psi/SI::deg);
 }
 
 
-arma::mat rollPitchYawToRotationMatrix(const arma::mat& rollPitchYaw)
+
+
+arma::mat eulerAnglesToRotationMatrix(
+    const arma::mat& phi_theta_psi, EulerAngleSequence convention)
 {
-    return
-             rotMatrix(rollPitchYaw(2)*SI::deg, vec3(0,0,1))
-            *rotMatrix(rollPitchYaw(1)*SI::deg, vec3(0,1,0))
-            *rotMatrix(rollPitchYaw(0)*SI::deg, vec3(1,0,0))
-            ;
+    // taken from https://mattools.github.io/matGeom/api/matGeom/geom3d/eulerAnglesToRotation3d.html
+    double k = SI::deg;
+
+    arma::mat rot1, rot2, rot3;
+    double
+        phi=phi_theta_psi(0),
+        theta=phi_theta_psi(1),
+        psi=phi_theta_psi(2);
+
+    auto createRotationOx =
+        std::bind(&rotMatrix, std::placeholders::_1, vec3(1,0,0));
+    auto createRotationOy =
+        std::bind(&rotMatrix, std::placeholders::_1, vec3(0,1,0));
+    auto createRotationOz =
+        std::bind(&rotMatrix, std::placeholders::_1, vec3(0,0,1));
+
+    switch (convention)
+    {
+    case ZYX:
+        rot1 = createRotationOx(psi * k);
+        rot2 = createRotationOy(theta * k);
+        rot3 = createRotationOz(phi * k);
+        break;
+    case ZXY:
+        rot1 = createRotationOy(psi * k);
+        rot2 = createRotationOx(theta * k);
+        rot3 = createRotationOz(phi * k);
+        break;
+    case YXZ:
+        rot1 = createRotationOz(psi * k);
+        rot2 = createRotationOx(theta * k);
+        rot3 = createRotationOy(phi * k);
+        break;
+    case YZX:
+        rot1 = createRotationOx(psi * k);
+        rot2 = createRotationOz(theta * k);
+        rot3 = createRotationOy(phi * k);
+        break;
+    case XYZ:
+        rot1 = createRotationOz(psi * k);
+        rot2 = createRotationOy(theta * k);
+        rot3 = createRotationOx(phi * k);
+        break;
+    case XZY:
+        rot1 = createRotationOy(psi * k);
+        rot2 = createRotationOz(theta * k);
+        rot3 = createRotationOx(phi * k);
+        break;
+    case ZYZ:
+        rot1 = createRotationOz(psi * k);
+        rot2 = createRotationOy(theta * k);
+        rot3 = createRotationOz(phi * k);
+        break;
+    case ZXZ:
+        rot1 = createRotationOz(psi * k);
+        rot2 = createRotationOx(theta * k);
+        rot3 = createRotationOz(phi * k);
+        break;
+    case YZY:
+        rot1 = createRotationOy(psi * k);
+        rot2 = createRotationOz(theta * k);
+        rot3 = createRotationOy(phi * k);
+        break;
+    case YXY:
+        rot1 = createRotationOy(psi * k);
+        rot2 = createRotationOx(theta * k);
+        rot3 = createRotationOy(phi * k);
+        break;
+    case XZX:
+        rot1 = createRotationOx(psi * k);
+        rot2 = createRotationOz(theta * k);
+        rot3 = createRotationOx(phi * k);
+        break;
+    case XYX:
+        rot1 = createRotationOx(psi * k);
+        rot2 = createRotationOy(theta * k);
+        rot3 = createRotationOx(phi * k);
+        break;
+    }
+
+    // concatenate matrices
+    return rot3 * rot2 * rot1;
 }
 
-arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis, const arma::mat& p0 )
+
+
+
+arma::mat rotationMatrixToRollPitchYaw(
+    const arma::mat& R )
+{
+    return rotationMatrixToEulerAngles(R, XYZ);
+}
+
+
+
+
+arma::mat rollPitchYawToRotationMatrix(
+    const arma::mat& rollPitchYaw )
+{
+    return eulerAnglesToRotationMatrix(rollPitchYaw, XYZ);
+}
+
+
+
+
+arma::mat rotated(
+    const arma::mat&p,
+    double theta,
+    const arma::mat& axis,
+    const arma::mat& p0 )
 {
     return p0 + rotMatrix(theta, axis)*(p-p0);
 }
 
-std::string toStr(const arma::mat& v3)
-{
-  std::string s="";
-  for (arma::uword i=0; i<3; i++)
-    s+=" "+lexical_cast<std::string>(v3(i));
-  return s+" ";
-}
+
+
+
+
 
 arma::mat linearRegression(const arma::mat& y, const arma::mat& x)
 {
   return solve(x.t()*x, x.t()*y);
 }
+
+
+
 
 arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder)
 {
@@ -282,6 +554,9 @@ arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxor
     xx.col(i)=pow(x, arma::uword(minorder)+i);
   return linearRegression(y, xx);
 }
+
+
+
 
 double evalPolynomial(double x, const arma::mat& coeffs)
 {
@@ -464,7 +739,7 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
   catch (GSLException& ex)
   {
       gsl_root_fsolver_free(workspace_f);
-      ex.messageRef() +=
+      ex.description()->errorDetails_ +=
               str(format("\ny(x_min)=%g, y(x_max)=%g, y(0.5*(x_min+x_max))=%g")
                   % model(x_min) % model(x_max) % model(0.5*(x_min+x_max)) );
       throw ex;
@@ -852,8 +1127,12 @@ arma::mat nonlinearSolveND(
         gsl_vector *v;
     }
     hybrid_state_t;
-    arma::mat J=insight::mat(static_cast<hybrid_state_t*>(s->state)->J);
-    if(fabs(arma::det(J))<SMALL)
+
+    arma::mat J=insight::mat(
+        static_cast<hybrid_state_t*>(s->state)
+            ->J );
+
+    if(fabs(arma::det(J))<SMALL*SMALL)
     {
         throw insight::JacobiDeterminatException(J);
     }
@@ -908,7 +1187,11 @@ arma::mat nonlinearSolveND(
 }
 
 
-arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
+arma::mat movingAverage(
+    const arma::mat& timeProfs,
+    double fraction,
+    bool first_col_is_time,
+    bool centerwindow)
 {
   std::ostringstream msg;
   msg<<"Computing moving average for "
@@ -921,8 +1204,10 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
     throw insight::Exception("Internal error: moving average without time column is currently unsupported!");
 
   if (timeProfs.n_cols<2)
-    throw insight::Exception("movingAverage: only dataset with "
-      +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
+    throw insight::Exception(
+          "movingAverage: only dataset with %d columns given."
+          " There is no data to average.",
+          timeProfs.n_cols);
 
   const arma::uword n_raw_max=10000;
   const arma::uword n_avg_max=1000;
@@ -1341,6 +1626,12 @@ bool operator!=(const arma::mat &m1, const arma::mat &m2)
   return false;
 }
 
+bool operator==(const arma::mat &m1, const arma::mat &m2)
+{
+    return !(m1!=m2);
+}
+
+
 arma::mat vec3Zero()
 {
     return vec3(0,0,0);
@@ -1401,6 +1692,8 @@ JacobiDeterminatException::JacobiDeterminatException(const arma::mat& J)
     : insight::Exception("jacobi determinant is zero"),
     J_(J)
 {
+    insight::dbg(DetailedBusiness) << "jacobian =" << J << std::endl;
+
     for (size_t j=0; j<J.n_cols; j++)
     {
         if (arma::norm(J.col(j),2)<SMALL)

@@ -494,7 +494,7 @@ void FrameMesh::build()
             BeamLocalCS blcs(vec3(p), vec3(tan));
             xsec = cad::Transform::create(
                         xsec,
-                        cad::OFtransformToOCC(
+                        cad::is_gp_Trsf(
                             blcs.MACRCARAPOUTRE().inverted()
                             )
                         );

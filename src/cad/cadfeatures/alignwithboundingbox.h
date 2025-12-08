@@ -15,19 +15,23 @@ public:
         Max=1, Center=2, Min=3
     };
 
-    struct Alignment {
+    struct Alignment : public DependencySource {
         FeaturePtr other_;
         VectorPtr direction_;
         AlignLocation atOther_, atThis_;
+
+        void replaceDependency(const DependencyReplacement& n) override;
+        void addDependencies(DependencyList& dl) const override;
+        std::shared_ptr<DependencySource>
+            shallowClone(TreeCloneMap& tcm) const override;
     };
 
 private:
-    FeaturePtr m1_;
-
     std::vector<Alignment> alignments_;
 
     gp_Trsf trsf_;
 
+    AlignWithBoundingBox(const AlignWithBoundingBox&o, TreeCloneMap& tcm);
     AlignWithBoundingBox (
         FeaturePtr m1,
         const std::vector<boost::fusion::vector<
@@ -39,7 +43,11 @@ private:
 
 public:
     declareType ( "AlignWithBoundingBox" );
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (alignments_));
+#endif
     CREATE_FUNCTION(AlignWithBoundingBox);
+    CLONEABLE(AlignWithBoundingBox);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

@@ -5,7 +5,7 @@ s=TableLookup(ScrewDIN, Dn, Dn, s);
 P=TableLookup(ScrewDIN, Dn, Dn, P);
 d3=TableLookup(ScrewDIN, Dn, Dn, d3);
 dh=TableLookup(ScrewDIN, Dn, Dn, dh);
-e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
+e1=TableLookup(MetricThread, P, P, e1); # Grundlochueberhang
 hk=0.5*P;
 L?=24;
 

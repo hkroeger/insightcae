@@ -210,11 +210,10 @@ void CaseConfigurationModel::appendConfigurationToNode(
 {
   for (int i=0; i < caseElements_.count(); i++)
   {
-      auto* elem = caseElements_[i];
-      if (elem)
+      if (auto* elem = caseElements_[i])
       {
           xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
-          elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
+          appendAttribute(doc, *elemnode, "type", elem->type_name());
           rootnode->append_node ( elemnode );
 
           if (pack)
@@ -225,22 +224,24 @@ void CaseConfigurationModel::appendConfigurationToNode(
           {
             elem->parameterSetModel()->clearPackedData();
           }
+
+          insight::hierarchicalData::Element::OutputProperties op;
+          op.skipParameterDescription=true;
           elem->parameterSetModel()->getParameterSet()
-              .appendToNode(std::string(), doc, *elemnode, fileParentPath);
+              .appendToNode(std::string(), doc, *elemnode, op);
       }
   }
 }
 
 void CaseConfigurationModel::readFromNode(
-    rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<> *rootnode,
+    const rapidxml::xml_node<> &rootnode,
     insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
     MultivisualizationGenerator* visGen,
     const boost::filesystem::path& fileParentPath )
 {
   clear();
 
-  for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement");
+  for (auto *e = rootnode.first_node("OpenFOAMCaseElement");
        e;  e = e->next_sibling("OpenFOAMCaseElement"))
   {
     auto typeattr = e->first_attribute("type");
@@ -251,8 +252,9 @@ void CaseConfigurationModel::readFromNode(
           type_name, mvl, visGen
           );
 
-    auto np = ice->parameterSetModel()->getParameterSet().cloneParameterSet();
-    np->readFromNode(std::string(), *e, fileParentPath);
+    auto np = ice->parameterSetModel()->getParameterSet().cloneAs<ParameterSet>();
+    np->readFromNode(std::string(), *e);
+    np->resolveRelativePaths(fileParentPath);
     ice->parameterSetModel()->resetParameterValues(*np);
 
     addCaseElement( ice );

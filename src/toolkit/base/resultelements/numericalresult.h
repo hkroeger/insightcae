@@ -2,6 +2,7 @@
 #define INSIGHT_NUMERICALRESULTS_H
 
 
+#include "base/rapidxml.h"
 #include "base/resultelement.h"
 
 
@@ -35,7 +36,9 @@ public:
         return value_;
     }
 
-    void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override
+    void exportDataToFile (
+        const std::string& name,
+        const boost::filesystem::path& outputdirectory ) const override
     {
         boost::filesystem::path fname ( outputdirectory/ ( name+".dat" ) );
         std::ofstream f ( fname.c_str() );
@@ -49,33 +52,31 @@ public:
     (
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
     ) const override
     {
-        using namespace rapidxml;
-        xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+        auto* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
-        child->append_attribute ( doc.allocate_attribute
-                                  (
-                                      "value",
-                                      doc.allocate_string ( boost::lexical_cast<std::string> ( value_ ).c_str() )
-                                  ) );
+        appendAttribute(doc, *child, "value", value_ );
 
         return child;
     }
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
     (
         const std::string& name,
-        rapidxml::xml_node<>& node
+        const rapidxml::xml_node<>& node
     ) override
     {
-       readBaseAttributesFromNode(name, node);
-       using namespace rapidxml;
-//      xml_node<>* child = findNode ( node, name, type() );
-//      if ( child ) {
-          stringToValue ( node.first_attribute ( "value" )->value(), value_ );
-//      }
+        auto *child = ResultElement::readFromNode(name, node);
+        value_ = getMandatoryAttribute<T>(*child, "value");
+        return child;
+    }
+
+    int nChildren() const override
+    {
+        return 0;
     }
 
     inline operator const T& () const
@@ -85,6 +86,16 @@ public:
     inline const T& operator() () const
     {
         return value();
+    }
+
+    bool isEqual(const Element& op) const override
+    {
+        if (auto *oa = dynamic_cast<const NumericalResult*>(&op))
+        {
+            return value_==oa->value_;
+        }
+        else
+            return false;
     }
 
 };

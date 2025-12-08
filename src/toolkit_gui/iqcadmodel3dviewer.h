@@ -12,7 +12,7 @@
 
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
-
+#include "iqparametersetmodel.h"
 
 
 
@@ -40,7 +40,7 @@ private:
 
 protected:
     QAbstractItemModel* model_;
-    QLabel *userMessage_, *currentActionDesc_;
+    QLabel *userMessage_, *currentActionDesc_, *mouseCoordinateDisplay_;
 
 public:
     IQCADModel3DViewer(QWidget* parent=nullptr);
@@ -64,27 +64,11 @@ public:
 
     virtual void setSelectionModel(QItemSelectionModel *selmodel);
 
-    virtual void writeViewerState(
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node) const =0;
-    virtual void restoreViewerState(
-        rapidxml::xml_node<>& node) =0;
-
 public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;
     virtual void undoExposeItem() =0;
 
-    // virtual bool onLeftButtonDown(
-    //     Qt::KeyboardModifiers nFlags,
-    //     const QPoint point, bool afterDoubleClick );
-    // virtual bool onKeyPress(
-    //     Qt::KeyboardModifiers modifiers,
-    //     int key );
-    // virtual bool onLeftButtonUp(
-    //     Qt::KeyboardModifiers nFlags,
-    //     const QPoint point,
-    //     bool lastClickWasDoubleClick );
-
+    virtual void onMeasurePointCoordinates() =0;
     virtual void onMeasureDistance() =0;
     virtual void onMeasureDiameter() =0;
     virtual void onSelectPoints() =0;
@@ -111,6 +95,7 @@ public Q_SLOT:
     virtual void selectBackgroundColor();
 
     virtual void onlyOneShaded(QPersistentModelIndex idx) =0;
+    virtual void showOnlyOne(QPersistentModelIndex idx) =0;
     virtual void resetRepresentations() =0;
 
     virtual void doSketchOnPlane(insight::cad::DatumPtr plane) =0;
@@ -119,11 +104,19 @@ public Q_SLOT:
             std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
             const std::string& presentationDelegateKey,
             SketchCompletionCallback onAccept,
-            SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
+            SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {},
+            boost::optional<std::string> parameterPath = boost::optional<std::string>()
         ) =0;
+
+    virtual
+        std::shared_ptr<IQParameterSetModel::EditingDisabler>
+        editSketchParameter(
+            const std::string& parameterPath,
+            std::shared_ptr<insight::cad::ConstrainedSketch> sketchOvr = nullptr );
 
     void showCurrentActionDescription(const QString& desc);
     void showUserPrompt(const QString& text);
+    void updateMouseCoordinateDisplay(double x, double y);
 
 Q_SIGNALS:
     void appendToNotepad(const QString& text);

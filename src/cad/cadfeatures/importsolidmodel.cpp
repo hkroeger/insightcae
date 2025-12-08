@@ -18,6 +18,8 @@
  */
 
 #include "importsolidmodel.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/exception.h"
@@ -74,6 +76,19 @@ addToStaticFunctionTable(Feature, Import, ruleDocumentation);
 
 
 
+Import::Import(const Import&o, TreeCloneMap& tcm)
+{
+    if (auto* fp=boost::get<FeatureSetPtr>(&o.importSource_))
+    {
+        importSource_=tcm.clone(*fp);
+    }
+    else
+    {
+        importSource_=o.importSource_;
+    }
+}
+
+
 
 Import::Import ( const TopoDS_Shape& shape )
 : importSource_(shape)
@@ -82,7 +97,7 @@ Import::Import ( const TopoDS_Shape& shape )
 
 
 
-Import::Import(const filesystem::path& filepath)
+Import::Import(const boost::filesystem::path& filepath)
 : importSource_(filepath)
 {}
 
@@ -190,7 +205,7 @@ void Import::build()
               BRep_Builder builder;
               builder.MakeCompound( comp );
 
-              for (auto ss: shapes)
+              for (auto& ss: shapes)
               {
                   builder.Add(comp, ss);
               }
@@ -213,6 +228,23 @@ void Import::build()
 
 }
 
+void Import::replaceDependency(const DependencyReplacement &repl)
+{
+    if (auto* dep_fsp = boost::get<FeatureSetPtr>(&importSource_))
+    {
+        repl(*dep_fsp);
+    }
+    invalidate();
+}
+
+void Import::addDependencies(DependencyList& dl) const
+{
+    if (auto* dep_fsp = boost::get<FeatureSetPtr>(&importSource_))
+    {
+        DepListInserter(dl, "importSource_")(*dep_fsp);
+    }
+}
+
 
 
 
@@ -222,12 +254,11 @@ void Import::insertrule(parser::ISCADParser& ruleset)
   (
     "import",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> 
-            ruleset.r_path
-            >> ')' )
+      ( '(' > ruleset.r_path
+            > ')' )
        [ qi::_val = phx::bind(
-                       &Import::create<const filesystem::path&>,
-                       qi::_1) ]
+           &Import::create<const boost::filesystem::path&>,
+           qi::_1) ]
     )
   );
 
@@ -236,7 +267,7 @@ void Import::insertrule(parser::ISCADParser& ruleset)
         "asModel",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-            ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' )
+            ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) > ')' )
                 [ qi::_val = phx::bind(Import::create<FeatureSetPtr>, qi::_1) ]
 
             )

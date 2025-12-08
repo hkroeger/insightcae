@@ -67,6 +67,10 @@ std::string compressibleSinglePhaseThermophysicalProperties::requiredThermoType(
             tt="heRhoThermo";
         }
     }
+    else if (dynamic_cast<const chtMultiRegionSolidNumerics*>(&nce))
+    {
+        tt="heSolidThermo";
+    }
     else if (const auto t = dynamic_cast<const unsteadyCompressibleNumerics*>(&nce) )
     {
         if (OFversion()<170)
@@ -199,13 +203,13 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
 
         //     for (arma::uword i=0; i<jt->coeffs_hi.size(); i++)
         //     {
-        //         mixp_thermo += " "+boost::lexical_cast<std::string>(jt->coeffs_hi(i));
+        //         mixp_thermo += " "+toString(jt->coeffs_hi(i));
         //     }
         //     mixp_thermo+="\n";
 
         //     for (arma::uword i=0; i<jt->coeffs_lo.size(); i++)
         //     {
-        //         mixp_thermo += " "+boost::lexical_cast<std::string>(jt->coeffs_lo(i));
+        //         mixp_thermo += " "+toString(jt->coeffs_lo(i));
         //     }
         //     mixp_thermo+="\n";
         // }
@@ -253,6 +257,13 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
         sd->insertEquationOfStateEntries(mixdict);
 
         thermophysicalProperties["mixture"]=mixdict;
+    }
+
+    if (p().requiresAdditionalThermosLib)
+    {
+        OFDictData::dict& controlDict = dictionaries.lookupDict("system/controlDict");
+        controlDict.getList("libs").insertNoDuplicate(
+            OFDictData::data("\"libadditionalThermos.so\"") );
     }
 
 }

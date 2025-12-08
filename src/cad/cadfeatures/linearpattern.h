@@ -40,6 +40,7 @@ class LinearPattern
      */
     FeaturePtr otherpat_;
 
+    LinearPattern(const LinearPattern&o, TreeCloneMap& tcm);
     LinearPattern ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
     LinearPattern ( FeaturePtr m1, FeaturePtr otherpat );
 
@@ -48,8 +49,11 @@ class LinearPattern
 
 public:
     declareType ( "LinearPattern" );
-
+#ifndef SWIG
+    DEPENDS((m1_,axis_,n_,otherpat_));
+#endif
     CREATE_FUNCTION(LinearPattern);
+    CLONEABLE(LinearPattern);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

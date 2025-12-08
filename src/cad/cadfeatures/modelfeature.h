@@ -34,35 +34,48 @@ namespace cad
 class ModelFeature
     : public Compound
 {
-    boost::variant<std::string, boost::filesystem::path> modelinput_;
+    boost::variant<std::string, boost::filesystem::path,ModelPtr> modelinput_;
     ModelVariableTable vars_;
 
-    ModelPtr model_;
+    void copyModelDatums(ModelPtr model);
 
-    void copyModelDatums();
-
+    ModelFeature ( const ModelFeature& o, TreeCloneMap& tcm );
     ModelFeature ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
     ModelFeature ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
-    ModelFeature ( ModelPtr model );
+    ModelFeature ( ModelPtr model, const ModelVariableTable& vars = ModelVariableTable() );
 
     size_t calcHash() const override;
     void build() override;
 
 public:
     declareType ( "loadmodel" );
-
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(ModelFeature);
+    CLONEABLE(ModelFeature);
 
     void executeEditor();
+
+    ModelVariable* findInputVariable(const std::string& name);
+    FeaturePtr findModelstep(const std::string& name);
 
     std::string modelname() const;
     boost::filesystem::path modelfile() const;
 
-    inline ModelPtr model() const
-    {
-        checkForBuildDuringAccess();
-        return model_;
-    }
+    // inline ModelPtr model() const
+    // {
+    //     checkForBuildDuringAccess();
+    //     return model_;
+    // }
+
+    typedef qi::rule<
+        std::string::iterator,
+        std::shared_ptr<ModelFeature>(ModelVariableTable),
+        insight::cad::parser::skip_grammar
+        > ModelFeatureArgRule;
+
+    static const ModelFeatureArgRule&
+    rule( parser::ISCADParser& ruleset );
 
     // boost::spirit::qi::symbols<char, FeatureSetPtr> featureSymbols(EntityType et) const override;
 
@@ -71,6 +84,7 @@ public:
 
 };
 
+typedef std::shared_ptr<ModelFeature> ModelFeaturePtr;
 
 
 

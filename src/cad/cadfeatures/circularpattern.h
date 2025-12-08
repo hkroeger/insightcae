@@ -34,17 +34,31 @@ class CircularPattern
     /**
      * pointer to another circular pattern feature, from which the parameters shall be copied
      */
-    FeaturePtr otherpat_;
+    // FeaturePtr otherpat_;
 
     /**
      * alternative: parameters
      */
-    VectorPtr p0_;
-    VectorPtr axis_;
-    ScalarPtr n_;
-    bool center_;
+    struct ExplicitTransformation
+    : public DependencySource
+    {
+        VectorPtr p0_;
+        VectorPtr axis_;
+        ScalarPtr n_;
+        bool center_;
+
+        void replaceDependency(const DependencyReplacement& repl) override;
+        void addDependencies(DependencyList& dl) const override;
+
+        std::shared_ptr<DependencySource>
+            shallowClone(TreeCloneMap& tcm) const override;
+    };
+
+    boost::variant<FeaturePtr,ExplicitTransformation> transformation_;
+
     std::string filterrule_;
 
+    CircularPattern(const CircularPattern&o, TreeCloneMap& tcm);
     CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     CircularPattern(FeaturePtr m1, FeaturePtr otherpat);
 
@@ -53,8 +67,11 @@ class CircularPattern
 
 public:
     declareType("CircularPattern");
-
+#ifndef SWIG
+    DEPENDS_W_BASE(Compound, (m1_));
+#endif
     CREATE_FUNCTION(CircularPattern);
+    CLONEABLE(CircularPattern);
 
     static void insertrule(parser::ISCADParser& ruleset);
     static FeatureCmdInfoList ruleDocumentation();

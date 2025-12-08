@@ -19,7 +19,7 @@ public:
   explicit ResultViewWindow(QWidget *parent = nullptr);
   ~ResultViewWindow();
 
-  void loadResults(insight::ResultSetPtr results);
+  void loadResults(std::unique_ptr<insight::ResultSet> results);
 
 private:
   Ui::ResultViewWindow *ui;

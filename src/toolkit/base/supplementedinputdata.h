@@ -168,7 +168,7 @@ public:
           name,
           toValue(q, u),
           description,
-          boost::lexical_cast<std::string>(u)
+          toString(u)
           );
   }
 
@@ -225,6 +225,8 @@ public:
 
 namespace cad {
 class FeatureVisualizationStyle;
+class Feature;
+typedef std::shared_ptr<Feature> FeaturePtr;
 }
 
 typedef std::function<void(

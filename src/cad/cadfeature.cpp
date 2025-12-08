@@ -19,9 +19,11 @@
  */
 
 #include "TopAbs_State.hxx"
+#include "base/exception.h"
 #include "base/linearalgebra.h"
 #include "geotest.h"
 
+#include <fstream>
 #include <memory>
 
 #include "cadfeature.h"
@@ -30,14 +32,14 @@
 #include "cadfeatures/transform.h"
 #include "base/tools.h"
 
-#include <base/exception.h>
+#include "cadexception.h"
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 #include "boost/make_shared.hpp"
 
 #include "dxfwriter.h"
 #include "featurefilter.h"
-#include "feature.h"
+#include "featureset.h"
 #include "gp_Cylinder.hxx"
 
 #include <BRepLib_FindSurface.hxx>
@@ -97,105 +99,6 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
-namespace boost
-{
-
-
-std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
-{
-    // create hash from
-    // 1. total volume
-    // 2. # vertices
-    // 3. # faces
-    // 4. vertex locations
-
-    size_t hash=0;
-
-    GProp_GProps volprops;
-    BRepGProp::VolumeProperties(shape, volprops);
-    boost::hash_combine(hash, boost::hash<double>()(volprops.Mass()));
-
-    insight::cad::SubshapeNumbering subnum(shape);
-    boost::hash_combine(hash, boost::hash<int>()(subnum.nVertexTags()));
-    boost::hash_combine(hash, boost::hash<int>()(subnum.nFaceTags()));
-
-    insight::cad::FeatureSetData vset;
-    subnum.insertAllVertexTags(vset);
-    for (const insight::cad::FeatureID& j: vset)
-    {
-        auto p=BRep_Tool::Pnt(subnum.vertexByTag(j));
-        boost::hash_combine
-            (
-                hash,
-                boost::hash<arma::mat>()(
-                insight::vec3( p.X(), p.Y(), p.Z() ))
-                );
-    }
-
-    return hash;
-}
-
-
-std::size_t hash<gp_Pnt>::operator()(const gp_Pnt& v) const
-{
-  std::hash<double> dh;
-  size_t h=0;
-  boost::hash_combine(h, dh(v.X()));
-  boost::hash_combine(h, dh(v.Y()));
-  boost::hash_combine(h, dh(v.Z()));
-  return h;
-}
-
-
-std::size_t hash<gp_Trsf>::operator()(const gp_Trsf& t) const
-{
-  std::hash<double> dh;
-  size_t h=0;
-  for (int c=1; c<=4; c++)
-  {
-      for (int r=1; r<=3; r++)
-      {
-          boost::hash_combine(h, dh(t.Value(r, c)));
-      }
-  }
-  boost::hash_combine(h, dh(t.ScaleFactor()));
-  return h;
-}
-
-
-std::size_t hash<insight::cad::ASTBase>::operator()(
-    const insight::cad::ASTBase& m ) const
-{
-  return m.hash();
-}
-
-std::size_t hash<insight::cad::Feature>::operator()(
-    const insight::cad::Feature& m ) const
-{
-    return hash<insight::cad::ASTBase>()(m);
-}
-
-std::size_t hash<insight::cad::FeatureSet>::operator()(
-    const insight::cad::FeatureSet& m ) const
-{
-    return m.calcFeatureSetHash();
-}
-
-
-std::size_t hash<insight::cad::DeferredFeatureSet>::operator()(
-    const insight::cad::DeferredFeatureSet& m ) const
-{
-    return hash<insight::cad::ASTBase>()(m);
-}
-
-std::size_t hash<insight::cad::Datum>::operator()(
-    const insight::cad::Datum& m ) const
-{
-    return hash<insight::cad::ASTBase>()(m);
-}
-
-}
-
 
 namespace insight 
 {
@@ -203,21 +106,6 @@ namespace cad
 {
 
 
-ParameterListHash::ParameterListHash()
-: hash_(0)
-{}
-
-size_t ParameterListHash::getHash() const
-{
-  return hash_;
-}
-
-
-
-ParameterListHash::operator size_t ()
-{
-  return hash_;
-}
 
 
 
@@ -588,6 +476,11 @@ std::string Feature::featureSymbolName() const
              featureSymbolName_;
 }
 
+string Feature::label() const
+{
+    return featureSymbolName();
+}
+
 
 void Feature::setVisResolution( ScalarPtr r )
 { 
@@ -651,14 +544,14 @@ void Feature::checkForBuildDuringAccess() const
   {
     if (!valid())
       {
-        dbg(2)<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+        dbg(insight::DetailedBusiness)<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
       }
     ASTBase::checkForBuildDuringAccess();
   }
   catch (const Standard_Failure& e)
   {
     dbg()<<"exception during feature rebuild"<<std::endl;
-    throw insight::cad::CADException(
+    throw insight::CADException(
           shared_from_this(),
           e.GetMessageString() ? e.GetMessageString() : "(no error message)" );
   }
@@ -674,7 +567,9 @@ FeaturePtr Feature::subshape(const std::string& name)
   SubfeatureMap::iterator i = providedSubshapes_.find(name);
   if (i==providedSubshapes_.end())
   {
-    throw insight::Exception("Subfeature "+name+" is not present!");
+    throw SubElementNotFound(
+          shared_from_this(),
+          "Subfeature "+name+" is not present!" );
     return FeaturePtr();
   }
   else
@@ -690,7 +585,9 @@ FeatureSetPtr Feature::providedFeatureSet(const std::string& name)
   FeatureSetPtrMap::iterator i = providedFeatureSets_.find(name);
   if (i==providedFeatureSets_.end())
   {
-    throw insight::Exception("Feature set "+name+" is not present!");
+    throw SubElementNotFound(
+          shared_from_this(),
+          "Feature set "+name+" is not present!");
     return FeatureSetPtr();
   }
   else
@@ -752,11 +649,17 @@ bool Feature::operator==(const Feature& o) const
 
 GeomAbs_CurveType Feature::edgeType(FeatureID i) const
 {
+    try
+    {
   const TopoDS_Edge& e = edge(i);
   double t0, t1;
   Handle_Geom_Curve crv=BRep_Tool::Curve(e, t0, t1);
   GeomAdaptor_Curve adapt(crv);
   return adapt.GetType();
+    }
+    catch (...)
+    { }
+    return GeomAbs_OtherCurve;
 }
 
 GeomAbs_SurfaceType Feature::faceType(FeatureID i) const
@@ -1087,6 +990,18 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
 }
 
 
+
+
+std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBoxSize(double deflection) const
+{
+    auto r=orientedModelBndBox(deflection);
+    r.second = r.second.col(1)-r.second.col(0);
+    return r;
+}
+
+
+
+
 arma::mat Feature::faceNormal(FeatureID i) const
 {
   BRepGProp_Face prop(face(i));
@@ -1175,34 +1090,22 @@ FeatureSetPtr Feature::vertexAt(const arma::mat& p) const
 
 FeatureSetPtr Feature::allVertices() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Vertex);
-    f->setData(allVerticesSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Vertex);
 }
 
 FeatureSetPtr Feature::allEdges() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Edge);
-    f->setData(allEdgesSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Edge);
 }
 
 FeatureSetPtr Feature::allFaces() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Face);
-    f->setData(allFacesSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Face);
 }
 
 FeatureSetPtr Feature::allSolids() const
 {
-    checkForBuildDuringAccess();
-    auto f=std::make_shared<FeatureSet>(shared_from_this(), Solid);
-    f->setData(allSolidsSet());
-    return f;
+    return DeferredFeatureSet::create(shared_from_this(), Solid);
 }
 
 FeatureSetPtr Feature::find(FeatureSetPtr fs) const
@@ -1342,7 +1245,7 @@ FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f
     bool ok=f->checkMatch(i);
     if (ok) res.insert(i);
   }
-  insight::dbg(2)<<"QUERY_FACES RESULT = "<<res<<endl;
+  insight::dbg(insight::DetailedBusiness)<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1378,7 +1281,7 @@ FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr 
   {
     if (f->checkMatch(i)) res.insert(i);
   }
-  insight::dbg(2)<<"QUERY_SOLIDS RESULT = "<<res<<endl;
+  insight::dbg(insight::DetailedBusiness)<<"QUERY_SOLIDS RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1622,6 +1525,14 @@ void Feature::saveAs
 #endif
     stlwriter.Write(shape(), filename.string().c_str());
   }
+  else if ( (ext==".dot") )
+  {
+      std::ofstream f( filename.string() );
+      {
+        DOT dot(f);
+        printDependencies(dot);
+      }
+  }
   else
   {
     throw insight::Exception("Unknown export file format! (Extension "+ext+")");
@@ -1725,7 +1636,7 @@ void Feature::exportEMesh
    <<"("<<endl;
   for (const arma::mat& p: points)
   {
-    f<<OFDictData::to_OF(p)<<endl;
+    f<<OFDictData::vector3(p)<<endl;
   }
   f<<")"<<endl;
 
@@ -1748,7 +1659,7 @@ Feature::operator const TopoDS_Shape& () const
 const TopoDS_Shape& Feature::shape() const
 {
   if (building())
-    throw insight::cad::CADException(shared_from_this(), "Internal error: recursion during build!");
+    throw insight::CADException(shared_from_this(), "Internal error: recursion during build!");
 
   checkForBuildDuringAccess();
 
@@ -2063,12 +1974,44 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<
 
     for (const auto& fs: m1.providedFeatureSets_)
     {
-        providedFeatureSets_[prefix+fs.first]=
-            // same IDs but on this model
-            std::make_shared<FeatureSet>(
-                shared_from_this(),
-                fs.second->shape(),
-                fs.second->data());
+        providedFeatureSets_[prefix+fs.first]=fs.second;
+        // switch (fs.second->shape())
+        // {
+        //     case Vertex:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //         // same IDs but on this model
+        //         makeFeatureSet<Vertex>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     case Edge:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //             // same IDs but on this model
+        //             makeFeatureSet<Edge>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     case Face:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //             // same IDs but on this model
+        //             makeFeatureSet<Face>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     case Solid:
+        //         providedFeatureSets_[prefix+fs.first]=
+        //             // same IDs but on this model
+        //             makeFeatureSet<Solid>(
+        //                 shared_from_this(),
+        //                 "isSame(%0)",
+        //                 { fs.second });
+        //         break;
+        //     default:
+        //         throw insight::UnhandledSelection();
+        // }
     };
 
 }
@@ -2287,7 +2230,7 @@ FeatureID Feature::vertexID(const TopoDS_Shape& v) const
 }
 
 
-void Feature::write(const filesystem::path& file) const
+void Feature::write(const boost::filesystem::path& file) const
 {
   std::ofstream f(file.c_str());
   write(f);
@@ -2334,7 +2277,7 @@ void Feature::write(std::ostream& f) const
   f<<areaWeight()<<endl;
 }
 
-void Feature::read(const filesystem::path& file)
+void Feature::read(const boost::filesystem::path& file)
 {
   cout<<"Reading model of type "<<type()<<" from cache file "<<file<<endl;
   std::ifstream f(file.c_str());
@@ -2742,6 +2685,7 @@ bool SingleVolumeFeature::isSingleVolume() const
 
 
 
+
 }
 
 
@@ -2756,7 +2700,7 @@ std::shared_ptr<PathParameter> make_filepath(
                 );
     ft->saveAs( tf.path() );
     return std::make_shared<PathParameter>(
-          FileContainer(originalFilePath, tf),
+          FileContainer(tf, originalFilePath),
           "temporary file path" );
 }
 

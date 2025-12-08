@@ -59,7 +59,8 @@ boxToCellOperator::boxToCellOperator(const OpenFOAMCase& c, ParameterSetInput ip
 void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
 {
   OFDictData::dict opdict;
-  opdict["box"]=OFDictData::to_OF(p().min) + OFDictData::to_OF(p().max);
+  opdict["box"]=OFDictData::toString(OFDictData::vector3(p().min))
+                  + OFDictData::toString(OFDictData::vector3(p().max));
 
   OFDictData::list fve;
   for (const auto& fvs: p().fieldValues)

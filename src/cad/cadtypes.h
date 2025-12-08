@@ -21,7 +21,11 @@
 #ifndef INSIGHT_CAD_CADTYPES_H
 #define INSIGHT_CAD_CADTYPES_H
 
-#define INSIGHT_CAD_DEBUG 1
+#include "base/cppextensions.h"
+#include "boost/variant/static_visitor.hpp"
+#include "boost/preprocessor.hpp"
+#include <algorithm>
+#include <memory>
 
 #include <set>
 #include <string>
@@ -38,7 +42,12 @@
 #include "boost/variant.hpp"
 #include "boost/fusion/container.hpp"
 #include "base/linearalgebra.h"
+#include <boost/spirit/include/qi.hpp>
 #endif
+
+#include "treeclonemap.h"
+#include "dependencysource.h"
+#include "dependencyreplacement.h"
 
 namespace insight 
 {
@@ -54,10 +63,13 @@ class ASTBase;
 class Feature;
 class Datum;
 class FeatureSet;
+class DeferredFeatureSet;
 class Filter;
 class Model;
 class PostprocAction;
-
+class DependencyReplacement;
+class DependencySource;
+class TreeCloneMap;
 
 
 
@@ -93,10 +105,12 @@ typedef std::map<std::string, FeatureSetPtr> FeatureSetPtrMap;
 typedef std::map<std::string, DatumPtr > DatumPtrMap;
 typedef enum { Point, Direction } VectorVariableType;
 typedef boost::fusion::vector2<VectorPtr,VectorVariableType> VectorPtrAndType;
-typedef boost::variant<FeaturePtr, DatumPtr, VectorPtrAndType, ScalarPtr>  ModelVariable;
-typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
+typedef boost::variant<VectorPtrAndType,ScalarPtr,FeaturePtr,DatumPtr>  ModelVariable;
+typedef boost::fusion::vector2<std::string, ModelVariable> ModelVariableAndName;
+typedef std::vector<ModelVariableAndName> ModelVariableTable;
 
 
+ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariableTable& mvt2);
 
 
 enum EntityType { Vertex, Edge, Face, Solid };
@@ -156,40 +170,115 @@ struct sharedModelLocations
 boost::filesystem::path sharedModelFilePath(const std::string& name);
 
 
+#define MAKE_ADDDEPENDENCY_CALLBACK(r, data, elem)  \
+DependencySource::DepListInserter(dl, BOOST_PP_STRINGIZE(elem))(elem);
 
-
-class OCCException
-        : public insight::Exception
-{
-    typedef std::map<std::string, TopoDS_Shape> InvolvedShapesList;
-    InvolvedShapesList involvedShapes_;
-
-public:
-    OCCException(const std::string message);
-
-    OCCException& addInvolvedShape(const std::string& label, TopoDS_Shape shape);
-    OCCException& addInvolvedShape(TopoDS_Shape shape);
-
-    const std::map<std::string, TopoDS_Shape>& involvedShapes() const;
-
-    void saveInvolvedShapes(const boost::filesystem::path& outFile) const;
-};
+#define MAKE_ADDDEPENDENCY_CALLS(...) \
+BOOST_PP_LIST_FOR_EACH( \
+MAKE_ADDDEPENDENCY_CALLBACK, _, BOOST_PP_VARIADIC_TO_LIST(__VA_ARGS__) )
 
 
 
-
-class CADException
-: public OCCException
-{
-  ConstFeaturePtr errorfeat_;
-public:
-    CADException(ConstFeaturePtr errorfeat, const std::string message);
-
-    inline ConstFeaturePtr feature() const { return errorfeat_; }
-};
+#define CL(MBRNAME) \
+MBRNAME(tcm.clone(o.MBRNAME))
 
 
+#define CLONEABLE(TYPE) \
+inline std::shared_ptr<DependencySource> shallowClone(TreeCloneMap& tcm) const override \
+{ return std::shared_ptr<DependencySource>(new TYPE(*this, tcm) ); }
 
+#define DEPENDS_NOINVALIDATE(VARS) \
+void replaceDependency(const DependencyReplacement& repl) override \
+{ std::for_each(std::tie VARS,repl); } \
+void addDependencies(DependencyList& dl) const override \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_DECL \
+void replaceDependency(const DependencyReplacement& repl) override;\
+void addDependencies(DependencyList& dl) const override
+
+#define DEPENDS_IMPL(TYPE,VARS) \
+void TYPE::replaceDependency(const DependencyReplacement& repl) \
+{ std::for_each(std::tie VARS,repl); this->invalidate(); } \
+void TYPE::addDependencies(DependencySource::DependencyList& dl) const \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_IMPL_NOINVALIDATE(TYPE,VARS) \
+void TYPE::replaceDependency(const DependencyReplacement& repl) \
+{ std::for_each(std::tie VARS,repl); } \
+void TYPE::addDependencies(DependencySource::DependencyList& dl) const \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
+
+#define DEPENDS(VARS) \
+void replaceDependency(const DependencyReplacement& repl) override \
+{ std::for_each(std::tie VARS,repl); this->invalidate(); } \
+void addDependencies(DependencyList& dl) const override \
+{ MAKE_ADDDEPENDENCY_CALLS VARS }
+
+#define DEPENDS_W_BASE(BASE, VARS) \
+void replaceDependency(const DependencyReplacement& repl) override \
+{ BASE::replaceDependency(repl); std::for_each(std::tie VARS, repl); this->invalidate(); } \
+void addDependencies(DependencyList& dl) const override \
+{ BASE::addDependencies(dl); MAKE_ADDDEPENDENCY_CALLS VARS }
+
+
+
+// template<class CloneResult>
+// class Cloner
+//     : public boost::static_visitor<CloneResult>
+// {
+//     TreeCloneMap& tcm_;
+
+// public:
+//     Cloner(TreeCloneMap& tcm)
+//         : tcm_(tcm)
+//     {}
+
+//     template<class T>
+//     void operator()(std::shared_ptr<const T>& t, std::shared_ptr<const T>& out) const
+//     {
+//         out=tcm_.clone(*t);
+//     }
+
+//     template<class T>
+//     void operator()(std::shared_ptr<T>& t, std::shared_ptr<const T>& out) const
+//     {
+//         out=tcm_.clone(*t);
+//     }
+
+
+//     // dispatch functions
+//     template<typename... Args>
+//     void operator()(boost::variant<Args...>& t, boost::variant<Args...>& out) const
+//     {
+//         t.apply_visitor(*this);
+//     }
+
+//     template<class X, class Y>
+//     void operator()(std::pair<X,Y>& p) const
+//     {
+//         (*this)(p.first);
+//         (*this)(p.second);
+//     }
+
+//     template<class X>
+//     void operator()(std::vector<X>& v) const
+//     {
+//         std::for_each(v.begin(), v.end(), *this);
+//     }
+
+
+//     template<class T, class C=char>
+//     void operator()(boost::spirit::qi::symbols<C, T>& v) const
+//     {
+//         v.for_each(
+//             [this](const std::string& name, T& v)
+//             {
+//                 (*this)(v);
+//             }
+//             );
+//     }
+// };
 
 }
 }

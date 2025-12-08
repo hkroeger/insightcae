@@ -93,6 +93,30 @@ fielddata=selectablesubset {{
    ep=vector (1 0 0) "Direction of sampling axis"
  }
 
+
+ fitted2DProfile
+ set {
+   values=array
+   [
+    set {
+     time = double 0 "Time instant"
+     component_coeffs=array
+      [ set {
+        coeffs_t = vector (1 1) "Coefficients of profile polynomial for direction t"
+        tmin  = double -1e100 "lower bound of t"
+        tmax  = double 1e100 "upper bound of t"
+        coeffs_u = vector (1 1) "Coefficients of profile polynomial for direction u"
+        umin  = double -1e100 "lower bound of u"
+        umax  = double 1e100 "upper bound of u"
+      } ] * 3 "Sets of polynomial coefficients for each tensor component"
+    } "Time instant data"
+   ] * 1  "Array of time instants"
+
+   p0=vector (0 0 0) "Origin of sampling axis"
+   ep=vector (1 0 0) "Direction of sampling axis (t)"
+   ev=vector (0 0 1) "Direction of orthogonal sampling axis (u)"
+ }
+
   vtkField
   set {
    values=array
@@ -182,7 +206,7 @@ public:
    * @param descr Description
    * @param qtylabel Label (formula symbol) of the quantity. Will be interpreted as latex math expression
    */
-  void insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const;
+  void insertGraphsToResultSet(ResultSet& results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const;
 
   bool isAConstantValue(arma::mat& value) const;
 };

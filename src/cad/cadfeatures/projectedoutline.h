@@ -35,12 +35,16 @@ class ProjectedOutline
   size_t calcHash() const override;
   void build() override;
 
+  ProjectedOutline(const ProjectedOutline&o, TreeCloneMap& tcm);
   ProjectedOutline(FeaturePtr source, DatumPtr target);
 
 public:
   declareType("ProjectedOutline");
-
+#ifndef SWIG
+  DEPENDS((source_,target_));
+#endif
   CREATE_FUNCTION(ProjectedOutline);
+  CLONEABLE(ProjectedOutline);
   
   static void insertrule(parser::ISCADParser& ruleset);
 };

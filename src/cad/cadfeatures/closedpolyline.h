@@ -31,6 +31,7 @@ class ClosedPolyline
 {
     std::vector<VectorPtr> pts_;
 
+    ClosedPolyline(const ClosedPolyline&o, TreeCloneMap& tcm);
     ClosedPolyline(const std::vector<VectorPtr>& pts);
 
     size_t calcHash() const override;
@@ -38,8 +39,11 @@ class ClosedPolyline
 
 public:
     declareType("ClosedPolyline");
-
+#ifndef SWIG
+    DEPENDS((pts_));
+#endif
     CREATE_FUNCTION(ClosedPolyline);
+    CLONEABLE(ClosedPolyline);
 
     operator const TopoDS_Face& () const;
 

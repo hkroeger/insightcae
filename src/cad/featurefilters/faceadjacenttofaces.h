@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_FACEADJACENTTOFACES_H
 #define INSIGHT_CAD_FACEADJACENTTOFACES_H
 
-#include "feature.h"
+#include "featureset.h"
 
 namespace insight {
 namespace cad {
@@ -29,10 +29,10 @@ class faceAdjacentToFaces
     : public Filter
 {
 protected:
-    FeatureSet faces_;
+    ConstFeatureSetPtr faces_;
 
 public:
-    faceAdjacentToFaces(FeatureSet faces);
+    faceAdjacentToFaces(ConstFeatureSetPtr faces);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

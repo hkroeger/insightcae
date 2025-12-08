@@ -20,9 +20,11 @@
 
 #include "base/exception.h"
 #include "cadfeature.h"
-#include "feature.h"
+#include "datum.h"
+#include "featureset.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
+
 
 using namespace std;
 using namespace boost;
@@ -52,20 +54,26 @@ void Filter::firstPass(FeatureID feature)
 }
 
 
+FeatureSet::FeatureSet(const FeatureSet& o, TreeCloneMap& tcm)
+: CL(model_),
+  shape_(o.shape_),
+  data_( o.data() )
+{}
+
+DEPENDS_IMPL_NOINVALIDATE(FeatureSet, (model_));
+
 
 FeatureSet::FeatureSet(const FeatureSet& o)
 : model_(o.model_),
-  shape_(o.shape_)
-{
-  data_.insert( o.data().begin(), o.data().end() );
-}
+  shape_(o.shape_),
+  data_( o.data() )
+{}
 
-  
+
 FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape)
 : model_(m),
   shape_(shape)
-{
-}
+{}
 
 FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id)
 : model_(m),
@@ -90,6 +98,16 @@ FeatureSet::~FeatureSet()
 {}
 
 
+ConstFeaturePtr FeatureSet::model() const
+{
+    return model_;
+}
+
+
+EntityType FeatureSet::shape() const
+{
+    return shape_;
+}
 
 FeatureSet::operator TopAbs_ShapeEnum () const
 {
@@ -97,7 +115,7 @@ FeatureSet::operator TopAbs_ShapeEnum () const
   else if (shape_==Face) return TopAbs_FACE;
   else if (shape_==Vertex) return TopAbs_VERTEX;
   else if (shape_==Solid) return TopAbs_SOLID;
-  else throw insight::Exception("Unknown EntityType:"+lexical_cast<std::string>(shape_));
+  else throw insight::Exception("Unknown EntityType: %d", shape_);
 }
 
 const FeatureSetData& FeatureSet::data() const
@@ -166,10 +184,18 @@ void FeatureSet::write() const
 }
 
 
+void FeatureSet::operator=(const FeatureSet& o)
+{
+    model_=o.model_;
+    shape_=o.shape_;
+    data_=o.data();
+}
+
+
 size_t FeatureSet::calcFeatureSetHash() const
 {
     ParameterListHash h;
-
+    h += "FeatureSet";
     h += *model();
     h += int(shape());
 
@@ -180,7 +206,6 @@ size_t FeatureSet::calcFeatureSetHash() const
 
     return h.getHash();
 }
-
 
 std::ostream& operator<<(std::ostream& os, const FeatureSetData& fsd)
 {
@@ -198,6 +223,65 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
   os << fs.data();
   return os;
 }
+
+
+
+
+size_t ProvidedFeatureSet::calcHash() const
+{
+    ParameterListHash h;
+    h += *model_;
+    h += label_;
+    h+=shape();
+    return h.getHash();
+}
+
+
+void ProvidedFeatureSet::build()
+{
+    auto fs = model_->featureSymbols(shape());
+    auto ofs = fs.find(label_);
+    insight::assertion(
+        ofs!=nullptr,
+        "model has not feature set with label %s", label_.c_str());
+    FeatureSet::operator=(**ofs);
+}
+
+FeatureSetPtr ProvidedFeatureSet::clone() const
+{
+    return ProvidedFeatureSet::create(model_, shape(), label_);
+}
+
+ProvidedFeatureSet::ProvidedFeatureSet(
+    const ProvidedFeatureSet&o, TreeCloneMap& tcm )
+: ASTBasedFeatureSet(o, tcm),
+  CL(model_), label_(o.label_)
+{}
+
+ProvidedFeatureSet::ProvidedFeatureSet(
+    ConstFeaturePtr m, EntityType shape,
+    const std::string& label )
+    : ASTBasedFeatureSet(nullptr, shape), model_(m), label_(label)
+{}
+
+DEPENDS_IMPL(ProvidedFeatureSet, (model_));
+
+
+const FeatureSetData& ProvidedFeatureSet::data() const
+{
+    checkForBuildDuringAccess();
+    return FeatureSet::data();
+}
+
+size_t ProvidedFeatureSet::calcFeatureSetHash() const
+{
+    return calcHash();
+}
+
+
+
+
+
 
 
 size_t DeferredFeatureSet::calcHash() const
@@ -291,6 +375,30 @@ void DeferredFeatureSet::build()
 }
 
 
+DeferredFeatureSet::DeferredFeatureSet(const DeferredFeatureSet&o, TreeCloneMap& tcm)
+  : ASTBasedFeatureSet(o, tcm),
+    CL(baseSet_), filterexpr_(o.filterexpr_)
+{
+    for (auto& r: o.refs_)
+    {
+        FeatureSetParserArg na;
+        if (auto *fsp=boost::get<FeatureSetPtr>(&r))
+        {
+            na=tcm.clone(*fsp);
+        }
+        else if (auto *vp=boost::get<VectorPtr>(&r))
+        {
+            na=tcm.clone(*vp);
+        }
+        else if (auto *sp=boost::get<ScalarPtr>(&r))
+        {
+            na=tcm.clone(*sp);
+        }
+        refs_.push_back(na);
+    }
+}
+
+
 DeferredFeatureSet::DeferredFeatureSet
     (
         ConstFeaturePtr m,
@@ -298,7 +406,7 @@ DeferredFeatureSet::DeferredFeatureSet
         const string& filterexpr,
         const FeatureSetParserArgList& refs
         )
-: FeatureSet(m, shape),
+: ASTBasedFeatureSet(m, shape),
     filterexpr_(filterexpr),
     refs_(refs)
 {}
@@ -310,7 +418,7 @@ DeferredFeatureSet::DeferredFeatureSet
         const string& filterexpr,
         const FeatureSetParserArgList& refs
         )
-: FeatureSet(q->model(), q->shape()),
+: ASTBasedFeatureSet(q->model(), q->shape()),
     baseSet_(q),
     filterexpr_(filterexpr),
     refs_(refs)

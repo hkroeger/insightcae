@@ -1,6 +1,7 @@
 #include "iqvtkselectconstrainedsketchentity.h"
 
 #include "base/cppextensions.h"
+#include "base/exception.h"
 #include "iqfilteredparametersetmodel.h"
 #include "iqvtkconstrainedsketcheditor.h"
 #include "parametereditorwidget.h"
@@ -58,16 +59,30 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
             [this,layEd]()
             {
                 auto newLayerName = layEd->currentText().toStdString();
+                insight::dbg(insight::BasicBusiness) << "new layer name = "<<newLayerName<<std::endl;
+
+                bool anythingDone=false;
                 for (auto& ee: *this)
                 {
                     auto e = ee.lock();
                     if (!(*editor_).hasLayer(newLayerName))
                     {
                         (*editor_).addLayer(newLayerName, *editor_.entityProperties_);
+                        anythingDone=true;
                     }
-                    e->setLayerName(newLayerName);
+                    if (e->layerName()!=newLayerName)
+                    {
+                        e->setLayerName(newLayerName);
+                        (*editor_).geometryChanged(
+                            editor_->findGeometry(e)->first );
+                        anythingDone=true;
+                    }
                 }
-                editor_.sketchChanged();
+
+                if (anythingDone)
+                {
+                    Q_EMIT editor_.sketchChanged();
+                }
             };
 
     connect(layEd->lineEdit(), &QLineEdit::editingFinished, layEd,
@@ -86,10 +101,12 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
         connect(pe_, &ParameterEditorWidget::parameterSetChanged, pe_,
                 [this]()
                 {
+                    DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
+
                     for (auto& ee: *this)
                     {
                         auto e = ee.lock();
-                        e->parametersRef().merge(
+                        e->parametersRef().copyMatching(
                             getParameterSet(pe_->model())
                             );
                     }
@@ -302,6 +319,8 @@ bool IQVTKSelectConstrainedSketchEntity::onMouseClick(
             dl->previewUpdated.connect(
                 [this](const arma::mat& p1_3d, const arma::mat& p2_3d)
                 {
+                    DBG_SLOT(previewUpdated);
+
                     auto p1=(*editor_).p3Dto2D(p1_3d);
                     auto p2=(*editor_).p3Dto2D(p2_3d);
 

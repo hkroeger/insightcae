@@ -13,17 +13,17 @@ addToFactoryTable(IQParameter, IQSubsetParameter);
 
 IQSubsetParameter::IQSubsetParameter(
     QObject *parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter *parameter,
-    const insight::ParameterSet &defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
     )
 : IQSpecializedParameter<insight::ParameterSet>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
 
-void IQSubsetParameter::populateContextMenu(QMenu *cm)
+void IQSubsetParameter::populateContextMenu(
+    QMenu *cm, IQCADModel3DViewer *viewer )
 {
     auto *saveAction = new QAction("Save to file...");
     cm->addAction(saveAction);
@@ -60,4 +60,9 @@ void IQSubsetParameter::populateContextMenu(QMenu *cm)
             }
         }
         );
+}
+
+QVariant IQSubsetParameter::value() const
+{
+    return QVariant();
 }

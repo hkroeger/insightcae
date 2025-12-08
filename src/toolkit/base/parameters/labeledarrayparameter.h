@@ -30,15 +30,26 @@ protected:
      * path to another parameter, to which the keys are synchronized
      */
     std::string keySourceParameterPath_;
+    std::set<boost::signals2::scoped_connection> syncConnections_;
 
     std::key_observer_map<Parameter, std::shared_ptr<boost::signals2::scoped_connection> >
         valueChangedConnections_,
         childValueChangedConnections_;
 
+    void eraseValueImpl(const std::string& label );
+    void insertWithDefaultsImpl(const std::string& label);
+    void insertValueImpl(
+        const std::string& label,
+        std::unique_ptr<Parameter>&& np );
+    void changeLabelImpl( const std::string& label, const std::string& newLabel );
+    Parameter& getOrInsertDefaultValueImpl( const std::string& label );
 
+    void initialize() override;
 
 public:
     declareType ( "labeledarray" );
+
+    LabeledArrayParameter(const rapidxml::xml_node<> & node);
 
     LabeledArrayParameter (
         const std::string& description,
@@ -56,21 +67,23 @@ public:
         bool isNecessary=false,
         int order=0 );
 
-    void initialize() override;
 
     bool isDifferent(const Parameter& p) const override;
 
     void setLabelPattern(const std::string& pat);
-    void synchronizeKeys();
+
     void setKeySourceParameterPath(const std::string& pp);
     void unsetKeySourceParameterPath();
+    bool keysAreLocked() const;
 
     std::set<std::string> keys() const;
+    bool hasKey(const std::string& label) const;
+    value_type& value();
+    const value_type& value() const;
 
     void setDefaultValue ( std::unique_ptr<Parameter>&& defP );
     const Parameter& defaultValue() const;
 
-    bool keysAreLocked() const;
     std::string findUniqueNewKey() const;
     void eraseValue ( const std::string& label );
     void appendValue ( std::unique_ptr<Parameter>&& np );
@@ -90,17 +103,20 @@ public:
     int size() const;
 
     int nChildren() const override;
-    std::string childParameterName(
+    std::string childElementName(
         int i,
         bool redirectArrayElementsToDefault=false ) const override;
-    Parameter& childParameterRef ( int i ) override;
-    const Parameter& childParameter( int i ) const override;
-    int childParameterIndex( const std::string& name ) const override;
+    Element& childElementRef ( int i ) override;
+    const Element& childElement( int i ) const override;
+    int childElementIndex( const std::string& name ) const override;
 
     void clear();
 
-    std::string latexRepresentation() const override;
-    std::string plainTextRepresentation(int indent=0) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+    std::string plainTextRepresentation(int indent) const override;
 
     bool isPacked() const override;
     void pack() override;
@@ -112,17 +128,18 @@ public:
         const std::string& name,
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) const override;
-    void readFromNode (
-        const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) override;
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
 
-    std::unique_ptr<Parameter> clone (bool initialize) const override;
-    void copyFrom(const Parameter& p) override;
-    void operator=(const LabeledArrayParameter& p);
-    void extend ( const Parameter& op ) override;
-    void merge ( const Parameter& other ) override;
+    const rapidxml::xml_node<>* readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node ) override;
+
+    std::unique_ptr<Element> clone () const override;
+
+    void assignFrom( const Element& rhs ) override;
+    void copyMatching( const Element& rhs ) override;
+    void extend( const Element& op ) override;
+    bool isEqual(const Element& op) const override;
 };
 
 } // namespace insight

@@ -160,9 +160,8 @@ private:
 public:
     LaunchAnalysisAction(
             AnalyzeClient& cl,
-            const ParameterSet& input,
+            const AnalysisParameterSet& input,
             const boost::filesystem::path& parent_path,
-            const std::string& analysisName,
             ReportSuccessCallback callback,
             SimpleCallBack onTimeout );
 
@@ -182,7 +181,7 @@ public:
     // success flag, result data
     struct Result : public ReportSuccessResult
     {
-      ResultSetPtr results;
+      std::unique_ptr<ResultSet> results;
     };
     typedef std::function<void(Result)> Callback;
 
@@ -277,9 +276,8 @@ public:
           AnalyzeClientAction::SimpleCallBack onTimeout );
 
   void launchAnalysis(
-      const ParameterSet& input,
+      const AnalysisParameterSet& input,
       const boost::filesystem::path& parent_path,
-      const std::string& analysisName,
       AnalyzeClientAction::ReportSuccessCallback onCompletion,
       AnalyzeClientAction::SimpleCallBack onTimeout
       );

@@ -10,6 +10,12 @@ if (MED_FOUND)
 endif()
 
 set(insightcad_SOURCES 
+
+  treeclonemap.h treeclonemap.cpp
+  dependencysource.h dependencysource.cpp
+  dependencyreplacement.h dependencyreplacement.cpp
+
+  cadexception.h cadexception.cpp
   translations.cpp
   astbase.cpp
   cadpostprocaction.cpp
@@ -39,9 +45,12 @@ set(insightcad_SOURCES
   constrainedsketchentities/angleconstraint.h constrainedsketchentities/angleconstraint.cpp
   constrainedsketchentities/distanceconstraint.h constrainedsketchentities/distanceconstraint.cpp
   constrainedsketchentities/externalreference.h constrainedsketchentities/externalreference.cpp
+  constrainedsketchentities/tangentconstraint.h constrainedsketchentities/tangentconstraint.cpp
   constrainedsketchgrammar.h constrainedsketchgrammar.cpp
 
   geotest.cpp 
+
+  parameterlisthash.h parameterlisthash.cpp
   cadparameter.cpp
   cadfeature.cpp 
   featurecache.cpp
@@ -51,7 +60,7 @@ set(insightcad_SOURCES
   meshing/surfacegmshcase.h meshing/surfacegmshcase.cpp
   meshing/sheetextrusiongmshcase.h meshing/sheetextrusiongmshcase.cpp
   featurefilter.cpp 
-  feature.cpp
+  featureset.h featureset.cpp
   occtools.cpp
   caddocitem.cpp
   cadtypes.cpp

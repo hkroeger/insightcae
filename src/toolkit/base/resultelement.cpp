@@ -1,4 +1,6 @@
 #include "resultelement.h"
+#include "base/hierarchicalelement.h"
+#include "base/rapidxml.h"
 
 
 using namespace std;
@@ -13,16 +15,6 @@ namespace insight {
 
 
 
-Ordering::Ordering ( double ordering_base, double ordering_step_fraction )
-    : ordering_ ( ordering_base ),
-      step_ ( ordering_base*ordering_step_fraction )
-{}
-
-double Ordering::next()
-{
-    ordering_+=step_;
-    return ordering_;
-}
 
 
 
@@ -56,11 +48,10 @@ defineFactoryTable
 
 
 ResultElement::ResultElement ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
-    : shortDescription_ ( shortdesc ),
+    : Element(0),
+      shortDescription_ ( shortdesc ),
       longDescription_ ( longdesc ),
-      unit_ ( unit ),
-      order_ ( 0 ),
-      displayFullPage_(false)
+      unit_ ( unit )
 {}
 
 
@@ -85,91 +76,67 @@ const SimpleLatex& ResultElement::unit() const
   return unit_;
 }
 
-void ResultElement::setDisplayFullPage(bool displayFullPage)
-{
-    displayFullPage_=displayFullPage;
-}
-
-bool ResultElement::displayFullPage() const
-{
-    return displayFullPage_;
-}
 
 
-void ResultElement::insertLatexHeaderCode ( std::set<std::string>& ) const
-{}
-
-void ResultElement::writeLatexCode ( ostream& , const std::string& , int , const boost::filesystem::path&  ) const
-{
-}
 
 void ResultElement::exportDataToFile ( const std::string& , const boost::filesystem::path&  ) const
 {
 }
 
 
-rapidxml::xml_node< char >* ResultElement::appendToNode
+rapidxml::xml_node< char >*
+ResultElement::appendToNode
 (
     const string& name,
     rapidxml::xml_document< char >& doc,
-    rapidxml::xml_node< char >& node
+    rapidxml::xml_node< char >& node,
+    const OutputProperties& outProps
 ) const
 {
-    using namespace rapidxml;
-    xml_node<>* child = doc.allocate_node ( node_element, doc.allocate_string ( this->type().c_str() ) );
-    node.append_node ( child );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "name",
-                                  doc.allocate_string ( name.c_str() ) )
-                            );
-//   child->append_attribute(doc.allocate_attribute
-//   (
-//     "type",
-//     doc.allocate_string( type().c_str() ))
-//   );
+    auto child = Element::appendToNode(name, doc, node, outProps);
 
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "shortDescription",
-                                  doc.allocate_string ( shortDescription_.simpleLatex().c_str() ) )
-                            );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "longDescription",
-                                  doc.allocate_string ( longDescription_.simpleLatex().c_str() ) )
-                            );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "unit",
-                                  doc.allocate_string ( unit_.simpleLatex().c_str() ) )
-                            );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "order",
-                                  doc.allocate_string ( str ( format ( "%g" ) % order_ ).c_str() ) )
-                            );
+    appendAttribute(doc, *child, "shortDescription", shortDescription_.simpleLatex());
+    appendAttribute(doc, *child, "longDescription", longDescription_.simpleLatex());
+    appendAttribute(doc, *child, "unit", unit_.simpleLatex());
 
     return child;
 }
 
-void ResultElement::readBaseAttributesFromNode(const string &name, rapidxml::xml_node<> &node)
-{
-  shortDescription_=SimpleLatex(node.first_attribute("shortDescription")->value());
-  longDescription_=SimpleLatex(node.first_attribute("longDescription")->value());
-  unit_=SimpleLatex(node.first_attribute("unit")->value());
-  order_=boost::lexical_cast<double>(node.first_attribute("order")->value());
-}
 
-void ResultElement::readFromNode ( const string& name, rapidxml::xml_node< char >& )
+
+const rapidxml::xml_node<>* ResultElement::readFromNode
+    (
+        const std::string& name,
+        const rapidxml::xml_node<>& parentNode
+        )
 {
-  insight::Warning("Not implemented: restoring result from XML file is not implemented for result element of type "+type()+" (appeared in node "+name+")");
+    auto *node=hierarchicalData::Element::readFromNode(name, parentNode);
+    shortDescription_=SimpleLatex(getMandatoryAttribute(*node, "shortDescription"));
+    longDescription_=SimpleLatex(getMandatoryAttribute(*node, "longDescription"));
+    unit_=SimpleLatex(getMandatoryAttribute(*node, "unit"));
+    return node;
 }
 
 
 std::unique_ptr<Parameter> ResultElement::convertIntoParameter() const
 {
     return nullptr;
+}
+
+bool ResultElement::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const ResultElement*>(&op))
+    {
+        if (shortDescription_!=oa->shortDescription_)
+            return false;
+        if (longDescription_!=oa->longDescription_)
+            return false;
+        if (unit_!=oa->unit_)
+            return false;
+        return true;
+    }
+    else
+        return false;
 }
 
 

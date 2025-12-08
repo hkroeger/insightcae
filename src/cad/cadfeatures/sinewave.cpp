@@ -18,6 +18,8 @@
  */
 
 #include "sinewave.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/fusion.hpp>
@@ -50,12 +52,17 @@ size_t SineWave::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=l_->value();
-  h+=A_->value();
+  h+=*l_;
+  h+=*A_;
   return h.getHash();
 }
 
 
+
+
+SineWave::SineWave(const SineWave&o, TreeCloneMap& tcm)
+: CL(l_), CL(A_)
+{}
 
 
 
@@ -100,7 +107,8 @@ void SineWave::insertrule(parser::ISCADParser& ruleset)
     "SineWave",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' > ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression > ')' )
         [ qi::_val = phx::bind(
                          &SineWave::create<ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2 ) ]

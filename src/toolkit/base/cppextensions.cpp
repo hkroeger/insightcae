@@ -41,6 +41,13 @@ observer_ptr_base::observer_ptr_base(observable *o)
 
 
 
+observer_ptr_base::observer_ptr_base(const observable *o)
+    : observed_(const_cast<observable*>(o))
+{
+    register_at_observable();
+}
+
+
 
 observer_ptr_base::~observer_ptr_base()
 {
@@ -127,6 +134,7 @@ ObjectWithBoostSignalConnections::block_all()
     }
     return blc;
 }
+
 
 
 }

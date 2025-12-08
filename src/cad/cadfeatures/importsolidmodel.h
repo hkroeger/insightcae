@@ -41,7 +41,7 @@ class Import
 
 
 
-
+    Import(const Import&o, TreeCloneMap& tcm);
     Import ( const TopoDS_Shape& shape );
     Import ( const boost::filesystem::path& filepath );
     Import ( FeatureSetPtr creashapes );
@@ -55,8 +55,11 @@ protected:
 
 public:
     declareType ( "Import" );
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
 
     CREATE_FUNCTION(Import);
+    CLONEABLE(Import);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

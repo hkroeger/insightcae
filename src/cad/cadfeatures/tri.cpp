@@ -18,6 +18,8 @@
  */
 
 #include "tri.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -48,15 +50,17 @@ size_t Tri::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=e1_->value();
-  h+=e2_->value();
+  h+=*p0_;
+  h+=*e1_;
+  h+=*e2_;
   return h.getHash();
 }
 
 
 
-
+Tri::Tri(const Tri&o, TreeCloneMap& tcm)
+: CL(p0_), CL(e1_), CL(e2_)
+{}
 
 
 Tri::Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2)
@@ -107,7 +111,9 @@ void Tri::insertrule(parser::ISCADParser& ruleset)
     "Tri",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ')' )
     [ qi::_val = phx::bind(
                        &Tri::create<VectorPtr, VectorPtr, VectorPtr>,
                        qi::_1, qi::_2, qi::_3) ]

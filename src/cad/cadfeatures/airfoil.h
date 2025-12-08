@@ -73,6 +73,8 @@ class Airfoil
     ScalarPtr r_EK_; // leading edge radius
     ScalarPtr r_AK_; // trailing edge radius
 
+    Airfoil(const Airfoil&o, TreeCloneMap& tcm);
+
     Airfoil 
     ( 
         const std::string& name, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr c, ScalarPtr t, ScalarPtr r_EK, ScalarPtr r_AK
@@ -111,7 +113,10 @@ class Airfoil
 
 public:
     declareType ( "Airfoil" );
-
+#ifndef SWIG
+    DEPENDS((p0_, ez_, ex_, c_, t_, r_EK_, r_AK_));
+#endif
+    CLONEABLE(Airfoil);
     CREATE_FUNCTION(Airfoil);
 
     operator const TopoDS_Face& () const;

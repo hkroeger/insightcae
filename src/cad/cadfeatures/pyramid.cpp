@@ -18,6 +18,8 @@
  */
 
 #include "pyramid.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -47,11 +49,16 @@ size_t Pyramid::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*base_;
-  h+=ptip_->value();
+  h+=*ptip_;
   return h.getHash();
 }
 
 
+
+
+Pyramid::Pyramid(const Pyramid&o, TreeCloneMap& tcm)
+    : CL(base_), CL(ptip_)
+{}
 
 
 
@@ -114,7 +121,8 @@ void Pyramid::insertrule(parser::ISCADParser& ruleset)
     "Pyramid",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_vectorExpression > ')' )
       [ qi::_val = phx::bind(
                          &Pyramid::create<FeaturePtr, VectorPtr>,
                          qi::_1, qi::_2) ]

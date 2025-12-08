@@ -18,6 +18,8 @@
  */
 
 #include "torus.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
 
@@ -47,14 +49,19 @@ size_t Torus::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=axisTimesD_->value();
-  h+=d_->value();
+  h+=*p0_;
+  h+=*axisTimesD_;
+  h+=*d_;
   return h.getHash();
 }
 
 
 
+
+
+Torus::Torus(const Torus&o, TreeCloneMap& tcm)
+: CL(p0_), CL(axisTimesD_), CL(d_)
+{}
 
 
 
@@ -105,11 +112,11 @@ void Torus::insertrule(parser::ISCADParser& ruleset)
     "Torus",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' 
-      >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_scalarExpression 
-      >> ')' ) 
+    ( '('
+      > ruleset.r_vectorExpression > ','
+      > ruleset.r_vectorExpression > ','
+      > ruleset.r_scalarExpression
+      > ')' )
      [ qi::_val = phx::bind(
                          &Torus::create<VectorPtr, VectorPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3) ]

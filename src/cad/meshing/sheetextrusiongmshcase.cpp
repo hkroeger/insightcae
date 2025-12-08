@@ -1,6 +1,7 @@
 #include "sheetextrusiongmshcase.h"
-
 #include "cadfeature.h"
+#include "datum.h"
+#include "base/tools.h"
 
 namespace insight {
 namespace cad {
@@ -113,7 +114,7 @@ SheetExtrusionGmshCase::SheetExtrusionGmshCase(
     for (int i=0;i<nLayers;++i)
     {
       layerNum += "1";
-      layerHeight += boost::lexical_cast<std::string>( hcum(i) );
+      layerHeight += toString( hcum(i) );
       if (i<nLayers-1)
       {
         layerNum+=",";

@@ -20,6 +20,7 @@
 
 
 #include "openfoamdict.h"
+#include <sstream>
 
 #define BOOST_SPIRIT_DEBUG
 
@@ -31,6 +32,8 @@
 
 #include "boost/iostreams/filtering_stream.hpp"
 #include "boost/iostreams/filter/gzip.hpp"
+
+#include "base/tools.h"
 
 using namespace std;
 using namespace boost;
@@ -253,7 +256,7 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
   out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" version     "+toString(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
        <<" class       "+d.className+";"<<endl
        <<" object      " << objname << ";"<<endl
@@ -336,7 +339,7 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d,
   out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" version     "+toString(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
        <<" class       "+d.className+";"<<endl
        <<" object      boundary;"<<endl
@@ -364,7 +367,7 @@ void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& 
   {
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" version     "+toString(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
        <<" class       "+d.className+";"<<endl
        <<" object      " << objname << ";"<<endl
@@ -534,19 +537,6 @@ void OFDictData::dictFile::write(const boost::filesystem::path& dictPath) const
   }
 }
 
-std::string to_OF(const arma::mat& v)
-{
-  std::string ret="";
-  if (v.n_elem>1) ret="(";
-  for (int i=0; i<v.n_elem; i++)
-  {
-    ret+=lexical_cast<string>(v(i));
-    if (i != (v.n_elem-1) )
-      ret+=" ";
-  }
-  if (v.n_elem>1) ret+=")";
-  return ret;
-}
 
 OFDictData::list vector3(const arma::mat& v)
 {
@@ -597,22 +587,6 @@ std::ostream& operator<<(std::ostream& os, const dimensionedData& d)
 std::ostream& operator<<(std::ostream& os, const dict& d)
 {
   d.write(os);
-//   os << "{\n";
-//   for(dict::const_iterator i=d.begin(); i!=d.end(); i++)
-//   {
-//     os << i->first << SPACE;
-//     if (const dict *d = boost::get<dict>(&i->second))
-//     {
-//       //os << "\n{\n";
-//       os << *d;
-//       //os << "}\n";
-//     }
-//     else
-//     {
-//       os << i->second << ";\n";
-//     }
-//   }
-//   os << "}\n";
   return os;
 }
 
@@ -629,6 +603,25 @@ std::ostream& operator<<(std::ostream& os, const list& l)
   }
   os<<")";
   return os;
+}
+
+
+string toString(const data &d)
+{
+    std::ostringstream os;
+    os << d;
+    return os.str();
+}
+
+
+std::string toUniformField(const data& d)
+{
+    return "uniform "+toString(d);
+}
+
+std::string toUniformField(const arma::mat& v)
+{
+    return toUniformField(vectorSpace(v));
 }
 
 }

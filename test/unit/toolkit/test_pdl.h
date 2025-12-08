@@ -22,10 +22,15 @@
 #define INSIGHT_TEST_PDL_H
 
 #include "base/boost_include.h"
+#include "base/propertylibrary.h"
 #include "base/parameterset.h"
 #include "base/parameters.h"
-#include "test_pdl__TestPDL__Parameters_headers.h"
+#include "base/parameters/spatialtransformationparameter.h"
+#include "base/parameters/simpledimensionedparameter.h"
 #include "openfoam/caseelements/turbulencemodel.h"
+
+#include "test_pdl__SubPS__Parameters_headers.h"
+#include "test_pdl__TestPDL__Parameters_headers.h"
 
 namespace insight {
 
@@ -46,6 +51,75 @@ defineType(BrakePad);
 typedef PropertyLibrary<BrakePad, &libSubDir> BrakePads;
 
 
+
+class SubPS
+{
+public:
+#include "test_pdl__SubPS__Parameters.h"
+/*
+PARAMETERSET>>> SubPS Parameters
+
+W = dimensionedScalar Length millimeters 1.0 "One millimeter"
+
+subsub = set {
+ sarr = array [ double 1. "" ] *2 ""
+} ""
+
+<<<PARAMETERSET
+*/
+
+};
+
+
+
+class Outline_SketchParameters
+    : public insight::cad::ConstrainedSketchParametersDelegate
+{
+public:
+public:
+#include "test_pdl__Outline_SketchParameters__Parameters.h"
+/*
+PARAMETERSET>>> Outline_SketchParameters Parameters
+
+L = double 1.0 "[mm] One millimeter"
+
+outlinesub = set {
+ karr = array [ double 1. "" ] *2 ""
+} ""
+
+<<<PARAMETERSET
+*/
+
+
+    void
+    changeDefaultParameters(insight::cad::ConstrainedSketchEntity& e) const override
+    {
+        if (dynamic_cast<const insight::cad::SketchPoint*>(&e))
+        {
+            e.changeDefaultParameters(
+                *defaultParameters() );
+        }
+    }
+
+    std::unique_ptr<insight::cad::LayerProperties>
+    createDefaultLayerProperties(const std::string& layerName) const override
+    {
+        auto defp=defaultParameters();
+
+        arma::mat c; // unspecified color
+        if (layerName!=insight::cad::ConstrainedSketch::defaultLayerName)
+            c=insight::vec3(std::rand(), std::rand(), std::rand())
+                /double(RAND_MAX);
+
+        return insight::cad::LayerProperties::create(
+            *defp, c);
+    }
+};
+
+static std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate>
+    outline_SketchParameters
+    = std::make_shared<Outline_SketchParameters>();
+
 class TestPDL
 {
 
@@ -53,6 +127,8 @@ public:
 #include "test_pdl__TestPDL__Parameters.h"
 /*
 PARAMETERSET>>> TestPDL Parameters
+
+subps = includedset "insight::SubPS::Parameters" ""
 
 L = dimensionedScalar Length millimeters 1.0 "One millimeter"
 
@@ -68,11 +144,15 @@ trsf = spatialTransformation (0 0 0) ( 0 0 0) 1 ""
 
 mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
 
+relFile = path "hull.stl" "A relative path to some file"
+
+absFile = path "/hull.stl" "An absolute path to some file"
+
 turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 
 sketch = cadsketch
         ""
-        ""
+        "outline_SketchParameters"
         ""
         "contour to extrude"
 

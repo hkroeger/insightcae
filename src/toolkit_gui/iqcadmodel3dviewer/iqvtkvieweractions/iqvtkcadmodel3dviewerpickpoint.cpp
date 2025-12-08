@@ -6,19 +6,61 @@
 #include <qdebug.h>
 #include <qnamespace.h>
 
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h"
 
 
 IQVTKCADModel3DViewerPickPoint::IQVTKCADModel3DViewerPickPoint(
-    ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent )
-: ViewWidgetAction<IQVTKCADModel3DViewer>(parent, true)
-{}
+    ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
+    bool finishAfterFirstClick )
+: ViewWidgetAction<IQVTKCADModel3DViewer>(parent, false),
+  finishAfterFirstClick_(finishAfterFirstClick)
+{
+    aboutToBeDestroyed.connect(
+        [this](){
+            DBG_SLOT(aboutToBeDestroyed);
 
+            viewer().deactivateSubshapeSelectionAll();
+        });
+}
+
+
+QString IQVTKCADModel3DViewerPickPoint::description() const
+{
+    return "Measure point coordinates";
+}
 
 
 void IQVTKCADModel3DViewerPickPoint::start()
-{}
+{
+    viewer().activateSelectionAll(insight::cad::Vertex);
+    //viewer().sendStatus("Please select first point!");
 
+    auto sel = make_viewWidgetAction<IQVTKSelectSubshape>(viewer());
+    sel->entitySelected.connect(
+        [this](IQVTKCADModel3DViewer::SubshapeData p1)
+        {
+            DBG_SLOT(entitySelected);
 
+            if (p1.subshapeType_ == insight::cad::Vertex)
+            {
+                gp_Pnt pt = BRep_Tool::Pnt(p1.feat->vertex(p1.id_));
+                arma::mat p = insight::vec3(pt);
+                std::cout<<"picked point at "<<p.t();
+
+                viewer().appendToNotepad(
+                    QString("[%1, %2, %3]")
+                        .arg(p[0]).arg(p[1]).arg(p[2])
+                    );
+
+                Q_EMIT pickedPoint(p);
+
+                if (finishAfterFirstClick_) finishAction();
+            }
+        }
+        );
+
+    launchAction(std::move(sel));
+}
 
 
 bool IQVTKCADModel3DViewerPickPoint::onMouseClick  (
@@ -26,21 +68,12 @@ bool IQVTKCADModel3DViewerPickPoint::onMouseClick  (
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    if (btn&Qt::LeftButton)
+    if (btn==Qt::RightButton)
     {
-        auto picker = vtkSmartPointer<vtkWorldPointPicker>::New();
-
-        auto p = viewer().widgetCoordsToVTK(point);
-        picker->Pick(p.x(), p.y(), 0, viewer().renderer());
-
-        arma::mat pt = insight::vec3Zero();
-        picker->GetPickPosition(pt.memptr());
-        Q_EMIT pickedPoint(pt);
-
         finishAction();
-
         return true;
     }
 
-    return false;
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onMouseClick(btn, nFlags, point);
 }

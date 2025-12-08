@@ -212,6 +212,8 @@ offset = selectablesubset {{
 
 method = selection (nearestPatchFace nearestPatchFaceAMI) nearestPatchFace "The mapping method"
 
+Tinitial = double 300 "[K] initial temperature"
+
 createGetter
 <<<PARAMETERSET
 */

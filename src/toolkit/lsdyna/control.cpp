@@ -125,6 +125,17 @@ void Control_Timestep::write(std::ostream& os) const
 
 
 
+Damping_Global::Damping_Global(double dampingCoeff)
+    : dampingCoeff_(dampingCoeff)
+{}
+
+void Damping_Global::write(std::ostream& os) const
+{
+    os << "*DAMPING_GLOBAL\n";
+    os << ", "<< dampingCoeff_ <<"\n";
+}
+
+
 
 Control_Output::Control_Output(
         si::Time outputDt,

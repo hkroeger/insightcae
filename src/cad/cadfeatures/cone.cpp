@@ -18,8 +18,11 @@
  */
 
 #include "cone.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
+#include "cadexception.h"
 
 #include "BRepPrimAPI_MakeCone.hxx"
 
@@ -48,16 +51,18 @@ size_t Cone::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=D1_->value();
-  h+=D2_->value();
-  if (di_) h+=di_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*D1_;
+  h+=*D2_;
+  if (di_) h+=*di_;
   return h.getHash();
 }
 
 
-
+Cone::Cone(const Cone&o, TreeCloneMap& tcm)
+    : CL(p1_), CL(p2_), CL(D1_), CL(D2_), CL(di_)
+{}
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di)
     : p1_(p1), p2_(p2), D1_(D1), D2_(D2), di_(di)
@@ -106,7 +111,7 @@ void Cone::build()
 
         if (!cutter.IsDone())
         {
-            throw insight::cad::CADException
+            throw insight::CADException
                 (
                     shared_from_this(),
                     _("could not perform cut operation.")

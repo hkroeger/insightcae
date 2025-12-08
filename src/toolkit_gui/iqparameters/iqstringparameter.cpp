@@ -14,20 +14,15 @@ addToFactoryTable(IQParameter, IQStringParameter);
 IQStringParameter::IQStringParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::StringParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {
 }
 
 
-QString IQStringParameter::valueText() const
-{
-  return QString::fromStdString( parameter()() );
-}
 
 bool IQStringParameter::setValue(QVariant value)
 {
@@ -48,7 +43,7 @@ QVBoxLayout* IQStringParameter::populateEditControls(
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
 //  connect(le_, &QLineEdit::destroyed, this, &StringParameterWrapper::onDestruction);
-  lineEdit->setText(valueText());
+  lineEdit->setText(value().toString());
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
 
@@ -70,8 +65,10 @@ QVBoxLayout* IQStringParameter::populateEditControls(
       parameterRef().valueChanged.connect(
           [=]()
           {
+              DBG_SLOT(valueChanged);
+
               QSignalBlocker sb(lineEdit);
-              lineEdit->setText(valueText());
+              lineEdit->setText(value().toString());
           }
           )
       );

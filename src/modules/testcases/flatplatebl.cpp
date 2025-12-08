@@ -302,7 +302,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     // mean value profile
     umean_data.values.resize(1);
     umean_data.values[0].time=0;
-    umean_data.values[0].profile->setOriginalFilePath(inlet_velocity_profile_tabfile); // without path! otherwise problems after case copying!
+    umean_data.values[0].profile->setFileName(inlet_velocity_profile_tabfile); // without path! otherwise problems after case copying!
     
     umean_data.p0=vec3(0,0,0);      
     umean_data.ep=vec3(0,1,0);    
@@ -431,7 +431,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
   cm.insert(new PressureOutletBC(cm, sp().out_top_, boundaryDict, PressureOutletBC::Parameters()
     .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
        FieldData::Parameters()
-        .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(0.0)))
+        .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(0.0))),
+        false
       ))
     .set_prohibitInflow(false)
   ));
@@ -449,7 +450,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
 void FlatPlateBL::evaluateAtSection
 (
   OpenFOAMCase& cm,
-  ResultSetPtr results, double x, int /*i*/,
+  ResultSet& results, double x, int /*i*/,
   const Interpolator& cfi,
   const std::string& UMeanName,
   const std::string& RFieldName,
@@ -467,11 +468,11 @@ void FlatPlateBL::evaluateAtSection
   TabularResult::Row *thisctrow=nullptr, *thisctrow2=nullptr;
   if (!extract_section)
   {
-    table = &(results->get<TabularResult>("tableCoefficients"));
+    table = &(results.get<TabularResult>("tableCoefficients"));
     thisctrow = &(table->appendRow());
     table->setCellByName(*thisctrow, "x/L", xByL);
 
-    table2 = &(results->get<TabularResult>("tableValues"));
+    table2 = &(results.get<TabularResult>("tableValues"));
     thisctrow2 = &(table2->appendRow());
     table2->setCellByName(*thisctrow2, "x/L", xByL);
   }
@@ -663,7 +664,8 @@ void FlatPlateBL::evaluateAtSection
   }
 }
 
-insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
+insight::ResultSetPtr FlatPlateBL::evaluateResults(
+    insight::OpenFOAMCase& cm, ProgressDisplayer& progress)
 {
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, progress);
   
@@ -735,7 +737,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
   
   addPlot
   (
-    results, executionPath(), "chartMeanWallFriction",
+    *results, executionPath(), "chartMeanWallFriction",
     "x [m]", "$\\langle C_f \\rangle$",
     {
       PlotCurve(Cf_vs_x, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'")
@@ -768,7 +770,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     evaluateAtSection
     (
       cm, 
-      results, 
+      *results,
       sp().sec_locs_[i] * sp().L_,
       i, 
       Cf_vs_x_i, 
@@ -782,7 +784,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     evaluateAtSection
     (
       cm, 
-      results, 
+      *results,
       es.x, 
       -1, 
       Cf_vs_x_i, 
@@ -805,7 +807,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
     
     addPlot
     (
-      results, executionPath(), "chartDelta",
+      *results, executionPath(), "chartDelta",
       "x [m]", "$\\delta$ [m]",
       {
 #ifdef HAS_REFDATA
@@ -828,7 +830,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
 //    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
     addPlot
     (
-      results, executionPath(), "chartRetheta",
+      *results, executionPath(), "chartRetheta",
       "$Re_x$ /$10^5$", "$Re_{\\theta}$",
       {
         PlotCurve(Rex, Re_theta, "Retheta", "w lp lt 1 lc 1 lw 2 t '$Re_{\\theta}$'"),
@@ -840,7 +842,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, Pr
 
     addPlot
     (
-      results, executionPath(), "chartDelta99",
+      *results, executionPath(), "chartDelta99",
       "x [m]", "$\\delta$ [m]",
       {
         PlotCurve(sp().L_*ctd.col(0), tabvals.getColByName("delta1"), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"),

@@ -18,6 +18,8 @@
  */
 
 #include "fixshape.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
 
@@ -53,6 +55,9 @@ size_t FixShape::calcHash() const
 
 
 
+FixShape::FixShape(const FixShape&o, TreeCloneMap& tcm)
+    : CL(in_)
+{}
 
 
 FixShape::FixShape ( FeaturePtr in )

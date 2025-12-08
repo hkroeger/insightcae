@@ -13,7 +13,9 @@ namespace insight {
 
 
 defineType(SelectableSubsetParameter);
-addToFactoryTable(Parameter, SelectableSubsetParameter);
+addParameterFactories(SelectableSubsetParameter);
+
+
 
 
 
@@ -38,8 +40,7 @@ SelectableSubsetParameter::SelectableSubsetParameter(
   {
         addItem(
           i.first,
-          std::dynamic_unique_ptr_cast<ParameterSet>(
-              i.second->clone(false) ) );
+          i.second->cloneAs<ParameterSet>() );
   }
   setSelection(defaultSelection);
 }
@@ -60,16 +61,6 @@ SelectableSubsetParameter::SelectableSubsetParameter(
   setSelection(defaultSelection);
 }
 
-
-
-
-void SelectableSubsetParameter::initialize()
-{
-    for (auto &v: value_)
-    {
-        v.second->initialize();
-    }
-}
 
 
 
@@ -104,38 +95,53 @@ std::vector<std::string> SelectableSubsetParameter::selectionKeys() const
 
 void SelectableSubsetParameter::setSelection(const key_type &nk)
 {
-    insight::assertion(
-        value_.count(nk),
-        "selection \"%s\" is not valid ", nk.c_str() );
-
-    int nBefore=0, nAfter=0;
-    if (!selection_.empty())
+    if (!nk.empty())
     {
-        nBefore=operator()().size();
-    }
-    nAfter=value_.at(nk)->size();
+        insight::assertion(
+            value_.count(nk),
+            "selection \"%s\" is not valid ", nk.c_str() );
 
-    if (nAfter>nBefore)
-    {
-        beforeChildInsertion(nBefore, nAfter-1);
-    }
-    else if (nAfter<nBefore)
-    {
-        beforeChildRemoval(nAfter, nBefore-1);
-    }
+        int nBefore=0, nAfter=0;
+        if (!selection_.empty())
+        {
+            nBefore=operator()().size();
+        }
+        nAfter=value_.at(nk)->size();
 
-    selection_=nk;
+        // if (nAfter>nBefore)
+        // {
+        //     beforeChildInsertion(nBefore, nAfter-1);
+        // }
+        // else if (nAfter<nBefore)
+        // {
+        //     beforeChildRemoval(nAfter, nBefore-1);
+        // }
 
-    if (nAfter>nBefore)
-    {
-        childInsertionDone(nBefore, nAfter-1);
-    }
-    else if (nAfter<nBefore)
-    {
-        childRemovalDone(nAfter, nBefore-1);
-    }
+        beforeChildRemoval(0, nBefore-1);
+        selection_=std::string();
+        childRemovalDone(0, nBefore-1);
 
-    triggerValueChanged();
+        if (nAfter>0)
+        {
+            beforeChildInsertion(0, nAfter-1);
+        }
+        selection_=nk;
+        if (nAfter>0)
+        {
+            childInsertionDone(0, nAfter-1);
+        }
+
+        // if (nAfter>nBefore)
+        // {
+        //     childInsertionDone(nBefore, nAfter-1);
+        // }
+        // else if (nAfter<nBefore)
+        // {
+        //     childRemovalDone(nAfter, nBefore-1);
+        // }
+
+        triggerValueChanged();
+    }
 }
 
 
@@ -143,6 +149,9 @@ void SelectableSubsetParameter::setSelection(const key_type &nk)
 
 const SelectableSubsetParameter::key_type &SelectableSubsetParameter::selection() const
 {
+    // insight::assertion(
+    //     !selection_.empty(),
+    //     "internal error: attempt to access during value change" );
     return selection_;
 }
 
@@ -204,8 +213,7 @@ SelectableSubsetParameter::copyItems() const
     result.insert(
         {
          sp.first,
-         std::dynamic_unique_ptr_cast<ParameterSet>(
-                 sp.second->clone(false))
+         sp.second->cloneAs<ParameterSet>()
         });
   }
   return result;
@@ -220,7 +228,7 @@ void SelectableSubsetParameter::addItem(
     std::unique_ptr<ParameterSet>&& ps )
 {
     insight::assertion(
-        key!=selection_,
+        selection_.empty() || (key!=selection()),
         "inserted item must not be currently selected" );
 
     auto ins = value_.insert({key, std::move(ps)});
@@ -238,11 +246,43 @@ void SelectableSubsetParameter::addItem(
     // }
 }
 
+void SelectableSubsetParameter::removeItem(key_type key)
+{
+    if (selection_==key)
+    {
+        // to be removing selected item, switch to next possibility
+        auto k=selectionKeys();
+        auto i=std::find(k.begin(), k.end(), key);
+        auto j=i;
+
+        j++;
+        if (j==k.end()) // already at the end; try previous
+        {
+            j=i;
+            j--;
+            if (j==k.end()) // already at the end; nothing left
+            {
+                throw insight::Exception(
+                    "tried to remove last selection entry"
+                    );
+            }
+        }
+
+        setSelection(*j);
+    }
+
+    if (value_.count(key))
+    {
+        auto i=value_.find(key);
+        value_.erase(i);
+    }
+}
+
 
 void SelectableSubsetParameter::setParametersForSelection(
     const key_type& key, const ParameterSet& ps)
 {
-  value_.at(key)->merge(ps);
+  value_.at(key)->assignFrom(ps);
 }
 
 
@@ -254,11 +294,14 @@ SelectableSubsetParameter::getParametersForSelection(
 }
 
 
-std::string SelectableSubsetParameter::latexRepresentation() const
+std::string SelectableSubsetParameter::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
   std::ostringstream os;
-  os<<"selected as ``"<<SimpleLatex(selection_).toLaTeX()<<"''\\\\"<<std::endl;
-  os<<operator()().latexRepresentation();
+  os<<"selected as ``"<<SimpleLatex(selection()).toLaTeX()<<"''\\\\"<<std::endl;
+  os<<operator()().latexRepresentation(name, documentHierarchyLevel, fsi);
   return os.str();
 }
 
@@ -268,7 +311,7 @@ std::string SelectableSubsetParameter::latexRepresentation() const
 std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
 {
   std::ostringstream os;
-  os<<"selected as \""<<SimpleLatex(selection_).toPlainText()<<"\"";
+  os<<"selected as \""<<SimpleLatex(selection()).toPlainText()<<"\"";
   if (operator()().size()>0)
   {
       os<<": \n";
@@ -318,20 +361,17 @@ SelectableSubsetParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath) const
+    const OutputProperties& outProps) const
 {
-  insight::CurrentExceptionContext ex(3, "appending selectable subset "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending selectable subset "+name+" to node "+node.name());
 
   using namespace rapidxml;
 
-  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-  child->append_attribute(doc.allocate_attribute
-  (
-    "value",
-    doc.allocate_string(selection_.c_str())
-  ));
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
-  operator()().appendToNode(std::string(), doc, *child, inputfilepath);
+  appendAttribute(doc, *child, "value", selection());
+
+  operator()().appendToNode(std::string(), doc, *child, outProps);
 
   return child;
 }
@@ -339,26 +379,27 @@ SelectableSubsetParameter::appendToNode(
 
 
 
-void SelectableSubsetParameter::readFromNode
+
+const rapidxml::xml_node<>*
+SelectableSubsetParameter::readFromNode
 (
     const std::string& name,
-    rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath)
+    const rapidxml::xml_node<>& node)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
+  auto* child = Parameter::readFromNode(name, node);
   if (child)
   {
-    auto valuenode=child->first_attribute("value");
-    insight::assertion(valuenode, "No value attribute present!");
-    std::string sel=valuenode->value();
+    auto sel=getMandatoryAttribute(*child, "value");
 
     setSelection(sel);
 
     if (value_.find(sel)==value_.end())
-      throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
+      throw insight::Exception(
+            "Invalid selection key during read of selectableSubset %s",
+            name.c_str());
 
-    operator()().readFromNode(std::string(), *child, inputfilepath);
+    operator()().readFromNode(std::string(), *child);
 
     triggerValueChanged();
   }
@@ -368,17 +409,30 @@ void SelectableSubsetParameter::readFromNode
           boost::str(
             boost::format(
              "No xml node found with type '%s' and name '%s', default value '%s' is used."
-             ) % type() % name % plainTextRepresentation()
+             ) % type() % name % plainTextRepresentation(0)
            )
         );
   }
+  return child;
 }
 
 
 
+SelectableSubsetParameter::SelectableSubsetParameter(
+    const rapidxml::xml_node<> &node)
+    : Parameter(node)
+{
+    auto sel=getMandatoryAttribute(node, "value");
+    addItem(
+        sel,
+        std::make_unique<ParameterSet>(node) );
+    setSelection(sel);
+}
 
-std::unique_ptr<Parameter>
-SelectableSubsetParameter::clone (bool init) const
+
+
+std::unique_ptr<hierarchicalData::Element>
+SelectableSubsetParameter::clone () const
 {
   auto np=
       std::make_unique<SelectableSubsetParameter>(
@@ -389,14 +443,11 @@ SelectableSubsetParameter::clone (bool init) const
   {
     np->addItem(
           i->first,
-          std::dynamic_unique_ptr_cast<ParameterSet>(
-              i->second->clone(false))
+          i->second->cloneAs<ParameterSet>()
           );
   }
 
-  np->setSelection(selection_);
-
-  if (init) np->initialize();
+  np->setSelection(selection());
 
   return np;
 }
@@ -404,46 +455,87 @@ SelectableSubsetParameter::clone (bool init) const
 
 
 
-void SelectableSubsetParameter::copyFrom(const Parameter& p)
+void SelectableSubsetParameter::assignFrom(const Element &p)
 {
-  operator=(dynamic_cast<const SelectableSubsetParameter&>(p));
+    auto& ossp =dynamic_cast<const SelectableSubsetParameter&>(p);
+
+
+    std::set<std::string> unmatchedKeys;
+    std::transform(
+        value_.begin(), value_.end(),
+        std::last_inserter(unmatchedKeys),
+        [](const decltype(value_)::value_type& e) { return e.first; }
+        );
+
+    for (auto &ov: ossp.value_)
+    {
+        if (value_.count(ov.first))
+        {
+            value_.at(ov.first)->assignFrom(*ov.second);
+            unmatchedKeys.erase(ov.first);
+        }
+        else
+        {
+            addItem(ov.first, ov.second->cloneAs<ParameterSet>());
+        }
+    }
+
+    setSelection( ossp.selection() );
+
+    for (auto& um: unmatchedKeys)
+    {
+        removeItem(um);
+    }
+
+
+    Parameter::assignFrom(ossp);
 }
 
 
 
-
-void SelectableSubsetParameter::operator=(const SelectableSubsetParameter& ossp)
+void SelectableSubsetParameter::copyMatching(
+    const Element& p)
 {
-  setSelection( ossp.selection_ );
-  operator()() = ossp();
+    auto& ossp =dynamic_cast<const SelectableSubsetParameter&>(p);
 
-  Parameter::copyFrom(ossp);
+    setSelection( ossp.selection() );
+    if (!ossp.selection().empty())
+    {
+        operator()().copyMatching(ossp());
+    }
+
+    Parameter::assignFrom(ossp);
 }
-
 
 
 
 void SelectableSubsetParameter::extend (
-    const Parameter& other )
+    const Element& other )
 {
-  if (auto *ossp=dynamic_cast<const SelectableSubsetParameter*>(&other))
-  {
-    operator()().extend( *ossp );
-  }
+    auto &ossp=dynamic_cast<const SelectableSubsetParameter&>(other);
+
+    operator()().extend( ossp );
 }
 
 
 
-
-void SelectableSubsetParameter::merge (
-    const Parameter& other )
+bool SelectableSubsetParameter::isEqual(const Element &op) const
 {
-  if (auto *ossp=dynamic_cast<const SelectableSubsetParameter*>(&other))
-  {
-    setSelection( ossp->selection_ );
-    operator()().merge( (*ossp)() );
-  }
+    if (auto *oa = dynamic_cast<const SelectableSubsetParameter*>(&op))
+    {
+        if (selection()!=oa->selection())
+            return false;
+
+        if (!value_.at(selection())->isEqual(
+                *oa->value_.at(oa->selection()) ) )
+            return false;
+
+        return true;
+    }
+    else
+        return false;
 }
+
 
 
 
@@ -472,18 +564,18 @@ SelectableSubsetParameter::intersection(
           {
               np->addItem(
                   key,
-                  issp->cloneParameterSet() );
+                  issp->cloneAs<ParameterSet>() );
           }
       }
     }
 
-    if (np->value_.count(selection_))
+    if (np->value_.count(selection()))
     {
-      np->setSelection(selection_);
+      np->setSelection(selection());
     }
-    else if (np->value_.count(ossp->selection_))
+    else if (np->value_.count(ossp->selection()))
     {
-      np->setSelection(ossp->selection_);
+      np->setSelection(ossp->selection());
     }
     else if (np->value_.size())
     {
@@ -504,23 +596,26 @@ SelectableSubsetParameter::intersection(
 
 int SelectableSubsetParameter::nChildren() const
 {
-    return operator()().size();
+    if (selection_.empty()) // intermediate state for GUI during selection switch
+        return 0;
+    else
+        return operator()().size();
 }
 
 
-int SelectableSubsetParameter::childParameterIndex(
+int SelectableSubsetParameter::childElementIndex(
     const std::string &name) const
 {
     for (int k=0; k<nChildren()+value_.size(); ++k)
     {
-        if (childParameterName(k)==name) return k;
+        if (childElementName(k)==name) return k;
     }
     return -1;
 }
 
 
 std::string
-SelectableSubsetParameter::childParameterName(
+SelectableSubsetParameter::childElementName(
     int i, bool ) const
 {
     if (i>=nChildren() && i<(nChildren()+value_.size()))
@@ -530,12 +625,12 @@ SelectableSubsetParameter::childParameterName(
         std::advance(ii, j);
         return "<"+ii->first+">";
     }
-  return operator()().childParameterName(i);
+  return operator()().childElementName(i);
 }
 
 std::string
-SelectableSubsetParameter::childParameterName(
-    const Parameter *childParam,
+SelectableSubsetParameter::childElementName(
+    const Element *childParam,
     bool redirectArrayElementsToDefault
     ) const
 {
@@ -545,14 +640,14 @@ SelectableSubsetParameter::childParameterName(
             return std::string();
     }
     return
-        operator()().childParameterName(
+        operator()().childElementName(
             childParam,
             redirectArrayElementsToDefault );
 }
 
 
-Parameter&
-SelectableSubsetParameter::childParameterRef ( int i )
+hierarchicalData::Element&
+SelectableSubsetParameter::childElementRef ( int i )
 {
     if (i>=nChildren() && i<(nChildren()+value_.size()))
     {
@@ -561,12 +656,12 @@ SelectableSubsetParameter::childParameterRef ( int i )
         std::advance(ii, j);
         return *ii->second;
     }
-  return operator()().childParameterRef(i);
+  return operator()().childElementRef(i);
 }
 
 
-const Parameter&
-SelectableSubsetParameter::childParameter( int i ) const
+const hierarchicalData::Element&
+SelectableSubsetParameter::childElement( int i ) const
 {
     if (i>=nChildren() && i<(nChildren()+value_.size()))
     {
@@ -575,7 +670,7 @@ SelectableSubsetParameter::childParameter( int i ) const
         std::advance(ii, j);
         return *ii->second;
     }
-  return operator()().childParameter(i);
+  return operator()().childElement(i);
 }
 
 } // namespace insight

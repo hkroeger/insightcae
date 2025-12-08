@@ -18,6 +18,8 @@
  */
 
 #include "closedpolyline.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -49,12 +51,21 @@ size_t ClosedPolyline::calcHash() const
   h+=this->type();
   for (const VectorPtr& p: pts_)
   {
-      h+=p->value();
+      h+=*p;
   }
   return h.getHash();
 }
 
 
+
+ClosedPolyline::ClosedPolyline(const ClosedPolyline&o, TreeCloneMap& tcm)
+{
+    for (auto& p: o.pts_)
+    {
+        pts_.push_back(
+            tcm.clone(p));
+    }
+}
 
 
 ClosedPolyline::ClosedPolyline(const std::vector<VectorPtr>& pts)
@@ -94,9 +105,9 @@ void ClosedPolyline::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "ClosedPolyline",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vectorExpression%',' >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression%',' > ')' )
     [ qi::_val = phx::bind(
                          &ClosedPolyline::create<const std::vector<VectorPtr>&>,
                          qi::_1) ]

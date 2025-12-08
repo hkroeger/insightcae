@@ -13,8 +13,11 @@ class SixDOFRigidBodyMotionSolver
 public:
 #include "sixdofrigidbodymotionsolver__SixDOFRigidBodyMotionSolver__Parameters.h"
 
+
 /*
 PARAMETERSET>>> SixDOFRigidBodyMotionSolver Parameters
+
+accelerationRelaxation = double 0.4 ""
 
 rho = selectablesubset {{
  field set {

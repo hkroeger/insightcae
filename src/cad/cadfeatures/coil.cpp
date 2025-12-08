@@ -20,6 +20,8 @@
 #include <cmath>
 
 #include "coil.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -52,19 +54,21 @@ size_t CoilPath::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=l_->value();
-  h+=dcore_->value();
-  h+=n_->value();
-  h+=d_->value();
-  h+=R_->value();
-  h+=rmin_->value();
-  h+=nl_->value();
-  h+=dr_->value();
+  h+=*l_;
+  h+=*dcore_;
+  h+=*n_;
+  h+=*d_;
+  h+=*R_;
+  h+=*rmin_;
+  h+=*nl_;
+  h+=*dr_;
   return h.getHash();
 }
 
 
-
+CoilPath::CoilPath(const CoilPath&o, TreeCloneMap& tcm)
+    : CL(l_), CL(dcore_), CL(n_), CL(d_), CL(R_), CL(rmin_), CL(nl_), CL(dr_)
+{}
 
 
 CoilPath::CoilPath
@@ -344,17 +348,20 @@ addToStaticFunctionTable(Feature, Coil, insertrule);
 size_t Coil::calcHash() const
 {
   ParameterListHash h;
-  h+=p0_->value();
-  h+=b_->value();
-  h+=l_->value();
-  h+=r_->value();
-  h+=d_->value();
-  h+=nv_->value();
-  h+=nr_->value();
+  h+=*p0_;
+  h+=*b_;
+  h+=*l_;
+  h+=*r_;
+  h+=*d_;
+  h+=*nv_;
+  h+=*nr_;
   return h.getHash();
 }
 
 
+Coil::Coil(const Coil&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(b_), CL(l_), CL(r_), CL(d_), CL(nv_), CL(nr_)
+{}
 
 Coil::Coil
 (
@@ -465,13 +472,13 @@ void Coil::insertrule(parser::ISCADParser& ruleset)
   (
     "Coil",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-        >> ruleset.r_scalarExpression >> ')' )
+      ( '(' > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ')' )
     [ qi::_val = phx::bind(
                 &Coil::create<VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
                               ScalarPtr, ScalarPtr, ScalarPtr>,

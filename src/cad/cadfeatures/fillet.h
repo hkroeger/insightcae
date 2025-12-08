@@ -34,6 +34,7 @@ class Fillet
     FeatureSetPtr edges_;
     ScalarPtr r_;
 
+    Fillet(const Fillet&o, TreeCloneMap& tcm);
     Fillet ( FeatureSetPtr edges, ScalarPtr r );
 
     size_t calcHash() const override;
@@ -41,8 +42,11 @@ class Fillet
 
 public:
     declareType ( "Fillet" );
-
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (edges_, r_))
+#endif
     CREATE_FUNCTION(Fillet);
+    CLONEABLE(Fillet);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

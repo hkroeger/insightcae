@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_ROTATEDHELICALSWEEP_H
 
 #include "cadfeature.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {
@@ -38,12 +39,16 @@ class RotatedHelicalSweep
   size_t calcHash() const override;
   void build() override;
 
+  RotatedHelicalSweep(const RotatedHelicalSweep&o, TreeCloneMap& tcm);
   RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset=scalarconst(0.0));
   
 public:
   declareType("RotatedHelicalSweep");
-
+#ifndef SWIG
+  DEPENDS((sk_, p0_, axis_, P_, revoffset_));
+#endif
   CREATE_FUNCTION(RotatedHelicalSweep);
+  CLONEABLE(RotatedHelicalSweep);
   
   static void insertrule(parser::ISCADParser& ruleset);
 };

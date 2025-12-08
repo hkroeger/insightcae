@@ -12,16 +12,15 @@ addToFactoryTable(IQParameter, IQArrayParameter);
 IQArrayParameter::IQArrayParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
     : IQSpecializedParameter<insight::ArrayParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
-QString IQArrayParameter::valueText() const
+QVariant IQArrayParameter::value() const
 {
   return QString( "array[%1]" )
         .arg( parameter().size() );
@@ -57,7 +56,7 @@ QVBoxLayout* IQArrayParameter::populateEditControls(
 
 
 
-void IQArrayParameter::populateContextMenu(QMenu *cm)
+void IQArrayParameter::populateContextMenu(QMenu *cm, IQCADModel3DViewer */*viewer*/)
 {
     auto *ca = new QAction("Clear array");
     cm->addAction(ca);
@@ -71,6 +70,11 @@ void IQArrayParameter::populateContextMenu(QMenu *cm)
 }
 
 
+// IQHierarchicalDataElement *IQArrayParameter::createForChild(
+//     IQHierarchicalDataModel *model,
+//     insight::hierarchicalData::Element *ce )
+//
+//  ==>> in iqarrayelementparameter.cpp
 
 
 void IQArrayParameter::appendEmpty()

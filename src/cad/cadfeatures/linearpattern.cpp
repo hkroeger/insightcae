@@ -18,6 +18,8 @@
  */
 
 #include "linearpattern.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -53,12 +55,18 @@ size_t LinearPattern::calcHash() const
     }
   else
   {
-      h+=axis_->value();
-      h+=n_->value();
+      h+=*axis_;
+      h+=*n_;
   }
   return h.getHash();
 }
 
+
+LinearPattern::LinearPattern(const LinearPattern&o, TreeCloneMap& tcm)
+    : Compound(o, tcm),
+    CL(m1_), CL(axis_), CL(n_),
+    CL(otherpat_)
+{}
 
 
   
@@ -141,22 +149,21 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "LinearPattern",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> 
-      ',' >> ruleset.r_vectorExpression >> 
-      ',' >> ruleset.r_scalarExpression >> ')' ) 
+    '(' > ruleset.r_solidmodel_expression [qi::_val = qi::_1 ]  >  ','
+      >
+    (  ruleset.r_vectorExpression >  ','
+      > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &LinearPattern::create<FeaturePtr, VectorPtr, ScalarPtr>,
-                         qi::_1, qi::_2, qi::_3) ]
+                         qi::_val, qi::_1, qi::_2) ]
     |
     (
-     '(' >>
-       ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression
-      >> ')'
+     ruleset.r_solidmodel_expression > ')'
     ) [ qi::_val = phx::bind(
                           &LinearPattern::create<FeaturePtr, FeaturePtr>,
-                          qi::_1, qi::_2) ]
+                          qi::_val, qi::_1) ]
 
     ))
   );

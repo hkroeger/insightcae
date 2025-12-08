@@ -9,10 +9,12 @@
 
 
 IQVTKCADModel3DViewerMeasurePoints::IQVTKCADModel3DViewerMeasurePoints(IQVTKCADModel3DViewer &viewWidget)
-  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
+  : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, false)
 {
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             viewer().deactivateSubshapeSelectionAll();
         });
 }
@@ -31,6 +33,8 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
   sel->entitySelected.connect(
       [this](IQVTKCADModel3DViewer::SubshapeData p1)
       {
+          DBG_SLOT(entitySelected);
+
           if (p1.subshapeType_ == insight::cad::Vertex)
           {
               gp_Pnt p =BRep_Tool::Pnt(p1.feat->vertex(p1.id_));
@@ -41,6 +45,8 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
               sel2->entitySelected.connect(
                   [this](IQVTKCADModel3DViewer::SubshapeData p2)
                   {
+                      DBG_SLOT(entitySelected);
+
                       if (p2.subshapeType_ == insight::cad::Vertex)
                       {
                           gp_Pnt p =BRep_Tool::Pnt(p2.feat->vertex(p2.id_));
@@ -52,9 +58,16 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
                               model!=nullptr,
                               "invalid model type" );
 
+
+                          auto existingActions = model->postprocActions();
+                          auto lbl = insight::findUnusedLabel(
+                              existingActions.begin(), existingActions.end(),
+                              std::string("distance measurement"),
+                              [](decltype(existingActions)::const_iterator i)
+                              { return i->first; } );
                           model->addPostprocAction
                               (
-                                  "distance measurement",
+                                  lbl,
                                   insight::cad::PostprocActionPtr
                                   (
                                       new insight::cad::Distance(p1_, p2_)
@@ -72,4 +85,20 @@ void IQVTKCADModel3DViewerMeasurePoints::start()
       );
 
   launchAction(std::move(sel));
+}
+
+
+bool IQVTKCADModel3DViewerMeasurePoints::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onMouseClick(btn, nFlags, point);
 }

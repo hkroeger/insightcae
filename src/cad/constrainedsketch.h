@@ -3,6 +3,7 @@
 
 
 #include "base/cppextensions.h"
+#include "constrainedsketchentity.h"
 #include "sketch.h"
 #include "base/exception.h"
 #include "base/parameterset.h"
@@ -37,16 +38,23 @@ public:
 struct LayerProperties
     : public insight::ParameterSet
 {
-    using insight::ParameterSet::ParameterSet;
+    arma::mat color;
 
-    static std::unique_ptr<LayerProperties> create();
+    // using insight::ParameterSet::ParameterSet;
+
     static std::unique_ptr<LayerProperties> create(
-        const ParameterSet& parameters );
+        const arma::mat& c );
+    static std::unique_ptr<LayerProperties> create(
+        const ParameterSet& parameters, const arma::mat& c );
 
     std::unique_ptr<LayerProperties> cloneLayerProperties() const
     {
-        return create(*this);
+        return create(*this, color);
     }
+
+private:
+    LayerProperties(const arma::mat& c);
+    LayerProperties(Entries &&defaultValue, const arma::mat& c);
 };
 
 
@@ -146,6 +154,7 @@ public:
 class ConstrainedSketch
     : public Feature
 {
+
 public:    
     enum SolverType
     {
@@ -184,6 +193,7 @@ private:
 
     std::map<std::string, std::unique_ptr<LayerProperties> > layerProperties_;
 
+    ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm);
     ConstrainedSketch( DatumPtr pl, const ConstrainedSketchParametersDelegate& pd );
     ConstrainedSketch( const ConstrainedSketch& other );
 
@@ -191,6 +201,11 @@ private:
     void build() override;
 
 public:
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
+
+    CLONEABLE(ConstrainedSketch);
+
     // required to make boost::adaptors::index work
     using iterator = typename GeometryMap::iterator;
     using const_iterator = typename GeometryMap::const_iterator;
@@ -215,6 +230,8 @@ public:
 
     const DatumPtr& plane() const;
     VectorPtr sketchPlaneNormal() const;
+
+    static arma::mat p3Dto2D(const gp_Ax3& plane, const arma::mat& p3d);
     arma::mat p3Dto2D(const arma::mat& p3d) const;
 
     GeometryMap::key_type findUnusedID(int direction=1) const;
@@ -274,8 +291,10 @@ public:
 
     arma::mat sketchBoundingBox() const;
 
+    std::set<std::string> unUsedLayerNames() const;
     std::set<std::string> usedLayerNames() const;
     std::set<std::string> layerNames() const;
+    bool removeUnusedLayers();
 
     bool hasLayer(const std::string& layerName) const;
     bool layerIsUsed(const std::string& layerName) const;
@@ -297,6 +316,58 @@ public:
         const ConstrainedSketchParametersDelegate& pd );
 
     void removeLayer(const std::string& layerName);
+
+    // geometric/topologic queries
+    enum LineUnderPointType { OnEnd=0, OnMiddle=1 };
+    struct LineUnderPoint {
+        std::shared_ptr<ConstrainedSketchEntity> line;
+        LineUnderPointType lupt;
+
+        bool operator<(const LineUnderPoint& o) const;
+    };
+    struct LinesUnderPointSearchResult
+        : public std::set<LineUnderPoint>
+    {
+        using std::set<LineUnderPoint>::set;
+
+        std::set<insight::cad::ConstrainedSketchEntityPtr>
+        filterMany(
+            std::function<bool(const LineUnderPoint&)> ff =
+            [](const LineUnderPoint&){ return true; })
+        {
+            std::set<insight::cad::ConstrainedSketchEntityPtr> r;
+            for (const auto& c: *this)
+            {
+                if (ff(c)) r.insert(c.line);
+            }
+
+            return r;
+        }
+
+        insight::cad::ConstrainedSketchEntityPtr
+        filterOne(
+            std::function<bool(const LineUnderPoint&)> ff =
+                [](const LineUnderPoint&){ return true; },
+            bool doThrow = true )
+        {
+            auto r=filterMany(ff);
+
+            if (r.size()!=1)
+            {
+                if (doThrow)
+                    throw insight::Exception(
+                        str(boost::format("expected exactly one entity, got %d")
+                            % r.size()));
+                else
+                    return nullptr;
+            }
+
+            return *r.begin();
+        }
+    };
+
+    LinesUnderPointSearchResult findLinesUnderPoint(
+        const arma::mat& p2d );
 
     std::vector<std::weak_ptr<insight::cad::ConstrainedSketchEntity> >
     entitiesInsideRect( double x1, double y1, double x2, double y2 ) const;

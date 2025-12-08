@@ -1,4 +1,4 @@
-
+#include "cadfeatures.h"
 #include "cadpostprocactions/pointdistance.h"
 #include "postprocactionvisualizer.h"
 

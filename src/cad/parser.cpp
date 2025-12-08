@@ -19,9 +19,11 @@
  */
 
 #include "cadtypes.h"
+#include <memory>
 #ifdef INSIGHT_CAD_DEBUG
 #define BOOST_SPIRIT_DEBUG
 #endif
+
 
 #include "cadfeature.h"
 
@@ -40,6 +42,7 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "cadfeatures/modelfeature.h"
 
 using namespace std;
 using namespace boost;
@@ -127,18 +130,40 @@ using namespace phx;
 using namespace insight::cad;
 
 
-
-
-void SyntaxElementDirectory::addEntry(SyntaxElementLocation location, FeaturePtr element)
+ostream &operator<<(ostream &os, const SyntaxElementLocation &sel)
 {
-//     std::cout<<"between START="<<location.first<<" END="<<location.second<<std::endl;
-    this->insert(std::pair<SyntaxElementLocation, FeaturePtr>(location, element));
+    os << sel.second.first << " until " << sel.second.second;
+    if (!sel.first.empty())
+        os << " in file \""<<sel.first<<"\"";
+    return os;
+}
+
+void SyntaxElementDirectory::addEntry(
+    SyntaxElementLocation location, FeaturePtr element)
+{
+    // remove, if already contained
+    if (count(location)) erase(location);
+
+    this->insert(
+        std::pair<SyntaxElementLocation, SyntaxElement>(
+            location, element ) );
 }
 
 
+void SyntaxElementDirectory::addFSEntry(
+    SyntaxElementLocation location, FeatureSetPtr element)
+{
+    // remove, if already contained
+    if (count(location)) erase(location);
+
+    this->insert(
+        std::pair<SyntaxElementLocation, SyntaxElement>(
+            location, element ) );
+}
 
 
-FeaturePtr SyntaxElementDirectory::findElement(long location, const boost::filesystem::path& file) const
+SyntaxElement SyntaxElementDirectory::findElement(
+    long location, const boost::filesystem::path& file ) const
 {
     for (const value_type& elem: *this)
     {
@@ -147,27 +172,6 @@ FeaturePtr SyntaxElementDirectory::findElement(long location, const boost::files
             return elem.second;
     }
     return FeaturePtr();
-}
-
-
-
-SyntaxElementLocation SyntaxElementDirectory::findElement(ConstFeaturePtr element) const
-{
-  std::cout<<"searching element "<<element->featureSymbolName()<<std::endl;
-  const_iterator it = std::find_if
-      (
-        this->begin(),
-        this->end(),
-        [&element](const value_type & t) -> bool
-        {
-//          std::cout<<t.first.second.first<<" ("<<bool(t.second)<<")..."<<t.first.second.second<<" ("<<bool(element)<<")"<<std::endl;
-          return t.second == element;
-        }
-      );
-  if (it==end())
-    return SyntaxElementLocation("", SyntaxElementPos(-1, -1));
-  else
-    return it->first;
 }
 
 
@@ -184,6 +188,18 @@ skip_grammar::skip_grammar()
 }
 
 
+
+SubmodelRule::SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars)
+: model_(std::make_shared<Model>(
+             mergeMVTs(parentModel.allVariables(), addVars) ) ),
+    parser_(model_.get())
+{}
+
+const qi::rule<std::string::iterator, skip_grammar>&
+SubmodelRule::rule() const
+{
+    return parser_.r_model;
+}
 
 
 
@@ -207,6 +223,7 @@ skip_grammar::skip_grammar()
 
 
 
+
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenameinfo)
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >(r_model),
@@ -216,14 +233,14 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 {
     r_model =
 //      current_pos.save_start_pos >>
-        ( r_string | qi::attr(std::string()) ) [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
+        ( r_string | qi::attr(std::string()) )
+            [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
         >>
-        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) ) [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
+        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) )
+            [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
         >>
         *(
             r_assignment
-            |
-            r_modelstep
             |
             r_solidmodel_propertyAssignment
         )
@@ -237,12 +254,12 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
     r_identifier.name("identifier");
 
     r_path = as_string[
-                 lexeme [ "\"" >> *~char_("\"") >> "\"" ]
+                 lexeme [ "\"" > *~char_("\"") > "\"" ]
              ];
     r_path.name("path");
 
     r_string = as_string[
-                   lexeme [ "\'" >> *~char_("\'") >> "\'" ]
+                   lexeme [ "\'" > *~char_("\'") > "\'" ]
                ];
     r_string.name("string");
 
@@ -251,85 +268,119 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
      *
      */
     r_assignment =
-        ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> '=' >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-        [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, false, qi::_5),
-            phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
-                       phx::construct<SyntaxElementLocation>(
-                         filenameinfo_,
-                         phx::construct<SyntaxElementPos>(qi::_1, qi::_3)
-                       ),
-                       qi::_4
-                  )
-            ) ]
-        |
-        ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> lit("?=") >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-        [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_2, qi::_4, false, qi::_5),
-            phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
-                       phx::construct<SyntaxElementLocation>(
-                         filenameinfo_,
-                         phx::construct<SyntaxElementPos>(qi::_1, qi::_3)
-                       ),
-                       qi::_4
-                  )
-            )]
-        |
-        ( r_identifier >> '='  >> r_datumExpression >> ';')
-        [ phx::bind(&Model::addDatum, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> lit("?=")  >> r_datumExpression >> ';')
-        [ phx::bind(&Model::addDatumIfNotPresent, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> '='  >> r_scalarExpression >> ';')
-        [ phx::bind(&Model::addScalar, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';')
-        [ phx::bind(&Model::addScalarIfNotPresent, model_, qi::_1, qi::_2) ]
+        //                 1              2                         3                            4                     5
+        ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
+        [ qi::_a=qi::_2, qi::_b=phx::construct<SyntaxElementPos>(qi::_1, qi::_3) ]
+        >> (
+         ( ':' >
+          //              1                2
+          (r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+             [ ( phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, true, qi::_2),
+               phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
+                         phx::construct<SyntaxElementLocation>(
+                             filenameinfo_, qi::_b ),
+                         qi::_1
+                         )
+               ) ]
+         )
+         |
+         ( qi::lit("=") >
+          (
+              ( r_datumExpression >> ';' )
+                [ phx::bind(&Model::addDatum, model_, qi::_a, qi::_1) ]
 
-        |
-        ( r_identifier >> '='  >> r_vectorExpression >> ';')
-        [ phx::bind(&Model::addPoint, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';')
-        [ phx::bind(&Model::addPointIfNotPresent, model_, qi::_1, qi::_2) ]
+            | ( r_scalarExpression >> ';' )
+                [ phx::bind(&Model::addScalar, model_, qi::_a, qi::_1) ]
 
-        |
-        ( r_identifier >> lit("!=")  >> r_vectorExpression >> ';')
-        [ phx::bind(&Model::addDirection, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> lit("?!=")  >> r_vectorExpression >> ';')
-        [ phx::bind(&Model::addDirectionIfNotPresent, model_, qi::_1, qi::_2) ]
+            | ( r_vectorExpression >> ';' )
+                [ phx::bind(&Model::addPoint, model_, qi::_a, qi::_1) ]
 
-        |
-        ( r_identifier >> '='  >> r_vertexFeaturesExpression >> ';')
-        [ phx::bind(&Model::addVertexFeature, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';')
-        [ phx::bind(&Model::addEdgeFeature, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> '='  >> r_faceFeaturesExpression >> ';')
-        [ phx::bind(&Model::addFaceFeature, model_, qi::_1, qi::_2) ]
-        |
-        ( r_identifier >> '='  >> r_solidFeaturesExpression >> ';')
-        [ phx::bind(&Model::addSolidFeature, model_, qi::_1, qi::_2) ]
-        ;
+            | ( r_vertexFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addVertexFeature, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_edgeFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addEdgeFeature, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_faceFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addFaceFeature, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_solidFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addSolidFeature, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            //              1                2
+            | (r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+                [ ( phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, false, qi::_2),
+                  phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
+                           phx::construct<SyntaxElementLocation>(
+                               filenameinfo_, qi::_b ),
+                           qi::_1
+                           )
+                 ) ]
+          )
+         )
+         |
+         ( qi::lit("?=") >
+           (
+              ( r_datumExpression >> ';' )
+               [ phx::bind(&Model::addDatumIfNotPresent, model_, qi::_a, qi::_1) ]
+
+            | ( r_scalarExpression >> ';' )
+               [ phx::bind(&Model::addScalarIfNotPresent, model_, qi::_a, qi::_1) ]
+            | ( r_vectorExpression >> ';' )
+               [ phx::bind(&Model::addPointIfNotPresent, model_, qi::_a, qi::_1) ]
+
+            | ( r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+               [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_a, qi::_1, false, qi::_2),
+                  phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
+                            phx::construct<SyntaxElementLocation>(
+                                filenameinfo_, qi::_b ),
+                            qi::_1
+                            )
+                  )]
+
+           )
+         )
+        );
+
+        // |
+        // ( r_identifier >> lit("!=")  >> r_vectorExpression >> ';')
+        // [ phx::bind(&Model::addDirection, model_, qi::_1, qi::_2) ]
+        // |
+        // ( r_identifier >> lit("?!=")  >> r_vectorExpression >> ';')
+        // [ phx::bind(&Model::addDirectionIfNotPresent, model_, qi::_1, qi::_2) ]
+
     r_assignment.name("assignment");
 
-
-    r_modelstep  =  ( current_pos.current_pos >> r_identifier >> current_pos.current_pos >> ':'
-                      >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-                    [ ( phx::bind(&Model::addModelstep, model_, qi::_2, qi::_4, true, qi::_5),
-                        phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
-                                   phx::construct<SyntaxElementLocation>(
-                                     filenameinfo_,
-                                     phx::construct<SyntaxElementPos>(qi::_1, qi::_3)
-                                   ),
-                                   qi::_4
-                              )
-                        ) ]
-//       [ (phx::bind(&Model::addComponent, model_, qi::_2, qi::_3), std::cout<<"POS="<<qi::_1<<std::endl ) ]
-                    ;
-    r_modelstep.name("modelling step");
-
+    // on_error<qi::fail>
+    //     (
+    //         r_assignment, std::cout
+    //             << val("Error! Expecting ")
+    //             << qi::_4                               // what failed?
+    //             << val(" here: \"")
+    //             << construct<std::string>(qi::_3, qi::_2)   // iterators to error-pos, end
+    //             << val("\"")
+    //             << std::endl
+    //         );
 
     createDocExpressions();
     createSelectionExpressions();
@@ -338,13 +389,17 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
     createVectorExpressions();
     createFeatureExpressions();
     createPostProcExpressions();
+
+    // BOOST_SPIRIT_DEBUG_RULE(r_assignment);
 }
 
 
 
-
-bool parseISCADModel(std::string::iterator first, std::string::iterator last, Model* model,
-                     const boost::filesystem::path& filenameinfo)
+bool parseISCADModel(
+    std::string::iterator first,
+    std::string::iterator last,
+    Model* model,
+    const boost::filesystem::path& filenameinfo )
 {
   ISCADParser parser(model, filenameinfo);
   skip_grammar skip;
@@ -363,12 +418,18 @@ bool parseISCADModel(std::string::iterator first, std::string::iterator last, Mo
   return r;
 }
 
+
+
 }
 
 using namespace parser;
 
 
-bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd)
+bool parseISCADModelFile(
+    const boost::filesystem::path& fn,
+    Model* m,
+    int* failloc,
+    parser::SyntaxElementDirectoryPtr* sd )
 {
     if (!boost::filesystem::exists(fn))
     {
@@ -414,6 +475,8 @@ bool parseISCADModel
     {
 
         ISCADParser parser ( m, filenameinfo );
+        if ( sd ) *sd = parser.syntax_element_locations;
+
         skip_grammar skip;
 
         //   std::cout<<"Parsing started."<<std::endl;
@@ -430,13 +493,6 @@ bool parseISCADModel
         {
             if ( failloc ) *failloc=int ( first-orgbegin );
             return false;
-        }
-        else
-        {
-            if ( sd )
-            {
-                *sd = parser.syntax_element_locations;
-            }
         }
     }
     catch ( const qi::expectation_failure<std::string::iterator>& e )

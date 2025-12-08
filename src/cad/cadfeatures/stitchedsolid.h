@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_STITCHEDSOLID_H
 
 #include "cadfeature.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {
@@ -34,11 +35,16 @@ class StitchedSolid
   size_t calcHash() const override;
   void build() override;
 
+  StitchedSolid(const StitchedSolid&o, TreeCloneMap& tcm);
   StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol=scalarconst(1e-3));
   
 public:
   declareType("StitchedSolid");
+#ifndef SWIG
+  DEPENDS((faces_,tol_));
+#endif
   CREATE_FUNCTION(StitchedSolid);
+  CLONEABLE(StitchedSolid);
   
   static FeatureCmdInfoList ruleDocumentation();
   static void insertrule(parser::ISCADParser& ruleset);

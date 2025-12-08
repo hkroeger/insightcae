@@ -19,69 +19,152 @@
 
 #include "scalarops.h"
 
-insight::cad::MultipliedScalar::MultipliedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
-: p1_(p1), p2_(p2)
+#include "parameterlisthash.h"
+
+defineType(insight::cad::MultipliedScalar);
+
+insight::cad::MultipliedScalar::MultipliedScalar(const MultipliedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
 {}
 
-double insight::cad::MultipliedScalar::value() const
+insight::cad::MultipliedScalar::MultipliedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
+: p1_(p1), p2_(p2)
+{
+    // registerDependencies({&p1_, &p2_});
+}
+
+size_t insight::cad::MultipliedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::MultipliedScalar::calcValue() const
 {
   return p1_->value() * p2_->value();
 }
 
 
+defineType(insight::cad::DividedScalar);
 
+insight::cad::DividedScalar::DividedScalar(const DividedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::DividedScalar::DividedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
+size_t insight::cad::DividedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
 
-double insight::cad::DividedScalar::value() const
+double insight::cad::DividedScalar::calcValue() const
 {
   return p1_->value() / p2_->value();
 }
 
 
 
+defineType(insight::cad::AddedScalar);
+
+insight::cad::AddedScalar::AddedScalar(const AddedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::AddedScalar::AddedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-double insight::cad::AddedScalar::value() const
+size_t insight::cad::AddedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::AddedScalar::calcValue() const
 {
   return p1_->value() + p2_->value();
 }
 
 
 
+defineType(insight::cad::SubtractedScalar);
+
+insight::cad::SubtractedScalar::SubtractedScalar(const SubtractedScalar &o, TreeCloneMap &tcm)
+    : CL(p1_), CL(p2_)
+{}
 
 insight::cad::SubtractedScalar::SubtractedScalar(insight::cad::ScalarPtr p1, insight::cad::ScalarPtr p2)
 : p1_(p1), p2_(p2)
 {}
 
-double insight::cad::SubtractedScalar::value() const
+size_t insight::cad::SubtractedScalar::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=*p2_;
+    return h.getHash();
+}
+
+double insight::cad::SubtractedScalar::calcValue() const
 {
   return p1_->value() - p2_->value();
 }
 
 
+defineType(insight::cad::VectorComponent);
+
+insight::cad::VectorComponent::VectorComponent(const VectorComponent &o, TreeCloneMap &tcm)
+    : CL(p1_), cmpt_(o.cmpt_)
+{}
 
 insight::cad::VectorComponent::VectorComponent(insight::cad::VectorPtr p1, int cmpt)
 : p1_(p1),
   cmpt_(cmpt)
 {}
 
-double insight::cad::VectorComponent::value() const
+size_t insight::cad::VectorComponent::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    h+=cmpt_;
+    return h.getHash();
+}
+
+double insight::cad::VectorComponent::calcValue() const
 {
   return p1_->value()(cmpt_);
 }
+
+
+
+defineType(insight::cad::VectorMag);
+
+insight::cad::VectorMag::VectorMag(const VectorMag &o, TreeCloneMap &tcm)
+    : CL(p1_)
+{}
 
 insight::cad::VectorMag::VectorMag(insight::cad::VectorPtr p1)
 : p1_(p1)
 {}
 
-double insight::cad::VectorMag::value() const
+size_t insight::cad::VectorMag::calcHash() const
+{
+    ParameterListHash h;
+    h+=*p1_;
+    return h.getHash();
+}
+
+double insight::cad::VectorMag::calcValue() const
 {
   return arma::norm(p1_->value(),2);
 }

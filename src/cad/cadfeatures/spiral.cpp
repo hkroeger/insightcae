@@ -18,9 +18,12 @@
  */
 
 #include "spiral.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadparameters.h"
 
 #include "TColgp_HArray1OfPnt.hxx"
 #include "GeomAPI_Interpolate.hxx"
@@ -46,15 +49,19 @@ size_t Spiral::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=n_->value();
-  h+=a_->value();
-  h+=P_->value();
+  h+=*p0_;
+  h+=*axis_;
+  h+=*n_;
+  h+=*a_;
+  h+=*P_;
   return h.getHash();
 }
 
 
+
+Spiral::Spiral(const Spiral&o, TreeCloneMap& tcm)
+: CL(p0_), CL(axis_), CL(n_), CL(a_), CL(P_)
+{}
 
 
 
@@ -96,11 +103,12 @@ void Spiral::insertrule(parser::ISCADParser& ruleset)
   (
     "Spiral",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-      ( '(' >> ruleset.r_vectorExpression >> ','
-            >> ruleset.r_vectorExpression >> ','
-            >> ruleset.r_scalarExpression >> ','
-            >> ruleset.r_scalarExpression
-            >> (( ',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(0.0))) >> ')' )
+      ( '(' > ruleset.r_vectorExpression > ','
+            > ruleset.r_vectorExpression > ','
+            > ruleset.r_scalarExpression > ','
+            > ruleset.r_scalarExpression
+            > (( ',' > ruleset.r_scalarExpression)|qi::attr(scalarconst(0.0)))
+            > ')' )
                     [ qi::_val = phx::bind(
                          &Spiral::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

@@ -13,7 +13,7 @@ defineTemplateType(IQPropertyLibrarySelectionParameter);
 addToFactoryTable(IQParameter, IQPropertyLibrarySelectionParameter);
 
 addFunctionToStaticFunctionTable(
-    IQParameterGridViewDelegateEditorWidget, IQPropertyLibrarySelectionParameter,
+    IQHierarchicalDataGridViewDelegateEditorWidget, IQPropertyLibrarySelectionParameter,
     createDelegate,
     [](QObject* parent) { return new IQSelectionDelegate(parent); }
     );

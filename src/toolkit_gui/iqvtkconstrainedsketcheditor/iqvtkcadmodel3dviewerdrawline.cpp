@@ -131,6 +131,8 @@ void IQVTKCADModel3DViewerDrawLine::start()
     pointSelected.connect(
         [this](PointProperty pp)
         {
+            DBG_SLOT(pointSelected);
+
             if (!p1_)
             {
                 p1_=std::make_shared_aggr<PointProperty>(pp);
@@ -170,7 +172,15 @@ void IQVTKCADModel3DViewerDrawLine::start()
                 p1_=p2_;
                 p2_.reset();
 
-                if (p1_->isAnExistingPoint) finishAction();
+                if (p1_->isAnExistingPoint)
+                {
+                    // end line here, restart
+                    previewLine_->SetVisibility(false);
+                    viewer().renderer()->RemoveActor(previewLine_);
+                    previewLine_=nullptr;
+                    prevLine_=nullptr;
+                    p1_.reset();
+                }
             }
         }
         );
@@ -178,6 +188,8 @@ void IQVTKCADModel3DViewerDrawLine::start()
     newPreviewEntity.connect(
         [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> pP)
         {
+            DBG_SLOT(newPreviewEntity);
+
             if (auto p =
                 std::dynamic_pointer_cast<insight::cad::SketchPoint>(
                     pP.lock() ) )
@@ -220,4 +232,11 @@ bool IQVTKCADModel3DViewerDrawLine::onMouseClick  (
 
     return IQVTKCADModel3DViewerPlanePointBasedAction
         ::onMouseClick(btn, nFlags, point);
+}
+
+
+
+QString IQVTKCADModel3DViewerDrawLine::description() const
+{
+    return "Draw line";
 }

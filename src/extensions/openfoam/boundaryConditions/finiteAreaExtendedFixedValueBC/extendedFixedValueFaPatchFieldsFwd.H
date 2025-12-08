@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -15,12 +15,31 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
  */
 
-#include "loop.h"
+#ifndef extendedFixedValueFvPatchFieldsFwd_H
+#define extendedFixedValueFvPatchFieldsFwd_H
 
-namespace insight {
-namespace cad {
-  
-}
-}
+#include "extendedFixedValueFvPatchField.H"
+#include "fvPatchField.H"
+#include "fieldTypes.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+template<class Type> class extendedFixedValueFvPatchField;
+
+makePatchTypeFieldTypedefsE(extended)
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif

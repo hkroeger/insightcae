@@ -49,8 +49,7 @@ public:
       const boost::filesystem::path& fileParentPath ) const;
 
   void readFromNode(
-      rapidxml::xml_document<>& doc,
-      rapidxml::xml_node<> *rootnode,
+      const rapidxml::xml_node<> &rootnode,
       insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
       MultivisualizationGenerator* visGen,
       const boost::filesystem::path& fileParentPath );

@@ -550,6 +550,16 @@ static std::shared_ptr<DerivedClass> create(T...args) \
             new DerivedClass(::std::forward<T>(args)...)); \
 }
 
+#define CREATE_FUNCTION_W_INIT(DerivedClass, InitFunction) \
+template <typename... T> \
+    static std::shared_ptr<DerivedClass> create(T...args) \
+{ \
+        auto newobj=std::shared_ptr<DerivedClass>( \
+            new DerivedClass(::std::forward<T>(args)...)); \
+        newobj->InitFunction(); \
+        return newobj; \
+}
+
 #define REUSE_CTOR(BaseClass, DerivedClass) \
 template<class ...Args> \
 DerivedClass(Args&&... addArgs) \

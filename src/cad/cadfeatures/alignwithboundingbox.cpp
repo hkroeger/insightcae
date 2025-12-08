@@ -1,7 +1,9 @@
+#include "cadfeatures/transform.h"
 #include "alignwithboundingbox.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/tools.h"
 #include "base/translations.h"
-#include "cadfeatures/transform.h"
 #include "cadtypes.h"
 
 namespace insight {
@@ -12,21 +14,44 @@ addToStaticFunctionTable(Feature, AlignWithBoundingBox, insertrule);
 addToStaticFunctionTable(Feature, AlignWithBoundingBox, ruleDocumentation);
 
 
+std::shared_ptr<DependencySource>
+AlignWithBoundingBox::Alignment::shallowClone(TreeCloneMap& tcm) const
+{
+    auto a=std::make_shared<AlignWithBoundingBox::Alignment>();
+    a->other_=tcm.clone(other_);
+    a->direction_=tcm.clone(direction_);
+    a->atOther_=atOther_;
+    a->atThis_=atThis_;
+    return a;
+}
+
+AlignWithBoundingBox::AlignWithBoundingBox(const AlignWithBoundingBox&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), trsf_(o.trsf_)
+{
+    for (auto& oa: o.alignments_)
+    {
+        alignments_.push_back(
+            dynamic_cast<AlignWithBoundingBox::Alignment&>
+            (*(oa.shallowClone(tcm)))
+            );
+    }
+}
+
+
 AlignWithBoundingBox::AlignWithBoundingBox (
     FeaturePtr m1,
     const std::vector<boost::fusion::vector<
         FeaturePtr, VectorPtr, AlignLocation, AlignLocation> >& other_direction_atOther_atThis    )
-: DerivedFeature(m1),
-  m1_(m1)
+: DerivedFeature(m1)
 {
     for (auto& odot: other_direction_atOther_atThis)
     {
-        alignments_.push_back({
-            boost::fusion::get<0>(odot),
-            boost::fusion::get<1>(odot),
-            boost::fusion::get<2>(odot),
-            boost::fusion::get<3>(odot)
-        });
+        Alignment a;
+        a.other_=boost::fusion::get<0>(odot);
+        a.direction_=boost::fusion::get<1>(odot);
+        a.atOther_=boost::fusion::get<2>(odot);
+        a.atThis_=boost::fusion::get<3>(odot);
+        alignments_.push_back(a);
     }
 }
 
@@ -34,16 +59,15 @@ size_t AlignWithBoundingBox::calcHash() const
 {
     ParameterListHash h;
     h+=this->type();
-    h+=*m1_;
     h+=alignments_.size();
     for (auto& a: alignments_)
     {
         h+=*a.other_;
-        h+=a.direction_->value();
+        h+=*a.direction_;
         h+=int(a.atOther_);
         h+=int(a.atThis_);
     }
-    return h.getHash();
+    return h.getHash()+DerivedFeature::calcHash();
 }
 
 void AlignWithBoundingBox::build()
@@ -52,7 +76,7 @@ void AlignWithBoundingBox::build()
 
     if (!cache.contains(hash()))
     {
-        FeaturePtr org = m1_;
+        auto org = baseFeature();
 
         for (auto& a: alignments_)
         {
@@ -168,6 +192,18 @@ gp_Trsf AlignWithBoundingBox::transformation() const
 {
     checkForBuildDuringAccess();
     return trsf_;
+}
+
+void AlignWithBoundingBox::Alignment::replaceDependency(const DependencyReplacement &repl)
+{
+    repl(other_);
+    repl(direction_);
+}
+
+void AlignWithBoundingBox::Alignment::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "other_")(other_);
+    DepListInserter(dl, "direction_")(direction_);
 }
 
 

@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "iqresultsetmodel.h"
+#include "iqfilteredresultsetmodel.h"
 #include "iqresultsetfiltermodel.h"
 
 namespace Ui {
@@ -24,12 +24,12 @@ public:
     ~IQResultSetDisplayerWidget();
 
     void clear();
-    void loadResults(insight::ResultSetPtr results);
+    void loadResults(std::unique_ptr<insight::ResultSet> results);
 
     bool hasResults() const;
 
 public Q_SLOTS:
-    void loadResultSet(const std::string& analysisName = std::string());
+    void loadResultSet();
     void saveResultSetAs();
     void renderReport();
     void loadFilter();

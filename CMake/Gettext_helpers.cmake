@@ -137,9 +137,12 @@ function(configure_gettext)
                 "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
                 "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
                 "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+            COMMAND sed -i "/^\\\"POT-Creation-Date: .*\\\"$$/d"
+                "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
             DEPENDS "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            COMMENT "Updating the ${lang} .po file from the .pot file")
+            COMMENT "Updating the ${lang} .po file from the .pot file; Remove POT-Creation-Date")
+
 
         add_custom_command(
             OUTPUT "${GETTEXT_GMOFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.gmo"

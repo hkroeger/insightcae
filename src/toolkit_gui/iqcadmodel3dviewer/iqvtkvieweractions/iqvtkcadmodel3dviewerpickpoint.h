@@ -11,14 +11,18 @@ class IQVTKCADModel3DViewerPickPoint
 {
     Q_OBJECT
 
+    bool finishAfterFirstClick_;
+
 public:
     IQVTKCADModel3DViewerPickPoint(
-        ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent );
+        ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
+        bool finishAfterFirstClick = false );
 
+    QString description() const override;
 
     void start() override;
 
-    bool onMouseClick(
+    bool onMouseClick  (
         Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override;

@@ -16,13 +16,9 @@ public:
     IQDoubleParameter
     (
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element
     );
-
-    QString valueText() const override;
-    bool setValue(QVariant value) override;
 
     QVBoxLayout* populateEditControls(
             QWidget* editControlsContainer,

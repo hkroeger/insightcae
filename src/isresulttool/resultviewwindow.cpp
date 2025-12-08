@@ -51,7 +51,8 @@ ResultViewWindow::~ResultViewWindow()
 
 
 
-void ResultViewWindow::loadResults(insight::ResultSetPtr results)
+void ResultViewWindow::loadResults(
+    std::unique_ptr<insight::ResultSet> results )
 {
-    viewer_->loadResults(results);
+    viewer_->loadResults(std::move(results));
 }

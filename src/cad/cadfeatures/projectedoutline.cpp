@@ -134,6 +134,12 @@ TopoDS_Shape makeOutlineProjectionEdges
   return allVisible;
 }
 
+
+ProjectedOutline::ProjectedOutline(const ProjectedOutline&o, TreeCloneMap& tcm)
+    : CL(source_), CL(target_)
+{}
+
+
 ProjectedOutline::ProjectedOutline(FeaturePtr source, DatumPtr target)
 : source_(source), target_(target)
 {}
@@ -153,7 +159,8 @@ void ProjectedOutline::insertrule(parser::ISCADParser& ruleset)
     "ProjectedOutline",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_datumExpression > ')' )
                   [ qi::_val = phx::bind(
                        &ProjectedOutline::create<FeaturePtr, DatumPtr>,
                        qi::_1, qi::_2) ]

@@ -19,6 +19,7 @@
 
 #include "coincident.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 #include "occtools.h"
 #include "geotest.h"
@@ -68,7 +69,7 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
   {
     TopoDS_Face e1=TopoDS::Face(model_->face(feature));
     TopoDS_Face e2=TopoDS::Face(f_->model()->face(f));
-    match |= isPartOf(e2, e1, tol_->evaluate(feature) );
+    match |= isPartOf(e2, e1, tol_->evaluate(feature) ) ;
   }
   
   return match;

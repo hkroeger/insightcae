@@ -18,6 +18,9 @@
  */
 
 #include "fillingface.h"
+#include "base/exception.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -76,6 +79,27 @@ size_t FillingFace::calcHash() const
 }
 
 
+
+FillingFace::FillingFace(const FillingFace&o, TreeCloneMap& tcm)
+    : inverted_(o.inverted_)
+{
+    auto cl = [&](const EdgeInput& ei) -> EdgeInput
+    {
+        if (auto*fp = boost::get<FeaturePtr>(&ei))
+        {
+            return tcm.clone(*fp);
+        }
+        else if (auto*fsp = boost::get<FeatureSetPtr>(&ei))
+        {
+            return tcm.clone(*fsp);
+        }
+        else throw UnhandledSelection();
+        return EdgeInput();
+    };
+
+    e1_=cl(o.e1_);
+    e2_=cl(o.e2_);
+}
 
 
 

@@ -70,7 +70,9 @@ JobPtr CAEnvironment::forkCase
 
 
 
-void CAEnvironment::runSolver(const filesystem::path &exportfile, CASolverOutputAnalyzer &analyzer) const
+void CAEnvironment::runSolver(
+    const boost::filesystem::path &exportfile,
+    CASolverOutputAnalyzer &analyzer ) const
 {
  auto job = forkCase(exportfile);
 

@@ -36,9 +36,9 @@ def readMeshes(nMeshes):
         MAILLAGE_1=mesh,
 	    MAILLAGE_2=addmesh,
 	    OPERATION='SUPERPOSE');
-      DETRUIRE(CONCEPT=( _F(NOM=(mesh, addmesh) ) ), INFO=1);
+      DETRUIRE(CONCEPT=( _F(NOM=(mesh,addmesh)) ), INFO=1);
       mesh=COPIER(CONCEPT=newmesh)
-      DETRUIRE(CONCEPT=( _F(NOM=(newmesh) ) ), INFO=1);
+      DETRUIRE(CONCEPT=( _F(NOM=newmesh) ), INFO=1);
 
   return mesh
 
@@ -174,8 +174,8 @@ class BoltedJoint(object):
 
     
     self.dt = Fv / (E*(math.pi*0.25*Ds**2)*self.alpha)
-    blT=BoltedJoint.allTempRamps
-    blT[self.label]=DEFI_FONCTION(
+    bT=BoltedJoint.allTempRamps
+    bT[self.label]=DEFI_FONCTION(
 		    NOM_PARA='INST',
 		    VALE=(
 			    0,          	0,
@@ -230,6 +230,12 @@ class BoltedJoint(object):
     else: 
       return None
 
+  def LIAISON_SOLIDE_NUT(self):
+      from code_aster.Cata.Syntax import _F
+      return _F(
+          GROUP_NO=(self.beamnut, self.nutface),
+          )
+
   def DDL_IMPO_NUT(self):
     from code_aster.Cata.Syntax import _F
     if self.nutface is None:
@@ -268,17 +274,17 @@ class BoltedJoint(object):
     self.dt *= mult
     print("Bolt ", self.label,": force Fax = ", Fax, ", resulting multiplier = ", mult)
 
-    blT=BoltedJoint.allTempRamps
+    bT=BoltedJoint.allTempRamps
     
     # re-create temperature ramp for beams
     DETRUIRE(CONCEPT=(
-                    _F(NOM=blT[self.label]),
+                    _F(NOM=bT[self.label]),
                     _F(NOM=tabfor)
                     ), 
              INFO=1
              );
              
-    blT[self.label]=DEFI_FONCTION(NOM_PARA='INST',VALE=(
+    bT[self.label]=DEFI_FONCTION(NOM_PARA='INST',VALE=(
                         0,       		0,
                         self.steps,   	-self.dt
                        )

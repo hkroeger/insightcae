@@ -2,6 +2,7 @@
 #include "base/cppextensions.h"
 #include "angle.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "base/units.h"
 
 #include "vtkActor.h"
@@ -28,9 +29,9 @@ defineType(Angle);
 size_t Angle::calcHash() const
 {
   ParameterListHash h;
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=pCtr_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*pCtr_;
   return h.getHash();
 }
 

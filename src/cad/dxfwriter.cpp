@@ -19,6 +19,8 @@
  */
 
 #include "dxfwriter.h"
+#include "featureset.h"
+#include "datum.h"
 
 #include "boost/foreach.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"

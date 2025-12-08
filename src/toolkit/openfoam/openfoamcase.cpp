@@ -264,15 +264,9 @@ std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
     dimss <<"[ "; for (int c: dimset) dimss <<c<<" "; dimss<<"]";
     field["dimensions"] = OFDictData::data( dimss.str() );
     
-    std::string vstr="";
-    const FieldValue& val = boost::fusion::get<2>(i.second);
-    for ( const double& v: val)
-    {
-      vstr+=" "+lexical_cast<std::string>(v);
-    }
-    if (val.size()>1) vstr  = " ("+vstr+" )";
+    arma::mat val ( boost::fusion::get<2>(i.second) );
     
-    field["internalField"] = OFDictData::data( "uniform"+vstr );
+    field["internalField"] = OFDictData::toUniformField( val );
     field["boundaryField"] = OFDictData::dict();
   }
   
@@ -342,7 +336,7 @@ void OpenFOAMCase::createOnDisk
 (
     const boost::filesystem::path& location, 
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
-)
+) const
 {
 
   if (!restrictToFiles)
@@ -360,7 +354,7 @@ void OpenFOAMCase::createOnDisk
     const boost::filesystem::path& location, 
     std::shared_ptr<OFdicts> dictionaries, 
     const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
-)
+) const
 {
   boost::filesystem::path basepath(location);
 
@@ -489,15 +483,12 @@ void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& lo
 void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesystem::path& file, bool skipOFE, bool skipBCs, const boost::filesystem::path& casepath)
 {
   using namespace rapidxml;
-  
-  xml_document<> doc;
-  doc.parse<0> ( const_cast<char*>(&contents[0]) );
 
-  xml_node<> *rootnode = doc.first_node ( "root" );
+    insight::XMLDocument doc(contents.begin(), contents.end());
 
   if (!skipOFE)
   {
-    xml_node<> *OFEnode = rootnode->first_node ( "OFE" );
+    xml_node<> *OFEnode = doc.rootNode->first_node ( "OFE" );
     if ( OFEnode )
       {
         std::string name = OFEnode->first_attribute ( "name" )->value();
@@ -505,12 +496,13 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
       }
   }
 
-  for ( xml_node<> *e = rootnode->first_node ( "OpenFOAMCaseElement" ); e; e = e->next_sibling ( "OpenFOAMCaseElement" ) )
+  for ( xml_node<> *e = doc.rootNode->first_node ( "OpenFOAMCaseElement" ); e; e = e->next_sibling ( "OpenFOAMCaseElement" ) )
     {
       std::string type_name = e->first_attribute ( "type" )->value();
 
       auto cp = OpenFOAMCaseElement::defaultParametersFor(type_name);
-      cp->readFromNode ( std::string(), *e, file.parent_path() );
+      cp->readFromNode ( std::string(), *e );
+      cp->resolveRelativePaths(file.parent_path());
       this->insert(OpenFOAMCaseElement::lookup(type_name, *this, *cp));
     }
 
@@ -518,7 +510,7 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
     {
         insight::OFDictData::dict boundaryDict;
         
-      xml_node<> *BCnode = rootnode->first_node ( "BoundaryConditions" );
+      xml_node<> *BCnode = doc.rootNode->first_node ( "BoundaryConditions" );
       if ( BCnode )
         {
           bool bdp=true;
@@ -552,7 +544,8 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
                     {
                       auto curp =
                           BoundaryCondition::defaultParametersFor( bc_type );
-                      curp->readFromNode ( std::string(), *e, file.parent_path() );
+                      curp->readFromNode ( std::string(), *e);
+                      curp->resolveRelativePaths(file.parent_path());
                       this->insert ( insight::BoundaryCondition::lookup (
                           bc_type, *this, patch_name, boundaryDict, *curp ) );
                     }
@@ -673,6 +666,18 @@ OpenFOAMCase::~OpenFOAMCase()
 }
 
 
+bool OpenFOAMCase::hasParentRegion() const
+{
+    return parentRegion_!=nullptr;
+}
+
+OpenFOAMCase &OpenFOAMCase::parentRegion() const
+{
+    insight::assertion(hasParentRegion(), "no parent region assigned");
+    return *parentRegion_;
+}
+
+
 
 
 void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<OpenFOAMCase> regionCase)
@@ -683,6 +688,7 @@ void OpenFOAMCase::addRegionCase(const std::string& regionName, std::shared_ptr<
         );
 
   regions_.emplace(regionName, regionCase);
+  regionCase->setParentRegion(this);
 }
 
 
@@ -751,13 +757,22 @@ const
 
 std::string mpirunCommand(int np)
 {
-    std::string execmd="mpirun -np "+lexical_cast<string>(np);
+    std::string execmd("mpirun");
 
-    std::string envvarname="INSIGHT_ADDITIONAL_MPIRUN_ARGS";
-    if ( char *addargs=getenv ( envvarname.c_str() ) )
+    if ( char *alternative_mpirun_cmd =
+            getenv ( "INSIGHT_MPIRUN_CMD" ) )
+    {
+        execmd = alternative_mpirun_cmd;
+    }
+
+    execmd += str(format(" -np %d") % np);
+
+    if ( char *addargs =
+            getenv ( "INSIGHT_ADDITIONAL_MPIRUN_ARGS" ) )
     {
         execmd += " "+std::string(addargs);
     }
+
     return execmd;
 }
 
@@ -894,7 +909,7 @@ void OpenFOAMCase::runBlockMesh
     const boost::filesystem::path& location,
     int nBlocks,
     ProgressDisplayer* progressDisplayer
-)
+) const
 {
   BlockMeshOutputAnalyzer bma(progressDisplayer, nBlocks);
   runSolver(location, bma, "blockMesh");

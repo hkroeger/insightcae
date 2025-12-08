@@ -20,7 +20,7 @@ void ParameterSetGenerator::writeCppTypeDeclMakeDefaultFunction_populate(std::os
 {
     SubsetGenerator::writeCppTypeDeclMakeDefaultFunction_populate(os);
 
-    os << name << ".initialize();\n";
+    // os << name << ".initialize();\n";
 }
 
 void ParameterSetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) const

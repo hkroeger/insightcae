@@ -1,5 +1,6 @@
 #include "spatialtransformationparameter.h"
 #include "base/rapidxml.h"
+#include "base/spatialtransformation.h"
 
 namespace insight {
 
@@ -7,7 +8,9 @@ namespace insight {
 
 
 defineType(SpatialTransformationParameter);
-addToFactoryTable(Parameter, SpatialTransformationParameter);
+addParameterFactories(SpatialTransformationParameter);
+
+
 
 
 
@@ -50,11 +53,14 @@ bool SpatialTransformationParameter::isDifferent(const Parameter& p) const
       return true;
 }
 
-std::string SpatialTransformationParameter::latexRepresentation() const
+std::string SpatialTransformationParameter::latexRepresentation(
+    const std::string&,
+    int,
+    const FileStorageInfo& ) const
 {
     std::ostringstream os;
 
-    os << "\\begin{enumeration}\n";
+    os << "\\begin{enumerate}\n";
 
     os << "\\item translate by\n";
     os << "$\\left("
@@ -67,15 +73,15 @@ std::string SpatialTransformationParameter::latexRepresentation() const
 
     auto rpy=rollPitchYaw();
     os << "\\item rotate\n";
-    os << "\\begin{enumeration}\n";
+    os << "\\begin{enumerate}\n";
     os << "\\item around x (roll) by $"<<rpy[0]<<"^\\circ$\n";
     os << "\\item around y (pitch) by $"<<rpy[1]<<"^\\circ$\n";
     os << "\\item around z (yaw) by $"<<rpy[2]<<"^\\circ$\n";
-    os << "\\end{enumeration}\n";
+    os << "\\end{enumerate}\n";
 
     os << "\\item scale by "<<scale()<<"\n";
 
-    os << "\\end{enumeration}\n";
+    os << "\\end{enumerate}\n";
 
     return os.str();
 }
@@ -113,10 +119,10 @@ rapidxml::xml_node<>* SpatialTransformationParameter::appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath ) const
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
 
     xml_node<>* translateNode = doc.allocate_node(
                 node_element,
@@ -130,14 +136,7 @@ rapidxml::xml_node<>* SpatialTransformationParameter::appendToNode (
     child->append_node(RNode);
     writeMatToXMLNode(R(), doc, *RNode);
 
-    child->append_attribute
-    (
-        doc.allocate_attribute
-        (
-            "scale",
-            doc.allocate_string ( valueToString ( scale() ).c_str() )
-        )
-    );
+    appendAttribute(doc, *child, "scale", toString ( scale() ));
 
     return child;
 }
@@ -145,13 +144,13 @@ rapidxml::xml_node<>* SpatialTransformationParameter::appendToNode (
 
 
 
-void SpatialTransformationParameter::readFromNode (
+const rapidxml::xml_node<>*
+SpatialTransformationParameter::readFromNode (
         const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath )
+        const rapidxml::xml_node<>& node )
 {
     using namespace rapidxml;
-    xml_node<>* child = findNode(node, name, type());
+    auto* child = Parameter::readFromNode(name, node);
     if (child)
     {
         {
@@ -169,11 +168,8 @@ void SpatialTransformationParameter::readFromNode (
             R_.load(iss, arma::raw_ascii);
         }
 
-        {
-            auto scaleAttr=child->first_attribute ( "scale" );
-            insight::assertion(scaleAttr, "No attribute \"scale\" present in "+name+"!");
-            stringToValue ( scaleAttr->value(), scale_ );
-        }
+        scale_=getMandatoryAttribute<double>(*child, "scale" );
+
         triggerValueChanged();
     }
     else
@@ -182,43 +178,74 @@ void SpatialTransformationParameter::readFromNode (
             boost::str(
               boost::format(
                "No xml node found with type '%s' and name '%s', default value '%s' is used."
-               ) % type() % name % plainTextRepresentation()
+               ) % type() % name % plainTextRepresentation(0)
              )
           );
     }
+    return child;
 }
 
 
 
+SpatialTransformationParameter::SpatialTransformationParameter(
+    const rapidxml::xml_node<> &node)
+    : Parameter(node)
+{
+    {
+        auto *translateNode = node.first_node("translate");
+        insight::assertion(translateNode!=nullptr, "no node labelled \"translate\" found!");
+        std::string value_str=translateNode->value();
+        std::istringstream iss(value_str);
+        translate_.load(iss, arma::raw_ascii);
+    }
+    {
+        auto *RNode = node.first_node("rotationMatrix");
+        insight::assertion(RNode!=nullptr, "no node labelled \"rotationMatrix\" found!");
+        std::string value_str=RNode->value();
+        std::istringstream iss(value_str);
+        R_.load(iss, arma::raw_ascii);
+    }
 
-std::unique_ptr<Parameter>
-SpatialTransformationParameter::clone(bool init) const
+    scale_=getMandatoryAttribute<double>(node, "scale" );
+
+    triggerValueChanged();
+}
+
+
+std::unique_ptr<hierarchicalData::Element>
+SpatialTransformationParameter::clone() const
 {
     auto p= std::make_unique<SpatialTransformationParameter>(
         operator()(), description().simpleLatex(),
         isHidden(), isNecessary(), isExpert(), order()
     );
-    if (init) p->initialize();
     return p;
 }
 
 
 
 
-void SpatialTransformationParameter::copyFrom(const Parameter& p)
-{
-    operator=(dynamic_cast<const SpatialTransformationParameter&>(p));
 
+void SpatialTransformationParameter::assignFrom(const Element& e)
+{
+    auto &op=dynamic_cast<const SpatialTransformationParameter&>(e);
+
+    SpatialTransformation::operator=(op);
+
+    Parameter::assignFrom(op);
 }
 
 
 
 
-void SpatialTransformationParameter::operator=(const SpatialTransformationParameter& op)
+bool SpatialTransformationParameter::isEqual(const Element &op) const
 {
-    SpatialTransformation::operator=(op);
-
-    Parameter::copyFrom(op);
+    if (auto *oa = dynamic_cast<const SpatialTransformationParameter*>(&op))
+    {
+        return SpatialTransformation::operator==(*oa);
+    }
+    else
+        return false;
 }
 
 

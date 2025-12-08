@@ -54,6 +54,7 @@ protected:
     bool fieldListCompleted_;
     MapMethod requiredMapMethod_;
 
+    OpenFOAMCase *parentRegion_;
     std::map<std::string, std::shared_ptr<OpenFOAMCase> > regions_;
     
     void createFieldListIfRequired() const;
@@ -63,10 +64,19 @@ public:
     OpenFOAMCase ( const OpenFOAMCase& other );
     virtual ~OpenFOAMCase();
 
+    inline void setParentRegion(OpenFOAMCase* pr)
+    {
+        parentRegion_=pr;
+    }
+
+    bool hasParentRegion() const;
+    OpenFOAMCase& parentRegion() const;
+
     inline void setRequiredMapMethod ( const MapMethod mm )
     {
         requiredMapMethod_=mm;
     }
+
     inline MapMethod requiredMapMethod() const
     {
         return requiredMapMethod_;
@@ -119,12 +129,12 @@ public:
         const boost::filesystem::path& location, 
         std::shared_ptr<OFdicts> dictionaries, 
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
-    );
+    ) const;
     virtual void createOnDisk 
     ( 
         const boost::filesystem::path& location, 
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
-    );
+    ) const;
 
     virtual bool meshPresentOnDisk ( const boost::filesystem::path& location ) const;
     virtual bool outputTimesPresentOnDisk ( const boost::filesystem::path& location, bool checkpar=false ) const;
@@ -170,7 +180,7 @@ public:
         const boost::filesystem::path& location,
         int nBlocks=1,
         ProgressDisplayer* progressDisplayer=nullptr
-    );
+    ) const;
 
     inline const FieldList& fields() const
     {

@@ -54,26 +54,29 @@ size_t Cutaway::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*model_;
   if (p0_ && n_)
     {
-      h+=p0_->value();
-      h+=n_->value();
+      h+=*p0_;
+      h+=*n_;
     }
   else
     {
       h+=*pl_;
       h+=inverted_;
     }
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
+Cutaway::Cutaway(const Cutaway&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(p0_), CL(n_), CL(pl_), inverted_(o.inverted_)
+{}
 
 
 Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
-: DerivedFeature(model), model_(model), p0_(p0), n_(n)
+: DerivedFeature(model), p0_(p0), n_(n)
 {
 }
 
@@ -81,7 +84,7 @@ Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
 
 
 Cutaway::Cutaway(FeaturePtr model, ConstDatumPtr pl, bool inverted)
-: DerivedFeature(model), model_(model), pl_(pl), inverted_(inverted)
+: DerivedFeature(model), pl_(pl), inverted_(inverted)
 {
 }
 
@@ -118,8 +121,9 @@ void Cutaway::build()
           n=n_->value();
         }
 
-      arma::mat bb=model_->modelBndBox ( 0.1 );
-      double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 ), 2 );
+      arma::mat bb=baseFeature()->modelBndBox ( 0.1 );
+      double delta=arma::norm(p0 - 0.5*(bb.col(0)+bb.col(1)),2);
+      double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 )+ delta, 2 ) ;
 
       arma::mat ex=cross ( n, vec3 ( 1,0,0 ) );
       if ( norm ( ex,2 ) <1e-8 ) {
@@ -145,21 +149,21 @@ void Cutaway::build()
       //   SolidModel(airspace).saveAs("airspace.stp");
       refpoints_["p0"]=p0;
       refvectors_["n"]=n;
-      providedSubshapes_["input"]=model_;
+      // providedSubshapes_["input"]=baseFeature();
       providedSubshapes_["AirSpace"]=airspace;
 
       try {
         providedSubshapes_["CutSurface"]=
             BooleanIntersection::create
             (
-              model_, q
+              baseFeature(), q
               );
       } catch ( ... ) {
         insight::Warning ( _("Could not create cutting surface!") );
       }
 
       try {
-        this->setShape ( BooleanSubtract::create( model_, airspace )->shape() );
+        this->setShape ( BooleanSubtract::create( baseFeature(), airspace )->shape() );
       } catch ( ... ) {
         throw insight::Exception ( _("Could not create cut!") );
       }
@@ -192,18 +196,22 @@ void Cutaway::insertrule(parser::ISCADParser& ruleset)
   (
     "Cutaway",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
-    ( '(' >> (
-     ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression )
+    ( '('
+        > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ] > ','
+        > (
+     ( ruleset.r_datumExpression // datum can be a vector => try datum first
+      > ( (',' > qi::lit("inverted") > qi::attr(true) ) | (qi::attr(false)) )
+      > ')' )
+         [ qi::_val = phx::bind(
+              &Cutaway::create<FeaturePtr, ConstDatumPtr, bool>,
+              qi::_val, qi::_1, qi::_2) ]
+                |
+     (
+        ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' )
       [ qi::_val = phx::bind(
                               &Cutaway::create<FeaturePtr, VectorPtr, VectorPtr>,
-                              qi::_1, qi::_2, qi::_3) ]
-      |
-     ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression 
-        >> ( (',' >> qi::lit("inverted") >> qi::attr(true) ) | (qi::attr(false)) ) )
-      [ qi::_val = phx::bind(
-                              &Cutaway::create<FeaturePtr, ConstDatumPtr, bool>,
-                              qi::_1, qi::_2, qi::_3) ]
-     ) >> ')' )
+                              qi::_val, qi::_1, qi::_2) ]
+     ) )
     )
   );
 }

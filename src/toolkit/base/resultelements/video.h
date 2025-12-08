@@ -13,22 +13,17 @@ class Video
 public:
     declareType ( "Video" );
 
-    Video ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
-    Video
-        (
-            const boost::filesystem::path& location,
-            const boost::filesystem::path& value,
-            const std::string& shortDesc,
-            const std::string& longDesc,
-            std::shared_ptr<std::string> base64_content = std::shared_ptr<std::string>()
-            );
-
+    using FileResult::FileResult;
 
     void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
 
 
-    ResultElementPtr clone() const override;
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

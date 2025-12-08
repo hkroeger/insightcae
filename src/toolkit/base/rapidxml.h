@@ -6,6 +6,7 @@
 #include <armadillo>
 #include "base/boost_include.h"
 
+#include "base/tools.h"
 #include "base/exception.h"
 #include "boost/lexical_cast.hpp"
 #include "rapidxml/rapidxml.hpp"
@@ -38,19 +39,63 @@ void appendAttribute(
         doc.allocate_attribute(
                     doc.allocate_string(label.c_str()),
                     doc.allocate_string
-                    ( boost::lexical_cast<std::string>(value).c_str() )
+                    ( toString<Type>(value).c_str() )
                     )
     );
 }
 
 
 
-std::string
-getMandatoryAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+template<class T = std::string>
+T getMandatoryAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName )
+{
+    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
+    {
+        return toValue<T>(fn->value());
+    }
+    else
+    {
+        throw insight::Exception(
+            "node does not have mandatory attribute \"%s\"!",
+            attributeName.c_str());
+    }
+}
 
 
-std::shared_ptr<std::string>
-getOptionalAttribute(rapidxml::xml_node<> &node, const std::string& attributeName);
+
+template<class T = std::string>
+std::shared_ptr<T>
+getOptionalAttribute(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName )
+{
+    if ( auto *fn = node.first_attribute(attributeName.c_str()) )
+    {
+        return std::make_shared<T>(
+            toValue<T>(
+                fn->value()));
+    }
+    else
+    {
+        return std::shared_ptr<T>();
+    }
+}
+
+template<class T = std::string>
+T
+getOptionalAttributeOrDefault(
+    const rapidxml::xml_node<> &node,
+    const std::string& attributeName,
+    T defl )
+{
+    auto spv = getOptionalAttribute<T>(node, attributeName);
+    if (spv)
+        return *spv;
+    else
+        return defl;
+}
 
 std::reference_wrapper<rapidxml::xml_node<> >
 appendRootNode(
@@ -64,15 +109,65 @@ appendNode(
         const std::string& label );
 
 
-struct XMLDocument
+
+
+class XMLDocument
     : public rapidxml::xml_document<>
 {
+    std::string buffer_; // needs to persist during the lifetime of xml_document
+    void parseBuffer();
+
+public:
+    xml_node<> *rootNode = nullptr;
+
+    struct RootNodeProperties
+    {
+        std::string name;
+        std::vector<std::pair<std::string, std::string> > attributes;
+    };
+
+    /**
+     * @brief XMLDocument
+     * create empty XML document with a single rootNode named "root"
+     */
+    XMLDocument(const RootNodeProperties& rootNode = { "root", {} });
+
+    /**
+     * @brief XMLDocument
+     * parse the specified string. Find the top level node named "root", if it exists.
+     * @param file
+     */
+    template<class Iterator>
+    XMLDocument(Iterator beg, Iterator end)
+        : buffer_(beg, end)
+    {
+        parseBuffer();
+    }
+
+    /**
+     * @brief XMLDocument
+     * parse the specified stream. Find the top level node named "root", if it exists.
+     * @param file
+     */
+    XMLDocument(std::istream& ons);
+
+    /**
+     * @brief XMLDocument
+     * parse the specified file. Find the top level node named "root", if it exists.
+     * @param file
+     */
     XMLDocument(const boost::filesystem::path& file);
+
+    void saveToStream(std::ostream& os) const;
+    void saveToFile(const boost::filesystem::path& file) const;
 };
 
 
-rapidxml::xml_node<> *findNode(
-    rapidxml::xml_node<>& father,
+
+
+const rapidxml::xml_node<> *
+findNode(
+    const rapidxml::xml_node<>& father,
     const std::string& name,
     const std::string& typeName
     );

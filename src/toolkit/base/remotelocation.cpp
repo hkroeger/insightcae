@@ -515,55 +515,22 @@ void RemoteLocation::syncToLocal
 
 
 void RemoteLocation::writeConfigFile(
-    const filesystem::path &cfgf
+    const boost::filesystem::path &cfgf
     ) const
 {
   using namespace rapidxml;
 
-  xml_document<> doc;
-  xml_node<>* decl = doc.allocate_node(node_declaration);
-  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-  doc.append_node(decl);
-  xml_node<> *rootnode = doc.allocate_node(node_element, "remote");
+  XMLDocument doc(XMLDocument::RootNodeProperties{"remote", {}});
 
+  appendAttribute(doc, *doc.rootNode, "server", serverConfig() );
+  appendAttribute(doc, *doc.rootNode, "temporary",
+                    isTemporaryStorage() ? "yes" : "no" );
+  appendAttribute(doc, *doc.rootNode, "autocreate",
+                    autoCreateRemoteDir_ ? "yes" : "no" );
+  appendAttribute(doc, *doc.rootNode, "directory", remoteDir().string() );
+  appendAttribute(doc, *doc.rootNode, "port", port_);
 
-  rootnode->append_attribute(doc.allocate_attribute
-                               ("server",
-                                 doc.allocate_string(serverConfig().c_str())
-                                 )
-                               );
-  rootnode->append_attribute(doc.allocate_attribute
-                               ("temporary",
-                                 doc.allocate_string(
-                                   isTemporaryStorage() ?
-                                    "yes" : "no"
-                                  )
-                                 )
-                               );
-  rootnode->append_attribute(doc.allocate_attribute
-                               ("autocreate",
-                                 doc.allocate_string(
-                                   autoCreateRemoteDir_ ?
-                                    "yes" : "no"
-                                  )
-                                 )
-                               );
-  rootnode->append_attribute(doc.allocate_attribute
-                               ("directory",
-                                 doc.allocate_string(remoteDir().string().c_str())
-                                 )
-                               );
-
-  rootnode->append_attribute(doc.allocate_attribute
-                               ("port",
-                                 doc.allocate_string(lexical_cast<string>(port_).c_str())
-                                 )
-                               );
-  doc.append_node(rootnode);
-
-  ofstream f(cfgf.string());
-  f << doc;
+  doc.saveToFile(cfgf);
 }
 
 

@@ -47,13 +47,13 @@ bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname,
     if (fieldname == "k")
     {
         BC["type"]=OFDictData::data(pref+"kqRWallFunction");
-        BC["value"]=OFDictData::data("uniform 1e-10");
+        BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
     else if (fieldname == "epsilon")
     {
         BC["type"]=OFDictData::data(pref+"epsilonWallFunction");
-        BC["value"]="uniform 10";
+        BC["value"]=OFDictData::toUniformField(10.);
         return true;
     }
     else if (fieldname == "nut")
@@ -64,25 +64,25 @@ bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname,
             double Cs=0.5;
             BC["Cs"]=Cs;
             BC["Ks"]=roughness_z0*9.793/Cs;
-            BC["value"]="uniform 1e-10";
+            BC["value"]=OFDictData::toUniformField(1e-10);
         }
         else
         {
             BC["type"]=OFDictData::data("nutkWallFunction");
-            BC["value"]=OFDictData::data("uniform 1e-10");
+            BC["value"]=OFDictData::toUniformField(1e-10);
         }
         return true;
     }
     else if (fieldname == "mut")
     {
         BC["type"]=OFDictData::data("mutkWallFunction");
-        BC["value"]=OFDictData::data("uniform 1e-10");
+        BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
     else if (fieldname == "alphat")
     {
         BC["type"]=OFDictData::data(pref+"alphatWallFunction");
-        BC["value"]=OFDictData::data("uniform 1e-10");
+        BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
 

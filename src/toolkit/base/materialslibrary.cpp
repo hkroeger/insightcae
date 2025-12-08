@@ -1,4 +1,5 @@
 #include "materialslibrary.h"
+#include "base/rapidxml.h"
 
 namespace insight {
 

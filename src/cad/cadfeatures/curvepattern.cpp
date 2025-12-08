@@ -19,6 +19,8 @@
  */
 
 #include "curvepattern.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -48,14 +50,17 @@ size_t CurvePattern::calcHash() const
   h+=this->type();
   h+=*m1_;
   h+=*curve_;
-  h+=delta_->value();
-  h+=n_->value();
+  h+=*delta_;
+  h+=*n_;
   return h.getHash();
 }
 
 
 
-  
+CurvePattern::CurvePattern(const CurvePattern&o, TreeCloneMap& tcm)
+    : Compound(o, tcm),
+    CL(m1_), CL(curve_), CL(delta_), CL(n_)
+{}
   
 CurvePattern::CurvePattern(FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n)
 : m1_(m1), curve_(curve), delta_(delta), n_(n)
@@ -137,12 +142,12 @@ void CurvePattern::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "CurvePattern",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> 
-      ',' >> ruleset.r_solidmodel_expression >> 
-      ',' >> ruleset.r_scalarExpression >> 
-      ',' >> ruleset.r_scalarExpression >> ')' ) 
+    ( '(' > ruleset.r_solidmodel_expression >
+      ',' > ruleset.r_solidmodel_expression >
+      ',' > ruleset.r_scalarExpression >
+      ',' > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &CurvePattern::create<FeaturePtr, FeaturePtr, ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3, qi::_4) ]

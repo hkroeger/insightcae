@@ -30,7 +30,8 @@ namespace insight {
 
 
 class SelectableSubsetParameter
-    : public Parameter, public SelectionParameterInterface
+    : public Parameter,
+      public SelectionParameterInterface
 {
 public:
   typedef std::string key_type;
@@ -46,6 +47,9 @@ protected:
 
 public:
   declareType ( "selectableSubset" );
+
+  SelectableSubsetParameter(
+      const rapidxml::xml_node<> & node);
 
   SelectableSubsetParameter (
       const std::string& description,
@@ -78,7 +82,6 @@ public:
       bool isNecessary=false,
       int order=0 );
 
-  void initialize() override;
 
   bool isDifferent(const Parameter& p) const override;
 
@@ -94,6 +97,7 @@ public:
   Entries copyItems() const;
 
   void addItem(key_type key, std::unique_ptr<ParameterSet>&& ps );
+  void removeItem(key_type key);
 
   inline ParameterSet& operator() ()
   {
@@ -108,8 +112,12 @@ public:
   void setParametersForSelection(const key_type& key, const ParameterSet& ps);
   const ParameterSet& getParametersForSelection(const key_type& key) const;
 
-  std::string latexRepresentation() const override;
-  std::string plainTextRepresentation(int indent=0) const override;
+  std::string latexRepresentation(
+      const std::string& name,
+      int documentHierarchyLevel,
+      const FileStorageInfo& fsi ) const override;
+
+  std::string plainTextRepresentation(int indent) const override;
 
   bool isPacked() const override;
   void pack() override;
@@ -122,18 +130,20 @@ public:
       const std::string& name,
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath ) const override;
+      const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
 
-  void readFromNode (
+  const rapidxml::xml_node<>*
+  readFromNode (
       const std::string& name,
-      rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath ) override;
+      const rapidxml::xml_node<>& node ) override;
 
-  std::unique_ptr<Parameter> clone (bool initialize) const override;
-  void copyFrom(const Parameter& p) override;
-  void operator=(const SelectableSubsetParameter& p);
-  void extend ( const Parameter& op ) override;
-  void merge ( const Parameter& other ) override;
+  std::unique_ptr<Element> clone () const override;
+
+  void assignFrom(const Element& p) override;
+  void copyMatching(const Element& p) override;
+  void extend( const Element& op ) override;
+  bool isEqual(const Element& op) const override;
+
 #ifndef SWIG
   std::unique_ptr<Parameter> intersection(const Parameter &other) const override;
 #endif
@@ -141,21 +151,21 @@ public:
 
   int nChildren() const override;
 
-  int childParameterIndex(
+  int childElementIndex(
       const std::string& name ) const override;
 
-  std::string childParameterName(
+  std::string childElementName(
       int i,
       bool redirectArrayElementsToDefault=false ) const override;
 
-  std::string childParameterName(
-      const Parameter* childParam,
+  std::string childElementName(
+      const Element* childParam,
       bool redirectArrayElementsToDefault=false ) const override;
 
-  Parameter& childParameterRef (
+  Element& childElementRef (
       int i ) override;
 
-  const Parameter& childParameter(
+  const Element& childElement(
       int i ) const override;
 
 };

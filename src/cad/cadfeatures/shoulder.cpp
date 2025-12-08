@@ -18,9 +18,12 @@
  */
 
 #include "shoulder.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadparameters.h"
 
 
 namespace qi = boost::spirit::qi;
@@ -46,12 +49,18 @@ size_t Shoulder::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=dir_->value();
-  h+=d_->value();
-  h+=Dmax_->value();
+  h+=*p0_;
+  h+=*dir_;
+  h+=*d_;
+  h+=*Dmax_;
   return h.getHash();
 }
+
+
+
+Shoulder::Shoulder(const Shoulder&o, TreeCloneMap& tcm)
+: CL(p0_), CL(dir_), CL(d_), CL(Dmax_)
+{}
 
 
 Shoulder::Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax)
@@ -94,11 +103,14 @@ void Shoulder::insertrule(parser::ISCADParser& ruleset)
     "Shoulder",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> 
-                ',' >> ruleset.r_scalarExpression >> ((',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6))) >> ')' )
-                  [ qi::_val = phx::bind(
-                       &Shoulder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
-                       qi::_1, qi::_2, qi::_3, qi::_4) ]
+            ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression >  ','
+             > ruleset.r_scalarExpression
+             > ((',' > ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6)))
+             > ')' )
+                [ qi::_val = phx::bind(
+                     &Shoulder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                     qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     )
   );

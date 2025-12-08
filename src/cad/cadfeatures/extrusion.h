@@ -37,6 +37,7 @@ class Extrusion
     boost::variant<VectorPtr,ScalarPtr> L_;
     bool centered_;
 
+    Extrusion(const Extrusion&o, TreeCloneMap& tcm);
     Extrusion ( FeaturePtr sk, ScalarPtr L, bool centered=false );
     Extrusion ( FeaturePtr sk, VectorPtr L, bool centered=false );
 
@@ -45,8 +46,11 @@ class Extrusion
 
 public:
     declareType ( "Extrusion" );
-
+#ifndef SWIG
+    DEPENDS((sk_, L_));
+#endif
     CREATE_FUNCTION(Extrusion);
+    CLONEABLE(Extrusion);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

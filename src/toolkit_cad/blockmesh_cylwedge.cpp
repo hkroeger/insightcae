@@ -18,7 +18,8 @@
  */
 
 #include "blockmesh_cylwedge.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 
 #include "base/units.h"
@@ -79,7 +80,7 @@ blockMeshDict_CylWedge::supplementedInputData::supplementedInputData(
     if (el.size()!=1)
       throw insight::Exception(
           boost::str(boost::format("CAD file %s should contain only one single edge! (It actually contains %d edges)")
-                     % p().geometry.wedge_spine_curve->originalFilePath().string()
+                     % p().geometry.wedge_spine_curve->fileName().string()
                      % el.size() )
           );
 

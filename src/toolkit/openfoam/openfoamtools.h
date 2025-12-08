@@ -217,13 +217,13 @@ MeshQualityList getMeshQuality(
 void meshQualityReport(
     const OpenFOAMCase& cm,
     const boost::filesystem::path& location,
-    ResultSetPtr results,
+    ResultSet& results,
     const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 void currentNumericalSettingsReport(const OpenFOAMCase& cm, 
-		       const boost::filesystem::path& location, 
-		       ResultSetPtr results
+               const boost::filesystem::path& location,
+               ResultSet& results
 		      );
 
 arma::mat viscousForceProfile

@@ -65,7 +65,24 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
     launchProgress_( af_->progressDisplayer_.forkNewAction(
           4,
           _("Launching remote analysis")) )
-{}
+{
+    // presumption: all signals have to be emitted from another thread!
+    connect(this, &RemoteRun::finished,
+            af_, &AnalysisForm::onResultReady,
+            Qt::QueuedConnection);
+
+    connect(this, &RemoteRun::failed,
+            af_, &AnalysisForm::onAnalysisError,
+            Qt::QueuedConnection);
+
+    connect(this, &RemoteRun::cancelled,
+            af_, &AnalysisForm::onAnalysisCancelled,
+            Qt::QueuedConnection);
+
+    connect(this, &RemoteRun::statusMessage,
+            [this](const QString& msg) { af_->statusMessage(msg); }
+            );
+}
 
 
 
@@ -82,7 +99,7 @@ void RemoteRun::launch()
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
   ac_ = std::make_unique<insight::AnalyzeClient>(
-      af_->analysisName_,
+      af_->psmodel_->getAnalysisName(),
       str(format("http://127.0.0.1:%d")
           % portMappings_->localListenerPort(remote_->exeConfig().port()) ),
       &af_->progressDisplayer_
@@ -159,13 +176,17 @@ void RemoteRun::uploadInputFile()
 
         insight::dbg()<<"upload input file"<<std::endl;
 
-        auto p = af_->parameters().cloneParameterSet();
+        auto p = af_->parameters()
+                     .cloneAs<insight::ParameterSet>();
+
         p->pack(); // pack
 
         {
             auto rs = remote_->exeConfig().remoteOFStream(
                 "param.ist", 0 );
-            p->saveToStream(*rs, ".", af_->analysisName_);
+            p->saveToStream(
+                *rs,
+                insight::hierarchicalData::Element::OutputProperties());
         }
 
         launchProgress_.stepTo(2);
@@ -391,7 +412,7 @@ void RemoteRun::fetchResults()
         ac_->queryResults(
                     [this](insight::QueryResultsAction::Result qrs)
                     {
-                        results_=qrs.results;
+                        results_=std::move(qrs.results);
 
                         ac_->ioService().post(
                                     std::bind(&RemoteRun::stopRemoteExecutionServer, this ) );
@@ -473,7 +494,7 @@ void RemoteRun::cleanupRemote()
 void RemoteRun::finish()
 {
     insight::dbg()<<"emit finished"<<std::endl;
-    Q_EMIT finished( results_ );
+    Q_EMIT finished();
 }
 
 
@@ -521,6 +542,13 @@ RemoteRun::~RemoteRun()
     ac_->httpClient().abort();
     ac_->ioService().stop();
     af_->progressDisplayer_.reset();
+}
+
+
+
+std::unique_ptr<insight::ResultSet> RemoteRun::moveResults()
+{
+    return std::move(results_);
 }
 
 

@@ -7,7 +7,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-04 12:38+0200\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: English\n"
@@ -17,52 +16,93 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: qtextensions.cpp:112
 msgid "Save file"
 msgstr ""
 
-#: qtextensions.cpp:120
 msgid "Open file"
 msgstr ""
 
-#: iqundoredostack.cpp:75
-msgid "undo sketch editing step"
+#, c-format
+msgid "image file \"%s\" does not exist"
 msgstr ""
 
-#: iqundoredostack.cpp:80
+#, c-format
+msgid "could not create reader for file \"%s\""
+msgstr ""
+
+msgid "Could not load background image"
+msgstr ""
+
+msgid "A background image could not be restored."
+msgstr ""
+
+msgid "Reason:"
+msgstr ""
+
+msgid "Nothing to be undone"
+msgstr ""
+
+msgid "Nothing to be redone"
+msgstr ""
+
+msgid "perform undo step"
+msgstr ""
+
 #, c-format
 msgid "undo step %s"
 msgstr ""
 
-#: iqundoredostack.cpp:108
-msgid "redo sketch editing step"
+msgid "perform redo step"
 msgstr ""
 
-#: iqundoredostack.cpp:113
 #, c-format
 msgid "redo step %s"
 msgstr ""
 
-#: iqparameters/iqlabeledarrayelementparameter.cpp:139
+msgid "Visible"
+msgstr ""
+
+msgid "Layer name"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Rename..."
+msgstr ""
+
+msgid "Rename layer"
+msgstr ""
+
+msgid "Please enter new layer name:"
+msgstr ""
+
+msgid "The visualization could not be generated."
+msgstr ""
+
 msgid "Change Item Label"
 msgstr "Change Item Label"
 
-#: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "New label:"
 msgstr "New label:"
 
-#: iqresultsetdisplayerwidget.cpp:150
 msgid "Load result set"
 msgstr ""
 
-#: iqresultsetdisplayerwidget.cpp:152
 msgid "InsightCAE Result Set"
 msgstr ""
 
-#: logviewerwidget.cpp:136
+msgid "An error has occurred"
+msgstr ""
+
+msgid "Stack trace"
+msgstr ""
+
+msgid "More details on error origin."
+msgstr ""
+
 msgid "Create file failed"
 msgstr ""
 
-#: logviewerwidget.cpp:137
 msgid "Could not create file %1"
 msgstr ""

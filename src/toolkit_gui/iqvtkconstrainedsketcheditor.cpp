@@ -21,6 +21,8 @@
 #include "iqvtkconstrainedsketcheditor/iqvtkdragpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawarc.h"
+#include "iqvtkconstrainedsketcheditor/iqvtksplitline.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h"
 #include "base/parameters/simpleparameter.h"
 
@@ -35,6 +37,7 @@
 #include <qnamespace.h>
 
 #include "constrainedsketchentities/distanceconstraint.h"
+#include "constrainedsketchentities/tangentconstraint.h"
 #include "constrainedsketchentities/angleconstraint.h"
 #include "constrainedsketchentities/fixedpointconstraint.h"
 #include "constrainedsketchentities/horizontalconstraint.h"
@@ -67,7 +70,7 @@ DefaultGUIConstrainedSketchPresentationDelegate::setupSketchEntityParameterSetMo
 {
     if (e.parameters().size()>0)
         return new IQParameterSetModel(
-            e.parameters().cloneParameterSet());
+            e.parameters().cloneAs<ParameterSet>());
     else
         return nullptr;
 }
@@ -80,7 +83,7 @@ DefaultGUIConstrainedSketchPresentationDelegate::setupLayerParameterSetModel(
     if (curP.size()>0)
     {
         return new IQParameterSetModel(
-            curP.cloneParameterSet());
+            curP.cloneAs<ParameterSet>());
     }
     else
     {
@@ -214,6 +217,16 @@ void IQVTKConstrainedSketchEditor::addActors(
         if (vtkSmartPointer<vtkActor> aa = vtkActor::SafeDownCast(a))
         {
             presentation_->setEntityAppearance(*sg, aa->GetProperty());
+
+            // override with layer color, if some was defined
+            if (std::dynamic_pointer_cast<insight::cad::Feature>(sg))
+            {
+                auto &c = (*this)->layerProperties(sg->layerName()).color;
+                if (c.n_elem==3)
+                {
+                    aa->GetProperty()->SetColor(c[0], c[1], c[2]);
+                }
+            }
         }
         if (auto follower=vtkFollower::SafeDownCast(a))
         {
@@ -272,6 +285,8 @@ void IQVTKConstrainedSketchEditor::drawPoint()
             {
                 if (pp.onFeature)
                 {
+                    entityProperties_->changeDefaultParameters(*pp.p);
+
                     if ( pp.onFeature
                             ->topologicalProperties().onlyEdges() )
                     {
@@ -295,8 +310,6 @@ void IQVTKConstrainedSketchEditor::drawPoint()
                     (*this)->insertGeometry(
                         FixedPointConstraint::create( pp.p ) ); // fix first point
                 }
-
-                entityProperties_->changeDefaultParameters(*pp.p);
 
                 (*this)->invalidate();
                 Q_EMIT sketchChanged();
@@ -428,6 +441,52 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
 
 
+void IQVTKConstrainedSketchEditor::drawArc()
+{
+    auto da = make_viewWidgetAction<IQVTKCADModel3DViewerDrawArc>(*this);
+    storeUndoState("Draw Arc");
+    launchAction(std::move(da));
+}
+
+
+
+void IQVTKConstrainedSketchEditor::splitLine()
+{
+    auto dl = make_viewWidgetAction<IQVTKSplitLine>(*this);
+    connect(dl.get(), &IQVTKSplitLine::splitPointSelected, dl.get(),
+
+            [this]( IQVTKSplitLine::PointProperty* addPoint,
+                    std::shared_ptr<insight::cad::Line> originalLine )
+            {
+                if ( !addPoint->isAnExistingPoint )
+                {
+                    (*this)->insertGeometry(
+                        FixedDistanceConstraint::create(
+                            originalLine->start(), addPoint->p,
+                            (*this)->sketchPlaneNormal()
+                            )
+                    );
+                }
+            }
+    );
+    connect(dl.get(), &IQVTKSplitLine::splitLineAdded, dl.get(),
+
+            [this]( std::shared_ptr<insight::cad::Line> addedLine,
+                    std::shared_ptr<insight::cad::Line> originalLine )
+            {
+                addedLine->changeDefaultParameters(
+                    originalLine->defaultParameters());
+
+                (*this)->insertGeometry(
+                    TangentConstraint::create( originalLine, addedLine ) );
+            }
+            );
+    storeUndoState("Split Line");
+    launchAction(std::move(dl));
+}
+
+
+
 
 void IQVTKConstrainedSketchEditor::drawRectangle()
 {
@@ -548,7 +607,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
       insight::cad::ConstrainedSketch::create<const ConstrainedSketch&>(sketch)),
   entityProperties_(
           entityProperties?
-              entityProperties : std::make_shared<insight::cad::ConstrainedSketchParametersDelegate>() ),
+              entityProperties :
+              std::make_shared<insight::cad::ConstrainedSketchParametersDelegate>() ),
   layerPropertiesEditor_(nullptr)
 {
     if (!presentationDelegateKey.empty())
@@ -586,8 +646,14 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawline.svg"), "Line",
                         this, &IQVTKConstrainedSketchEditor::drawLine);
 
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawarc.svg"), "Arc",
+                        this, &IQVTKConstrainedSketchEditor::drawArc);
+
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_drawrectangle.svg"), "Rectangle",
                         this, &IQVTKConstrainedSketchEditor::drawRectangle);
+
+    toolBar_->addAction(QPixmap(":/icons/icon_sketch_splitline.svg"), "Split Line",
+                        this, &IQVTKConstrainedSketchEditor::splitLine);
 
     toolBar_->addAction(QPixmap(":/icons/icon_sketch_solve.svg"), "Solve",
                         this, &IQVTKConstrainedSketchEditor::solve);
@@ -638,6 +704,35 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             }
         }
     );
+
+    toolBar_->addAction(
+        "T",
+        this, [this]()
+        {
+            if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+            {
+                if (selact->somethingSelected())
+                {
+                    insight::assertion(
+                        selact->currentSelection().size()==2,
+                        "exactly two entities should be selected!");
+
+                    auto l1=std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
+                        selact->currentSelection().begin()->lock() );
+                    auto l2=std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
+                        (++selact->currentSelection().begin())->lock() );
+
+                    auto c = TangentConstraint::create(
+                        l1, l2,
+                        std::string() );
+
+                    (*this)->insertGeometry(c);
+                    (*this)->invalidate();
+                    Q_EMIT sketchChanged();
+                }
+            }
+        }
+        );
 
     toolBar_->addAction(
         QPixmap(":/icons/icon_fixpoint.svg"), "Fix Point Coordinates",
@@ -983,6 +1078,15 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 this, &IQVTKConstrainedSketchEditor::renameLayer);
         layerlist->setModel(model);
 
+        layerlist->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(
+            layerlist, &QTableView::customContextMenuRequested,
+            model, [model,layerlist](const QPoint &pos)
+            {
+                model->contextMenu(layerlist, layerlist->indexAt(pos), pos);
+            }
+        );
+
         connect(
             layerlist->selectionModel(),
             &QItemSelectionModel::currentChanged,
@@ -1009,6 +1113,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                             m,
                             [this,m,model,selectedLayerName]()
                             {
+                                DBG_SLOT(ParameterEditorWidget::parameterSetChanged);
+
                                 (*this)->setLayerProperties(
                                         selectedLayerName,
                                         m->getParameterSet()
@@ -1085,6 +1191,8 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     aboutToBeDestroyed.connect(
         [this](){
+            DBG_SLOT(aboutToBeDestroyed);
+
             cancelCurrentAction();
 
             transparency_.reset();
@@ -1115,24 +1223,34 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
     (*this)->geometryAboutToBeRemoved.connect(
         [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+            DBG_SLOT(geometryAboutToBeRemoved);
             removeActors((*this)->get(geoId));
         });
 
     (*this)->geometryAdded.connect(
         [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+            DBG_SLOT(geometryAdded);
             addActors((*this)->get(geoId));
             onSketchSizeChanged();
         });
 
     (*this)->geometryChanged.connect(
         [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+                DBG_SLOT(geometryChanged);
               // redisplay, if displayed already
               auto g=(*this)->get(geoId);
               auto i=sketchGeometryActors_.find(g);
               if (i!=sketchGeometryActors_.end())
               {
                 removeActors(g, false);
-                addActors(g);
+                if (layerIsVisible(g->layerName()))
+                {
+                    addActors(g);
+                }
+                else
+                {
+                    this->viewer().scheduleRedraw();
+                }
               }
               onSketchSizeChanged();
         });
@@ -1144,6 +1262,18 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 IQVTKConstrainedSketchEditor::~IQVTKConstrainedSketchEditor()
 {}
 
+
+void IQVTKConstrainedSketchEditor::setPathToEditedParameter(
+    const std::string& pp)
+{
+    pathToEditedParameter_=pp;
+}
+
+boost::optional<std::string>
+IQVTKConstrainedSketchEditor::pathToEditedParameter() const
+{
+    return pathToEditedParameter_;
+}
 
 
 QString IQVTKConstrainedSketchEditor::description() const
@@ -1410,6 +1540,20 @@ bool IQVTKConstrainedSketchEditor::onMouseDrag
         ::onMouseDrag(buttons, curFlags, point, eventType);
 }
 
+void IQVTKConstrainedSketchEditor::updateLastMouseLocation(const QPoint &p)
+{
+    ViewWidgetAction<IQVTKCADModel3DViewer>::updateLastMouseLocation(p);
+
+    auto p2 = viewer().pointInPlane2D(
+        sketch().plane()->plane(),
+          viewer().pointInPlane3D(
+            sketch().plane()->plane(),
+            p
+        ) );
+    viewer().updateMouseCoordinateDisplay(p2(0), p2(1));
+}
+
+
 
 
 
@@ -1511,25 +1655,34 @@ void IQVTKConstrainedSketchEditor::renameLayer(
 
 void IQVTKConstrainedSketchEditor::onSketchSizeChanged()
 {
-    auto bb=(*this)->sketchBoundingBox();
-    double Ldiag=std::max(
-        insight::LSMALL,
-        arma::norm(bb.col(1)-bb.col(0), 2) );
+    static std::atomic<bool> isRunning(false); // need to detect recursion, might occur via parameter change=>sketch size change
 
-    for (const auto& g: **this)
+    if (!isRunning)
     {
-        if (auto dim =
-            std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
-                g.second ) )
+        isRunning=true;
+
+        auto bb=(*this)->sketchBoundingBox();
+        double Ldiag=std::max(
+            insight::LSMALL,
+            arma::norm(bb.col(1)-bb.col(0), 2) );
+
+        for (const auto& g: **this)
         {
-            dim->setArrowSize(Ldiag*0.01);
-            auto i=sketchGeometryActors_.find(dim);
-            if (i!=sketchGeometryActors_.end())
+            if (auto dim =
+                std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
+                    g.second ) )
             {
-                removeActors(dim, false);
-                addActors(dim);
+                dim->setArrowSize(Ldiag*0.01);
+                auto i=sketchGeometryActors_.find(dim);
+                if (i!=sketchGeometryActors_.end())
+                {
+                    removeActors(dim, false);
+                    addActors(dim);
+                }
             }
         }
+
+        isRunning=false;
     }
 }
 

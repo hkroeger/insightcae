@@ -19,7 +19,14 @@
 
 #include "mesh.h"
 
+#include "boost/algorithm/string/predicate.hpp"
+#include "boost/none.hpp"
+#include "boost/regex/v4/regex.hpp"
+#include "boost/regex/v4/regex_fwd.hpp"
 #include "cadfeature.h"
+#include "datum.h"
+#include "cadfeatures/subfeature.h"
+#include "cadtypes.h"
 #include "meshing.h"
 
 #include "base/boost_include.h"
@@ -57,6 +64,7 @@ Mesh::Mesh
   const GroupDefinitions& v_e_f_s_groups,
   const insight::cad::NamedVertices& namedVertices,
   const std::vector<MeshSizeBall>& meshSizeBalls,
+  const ScrewInfos& screwInfos,
   bool keepTmpDir
 )
 : 
@@ -71,6 +79,9 @@ Mesh::Mesh
   solidGroups_(boost::fusion::at_c<3>(v_e_f_s_groups)),
   namedVertices_(namedVertices),
   meshSizeBalls_(meshSizeBalls),
+  screwHeads_(boost::fusion::get<0>(screwInfos)),
+  screwBases_(boost::fusion::get<1>(screwInfos)),
+  screwBodies_(boost::fusion::get<2>(screwInfos)),
   keepTmpDir_(keepTmpDir)
 {}
 
@@ -90,6 +101,141 @@ void Mesh::setupGmshCase(GmshCase& c)
     c.setQuadratic();
   else
     c.setLinear();
+
+  auto findLoopInstances = [&](
+        cad::FeaturePtr bfeat,
+        boost::optional<std::string> subfeatname )
+  {
+      auto& sym=bfeat->providedSubshapes();
+
+      std::map<int, cad::FeaturePtr> out;
+      boost::regex pat("^instance([0-9]+)$");
+      boost::smatch m;
+      for (auto& i: sym)
+      {
+          if (boost::regex_match(i.first, m, pat))
+          {
+              if (subfeatname)
+              {
+                  out.insert({
+                    toNumber<int>(m[1]),
+                    Subfeature::create(i.second, *subfeatname)} );
+              }
+              else
+              {
+                  out.insert({toNumber<int>(m[1]), i.second});
+              }
+          }
+      }
+      if (out.size()==0) out[-1]=bfeat;
+      return out;
+  };
+
+
+
+  for (const auto& sh: screwHeads_)
+  {
+      auto name=boost::fusion::get<0>(sh);
+
+      // if contains "instance" subshapes, assume this is a pattern and loop over instances
+      auto its=findLoopInstances(
+          boost::fusion::get<1>(sh),
+          boost::fusion::get<2>(sh) );
+
+
+      for (auto i: its)
+      {
+          std::string pref=name;
+          if (i.first>=0)
+          {
+              pref=str(boost::format("%s%d")%name%(i.first+1));
+          }
+
+          edgeGroups_.push_back(
+              GroupDesc{
+               str(boost::format("%she")%pref),
+                makeEdgeFeatureSet(
+                      model_, "isIdentical(%0)",
+                      { i.second->providedFeatureSet("screwhead_edge") } ),
+               boost::fusion::get<3>(sh)
+              }
+            );
+      }
+  }
+
+  for (const auto& sb: screwBases_)
+  {
+      auto name=boost::fusion::get<0>(sb);
+
+      auto its=findLoopInstances(
+          boost::fusion::get<1>(sb),
+          boost::fusion::get<2>(sb)  );
+
+      for (auto i: its)
+      {
+          std::string pref=name;
+          if (i.first>=0)
+          {
+              pref=str(boost::format("%s%d")%name%(i.first+1));
+          }
+          auto sbe=i.second->providedFeatureSet("screwbase_edge");
+          edgeGroups_.push_back(
+              GroupDesc{
+                  str(boost::format("%sbe")%pref),
+                  makeEdgeFeatureSet(
+                      model_, "isIdentical(%0)",
+                      { sbe } ),
+                  boost::fusion::get<3>(sb)
+              }
+              );
+      }
+  }
+
+  for (const auto& sb: screwBodies_)
+  {
+      auto name=boost::fusion::get<0>(sb);
+
+      auto its=findLoopInstances(
+          boost::fusion::get<1>(sb),
+          boost::fusion::get<2>(sb) );
+
+      for (auto i: its)
+      {
+          std::string pref=name;
+          if (i.first>=0)
+          {
+              pref=str(boost::format("%s%d")%name%(i.first+1));
+          }
+
+          vertexGroups_.push_back(
+              GroupDesc{
+                  str(boost::format("%sh")%pref),
+                  makeVertexFeatureSet(
+                      model_, "dist(loc,%m0)<1e-6",
+                      { cad::matconst(i.second->getDatumPoint("phead")) } ),
+                  boost::optional<ScalarPtr>()
+              }
+              );
+          vertexGroups_.push_back(
+              GroupDesc{
+                  str(boost::format("%sb")%pref),
+                  makeVertexFeatureSet(
+                      model_, "dist(loc,%m0)<1e-6",
+                      { cad::matconst(i.second->getDatumPoint("pbase")) } ),
+                  boost::optional<ScalarPtr>()
+              }
+              );
+          edgeGroups_.push_back(
+              GroupDesc{
+                  str(boost::format("%s")%pref),
+                  makeEdgeFeatureSet(
+                      model_, "isIdentical(%0)",
+                      { i.second->subshape("beam")->allEdges() } ),
+                  boost::optional<ScalarPtr>()
+              }
+              );
+      }
+  }
 
   for (const GroupDesc& gd: vertexGroups_)
   {
@@ -147,6 +293,7 @@ void Mesh::setupGmshCase(GmshCase& c)
       c.setFaceEdgeLen(gname, (*gs)->value());
     }
   }
+
 }
 
 void Mesh::build()
@@ -161,7 +308,7 @@ void Mesh::build()
       auto location = boost::fusion::get<0>(func.value())->value();
       auto D = boost::fusion::get<1>(func.value())->value();
       auto Linside = boost::fusion::get<2>(func.value())->value();
-      fis.push_back( boost::lexical_cast<std::string>(func.index()+1) );
+      fis.push_back( toString(func.index()+1) );
       auto fi = "Field["+fis.back()+"]";
       addcode.insert(
           addcode.end(),
@@ -176,7 +323,7 @@ void Mesh::build()
           });
   }
   {
-      auto fii=boost::lexical_cast<std::string>(meshSizeBalls_.size()+1);
+      auto fii=toString(meshSizeBalls_.size()+1);
       auto fi = "Field["+fii+"]";
       addcode.insert(
           addcode.end(),
@@ -223,7 +370,7 @@ ExtrudedMesh::ExtrudedMesh
       boost::fusion::at_c<4>(v_e_bf_tf_s_groups)
       ),
     namedVertices,
-    {},
+    {}, ScrewInfos{},
     keepTmpDir
     ),
   h_(boost::fusion::at_c<2>(L_h_nLayers)),

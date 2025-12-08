@@ -74,7 +74,8 @@ void QFeatureItem::exportShape()
         {"stl", "ASCII STL file"},
         {"stlb", "Binary STL file"},
         {"igs iges", "IGES file"},
-        {"stp step", "STEP file", true}
+        {"stp step", "STEP file", true},
+        {"dot", "depdency graph"}
     }
   ))
   {

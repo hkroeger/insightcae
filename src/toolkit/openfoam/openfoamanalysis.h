@@ -24,6 +24,7 @@
 
 #include "base/analysis.h"
 
+#include "base/cppextensions.h"
 #include "boost/thread/detail/thread.hpp"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/caseelements/turbulencemodel.h"
@@ -60,7 +61,6 @@ namespace insight {
 
 class ConvergenceAnalysisDisplayer;
 
-int realNp(int userInputNp);
 
 template<class Base>
 class OpenFOAMAnalysisTemplate : public Base
@@ -105,7 +105,7 @@ public:
     addParameterMembers_ParameterClass(OpenFOAMAnalysisTemplate::Parameters);
 
 protected:
-  ResultSetPtr derivedInputData_;
+  std::unique_ptr<ResultSection> derivedInputData_;
 
   std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
@@ -131,11 +131,16 @@ public:
         if (!derivedInputData_)
         {
             auto empty_ps = ParameterSet::create();
-            derivedInputData_.reset(new ResultSet(*empty_ps, "Derived Input Data", ""));
+            derivedInputData_.reset(
+                new ResultSection("Derived Input Data"));
         }
     }
 
-    virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="")
+    virtual void reportIntermediateParameter(
+        const std::string& name,
+        double value,
+        const std::string& description="",
+        const std::string& unit="" )
     {
         initializeDerivedInputDataSection();
 
@@ -144,7 +149,7 @@ public:
             std::cout<<" ("<<description<<")";
         std::cout<<std::endl;
 
-        boost::assign::ptr_map_insert<ScalarResult>(*derivedInputData_) (name, value, description, "", unit);
+        derivedInputData_->insert<ScalarResult>(name, value, description, "", unit);
     }
     
     virtual void calcDerivedInputData(ProgressDisplayer& progress)
@@ -220,7 +225,7 @@ public:
 
     void changeMapFromPath(const boost::filesystem::path& newMapFromPath)
     {
-        p().run.mapFrom->setOriginalFilePath(newMapFromPath);
+        p().run.mapFrom->setFileName(newMapFromPath);
     }
 
 
@@ -329,7 +334,7 @@ public:
                         str(boost::format(
                                 _("Linking the mesh to OpenFOAM case in directory %s.")
                                 ) % dir.string() ) );
-                    linkPolyMesh(p().mesh.linkmesh->filePath(dir)/"constant", dir/"constant", &ofe);
+                    linkPolyMesh(p().mesh.linkmesh->filePath(true)/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
@@ -420,7 +425,7 @@ public:
             if ((cm.OFversion()>=230) && (p().run.mapFrom->isValid()))
             {
                 // parallelTarget option is not present in OF2.3.x
-                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(exepath), false);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(true), false);
             }
         }
 
@@ -442,7 +447,7 @@ public:
         {
             if ( (!(cm.OFversion()>=230)) && (p().run.mapFrom->isValid()) )
             {
-                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(exepath), is_parallel);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(true), is_parallel);
             }
             else
             {
@@ -577,20 +582,22 @@ public:
         if (!p().eval.skipmeshquality)
         {
             parentActionProgress.message("Generating mesh quality report");
-            meshQualityReport(cm, exepath, results);
+            meshQualityReport(cm, exepath, *results);
         }
 
         if (p().eval.reportdicts)
         {
             parentActionProgress.message("Adding numerical settings to report");
-            currentNumericalSettingsReport(cm, exepath, results);
+            currentNumericalSettingsReport(cm, exepath, *results);
         }
 
         if (derivedInputData_)
         {
             parentActionProgress.message("Inserting derived input quantities into report");
-            std::string key(derivedInputData_->title());
-            results->insert( key, derivedInputData_->clone() ) .setOrder(-1.);
+            results->insert(
+                       "DerivedInputData",
+                       derivedInputData_->cloneAs<ResultElement>()
+                       ) .setOrder(-1.);
         }
 
         return results;
@@ -687,7 +694,9 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const P& tmp )
       tmp.selection, cm, ParameterSetInput(*tmp.parameters) );
 
   if (!model)
-      throw insight::Exception(_("Unrecognized RASModel selection: %s"), tmp.selection);
+      throw insight::Exception(
+          _("Unrecognized RASModel selection: %s"),
+            tmp.selection.c_str());
 
   return cm.insert(model);
 }

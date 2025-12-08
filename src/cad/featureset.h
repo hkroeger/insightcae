@@ -22,6 +22,7 @@
 #define INSIGHT_CAD_FEATURE_H
 
 #include "base/factory.h"
+#include "base/cppextensions.h"
 #include "cadtypes.h"
 #include "astbase.h"
 
@@ -103,6 +104,7 @@ protected:
     ConstFeaturePtr model_;
 
 public:
+
     QuantityComputer()
     {}
 
@@ -149,6 +151,7 @@ std::ostream& operator<<(std::ostream& os, const FeatureSetData& fs);
 
 
 class FeatureSet
+: public DependencySource
 {
 // #warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
   
@@ -161,7 +164,16 @@ class FeatureSet
   
   FeatureSetData data_;
 
+protected:
+  FeatureSet(const FeatureSet&o, TreeCloneMap& tcm);
+
 public:
+#ifndef SWIG
+  // DEPENDS_NOINVALIDATE((model_));
+  DEPENDS_DECL;
+#endif
+  CLONEABLE(FeatureSet);
+
   FeatureSet(const FeatureSet& o);
   FeatureSet(ConstFeaturePtr m, EntityType shape);
   FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id);
@@ -170,8 +182,8 @@ public:
 
   virtual ~FeatureSet();
 
-  inline ConstFeaturePtr model() const { return model_; }
-  inline EntityType shape() const { return shape_; }
+  ConstFeaturePtr model() const;
+  EntityType shape() const;
 
   size_t size() const;
   
@@ -189,17 +201,56 @@ public:
   
   void write() const;
 
+  void operator=(const FeatureSet& fs);
 
   virtual size_t calcFeatureSetHash() const;
+};
 
+
+#ifndef SWIG
+class ASTBasedFeatureSet
+    : public ASTBase,
+      public FeatureSet
+{
+public:
+    using FeatureSet::FeatureSet;
+};
+#endif
+
+class ProvidedFeatureSet
+    : public ASTBasedFeatureSet
+{
+    ConstFeaturePtr model_;
+    std::string label_;
+
+    ProvidedFeatureSet(const ProvidedFeatureSet&o, TreeCloneMap& tcm);
+    ProvidedFeatureSet(
+        ConstFeaturePtr m, EntityType shape,
+        const std::string& label );
+
+public:
+    CREATE_FUNCTION(ProvidedFeatureSet);
+    CLONEABLE(ProvidedFeatureSet);
+#ifndef SWIG
+    DEPENDS_DECL;
+    // DEPENDS((model_));
+#endif
+
+    size_t calcHash() const override;
+    void build() override;
+
+    FeatureSetPtr clone() const override;
+
+    const FeatureSetData& data() const override;
+
+    size_t calcFeatureSetHash() const override;
 };
 
 
 
 
 class DeferredFeatureSet
-    : public ASTBase,
-      public FeatureSet
+    : public ASTBasedFeatureSet
 {
   /**
    * basis for subset query
@@ -212,6 +263,8 @@ class DeferredFeatureSet
 
     size_t calcHash() const override;
     void build() override;
+
+    DeferredFeatureSet(const DeferredFeatureSet&o, TreeCloneMap& tcm);
 
   /**
    * query an entire feature
@@ -234,9 +287,12 @@ class DeferredFeatureSet
         const FeatureSetParserArgList& refs = FeatureSetParserArgList()
     );
 
-
 public:
     CREATE_FUNCTION(DeferredFeatureSet);
+    CLONEABLE(DeferredFeatureSet);
+#ifndef SWIG
+    DEPENDS((baseSet_, refs_));
+#endif
 
     inline ConstFeatureSetPtr baseSet() const { return baseSet_; }
 

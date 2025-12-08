@@ -40,6 +40,7 @@ class FreeCADModel
     std::string solidname_;
     FreeCADModelVarList vars_;
 
+    FreeCADModel(const FreeCADModel&o, TreeCloneMap& tcm);
     FreeCADModel ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
 
     size_t calcHash() const override;
@@ -47,8 +48,10 @@ class FreeCADModel
 
 public:
     declareType ( "FreeCADModel" );
-
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(FreeCADModel);
+    CLONEABLE(FreeCADModel);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

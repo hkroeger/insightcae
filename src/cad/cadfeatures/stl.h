@@ -56,6 +56,7 @@ private:
   GeometrySpecification geometry_;
   TransformationSpecification transform_;
 
+  STL(const STL&o, TreeCloneMap& tcm);
   STL(GeometrySpecification geometry);
 
   STL(GeometrySpecification geometry,
@@ -70,7 +71,10 @@ protected:
 
 public:
     declareType("STL");
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(STL);
+    CLONEABLE(STL);
 
     static void insertrule(parser::ISCADParser& ruleset);
     static FeatureCmdInfoList ruleDocumentation();

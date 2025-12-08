@@ -18,6 +18,9 @@
  */
 
 #include "subfeature.h"
+#include "cadfeature.h"
+#include "datum.h"
+#include "cadexception.h"
 
 namespace insight 
 {
@@ -30,10 +33,17 @@ size_t Subfeature::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*basefeat_;
   h+=subfeatname_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
+
+
+Subfeature::Subfeature(const Subfeature&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(basefeat_), subfeatname_(o.subfeatname_)
+{}
+
+
 
 Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
   : DerivedFeature(basefeat),
@@ -42,12 +52,30 @@ Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
 {}
 
 
+
+
+const std::string &Subfeature::subfeatname() const
+{
+    return subfeatname_;
+}
+
+
+
+
 void Subfeature::build()
 {
-  FeaturePtr f=basefeat_->subshape(subfeatname_);
-  setBaseFeat(f);
-  setShape(f->shape());
-  copyDatums(*f);
+    try
+    {
+        FeaturePtr f=basefeat_->subshape(subfeatname_);
+        setBaseFeat(f);
+        setShape(f->shape());
+        copyDatums(*f);
+    }
+    catch (SubElementNotFound& ex)
+    {
+        ex.description()->geometryInError_ = shared_from_this();
+        throw ex;
+    }
 }
   
 }

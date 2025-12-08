@@ -32,16 +32,6 @@ namespace insight
 
 
 
-class ParameterNotFoundException
-    : public Exception
-{
-public:
-    ParameterNotFoundException(const std::string& msg);
-};
-
-
-
-
 class ParameterSet
   : public Parameter
 {
@@ -67,9 +57,6 @@ private:
 protected:
     ParameterSet();
 
-    ParameterSet(
-        const std::string& description,
-        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
     ParameterSet(
         Entries &&defaultValue,
@@ -82,7 +69,14 @@ protected:
         bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
 public:
-  declareType ( "subset" );;
+  declareType ( "subset" );
+
+  ParameterSet(
+        const rapidxml::xml_node<> & node );
+
+  ParameterSet(
+      const std::string& description,
+      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
   static std::unique_ptr<ParameterSet> create();
 
@@ -116,7 +110,34 @@ public:
   bool isDifferent(const Parameter& p) const override;
 
 
-  void insert(const std::string &name, std::unique_ptr<Parameter>&& p);
+  Parameter& insert(const std::string &name, std::unique_ptr<Parameter>&& p);
+
+  template<class RT, class ...Args>
+  RT& insert(
+      const std::string& key, Args&&... addArgs )
+  {
+      return dynamic_cast<RT&>(
+          insert(key, std::make_unique<RT>(std::forward<Args>(addArgs)...))
+          );
+  }
+
+  template<class RT, class ...Args>
+  RT& getOrInsert(
+      const std::string& key, Args&&... addArgs )
+  {
+      auto existing=value_.find(key);
+      if (existing==value_.end())
+      {
+          return dynamic_cast<RT&>(
+              insert(key, std::make_unique<RT>(std::forward<Args>(addArgs)...))
+              );
+      }
+      else
+      {
+          return dynamic_cast<RT&>(*existing->second);
+      }
+  }
+
   void remove(const std::string& name);
 
   // for interchangeability in arrays with selectablesubset
@@ -129,8 +150,12 @@ public:
       return *this;
   }
 
-  std::string latexRepresentation() const override;
-  std::string plainTextRepresentation(int indent=0) const override;
+  std::string latexRepresentation(
+      const std::string& name,
+      int documentHierarchyLevel,
+      const FileStorageInfo& fsi ) const override;
+
+  std::string plainTextRepresentation(int indent) const override;
 
   bool isPacked() const override;
   void pack() override;
@@ -143,46 +168,32 @@ public:
       const std::string& name,
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath
+      const insight::hierarchicalData::Element::OutputProperties& outProps
   ) const override;
 
-  void readFromNode
+  const rapidxml::xml_node<>* readFromNode
   (
       const std::string& name,
-      rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath
+      const rapidxml::xml_node<>& node
   ) override;
 
 
 
   int nChildren() const override;
 
-  std::string childParameterName(
+  std::string childElementName(
       int i,
       bool redirectArrayElementsToDefault=false ) const override;
 
-  std::string childParameterName(
-      const Parameter *p,
+  std::string childElementName(
+      const Element *p,
       bool redirectArrayElementsToDefault=false ) const override;
 
-  Parameter& childParameterRef ( int i ) override;
+  Element& childElementRef ( int i ) override;
 
-  const Parameter& childParameter( int i ) const override;
-
+  const Element& childElement( int i ) const override;
 
   size_t size() const;
-
-  bool hasParameter( std::string path ) const;
-  insight::Parameter& getParameter( std::string path );
-
-  template<class T>
-  T& get ( const std::string& name );
-
-  template<class T>
-  const T& get ( const std::string& name ) const
-  {
-      return const_cast<ParameterSet&>(*this).get<T>(name);
-  }
 
   template<class T>
   const typename T::value_type& getOrDefault ( const std::string& name, const typename T::value_type& defaultValue ) const
@@ -191,7 +202,7 @@ public:
       {
           return this->get<T> ( name ) ();
       }
-      catch ( const ParameterNotFoundException& /*e*/ )
+      catch ( const ElementNotFoundException& /*e*/ )
       {
           return defaultValue;
       }
@@ -199,7 +210,7 @@ public:
 
   bool contains ( const std::string& name ) const;
 
-  std::istream& getFileStream ( const std::string& name );
+  std::unique_ptr<std::istream> getFileStream ( const std::string& name );
 
   ParameterSet& setInt ( const std::string& name, int v );
   ParameterSet& setDouble ( const std::string& name, double v );
@@ -223,18 +234,15 @@ public:
 
   void replace ( const std::string& key, std::unique_ptr<Parameter> newp );
 
-  std::unique_ptr<Parameter> clone(bool initialize) const override;
+  std::unique_ptr<Element> clone() const override;
 
-  inline std::unique_ptr<ParameterSet> cloneParameterSet() const
-  {
-      return std::dynamic_unique_ptr_cast<ParameterSet>(clone(true));
-  }
+  void assignFrom( const Element& rhs ) override;
+  void copyMatching( const Element& o ) override;
+  void extend ( const Element& op ) override;
+  bool isEqual(const Element& op) const override;
 
-  void copyFrom(const Parameter& o) override;
-  void operator=(const ParameterSet& spo);
-  void extend ( const Parameter& op ) override;
-  void merge ( const Parameter& other ) override;
   void clear();
+
 #ifndef SWIG
   std::unique_ptr<Parameter> intersection(const Parameter& other) const override;
 #endif
@@ -248,26 +256,6 @@ std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
 
 
 
-template<class T = insight::Parameter>
-T& ParameterSet::get ( const std::string& name )
-{
-  typedef T PT;
-
-
-  auto& p = this->getParameter(name);
-
-  if ( PT* const pt=dynamic_cast<PT* const>(&p) )
-  {
-      return *pt;
-  }
-  else
-  {
-      throw insight::ParameterNotFoundException(
-          "Parameter "+name+" not of requested type!"
-                                " (actual type is "+p.type()+")"
-          );
-  }
-}
 
 }
 

@@ -34,11 +34,16 @@ class Split
   size_t calcHash() const override;
   void build() override;
   
+  Split(const Split&o, TreeCloneMap& tcm);
   Split(FeaturePtr source, FeaturePtr target);
 
 public:
   declareType("Split");
+#ifndef SWIG
+  DEPENDS((source_,target_));
+#endif
   CREATE_FUNCTION(Split);
+  CLONEABLE(Split);
   
   static void insertrule(parser::ISCADParser& ruleset);
 };

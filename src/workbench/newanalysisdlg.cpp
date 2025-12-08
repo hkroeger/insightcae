@@ -44,7 +44,7 @@ newAnalysisDlg::newAnalysisDlg(WorkbenchMainWindow* parent)
 
   this->setWindowTitle(_("Create New Analysis"));
   
-  auto cancelBtn=new QPushButton("Cancel");
+  auto cancelBtn=new QPushButton(_("Cancel"));
   ui->widget->replaceLoadButton(cancelBtn);
 
   connect(cancelBtn, &QPushButton::clicked,

@@ -33,6 +33,7 @@ class Wire
 {
     boost::variant<FeatureSetPtr, std::vector<FeaturePtr> > edges_;
 
+    Wire(const Wire&o, TreeCloneMap& tcm);
     Wire ( FeatureSetPtr edges );
     Wire ( const std::vector<FeaturePtr>& edges );
 
@@ -41,7 +42,11 @@ class Wire
 
 public:
     declareType ( "Wire" );
+#ifndef SWIG
+    DEPENDS((edges_));
+#endif
     CREATE_FUNCTION(Wire);
+    CLONEABLE(Wire);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

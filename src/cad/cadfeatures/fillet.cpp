@@ -18,6 +18,8 @@
  */
 
 #include "fillet.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -45,13 +47,18 @@ size_t Fillet::calcHash() const
 {
   ParameterListHash h;
   h+=*edges_;
-  h+=r_->value();
-  return h.getHash();
+  h+=*r_;
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
   
-  
+Fillet::Fillet(const Fillet&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(edges_), CL(r_)
+{}
+
+
 Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
 : DerivedFeature(edges->model()), edges_(edges), r_(r)
 {}
@@ -88,9 +95,10 @@ void Fillet::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Fillet",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+    ( '(' > ruleset.r_edgeFeaturesExpression > ','
+          > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &Fillet::create<FeatureSetPtr, ScalarPtr>,
                          qi::_1, qi::_2) ]

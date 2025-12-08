@@ -40,6 +40,7 @@ class Cylinder
 
     bool centered_;
 
+    Cylinder(const Cylinder&o, TreeCloneMap& tcm);
     Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
     Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
 
@@ -48,8 +49,11 @@ class Cylinder
 
 public:
     declareType ( "Cylinder" );
-
+#ifndef SWIG
+    DEPENDS((p1_, p2_, D_, Di_));
+#endif
     CREATE_FUNCTION(Cylinder);
+    CLONEABLE(Cylinder);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

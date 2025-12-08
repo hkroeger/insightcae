@@ -120,6 +120,8 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
     pointSelected.connect(
         [this](PointProperty pp)
         {
+            DBG_SLOT(pointSelected);
+
             if (!p1_)
             {
                 p1_=std::make_shared_aggr<PointProperty>(pp);
@@ -175,7 +177,15 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
                 }
 
 
-                finishAction();
+                //finishAction();
+
+                //restart
+                p1_.reset();
+                p2_.reset();
+                previewLine_->SetVisibility(false);
+                viewer().renderer()->RemoveActor(previewLine_);
+                previewLine_=nullptr;
+                prevLine_=nullptr;
             }
         }
         );
@@ -183,6 +193,8 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
     newPreviewEntity.connect(
         [this](std::weak_ptr<insight::cad::ConstrainedSketchEntity> pP)
         {
+            DBG_SLOT(newPreviewEntity);
+
             if (auto p = std::dynamic_pointer_cast<insight::cad::SketchPoint>(pP.lock()))
             {
                 updatePreviewRect(p->value());
@@ -222,4 +234,9 @@ bool IQVTKCADModel3DViewerDrawRectangle::onMouseClick  (
     else
         return IQVTKCADModel3DViewerPlanePointBasedAction
             ::onMouseClick( btn, nFlags, point );
+}
+
+QString IQVTKCADModel3DViewerDrawRectangle::description() const
+{
+    return "Draw rectangle";
 }

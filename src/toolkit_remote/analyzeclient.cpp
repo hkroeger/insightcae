@@ -24,6 +24,7 @@
 #include "Wt/Json/Array.h"
 #include "Wt/Json/Parser.h"
 #include "Wt/Json/Serializer.h"
+#include "base/hierarchicalelement.h"
 
 #include <functional>
 
@@ -293,9 +294,8 @@ void ControlRequestAction::handleHttpResponse(
 
 LaunchAnalysisAction::LaunchAnalysisAction(
         AnalyzeClient& cl,
-        const ParameterSet& input,
+        const AnalysisParameterSet& input,
         const boost::filesystem::path& parent_path,
-        const std::string& analysisName,
         ReportSuccessCallback callback,
         AnalyzeClientAction::SimpleCallBack onTimeout )
     : AnalyzeClientAction(cl, onTimeout),
@@ -304,7 +304,7 @@ LaunchAnalysisAction::LaunchAnalysisAction(
     CurrentExceptionContext ex("composing parameter set message to server");
     msg_.setHeader("Content-Type", "application/xml");
     std::ostringstream cs;
-    input.saveToStream(cs, parent_path, analysisName);
+    input.saveToStream(cs, hierarchicalData::Element::OutputProperties());
     msg_.addBodyText(cs.str());
 }
 
@@ -353,11 +353,11 @@ void QueryResultsAction::handleHttpResponse(
             const Wt::Http::Message& response )
 {
     AnalyzeClientAction::handleHttpResponse(err, response);
-    bool success = (!err && response.status() == 200);
 
-    ResultSetPtr r;
+    Result qrr;
+    qrr.success = (!err && response.status() == 200);
 
-    if (success)
+    if (qrr.success)
     {
       const auto *ct = response.getHeader("Content-Type");
 
@@ -366,14 +366,22 @@ void QueryResultsAction::handleHttpResponse(
 
       if ( (*ct)=="application/xml")
       {
-        r = ResultSet::createFromString( response.body(), cl_.analysisName() );
+        qrr.results = ResultSet::createFromString( response.body() );
       }
     }
 
-    Result qrr;
-    qrr.success=success;
-    qrr.results=r;
-    cl_.ioService().post( std::bind(callback_, qrr) );
+    callback_(std::move(qrr));
+    // //auto b=std::bind(callback_, qrr);
+    // auto b=[this,qrr](){
+    //     callback_(qrr);
+    // };
+    // struct CC
+    // {
+    //     std::unique_ptr<int> ii;
+    //     void operator()()
+    //     {}
+    // } cc;
+    // cl_.ioService().post(cc);
 }
 
 
@@ -523,16 +531,15 @@ void AnalyzeClient::queryExepath(
 
 
 void AnalyzeClient::launchAnalysis(
-    const ParameterSet& input,
+    const AnalysisParameterSet& input,
     const boost::filesystem::path& parent_path,
-    const std::string& analysisName,
     AnalyzeClientAction::ReportSuccessCallback onCompletion,
     AnalyzeClientAction::SimpleCallBack onTimeout
     )
 {
    launchAction( std::make_shared<LaunchAnalysisAction>(
                      *this,
-                     input, parent_path, analysisName,
+                     input, parent_path,
                      onCompletion, onTimeout ) );
 }
 

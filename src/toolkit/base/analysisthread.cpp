@@ -2,6 +2,7 @@
 
 #include "base/analysis.h"
 #include "base/progressdisplayer/prefixedprogressdisplayer.h"
+#include <exception>
 #include <memory>
 #include <mutex>
 
@@ -64,19 +65,20 @@ AnalysisThread::AnalysisThread(
                 boost::mutex::scoped_lock lck(dataAccess_);
                 executionPath_ = std::get<1>(*pap);
               }
+              auto psp=std::get<0>(*pap);
               sid =
                 insight::Analysis::supplementedInputDatas()(
-                    analysisName, ParameterSetInput(*std::get<0>(*pap)), executionPath_, *pd );
+                    analysisName, ParameterSetInput(*psp), executionPath_, *pd );
           }
-          else if (auto *pap =
+          else if (auto *sibp =
                      boost::get<insight::supplementedInputDataBasePtr>(
                          &input ) )
           {
               {
                   boost::mutex::scoped_lock lck(dataAccess_);
-                  executionPath_ = (*pap)->executionPath();
+                  executionPath_ = (*sibp)->executionPath();
               }
-              sid = *pap;
+              sid = *sibp;
           }
 
           auto analysis = insight::Analysis::analyses()(
@@ -84,7 +86,7 @@ AnalysisThread::AnalysisThread(
 
           analysis_ = analysis.get();
 
-          results_ = (*analysis)(*pd);
+          this->ResultSetPtr::operator=( (*analysis)(*pd) );
 
           postAction();
         }
@@ -112,11 +114,10 @@ void AnalysisThread::interrupt()
   thread_.interrupt();
 }
 
-ResultSetPtr AnalysisThread::join()
+void AnalysisThread::join()
 {
   thread_.join();
   if (exception_) std::rethrow_exception(exception_);
-  return results_;
 }
 
 const boost::filesystem::path &AnalysisThread::executionPath() const
@@ -168,17 +169,25 @@ void AnalysisWorkerThread::operator() ()
       try
       {
         auto& analysis= *(ai.analysis);
-        ai.results->transfer( *analysis(pd) ); // call operator() from analysis object
+
+          std::cout<<"name "<<ai.name<<std::endl;
+        auto result = analysis(pd);
+
+        ai.results=std::move(result);
       }
-      catch ( const std::exception& e )
+      catch ( std::exception& e )
       {
-        ai.exception = std::current_exception();
+          std::cout<<"name2 "<<ai.name<<std::endl;
+        // ai.exception = std::current_exception();
         WarningDispatcher::getCurrent().issue(
               "An exception has occurred while processing the instance "+ai.name+" of the parameter study."
               "The analsis of this instance was not completed.\n"
               "Reason: "+e.what()
               );
+        ai.exception = std::make_exception_ptr(e);
       }
+
+      queue_->storeProcessed(std::move(ai));
 
       // Make sure we can be interrupted at least between analyses
       boost::this_thread::interruption_point();

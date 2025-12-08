@@ -24,6 +24,7 @@ project(toolkit)
 set(toolkit_SOURCES
     base/cppextensions.h base/cppextensions.cpp
     base/translations.h base/translations.cpp
+
     base/global.cpp
     base/boost_include.cpp
     base/rapidxml.h base/rapidxml.cpp
@@ -39,6 +40,9 @@ set(toolkit_SOURCES
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h
+
+
+    base/hierarchicalelement.h base/hierarchicalelement.cpp
 
     base/parameter.cpp base/parameter.h
     base/parameters/simpleparameter.cpp base/parameters/simpleparameter.h
@@ -86,6 +90,7 @@ set(toolkit_SOURCES
     base/taskspoolerinterface.cpp base/taskspoolerinterface.h
     base/mountremote.cpp base/mountremote.h
     base/outputanalyzer.cpp base/outputanalyzer.h
+    base/filestorageinfo.h base/filestorageinfo.cpp
     base/filecontainer.cpp base/filecontainer.h
     base/streamredirector.h base/streamredirector.cpp
     base/streamtoprogressdisplayer.h base/streamtoprogressdisplayer.cpp
@@ -118,7 +123,7 @@ set(toolkit_SOURCES
     base/resultelements/gnuplotpolarchartrenderer.cpp base/resultelements/gnuplotpolarchartrenderer.h
     base/resultelements/fastgnuplotrenderer.h base/resultelements/fastgnuplotrenderer.cpp
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
-    base/resultsetfilter.h base/resultsetfilter.cpp
+    base/hierarchicaldatafilter.h base/hierarchicaldatafilter.cpp
     base/propertylibrary.h base/propertylibrary.cpp
     base/materialslibrary.h base/materialslibrary.cpp
     base/zipfile.h base/zipfile.cpp
@@ -295,6 +300,7 @@ set(toolkit_SOURCES
     code_aster/caseelements/shellpart.h code_aster/caseelements/shellpart.cpp
     code_aster/caseelements/gluedconnection.h code_aster/caseelements/gluedconnection.cpp
 
+    lsdyna/femmesh.h lsdyna/femmesh.cpp
     lsdyna/lsdynainputdeck.h lsdyna/lsdynainputdeck.cpp
     lsdyna/lsdynainputcard.h lsdyna/lsdynainputcard.cpp
     lsdyna/control.h lsdyna/control.cpp

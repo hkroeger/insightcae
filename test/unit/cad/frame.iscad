@@ -1,0 +1,11 @@
+wing=
+Extrusion(
+ Naca4( '0014', O, 1*EX, EZ ),
+ 10*EZ
+);
+
+wingsurface:*wing?face('!isPlane');
+
+pl=Plane(5*EX, 0.4*EZ+0.4*EX);
+
+sec:wingsurface&pl;

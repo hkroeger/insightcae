@@ -43,7 +43,7 @@ bool LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldI
     if (fieldname == "k")
     {
         BC["type"]="fixedValue";
-        BC["value"]="uniform 1e-10";
+        BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
     else if ( (fieldname == "nuSgs")||((OFversion()>=300)&&(fieldname == "nut")) )
@@ -52,8 +52,8 @@ bool LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldI
         {
 //             std::cout<<"inserting \"nuSgsABLRoughWallFunction\" with z0="<<roughness_z0<<std::endl;
             BC["type"]="nuSgsABLRoughWallFunction";
-            BC["z0"]=boost::str(boost::format("uniform %g")%roughness_z0);
-            BC["value"]="uniform 1e-10";
+            BC["z0"]=OFDictData::toUniformField(roughness_z0);
+            BC["value"]=OFDictData::toUniformField(1e-10);
         }
         else
         {

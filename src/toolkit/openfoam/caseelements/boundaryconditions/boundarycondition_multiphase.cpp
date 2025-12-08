@@ -56,17 +56,16 @@ bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const
         &&
         ( get<0> ( fieldinfo ) ==scalarField )
     ) {
-        std::ostringstream entry;
-        entry << "uniform " << pf->fraction;
+        auto entry = OFDictData::toUniformField(pf->fraction);
         if (pf->handleflowreversal)
           {
             BC["type"]="inletOutlet";
-            BC["inletValue"]=entry.str();
-            BC["value"]=entry.str();
+            BC["inletValue"]=entry;
+            BC["value"]=entry;
           } else
           {
             BC["type"]="fixedValue";
-            BC["value"]=entry.str();
+            BC["value"]=entry;
           }
         return true;
     } else {
@@ -121,12 +120,11 @@ bool uniformWallTiedPhases::addIntoFieldDictionary ( const std::string& fieldnam
         &&
         ( get<0> ( fieldinfo ) ==scalarField )
     ) {
-        std::ostringstream entry;
-        entry << "uniform " << pf->fraction;
+        auto entry=OFDictData::toUniformField(pf->fraction);
 //     BC["type"]="fixedValue";
 //     BC["value"]=entry.str();
         BC["type"]="fixedValue";
-        BC["value"]=entry.str();
+        BC["value"]=entry;
         return true;
     } else {
         return false;

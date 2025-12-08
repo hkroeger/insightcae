@@ -71,6 +71,20 @@ public:
 
 
 
+class Damping_Global
+    : public LSDynaInputCard
+{
+public:
+    double dampingCoeff_;
+
+public:
+    Damping_Global(double dampingCoeff);
+
+    void write(std::ostream& os) const override;
+};
+
+
+
 class Control_Output
         : public LSDynaInputCard
 {

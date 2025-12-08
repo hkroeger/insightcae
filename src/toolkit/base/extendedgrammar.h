@@ -108,6 +108,20 @@ public:
                 addrule ) );
         return *addrule;
     }
+
+    template<class Rule>
+    inline Rule* findAdditionalRule(const std::string& name)
+    {
+        for (auto& rc: additionalRules_)
+        {
+            if (auto *r = dynamic_cast<RuleContainer<Rule>*>(&rc))
+            {
+                if ((*r)->name()==name)
+                    return (*r).get();
+            }
+        }
+        return nullptr;
+    }
 };
 
 

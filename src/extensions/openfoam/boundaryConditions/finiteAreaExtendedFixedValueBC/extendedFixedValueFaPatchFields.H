@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -15,27 +15,28 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
  */
 
-#ifndef INSIGHT_CAD_LOOP_H
-#define INSIGHT_CAD_LOOP_H
+#ifndef extendedFixedValueFaPatchFields_H
+#define extendedFixedValueFaPatchFields_H
 
-namespace insight
-{
-namespace cad
-{
-  
-class LoopInstance
-{
-public:
-  
-};
+#include "extendedFixedValueFaPatchField.H"
+#include "fieldTypes.H"
 
-class Loop
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
 {
-};
 
-}
-}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#endif // INSIGHT_CAD_LOOP_H
+makePatchTypeFieldTypedefsE(extendedFixedValue)
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif

@@ -1,5 +1,6 @@
 #include "stringer.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include <memory>
 
 #include "base/boost_include.h"
@@ -26,12 +27,12 @@ size_t Stringer::calcHash() const
 {
   ParameterListHash h;
   h+=*spine_;
-  h+=normal_->value();
-  h+=t_->value();
-  h+=w_->value();
-  h+=delta_->value();
-  h+=ext0_->value();
-  h+=ext1_->value();
+  h+=*normal_;
+  h+=*t_;
+  h+=*w_;
+  h+=*delta_;
+  h+=*ext0_;
+  h+=*ext1_;
   return h.getHash();
 }
 
@@ -120,6 +121,16 @@ void Stringer::build()
   setShape(result);
 }
 
+
+Stringer::Stringer(const Stringer&o, TreeCloneMap& tcm)
+  : CL(spine_),
+    CL(normal_),
+    CL(t_), CL(w_), CL(delta_),
+    CL(ext0_), CL(ext1_)
+{}
+
+
+
 Stringer::Stringer(
     FeaturePtr spine,
     VectorPtr normal,
@@ -147,14 +158,14 @@ void Stringer::insertrule(parser::ISCADParser& ruleset)
       std::make_shared<parser::ISCADParser::ModelstepRule>(
 
                   ( '('
-                    >> ruleset.r_solidmodel_expression >> ',' // 1
-                    >> ruleset.r_vectorExpression >> ',' // 2
-                    >> ruleset.r_scalarExpression >> ',' // 3
-                    >> ruleset.r_scalarExpression >> ',' // 4
-                    >> ruleset.r_scalarExpression // 5
-                    >> ( ( ',' >> qi::lit("ext0") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
-                    >> ( ( ',' >> qi::lit("ext1") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
-                    >> ')' )
+                    > ruleset.r_solidmodel_expression > ',' // 1
+                    > ruleset.r_vectorExpression > ',' // 2
+                    > ruleset.r_scalarExpression > ',' // 3
+                    > ruleset.r_scalarExpression > ',' // 4
+                    > ruleset.r_scalarExpression // 5
+             > ( ( ',' >> qi::lit("ext0") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
+             > ( ( ',' >> qi::lit("ext1") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
+                    > ')' )
                   [ qi::_val = phx::bind(
                        &Stringer::create<FeaturePtr, VectorPtr, ScalarPtr,
                                          ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,

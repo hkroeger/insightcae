@@ -46,6 +46,7 @@ protected:
     DatumPtr axis_;
     ExplosionComponentList components_;
 
+    Exploded(const Exploded&o, TreeCloneMap& tcm);
     Exploded ( DatumPtr axis, const ExplosionComponentList& m1 );
     Exploded ( DatumPtr axis, FeaturePtr assy );
 
@@ -54,8 +55,11 @@ protected:
 
 public:
     declareType ( "Exploded" );
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
 
     CREATE_FUNCTION(Exploded);
+    CLONEABLE(Exploded);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

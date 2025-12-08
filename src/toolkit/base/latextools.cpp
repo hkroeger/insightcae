@@ -169,7 +169,7 @@ struct PlainTextReplacements
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
 
-    reformatted_ += str(format("\nfile://%s\n") % fname.string() );
+    reformatted_ += str(format("\nfile://%s\n") % fname.generic_string() );
   }
 
   void appendSvgImage(double, const std::string& imagename) override
@@ -212,14 +212,18 @@ struct LaTeXReplacements
   {
     boost::filesystem::path fname = findSharedImageFile(imagename);
     fname = boost::filesystem::change_extension(fname, "");
-    reformatted_ += str(format("\\includegraphics[keepaspectratio,width=%d\\linewidth]{%s}") % width % fname.string() );
+    reformatted_ += str(
+        format("\\includegraphics[keepaspectratio,width=%d\\linewidth]{%s}")
+        % width % fname.generic_string() );
   }
 
   void appendSvgImage(double width, const std::string& imagename) override
   {
       boost::filesystem::path fname = findSharedImageFile(imagename);
       fname = boost::filesystem::change_extension(fname, "");
-      reformatted_ += str(format("\\includesvg[width=%d\\linewidth]{%s}") % width % fname.string() );
+      reformatted_ += str(
+          format("\\includesvg[width=%d\\linewidth]{%s}")
+          % width % fname.generic_string() );
   }
 
   void appendInlineFormula(const std::string& latex_formula) override
@@ -453,8 +457,12 @@ struct StringParser
     StringParser(Replacements& rep)
     : qi::grammar<std::string::iterator>::base_type(start)
     {
-      inlineformula =  qi::as_string[ '$' > +(~qi::char_("$")) - qi::char_('$')  > '$' ];
-      displayformula =  qi::as_string[ qi::lit("$$") > +(~qi::char_("$")) - qi::char_('$') > qi::lit("$$") ];
+      inlineformula =  qi::as_string[
+            '$' > +(~qi::char_("$")) - qi::char_('$')  > '$'
+      ];
+      displayformula =  qi::as_string[
+          qi::lit("$$") > +(~qi::char_("$")) - qi::char_('$') > qi::lit("$$")
+      ];
       verbatimtext =
             qi::lit("\\begin{verbatim}")
           > qi::lexeme[ *( (qi::as_string[~qi::char_(rep.specialchars_)])|rep.simple_replacements_ - qi::lit("\\end{verbatim}") ) ][ qi::_val = phx::bind(&combine, qi::_1) ]
@@ -494,8 +502,8 @@ struct StringParser
 //            [ phx::bind(&Replacements::appendFormattedText, &rep, qi::_1, Replacements::BOLD) ]
         )
         |
-        qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ]
-          [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
+          qi::as_string[ +(~qi::char_(rep.specialchars_)) - qi::char_(rep.specialchars_) ]
+                [ phx::bind(&Replacements::appendText, &rep, qi::_1) ]
         |
         image
         |
@@ -534,6 +542,10 @@ struct StringParser
 std::string reformat(const std::string& simplelatex, Replacements& rep)
 {
   std::string original(simplelatex);
+
+#ifdef WIN32
+  boost::replace_all(original, "\r\n", "\n");
+#endif
   
   StringParser parser(rep);
   
@@ -549,8 +561,10 @@ std::string reformat(const std::string& simplelatex, Replacements& rep)
   
   if (start != end)
   {
-    std::cout << "Fail at "<<int(start-original.begin())<<std::endl;
-    throw insight::Exception("Failed to translate simple latex text: \""+simplelatex+"\"");
+      std::ostringstream msg;
+      msg << "Failed to translate simple latex text: \""<<simplelatex<<"\""<<std::endl
+          <<"Fail at "<<int(start-original.begin())<<", \""<<std::string(start, end)<<"\""<<std::endl;
+    throw insight::Exception(msg.str());
   }
   
   return rep.reformatted_;
@@ -571,7 +585,9 @@ SimpleLatex::SimpleLatex(const std::string &slt)
     : simpleLatex_code_(slt)
 {}
 
-
+SimpleLatex::SimpleLatex(const char * simpleLatex)
+    : simpleLatex_code_(simpleLatex)
+{}
 
 const std::string& SimpleLatex::simpleLatex() const
 {

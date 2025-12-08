@@ -24,6 +24,7 @@ add_sources(insightcad_SOURCES
  extrusion.cpp extrusion.h
  ellipse.cpp ellipse.h
  fillet.cpp fillet.h
+ forloop.cpp forloop.h
  fillingface.cpp fillingface.h
  fixshape.cpp fixshape.h
  faceisocurve.cpp faceisocurve.h
@@ -47,6 +48,8 @@ add_sources(insightcad_SOURCES
  splinecurve.cpp splinecurve.h
  splinesurface.cpp splinesurface.h
  split.cpp split.h
+
+ splitsurface.cpp splitsurface.h
  spring.cpp spring.h
  sinewave.cpp sinewave.h
  helix.cpp helix.h
@@ -73,7 +76,6 @@ add_sources(insightcad_SOURCES
  freecadmodel.cpp freecadmodel.h
  pyramid.cpp pyramid.h
  closedpolyline.cpp closedpolyline.h
- loop.cpp loop.h
  gear.cpp gear.h
  curvepattern.cpp curvepattern.h
  refplace.cpp refplace.h

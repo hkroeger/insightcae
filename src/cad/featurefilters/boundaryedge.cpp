@@ -20,6 +20,7 @@
 
 #include "boundaryedge.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "occinclude.h"
 
 using namespace std;

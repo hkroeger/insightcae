@@ -87,7 +87,7 @@ public:
             return true;
         }
         else
-            InputReceiver<Viewer>::onMouseWheel(
+            return InputReceiver<Viewer>::onMouseWheel(
                 angleDeltaX, angleDeltaY );
     }
 };

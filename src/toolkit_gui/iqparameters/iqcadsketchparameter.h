@@ -15,20 +15,49 @@ public:
     IQCADSketchParameter
         (
             QObject* parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter* parameter,
-            const insight::ParameterSet& defaultParameterSet
+            IQHierarchicalDataModel* hdmodel,
+            insight::hierarchicalData::Element* element
             );
 
     void connectSignals() override;
 
-    QString valueText() const override;
+    QVariant value() const override;
 
     QVBoxLayout* populateEditControls(
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer) override;
+
+    void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
+
+    void edit(IQCADModel3DViewer *viewer);
 };
 
+
+/*
+class TOOLKIT_GUI_EXPORT IQCADSketchDelegate
+    : public QStyledItemDelegate
+{
+    Q_OBJECT
+
+public:
+    IQCADSketchDelegate(QObject * parent = 0);
+
+    QWidget * createEditor(
+        QWidget * parent,
+        const QStyleOptionViewItem & option,
+        const QModelIndex & index) const override;
+
+    void setEditorData(
+        QWidget *editor,
+        const QModelIndex &index ) const override;
+
+    void setModelData(
+        QWidget *editor,
+        QAbstractItemModel *model,
+        const QModelIndex &index ) const override;
+
+};
+*/
 
 
 #endif // IQCADSKETCHPARAMETER_H

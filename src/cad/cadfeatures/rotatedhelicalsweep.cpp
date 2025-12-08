@@ -18,10 +18,13 @@
  */
 
 #include "rotatedhelicalsweep.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 
 namespace qi = boost::spirit::qi;
@@ -48,10 +51,10 @@ size_t RotatedHelicalSweep::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*sk_;
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=P_->value();
-  h+=revoffset_->value();
+  h+=*p0_;
+  h+=*axis_;
+  h+=*P_;
+  h+=*revoffset_;
   return h.getHash();
 }
 
@@ -120,9 +123,17 @@ TopoDS_Shape makeRotatedHelicalSweep(const Feature& sk, const arma::mat& p0, con
 }
 
 
+RotatedHelicalSweep::RotatedHelicalSweep(const RotatedHelicalSweep&o, TreeCloneMap& tcm)
+: CL(sk_), CL(p0_), CL(axis_), CL(P_), CL(revoffset_)
+{}
+
+
+
 RotatedHelicalSweep::RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset)
 : sk_(sk), p0_(p0), axis_(axis), P_(P), revoffset_(revoffset)
 {}
+
+
 
 void RotatedHelicalSweep::build()
 {
@@ -131,6 +142,8 @@ void RotatedHelicalSweep::build()
   setShape(makeRotatedHelicalSweep(*sk_, p0_->value(), axis_->value(), P_->value(), revoffset_->value()));
 }
 
+
+
 void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset)
 {
   ruleset.modelstepFunctionRules.add
@@ -138,12 +151,13 @@ void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset)
     "RotatedHelicalSweep",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' 
-	    >> ruleset.r_solidmodel_expression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> 
-        ((  ',' >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0))) >> ')' )
+    ( '('
+        > ruleset.r_solidmodel_expression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression >
+        ((  ',' > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+        > ')' )
                   [ qi::_val = phx::bind(
                        &RotatedHelicalSweep::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

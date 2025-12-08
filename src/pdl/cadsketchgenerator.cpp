@@ -102,7 +102,7 @@ void CADSketchGenerator::Data::cppWriteSetStatement
         const std::string& staticname
         ) const
 {
-    os<<varname<<" = *"<<staticname<<";\n";
+    os<<varname<<".assignFrom( *"<<staticname<<" );\n";
 }
 
 /**

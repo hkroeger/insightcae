@@ -71,7 +71,7 @@ bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, 
     if (fieldname == "kSgs")
     {
       BC["type"]="fixedValue";
-      BC["value"]="uniform 0";
+      BC["value"]=OFDictData::toUniformField(0.);
       return true;
     }
     else if (fieldname == "nuSgs")

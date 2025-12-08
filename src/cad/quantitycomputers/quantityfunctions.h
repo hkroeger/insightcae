@@ -21,7 +21,7 @@
 #ifndef INSIGHT_CAD_QUANTITYFUNCTIONS_H
 #define INSIGHT_CAD_QUANTITYFUNCTIONS_H
 
-#include "feature.h"
+#include "featureset.h"
 
 namespace insight
 {
@@ -206,8 +206,8 @@ BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
 BINARY_FUNCTION_QTC(powed, (pow(value1,value2)), PowResult );
 BINARY_FUNCTION_QTC(dotted, (arma::dot(value1,value2)), DotResult );
-BINARY_FUNCTION_QTC(angle, ( ::acos(std::min(1.0, arma::norm_dot(value1, value2)))), DotResult );
-BINARY_FUNCTION_QTC(angleMag, (::acos( std::min(1.0, ::fabs(arma::norm_dot(value1, value2))) )), DotResult );
+BINARY_FUNCTION_QTC(angle,    ( ::acos(arma::norm_dot(value1, value2))), DotResult );
+BINARY_FUNCTION_QTC(angleMag, (::acos(::fabs(arma::norm_dot(value1, value2)))), DotResult );
 //BINARY_FUNCTION_QTC(angleMag, (::acos( fabs(arma::dot(value1/arma::norm(value1,2), value2/arma::norm(value2,2))) )), DotResult );
 
 }

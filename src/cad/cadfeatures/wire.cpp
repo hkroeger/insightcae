@@ -18,6 +18,8 @@
  */
 
 #include "wire.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -63,6 +65,22 @@ size_t Wire::calcHash() const
 
 
 
+Wire::Wire(const Wire&o, TreeCloneMap& tcm)
+{
+    if (auto* fsp=boost::get<FeatureSetPtr>(&o.edges_))
+    {
+        edges_=tcm.clone(*fsp);
+    }
+    else if (auto* fpv=boost::get<std::vector<FeaturePtr> >(&o.edges_))
+    {
+        std::vector<FeaturePtr> nv;
+        for (auto& fp: *fpv)
+        {
+            nv.push_back(tcm.clone(fp));
+        }
+        edges_=nv;
+    }
+}
 
 
 
@@ -130,7 +148,7 @@ void Wire::insertrule(parser::ISCADParser& ruleset)
                              &Wire::create<FeatureSetPtr>,
                              qi::_1) ]
         |
-        ( ruleset.r_modelstep % ',' )
+        ( ruleset.r_solidmodel_expression % ',' )
             [ qi::_val = phx::bind(
                              &Wire::create<const std::vector<FeaturePtr>&>,
                              qi::_1) ]

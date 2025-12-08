@@ -35,6 +35,8 @@ namespace insight
 
 
 
+
+
 /**
  * @brief The PathParameter class stores a reference to some external file.
  * It can store only the path but the external content can be "packed", i.e.
@@ -52,6 +54,8 @@ protected:
 public:
   declareType ( "path" );
 
+  PathParameter (const rapidxml::xml_node<> & node);
+
   PathParameter (
       const std::string& description,
       bool isHidden=false,
@@ -65,8 +69,7 @@ public:
       bool isHidden=false,
       bool isExpert=false,
       bool isNecessary=false,
-      int order=0,
-      std::shared_ptr<std::string> binary_content = std::shared_ptr<std::string>()  );
+      int order=0  );
 
   PathParameter (
       const FileContainer& fc,
@@ -78,13 +81,18 @@ public:
 
   bool isDifferent(const Parameter& p) const override;
 
-  std::string latexRepresentation() const override;
-  std::string plainTextRepresentation(int /*indent*/=0) const override;
+  std::string latexRepresentation(
+      const std::string& name,
+      int documentHierarchyLevel,
+      const FileStorageInfo& fsi ) const override;
+  std::string plainTextRepresentation(int indent) const override;
 
+  void resolveRelativePaths(const boost::filesystem::path& baseDirectory) override;
   bool isPacked() const override;
   void pack() override;
   void unpack(const boost::filesystem::path& basePath) override;
   void clearPackedData() override;
+
 
   /**
    * @brief filePath
@@ -92,28 +100,33 @@ public:
    * It will be created, if it does not exist on the filesystem yet
    * but its content is available in memory.
    * @param baseDirectory
-   * The working directory. If the file is only in memory,
-   * it will be created in a temporary directory under this path.
+   * The working directory, relative to which relative paths are resolved.
+   * If the file is only in memory, it will be created in a temporary directory
+   * under this path.
    * @return
    */
-  boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
+  boost::filesystem::path filePath(
+      bool unpackIfNoLocalCopy=true,
+      boost::optional<boost::filesystem::path> overrideBaseDirectory
+        = boost::optional<boost::filesystem::path>() ) const;
+
+
 
   rapidxml::xml_node<>* appendToNode(
       const std::string& name,
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath) const override;
+      const OutputProperties& outProps ) const override;
 
-  void readFromNode(
+  const rapidxml::xml_node<>* readFromNode(
       const std::string& name,
-      rapidxml::xml_node<>& node,
-      boost::filesystem::path inputfilepath) override;
+      const rapidxml::xml_node<>& node) override;
 
   std::unique_ptr<PathParameter> clonePathParameter() const;
-  std::unique_ptr<Parameter> clone(bool initialize) const override;
+  std::unique_ptr<Element> clone() const override;
 
-  void copyFrom(const Parameter& p) override;
-  void operator=(const PathParameter& p);
+  void assignFrom(const Element& e) override;
+  bool isEqual(const Element& op) const override;
 
   int nChildren() const override;
 
@@ -159,18 +172,31 @@ class DirectoryParameter
 public:
     declareType ( "directory" );
 
+    DirectoryParameter (const rapidxml::xml_node<> & node);
     DirectoryParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
     DirectoryParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    std::string latexRepresentation() const override;
 
-    rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override;
-    void readFromNode ( const std::string& name, rapidxml::xml_node<>& node,
-                                boost::filesystem::path inputfilepath ) override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
 
-    void operator=(const DirectoryParameter& p);
+    void pack() override;
+    void unpack(const boost::filesystem::path& basePath) override;
 
-    std::unique_ptr<Parameter> clone(bool initialize) const override;
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
+
+    const rapidxml::xml_node<>* readFromNode (
+        const std::string& name,
+        const rapidxml::xml_node<>& node) override;
+
+    bool isEqual(const Element& op) const override;
+
+    std::unique_ptr<Element> clone() const override;
     std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };
 

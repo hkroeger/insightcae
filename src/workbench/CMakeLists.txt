@@ -11,41 +11,32 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 set(workbench_SRCS
     workbench.cpp
 
-    iqcasedirectorystate.h
-    iqcasedirectorystate.cpp
+    iqcasedirectorystate.h iqcasedirectorystate.cpp
     iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
     iqexecutionworkspace.h iqexecutionworkspace.cpp
 
-    analysisform.cpp
-    analysisform.h
+    newanalysisform.h newanalysisform.cpp
+    newanalysisdlg.h newanalysisdlg.cpp
+
+    analysisform.h analysisform.cpp
     analysisform_gui.cpp
     analysisform_localactions.cpp
     analysisform_remoteactions.cpp
-    newanalysisdlg.cpp
-    newanalysisdlg.h
-    workbenchwindow.cpp
-    workbenchwindow.h
+    workbenchwindow.h workbenchwindow.cpp
 
-    workbenchaction.cpp
-    workbenchaction.h
-    localrun.cpp
-    localrun.h
-    #wslrun.h
-    #wslrun.cpp
+    workbenchaction.h workbenchaction.cpp
+    localrun.h localrun.cpp
 
-    #qsetupremotedialog.cpp
-    #qsetupremotedialog.h
-
-    qexecutionworkspacedialog.h
-    qexecutionworkspacedialog.cpp
-
+    qexecutionworkspacedialog.h qexecutionworkspacedialog.cpp
 )
 SET(workbench_FORMS
     newanalysisdlg.ui
     analysisform.ui
     xml_display.ui
     qsetupremotedialog.ui
-    qexecutionworkspacedialog.ui)
+    qexecutionworkspacedialog.ui
+    newanalysisform.ui)
+
 SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
     toolkit_gui
@@ -67,8 +58,7 @@ else()
 endif()
 
 
-add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS}
-  newanalysisform.h newanalysisform.cpp newanalysisform.ui)
+add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
 
 target_link_libraries(workbench ${workbench_LIBS})
 linkToolkitVtk(workbench Onscreen)

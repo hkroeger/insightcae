@@ -17,12 +17,13 @@ public:
   IQSelectableSubsetParameter
   (
       QObject* parent,
-      IQParameterSetModel* psmodel,
-      insight::Parameter* parameter,
-      const insight::ParameterSet& defaultParameterSet
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element
   );
 
-  void populateContextMenu(QMenu* m) override;
+  void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
+
+  QVariant value() const override;
 };
 
 

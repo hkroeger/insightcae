@@ -17,10 +17,23 @@ class VectorResult
 public:
     declareType ( "VectorResult" );
 
-    VectorResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
-    VectorResult ( const arma::mat& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit );
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
-    ResultElementPtr clone() const override;
+    VectorResult (
+        const std::string& shortdesc,
+        const std::string& longdesc,
+        const std::string& unit );
+
+    VectorResult (
+        const arma::mat& value,
+        const std::string& shortDesc,
+        const std::string& longDesc,
+        const std::string& unit );
+
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

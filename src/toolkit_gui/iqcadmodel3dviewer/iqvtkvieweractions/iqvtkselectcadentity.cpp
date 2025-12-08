@@ -263,8 +263,12 @@ IQVTKSelectSubshape::highlightEntity(IQVTKCADModel3DViewer::SubshapeData entity,
 IQVTKSelectSubshape::IQVTKSelectSubshape(IQVTKCADModel3DViewer &viewer)
     : IQVTKCADModel3DViewerSubshapeSelectionLogic(
         []() { return std::make_shared<MultiSelectionContainer>(); },
-        viewer )
-{}
+        viewer,
+        false // captureAllInput
+      )
+{
+    toggleHoveringSelectionPreview(true);
+}
 
 
 

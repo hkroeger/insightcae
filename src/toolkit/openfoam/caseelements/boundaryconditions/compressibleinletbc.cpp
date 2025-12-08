@@ -31,10 +31,7 @@ void CompressibleInletBC::setField_p (
     OFDictData::dict& BC, OFdicts& dictionaries, bool isPrgh ) const
 {
     BC["type"]=OFDictData::data ( "fixedValue" );
-    BC["value"]=OFDictData::data (
-        "uniform "
-        +boost::lexical_cast<std::string> (
-            p().pressure ) );
+    BC["value"]=OFDictData::toUniformField(p().pressure);
 }
 
 

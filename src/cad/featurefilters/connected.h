@@ -1,7 +1,7 @@
 #ifndef CONNECTED_H
 #define CONNECTED_H
 
-#include "feature.h"
+#include "featureset.h"
 #include "base/exception.h"
 #include "quantitycomputers/constantquantity.h"
 
@@ -19,7 +19,7 @@ protected:
      * @brief f_
      * Seed faces, to which all result faces shall be connected topologically.
      */
-    FeatureSetPtr f_;
+    ConstFeatureSetPtr f_;
 
     std::set<FeatureID> selected_feats_;
 
@@ -30,8 +30,8 @@ public:
         throw insight::Exception("coincident filter: not implemented!");
     }
 
-    connected(FeatureSet f)
-    : f_(std::make_shared<FeatureSet>(f))
+    connected(ConstFeatureSetPtr f)
+    : f_(f)
     {}
 
     void initialize(ConstFeaturePtr m)
@@ -44,7 +44,7 @@ public:
 
     FilterPtr clone() const
     {
-        return FilterPtr(new connected(*f_));
+        return FilterPtr(new connected(f_));
     }
 
 };

@@ -1,5 +1,7 @@
 
 #include "same.h"
+#include "cadfeature.h"
+#include "datum.h"
 
 namespace insight {
 namespace cad {
@@ -20,7 +22,7 @@ bool same<Vertex, TopoDS_Vertex>::checkMatch(FeatureID i) const
     auto e1 = model_->vertex(i);
     for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-        if (e1.IsEqual(*j))
+        if (e1.IsSame(*j))
         {
             unmatched_.erase(j);
             return true;
@@ -46,7 +48,7 @@ bool same<Edge, TopoDS_Edge>::checkMatch(FeatureID i) const
     auto &e1 = model_->edge(i);
     for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-        if (e1.IsEqual(*j))
+        if (e1.IsSame(*j))
         {
             unmatched_.erase(j);
             return true;
@@ -72,7 +74,7 @@ bool same<Face,TopoDS_Face>::checkMatch(FeatureID i) const
     auto &e1 = model_->face(i);
     for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-      if (e1.IsEqual(*j))
+      if (e1.IsSame(*j))
       {
           unmatched_.erase(j);
           return true;
@@ -98,7 +100,7 @@ bool same<Solid, TopoDS_Solid>::checkMatch(FeatureID i) const
     auto &e1 = model_->subsolid(i);
     for (auto j = unmatched_.begin(); j!=unmatched_.end(); ++j)
     {
-        if (e1.IsEqual(*j))
+        if (e1.IsSame(*j))
         {
             unmatched_.erase(j);
             return true;

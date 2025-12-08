@@ -20,6 +20,7 @@
 
 #include "cadtypes.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 #include "cadfeatures/compound.h"
 #include "cadfeatures/importsolidmodel.h"
@@ -84,50 +85,21 @@ FeatureVisualizationStyle FeatureVisualizationStyle::intermediateFeatureStyle()
 }
 
 
-OCCException::OCCException(const std::string message)
-    : insight::Exception(message)
+
+
+
+ModelVariableTable mergeMVTs(const ModelVariableTable& mvt1, const ModelVariableTable& mvt2)
 {
+    ModelVariableTable rmvt(mvt1.begin(), mvt1.end());
+
+    std::copy(mvt2.begin(), mvt2.end(),
+              std::back_inserter(rmvt) );
+
+    return rmvt;
 }
 
-OCCException& OCCException::addInvolvedShape(const std::string& label, TopoDS_Shape shape)
-{
-    involvedShapes_[label]=shape;
-    return *this;
-}
 
-OCCException& OCCException::addInvolvedShape(TopoDS_Shape shape)
-{
-    involvedShapes_[str(boost::format("involvedShape_%d")%(involvedShapes_.size()))]=shape;
-    return *this;
-}
 
-const std::map<std::string, TopoDS_Shape>& OCCException::involvedShapes() const
-{
-    return involvedShapes_;
-}
-
-void OCCException::saveInvolvedShapes(const boost::filesystem::path& outFile) const
-{
-    CompoundFeatureMap m;
-    std::transform(
-                involvedShapes_.begin(),
-                involvedShapes_.end(),
-                std::inserter(m, m.begin()),
-                [&](const InvolvedShapesList::value_type& iv)
-                {
-                    return CompoundFeatureMap::value_type(iv.first, Import::create(iv.second));
-                }
-    );
-    auto cc=Compound::create(m);
-    cc->saveAs(outFile);
-}
-
-CADException::CADException(ConstFeaturePtr feat, const std::string message)
-: OCCException(
-    (feat ? "In feature "+feat->featureSymbolName()+": " : "without feature context: " )
-    + message),
-  errorfeat_(feat)
-{}
 
 }
 }

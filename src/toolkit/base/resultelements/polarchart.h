@@ -29,13 +29,15 @@ public:
 
  void generatePlotImage ( const boost::filesystem::path& imagepath ) const override;
 
- ResultElementPtr clone() const override;
+ std::unique_ptr<hierarchicalData::Element> clone() const override;
+
+ bool isEqual(const Element& op) const override;
 };
 
 
 insight::ResultElement& addPolarPlot
 (
-    std::shared_ptr<ResultElementCollection> results,
+    ResultElementCollection& results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& rlabel,

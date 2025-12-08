@@ -147,8 +147,9 @@ path Analysis::executionPath() const
 ResultSetPtr Analysis::createResultSet() const
 {
     auto desc=Analysis::descriptions()(type());
-    auto results=std::make_shared<ResultSet>(
-        parameters(), desc.name, "Result Report");
+    auto results=std::make_unique<ResultSet>(
+        parameters().cloneAs<ParameterSet>(),
+        desc.name, "Result Report" );
     results->introduction() = desc.description;
     return results;
 }
@@ -172,15 +173,16 @@ const ParameterSet &Analysis::parameters() const
 
 
 // Add data to the queue and notify others
-void SynchronisedAnalysisQueue::enqueue ( const AnalysisInstance& data )
+void SynchronisedAnalysisQueue::enqueue ( AnalysisInstance&& data )
 {
     boost::unique_lock<boost::mutex> lock ( m_mutex );
 
     // Add the data to the queue
-    m_queue.push ( data );
+    m_queue.push ( std::move(data) );
     // Notify others that data is ready
     m_cond.notify_one();
 }
+
 
 
 // Get data from the queue. Wait for data if not available
@@ -197,13 +199,19 @@ AnalysisInstance SynchronisedAnalysisQueue::dequeue()
     }
 
     // Retrieve the data from the queue
-    AnalysisInstance result=m_queue.front();
-    processed_.push_back ( result );
+    AnalysisInstance result;
+    std::swap(result, m_queue.front());
     m_queue.pop();
-
-    return result;
+    return std::move(result);
 }
 
+
+
+void SynchronisedAnalysisQueue::storeProcessed(
+    AnalysisInstance &&processedInstance)
+{
+    processed_.push_back(std::move(processedInstance));
+}
 
 void SynchronisedAnalysisQueue::cancelAll()
 {

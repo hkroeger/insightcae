@@ -32,7 +32,7 @@ namespace cad
     
 typedef std::vector<FeaturePtr> CompoundFeatureList;
 typedef std::map<std::string, FeaturePtr>  CompoundFeatureMap;
-typedef std::vector<boost::fusion::vector<std::string, FeaturePtr> > CompoundFeatureMapData;
+typedef std::vector<boost::fusion::vector<FeaturePtr, std::string> > CompoundFeatureMapData;
 
 
 
@@ -43,6 +43,7 @@ class Compound
 protected:
     CompoundFeatureMap components_;
 
+    Compound(const Compound&o, TreeCloneMap& tcm);
     Compound();
     Compound ( const CompoundFeatureList& m1 );
     Compound ( const CompoundFeatureMap& m1 );
@@ -52,8 +53,10 @@ protected:
 
 public:
     declareType ( "Compound" );
-
+    void replaceDependency(const DependencyReplacement& repl) override;
+    void addDependencies(DependencyList& dl) const override;
     CREATE_FUNCTION(Compound);
+    CLONEABLE(Compound);
 
     static std::shared_ptr<Compound> create_named( const CompoundFeatureMapData& m1 );
 

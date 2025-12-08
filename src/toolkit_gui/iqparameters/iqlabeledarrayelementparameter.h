@@ -2,6 +2,7 @@
 #define IQLABELEDARRAYELEMENTPARAMETER_H
 
 
+#include "base/hierarchicalelement.h"
 #include "toolkit_gui_export.h"
 
 
@@ -18,17 +19,10 @@ public:
             IQLabeledArrayElementParameterBase,
             LIST(
                 QObject* parent,
-                IQParameterSetModel* psmodel,
-                insight::Parameter* parameter,
-                const insight::ParameterSet& defaultParameterSet ),
-            LIST(parent, psmodel, parameter, defaultParameterSet)
+                IQHierarchicalDataModel* psmodel,
+                insight::hierarchicalData::Element* parameter ),
+            LIST(parent, psmodel, parameter)
             );
-
-    static IQParameter* create(
-        QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* p,
-        const insight::ParameterSet& defaultParameterSet );
 
 public:
     declareType("IQLabeledArrayElementParameterBase");
@@ -36,9 +30,8 @@ public:
     IQLabeledArrayElementParameterBase
         (
             QObject *parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter *parameter,
-            const insight::ParameterSet &defaultParameterSet
+            IQHierarchicalDataModel* psmodel,
+            insight::hierarchicalData::Element *parameter
             );
 };
 
@@ -58,27 +51,20 @@ public:
     IQLabeledArrayElementParameter
         (
             QObject *parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter *parameter,
-            const insight::ParameterSet &defaultParameterSet
+            IQHierarchicalDataModel* psmodel,
+            insight::hierarchicalData::Element *parameter
             )
-        : IQBaseParameter(parent, psmodel, parameter, defaultParameterSet),
-        IQLabeledArrayElementParameterBase(parent, psmodel, parameter, defaultParameterSet)
+        : IQBaseParameter(parent, psmodel, parameter),
+        IQLabeledArrayElementParameterBase(parent, psmodel, parameter)
     {}
 
-    // const QString path(bool redirectArrayElementsToDefault=false) const override
-    // {
-    //     QString n=this->name();
-    //     return this->buildPath(n, redirectArrayElementsToDefault);
-    // }
 
     IQLabeledArrayParameter* arrayParameter()
     {
-        return dynamic_cast<IQLabeledArrayParameter*>(this->parentParameter());
+        return dynamic_cast<IQLabeledArrayParameter*>(this->parentElement());
     }
 
-    virtual void populateContextMenu(QMenu* m);
-
+    virtual void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer);
 };
 
 

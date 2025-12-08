@@ -32,19 +32,23 @@ namespace cad
 class BooleanIntersection
 : public DerivedFeature
 {
-  FeaturePtr m1_, m2_;
-  DatumPtr m2pl_;
+  boost::variant<FeaturePtr,DatumPtr> m2_;
   
-  BooleanIntersection(FeaturePtr m1, FeaturePtr m2);
-  BooleanIntersection(FeaturePtr m1, DatumPtr m2pl);
+  BooleanIntersection(const BooleanIntersection&o, TreeCloneMap& tcm);
+  BooleanIntersection(ConstFeaturePtr m1, FeaturePtr m2);
+  BooleanIntersection(ConstFeaturePtr m1, DatumPtr m2pl);
 
   size_t calcHash() const override;
   void build() override;
 
 public:
   declareType("BooleanIntersection");
+#ifndef SWIG
+  DEPENDS_W_BASE(DerivedFeature, (m2_));
+#endif
 
   CREATE_FUNCTION(BooleanIntersection);
+  CLONEABLE(BooleanIntersection);
 //  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
 //  static FeaturePtr create_plane(FeaturePtr m1, DatumPtr m2pl);
   

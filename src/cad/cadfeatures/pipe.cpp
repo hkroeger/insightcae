@@ -20,6 +20,8 @@
 #include "BRepAdaptor_HCompCurve.hxx"
 #include "Approx_Curve3d.hxx"
 #include "pipe.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/translations.h"
 #include "cadfeatures/importsolidmodel.h"
 
@@ -51,13 +53,20 @@ size_t Pipe::calcHash() const
   h+=this->type();
   h+=*spine_;
   h+=*xsec_;
-  if (fixed_binormal_) h+=fixed_binormal_->value();
+  if (fixed_binormal_) h+=*fixed_binormal_;
   h+=orient_;
   h+=reapprox_spine_;
   return h.getHash();
 }
 
 
+
+Pipe::Pipe(const Pipe&o, TreeCloneMap& tcm)
+    : CL(spine_), CL(xsec_),
+    orient_(o.orient_),
+    reapprox_spine_(o.reapprox_spine_),
+    CL(fixed_binormal_)
+{}
 
 
 
@@ -175,12 +184,12 @@ void Pipe::insertrule(parser::ISCADParser& ruleset)
         "Pipe",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-                    ( '(' >> ruleset.r_solidmodel_expression >> ','
-                      >> ruleset.r_solidmodel_expression
-                      >> ( ( ',' >> qi::lit("fixedbinormal") >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) ) 
-                      >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) 
-                      >> ( ( ',' >> qi::lit("reapprox") >> qi::attr(true) ) | qi::attr(false) ) 
-                      >> ')' )
+                    ( '(' > ruleset.r_solidmodel_expression > ','
+                      > ruleset.r_solidmodel_expression
+             > ( ( ',' >> qi::lit("fixedbinormal") > ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
+             > ( ( ',' >> qi::lit("orient") > qi::attr(true) ) | qi::attr(false) )
+             > ( ( ',' >> qi::lit("reapprox") > qi::attr(true) ) | qi::attr(false) )
+                      > ')' )
                     [ qi::_val = phx::bind(
                          &Pipe::create<FeaturePtr, FeaturePtr, VectorPtr, bool, bool>,
                          qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

@@ -37,6 +37,7 @@ class Pipe
     bool reapprox_spine_;
     VectorPtr fixed_binormal_;
 
+    Pipe(const Pipe&o, TreeCloneMap& tcm);
     Pipe ( FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal=VectorPtr(), bool orient=false, bool reapprox_spine=false );
 
     size_t calcHash() const override;
@@ -44,8 +45,11 @@ class Pipe
 
 public:
     declareType ( "Pipe" );
-
+#ifndef SWIG
+    DEPENDS((spine_,xsec_,fixed_binormal_));
+#endif
     CREATE_FUNCTION(Pipe);
+    CLONEABLE(Pipe);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

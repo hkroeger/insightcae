@@ -18,6 +18,7 @@
  */
 
 #include "cadfeature.h"
+#include "datum.h"
 #include "drawingexport.h"
 #include "dxfwriter.h"
 

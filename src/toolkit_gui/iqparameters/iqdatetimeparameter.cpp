@@ -22,23 +22,15 @@ addToFactoryTable(IQParameter, IQDateTimeParameter);
 IQDateTimeParameter::IQDateTimeParameter
     (
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element
         )
     : IQSpecializedParameter<insight::DateTimeParameter>(
-          parent, psmodel, parameter, defaultParameterSet )
+          parent, hdmodel, element )
 {
 }
 
 
-QString IQDateTimeParameter::valueText() const
-{
-    return QString::fromStdString(
-        boost::posix_time::to_simple_string(
-            parameter()()
-            ) );
-}
 
 
 QVBoxLayout* IQDateTimeParameter::populateEditControls(
@@ -83,6 +75,8 @@ QVBoxLayout* IQDateTimeParameter::populateEditControls(
         parameterRef().valueChanged.connect(
             [=]()
             {
+                DBG_SLOT(valueChanged);
+
                 QSignalBlocker sb(de);
                 de->setDateTime(
                     QDateTime::fromString(

@@ -19,6 +19,7 @@
 
 #include "faceadjacenttofaces.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 
 using namespace std;
@@ -30,7 +31,7 @@ namespace cad
 {
 
 
-faceAdjacentToFaces::faceAdjacentToFaces(FeatureSet faces)
+faceAdjacentToFaces::faceAdjacentToFaces(ConstFeatureSetPtr faces)
 : faces_(faces)
 {
 }
@@ -41,15 +42,15 @@ bool faceAdjacentToFaces::checkMatch(FeatureID feature) const
   for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
   {
     TopoDS_Edge e=TopoDS::Edge(ex.Current());
-    for (FeatureID fi: faces_.data())
+    for (FeatureID fi: faces_->data())
     {
       bool valid=true;
-      if (model_==faces_.model())
+      if (model_==faces_->model())
 	if (fi==feature) valid=false;
 	
       if (valid)
       {
-	TopoDS_Face f2=faces_.model()->face(fi);
+    TopoDS_Face f2=faces_->model()->face(fi);
 	for(TopExp_Explorer ex2(f2, TopAbs_EDGE); ex2.More(); ex2.Next())
 	{
 	  TopoDS_Edge e2=TopoDS::Edge(ex2.Current());

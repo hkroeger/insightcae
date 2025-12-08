@@ -134,7 +134,7 @@ readSingleTabularFile(
     while ( getline ( f, line ) )
     {
       lineNo++;
-      CurrentExceptionContext ex(3, str(format("reading line %d of file %s")%lineNo%ffp.string()));
+      CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d of file %s")%lineNo%ffp.string()));
 
       trim(line);
 
@@ -531,7 +531,8 @@ arma::cube probes::readProbes
   path fp = absolute ( location ) /"postProcessing"/foName;
   
   if ( c.OFversion() < 400 )
-      insight::Warning("readProbes has not been tested for the current OF version "+boost::lexical_cast<std::string>(c.OFversion()));
+      insight::Warning(
+          "readProbes has not been tested for the current OF version %d", c.OFversion());
 
   if (!exists(fp))
       throw insight::Exception("data path of function object "+foName+" does not exist!");
@@ -1080,10 +1081,9 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations
         t.push_back(toNumber<double>(strs[0]));
 	
 	if (strs.size()!=(nk+2))
-	  throw insight::Exception("Expected "
-				    +lexical_cast<string>(nk+1)
-				    +" profiles in twoPointCorrelation results but got "
-				    +lexical_cast<string>(strs.size()-1)+"!");
+      throw insight::Exception(
+            "Expected %d profiles in twoPointCorrelation results but got %d!",
+            nk+1, strs.size()-1);
 	
 	for (int k=1; k<=nk; k++)
 	{
@@ -1092,7 +1092,8 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations
 	  if (np<0) 
 	    np=pts.size()-1; // trailing space!
 	  else if (np!=pts.size()-1)
-	    throw insight::Exception("Expected uniform number of sampling point in twoPointCorrelation results!");
+        throw insight::Exception(
+              "Expected uniform number of sampling point in twoPointCorrelation results!");
 	  
 	  for (int j=0; j<np; j++)
           {
@@ -1312,11 +1313,11 @@ arma::mat forces::readForces
           {
             std::vector<double> r1, r2;
             {
-              CurrentExceptionContext ex(3, str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
+              CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
               readForcesLine ( f, ncexp, skip, r1 );
             }
             {
-              CurrentExceptionContext ex(3, str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
+              CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
               readForcesLine ( f2, ncexp, skip, r2 );
             }
 
@@ -1337,7 +1338,7 @@ arma::mat forces::readForces
           }
         else
           {
-            CurrentExceptionContext ex(3, str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
+            CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
             readForcesLine ( f, ncexp, skip, row );
             if ( row.size()==0 )
             {
@@ -1626,10 +1627,13 @@ ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer&)
       arma::join_rows ( x, m.evaluateObjective(x) )
   );
 
-  results->insert( "L", new ScalarResult(m.lengthScale(), "Length scale", "", "m") );
+  results->insert<ScalarResult>(
+      "L",
+      m.lengthScale(), "Length scale", "", "m"
+      );
   addPlot
   (
-      results, executionPath(), "chartACF",
+      *results, executionPath(), "chartACF",
       "x", "$\\langle R \\rangle$",
       {
         PlotCurve(p().R_vs_x, "raw", "w p lt 1 t 'ACF'"),
@@ -1659,7 +1663,7 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getTanParameters(int i)
     r.set_homogeneousTranslationUnit( (p().tanSpan/double(p().nph))*p().e_tan );
     r.set_nph( p().nph );
 
-    r.set_name(p().name+"_tan_"+lexical_cast<std::string>(i));
+    r.set_name(p().name+"_tan_"+toString(i));
     r.set_outputControl("timeStep");
     r.set_timeStart( p().timeStart );
     return r;
@@ -1674,7 +1678,7 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getAxParameters(int i) 
     r.set_np(p().np);
     r.set_homogeneousTranslationUnit( (p().tanSpan/double(p().nph))*p().e_tan );
     r.set_nph(p().nph);
-    r.set_name(p().name+"_ax_"+lexical_cast<std::string>(i));
+    r.set_name(p().name+"_ax_"+toString(i));
     r.set_outputControl("timeStep");
     r.set_timeStart( p().timeStart );
     return r;
@@ -1713,7 +1717,7 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getTanParame
     r.set_homogeneousTranslationUnit( (2.*M_PI/double(p().nph))*p().e_tan );
     r.set_nph( p().nph );
 
-    r.set_name(p().name+"_tan_"+lexical_cast<std::string>(i));
+    r.set_name(p().name+"_tan_"+toString(i));
     r.set_outputControl("timeStep");
     r.set_timeStart( p().timeStart );
     return r;
@@ -1733,7 +1737,7 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getAxParamet
     r.set_homogeneousTranslationUnit( (2.*M_PI/double(p().nph))*p().e_tan );
     r.set_nph(p().nph);
 
-    r.set_name(p().name+"_ax_"+lexical_cast<std::string>(i));
+    r.set_name(p().name+"_ax_"+toString(i));
     r.set_outputControl("timeStep");
     r.set_timeStart( p().timeStart );
     return r;

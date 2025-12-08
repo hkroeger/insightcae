@@ -63,6 +63,10 @@ size_t Mirror::calcHash() const
 
 
 
+Mirror::Mirror(const Mirror&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(m1_), CL(pl_), s_(o.s_), tr_(o.tr_)
+{}
 
 
 Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
@@ -114,9 +118,10 @@ void Mirror::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Mirror",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_datumExpression > ')' )
        [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, DatumPtr>, qi::_1, qi::_2) ]
       
     ))
@@ -126,7 +131,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset)
     "FlipY",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ')' )
       [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, Mirror::Shortcut>, qi::_1, FlipY) ]
       
     ))
@@ -136,7 +141,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset)
     "FlipX",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
+    ( '(' > ruleset.r_solidmodel_expression > ')' )
       [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, Mirror::Shortcut>, qi::_1, FlipX) ]
       
     ))
@@ -146,7 +151,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset)
     "FlipXY",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
+    ( '(' > ruleset.r_solidmodel_expression > ')' )
       [ qi::_val = phx::bind(&Mirror::create<FeaturePtr, Mirror::Shortcut>, qi::_1, FlipXY) ]
       
     ))

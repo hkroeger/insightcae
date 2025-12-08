@@ -20,9 +20,11 @@
 #include "GeomAPI_IntCS.hxx"
 #include "booleanintersection.h"
 #include "base/boost_include.h"
+#include "base/exception.h"
 #include "base/tools.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "cadexception.h"
 
 #include "datum.h"
 
@@ -50,20 +52,30 @@ size_t BooleanIntersection::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*m1_;
-  if (m2_) h+=*m2_;
-  if (m2pl_) h+=*m2pl_;
-  return h.getHash();
+  if (auto *f = boost::get<FeaturePtr>(&m2_)) h+=**f;
+  else if (auto *p = boost::get<DatumPtr>(&m2_)) h+=**p;
+  else throw insight::UnhandledSelection();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 
+BooleanIntersection::BooleanIntersection(const BooleanIntersection&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm)
+{
+    if (auto *fp=boost::get<FeaturePtr>(&o.m2_))
+    {
+        m2_=tcm.clone(*fp);
+    }
+    else if (auto *dp=boost::get<DatumPtr>(&o.m2_))
+    {
+        m2_=tcm.clone(*dp);
+    }
+}
 
-
-BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
+BooleanIntersection::BooleanIntersection(ConstFeaturePtr m1, FeaturePtr m2)
     : DerivedFeature(m1),
-      m1_(m1),
       m2_(m2)
 { 
     setFeatureSymbolName( "("+m1->featureSymbolName()+" & "+m2->featureSymbolName()+")" );
@@ -72,10 +84,9 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
 
 
 
-BooleanIntersection::BooleanIntersection(FeaturePtr m1, DatumPtr m2pl)
+BooleanIntersection::BooleanIntersection(ConstFeaturePtr m1, DatumPtr m2pl)
     : DerivedFeature(m1),
-      m1_(m1),
-      m2pl_(m2pl)
+      m2_(m2pl)
 {
     setFeatureSymbolName( "("+m1->featureSymbolName()+" & datum)" );
 }
@@ -90,9 +101,9 @@ void BooleanIntersection::build()
     
     if (!cache.contains(hash()))
     {
-      if (m1_ && m2_)
+        if (auto *f = boost::get<FeaturePtr>(&m2_))
       {
-              BRepAlgoAPI_Common intersector(*m1_, *m2_);
+              BRepAlgoAPI_Common intersector(*baseFeature(), **f);
               intersector.Build();
               if (!intersector.IsDone())
               {
@@ -104,30 +115,30 @@ void BooleanIntersection::build()
               }
               setShape(intersector.Shape());
               cache.insert(shared_from_this());
-          m1_->unsetLeaf();
-          m2_->unsetLeaf();
+          baseFeature()->unsetLeaf();
+          (*f)->unsetLeaf();
       }
       else
       {
-          if (m2pl_)
+          if (auto *pl = boost::get<DatumPtr>(&m2_))
           {
-              if (!m2pl_->providesPlanarReference())
+              if (!(*pl)->providesPlanarReference())
                   throw CADException(shared_from_this(),
                                      _("intersection: given reference does not provide planar reference!"));
 
-              if (m1_->isSingleWire() || m1_->isSingleEdge())
+              if (baseFeature()->isSingleWire() || baseFeature()->isSingleEdge())
               {
                   TopoDS_Compound res;
                   BRep_Builder builder;
                   builder.MakeCompound( res );
 
-                  Handle_Geom_Surface pl(new Geom_Plane(m2pl_->plane()));
-                  for (TopExp_Explorer ex(*m1_, TopAbs_EDGE); ex.More(); ex.Next())
+                  Handle_Geom_Surface pln(new Geom_Plane( (*pl)->plane() ));
+                  for (TopExp_Explorer ex(*baseFeature(), TopAbs_EDGE); ex.More(); ex.Next())
                   {
                       TopoDS_Edge e=TopoDS::Edge(ex.Current());
                       GeomAPI_IntCS	intersection;
                       double x0, x1;
-                      intersection.Perform(BRep_Tool::Curve(e, x0, x1), pl);
+                      intersection.Perform(BRep_Tool::Curve(e, x0, x1), pln);
 
                       // For debugging only
                       if (!intersection.IsDone() )
@@ -146,8 +157,8 @@ void BooleanIntersection::build()
               else
               {
                   BRepAlgoAPI_Common intersector(
-                              *m1_,
-                              BRepBuilderAPI_MakeFace(m2pl_->plane()).Face() );
+                              *baseFeature(),
+                              BRepBuilderAPI_MakeFace((*pl)->plane()).Face() );
                   intersector.Build();
                   if (!intersector.IsDone())
                   {
@@ -161,7 +172,7 @@ void BooleanIntersection::build()
 
                   setShape(isecsh);
               }
-              m1_->unsetLeaf();
+              baseFeature()->unsetLeaf();
           }
           else
               throw CADException(shared_from_this(),
@@ -177,10 +188,8 @@ void BooleanIntersection::build()
 
 void BooleanIntersection::operator=(const BooleanIntersection& o)
 {
-  m1_=o.m1_;
   m2_=o.m2_;
-  m2pl_=o.m2pl_;
-  Feature::operator=(o);
+  DerivedFeature::operator=(o);
 }
 
 

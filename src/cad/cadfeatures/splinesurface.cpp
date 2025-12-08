@@ -18,6 +18,8 @@
  */
 
 #include "splinesurface.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "Geom_BSplineSurface.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -50,12 +52,27 @@ size_t SplineSurface::calcHash() const
   {
       for (const VectorPtr& p: ipts)
       {
-          h+=p->value();
+          h+=*p;
       }
   }
   return h.getHash();
 }
 
+
+
+SplineSurface::SplineSurface(const SplineSurface&o, TreeCloneMap& tcm)
+{
+    for (auto& opv: o.pts_)
+    {
+        pts_.push_back(std::vector<VectorPtr>());
+        auto &pv = pts_.back();
+
+        for (auto& p: opv)
+        {
+            pv.push_back(tcm.clone(p));
+        }
+    }
+}
 
 
 
@@ -110,9 +127,9 @@ void SplineSurface::insertrule(parser::ISCADParser& ruleset)
     "SplineSurface",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> 
-	  ( ( '(' >> ( ruleset.r_vectorExpression % ',' ) >> ')' ) % ',' )
-	  >> ')' ) 
+    ( '(' >
+      ( ( '(' > ( ruleset.r_vectorExpression % ',' ) > ')' ) % ',' )
+      > ')' )
     [ qi::_val = phx::bind(
                        &SplineSurface::create<const std::vector< std::vector<VectorPtr> >&>,
                        qi::_1) ]

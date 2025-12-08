@@ -13,28 +13,41 @@ defineType ( VectorResult );
 addToFactoryTable ( ResultElement, VectorResult );
 
 
-VectorResult::VectorResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+VectorResult::VectorResult (
+    const std::string& shortdesc,
+    const std::string& longdesc,
+    const std::string& unit )
     : NumericalResult< arma::mat > ( shortdesc, longdesc, unit )
 {
 }
 
 
-VectorResult::VectorResult ( const arma::mat& value, const string& shortDesc, const string& longDesc, const string& unit )
+VectorResult::VectorResult (
+    const arma::mat& value,
+    const string& shortDesc,
+    const string& longDesc,
+    const string& unit )
     : NumericalResult< arma::mat > ( value, shortDesc, longDesc, unit )
 {}
 
 
-void VectorResult::writeLatexCode ( ostream& f, const std::string& , int , const boost::filesystem::path&  ) const
+std::string
+VectorResult::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
-//   f.setf(ios::fixed,ios::floatfield);
-//   f.precision(3);
-    f << str ( format ( "(%g %g %g)" ) % value_(0) % value_(1) % value_(2) ) << unit_.toLaTeX();
+    return
+        str ( format ( "(%g %g %g)" ) % value_(0) % value_(1) % value_(2) )
+        + unit_.toLaTeX();
 }
 
 
-ResultElementPtr VectorResult::clone() const
+std::unique_ptr<hierarchicalData::Element> VectorResult::clone() const
 {
-    ResultElementPtr res ( new VectorResult ( value_, shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex() ) );
+    auto res = std::make_unique<VectorResult> (
+        value_, shortDescription_.simpleLatex(),
+        longDescription_.simpleLatex(), unit_.simpleLatex() );
     res->setOrder ( order() );
     return res;
 }

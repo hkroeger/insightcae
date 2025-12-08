@@ -1,5 +1,6 @@
 #include "cadsketchparameter.h"
 
+#include "base/hierarchicalelement.h"
 #include "constrainedsketch.h"
 #include "datum.h"
 #include "base/rapidxml.h"
@@ -11,56 +12,167 @@ namespace insight {
 
 
 defineType(CADSketchParameter);
-addToFactoryTable(Parameter, CADSketchParameter);
+addParameterFactories(CADSketchParameter);
 
 
 
 
-void CADSketchParameter::resetCADGeometry()
+insight::cad::ConstrainedSketch& DelayedCreatedSketch::sketchRef()
 {
-    CADGeometry_ = insight::cad::ConstrainedSketch::create(
+    if (!sketch_)
+    {
+        sketch_=createEmpty();
+        connectSignalsToSketch(sketch_);
+    }
+
+    if (script_)
+    {
+        if (!script_->empty())
+        {
+            *sketch_ = *createSketch(*script_);
+        }
+        else
+        {
+            sketch_->clear();
+        }
+
+        script_.reset();
+    }
+
+    return *sketch_;
+}
+
+void DelayedCreatedSketch::setScript(const std::string& script)
+{
+    script_ = std::make_unique<std::string>(script);
+}
+
+std::string DelayedCreatedSketch::script() const
+{
+    if (script_)
+    {
+        return *script_;
+    }
+    else if (sketch_)
+    {
+        std::ostringstream so;
+        sketch_->generateScript(so);
+        auto s=so.str();
+        return s;
+    }
+    else
+    {
+        return std::string();
+    }
+}
+
+
+void DelayedCreatedSketch::assignFrom(
+    const DelayedCreatedSketch &os)
+{
+    if (os.script_)
+    {
+        script_=std::make_unique<std::string>(*os.script_);
+    }
+    else
+    {
+        script_.reset();
+    }
+
+    if (os.sketch_)
+    {
+        if (!sketch_)
+        {
+            sketch_=createEmpty();
+            connectSignalsToSketch(sketch_);
+        }
+        *sketch_ = *os.sketch_;
+    }
+    else
+    {
+        sketch_.reset();
+    }
+}
+
+
+
+
+
+
+
+
+std::shared_ptr<insight::cad::ConstrainedSketch>
+CADSketchParameter::createEmpty() const
+{
+    auto s = insight::cad::ConstrainedSketch::create(
         std::make_shared<cad::DatumPlane>(
             cad::vec3const(0,0,0),
             cad::vec3const(0,0,1) ),
         *entityProperties() );
 
-    CADGeometry_->setParentParameter(this);
-
-    cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
-    [this](int) {
-        if (!valueChangeSignalBlocked()) childValueChanged();
-    };
-    cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
-    [this](int) {
-        if (!valueChangeSignalBlocked()) childValueChanged();
-    };
-    cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
-    [this](int) {
-        if (!valueChangeSignalBlocked()) childValueChanged();
-    };
-
-    addSlot_.track_foreign(CADGeometry_);
-    addSlotConn_=CADGeometry_->geometryAdded.connect(addSlot_);
-
-    removeSlot_.track_foreign(CADGeometry_);
-    removeSlotConn_=CADGeometry_->geometryRemoved.connect(removeSlot_);
-
-    changeSlot_.track_foreign(CADGeometry_);
-    changeSlotConn_=CADGeometry_->geometryChanged.connect(changeSlot_);
-
     for (auto& ref: references_)
     {
         try
         {
-            auto &r = parentSet().get<CADGeometryParameter>(ref.second);
-            CADGeometry_->setExternalReference(
+            auto &r =
+                const_cast<CADSketchParameter&>(*this)
+                          .parentSet()
+                          .get<CADGeometryParameter>(ref.second);
+
+            s->setExternalReference(
                 cad::ExternalReference::create(r.geometry()),
                 ref.first
                 );
         }
-        catch (const ParameterNotFoundException&)
+        catch (const ElementNotFoundException&)
         {}
     }
+
+    return s;
+}
+
+void CADSketchParameter::connectSignalsToSketch(cad::ConstrainedSketchPtr s)
+{
+    s->setParentParameter(this);
+
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
+        [this](int) {
+            DBG_SLOT(geometryAdded);
+            if (!valueChangeSignalBlocked()) childValueChanged();
+        };
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
+        [this](int) {
+            DBG_SLOT(geometryRemoved);
+            if (!valueChangeSignalBlocked()) childValueChanged();
+        };
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
+        [this](int) {
+            DBG_SLOT(geometryChanged);
+            if (!valueChangeSignalBlocked()) childValueChanged();
+        };
+
+    addSlot_.track_foreign(s);
+    addSlotConn_=s->geometryAdded.connect(addSlot_);
+
+    removeSlot_.track_foreign(s);
+    removeSlotConn_=s->geometryRemoved.connect(removeSlot_);
+
+    changeSlot_.track_foreign(s);
+    changeSlotConn_=s->geometryChanged.connect(changeSlot_);
+
+}
+
+
+
+cad::ConstrainedSketchPtr
+CADSketchParameter::createSketch(const std::string &script) const
+{
+    auto newsk=createEmpty();
+    std::istringstream is(script);
+    newsk->readFromStream(
+        is, *entityProperties()
+        );
+    return newsk;
 }
 
 
@@ -108,8 +220,7 @@ CADSketchParameter::CADSketchParameter(
 
 
 CADSketchParameter::~CADSketchParameter()
-{
-}
+{}
 
 
 
@@ -135,78 +246,13 @@ CADSketchParameter::presentationDelegateKey() const
 
 
 
-std::string CADSketchParameter::script() const
-{
-    if (script_)
-    {
-        return *script_;
-    }
-    else if (CADGeometry_)
-    {
-        std::ostringstream so;
-        CADGeometry_->generateScript(so);
-        auto s=so.str();
-        return s;
-    }
-    else
-    {
-        return std::string();
-    }
-}
-
-
 void CADSketchParameter::setScript(const std::string& script)
 {
-    if (script.empty())
-    {
-        script_.reset();
-        CADGeometry_.reset();
-    }
-    else
-    {
-        script_ =
-            std::make_unique<std::string>(script);
-    }
-
+    DelayedCreatedSketch::setScript(script);
     triggerValueChanged();
 }
 
 
-const insight::cad::ConstrainedSketch&
-CADSketchParameter::featureGeometry() const
-{
-    return *const_cast<CADSketchParameter*>(this)
-                ->featureGeometryRef();
-}
-
-std::shared_ptr<insight::cad::ConstrainedSketch>
-CADSketchParameter::featureGeometryRef()
-{
-    if (!CADGeometry_)
-    {
-        resetCADGeometry();
-    }
-
-    if (script_)
-    {
-        if (!script_->empty())
-        {
-            std::istringstream is(*script_);
-
-            CADGeometry_->readFromStream(
-                is, *entityProperties()
-                );
-
-            script_.reset();
-        }
-        else
-        {
-            CADGeometry_->clear();
-        }
-    }
-
-    return CADGeometry_;
-}
 
 cad::FeaturePtr CADSketchParameter::geometry() const
 {
@@ -215,7 +261,10 @@ cad::FeaturePtr CADSketchParameter::geometry() const
 }
 
 
-std::string CADSketchParameter::latexRepresentation() const
+std::string CADSketchParameter::latexRepresentation(
+    const std::string&,
+    int,
+    const FileStorageInfo& ) const
 {
     return "(sketched)";
 }
@@ -230,93 +279,91 @@ rapidxml::xml_node<>* CADSketchParameter::appendToNode
         const std::string& name,
         rapidxml::xml_document<>& doc,
         rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath
+    const OutputProperties& outProps
         ) const
 {
-    auto n = Parameter::appendToNode(name, doc, node, inputfilepath);
+    auto n = Parameter::appendToNode(name, doc, node, outProps);
     auto s=script();
     n->value(doc.allocate_string(s.c_str()));
     return n;
 }
 
-void CADSketchParameter::readFromNode
+const rapidxml::xml_node<>* CADSketchParameter::readFromNode
     (
         const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath
+        const rapidxml::xml_node<>& node
         )
 {
     using namespace rapidxml;
-    xml_node<>* child = findNode(node, name, type());
+    auto* child = findNode(node, name, type());
     if (child)
     {
         setScript(child->value());
     }
+    return child;
 }
 
-std::unique_ptr<CADSketchParameter>
-CADSketchParameter::cloneCADSketchParameter(
-    bool keepParentRef
-    ) const
+
+CADSketchParameter::CADSketchParameter(
+    const rapidxml::xml_node<> &node)
+    : CADGeometryParameter(node)
 {
-    auto ncgp=std::make_unique<CADSketchParameter>(
+    setScript(node.value());
+}
+
+
+
+std::unique_ptr<hierarchicalData::Element> CADSketchParameter::clone() const
+{
+    return std::make_unique<CADSketchParameter>(
         script(),
         entityProperties_,
         presentationDelegateKey_,
         references_,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order() );
-
-    if (keepParentRef)
-        ncgp->setParent(
-            const_cast<Parameter*>(
-                &parent() ) );
-
-    return ncgp;
 }
 
 
-std::unique_ptr<Parameter> CADSketchParameter::clone(bool init) const
-{
-    auto p=cloneCADSketchParameter();
-    if (init) p->initialize();
-    return p;
-}
 
-void CADSketchParameter::copyFrom(const Parameter& op)
+void CADSketchParameter::assignFrom(const Element& oe)
 {
-    operator=(dynamic_cast<const CADSketchParameter&>(op));
-}
-
-void CADSketchParameter::operator=(const CADSketchParameter &op)
-{
-    Parameter::copyFrom(op);
+    auto &op = dynamic_cast<const CADSketchParameter &>(oe);
 
     entityProperties_ = op.entityProperties_;
     presentationDelegateKey_ = op.presentationDelegateKey_;
     references_ = op.references_;
 
-    if (op.script_)
-    {
-        script_=std::make_unique<std::string>(*op.script_);
-    }
-    else
-    {
-        script_.reset();
-    }
+    DelayedCreatedSketch::assignFrom(op);
 
-    if (op.CADGeometry_)
-    {
-        resetCADGeometry();
-        *CADGeometry_ = *op.CADGeometry_;
-    }
-    else
-    {
-        CADGeometry_.reset();
-    }
-
-    triggerValueChanged();
+    Parameter::assignFrom(op);
 }
+
+
+
+void CADSketchParameter::copyMatching( const Element& rhs )
+{
+    CADGeometryParameter::copyMatching(rhs);
+}
+
+void CADSketchParameter::extend( const Element& op )
+{
+    CADGeometryParameter::extend(op);
+}
+
+bool CADSketchParameter::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const CADSketchParameter*>(&op))
+    {
+        if (sketch().hash()!=oa->sketch().hash())
+            return false;
+
+        return true;
+    }
+    else
+        return false;
+}
+
 
 bool CADSketchParameter::isDifferent(const Parameter & op) const
 {
@@ -331,13 +378,11 @@ bool CADSketchParameter::isDifferent(const Parameter & op) const
 
 int CADSketchParameter::nChildren() const
 {
-    if (!script_ && !CADGeometry_)
-        return 0;
-    return featureGeometry().size();
+    return sketch().size();
 }
 
 
-std::string CADSketchParameter::childParameterName( int i, bool ) const
+std::string CADSketchParameter::childElementName( int i, bool ) const
 {
     insight::assertion(
         i>=0 && i<nChildren(),
@@ -348,27 +393,27 @@ std::string CADSketchParameter::childParameterName( int i, bool ) const
 }
 
 
-Parameter& CADSketchParameter::childParameterRef ( int i )
+Parameter& CADSketchParameter::childElementRef ( int i )
 {
     insight::assertion(
         i>=0 && i<nChildren(),
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
-    auto g = featureGeometry().begin();
+    auto g = sketch().begin();
     std::advance(g, i);
     return g->second->parametersRef();
 }
 
 
-const Parameter& CADSketchParameter::childParameter( int i ) const
+const Parameter& CADSketchParameter::childElement( int i ) const
 {
     insight::assertion(
         i>=0 && i<nChildren(),
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
-    auto g = featureGeometry().begin();
+    auto g = sketch().begin();
     std::advance(g, i);
     return g->second->parameters();
 }

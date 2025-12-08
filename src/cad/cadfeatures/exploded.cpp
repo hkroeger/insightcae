@@ -23,6 +23,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "datum.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 
 #include <limits.h>
@@ -57,15 +58,28 @@ size_t Exploded::calcHash() const
   {
       h+=*boost::fusion::at_c<0>(ec);
       h+=int(boost::fusion::at_c<1>(ec));
-      h+=boost::fusion::at_c<2>(ec)->value();
-      h+=boost::fusion::at_c<3>(ec)->value();
+      h+=*boost::fusion::at_c<2>(ec);
+      h+=*boost::fusion::at_c<3>(ec);
   }
   return h.getHash();
 }
 
 
 
-
+Exploded::Exploded(const Exploded&o, TreeCloneMap& tcm)
+    : CL(axis_)
+{
+    for (auto& ec: o.components_)
+    {
+        auto& fp=boost::fusion::get<0>(ec);
+        auto& ed=boost::fusion::get<1>(ec);
+        auto& vp=boost::fusion::get<2>(ec);
+        auto& sp=boost::fusion::get<3>(ec);
+        components_.push_back(ExplosionComponent{
+            tcm.clone(fp), ed, tcm.clone(vp), tcm.clone(sp)
+        });
+    }
+}
 
 Exploded::Exploded( DatumPtr axis, const ExplosionComponentList& m1)
 : axis_(axis),
@@ -164,6 +178,31 @@ void Exploded::build()
 
 
 
+void Exploded::replaceDependency(const DependencyReplacement &repl)
+{
+    repl(axis_);
+    for (auto& ec: components_)
+    {
+        repl(boost::fusion::get<0>(ec));
+        repl(boost::fusion::get<2>(ec));
+        repl(boost::fusion::get<3>(ec));
+    }
+    invalidate();
+}
+
+void Exploded::addDependencies(DependencyList& dl) const
+{
+    DepListInserter(dl, "axis_")(axis_);
+
+    for (auto ec: boost::adaptors::index(components_))
+    {
+        auto idxPref = toString(ec.index())+".";
+        DepListInserter(dl, idxPref+"feature")(boost::fusion::get<0>(ec.value()));
+        DepListInserter(dl, idxPref+"direction")(boost::fusion::get<2>(ec.value()));
+        DepListInserter(dl, idxPref+"distance")(boost::fusion::get<3>(ec.value()));
+    }
+}
+
 
 void Exploded::insertrule(parser::ISCADParser& ruleset)
 {
@@ -171,24 +210,24 @@ void Exploded::insertrule(parser::ISCADParser& ruleset)
     (
         "Exploded",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
-                      '(' 
-                       >> ( 
-                        (
-			 ( ( ruleset.r_solidmodel_expression 
-                            >> ( (qi::lit("axial")>qi::attr(ExplosionDirection_Axial)) 
+          '('
+            > (
+             (
+             ( (  ruleset.r_solidmodel_expression
+                > ( (qi::lit("axial")>qi::attr(ExplosionDirection_Axial))
 			        | (qi::lit("radial")>qi::attr(ExplosionDirection_Radial)) 
-				| qi::attr(ExplosionDirection_Axial) )
-                            >> (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0))) 
-                            >> (ruleset.r_scalarExpression|qi::attr(scalarconst(1.))) 
-			   ) % ',' )
-			 >> ',' >> ruleset.r_datumExpression >> ')' )
-                      [ qi::_val = phx::bind(
+                    | qi::attr(ExplosionDirection_Axial) )
+                > (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0)))
+                > (ruleset.r_scalarExpression|qi::attr(scalarconst(1.)))
+                 ) % ',' ) > ','
+                > ruleset.r_datumExpression > ')' )
+               [ qi::_val = phx::bind(
                              &Exploded::create<DatumPtr, const ExplosionComponentList&>,
                              qi::_2, qi::_1) ]
-
-                        |
-                        
-                        (qi::lit("assembly") >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
+               |
+               ( qi::lit("assembly")
+                  > ruleset.r_solidmodel_expression > ','
+                  > ruleset.r_datumExpression > ')' )
                       [ qi::_val = phx::bind(
                              &Exploded::create<DatumPtr, FeaturePtr>,
                              qi::_2, qi::_1) ]

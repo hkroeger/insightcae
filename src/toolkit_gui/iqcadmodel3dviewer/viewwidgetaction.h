@@ -5,7 +5,7 @@
 
 
 #include "cadtypes.h"
-#include "feature.h"
+#include "featureset.h"
 
 #include <memory>
 
@@ -56,13 +56,17 @@ public:
      */
     void connectActionIsFinished(std::function<void(bool)> f)
     {
-        actionIsFinished.connect([f](bool success){
-            QMetaObject::invokeMethod(
-                qApp,
-                std::bind(f, success),
-                Qt::QueuedConnection
-                );
-        });
+        actionIsFinished.connect(
+            [f](bool success)
+            {
+                DBG_SLOT(actionIsFinished);
+
+                QMetaObject::invokeMethod(
+                    qApp,
+                    std::bind(f, success),
+                    Qt::QueuedConnection
+                    );
+            });
     }
 
 private:

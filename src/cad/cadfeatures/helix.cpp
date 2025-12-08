@@ -18,6 +18,8 @@
  */
 
 #include "helix.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -40,15 +42,17 @@ size_t Helix::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
-  h+=d_->value();
-  h+=winds_->value();
+  h+=*p0_;
+  h+=*p1_;
+  h+=*d_;
+  h+=*winds_;
   return h.getHash();
 }
 
 
-
+Helix::Helix(const Helix&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(p1_), CL(d_), CL(winds_)
+{}
 
 
 Helix::Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)
@@ -92,11 +96,11 @@ void Helix::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Helix",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-      ( '(' >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_vectorExpression >> ',' 
-	    >> ruleset.r_scalarExpression >> ',' 
-        >> ruleset.r_scalarExpression >> ')' )
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+      ( '(' > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_scalarExpression > ','
+        > ruleset.r_scalarExpression > ')' )
                   [ qi::_val = phx::bind(
                        &Helix::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4) ]

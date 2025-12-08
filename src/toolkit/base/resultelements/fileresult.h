@@ -27,33 +27,43 @@ public:
         const boost::filesystem::path& location,
         const boost::filesystem::path& value,
         const std::string& shortDesc,
-        const std::string& longDesc,
-        std::shared_ptr<std::string> base64_content = std::shared_ptr<std::string>()
+        const std::string& longDesc
     );
 
+    FileResult
+    (
+        const FileContainer& fc,
+        const std::string& shortDesc,
+        const std::string& longDesc
+    );
 
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
 
     boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
 
     /**
      * append the contents of this element to the given xml node
      */
-    rapidxml::xml_node<>* appendToNode
-    (
+    rapidxml::xml_node<>* appendToNode(
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
     ) const override;
 
-    void readFromNode
-        (
-            const std::string& name,
-            rapidxml::xml_node<>& node
-        ) override;
+    const rapidxml::xml_node< char >* readFromNode(
+        const std::string& name,
+        const rapidxml::xml_node<>& node
+    ) override;
 
+    int nChildren() const override;
 
-    ResultElementPtr clone() const override;
+    bool isEqual(const Element& op) const override;
+
+    std::unique_ptr<Element> clone() const override;
 };
 
 } // namespace insight

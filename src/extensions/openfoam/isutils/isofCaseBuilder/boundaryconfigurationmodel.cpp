@@ -292,7 +292,9 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
     bool pack,
     const boost::filesystem::path& fileParentPath ) const
 {
-  xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
+  xml_node<> *unassignedBCnode =
+        doc.allocate_node ( node_element, "UnassignedPatches" );
+
   if (pack)
   {
     defaultPatch_->parameterSetModel()->pack();
@@ -301,6 +303,7 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
   {
     defaultPatch_->parameterSetModel()->clearPackedData();
   }
+
   defaultPatch_->appendToNode(doc, *unassignedBCnode, fileParentPath);
   BCnode->append_node ( unassignedBCnode );
 
@@ -322,28 +325,27 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
 }
 
 void BoundaryConfigurationModel::readFromNode(
-    rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> *BCnode,
+    const rapidxml::xml_node<> &BCnode,
     insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
     MultivisualizationGenerator* visGen,
     const boost::filesystem::path &fileParentPath)
 {
   clear();
 
-  if (xml_node<> *unassignedBCnode =
-      BCnode->first_node( "UnassignedPatches" ))
+  if (auto *unassignedBCnode =
+      BCnode.first_node( "UnassignedPatches" ))
   {
-    defaultPatch_ = new DefaultPatch(doc, *unassignedBCnode, fileParentPath, mvl, visGen);
+    defaultPatch_ = new DefaultPatch(*unassignedBCnode, fileParentPath, mvl, visGen);
     Q_EMIT dataChanged(
           createIndex(0, 0),
           createIndex(0, 1)
           );
   }
 
-  for (xml_node<> *e = BCnode->first_node("Patch");
+  for (auto *e = BCnode.first_node("Patch");
        e; e = e->next_sibling("Patch"))
   {
-      auto *ice=new Patch(doc, *e, fileParentPath, mvl, visGen);
+      auto *ice=new Patch(*e, fileParentPath, mvl, visGen);
       addPatchConfiguration( ice );
   }
 }

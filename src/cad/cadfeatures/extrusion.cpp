@@ -18,11 +18,13 @@
  */
 
 #include "extrusion.h"
+
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
 #include "cadfeature.h"
+#include "datum.h"
 #include "cadfeatures/importsolidmodel.h"
 
 namespace qi = boost::spirit::qi;
@@ -52,11 +54,11 @@ size_t Extrusion::calcHash() const
 
   if (const auto* Lvec = boost::get<VectorPtr>(&L_))
   {
-      h+=(*Lvec)->value();
+      h+=**Lvec;
   }
   else if (const auto* Lsc = boost::get<ScalarPtr>(&L_))
   {
-      h+=(*Lsc)->value();
+      h+=**Lsc;
   }
 
   h+=centered_;
@@ -64,7 +66,18 @@ size_t Extrusion::calcHash() const
 }
 
 
-
+Extrusion::Extrusion(const Extrusion&o, TreeCloneMap& tcm)
+    : CL(sk_), centered_(o.centered_)
+{
+    if (auto *vp=boost::get<VectorPtr>(&o.L_))
+    {
+        L_=tcm.clone(*vp);
+    }
+    else if (auto *sp=boost::get<ScalarPtr>(&o.L_))
+    {
+        L_=tcm.clone(*sp);
+    }
+}
 
 Extrusion::Extrusion(FeaturePtr sk, ScalarPtr L, bool centered)
     : sk_(sk), L_(L), centered_(centered)
@@ -122,18 +135,18 @@ void Extrusion::build()
         providedSubshapes_["frontEdge"]=f;
         providedSubshapes_["backEdge"]=b;
         providedFeatureSets_["frontEdge"]=makeEdgeFeatureSet(
-            shared_from_this(), "isSame(%0)", {f->allEdges()});
+            shared_from_this(), "isIdentical(%0)", {f->allEdges()});
         providedFeatureSets_["backEdge"]=makeEdgeFeatureSet(
-            shared_from_this(), "isSame(%0)", {b->allEdges()});
+            shared_from_this(), "isIdentical(%0)", {b->allEdges()});
     }
     else
     {
         providedSubshapes_["frontFace"]=f;
         providedSubshapes_["backFace"]=b;
         providedFeatureSets_["frontFace"]=makeFaceFeatureSet(
-            shared_from_this(), "isSame(%0)", {f->allFaces()});
+            shared_from_this(), "isIdentical(%0)", {f->allFaces()});
         providedFeatureSets_["backFace"]=makeFaceFeatureSet(
-            shared_from_this(), "isSame(%0)", {b->allFaces()});
+            shared_from_this(), "isIdentical(%0)", {b->allFaces()});
     }
 
     setShape ( mkp.Shape() );
@@ -150,23 +163,23 @@ void Extrusion::insertrule(parser::ISCADParser& ruleset)
   ruleset.modelstepFunctionRules.add
   (
     "Extrusion",
-    std::make_shared<parser::ISCADParser::ModelstepRule>(
-
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression
-      >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
-      >> ')' )
-      [ qi::_val = phx::bind(
+        std::make_shared<parser::ISCADParser::ModelstepRule>(
+            '(' > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ] > ','
+                > ( ruleset.r_vectorExpression
+                   > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+                   > ')' )
+                    [ qi::_val = phx::bind(
                          &Extrusion::create<FeaturePtr, VectorPtr, bool>,
-                         qi::_1, qi::_2, qi::_3) ]
-    |
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression
-      >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) )
-      >> ')' )
-      [ qi::_val = phx::bind(
-                         &Extrusion::create<FeaturePtr, ScalarPtr, bool>,
-                         qi::_1, qi::_2, qi::_3) ]
+                         qi::_val, qi::_1, qi::_2) ]
+            |
+            ( ruleset.r_scalarExpression
+             > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+             > ')' )
+                [ qi::_val = phx::bind(
+                     &Extrusion::create<FeaturePtr, ScalarPtr, bool>,
+                     qi::_val, qi::_1, qi::_2) ]
 
-    )
+            )
   );
 }
 

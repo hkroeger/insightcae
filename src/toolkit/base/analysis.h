@@ -273,7 +273,7 @@ public:
 
 
 
-
+#ifndef SWIG
 struct AnalysisInstance
 {
   std::string name;
@@ -284,7 +284,6 @@ struct AnalysisInstance
 };
 
 typedef std::vector<AnalysisInstance> AnalysisInstanceList;
-
 
 // Queue class that has thread synchronisation
 class SynchronisedAnalysisQueue
@@ -299,10 +298,12 @@ private:
 public:
 
     // Add data to the queue and notify others
-    void enqueue ( const AnalysisInstance& data );
+    void enqueue ( AnalysisInstance&& data );
 
     // Get data from the queue. Wait for data if not available
     AnalysisInstance dequeue();
+
+    void storeProcessed(AnalysisInstance&& processedInstance);
 
     inline size_t n_instances() const
     {
@@ -333,6 +334,7 @@ public:
     }
 };
 
+#endif
 
 
 

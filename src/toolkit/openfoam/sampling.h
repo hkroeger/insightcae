@@ -86,11 +86,12 @@ class line
 {
 public:
 #include "sampling__sampleOps_line__Parameters.h"
-    /*
+/*
 PARAMETERSET>>> sampleOps_line Parameters
 inherits set::Parameters
 
 points = vector (0 0 0) "Matrix of points"
+samplePointsAtFace = bool false "only intersection points with faces on the line between first and last point are sampling points"
 
 createGetters
 <<<PARAMETERSET
@@ -109,7 +110,8 @@ public:
    */
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
-                          const std::string& time="" // empty string means latest
+                          const std::string& time="", // empty string means latest
+                          const std::string& region="" // empty string: default region
                           ) const;
 };
 
@@ -149,7 +151,8 @@ public:
    */
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
-                          const std::string& time="" // empty string means latest
+                          const std::string& time="", // empty string means latest
+                          const std::string& region="" // empty string: default region
                           ) const;
 };
 
@@ -190,10 +193,11 @@ public:
     virtual set* clone() const;
 
     arma::mat rotMatrix(int i, double angularOffset=0) const;
-    inline std::string setname(int i) const { return p().name+"-"+boost::lexical_cast<std::string>(i); }
+    inline std::string setname(int i) const { return p().name+"-"+toString(i); }
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
-                          const std::string& time="" // empty string means latest
+                          const std::string& time="", // empty string means latest
+                          const std::string& region="" // empty string: default region
                           ) const;
 };
 
@@ -228,10 +232,11 @@ public:
     virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
     virtual set* clone() const;
 
-    inline std::string setname(int i, int j) const { return p().name+"-"+boost::lexical_cast<std::string>(i*p().nd1+j); }
+    inline std::string setname(int i, int j) const { return p().name+"-"+toString(i*p().nd1+j); }
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
-                          const std::string& time="" // empty string means latest
+                          const std::string& time="", // empty string means latest
+                          const std::string& region="" // empty string: default region
                           ) const;
 };
 
@@ -271,7 +276,8 @@ public:
 
     arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
                           ColumnDescription* coldescr=NULL,
-                          const std::string& time="" // empty string means latest
+                          const std::string& time="", // empty string means latest
+                          const std::string& region="" // empty string: default region
                           ) const;
 };
 

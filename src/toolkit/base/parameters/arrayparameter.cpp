@@ -3,6 +3,8 @@
 #include "base/tools.h"
 #include "base/rapidxml.h"
 
+#include "subsetparameter.h"
+
 namespace insight
 {
 
@@ -11,7 +13,8 @@ namespace insight
 
 
 defineType(ArrayParameter);
-addToFactoryTable(Parameter, ArrayParameter);
+addParameterFactories(ArrayParameter);
+
 
 
 
@@ -28,7 +31,7 @@ ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const st
 : Parameter(description, isHidden, isExpert, isNecessary, order),
   defaultSize_(size)
 {
-    setDefaultValue(defaultValue.clone(false));
+    setDefaultValue(defaultValue.cloneAs<Parameter>());
     for (int i=0; i<defaultSize_; i++)
     {
         appendEmpty(false);
@@ -174,8 +177,8 @@ void ArrayParameter::appendEmpty(bool init)
     int i=value_.size();
     beforeChildInsertion(i, i);
 
-  value_.push_back ( defaultValue_->clone(false) );
-  if (init) initialize();
+  value_.push_back ( defaultValue_->cloneAs<Parameter>() );
+  // if (init) initialize();
 
   auto& ins=value_.back();
   valueChangedConnections_.insert(ins.get(),
@@ -227,7 +230,7 @@ int ArrayParameter::nChildren() const
     return value_.size();
 }
 
-std::string ArrayParameter::childParameterName(
+std::string ArrayParameter::childElementName(
     int i,
     bool redirectArrayElementsToDefault ) const
 {
@@ -244,7 +247,7 @@ std::string ArrayParameter::childParameterName(
 }
 
 
-Parameter& ArrayParameter::childParameterRef ( int i )
+hierarchicalData::Element& ArrayParameter::childElementRef ( int i )
 {
     insight::assertion(i>=0 && i<=nChildren(),
                        "index %d out of range (0...%d)", i, nChildren());
@@ -255,7 +258,7 @@ Parameter& ArrayParameter::childParameterRef ( int i )
 }
 
 
-const Parameter& ArrayParameter::childParameter( int i ) const
+const hierarchicalData::Element& ArrayParameter::childElement( int i ) const
 {
     insight::assertion(i>=0 && i<=nChildren(),
                        "index %d out of range (0...%d)", i, nChildren());
@@ -265,7 +268,7 @@ const Parameter& ArrayParameter::childParameter( int i ) const
         return *(value_[i]);
 }
 
-int ArrayParameter::childParameterIndex(const std::string &name) const
+int ArrayParameter::childElementIndex(const std::string &name) const
 {
     if (name=="default")
     {
@@ -305,24 +308,31 @@ void ArrayParameter::clear()
     triggerValueChanged();
 }
 
-std::string ArrayParameter::latexRepresentation() const
+std::string ArrayParameter::latexRepresentation(
+    const std::string& name,
+    int documentHierarchyLevel,
+    const FileStorageInfo& fsi ) const
 {
-  std::ostringstream os;
-  if (size()>0)
-  {
-    os<<"\\begin{enumerate}\n";
-
-    for(auto i=value_.begin(); i!=value_.end(); ++i)
+    std::ostringstream os;
+    if (size()>0)
     {
-      os << "\\item item " << (i-value_.begin()) << " :\\\\\n" << (*i)->latexRepresentation();
+        os<<"\\begin{enumerate}\n";
+
+        for(auto i=value_.begin(); i!=value_.end(); ++i)
+        {
+            if (!fsi.elementFilter.matches(**i))
+            {
+                os << "\\item item " << (i-value_.begin()) << " :\\\\\n" <<
+                    (*i)->latexRepresentation(name, documentHierarchyLevel, fsi);
+            }
+        }
+        os << "\\end{enumerate}\n";
     }
-    os << "\\end{enumerate}\n";
-  }
-  else
-  {
-    os << "(empty)\n";
-  }
-  return os.str();
+    else
+    {
+        os << "(empty)\n";
+    }
+    return os.str();
 }
 
 
@@ -400,18 +410,20 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(
     const std::string& name,
     rapidxml::xml_document<>& doc,
     rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath) const
+    const OutputProperties& outProps ) const
 {
-  insight::CurrentExceptionContext ex(3, "appending array "+name+" to node "+node.name());
+  insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending array "+name+" to node "+node.name());
   using namespace rapidxml;
-  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-  defaultValue_->appendToNode("default", doc, *child, inputfilepath);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
+  defaultValue_->appendToNode("default", doc, *child, outProps);
   for (int i=0; i<size(); i++)
   {
-    value_[i]->appendToNode(
-          boost::lexical_cast<std::string>(i),
-          doc, *child,
-          inputfilepath );
+      if (!outProps.filter.matches(*value_[i]))
+      {
+        value_[i]->appendToNode(
+              toString(i),
+              doc, *child, outProps);
+      }
   }
   return child;
 }
@@ -419,54 +431,94 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(
 
 
 
-void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_node<>& node,
-    boost::filesystem::path inputfilepath)
+const rapidxml::xml_node<>* ArrayParameter::readFromNode(
+    const std::string& name,
+    const rapidxml::xml_node<>& node)
 {
-  using namespace rapidxml;
-  xml_node<>* child = findNode(node, name, type());
-
-  if (child)
-  {
-    int imax=-1;
-    for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
+    auto *child = Parameter::readFromNode(name, node);
+    if (child)
     {
-      std::string name(e->first_attribute("name")->value());
-      if (name=="default")
-      {
-        defaultValue_->readFromNode( name, *child, inputfilepath );
-      }
-      else
-      {
-        int i=boost::lexical_cast<int>(name);
-        imax=std::max(imax,i);
-        if (i>size()-1) resize(i+1, false);
-        value_[i]->readFromNode( name, *child, inputfilepath );
-      }
-    }
-    if (imax<0)
-      clear();
-    else
-      resize(imax+1, false);
+        int imax=-1;
+        for (auto *e = child->first_node(); e; e = e->next_sibling())
+        {
+            std::string name(e->first_attribute("name")->value());
+            if (name=="default")
+            {
+                defaultValue_->readFromNode( name, *child );
+            }
+            else
+            {
+                int i=boost::lexical_cast<int>(name);
+                imax=std::max(imax,i);
+                if (i>size()-1) resize(i+1, false);
+                value_[i]->readFromNode( name, *child );
+            }
+        }
+        if (imax<0)
+            clear();
+        else
+            resize(imax+1, false);
 
-    initialize();
+        triggerValueChanged();
+    }
+    else
+    {
+        insight::Warning(
+            boost::str(
+                boost::format(
+                    _("No xml node found with type '%s' and name '%s', default value '%s' is used.")
+                    ) % type() % name % plainTextRepresentation(0)
+                )
+            );
+    }
+    return child;
+}
+
+
+ArrayParameter::ArrayParameter(const rapidxml::xml_node<> &node)
+    : Parameter(node),
+    defaultSize_(0)
+{
+    int imax=-1;
+
+    if (auto *e = node.first_node("default"))
+    {
+        defaultValue_=Parameter::createFromNode(*e);
+    }
+
+    for (auto *e = node.first_node(); e; e = e->next_sibling())
+    {
+        std::string name(e->first_attribute("name")->value());
+        if (name!="default")
+        {
+            auto v=Parameter::createFromNode(*e);
+
+            if (!defaultValue_)
+            {
+                defaultValue_=v->cloneAs<Parameter>();
+            }
+
+            int i=boost::lexical_cast<int>(name);
+            imax=std::max(imax,i);
+            if (i>size()-1) resize(i+1, false);
+            v->setParent(this);
+            value_[i]=std::move(v);
+        }
+    }
+
+    if (size()==0)
+    {
+        // got empty array, insert some empty ParameterSet as default value
+        defaultValue_=ParameterSet::create();
+    }
+
     triggerValueChanged();
-  }
-  else
-  {
-    insight::Warning(
-          boost::str(
-            boost::format(
-                _("No xml node found with type '%s' and name '%s', default value '%s' is used.")
-             ) % type() % name % plainTextRepresentation()
-           )
-        );
-  }
 }
 
 
 
 
-std::unique_ptr<Parameter> ArrayParameter::clone (bool init) const
+std::unique_ptr<hierarchicalData::Element> ArrayParameter::clone () const
 {
   auto np=std::make_unique<ArrayParameter>(
         *defaultValue_,
@@ -476,10 +528,8 @@ std::unique_ptr<Parameter> ArrayParameter::clone (bool init) const
 
   for (int i=0; i<size(); i++)
   {
-    np->appendValue( value_[i]->clone(false) );
+    np->appendValue( value_[i]->cloneAs<Parameter>() );
   }
-
-  if (init) np->initialize();
 
   return np;
 }
@@ -487,62 +537,85 @@ std::unique_ptr<Parameter> ArrayParameter::clone (bool init) const
 
 
 
-void ArrayParameter::copyFrom(const Parameter& p)
+void ArrayParameter::assignFrom( const Element& rhs )
 {
-  operator=(dynamic_cast<const ArrayParameter&>(p));
-}
+  auto &op = dynamic_cast<const ArrayParameter&>(rhs);
 
-
-
-
-void ArrayParameter::operator=(const ArrayParameter& op)
-{
-  (*defaultValue_).copyFrom(*op.defaultValue_);
+  (*defaultValue_).assignFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
 
   resize(op.size(), true);
 
   for (int i=0; i<op.size(); ++i)
   {
-    (*value_[i]).copyFrom( *op.value_[i] );
+    (*value_[i]).assignFrom( *op.value_[i] );
   }
 
-  Parameter::copyFrom(op);
+  Parameter::assignFrom(op);
 }
 
 
+void ArrayParameter::copyMatching( const Element& rhs )
+{
+    auto &op = dynamic_cast<const ArrayParameter&>(rhs);
+
+    (*defaultValue_).copyMatching(*op.defaultValue_);
+    defaultSize_ = op.defaultSize_;
+
+    resize(op.size(), true);
+
+    for (int i=0; i<size(); ++i)
+    {
+        (*value_[i]).copyMatching( *op.value_[i] );
+    }
+
+    Parameter::assignFrom(rhs);
+}
 
 
-void ArrayParameter::extend(const Parameter &other)
+void ArrayParameter::extend(const Element &other)
 {
   auto &op = dynamic_cast<const ArrayParameter&>(other);
+
   defaultValue_->extend(*op.defaultValue_);
-  for (auto&e : value_)
+
+  for (int i=0; i<size(); ++i)
   {
-    e->extend(*op.defaultValue_);
+      if (i<op.size())
+      {
+          (*value_[i]).extend( *op.value_[i] );
+      }
+      else
+      {
+          (*value_[i]).extend( *defaultValue_ );
+      }
   }
-  triggerValueChanged();
 }
 
-void ArrayParameter::merge(const Parameter &other)
+bool ArrayParameter::isEqual(const Element &op) const
 {
-  auto &op = dynamic_cast<const ArrayParameter&>(other);
+    if (auto *oa = dynamic_cast<const ArrayParameter*>(&op))
+    {
+        if (!defaultValue_->isEqual(*oa->defaultValue_))
+            return false;
 
-  defaultValue_->merge(*op.defaultValue_);
+        if (defaultSize_!=oa->defaultSize_)
+            return false;
 
-  int i;
-  for (i=0; i<std::min(size(), op.size()); ++i)
-  {
-    value_[i]->merge(*op.value_[i]);
-  }
-  for (; i<op.size(); ++i) // if other is larger
-  {
-    appendEmpty(true);
-    insight::assertion( value_.size()-1==i, "unexpected" );
-    value_.back()->merge(*op.value_[i]);
-  }
-  triggerValueChanged();
+        if (size()!=oa->size())
+            return false;
+
+        for ( size_t i=0; i<size(); ++i )
+        {
+            if (!value_[i]->isEqual(*oa->value_[i]))
+                return false;
+        }
+        return true;
+    }
+    else
+        return false;
 }
+
 
 
 

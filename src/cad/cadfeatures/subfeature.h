@@ -36,12 +36,18 @@ class Subfeature
     size_t calcHash() const override;
     void build() override;
 
+    Subfeature(const Subfeature&o, TreeCloneMap& tcm);
     Subfeature(FeaturePtr basefeat, const std::string& subfeatname);
 
 public:
     declareType("Subfeature");
-
+#ifndef SWIG
+    DEPENDS((basefeat_));
+#endif
     CREATE_FUNCTION(Subfeature);
+    CLONEABLE(Subfeature);
+
+    const std::string& subfeatname() const;
 };
 
 }

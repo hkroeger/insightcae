@@ -25,6 +25,10 @@
 #include "GeomAPI_ExtremaCurveCurve.hxx"
 
 
+insight::cad::PointFeatureProp::PointFeatureProp(const PointFeatureProp &o, TreeCloneMap &tcm)
+    : CL(model_), name_(o.name_)
+{}
+
 insight::cad::PointFeatureProp::PointFeatureProp
 (
   insight::cad::FeaturePtr model, 
@@ -35,14 +39,24 @@ insight::cad::PointFeatureProp::PointFeatureProp
 {}
 
 
+size_t insight::cad::PointFeatureProp::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=name_;
+    return h.getHash();
+}
 
 
-arma::mat insight::cad::PointFeatureProp::value() const
+arma::mat insight::cad::PointFeatureProp::calcValue() const
 {
   return model_->getDatumPoint(name_);
 }
 
 
+insight::cad::VectorFeatureProp::VectorFeatureProp(const VectorFeatureProp&o, TreeCloneMap& tcm)
+    : CL(model_), name_(o.name_)
+{}
 
 
 insight::cad::VectorFeatureProp::VectorFeatureProp
@@ -55,21 +69,36 @@ insight::cad::VectorFeatureProp::VectorFeatureProp
 {}
 
 
+size_t insight::cad::VectorFeatureProp::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=name_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::VectorFeatureProp::value() const
+arma::mat insight::cad::VectorFeatureProp::calcValue() const
 {
   return model_->getDatumVector(name_);
 }
+
+insight::cad::SinglePointCoords::SinglePointCoords(const SinglePointCoords &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
 
 insight::cad::SinglePointCoords::SinglePointCoords(insight::cad::ConstFeatureSetPtr pfs)
 : pfs_(pfs)
 {}
 
 
+size_t insight::cad::SinglePointCoords::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::SinglePointCoords::value() const
+arma::mat insight::cad::SinglePointCoords::calcValue() const
 {
   if (!(pfs_->size()==1))
     throw insight::Exception("vertex feature set must not contain more than one point for coordinate extraction!");
@@ -80,6 +109,10 @@ arma::mat insight::cad::SinglePointCoords::value() const
 
 
 
+
+insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(const CircleEdgeCenterCoords &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
 
 insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(insight::cad::ConstFeatureSetPtr pfs)
     : pfs_(pfs)
@@ -132,7 +165,9 @@ void insight::cad::CircleEdgeCenterCoords::compute(arma::mat &pc, double &D, arm
     }
   }
   else
-    throw insight::Exception("selected edge is not a circle or BSplineCurve! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
+    throw insight::Exception(
+          "selected edge is not a circle or BSplineCurve! (instead is of type %d)",
+          adapt.GetType());
 
   pc=vec3(icyl.Location());
   D=icyl.Radius()*2.;
@@ -140,9 +175,14 @@ void insight::cad::CircleEdgeCenterCoords::compute(arma::mat &pc, double &D, arm
 }
 
 
+size_t insight::cad::CircleEdgeCenterCoords::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::CircleEdgeCenterCoords::value() const
+arma::mat insight::cad::CircleEdgeCenterCoords::calcValue() const
 {
   arma::mat pc, ex;
   double D;
@@ -153,14 +193,23 @@ arma::mat insight::cad::CircleEdgeCenterCoords::value() const
 
 
 
+insight::cad::DatumPointCoord::DatumPointCoord(const DatumPointCoord &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPointCoord::DatumPointCoord(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
 
 
+size_t insight::cad::DatumPointCoord::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumPointCoord::value() const
+arma::mat insight::cad::DatumPointCoord::calcValue() const
 {
   if ( pfs_->providesPointReference() )
   {
@@ -176,14 +225,23 @@ arma::mat insight::cad::DatumPointCoord::value() const
 
 
 
+insight::cad::DatumDir::DatumDir(const DatumDir &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumDir::DatumDir(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
 
 
+size_t insight::cad::DatumDir::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumDir::value() const
+arma::mat insight::cad::DatumDir::calcValue() const
 {
   if ( pfs_->providesAxisReference() )
   {
@@ -198,13 +256,23 @@ arma::mat insight::cad::DatumDir::value() const
 
 
 
+insight::cad::XsecCurveCurve::XsecCurveCurve(const XsecCurveCurve &o, TreeCloneMap &tcm)
+    : CL(c1_), CL(c2_)
+{}
+
 insight::cad::XsecCurveCurve::XsecCurveCurve(ConstFeaturePtr c1, ConstFeaturePtr c2)
     : c1_(c1), c2_(c2)
 {}
 
 
-
-arma::mat insight::cad::XsecCurveCurve::value() const
+size_t insight::cad::XsecCurveCurve::calcHash() const
+{
+    ParameterListHash h;
+    h+=*c1_;
+    h+=*c2_;
+    return h.getHash();
+}
+arma::mat insight::cad::XsecCurveCurve::calcValue() const
 {
     TopoDS_Edge e1=TopoDS::Edge(c1_->shape());
     TopoDS_Edge e2=TopoDS::Edge(c2_->shape());
@@ -225,14 +293,23 @@ arma::mat insight::cad::XsecCurveCurve::value() const
 
 
 
+insight::cad::DatumPlaneNormal::DatumPlaneNormal(const DatumPlaneNormal &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
 
 
+size_t insight::cad::DatumPlaneNormal::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumPlaneNormal::value() const
+arma::mat insight::cad::DatumPlaneNormal::calcValue() const
 {
 //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
   if (pfs_->providesPlanarReference())
@@ -246,14 +323,24 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   return vec3(0,0,0);
 }
 
+insight::cad::DatumPlaneX::DatumPlaneX(const DatumPlaneX &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPlaneX::DatumPlaneX(insight::cad::ConstDatumPtr pfs)
     : pfs_(pfs)
 {}
 
 
 
+size_t insight::cad::DatumPlaneX::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-arma::mat insight::cad::DatumPlaneX::value() const
+arma::mat insight::cad::DatumPlaneX::calcValue() const
 {
     //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
     if (pfs_->providesPlanarReference())
@@ -268,14 +355,23 @@ arma::mat insight::cad::DatumPlaneX::value() const
 }
 
 
+insight::cad::DatumPlaneY::DatumPlaneY(const DatumPlaneY &o, TreeCloneMap &tcm)
+    : CL(pfs_)
+{}
+
 insight::cad::DatumPlaneY::DatumPlaneY(insight::cad::ConstDatumPtr pfs)
     : pfs_(pfs)
 {}
 
 
+size_t insight::cad::DatumPlaneY::calcHash() const
+{
+    ParameterListHash h;
+    h+=*pfs_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::DatumPlaneY::value() const
+arma::mat insight::cad::DatumPlaneY::calcValue() const
 {
     //   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
     if (pfs_->providesPlanarReference())
@@ -290,14 +386,23 @@ arma::mat insight::cad::DatumPlaneY::value() const
 }
 
 
+insight::cad::BBMin::BBMin(const BBMin &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::BBMin::BBMin(FeaturePtr model)
 : model_(model)
 {}
 
 
+size_t insight::cad::BBMin::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::BBMin::value() const
+arma::mat insight::cad::BBMin::calcValue() const
 {
   return model_->modelBndBox().col(0);
 }
@@ -305,14 +410,23 @@ arma::mat insight::cad::BBMin::value() const
 
 
 
+insight::cad::BBMax::BBMax(const BBMax &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::BBMax::BBMax(FeaturePtr model)
 : model_(model)
 {}
 
 
+size_t insight::cad::BBMax::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::BBMax::value() const
+arma::mat insight::cad::BBMax::calcValue() const
 {
   return model_->modelBndBox().col(1);
 }
@@ -320,14 +434,23 @@ arma::mat insight::cad::BBMax::value() const
 
 
 
+insight::cad::COG::COG(const COG &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::COG::COG(FeaturePtr model)
 : model_(model)
 {}
 
 
+size_t insight::cad::COG::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::COG::value() const
+arma::mat insight::cad::COG::calcValue() const
 {
   return model_->modelCoG();
 }
@@ -335,14 +458,23 @@ arma::mat insight::cad::COG::value() const
 
 
 
+insight::cad::SurfaceCOG::SurfaceCOG(const SurfaceCOG &o, TreeCloneMap &tcm)
+    : CL(model_)
+{}
+
 insight::cad::SurfaceCOG::SurfaceCOG(FeaturePtr model)
 : model_(model)
 {}
 
 
+size_t insight::cad::SurfaceCOG::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::SurfaceCOG::value() const
+arma::mat insight::cad::SurfaceCOG::calcValue() const
 {
   return model_->surfaceCoG();
 }
@@ -350,18 +482,32 @@ arma::mat insight::cad::SurfaceCOG::value() const
 
 
 
+insight::cad::SurfaceInertiaAxis::SurfaceInertiaAxis(const SurfaceInertiaAxis &o, TreeCloneMap &tcm)
+    : CL(model_), axis_(o.axis_)
+{}
+
 insight::cad::SurfaceInertiaAxis::SurfaceInertiaAxis(FeaturePtr model, int axis)
 : model_(model), axis_(axis)
 {}
 
 
+size_t insight::cad::SurfaceInertiaAxis::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=axis_;
+    return h.getHash();
+}
 
-
-arma::mat insight::cad::SurfaceInertiaAxis::value() const
+arma::mat insight::cad::SurfaceInertiaAxis::calcValue() const
 {
   return model_->surfaceInertia(axis_);
 }
 
+
+insight::cad::PointInFeatureCS::PointInFeatureCS(const PointInFeatureCS &o, TreeCloneMap &tcm)
+    : CL(model_), CL(locP_)
+{}
 
 insight::cad::PointInFeatureCS::PointInFeatureCS(
     FeaturePtr model,
@@ -370,7 +516,16 @@ insight::cad::PointInFeatureCS::PointInFeatureCS(
     locP_(locP)
 {}
 
-arma::mat insight::cad::PointInFeatureCS::value() const
+size_t insight::cad::PointInFeatureCS::calcHash() const
+{
+    ParameterListHash h;
+    h+=*model_;
+    h+=*locP_;
+    return h.getHash();
+}
+
+
+arma::mat insight::cad::PointInFeatureCS::calcValue() const
 {
     arma::mat locP=locP_->value();
     auto& dp=model_->getDatumPoints();

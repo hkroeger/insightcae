@@ -1,8 +1,11 @@
 #include "chart.h"
+#include "base/hierarchicalelement.h"
 #include "base/resultelements/chartrenderer.h"
 
 #include "base/tools.h"
 #include "base/rapidxml.h"
+#include <memory>
+#include <sstream>
 
 using namespace std;
 using namespace boost;
@@ -118,6 +121,20 @@ const std::string& PlotCurve::plaintextlabel() const
     return plaintextlabel_;
 }
 
+bool PlotCurve::operator==(const PlotCurve o) const
+{
+    if (plotcmd_!=o.plotcmd_)
+        return false;
+
+    if (plaintextlabel_!=o.plaintextlabel_)
+        return false;
+
+    if (!(style_==o.style_))
+        return false;
+
+    return xy_==o.xy_;
+}
+
 
 
 
@@ -141,6 +158,18 @@ PlotCurveList::PlotCurveList(std::initializer_list<PlotCurve> il)
 PlotCurveList::PlotCurveList(const_iterator begin, const_iterator end)
  : std::vector<PlotCurve>(begin, end)
 {}
+
+bool PlotCurveList::operator==(const PlotCurveList o) const
+{
+    if (o.size()!=size())
+        return false;
+    for (size_t i=0; i<size(); ++i)
+    {
+        if (!((*this)[i]==o[i]))
+            return false;
+    }
+    return true;
+}
 
 
 
@@ -211,7 +240,7 @@ const PlotCurve &Chart::plotCurve(const std::string &plainTextLabel) const
 
 
 
-void Chart::generatePlotImage( const path& imagepath ) const
+void Chart::generatePlotImage( const boost::filesystem::path& imagepath ) const
 {
   ChartRenderer::create(chartData())->render(imagepath);
 }
@@ -224,21 +253,30 @@ void Chart::insertLatexHeaderCode(std::set<std::string>& h) const
 }
 
 
-void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int , const boost::filesystem::path& outputfilepath ) const
+std::string Chart::latexRepresentation (
+    const std::string& name,
+    int,
+    const FileStorageInfo& fsi ) const
 {
-    path chart_file=cleanLatexImageFileName ( outputfilepath/ ( name+".png" ) ).string();
+    auto &addf = *fsi.additionalFiles;
+
+    auto filename=cleanLatexImageFileName(name+".png");
+    auto chart_file =
+        (addf.directory/filename).string();
 
     generatePlotImage ( chart_file );
 
-    //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+    std::ostringstream f;
     f<<
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{"
-        << make_relative ( outputfilepath, chart_file ).generic_path().string() << "}\n"
+        << (addf.directoryRelativePath/filename ).generic_string() << "}\n"
      "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";
+
+    return f.str();
 }
 
 
@@ -258,88 +296,88 @@ void Chart::exportDataToFile ( const std::string& name, const boost::filesystem:
     }
 }
 
+int Chart::nChildren() const
+{
+    return 0;
+}
+
+bool Chart::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const Chart*>(&op))
+    {
+        return ChartData::operator==(*oa);
+    }
+    else
+        return false;
+}
+
 
 rapidxml::xml_node<>* Chart::appendToNode
 (
     const std::string& name,
     rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node
+    rapidxml::xml_node<>& node,
+    const OutputProperties& outProps
 ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "xlabel",
-                                  doc.allocate_string ( xlabel_.c_str() )
-                              ) );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "ylabel",
-                                  doc.allocate_string ( ylabel_.c_str() )
-                              ) );
-    child->append_attribute ( doc.allocate_attribute
-                              (
-                                  "addinit",
-                                  doc.allocate_string ( addinit_.c_str() )
-                              ) );
+    xml_node<>* child =
+        ResultElement::appendToNode ( name, doc, node, outProps );
 
-    for ( const PlotCurve& pc: plc_ ) {
-        xml_node<> *pcnode = doc.allocate_node
-                             (
-                                 node_element,
-                                 "PlotCurve"
-                             );
-        child->append_node ( pcnode );
+    appendAttribute(doc, *child, "xlabel", xlabel_ );
+    appendAttribute(doc, *child, "ylabel", ylabel_ );
+    appendAttribute(doc, *child, "addinit", addinit_ );
 
-        pcnode->append_attribute
-        (
-            doc.allocate_attribute
-            (
-                "plaintextlabel",
-                doc.allocate_string ( pc.plaintextlabel().c_str() )
-            )
-        );
-
-        pcnode->append_attribute
-        (
-            doc.allocate_attribute
-            (
-                "plotcmd",
-                doc.allocate_string ( pc.plotcmd_.c_str() )
-            )
-        );
-
-        writeMatToXMLNode ( pc.xy_, doc, *pcnode );
+    for ( const PlotCurve& pc: plc_ )
+    {
+        auto pcnode = appendNode(doc, *child, "PlotCurve");
+        appendAttribute(doc, pcnode, "plaintextlabel", pc.plaintextlabel() );
+        appendAttribute(doc, pcnode, "plotcmd", pc.plotcmd_ );
+        writeMatToXMLNode ( pc.xy_, doc, pcnode );
     }
 
     return child;
 }
 
-void Chart::readFromNode(const string &name, rapidxml::xml_node<> &node)
+
+
+const rapidxml::xml_node<>*
+Chart::readFromNode(
+    const string &name,
+    const rapidxml::xml_node<> &parentNode )
 {
-  readBaseAttributesFromNode(name, node);
-  xlabel_=node.first_attribute("xlabel")->value();
-  ylabel_=node.first_attribute("ylabel")->value();
-  addinit_=node.first_attribute("addinit")->value();
-  for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
+  auto *child =
+        ResultElement::readFromNode(name, parentNode);
+
+  xlabel_=getMandatoryAttribute(*child, "xlabel");
+  ylabel_=getMandatoryAttribute(*child, "ylabel");
+  addinit_=getMandatoryAttribute(*child, "addinit");
+
+  for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
   {
-    std::string plaintextlabel=e->first_attribute("plaintextlabel")->value();
-    std::string plotcmd=e->first_attribute("plotcmd")->value();
+    auto plaintextlabel=getMandatoryAttribute(*e, "plaintextlabel");
+    auto plotcmd=getMandatoryAttribute(*e, "plotcmd");
+
     std::string value_str=e->value();
     std::istringstream iss(value_str);
     arma::mat xy;
     xy.load(iss, arma::raw_ascii);
+
     plc_.push_back(PlotCurve(xy, plaintextlabel, plotcmd));
   }
+  return child;
 }
 
 
 
 
-ResultElementPtr Chart::clone() const
+std::unique_ptr<hierarchicalData::Element> Chart::clone() const
 {
-    ResultElementPtr res ( new Chart ( xlabel_, ylabel_, plc_, shortDescription().simpleLatex(), longDescription().simpleLatex(), addinit_ ) );
+    auto res=std::make_unique<Chart>(
+        xlabel_, ylabel_, plc_,
+        shortDescription().simpleLatex(),
+        longDescription().simpleLatex(),
+        addinit_ );
     res->setOrder ( order() );
     return res;
 }
@@ -355,31 +393,6 @@ std::string yRangeExpression(double mi, double ma, double boundaryBySpan)
         std::max(1., boundaryBySpan*span);
     return str ( boost::format ( "set yrange [%g:%g]" )
                % ( mi-bnd ) % ( ma+bnd ) );
-}
-
-
-
-insight::ResultElement& addPlot
-(
-    std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& workdir,
-    const std::string& resultelementname,
-    const std::string& xlabel,
-    const std::string& ylabel,
-    const PlotCurveList& plc,
-    const std::string& shortDescription,
-    const std::string& addinit,
-    const std::string& watermarktext
-)
-{
-    return addPlot
-    (
-        *results, workdir,
-        resultelementname,
-        xlabel, ylabel,
-        plc,
-        shortDescription, addinit, watermarktext
-    );
 }
 
 
@@ -407,15 +420,33 @@ insight::ResultElement& addPlot
           ;
     }
 
-    return results.insert (
-                resultelementname,
-                new Chart
-                (
-                    xlabel, ylabel, plc,
-                    shortDescription, "",
-                    precmd
-                    )
-                );
+    return results.insert<Chart> (
+        resultelementname,
+        xlabel, ylabel, plc,
+        shortDescription, "",
+        precmd
+        );
+}
+
+bool ChartData::operator==(const ChartData o) const
+{
+    if (xlabel_!=o.xlabel_) return false;
+    if (ylabel_!=o.ylabel_) return false;
+    if (addinit_!=o.addinit_) return false;
+    return plc_==o.plc_;
+}
+
+bool PlotCurveStyle::operator==(const PlotCurveStyle &o) const
+{
+    if (color_!=o.color_) return false;
+    if (lineWidth_!=o.lineWidth_) return false;
+    if (dashType_!=o.dashType_) return false;
+    if (withPoints_!=o.withPoints_) return false;
+    if (withLines_!=o.withLines_) return false;
+    if (errorLines_!=o.errorLines_) return false;
+    if (title_!=o.title_) return false;
+    if (ax_y_!=o.ax_y_) return false;
+    return true;
 }
 
 

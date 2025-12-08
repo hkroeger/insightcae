@@ -18,6 +18,8 @@
  */
 
 #include "ellipse.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -72,9 +74,9 @@ size_t Ellipse::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=axmaj_->value();
-  h+=axmin_->value();
+  h+=*p0_;
+  h+=*axmaj_;
+  h+=*axmin_;
   return h.getHash();
 }
 
@@ -98,6 +100,10 @@ void Ellipse::build()
 }
 
 
+Ellipse::Ellipse(const Ellipse&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(axmaj_), CL(axmin_)
+{}
+
 
 
 Ellipse::Ellipse(VectorPtr p0, VectorPtr axmaj, VectorPtr axmin)
@@ -119,7 +125,9 @@ void Ellipse::insertrule(parser::ISCADParser& ruleset)
     "Ellipse",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+           > ruleset.r_vectorExpression > ','
+           > ruleset.r_vectorExpression > ')' )
      [ qi::_val = phx::bind(
                        &Ellipse::create<VectorPtr, VectorPtr, VectorPtr>,
                        qi::_1, qi::_2, qi::_3) ]

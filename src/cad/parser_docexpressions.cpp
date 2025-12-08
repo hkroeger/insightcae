@@ -26,6 +26,7 @@
 #include "cadfeature.h"
 
 #include "datum.h"
+#include "featureset.h"
 #include "sketch.h"
 #include "cadpostprocactions.h"
 

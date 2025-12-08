@@ -44,7 +44,13 @@ private:
 
     void prepareCleanup()
     {
-        aboutToBeDestroyed.connect([this](){cleanupDone_=true;});
+        aboutToBeDestroyed.connect(
+            [this](){
+                DBG_SLOT(aboutToBeDestroyed);
+
+                cleanupDone_=true;
+            }
+            );
     }
 
 protected:
@@ -123,7 +129,7 @@ public:
         return *lastMouseLocation_;
     }
 
-    void updateLastMouseLocation(const QPoint& p)
+    virtual void updateLastMouseLocation(const QPoint& p)
     {
         lastMouseLocation_.reset(new QPoint(p));
     }

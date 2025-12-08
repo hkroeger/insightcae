@@ -9,8 +9,11 @@ namespace insight {
 defineType(QTabularResult);
 addToFactoryTable(IQResultElement, QTabularResult);
 
-QTabularResult::QTabularResult(QObject *parent, const QString &label, insight::ResultElementPtr rep)
-: IQResultElement(parent, label, rep)
+QTabularResult::QTabularResult(
+    QObject* parent,
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element )
+    : IQResultElement(parent, hdmodel, element)
 {
 }
 
@@ -25,15 +28,14 @@ void QTabularResult::createFullDisplay(QVBoxLayout* layout)
 {
   IQResultElement::createFullDisplay(layout);
 
-  auto resp=resultElementAs<TabularResult>();
-  auto& res=*resp;
+  auto &res=elementAs<TabularResult>();
 
   auto tw=new QTableWidget(res.rows().size(), res.headings().size()/*, this*/);
 
   QStringList headers;
-  for (const std::string& h: res.headings() )
+  for (auto& h: res.headings() )
   {
-    headers << QString::fromStdString(h);
+    headers << QString::fromStdString(h.toPlainText());
   }
   tw->setHorizontalHeaderLabels( headers );
   tw->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

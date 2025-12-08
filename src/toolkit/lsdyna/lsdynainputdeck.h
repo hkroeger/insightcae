@@ -43,6 +43,12 @@ public:
     inline si::Mass massUnit() const { return units_.massUnit_; }
     si::Pressure stressUnit() const;
     boost::units::quantity<si::mass_density, double> densityUnit() const;
+
+    static
+    std::map<int, boost::filesystem::path>
+    resultFiles(
+        const boost::filesystem::path& workDir,
+        const std::string& prefix );
 };
 
 

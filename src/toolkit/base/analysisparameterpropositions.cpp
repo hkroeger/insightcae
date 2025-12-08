@@ -46,7 +46,7 @@ struct PythonFunction
             object main_namespace = main_module.attr("__dict__");
             object toolkit = import("Insight.toolkit");
 
-            static void *descr = nullptr;
+            static swig_type_info *descr = nullptr;
             if (!descr) {
                 descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
                 assert(descr);
@@ -165,16 +165,10 @@ struct SharedLibraryFunction
 
 AnalysisParameterPropositions::AnalysisParameterPropositions()
 {
-    boost::filesystem::path fp;
-    try
-    {
-        fp =  SharedPathList::global().getSharedFilePath(
-            "parameterPropositionSources.xml" );
-    }
-    catch (...)
-    {
-        return;
-    }
+    bool found=false;
+    boost::filesystem::path fp =  SharedPathList::global().getSharedFilePath(
+            "parameterPropositionSources.xml", &found );
+    if (!found) return;
 
     CurrentExceptionContext ex("reading external parameter proposition sources from "+fp.string());
 

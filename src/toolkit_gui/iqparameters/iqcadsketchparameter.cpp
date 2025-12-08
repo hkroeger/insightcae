@@ -6,6 +6,7 @@
 #include "iqparametersetmodel.h"
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
+#include "qtextensions.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -25,12 +26,11 @@ addToFactoryTable(IQParameter, IQCADSketchParameter);
 IQCADSketchParameter::IQCADSketchParameter
     (
         QObject* parent,
-        IQParameterSetModel* psmodel,
-        insight::Parameter* parameter,
-        const insight::ParameterSet& defaultParameterSet
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element
         )
     : IQSpecializedParameter<insight::CADSketchParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
@@ -41,19 +41,22 @@ void IQCADSketchParameter::connectSignals()
     disconnectAtEOL(
         parameterRef().childValueChanged.connect(
             [this]() {
+                DBG_SLOT(childValueChanged);
+
                 auto blocker = block_all();
-                model()->notifyParameterChange( *this );
+                model()->notifyElementChange( *this );
             }
-            )
-        );
+        )
+    );
 }
 
 
 
 
-QString IQCADSketchParameter::valueText() const
+QVariant IQCADSketchParameter::value() const
 {
-    return "sketch";
+    // return "(sketch)";
+    return QString("(sketch with %1 entities)").arg(parameter().sketch().size());
 }
 
 
@@ -68,7 +71,22 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
 
     auto *teScript = new QTextEdit(editControlsContainer);
-    teScript->document()->setPlainText(QString::fromStdString(parameter().script()));
+    auto updateScriptEdit = [this,teScript]() {
+        DBG_SLOT(valueChanged);
+
+        teScript->document()->setPlainText(
+            QString::fromStdString(parameter().script()));
+    };
+
+    updateScriptEdit();
+
+    ::disconnectAtEOL(
+        teScript,
+        (*this)->valueChanged.connect(
+            updateScriptEdit
+            )
+        );
+
     layout->addWidget(teScript);
 
 
@@ -90,47 +108,102 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
         };
         connect(apply, &QPushButton::pressed, applyFunction);
 
-
-        auto editFunction = [=]()
-        {
-            auto&p = this->parameterRef();
-
-            auto sk = p.featureGeometryRef();
-
-            viewer->editSketch(
-
-                *sk,
-
-                p.entityProperties(),
-                p.presentationDelegateKey(),
-
-                [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
-                {
-                    auto& tp = this->parameterRef();
-
-                    {
-                        auto blocker{parameterRef().blockUpdateValueSignal()};
-                        *sk = *accSk;
-
-                        std::ostringstream os;
-                        sk->generateScript(os);
-
-                        tp.setScript(os.str());
-                        tp.featureGeometry(); //trigger rebuild
-                    }
-
-                    tp.triggerValueChanged();
-
-                    teScript->document()->setPlainText(
-                        QString::fromStdString(tp.script()) );
-                },
-
-                [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
-
-                );
-        };
-        connect(edit, &QPushButton::pressed, editFunction);
+        connect(edit, &QPushButton::pressed,
+                std::bind(&IQCADSketchParameter::edit, this, viewer) );
     }
 
     return layout;
 }
+
+
+
+
+void IQCADSketchParameter::populateContextMenu(QMenu *cm, IQCADModel3DViewer *viewer)
+{
+    if (viewer)
+    {
+        auto *editAction = new QAction("Edit sketch...");
+        cm->addAction(editAction);
+
+        QObject::connect(editAction, &QAction::triggered,
+                         std::bind(&IQCADSketchParameter::edit, this, viewer) );
+    }
+}
+
+
+
+
+void IQCADSketchParameter::edit(IQCADModel3DViewer *viewer)
+{
+    if (auto editctrl = viewer->editSketchParameter(
+            this->parameter().path() ))
+    {
+        this->setControlsEnabled(false);
+        editctrl->additionalCleanup=[this]() {
+            this->setControlsEnabled(true); };
+    }
+}
+
+
+/*
+IQCADSketchDelegate::IQCADSketchDelegate(QObject * parent)
+    : QStyledItemDelegate(parent)
+{}
+
+QWidget * IQCADSketchDelegate::createEditor(
+    QWidget * parent,
+    const QStyleOptionViewItem & option,
+    const QModelIndex & index) const
+{
+    auto *iqp=static_cast<IQParameter*>(
+        index.siblingAtColumn(IQParameterSetModel::iqParamCol)
+            .data().value<void*>() );
+    auto&p = *dynamic_cast<insight::CADSketchParameter*>(iqp->get());
+
+    auto sk = p.featureGeometryRef();
+
+    viewer->editSketch(
+
+        *sk,
+
+        p.entityProperties(),
+        p.presentationDelegateKey(),
+
+        [this,sk,teScript](insight::cad::ConstrainedSketchPtr accSk) // on accept
+        {
+            auto& tp = this->parameterRef();
+
+            {
+                auto blocker{parameterRef().blockUpdateValueSignal()};
+                *sk = *accSk;
+
+                std::ostringstream os;
+                sk->generateScript(os);
+
+                tp.setScript(os.str());
+                tp.featureGeometry(); //trigger rebuild
+            }
+
+            tp.triggerValueChanged();
+
+            teScript->document()->setPlainText(
+                QString::fromStdString(tp.script()) );
+        },
+
+        [](insight::cad::ConstrainedSketchPtr) {} // on cancel: just nothing to do
+
+        );
+    return nullptr;
+}
+
+void IQCADSketchDelegate::setEditorData(
+    QWidget *editor,
+    const QModelIndex &index ) const
+{}
+
+void IQCADSketchDelegate::setModelData(
+    QWidget *editor,
+    QAbstractItemModel *model,
+    const QModelIndex &index ) const
+{}
+*/

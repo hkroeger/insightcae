@@ -252,6 +252,9 @@ private:
         CADEntity entity_;
         std::shared_ptr<DisplayedEntity> de_;
         QPersistentModelIndex idx2highlight_;
+        std::map<vtkActor*,float> orgLineWidth_, orgPointSize_;
+
+        void setExposedDisplayProps(vtkActor* act, QColor hicol);
 
     public:
         ExposeItem(
@@ -415,20 +418,28 @@ public:
 
     QSize sizeHint() const override;
     QPointF widgetCoordsToVTK(const QPoint& widgetCoords) const;
+    QPoint VTKToWidgetCoords(const QPointF &VTKCoords) const;
 
     ViewWidgetActionPtr setupDefaultAction() override;
 
     const Bounds& sceneBounds() const;
 
-    void writeViewerState(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const override;
-    void restoreViewerState(rapidxml::xml_node<>& node) override;
-
     void setCameraState(const insight::CameraState& camState) override;
+
+    void saveState(
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parentPath ) const override;
+
+    void restoreState(
+        const rapidxml::xml_node<>& rootNode,
+        const boost::filesystem::path& parentPath ) override;
 
 public:
     void exposeItem( insight::cad::FeaturePtr feat ) override;
     void undoExposeItem() override;
 
+    void onMeasurePointCoordinates() override;
     void onMeasureDistance() override;
     void onMeasureDiameter() override;
     void onSelectPoints() override;
@@ -439,6 +450,7 @@ public:
     void toggleClip(const arma::mat& p, const arma::mat& n) override;
 
     void fitAll() override;
+    void centerRotation();
 
     void view( const arma::mat& viewDir, const arma::mat& upDir ) override;
 
@@ -484,6 +496,7 @@ public:
     arma::mat pointInPlane2D(const gp_Ax3& plane, const arma::mat& pip3d) const;
 
     void onlyOneShaded(QPersistentModelIndex idx) override;
+    void showOnlyOne(QPersistentModelIndex idx) override;
     void resetRepresentations() override;
 
     void doSketchOnPlane(insight::cad::DatumPtr plane) override;
@@ -492,20 +505,10 @@ public:
         std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties,
         const std::string& presentationDelegateKey,
         SketchCompletionCallback onAccept,
-        SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {}
+        SketchCompletionCallback onCancel = [](insight::cad::ConstrainedSketchPtr) {},
+        boost::optional<std::string> parameterPath = boost::optional<std::string>()
         ) override;
 
-// protected:
-//     void mouseDoubleClickEvent(QMouseEvent* e) override;
-//     void mousePressEvent(QMouseEvent* e) override;
-//     void mouseReleaseEvent(QMouseEvent* e) override;
-//     void mouseMoveEvent(QMouseEvent* e) override;
-//     void wheelEvent(QWheelEvent* e) override;
-//     void keyPressEvent(QKeyEvent* e) override;
-//     void keyReleaseEvent(QKeyEvent* e) override;
-
-
-//    vtkActor* getActor(insight::cad::FeaturePtr geom);
 };
 
 

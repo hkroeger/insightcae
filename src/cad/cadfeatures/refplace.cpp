@@ -23,6 +23,7 @@
 #include "gp_Quaternion.hxx"
 #include "base/tools.h"
 #include "base/translations.h"
+#include "cadparameters.h"
 
 //#include <dlib/optimization.h>
 
@@ -96,6 +97,10 @@ double Condition::residual(const arma::mat& values) const
 
 
 
+CoincidentPoint::CoincidentPoint(const CoincidentPoint &o, TreeCloneMap &tcm)
+    : CL(p_org_), CL(p_targ_)
+{}
+
 CoincidentPoint::CoincidentPoint(VectorPtr p_org, VectorPtr p_targ)
 : p_org_(p_org), p_targ_(p_targ)
 {}
@@ -109,6 +114,10 @@ double CoincidentPoint::residual(const gp_Trsf& tr) const
 
 
 
+ParallelAxis::ParallelAxis(const ParallelAxis &o, TreeCloneMap &tcm)
+    : CL(dir_org_), CL(dir_targ_)
+{}
+
 ParallelAxis::ParallelAxis(VectorPtr dir_org, VectorPtr dir_targ)
 : dir_org_(dir_org), dir_targ_(dir_targ)
 {}
@@ -121,6 +130,10 @@ double ParallelAxis::residual(const gp_Trsf& tr) const
 
 
 
+
+ParallelPlanes::ParallelPlanes(const ParallelPlanes &o, TreeCloneMap &tcm)
+    : CL(pl_org_), CL(pl_targ_), orient_(o.orient_)
+{}
 
 ParallelPlanes::ParallelPlanes(DatumPtr pl_org, DatumPtr pl_targ, Orientation orient)
 : pl_org_(pl_org), pl_targ_(pl_targ), orient_(orient)
@@ -144,6 +157,10 @@ double ParallelPlanes::residual(const gp_Trsf& tr) const
 
 
 
+AlignedPlanes::AlignedPlanes(const AlignedPlanes &o, TreeCloneMap &tcm)
+    : ParallelPlanes(o, tcm)
+{}
+
 AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ, Orientation orient)
 : ParallelPlanes(pl_org, pl_targ, orient)
 {}
@@ -164,6 +181,10 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
 
 
 
+InclinedPlanes::InclinedPlanes(const InclinedPlanes &o, TreeCloneMap &tcm)
+    :CL(pl_org_), CL(pl_targ_), CL(angle_)
+{}
+
 InclinedPlanes::InclinedPlanes(DatumPtr pl_org, DatumPtr pl_targ, ScalarPtr angle)
 : pl_org_(pl_org), pl_targ_(pl_targ), angle_(angle)
 {}
@@ -178,6 +199,10 @@ double InclinedPlanes::residual(const gp_Trsf& tr) const
     return ::pow( pl.Axis().Direction().Angle(ptarg.Axis().Direction()) - angle_->value(), 2);
 }
 
+
+Coaxial::Coaxial(const Coaxial &o, TreeCloneMap &tcm)
+    : CL(ax_org_),  CL(ax_targ_), inv_(o.inv_)
+{}
 
 Coaxial::Coaxial(DatumPtr ax_org, DatumPtr ax_targ, bool inv)
 : ax_org_(ax_org), ax_targ_(ax_targ), inv_(inv)
@@ -198,10 +223,14 @@ double Coaxial::residual(const gp_Trsf& tr) const
 
     return pow(ao.Direction().Angle(fac*at.Direction()), 2) + r.SquareModulus()*pow(dist_scale,2);
 }
-    
-    
-    
-    
+
+
+
+
+PointInPlane::PointInPlane(const PointInPlane &o, TreeCloneMap &tcm)
+    : CL(p_org_), CL(pl_targ_)
+{}
+
 PointInPlane::PointInPlane(VectorPtr p_org, DatumPtr pl_targ)
 : p_org_(p_org), pl_targ_(pl_targ)
 {}
@@ -218,6 +247,10 @@ double PointInPlane::residual(const gp_Trsf& tr) const
 
 
 
+
+PointOnAxis::PointOnAxis(const PointOnAxis &o, TreeCloneMap &tcm)
+    : CL(p_org_), CL(ax_targ_)
+{}
 
 PointOnAxis::PointOnAxis(VectorPtr p_org, DatumPtr ax_targ)
 : p_org_(p_org), ax_targ_(ax_targ)
@@ -238,19 +271,28 @@ double PointOnAxis::residual(const gp_Trsf& tr) const
 size_t RefPlace::calcHash() const
 {
   ParameterListHash p;
-  p+=*m_;
 
 #warning hashes of placement rules missing
 
-  return p.getHash();
+  return p.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 
 
-RefPlace::RefPlace(FeaturePtr m, const gp_Ax2& cs)
-: DerivedFeature(m), m_(m) 
+RefPlace::RefPlace(const RefPlace &o, TreeCloneMap &tcm)
+    : DerivedFeature(o, tcm),
+      trsf_( bool(o.trsf_) ? new gp_Trsf(*o.trsf_) : nullptr )
+{
+    for (auto& c: o.conditions_)
+    {
+        conditions_.push_back(tcm.clone(c));
+    }
+}
+
+RefPlace::RefPlace(ConstFeaturePtr m, const gp_Ax2& cs)
+: DerivedFeature(m)
 {
   trsf_.reset(new gp_Trsf);
   trsf_->SetTransformation(gp_Ax3(cs));
@@ -260,8 +302,8 @@ RefPlace::RefPlace(FeaturePtr m, const gp_Ax2& cs)
 
 
 
-RefPlace::RefPlace(FeaturePtr m, ConditionList conditions)
-: DerivedFeature(m), m_(m), conditions_(conditions)
+RefPlace::RefPlace(ConstFeaturePtr m, ConditionList conditions)
+: DerivedFeature(m), conditions_(conditions)
 {}
 
 
@@ -376,8 +418,8 @@ void RefPlace::build()
         trsf_.reset( new gp_Trsf(trsf_from_vector(tp)) );
     }
 
-    setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
-    copyDatumsTransformed(*m_, *trsf_, "", boost::assign::list_of("origin")("ex")("ez") );
+    setShape(BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape());
+    copyDatumsTransformed(*baseFeature(), *trsf_, "", {"origin", "ex", "ez"} );
     
 }
 
@@ -431,9 +473,8 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset)
         "RefPlace",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-                    ( '(' >> ruleset.r_solidmodel_expression >>
-                      ',' >> r_condition % ','  >>
-                      ')' )
+                    ( '(' > ruleset.r_solidmodel_expression >
+                      ',' > r_condition % ','  > ')' )
                     [ qi::_val = phx::bind(
                          &RefPlace::create<FeaturePtr, ConditionList>,
                          qi::_1, qi::_2) ]

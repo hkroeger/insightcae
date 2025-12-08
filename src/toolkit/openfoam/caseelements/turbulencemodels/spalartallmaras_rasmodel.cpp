@@ -51,7 +51,7 @@ bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldna
   if (fieldname == "nuTilda")
   {
     BC["type"]=OFDictData::data("fixedValue");
-    BC["value"]=OFDictData::data("uniform 0");
+    BC["value"]=OFDictData::toUniformField(0.);
     return true;
   }
   else if (fieldname == "nut")
@@ -59,12 +59,12 @@ bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldna
     if (OFversion()>=170)
     {
       BC["type"]=OFDictData::data("nutUSpaldingWallFunction");
-      BC["value"]=OFDictData::data("uniform 0");
+      BC["value"]=OFDictData::toUniformField(0.);
     }
     else
     {
       BC["type"]=OFDictData::data("nutSpalartAllmarasWallFunction");
-      BC["value"]=OFDictData::data("uniform 0");
+      BC["value"]=OFDictData::toUniformField(0.);
     }
     return true;
   }

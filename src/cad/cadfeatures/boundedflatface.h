@@ -35,6 +35,7 @@ public:
 private:
     EdgeSelection edges_;
 
+    BoundedFlatFace(const BoundedFlatFace&o, TreeCloneMap& tcm);
     BoundedFlatFace(const std::vector<FeaturePtr>& edges);
     BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
 
@@ -44,8 +45,11 @@ protected:
 
 public:
     declareType("BoundedFlatFace");
-
+#ifndef SWIG
+    DEPENDS((edges_));
+#endif
     CREATE_FUNCTION(BoundedFlatFace);
+    CLONEABLE(BoundedFlatFace);
 
     operator const TopoDS_Face& () const;
 

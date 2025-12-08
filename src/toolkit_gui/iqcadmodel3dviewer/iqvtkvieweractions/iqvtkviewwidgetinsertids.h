@@ -31,6 +31,8 @@ public:
   {
       aboutToBeDestroyed.connect(
           [this](){
+              DBG_SLOT(aboutToBeDestroyed);
+
               viewer().deactivateSubshapeSelectionAll();
           });
   }
@@ -44,6 +46,8 @@ public:
       sel->entitySelected.connect(
           [this](IQVTKCADModel3DViewer::SubshapeData sd)
           {
+              DBG_SLOT(entitySelected);
+
               if (sd.subshapeType_ == shapeType)
               {
                   if (!selection_)

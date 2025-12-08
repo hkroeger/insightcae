@@ -32,17 +32,21 @@ namespace cad
 class BooleanSubtract
 : public DerivedFeature
 {
-  FeaturePtr m1_, m2_;
+  FeaturePtr m2_;
   
-  BooleanSubtract(FeaturePtr m1, FeaturePtr m2);
+  BooleanSubtract(const BooleanSubtract&o, TreeCloneMap& tcm);
+  BooleanSubtract(ConstFeaturePtr m1, FeaturePtr m2);
 
   size_t calcHash() const override;
   void build() override;
 
 public:
   declareType("BooleanSubtract");
-
+#ifndef SWIG
+  DEPENDS_W_BASE(DerivedFeature, (m2_));
+#endif
   CREATE_FUNCTION(BooleanSubtract);
+  CLONEABLE(BooleanSubtract);
   
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();

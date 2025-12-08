@@ -26,46 +26,118 @@
 namespace insight {
 namespace cad {
 
+
+
 class ScalarFeatureProp 
 : public Scalar
 {
   FeaturePtr model_;
   std::string name_;
   
+  ScalarFeatureProp(const ScalarFeatureProp&o, TreeCloneMap& tcm);
 public:
+  CLONEABLE(ScalarFeatureProp);
+#ifndef SWIG
+  DEPENDS((model_));
+#endif
   ScalarFeatureProp(FeaturePtr model, const std::string& name);
-  virtual double value() const;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
+
+
 
 class FeatureVolume 
 : public Scalar
 {
   FeaturePtr model_;
   
+  FeatureVolume(const FeatureVolume&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(FeatureVolume);
+
   FeatureVolume(FeaturePtr model);
-  virtual double value() const;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
+
+class FeatureSurfaceArea
+    : public Scalar
+{
+    FeaturePtr model_;
+
+    FeatureSurfaceArea(const FeatureSurfaceArea&o, TreeCloneMap& tcm);
+public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+    CLONEABLE(FeatureSurfaceArea);
+
+    FeatureSurfaceArea(FeaturePtr model);
+    size_t calcHash() const override;
+    double calcValue() const override;
+};
+
 
 class CumulativeEdgeLength 
 : public Scalar
 {
   FeaturePtr model_;
   
+  CumulativeEdgeLength(const CumulativeEdgeLength&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((model_));
+#endif
+  CLONEABLE(CumulativeEdgeLength);
+
   CumulativeEdgeLength(FeaturePtr model);
-  virtual double value() const;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
+
+
 
 class CircleDiameter
 : public Scalar
 {
   ConstFeatureSetPtr pfs_;
 
+  CircleDiameter(const CircleDiameter&o, TreeCloneMap& tcm);
 public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+  CLONEABLE(CircleDiameter);
+
   CircleDiameter(ConstFeatureSetPtr pfs);
-  virtual double value() const;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
+
+
+
+class CylinderDiameter
+    : public Scalar
+{
+    ConstFeatureSetPtr pfs_;
+
+    CylinderDiameter(const CylinderDiameter&o, TreeCloneMap& tcm);
+public:
+#ifndef SWIG
+    DEPENDS((pfs_));
+#endif
+    CLONEABLE(CylinderDiameter);
+
+    CylinderDiameter(ConstFeatureSetPtr pfs);
+    size_t calcHash() const override;
+    double calcValue() const override;
+};
+
+
 
 }
 }

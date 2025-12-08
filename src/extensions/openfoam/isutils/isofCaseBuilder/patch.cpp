@@ -1,5 +1,6 @@
 #include "patch.h"
 
+#include "base/hierarchicalelement.h"
 #include "openfoam/caseelements/boundarycondition.h"
 
 #include "iqparametersetmodel.h"
@@ -33,8 +34,7 @@ Patch::Patch(
 }
 
 
-Patch::Patch(rapidxml::xml_document<>& doc,
-             rapidxml::xml_node<>& node,
+Patch::Patch(const rapidxml::xml_node<>& node,
              boost::filesystem::path inputfilepath,
              insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
              MultivisualizationGenerator* visGen,
@@ -56,8 +56,9 @@ Patch::Patch(rapidxml::xml_document<>& doc,
   {
       set_bc_type(type_name_);
 
-      auto np = parameterSetModel()->getParameterSet().cloneParameterSet();
-      np->readFromNode(std::string(), node, inputfilepath);
+      auto np = parameterSetModel()->getParameterSet().cloneAs<ParameterSet>();
+      np->readFromNode(std::string(), node);
+      np->resolveRelativePaths(inputfilepath);
 
       parameterSetModel()->resetParameterValues(*np);
   }
@@ -76,7 +77,7 @@ Patch::Patch(rapidxml::xml_document<>& doc,
 void Patch::set_bc_type(const std::string& type_name)
 {
     type_name_=type_name;
-    curp_->resetParameters(
+    curp_->resetData(
         BoundaryCondition::defaultParametersFor(type_name_) );
     Q_EMIT visualizationUpdateRequired();
 }
@@ -103,11 +104,13 @@ bool Patch::insertElement(insight::OpenFOAMCase& c, insight::OFDictData::dict& b
 
 void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath )
 {
-//     xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
     node.append_attribute ( doc.allocate_attribute ( "patchName", patch_name_.c_str() ) );
     node.append_attribute ( doc.allocate_attribute ( "BCtype", type_name_.c_str() ) );
 
-    curp_->getParameterSet().appendToNode ( std::string(), doc, node, inputfilepath.parent_path() );
+    insight::hierarchicalData::Element::OutputProperties op;
+    op.skipParameterDescription=true;
+    curp_->getParameterSet().appendToNode (
+        std::string(), doc, node, op );
 }
 
 
@@ -121,13 +124,12 @@ DefaultPatch::DefaultPatch(
 {}
 
 DefaultPatch::DefaultPatch(
-    rapidxml::xml_document<>& doc,
-    rapidxml::xml_node<>& node,
+    const rapidxml::xml_node<>& node,
     boost::filesystem::path inputfilepath,
     insight::MultiCADParameterSetVisualizer::SubVisualizerList& mvl,
     MultivisualizationGenerator* visGen,
     QObject* parent )
-: Patch(doc, node, inputfilepath, mvl, visGen, parent)
+: Patch(node, inputfilepath, mvl, visGen, parent)
 {}
 
 bool DefaultPatch::insertElement ( insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict ) const

@@ -115,6 +115,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                     {
                                         QDialog dlg;
                                         ip->populateEditControls(&dlg, viewer);
+                                        ip->checkEnabledOrDisabled();
                                         dlg.exec();
                                     }
                                     );
@@ -124,14 +125,17 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                             auto ch=ip->children();
                             for (auto& cp: ch)
                             {
-                                addEditActions(cp);
+                                if (auto* pcp=dynamic_cast<IQParameter*>(cp))
+                                {
+                                    addEditActions(pcp);
+                                }
                             }
                         };
 
                         for (auto& ap: viz->second.assocParamPaths)
                         {
                             auto psm = parameterSetModel(associatedParameterSetModel_);
-                            auto pi = psm->indexFromParameterPath(ap, 0);
+                            auto pi = psm->indexOfPath(ap, 0);
                             auto iqp = psm->parameterFromIndex(pi);
 
                             addEditActions(iqp);
@@ -255,6 +259,12 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     std::bind(&IQCADModel3DViewer::onlyOneShaded, viewer,
                               QPersistentModelIndex(idx) ) );
 
+            a = new QAction(("Show only this"), this);
+            cm.addAction(a);
+            connect(a, &QAction::triggered,
+                    std::bind(&IQCADModel3DViewer::showOnlyOne, viewer,
+                              QPersistentModelIndex(idx) ) );
+
             a = new QAction(("Reset shading"), this);
             cm.addAction(a);
             connect(a, &QAction::triggered,
@@ -366,7 +376,8 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                                     {"stl", "ASCII STL file"},
                                     {"stlb", "Binary STL file"},
                                     {"stp step", "STEP file", true},
-                                    {"igs iges", "IGES file"}
+                                    {"igs iges", "IGES file"},
+                                    {"dot", "dependency graph"}
                             }
                             ) )
                         {

@@ -27,7 +27,7 @@ void volumeDrag::addIntoFvOptionDictionary(
   OFDictData::dict vdd;
   vdd["cellZone"]=p().name;
   vdd["selectionMode"]="cellZone";
-  vdd["CD"]=OFDictData::to_OF(p().CD);
+  vdd["CD"]=OFDictData::vector3(p().CD);
   cd["volumeDragCoeffs"]=vdd;
 
   fvOptions[name()]=cd;

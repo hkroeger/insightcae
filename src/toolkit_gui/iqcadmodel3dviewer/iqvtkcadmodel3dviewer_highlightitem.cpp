@@ -5,6 +5,45 @@
 #include "vtkProperty.h"
 #include "vtkTextProperty.h"
 
+void IQVTKCADModel3DViewer::ExposeItem::
+    setExposedDisplayProps(vtkActor* act, QColor hicol)
+{
+    act->GetProperty()->SetOpacity(1.);
+    act->GetProperty()->SetColor(
+        hicol.redF(), hicol.greenF(), hicol.blueF() );
+    act->SetVisibility(true);
+
+    if (auto* pdm = vtkPolyDataMapper::SafeDownCast(act->GetMapper()))
+    {
+        pdm->Update();
+
+        auto *inp=pdm->GetInput();
+
+        int
+            np=inp->GetNumberOfPoints(),
+            npy=inp->GetNumberOfPolys(),
+            nl=inp->GetNumberOfLines(),
+            nst=inp->GetNumberOfStrips()
+            ;
+
+        if (npy>0)
+        {
+        }
+        else if ( (nl>0) || (nst>0) )
+        {
+            float oldLineWidth=act->GetProperty()->GetLineWidth();
+            act->GetProperty()->SetLineWidth(oldLineWidth + 4);
+            orgLineWidth_[act]=oldLineWidth;
+        }
+        else if (np>0)
+        {
+            float oldPointSize_=act->GetProperty()->GetPointSize();
+            act->GetProperty()->SetPointSize(oldPointSize_ + 6);
+            orgPointSize_[act]=oldPointSize_;
+        }
+    }
+}
+
 IQVTKCADModel3DViewer::ExposeItem::ExposeItem(
         std::shared_ptr<DisplayedEntity> de,
         QPersistentModelIndex idx2highlight,
@@ -23,10 +62,7 @@ IQVTKCADModel3DViewer::ExposeItem::ExposeItem(
             {
                 if (o.first == idx2highlight_)
                 {
-                    act->GetProperty()->SetOpacity(1.);
-                    act->GetProperty()->SetColor(
-                        hicol.redF(), hicol.greenF(), hicol.blueF() );
-                    act->SetVisibility(true);
+                    setExposedDisplayProps(act, hicol);
                 }
                 else
                 {
@@ -42,9 +78,7 @@ IQVTKCADModel3DViewer::ExposeItem::ExposeItem(
         {
             if ( auto act = vtkActor::SafeDownCast(actor) )
             {
-                act->GetProperty()->SetOpacity(1.);
-                act->GetProperty()->SetColor(
-                    hicol.redF(), hicol.greenF(), hicol.blueF() );
+                setExposedDisplayProps(act, hicol);
             }
             viewer_.renderer()->AddActor(actor);
         }
@@ -58,6 +92,14 @@ IQVTKCADModel3DViewer::ExposeItem::ExposeItem(
 
 IQVTKCADModel3DViewer::ExposeItem::~ExposeItem()
 {
+    for (auto& olw: orgLineWidth_)
+    {
+        olw.first->GetProperty()->SetLineWidth(olw.second);
+    }
+    for (auto& ops: orgPointSize_)
+    {
+        ops.first->GetProperty()->SetPointSize(ops.second);
+    }
     for (auto& o: viewer_.displayedData_)
     {
         for (const auto& actor: o.second.actors_)

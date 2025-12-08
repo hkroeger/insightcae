@@ -1,6 +1,7 @@
 #ifndef IQVIDEO_H
 #define IQVIDEO_H
 
+#include "base/tools.h"
 #include "toolkit_gui_export.h"
 
 
@@ -18,17 +19,23 @@ class TOOLKIT_GUI_EXPORT IQVideo
 {
     Q_OBJECT
 
+    mutable std::unique_ptr<insight::TemporaryFile> localFile_;
+
     int delta_w_;
     QLabel *id_;
     QPixmap previewImage_;
 
 protected:
+    boost::filesystem::path ensureFileIsLocallyAvailable() const;
     void setPreviewImage(const QPixmap& pm);
 
 public:
     declareType ( insight::Video::typeName_() );
 
-    IQVideo(QObject* parent, const QString& label, insight::ResultElementPtr rep);
+    IQVideo(
+        QObject* parent,
+        IQHierarchicalDataModel* hdmodel,
+        insight::hierarchicalData::Element* element );
 
     QVariant previewInformation(int role) const override;
     void createFullDisplay(QVBoxLayout *layout) override;

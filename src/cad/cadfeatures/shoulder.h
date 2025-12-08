@@ -36,11 +36,16 @@ class Shoulder
   size_t calcHash() const override;
   void build() override;
   
+  Shoulder(const Shoulder&o, TreeCloneMap& tcm);
   Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax);
 
 public:
   declareType("Shoulder");
+#ifndef SWIG
+  DEPENDS((p0_, dir_, d_, Dmax_));
+#endif
   CREATE_FUNCTION(Shoulder);
+  CLONEABLE(Shoulder);
   
   static void insertrule(parser::ISCADParser& ruleset);
 };

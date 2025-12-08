@@ -9,18 +9,30 @@
 
 
 LocalRun::LocalRun(AnalysisForm *af)
-  : WorkbenchAction(af),
-    workerThread_(
-          af_->analysisName_,
+  : insight::QAnalysisThread(
+          af->psmodel_->getAnalysisName(),
 #warning wait for visualization run to finish, if is running
-          bool(af_->sid_) ?
-            insight::AnalysisThread::ParameterInput( af_->sid_ )
+          bool(af->sid_) ?
+            insight::AnalysisThread::ParameterInput( af->sid_ )
           : insight::AnalysisThread::ParameterInput(
               insight::AnalysisThread::ParameterSetAndExePath{
-                &af_->parameters(), af_->localCaseDirectory() } ),
-          &af->progressDisplayer_ )
+                &af->parameters(), af->localCaseDirectory() } ),
+          &af->progressDisplayer_ ),
+    WorkbenchAction(af)
 {
-  connectAnalysisThread(&workerThread_);
+    // presumption: all signals have to be emitted from another thread!
+    QObject::connect(this, &insight::QAnalysisThread::finished,
+            af, &AnalysisForm::onResultReady,
+            Qt::QueuedConnection);
+
+    QObject::connect(this, &insight::QAnalysisThread::failed,
+            af, &AnalysisForm::onAnalysisError,
+            Qt::QueuedConnection);
+
+    QObject::connect(this, &insight::QAnalysisThread::cancelled,
+            af, &AnalysisForm::onAnalysisCancelled,
+            Qt::QueuedConnection);
+
   af_->progressDisplayer_.reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 }
@@ -29,14 +41,19 @@ LocalRun::LocalRun(AnalysisForm *af)
 
 LocalRun::~LocalRun()
 {
-  workerThread_.interrupt();
-  workerThread_.join();
+  interrupt();
+  join();
 
   af_->progressDisplayer_.reset();
 }
 
 
+std::unique_ptr<insight::ResultSet> LocalRun::moveResults()
+{
+    return std::move(*this);
+}
+
 void LocalRun::onCancel()
 {
-  workerThread_.interrupt();
+  interrupt();
 }

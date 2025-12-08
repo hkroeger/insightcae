@@ -13,17 +13,16 @@ addToFactoryTable(IQParameter, IQBoolParameter);
 IQBoolParameter::IQBoolParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSpecializedParameter<insight::BoolParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {
 }
 
 
-QString IQBoolParameter::valueText() const
+QVariant IQBoolParameter::value() const
 {
   return parameter()() ? "true" : "false";
 }
@@ -78,6 +77,8 @@ QVBoxLayout* IQBoolParameter::populateEditControls(
       p.valueChanged.connect(
           [&p,checkBox]()
           {
+              DBG_SLOT(valueChanged);
+
               QSignalBlocker sb(checkBox);
               checkBox->setCheckState(p()?Qt::Checked:Qt::Unchecked);
           }

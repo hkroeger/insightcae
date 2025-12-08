@@ -1,6 +1,7 @@
 #include "sketchpoint.h"
-
+#include "cadfeature.h"
 #include "datum.h"
+#include "featureset.h"
 #include "constrainedsketch.h"
 
 #include <vtkSmartPointer.h>
@@ -16,6 +17,10 @@ namespace cad {
 defineType(SketchPoint);
 addToStaticFunctionTable(ConstrainedSketchEntity, SketchPoint, addParserRule);
 
+
+SketchPoint::SketchPoint(const SketchPoint &o, TreeCloneMap &tcm)
+    : CL(plane_), x_(o.x_), y_(o.y_)
+{}
 
 SketchPoint::SketchPoint(
     DatumPtr plane,
@@ -42,19 +47,39 @@ void SketchPoint::setCoords2D(double x, double y)
     y_=y;
 }
 
+void SketchPoint::setCoords2D(const arma::mat& xy)
+{
+    setCoords2D(xy(0), xy(1));
+}
+
 arma::mat SketchPoint::coords2D() const
 {
     return vec2(x_, y_);
 }
 
-arma::mat SketchPoint::value() const
+
+size_t SketchPoint::calcHash() const
+{
+    ParameterListHash h;
+    h+=*plane_;
+    h+=x_;
+    h+=y_;
+    return h.getHash();
+}
+
+arma::mat SketchPoint::calcValue() const
 {
     auto pl=plane_->plane();
     return vec3(
         pl.Location()
-            .Translated(pl.XDirection().XYZ()*x_)
-            .Translated(pl.YDirection().XYZ()*y_)
+            .Translated(pl.XDirection().XYZ()*coords2D()(0))
+            .Translated(pl.YDirection().XYZ()*coords2D()(1))
         );
+}
+
+DatumPtr SketchPoint::plane() const
+{
+    return plane_;
 }
 
 int SketchPoint::nDoF() const
@@ -67,8 +92,8 @@ double SketchPoint::getDoFValue(unsigned int iDoF) const
 {
     switch (iDoF)
     {
-    case 0: return x_; break;
-    case 1: return y_; break;
+    case 0: return coords2D()(0); break;
+    case 1: return coords2D()(1); break;
     default:
         throw insight::Exception(
             "invalid DoF index: %d", iDoF );
@@ -81,8 +106,8 @@ void SketchPoint::setDoFValue(unsigned int iDoF, double value)
 {
     switch (iDoF)
     {
-    case 0: x_=value; break;
-    case 1: y_=value; break;
+    case 0: setCoords2D(value, coords2D()(1)); break;
+    case 1: setCoords2D(coords2D()(0), value); break;
     default:
         throw insight::Exception(
             "invalid DoF index: %d", iDoF );
@@ -92,8 +117,10 @@ void SketchPoint::setDoFValue(unsigned int iDoF, double value)
 
 void SketchPoint::scaleSketch(double scaleFactor)
 {
-    x_*=scaleFactor;
-    y_*=scaleFactor;
+    setCoords2D(
+        scaleFactor*coords2D()(0),
+        scaleFactor*coords2D()(1)
+    );
 }
 
 void SketchPoint::generateScriptCommand(
@@ -105,7 +132,7 @@ void SketchPoint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + str(boost::format("%g, %g")%v(0)%v(1))
             + ", layer " + layerName()
             + parameterString()
@@ -132,7 +159,8 @@ void SketchPoint::addParserRule(
                  &SketchPoint::create<DatumPtr, double, double, const std::string&>,
                    ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, phx::ref(*qi::_a)),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5, "."),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
+                    boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -162,11 +190,11 @@ ConstrainedSketchEntityPtr SketchPoint::clone() const
 {
     auto cl=SketchPoint::create(
         plane_,
-        x_, y_,
+        coords2D(),
         layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

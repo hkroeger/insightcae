@@ -18,6 +18,8 @@
  */
 
 #include "wirefillet.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -47,10 +49,15 @@ size_t WireFillet::calcHash() const
 {
   ParameterListHash h;
   h+=*vertices_;
-  h+=r_->value();
+  h+=*r_;
   return h.getHash();
 }
 
+
+
+WireFillet::WireFillet(const WireFillet&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(vertices_), CL(r_)
+{}
 
 
 
@@ -185,7 +192,8 @@ void WireFillet::insertrule(parser::ISCADParser& ruleset)
     "WireFillet",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' >> ruleset.r_vertexFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_vertexFeaturesExpression > ','
+             > ruleset.r_scalarExpression > ')' )
       [ qi::_val = phx::bind(
                          &WireFillet::create<FeatureSetPtr, ScalarPtr>,
                          qi::_1, qi::_2) ]

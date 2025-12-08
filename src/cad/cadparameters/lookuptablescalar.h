@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_LOOKUPTABLESCALAR_H
 
 #include "cadparameter.h"
+#include "cadtypes.h"
 
 namespace insight 
 {
@@ -35,8 +36,15 @@ class LookupTableScalar
   ScalarPtr keyval_;
   std::string depcol_;
   bool select_nearest_;
+
+  LookupTableScalar(const LookupTableScalar& o, TreeCloneMap& tcm);
   
 public:
+#ifndef SWIG
+    DEPENDS((keyval_));
+#endif
+  CLONEABLE(LookupTableScalar);
+
   LookupTableScalar
   (
     const std::string& name, 
@@ -46,7 +54,8 @@ public:
     bool select_nearest=false
   );
   
-  virtual double value() const;
+  size_t calcHash() const override;
+  double calcValue() const override;
 };
 }
 }

@@ -35,26 +35,33 @@ class DerivedFeature
   ConstFeaturePtr basefeat_;
 
 protected:
+  size_t calcHash() const override;
+  DerivedFeature(const DerivedFeature&o, TreeCloneMap& tcm);
   DerivedFeature(ConstFeaturePtr basefeat);
 
 public:
   declareType("DerivedFeature");
+#ifndef SWIG
+  DEPENDS((basefeat_));
+#endif
   
   inline void setBaseFeat(ConstFeaturePtr basefeat) { basefeat_=basefeat; }
+  ConstFeaturePtr baseFeature() const;
+
+  double density() const override;
+  double areaWeight() const override;
+  double mass(double density_ovr=-1., double aw_ovr=-1.) const override;
+  arma::mat modelCoG(double density_ovr=-1.) const override;
+  arma::mat modelInertia(double density_ovr=-1.) const override;
   
-  virtual double density() const;
-  virtual double areaWeight() const;
-  virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
-  virtual arma::mat modelCoG(double density_ovr=-1.) const;
-  virtual arma::mat modelInertia(double density_ovr=-1.) const;
-  
-  virtual bool isSingleEdge() const;
-  virtual bool isSingleOpenWire() const;
-  virtual bool isSingleClosedWire() const;
-  virtual bool isSingleWire() const;
-  virtual bool isSingleFace() const;
-  virtual bool isSingleVolume() const;
-  
+  bool isSingleEdge() const override;
+  bool isSingleOpenWire() const override;
+  bool isSingleClosedWire() const override;
+  bool isSingleWire() const override;
+  bool isSingleFace() const override;
+  bool isSingleVolume() const override;
+
+  void operator=(const DerivedFeature& o);
 };
 
 

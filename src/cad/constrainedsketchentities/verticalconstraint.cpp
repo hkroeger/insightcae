@@ -1,5 +1,6 @@
 #include "verticalconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
 
@@ -80,8 +81,8 @@ void VerticalConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + boost::lexical_cast<std::string>(myLabel) + ", "
-            + boost::lexical_cast<std::string>(entityLabels.at(line_.get()))
+            + toString(myLabel) + ", "
+            + toString(entityLabels.at(line_.get()))
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -113,7 +114,8 @@ void VerticalConstraint::addParserRule(
                  &VerticalConstraint::create<std::shared_ptr<Line>, const std::string& >,
                  phx::bind(&ConstrainedSketch::get<Line>, ruleset.sketch, qi::_2), qi::_3 ),
             phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-            phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4, "."),
+            phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4,
+                boost::filesystem::path(".") ),
             qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
         );
 }
@@ -158,7 +160,7 @@ ConstrainedSketchEntityPtr VerticalConstraint::clone() const
     auto cl=VerticalConstraint::create( line_, layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

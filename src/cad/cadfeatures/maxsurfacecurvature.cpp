@@ -1,5 +1,6 @@
 #include "maxsurfacecurvature.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -297,6 +298,12 @@ void MaxSurfaceCurvature::build()
 
 
 
+MaxSurfaceCurvature::MaxSurfaceCurvature(
+    const MaxSurfaceCurvature&o, TreeCloneMap& tcm)
+    : CL(faces_)
+{}
+
+
 
 MaxSurfaceCurvature::MaxSurfaceCurvature(FeatureSetPtr faces)
 : faces_(faces)
@@ -322,7 +329,7 @@ void MaxSurfaceCurvature::insertrule(parser::ISCADParser& ruleset)
     "MaxSurfaceCurvature",
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_faceFeaturesExpression >> ')' )
+    ( '(' > ruleset.r_faceFeaturesExpression > ')' )
         [ qi::_val = phx::bind(
                        &MaxSurfaceCurvature::create<FeatureSetPtr>,
                        qi::_1) ]

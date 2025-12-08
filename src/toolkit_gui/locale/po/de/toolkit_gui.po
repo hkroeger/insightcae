@@ -7,7 +7,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-04 12:38+0200\n"
 "PO-Revision-Date: 2024-03-11 11:31+0100\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
@@ -17,52 +16,93 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: qtextensions.cpp:112
 msgid "Save file"
 msgstr "Datei speichern"
 
-#: qtextensions.cpp:120
 msgid "Open file"
 msgstr "Datei öffnen"
 
-#: iqundoredostack.cpp:75
-msgid "undo sketch editing step"
-msgstr ""
+#, c-format
+msgid "image file \"%s\" does not exist"
+msgstr "die Bitmap-Datei \"%s\" existiert nicht"
 
-#: iqundoredostack.cpp:80
+#, c-format
+msgid "could not create reader for file \"%s\""
+msgstr "konnte die Datei %1 nicht erzeugen"
+
+msgid "Could not load background image"
+msgstr "Konnte das Hintergrundbild nicht laden"
+
+msgid "A background image could not be restored."
+msgstr "Ein Hintergrundbild konnte nicht wiederhergestellt werden."
+
+msgid "Reason:"
+msgstr "Grund:"
+
+msgid "Nothing to be undone"
+msgstr "Nichts rückgängig zu machen"
+
+msgid "Nothing to be redone"
+msgstr "Nichts wiederherzustellen"
+
+msgid "perform undo step"
+msgstr "Rückgängig machen"
+
 #, c-format
 msgid "undo step %s"
-msgstr ""
+msgstr "%s rückgängig machen"
 
-#: iqundoredostack.cpp:108
-msgid "redo sketch editing step"
-msgstr ""
+msgid "perform redo step"
+msgstr "Wiederherstellen"
 
-#: iqundoredostack.cpp:113
 #, c-format
 msgid "redo step %s"
-msgstr ""
+msgstr "%s wiederherstellen"
 
-#: iqparameters/iqlabeledarrayelementparameter.cpp:139
+msgid "Visible"
+msgstr "Sichtbar"
+
+msgid "Layer name"
+msgstr "Layername"
+
+msgid "Remove"
+msgstr "Entfernen"
+
+msgid "Rename..."
+msgstr "Umbenennen..."
+
+msgid "Rename layer"
+msgstr "Layer umbenennen"
+
+msgid "Please enter new layer name:"
+msgstr "Neuen Layernamen eingeben:"
+
+msgid "The visualization could not be generated."
+msgstr "Die Visualisierung konnte nicht erzeugt werden."
+
 msgid "Change Item Label"
 msgstr "Bezeichner ändern"
 
-#: iqparameters/iqlabeledarrayelementparameter.cpp:139
 msgid "New label:"
 msgstr "Neuer Bezeichner:"
 
-#: iqresultsetdisplayerwidget.cpp:150
 msgid "Load result set"
-msgstr ""
+msgstr "Ergebnisse laden"
 
-#: iqresultsetdisplayerwidget.cpp:152
 msgid "InsightCAE Result Set"
+msgstr "InsightCAE Ergebnisdaten"
+
+msgid "An error has occurred"
 msgstr ""
 
-#: logviewerwidget.cpp:136
+msgid "Stack trace"
+msgstr ""
+
+msgid "More details on error origin."
+msgstr ""
+
 msgid "Create file failed"
 msgstr "Erzeugen der Datei fehlgeschlagen"
 
-#: logviewerwidget.cpp:137
 msgid "Could not create file %1"
 msgstr "Konnte die Datei %1 nicht erzeugen"

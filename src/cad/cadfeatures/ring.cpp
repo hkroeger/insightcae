@@ -18,6 +18,8 @@
  */
 
 #include "ring.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -44,13 +46,17 @@ size_t Ring::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=Da_->value();
-  h+=Di_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*Da_;
+  h+=*Di_;
   return h.getHash();
 }
 
+
+Ring::Ring(const Ring&o, TreeCloneMap& tcm)
+: CL(p1_), CL(p2_), CL(Da_), CL(Di_)
+{}
 
 
 Ring::Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
@@ -98,7 +104,10 @@ void Ring::insertrule(parser::ISCADParser& ruleset)
     "Ring",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression > ')' )
         [ qi::_val = phx::bind(
                        &Ring::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4) ]

@@ -62,6 +62,78 @@ namespace insight
 {
 
 
+std::set<boost::filesystem::path> wildcardSearch(
+    const boost::filesystem::path &rootPattern )
+{
+    std::set<fs::path> results;
+
+    std::vector<boost::regex> patternParts;
+    for (const auto& part : rootPattern)
+    {
+        patternParts.emplace_back(
+            boost::regex(part.string()) );
+    }
+
+    fs::path start;
+    int startIdx=0;
+    if (rootPattern.is_absolute())
+    {
+#ifdef WIN32
+        start = fs::path(rootPattern.root_path());
+        if (start.empty())
+        {
+            start = fs::current_path().root_path();
+        }
+        startIdx=2;
+#else
+        start = fs::path("/");
+#endif
+    }
+    else
+    {
+        start = fs::current_path();
+    }
+
+    std::cout<<start<<std::endl;
+
+    std::function<void(fs::path, size_t)> recurse;
+    recurse = [&](fs::path current, size_t depth)
+    {
+        if (depth == patternParts.size())
+        {
+            results.insert(current);
+            return;
+        }
+
+        if (!fs::exists(current) || !fs::is_directory(current))
+            return;
+
+        if (patternParts[depth].expression()==std::string("."))
+        {
+            recurse(current, depth + 1);
+        }
+        else
+        {
+            const boost::regex& r = patternParts[depth];
+
+            for (fs::directory_iterator it(current), end; it != end; ++it)
+            {
+                const std::string name = it->path().filename().string();
+
+                if (!boost::regex_match(name, r))
+                    continue;
+
+                recurse(it->path(), depth + 1);
+            }
+        }
+    };
+
+    recurse(start, startIdx);
+
+    return results;
+}
+
+
 const std::string base64_padding[] = {"", "==","="};
 
 
@@ -554,9 +626,12 @@ boost::filesystem::path SharedPathList::findFirstWritableLocation(
 
 
 ExecTimer::ExecTimer(const std::string& name)
-: boost::timer::auto_cpu_timer(boost::timer::default_places, name+": END %ws wall, %us usr + %ss sys = %ts CPU (%p%)\n")
+: boost::timer::auto_cpu_timer(
+          insight::dbg(DeepDetail),
+          boost::timer::default_places,
+          name+": END %ws wall, %us usr + %ss sys = %ts CPU (%p%)\n")
 {
-    std::cout<< ( name+": BEGIN\n" );
+    insight::dbg(DeepDetail) << ( name+": BEGIN\n" );
 }
 
 
@@ -565,27 +640,52 @@ ExecTimer::~ExecTimer()
 
 
 
-void copyDirectoryRecursively(const path& sourceDir, const path& destinationDir)
+void copyDirectoryRecursively(
+    const path& sourceDir,
+    const path& destinationDir,
+    bool failIfTargetExists )
 {
     if (!exists(sourceDir) || !is_directory(sourceDir))
     {
         throw std::runtime_error("Source directory " + sourceDir.string() + " does not exist or is not a directory");
     }
+
     if (exists(destinationDir))
     {
-        throw std::runtime_error("Destination directory " + destinationDir.string() + " already exists");
+        if (failIfTargetExists)
+        {
+            throw std::runtime_error("Destination directory " + destinationDir.string() + " already exists");
+        }
     }
-    if (!create_directory(destinationDir))
+    else if (!create_directory(destinationDir))
     {
         throw std::runtime_error("Cannot create destination directory " + destinationDir.string());
     }
 
-    for (const auto& dirEnt : boost::make_iterator_range(recursive_directory_iterator{sourceDir}, {}))
+    for (const auto& dirEnt : boost::make_iterator_range(directory_iterator{sourceDir}, {}))
     {
         const auto& path = dirEnt.path();
         auto relativePathStr = path.string();
         boost::replace_first(relativePathStr, sourceDir.string(), "");
-        copy(path, destinationDir / relativePathStr);
+
+        auto from = path;
+        auto to = destinationDir / relativePathStr;
+
+        insight::dbg()<<"copy "<<from<<" to "<<to<<std::endl;
+
+        file_status s(symlink_status(from));
+        if (is_symlink(s))
+            copy_symlink(from, to);
+        else if (is_directory(s))
+        {
+            copyDirectoryRecursively(from, to, failIfTargetExists);
+        }
+        else if (is_regular_file(s))
+        {
+            copy_file(from, to,
+                      failIfTargetExists ? copy_option::fail_if_exists
+                                         : copy_option::overwrite_if_exists);
+        }
     }
 }
 
@@ -1058,12 +1158,13 @@ void TemplateFile::replace(const string &keyword, const string &content)
 
 void TemplateFile::write(ostream &os) const
 {
-  os.write(this->c_str(), long(this->size()) );
+  // os.write(this->c_str(), long(this->size()) );
+    os << *this << endl;
 }
 
 void TemplateFile::write(const path &outfile) const
 {
-  std::ofstream f(outfile.string(), ios::binary);
+  std::ofstream f(outfile.string()/*, ios::binary*/);
   write(f);
 }
 
@@ -1119,20 +1220,109 @@ void RSyncOutputAnalyzer::update(const std::string& line)
 }
 
 
+template <typename T>
+bool is_only_a(const std::string& str)
+{
+    std::stringstream ss(str);
+    T x;
+    return (ss >> x && ss.rdbuf()->in_avail() ==0);
+}
+
+
+template<>
+std::string toString(const arma::mat&value)
+{
+    std::string s;
+    for (arma::uword i=0; i<value.n_elem; i++)
+    {
+        if (i>0) s+=" ";
+        s += toString<double>(value(i));
+    }
+    return s;
+}
+
+template<>
+std::string toString(const std::string& s)
+{
+    return s;
+}
+
+template<>
+std::string toString(const boost::gregorian::date &date)
+{
+    return boost::gregorian::to_simple_string(date);
+}
+
+template<>
+std::string toString(const boost::posix_time::ptime &datetime)
+{
+    return boost::posix_time::to_simple_string(datetime);
+}
+
 
 
 
 bool isNumber(const string &s)
 {
-  try {
-    auto result = boost::lexical_cast<double>(s);
-    return true;
-  }
-  catch (const boost::bad_lexical_cast&)
-  {
-    return false;
-    }
+    return
+       is_only_a<unsigned long>(s)
+    || is_only_a<int>(s)
+    || is_only_a<float>(s);
+
+  // try {
+  //   auto result = boost::lexical_cast<double>(s);
+  //   return true;
+  // }
+  // catch (const boost::bad_lexical_cast&)
+  // {
+  //   return false;
+  //   }
 }
+
+
+
+
+template<>
+arma::mat toValue(const std::string& s)
+{
+    CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "converting string \""+s+"\" into vector", false);
+
+    std::vector<std::string> cmpts;
+    auto st = boost::trim_copy(s);
+    boost::split(
+        cmpts,
+        st,
+        boost::is_any_of(" \t\n,;"),
+        token_compress_on
+        );
+    std::vector<double> vals;
+    for (size_t i=0; i<cmpts.size(); i++)
+    {
+        vals.push_back( toNumber<double>(cmpts[i]) );
+    }
+
+    return arma::mat(vals.data(), vals.size(), 1);
+}
+
+template<>
+std::string toValue(const std::string& s)
+{
+    return s;
+}
+
+template<>
+boost::gregorian::date toValue(const std::string& s)
+{
+    return boost::gregorian::from_simple_string(s);
+}
+
+
+template<>
+boost::posix_time::ptime toValue(const std::string& s)
+{
+    return boost::posix_time::time_from_string(s);
+}
+
 
 
 
@@ -1204,5 +1394,22 @@ OperatingSystem currentOperatingSystem =
     UnknownOS
 #endif
 ;
+
+int realNp(int userInputNp)
+{
+    if (userInputNp>0)
+    {
+        return userInputNp;
+    }
+    else
+    {
+        return std::max<int>(
+            1,
+            boost::thread::physical_concurrency()+userInputNp
+            );
+    }
+}
+
+
 
 }

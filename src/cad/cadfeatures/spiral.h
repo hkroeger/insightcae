@@ -38,11 +38,16 @@ class Spiral
   size_t calcHash() const override;
   void build() override;
 
+  Spiral(const Spiral&o, TreeCloneMap& tcm);
   Spiral(VectorPtr p0, VectorPtr axis, ScalarPtr n, ScalarPtr a, ScalarPtr P);
 
 public:
   declareType("Spiral");
+#ifndef SWIG
+  DEPENDS((p0_, axis_, n_, a_, P_));
+#endif
   CREATE_FUNCTION(Spiral);
+  CLONEABLE(Spiral);
 
   static void insertrule(parser::ISCADParser& ruleset);
 

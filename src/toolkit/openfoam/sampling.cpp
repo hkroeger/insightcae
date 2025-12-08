@@ -1,5 +1,6 @@
 #include "sampling.h"
 
+#include "base/exception.h"
 #include "openfoam/openfoamtools.h"
 
 
@@ -33,13 +34,26 @@ void line::addIntoDictionary(const OpenFOAMCase& /*ofc*/, OFDictData::dict& samp
   OFDictData::list& l=sampleDict.getList("sets");
 
   OFDictData::dict sd;
-  sd["type"]="consistentCurve";
   sd["axis"]="distance";
 
-  OFDictData::list pl;
-  for (arma::uword i=0; i<p().points.n_rows; i++)
-    pl.push_back(OFDictData::vector3(p().points.row(i).t()));
-  sd["points"]=pl;
+  if (p().samplePointsAtFace)
+  {
+      insight::assertion(
+          p().points.n_rows>=2,
+          "at last a start and end point are needed");
+
+      sd["type"]="face";
+      sd["start"]=OFDictData::vector3(p().points.row(0).t());
+      sd["end"]=OFDictData::vector3(p().points.row(p().points.n_rows-1).t());
+  }
+  else
+  {
+      sd["type"]="consistentCurve";
+      OFDictData::list pl;
+      for (arma::uword i=0; i<p().points.n_rows; i++)
+        pl.push_back(OFDictData::vector3(p().points.row(i).t()));
+      sd["points"]=pl;
+  }
 
   l.push_back(p().name);
   l.push_back(sd);
@@ -57,7 +71,8 @@ arma::mat line::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   ColumnDescription* coldescr,
-  const std::string& time
+  const std::string& time,
+  const std::string& region
 ) const
 {
   arma::mat data;
@@ -75,6 +90,9 @@ arma::mat line::readSamples
   {
     fp=absolute(location)/"postProcessing"/"sets";
   }
+
+  if (!region.empty())
+      fp/=region;
 
   TimeDirectoryList tdl=listTimeDirectories(fp);
 
@@ -163,7 +181,8 @@ arma::mat line::readSamples
   arma::mat rdata;
   if (data.n_cols>0)
   {
-
+      if (!p().samplePointsAtFace)
+      {
     // compute expected length coordinates from prescribed sampling points => coords
     std::vector<double> d;
     d.push_back(0.0);
@@ -185,6 +204,11 @@ arma::mat line::readSamples
 
     // combine expected coords with interpolated data
     rdata=join_rows( coords, idata );
+      }
+      else
+      {
+          rdata=data;
+      }
   }
 
 //   return data;
@@ -198,7 +222,10 @@ uniformLine::uniformLine(ParameterSetInput ip)
   l_
   (
         line::Parameters()
-          .set_points( arma::linspace(0,1.,p().np)*(p().end-p().start).t() + arma::ones(p().np,1)*p().start.t() )
+          .set_points(
+                  arma::linspace(0,1.,std::max<int>(2,p().np)) * (p().end-p().start).t()
+                  + arma::ones(std::max<int>(2,p().np),1) * p().start.t() )
+          .set_samplePointsAtFace(p().np==0)
           .set_name(p().set::Parameters::name
     )
   )
@@ -218,9 +245,10 @@ arma::mat uniformLine::readSamples(
     const OpenFOAMCase& ofc,
     const boost::filesystem::path& location,
     ColumnDescription* coldescr,
-    const std::string& time ) const
+    const std::string& time,
+    const std::string& region ) const
 {
-  return l_.readSamples(ofc, location, coldescr, time);
+  return l_.readSamples(ofc, location, coldescr, time, region);
 }
 
 
@@ -269,7 +297,8 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   ColumnDescription* coldescr,
-  const std::string& time
+  const std::string& time,
+    const std::string& region
 ) const
 {
   arma::mat data;
@@ -278,7 +307,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
   bool cd_set=false;
   for (const line& l: lines_)
   {
-    arma::mat datai = l.readSamples(ofc, location, &cd, time);
+    arma::mat datai = l.readSamples(ofc, location, &cd, time, region);
     arma::mat Ri=rotMatrix(i++, p().angularOffset).t();
 
     if (datai.n_cols>1)
@@ -297,7 +326,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
       else
       {
             for (size_t c=0; c<ci.ncmpt; c++)
-          f<<" "+fn.first+"_"+boost::lexical_cast<std::string>(c);
+          f<<" "+fn.first+"_"+toString(c);
       }
       //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
     }
@@ -347,13 +376,14 @@ arma::mat circumferentialAveragedUniformLine::readSamples
     }
     else
     {
-      throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity (name "
-        +fn.first+", col="+boost::lexical_cast<std::string>(ci.col)+") with "
-          +boost::lexical_cast<std::string>(ci.ncmpt)+" components. Don't know how to handle.");
+      throw insight::Exception(
+            "circumferentialAveragedUniformLine::readSamples:"
+            " encountered quantity (name %s, col=%d) with %d components."
+            " Don't know how to handle.",
+            fn.first.c_str(), ci.col, ci.ncmpt
+            );
     }
       }
-
-      //datai.save(p().name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
 
       if (data.n_cols==0)
     data=datai;
@@ -428,7 +458,8 @@ arma::mat linearAveragedPolyLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   ColumnDescription* coldescr,
-  const std::string& time
+  const std::string& time,
+    const std::string& region
 ) const
 {
   arma::mat data; // only the data, without coordinate column!
@@ -437,7 +468,7 @@ arma::mat linearAveragedPolyLine::readSamples
   int valid_lines=0;
   for (const line& l: lines_)
   {
-    arma::mat ds=l.readSamples(ofc, location, &cd, time);
+    arma::mat ds=l.readSamples(ofc, location, &cd, time, region);
     if (ds.n_rows>0)
     {
       arma::mat datai = Interpolator(ds)(x_);
@@ -514,10 +545,11 @@ arma::mat linearAveragedUniformLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   ColumnDescription* coldescr,
-  const std::string& time
+  const std::string& time,
+    const std::string& region
 ) const
 {
-  return pl_.readSamples(ofc, location, coldescr, time);
+  return pl_.readSamples(ofc, location, coldescr, time, region);
 }
 
 

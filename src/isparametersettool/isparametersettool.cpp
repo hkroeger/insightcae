@@ -21,6 +21,7 @@
 
 #include "base/parameters.h"
 #include "base/cppextensions.h"
+#include "base/rapidxml.h"
 #include "base/translations.h"
 #include "base/toolkitversion.h"
 #include "base/tools.h"
@@ -117,38 +118,16 @@ int main(int argc, char *argv[])
             exit(-1);
         }
 
-        std::string contents, analysisName;
+        std::string analysisName;
 
         boost::filesystem::path fn = vm["input-file"].as<std::string>();
         auto inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
         auto filestem = fn.stem().string();
 
-        if (!boost::filesystem::exists(fn))
-        {
-            std::cerr << std::endl
-                      << _("Error: input file does not exist")<<": "<<fn
-                      <<std::endl<<std::endl;
-            exit(-1);
-        }
 
-        readFileIntoString(fn, contents);
+        auto parameters = std::make_unique<AnalysisParameterSet>();
+        parameters->readFromFile(fn);
 
-        xml_document<> doc;
-        doc.parse<0>(&contents[0]);
-
-        xml_node<> *rootnode = doc.first_node("root");
-
-        xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-        if (analysisnamenode)
-        {
-            analysisName = analysisnamenode->first_attribute("name")->value();
-        }
-
-
-        auto parameters =
-            insight::Analysis::defaultParameters()(analysisName);
-
-        parameters->readFromNode( std::string(), *rootnode, inputFileParentPath );
 
         if (vm.count("merge"))
         {
@@ -157,19 +136,24 @@ int main(int argc, char *argv[])
             {
                 std::vector<std::string> cargs;
                 boost::split(cargs, ist, boost::is_any_of(":"));
-                if (cargs.size()==1)
+                if (cargs.size()>0)
                 {
-                    // 	ParameterSet to_merge;
-                    parameters->readFromFile(ist);
-                }
-                else if (cargs.size()==3)
-                {
-                    parameters->getParameter(cargs[2]).readFromFile(cargs[0], cargs[1]);
+                    insight::assertion(
+                        cargs.size()==1 || cargs.size()==3,
+                        _("merge command needs either one or three arguments!\nGot: %s"),
+                        ist.c_str() );
+
+                    boost::optional<AnalysisParameterSet::ParameterPath_SubNodePath> subset;
+                    if (cargs.size()==3)
+                    {
+                        subset=AnalysisParameterSet::ParameterPath_SubNodePath
+                            {cargs[1], cargs[2]};
+                    }
+                    parameters->mergeIncompatibleParameterSet(cargs[0], subset);
                 }
                 else
                 {
-                    throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"),
-                                             ist.c_str());
+                    throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"), ist.c_str());
                 }
             }
         }
@@ -247,9 +231,9 @@ int main(int argc, char *argv[])
 
         return 0;
     }
-    catch (std::exception& ex)
+    catch (...)
     {
-        insight::printException(ex);
+        insight::printCurrentException();
         return -1;
     }
 }

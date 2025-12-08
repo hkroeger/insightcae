@@ -2,6 +2,7 @@
 #define INSIGHT_CHART_H
 
 
+#include "base/hierarchicalelement.h"
 #include "base/resultelementcollection.h"
 
 
@@ -30,8 +31,9 @@ struct PlotCurveStyle
   ADD(ax_y, y, int, 1)
 
   PlotCurveStyle& no_t() { title_=""; return *this; }
-
 #undef ADD
+
+  bool operator==(const PlotCurveStyle& o) const;
 };
 
 
@@ -84,6 +86,8 @@ struct PlotCurve {
     std::string title() const;
     const arma::mat& xy() const;
     const std::string& plaintextlabel() const;
+
+    bool operator==(const PlotCurve o) const;
 };
 
 
@@ -98,20 +102,24 @@ struct PlotCurveList
  PlotCurveList(std::vector<PlotCurve>::const_iterator begin, std::vector<PlotCurve>::const_iterator end);
 
  bool include_zero=true;
+
+ bool operator==(const PlotCurveList o) const;
 };
 
 
 
 
-
+#ifndef SWIG
 struct ChartData
 {
   std::string xlabel_;
   std::string ylabel_;
   PlotCurveList plc_;
   std::string addinit_;
-};
 
+  bool operator==(const ChartData o) const;
+};
+#endif
 
 
 
@@ -138,44 +146,43 @@ public:
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
     void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
     /**
      * append the contents of this element to the given xml node
      */
-    rapidxml::xml_node<>* appendToNode
-    (
-        const std::string& name,
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
-    ) const override;
-
-    void readFromNode
+    rapidxml::xml_node<>*
+    appendToNode
         (
             const std::string& name,
-            rapidxml::xml_node<>& node
-        ) override;
+            rapidxml::xml_document<>& doc,
+            rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
+            ) const override;
 
-    ResultElementPtr clone() const override;
+    const rapidxml::xml_node<>*
+    readFromNode
+        (
+            const std::string& name,
+            const rapidxml::xml_node<>& node
+            ) override;
+
+    int nChildren() const override;
+
+    bool isEqual(const Element& op) const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 
 std::string yRangeExpression(double mi, double ma, double boundaryBySpan=0.2);
 
 
-insight::ResultElement& addPlot
-(
-    std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& workdir,
-    const std::string& resultelementname,
-    const std::string& xlabel,
-    const std::string& ylabel,
-    const PlotCurveList& plc,
-    const std::string& shortDescription,
-    const std::string& addinit = "",
-    const std::string& watermarktext = ""
-);
 
 
 insight::ResultElement& addPlot

@@ -18,6 +18,8 @@
  */
 
 #include "partition.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -56,6 +58,11 @@ size_t Partition::calcHash() const
 
 
 
+
+Partition::Partition(const Partition&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm),
+    CL(m1_), CL(m2_)
+{}
 
 
 
@@ -98,7 +105,8 @@ void Partition::insertrule(parser::ISCADParser& ruleset)
     "Partition",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_solidmodel_expression > ')' )
     [ qi::_val = phx::bind(
                        &Partition::create<FeaturePtr, FeaturePtr>,
                        qi::_1, qi::_2) ]

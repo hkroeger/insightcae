@@ -18,6 +18,8 @@
  */
 
 #include "gluefaces.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "occinclude.h"
 
 #include "BRepCheck_Shell.hxx"
@@ -51,9 +53,14 @@ size_t GlueFaces::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*feat_;
-  h+=tol_->value();
+  h+=*tol_;
   return h.getHash();
 }
+
+
+GlueFaces::GlueFaces(const GlueFaces&o, TreeCloneMap& tcm)
+    : CL(feat_), CL(tol_)
+{}
 
 
 GlueFaces::GlueFaces(FeaturePtr feat, ScalarPtr tol)
@@ -87,9 +94,9 @@ void GlueFaces::insertrule(parser::ISCADParser& ruleset)
     "GlueFaces",
      std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression 
-	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) 
-      >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression
+      > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) )
+      > ')' )
       [ qi::_val = phx::bind(
                        &GlueFaces::create<FeaturePtr, ScalarPtr>,
                        qi::_1, qi::_2) ]

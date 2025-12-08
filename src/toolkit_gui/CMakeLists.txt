@@ -20,6 +20,7 @@ find_package(VTK
 
 set(toolkit_gui_SRCS
  qtextensions.h qtextensions.cpp
+ translations.cpp
 
  iqgroupingitemmodel.h iqgroupingitemmodel.cpp
 
@@ -28,7 +29,7 @@ set(toolkit_gui_SRCS
  iscadmetatyperegistrator.cpp
  iscadmetatyperegistrator.h
 
- dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp dialogs/defineplanedialog.ui
+ dialogs/defineplanedialog.h dialogs/defineplanedialog.cpp
 
 
  cadmodel3dviewer.h cadmodel3dviewer.cpp
@@ -47,6 +48,8 @@ set(toolkit_gui_SRCS
  qoccviewwidget.h qoccviewwidget.cpp
  iqcadmodel3dviewer.h iqcadmodel3dviewer.cpp
  iqvtkcadmodel3dviewer.h iqvtkcadmodel3dviewer.cpp
+
+ editorwithsavablestate.h editorwithsavablestate.cpp
 
  iqundoredostack.h iqundoredostack.cpp
  iqcadmodel3dviewer/iqvtkviewerstate.h iqcadmodel3dviewer/iqvtkviewerstate.cpp
@@ -72,9 +75,8 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkselectcadentity.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.cpp
  iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.h iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.cpp
- iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.cpp iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.ui
- iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.cpp iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.ui
-
+ iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.h iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.cpp
+ iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.cpp
 
  iqvtkconstrainedsketcheditor.h iqvtkconstrainedsketcheditor.cpp
  iqvtkconstrainedsketcheditor/iqvtkdragpoint.h iqvtkconstrainedsketcheditor/iqvtkdragpoint.cpp
@@ -84,10 +86,11 @@ set(toolkit_gui_SRCS
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawpoint.cpp
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.cpp
  iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawrectangle.cpp
+ iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawarc.h iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawarc.cpp
  iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchlayerlistmodel.cpp
  iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.h iqvtkconstrainedsketcheditor/iqconstrainedsketchentitylistmodel.cpp
  iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.h iqvtkconstrainedsketcheditor/iqvtkselectconstrainedsketchentity.cpp
-
+ iqvtkconstrainedsketcheditor/iqvtksplitline.h iqvtkconstrainedsketcheditor/iqvtksplitline.cpp
 
  iqcadtransformationcommand.h iqcadtransformationcommand.cpp
  iqvectordirectioncommand.h iqvectordirectioncommand.cpp
@@ -124,14 +127,15 @@ set(toolkit_gui_SRCS
  postprocactionvisualizers/anglevisualizer.cpp
  postprocactionvisualizers/solidpropertiesvisualizer.cpp
 
- insightcae_gui.qrc
-
     parametereditorwidget.cpp
     iqoccparametersetdisplay.h iqoccparametersetdisplay.cpp
     iqvtkparametersetdisplay.h iqvtkparametersetdisplay.cpp
 
     iqremoteexecutionstate.h iqremoteexecutionstate.cpp
 
+
+    iqhierarchicaldatamodel.h iqhierarchicaldatamodel.cpp
+    iqhierarchicaldataelement.h iqhierarchicaldataelement.cpp
     iqparametersetmodel.h iqparametersetmodel.cpp
     iqfilteredparametersetmodel.h iqfilteredparametersetmodel.cpp
 
@@ -164,25 +168,23 @@ set(toolkit_gui_SRCS
 
     iqremoteservereditdialog.h
     iqremoteservereditdialog.cpp
-    iqremoteservereditdialog.ui
 
     iqselectremotehosttypedialog.h
     iqselectremotehosttypedialog.cpp
-    iqselectremotehosttypedialog.ui
 
     iqremoteserverlistmodel.h
     iqremoteserverlistmodel.cpp
 
-    iqaddfilterdialog.cpp iqaddfilterdialog.h iqaddfilterdialog.ui
-    iqselectresultelementsdialog.h iqselectresultelementsdialog.cpp iqselectresultelementsdialog.ui
-    iqresultsetdisplayerwidget.h iqresultsetdisplayerwidget.cpp iqresultsetdisplayerwidget.ui
+    iqaddfilterdialog.cpp iqaddfilterdialog.h
+    iqselectresultelementsdialog.h iqselectresultelementsdialog.cpp
+    iqresultsetdisplayerwidget.h iqresultsetdisplayerwidget.cpp
 
     iqdebugstream.cpp iqdebugstream.h
     qinsighterror.cpp qinsighterror.h
     email.cpp email.h
     mimetypemanager.cpp mimetypemanager.h
 
-    of_clean_case.cpp of_clean_case.h of_clean_case.ui
+    of_clean_case.cpp of_clean_case.h
     snappyhexmesh_gui.cpp snappyhexmesh_gui.h
     cadparametersetvisualizer.cpp cadparametersetvisualizer.h
     logviewerwidget.cpp logviewerwidget.h
@@ -190,7 +192,7 @@ set(toolkit_gui_SRCS
     progressrelay.cpp progressrelay.h
     insightcaeapplication.cpp insightcaeapplication.h
     iqremotefoldermodel.h iqremotefoldermodel.cpp
-    remotedirselector.cpp remotedirselector.h remotedirselector.ui
+    remotedirselector.cpp remotedirselector.h
     remotesync.cpp remotesync.h
     sdmdiarea.cpp sdmdiarea.h
     blockmesh_gui.cpp blockmesh_gui.h
@@ -198,26 +200,27 @@ set(toolkit_gui_SRCS
     blockmeshvisualization.h blockmeshvisualization.cpp
     #blockmesh_cylwedgeortho_gui.cpp
     metatypes.cpp metatypes.h
-    iqparaviewdialog.h iqparaviewdialog.cpp iqparaviewdialog.ui
-    iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h iqremoteparaviewdialog.ui
+    iqparaviewdialog.h iqparaviewdialog.cpp
+    iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h
     iqfiledownloader.h iqfiledownloader.cpp
     iqwaitanimation.h iqwaitanimation.cpp
     analysisguilibrary.h analysisguilibrary.cpp
     wslinstallation.h wslinstallation.cpp
     iqexternalprogramsmodel.h iqexternalprogramsmodel.cpp
 
-    iqcadexceptiondisplaydialog.h iqcadexceptiondisplaydialog.cpp iqcadexceptiondisplaydialog.ui
+    iqcadexceptiondisplaydialog.h iqcadexceptiondisplaydialog.cpp
 
-    iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp iqconfigureexternalprogramsdialog.ui
+    iqconfigureexternalprogramsdialog.h iqconfigureexternalprogramsdialog.cpp
     iqglobalconfigurationmodel.h
-    iqmanagereporttemplatesdialog.h iqmanagereporttemplatesdialog.cpp iqmanagereporttemplatesdialog.ui
+    iqmanagereporttemplatesdialog.h iqmanagereporttemplatesdialog.cpp
 
-    iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp iqsetupwsldistributionwizard.ui
+    iqsetupwsldistributionwizard.h iqsetupwsldistributionwizard.cpp
 
     qanalysisthread.cpp qanalysisthread.h
     qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
     iqresultsetmodel.cpp iqresultsetmodel.h
+    iqfilteredresultsetmodel.h iqfilteredresultsetmodel.cpp
     qresultelements/qcomment.cpp qresultelements/qcomment.h
     qresultelements/qimage.cpp qresultelements/qimage.h
     qresultelements/iqvideo.cpp qresultelements/iqvideo.h
@@ -231,9 +234,26 @@ set(toolkit_gui_SRCS
 
 
 
-SET(toolkit_gui_RCCS toolkit_gui.qrc)
-
-add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_RCCS})
+SET(toolkit_gui_RCCS toolkit_gui.qrc insightcae_gui.qrc)
+SET(toolkit_gui_UIS
+  iqcadexceptiondisplaydialog.ui
+  iqconfigureexternalprogramsdialog.ui
+  iqmanagereporttemplatesdialog.ui
+  iqsetupwsldistributionwizard.ui
+  iqremoteparaviewdialog.ui
+  iqparaviewdialog.ui
+  remotedirselector.ui
+  of_clean_case.ui
+  iqaddfilterdialog.ui
+  iqselectresultelementsdialog.ui
+  iqresultsetdisplayerwidget.ui
+  iqselectremotehosttypedialog.ui
+  iqremoteservereditdialog.ui
+  iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimagecoordinatesdialog.ui
+  dialogs/defineplanedialog.ui
+  iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.ui
+)
+add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_RCCS} ${toolkit_gui_UIS})
 add_PDL(toolkit_gui "${toolkit_gui_SRCS}")
 
 # --export-all-symbols is not sufficient for signal/slots to work across DLLs

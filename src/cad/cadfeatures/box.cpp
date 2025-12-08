@@ -18,6 +18,8 @@
  */
 
 #include "box.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -46,10 +48,10 @@ size_t Box::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=L1_->value();
-  h+=L2_->value();
-  h+=L3_->value();
+  h+=*p0_;
+  h+=*L1_;
+  h+=*L2_;
+  h+=*L3_;
   h+=boost::fusion::at_c<0>(center_);
   h+=boost::fusion::at_c<1>(center_);
   h+=boost::fusion::at_c<2>(center_);
@@ -58,6 +60,9 @@ size_t Box::calcHash() const
 
 
 
+Box::Box(const Box&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(L1_), CL(L2_), CL(L3_), center_(o.center_)
+{}
   
 Box::Box
 (
@@ -141,24 +146,24 @@ void Box::insertrule(parser::ISCADParser& ruleset)
     "Box",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression >> ',' 
-        >> ruleset.r_vectorExpression 
-        >> ( ( ',' >> (
-            (  qi::lit("centered") >> qi::attr(true) >> qi::attr(true) >> qi::attr(true) )
+    ( '('
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression > ','
+        > ruleset.r_vectorExpression
+        > ( ( ',' > (
+            (  qi::lit("centered") > qi::attr(true) > qi::attr(true) > qi::attr(true) )
             |
             (  qi::lit("center") 
-            >> (( 'x' >> qi::attr(true) )|qi::attr(false))
-            >> (( 'y' >> qi::attr(true) )|qi::attr(false))
-            >> (( 'z' >> qi::attr(true) )|qi::attr(false))
+            > (( 'x' > qi::attr(true) )|qi::attr(false))
+            > (( 'y' > qi::attr(true) )|qi::attr(false))
+            > (( 'z' > qi::attr(true) )|qi::attr(false))
             )
             ) )
             |
-            ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
+            ( qi::attr(false) > qi::attr(false) > qi::attr(false) )
           )
-        >> ')' ) 
+        > ')' )
       [ qi::_val = phx::bind(
                        &Box::create<VectorPtr, VectorPtr, VectorPtr, VectorPtr, BoxCentering>,
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]

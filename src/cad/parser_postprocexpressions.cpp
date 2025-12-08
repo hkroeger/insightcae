@@ -26,6 +26,7 @@
 #include "cadfeature.h"
 
 #include "datum.h"
+#include "featureset.h"
 #include "sketch.h"
 #include "cadpostprocactions.h"
 #include "cadpostprocactions/angle.h"
@@ -126,23 +127,23 @@ void ISCADParser::createPostProcExpressions()
         * <b>saveAs(\ref iscad_filename_expression "<filename>") << \ref iscad_feature_expression "<feature:feature to save>" </b>
         *
         */
-        ( lit("saveAs") >> '(' >> r_path >> ')' >> lit("<<")
-          >> r_solidmodel_expression
-          >> *( r_identifier >> '=' >> r_faceFeaturesExpression )
-          >> ';' )
+        ( lit("saveAs") > '(' > r_path > ')' > lit("<<")
+          > r_solidmodel_expression
+          > *( r_identifier > '=' > r_faceFeaturesExpression )
+          > ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Export>(qi::_2, qi::_1, qi::_3))) ]
         |
-        ( (lit("exportSTL")|lit("STL")) >> '('
-                            >> r_path
-                            >> ( (',' >> r_scalarExpression)|qi::attr(ScalarPtr()) )
-                            >> ( (',' >> lit("ascii") >> qi::attr(false) )|qi::attr(true) )
-                          >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
+        ( (lit("exportSTL")|lit("STL")) > '('
+                            > r_path
+                            > ( (',' > r_scalarExpression)|qi::attr(ScalarPtr()) )
+                            > ( (',' > lit("ascii") > qi::attr(false) )|qi::attr(true) )
+                            > ')' > lit("<<") > r_solidmodel_expression > ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<ExportSTL>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
         |
-        ( lit("exportEMesh") >> '(' >> r_path >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')'
-          >> lit("<<") >> r_edgeFeaturesExpression >> ';' )
+        ( lit("exportEMesh") > '(' > r_path > ',' > r_scalarExpression > ',' > r_scalarExpression > ')'
+          > lit("<<") > r_edgeFeaturesExpression > ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<ExportEMesh>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
         |
@@ -160,23 +161,28 @@ void ISCADParser::createPostProcExpressions()
         *  vertices ( \ref iscad_identifier_expression "<identifier:vertex name>" = \ref iscad_vector_expression "<vector:vertex location>" ... )
         * </b>
         */
-        ( lit("gmsh") >> '(' >> r_path >> ')' >> lit("<<")
-          >> r_solidmodel_expression //>> lit("as") >> r_identifier
-          >> hold[ lit("L") >> '=' >> '(' >> r_scalarExpression >> r_scalarExpression >> ')' ] // Lmax, Lmin
-          >> ( ( lit("linear") >> attr(false) ) | attr(true) )
-          >> hold[
-             ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("faceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-             ]
-          >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
-         >> ( lit("meshSizes") >> '(' >> *( r_vectorExpression >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression ) >> ')' | qi::attr(std::vector<MeshSizeBall>()) )
-          >> ( (lit("keepTmpDir")>attr(true)) | attr(false) )
-          >> ';' )
+        ( lit("gmsh") > '(' > r_path > ')' > lit("<<")
+          > r_solidmodel_expression
+          > hold[ lit("L") > '=' > '(' > r_scalarExpression > r_scalarExpression > ')' ] // Lmax, Lmin
+          > ( ( lit("linear") > attr(false) ) | attr(true) )
+          > hold[
+             ( ( lit("vertexGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_vertexFeaturesExpression > -( '@' > r_scalarExpression ) ) ) > ')' ) | attr(GroupsDesc()) )
+          > ( ( lit("edgeGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_edgeFeaturesExpression > -( '@' > r_scalarExpression ) )  ) > ')' ) | attr(GroupsDesc()) )
+          > ( ( lit("faceGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_faceFeaturesExpression > -( '@' > r_scalarExpression ) )  ) > ')' ) | attr(GroupsDesc()) )
+          > ( ( lit("volumeGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_solidFeaturesExpression > -( '@' > r_scalarExpression ) )  ) > ')' ) | attr(GroupsDesc()) )
+            ]
+          > ( ( lit("vertices") > '(' > *( (r_identifier|r_string) > '=' > r_vectorExpression ) > ')'  )| attr(NamedVertices()) )
+          > ( ( lit("meshSizes") > '(' > *( r_vectorExpression > ',' > r_scalarExpression > ',' > r_scalarExpression ) >> ')' ) | qi::attr(std::vector<MeshSizeBall>()) )
+          > qi::hold[
+            ( ( lit("screwHeads") > '(' > *( (r_identifier|r_string) > '=' > r_solidmodel_expression > -( qi::lit("sub") > r_identifier ) > -( '@' > r_scalarExpression ) ) > ')'  )| attr(ScrewHeads()) )
+          > ( ( lit("screwBases") > '(' > *( (r_identifier|r_string) > '=' > r_solidmodel_expression > -( qi::lit("sub") > r_identifier ) > -( '@' > r_scalarExpression ) ) > ')'  )| attr(ScrewBases()) )
+          > ( ( lit("screws")     > '(' > *( (r_identifier|r_string) > '=' > r_solidmodel_expression > -( qi::lit("sub") > r_identifier) ) > ')'  )| attr(ScrewBodies()) )
+            ]
+          > ( ( lit("keepTmpDir") > attr(true) ) | attr(false) )
+          > ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Mesh>(
-                           qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8
+                           qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8, qi::_9
                             ))) ]
         |
 

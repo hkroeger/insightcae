@@ -46,7 +46,6 @@ protected:
 public:
     declareType ( N );
 
-
     SimpleParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
         : Parameter ( description, isHidden, isExpert, isNecessary, order )
     {}
@@ -88,65 +87,75 @@ public:
     }
 
 
-    std::string latexRepresentation() const override
+    std::string latexRepresentation(
+        const std::string&,
+        int,
+        const FileStorageInfo& ) const override
     {
-        return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
+        return SimpleLatex( toString ( value_ ) ).toLaTeX();
+    }
+
+    bool canSetDataFromString() const override
+    {
+        return true;
+    }
+
+    void setDataFromString(const std::string& newValue, bool* ok = nullptr) override
+    {
+        try
+        {
+            set(toValue<T>(newValue));
+            if (ok) *ok=true;
+        }
+        catch (...)
+        {
+            if (ok) *ok=false;
+        }
+    }
+
+    std::string plainTextRepresentation(int /*indent*/) const override
+    {
+        return SimpleLatex( toString ( value_ ) ).toPlainText();
     }
 
 
-    std::string plainTextRepresentation(int /*indent*/=0) const override
-    {
-        return SimpleLatex( valueToString ( value_ ) ).toPlainText();
-    }
-
-
-    std::unique_ptr<Parameter> clone(bool init) const override
+    std::unique_ptr<Element> clone() const override
     {
         auto p= std::make_unique<SimpleParameter<T, N> >(
             value_,
             description().simpleLatex(),
             isHidden(), isExpert(), isNecessary(), order() );
-        if (init) p->initialize();
         return p;
     }
 
 
     rapidxml::xml_node<>* appendToNode (
-            const std::string& name,
-            rapidxml::xml_document<>& doc,
-            rapidxml::xml_node<>& node,
-            boost::filesystem::path inputfilepath ) const override
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override
     {
-        insight::CurrentExceptionContext ex(3, "appending simple parameter "+name+" to node "+node.name());
+        insight::CurrentExceptionContext ex(
+            insight::VerbosityLevel::Loops,
+            "appending simple parameter %s to node %s", name.c_str(), node.name());
 
         using namespace rapidxml;
-        xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
-        child->append_attribute
-        (
-            doc.allocate_attribute
-            (
-                "value",
-                doc.allocate_string ( valueToString ( value_ ).c_str() )
-            )
-        );
+        xml_node<>* child = Parameter::appendToNode ( name, doc, node, outProps );
+        appendAttribute(doc, *child, "value", value_ );
         return child;
     }
 
 
-    void readFromNode
+    const rapidxml::xml_node<>* readFromNode
     (
-        const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path
+        const std::string &name,
+        const rapidxml::xml_node<> &node
     ) override
     {
-        using namespace rapidxml;
-        xml_node<>* child = findNode ( node, name, type() );
+        auto *child = Parameter::readFromNode( name, node );
         if ( child )
         {
-          auto valueattr=child->first_attribute ( "value" );
-          insight::assertion(valueattr, "No value attribute present in "+name+"!");
-          stringToValue ( valueattr->value(), value_ );
+          value_=getMandatoryAttribute<T>(*child, "value");
           triggerValueChanged();
         }
         else
@@ -155,33 +164,119 @@ public:
                 boost::str(
                   boost::format(
                    "No xml node found with type '%s' and name '%s', default value '%s' is used."
-                   ) % type() % name % plainTextRepresentation()
+                   ) % type() % name % plainTextRepresentation(0)
                  )
               );
         }
+        return child;
     }
 
 
-    void copyFrom(const Parameter& p) override
+    SimpleParameter(const rapidxml::xml_node<> & node, bool skipValueRead=false)
+        : Parameter(node)
     {
-        operator=(dynamic_cast<const SimpleParameter<T,N>&>(p));
+        if (!skipValueRead)
+            value_=getMandatoryAttribute<T>(node, "value");
     }
 
 
-    void operator=(const SimpleParameter& op)
+    void assignFrom(const Element& e) override
     {
+        auto& op = dynamic_cast<const SimpleParameter&>(e);
+
         value_=op.value_;
 
-        Parameter::copyFrom(op);
+        Parameter::assignFrom(op);
     }
 
+    bool isEqual(const Element &op) const override
+    {
+        if (auto *oa = dynamic_cast<const SimpleParameter*>(&op))
+        {
+            return value_==oa->value_;
+        }
+        else
+            return false;
+    }
 
     int nChildren() const override
     {
       return 0;
     }
 
+    bool isBooleanData() const override
+    {
+        return Element::isBooleanData();
+    }
 
+    bool canSetFromBoolean() const override
+    {
+        return Element::canSetFromBoolean();
+    }
+
+    bool getAsBoolean() const override
+    {
+        return Element::getAsBoolean();
+    }
+
+    void setBoolean(bool b) override
+    {
+        Element::setBoolean(b);
+    }
+
+};
+
+
+
+
+extern char VectorBaseName[];
+extern char VectorName[];
+
+class VectorParameter
+    : public SimpleParameter<arma::mat, VectorBaseName >
+{
+public:
+    enum VectorType {
+        NonSpatial, Point, Direction
+    };
+
+private:
+    VectorType vectorType_;
+
+public:
+    declareType ( VectorName );
+
+    VectorParameter (
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    VectorParameter (
+        const arma::mat& value, const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    VectorParameter (
+        VectorType vt, const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    VectorParameter (
+        VectorType vt, const arma::mat& value,
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    rapidxml::xml_node<>* appendToNode (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps ) const override;
+
+    VectorParameter(const rapidxml::xml_node<> & node, bool skipValueRead=false);
+
+    inline VectorType vectorType() const
+    {
+        return vectorType_;
+    }
+
+    std::unique_ptr<Element> clone() const override;
 };
 
 
@@ -190,7 +285,6 @@ public:
 extern char DoubleName[];
 extern char IntName[];
 extern char BoolName[];
-extern char VectorName[];
 extern char StringName[];
 extern char DateName[];
 extern char DateTimeName[];
@@ -201,19 +295,30 @@ extern char DateTimeName[];
 typedef SimpleParameter<double, DoubleName> DoubleParameter;
 typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
-typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
+// typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 typedef SimpleParameter<boost::gregorian::date, DateName> DateParameter;
 typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParameter;
 
 
+template<>
+bool BoolParameter::isBooleanData() const;
+
+template<>
+bool BoolParameter::canSetFromBoolean() const;
+
+template<>
+bool BoolParameter::getAsBoolean() const;
+
+template<>
+void BoolParameter::setBoolean(bool b);
 
 
 #ifdef SWIG
 %template(DoubleParameter) SimpleParameter<double, DoubleName>;
 %template(IntParameter) SimpleParameter<int, IntName>;
 %template(BoolParameter) SimpleParameter<bool, BoolName>;
-%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
+//%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
 %template(StringParameter) SimpleParameter<std::string, StringName>;
 %template(DateParameter) SimpleParameter<boost::gregorian::date, DateName>;
 %template(DateTimeParameter) SimpleParameter<boost::posix_time::ptime, DateTimeName>;

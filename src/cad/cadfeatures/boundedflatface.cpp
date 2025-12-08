@@ -18,7 +18,8 @@
  */
 
 #include "boundedflatface.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -48,24 +49,72 @@ size_t BoundedFlatFace::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=edges_;
+  if (auto* feats
+          = boost::get<std::vector<FeaturePtr> >(&edges_))
+  {
+      for (auto& f: *feats)
+      {
+        h+=*f;
+      }
+  }
+  else if (auto* fsets
+             = boost::get<std::vector<FeatureSetPtr> >(&edges_))
+  {
+      for (auto& f: *fsets)
+      {
+          h+=*f;
+      }
+  }
   return h.getHash();
 }
 
+
+
+BoundedFlatFace::BoundedFlatFace(const BoundedFlatFace&o, TreeCloneMap& tcm)
+{
+    if (auto*fv=boost::get<std::vector<FeaturePtr> >(&o.edges_))
+    {
+        edges_=std::vector<FeaturePtr>();
+        auto& edgs=boost::get<std::vector<FeaturePtr> >(edges_);
+        for (auto& e: *fv)
+        {
+            edgs.push_back(tcm.clone(e));
+        }
+    }
+    else if (auto*fs=boost::get<std::vector<FeatureSetPtr> >(&o.edges_))
+    {
+        edges_=std::vector<FeatureSetPtr>();
+        auto& edgs=boost::get<std::vector<FeatureSetPtr> >(edges_);
+        for (auto& e: *fs)
+        {
+            edgs.push_back(tcm.clone(e));
+        }
+    }
+}
 
 
 
 
 BoundedFlatFace::BoundedFlatFace(const std::vector<FeaturePtr>& edges)
 : edges_(edges)
-{}
+{
+    for (auto& e: edges)
+    {
+        insight::assertion(bool(e), "invalid feature pointer supplied");
+    }
+}
 
 
 
 
 BoundedFlatFace::BoundedFlatFace(const std::vector<FeatureSetPtr>& edges)
 : edges_(edges)
-{}
+{
+    for (auto& e: edges)
+    {
+        insight::assertion(bool(e), "invalid feature set pointer supplied");
+    }
+}
 
 
  
@@ -77,7 +126,7 @@ void BoundedFlatFace::build()
     TopTools_ListOfShape edgs;
     if
     (
-        const std::vector<FeaturePtr>* edgesPtr
+        auto* edgesPtr
         = boost::get<std::vector<FeaturePtr> >(&edges_)
     )
     {
@@ -114,7 +163,7 @@ void BoundedFlatFace::build()
     }
     else if
     (
-        const std::vector<FeatureSetPtr>* edgesPtr
+        auto* edgesPtr
         = boost::get<std::vector<FeatureSetPtr> >(&edges_)
     )
     {
@@ -216,14 +265,13 @@ void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset)
   (
     "BoundedFlatFace",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
-
-    ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
-                  [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeaturePtr>&>, qi::_1) ]
-    |
-    ( '(' >> ( ruleset.r_edgeFeaturesExpression % ',' ) >> ')' )
-                  [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeatureSetPtr>&>, qi::_1) ]
-      
-    ))
+    '(' > (
+        ( ( ruleset.r_edgeFeaturesExpression % ',' ) > ')' ) // feature expr might start with a solidmodel expression, so try first
+            [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeatureSetPtr>&>, qi::_1) ]
+        |
+        ( ( ruleset.r_solidmodel_expression % ',' ) > ')' )
+            [ qi::_val = phx::bind(&BoundedFlatFace::create<const std::vector<FeaturePtr>&>, qi::_1) ]
+    )))
   );
 }
 

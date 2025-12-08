@@ -11,11 +11,13 @@
 IQVTKCADModel3DViewerMeasureDiameter::IQVTKCADModel3DViewerMeasureDiameter(
     IQVTKCADModel3DViewer &viewWidget)
     : ViewWidgetAction<IQVTKCADModel3DViewer>(
-          viewWidget)
+          viewWidget, false)
 {
     aboutToBeDestroyed.connect(
         [this](){
-        viewer().deactivateSubshapeSelectionAll();
+            DBG_SLOT(aboutToBeDestroyed);
+
+            viewer().deactivateSubshapeSelectionAll();
         });
 }
 
@@ -34,6 +36,8 @@ void IQVTKCADModel3DViewerMeasureDiameter::start()
     sel->entitySelected.connect(
         [this](IQVTKCADModel3DViewer::SubshapeData edg)
         {
+            DBG_SLOT(entitySelected);
+
             if (edg.subshapeType_ == insight::cad::Edge)
             {
                 insight::cad::CircleEdgeCenterCoords cecc(
@@ -56,4 +60,20 @@ void IQVTKCADModel3DViewerMeasureDiameter::start()
         );
 
     launchAction(std::move(sel));
+}
+
+
+bool IQVTKCADModel3DViewerMeasureDiameter::onMouseClick  (
+    Qt::MouseButtons btn,
+    Qt::KeyboardModifiers nFlags,
+    const QPoint point )
+{
+    if (btn==Qt::RightButton)
+    {
+        finishAction();
+        return true;
+    }
+
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onMouseClick(btn, nFlags, point);
 }

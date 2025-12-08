@@ -18,7 +18,8 @@
  */
 
 #include "circle.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -47,9 +48,10 @@ size_t Circle::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=n_->value();
-  h+=D_->value();
+  h+=*p0_;
+  h+=*n_;
+  h+=*D_;
+  if (d_) h+=*d_;
   return h.getHash();
 }
 
@@ -58,22 +60,51 @@ size_t Circle::calcHash() const
 
 void Circle::build()
 {
-  Handle_Geom_Circle c=GC_MakeCircle(to_Pnt(p0_->value()), to_Vec(n_->value()), 0.5*D_->value()).Value();
+  Handle_Geom_Circle c =
+        GC_MakeCircle(
+            to_Pnt(p0_->value()),
+            to_Vec(n_->value()),
+            0.5*D_->value()
+        ).Value();
   
   refpoints_["p0"]=p0_->value();
   
   BRepBuilderAPI_MakeEdge e(c);
   BRepBuilderAPI_MakeWire w;
   w.Add(e.Edge());
+
+  auto face=BRepBuilderAPI_MakeFace(w.Wire()).Shape();
+
+  if (d_)
+  {
+      Handle_Geom_Circle ci =
+          GC_MakeCircle(
+              to_Pnt(p0_->value()),
+              to_Vec(n_->value()),
+              0.5*d_->value()
+              ).Value();
+      BRepBuilderAPI_MakeEdge e(ci);
+      BRepBuilderAPI_MakeWire w;
+      w.Add(e.Edge());
+      BRepAlgoAPI_Cut cutter(
+          face,
+          BRepBuilderAPI_MakeFace(w.Wire()));
+      cutter.Build();
+      face=cutter.Shape();
+  }
   providedSubshapes_["OuterWire"]=Import::create(e.Edge());
-  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+  setShape(face);
 }
 
 
 
+Circle::Circle(const Circle&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(n_), CL(D_), CL(d_)
+{}
 
-Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D)
-: p0_(p0), n_(n), D_(D)
+
+Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D, ScalarPtr d)
+    : p0_(p0), n_(n), D_(D), d_(d)
 {
 }
 
@@ -97,10 +128,14 @@ void Circle::insertrule(parser::ISCADParser& ruleset)
     "Circle",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+    ( '(' > ruleset.r_vectorExpression > ','
+             > ruleset.r_vectorExpression > ','
+             > ruleset.r_scalarExpression
+             > ( ( ',' > ruleset.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+             > ')' )
     [ qi::_val = phx::bind(
-                       &Circle::create<VectorPtr, VectorPtr, ScalarPtr>,
-                       qi::_1, qi::_2, qi::_3) ]
+                       &Circle::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr>,
+                       qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     )
   );
@@ -116,9 +151,10 @@ FeatureCmdInfoList Circle::ruleDocumentation()
         (
             "Circle",
          
-            "( <vector:p0>, <vector:n>, <scalar:D> )",
+            "( <vector:p0>, <vector:n>, <scalar:D> [, <scalar:d> ] )",
 
-          _("Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D.")
+            std::string(_("Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D."))
+          + _("Optionally, an internal hole is cout out with a diameter d.")
         )
   };
 }

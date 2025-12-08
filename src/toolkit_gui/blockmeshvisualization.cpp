@@ -13,6 +13,7 @@
 #include "cadfeatures/importsolidmodel.h"
 #include "cadfeatures/transform.h"
 #include "cadparametersetvisualizer.h"
+#include "cadexception.h"
 
 #include "boost/iterator_adaptors.hpp"
 

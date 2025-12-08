@@ -25,6 +25,8 @@
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "factory.h"
 #include "base/latextools.h"
+#include "base/tools.h"
+#include "base/hierarchicalelement.h"
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 #include "base/cppextensions.h"
@@ -55,17 +57,13 @@ class ConstrainedSketch;
 }
 
 
-namespace ParameterPath {
-
-std::string
-join(const std::string& p1, const std::string& p2);
-
-std::string
-join(const std::vector<std::string>& ps);
-
-}
 
 
+/**
+ * @brief The PrimitiveStaticValueWrap class
+ * Wraps a parameter value along with its path
+ * into the parameter set, which contains it.
+ */
 template<class T>
 struct PrimitiveStaticValueWrap
 {
@@ -96,7 +94,11 @@ struct PrimitiveStaticValueWrap
 
 
 
-
+/**
+ * @brief The StaticValueWrap class
+ * Wraps a parameter value along with its path
+ * into the parameter set, which contains it.
+ */
 template<class T>
 class StaticValueWrap
     : public T
@@ -136,6 +138,46 @@ public:
 };
 
 
+
+template<class P>
+class ParametersReference
+    : public std::reference_wrapper<const P>
+{
+public:
+    boost::optional<std::string> parameterPath;
+
+    ParametersReference(const P& o, const boost::optional<std::string>& explicitPath)
+        : std::reference_wrapper<const P>(o),
+        parameterPath(explicitPath)
+    {}
+
+    ParametersReference(const ParametersReference<P>& o)
+        : std::reference_wrapper<const P>(o),
+        parameterPath(o.parameterPath)
+    {}
+
+    template<class DerivedP>
+    ParametersReference(const ParametersReference<DerivedP>& o)
+      : std::reference_wrapper<const P>(dynamic_cast<const P&>(o.get())),
+        parameterPath(o.parameterPath)
+    {}
+
+    ParametersReference(const StaticValueWrap<P>& parameter)
+        : std::reference_wrapper<const P>(parameter),
+        parameterPath(parameter.parameterPath)
+    {}
+
+    template<class DerivedP>
+    ParametersReference(const StaticValueWrap<DerivedP>& parameter)
+        : std::reference_wrapper<const P>(parameter),
+        parameterPath(parameter.parameterPath)
+    {}
+
+    const P& parameters() const
+    {
+        return this->get();
+    }
+};
 
 
 }
@@ -184,101 +226,33 @@ class ParameterSet;
  *   so has pointer semantics
  */
 class Parameter
-    : public boost::noncopyable,
-      public std::observable
+    : public hierarchicalData::Element
 {
 
 public:
-    declareFactoryTable ( Parameter, LIST ( const std::string& descr ), LIST ( descr ) );
+    // declareFactoryTable ( Parameter, LIST ( const std::string& descr ), LIST ( descr ) );
+    declareFactoryTable2(
+        Parameter,
+        ParameterFromDescription, createParameter,
+        const std::string&
+        );
 
-#ifndef SWIG
-    boost::signals2::signal<void()> valueChanged, childValueChanged;
-    boost::signals2::signal<void(int, int)> beforeChildInsertion, childInsertionDone;
-    boost::signals2::signal<void(int, int)> beforeChildRemoval, childRemovalDone;
-#endif
+    declareFactoryTable2(
+        Parameter,
+        ParameterFromNode, createParameterFromNode,
+        const rapidxml::xml_node<> & );
 
-    typedef Parameter& reference;
-    typedef const Parameter& const_reference;
-    typedef Parameter* pointer;
-    typedef const Parameter* const_pointer;
-    typedef size_t size_type;
-    typedef int difference_type;
+#define addParameterFactories(PT) \
+    addToFactoryTable2(Parameter, ParameterFromDescription, createParameter, PT);\
+    addToFactoryTable2(Parameter, ParameterFromNode, createParameterFromNode, PT);
 
-    class const_iterator;
-
-    class iterator
-    {
-        friend class const_iterator;
-
-        Parameter* p_;
-        int iChild_;
-    public:
-        typedef Parameter::reference reference;
-        typedef Parameter::pointer pointer;
-        typedef Parameter::size_type size_type;
-        typedef Parameter::difference_type difference_type;
-        typedef std::random_access_iterator_tag iterator_category;
-
-        iterator();
-        iterator(Parameter&, int i=0);
-        iterator(const iterator&);
-        ~iterator();
-
-        iterator& operator=(const iterator&);
-        bool operator==(const iterator&) const;
-        bool operator!=(const iterator&) const;
-
-        iterator& operator++();
-
-        reference operator*() const;
-        pointer operator->() const;
-        pointer get_pointer() const;
-        std::string name() const;
-    };
-
-    class const_iterator
-    {
-        const Parameter* p_;
-        int iChild_;
-    public:
-        typedef Parameter::const_reference reference;
-        typedef Parameter::const_pointer pointer;
-        typedef Parameter::size_type size_type;
-        typedef Parameter::difference_type difference_type;
-        typedef std::random_access_iterator_tag iterator_category;
-
-        const_iterator();
-        const_iterator(const Parameter&, int i=0);
-        const_iterator(const iterator&);
-        const_iterator(const const_iterator&);
-        ~const_iterator();
-
-        const_iterator& operator=(const const_iterator&);
-        bool operator==(const const_iterator&) const;
-        bool operator!=(const const_iterator&) const;
-
-        const_iterator& operator++();
-
-        reference operator*() const;
-        pointer operator->() const;
-        pointer get_pointer() const;
-        std::string name() const;
-    };
-
-    typedef std::reverse_iterator<iterator> reverse_iterator; //optional
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator; //optional
+public:
+    void setParent(Element* parent) override;
 
 private:
     SimpleLatex description_;
 
     bool isHidden_, isExpert_, isNecessary_;
-    int order_;
-
-    bool valueChangeSignalBlocked_;
-
-    std::observer_ptr<Parameter> parent_;
-
-    bool needsInitialization_;
 
 
     friend class ArrayParameter;
@@ -287,42 +261,26 @@ private:
     friend class LabeledArrayParameter;
     friend class cad::ConstrainedSketch;
 
-protected:
-    virtual void setParent(Parameter* parent);
-
-    inline bool valueChangeSignalBlocked() const
-    {
-        return valueChangeSignalBlocked_;
-    }
 
 public:
     declareType ( "Parameter" );
 
+    Parameter( const rapidxml::xml_node<> &node );
+
     Parameter (
         const std::string& description,
-        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
 
-    virtual ~Parameter();
 
-    /**
-     * @brief initialize
-     * required by synchronized parameters (LabeledArrayParameter) that get a selection from other parameters
-     */
-    virtual void initialize();
-
-    bool hasParent() const;
-    Parameter& parent();
-    const Parameter& parent() const;
     ParameterSet& parentSet();
-
-    std::string path(bool redirectArrayElementsToDefault=false) const;
-    std::string name(bool redirectArrayElementsToDefault=false) const;
 
     bool isHidden() const;
     bool isExpert() const;
     bool isNecessary() const;
     virtual bool isDifferent(const Parameter& p) const;
-    int order() const;
 
     bool isModified(const ParameterSet& defaultValues) const;
 
@@ -336,47 +294,17 @@ public:
         return description_;
     }
 
+
     /**
-     * LaTeX representation of the parameter value
+     * @brief resolveRelativePaths
+     * if paths are stored and they are relative,
+     * convert them into absolute ones using this
+     * base directory.
+     * @param baseDirectory
      */
-    virtual std::string latexRepresentation() const =0;
-    virtual std::string plainTextRepresentation(int indent=0) const =0;
+    virtual void resolveRelativePaths(
+        const boost::filesystem::path &baseDirectory);
 
-    virtual rapidxml::xml_node<>* appendToNode
-    (
-        const std::string& name,
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath
-    ) const;
-
-    virtual void readFromNode
-    (
-        const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path inputfilepath
-    ) =0;
-
-    void saveToNode(
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& rootNode,
-        const boost::filesystem::path& parent_path,
-        std::string analysisName ) const;
-    virtual void saveToStream(std::ostream& os, const boost::filesystem::path& parentPath, std::string analysisName = std::string() ) const;
-    void saveToFile ( const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
-    void saveToString ( std::string& s, const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
-
-    std::string readFromRootNode(
-        rapidxml::xml_node<>& rootNode,
-        const boost::filesystem::path& parent_path,
-        const std::string& startAtSubnode = std::string() );
-
-    std::string readFromFile(
-        const boost::filesystem::path& file,
-        const std::string& startAtSubnode = std::string() );
-
-//    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
-    virtual std::unique_ptr<Parameter> clone(bool initialize) const =0;
 
     /**
      * @brief isPacked
@@ -384,6 +312,7 @@ public:
      * @return
      */
     virtual bool isPacked() const;
+
 
     /**
      * @brief pack
@@ -403,113 +332,41 @@ public:
      */
     virtual void clearPackedData();
 
+    void readFromRootNode(
+        const rapidxml::xml_node<>& rootNode,
+        const std::string& startAtSubnode = std::string() ) override;
+
+    void readFromFile(
+        const boost::filesystem::path& file,
+        const std::string& startAtSubnode = std::string() ) override;
+
+
+    rapidxml::xml_node<>* appendToNode(
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        const OutputProperties& outProps ) const override;
 
     /**
-     * @brief copyFrom
-     * Set values from other parameter. In subsets, set values of all parameters with the same name as in op
-     * @param op
-     * other parameter
+     * @brief createFromNode
+     * Restore a snapshot from the given node.
+     * The resulting parameter data will only be valid for representation
+     * and features will be missing. For example, selection parameters won't
+     * now other options the the currently selected one.
+     * @param node
+     * @return
      */
-    virtual void copyFrom(const Parameter& op);
+    static std::unique_ptr<Parameter> createFromNode(
+        const rapidxml::xml_node<>& node );
 
-    /**
-     * insert entries into current subset, that are not yet present.
-     * Existing parameters will not be touched!
-     */
-    virtual void extend ( const Parameter& op );
+    void assignFrom(const Element& o) override;
 
-    /**
-     * Set values and child parmeters from other, overwrite where matching (type and name).
-     */
-    virtual void merge ( const Parameter& other );
 
 #ifndef SWIG
     virtual std::unique_ptr<Parameter> intersection(const Parameter& other) const;
 #endif
 
-
-    virtual int nChildren() const =0;
-
-    virtual std::string childParameterName(
-        int i,
-        bool redirectArrayElementsToDefault=false ) const;
-
-    virtual std::string childParameterName(
-        const Parameter* childParam,
-        bool redirectArrayElementsToDefault=false ) const;
-
-    virtual Parameter& childParameterRef ( int i );
-
-    virtual const Parameter& childParameter( int i ) const;
-
-    virtual int childParameterIndex( const std::string& name ) const;
-
-    virtual int childParameterIndex( const Parameter* childParam ) const;
-
-    Parameter& childParameterByNameRef ( const std::string& name );
-
-    const Parameter& childParameterByName ( const std::string& name ) const;
-
-    std::vector<std::string> childParameterNameList() const;
-    std::vector<std::string> childParameterFullPathList() const;
-
-
-    iterator begin();
-    const_iterator begin() const;
-    const_iterator cbegin() const;
-    iterator end();
-    const_iterator end() const;
-    const_iterator cend() const;
-
-#ifndef SWIG
-    struct UpdateValueSignalBlockage
-    {
-        Parameter& blockedParameter;
-        UpdateValueSignalBlockage(Parameter& p);
-        ~UpdateValueSignalBlockage();
-    };
-
-    std::unique_ptr<UpdateValueSignalBlockage> blockUpdateValueSignal();
-#endif
-
-    virtual void setUpdateValueSignalBlockage(bool block=true);
-    void triggerValueChanged();
-    void triggerChildValueChanged();
 };
-
-
-
-
-template<class V>
-std::string valueToString(const V& value)
-{
-  return boost::lexical_cast<std::string>(value);
-}
-
-std::string valueToString(const arma::mat& value);
-std::string valueToString(const boost::gregorian::date& value);
-std::string valueToString(const boost::posix_time::ptime& value);
-
-
-
-
-template<class V>
-void stringToValue(const std::string& s, V& v)
-{
-  v=boost::lexical_cast<V>(s);
-}
-
-void stringToValue(const std::string& s, arma::mat& v);
-void stringToValue(const std::string& s, boost::gregorian::date& date);
-void stringToValue(const std::string& s, boost::posix_time::ptime& date);
-
-
-// inline std::unique_ptr<Parameter> new_clone(const Parameter& p)
-// {
-//   return p.clone();
-// }
-
-
 
 
 

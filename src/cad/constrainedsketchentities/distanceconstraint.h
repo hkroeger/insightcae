@@ -48,6 +48,8 @@ public:
 
     bool isInside( SelectionRect r) const override;
 
+    void ensureRequiredParameters() override;
+
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const DistanceConstraint& other);
 
@@ -69,7 +71,7 @@ class FixedDistanceConstraint
 public:
     declareType("DistanceConstraint");
 
-    CREATE_FUNCTION(FixedDistanceConstraint);
+    CREATE_FUNCTION_W_INIT(FixedDistanceConstraint, ensureRequiredParameters);
 
     double targetValue() const override;
     void setTargetValue(double dist);
@@ -83,6 +85,8 @@ public:
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
         const ConstrainedSketchParametersDelegate& pd);
+
+    void ensureRequiredParameters() override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const FixedDistanceConstraint& other);
@@ -111,7 +115,7 @@ class LinkedDistanceConstraint
 public:
     declareType("Distance");
 
-    CREATE_FUNCTION(LinkedDistanceConstraint);
+    CREATE_FUNCTION_W_INIT(LinkedDistanceConstraint, ensureRequiredParameters);
 
     double targetValue() const override;
     void scaleSketch(double scaleFactor) override;
@@ -123,6 +127,8 @@ public:
     static void addParserRule(
         ConstrainedSketchGrammar& ruleset,
         const ConstrainedSketchParametersDelegate& pd );
+
+    void ensureRequiredParameters() override;
 
     void operator=(const ConstrainedSketchEntity& other) override;
     void operator=(const LinkedDistanceConstraint& other);

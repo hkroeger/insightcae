@@ -1,8 +1,11 @@
 #include "chtmultiregionnumerics.h"
 
+#include "openfoam/caseelements/numerics/pimplesettings.h"
 #include "openfoam/ofdicts.h"
 #include "openfoam/openfoamdict.h"
 #include "openfoam/openfoamcase.h"
+
+#include "openfoam/caseelements/boundaryconditions/wallbc.h"
 
 namespace insight {
 
@@ -32,10 +35,17 @@ void chtMultiRegionNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  if (boost::get<Parameters::formulation_unsteady_type>(&p().formulation))
+  if (auto us = unsteadyFormulation())
+  {
     controlDict["application"]="chtMultiRegionFoam";
-  else if (boost::get<Parameters::formulation_steady_type>(&p().formulation))
+
+    CompressiblePIMPLESettings(us->time_integration)
+        .addIntoDictionaries(OFcase(), dictionaries);
+  }
+  else
+  {
     controlDict["application"]="chtMultiRegionSimpleFoam";
+  }
 
   controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );
   controlDict.getList("libs").insertNoDuplicate( "\"libconsistentCurveSampleSet.so\"" );
@@ -89,6 +99,41 @@ bool chtMultiRegionNumerics::isCompressible() const
 
 
 
+bool chtMultiRegionNumerics::insertCoupledWall
+(
+    OpenFOAMCase& chc,
+    const OFDictData::dict& boundaryDict,
+    const std::string& patchName,
+    const std::string& otherPatchName,
+    const std::string& otherZoneName,
+    double Tinitial,
+    HeatBC::CHTCoupledWall::Parameters::offset_type offset )
+{
+    if (boundaryDict.find(patchName)!=boundaryDict.end())
+    {
+        WallBC::Parameters cwp;
+        HeatBC::CHTCoupledWall::Parameters cp;
+        cp.Tnbr="T";
+        cp.samplePatch=otherPatchName;
+        cp.sampleRegion=otherZoneName;
+        cp.offset=offset;
+        cp.Tinitial=Tinitial;
+        cwp.heattransfer=std::make_shared<HeatBC::CHTCoupledWall>(cp);
+        chc.insert(new WallBC(chc, patchName, boundaryDict, cwp));
+        return true;
+    }
+    else
+        return false;
+}
+
+const chtMultiRegionNumerics::Parameters::formulation_unsteady_type *
+chtMultiRegionNumerics::unsteadyFormulation() const
+{
+    return boost::get<Parameters::formulation_unsteady_type>(&p().formulation);
+};
+
+
+
 
 
 defineType(chtMultiRegionFluidNumerics);
@@ -100,10 +145,10 @@ void chtMultiRegionFluidNumerics::init()
   if (OFversion() < 600)
     throw insight::UnsupportedFeature("chtMultiRegionNumerics currently supports only OF >=600");
 
-  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({p().pinternal}), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({p().Uinternal(0),p().Uinternal(1),p().Uinternal(2)} ), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p().Tinternal}), volField ) );
+  OFcase().addField("p_rgh", FieldInfo(scalarField, dimPressure,    FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,    FieldValue({p().pinternal}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 	FieldValue({p().Uinternal(0),p().Uinternal(1),p().Uinternal(2)} ), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,	FieldValue({p().Tinternal}), volField ) );
 }
 
 
@@ -122,45 +167,60 @@ void chtMultiRegionFluidNumerics::addIntoDictionaries(OFdicts& dictionaries) con
   // ============ setup fvSolution ================================
 
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
 
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["p_rgh"]=OFcase().stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["\"(U|h|e|k|epsilon|nuTilda)\""]=OFcase().stdAsymmSolverSetup(1e-8, 0.01);
   solvers["omega"]=OFcase().stdAsymmSolverSetup(1e-12, 0.01, 1);
 
-
-  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+  auto& parent = OFcase().parentRegion().findUniqueElement<chtMultiRegionNumerics>();
+  if (auto ul = parent.unsteadyFormulation())
   {
-    OFDictData::dict fieldRelax, eqnRelax;
-    fieldRelax["rho"]=0.9;
-    fieldRelax["p_rgh"]=0.7;
+      CompressiblePIMPLESettings(ul->time_integration)
+          .addIntoDictionaries(OFcase(), dictionaries);
 
-    eqnRelax["U"]=0.2;
+      OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+      ddt["default"]="Euler";
 
-    eqnRelax["h"]=
-        eqnRelax["e"]=0.2;
+      solvers["p_rghFinal"]=OFcase().stdSymmSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.01);
+      solvers["\"(U|h|e|k|epsilon|nuTilda)Final\""]=OFcase().stdAsymmSolverSetup(1e-8, 0.0);
+      solvers["omegaFinal"]=OFcase().stdAsymmSolverSetup(1e-12, 0.0, 1);
 
-    eqnRelax["epsilon"]=
-        eqnRelax["nuTilda"]=
-        eqnRelax["omega"]=
-        eqnRelax["R"]=
-        eqnRelax["k"]=0.7;
+  }
+  else
+  {
+      OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+      {
+        OFDictData::dict fieldRelax, eqnRelax;
+        fieldRelax["rho"]=0.9;
+        fieldRelax["p_rgh"]=0.7;
 
-    relax["fields"]=fieldRelax;
-    relax["equations"]=eqnRelax;
+        eqnRelax["U"]=0.2;
+
+        eqnRelax["h"]=
+            eqnRelax["e"]=0.2;
+
+        eqnRelax["epsilon"]=
+            eqnRelax["nuTilda"]=
+            eqnRelax["omega"]=
+            eqnRelax["R"]=
+            eqnRelax["k"]=0.7;
+
+        relax["fields"]=fieldRelax;
+        relax["equations"]=eqnRelax;
+      }
+
+      OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
+      SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
+      SIMPLE["frozenFlow"]=p().frozenFlow;
+
+
+      OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+      ddt["default"]="steadyState";
   }
 
-  OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
-  SIMPLE["frozenFlow"]=p().frozenFlow;
-
-
   // ============ setup fvSchemes ================================
-
-  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
-
-  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
-  ddt["default"]="steadyState";
 
   insertStandardGradientConfig(dictionaries);
 
@@ -205,6 +265,107 @@ bool chtMultiRegionFluidNumerics::isCompressible() const
   return true;
 }
 
+
+
+
+
+
+
+defineType(chtMultiRegionSolidNumerics);
+addToOpenFOAMCaseElementFactoryTable(chtMultiRegionSolidNumerics);
+
+
+void chtMultiRegionSolidNumerics::init()
+{
+    if (OFversion() < 600)
+        throw insight::UnsupportedFeature("chtMultiRegionNumerics currently supports only OF >=600");
+
+    OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,		FieldValue({1e5}), volField ) );
+    OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({p().Tinternal}), volField ) );
+}
+
+
+chtMultiRegionSolidNumerics::chtMultiRegionSolidNumerics(OpenFOAMCase& c, ParameterSetInput ip)
+    : FVNumerics(c, ip.forward<Parameters>(), "p")
+{
+    init();
+}
+
+std::string chtMultiRegionSolidNumerics::lqGradSchemeIfPossible() const
+{
+    return "Gauss linear";
+}
+
+
+void chtMultiRegionSolidNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+    insight::FVNumerics::addIntoDictionaries(dictionaries);
+
+
+    // ============ setup fvSolution ================================
+
+    OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+    OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+
+    OFDictData::dict& solvers=fvSolution.subDict("solvers");
+    solvers["h"]=OFcase().stdSymmSolverSetup(1e-8, 0.01);
+
+
+    auto& parent = OFcase().parentRegion().findUniqueElement<chtMultiRegionNumerics>();
+    if (auto ul = parent.unsteadyFormulation())
+    {
+        CompressiblePIMPLESettings(ul->time_integration)
+        .addIntoDictionaries(OFcase(), dictionaries);
+
+        OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+        ddt["default"]="Euler";
+
+        solvers["hFinal"]=OFcase().stdSymmSolverSetup(1e-8, 0.0);
+    }
+    else
+    {
+
+        OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+        {
+            OFDictData::dict eqnRelax;
+            eqnRelax["h"]=0.7;
+            relax["equations"]=eqnRelax;
+        }
+
+        OFDictData::dict& SIMPLE=fvSolution.subDict("SIMPLE");
+        SIMPLE["nNonOrthogonalCorrectors"]=p().nNonOrthogonalCorrectors;
+
+
+        // ============ setup fvSchemes ================================
+
+
+        OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+        ddt["default"]="steadyState";
+
+    }
+
+
+    insertStandardGradientConfig(dictionaries);
+
+    OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+    div["default"]="none";
+
+    OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+    laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
+
+    OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+    interpolation["default"]="linear";
+
+    OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+    snGrad["default"]="localLimited UBlendingFactor 1";
+
+}
+
+
+bool chtMultiRegionSolidNumerics::isCompressible() const
+{
+    return false;
+}
 
 
 } // namespace insight

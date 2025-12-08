@@ -35,7 +35,6 @@ class Transform
     : public DerivedFeature
 {
 
-    FeaturePtr m1_;
     VectorPtr trans_;
     VectorPtr rotorg_;
     VectorPtr rot_;
@@ -44,19 +43,24 @@ class Transform
 
     std::shared_ptr<gp_Trsf> trsf_;
 
-    Transform ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
-    Transform ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
-    Transform ( FeaturePtr m1, VectorPtr trans );
-    Transform ( FeaturePtr m1, ScalarPtr scale );
-    Transform ( FeaturePtr m1, FeaturePtr other );
-    Transform ( FeaturePtr m1, const gp_Trsf& trsf );
+    Transform(const Transform&o, TreeCloneMap& tcm);
+    Transform ( ConstFeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
+    Transform ( ConstFeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
+    Transform ( ConstFeaturePtr m1, VectorPtr trans );
+    Transform ( ConstFeaturePtr m1, ScalarPtr scale );
+    Transform ( ConstFeaturePtr m1, FeaturePtr other );
+    Transform ( ConstFeaturePtr m1, const gp_Trsf& trsf );
 
     size_t calcHash() const override;
     void build() override;
 
 public:
     declareType ( "Transform" );
+#ifndef SWIG
+    DEPENDS_W_BASE(DerivedFeature, (trans_,rotorg_,rot_,sf_,other_));
+#endif
     CREATE_FUNCTION(Transform);
+    CLONEABLE(Transform);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

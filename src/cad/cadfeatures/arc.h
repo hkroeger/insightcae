@@ -21,32 +21,57 @@
 #define INSIGHT_CAD_ARC_H
 
 #include "cadparameters.h"
+#include "constrainedsketchentity.h"
 #include "cadfeatures/singleedgefeature.h"
+#include "constrainedsketchentities/sketchpoint.h"
+#include <memory>
 
 namespace insight 
 {
 namespace cad
 {
 
-    
-    
+        
     
 class Arc
-    : public SingleEdgeFeature
+    : public SingleEdgeFeature,
+      public ConstrainedSketchEntity
 {
+public:
+    enum ThirdVectorType
+    {
+        NormalTimesRadius, IntermediatePoint, P0Tangent, P1Tangent
+    };
+
+private:
     VectorPtr p0_;
-    VectorPtr p0tang_;
     VectorPtr p1_;
+
+    ThirdVectorType avType_;
+    VectorPtr av_;
 
     size_t calcHash() const override;
     void build() override;
 
-    Arc ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
+    Arc(const Arc&o, TreeCloneMap& tcm);
+    Arc (
+        VectorPtr p0,
+        ThirdVectorType avType, VectorPtr av,
+        VectorPtr p1,
+        const std::string& layerName=std::string() );
 
 public:
     declareType ( "Arc" );
+#ifndef SWIG
+    DEPENDS((p0_, p1_, av_));
+#endif
+    CLONEABLE(Arc);
 
-    CREATE_FUNCTION(Arc);
+    static std::shared_ptr<Arc> create(
+        VectorPtr p0,
+        ThirdVectorType avType, VectorPtr av,
+        VectorPtr p1,
+        const std::string& layerName=std::string() );
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
@@ -55,37 +80,84 @@ public:
     VectorPtr end() const  override { return p1_; }
 
     bool isSingleOpenWire() const override;
+
+    void scaleSketch(double scaleFactor) override;
+
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        const ConstrainedSketchParametersDelegate& pd );
+
+    std::set<std::comparable_weak_ptr<ConstrainedSketchEntity> >
+    dependencies() const override;
+
+    void replaceDependency(
+        const std::weak_ptr<ConstrainedSketchEntity>& entity,
+        const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
+
+    Handle_Geom_TrimmedCurve calcArc() const;
+
+    bool isInside( SelectionRect r) const override;
+    bool pointIsOnLine(const arma::mat& p) const;
+    arma::mat projectOntoLine(const arma::mat& p) const;
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const Arc& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
+
+    std::vector<vtkSmartPointer<vtkProp> > createActor() const override;
 };
 
-    
-    
-    
-class Arc3P
-    : public SingleEdgeFeature
+
+
+
+class ArcCenterPoint
+: public SketchPoint
 {
-    VectorPtr p0_;
-    VectorPtr pm_;
-    VectorPtr p1_;
+    double angle_;
+    std::weak_ptr<Arc> arc_;
 
-    size_t calcHash() const override;
-    void build() override;
+    ArcCenterPoint(DatumPtr plane, double angle, const std::string& layerName = std::string());
 
-    Arc3P ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
+    friend class Arc;
+    void linktoArc(std::weak_ptr<Arc> arc);
+
+    arma::mat calcXYFromArc() const;
 
 public:
-    declareType ( "Arc3P" );
-    
-    CREATE_FUNCTION(Arc3P);
+    declareType("ArcCenterPoint");
 
-    static void insertrule ( parser::ISCADParser& ruleset );
-    static FeatureCmdInfoList ruleDocumentation();
+    CREATE_FUNCTION(ArcCenterPoint);
 
-    VectorPtr start() const override { return p0_; }
-    VectorPtr end() const  override { return p1_; }
+    void setCoords2D(double x, double y) override;
+    arma::mat coords2D() const override;
+    arma::mat normalTimesAngle() const;
 
-    bool isSingleOpenWire() const override;
+    int nDoF() const override;
+    double getDoFValue(unsigned int iDoF) const override;
+    void setDoFValue(unsigned int iDoF, double value) override;
+    void scaleSketch(double scaleFactor) override;
 
+    void generateScriptCommand(
+        ConstrainedSketchScriptBuffer& script,
+        const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;
+
+    static void addParserRule(
+        ConstrainedSketchGrammar& ruleset,
+        const ConstrainedSketchParametersDelegate& pd );
+
+
+
+    void operator=(const ConstrainedSketchEntity& other) override;
+    void operator=(const ArcCenterPoint& other);
+
+    ConstrainedSketchEntityPtr clone() const override;
 };
+
 
 
 

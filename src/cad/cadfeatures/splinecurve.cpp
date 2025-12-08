@@ -18,6 +18,8 @@
  */
 
 #include "splinecurve.h"
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/fusion.hpp>
@@ -53,15 +55,24 @@ size_t SplineCurve::calcHash() const
   h+=this->type();
   for (const VectorPtr& p: pts_)
   {
-      h+=p->value();
+      h+=*p;
   }
-  if (tan0_) h+=tan0_->value();
-  if (tan1_) h+=tan1_->value();
+  if (tan0_) h+=*tan0_;
+  if (tan1_) h+=*tan1_;
   return h.getHash();
 }
 
 
 
+
+SplineCurve::SplineCurve(const SplineCurve&o, TreeCloneMap& tcm)
+    : CL(tan0_), CL(tan1_)
+{
+    for (auto& p: o.pts_)
+    {
+        pts_.push_back(tcm.clone(p));
+    }
+}
 
 
 
@@ -106,9 +117,9 @@ void SplineCurve::insertrule(parser::ISCADParser& ruleset)
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' 
-        > ruleset.r_vectorExpression % ',' 
-        >> ( (',' >> qi::lit("der") >> ruleset.r_vectorExpression >> ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) ) 
-        >> ')' ) 
+        > ruleset.r_vectorExpression % ','
+        > ( (',' > qi::lit("der") > ruleset.r_vectorExpression > ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) )
+        > ')' )
     [ qi::_val = phx::bind(
                          &SplineCurve::create<const std::vector<VectorPtr>&, VectorPtr, VectorPtr>,
                          qi::_1, phx::at_c<0>(qi::_2), phx::at_c<1>(qi::_2) ) ]

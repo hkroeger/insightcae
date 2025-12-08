@@ -102,9 +102,6 @@ protected:
         ParameterSetDisplay* display
         );
 
-    bool firstShowOccurred_;
-    void showEvent(QShowEvent *event) override;
-
     void resizeEvent(QResizeEvent*) override;
 
 public:
@@ -165,6 +162,8 @@ public:
 
     bool hasViewer() const;
     CADViewer *viewer() const;
+    inline ParameterSetDisplay* display()
+    { return display_; }
 
     void rebuildVisualization();
     

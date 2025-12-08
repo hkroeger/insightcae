@@ -3,6 +3,7 @@
 
 
 #include "base/resultelement.h"
+#include <string>
 
 
 namespace insight {
@@ -15,19 +16,23 @@ class TabularResult
 public:
     typedef std::vector<double> Row;
     typedef std::vector<Row> Table;
+    typedef std::vector<SimpleLatex> Headings;
 
 protected:
-    std::vector<std::string> headings_;
+    std::vector<SimpleLatex> headings_;
     Table rows_;
 
 public:
     declareType ( "TabularResult" );
 
-    TabularResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
+    TabularResult (
+        const std::string& shortdesc,
+        const std::string& longdesc,
+        const std::string& unit );
 
     TabularResult
     (
-        const std::vector<std::string>& headings,
+        const Headings& headings,
         const Table& rows,
         const std::string& shortDesc,
         const std::string& longDesc,
@@ -36,14 +41,14 @@ public:
 
     TabularResult
     (
-        const std::vector<std::string>& headings,
+        const Headings& headings,
         const arma::mat& rows,
         const std::string& shortDesc,
         const std::string& longDesc,
         const std::string& unit
     );
 
-    inline const std::vector<std::string>& headings() const
+    inline const Headings& headings() const
     {
         return headings_;
     }
@@ -62,34 +67,45 @@ public:
 
     arma::mat toMat() const;
 
-    inline void setTableData ( const std::vector<std::string>& headings, const Table& rows )
+    inline void setTableData ( const std::vector<SimpleLatex>& headings, const Table& rows )
     {
         headings_=headings;
         rows_=rows;
     }
 
     virtual void writeGnuplotData ( std::ostream& f ) const;
+
     void insertLatexHeaderCode ( std::set<std::string>& f ) const override;
-    void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const override;
-    void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
+
+    std::string latexRepresentation(
+        const std::string& name,
+        int documentHierarchyLevel,
+        const FileStorageInfo& fsi ) const override;
+
+    void exportDataToFile (
+        const std::string& name,
+        const boost::filesystem::path& outputdirectory ) const override;
 
     /**
      * append the contents of this element to the given xml node
      */
-    rapidxml::xml_node<>* appendToNode
-    (
+    rapidxml::xml_node<>* appendToNode(
         const std::string& name,
         rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
+        rapidxml::xml_node<>& node,
+        const insight::hierarchicalData::Element::OutputProperties& outProps
     ) const override;
 
-    void readFromNode
-        (
-            const std::string& name,
-            rapidxml::xml_node<>& node
-        ) override;
+    const rapidxml::xml_node<>* readFromNode(
+        const std::string& name,
+        const rapidxml::xml_node<>& node
+    ) override;
 
-    ResultElementPtr clone() const override;
+    bool isEqual(const Element& op) const override;
+
+    int nChildren() const override;
+
+    std::unique_ptr<hierarchicalData::Element> clone() const override;
 };
 
 

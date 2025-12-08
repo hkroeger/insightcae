@@ -26,6 +26,7 @@
 #include <functional>
 #include <vector>
 #include <set>
+#include <iterator>
 #include "base/exception.h"
 #include "base/factory.h"
 
@@ -96,6 +97,80 @@ std::vector<T> vector_cast(
     return std::container_type_cast<std::vector<T> >(c1);
 }
 
+
+// taken from https://stackoverflow.com/a/3611374
+
+template<class Container>
+class last_inserter_iterator
+/*: public std::_Outit*/
+: public std::iterator<std::output_iterator_tag,
+                           void, void, void, void>
+{
+public:
+    typedef last_inserter_iterator<Container> _Myt;
+    typedef Container container_type;
+    typedef typename Container::const_reference const_reference;
+    typedef typename Container::value_type _Valty;
+
+    last_inserter_iterator(Container& cont)
+        : container(cont)
+    {
+    }
+
+    _Myt& operator=(const _Valty& _Val)
+    {
+        container.insert(get_insert_hint(), _Val);
+        return (*this);
+    }
+
+    _Myt& operator=(_Valty&& _Val)
+    {
+        container.insert(get_insert_hint(), std::forward<_Valty>(_Val));
+        return (*this);
+    }
+
+    _Myt& operator*()
+    {
+        return (*this);
+    }
+
+    _Myt& operator++()
+    {
+        return (*this);
+    }
+
+    _Myt& operator++(int)
+    {
+        return (*this);
+    }
+
+protected:
+    Container& container;
+
+    typename Container::iterator get_insert_hint() const
+    {
+        // Container is empty: no last element to insert ahead of; just insert at begin.
+        if (container.empty())
+            return container.begin();
+        else
+        {
+            // Otherwise return iterator to last element in the container.  std::set wants the
+            // element *preceding* the insert position as a hint, so this should be an iterator
+            // to the last actual element, not end().
+            return (--container.end());
+        }
+    }
+};
+
+template<typename Container>
+inline last_inserter_iterator<Container> last_inserter(Container& cont)
+{
+    return last_inserter_iterator<Container>(cont);
+}
+
+
+
+
 class observer_ptr_base;
 
 
@@ -141,6 +216,7 @@ protected:
 public:
     observer_ptr_base();
     observer_ptr_base(const observer_ptr_base& o);
+    observer_ptr_base(const observable *o);
     observer_ptr_base(observable *o);
     virtual ~observer_ptr_base();
 
@@ -535,6 +611,71 @@ typename Map::const_iterator find_mapped_value(const Map& m, const typename Map:
         [&](const typename Map::value_type& entry) {
             return entry.second==value;
         });
+}
+
+
+
+
+
+
+// the following is taken from sigidagi (https://stackoverflow.com/a/6401663)
+
+// ------------- UTILITY---------------
+template<int...> struct index_tuple{};
+
+template<int I, typename IndexTuple, typename... Types>
+struct make_indexes_impl;
+
+template<int I, int... Indexes, typename T, typename ... Types>
+struct make_indexes_impl<I, index_tuple<Indexes...>, T, Types...>
+{
+    typedef typename make_indexes_impl<I + 1, index_tuple<Indexes..., I>, Types...>::type type;
+};
+
+template<int I, int... Indexes>
+struct make_indexes_impl<I, index_tuple<Indexes...> >
+{
+    typedef index_tuple<Indexes...> type;
+};
+
+template<typename ... Types>
+struct make_indexes : make_indexes_impl<0, index_tuple<>, Types...>
+{};
+
+// ----------- FOR EACH -----------------
+template<typename Func, typename Last>
+void for_each_impl(Func&& f, Last&& last)
+{
+    f(last);
+}
+
+template<typename Func, typename First, typename ... Rest>
+void for_each_impl(Func&& f, First&& first, Rest&&...rest)
+{
+    f(first);
+    for_each_impl( std::forward<Func>(f), rest...);
+}
+
+template<typename Func, int ... Indexes, typename ... Args>
+void for_each_helper( Func&& f, index_tuple<Indexes...>, std::tuple<Args...>&& tup)
+{
+    for_each_impl( std::forward<Func>(f), std::forward<Args>(std::get<Indexes>(tup))...);
+}
+
+template<typename Func, typename ... Args>
+void for_each( std::tuple<Args...>& tup, Func&& f)
+{
+    for_each_helper(std::forward<Func>(f),
+                    typename make_indexes<Args...>::type(),
+                    std::forward<std::tuple<Args...>>(tup) );
+}
+
+template<typename Func, typename ... Args>
+void for_each( std::tuple<Args...>&& tup, Func&& f)
+{
+    for_each_helper(std::forward<Func>(f),
+                    typename make_indexes<Args...>::type(),
+                    std::forward<std::tuple<Args...>>(tup) );
 }
 
 

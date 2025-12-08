@@ -7,12 +7,12 @@ using namespace insight;
 
 int main(int, char*[])
 {
-  ResultSetPtr res = std::make_shared<ResultSet>(*ParameterSet::create(), "Chart Renderer Test", "");
+  ResultSetPtr res = std::make_unique<ResultSet>(nullptr, "Chart Renderer Test", "");
 
   arma::mat x = arma::linspace(0, M_PI, 50);
   arma::mat y = sin(pow(x,2));
 
-  addPlot(res, ".", "testChart",
+  addPlot(*res, ".", "testChart",
           "$x$", "$\\sin(x^2)$",
           {
             PlotCurve(x, y, "testcurve", PlotCurveStyle().t("tc 1")),
@@ -65,7 +65,7 @@ int main(int, char*[])
               });
 
   addPolarContourPlot(
-              res, "testPolarContourChart",
+              *res, "testPolarContourChart",
               "$\\langle F \\rangle$",
               "$\\sqrt{\\langle \\ddot{\\xi}^2+\\ddot{\\eta}^2 \\rangle}$ / $m \\cdot s^{-2}$",
               24.,

@@ -58,12 +58,17 @@ size_t Line::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
+  h+=*p0_;
+  h+=*p1_;
   h+=second_is_dir_;
   return h.getHash();
 }
 
+
+
+Line::Line(const Line&o, TreeCloneMap& tcm)
+    : CL(p0_), CL(p1_), second_is_dir_(o.second_is_dir_)
+{}
 
 
 
@@ -109,7 +114,7 @@ void Line::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "("
-            + lexical_cast<std::string>(myLabel)
+            + toString(myLabel)
             +", "
             + pointSpec(p0_, script, entityLabels)
             + ", "
@@ -177,12 +182,15 @@ void Line::replaceDependency(
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p0_) == entity )
         {
             p0_ = p;
+            invalidate();
         }
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity )
         {
             p1_ = p;
+            invalidate();
         }
     }
+    invalidate();
 }
 
 
@@ -191,6 +199,27 @@ bool Line::isInside( SelectionRect r) const
     return
         r.isInside(p0_->value())
            && r.isInside(p1_->value());
+}
+
+bool Line::pointIsOnLine(const arma::mat &p3d) const
+{
+    arma::mat L=p1_->value()-p0_->value();
+    double ll=arma::norm(L,2);
+    L=L/ll;
+    arma::mat l=(p3d - p0_->value())/ll;
+    double d=arma::dot(l, L);
+    double n=arma::norm(arma::cross(l, L), 2);
+    std::cout<<"check d="<<d<<", n="<<n<<std::endl;
+    return (d<=1.) && (d>=-insight::SMALL) && (fabs(n)<insight::SMALL);
+}
+
+
+arma::mat Line::projectOntoLine(const arma::mat &p) const
+{
+    arma::mat AB = end()->value() - start()->value();
+    arma::mat AC = p - start()->value();
+    arma::mat AD = AB* arma::dot(AB,AC)/arma::dot(AB, AB);
+    return start()->value() + AD;
 }
 
 
@@ -303,7 +332,7 @@ ConstrainedSketchEntityPtr Line::clone() const
         layerName() );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

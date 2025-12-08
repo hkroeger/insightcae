@@ -110,10 +110,11 @@ void addModelsteps
         
         insight::dbg()<<"adding "<<ms.first<<std::endl;
         std::set<std::string> components;
-        if ( insight::cad::ModelFeature* mf = dynamic_cast<insight::cad::ModelFeature*>(fp.get()) )
-        {
-            components = mf->model()->components();
-        }
+#warning reimplement
+        // if ( auto* mf = dynamic_cast<insight::cad::ModelFeature*>(fp.get()) )
+        // {
+        //     components = mf->model()->components();
+        // }
         addModelsteps( *fp, curnode, thisname, components );
         addSymbols( *ms.second, curnode, thisname );
     }
@@ -138,10 +139,11 @@ ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPt
         }
         ui->component_tree->addTopLevelItem(curnode);
         std::set<std::string> components;
-        if ( insight::cad::ModelFeature* mf = dynamic_cast<insight::cad::ModelFeature*>(ms.second.get()) )
-        {
-            components = mf->model()->components();
-        }
+#warning reimplement
+        // if ( insight::cad::ModelFeature* mf = dynamic_cast<insight::cad::ModelFeature*>(ms.second.get()) )
+        // {
+        //     components = mf->model()->components();
+        // }
         addModelsteps( *ms.second, curnode, ms.first, components );
         addSymbols( *ms.second, curnode, ms.first );
     }

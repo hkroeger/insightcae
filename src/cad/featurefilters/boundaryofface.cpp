@@ -19,6 +19,7 @@
 
 #include "boundaryofface.h"
 #include "cadfeature.h"
+#include "datum.h"
 
 
 using namespace std;

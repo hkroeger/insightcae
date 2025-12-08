@@ -49,6 +49,10 @@
 
 namespace insight {
 namespace cad {
+
+class ModelFeature;
+
+
 namespace parser {
 
 
@@ -64,13 +68,43 @@ typedef std::vector<modelstep> model;
 typedef std::pair<long, long> SyntaxElementPos;
 typedef std::pair<boost::filesystem::path, SyntaxElementPos> SyntaxElementLocation;
 
+std::ostream& operator<<(std::ostream& os, const SyntaxElementLocation& sel);
+
+typedef boost::variant<FeaturePtr,FeatureSetPtr> SyntaxElement;
+
 class SyntaxElementDirectory
-: public std::map<SyntaxElementLocation, FeaturePtr>
+: public std::map<SyntaxElementLocation, SyntaxElement>
 {
 public:
     void addEntry(SyntaxElementLocation location, FeaturePtr element);
-    FeaturePtr findElement(long location, const boost::filesystem::path& file="") const;
-    SyntaxElementLocation findElement(ConstFeaturePtr element) const;
+    void addFSEntry(SyntaxElementLocation location, FeatureSetPtr element);
+
+    SyntaxElement findElement(long location, const boost::filesystem::path& file="") const;
+
+    template<class T>
+    SyntaxElementLocation findLocation(const T& element) const
+    {
+        if (element)
+        {
+            const_iterator it = std::find_if
+                (
+                    this->begin(),
+                    this->end(),
+                    [&element](const value_type & t) -> bool
+                    {
+                        if (auto *fp = boost::get<T>(&t.second))
+                        {
+                            return *fp == element;
+                        }
+                        else return false;
+                    }
+                    );
+            if (it!=end())
+                return it->first;
+        }
+        return SyntaxElementLocation("", SyntaxElementPos(-1, -1));
+    }
+
 };
 
 typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
@@ -120,7 +154,8 @@ public:
 };
 
 
-
+class SubmodelRule;
+typedef std::shared_ptr<SubmodelRule> SubmodelRulePtr;
 
 struct ISCADParser
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >
@@ -128,34 +163,65 @@ struct ISCADParser
     CurrentPos<std::string::iterator> current_pos;
     boost::filesystem::path filenameinfo_;
     SyntaxElementDirectoryPtr syntax_element_locations;
+    boost::spirit::qi::symbols<char> selectionkeywords;
 
     typedef qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> ModelstepRule;
     typedef std::shared_ptr<ModelstepRule> ModelstepRulePtr;
+    qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;
+    qi::rule<std::string::iterator,
+             boost::fusion::vector3<std::size_t, std::size_t, FeaturePtr>(),
+             skip_grammar,
+             qi::locals<ModelstepRulePtr> > r_modelstepFunction;
+
+
+    typedef qi::rule<std::string::iterator, ScalarPtr(), skip_grammar> ScalarFunctionRule;
+    typedef std::shared_ptr<ScalarFunctionRule> ScalarFunctionRulePtr;
+    qi::symbols<char, ScalarFunctionRulePtr> scalarFunctionRules;
+    qi::rule<std::string::iterator,
+             boost::fusion::vector3<std::size_t, std::size_t, ScalarPtr>(),
+             skip_grammar,
+             qi::locals<ScalarFunctionRulePtr> > r_scalarFunction;
+
+
+    typedef qi::rule<std::string::iterator, VectorPtr(), skip_grammar> VectorFunctionRule;
+    typedef std::shared_ptr<VectorFunctionRule> VectorFunctionRulePtr;
+    qi::symbols<char, VectorFunctionRulePtr> vectorFunctionRules;
+    qi::rule<std::string::iterator,
+             boost::fusion::vector3<std::size_t, std::size_t, VectorPtr>(),
+             skip_grammar,
+             qi::locals<VectorFunctionRulePtr> > r_vectorFunction;
+
 
     Model* model_;
+
+
 
     qi::rule<std::string::iterator, ScalarPtr(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<std::string::iterator, VectorPtr(), qi::locals<FeaturePtr>, skip_grammar > r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_vertexFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_edgeFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_faceFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr> > r_solidFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_vertexFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_edgeFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_faceFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_solidFeaturesExpression;
     qi::rule<std::string::iterator, DatumPtr(), skip_grammar> r_datumExpression;
     
     qi::rule<std::string::iterator, skip_grammar> r_model;
-    qi::rule<std::string::iterator, skip_grammar> r_assignment;
+    qi::rule<std::string::iterator, skip_grammar, qi::locals<std::string,SyntaxElementPos> > r_assignment;
     qi::rule<std::string::iterator, qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_propertyAssignment;
     qi::rule<std::string::iterator, skip_grammar> r_postproc, r_doc;
     qi::rule<std::string::iterator, DrawingViewDefinition(), skip_grammar> r_viewDef;
-    qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;
-    qi::rule<std::string::iterator, boost::fusion::vector3<std::size_t, std::size_t, FeaturePtr>(), skip_grammar, qi::locals<ModelstepRulePtr> > r_modelstepFunction;
-    ModelstepRule r_modelstep;
+
+    // ModelstepRule r_modelstep;
     qi::rule<std::string::iterator, boost::fusion::vector3<std::size_t, FeaturePtr, std::size_t>(), skip_grammar > r_modelstepSymbol;
     qi::rule<std::string::iterator, std::string()> r_identifier;
     qi::rule<std::string::iterator, std::string()> r_string;
     qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
     qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
+
+    qi::rule<std::string::iterator,
+             std::shared_ptr<ModelFeature>(ModelVariableTable),
+             skip_grammar, qi::locals<SubmodelRulePtr> >
+        r_submodel;
 
 
     ISCADParser(Model* model, const boost::filesystem::path& filenameinfo="");
@@ -168,6 +234,23 @@ struct ISCADParser
     void createDatumExpressions();
     void createSelectionExpressions();
 };
+
+
+
+
+class SubmodelRule
+{
+public:
+    std::shared_ptr<insight::cad::Model> model_;
+    ISCADParser parser_;
+
+    SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars);
+
+    const qi::rule<std::string::iterator, skip_grammar>&
+    rule() const;
+};
+
+
 
 }
 

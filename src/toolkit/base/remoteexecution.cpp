@@ -106,9 +106,9 @@ RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& loca
 
 
 RemoteExecutionConfig::RemoteExecutionConfig(RemoteServer::ConfigPtr rsc,
-                                             const filesystem::path &location,
-                                             const filesystem::path &remotePath,
-                                             const filesystem::path &localREConfigFile)
+                                             const boost::filesystem::path &location,
+                                             const boost::filesystem::path &remotePath,
+                                             const boost::filesystem::path &localREConfigFile)
   : RemoteLocation(rsc, remotePath),
     localDir_(location)
 {

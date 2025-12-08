@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include "base/tools.h"
 #include "datum.h"
+#include "cadparameters.h"
+
 #include "base/translations.h"
 
 #include <boost/spirit/include/qi.hpp>
@@ -49,17 +51,21 @@ size_t Cylinder::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=p2isAxis_;
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=D_->value();
-  if (Di_) h+=Di_->value();
+  h+=*p1_;
+  h+=*p2_;
+  h+=*D_;
+  if (Di_) h+=*Di_;
   h+=centered_;
   return h.getHash();
 }
 
 
 
-
+Cylinder::Cylinder(const Cylinder&o, TreeCloneMap& tcm)
+    : p2isAxis_(o.p2isAxis_),
+    CL(p1_), CL(p2_), CL(D_), CL(Di_),
+    centered_(o.centered_)
+{}
 
 Cylinder::Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered )
     : p2isAxis_ ( p2isAxis ), p1_ ( p1 ), p2_ ( p2 ), D_ ( D ), centered_ ( centered )
@@ -166,19 +172,19 @@ void Cylinder::insertrule ( parser::ISCADParser& ruleset )
         "Cylinder",
         std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-                    ( '('
-                      >> ruleset.r_vectorExpression >> ','
-                      >> ( ( qi::lit ( "ax" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
-                      >> ruleset.r_vectorExpression >> ','
-                      >> ruleset.r_scalarExpression
-                      >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
-                      >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
-                      >> ')' )
-                    [ qi::_val = phx::bind (
-                       &Cylinder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, bool, bool>,
-                       qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
+            ( '('
+              > ruleset.r_vectorExpression > ','
+              > ( ( qi::lit ( "ax" ) > qi::attr ( true ) ) | qi::attr ( false ) )
+              > ruleset.r_vectorExpression > ','
+              > ruleset.r_scalarExpression
+              > ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
+              > ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
+              > ')' )
+            [ qi::_val = phx::bind (
+               &Cylinder::create<VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, bool, bool>,
+               qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
 
-                )
+        )
     );
 }
 

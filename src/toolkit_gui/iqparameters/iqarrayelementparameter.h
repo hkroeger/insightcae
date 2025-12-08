@@ -14,17 +14,10 @@ public:
       IQArrayElementParameterBase,
         LIST(
             QObject* parent,
-            IQParameterSetModel* psmodel,
-            insight::Parameter* parameter,
-            const insight::ParameterSet& defaultParameterSet ),
-        LIST(parent, psmodel, parameter, defaultParameterSet)
+            IQHierarchicalDataModel* hdmodel,
+            insight::hierarchicalData::Element* arrayelement ),
+        LIST(parent, hdmodel, arrayelement)
   );
-
-  static IQParameter* create(
-      QObject* parent,
-      IQParameterSetModel* psmodel,
-      insight::Parameter* p,
-      const insight::ParameterSet& defaultParameterSet );
 
 public:
   declareType("IQArrayElementParameterBase");
@@ -32,9 +25,8 @@ public:
   IQArrayElementParameterBase
   (
       QObject *parent,
-      IQParameterSetModel* psmodel,
-      insight::Parameter *parameter,
-      const insight::ParameterSet &defaultParameterSet
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element
   );
 
 public Q_SLOTS:
@@ -57,15 +49,14 @@ public:
   IQArrayElementParameter
   (
       QObject *parent,
-      IQParameterSetModel* psmodel,
-      insight::Parameter *parameter,
-      const insight::ParameterSet &defaultParameterSet
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element
   )
-    : IQBaseParameter(parent, psmodel, parameter, defaultParameterSet),
-      IQArrayElementParameterBase(parent, psmodel, parameter, defaultParameterSet)
+    : IQBaseParameter(parent, hdmodel, element),
+      IQArrayElementParameterBase(parent, hdmodel, element)
   {}
 
-  void populateContextMenu(QMenu* m) override;
+  void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
 
   void deleteFromArray() override;
 };

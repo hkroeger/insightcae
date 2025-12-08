@@ -1,5 +1,6 @@
 #include "distanceconstraint.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "cadparameters.h"
 
 #include "AIS_Point.hxx"
@@ -27,9 +28,9 @@ defineType(DistanceConstraint);
 size_t DistanceConstraint::calcHash() const
 {
     ParameterListHash h;
-    h+=p1_->value();
-    h+=p2_->value();
-    if (distanceAlong_) h+=distanceAlong_->value();
+    h+=*p1_;
+    h+=*p2_;
+    if (distanceAlong_) h+=*distanceAlong_;
     h+=targetValue();
     return h.getHash();
 }
@@ -45,12 +46,7 @@ DistanceConstraint::DistanceConstraint(
     : ConstraintWithDimensionLines(layerName),
     Distance(p1, p2, distanceAlong),
     planeNormal_(planeNormal)
-{
-    ParameterSet::Entries e;
-    e.emplace("dimLineOfs", std::make_unique<DoubleParameter>(1., "dimension line offset"));
-    e.emplace("arrowSize", std::make_unique<DoubleParameter>(1., "arrow size"));
-    changeDefaultParameters(*ParameterSet::create(std::move(e), ""));
-}
+{}
 
 
 
@@ -168,6 +164,12 @@ bool DistanceConstraint::isInside(SelectionRect r) const
     return r.isInside(symbolLocation());
 }
 
+void DistanceConstraint::ensureRequiredParameters()
+{
+    parametersRef().getOrInsert<DoubleParameter>("dimLineOfs", 1., "dimension line offset");
+    parametersRef().getOrInsert<DoubleParameter>("arrowSize", 1., "arrow size");
+}
+
 
 
 
@@ -208,14 +210,7 @@ FixedDistanceConstraint::FixedDistanceConstraint(
     VectorPtr distanceAlong
     )
     : DistanceConstraint(p1, p2, planeNormal, layerName, distanceAlong)
-{
-    auto ps = defaultParameters().cloneParameterSet();
-    ps->insert(
-        "distance",
-        std::make_unique<DoubleParameter>(
-            calcDistance(), "target value") );
-    changeDefaultParameters(*ps);
-}
+{}
 
 
 
@@ -249,7 +244,7 @@ void FixedDistanceConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p1_, script, entityLabels)
             + ", "
             + pointSpec(p2_, script, entityLabels)
@@ -292,9 +287,18 @@ void FixedDistanceConstraint::addParserRule(
                      phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
                      qi::_5, qi::_4 ),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6, boost::filesystem::path(".")),
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6,
+                       boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
+}
+
+void FixedDistanceConstraint::ensureRequiredParameters()
+{
+    DistanceConstraint::ensureRequiredParameters();
+
+    parametersRef().getOrInsert<DoubleParameter>(
+        "distance", calcDistance(), "target value" );
 }
 
 
@@ -314,7 +318,7 @@ ConstrainedSketchEntityPtr FixedDistanceConstraint::clone() const
         layerName(), distanceAlong_ );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 
@@ -375,7 +379,7 @@ void LinkedDistanceConstraint::generateScriptCommand(
     script.insertCommandFor(
         myLabel,
         type() + "( "
-            + lexical_cast<std::string>(myLabel) + ", "
+            + toString(myLabel) + ", "
             + pointSpec(p1_, script, entityLabels) + ", "
             + pointSpec(p2_, script, entityLabels) + ", "
             + distExpr_
@@ -441,6 +445,13 @@ void LinkedDistanceConstraint::addParserRule(
 
 
 
+void LinkedDistanceConstraint::ensureRequiredParameters()
+{
+    DistanceConstraint::ensureRequiredParameters();
+}
+
+
+
 
 void LinkedDistanceConstraint::operator=(const ConstrainedSketchEntity& other)
 {
@@ -457,7 +468,7 @@ ConstrainedSketchEntityPtr LinkedDistanceConstraint::clone() const
         distanceAlong_ );
 
     cl->changeDefaultParameters(defaultParameters());
-    cl->parametersRef() = parameters();
+    cl->parametersRef().assignFrom( parameters() );
     return cl;
 }
 

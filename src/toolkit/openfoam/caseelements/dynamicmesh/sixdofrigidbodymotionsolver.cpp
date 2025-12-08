@@ -33,7 +33,7 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
         rbmc["rhoInf"]=rhoc->rhoInf;
       }
 
-    rbmc["accelerationRelaxation"]=0.4;
+    rbmc["accelerationRelaxation"]=p().accelerationRelaxation;
 
     OFDictData::dict bl;
     for (auto& body: p().bodies)
@@ -93,7 +93,7 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
             fsd["type"]="prescribedVelocity";
             fsd["body"]=pv->body;
             fsd["velocity"]="table ( ( 0 "+
-                    boost::lexical_cast<std::string>(arma::norm(pv->velocity,2))
+                    toString(arma::norm(pv->velocity,2))
                     +" ) )";
             fsd["direction"]=OFDictData::vector3(
                         pv->velocity

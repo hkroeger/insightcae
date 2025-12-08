@@ -36,6 +36,7 @@ class Pyramid
     FeaturePtr base_;
     VectorPtr ptip_;
 
+    Pyramid(const Pyramid&o, TreeCloneMap& tcm);
     Pyramid ( FeaturePtr base, VectorPtr ptip );
 
     size_t calcHash() const override;
@@ -43,8 +44,11 @@ class Pyramid
 
 public:
     declareType ( "Pyramid" );
-
+#ifndef SWIG
+    DEPENDS((base_, ptip_));
+#endif
     CREATE_FUNCTION(Pyramid);
+    CLONEABLE(Pyramid);
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

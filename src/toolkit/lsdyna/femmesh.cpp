@@ -1,6 +1,8 @@
 
 #include "femmesh.h"
 
+#include "vtkGenericDataObjectReader.h"
+#include "vtkCellData.h"
 
 namespace insight {
 
@@ -8,6 +10,7 @@ namespace insight {
 const std::array<int, 3> FEMMesh::triNodeMapping = { 0, 1, 2 };
 const std::array<int, 4> FEMMesh::quadNodeMapping = { 0, 1, 2, 3 };
 const std::array<int, 4> FEMMesh::tetNodeMapping = { 0, 1, 2, 3 };
+const std::array<int, 2> FEMMesh::lineNodeMapping = { 0, 1 };
 
 
 
@@ -57,6 +60,11 @@ void FEMMesh::findNodesOfPart(std::set<int>& nodeSet, int part_id) const
         if (e.part_id==part_id)
             nodeSet.insert(e.n.begin(), e.n.end());
     }
+    for (const auto& l: lines_)
+    {
+        if (l.part_id==part_id)
+            nodeSet.insert(l.n.begin(), l.n.end());
+    }
 }
 
 void FEMMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
@@ -80,6 +88,23 @@ void FEMMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
 
 
 
+int FEMMesh::findNodeAt(const arma::mat &x, double tol) const
+{
+    for (auto& n: nodes_)
+    {
+        if (arma::norm(n.second-x,2)<=tol)
+        {
+            return n.first;
+        }
+    }
+    throw insight::Exception("no node found at location (%g %g %g)",
+                             x(0), x(1), x(2));
+    return -1;
+}
+
+
+
+
 FEMMesh::IdSet& FEMMesh::nodeSet(int setId)
 {
     return nodeSets_[setId];
@@ -91,6 +116,79 @@ FEMMesh::IdSet &FEMMesh::shellSet(int setId)
 }
 
 
+
+void FEMMesh::addVTK(const boost::filesystem::path &fn, int partId)
+{
+    auto reader = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+    reader->SetFileName(fn.string().c_str());
+    reader->Update();
+
+    std::map<int, int> unhandledCells;
+    vtkIdType nodeIdsOfs=maxNodeId();
+    if (auto *smesh = vtkDataSet::SafeDownCast(reader->GetOutput()))
+    {
+        auto cei = smesh->GetCellData()->GetArray("CellEntityIds");
+
+        for (int i=0; i<smesh->GetNumberOfCells(); ++i)
+        {
+
+            int effectivePartId=partId;
+            if (cei)
+            {
+                effectivePartId+=cei->GetTuple1(i);
+            }
+
+            auto *c=smesh->GetCell(i);
+            if (auto *q = vtkQuad::SafeDownCast(c))
+            {
+                addQuadElement(smesh, q, effectivePartId, nodeIdsOfs);
+            }
+            else if (auto *t = vtkTriangle::SafeDownCast(c))
+            {
+                addTriElement(smesh, t, effectivePartId, nodeIdsOfs);
+            }
+            else if (auto *t = vtkTetra::SafeDownCast(c))
+            {
+                addTetElement(smesh, t, effectivePartId, nodeIdsOfs);
+            }
+            else if (auto *l = vtkLine::SafeDownCast(c))
+            {
+                addLineElement(smesh, l, effectivePartId, nodeIdsOfs);
+            }
+            else
+            {
+                int ct=c->GetCellType();
+                if (unhandledCells.find(ct)==unhandledCells.end())
+                    unhandledCells[ct]=1;
+                else
+                    unhandledCells[ct]++;
+            }
+        }
+    }
+    else
+    {
+        throw insight::Exception("Unhandled data set type:", reader->GetOutput()->GetDataObjectType());
+    }
+
+    if (unhandledCells.size()>0)
+    {
+        std::cerr<<"Unhandled cells:\n";
+        for (const auto& uhc: unhandledCells)
+        {
+            std::cerr<<" type "<<uhc.first<<": "<<uhc.second<<"\n";
+        }
+    }
+}
+
+void FEMMesh::partToSet(int partId, int setId)
+{
+    insight::assertion(
+        elementsAreNumbered,
+        "elements need to be numbered first");
+
+    findNodesOfPart( nodeSet(setId), partId );
+    findShellsOfPart( shellSet(setId), partId );
+}
 
 void FEMMesh::addQuadElement(vtkDataSet* ds, vtkQuad* q, int part_id, vtkIdType nodeIdOfs)
 {
@@ -105,6 +203,11 @@ void FEMMesh::addTriElement(vtkDataSet* ds, vtkTriangle* t, int part_id, vtkIdTy
 void FEMMesh::addTetElement(vtkDataSet* ds, vtkTetra* t, int part_id, vtkIdType nodeIdOfs)
 {
     addElement(ds, t, part_id, tets_, nodeIdOfs);
+}
+
+void FEMMesh::addLineElement(vtkDataSet *ds, vtkLine *l, int part_id, vtkIdType nodeIdOfs)
+{
+    addElement(ds, l, part_id, lines_, nodeIdOfs);
 }
 
 vtkIdType FEMMesh::maxNodeId() const
@@ -124,6 +227,7 @@ void FEMMesh::numberElements(
     numberElements(ei, tris_, parts2Skip);
     numberElements(ei, quads_, parts2Skip);
     numberElements(ei, tets_, parts2Skip);
+    numberElements(ei, lines_, parts2Skip);
     elementsAreNumbered=true;
 }
 
@@ -175,7 +279,22 @@ int FEMMesh::maxElementIdx() const
             }
             else
             {
-                return -1;
+                auto lie = std::find_if
+                    (
+                        lines_.rbegin(), lines_.rend(),
+                        [](const decltype(lines_)::value_type& e)
+                        {
+                            return e.idx>=0;
+                        }
+                        );
+                if (lie!=lines_.rend())
+                {
+                    return lie->idx;
+                }
+                else
+                {
+                    return -1;
+                }
             }
         }
     }
@@ -187,6 +306,7 @@ void FEMMesh::getCellCenters(vtkPoints *ctrs) const
     insertElementCenters(ctrs, tris_);
     insertElementCenters(ctrs, quads_);
     insertElementCenters(ctrs, tets_);
+    insertElementCenters(ctrs, lines_);
 }
 
 
@@ -236,6 +356,22 @@ void FEMMesh::write(
     else if (fmt==Radioss)
     {
         writeElementListRadioss(of, tets_, "TETRA4");
+    }
+
+
+    if (fmt==LSDyna)
+    {
+        std::ostringstream os;
+        writeElementListLSDyna(os, lines_, ", ");
+        if (!os.str().empty())
+        {
+            of<<"*ELEMENT_BEAM\n";
+            of<<os.str();
+        }
+    }
+    else if (fmt==Radioss)
+    {
+        writeElementListRadioss(of, lines_, "LINE2");
     }
 
     for (const auto& ns: nodeSets_)
@@ -296,6 +432,10 @@ void FEMMesh::printStatistics(ostream &os) const
     {
         stat[e.part_id].nTets++;
     }
+    for (const auto& e: lines_)
+    {
+        stat[e.part_id].nLines++;
+    }
 
     for (const auto& p: stat)
     {
@@ -312,7 +452,8 @@ void FEMMesh::PartStatistics::print(ostream &os, int partId) const
     os << " * Part "<<partId<<" comprises "
        << "\t" << nTris << " triangles, "
        << "\t" << nQuads << " quads, "
-       << "\t" << nTets << " tetrahedra."
+       << "\t" << nTets << " tetrahedra, "
+       << "\t" << nLines << " lines."
        << endl;
 }
 

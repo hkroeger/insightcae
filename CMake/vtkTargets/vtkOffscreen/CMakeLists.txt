@@ -54,6 +54,11 @@ else()
     get_filename_component(PY3ROOT ${PYTHON_LIBRARY} DIRECTORY) #lib
     get_filename_component(PY3ROOT ${PY3ROOT} DIRECTORY) #root
 
+    if (WIN32)
+      set(LIBNAME libvtkDICOM-pvisoffscreen.dll.a)
+    else()
+      set(LIBNAME libvtkDICOM-pvisoffscreen.so.0.8.17)
+    endif()
 
     ExternalProject_Add( vtkdicom-offscreen
        DOWNLOAD_COMMAND "" # Disable download
@@ -72,7 +77,7 @@ else()
          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
          -DCMAKE_INSTALL_LIBDIR=lib
 
-       BUILD_BYPRODUCTS <INSTALL_DIR>/lib/libvtkDICOM-pvisoffscreen.so.0.8.15
+       BUILD_BYPRODUCTS <INSTALL_DIR>/lib/${LIBNAME}
     )
 
     ExternalProject_Get_Property( vtkdicom-offscreen INSTALL_DIR )
@@ -80,7 +85,7 @@ else()
 
     set(VTKDICOMOFFSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
     set(VTKDICOMOFFSCREEN_LIBDIR ${INSTALL_DIR}/lib)
-    set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/libvtkDICOM-pvisoffscreen.so.0.8.15)
+    set(VTKDICOMOFFSCREEN_LIBRARY ${VTKDICOMOFFSCREEN_LIBDIR}/${LIBNAME})
 
     install(DIRECTORY ${VTKDICOMOFFSCREEN_LIBDIR}/
       DESTINATION lib

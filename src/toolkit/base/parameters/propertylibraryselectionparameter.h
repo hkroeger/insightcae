@@ -37,6 +37,9 @@ protected:
 public:
     declareType ( "librarySelection" );
 
+    PropertyLibrarySelectionParameter(
+        const rapidxml::xml_node<> & node);
+
     PropertyLibrarySelectionParameter (
             const std::string& description,
             bool isHidden=false,
@@ -72,15 +75,15 @@ public:
     std::string iconPathForKey(const std::string& key) const override;
 
 
-    void readFromNode(
+    const rapidxml::xml_node<>* readFromNode(
         const std::string& name,
-        rapidxml::xml_node<>& node,
-        boost::filesystem::path
+        const rapidxml::xml_node<>& node
     ) override;
 
-    std::unique_ptr<Parameter> clone(bool initialize) const override;
-    void copyFrom(const Parameter& p) override;
-    void operator=(const PropertyLibrarySelectionParameter& p);
+    std::unique_ptr<Element> clone() const override;
+
+    void assignFrom(const Element& p) override;
+
     int nChildren() const override;
 };
 

@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
         rp.wait();
 
     }
-    catch (const std::exception& e)
+    catch (...)
     {
-        printException(e);
+        insight::printCurrentException();
         return -1;
     }
 }

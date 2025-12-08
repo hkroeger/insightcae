@@ -1,4 +1,5 @@
 add_subdirectory(applyBL)
+add_subdirectory(additionalThermos)
 add_subdirectory(binningProfile)
 add_subdirectory(blockMeshProjectedSplineEdge)
 add_subdirectory(convertPressure)

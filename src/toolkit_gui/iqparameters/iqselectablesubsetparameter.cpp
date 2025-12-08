@@ -26,7 +26,7 @@ addToFactoryTable(IQParameter, IQSelectableSubsetParameter);
 
 
 addFunctionToStaticFunctionTable(
-    IQParameterGridViewDelegateEditorWidget, IQSelectableSubsetParameter,
+    IQHierarchicalDataGridViewDelegateEditorWidget, IQSelectableSubsetParameter,
     createDelegate,
     [](QObject* parent) { return new IQSelectionDelegate(parent); }
     );
@@ -37,18 +37,18 @@ addFunctionToStaticFunctionTable(
 IQSelectableSubsetParameter::IQSelectableSubsetParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    insight::Parameter* parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
   : IQSelectionParameterBase<insight::SelectableSubsetParameter>(
-          parent, psmodel, parameter, defaultParameterSet)
+          parent, hdmodel, element)
 {}
 
 
 
 
-void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
+void IQSelectableSubsetParameter::populateContextMenu(
+    QMenu *cm, IQCADModel3DViewer *viewer )
 {
   auto *saveAction = new QAction("Save to file...");
   cm->addAction(saveAction);
@@ -67,6 +67,10 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
               {{ "iss", "Selectable subset contents" }} ) )
           {
               insight::CurrentExceptionContext ex(3, "writing parameter set to file "+fn.asString());
+
+              parameter().saveToFile(fn.asString());
+
+              /*
               std::ofstream f(fn.asString());
 
               // prepare XML document
@@ -82,12 +86,14 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
               doc.append_node(rootnode);
 
               // store parameters
-              parameter().appendToNode(this->name().toStdString(), doc, *rootnode, "");
+              parameter().appendToNode(this->name().toStdString(), doc, *rootnode);
+
 
               f << doc;
               f << std::endl;
               f << std::flush;
               f.close();
+*/
           }
       }
       );
@@ -106,21 +112,20 @@ void IQSelectableSubsetParameter::populateContextMenu(QMenu *cm)
           {
               auto file = insight::ensureFileExtension(fn, "iss");
 
-              insight::CurrentExceptionContext ex("reading parameter set from file "+file.string());
-              std::string contents;
-              insight::readFileIntoString(file, contents);
-
-              // prepare XML document
-              xml_document<> doc;
-              doc.parse<0>(&contents[0]);
+              insight::XMLDocument doc(file);
               xml_node<> *rootnode = doc.first_node(insight::SelectableSubsetParameter::typeName_());
 
 
               // store parameters
-              parameterRef().readFromNode(this->name().toStdString(), *rootnode, "");
+              parameterRef().readFromNode(this->name().toStdString(), *rootnode);
           }
       }
       );
+}
+
+QVariant IQSelectableSubsetParameter::value() const
+{
+    return QString::fromStdString(parameter().selection());
 }
 
 

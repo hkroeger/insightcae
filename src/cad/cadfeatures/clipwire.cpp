@@ -21,7 +21,8 @@
 #include "GCPnts_AbscissaPoint.hxx"
 
 #include "clipwire.h"
-
+#include "cadfeature.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
@@ -48,20 +49,21 @@ addToStaticFunctionTable(Feature, ClipWire, ruleDocumentation);
 size_t ClipWire::calcHash() const
 {
   ParameterListHash h;
-  h+=m1_;
-  h+=ls_->value();
-  h+=le_->value();
-  return h.getHash();
+  h+=*ls_;
+  h+=*le_;
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
-
+ClipWire::ClipWire(const ClipWire&o, TreeCloneMap& tcm)
+    : DerivedFeature(o, tcm), CL(ls_), CL(le_)
+{}
 
 
 ClipWire::ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
 : DerivedFeature(wire),
-  m1_(wire), ls_(ls), le_(le)
+  ls_(ls), le_(le)
 {
 }
 
@@ -72,12 +74,12 @@ ClipWire::ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le)
 
 void ClipWire::build()
 {
-    if (!m1_->isSingleOpenWire())
+    if (!baseFeature()->isSingleOpenWire())
     {
       throw insight::Exception(_("Given feature is not a wire! ClipWire can only operate on wires."));
     }
 
-    TopoDS_Wire w = m1_->asSingleOpenWire();
+    TopoDS_Wire w = baseFeature()->asSingleOpenWire();
 
     double Ls=ls_->value();
     double Le=le_->value();
@@ -192,7 +194,9 @@ void ClipWire::insertrule(parser::ISCADParser& ruleset)
     "ClipWire",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' )
+    ( '(' > ruleset.r_solidmodel_expression > ','
+             > ruleset.r_scalarExpression > ','
+             > ruleset.r_scalarExpression > ')' )
                     [ qi::_val = phx::bind(
                          &ClipWire::create<FeaturePtr, ScalarPtr, ScalarPtr>,
                          qi::_1, qi::_2, qi::_3) ]

@@ -17,6 +17,7 @@ class Tongue
   size_t calcHash() const override;
   void build() override;
 
+  Tongue(const Tongue&o, TreeCloneMap& tcm);
   Tongue(
       FeaturePtr spine,
       VectorPtr direction,
@@ -29,7 +30,11 @@ class Tongue
 
 public:
   declareType("Tongue");
+#ifndef SWIG
+  DEPENDS((spine_,direction_, insidePt_,t_, w_, ovl_, delta_));
+#endif
   CREATE_FUNCTION(Tongue);
+  CLONEABLE(Tongue);
 
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();

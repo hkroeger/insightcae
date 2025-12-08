@@ -1,4 +1,7 @@
 #include "attributeresulttable.h"
+#include "base/hierarchicalelement.h"
+#include "base/rapidxml.h"
+#include <sstream>
 
 
 using namespace std;
@@ -68,8 +71,12 @@ const SimpleLatex& AttributeTableResult::valueColumnTitle() const
 
 
 
-void AttributeTableResult::writeLatexCode ( std::ostream& f, const std::string& , int , const boost::filesystem::path& outputfilepath ) const
+std::string AttributeTableResult::latexRepresentation(
+    const std::string&,
+    int,
+    const FileStorageInfo& ) const
 {
+    std::ostringstream f;
     f<< "\\begin{longtable}{lc}\n"
      << labelColumnTitle_.toLaTeX()
      << " & "
@@ -82,12 +89,15 @@ void AttributeTableResult::writeLatexCode ( std::ostream& f, const std::string& 
         f<<names_[i].toLaTeX()<<" & "<<values_[i]<<"\\\\"<<endl;
     }
     f<<"\\end{longtable}\n";
+    return f.str();
 }
 
 
 
 
-void AttributeTableResult::exportDataToFile ( const string& name, const path& outputdirectory ) const
+void AttributeTableResult::exportDataToFile (
+    const string& name,
+    const boost::filesystem::path& outputdirectory ) const
 {
     boost::filesystem::path fname ( outputdirectory/ ( name+".csv" ) );
     std::ofstream f ( fname.c_str() );
@@ -100,20 +110,21 @@ void AttributeTableResult::exportDataToFile ( const string& name, const path& ou
 
 
 
-void AttributeTableResult::readFromNode(
+const rapidxml::xml_node<>*
+AttributeTableResult::readFromNode(
     const string &name,
-    rapidxml::xml_node<> &node )
+    const rapidxml::xml_node<> &parentNode )
 {
-  readBaseAttributesFromNode(name, node);
-  if (auto *vct = node.first_attribute("valueColumnTitle"))
+  auto *child = ResultElement::readFromNode(name, parentNode);
+  if (auto *vct = child->first_attribute("valueColumnTitle"))
   {
       valueColumnTitle_=SimpleLatex(vct->value());
   }
-  if (auto *lct = node.first_attribute("labelColumnTitle"))
+  if (auto *lct = child->first_attribute("labelColumnTitle"))
   {
       labelColumnTitle_=SimpleLatex(lct->value());
   }
-  for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
+  for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
   {
     names_.push_back(SimpleLatex(e->first_attribute("name")->value()));
     std::string typ(e->first_attribute("type")->value());
@@ -125,65 +136,99 @@ void AttributeTableResult::readFromNode(
     else if (typ=="string")
       values_.push_back(value);
   }
+  return child;
+}
+
+int AttributeTableResult::nChildren() const
+{
+    return 0;
+}
+
+bool AttributeTableResult::isEqual(const Element &op) const
+{
+    if (auto *oa = dynamic_cast<const AttributeTableResult*>(&op))
+    {
+        if (labelColumnTitle_!=oa->labelColumnTitle_)
+            return false;
+        if (valueColumnTitle_!=oa->valueColumnTitle_)
+            return false;
+
+        if (names_.size()!=oa->names_.size())
+            return false;
+        if (values_.size()!=oa->values_.size())
+            return false;
+
+        {
+            auto i=names_.begin();
+            auto j=oa->names_.begin();
+
+            while (i!=names_.end())
+            {
+                if (*i!=*j)
+                    return false;
+
+                ++i; ++j;
+            }
+        }
+
+        {
+            auto i=values_.begin();
+            auto j=oa->values_.begin();
+
+            while (i!=values_.end())
+            {
+                if (*i!=*j)
+                    return false;
+
+                ++i; ++j;
+            }
+        }
+
+        return true;
+    }
+    else
+        return false;
 }
 
 
-xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
+xml_node< char >* AttributeTableResult::appendToNode (
+    const string& name,
+    xml_document< char >& doc,
+    xml_node< char >& node,
+    const OutputProperties& outProps ) const
 {
     using namespace rapidxml;
-    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node, outProps );
 
     if (labelColumnTitle()!=defaultLabelColumnTitle)
     {
-        child->append_attribute ( doc.allocate_attribute
-                                  (
-                                      "labelColumnTitle",
-                                      doc.allocate_string ( labelColumnTitle().simpleLatex().c_str() )
-                                  ) );
+        appendAttribute(doc, *child, "labelColumnTitle", labelColumnTitle().simpleLatex());
     }
     if (valueColumnTitle()!=defaultValueColumnTitle)
     {
-        child->append_attribute ( doc.allocate_attribute
-                                  (
-                                      "valueColumnTitle",
-                                      doc.allocate_string ( valueColumnTitle().simpleLatex().c_str() )
-                                  ) );
+        appendAttribute(doc, *child, "valueColumnTitle", valueColumnTitle().simpleLatex());
     }
 
     for ( size_t i=0; i<names_.size(); i++ ) {
-        xml_node<>* cattr = doc.allocate_node (
-              node_element,
-              doc.allocate_string ( str ( format ( "attribute_%i" ) %i ).c_str()
-                                    ) );
-        child->append_node ( cattr );
 
-        cattr->append_attribute ( doc.allocate_attribute
-                                  (
-                                      "name",
-                                      doc.allocate_string ( names_[i].simpleLatex().c_str() )
-                                  ) );
+        auto cattr = appendNode(doc, *child, str ( format ( "attribute_%i" ) %i ));
 
-        if ( const int* v = boost::get<int> ( &values_[i] ) ) {
-            cattr->append_attribute ( doc.allocate_attribute (
-                                          "type", doc.allocate_string ( "int" )
-                                      ) );
-            cattr->append_attribute ( doc.allocate_attribute (
-                                          "value", doc.allocate_string ( boost::lexical_cast<std::string> ( *v ).c_str() )
-                                      ) );
-        } else if ( const double* v = boost::get<double> ( &values_[i] ) ) {
-            cattr->append_attribute ( doc.allocate_attribute (
-                                          "type", doc.allocate_string ( "double" )
-                                      ) );
-            cattr->append_attribute ( doc.allocate_attribute (
-                                          "value", doc.allocate_string ( boost::lexical_cast<std::string> ( *v ).c_str() )
-                                      ) );
-        } else if ( const std::string* v = boost::get<std::string> ( &values_[i] ) ) {
-            cattr->append_attribute ( doc.allocate_attribute (
-                                          "type", doc.allocate_string ( "string" )
-                                      ) );
-            cattr->append_attribute ( doc.allocate_attribute (
-                                          "value", doc.allocate_string ( v->c_str() )
-                                      ) );
+        appendAttribute(doc, cattr, "name", names_[i].simpleLatex());
+
+        if ( const int* v = boost::get<int> ( &values_[i] ) )
+        {
+            appendAttribute(doc, cattr, "type", "int" );
+            appendAttribute(doc, cattr, "value", *v );
+        }
+        else if ( const double* v = boost::get<double> ( &values_[i] ) )
+        {
+            appendAttribute(doc, cattr, "type", "double");
+            appendAttribute(doc, cattr, "value", *v );
+        }
+        else if ( const std::string* v = boost::get<std::string> ( &values_[i] ) )
+        {
+            appendAttribute(doc, cattr, "type", "string" );
+            appendAttribute(doc, cattr, "value", v);
         }
 
     }
@@ -192,19 +237,21 @@ xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_d
 }
 
 
-ResultElementPtr AttributeTableResult::clone() const
+std::unique_ptr<hierarchicalData::Element>
+AttributeTableResult::clone() const
 {
-    ResultElementPtr res ( new AttributeTableResult ( names_, values_,
-                           shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex(),
-                           labelColumnTitle_, valueColumnTitle_ ) );
-    res->setOrder ( order() );
-    return res;
+    auto cl = std::make_unique<AttributeTableResult>(
+        names_, values_,
+        shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex(),
+        labelColumnTitle_, valueColumnTitle_ );
+    cl->setOrder ( order() );
+    return cl;
 }
 
 
 
 
-ResultElementPtr polynomialFitResult
+std::unique_ptr<ResultElement> polynomialFitResult
 (
     const arma::mat& coeffs,
     const std::string& xvarName,
@@ -224,19 +271,16 @@ ResultElementPtr polynomialFitResult
         } else if ( order==1 ) {
             names.push_back ( "$"+xvarName+"$" );
         } else {
-            names.push_back ( "$"+xvarName+"^{"+lexical_cast<string> ( order )+"}$" );
+            names.push_back ( "$"+xvarName+"^{"+toString( order )+"}$" );
         }
         values.push_back ( coeffs ( i ) );
     }
 
-    return ResultElementPtr
-           (
-               new AttributeTableResult
+    return std::make_unique<AttributeTableResult>
                (
                    names, values,
                    shortDesc, longDesc, ""
-               )
-           );
+               );
 }
 
 

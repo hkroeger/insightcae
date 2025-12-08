@@ -22,6 +22,7 @@
 
 
 #include "cadfeature.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {
@@ -36,6 +37,7 @@ class Offset
     ScalarPtr thickness_;
     ScalarPtr tol_;
 
+    Offset(const Offset&o, TreeCloneMap& tcm);
     Offset ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
 
     size_t calcHash() const override;
@@ -45,6 +47,10 @@ public:
     declareType ( "Offset" );
 
     CREATE_FUNCTION(Offset);
+    CLONEABLE(Offset);
+#ifndef SWIG
+    DEPENDS((shell_,thickness_,tol_));
+#endif
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

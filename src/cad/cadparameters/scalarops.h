@@ -184,18 +184,18 @@ INSIGHT_CAD_UNARY_FUNCTION(ceil);
 INSIGHT_CAD_UNARY_FUNCTION(floor);
 INSIGHT_CAD_UNARY_FUNCTION(round);
 
-#define INSIGHT_CAD_BINARY_FUNCTION(FUNCTION) \
-class Scalar_##FUNCTION\
+#define INSIGHT_CAD_BINARY_FUNCTION_W_NAME(FUNCTION,NAME) \
+class Scalar_##NAME\
 : public insight::cad::Scalar\
 {\
   ScalarPtr p1_, p2_;\
-  Scalar_##FUNCTION(const Scalar_##FUNCTION&o, TreeCloneMap& tcm)\
+  Scalar_##NAME(const Scalar_##NAME&o, TreeCloneMap& tcm)\
     : CL(p1_), CL(p2_) \
   {}\
 public:\
   DEPENDS((p1_, p2_)); \
-  CLONEABLE(Scalar_##FUNCTION);\
-  Scalar_##FUNCTION(ScalarPtr p1, ScalarPtr p2)\
+  CLONEABLE(Scalar_##NAME);\
+  Scalar_##NAME(ScalarPtr p1, ScalarPtr p2)\
   : p1_(p1), p2_(p2) {} \
   size_t calcHash() const override \
   { ParameterListHash h; h+=*p1_; h+=*p2_; return h.getHash(); } \
@@ -203,8 +203,13 @@ public:\
   { return ::FUNCTION ( p1_->value(), p2_->value() ); }\
 };
 
+#define INSIGHT_CAD_BINARY_FUNCTION(FUNCTION) \
+INSIGHT_CAD_BINARY_FUNCTION_W_NAME(FUNCTION,FUNCTION)
+
 INSIGHT_CAD_BINARY_FUNCTION(pow);
 INSIGHT_CAD_BINARY_FUNCTION(atan2);
+INSIGHT_CAD_BINARY_FUNCTION_W_NAME(std::max<double>, max);
+INSIGHT_CAD_BINARY_FUNCTION_W_NAME(std::min<double>, min);
 
 
 // class UpperTolerance

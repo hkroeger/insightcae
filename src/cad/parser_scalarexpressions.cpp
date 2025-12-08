@@ -179,6 +179,16 @@ void ISCADParser::createScalarExpressions()
         [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_pow>(qi::_1, qi::_2)) ] );
 
     ADD_SCALAR_FUNCTION(
+        "min",
+        ( '(' > r_scalarExpression > ',' > r_scalarExpression > ')' ),
+        [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_min>(qi::_1, qi::_2)) ] );
+
+    ADD_SCALAR_FUNCTION(
+        "max",
+        ( '(' > r_scalarExpression > ',' > r_scalarExpression > ')' ),
+        [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_max>(qi::_1, qi::_2)) ] );
+
+    ADD_SCALAR_FUNCTION(
         "atan2",
         ( '(' > r_scalarExpression > ',' > r_scalarExpression > ')' ),
         [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan2>(qi::_1, qi::_2)) ] );

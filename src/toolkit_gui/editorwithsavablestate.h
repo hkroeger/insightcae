@@ -52,6 +52,9 @@ class AutosavableEditor
     boost::signals2::scoped_connection
         autosaveTriggerConnection_;
 
+protected:
+    void doCleanupOnRegularExit();
+
 public:
     AutosavableEditor();
 

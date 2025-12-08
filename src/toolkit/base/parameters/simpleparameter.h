@@ -204,6 +204,25 @@ public:
       return 0;
     }
 
+    bool isBooleanData() const override
+    {
+        return Element::isBooleanData();
+    }
+
+    bool canSetFromBoolean() const override
+    {
+        return Element::canSetFromBoolean();
+    }
+
+    bool getAsBoolean() const override
+    {
+        return Element::getAsBoolean();
+    }
+
+    void setBoolean(bool b) override
+    {
+        Element::setBoolean(b);
+    }
 
 };
 
@@ -282,6 +301,17 @@ typedef SimpleParameter<boost::gregorian::date, DateName> DateParameter;
 typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParameter;
 
 
+template<>
+bool BoolParameter::isBooleanData() const;
+
+template<>
+bool BoolParameter::canSetFromBoolean() const;
+
+template<>
+bool BoolParameter::getAsBoolean() const;
+
+template<>
+void BoolParameter::setBoolean(bool b);
 
 
 #ifdef SWIG

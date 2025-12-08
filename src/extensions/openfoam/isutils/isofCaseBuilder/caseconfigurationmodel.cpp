@@ -210,11 +210,10 @@ void CaseConfigurationModel::appendConfigurationToNode(
 {
   for (int i=0; i < caseElements_.count(); i++)
   {
-      auto* elem = caseElements_[i];
-      if (elem)
+      if (auto* elem = caseElements_[i])
       {
           xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
-          elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
+          appendAttribute(doc, *elemnode, "type", elem->type_name());
           rootnode->append_node ( elemnode );
 
           if (pack)
@@ -225,9 +224,11 @@ void CaseConfigurationModel::appendConfigurationToNode(
           {
             elem->parameterSetModel()->clearPackedData();
           }
+
+          insight::hierarchicalData::Element::OutputProperties op;
+          op.skipParameterDescription=true;
           elem->parameterSetModel()->getParameterSet()
-              .appendToNode(std::string(), doc, *elemnode,
-                insight::hierarchicalData::Element::OutputProperties());
+              .appendToNode(std::string(), doc, *elemnode, op);
       }
   }
 }

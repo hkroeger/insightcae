@@ -53,6 +53,9 @@ if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
 endif()
 
+SET(INSIGHT_PACKAGE_NAME_SUFFIX "" CACHE STRING "suffix to add to package name (with a dash)")
+
+
 if (CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_WRAPPER "/opt/mxe/usr/bin/i686-w64-mingw32.shared-cmake" CACHE STRING "required in MXE cross build, cmake is called through wrapper script there")
 else()
@@ -136,6 +139,9 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "InsightCAE")
 
 ### change package name according to build options
 SET(CPACK_PACKAGE_NAME "insightcae")
+if (NOT "${INSIGHT_PACKAGE_NAME_SUFFIX}" STREQUAL "")
+  SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-${INSIGHT_PACKAGE_NAME_SUFFIX}")
+endif()
 
 set(CPACK_DEB_COMPONENT_INSTALL OFF)
 set(CPACK_RPM_COMPONENT_INSTALL OFF)

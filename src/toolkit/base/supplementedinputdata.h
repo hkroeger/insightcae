@@ -107,6 +107,29 @@ private:
 
 
 
+struct TemporaryParameterSetStorage
+{
+    ParameterSetInput ps_;
+
+    TemporaryParameterSetStorage()
+    {}
+
+    TemporaryParameterSetStorage(ParameterSetInput ps)
+        : ps_(std::move(ps))
+    {}
+
+    template<class Parameters>
+    ParametersReference<Parameters> pRef() const
+    {
+        return ParametersReference<Parameters>(
+            dynamic_cast<const Parameters&>(ps_.parameters()),
+            ps_.parameterSet().path() );
+    }
+};
+
+
+
+
 class supplementedInputDataBase
 {
 

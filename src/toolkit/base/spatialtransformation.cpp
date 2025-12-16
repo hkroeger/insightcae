@@ -29,6 +29,13 @@ SpatialTransformation::SpatialTransformation()
 }
 
 SpatialTransformation::SpatialTransformation(
+    const SpatialTransformation& o)
+  : translate_(o.translate_),
+    R_(o.R_),
+    scale_(o.scale_)
+{}
+
+SpatialTransformation::SpatialTransformation(
     const arma::mat& translate,
     const arma::mat& rollPitchYaw,
     double scale )
@@ -173,11 +180,11 @@ arma::mat SpatialTransformation::trsfVec(double x, double y, double z) const
 
 
 
-void SpatialTransformation::appendTransformation(const SpatialTransformation &st)
+void SpatialTransformation::appendTransformation(const SpatialTransformation &t2)
 {
-    translate_ += arma::inv(scale_*R_) * st.translate();
-    scale_ *= st.scale();
-    R_ = st.R()*R_;
+    translate_ += arma::inv(scale_*R_) * t2.translate();
+    scale_ *= t2.scale();
+    R_ = t2.R()*R_;
 }
 
 SpatialTransformation SpatialTransformation::appended(const SpatialTransformation &st) const
@@ -271,8 +278,11 @@ bool SpatialTransformation::operator!=(const SpatialTransformation &o) const
 
 void SpatialTransformation::invert()
 {
-    translate_ = -scale()*rotationMatrix()*translate_;
-    scale_ = 1./scale();
+    double s=scale();
+    arma::mat R=rotationMatrix();
+
+    translate_ = -s*R*translate_;
+    scale_ = 1./s;
     R_ = arma::inv(R_);
 }
 
@@ -285,8 +295,24 @@ SpatialTransformation SpatialTransformation::inverted() const
 
 
 
+SpatialTransformation operator*(
+    const SpatialTransformation& tL,
+    const SpatialTransformation& tR )
+{
+    return tR.appended(tL);
+}
 
 
+
+
+CoordinateSystem SpatialTransformation::localCoordinateSystem() const
+{
+    return CoordinateSystem(
+        translate(),
+        rotationMatrix().col(0),
+        rotationMatrix().col(2)
+        );
+}
 
 CoordinateSystem::CoordinateSystem()
     : origin(vec3Zero()),
@@ -332,6 +358,7 @@ CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, cons
 void CoordinateSystem::rotate(double angle, const arma::mat& axis)
 {
     arma::mat rot=rotMatrix(angle, axis);
+    std::cout<<"rot="<<rot<<std::endl;
     ex=rot*ex;
     ey=rot*ey;
     ez=rot*ez;
@@ -372,6 +399,17 @@ void CoordinateSystem::setVTKMatrix(vtkMatrix4x4 *m)
     }
 }
 
+
+
+std::ostream& operator<<(std::ostream& os, const CoordinateSystem& cs)
+{
+    os
+        <<"origin="<<cs.origin.t()
+        <<"ex="<<cs.ex.t()
+        <<"ey="<<cs.ey.t()
+        <<"ez="<<cs.ez.t();
+    return os;
+}
 
 
 

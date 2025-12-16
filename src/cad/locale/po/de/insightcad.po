@@ -515,22 +515,6 @@ msgid ""
 msgstr ""
 
 #, c-format
-msgid "datum value %s already present!"
-msgstr ""
-
-#, c-format
-msgid "datum point %s already present!"
-msgstr ""
-
-#, c-format
-msgid "datum direction %s already present!"
-msgstr ""
-
-#, c-format
-msgid "datum %s already present!"
-msgstr ""
-
-#, c-format
 msgid "building model %s"
 msgstr "erzeuge Modell %s"
 

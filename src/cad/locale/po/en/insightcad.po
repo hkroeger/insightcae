@@ -625,22 +625,6 @@ msgstr ""
 "selection set vertices are rounded with width r."
 
 #, c-format
-msgid "datum value %s already present!"
-msgstr "datum value %s already present!"
-
-#, c-format
-msgid "datum point %s already present!"
-msgstr "datum point %s already present!"
-
-#, c-format
-msgid "datum direction %s already present!"
-msgstr "datum direction %s already present!"
-
-#, c-format
-msgid "datum %s already present!"
-msgstr "datum %s already present!"
-
-#, c-format
 msgid "building model %s"
 msgstr "building model %s"
 
@@ -850,3 +834,19 @@ msgid ""
 msgstr ""
 "align the extremities of the first object with those of other, measured "
 "along direction."
+
+#, c-format
+#~ msgid "datum value %s already present!"
+#~ msgstr "datum value %s already present!"
+
+#, c-format
+#~ msgid "datum point %s already present!"
+#~ msgstr "datum point %s already present!"
+
+#, c-format
+#~ msgid "datum direction %s already present!"
+#~ msgstr "datum direction %s already present!"
+
+#, c-format
+#~ msgid "datum %s already present!"
+#~ msgstr "datum %s already present!"

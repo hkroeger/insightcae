@@ -34,6 +34,7 @@ typedef std::vector<const vtk_Transformer*> vtk_TransformerList;
 
 class SpatialTransformation;
 class OpenFOAMCase;
+struct CoordinateSystem;
 
 #ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st);
@@ -79,6 +80,8 @@ public:
      */
     SpatialTransformation();
 
+    SpatialTransformation(const SpatialTransformation& o);
+
     /**
      * @brief SpatialTransformation
      * construct from components
@@ -106,6 +109,7 @@ public:
         const arma::mat& ez,
         const arma::mat& O
         );
+
 
     /**
      * @brief SpatialTransformation
@@ -220,6 +224,7 @@ public:
      * @brief appendTransformation
      * modify this transformation, so that it yields this transform,
      * followed by the provided, "appended" transformation
+     * (equals PreMultiply)
      * @param st
      */
     void appendTransformation(const SpatialTransformation& st);
@@ -245,8 +250,13 @@ public:
     void invert();
     SpatialTransformation inverted() const;
 
+    CoordinateSystem localCoordinateSystem() const;
 };
 
+
+SpatialTransformation operator*(
+    const SpatialTransformation& t1,
+    const SpatialTransformation& t2 );
 
 
 struct CoordinateSystem
@@ -264,6 +274,7 @@ struct CoordinateSystem
         const arma::mat& ex,
         const arma::mat& ez );
 
+
     void rotate(double angle, const arma::mat& axis);
 
     // arma::mat operator()(double x, double y, double z) const;
@@ -275,6 +286,9 @@ struct CoordinateSystem
 
     void setVTKMatrix(vtkMatrix4x4* m);
 };
+
+
+std::ostream& operator<<(std::ostream& os, const CoordinateSystem& cs);
 
 
 

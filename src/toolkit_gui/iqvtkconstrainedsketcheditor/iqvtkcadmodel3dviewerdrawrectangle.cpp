@@ -132,60 +132,63 @@ void IQVTKCADModel3DViewerDrawRectangle::start()
             {
                 p2_ = std::make_shared_aggr<PointProperty>(pp);
 
-                if (addToSketch_)
+                if (arma::norm( p2_->p->value() - p1_->p->value(), 2) > LSMALL)
                 {
-                    if ( !p1_->isAnExistingPoint )
+                    if (addToSketch_)
                     {
-                        sketch().insertGeometry( p1_->p );
+                        if ( !p1_->isAnExistingPoint )
+                        {
+                            sketch().insertGeometry( p1_->p );
+                        }
+
+                        if (!p2_->isAnExistingPoint)
+                        {
+                            sketch().insertGeometry( p2_->p );
+                        }
+
+                        auto p2p4 = calcP2P4(p2_->p->value());
+
+                        auto sp2 = SketchPoint::create(
+                            sketch().plane(),
+                            viewer().pointInPlane2D(
+                                sketch().plane()->plane(),
+                                p2p4.first ) );
+                        sketch().insertGeometry( sp2 );
+
+                        auto sp4 = SketchPoint::create(
+                            sketch().plane(),
+                            viewer().pointInPlane2D(
+                                sketch().plane()->plane(),
+                                p2p4.second ) );
+                        sketch().insertGeometry( sp4 );
+
+
+                        auto l1 = Line::create( p1_->p, sp2 );
+                        auto l2 = Line::create( sp2, p2_->p );
+                        auto l3 = Line::create( p2_->p, sp4 );
+                        auto l4 = Line::create( sp4, p1_->p );
+
+                        sketch().insertGeometry(l1);
+                        sketch().insertGeometry(l2);
+                        sketch().insertGeometry(l3);
+                        sketch().insertGeometry(l4);
+                        sketch().invalidate();
+
+                        Q_EMIT rectangleAdded({l1, l2, l3, l4}, p2_.get(), p1_.get() );
+                        Q_EMIT updateActors();
                     }
 
-                    if (!p2_->isAnExistingPoint)
-                    {
-                        sketch().insertGeometry( p2_->p );
-                    }
 
-                    auto p2p4 = calcP2P4(p2_->p->value());
+                    //finishAction();
 
-                    auto sp2 = SketchPoint::create(
-                        sketch().plane(),
-                        viewer().pointInPlane2D(
-                            sketch().plane()->plane(),
-                            p2p4.first ) );
-                    sketch().insertGeometry( sp2 );
-
-                    auto sp4 = SketchPoint::create(
-                        sketch().plane(),
-                        viewer().pointInPlane2D(
-                            sketch().plane()->plane(),
-                            p2p4.second ) );
-                    sketch().insertGeometry( sp4 );
-
-
-                    auto l1 = Line::create( p1_->p, sp2 );
-                    auto l2 = Line::create( sp2, p2_->p );
-                    auto l3 = Line::create( p2_->p, sp4 );
-                    auto l4 = Line::create( sp4, p1_->p );
-
-                    sketch().insertGeometry(l1);
-                    sketch().insertGeometry(l2);
-                    sketch().insertGeometry(l3);
-                    sketch().insertGeometry(l4);
-                    sketch().invalidate();
-
-                    Q_EMIT rectangleAdded({l1, l2, l3, l4}, p2_.get(), p1_.get() );
-                    Q_EMIT updateActors();
+                    //restart
+                    p1_.reset();
+                    p2_.reset();
+                    previewLine_->SetVisibility(false);
+                    viewer().renderer()->RemoveActor(previewLine_);
+                    previewLine_=nullptr;
+                    prevLine_=nullptr;
                 }
-
-
-                //finishAction();
-
-                //restart
-                p1_.reset();
-                p2_.reset();
-                previewLine_->SetVisibility(false);
-                viewer().renderer()->RemoveActor(previewLine_);
-                previewLine_=nullptr;
-                prevLine_=nullptr;
             }
         }
         );

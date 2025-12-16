@@ -11,32 +11,66 @@ int main(int /*argc*/, char*/*argv*/[])
 {
   try
   {
+        int n=5;
         int nWrong=0, nTried=0;
-        for (int i=-180; i<180; i+=10)
+        for (int i=0; i<n; i++)
         {
-            for (int j=-180; j<180; j+=10)
+            for (int j=0; j<n; j++)
             {
-                for (int k=-180; k<180; k+=10)
+                for (int k=0; k<n; k++)
                 {
                     nTried++;
+                    bool wrong=false;
 
-                    arma::mat rpy=vec3(i,j,k);
+                    arma::mat rpy=vec3(
+                        -180.+(i/double(n))*360.,
+                        -180.+(j/double(n))*360.,
+                        -180.+(k/double(n))*360.
+                        );
 
-                    SpatialTransformation t(vec3Zero(), rpy);
+                    arma::mat disp=vec3(
+                        -100.+(i/double(n))*200.,
+                        -100.+(j/double(n))*200.,
+                        -100.+(k/double(n))*200.
+                        );
+                    SpatialTransformation t(disp, rpy);
 
                     arma::mat rpyp=t.rollPitchYaw();
 
-                    SpatialTransformation t2(vec3Zero(), rpyp);
+                    SpatialTransformation t2(t.translate(), rpyp);
 
                     if (t!=t2)
                     {
-                        nWrong++;
+                        wrong=true;
                         std::cout
                             <<boost::str(boost::format("wrong roll/pitch/yaw conversion for (%g, %g, %g): back conversion yields (%g, %g, %g)")
                                     %rpy(0)%rpy(1)%rpy(2)
                                     %rpyp(0)%rpyp(1)%rpyp(2))
                                   <<std::endl;
                     }
+
+                    arma::mat pt=vec3(
+                        -200.+(i/double(n))*400.,
+                        -200.+(j/double(n))*400.,
+                        -200.+(k/double(n))*400.
+                        );
+
+                    arma::mat pdash = t.trsfPt(pt);
+                    arma::mat pdashdash = t.inverted().trsfPt(pdash);
+
+                    if (arma::norm(pdashdash-pt,2)>SMALL)
+                    {
+                        wrong=true;
+                        std::cout
+                            <<boost::str(boost::format("forth and back transformation did not yield equality: pt=(%g, %g, %g), pdash=(%g, %g, %g), pdashdash=(%g, %g, %g)")
+                                          %pt(0)%pt(1)%pt(2)
+                                          %pdash(0)%pdash(1)%pdash(2)
+                                          %pdashdash(0)%pdashdash(1)%pdashdash(2))
+                            <<std::endl;
+                    }
+
+                    if (wrong) nWrong++;
+
                 }
             }
         }

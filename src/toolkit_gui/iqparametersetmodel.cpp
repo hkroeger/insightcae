@@ -600,11 +600,12 @@ void IQParameterSetModel::removeLabeledArrayElement(const QModelIndex &index)
 
 
 
-void IQParameterSetModel::addGeometryToSpatialTransformationParameter(
+void IQParameterSetModel::addContextToSpatialTransformationParameter(
         const std::string &parameterPath,
-        insight::cad::FeaturePtr geom )
+        insight::cad::TransformParameterContextData cd )
 {
-    transformedGeometry_[parameterPath]=geom;
+    dbg(insight::DetailedBusiness) << "register " << cd.geometry << " for " << parameterPath << std::endl;
+    transformParameterContextData_[parameterPath]=cd;
 }
 
 
@@ -615,15 +616,16 @@ void IQParameterSetModel::addVectorBasePoint(const std::string &parameterPath, c
     vectorBasePoints_[parameterPath]=pBase;
 }
 
-insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformationParameter(
+boost::optional<insight::cad::TransformParameterContextData>
+IQParameterSetModel::getContextToSpatialTransformationParameter(
         const std::string &parameterPath )
 {
-    auto i = transformedGeometry_.find(parameterPath);
-    if (i!=transformedGeometry_.end())
+    auto i = transformParameterContextData_.find(parameterPath);
+    if (i!=transformParameterContextData_.end())
     {
         return i->second;
     }
-    return insight::cad::FeaturePtr();
+    return boost::optional<insight::cad::TransformParameterContextData>();
 }
 
 

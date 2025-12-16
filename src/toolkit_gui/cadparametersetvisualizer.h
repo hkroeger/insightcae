@@ -254,9 +254,9 @@ public:
 
   IQParameterSetModel* parameterSetModel() const;
 
-  void addGeometryToSpatialTransformationParameter(
+  void addContextToSpatialTransformationParameter(
       const std::string& parameterPath,
-      insight::cad::FeaturePtr geom );
+      cad::TransformParameterContextData cd );
 
   void addVectorBasePoint(
       const std::string& parameterPath,

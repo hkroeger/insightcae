@@ -21,6 +21,7 @@
 #include "TopAbs_State.hxx"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/spatialtransformation.h"
 #include "geotest.h"
 
 #include <fstream>
@@ -44,6 +45,7 @@
 
 #include <BRepLib_FindSurface.hxx>
 #include <BRepCheck_Shell.hxx>
+#include <string>
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "HLRBRep_PolyHLRToShape.hxx"
 #include "HLRBRep_PolyAlgo.hxx"
@@ -404,6 +406,9 @@ Feature::Feature()
 //   areaWeight_(0.0),
   featureSymbolName_()
 {
+    setLocalCoordinateSystem(
+        vec3Zero(),
+        vec3X(), vec3Z() );
 }
 
 
@@ -513,6 +518,15 @@ double Feature::areaWeight() const
     return areaWeight_->value(); 
   else
     return 0.0;
+}
+
+CoordinateSystem Feature::getLocalCoordinateSystem() const
+{
+    checkForBuildDuringAccess();
+    return insight::CoordinateSystem(
+        refpoints_.at("O"),
+        refvectors_.at("EX"),
+        refvectors_.at("EZ") );
 }
 
 double Feature::mass(double density_ovr, double aw_ovr) const
@@ -1658,8 +1672,8 @@ Feature::operator const TopoDS_Shape& () const
 
 const TopoDS_Shape& Feature::shape() const
 {
-  if (building())
-    throw insight::CADException(shared_from_this(), "Internal error: recursion during build!");
+  // if (building())
+  //   throw insight::CADException(shared_from_this(), "Internal error: recursion during build!");
 
   checkForBuildDuringAccess();
 
@@ -1922,151 +1936,58 @@ TopoDS_Shape Feature::asSingleVolume() const
 
 
 
-
 void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<std::string> excludes)
 {
-    // Transform all ref points and ref vectors
-    for (const RefValuesList::value_type& v: m1.getDatumScalars())
-    {
-        if (excludes.find(v.first)==excludes.end())
-        {
-            if (refvalues_.find(prefix+v.first)!=refvalues_.end())
-                throw insight::Exception("datum value "+prefix+v.first+" already present!");
-            refvalues_[prefix+v.first]=v.second;
-        }
-    }
-    for (const RefPointsList::value_type& p: m1.getDatumPoints())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refpoints_.find(prefix+p.first)!=refpoints_.end())
-                throw insight::Exception("datum point "+prefix+p.first+" already present!");
-            refpoints_[prefix+p.first]=p.second;
-        }
-    }
-    for (const RefVectorsList::value_type& p: m1.getDatumVectors())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refvectors_.find(prefix+p.first)!=refvectors_.end())
-                throw insight::Exception("datum vector "+prefix+p.first+" already present!");
-            refvectors_[prefix+p.first]=p.second;
-        }
-    }
-    for (const SubfeatureMap::value_type& sf: m1.providedSubshapes())
-    {
-        if (excludes.find(sf.first)==excludes.end())
-        {
-            if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
-                throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=sf.second;
-        }
-    }
-    for (const DatumPtrMap::value_type& df: m1.providedDatums())
-    {
-        if (excludes.find(df.first)==excludes.end())
-        {
-            if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
-                throw insight::Exception("datum "+prefix+df.first+" already present!");
-            providedDatums_[prefix+df.first]=df.second;
-        }
-    }
-
-    for (const auto& fs: m1.providedFeatureSets_)
-    {
-        providedFeatureSets_[prefix+fs.first]=fs.second;
-        // switch (fs.second->shape())
-        // {
-        //     case Vertex:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //         // same IDs but on this model
-        //         makeFeatureSet<Vertex>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     case Edge:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //             // same IDs but on this model
-        //             makeFeatureSet<Edge>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     case Face:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //             // same IDs but on this model
-        //             makeFeatureSet<Face>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     case Solid:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //             // same IDs but on this model
-        //             makeFeatureSet<Solid>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     default:
-        //         throw insight::UnhandledSelection();
-        // }
-    };
-
+    copyDatumsTransformed(m1, gp_Trsf(), prefix, excludes);
 }
 
-
-
-
-void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix, std::set<std::string> excludes)
+bool isIdentity(const gp_Trsf& trsf)
 {
+    NCollection_Mat4<double> m1, m2;
+    trsf.GetMat4(m1);
+    gp_Trsf().GetMat4(m2);
+    bool equal=true;
+    for (int i=1; i<=4; ++i)
+        for (int j=1; j<=4; ++j)
+        {
+            if (fabs(m1.GetValue(i,j)-m2.GetValue(i,j))>SMALL)
+                equal=false;
+        }
+    return equal;
+}
+
+void Feature::copyDatumsTransformed(
+    const Feature& m1,
+    const gp_Trsf& trsf,
+    const std::string& prefix,
+    std::set<std::string> excludes)
+{
+
     // Transform all ref points and ref vectors
-    for (const RefValuesList::value_type& v: m1.getDatumScalars())
-    {
-        if (excludes.find(v.first)==excludes.end())
-        {
-            if (refvalues_.find(prefix+v.first)!=refvalues_.end())
-                throw insight::Exception("datum value "+prefix+v.first+" already present!");
-            refvalues_[prefix+v.first]=v.second;
-        }
-    }
-    for (const RefPointsList::value_type& p: m1.getDatumPoints())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refpoints_.find(prefix+p.first)!=refpoints_.end())
-                throw insight::Exception("datum point "+prefix+p.first+" already present!");
-            refpoints_[prefix+p.first]=vec3(to_Pnt(p.second).Transformed(trsf));
-        }
-    }
-    for (const RefVectorsList::value_type& p: m1.getDatumVectors())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refvectors_.find(prefix+p.first)!=refvectors_.end())
-                throw insight::Exception("datum vector "+prefix+p.first+" already present!");
-            refvectors_[prefix+p.first]=vec3(to_Vec(p.second).Transformed(trsf));
-        }
-    }
-    for (const SubfeatureMap::value_type& sf: m1.providedSubshapes())
-    {
-        if (excludes.find(sf.first)==excludes.end())
-        {
-            if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
-                throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=Transform::create(sf.second, trsf);
-        }
-    }
-    for (const DatumPtrMap::value_type& df: m1.providedDatums())
-    {
-        if (excludes.find(df.first)==excludes.end())
-        {
-            if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
-                throw insight::Exception("datum "+prefix+df.first+" already present!");
-            providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
-        }
-    }
+    copyDatumItems(m1.getDatumScalars(), refvalues_,
+              [](double s)
+                { return s; },
+              "datum value", prefix, excludes);
+
+    copyDatumItems(m1.getDatumPoints(), refpoints_,
+              [&trsf](const arma::mat& p)
+                { return vec3(to_Pnt(p).Transformed(trsf)); },
+              "datum point", prefix, excludes, {"O"} );
+
+    copyDatumItems(m1.getDatumVectors(), refvectors_,
+              [&trsf](const arma::mat& v)
+              { return vec3(to_Vec(v).Transformed(trsf)); },
+              "datum vector", prefix, excludes, {"EX", "EY", "EZ"} );
+
+    copyDatumItems(m1.providedSubshapes(), providedSubshapes_,
+              [&trsf](FeaturePtr ss)
+              { return isIdentity(trsf)?ss:Transform::create(ss, trsf); },
+              "subshape", prefix, excludes);
+
+    copyDatumItems(m1.providedDatums(), providedDatums_,
+              [&trsf](DatumPtr sd)
+              { return isIdentity(trsf)?sd:DatumPtr(new TransformedDatum(sd, trsf)); },
+              "datum", prefix, excludes, {"XY", "XZ", "YZ"} );
 
     for (const auto& fs: m1.providedFeatureSets_)
     {

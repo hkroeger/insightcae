@@ -24,6 +24,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
 #include "base/translations.h"
+#include "occtools.h"
 
 
 namespace qi = boost::spirit::qi;
@@ -128,7 +129,15 @@ Transform::Transform(ConstFeaturePtr m1, FeaturePtr other)
 
 
 
-
+std::shared_ptr<Transform>
+Transform::create_localCSTrsf(ConstFeaturePtr m1, const gp_Trsf& trsf)
+{
+    auto orgTrsf=cad::is_gp_Trsf(m1->getLocalCoordinateSystem().globalToLocal());
+    return cad::Transform::create(
+        m1,
+        orgTrsf*trsf*orgTrsf.Inverted()
+    );
+}
 
 
 

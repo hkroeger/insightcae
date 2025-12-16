@@ -43,7 +43,7 @@ ASTBase::ASTBase()
 {}
 
 ASTBase::ASTBase(const ASTBase& o)
-: valid_(o.valid_),
+: valid_(bool(o.valid_)),
   building_(false),
   hash_(o.hash_)
 {
@@ -74,6 +74,8 @@ void ASTBase::invalidate()
     hash_=0;
 }
 
+
+
 void ASTBase::checkForBuildDuringAccess() const
 {
   {
@@ -87,18 +89,21 @@ void ASTBase::checkForBuildDuringAccess() const
       }
   }
 
-//  boost::mutex m_mutex;
-//  boost::unique_lock<boost::mutex> lock(m_mutex);
-  
-  if (!valid()) 
   {
       std::lock_guard<std::mutex> l(build_mtx_);
-      building_=true;
-      const_cast<ASTBase*>(this)->build();
-      building_=false;
-      const_cast<ASTBase*>(this)->setValid();
+      if (!valid())
+      {
+          auto nct=const_cast<ASTBase*>(this);
+
+          building_=true;
+          nct->build();
+          building_=false;
+          const_cast<ASTBase*>(this)->setValid();
+      }
   }
 }
+
+
 
 
 size_t ASTBase::hash() const
@@ -112,7 +117,7 @@ size_t ASTBase::hash() const
 
 ASTBase &ASTBase::operator=(const ASTBase &o)
 {
-  valid_=o.valid_;
+  valid_=bool(o.valid_);
   building_=false;
   hash_=o.hash_;
   return *this;

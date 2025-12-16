@@ -60,6 +60,10 @@ public:
     DEPENDS_W_BASE(DerivedFeature, (trans_,rotorg_,rot_,sf_,other_));
 #endif
     CREATE_FUNCTION(Transform);
+
+    static std::shared_ptr<Transform>
+    create_localCSTrsf(ConstFeaturePtr m1, const gp_Trsf& trsf);
+
     CLONEABLE(Transform);
 
     static void insertrule ( parser::ISCADParser& ruleset );

@@ -117,6 +117,12 @@ enum EntityType { Vertex, Edge, Face, Solid };
 
 
 
+struct TransformParameterContextData
+{
+    insight::cad::FeaturePtr geometry;
+    insight::CoordinateSystem referenceCS;
+};
+
 
 struct VisualizationStyle
 {

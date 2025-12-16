@@ -58,6 +58,7 @@
 #include "vtkInteractorStyleUser.h"
 #include "vtkProp3DCollection.h"
 #include "vtkRendererCollection.h"
+#include "vtkHardwareSelector.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -1708,7 +1709,7 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
 //    }
 //    else
     {
-        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        auto picker3d = vtkSmartPointer<vtkCellPicker>::New();
         if (restrictPicking.size())
         {
             picker3d->InitializePickList();
@@ -1716,7 +1717,7 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
                 picker3d->AddPickList(i);
             picker3d->SetPickFromList(true);
         }
-        picker3d->SetTolerance(1e-4);
+        picker3d->SetTolerance(1e-2);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
         auto pi = picker3d->GetProp3Ds();
 //        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;

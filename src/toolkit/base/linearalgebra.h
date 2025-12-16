@@ -222,6 +222,9 @@ double* toArray(const arma::mat& v); // !non-const! return value to match VTK fu
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
 
+arma::mat orthogonalPart(const arma::mat& vec, const arma::mat& iaxis);
+double rotAngle(const arma::mat& dir, const arma::mat& dir0, const arma::mat& axis);
+
 /**
  * @brief rotationMatrixToRollPitchYaw
  * @param R

@@ -243,6 +243,7 @@ arma::mat rotationMatrixToEulerAngles(const arma::mat& R, EulerAngleSequence con
 
 #define RCOMP(i,j) R(i-1,j-1)
 
+
   switch (convention)
   {
   case ZYX:
@@ -411,6 +412,10 @@ arma::mat rotationMatrixToEulerAngles(const arma::mat& R, EulerAngleSequence con
       break;
  }
 #undef RCOMP
+
+ // std::cout<<R<<std::endl;
+ // std::cout<<"phi, theta, psi="<<phi<<" "<<theta<<" "<<psi<<std::endl;
+
   return vec3(phi/SI::deg, theta/SI::deg, psi/SI::deg);
 }
 
@@ -1714,6 +1719,35 @@ NonConvergenceException::NonConvergenceException(
         "the solver did not converge towards a solution after %d iterations",
         performedIterations )
 {}
+
+arma::mat orthogonalPart(const arma::mat& vec, const arma::mat& iaxis)
+{
+    auto axis=normalized(iaxis);
+    arma::mat elat=arma::cross(axis, vec);
+    arma::mat eorth=normalized(arma::cross(elat,axis));
+    return eorth*arma::dot(eorth,vec);
+}
+
+double rotAngle(
+    const arma::mat &idir,
+    const arma::mat &idir0,
+    const arma::mat &iaxis )
+{
+    auto dir0 = normalized(orthogonalPart(idir0, iaxis));
+    auto dir = normalized(orthogonalPart(idir, iaxis));
+
+    double az=0;
+    if (fabs(1.-arma::dot(dir0,dir))<SMALL)
+        az=0.;
+    else if (fabs(1.+arma::dot(dir0,dir))<SMALL)
+        az=M_PI;
+    else
+    {
+        arma::mat v=arma::cross(dir0,dir);
+        az = sgn(arma::dot(v,iaxis)) * asin(arma::norm(v,2));
+    }
+    return az;
+}
 
 
 

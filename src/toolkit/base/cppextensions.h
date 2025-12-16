@@ -78,26 +78,6 @@ Container transform_copy(
     return res;
 }
 
-template<class Container, class Container1>
-Container container_type_cast(
-    Container1 c1)
-{
-    Container res;
-    std::transform(
-        c1.begin(), c1.end(),
-        std::back_inserter(res),
-        [](const typename Container::value_type& e) { return e; } );
-    return res;
-}
-
-template<class T, class Container1>
-std::vector<T> vector_cast(
-    Container1 c1)
-{
-    return std::container_type_cast<std::vector<T> >(c1);
-}
-
-
 // taken from https://stackoverflow.com/a/3611374
 
 template<class Container>
@@ -166,6 +146,56 @@ template<typename Container>
 inline last_inserter_iterator<Container> last_inserter(Container& cont)
 {
     return last_inserter_iterator<Container>(cont);
+}
+
+
+
+
+
+template<class Container, class Container1>
+Container container_type_cast(
+    Container1 c1)
+{
+    Container res;
+    std::transform(
+        c1.begin(), c1.end(),
+        std::last_inserter(res),
+        [](const typename Container::value_type& e) { return e; } );
+    return res;
+}
+
+template<class T, class Container1>
+std::vector<T> vector_cast(
+    Container1 c1)
+{
+    return std::container_type_cast<std::vector<T> >(c1);
+}
+
+template<class Map>
+std::set<typename Map::key_type>
+map_keys(const Map& m)
+{
+    std::set<typename Map::key_type> result;
+    std::transform(
+        m.begin(), m.end(),
+        std::last_inserter(result),
+        [](const typename Map::value_type& v){ return v.first; }
+        );
+    return result;
+}
+
+
+template<class Map>
+std::vector<typename Map::mapped_type>
+map_items(const Map& m)
+{
+    std::vector<typename Map::mapped_type> result;
+    std::transform(
+        m.begin(), m.end(),
+        std::last_inserter(result),
+        [](const typename Map::value_type& v){ return v.second; }
+        );
+    return result;
 }
 
 

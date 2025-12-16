@@ -28,6 +28,7 @@
 #include <memory>
 
 #include "base/boost_include.h"
+#include "base/spatialtransformation.h"
 
 #ifndef Q_MOC_RUN
 #include <boost/spirit/include/qi.hpp>
@@ -121,6 +122,31 @@ public:
 typedef std::vector<vtkSmartPointer<vtkProp> >  VTKActorList;
 
 
+
+
+template<class SourceContainer, class TargetContainer, class TrsfFunction>
+void copyDatumItems(
+    const SourceContainer& source, TargetContainer& target,
+    TrsfFunction tr, const std::string& lbl,
+    const std::string& prefix = std::string(),
+    std::set<std::string> excludes = {},
+    std::set<std::string> enforce = {} )
+{
+    for (const auto& e: source)
+    {
+        if (excludes.count(e.first)==0)
+        {
+            if (
+                (target.find(prefix+e.first)!=target.end())
+                && !enforce.count(e.first) )
+            {
+                throw insight::Exception(lbl+" "+prefix+e.first+" already present!");
+            }
+
+            target[prefix+e.first]=tr(e.second);
+        }
+    }
+}
 
 
  
@@ -239,6 +265,8 @@ public:
   
   virtual void setAreaWeight(ScalarPtr rho);
   virtual double areaWeight() const;
+
+  insight::CoordinateSystem getLocalCoordinateSystem() const;
   
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
@@ -408,8 +436,16 @@ public:
   virtual TopoDS_Face asSingleFace() const;
   virtual TopoDS_Shape asSingleVolume() const;
   
-  void copyDatums(const Feature& m1, const std::string& prefix="", std::set<std::string> excludes = std::set<std::string>() );
-  void copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix="", std::set<std::string> excludes = std::set<std::string>() );
+  void copyDatums(
+      const Feature& m1,
+      const std::string& prefix=std::string(),
+      std::set<std::string> excludes = {} );
+
+  void copyDatumsTransformed(
+      const Feature& m1,
+      const gp_Trsf& trsf,
+      const std::string& prefix=std::string(),
+      std::set<std::string> excludes = {} );
 
   virtual const RefValuesList& getDatumScalars() const;
   virtual double getDatumScalar(const std::string& name="") const;

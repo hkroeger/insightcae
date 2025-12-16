@@ -82,15 +82,16 @@ std::ostream& operator<<(std::ostream& os, const Model& m)
 
 void Model::defaultVariables()
 {
-    addScalar   ( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
-    addScalar   ( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
-    addPoint    ( "O",          VectorPtr(new ConstantVector(vec3(0,0,0))) );
-    addDirection( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
-    addDirection( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
-    addDirection( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
-    addDatum    ( "XY", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EZ"), lookupDirection("EY"))) );
-    addDatum    ( "XZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EY"), lookupDirection("EX"))) );
-    addDatum    ( "YZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EX"), lookupDirection("EY"))) );
+    addScalarIfNotPresent   ( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
+    addScalarIfNotPresent   ( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
+
+    addPointIfNotPresent    ( "O",      VectorPtr(new ConstantVector(vec3(0,0,0))) );
+    addDirectionIfNotPresent( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
+    addDirectionIfNotPresent( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
+    addDirectionIfNotPresent( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
+    addDatumIfNotPresent    ( "XY", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EZ"), lookupDirection("EY"))) );
+    addDatumIfNotPresent    ( "XZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EY"), lookupDirection("EX"))) );
+    addDatumIfNotPresent    ( "YZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EX"), lookupDirection("EY"))) );
 }
 
 void Model::copyVariables(const ModelVariableTable& vars)
@@ -169,8 +170,8 @@ defineType(Model);
 Model::Model(const ModelVariableTable& vars)
   : cost_(0.0)
 {
-    defaultVariables();
     copyVariables(vars);
+    defaultVariables();
 
     setValid();
 }
@@ -182,8 +183,8 @@ Model::Model(const std::string& modelname, const ModelVariableTable& vars)
     : modelfile_(sharedModelFilePath(modelname+".iscad")),
       cost_(0.)
 {
-    defaultVariables();
     copyVariables(vars);
+    defaultVariables();
 }
 
 
@@ -194,8 +195,8 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
 {
 #warning local extension of search path required
     insight::SharedPathList::global().insertFileDirectoyIfNotPresent(modelfile_);
-    defaultVariables();
     copyVariables(vars);
+    defaultVariables();
 }
 
 void Model::setDescription(const std::string& description)

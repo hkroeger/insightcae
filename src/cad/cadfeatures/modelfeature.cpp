@@ -56,48 +56,36 @@ addToStaticFunctionTable(Feature, ModelFeature, ruleDocumentation);
 
 void ModelFeature::copyModelDatums(ModelPtr model_)
 {
-  auto scalars=model_->scalars();
-  for (decltype(scalars)::value_type const& v: scalars)
-  {
-    if (refvalues_.find(v.first)!=refvalues_.end())
-          throw insight::Exception(_("datum value %s already present!"), v.first.c_str());
-    refvalues_[v.first]=v.second->value();
-  }
 
-  auto points=model_->points();
-  for (decltype(points)::value_type const& p: points)
-  {
-    if (refpoints_.find(p.first)!=refpoints_.end())
-          throw insight::Exception(_("datum point %s already present!"), p.first.c_str());
-    refpoints_[p.first]=p.second->value();
-  }
+    copyDatumItems(model_->scalars(), refvalues_,
+                   [](ScalarPtr s)
+                   { return s->value(); },
+                   "datum value");
 
-  auto directions=model_->directions();
-  for (decltype(directions)::value_type const& p: directions)
-  {
-    if (refvectors_.find(p.first)!=refvectors_.end())
-          throw insight::Exception(_("datum direction %s already present!"), p.first.c_str());
-    refvectors_[p.first]=p.second->value();
-  }
+    copyDatumItems(model_->points(), refpoints_,
+                   [](VectorPtr p)
+                   { return p->value(); },
+                   "datum point", std::string(), {}, {"O"} );
 
-  auto datums=model_->datums();
-  for (decltype(datums)::value_type const& d: datums)
-  {
-    if (providedDatums_.find(d.first)!=providedDatums_.end())
-          throw insight::Exception(_("datum %s already present!"), d.first.c_str());
+    copyDatumItems(model_->directions(), refvectors_,
+                   [](VectorPtr v)
+                   { return v->value(); },
+                   "datum vector", std::string(), {}, {"EX", "EY", "EZ"} );
 
-    providedDatums_[d.first]=d.second;
-  }
+    copyDatumItems(model_->datums(), providedDatums_,
+                   [](DatumPtr sd)
+                   { return sd; },
+                   "datum", std::string(), {}, {"XY", "XZ", "YZ"} );
 
-  auto addfs=
-      [this](const std::string& name, FeatureSetPtr fs)
-  {
-      providedFeatureSets_[name]=fs;
-  };
-  model_->vertexFeatureSymbols().for_each(addfs);
-  model_->edgeFeatureSymbols().for_each(addfs);
-  model_->faceFeatureSymbols().for_each(addfs);
-  model_->solidFeatureSymbols().for_each(addfs);
+    auto addfs=
+        [this](const std::string& name, FeatureSetPtr fs)
+    {
+        providedFeatureSets_[name]=fs;
+    };
+    model_->vertexFeatureSymbols().for_each(addfs);
+    model_->edgeFeatureSymbols().for_each(addfs);
+    model_->faceFeatureSymbols().for_each(addfs);
+    model_->solidFeatureSymbols().for_each(addfs);
 
 }
 

@@ -287,9 +287,9 @@ struct CoordinateSystem
     void setVTKMatrix(vtkMatrix4x4* m);
 };
 
-
+#ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const CoordinateSystem& cs);
-
+#endif
 
 
 /**

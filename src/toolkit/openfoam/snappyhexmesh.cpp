@@ -417,7 +417,7 @@ void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
   castellatedCtrls["minRefinementCells"] = 10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
   castellatedCtrls["nCellsBetweenLevels"]=8;
-  castellatedCtrls["resolveFeatureAngle"]=30.0;
+  castellatedCtrls["resolveFeatureAngle"]=15.0;
   castellatedCtrls["allowFreeStandingZoneFaces"]=true;
 }
 
@@ -495,7 +495,7 @@ void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  
 
-  qualityCtrls["minTetQuality"]= 1e-40;  
+  qualityCtrls["minTetQuality"]= 1e-40;
 }
 
 void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls)

@@ -155,9 +155,12 @@ void Import::build()
           }
           setShapeFromFile(fp);
 
-          for (FeatureID i: allSolidsSet())
+          FeatureSetData fsd;
+          idx_->insertAllSolidTags(fsd);
+          for (FeatureID i: fsd)
           {
-              providedSubshapes_[boost::str(boost::format("solid%d")%i)]=Import::create(subsolid(i));
+              providedSubshapes_[boost::str(boost::format("solid%d")%i)]=
+                  Import::create(idx_->solidByTag(i));
           }
 
           setFeatureSymbolName("importedFrom_"+fp.string());

@@ -95,7 +95,13 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
               }
 
               auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
-                  *v->topmostActionHost(), insight::CoordinateSystem(O, parameter()()), true );
+                  *v->topmostActionHost(), insight::CoordinateSystem(O, parameter()()),
+                    true,
+                    IQVTKManipulateCoordinateSystem::ActorMask{
+                        IQVTKManipulateCoordinateSystem::Ex,
+                        IQVTKManipulateCoordinateSystem::XZ,
+                        IQVTKManipulateCoordinateSystem::XY } );
+
               connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
                       [this,applyFunction](const insight::CoordinateSystem& cs)
                       {

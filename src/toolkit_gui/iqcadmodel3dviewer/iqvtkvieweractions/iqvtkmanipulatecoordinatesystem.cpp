@@ -16,25 +16,27 @@
 IQVTKManipulateCoordinateSystem::IQVTKManipulateCoordinateSystem(
     ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
     const insight::CoordinateSystem& cs,
-    bool showOnlyX )
-  : ViewWidgetAction<IQVTKCADModel3DViewer>(parent, true),
+    bool locPosition,
+    ActorMask actorsToShow )
+  : ViewWidgetAction<IQVTKCADModel3DViewer>(parent, false),
     cs_(cs),
-    showOnlyX_(showOnlyX)
+    locPosition_(locPosition),
+    actorsToShow_(actorsToShow)
 {
+    if (actorsToShow_.size()<1)
+    {
+        actorsToShow_={P0, Ex, Ey, Ez, XY, XZ, YZ};
+    }
     aboutToBeDestroyed.connect(
         [this](){
             DBG_SLOT(aboutToBeDestroyed);
 
-            viewer().renderer()->RemoveActor(aP0_);
-            viewer().renderer()->RemoveActor(aEx_);
-            if (!showOnlyX_)
+            for (auto& actor: actors_)
             {
-                viewer().renderer()->RemoveActor(aEy_);
-                viewer().renderer()->RemoveActor(aEz_);
+                if (actor.second)
+                    viewer().renderer()->RemoveActor(actor.second);
             }
-            viewer().renderer()->RemoveActor(aXY_);
-            viewer().renderer()->RemoveActor(aYZ_);
-            viewer().renderer()->RemoveActor(aXZ_);
+
             viewer().scheduleRedraw();
         });
 
@@ -46,6 +48,15 @@ QString IQVTKManipulateCoordinateSystem::description() const
 }
 
 
+vtkActor *IQVTKManipulateCoordinateSystem::actorIfActive(Actor a) const
+{
+    auto i=actors_.find(a);
+    if (i!=actors_.end())
+        return i->second;
+    else
+        return nullptr;
+}
+
 void IQVTKManipulateCoordinateSystem::setCS()
 {
     ctr_->SetCenter(cs_.origin.memptr());
@@ -55,21 +66,21 @@ void IQVTKManipulateCoordinateSystem::setCS()
     {
         auto tex=vtkTransform::SafeDownCast(ex_->GetTransform());
         auto matrixx=vtkSmartPointer<vtkMatrix4x4>::New();
-        insight::CoordinateSystem(origin, cs_.ex).setVTKMatrix(matrixx);
+        insight::CoordinateSystem(origin, cs_.ex, cs_.ez).setVTKMatrix(matrixx);
         tex->SetMatrix(matrixx);
         tex->Scale(5., 5., 5.);
     }
     {
         auto tey=vtkTransform::SafeDownCast(ey_->GetTransform());
         auto matrixy=vtkSmartPointer<vtkMatrix4x4>::New();
-        insight::CoordinateSystem(origin, cs_.ey).setVTKMatrix(matrixy);
+        insight::CoordinateSystem(origin, cs_.ey, cs_.ez).setVTKMatrix(matrixy);
         tey->SetMatrix(matrixy);
         tey->Scale(5., 5., 5.);
     }
     {
         auto tez=vtkTransform::SafeDownCast(ez_->GetTransform());
         auto matrixz=vtkSmartPointer<vtkMatrix4x4>::New();
-        insight::CoordinateSystem(origin, cs_.ez).setVTKMatrix(matrixz);
+        insight::CoordinateSystem(origin, cs_.ez, -cs_.ex).setVTKMatrix(matrixz);
         tez->SetMatrix(matrixz);
         tez->Scale(5., 5., 5.);
     }
@@ -81,7 +92,6 @@ void IQVTKManipulateCoordinateSystem::start()
 {
     ctr_ = vtkSmartPointer<vtkPointSource>::New();
     ctr_->SetNumberOfPoints(1);
-    // ctr_->SetCenter(cs_.origin.memptr());
     ctr_->SetRadius(0.);
 
     auto cdist = vtkSmartPointer<vtkDistanceToCamera>::New();
@@ -156,74 +166,175 @@ void IQVTKManipulateCoordinateSystem::start()
     fixedCtr->SetInputArrayToProcess(
         0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "DistanceToCamera");
 
-    aP0_=display(fixedCtr, insight::vec3(0.5,0.5,0.5));
+    if (actorsToShow_.count(P0))
+        actors_[P0]=display(fixedCtr, insight::vec3(0.5,0.5,0.5));
 
     {
         auto a=arrow(ex_, pyz_);
-        aEx_=display(a.first, insight::vec3(0,1,0));
-        aYZ_=display(a.second, insight::vec3(0,1,0));
+
+        if (actorsToShow_.count(Ex))
+            actors_[Ex]=display(a.first, insight::vec3(1,0,0));
+
+        if (actorsToShow_.count(YZ))
+            actors_[YZ]=display(a.second, insight::vec3(1,0,0));
     }
     {
         auto a=arrow(ey_, pxz_);
-        if (!showOnlyX_) aEy_=display(a.first, insight::vec3(1,0,0));
-        aXZ_=display(a.second, insight::vec3(1,0,0));
+
+        if (actorsToShow_.count(Ey))
+            actors_[Ey]=display(a.first, insight::vec3(0,1,0));
+
+        if (actorsToShow_.count(XZ))
+            actors_[XZ]=display(a.second, insight::vec3(0,1,0));
     }
     {
         auto a=arrow(ez_, pxy_);
-        if (!showOnlyX_) aEz_=display(a.first, insight::vec3(0,0,1));
-        aXY_=display(a.second, insight::vec3(0,0,1));
+
+        if (actorsToShow_.count(Ez))
+            actors_[Ez]=display(a.first, insight::vec3(0,0,1));
+
+        if (actorsToShow_.count(XY))
+            actors_[XY]=display(a.second, insight::vec3(0,0,1));
     }
 
     setCS();
 }
 
 
+bool IQVTKManipulateCoordinateSystem::onMouseMove(
+    const QPoint point,
+    Qt::KeyboardModifiers curFlags )
+{
+    if (!ViewWidgetAction::onMouseMove(point, curFlags))
+    {
+        std::set eligible{XY, XZ, YZ};
+        if (!locPosition_)
+            eligible.insert({Ex, Ey, Ez});
+
+        if (auto hit = viewer().findActorUnderCursorAt(
+                point,
+                std::container_type_cast<std::set<vtkProp*> >(
+                    map_items(actors_)) ))
+        {
+
+            for (auto& a: eligible)
+            {
+                auto ta=actorIfActive(a);
+                if (ta==hit)
+                {
+                    std::cout<<"hit "<<a<<std::endl;
+                    viewer().highlightActor(ta);
+                }
+            }
+            std::cout<<"hit check done"<<std::endl;
+        }
+    }
+    return false;
+}
+
+
 
 void IQVTKManipulateCoordinateSystem::ManipPlane::update(const QPoint& newp)
 {
-    if (start)
+    try
     {
-        try
+        arma::mat n=insight::normalized(normal());
+
+        auto p1 =
+            parent->viewer().pointInPlane3D(
+                gp_Ax3(
+                    to_Pnt(parent->cs_.origin),
+                    to_Vec(n)
+                    ),
+                newp
+                );
+
+        if (startPt)
         {
-            arma::mat n=normal();
+            arma::mat dx=p1-*startPt;
+            if (arma::norm(dx,2) > insight::SMALL)
+            {
+                double ang=insight::rotAngle(
+                    p1 - parent->cs_.origin,
+                    *startPt - parent->cs_.origin,
+                    n );
 
-            gp_Ax3 viewPlane(
-                to_Pnt(parent->cs_.origin),
-                to_Vec(n)
-                );
+                insight::assertion(
+                    !std::isnan(ang),
+                    "invalid rotation angle");
 
-            auto p0 = insight::normalized(
-                parent->viewer().pointInPlane3D(
-                    viewPlane,
-                    *start
-                    )
-                );
+                parent->cs_.rotate(ang, n);
 
-            auto p1 = insight::normalized(
-                parent->viewer().pointInPlane3D(
-                    viewPlane,
-                    newp
-                    )
-                );
-            arma::mat dx=p1-p0;
-            double ang=::acos(arma::dot(p0, p1));
-            if (arma::dot(dx, arma::cross(p0,n))>0.)
-                ang*=-1.;
+                parent->setCS();
 
-            std::cout<<"ang="<<ang<<std::endl;
+                parent->viewer().scheduleRedraw();
+            }
 
-            parent->cs_.rotate(ang, n);
-
-            parent->setCS();
-
-            parent->viewer().scheduleRedraw();
         }
-        catch (...)
-        {
-            // ignore errors, when no unique intersection with plane
-        }
+        startPt=p1;
     }
-    start=newp;
+    catch (...)
+    {
+        // ignore errors, when no unique intersection with plane
+    }
+}
+
+
+arma::mat IQVTKManipulateCoordinateSystem::ManipAlong::closestPt(const QPoint &newp)
+{
+    vtkCamera* camera = parent->viewer().renderer()->GetActiveCamera();
+
+    auto d1=insight::normalized(
+        insight::vec3FromComponents(
+            camera->GetViewPlaneNormal()));
+
+    auto p1 = parent->viewer().pointInPlane3D(
+            gp_Ax3( // plane orthogonal to view direction and through CS origin
+                to_Pnt(parent->cs_.origin),
+                to_Vec(d1)
+                ),
+            newp
+        );
+
+    arma::mat r = p1 - p2;
+
+    double a = dot(d1, d1);
+    double b = dot(d1, d2);
+    double c = dot(d2, d2);
+    double d = dot(d1, r);
+    double e = dot(d2, r);
+
+    double denom = a*c - b*b;
+
+    insight::assertion(
+        std::abs(denom) > insight::SMALL,
+        "view direction parallel to direction");
+
+    double s = (a*e - b*d) / denom;
+
+    // arma::mat point1 = p1 + d1 * t;
+    arma::mat point2 = p2 + d2 * s;
+
+    return point2;
+}
+
+
+void IQVTKManipulateCoordinateSystem::ManipAlong::update(const QPoint& newp)
+{
+    arma::mat curp=closestPt(newp);
+
+    if (!startDiff_)
+    {
+        startDiff_=parent->cs_.origin-curp;
+    }
+    else
+    {
+        parent->cs_=insight::CoordinateSystem(
+            *startDiff_+curp, parent->cs_.ex, parent->cs_.ez);
+        parent->setCS();
+
+        parent->viewer().scheduleRedraw();
+    }
 }
 
 
@@ -264,12 +375,14 @@ bool IQVTKManipulateCoordinateSystem::onMouseDrag(
     const QPoint point,
     EventType eventType )
 {
-    if (eventType==Begin)
+    if ((eventType==Begin) && !action )
     {
         if (auto hit = viewer().findActorUnderCursorAt(
-                point, {aXY_, aYZ_, aXZ_/*aP0_,*/ /*aEx_, aEy_, aEz_*/} ))
+                point,
+                std::container_type_cast<std::set<vtkProp*> >(
+                    map_items(actors_)) ))
         {
-            if (hit==aXY_)
+            if (hit==actorIfActive(XY))
             {
                 auto mex=std::make_unique<ManipPlane>();
                 mex->parent=this;
@@ -277,7 +390,7 @@ bool IQVTKManipulateCoordinateSystem::onMouseDrag(
                 action=std::move(mex);
                 return true;
             }
-            else if (hit==aYZ_)
+            else if (hit==actorIfActive(YZ))
             {
                 auto mex=std::make_unique<ManipPlane>();
                 mex->parent=this;
@@ -285,7 +398,7 @@ bool IQVTKManipulateCoordinateSystem::onMouseDrag(
                 action=std::move(mex);
                 return true;
             }
-            else if (hit==aXZ_)
+            else if (hit==actorIfActive(XZ))
             {
                 auto mex=std::make_unique<ManipPlane>();
                 mex->parent=this;
@@ -293,56 +406,55 @@ bool IQVTKManipulateCoordinateSystem::onMouseDrag(
                 action=std::move(mex);
                 return true;
             }
-            // if (hit==aEx_)
-            // {
-            //     auto mex=std::make_unique<ManipEX>();
-            //     mex->start=point;
-            //     mex->parent=this;
-            //     action=std::move(mex);
-            //     return true;
-            // }
-            // else if (hit==aEy_)
-            // {
-            //     auto mey=std::make_unique<ManipEY>();
-            //     mey->start=point;
-            //     mey->parent=this;
-            //     action=std::move(mey);
-            //     return true;
-            // }
-            // else if (hit==aEz_)
-            // {
-            //     auto mez=std::make_unique<ManipEZ>();
-            //     mez->start=point;
-            //     mez->parent=this;
-            //     action=std::move(mez);
-            //     return true;
-            // }
-            // else if (hit==aP0_)
-            // {
-            //     auto mp0=std::make_unique<ManipP0>();
-            //     mp0->start=point;
-            //     mp0->parent=this;
-            //     action=std::move(mp0);
-            //     return true;
-            // }
+            else if (!locPosition_ && (hit==actorIfActive(Ex)))
+            {
+                auto mex=std::make_unique<ManipAlong>();
+                mex->parent=this;
+                mex->p2=cs_.origin;
+                mex->d2=cs_.ex;
+                action=std::move(mex);
+                return true;
+            }
+            else if (!locPosition_ && (hit==actorIfActive(Ey)))
+            {
+                auto mex=std::make_unique<ManipAlong>();
+                mex->parent=this;
+                mex->p2=cs_.origin;
+                mex->d2=cs_.ey;
+                action=std::move(mex);
+                return true;
+            }
+            else if (!locPosition_ && (hit==actorIfActive(Ez)))
+            {
+                auto mex=std::make_unique<ManipAlong>();
+                mex->parent=this;
+                mex->p2=cs_.origin;
+                mex->d2=cs_.ez;
+                action=std::move(mex);
+                return true;
+            }
         }
     }
-    else if (eventType==Intermediate)
+    else if (action)
     {
-        if (action)
+        if (eventType==Intermediate)
         {
+
             action->update(point);
             return true;
         }
-    }
-    else if (eventType==Final)
-    {
-        action.reset();
-        return true;
+        else if (eventType==Final)
+        {
+            action.reset();
+            return true;
+        }
     }
 
-    return false;
+    return ViewWidgetAction::onMouseDrag(
+        btn, nFlags, point, eventType);
 }
+
+
 
 bool IQVTKManipulateCoordinateSystem::onMouseClick(
     Qt::MouseButtons btn,
@@ -354,7 +466,10 @@ bool IQVTKManipulateCoordinateSystem::onMouseClick(
         this->finishAction(false);
         return true;
     }
-    return false;
+
+    return
+        ViewWidgetAction::onMouseClick(
+            btn, nFlags, point );
 }
 
 

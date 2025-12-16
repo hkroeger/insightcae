@@ -163,13 +163,12 @@ CADParameterSetModelVisualizer::CADParameterSetModelVisualizer(
     status_(BeforeLaunch), success_(false)
 {}
 
-void CADParameterSetModelVisualizer::addGeometryToSpatialTransformationParameter(
+void CADParameterSetModelVisualizer::addContextToSpatialTransformationParameter(
         const std::string &parameterPath,
-        cad::FeaturePtr geom )
+        cad::TransformParameterContextData cd )
 {
-    psmodel_->addGeometryToSpatialTransformationParameter(
-                    parameterPath,
-                    geom );
+    psmodel_->addContextToSpatialTransformationParameter(
+                    parameterPath, cd );
 }
 
 

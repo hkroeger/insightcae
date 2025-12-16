@@ -3,6 +3,7 @@
 
 #include "base/parameter.h"
 #include "base/parameters/subsetparameter.h"
+#include "base/spatialtransformation.h"
 #include "toolkit_gui_export.h"
 
 #include <QSet>
@@ -16,6 +17,7 @@
 #include "base/parameterset.h"
 #include "iqparameter.h"
 #include "iqhierarchicaldatamodel.h"
+#include "cadtypes.h"
 
 
 
@@ -57,7 +59,7 @@ private:
 
   std::unique_ptr<insight::ParameterSet> defaultParameterSet_;
 
-  mutable std::map<std::string, insight::cad::FeaturePtr> transformedGeometry_;
+  mutable std::map<std::string, insight::cad::TransformParameterContextData> transformParameterContextData_;
 
   /**
    * @brief vectorBasePoints_
@@ -136,14 +138,15 @@ public:
   void removeLabeledArrayElement(const QModelIndex &index);
 
 
-  void addGeometryToSpatialTransformationParameter(
-          const std::string& parameterPath, insight::cad::FeaturePtr geom );
+  void addContextToSpatialTransformationParameter(
+          const std::string& parameterPath, insight::cad::TransformParameterContextData context );
   void addVectorBasePoint(
           const std::string& parameterPath, const arma::mat& pBase );
 
-  insight::cad::FeaturePtr
-  getGeometryToSpatialTransformationParameter(
+  boost::optional<insight::cad::TransformParameterContextData>
+  getContextToSpatialTransformationParameter(
           const std::string& parameterPath );
+
   const arma::mat* const getVectorBasePoint(
           const std::string& parameterPath );
 

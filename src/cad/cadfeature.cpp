@@ -1943,14 +1943,12 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<
 
 bool isIdentity(const gp_Trsf& trsf)
 {
-    NCollection_Mat4<double> m1, m2;
-    trsf.GetMat4(m1);
-    gp_Trsf().GetMat4(m2);
+    gp_Trsf identity;
     bool equal=true;
-    for (int i=1; i<=4; ++i)
+    for (int i=1; i<=3; ++i)
         for (int j=1; j<=4; ++j)
         {
-            if (fabs(m1.GetValue(i,j)-m2.GetValue(i,j))>SMALL)
+            if (fabs(trsf.Value(i,j)-identity.Value(i,j))>SMALL)
                 equal=false;
         }
     return equal;

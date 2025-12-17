@@ -258,9 +258,9 @@ public:
       const std::string& parameterPath,
       cad::TransformParameterContextData cd );
 
-  void addVectorBasePoint(
+  void addContextToVectorParameter(
       const std::string& parameterPath,
-      const arma::mat& pBase );
+      insight::cad::VectorParameterContextData context );
 
   virtual std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() = 0;
 

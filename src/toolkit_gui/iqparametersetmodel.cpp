@@ -611,9 +611,11 @@ void IQParameterSetModel::addContextToSpatialTransformationParameter(
 
 
 
-void IQParameterSetModel::addVectorBasePoint(const std::string &parameterPath, const arma::mat &pBase)
+void IQParameterSetModel::addContextToVectorParameter(
+    const std::string &parameterPath,
+    insight::cad::VectorParameterContextData context)
 {
-    vectorBasePoints_[parameterPath]=pBase;
+    vectorParameterContextData_[parameterPath]=context;
 }
 
 boost::optional<insight::cad::TransformParameterContextData>
@@ -631,14 +633,15 @@ IQParameterSetModel::getContextToSpatialTransformationParameter(
 
 
 
-const arma::mat * const IQParameterSetModel::getVectorBasePoint(const std::string &parameterPath)
+boost::optional<insight::cad::VectorParameterContextData>
+IQParameterSetModel::getContextToVectorParameter(const std::string &parameterPath)
 {
-    auto i = vectorBasePoints_.find(parameterPath);
-    if (i!=vectorBasePoints_.end())
+    auto i = vectorParameterContextData_.find(parameterPath);
+    if (i!=vectorParameterContextData_.end())
     {
-        return &i->second;
+        return i->second;
     }
-    return nullptr;
+    return boost::optional<insight::cad::VectorParameterContextData>();
 }
 
 

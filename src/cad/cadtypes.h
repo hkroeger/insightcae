@@ -123,6 +123,10 @@ struct TransformParameterContextData
     insight::CoordinateSystem referenceCS;
 };
 
+struct VectorParameterContextData
+{
+    arma::mat basePoint;
+};
 
 struct VisualizationStyle
 {

@@ -62,11 +62,11 @@ private:
   mutable std::map<std::string, insight::cad::TransformParameterContextData> transformParameterContextData_;
 
   /**
-   * @brief vectorBasePoints_
+   * @brief vectorParameterContextData_
    * if a vector parameter represents a direction, this map contains the base point.
    * If there is no base point for a vector parameter, it treated as a point (location vector)
    */
-  mutable std::map<std::string, arma::mat> vectorBasePoints_;
+  mutable std::map<std::string, insight::cad::VectorParameterContextData> vectorParameterContextData_;
 
 
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
@@ -140,14 +140,15 @@ public:
 
   void addContextToSpatialTransformationParameter(
           const std::string& parameterPath, insight::cad::TransformParameterContextData context );
-  void addVectorBasePoint(
-          const std::string& parameterPath, const arma::mat& pBase );
+  void addContextToVectorParameter(
+          const std::string& parameterPath, insight::cad::VectorParameterContextData context );
 
   boost::optional<insight::cad::TransformParameterContextData>
   getContextToSpatialTransformationParameter(
           const std::string& parameterPath );
 
-  const arma::mat* const getVectorBasePoint(
+  boost::optional<insight::cad::VectorParameterContextData>
+  getContextToVectorParameter(
           const std::string& parameterPath );
 
   void pack();

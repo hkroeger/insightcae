@@ -174,13 +174,13 @@ void CADParameterSetModelVisualizer::addContextToSpatialTransformationParameter(
 
 
 
-void CADParameterSetModelVisualizer::addVectorBasePoint(
+void CADParameterSetModelVisualizer::addContextToVectorParameter(
         const std::string &parameterPath,
-        const arma::mat &pBase )
+        insight::cad::VectorParameterContextData context )
 {
-    psmodel_->addVectorBasePoint(
+    psmodel_->addContextToVectorParameter(
                     parameterPath,
-                    pBase );
+                    context );
 }
 
 

@@ -21,6 +21,7 @@
 #include "cadfeature.h"
 #include "iqiscadmodelgenerator.h"
 #include "iqiscadmodelrebuilder.h"
+#include "parametersetwithguicontext.h"
 
 #include "AIS_DisplayMode.hxx"
 
@@ -254,13 +255,7 @@ public:
 
   IQParameterSetModel* parameterSetModel() const;
 
-  void addContextToSpatialTransformationParameter(
-      const std::string& parameterPath,
-      cad::TransformParameterContextData cd );
-
-  void addContextToVectorParameter(
-      const std::string& parameterPath,
-      insight::cad::VectorParameterContextData context );
+  insight::ParameterSetGUIContext &GUIContext();
 
   virtual std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() = 0;
 

@@ -163,26 +163,6 @@ CADParameterSetModelVisualizer::CADParameterSetModelVisualizer(
     status_(BeforeLaunch), success_(false)
 {}
 
-void CADParameterSetModelVisualizer::addContextToSpatialTransformationParameter(
-        const std::string &parameterPath,
-        cad::TransformParameterContextData cd )
-{
-    psmodel_->addContextToSpatialTransformationParameter(
-                    parameterPath, cd );
-}
-
-
-
-
-void CADParameterSetModelVisualizer::addContextToVectorParameter(
-        const std::string &parameterPath,
-        insight::cad::VectorParameterContextData context )
-{
-    psmodel_->addContextToVectorParameter(
-                    parameterPath,
-                    context );
-}
-
 
 
 
@@ -314,7 +294,10 @@ IQParameterSetModel* CADParameterSetModelVisualizer::parameterSetModel() const
     return psmodel_;
 }
 
-
+insight::ParameterSetGUIContext& CADParameterSetModelVisualizer::GUIContext()
+{
+    return parameterSetModel()->GUIContext();
+}
 
 
 

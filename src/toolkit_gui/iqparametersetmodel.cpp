@@ -594,52 +594,16 @@ void IQParameterSetModel::removeLabeledArrayElement(const QModelIndex &index)
 
 
 
-
-
-
-
-
-
-void IQParameterSetModel::addContextToSpatialTransformationParameter(
-        const std::string &parameterPath,
-        insight::cad::TransformParameterContextData cd )
+insight::ParameterSetGUIContext &IQParameterSetModel::GUIContext()
 {
-    dbg(insight::DetailedBusiness) << "register " << cd.geometry << " for " << parameterPath << std::endl;
-    transformParameterContextData_[parameterPath]=cd;
+    return dynamic_cast<insight::ParameterSetGUIContext &>(
+        const_cast<insight::hierarchicalData::Element&>(
+            getHierarchicalData()) );
 }
 
 
 
 
-void IQParameterSetModel::addVectorBasePoint(const std::string &parameterPath, const arma::mat &pBase)
-{
-    vectorBasePoints_[parameterPath]=pBase;
-}
-
-boost::optional<insight::cad::TransformParameterContextData>
-IQParameterSetModel::getContextToSpatialTransformationParameter(
-        const std::string &parameterPath )
-{
-    auto i = transformParameterContextData_.find(parameterPath);
-    if (i!=transformParameterContextData_.end())
-    {
-        return i->second;
-    }
-    return boost::optional<insight::cad::TransformParameterContextData>();
-}
-
-
-
-
-const arma::mat * const IQParameterSetModel::getVectorBasePoint(const std::string &parameterPath)
-{
-    auto i = vectorBasePoints_.find(parameterPath);
-    if (i!=vectorBasePoints_.end())
-    {
-        return &i->second;
-    }
-    return nullptr;
-}
 
 
 void IQParameterSetModel::pack()

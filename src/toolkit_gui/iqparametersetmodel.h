@@ -3,7 +3,8 @@
 
 #include "base/parameter.h"
 #include "base/parameters/subsetparameter.h"
-#include "base/spatialtransformation.h"
+#include "parametersetwithguicontext.h"
+
 #include "toolkit_gui_export.h"
 
 #include <QSet>
@@ -58,16 +59,6 @@ private:
 
 
   std::unique_ptr<insight::ParameterSet> defaultParameterSet_;
-
-  mutable std::map<std::string, insight::cad::TransformParameterContextData> transformParameterContextData_;
-
-  /**
-   * @brief vectorBasePoints_
-   * if a vector parameter represents a direction, this map contains the base point.
-   * If there is no base point for a vector parameter, it treated as a point (location vector)
-   */
-  mutable std::map<std::string, arma::mat> vectorBasePoints_;
-
 
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
@@ -137,18 +128,7 @@ public:
   void removeArrayElement(const QModelIndex &index);
   void removeLabeledArrayElement(const QModelIndex &index);
 
-
-  void addContextToSpatialTransformationParameter(
-          const std::string& parameterPath, insight::cad::TransformParameterContextData context );
-  void addVectorBasePoint(
-          const std::string& parameterPath, const arma::mat& pBase );
-
-  boost::optional<insight::cad::TransformParameterContextData>
-  getContextToSpatialTransformationParameter(
-          const std::string& parameterPath );
-
-  const arma::mat* const getVectorBasePoint(
-          const std::string& parameterPath );
+  insight::ParameterSetGUIContext& GUIContext();
 
   void pack();
   void clearPackedData();

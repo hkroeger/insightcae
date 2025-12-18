@@ -230,6 +230,8 @@ set(toolkit_gui_SRCS
     qresultelements/qtabularresult.cpp qresultelements/qtabularresult.h
     qresultelements/qvectorresult.cpp qresultelements/qvectorresult.h
     qresultelements/qresultsection.cpp qresultelements/qresultsection.h
+
+    parametersetwithguicontext.h parametersetwithguicontext.cpp
 )
 
 

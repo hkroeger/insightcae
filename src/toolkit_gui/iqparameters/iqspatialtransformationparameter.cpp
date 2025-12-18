@@ -166,7 +166,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
           [this,translateLE,v,setValuesToControls,apply]()
           {
             if (auto cd =
-              psModel()->getContextToSpatialTransformationParameter(get()->path()))
+              psModel()->GUIContext().getData<insight::SpatialTransformationParameter>(get()->path()))
             {
                 vtkNew<ivtkOCCShape> shape;
                 shape->SetShape( cd->geometry->shape() );

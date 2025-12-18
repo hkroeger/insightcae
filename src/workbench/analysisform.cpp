@@ -183,8 +183,10 @@ AnalysisForm::AnalysisForm(
 
     // load default parameters
     auto defaultParams =
-        std::make_unique<insight::AnalysisParameterSet>(
-          analysisName);
+        std::make_unique<
+            insight::ParameterSetWithGUIContext<
+                insight::AnalysisParameterSet> >(
+                    analysisName );
 
     isOpenFOAMAnalysis_ =
         defaultParams->hasPath("run/OFEname");

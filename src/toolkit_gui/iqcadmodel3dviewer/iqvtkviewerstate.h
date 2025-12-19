@@ -1,8 +1,11 @@
 #ifndef IQVTKVIEWERSTATE_H
 #define IQVTKVIEWERSTATE_H
 
+#include <set>
+
 
 class IQVTKCADModel3DViewer;
+class vtkProp;
 
 class IQVTKViewerState
 {
@@ -15,6 +18,8 @@ public:
     virtual ~IQVTKViewerState();
 
     IQVTKCADModel3DViewer& viewer() const;
+
+    virtual std::set<vtkProp*> affectedActors() const =0;
 };
 
 

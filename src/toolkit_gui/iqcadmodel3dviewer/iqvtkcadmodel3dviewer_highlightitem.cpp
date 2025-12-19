@@ -138,6 +138,38 @@ IQVTKCADModel3DViewer::ExposeItem::~ExposeItem()
 
 
 
+std::set<vtkProp *> IQVTKCADModel3DViewer::ExposeItem::affectedActors() const
+{
+    std::set<vtkProp *> r;
+
+    for (auto& o: viewer_.displayedData_)
+    {
+        for (const auto& actor: o.second.actors_)
+        {
+            if (auto act = vtkActor::SafeDownCast(actor))
+            {
+                if ( o.first == idx2highlight_)
+                {
+                    // restore all display props
+                    r.insert(act);
+                }
+            }
+        }
+    }
+
+    if (de_)
+    {
+        for (const auto& actor: de_->actors_)
+        {
+            r.insert( actor );
+        }
+    }
+    return r;
+}
+
+
+
+
 const IQVTKCADModel3DViewer::CADEntity &IQVTKCADModel3DViewer::ExposeItem::entity() const
 {
     return entity_;
@@ -152,15 +184,28 @@ QModelIndex IQVTKCADModel3DViewer::ExposeItem::index() const
 }
 
 
+IQVTKCADModel3DViewer::ActorHighlighter::ActorHighlighter(
+    IQVTKCADModel3DViewer& viewer,
+    vtkActor* actorToHighlight )
+: IQVTKViewerState(viewer),
+    actor_(actorToHighlight)
+{}
 
+std::set<vtkProp*> IQVTKCADModel3DViewer::ActorHighlighter::affectedActors() const
+{
+    return { actor_ };
+}
 
 
 IQVTKCADModel3DViewer::SilhouetteHighlighter::SilhouetteHighlighter(
     IQVTKCADModel3DViewer& viewer,
-    vtkPolyDataMapper* mapperToHighlight,
+    vtkActor* actorToHighlight,
     QColor hicol )
-    : IQVTKViewerState(viewer)
+    : ActorHighlighter(viewer, actorToHighlight)
 {
+    auto* mapperToHighlight =
+        vtkPolyDataMapper::SafeDownCast(
+            actorToHighlight->GetMapper() );
     auto* id = mapperToHighlight->GetInput();
     if (id->GetNumberOfCells()>0)
     {
@@ -198,11 +243,12 @@ IQVTKCADModel3DViewer::SilhouetteHighlighter::~SilhouetteHighlighter()
 }
 
 
+
 IQVTKCADModel3DViewer::LinewidthHighlighter::LinewidthHighlighter(
     IQVTKCADModel3DViewer& viewer,
     vtkActor* actorToHighlight,
     QColor hicol )
-    : IQVTKViewerState(viewer), actor_(actorToHighlight)
+    : ActorHighlighter(viewer, actorToHighlight)
 {
 
     oldLineWidth_=actor_->GetProperty()->GetLineWidth();
@@ -229,7 +275,7 @@ IQVTKCADModel3DViewer::PointSizeHighlighter::PointSizeHighlighter(
     IQVTKCADModel3DViewer& viewer,
     vtkActor* actorToHighlight,
     QColor hicol )
-    : IQVTKViewerState(viewer), actor_(actorToHighlight)
+    : ActorHighlighter(viewer, actorToHighlight)
 {
     oldPointSize_=actor_->GetProperty()->GetPointSize();
     actor_->GetProperty()->GetColor(oldColor_);
@@ -272,4 +318,9 @@ IQVTKCADModel3DViewer::TextActorHighlighter::~TextActorHighlighter()
     actor_->GetCaptionTextProperty()->BoldOff();
 
     viewer_.scheduleRedraw();
+}
+
+std::set<vtkProp*> IQVTKCADModel3DViewer::TextActorHighlighter::affectedActors() const
+{
+    return { actor_ };
 }

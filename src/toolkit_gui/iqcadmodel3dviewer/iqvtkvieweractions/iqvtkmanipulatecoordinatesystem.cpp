@@ -222,11 +222,14 @@ bool IQVTKManipulateCoordinateSystem::onMouseMove(
                 auto ta=actorIfActive(a);
                 if (ta==hit)
                 {
-                    std::cout<<"hit "<<a<<std::endl;
-                    viewer().highlightActor(ta);
+                    if (!( currentHighlight_
+                           &&
+                           (currentHighlight_->affectedActors().count(ta)>0) ))
+                    {
+                        currentHighlight_=viewer().highlightActor(ta);
+                    }
                 }
             }
-            std::cout<<"hit check done"<<std::endl;
         }
     }
     return false;

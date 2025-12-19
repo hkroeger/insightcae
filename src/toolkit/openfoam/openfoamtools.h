@@ -256,7 +256,8 @@ void surfaceFeatureExtract
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::string& surfaceName
+  const std::string& surfaceName,
+  double featureAngle = 60.
 );
 
 

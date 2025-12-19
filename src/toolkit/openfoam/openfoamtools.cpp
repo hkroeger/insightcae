@@ -1589,7 +1589,8 @@ void surfaceFeatureExtract
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::string& surfaceName
+  const std::string& surfaceName,
+  double featureAngle
 )
 {
   OFDictData::dictFile sfeDict;
@@ -1599,7 +1600,7 @@ void surfaceFeatureExtract
   opts["extractionMethod"]="extractFromSurface";
   
   OFDictData::dict coeffs;
-  coeffs["includedAngle"]=120.0;
+  coeffs["includedAngle"]=180.-featureAngle; //120.0;
   coeffs["geometricTestOnly"]=true;
   opts["extractFromSurfaceCoeffs"]=coeffs;
   

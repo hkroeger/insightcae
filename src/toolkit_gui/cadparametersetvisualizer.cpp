@@ -294,7 +294,7 @@ IQParameterSetModel* CADParameterSetModelVisualizer::parameterSetModel() const
     return psmodel_;
 }
 
-insight::ParameterSetGUIContext& CADParameterSetModelVisualizer::GUIContext()
+insight::ParameterSetGUIContext* CADParameterSetModelVisualizer::GUIContext()
 {
     return parameterSetModel()->GUIContext();
 }

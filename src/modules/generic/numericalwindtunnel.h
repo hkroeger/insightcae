@@ -138,6 +138,14 @@ fluid = set {
  
 } "Parameters of the fluid"
 
+eval = set
+{
+    referenceAreaProjectionDirection = selection (frontal lateral vertical) frontal
+"A projected area of the geometry is used to calculate force coefficients. This selects the direction of the projection."
+} "Parameters for evaluation after solver run"
+
+
+
 <<<PARAMETERSET
 */
 

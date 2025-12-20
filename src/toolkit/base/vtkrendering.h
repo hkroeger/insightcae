@@ -426,12 +426,13 @@ public:
          std::pair<double,double> // Lh, Lv
         > scaleOrSize = boost::blank() );
 
+  typedef boost::variant<
+      double, // scale
+      std::pair<double,double> // Lh, Lv
+      > ParallelScale;
 
   void setParallelScale(
-      boost::variant<
-        double, // scale
-        std::pair<double,double> // Lh, Lv
-      > scaleOrSize
+      ParallelScale scaleOrSize
       );
 
   void fitAll(double mult=1.05);
@@ -447,6 +448,16 @@ public:
       const std::string& shortDesc,
       const std::string& longDesc = std::string()
       ) const;
+
+
+  void addDiagonalViews(
+      ResultElementCollection& results,
+      const insight::CoordinateSystem& baseCS,
+      double cameraDistance,
+      const boost::filesystem::path& basefilename,
+      const std::string& viewDescription,
+      boost::optional<ParallelScale> parallelScale = boost::none
+      );
 };
 
 

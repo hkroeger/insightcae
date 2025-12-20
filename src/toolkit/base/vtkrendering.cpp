@@ -1735,6 +1735,47 @@ void VTKOffscreenScene::addSnapshotToResults(
 
 
 
+void VTKOffscreenScene::addDiagonalViews(
+    ResultElementCollection& results,
+    const insight::CoordinateSystem& baseCS,
+    double cameraDistance,
+    const boost::filesystem::path& basefilename,
+    const std::string& viewDescription,
+    boost::optional<boost::variant<
+        double, // scale
+        std::pair<double,double> // Lh, Lv
+        > > parallelScale
+    )
+{
+    auto views = generateStandardViews(
+        baseCS,
+        cameraDistance );
+
+    hierarchicalData::Ordering o;
+
+    for (const auto& lv: views)
+    {
+        setupActiveCamera(lv.second);
+
+        if (!parallelScale)
+            fitAll();
+        else
+            setParallelScale(*parallelScale);
+
+        std::string name=
+            basefilename.filename().stem().string()+"_"+lv.first,
+            fname=name+".png";
+        exportImage(basefilename.parent_path() / fname);
+
+        results.insert<Image> (
+                   name,
+                   basefilename.parent_path(), fname,
+                   viewDescription+" ("+lv.second.title+")", ""
+                   ).setOrder(o.next());
+    }
+}
+
+
 //class ModifiedPOpenFOAMReader : public vtkPOpenFOAMReader
 //{
 //  ModifiedPOpenFOAMReader()

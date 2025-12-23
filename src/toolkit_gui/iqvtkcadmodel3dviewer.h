@@ -264,6 +264,8 @@ private:
                 QColor hicol = QColorConstants::Red );
         ~ExposeItem();
 
+        std::set<vtkProp*> affectedActors() const override;
+
         const CADEntity& entity() const;
         QModelIndex index() const;
 
@@ -277,8 +279,20 @@ private:
      * highlighting => make thick frame or something to
      * indicate that object is selected
      */
+    class ActorHighlighter : public IQVTKViewerState
+    {
+    protected:
+        vtkSmartPointer<vtkActor> actor_;
 
-    class SilhouetteHighlighter : public IQVTKViewerState
+    public:
+        ActorHighlighter(
+            IQVTKCADModel3DViewer& viewer,
+            vtkActor* actorToHighlight );
+
+        std::set<vtkProp*> affectedActors() const override;
+    };
+
+    class SilhouetteHighlighter : public ActorHighlighter
     {
         vtkSmartPointer<vtkPolyDataSilhouette> silhouette_;
         vtkSmartPointer<vtkActor> silhouetteActor_;
@@ -286,15 +300,14 @@ private:
     public:
         SilhouetteHighlighter(
             IQVTKCADModel3DViewer& viewer,
-            vtkPolyDataMapper* mapperToHighlight,
+            vtkActor* actorToHighlight,
             QColor hicol = QColorConstants::Red );
         ~SilhouetteHighlighter();
     };
     friend class SilhouetteHighlighter;
 
-    class LinewidthHighlighter : public IQVTKViewerState
+    class LinewidthHighlighter : public ActorHighlighter
     {
-        vtkSmartPointer<vtkActor> actor_;
         double oldColor_[3];
         float oldLineWidth_;
 
@@ -309,9 +322,8 @@ private:
 
 
 
-    class PointSizeHighlighter : public IQVTKViewerState
+    class PointSizeHighlighter : public ActorHighlighter
     {
-        vtkSmartPointer<vtkActor> actor_;
         double oldColor_[3];
         float oldPointSize_;
 
@@ -337,6 +349,7 @@ private:
             vtkCaptionActor2D* actorToHighlight,
             QColor hicol = QColorConstants::Red );
         ~TextActorHighlighter();
+        std::set<vtkProp*> affectedActors() const override;
     };
     friend class TextActorHighlighter;
 

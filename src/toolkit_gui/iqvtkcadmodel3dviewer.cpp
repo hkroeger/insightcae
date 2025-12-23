@@ -440,7 +440,7 @@ IQVTKCADModel3DViewer::highlightActor(vtkProp *prop, QColor hicol)
             {
                 actorHighlight.reset(
                     new SilhouetteHighlighter(
-                        *this, pdm, hicol
+                        *this, actor, hicol
                     ));
             }
             else if (pdm->GetInput()->GetNumberOfLines()>0

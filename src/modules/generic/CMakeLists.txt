@@ -13,7 +13,7 @@ set(genericmodules_LIBS
 
 if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)
     LIST(APPEND genericmodules_SOURCES
-        numericalwindtunnel.cpp numericalwindtunnel.h
+        numericalwindtunnel.cpp numericalwindtunnel.h numericalwindtunnel_eval.cpp
         internalpressureloss.cpp internalpressureloss.h
     )
     LIST(APPEND genericmodules_LIBS insightcad)

@@ -89,7 +89,7 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
           case insight::VectorParameter::VectorType::Direction: {
               arma::mat O=insight::vec3Zero();
               if (auto bp =
-                  psModel()->GUIContext().getData<insight::VectorParameter>(parameter().path()))
+                  psModel()->GUIContext()->getData<insight::VectorParameter>(parameter().path()))
               {
                   O=bp->basePoint;
               }

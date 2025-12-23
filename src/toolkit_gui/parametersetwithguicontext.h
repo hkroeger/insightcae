@@ -67,7 +67,8 @@ struct Data<VectorParameter>
 
 class ParameterSetGUIContext
 {
-    std::map<const Parameter*, std::unique_ptr<ParameterGUIContext::DataBase> > contextData_;
+    // use path as key because context might be added before the actual parameter
+    std::map<std::string, std::unique_ptr<ParameterGUIContext::DataBase> > contextData_;
 
 protected:
     virtual ParameterSet& theParameterSet() =0;
@@ -77,33 +78,32 @@ public:
     template<class ParameterClass, typename... Args>
     void addData(const std::string& ppath, Args... args)
     {
-        auto *p=&theParameterSet().template get<ParameterClass>(ppath);
-        contextData_[p]=std::make_unique<ParameterGUIContext::Data<ParameterClass> >(args...);
+        contextData_[ppath]=std::make_unique<ParameterGUIContext::Data<ParameterClass> >(args...);
     }
 
     template<class ParameterClass, typename... Args>
     void addData(const ParameterClass* p, Args... args)
     {
-        contextData_[p]=std::make_unique<ParameterGUIContext::Data<ParameterClass> >(args...);
+        contextData_[p->path()]=std::make_unique<ParameterGUIContext::Data<ParameterClass> >(args...);
     }
 
     template<class ParameterClass>
     boost::optional<ParameterGUIContext::Data<ParameterClass> >
     getData(const ParameterClass* p)
     {
-        if (contextData_.count(p))
-            return dynamic_cast<ParameterGUIContext::Data<ParameterClass>&>(
-                *contextData_.at(p));
-        else
-            return boost::optional<ParameterGUIContext::Data<ParameterClass> >();
+        return getData(p->path());
     }
 
     template<class ParameterClass>
     boost::optional<ParameterGUIContext::Data<ParameterClass> >
     getData(const std::string& ppath)
     {
-        auto *p=&theParameterSet().template get<ParameterClass>(ppath);
-        return getData(p);
+        auto i=contextData_.find(ppath);
+        if (i!=contextData_.end())
+            return dynamic_cast<ParameterGUIContext::Data<ParameterClass>&>(
+                *i->second );
+        else
+            return boost::optional<ParameterGUIContext::Data<ParameterClass> >();
     }
 };
 

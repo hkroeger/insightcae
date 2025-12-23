@@ -9,6 +9,8 @@
 #include <vtkTransformFilter.h>
 
 class IQVTKCADModel3DViewer;
+class IQVTKViewerState;
+
 
 class IQVTKManipulateCoordinateSystem
     : public QObject,
@@ -24,6 +26,8 @@ class IQVTKManipulateCoordinateSystem
 
     vtkSmartPointer<vtkTransformFilter>
         ex_, ey_, ez_, pxy_, pxz_, pyz_;
+
+    std::shared_ptr<IQVTKViewerState> currentHighlight_;
 
 public:
     enum Actor {

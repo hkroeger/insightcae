@@ -176,14 +176,18 @@ void ExceptionBase::saveContext(bool strace)
       }
   }
 
-  if (strace)
+  errorDescription_->strace_="";
+
+  if (const char* iv = getenv("INSIGHT_VERBOSE"))
   {
-    ostringstream trace_buf;
-    trace_buf  << boost::stacktrace::stacktrace();
-    errorDescription_->strace_=trace_buf.str();
+      if (strace && (atoi(iv)>=VerbosityLevel::DeepDetail) )
+      {
+        ostringstream trace_buf;
+        trace_buf  << boost::stacktrace::stacktrace();
+        errorDescription_->strace_=trace_buf.str();
+      }
   }
-  else
-    errorDescription_->strace_="";
+
 }
 
 

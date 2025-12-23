@@ -128,7 +128,7 @@ public:
   void removeArrayElement(const QModelIndex &index);
   void removeLabeledArrayElement(const QModelIndex &index);
 
-  insight::ParameterSetGUIContext& GUIContext();
+  insight::ParameterSetGUIContext* GUIContext();
 
   void pack();
   void clearPackedData();

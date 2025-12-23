@@ -594,11 +594,11 @@ void IQParameterSetModel::removeLabeledArrayElement(const QModelIndex &index)
 
 
 
-insight::ParameterSetGUIContext &IQParameterSetModel::GUIContext()
+insight::ParameterSetGUIContext* IQParameterSetModel::GUIContext()
 {
-    return dynamic_cast<insight::ParameterSetGUIContext &>(
-        const_cast<insight::hierarchicalData::Element&>(
-            getHierarchicalData()) );
+    return dynamic_cast<insight::ParameterSetGUIContext*>(
+        const_cast<insight::hierarchicalData::Element*>(
+            &getHierarchicalData()) );
 }
 
 

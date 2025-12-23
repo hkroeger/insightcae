@@ -255,7 +255,7 @@ public:
 
   IQParameterSetModel* parameterSetModel() const;
 
-  insight::ParameterSetGUIContext &GUIContext();
+  insight::ParameterSetGUIContext* GUIContext();
 
   virtual std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() = 0;
 

@@ -687,7 +687,12 @@ void AnalysisForm::onSaveParametersAs()
   {
     updateSaveMenuLabel();
 
-    saveAs(fn.asFilesystemPath());
+    auto fp = fn.asFilesystemPath();
+
+    psmodel_->resolveRelativePaths(
+        fp.parent_path() );
+
+    saveAs(fp);
   }
 }
 

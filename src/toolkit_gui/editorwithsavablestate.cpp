@@ -80,12 +80,13 @@ void AutosavableEditor::load(
     modificationStateChanged();
 }
 
-void AutosavableEditor::saveAs(const boost::filesystem::path& toFile)
+void AutosavableEditor::saveAs(
+    const boost::filesystem::path& toFile)
 {
     if (currentFileName_!=toFile)
     {
         currentFileName_=toFile;
-        fileNameChanged(currentFileName_);
+        fileNameChanged(currentFileName_);        
     }
     save();
 }

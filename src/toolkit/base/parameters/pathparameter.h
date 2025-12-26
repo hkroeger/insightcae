@@ -110,7 +110,7 @@ public:
       boost::optional<boost::filesystem::path> overrideBaseDirectory
         = boost::optional<boost::filesystem::path>() ) const;
 
-
+  void setFileName(const boost::filesystem::path& fn) override;
 
   rapidxml::xml_node<>* appendToNode(
       const std::string& name,

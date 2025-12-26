@@ -160,7 +160,7 @@ public:
    */
   const boost::filesystem::path& fileName() const;
 
-  void setFileName(const boost::filesystem::path& fn);
+  virtual void setFileName(const boost::filesystem::path& fn);
 
 
   std::unique_ptr<std::istream> stream() const;

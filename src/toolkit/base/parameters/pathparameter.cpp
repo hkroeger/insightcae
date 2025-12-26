@@ -107,8 +107,11 @@ std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 
 void PathParameter::resolveRelativePaths(const boost::filesystem::path &baseDirectory)
 {
+    auto org=fileName();
     FileContainer::resolveRelativePath(baseDirectory);
     Parameter::resolveRelativePaths(baseDirectory);
+    if (fileName()!=org)
+        triggerValueChanged();
 }
 
 
@@ -191,6 +194,15 @@ PathParameter::filePath(
     }
 
     return fp;
+}
+
+
+
+
+void PathParameter::setFileName(const boost::filesystem::path &fn)
+{
+    FileContainer::setFileName(fn);
+    triggerValueChanged();
 }
 
 

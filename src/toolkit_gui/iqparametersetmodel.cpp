@@ -632,6 +632,18 @@ std::string IQParameterSetModel::getAnalysisName() const
     return std::string();
 }
 
+void IQParameterSetModel::resolveRelativePaths(
+    const boost::filesystem::path &parentPath )
+{
+    if (auto *p = dynamic_cast<const insight::Parameter*>(
+            &getHierarchicalData()))
+    {
+        const_cast<insight::Parameter*>(p)
+            ->resolveRelativePaths(
+                parentPath );
+    }
+}
+
 
 
 

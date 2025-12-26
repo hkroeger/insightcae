@@ -13,6 +13,7 @@
 #include <QAbstractProxyModel>
 #include <QScopedPointer>
 #include <atomic>
+#include <boost/filesystem/path.hpp>
 #include <memory>
 
 #include "base/parameterset.h"
@@ -136,6 +137,7 @@ public:
   std::string getAnalysisName() const;
 
 
+  void resolveRelativePaths(const boost::filesystem::path& parentPath);
 
 
 public Q_SLOTS:

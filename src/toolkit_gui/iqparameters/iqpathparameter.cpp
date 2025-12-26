@@ -46,6 +46,16 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 //  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
   lineEdit->setText(QString::fromStdString(
       parameter().fileName().string()));
+  ::disconnectAtEOL(
+      lineEdit,
+      parameterRef().valueChanged.connect(
+          [lineEdit,this](){
+              DBG_SLOT(valueChanged);
+              lineEdit->setText(QString::fromStdString(
+                  parameter().fileName().string()));
+          }
+          )
+      );
   layout2->addWidget(lineEdit);
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
@@ -88,8 +98,9 @@ QVBoxLayout* IQPathParameter::populateEditControls(
     QString fn = showSelectPathDialog(editControlsContainer, lineEdit->text());
     if (!fn.isEmpty())
     {
-      lineEdit->setText(fn);
-      applyFunction();
+        parameterRef().setFileName(fn.toStdString());
+      // lineEdit->setText(fn);
+      // applyFunction();
     }
   }
   );

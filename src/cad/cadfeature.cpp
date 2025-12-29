@@ -1095,7 +1095,6 @@ FeatureSetPtr Feature::allOf(EntityType et) const
 
 FeatureSetPtr Feature::vertexAt(const arma::mat& p) const
 {
-    checkForBuildDuringAccess();
     return makeVertexFeatureSet(
         shared_from_this(),
         "dist(loc,%m0)<1e-6",

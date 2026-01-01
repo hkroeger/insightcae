@@ -118,6 +118,37 @@ public:
 
 
 
+
+
+class ConstrainedJoint
+    : public LSDynaInputCard
+{
+public:
+    enum Type {
+        Cylindrical,
+        Revolute,
+        Spherical,
+        Locking,
+        Translational,
+        Universal,
+        Planar
+    };
+private:
+    Type type_;
+    std::set<int> nodes_;
+
+public:
+    ConstrainedJoint(
+        Type type,
+        std::set<int> nodes
+        );
+
+    void write(std::ostream& os) const override;
+};
+
+
+
+
 class LoadShell
     : public LSDynaInputCard
 {

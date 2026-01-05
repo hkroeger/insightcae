@@ -16,6 +16,7 @@
 #include "vtkTriangle.h"
 #include "vtkLine.h"
 #include "vtkPoints.h"
+#include "vtkQuadraticEdge.h"
 
 #include "boost/algorithm/string.hpp"
 
@@ -37,11 +38,11 @@ public:
         std::array<vtkIdType, N> n;
     };
 
-    static const std::array<int,2> lineNodeMapping;
-    typedef Element<2, lineNodeMapping> Line;
+    static const std::array<int,3> lineNodeMapping;
+    typedef Element<3, lineNodeMapping> Line;
 
-    static const std::array<int,3> triNodeMapping;
-    typedef Element<3, triNodeMapping> Tri;
+    static const std::array<int,4> triNodeMapping;
+    typedef Element<4, triNodeMapping> Tri;
 
     static const std::array<int,4> quadNodeMapping;
     typedef Element<4, quadNodeMapping> Quad;
@@ -75,10 +76,14 @@ private:
 
     std::map<int, IdSet> nodeSets_, shellSets_;
 
+    mutable int beamRefNode_;
+
 public:
     FEMMesh()
         : elementsAreNumbered(false)
     {}
+
+    void setBeamRefPoint(const arma::mat& pref);
 
     void addVTK(
         const boost::filesystem::path& f,
@@ -88,7 +93,7 @@ public:
     void partToSet(int partId, int setId);
 
     template<class VTKCell, class TargetElement>
-    void addElement(vtkDataSet* ds, VTKCell* q, int part_id, std::vector<TargetElement>& cellList, vtkIdType nodeIdOfs=0)
+    TargetElement& addElement(vtkDataSet* ds, VTKCell* q, int part_id, std::vector<TargetElement>& cellList, vtkIdType nodeIdOfs=0)
     {
         insight::assertion(!elementsAreNumbered,
                            "Elements are already numbered. No more addition allowed!" );
@@ -106,6 +111,7 @@ public:
         };
 
         cellList.push_back(s);
+        return cellList.back();
     }
 
     template<class Element>
@@ -128,6 +134,7 @@ public:
     void addTriElement(vtkDataSet* ds, vtkTriangle* t, int part_id, vtkIdType nodeIdOfs=0);
     void addTetElement(vtkDataSet* ds, vtkTetra* t, int part_id, vtkIdType nodeIdOfs=0);
     void addLineElement(vtkDataSet* ds, vtkLine* l, int part_id, vtkIdType nodeIdOfs=0);
+    void addLineElement(vtkDataSet* ds, vtkQuadraticEdge* ql, int part_id, vtkIdType nodeIdOfs=0);
 
     template<class TargetElement>
     void numberElements(
@@ -156,7 +163,11 @@ public:
 
     void findNodesOfPart(std::set<int>& nodeSet, int part_id) const;
     void findShellsOfPart(std::set<int>& shellSet, int part_id) const;
-    int findNodeAt(const arma::mat& x, double tol = insight::SMALL) const;
+
+    int findNodeAt(
+        const arma::mat& x,
+        const std::set<int>& constrainToNodeSets = {},
+        double tol = insight::SMALL) const;
 
     IdSet& nodeSet(int setId);
     IdSet& shellSet(int setId);
@@ -176,9 +187,9 @@ public:
                 std::vector<std::string> nodeIds;
                 for (auto& ni: c.n)
                     nodeIds.push_back(toString(ni));
-#warning dirty hack for triangles
-                if (c.n.size()==3)
-                    nodeIds.push_back(nodeIds.back());
+// #warning dirty hack for triangles
+//                 if (c.n.size()==3)
+//                     nodeIds.push_back(nodeIds.back());
                 auto nodeIdList = boost::join(nodeIds, ", ");
 
                 os <<c.idx << ", " << c.part_id;

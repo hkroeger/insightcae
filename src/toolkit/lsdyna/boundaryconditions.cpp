@@ -121,5 +121,44 @@ void LoadShell::write(std::ostream& os) const
 }
 
 
+
+
+
+ConstrainedJoint::ConstrainedJoint(Type type, std::set<int> nodes)
+    : type_(type), nodes_(nodes)
+{}
+
+
+void ConstrainedJoint::write(std::ostream& os) const
+{
+    os << "*CONSTRAINED_JOINT_";
+    switch (type_)
+    {
+        case Cylindrical: os << "CYLINDRICAL"; break;
+        case Revolute: os << "REVOLUTE"; break;
+        case Spherical: os << "SPHERICAL"; break;
+        case Locking: os << "LOCKING"; break;
+        case Translational: os << "TRANSLATIONAL"; break;
+        case Universal: os << "UNIVERSAL"; break;
+        case Planar: os << "PLANAR"; break;
+        default: throw insight::UnhandledSelection();
+    }
+    os << "\n";
+
+    int ic=1;
+    for (auto i = nodes_.begin(); i!=nodes_.end(); ++i)
+    {
+        if (ic>1) os << ", ";
+        os << *i;
+        ic++;
+        auto j=i; j++;
+        if ((ic>7) || (j==nodes_.end()))
+        {
+            os << "\n";
+            ic=1;
+        }
+    }
+}
+
 } // namespace LSDynaInputCards
 } // namespace insight

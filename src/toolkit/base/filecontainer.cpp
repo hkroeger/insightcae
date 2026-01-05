@@ -338,7 +338,7 @@ const boost::filesystem::path& FileContainer::fileName() const
 void FileContainer::setFileName(const boost::filesystem::path &fn)
 {
     auto val=fn;
-    if (baseDirectory_)
+    if (!fn.empty() && baseDirectory_)
     {
         val=boost::filesystem::make_relative(
             *baseDirectory_, fn);
@@ -398,8 +398,11 @@ void FileContainer::resolveRelativePath(
     const boost::filesystem::path &baseDirectory)
 {
     baseDirectory_=baseDirectory;
-    fileName_=boost::filesystem::make_relative(
-        *baseDirectory_, fileName_);
+    if (!fileName_.empty())
+    {
+        fileName_=boost::filesystem::make_relative(
+            *baseDirectory_, fileName_);
+    }
 }
 
 boost::filesystem::path

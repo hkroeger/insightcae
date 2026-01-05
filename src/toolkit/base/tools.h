@@ -51,6 +51,40 @@ std::set<boost::filesystem::path>
 wildcardSearch(const boost::filesystem::path& pathWithRegex);
 
 
+template<class T, typename ...Args>
+class OnDemand
+{
+public:
+    typedef std::function<std::shared_ptr<T>(Args...)> InitFunction;
+
+private:
+    InitFunction initFunction_;
+    mutable std::shared_ptr<T> value_;
+
+public:
+    OnDemand(InitFunction inif)
+        : initFunction_(inif)
+    {}
+
+    std::shared_ptr<T> ptr(Args...args) const
+    {
+        if (!value_)
+        {
+            value_=initFunction_(args...);
+        }
+        return value_;
+    }
+
+    T& operator()(Args...args)
+    {
+        return *ptr(args...);
+    }
+
+    const T& operator()(Args...args) const
+    {
+        return *ptr(args...);
+    }
+};
 
 
 

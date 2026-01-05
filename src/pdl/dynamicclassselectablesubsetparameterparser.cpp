@@ -86,7 +86,7 @@ void DynamicClassSelectableSubsetParameterParser
 {
     os<<"{"
           <<varname<<".setSelection("<<staticname<<"->type());"
-          <<varname<<".assignFrom( "<<staticname<<"->getParameters() );"
+          <<varname<<"().assignFrom( "<<staticname<<"->getParameters() );"
         "}"<<endl;
 }
 

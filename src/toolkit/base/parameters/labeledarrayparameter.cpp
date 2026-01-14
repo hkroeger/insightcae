@@ -326,7 +326,8 @@ void LabeledArrayParameter::insertValueImpl(
 
     beforeChildInsertion(i, i);
 
-    auto ins = v.insert({ label, std::move(np) });
+    //should overwrite
+    auto ins = v.insert_or_assign(label, std::move(np));
 
     valueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(

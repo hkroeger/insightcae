@@ -319,28 +319,50 @@ CoordinateSystem::CoordinateSystem()
     ex(vec3X(1)), ey(vec3Y(1)), ez(vec3Z(1))
 {}
 
-CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x)
-    : origin(p0),
-    ex(x/arma::norm(x,2))
+CoordinateSystem::CoordinateSystem(
+    const arma::mat &p0,
+    const arma::mat &e,
+    DirDef def )
+  : origin(p0)
 {
-    arma::mat tz=vec3(0,0,1);
-    if ( fabs(arma::dot(tz,ex) - 1.) < SMALL )
+    switch (def)
     {
-        tz=vec3(0,1,0);
+    case X:
+        {
+            ex=normalized(e);
+            arma::mat tz=vec3(0,0,1);
+            if ( fabs(arma::dot(tz,ex) - 1.) < SMALL )
+            {
+                tz=vec3(0,1,0);
+            }
+
+            ey=-normalized(arma::cross(ex,tz));
+            ez=normalized(arma::cross(ex,ey));
+        } break;
+    case Z:
+        {
+            ez=normalized(e);
+            arma::mat tx=vec3(1,0,0);
+            if ( fabs(arma::dot(tx,ez) - 1.) < SMALL )
+            {
+                tx=vec3(0,1,0);
+            }
+
+            ey=normalized(arma::cross(ez,tx));
+            ex=normalized(arma::cross(ey,ez));
+        }
+        break;
     }
-
-    ey=-arma::cross(ex,tz);
-    ey/=arma::norm(ey,2);
-
-    ez=arma::cross(ex,ey);
-    ez/=arma::norm(ez,2);
 }
 
 
 
 
-CoordinateSystem::CoordinateSystem(const arma::mat &p0, const arma::mat &x, const arma::mat &z)
-    : origin(p0),
+CoordinateSystem::CoordinateSystem(
+    const arma::mat &p0,
+    const arma::mat &x,
+    const arma::mat &z)
+  : origin(p0),
     ex(x/arma::norm(x,2))
 {
     if ( fabs(arma::dot(z,ex) - 1.) < SMALL )

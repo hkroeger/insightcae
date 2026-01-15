@@ -265,9 +265,14 @@ struct CoordinateSystem
 
     CoordinateSystem();
 
+    enum DirDef {
+        X, Z
+    };
+
     CoordinateSystem(
         const arma::mat& p0,
-        const arma::mat& ex );
+        const arma::mat& e,
+        DirDef def = X );
 
     CoordinateSystem(
         const arma::mat& p0,

@@ -196,7 +196,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else {
             bool handled = false;
-            handled = handled || MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+            handled = handled || MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
             handled = handled || phasefractions->addIntoFieldDictionary ( field.first, field.second, BC );
             handled = handled || heattransfer->addIntoFieldDictionary ( field.first, field.second, BC, dictionaries );
 

@@ -70,7 +70,7 @@ void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       .subDict("boundaryField").subDict(patchName_);
 
     if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
-      MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+      MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
     else
     {
       if (OFversion()>=210)

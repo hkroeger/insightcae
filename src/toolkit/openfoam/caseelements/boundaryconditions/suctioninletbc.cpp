@@ -143,7 +143,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         else
           {
             if ( ! (
-                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
                         ||
                         phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
                     ) )

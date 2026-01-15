@@ -255,7 +255,7 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     else
     {
       if (!(
-          MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+          MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
           ||
           phasefractions->addIntoFieldDictionary(field.first, field.second, BC)
           ))

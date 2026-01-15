@@ -97,8 +97,6 @@ set(toolkit_gui_SRCS
  iqvtkiscadmodeldisplay.h iqvtkiscadmodeldisplay.cpp
  iqvtkkeepfixedsizecallback.h iqvtkkeepfixedsizecallback.cpp
 
- cadfeaturetransient.cpp
- cadfeaturetransient.h
  pointertransient.cpp
  pointertransient.h
 # qoccviewercontext.cpp
@@ -161,7 +159,7 @@ set(toolkit_gui_SRCS
     iqparameters/iqlabeledarrayelementparameter.h iqparameters/iqlabeledarrayelementparameter.cpp
     iqparameters/iqdateparameter.h iqparameters/iqdateparameter.cpp
     iqparameters/iqdatetimeparameter.h iqparameters/iqdatetimeparameter.cpp
-    #iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
+    iqparameters/iqcadgeometryparameter.h iqparameters/iqcadgeometryparameter.cpp
     iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
     iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp

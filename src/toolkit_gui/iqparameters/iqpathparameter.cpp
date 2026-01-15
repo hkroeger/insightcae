@@ -45,14 +45,14 @@ QVBoxLayout* IQPathParameter::populateEditControls(
   auto *lineEdit = new QLineEdit(editControlsContainer);
 //  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
   lineEdit->setText(QString::fromStdString(
-      parameter().fileName().string()));
+      parameter().filePath().string()));
   ::disconnectAtEOL(
       lineEdit,
       parameterRef().valueChanged.connect(
           [lineEdit,this](){
               DBG_SLOT(valueChanged);
               lineEdit->setText(QString::fromStdString(
-                  parameter().fileName().string()));
+                  parameter().filePath().string()));
           }
           )
       );
@@ -72,7 +72,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    parameterRef().setFileName( lineEdit->text().toStdString() );
+    parameterRef().setFilePath( lineEdit->text().toStdString() );
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
@@ -98,7 +98,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
     QString fn = showSelectPathDialog(editControlsContainer, lineEdit->text());
     if (!fn.isEmpty())
     {
-        parameterRef().setFileName(fn.toStdString());
+        parameterRef().setFilePath(fn.toStdString());
       // lineEdit->setText(fn);
       // applyFunction();
     }
@@ -147,7 +147,7 @@ QVBoxLayout* IQPathParameter::populateEditControls(
   connect(saveBtn, &QPushButton::clicked, [=]()
   {
     boost::filesystem::path orgfn(
-          parameter().fileName() );
+          parameter().filePath() );
 
     if (auto fn = getFileName(
           editControlsContainer,

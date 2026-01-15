@@ -26,7 +26,10 @@
 
 #include "base/boost_include.h"
 
+#include "boost/algorithm/string/classification.hpp"
+#include "boost/algorithm/string/replace.hpp"
 #include "boost/filesystem/path.hpp"
+#include "cadfeatures/inhomscale.h"
 #include "openfoam/caseelements/openfoamcaseelement.h"
 #include "base/progressdisplayer.h"
 
@@ -37,7 +40,19 @@
 #include "base/spatialtransformation.h"
 #include "base/vtktransformation.h"
 
+#include "occtools.h"
+#include "cadfeatures/transform.h"
+
+#include "vtkFeatureEdges.h"
+
 namespace insight {
+
+
+cad::FeaturePtr surfaceFeatureExtract
+    (
+        cad::FeaturePtr f,
+        double featureAngle = 60.
+        );
 
 
 namespace snappyHexMeshFeats
@@ -49,7 +64,14 @@ geometryDir(const OFEnvironment& ofe, const boost::filesystem::path& caseDir);
 boost::filesystem::path
 geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir);
 
+
+std::string cleanedName(const std::string& fn);
+
 }
+
+
+
+
 
 
 template<class Base>
@@ -62,8 +84,9 @@ public:
 PARAMETERSET>>> ExternalGeometryFile Parameters
 inherits Base::Parameters
 
-fileName = path "" "Path to geometry file (STL format)" *necessary
-scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
+geometry = cadgeometry "" "Geometry or geometry file (STL or CAD exchange format)" *necessary
+scalefactor = double 1 "Geometry scaling factor"
+inhomscale = vector (1 1 1) "Inhomogeneous scale factors for X, Y and Z direction respectively"
 translate = vector (0 0 0) "Translation vector"
 rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
 
@@ -75,25 +98,42 @@ createGetter
 public:
   ExternalGeometryFile( ParameterSetInput ip = Parameters() )
         : Base(ip.forward<Parameters>())
+    {}
+
+  std::string name() const override
   {
-        auto fname=p().fileName->fileName().filename().string();
-        insight::assertion(
-            std::isalpha(fname[0]),
-            "filename must not start with a number or special char (got %s)",
-            fname.c_str() );
-    }
+      auto n=Base::name();
+      if (n.empty())
+      {
+          boost::optional<boost::filesystem::path> fn =
+              p().geometry->filePath();
+          if (fn.is_initialized())
+          {
+              n=fn->filename().stem().string();
+          }
+      }
+      if (n.empty())
+      {
+          throw insight::Exception("the feature name must not be empty");
+      }
+      return n;
+  }
+
+  std::string cleanName() const
+  {
+      return snappyHexMeshFeats::cleanedName( this->name() );
+  }
+
+  virtual std::string fileName() const =0;
   
-  std::string fileName() const
-    {
-        return p().fileName->fileName().filename().string();
-    }
-  
+  virtual void writeTo(cad::FeaturePtr f, const boost::filesystem::path& fn) const =0;
+
   virtual void putIntoConstantTrisurface(
       const OpenFOAMCase& ofc,
       const boost::filesystem::path& location
       ) const
     {
-        boost::filesystem::path from( p().fileName->localFilePath() );
+        // boost::filesystem::path from( p().fileName->localFilePath() );
         boost::filesystem::path to(
             snappyHexMeshFeats::geometryDir(ofc, location)
             /fileName() );
@@ -101,24 +141,35 @@ public:
         if (!exists(to.parent_path()))
             create_directories(to.parent_path());
 
-        double s=p().scale[0];
-        insight::assertion(
-            (fabs(p().scale[1]-p().scale[0])<SMALL)
-                && (fabs(p().scale[2]-p().scale[0])<SMALL),
-            "unequal scaling factors for different directions are not supported" );
 
         insight::SpatialTransformation trsf(
-            p().translate, p().rollPitchYaw, s );
+            p().translate, p().rollPitchYaw, p().scalefactor );
 
         std::cout
-            << "reading STL file from " << from
-            << ", transforming by " << trsf
-            << " and writing to " << to
+            << "transforming " << this->name()
+            << " by " << trsf
+            << " to " << to
             << std::endl;
 
-        writeSTL(
-            readSTL(from, {&trsf}),
-            to );
+        cad::FeaturePtr geo= cad::Transform::create(
+            p().geometry->geometry(),
+            cad::is_gp_Trsf(trsf)
+        );
+
+        arma::mat as=p().inhomscale;
+        if ( arma::norm( as-vec3One(), 2 ) > SMALL )
+        {
+            geo=cad::InhomScale::create(geo, cad::matconst(as));
+        }
+
+        writeTo(
+            geo,
+            to
+        );
+
+        // writeSTL(
+        //     readSTL(from, {&trsf}),
+        //     to );
     }
 
 
@@ -146,7 +197,7 @@ public:
 /*
 PARAMETERSET>>> Feature Parameters
 
-name = string "unnamed" "Name of the geometry feature"  *necessary
+name = string "" "Name of the geometry feature"  *necessary
 
 createGetter
 <<<PARAMETERSET
@@ -163,8 +214,9 @@ public:
       const boost::filesystem::path& location ) const;
 
   virtual bool producesPrismLayers() const;
-};
 
+  virtual std::string name() const;
+};
 
 
 
@@ -196,6 +248,9 @@ public:
   declareType("Geometry");
 
   Geometry(ParameterSetInput ip = Parameters() );
+
+  std::string fileName() const override;
+  void writeTo(cad::FeaturePtr f, const boost::filesystem::path& fn) const override;
   
   void addIntoDictionary(OFDictData::dict& sHMDict) const override;
   void modifyFiles(const OpenFOAMCase& ofc,
@@ -236,18 +291,14 @@ public:
 
 
 class ExplicitFeatureCurve
-: public Feature
+    : public ExternalGeometryFile<Feature>
 {
 public:
 #include "snappyhexmesh__ExplicitFeatureCurve__Parameters.h"
 /*
 PARAMETERSET>>> ExplicitFeatureCurve Parameters
-inherits Feature::Parameters
+inherits ExternalGeometryFile<Feature>::Parameters
 
-fileName = path "" "Filename of the feature curve"  *necessary
-scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
-translate = vector (0 0 0) "Translation vector"
-rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
 level = int 4 "Refinement level at curve"
 distance = double 0 "Refinement distance"
 
@@ -261,9 +312,13 @@ public:
 
   ExplicitFeatureCurve(ParameterSetInput ip = Parameters() );
 
-  void addIntoDictionary(OFDictData::dict& sHMDict) const override;
+  std::string fileName() const override;
+  void writeTo(cad::FeaturePtr f, const boost::filesystem::path& fn) const override;
+
   void modifyFiles(const OpenFOAMCase& ofc,
                    const boost::filesystem::path& location) const override;
+
+  void addIntoDictionary(OFDictData::dict& sHMDict) const override;
 };
 
 
@@ -405,6 +460,9 @@ public:
   declareType("RefinementGeometry");
 
   RefinementGeometry(ParameterSetInput ip = Parameters() );
+
+  std::string fileName() const override;
+  void writeTo(cad::FeaturePtr f, const boost::filesystem::path& fn) const override;
 
   bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const override;
   //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
@@ -569,6 +627,19 @@ void snappyHexMesh
 );
 
 
+void createPrismLayers
+(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& casePath,
+    double finalLayerThickness,
+    bool relativeSizes,
+    const PatchLayers& nLayers,
+    double expRatio,
+    bool twodForExtrusion = false,
+    bool isalreadydecomposed = false,
+    bool keepdecomposedafterfinish = false,
+    ProgressDisplayer* progress = nullptr
+);
 
 }
 

@@ -21,19 +21,83 @@
 #include "snappyhexmesh.h"
 
 #include "base/boost_include.h"
+#include "base/linearalgebra.h"
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
 
 #include "openfoam/snappyhexmeshoutputanalyzer.h"
+
+#include "cadfeatures/importsolidmodel.h"
+#include "vtkLine.h"
+
 
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::assign;
 
+
+
+
 namespace insight
 {
-  
+
+
+
+cad::FeaturePtr surfaceFeatureExtract
+    (
+        cad::FeaturePtr f,
+        double featureAngle
+        )
+{
+    auto inp=f->triangulationToVTK();
+    auto fe=vtkSmartPointer<vtkFeatureEdges>::New();
+    fe->SetInputData(inp);
+    fe->SetFeatureAngle(featureAngle);
+    fe->Update();
+    auto feo=fe->GetOutput();
+
+    BRep_Builder bb;
+    TopoDS_Compound result;
+    bb.MakeCompound ( result );
+
+    for (vtkIdType i=0; i<feo->GetNumberOfCells(); ++i)
+    {
+        auto c=feo->GetCell(i);
+        if (auto l=vtkLine::SafeDownCast(c))
+        {
+            insight::assertion(
+                l->GetNumberOfPoints()==2,
+                "expected 2 points per line, found %d",
+                l->GetNumberOfPoints() );
+
+            auto p1 = vec3FromComponents(
+                feo->GetPoint(l->GetPointId(0)));
+            auto p2 = vec3FromComponents(
+                feo->GetPoint(l->GetPointId(1)));
+            bb.Add(
+                result,
+                BRepBuilderAPI_MakeEdge(
+                    to_Pnt(p1),
+                    to_Pnt(p2) ).Edge()
+                );
+        }
+        else
+        {
+            throw insight::Exception(
+                "expect feature edge mesh comprised of lines only, got cell of type %d",
+                c->GetCellType()
+                );
+        }
+    }
+
+    return cad::Import::create(result);
+}
+
+
+
+
+
 enum trimmedMesher {sHM, cfM};
 
 
@@ -43,11 +107,16 @@ namespace snappyHexMeshFeats
 {
 
 
+
+
 boost::filesystem::path
 geometryDir(const OFEnvironment& ofe, const boost::filesystem::path& caseDir)
 {
     return caseDir/"constant"/"triSurface";
 }
+
+
+
 
 boost::filesystem::path
 geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir)
@@ -56,26 +125,59 @@ geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir)
 }
 
 
-    
+std::string cleanedName(const std::string& fn)
+{
+    auto c1=boost::is_alnum();
+    auto c2=boost::is_digit();
+    auto c3=boost::is_any_of("_");
+
+    std::string fnf;
+    for (auto& c: fn)
+    {
+        if (c1(c)||c2(c)||c3(c))
+            fnf.append(1, c);
+    }
+
+    if ((fnf.size()>0) && !std::isalpha(fnf[0]))
+    {
+        fnf="f"+fnf;
+    }
+    return fnf;
+}
+
     
 defineType(Feature);
 defineDynamicClass(Feature);
 
+
+
+
 Feature::Feature(ParameterSetInput ip)
  : p_(ip.forward<Parameters>())
 {}
+
+
+
 
 void Feature::modifyFiles
 (
   const OpenFOAMCase&,
   const boost::filesystem::path&
 ) const
-{
-}
+{}
+
+
+
 
 bool Feature::producesPrismLayers() const
 {
   return false;
+}
+
+
+std::string Feature::name() const
+{
+    return p().name;
 }
 
 
@@ -85,15 +187,33 @@ addToFactoryTable(Feature, Geometry);
 addToStaticFunctionTable(Feature, Geometry, defaultParameters);
 
 
+
+
 Geometry::Geometry( ParameterSetInput ip )
     : ExternalGeometryFile<Feature>(ip.forward<Parameters>())
 {}
 
+
+
+std::string Geometry::fileName() const
+{
+    return cleanName()+".stlb";
+}
+
+void Geometry::writeTo(cad::FeaturePtr f, const boost::filesystem::path &fn) const
+{
+    f->saveAs(fn);
+}
+
+
 void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
+
+    auto n=this->cleanName();
+
   OFDictData::dict geodict;
   geodict["type"]="triSurfaceMesh";
-  geodict["name"]=p().name;
+  geodict["name"]=n;
   std::string fn="\""+fileName()+"\"";
   sHMDict.subDict("geometry")[fn]=geodict;
 
@@ -122,24 +242,25 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
     }
     castdict["regions"]=rrd;
   }
-  sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p().name]=castdict;
+  sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[n]=castdict;
 
   OFDictData::dict layerdict;
   layerdict["nSurfaceLayers"]=p().nLayers;
-  sHMDict.subDict("addLayersControls").subDict("layers")["\""+p().name+".*\""]=layerdict;
+  sHMDict.subDict("addLayersControls").subDict("layers")["\""+n+".*\""]=layerdict;
   for (const Parameters::regionRefinements_default_type& rr: p().regionRefinements)
   {
    OFDictData::dict layerdict;
    layerdict["nSurfaceLayers"]=0;
-   sHMDict.subDict("addLayersControls").subDict("layers")[p().name+"_"+rr.regionname]=layerdict;
+   sHMDict.subDict("addLayersControls").subDict("layers")[n+"_"+rr.regionname]=layerdict;
   }
 
 }
 
-void Geometry::modifyFiles(const OpenFOAMCase& ofc, 
-	      const boost::filesystem::path& location) const
+void Geometry::modifyFiles(
+    const OpenFOAMCase& ofc,
+    const boost::filesystem::path& location ) const
 {
-  ExternalGeometryFile::putIntoConstantTrisurface(ofc, location);
+  putIntoConstantTrisurface(ofc, location);
 }
 
 bool Geometry::producesPrismLayers() const
@@ -181,47 +302,37 @@ addToStaticFunctionTable(Feature, ExplicitFeatureCurve, defaultParameters);
 
 
 ExplicitFeatureCurve::ExplicitFeatureCurve(ParameterSetInput ip)
-    : Feature(ip.forward<Parameters>())
+    : ExternalGeometryFile<Feature>(ip.forward<Parameters>())
 {
+}
+
+
+std::string ExplicitFeatureCurve::fileName() const
+{
+    return cleanName()+".eMesh";
+}
+
+void ExplicitFeatureCurve::writeTo(cad::FeaturePtr f, const boost::filesystem::path &fn) const
+{
+    f->exportEMesh(fn, *f->allEdges(), 1e-1);
+}
+
+void ExplicitFeatureCurve::modifyFiles(
+    const OpenFOAMCase &ofc,
+    const boost::filesystem::path &location) const
+{
+  putIntoConstantTrisurface(ofc, location);
 }
 
 void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
-  refdict["file"]="\""+p().fileName->fileName().filename().string()+"\"";
+  refdict["file"]="\""+this->fileName()+"\"";
   refdict["levels"]=OFDictData::list( {OFDictData::list({p().distance, p().level}) });
   sHMDict.subDict("castellatedMeshControls").getList("features").push_back(refdict);
 
 }
 
-void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
-{
-  boost::filesystem::path from(p().fileName->localFilePath());
-
-  if (!exists(from))
-  {
-    boost::filesystem::path alt_from=from;
-    alt_from.replace_extension(".eMesh.gz");
-    if (!exists(alt_from))
-      throw insight::Exception(
-            "feature edge file does not exist: neither %s nor %s",
-            from.string().c_str(), alt_from.string().c_str() );
-  }
-
-  boost::filesystem::path to(
-      snappyHexMeshFeats::geometryDir(ofc, location)
-      / from.filename() );
-  
-  ofc.executeCommand(location, "eMeshTransformPoints",
-    {
-     absolute(from).string(),
-     absolute(to).string(),
-     "-scale", OFDictData::toString(OFDictData::vector3(p().scale)),
-     "-translate", OFDictData::toString(OFDictData::vector3(p().translate)),
-     "-rollPitchYaw", OFDictData::toString(OFDictData::vector3(p().rollPitchYaw))
-    }
-  );
-}
 
 
 
@@ -337,10 +448,25 @@ RefinementGeometry::RefinementGeometry(ParameterSetInput ip)
 : ExternalGeometryFile<RefinementRegion>(ip.forward<Parameters>())
 {}
 
-
-bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
+void RefinementGeometry::writeTo(
+    cad::FeaturePtr f,
+    const boost::filesystem::path &fn ) const
 {
-  entryTitle="\""+fileName()+"\"";
+    f->saveAs(fn);
+}
+
+
+string RefinementGeometry::fileName() const
+{
+    return cleanName()+".stlb";
+}
+
+
+bool RefinementGeometry::setGeometrySubdict(
+    OFDictData::dict& geodict,
+    std::string& entryTitle ) const
+{
+  entryTitle="\""+this->fileName()+"\"";
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p().name;
   return true;
@@ -559,7 +685,7 @@ RefinementLevel::RefinementLevel(
             L>SMALL,
             "refinement level target length must be larger than zero");
         double dlevel=log(L/delta)/log(2.);
-        level=std::max<int>(0, std::ceil(dlevel));
+        level=std::max<int>(0, std::round(dlevel));
     }
     else if (const auto * Ll = boost::get<L_level>(&input))
     {
@@ -891,6 +1017,89 @@ void snappyHexMesh
   //ofc.executeCommand(location, "snappyHexMesh", opts);
 }
 
+
+
+
+
+
+void createPrismLayers
+    (
+        const OpenFOAMCase& cm,
+        const boost::filesystem::path& casePath,
+        double finalLayerThickness,
+        bool relativeSizes,
+        const insight::PatchLayers& nLayers,
+        double expRatio,
+        bool twodForExtrusion,
+        bool isalreadydecomposed,
+        bool keepdecomposedafterfinish,
+        ProgressDisplayer* progress
+        )
+{
+
+    //   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
+    snappyHexMeshConfiguration::Parameters shm_cfg;
+
+    shm_cfg.set_erlayer(expRatio)
+        .set_tlayer(finalLayerThickness)
+        .set_relativeSizes(relativeSizes)
+
+        .set_doCastellatedMesh(false)
+        .set_doSnap(false)
+        .set_doAddLayers(true)
+        ;
+    for (const PatchLayers::value_type& pl: nLayers)
+    {
+        //     shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
+        shm_cfg.features.push_back( snappyHexMeshFeats::FeaturePtr( new snappyHexMeshFeats::PatchLayers( snappyHexMeshFeats::PatchLayers::Parameters()
+                                                                                                          .set_nLayers(pl.second)
+                                                                                                          .set_name(pl.first)
+                                                                                                      )));
+    }
+
+    if (twodForExtrusion)
+    {
+        //     setNoQualityCtrls(*qualityCtrls);
+        shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::disabled;
+    }
+    else
+    {
+        shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::relaxed;
+        //      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::standard;
+        //     setRelaxedQualityCtrls(*qualityCtrls);
+        //     (*qualityCtrls)["maxConcave"]=180.0; //85.0;
+        //     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;
+    }
+
+    shm_cfg.PiM.push_back(vec3(0,0,0));
+    snappyHexMesh
+        (
+            cm, casePath,
+            //     OFDictData::vector3(vec3(0,0,0)),
+            //     shm_feats,
+            //     snappyHexMeshOpts::Parameters()
+            // //       .set_stopOnBadPrismLayer(p.getBool("mesh/prismfailcheck"))
+            //       .set_erlayer(expRatio)
+            //       .set_tlayer(finalLayerThickness)
+            //       .set_relativeSizes(relativeSizes)
+            //
+            //       .set_doCastellatedMesh(false)
+            //       .set_doSnap(false)
+            //       .set_doAddLayers(true)
+            //
+            //       .set_qualityCtrls(qualityCtrls)
+            // /*
+            //       .set_tlayer(p.getDouble("mesh/mlayer"))
+            //       .set_relativeSizes(true)
+            //   */
+            //     ,
+            shm_cfg,
+            true,
+            isalreadydecomposed,
+            keepdecomposedafterfinish,
+            progress
+            );
+}
 
   
 }

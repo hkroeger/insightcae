@@ -40,7 +40,6 @@
 #include "openfoam/openfoamdict.h"
 #include "openfoam/ofenvironment.h"
 #include "openfoam/openfoamparameterstudy.h"
-#include "openfoam/snappyhexmesh.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/stretchtransformation.h"
 #include "openfoam/ofes.h"

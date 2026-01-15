@@ -23,7 +23,7 @@ bool Edge::connectsPoints(const Point& c0, const Point& c1) const
      );
 }
 
-void Edge::registerPoints(blockMesh& bmd) const
+void Edge::registerPoints(blockMeshBlocking& bmd) const
 {
   bmd.addPoint(c0_);
   bmd.addPoint(c1_);

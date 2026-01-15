@@ -132,7 +132,6 @@ set(toolkit_SOURCES
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h
     openfoam/openfoamanalysis.cpp openfoam/openfoamanalysis.h
     openfoam/openfoamcase.cpp openfoam/openfoamcase.h
-    openfoam/snappyhexmesh.cpp openfoam/snappyhexmesh.h
     openfoam/cfmesh.cpp openfoam/cfmesh.h
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h

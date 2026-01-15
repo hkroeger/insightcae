@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "base/exception.h"
-#include "base/parameters/subsetparameter.h"
+#include "base/parameters/selectablesubsetparameter.h"
 #include "base/units.h"
 #include "base/parameterset.h"
 #include "base/cppextensions.h"

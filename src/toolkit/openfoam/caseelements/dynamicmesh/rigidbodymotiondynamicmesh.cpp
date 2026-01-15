@@ -53,7 +53,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
 
     OFDictData::list libl;
     libl.push_back("\"lib"+name+".so\"");
-    libl.push_back("\"libextendedRigidBodyDynamics.so\"");
+    libl.push_back("\"libextendedRigidBodyMotion.so\"");
     dynamicMeshDict["motionSolverLibs"]=libl;
 
 

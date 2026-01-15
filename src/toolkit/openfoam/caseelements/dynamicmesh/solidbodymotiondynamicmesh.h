@@ -6,17 +6,14 @@
 
 namespace insight {
 
-class solidBodyMotionDynamicMesh
-: public dynamicMesh
+
+class solidBodyMotionFunction
 {
 public:
-#include "solidbodymotiondynamicmesh__solidBodyMotionDynamicMesh__Parameters.h"
+#include "solidbodymotiondynamicmesh__solidBodyMotionFunction__Parameters.h"
 /*
-PARAMETERSET>>> solidBodyMotionDynamicMesh Parameters
-inherits dynamicMesh::Parameters
-
-zonename = string "none" "Name of the cell zone which moves.
-Enter 'none', if the entire mesh shall be moved."
+PARAMETERSET>>> solidBodyMotionFunction Parameters
+skipDefaultBase
 
 motion = selectablesubset
 {{
@@ -42,19 +39,42 @@ motion = selectablesubset
 
 }} rotation "type of motion"
 
+<<<PARAMETERSET
+*/
+    insight::solidBodyMotionFunction::Parameters mp_;
+
+    solidBodyMotionFunction(const insight::solidBodyMotionFunction::Parameters& p);
+
+    void addIntoDictionary(OFDictData::dict& dictionary) const;
+};
+
+
+
+
+class solidBodyMotionDynamicMesh
+: public dynamicMesh,
+  public solidBodyMotionFunction
+{
+public:
+#include "solidbodymotiondynamicmesh__solidBodyMotionDynamicMesh__Parameters.h"
+/*
+PARAMETERSET>>> solidBodyMotionDynamicMesh Parameters
+inherits dynamicMesh::Parameters
+inherits insight::solidBodyMotionFunction::Parameters
+
+zonename = string "none" "Name of the cell zone which moves.
+Enter 'none', if the entire mesh shall be moved."
+
 createGetter
 <<<PARAMETERSET
 */
-
-// protected:
-//     ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
 
 public:
   declareType ( "solidBodyMotionDynamicMesh" );
 
   solidBodyMotionDynamicMesh(
       OpenFOAMCase& c,
-      ParameterSetInput ip = Parameters() );
+      ParameterSetInput ip = solidBodyMotionDynamicMesh::Parameters() );
 
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 

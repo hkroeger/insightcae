@@ -28,7 +28,6 @@
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamtools.h"
-#include "openfoam/snappyhexmesh.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 #include "openfoam/createpatch.h"
@@ -49,6 +48,9 @@
 #include "vtkCellData.h"
 #include "vtkPolyData.h"
 
+
+
+
 using namespace std;
 using namespace arma;
 using namespace boost;
@@ -57,7 +59,40 @@ using namespace boost::assign;
 
 namespace insight
 {
-  
+
+
+
+
+void createCellZoneFromRegionSeedPoint(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& dir,
+    const std::string& zoneName,
+    const arma::mat& PiM,
+    const std::vector<std::string>& asc
+    )
+{
+    std::string pims=OFDictData::toString(OFDictData::vector3(PiM)), nErode="";
+    if (cm.OFversion()>=220) pims="("+pims+")";
+    if (cm.OFversion()>=400) nErode=" 0";
+
+    std::vector<std::string> setCmds={
+        "cellSet dummy new boxToCell (-1e10 -1e10 -1e10) (1e10 1e10 1e10)",
+        "cellSet "+zoneName+" new regionToCell dummy "+pims+nErode,
+        "cellSet dummy remove"
+    };
+
+    std::copy(
+        asc.begin(), asc.end(),
+        std::last_inserter(setCmds)
+        );
+
+    setSet(cm, dir, setCmds);
+    cm.executeCommand(dir, "setsToZones", { "-noFlipMap" } );
+}
+
+
+
+
 TimeDirectoryList listTimeDirectories(
     const boost::filesystem::path& dir,
     const boost::filesystem::path& fta )
@@ -1618,6 +1653,8 @@ void surfaceFeatureExtract
   cm.executeCommand(location, "surfaceFeatureExtract", opt);
 }
 
+
+
 void extrude2DMesh
 (
   const OpenFOAMCase& cm, 
@@ -1954,85 +1991,6 @@ void PatchLayers::setByPattern(const std::string& regex_pattern, int nLayers)
 }
 
 
-void createPrismLayers
-(
-  const OpenFOAMCase& cm,
-  const boost::filesystem::path& casePath,
-  double finalLayerThickness, 
-  bool relativeSizes, 
-  const insight::PatchLayers& nLayers,
-  double expRatio,
-  bool twodForExtrusion,
-  bool isalreadydecomposed,
-  bool keepdecomposedafterfinish,
-  ProgressDisplayer* progress
-)
-{
-    
-//   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
-    snappyHexMeshConfiguration::Parameters shm_cfg;
-    
-    shm_cfg.set_erlayer(expRatio)
-      .set_tlayer(finalLayerThickness)
-      .set_relativeSizes(relativeSizes)
-      
-      .set_doCastellatedMesh(false)
-      .set_doSnap(false)
-      .set_doAddLayers(true)
-  ;
-  for (const PatchLayers::value_type& pl: nLayers)
-  {
-//     shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
-      shm_cfg.features.push_back( snappyHexMeshFeats::FeaturePtr( new snappyHexMeshFeats::PatchLayers( snappyHexMeshFeats::PatchLayers::Parameters()
-      .set_nLayers(pl.second)
-      .set_name(pl.first)
-    )));
-  }
-  
-  if (twodForExtrusion)
-  {
-//     setNoQualityCtrls(*qualityCtrls);
-      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::disabled;
-  }
-  else
-  {
-      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::relaxed;
-//      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::standard;
-//     setRelaxedQualityCtrls(*qualityCtrls);
-//     (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
-//     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
-  }
-  
-  shm_cfg.PiM.push_back(vec3(0,0,0));
-  snappyHexMesh
-  (
-    cm, casePath,
-//     OFDictData::vector3(vec3(0,0,0)),
-//     shm_feats,
-//     snappyHexMeshOpts::Parameters()
-// //       .set_stopOnBadPrismLayer(p.getBool("mesh/prismfailcheck"))
-//       .set_erlayer(expRatio)
-//       .set_tlayer(finalLayerThickness)
-//       .set_relativeSizes(relativeSizes)
-//       
-//       .set_doCastellatedMesh(false)
-//       .set_doSnap(false)
-//       .set_doAddLayers(true)
-//       
-//       .set_qualityCtrls(qualityCtrls)
-// /*
-//       .set_tlayer(p.getDouble("mesh/mlayer"))
-//       .set_relativeSizes(true)
-//   */
-//     ,
-    shm_cfg,
-    true,
-    isalreadydecomposed,
-    keepdecomposedafterfinish,
-    progress
-  ); 
-}
-
 arma::mat surfaceProjectLine
 (
  const OFEnvironment& ofe, 
@@ -2177,7 +2135,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     .set_name(p().profile_name)
   ));
 
-  auto casepath = p().casepath->localFilePath();
+  auto casepath = p().casepath->expandedFilePath();
 
   sample(
       cm, casepath,
@@ -2622,6 +2580,13 @@ eMesh::eMesh(const EMeshPtsListList &pts)
       ofs+=points.size();
     }
 }
+
+eMesh::eMesh(
+    const std::vector<arma::mat>&pts,
+    const std::vector<std::pair<int, int> >&edges )
+  : points_(pts),
+    edges_(edges)
+{}
 
 int eMesh::nPoints() const
 {

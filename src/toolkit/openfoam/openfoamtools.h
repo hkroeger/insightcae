@@ -42,7 +42,18 @@
 
 namespace insight
 {
-  
+
+
+void createCellZoneFromRegionSeedPoint(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& dir,
+    const std::string& zoneName,
+    const arma::mat& PiM,
+    const std::vector<std::string>& additionalSetCommands={}
+    );
+
+
+
 typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
 
 
@@ -254,11 +265,12 @@ arma::mat minPatchPressure
 
 void surfaceFeatureExtract
 (
-  const OpenFOAMCase& cm, 
-  const boost::filesystem::path& location,
-  const std::string& surfaceName,
-  double featureAngle = 60.
-);
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    const std::string& surfaceName,
+    double featureAngle = 60.
+    );
+
 
 
 /**
@@ -357,19 +369,7 @@ public:
     void setByPattern(const std::string& regex_pattern, int nLayers);
 };
 
-void createPrismLayers
-(
-  const OpenFOAMCase& cm,
-  const boost::filesystem::path& casePath,
-  double finalLayerThickness, 
-  bool relativeSizes, 
-  const PatchLayers& nLayers,
-  double expRatio,
-  bool twodForExtrusion = false,
-  bool isalreadydecomposed = false,
-  bool keepdecomposedafterfinish = false,
-  ProgressDisplayer* progress = nullptr
-);
+
 
 arma::mat surfaceProjectLine
 (
@@ -522,18 +522,30 @@ typedef std::vector<EMeshPtsList> EMeshPtsListList;
 
 class eMesh
 {
+public:
+    typedef std::pair<int, int> Edge;
+    typedef std::vector<arma::mat> PointList;
+    typedef std::vector<Edge> EdgeList;
+
 protected:
-    std::vector<arma::mat> points_;
-    std::vector<std::pair<int, int> > edges_;
+    PointList points_;
+    EdgeList edges_;
 
 public:
     eMesh();
     eMesh(const EMeshPtsList& pts);
     eMesh(const EMeshPtsListList& pts);
+    eMesh(
+        const PointList&pts,
+        const EdgeList&edges );
+
     int nPoints() const;
     int nEdges() const;
     void write(std::ostream& os) const;
     void write(const boost::filesystem::path& filename) const;
+
+    inline const PointList& points() const { return points_; }
+    inline const EdgeList& edges() const { return edges_; }
 };
 
 #ifndef SWIG

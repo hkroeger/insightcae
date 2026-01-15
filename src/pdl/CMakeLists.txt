@@ -23,8 +23,9 @@ set(pdl_SOURCES
     selectablesubsetgenerator.cpp selectablesubsetgenerator.h
     propertylibraryselectiongenerator.h propertylibraryselectiongenerator.cpp
     spatialtransformationparameterparser.h spatialtransformationparameterparser.cpp
-    cadgeometryparameterparser.h cadgeometryparameterparser.cpp
+
     labeledarraygenerator.h labeledarraygenerator.cpp
+    cadgeometrygenerator.h cadgeometrygenerator.cpp
     cadsketchgenerator.h cadsketchgenerator.cpp
     dateparameterparser.h dateparameterparser.cpp
     datetimeparameterparser.h datetimeparameterparser.cpp

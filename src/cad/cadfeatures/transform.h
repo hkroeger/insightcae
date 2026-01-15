@@ -35,11 +35,13 @@ class Transform
     : public DerivedFeature
 {
 
+
     VectorPtr trans_;
     VectorPtr rotorg_;
     VectorPtr rot_;
     ScalarPtr sf_;
-    FeaturePtr other_;
+
+    FeaturePtr otherTrsfSource_;
 
     std::shared_ptr<gp_Trsf> trsf_;
 
@@ -57,7 +59,7 @@ class Transform
 public:
     declareType ( "Transform" );
 #ifndef SWIG
-    DEPENDS_W_BASE(DerivedFeature, (trans_,rotorg_,rot_,sf_,other_));
+    DEPENDS_W_BASE(DerivedFeature, (trans_,rotorg_,rot_,sf_,otherTrsfSource_));
 #endif
     CREATE_FUNCTION(Transform);
 

@@ -17,17 +17,17 @@ add_executable(testexe_pdl test_pdl.cpp)
 linkToolkitVtk(testexe_pdl Offscreen)
 add_test(NAME unit_pdl COMMAND testexe_pdl)
 add_PDL(testexe_pdl "${test_pdl_SOURCES}")
-target_link_libraries(testexe_pdl insightcad)
+target_link_libraries(testexe_pdl toolkit_cad)
 
 add_toolkit_test(toolkit_dictparser)
 
 add_toolkit_test(toolkit_parameterset)
 add_dependencies(testexe_toolkit_parameterset testexe_pdl)
-target_link_libraries(testexe_toolkit_parameterset insightcad) # for cadsketchparameter
+target_link_libraries(testexe_toolkit_parameterset toolkit_cad) # for cadsketchparameter
 
 add_toolkit_test(toolkit_resultset)
 add_dependencies(testexe_toolkit_resultset testexe_pdl)
-target_link_libraries(testexe_toolkit_resultset insightcad) # for cadsketchparameter
+target_link_libraries(testexe_toolkit_resultset toolkit_cad) # for cadsketchparameter
 
 add_toolkit_test(toolkit_simplelatex)
 add_toolkit_test(toolkit_meminfo)

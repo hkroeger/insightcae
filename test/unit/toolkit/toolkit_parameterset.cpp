@@ -43,12 +43,12 @@ int main()
         std::cout<<ps->getPath("absFile")<<std::endl;
 
         auto &afile = ps->get<PathParameter>("absFile");
-        std::cout<<afile.filePath(false)<<std::endl;
+        std::cout<<afile.accessibleFilePath()<<std::endl;
 
         std::cout<<ps->getPath("relFile")<<std::endl;
         try
         {
-            std::cout<<ps->get<PathParameter>("relFile").filePath(false)<<std::endl;
+            std::cout<<ps->get<PathParameter>("relFile").accessibleFilePath()<<std::endl;
             throw insight::Exception("expected error during attempt to get full path of relative path without base directory set");
         }
         catch (const insight::UnsetBaseDirectory& ex)
@@ -60,7 +60,7 @@ int main()
         ps->resolveRelativePaths( boost::filesystem::current_path() );
 
 
-        auto rp = ps->get<PathParameter>("relFile").filePath(false);
+        auto rp = ps->get<PathParameter>("relFile").accessibleFilePath();
         std::cout<<rp<<std::endl;
 
         insight::assertion(

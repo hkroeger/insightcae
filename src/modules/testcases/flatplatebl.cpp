@@ -302,7 +302,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     // mean value profile
     umean_data.values.resize(1);
     umean_data.values[0].time=0;
-    umean_data.values[0].profile->setFileName(inlet_velocity_profile_tabfile); // without path! otherwise problems after case copying!
+    umean_data.values[0].profile->setFilePath(inlet_velocity_profile_tabfile); // without path! otherwise problems after case copying!
     
     umean_data.p0=vec3(0,0,0);      
     umean_data.ep=vec3(0,1,0);    

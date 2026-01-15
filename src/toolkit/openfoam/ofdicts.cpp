@@ -10,7 +10,7 @@ boost::filesystem::path OFdicts::insertAdditionalInputFile(std::shared_ptr<PathP
 {
   //throw insight::Exception("not implemented");
   insight::Warning("cannot handle additional input file %s, just inserting file name", file->fileName().c_str());
-  return file->filePath(true);
+  return file->accessibleFilePath(true);
 }
 
 OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, const FieldInfo& fi)

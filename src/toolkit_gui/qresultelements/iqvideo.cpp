@@ -65,8 +65,7 @@ IQVideo::ensureFileIsLocallyAvailable() const
         if (!localFile_)
         {
             localFile_=std::make_unique<TemporaryFile>(
-                "%%%%%"+
-                im.fileName().extension().string() );
+                "%%%%%"+ im.fileExtension() );
             im.copyTo(localFile_->path());
         }
         return localFile_->path();

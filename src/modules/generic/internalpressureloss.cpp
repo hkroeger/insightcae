@@ -138,7 +138,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
       auto file = w.second.file;
       if (file->isValid())
       {
-          cad::FeaturePtr f = loadgeom(file->filePath());
+          cad::FeaturePtr f = loadgeom(file->accessibleFilePath());
           walls_[w.first]=f;
           if (bb_.empty())
               bb_=f->modelBndBox();
@@ -149,14 +149,14 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
 
   if (p.geometry.inlet->isValid())
   {
-      cad::FeaturePtr f = loadgeom(p.geometry.inlet->filePath());
+      cad::FeaturePtr f = loadgeom(p.geometry.inlet->accessibleFilePath());
       inlet_=f;
       bb_.extend(f->modelBndBox());
   }
 
   if (p.geometry.outlet->isValid())
   {
-      cad::FeaturePtr f = loadgeom(p.geometry.outlet->filePath());
+      cad::FeaturePtr f = loadgeom(p.geometry.outlet->accessibleFilePath());
       outlet_=f;
       bb_.extend(f->modelBndBox());
   }
@@ -292,7 +292,6 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     create_directory(sp().stldir_);
 
     snappyHexMeshConfiguration::Parameters shm_cfg;
-    arma::mat s = vec3(1,1,1)*p.geometryscale;
 
     for (const auto&w: sp().walls_)
     {
@@ -308,8 +307,8 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
                 new snappyHexMeshFeats::ExplicitFeatureCurve(
                     snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
                        .set_level(p.mesh.maxLevel)
-                       .set_scale(s)
-                        .set_fileName(make_filepath(efn))
+                       .set_scalefactor(p.geometryscale)
+                       .set_geometry(make_geometryFile(efn))
                    )));
         shm_cfg.features.push_back(
             snappyHexMeshFeats::FeaturePtr(
@@ -318,8 +317,8 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
                        .set_minLevel(p.mesh.minLevel)
                        .set_maxLevel(p.mesh.maxLevel)
                        .set_nLayers(p.mesh.nLayers)
-                       .set_scale(s)
-                       .set_fileName(make_filepath(fn))
+                       .set_scalefactor(p.geometryscale)
+                       .set_geometry(make_geometryFile(fn))
                        .set_name(w.first)
                    )));
     }
@@ -329,9 +328,9 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
       .set_minLevel(p.mesh.minLevel)
       .set_maxLevel(p.mesh.maxLevel)
       .set_nLayers(0)
-      .set_scale(s)
+      .set_scalefactor(p.geometryscale)
 
-      .set_fileName(make_filepath(executionPath()/sp().stldir_/(sp().fn_inlet_+".stlb")))
+      .set_geometry(make_geometryFile(executionPath()/sp().stldir_/(sp().fn_inlet_+".stlb")))
       .set_name("inlet")
     )));
 
@@ -340,9 +339,9 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
       .set_minLevel(p.mesh.minLevel)
       .set_maxLevel(p.mesh.maxLevel)
       .set_nLayers(0)
-      .set_scale(s)
+      .set_scalefactor(p.geometryscale)
 
-      .set_fileName(make_filepath(executionPath()/sp().stldir_/(sp().fn_outlet_+".stlb")))
+      .set_geometry(make_geometryFile(executionPath()/sp().stldir_/(sp().fn_outlet_+".stlb")))
       .set_name("outlet")
     )));
 

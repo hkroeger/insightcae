@@ -225,7 +225,7 @@ public:
 
     void changeMapFromPath(const boost::filesystem::path& newMapFromPath)
     {
-        p().run.mapFrom->setFileName(newMapFromPath);
+        p().run.mapFrom->setFilePath(newMapFromPath);
     }
 
 
@@ -334,7 +334,7 @@ public:
                         str(boost::format(
                                 _("Linking the mesh to OpenFOAM case in directory %s.")
                                 ) % dir.string() ) );
-                    linkPolyMesh(p().mesh.linkmesh->filePath(true)/"constant", dir/"constant", &ofe);
+                    linkPolyMesh(p().mesh.linkmesh->expandedFilePath()/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
@@ -425,7 +425,7 @@ public:
             if ((cm.OFversion()>=230) && (p().run.mapFrom->isValid()))
             {
                 // parallelTarget option is not present in OF2.3.x
-                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(true), false);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->expandedFilePath(), false);
             }
         }
 
@@ -447,7 +447,7 @@ public:
         {
             if ( (!(cm.OFversion()>=230)) && (p().run.mapFrom->isValid()) )
             {
-                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(true), is_parallel);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->expandedFilePath(), is_parallel);
             }
             else
             {

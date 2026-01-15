@@ -64,6 +64,7 @@ add_sources(insightcad_SOURCES
  sweep.cpp sweep.h
  sheet.cpp sheet.h
  transform.cpp transform.h
+ inhomscale.h inhomscale.cpp
  tri.cpp tri.h
  tongue.cpp tongue.h
  wire.cpp wire.h

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     argList::validArgs.append("output surface file");
     argList::validArgs.append("compression factor");
     argList::validArgs.append("height of compressed region");
-    argList::validArgs.append("height of transistion end");
+    argList::validArgs.append("height of transition end");
     argList::validOptions.insert("zw", "location of waterline");
     argList args(argc, argv);
 

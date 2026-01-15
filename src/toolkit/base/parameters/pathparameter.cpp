@@ -64,22 +64,7 @@ bool PathParameter::isDifferent(const Parameter& p) const
 {
   if (const auto *pp = dynamic_cast<const PathParameter*>(&p))
   {
-    if (pp->fileName()!=fileName())
-      return true;
-
-    if (isPacked())
-    {
-      if (!pp->isPacked())
-        return true;
-
-      if (!(pp->contentModificationTime()==contentModificationTime()))
-        return true;
-
-      if (pp->contentBufferSize()!=contentBufferSize())
-        return true;
-    }
-
-    return false;
+    return FileContainer::isDifferent(*pp);
   }
   else
     return true;
@@ -91,7 +76,7 @@ std::string PathParameter::latexRepresentation(
     int,
     const FileStorageInfo& ) const
 {
-    return SimpleLatex( fileName().string() ).toLaTeX();
+    return SimpleLatex( filePath().string() ).toLaTeX();
 }
 
 
@@ -99,7 +84,7 @@ std::string PathParameter::latexRepresentation(
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
-  return SimpleLatex( fileName().generic_string() ).toPlainText();
+  return SimpleLatex( filePath().generic_string() ).toPlainText();
 }
 
 
@@ -107,10 +92,10 @@ std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 
 void PathParameter::resolveRelativePaths(const boost::filesystem::path &baseDirectory)
 {
-    auto org=fileName();
+    auto org=filePath();
     FileContainer::resolveRelativePath(baseDirectory);
     Parameter::resolveRelativePaths(baseDirectory);
-    if (fileName()!=org)
+    if (filePath()!=org)
         triggerValueChanged();
 }
 
@@ -129,7 +114,7 @@ void PathParameter::pack()
 {
     if (isValid())
     {
-        auto lfp=localFilePath();
+        auto lfp=expandedFilePath();
         if (boost::filesystem::exists(lfp))
             replaceContent(lfp);
     }
@@ -140,7 +125,7 @@ void PathParameter::pack()
 
 void PathParameter::unpack(const boost::filesystem::path &basePath)
 {
-    filePath(true, basePath); // triggers unpack
+    accessibleFilePath(true, basePath); // triggers unpack
 }
 
 
@@ -154,54 +139,11 @@ void PathParameter::clearPackedData()
 
 
 
-boost::filesystem::path
-PathParameter::filePath(
-    bool unpackIfNoLocalCopy,
-    boost::optional<boost::filesystem::path> overrideBaseDirectory ) const
+
+
+void PathParameter::setFilePath(const boost::filesystem::path &fn)
 {
-    boost::filesystem::path fp = localFilePath();
-
-    if (!boost::filesystem::exists(fp) && unpackIfNoLocalCopy && hasFileContent())
-    {
-        auto baseDir = baseDirectory();
-
-        if (overrideBaseDirectory)
-            baseDir=*overrideBaseDirectory;
-
-        if (!baseDir)
-        {
-          fp = GlobalTemporaryDirectory::path()/fileName();
-        }
-        else
-        {
-            fp = *baseDir / "embeddedFiles";
-            if (!fileName().parent_path().empty())
-            {
-                auto dirHash = std::hash<std::string>()(
-                    fileName().parent_path().string());
-                fp /= toString(dirHash);
-            }
-            fp /= fileName();
-        }
-    }
-
-    if (unpackIfNoLocalCopy && hasFileContent())
-    {
-        if (!boost::filesystem::exists(fp))
-        {
-            copyTo(fp, true);
-        }
-    }
-
-    return fp;
-}
-
-
-
-
-void PathParameter::setFileName(const boost::filesystem::path &fn)
-{
-    FileContainer::setFileName(fn);
+    FileContainer::setFilePath(fn);
     triggerValueChanged();
 }
 
@@ -257,7 +199,7 @@ PathParameter::readFromNode
           boost::str(
             boost::format(
              "No xml node found with type '%s' and name '%s', default value '%s' is used."
-            ) % type() % name % fileName().c_str() ) );
+            ) % type() % name % filePath().c_str() ) );
   }
   return child;
 }
@@ -373,7 +315,7 @@ std::string DirectoryParameter::latexRepresentation(
     return std::string()
       + "{\\ttfamily "
       + SimpleLatex(
-            fileName().string()
+            filePath().string()
         ).toLaTeX()
       + "}";
 }
@@ -418,7 +360,7 @@ const rapidxml::xml_node<>* DirectoryParameter::readFromNode
   {
     insight::Warning(
              "No xml node found with type '%s' and name '%s', default value '%s' is used.",
-              type().c_str(), name.c_str(), fileName().c_str()
+              type().c_str(), name.c_str(), filePath().c_str()
         );
   }
   return child;
@@ -447,7 +389,7 @@ bool DirectoryParameter::isEqual(const Element &op) const
 std::unique_ptr<hierarchicalData::Element> DirectoryParameter::clone() const
 {
     auto p=std::make_unique<DirectoryParameter>(
-        fileName(),
+        filePath(),
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order() );
     return p;

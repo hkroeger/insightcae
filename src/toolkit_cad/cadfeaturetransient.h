@@ -21,7 +21,7 @@
 #ifndef INSIGHT_CAD_CADFEATURETRANSIENT_H
 #define INSIGHT_CAD_CADFEATURETRANSIENT_H
 
-#include "toolkit_gui_export.h"
+#include "toolkit_cad_export.h"
 
 #ifndef Q_MOC_RUN
 #include "cadfeature.h"
@@ -33,7 +33,7 @@
 namespace insight {
 namespace cad {
 
-class TOOLKIT_GUI_EXPORT FeatureTransient
+class TOOLKIT_CAD_EXPORT FeatureTransient
 : public Standard_Transient
 {
 protected:

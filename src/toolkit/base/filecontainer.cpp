@@ -247,7 +247,7 @@ FileContainer::FileContainer()
 
 
 FileContainer::FileContainer(const FileContainer& other)
-    : fileName_(other.fileName_),
+    : filePath_(other.filePath_),
     baseDirectory_(other.baseDirectory_),
     file_content_(other.file_content_), // get reference to the same content for performance reasons
     fileContentTimestamp_(other.fileContentTimestamp_)/*,
@@ -261,7 +261,7 @@ FileContainer::FileContainer(const FileContainer& other)
 FileContainer::FileContainer(
     const boost::filesystem::path& fileName,
     const boost::optional<boost::filesystem::path>& baseDir )
-  : fileName_(fileName),
+  : filePath_(fileName),
     baseDirectory_(baseDir)
 {
     clock_gettime(CLOCK_REALTIME, &fileContentTimestamp_);
@@ -273,11 +273,11 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     const TemporaryFile& tf,
     const boost::filesystem::path &fileName )
-    : fileName_(fileName)
+    : filePath_(fileName)
 {
-    if (!fileName_.has_extension())
+    if (!filePath_.has_extension())
     {
-        fileName_.replace_extension(tf.path().filename().extension());
+        filePath_.replace_extension(tf.path().filename().extension());
     }
     replaceContent(tf.path());
 }
@@ -288,7 +288,7 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     const char *binaryFileContent, size_t size,
     const boost::filesystem::path &fileName )
-    : fileName_(fileName)
+    : filePath_(fileName)
 {
     replaceContentBuffer(
         std::make_shared<std::string>(
@@ -301,9 +301,29 @@ FileContainer::FileContainer(
 FileContainer::FileContainer(
     std::shared_ptr<std::string> content,
     const boost::filesystem::path& fileName )
-    : fileName_(fileName)
+    : filePath_(fileName)
 {
     replaceContentBuffer(content);
+}
+
+bool FileContainer::isDifferent(const FileContainer &o) const
+{
+    if (o.filePath()!=filePath())
+        return true;
+
+    if (hasFileContent())
+    {
+        if (!o.hasFileContent())
+            return true;
+
+        if (!(o.contentModificationTime()==contentModificationTime()))
+            return true;
+
+        if (o.contentBufferSize()!=contentBufferSize())
+            return true;
+    }
+
+    return false;
 }
 
 
@@ -323,19 +343,90 @@ bool FileContainer::hasFileContent() const
 
 bool FileContainer::isValid() const
 {
-  return  !fileName_.empty();
+  return  !filePath_.empty();
 }
 
 
 
 
 
-const boost::filesystem::path& FileContainer::fileName() const
+boost::filesystem::path FileContainer::fileName() const
 {
-    return fileName_;
+    return filePath_.filename();
 }
 
-void FileContainer::setFileName(const boost::filesystem::path &fn)
+
+std::string FileContainer::fileNameStem() const
+{
+    return fileName().stem().string();
+}
+
+/**
+   * @brief fileExtension
+   * @return
+   * file extension in lower case with leading dot
+   */
+std::string FileContainer::fileExtension() const
+{
+    return boost::to_lower_copy(
+        fileName().extension().string() );
+}
+
+
+boost::filesystem::path FileContainer::filePath() const
+{
+    return filePath_;
+}
+
+
+
+
+boost::filesystem::path
+FileContainer::accessibleFilePath(
+    bool unpackIfNoLocalCopy,
+    boost::optional<boost::filesystem::path> overrideBaseDirectory ) const
+{
+    boost::filesystem::path fp = expandedFilePath();
+
+    if (!boost::filesystem::exists(fp) && unpackIfNoLocalCopy && hasFileContent())
+    {
+        auto baseDir = baseDirectory();
+
+        if (overrideBaseDirectory)
+            baseDir=*overrideBaseDirectory;
+
+        if (!baseDir)
+        {
+            fp = GlobalTemporaryDirectory::path()/fileName();
+        }
+        else
+        {
+            fp = *baseDir / "embeddedFiles";
+            if (!fileName().parent_path().empty())
+            {
+                auto dirHash = std::hash<std::string>()(
+                    fileName().parent_path().string());
+                fp /= toString(dirHash);
+            }
+            fp /= fileName();
+        }
+    }
+
+    if (unpackIfNoLocalCopy && hasFileContent())
+    {
+        if (!boost::filesystem::exists(fp))
+        {
+            copyTo(fp, true);
+        }
+    }
+
+    return fp;
+}
+
+
+
+
+void FileContainer::setFilePath(const boost::filesystem::path &fn)
 {
     auto val=fn;
     if (!fn.empty() && baseDirectory_)
@@ -343,7 +434,7 @@ void FileContainer::setFileName(const boost::filesystem::path &fn)
         val=boost::filesystem::make_relative(
             *baseDirectory_, fn);
     }
-    fileName_=val;
+    filePath_=val;
 }
 
 
@@ -361,7 +452,7 @@ std::unique_ptr<std::istream> FileContainer::stream() const
   }
   else
   {
-      auto lfp=localFilePath();
+      auto lfp=expandedFilePath();
 
       if (boost::filesystem::exists(lfp))
       {
@@ -398,33 +489,37 @@ void FileContainer::resolveRelativePath(
     const boost::filesystem::path &baseDirectory)
 {
     baseDirectory_=baseDirectory;
-    if (!fileName_.empty())
+    if (!filePath_.empty())
     {
-        fileName_=boost::filesystem::make_relative(
-            *baseDirectory_, fileName_);
+        filePath_=boost::filesystem::make_relative(
+            *baseDirectory_, filePath_);
     }
 }
 
 boost::filesystem::path
-FileContainer::localFilePath() const
+FileContainer::expandedFilePath(bool dontThrow) const
 {
-    if (fileName_.is_relative())
+    if (filePath_.is_relative())
     {
         if (baseDirectory_)
         {
-            return (*baseDirectory_)/fileName_;
+            return (*baseDirectory_)/filePath_;
         }
         else
         {
-            throw insight::UnsetBaseDirectory(
-                str(boost::format("only a relative path (%s) was given"
-                " but no base directory for full path resolution has been set")
-                    % fileName_.string())
-                );
+            if (!dontThrow)
+            {
+                throw insight::UnsetBaseDirectory(
+                    str(boost::format("only a relative path (%s) was given"
+                    " but no base directory for full path resolution has been set")
+                        % filePath_.string())
+                    );
+                return boost::filesystem::path();
+            }
         }
     }
     else
-        return fileName_;
+        return filePath_;
 }
 
 
@@ -557,7 +652,7 @@ void FileContainer::copyTo(
     }
     else
     {
-        auto lfp = localFilePath();
+        auto lfp = expandedFilePath();
 
         if (boost::filesystem::exists(lfp))
         {
@@ -636,7 +731,7 @@ void FileContainer::clearPackedData()
 
 void FileContainer::operator=(const FileContainer& oc)
 {
-  fileName_ = oc.fileName_;
+  filePath_ = oc.filePath_;
   baseDirectory_ = oc.baseDirectory_;
   file_content_ = oc.file_content_;
   fileContentTimestamp_ = oc.fileContentTimestamp_;
@@ -652,12 +747,12 @@ void FileContainer::appendToNode
     const std::string& contentAttribName
 ) const
 {
-  auto fn=fileName_;
+  auto fn=filePath_;
   if (baseDirectory_)
   {
-      if (!fn.is_relative() && path_contains_file(*baseDirectory_, fileName_))
+      if (!fn.is_relative() && path_contains_file(*baseDirectory_, filePath_))
       {
-          fn=make_relative(fileName_, *baseDirectory_);
+          fn=make_relative(filePath_, *baseDirectory_);
       }
   }
 
@@ -665,61 +760,10 @@ void FileContainer::appendToNode
 
   if (hasFileContent())
   {
-
-    // ===========================================================================================
-    // 1.) do base64 encode
-    // typedefs
-    using namespace boost::archive::iterators;
-    typedef
-//          insert_linebreaks<         // insert line breaks every 72 characters
-            base64_from_binary<    // convert binary values to base64 characters
-                transform_width<   // retrieve 6 bit integers from a sequence of 8 bit bytes
-                    const char*, 6, 8
-                >
-            >
-//              ,72 >
-        base64_enc; // compose all the above operations in to a new iterator
-
-    char tail[3] = {0,0,0};
-    size_t len=file_content_->size();
-    unsigned int one_third_len = len/3;
-    unsigned int len_rounded_down = one_third_len*3;
-    unsigned int j = len_rounded_down + one_third_len;
-    unsigned int base64length = ((4 * file_content_->size() / 3) + 3) & ~3;
-
-    auto *xml_content = doc.allocate_string(0, base64length+1);
-    std::copy(
-          base64_enc(file_content_->c_str()),
-          base64_enc(file_content_->c_str()+len_rounded_down),
-          xml_content
-          );
-
-    if (len_rounded_down != len)
-    {
-        unsigned int i=0;
-        for(; i < len - len_rounded_down; ++i)
-        {
-            tail[i] = (*file_content_)[len_rounded_down+i];
-        }
-
-        std::copy(base64_enc(tail), base64_enc(tail + 3), xml_content + j);
-
-        for(i=len + one_third_len + 1; i < j+4; ++i)
-        {
-            xml_content[i] = '=';
-        }
-    }
-
-    xml_content[base64length]=0;
-
-
-    // ===========================================================================================
-    // 2.) append to node
     node.append_attribute(doc.allocate_attribute
     (
-      doc.allocate_string(contentAttribName.c_str()),
-      //os.str().c_str()
-      xml_content
+        doc.allocate_string(contentAttribName.c_str()),
+        base64_encode(doc, *file_content_)
     ));
 
   }
@@ -734,7 +778,7 @@ void FileContainer::readFromNode
 )
 {
 
-  fileName_ =
+  filePath_ =
       getMandatoryAttribute(node, fileNameAttribName);
 
   if (auto* a = node.first_attribute(contentAttribName.c_str()))
@@ -753,7 +797,7 @@ const timespec &FileContainer::contentModificationTime() const
 
 bool FileContainer::operator==(const FileContainer& o) const
 {
-    if (!boost::filesystem::weakly_equivalent(fileName_, o.fileName_))
+    if (!boost::filesystem::weakly_equivalent(filePath_, o.filePath_))
         return false;
 
     if (file_content_ && o.file_content_)

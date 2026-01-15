@@ -42,7 +42,6 @@ public:
         int documentHierarchyLevel,
         const FileStorageInfo& fsi ) const override;
 
-    boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
 
     /**
      * append the contents of this element to the given xml node

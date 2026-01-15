@@ -58,7 +58,7 @@ public:
 
 
 class CADSketchParameter
-: public CADGeometryParameter,
+: public CADGeometryParameterBase,
   public DelayedCreatedSketch
 {
 

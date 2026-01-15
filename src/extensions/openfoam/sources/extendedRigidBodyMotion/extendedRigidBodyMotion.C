@@ -381,7 +381,10 @@ extendedRigidBodyMeshMotion::extendedRigidBodyMeshMotion
     referenceSystemSpeed_(
         coeffDict().lookupOrDefault<vector>(
             "referenceSystemSpeed", vector::zero ) ),
-    rampDuration_(readScalar(coeffDict().lookup("rampDuration")))
+    rampDuration_(readScalar(coeffDict().lookup("rampDuration"))),
+    relativeMovingBodies_(
+          coeffDict().lookup("relativeMovingBodies"),
+          relativeMovingBody::INew<relativeMovingBody>(mesh) )
 {
     if (rhoName_ == "rhoInf")
     {
@@ -494,15 +497,30 @@ extendedRigidBodyMeshMotion::curPoints() const
 
 void extendedRigidBodyMeshMotion::resetPointsFromCurMotionState()
 {
+
+    pointField movedPoints(points0());
+
+    // move props etc. first
+    for (const auto& rmb: relativeMovingBodies_)
+    {
+        UIndirectList<point>(movedPoints, rmb.pointIDs_) =
+            transformPoints
+            (
+                rmb.transformation(),
+                pointField(movedPoints, rmb.pointIDs_)
+                );
+    }
+
+    // then apply body motion
     // Update the displacements
     if (bodyMeshes_.size() == 1)
     {
-        pointDisplacement_.primitiveFieldRef() = model_.transformPoints
+        movedPoints = model_.transformPoints
         (
             bodyMeshes_[0].bodyID_,
             bodyMeshes_[0].weight_,
-            points0()
-        ) - points0();
+            movedPoints
+        );
     }
     else
     {
@@ -514,9 +532,15 @@ void extendedRigidBodyMeshMotion::resetPointsFromCurMotionState()
             weights[bi] = &bodyMeshes_[bi].weight_;
         }
 
-        pointDisplacement_.primitiveFieldRef() =
-            model_.transformPoints(bodyIDs, weights, points0()) - points0();
+        movedPoints = model_.transformPoints
+        (
+            bodyIDs,
+            weights,
+            movedPoints
+        );
     }
+
+    pointDisplacement_.primitiveFieldRef() = movedPoints - points0();
 
     // Displacement has changed. Update boundary conditions
     pointConstraints::New

@@ -2,6 +2,9 @@
 set(PRJ extendedRigidBodyMotion)
 
 set(SRC 
+    movingmeshpart.cpp movingmeshpart.h
+    relativemovingbody.cpp relativemovingbody.h
+
  extendedRigidBodyMotion.C
  additionalforceandmoment.cpp
  directforce.cpp

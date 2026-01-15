@@ -9,12 +9,16 @@ struct SubsetGenerator
 {
         ParameterSetData value;
 
-        boost::optional<std::string> templateArg_, base_type_name_, addTo_makeDefault_;
+        boost::optional<std::string> templateArg_, addTo_makeDefault_;
+
+        typedef boost::fusion::vector<bool,std::string> BaseType;
+        typedef boost::optional<std::vector<BaseType> > BaseTypes;
+        BaseTypes base_types_;
 
         SubsetGenerator(const ParameterSetData& v, const std::string& d);
         SubsetGenerator(const ParameterSetData& v,
                         const boost::optional<std::string>& templateArg,
-                        const boost::optional<std::string>& inherits,
+                        BaseTypes inherits,
                         const boost::optional<std::string>& description,
                         const boost::optional<std::string>& addCode
                         );

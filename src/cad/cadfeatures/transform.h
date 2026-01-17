@@ -52,6 +52,7 @@ class Transform
     Transform ( ConstFeaturePtr m1, ScalarPtr scale );
     Transform ( ConstFeaturePtr m1, FeaturePtr other );
     Transform ( ConstFeaturePtr m1, const gp_Trsf& trsf );
+    Transform ( ConstFeaturePtr m1, const insight::SpatialTransformation& trsf );
 
     size_t calcHash() const override;
     void build() override;

@@ -119,6 +119,13 @@ Transform::Transform(ConstFeaturePtr m1, const gp_Trsf& trsf)
   *trsf_=trsf;
 }
 
+Transform::Transform(ConstFeaturePtr m1, const SpatialTransformation &trsf)
+  : DerivedFeature(m1),
+    trsf_(new gp_Trsf)
+{
+    *trsf_=is_gp_Trsf(trsf);
+}
+
 
 
 

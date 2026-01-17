@@ -932,6 +932,17 @@ arma::mat Feature::modelInertia(double density_ovr) const
   return rho*T*Ip*T.t();
 }
 
+
+void Feature::createTriangulation(double deflection)
+{
+    checkForBuildDuringAccess();
+
+    if (deflection>0)
+    {
+        BRepMesh_IncrementalMesh Inc(shape(), deflection);
+    }
+}
+
 arma::mat Feature::modelBndBox(double deflection) const
 {
   checkForBuildDuringAccess();
@@ -1606,6 +1617,10 @@ void Feature::saveAs
         DOT dot(f);
         printDependencies(dot);
       }
+  }
+  else if ( ext==".emesh" )
+  {
+      exportEMesh(filename, *allEdges());
   }
   else
   {

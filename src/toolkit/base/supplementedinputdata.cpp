@@ -1,4 +1,5 @@
 #include "supplementedinputdata.h"
+#include "base/cppextensions.h"
 #include "base/exception.h"
 #include "base/parameterset.h"
 #include <string>
@@ -215,6 +216,24 @@ void supplementedInputDataBase::reportSupplementQuantity(
         name,
         ReportedSupplementQuantity{ value, description, unit }
     ) );
+}
+
+
+void supplementedInputDataBase::insertSupplementQuantities(
+    const std::string &prefix,
+    const ReportedSupplementQuantitiesTable &rsqt)
+{
+    std::transform(
+        rsqt.begin(), rsqt.end(),
+        std::inserter(reportedSupplementQuantities_, reportedSupplementQuantities_.end()),
+        [&](const ReportedSupplementQuantitiesTable::value_type& o)
+        {
+            auto newname=o.first;
+            if (!prefix.empty()) newname=prefix+"/"+newname;
+            return ReportedSupplementQuantitiesTable::value_type{
+                newname, o.second };
+        }
+        );
 }
 
 const ParameterSet& supplementedInputDataBase::parameters() const

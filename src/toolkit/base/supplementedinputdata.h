@@ -195,6 +195,19 @@ public:
           );
   }
 
+  /**
+   * @brief insertSupplementQuantities
+   * insert a set of quantities to report from e.g. subanalyses
+   * @param prefix
+   * a string to prepend to each quantity
+   * @param rsqt
+   * table of quantities to insert
+   */
+  void insertSupplementQuantities(
+      const std::string& prefix,
+      const ReportedSupplementQuantitiesTable& rsqt
+      );
+
   const ReportedSupplementQuantitiesTable& reportedSupplementQuantities() const;
 
   virtual const ParameterSet& parameters() const;

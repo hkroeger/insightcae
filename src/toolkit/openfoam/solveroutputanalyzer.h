@@ -12,26 +12,10 @@
 
 #include "boost/regex.hpp"
 
+#include "outputsectionreader.h"
+
 namespace insight {
 
-class OutputSectionReader;
-
-typedef std::shared_ptr<OutputSectionReader> OutputSectionReaderPtr;
-
-class OutputSectionReader
-{
-public:
-    declareStaticFunctionTableWithArgs(
-            createIfMatches,
-            OutputSectionReaderPtr,
-            LIST(const std::string&),
-            LIST(const std::string& line) );
-
-    declareType ( "OutputSectionReader" );
-
-    virtual bool parseNextLine(const std::string& line) =0;
-    virtual void addProgressVariables(std::map<std::string, double>& progVars) const =0;
-};
 
 
 class SolverOutputAnalyzer

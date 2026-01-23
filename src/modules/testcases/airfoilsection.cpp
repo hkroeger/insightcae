@@ -81,12 +81,12 @@ AirfoilSection::supplementedInputData::supplementedInputData(
 {
 
   if (!p().geometry.foilfile->isValid())
-    throw insight::Exception("Foil data file does not exist: "+p().geometry.foilfile->fileName().string());
+    throw insight::Exception("Foil data file does not exist: "+p().geometry.foilfile->filePath().string());
 
-  std::cout<<"Reading foil from "<<p().geometry.foilfile->fileName().string()<<std::endl;
+  std::cout<<"Reading foil from "<<p().geometry.foilfile->filePath().string()<<std::endl;
   {
     std::string data;
-    std::string ext = p().geometry.foilfile->fileName().extension().string();
+    std::string ext = p().geometry.foilfile->fileExtension();
 
     int lnr=0;
 
@@ -107,8 +107,9 @@ AirfoilSection::supplementedInputData::supplementedInputData(
           std::istringstream l(line);
           double x, y;
           l >> x >> y;
-          if (l.fail()) throw insight::Exception(boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
-                                                            % p().geometry.foilfile->fileName().string() % lnr % line));
+          if (l.fail()) throw insight::Exception(
+                  boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
+                    % p().geometry.foilfile->filePath().string() % lnr % line));
           data += boost::str(boost::format("%g %g\n") % x % y);
         }
 
@@ -231,8 +232,8 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
     .set_maxLevel(p().mesh.lxfoil)
     .set_nLayers(p().mesh.nlayer)
 
-    .set_fileName(make_filepath(targ_path))
-    .set_scale(vec3(sp().c_, sp().c_, 1))
+    .set_geometry(make_geometryFile(targ_path))
+    .set_scalefactor(sp().c_)
     .set_rollPitchYaw(vec3(0,0,-p().geometry.alpha))
     .set_name(sp().foil_)
   )));

@@ -16,7 +16,7 @@ namespace MeshMotionBC
 {
 
 
-const NoMeshMotion noMeshMotion;
+const PassiveMeshMotion passiveMeshMotion;
 
 
 
@@ -37,28 +37,28 @@ void MeshMotionBC::addIntoDictionaries(OFdicts&) const
 
 
 
-defineType(NoMeshMotion);
-addToFactoryTable(MeshMotionBC, NoMeshMotion);
-addToStaticFunctionTable(MeshMotionBC, NoMeshMotion, defaultParameters);
+defineType(PassiveMeshMotion);
+addToFactoryTable(MeshMotionBC, PassiveMeshMotion);
+addToStaticFunctionTable(MeshMotionBC, PassiveMeshMotion, defaultParameters);
 
-NoMeshMotion::NoMeshMotion()
+PassiveMeshMotion::PassiveMeshMotion()
     : MeshMotionBC(Parameters())
 {}
 
-NoMeshMotion::NoMeshMotion(ParameterSetInput ip)
+PassiveMeshMotion::PassiveMeshMotion(ParameterSetInput ip)
     : MeshMotionBC(ip.forward<Parameters>())
 {}
 
-bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool PassiveMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
     if
     (
-      ((fieldname=="displacement")||(fieldname == "motionU"))
+      ((fieldname=="pointDisplacement")||(fieldname == "motionU"))
       &&
       (get<0>(fieldinfo)==vectorField)
     )
     {
-      BC["type"]=OFDictData::data("fixedValue");
+      BC["type"]=OFDictData::data("calculated");
       BC["value"]=OFDictData::toUniformField(vec3Zero());
       return true;
     }
@@ -96,7 +96,7 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& /
   if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
   {
     BC["type"]= OFDictData::data("FEMDisplacement");
-    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p().FEMScratchDir->localFilePath().string()+"\"");
+    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p().FEMScratchDir->expandedFilePath().string()+"\"");
     BC["pressureScale"]=  OFDictData::data(p().pressureScale);
     BC["minPressure"]=  OFDictData::data(p().clipPressure);
     BC["nSmoothIter"]=  OFDictData::data(4);

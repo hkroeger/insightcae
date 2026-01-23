@@ -52,7 +52,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer& displayer)
     g.executeCommand(
       str(format("cd %s; tar vxzf %s")
             % absolute(dir).string()
-            % absolute(p().template_archive->filePath(true)).string() ),
+            % absolute(p().template_archive->accessibleFilePath()).string() ),
       std::vector<std::string>(),
       &filelist
     );

@@ -55,7 +55,7 @@ size_t Transform::calcHash() const
   if (rot_) h+=*rot_;
   if (rotorg_) h+=*rotorg_;
   if (sf_) h+=*sf_;
-  if (other_) h+=*other_;
+  if (otherTrsfSource_) h+=*otherTrsfSource_;
   if (trsf_) h+=*trsf_;
   return h.getHash()+DerivedFeature::calcHash();
 }
@@ -70,7 +70,7 @@ Transform::Transform(const Transform&o, TreeCloneMap& tcm)
     CL(rotorg_),
     CL(rot_),
     CL(sf_),
-    CL(other_),
+    CL(otherTrsfSource_),
     trsf_(bool(o.trsf_) ? new gp_Trsf(*o.trsf_) : nullptr)
 {}
 
@@ -119,12 +119,19 @@ Transform::Transform(ConstFeaturePtr m1, const gp_Trsf& trsf)
   *trsf_=trsf;
 }
 
+Transform::Transform(ConstFeaturePtr m1, const SpatialTransformation &trsf)
+  : DerivedFeature(m1),
+    trsf_(new gp_Trsf)
+{
+    *trsf_=is_gp_Trsf(trsf);
+}
+
 
 
 
 Transform::Transform(ConstFeaturePtr m1, FeaturePtr other)
 : DerivedFeature(m1),
-  other_(other)
+  otherTrsfSource_(other)
 {}
 
 
@@ -182,9 +189,9 @@ void Transform::build()
     if (!trsf_)
     {
 
-        if (other_)
+        if (otherTrsfSource_)
         {
-            trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(other_)));
+            trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(otherTrsfSource_)));
         }
         else
         {
@@ -242,13 +249,19 @@ void Transform::build()
     }
 
 
-    setShape(BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape());
+    TopoDS_Shape s = BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape();
+    setShape(s);
 
     // Transform all ref points and ref vectors
     copyDatumsTransformed(
                 *baseFeature(), *trsf_, "",
                 { "scaleFactor", "translation", "rotationOrigin", "rotation" }
                 );
+
+    if (refvalues_.count("isSTLGeometry"))
+    {
+        transformTriangulation(*baseFeature(), s, *trsf_);
+    }
 
     providedSubshapes_["basefeat"]=
         std::const_pointer_cast<Feature>(baseFeature()); // overwrite existing basefeat, if there
@@ -268,9 +281,9 @@ bool Transform::isTransformationFeature() const
 {
     double sf=1.0;
     
-    if (other_)
+    if (otherTrsfSource_)
     {
-        sf=other_->getDatumScalar("scaleFactor");
+        sf=otherTrsfSource_->getDatumScalar("scaleFactor");
     }
     else if (sf_)
     {

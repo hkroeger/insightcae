@@ -131,6 +131,8 @@ arma::mat tensor3(
   double zx, double zy, double zz
 );
 
+arma::mat tensor3Ident();
+
 template<class T>
 arma::mat Tensor(const T& t)
 {

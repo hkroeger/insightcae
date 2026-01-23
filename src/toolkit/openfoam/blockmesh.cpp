@@ -21,6 +21,7 @@
 #include "openfoam/blockmesh.h"
 #include "base/vtktools.h"
 #include "openfoam/ofdicts.h"
+#include "openfoam/ofes.h"
 
 #include "boost/assign/std/vector.hpp"
 
@@ -36,18 +37,16 @@ namespace bmd {
 
 
 
-blockMesh::blockMesh(OpenFOAMCase& c, ParameterSetInput ip)
-: OpenFOAMCaseElement(c, /*"blockMesh",*/ ip.forward<Parameters>()),
-  scaleFactor_(1.0),
+blockMeshBlocking::blockMeshBlocking()
+: scaleFactor_(1.0),
   defaultPatchName_("defaultFaces"),
   defaultPatchType_("wall"),
   allPoints_()
 {}
 
 
-blockMesh::blockMesh(OpenFOAMCase& c, const blockMesh &o)
-    : OpenFOAMCaseElement(c, /*"blockMesh", */OpenFOAMCaseElement::Parameters() ),
-    scaleFactor_(o.scaleFactor_),
+blockMeshBlocking::blockMeshBlocking(const blockMeshBlocking &o)
+  : scaleFactor_(o.scaleFactor_),
     defaultPatchName_(o.defaultPatchName_),
     defaultPatchType_(o.defaultPatchType_)
 {
@@ -59,7 +58,7 @@ blockMesh::blockMesh(OpenFOAMCase& c, const blockMesh &o)
 }
 
 
-void blockMesh::copy(const blockMesh& other)
+void blockMeshBlocking::copy(const blockMeshBlocking& other)
 {
   for (const auto& b: other.allBlocks_)
     {
@@ -84,43 +83,43 @@ void blockMesh::copy(const blockMesh& other)
     }
 }
 
-void blockMesh::setScaleFactor(double sf)
+void blockMeshBlocking::setScaleFactor(double sf)
 {
   scaleFactor_=sf;
 }
 
-void blockMesh::setDefaultPatch(const std::string& name, std::string type)
+void blockMeshBlocking::setDefaultPatch(const std::string& name, std::string type)
 {
   defaultPatchName_=name;
   defaultPatchType_=type;
 }
 
-void blockMesh::addGeometry(const Geometry& geo)
+void blockMeshBlocking::addGeometry(const Geometry& geo)
 {
     geometries_.push_back(geo);
 }
 
-const std::vector<Geometry>& blockMesh::allGeometry() const
+const std::vector<Geometry>& blockMeshBlocking::allGeometry() const
 {
     return geometries_;
 }
 
-void blockMesh::addProjectedVertex(const Point& pf, const std::string& geometryLabel)
+void blockMeshBlocking::addProjectedVertex(const Point& pf, const std::string& geometryLabel)
 {
     projectedVertices_[pf]=geometryLabel;
 }
 
-void blockMesh::addProjectedFace(const ProjectedFace& pf)
+void blockMeshBlocking::addProjectedFace(const ProjectedFace& pf)
 {
     projectedFaces_.push_back(pf);
 }
 
-const std::vector<ProjectedFace>& blockMesh::allProjectedFaces() const
+const std::vector<ProjectedFace>& blockMeshBlocking::allProjectedFaces() const
 {
     return projectedFaces_;
 }
 
-void blockMesh::removePatch(const std::string& name)
+void blockMeshBlocking::removePatch(const std::string& name)
 {
   std::string key(name);
   auto elem = allPatches_.find(name);
@@ -130,7 +129,7 @@ void blockMesh::removePatch(const std::string& name)
   }
 }
 
-void blockMesh::numberVertices(PointMap& pts) const
+void blockMeshBlocking::numberVertices(PointMap& pts) const
 {
   int idx=0;
   for (PointMap::iterator i=pts.begin();
@@ -140,7 +139,7 @@ void blockMesh::numberVertices(PointMap& pts) const
   }
 }
 
-Edge &blockMesh::addEdge(Edge *edge)
+Edge &blockMeshBlocking::addEdge(Edge *edge)
 {
   // check if edge was already added
   for (const auto& e: allEdges_)
@@ -164,10 +163,67 @@ Edge &blockMesh::addEdge(Edge *edge)
 
 
 
-bool blockMesh::hasEdgeBetween(const Point& p1, const Point& p2) const
+bool blockMeshBlocking::hasEdgeBetween(const Point& p1, const Point& p2) const
 {
   return edgeBetween(p1, p2)!=nullptr;
 }
+
+
+
+void blockMeshBlocking::writeVTK(const boost::filesystem::path& fn) const
+{
+    PointMap pts(allPoints_);
+    numberVertices(pts);
+
+    vtk::vtkUnstructuredGridModel m;
+    double x[allPoints_.size()], y[allPoints_.size()], z[allPoints_.size()];
+    int j=0;
+    for (PointMap::const_iterator i=allPoints_.begin(); i!=allPoints_.end(); i++)
+    {
+        x[j]=i->first[0];
+        y[j]=i->first[1];
+        z[j]=i->first[2];
+        j++;
+    }
+    m.setPoints(allPoints_.size(), x, y, z);
+
+    for (boost::ptr_vector<Block>::const_iterator i=allBlocks_.begin(); i!=allBlocks_.end(); i++)
+    {
+        std::vector<OFDictData::data> l =
+            i->bmdEntry(pts, OFEs::getCurrentOrPreferred().version());
+
+        auto idx = boost::get<OFDictData::list&>(l[1]);
+        std::vector<int> pi;
+        std::transform(idx.begin(), idx.end(), std::back_inserter(pi),
+                       [](const OFDictData::list::value_type& i) { return boost::get<int>(i); });
+        m.appendCell( 8, pi.data(), 12 ); // 12 = HEXAHEDRON
+    }
+
+    std::ofstream os(fn.c_str());
+    m.writeLegacyFile(os);
+}
+
+int blockMeshBlocking::nBlocks() const
+{
+    return allBlocks_.size();
+}
+
+
+
+
+
+
+blockMesh::blockMesh(OpenFOAMCase& c, ParameterSetInput ip)
+  : OpenFOAMCaseElement(c, /*"blockMesh",*/ ip.forward<Parameters>()),
+    blockMeshBlocking()
+{}
+
+
+blockMesh::blockMesh(OpenFOAMCase& c, const blockMeshBlocking &o)
+    : OpenFOAMCaseElement(c, /*"blockMesh", */OpenFOAMCaseElement::Parameters() ),
+    blockMeshBlocking(o)
+{}
+
 
 OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) const
 {
@@ -293,42 +349,6 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 
 }
 
-
-void blockMesh::writeVTK(const boost::filesystem::path& fn) const
-{
-  PointMap pts(allPoints_);
-  numberVertices(pts);
-
-  vtk::vtkUnstructuredGridModel m;
-  double x[allPoints_.size()], y[allPoints_.size()], z[allPoints_.size()];
-  int j=0;
-  for (PointMap::const_iterator i=allPoints_.begin(); i!=allPoints_.end(); i++)
-   {
-     x[j]=i->first[0];
-     y[j]=i->first[1];
-     z[j]=i->first[2];
-     j++;
-   }
-  m.setPoints(allPoints_.size(), x, y, z);
-
-  for (boost::ptr_vector<Block>::const_iterator i=allBlocks_.begin(); i!=allBlocks_.end(); i++)
-   {
-     std::vector<OFDictData::data> l = i->bmdEntry(pts, OFversion());
-     auto idx = boost::get<OFDictData::list&>(l[1]);
-     std::vector<int> pi;
-     std::transform(idx.begin(), idx.end(), std::back_inserter(pi),
-                    [](const OFDictData::list::value_type& i) { return boost::get<int>(i); });
-     m.appendCell( 8, pi.data(), 12 ); // 12 = HEXAHEDRON
-   }
-
-  std::ofstream os(fn.c_str());
-  m.writeLegacyFile(os);
-}
-
-int blockMesh::nBlocks() const
-{
-  return allBlocks_.size();
-}
 
 }
 

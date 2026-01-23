@@ -163,6 +163,55 @@ std::string base64_encode(const std::string& s)
 }
 
 
+char* base64_encode(
+    rapidxml::xml_document<> &doc,
+    const std::string& file_content_ )
+{
+    using namespace boost::archive::iterators;
+    typedef
+        //          insert_linebreaks<         // insert line breaks every 72 characters
+        base64_from_binary<    // convert binary values to base64 characters
+            transform_width<   // retrieve 6 bit integers from a sequence of 8 bit bytes
+                const char*, 6, 8
+                >
+            >
+            //              ,72 >
+            base64_enc; // compose all the above operations in to a new iterator
+
+    char tail[3] = {0,0,0};
+    size_t len=file_content_.size();
+    unsigned int one_third_len = len/3;
+    unsigned int len_rounded_down = one_third_len*3;
+    unsigned int j = len_rounded_down + one_third_len;
+    unsigned int base64length = ((4 * file_content_.size() / 3) + 3) & ~3;
+
+    auto *xml_content = doc.allocate_string(0, base64length+1);
+    std::copy(
+        base64_enc(file_content_.c_str()),
+        base64_enc(file_content_.c_str()+len_rounded_down),
+        xml_content
+        );
+
+    if (len_rounded_down != len)
+    {
+        unsigned int i=0;
+        for(; i < len - len_rounded_down; ++i)
+        {
+            tail[i] = file_content_[len_rounded_down+i];
+        }
+
+        std::copy(base64_enc(tail), base64_enc(tail + 3), xml_content + j);
+
+        for(i=len + one_third_len + 1; i < j+4; ++i)
+        {
+            xml_content[i] = '=';
+        }
+    }
+
+    xml_content[base64length]=0;
+    return xml_content;
+}
+
 
 
 std::string

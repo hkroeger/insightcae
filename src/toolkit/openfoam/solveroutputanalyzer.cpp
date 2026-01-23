@@ -9,19 +9,9 @@
 
 
 using namespace std;
-using namespace boost;
 
-namespace insight {
-
-
-defineType(OutputSectionReader);
-defineStaticFunctionTableWithArgs(
-        OutputSectionReader,
-        createIfMatches,
-        std::shared_ptr<OutputSectionReader>,
-        LIST(const std::string& line),
-        LIST(line) );
-
+namespace insight
+{
 
 const std::string SolverOutputAnalyzer::pre_iter="iteration/";
 const std::string SolverOutputAnalyzer::pre_resi="residual/";
@@ -39,82 +29,6 @@ const std::string SolverOutputAnalyzer::pre_minmax="minmax/";
 
 
 
-
-class MinMaxReader : public OutputSectionReader
-{
-    static boost::regex re_intro, re_mima;
-
-    std::string label_;
-    std::map<std::string, double> min_, max_;
-
-    MinMaxReader(const std::string& label)
-        : label_(label)
-    {}
-
-public:
-    declareType("MinMaxReader");
-
-    static std::shared_ptr<OutputSectionReader> createIfMatches(
-            const std::string& line )
-    {
-        boost::smatch match;
-        if (boost::regex_search( line, match, re_intro, boost::match_default ) )
-        {
-            return std::shared_ptr<OutputSectionReader>(new MinMaxReader(match[1]));
-        }
-        else
-            return nullptr;
-    }
-
-    bool parseNextLine(const std::string& line) override
-    {
-        if (line.empty())
-        {
-            return false;
-        }
-        else
-        {
-            boost::smatch match;
-            if (boost::regex_search( line, match, re_mima, boost::match_default ) )
-            {
-                std::string varname(match[2]);
-                if (match[1]=="min")
-                {
-                    min_[varname] = insight::toNumber<double>(match[3]);
-                }
-                else if (match[1]=="max")
-                {
-                    max_[varname] = insight::toNumber<double>(match[3]);
-                }
-                else
-                    return false;
-
-                return true;
-            }
-            else
-                return false;
-        }
-    }
-
-    void addProgressVariables(std::map<std::string, double>& progVars) const override
-    {
-        for(const auto&mi: min_)
-        {
-            progVars[label_+"_"+mi.first+"/min"]=mi.second;
-        }
-        for(const auto&ma: max_)
-        {
-            progVars[label_+"_"+ma.first+"/max"]=ma.second;
-        }
-    }
-
-};
-
-defineType(MinMaxReader);
-addToStaticFunctionTable(OutputSectionReader, MinMaxReader, createIfMatches);
-
-boost::regex MinMaxReader::re_intro("^fieldMinMax (.+) write:$");
-boost::regex MinMaxReader::re_mima("^ *(min|max)\\((.+)\\) = (.+) in cell (.+) at location \\((.+) (.+) (.+)\\)");
 
 
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime)
@@ -382,12 +296,11 @@ void SolverOutputAnalyzer::update(const std::string& line)
         }
         else
         {
-            for (const auto& cim: *OutputSectionReader::createIfMatchesFunctions_)
+            for (const auto& cim: OutputSectionReader::createIfMatches())
             {
                 if ( (currentOutputSectionReader_ = cim.second(line)) )
                     break;
             }
-//            currentOutputSectionReader_ = MinMaxReader::createIfMatches(line);
         }
     }
     catch (...)

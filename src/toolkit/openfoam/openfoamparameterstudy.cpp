@@ -60,7 +60,7 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
     ParameterSet& newp ) const
 {
   boost::filesystem::path oldmf =
-        newp.get<PathParameter>("run/mapFrom").filePath();
+        newp.get<PathParameter>("run/mapFrom").accessibleFilePath();
   boost::filesystem::path newmf = "";
 
   if (oldmf!="")
@@ -75,7 +75,7 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
       newmf="";
     }
   }
-  newp.get<PathParameter>("run/mapFrom").setFileName(newmf);
+  newp.get<PathParameter>("run/mapFrom").setFilePath(newmf);
 }
 
 
@@ -140,12 +140,12 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
         }
     }
 
-    path old_lp=ps.template get<PathParameter>("mesh/linkmesh").filePath(true);
+    path old_lp=ps.template get<PathParameter>("mesh/linkmesh").expandedFilePath();
     if (!subcasesRemesh_)
-        ps.template get<PathParameter>("mesh/linkmesh").setFileName(
+        ps.template get<PathParameter>("mesh/linkmesh").setFilePath(
             boost::filesystem::absolute(this->executionPath()) );
     this->setupQueue();
-    ps.template get<PathParameter>("mesh/linkmesh").setFileName( old_lp );
+    ps.template get<PathParameter>("mesh/linkmesh").setFilePath( old_lp );
 
     this->processQueue(displayer);
     ResultSetPtr results = this->evaluateRuns();

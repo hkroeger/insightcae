@@ -117,7 +117,7 @@ CADSketchParameter::createEmpty() const
             auto &r =
                 const_cast<CADSketchParameter&>(*this)
                           .parentSet()
-                          .get<CADGeometryParameter>(ref.second);
+                          .get<CADGeometryParameterBase>(ref.second);
 
             s->setExternalReference(
                 cad::ExternalReference::create(r.geometry()),
@@ -181,7 +181,7 @@ CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order)
+    : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order)
 {}
 
 
@@ -192,7 +192,7 @@ CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order)
+    : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order)
 {
     setScript(script);
 }
@@ -206,7 +206,7 @@ CADSketchParameter::CADSketchParameter(
    const std::string& description,
    bool isHidden, bool isExpert, bool isNecessary, int order
    )
-    : CADGeometryParameter(description, isHidden, isExpert, isNecessary, order),
+    : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order),
     entityProperties_(
           bool(entityProperties)?
             entityProperties : insight::cad::noParametersDelegate ),
@@ -306,7 +306,7 @@ const rapidxml::xml_node<>* CADSketchParameter::readFromNode
 
 CADSketchParameter::CADSketchParameter(
     const rapidxml::xml_node<> &node)
-    : CADGeometryParameter(node)
+    : CADGeometryParameterBase(node)
 {
     setScript(node.value());
 }
@@ -343,12 +343,12 @@ void CADSketchParameter::assignFrom(const Element& oe)
 
 void CADSketchParameter::copyMatching( const Element& rhs )
 {
-    CADGeometryParameter::copyMatching(rhs);
+    CADGeometryParameterBase::copyMatching(rhs);
 }
 
 void CADSketchParameter::extend( const Element& op )
 {
-    CADGeometryParameter::extend(op);
+    CADGeometryParameterBase::extend(op);
 }
 
 bool CADSketchParameter::isEqual(const Element &op) const

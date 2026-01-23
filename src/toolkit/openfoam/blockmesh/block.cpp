@@ -82,7 +82,7 @@ const PointList &Block::corners() const
 
 
 
-void Block::registerPoints(blockMesh& bmd) const
+void Block::registerPoints(blockMeshBlocking& bmd) const
 {
   for (PointList::const_iterator i=corners_.begin();
        i!=corners_.end(); i++)

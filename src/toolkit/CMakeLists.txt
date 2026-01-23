@@ -132,7 +132,6 @@ set(toolkit_SOURCES
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h
     openfoam/openfoamanalysis.cpp openfoam/openfoamanalysis.h
     openfoam/openfoamcase.cpp openfoam/openfoamcase.h
-    openfoam/snappyhexmesh.cpp openfoam/snappyhexmesh.h
     openfoam/cfmesh.cpp openfoam/cfmesh.h
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
@@ -161,7 +160,13 @@ set(toolkit_SOURCES
     openfoam/fielddata.cpp openfoam/fielddata.h
     openfoam/paraview.cpp openfoam/paraview.h
     openfoam/stretchtransformation.cpp openfoam/stretchtransformation.h
+
+
+    openfoam/outputsectionreader.h openfoam/outputsectionreader.cpp
+    openfoam/outputsectionreaders/minmax.h openfoam/outputsectionreaders/minmax.cpp
     openfoam/solveroutputanalyzer.cpp openfoam/solveroutputanalyzer.h
+
+
     openfoam/blockmeshoutputanalyzer.cpp openfoam/blockmeshoutputanalyzer.h
     openfoam/snappyhexmeshoutputanalyzer.cpp openfoam/snappyhexmeshoutputanalyzer.h
     openfoam/ofdicts.cpp openfoam/ofdicts.h

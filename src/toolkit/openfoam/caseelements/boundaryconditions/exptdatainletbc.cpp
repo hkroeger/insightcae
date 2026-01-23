@@ -147,7 +147,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["value"]=OFDictData::toUniformField(1e-10);
         } else {
             if ( ! (
-                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
                         ||
                         phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
                     ) ) {

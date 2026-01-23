@@ -86,7 +86,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     else
     {
       if (!(
-          MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+          MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
 /*	  ||
           p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
           ))

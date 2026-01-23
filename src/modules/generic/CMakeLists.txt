@@ -16,7 +16,7 @@ if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)
         numericalwindtunnel.cpp numericalwindtunnel.h numericalwindtunnel_eval.cpp
         internalpressureloss.cpp internalpressureloss.h
     )
-    LIST(APPEND genericmodules_LIBS insightcad)
+    LIST(APPEND genericmodules_LIBS toolkit_cad)
 endif()
 
 file(GLOB_RECURSE genericmodules_HEADERS "*.h")

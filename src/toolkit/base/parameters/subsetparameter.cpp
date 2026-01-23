@@ -534,7 +534,7 @@ ParameterSet& ParameterSet::setMatrix ( const std::string& name, const arma::mat
 
 ParameterSet& ParameterSet::setOriginalFileName ( const std::string& name, const boost::filesystem::path& fp)
 {
-  this->get<PathParameter> ( name ).setFileName(fp);
+  this->get<PathParameter> ( name ).setFilePath(fp);
   return *this;
 }
 
@@ -581,7 +581,7 @@ const arma::mat& ParameterSet::getVector ( const std::string& name ) const
 
 const boost::filesystem::path ParameterSet::getPath ( const std::string& name, const boost::filesystem::path& basePath ) const
 {
-  return this->get<PathParameter> ( name ) .fileName();
+  return this->get<PathParameter> ( name ) .filePath();
 }
 
 

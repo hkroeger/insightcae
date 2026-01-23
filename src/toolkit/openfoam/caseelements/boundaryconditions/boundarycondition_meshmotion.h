@@ -41,20 +41,20 @@ public:
 typedef std::shared_ptr<MeshMotionBC> MeshMotionBCPtr;
 
 
-class NoMeshMotion
+class PassiveMeshMotion
   : public MeshMotionBC
 {
 public:
-  declareType ( "NoMeshMotion" );
+  declareType ( "PassiveMeshMotion" );
 
-  NoMeshMotion();
-  NoMeshMotion ( ParameterSetInput ip );
+  PassiveMeshMotion();
+  PassiveMeshMotion ( ParameterSetInput ip );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 };
 
 
-extern const NoMeshMotion noMeshMotion;
+extern const PassiveMeshMotion passiveMeshMotion;
 
 
 class CAFSIBC

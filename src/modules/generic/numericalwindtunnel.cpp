@@ -106,8 +106,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       bbAtt; // bounding box in SI, rotated to wind tunnel CS + applied attitude change
 
   parentProgress.message("Getting geometry file"); // extraction may take place now
-  std::string geom_file_ext = p().geometry.objectfile->fileName().extension().string();
-  boost::to_lower(geom_file_ext);
+  std::string geom_file_ext = p().geometry.objectfile->fileExtension();
 
 
   gp_Trsf roll; roll.SetRotation(
@@ -137,7 +136,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
           3, 1
          );
 
-    auto geopositioned=readSTL(p().geometry.objectfile->filePath(), { &trsf });
+    auto geopositioned=readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf });
     bb = p().geometryscale
          * STLBndBox(geopositioned);
 
@@ -152,7 +151,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     boost::mutex::scoped_lock lock(mtx);
 
     auto geopositioned = cad::Transform::create(
-          cad::Import::create(p().geometry.objectfile->filePath()), rot);
+          cad::Import::create(p().geometry.objectfile->accessibleFilePath()), rot);
     bb = p().geometryscale
          * geopositioned->modelBndBox(bbdefl);
 
@@ -287,7 +286,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   
   boost::filesystem::path objectSTLFile =
    snappyHexMeshFeats::geometryDir(cm, executionPath())/
-   (p().geometry.objectfile->fileName().stem().string()+".stlb");
+   (p().geometry.objectfile->fileNameStem()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
     .set_np(np())
@@ -522,8 +521,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
     
   create_directory(objectSTLFile.parent_path());
 
-  std::string geom_file_ext = p().geometry.objectfile->fileName().extension().string();
-  boost::to_lower(geom_file_ext);
+  std::string geom_file_ext = p().geometry.objectfile->fileExtension();
 
   if (geom_file_ext==".stl" || geom_file_ext==".stlb")
   {
@@ -531,14 +529,14 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
           std::bind(&gp_Trsf::Value, &sp().cad_to_cfd_, std::placeholders::_1, std::placeholders::_2),
           3, 1
          );
-    writeSTL( readSTL(p().geometry.objectfile->filePath(), { &trsf }), objectSTLFile );
+    writeSTL( readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf }), objectSTLFile );
   }
   else
   {
     boost::mutex::scoped_lock lock(mtx);
 
     auto obj = cad::Transform::create(
-          cad::Import::create(p().geometry.objectfile->filePath()),
+          cad::Import::create(p().geometry.objectfile->accessibleFilePath()),
           sp().cad_to_cfd_
           );
     obj->exportSTL(objectSTLFile);
@@ -552,7 +550,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
     .set_minLevel(p().mesh.lmsurf)
     .set_maxLevel(p().mesh.lxsurf)
     .set_nLayers(p().mesh.nlayer)
-    .set_fileName(make_filepath(objectSTLFile))
+    .set_geometry(make_geometryFile(objectSTLFile))
     .set_name("object")
   )));
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(

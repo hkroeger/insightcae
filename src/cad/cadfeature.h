@@ -335,6 +335,8 @@ public:
    */
   virtual arma::mat modelInertia(double density_ovr=-1.) const;
   
+  void createTriangulation(double deflection);
+
   /**
    * return bounding box of model
    * first col: min point

@@ -71,7 +71,7 @@ bool testEquality(const MatrixParameter& ip, const StaticParameter& sp)
 template<class StaticParameter>
 bool testEquality(const PathParameter& ip, const StaticParameter& sp)
 {
-    return ip.fileName()==sp->fileName();
+    return ip.filePath()==sp->filePath();
 }
 
 template<class StaticParameter>

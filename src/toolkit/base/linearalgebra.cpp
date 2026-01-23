@@ -1749,6 +1749,11 @@ double rotAngle(
     return az;
 }
 
+arma::mat tensor3Ident()
+{
+    return tensor3(1., 0, 0, 0, 1., 0, 0, 0, 1.);
+}
+
 
 
 }

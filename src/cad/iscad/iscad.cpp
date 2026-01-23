@@ -20,6 +20,8 @@
 
 #include <QMainWindow>
 #include <QSplashScreen>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/erase.hpp>
 
 #include "base/boost_include.h"
 #include "base/exception.h"
@@ -59,7 +61,7 @@ int main ( int argc, char** argv )
       ( "batch,b", _("evaluate model from specified input file without starting GUI") )
       ( "nolog,l", _("put debug output to console instead of log window") )
       ( "nobgparse,g", _("deactivate background parsing") )
-      ( "input-file,f", po::value< std::string >(), _("Specify input file.") )
+      ( "input-file,f", po::value< std::vector<std::string> >(), _("Specify input file.") )
   ;
 
   po::positional_options_description p;
@@ -169,16 +171,26 @@ int main ( int argc, char** argv )
       
       if ( vm.count ( "input-file" ) )
       {
-        boost::filesystem::path filename ( vm["input-file"].as<std::string>() );
-        if ( boost::filesystem::extension(filename) == ".iscad" )
+        std::string loadScript;
+        for (auto& ip: vm["input-file"].as<std::vector<std::string> >())
         {
-          window.insertModel ( filename, dobgparsing );
+            boost::filesystem::path filename ( ip );
+            if ( boost::filesystem::extension(filename) == ".iscad" )
+            {
+              window.insertModel ( filename, dobgparsing );
+            }
+            else
+            {
+                auto ext=boost::to_lower_copy(filename.extension().string());
+                boost::algorithm::erase_head(ext,1);
+                std::string loadfunc="import";
+                if ((ext=="stl")||(ext=="stlb"))
+                    loadfunc="STL";
+                loadScript+=filename.filename().stem().string()+"_"+ext+": "+loadfunc+"(\""+filename.string()+"\");\n";
+            }
         }
-        else
-        {
-          std::string script = "model: import(\""+filename.string()+"\");\n";
-          window.insertModelScript ( script, dobgparsing );
-        }
+        if (!loadScript.empty())
+            window.insertModelScript ( loadScript, dobgparsing );
       }
       else
       {

@@ -37,7 +37,7 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
   layout2->addWidget(promptLabel);
   auto *lineEdit=new QLineEdit(editControlsContainer);
   lineEdit->setText(QString::fromStdString(
-      parameter().fileName().string()));
+      parameter().filePath().string()));
   layout2->addWidget(lineEdit);
   layout->addLayout(layout2);
 
@@ -46,7 +46,7 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    parameterRef().setFileName( lineEdit->text().toStdString() );
+    parameterRef().setFilePath( lineEdit->text().toStdString() );
   };
 
   connect(lineEdit, &QLineEdit::returnPressed, applyFunction);

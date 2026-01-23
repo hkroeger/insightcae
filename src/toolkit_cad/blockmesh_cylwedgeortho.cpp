@@ -1292,7 +1292,7 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
 void blockMeshDict_CylWedgeOrtho::create_bmd()
 {
-    insight::CurrentExceptionContext("creating blockMeshDict from spine "+p().geometry.wedge_spine_curve->fileName().string());
+    insight::CurrentExceptionContext("creating blockMeshDict from spine "+p().geometry.wedge_spine_curve->filePath().string());
 
     this->setDefaultPatch(p().mesh.defaultPatchName);
 
@@ -1313,7 +1313,7 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
     if (el.size()!=1)
       throw insight::Exception(
           boost::str(boost::format("CAD file %s should contain only one single edge! (It actually contains %d edges)")
-                     % p().geometry.wedge_spine_curve->fileName().string() % el.size() )
+                     % p().geometry.wedge_spine_curve->filePath().string() % el.size() )
           );
 
     TopoDS_Edge e= TopoDS::Edge(BRepBuilderAPI_NurbsConvert(wsc->edge(*el.begin())).Shape());

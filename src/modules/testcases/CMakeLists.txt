@@ -8,7 +8,7 @@ set(testcases_SOURCES
   )
 
 set(testcases_LIBS
-  toolkit
+  toolkit toolkit_cad
 )
 if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
     list(APPEND testcases_SOURCES

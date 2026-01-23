@@ -34,7 +34,7 @@
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamdict.h"
-#include "openfoam/snappyhexmesh.h"
+// #include "openfoam/snappyhexmesh.h"
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 
 #include "openfoam/blockmesh_templates.h"
@@ -447,137 +447,138 @@ SnappyHexMesh::SnappyHexMesh
 
 void SnappyHexMesh::build()
 {
-    boost::filesystem::create_directory(outpath_); // create dir, if not existing
+#warning reimplement
+//     boost::filesystem::create_directory(outpath_); // create dir, if not existing
         
-    OpenFOAMCase ofc( OFEs::get(OFEname_) );
+//     OpenFOAMCase ofc( OFEs::get(OFEname_) );
 
-    snappyHexMeshConfiguration::Parameters shm_cfg;
+//     snappyHexMeshConfiguration::Parameters shm_cfg;
 
-    arma::mat pmin = vec3(1e10, 1e10, 1e10);
-    arma::mat pmax = vec3(-1e10, -1e10, -1e10);
+//     arma::mat pmin = vec3(1e10, 1e10, 1e10);
+//     arma::mat pmax = vec3(-1e10, -1e10, -1e10);
     
-    for (const GeometryDesc& geom: geometries_)
-    {
-        const FeaturePtr geo = boost::fusion::at_c<0>(geom);
-        const std::string& name = boost::fusion::at_c<1>(geom);
+//     for (const GeometryDesc& geom: geometries_)
+//     {
+//         const FeaturePtr geo = boost::fusion::at_c<0>(geom);
+//         const std::string& name = boost::fusion::at_c<1>(geom);
         
-        boost::filesystem::path filepath = outpath_/(name+".stlb");
-        ScalarPtr res= boost::fusion::at_c<2>(geom);
-        if (res)
-        {
-            geo->exportSTL(filepath, res->value());
-        }
-        else
-        {
-            geo->saveAs(filepath);
-        }
+//         boost::filesystem::path filepath = outpath_/(name+".stlb");
+//         ScalarPtr res= boost::fusion::at_c<2>(geom);
+//         if (res)
+//         {
+//             geo->exportSTL(filepath, res->value());
+//         }
+//         else
+//         {
+//             geo->saveAs(filepath);
+//         }
         
-        arma::mat bb = geo->modelBndBox();
-        for (int i=0; i<3; i++)
-        {
-            pmin(i) = std::min( pmin(i), bb(i,0) );
-            pmax(i) = std::max( pmax(i), bb(i,1) );
-        }
+//         arma::mat bb = geo->modelBndBox();
+//         for (int i=0; i<3; i++)
+//         {
+//             pmin(i) = std::min( pmin(i), bb(i,0) );
+//             pmax(i) = std::max( pmax(i), bb(i,1) );
+//         }
         
-        int minlevel=0, maxlevel=0;
-        if (boost::fusion::at_c<3>(geom))
-        {
-            const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<3>(geom);
-            minlevel=boost::fusion::at_c<0>(levels)->value();
-            maxlevel=boost::fusion::at_c<1>(levels)->value();
-        }
+//         int minlevel=0, maxlevel=0;
+//         if (boost::fusion::at_c<3>(geom))
+//         {
+//             const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<3>(geom);
+//             minlevel=boost::fusion::at_c<0>(levels)->value();
+//             maxlevel=boost::fusion::at_c<1>(levels)->value();
+//         }
         
-        int nlayers=0;
-        if (boost::fusion::at_c<4>(geom))
-        {
-            nlayers=(*boost::fusion::at_c<4>(geom))->value();
-        }
+//         int nlayers=0;
+//         if (boost::fusion::at_c<4>(geom))
+//         {
+//             nlayers=(*boost::fusion::at_c<4>(geom))->value();
+//         }
         
-        shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(  
-            new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-            .set_minLevel(minlevel)
-            .set_maxLevel(maxlevel)
-            .set_nLayers(nlayers)
-            //.set_regionRefinements(rl)
+//         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
+//             new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
+//             .set_minLevel(minlevel)
+//             .set_maxLevel(maxlevel)
+//             .set_nLayers(nlayers)
+//             //.set_regionRefinements(rl)
 
-            .set_fileName(make_filepath(filepath))
-            .set_name(name)
-        )));
-    }
+//             .set_fileName(make_filepath(filepath))
+//             .set_name(name)
+//         )));
+//     }
     
-    for (const EdgeRefineDesc& edgref: edgerefines_)
-    {
-        const std::string& name = boost::fusion::at_c<0>(edgref);
-        FeatureSetPtr fsp = boost::fusion::at_c<1>(edgref);
-        int level = boost::fusion::at_c<2>(edgref)->value();
+//     for (const EdgeRefineDesc& edgref: edgerefines_)
+//     {
+//         const std::string& name = boost::fusion::at_c<0>(edgref);
+//         FeatureSetPtr fsp = boost::fusion::at_c<1>(edgref);
+//         int level = boost::fusion::at_c<2>(edgref)->value();
         
-        boost::filesystem::path filepath = outpath_/(name+".eMesh");
-        fsp->model()->exportEMesh(filepath, *fsp);
+//         boost::filesystem::path filepath = outpath_/(name+".eMesh");
+//         fsp->model()->exportEMesh(filepath, *fsp);
 
-        shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
-            new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
-            .set_level(level)
-            .set_fileName(make_filepath(filepath))
-        )));
-    }
+//         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
+//             new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
+//             .set_level(level)
+//             .set_fileName(make_filepath(filepath))
+//         )));
+//     }
     
-    shm_cfg
-      .set_relativeSizes(true)
-      .set_stopOnBadPrismLayer(false)
-      .set_erlayer(1.3)
-      .set_tlayer(0.5);
+//     shm_cfg
+//       .set_relativeSizes(true)
+//       .set_stopOnBadPrismLayer(false)
+//       .set_erlayer(1.3)
+//       .set_tlayer(0.5);
   
-    shm_cfg.PiM.push_back(PiM_->value());
+//     shm_cfg.PiM.push_back(PiM_->value());
     
-    ofc.insert(new MeshingNumerics(ofc, MeshingNumerics::Parameters()
-//                                   .set_np(np)
-                                 ));
+//     ofc.insert(new MeshingNumerics(ofc, MeshingNumerics::Parameters()
+// //                                   .set_np(np)
+//                                  ));
     
-    {
-     double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
-     double maxs = std::max(L, std::max(W, H));
-     double add = 0.05*maxs;
-     pmin -= add;
-     pmax += add;
-    }
+//     {
+//      double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
+//      double maxs = std::max(L, std::max(W, H));
+//      double add = 0.05*maxs;
+//      pmin -= add;
+//      pmax += add;
+//     }
     
-    double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
-    int nx=std::max(1, int(ceil(L/templCellSize_->value())) );
-    int ny=std::max(1, int(ceil(W/templCellSize_->value())) );
-    int nz=std::max(1, int(ceil(H/templCellSize_->value())) );
+//     double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
+//     int nx=std::max(1, int(ceil(L/templCellSize_->value())) );
+//     int ny=std::max(1, int(ceil(W/templCellSize_->value())) );
+//     int nz=std::max(1, int(ceil(H/templCellSize_->value())) );
     
-    bmd::blockMeshDict_Box::Parameters bmd_p;
-    bmd_p.geometry.p0=pmin;
-    bmd_p.geometry.L=L;
-    bmd_p.geometry.W=W;
-    bmd_p.geometry.H=H;
-    {
-      bmd::blockMeshDict_Box::Parameters::mesh_type::resolution_individual_type res;
-      res.nx=nx;
-      res.ny=ny;
-      res.nz=nz;
-      bmd_p.mesh.resolution=res;
-    }
-    ofc.insert(new bmd::blockMeshDict_Box(ofc, bmd_p));
+//     bmd::blockMeshDict_Box::Parameters bmd_p;
+//     bmd_p.geometry.p0=pmin;
+//     bmd_p.geometry.L=L;
+//     bmd_p.geometry.W=W;
+//     bmd_p.geometry.H=H;
+//     {
+//       bmd::blockMeshDict_Box::Parameters::mesh_type::resolution_individual_type res;
+//       res.nx=nx;
+//       res.ny=ny;
+//       res.nz=nz;
+//       bmd_p.mesh.resolution=res;
+//     }
+//     ofc.insert(new bmd::blockMeshDict_Box(ofc, bmd_p));
     
-    ofc.createOnDisk(outpath_);
-    ofc.executeCommand(outpath_, "blockMesh");
+//     ofc.createOnDisk(outpath_);
+//     ofc.executeCommand(outpath_, "blockMesh");
     
-    snappyHexMesh
-    (
-        ofc, outpath_,
-        shm_cfg,
-        true,
-        false,
-        false
-    );
+//     snappyHexMesh
+//     (
+//         ofc, outpath_,
+//         shm_cfg,
+//         true,
+//         false,
+//         false
+//     );
 }
 
-//Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
-//{
+// Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
+// {
 //  checkForBuildDuringAccess();
 //  return Handle_AIS_InteractiveObject();
-//}
+// }
 
 void SnappyHexMesh::write(std::ostream& ) const
 {

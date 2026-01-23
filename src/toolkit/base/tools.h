@@ -84,12 +84,20 @@ public:
     {
         return *ptr(args...);
     }
+
+    void reset()
+    {
+        value_.reset();
+    }
 };
 
 
 
 std::string base64_encode(const std::string& s);
 std::string base64_encode(const boost::filesystem::path& f);
+char* base64_encode(
+    rapidxml::xml_document<> &doc,
+    const std::string& file_content_ );
 
 std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer);
 

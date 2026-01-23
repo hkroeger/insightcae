@@ -110,7 +110,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else {
             if ( ! (
-                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
                         ||
                         phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
                     ) )

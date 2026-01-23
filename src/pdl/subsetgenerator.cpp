@@ -1,5 +1,6 @@
 #include "subsetgenerator.h"
 #include "boost/algorithm/string/join.hpp"
+#include <algorithm>
 #include <iterator>
 
 using namespace std;
@@ -18,13 +19,13 @@ SubsetGenerator::SubsetGenerator(
 SubsetGenerator::SubsetGenerator(
     const ParameterSetData &v,
     const boost::optional<std::string> &templateArg,
-    const boost::optional<std::string> &inherits,
+    BaseTypes inherits,
     const boost::optional<std::string> &description,
     const boost::optional<std::string> &addCode )
     : ParameterGenerator(description.value_or("")),
     value(v),
     templateArg_(templateArg),
-    base_type_name_(inherits),
+    base_types_(inherits),
     addTo_makeDefault_(addCode)
 {}
 
@@ -98,9 +99,16 @@ void SubsetGenerator::writeCppTypeDeclConstructors(
 {
     // default constructor
     os << cppTypeName() << "()\n";
-    if (base_type_name_)
+    if (base_types_ && base_types_->size())
     {
-        os<<": "<<base_type_name_.value()<<"()\n";
+        std::vector<std::string> bt;
+        std::transform(
+            base_types_->begin(), base_types_->end(),
+            std::back_inserter(bt),
+            [](const BaseType& t)
+            { return boost::fusion::at_c<1>(t)+"()"; } );
+
+        os<<": "<<boost::join(bt, ",\n")<<"\n";
     }
     os<<"{ get(*makeDefault()); }\n";
 
@@ -134,9 +142,16 @@ void SubsetGenerator::writeCppTypeDeclConstructors(
 
     //get from other ParameterSet
     os << cppTypeName() << "(const insight::ParameterSet& p)\n";
-    if (base_type_name_)
+    if (base_types_ && base_types_->size())
     {
-        os<<": "<<base_type_name_.value()<<"(p)\n";
+        std::vector<std::string> bt;
+        std::transform(
+            base_types_->begin(), base_types_->end(),
+            std::back_inserter(bt),
+            [](const BaseType& t)
+            { return boost::fusion::at_c<1>(t)+"(p)"; } );
+
+        os<<": "<<boost::join(bt, ",\n")<<"\n";
     }
     os <<"{ get(p); }\n";
 }
@@ -151,9 +166,12 @@ void SubsetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) const
        << "{\n";
 
     // if is derived, call base class method
-    if ( base_type_name_  )
+    if ( base_types_ && base_types_->size() )
     {
-        os << base_type_name_.value()<<"::set(p);\n";
+        for (auto& bt: *base_types_)
+        {
+            os << boost::fusion::at_c<1>(bt)<<"::set(p);\n";
+        }
     }
 
     for ( auto& member: value )
@@ -178,9 +196,12 @@ void SubsetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) const
     os << "virtual void get(const insight::ParameterSet& p)\n"
        << "{\n";
 
-    if ( base_type_name_ )
+    if ( base_types_ && base_types_->size() )
     {
-        os << base_type_name_.value()<<"::get(p);\n";
+        for (auto& bt: *base_types_)
+        {
+            os << boost::fusion::at_c<1>(bt) <<"::get(p);\n";
+        }
     }
 
     for ( auto& member: value )
@@ -215,19 +236,19 @@ void SubsetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) const
 
 void SubsetGenerator::writeCppTypeDeclMakeDefaultFunction_populate(std::ostream &os) const
 {
-    if ( base_type_name_ )
-    {
-        os << "auto "<<name<<"Ptr = "<<base_type_name_.value()<<"::makeDefault();\n";
 
-    }
-    else
-    {
-        os<<"auto "<<name<<"Ptr = "
-           << cppInsightType()<<"::create_uninitialized( "
-           <<cppInsightTypeConstructorParameters()<<" ); ";
-    }
+    os<< "auto "<<name<<"Ptr = "
+       << cppInsightType()<<"::create_uninitialized( "
+       <<   cppInsightTypeConstructorParameters()<<" ); "
+       << "auto &"<<name<<" = *"<<name<<"Ptr;\n";
 
-    os << "auto &"<<name<<" = *"<<name<<"Ptr;\n";
+    if (base_types_)
+    {
+        for ( auto& bt: *base_types_ )
+        {
+            os << name<<".extend( *"<<boost::fusion::at_c<1>(bt)<<"::makeDefault() );\n";
+        }
+    }
 
     for (auto& pe: value )
     {
@@ -269,8 +290,19 @@ void SubsetGenerator::writeCppTypeDecl(
     if (templateArg_)
         os<<"template<"<<templateArg_.value()<<">\n";
 
-    os << "struct "<<cppTypeName()<< (base_type_name_?" : public "+base_type_name_.value():"") <<"\n"
-       << "{\n";
+    os << "struct "<<cppTypeName()<<"\n";
+    if (base_types_ && base_types_->size())
+    {
+        std::vector<std::string> bt;
+        std::transform(
+            base_types_->begin(), base_types_->end(),
+            std::back_inserter(bt),
+            [](const BaseType& t)
+            { return "public "+boost::fusion::at_c<1>(t); } );
+
+        os<<": "<<boost::join(bt, ",\n")<<"\n";
+    }
+    os << "{\n";
 
     writeCppTypeDeclMemberDefinitions(os);
     writeCppTypeDeclConstructors(os);

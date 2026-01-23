@@ -18,19 +18,18 @@ public:
 
     void recreateVisualizationElements() override
     {
-        std::string geom_file_ext = p().geometry.objectfile->fileName().extension().string();
-        boost::to_lower(geom_file_ext);
+        std::string geom_file_ext = p().geometry.objectfile->fileExtension();
 
         cad::FeaturePtr org_geom;
 
         if (geom_file_ext==".stl" || geom_file_ext==".stlb")
         {
-            org_geom = cad::STL::create(p().geometry.objectfile->filePath(), sp().cad_to_cfd_);
+            org_geom = cad::STL::create(p().geometry.objectfile->accessibleFilePath(), sp().cad_to_cfd_);
         }
         else
         {
             org_geom = cad::Transform::create(
-                cad::Import::create(p().geometry.objectfile->filePath()),
+                cad::Import::create(p().geometry.objectfile->accessibleFilePath()),
                 sp().cad_to_cfd_
                 );
         }

@@ -94,23 +94,7 @@ public:
   void clearPackedData() override;
 
 
-  /**
-   * @brief filePath
-   * Get the path of the file.
-   * It will be created, if it does not exist on the filesystem yet
-   * but its content is available in memory.
-   * @param baseDirectory
-   * The working directory, relative to which relative paths are resolved.
-   * If the file is only in memory, it will be created in a temporary directory
-   * under this path.
-   * @return
-   */
-  boost::filesystem::path filePath(
-      bool unpackIfNoLocalCopy=true,
-      boost::optional<boost::filesystem::path> overrideBaseDirectory
-        = boost::optional<boost::filesystem::path>() ) const;
-
-  void setFileName(const boost::filesystem::path& fn) override;
+  void setFilePath(const boost::filesystem::path& fn) override;
 
   rapidxml::xml_node<>* appendToNode(
       const std::string& name,

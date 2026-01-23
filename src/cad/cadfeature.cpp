@@ -22,6 +22,8 @@
 #include "base/exception.h"
 #include "base/linearalgebra.h"
 #include "base/spatialtransformation.h"
+#include "boost/filesystem/operations.hpp"
+#include "base/zipfile.h"
 #include "geotest.h"
 
 #include <fstream>
@@ -29,6 +31,7 @@
 
 #include "cadfeature.h"
 #include "datum.h"
+#include "openfoam/openfoamtools.h"
 #include "sketch.h"
 #include "cadfeatures/transform.h"
 #include "base/tools.h"
@@ -93,6 +96,8 @@
 
 #include "Poly.hxx"
 #include "Poly_ListOfTriangulation.hxx"
+
+#include "openfoam/openfoamdict.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -367,6 +372,58 @@ void Feature::setShapeFromFile(const boost::filesystem::path& filename)
         //            providedSubshapes_[f.first].reset(new Feature(f.second));
         //        }
 
+    }
+    else if ( ext==".emesh" )
+    {
+        insight::eMesh emd;
+
+        {
+            std::shared_ptr<std::string> fc;
+            std::shared_ptr<std::istream> f;
+            if (!boost::filesystem::exists(filename))
+            {
+                boost::filesystem::path fn2(filename.string()+".gz");
+                if (boost::filesystem::exists(fn2))
+                {
+                    auto unz=ZipFile(fn2).uncompressFiles();
+                    insight::assertion(
+                        unz.size()==1,
+                        "expected a single file in archive %s, got %d",
+                        fn2.string().c_str(), unz.size() );
+
+                    fc=unz.begin()->second;
+                    f=std::make_shared<std::istringstream>(*fc);
+                }
+                else
+                    throw insight::Exception(
+                            "neither %s nor %s found",
+                            filename.string().c_str(),
+                            fn2.string().c_str()
+                        );
+            }
+            else
+            {
+                f=std::make_shared<std::ifstream>(filename.string());
+            }
+
+            readOpenFOAMEMesh(*f, emd);
+        }
+
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+
+        for (auto& e: emd.edges())
+        {
+            bb.Add(
+                result,
+                BRepBuilderAPI_MakeEdge(
+                    to_Pnt(emd.points()[e.first]),
+                    to_Pnt(emd.points()[e.second]) ).Edge()
+                );
+        }
+
+        setShape(result);
     }
     else
     {
@@ -873,6 +930,17 @@ arma::mat Feature::modelInertia(double density_ovr) const
   gpp.Moments( Ip(0,0), Ip(1,1), Ip(2,2) );
   
   return rho*T*Ip*T.t();
+}
+
+
+void Feature::createTriangulation(double deflection)
+{
+    checkForBuildDuringAccess();
+
+    if (deflection>0)
+    {
+        BRepMesh_IncrementalMesh Inc(shape(), deflection);
+    }
 }
 
 arma::mat Feature::modelBndBox(double deflection) const
@@ -1527,7 +1595,11 @@ void Feature::saveAs
 
   else if ( (ext==".stl") || (ext==".stlb") )
   {
-    BRepMesh_IncrementalMesh Inc(shape(), 1e-2);
+    if (!refvalues_.count("isSTLGeometry"))
+    {
+        BRepMesh_IncrementalMesh Inc(shape(), 1e-2);
+    }
+
     StlAPI_Writer stlwriter;
 
     stlwriter.ASCIIMode() = (ext==".stl");
@@ -1546,6 +1618,10 @@ void Feature::saveAs
         printDependencies(dot);
       }
   }
+  else if ( ext==".emesh" )
+  {
+      exportEMesh(filename, *allEdges());
+  }
   else
   {
     throw insight::Exception("Unknown export file format! (Extension "+ext+")");
@@ -1554,23 +1630,33 @@ void Feature::saveAs
 
 void Feature::exportSTL(const boost::filesystem::path& filename, double abstol, bool binary) const
 {
-  BRepBuilderAPI_Copy aCopy( shape(), Standard_False );
-  TopoDS_Shape os=aCopy.Shape();
-
-  StlAPI_Writer stlwriter;
-  stlwriter.ASCIIMode() = !binary; //false;
+    StlAPI_Writer stlwriter;
+    stlwriter.ASCIIMode() = !binary; //false;
 
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
-  stlwriter.RelativeMode()=false;
-  stlwriter.SetDeflection(abstol);
-#else
-  BRepTools::Clean( os );
-//  ShapeFix_ShapeTolerance sf;
-//  sf.SetTolerance(os, abstol);
-  BRepMesh_IncrementalMesh binc(os, abstol);
+    stlwriter.RelativeMode()=false;
+    stlwriter.SetDeflection(abstol);
 #endif
 
-  stlwriter.Write(os, filename.string().c_str());
+    BRepBuilderAPI_Copy aCopy( shape(), Standard_False );
+    TopoDS_Shape os=aCopy.Shape();
+
+    if (refvalues_.count("isSTLGeometry"))
+    {
+        os=shape();
+    }
+    else
+    {
+
+#if !((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
+        BRepTools::Clean( os );
+        //  ShapeFix_ShapeTolerance sf;
+        //  sf.SetTolerance(os, abstol);
+        BRepMesh_IncrementalMesh binc(os, abstol);
+#endif
+    }
+
+    stlwriter.Write(os, filename.string().c_str());
 }
 
 
@@ -1582,84 +1668,109 @@ void Feature::exportEMesh
   double maxlen
 )
 {
-  if (fs.shape()!=Edge) 
-    throw insight::Exception("Called with incompatible feature set!");
-  
-  std::vector<arma::mat> points;
-  typedef std::pair<int, int> Edge;
-  std::vector<Edge> edges;
-  
-  for (const FeatureID& fi: fs.data())
-  {
-    
-    TopoDS_Edge e=fs.model()->edge(fi);
-    if (!BRep_Tool::Degenerated(e))
+    if (fs.shape()!=Edge)
+        throw insight::Exception("Called with incompatible feature set!");
+
+    std::map<arma::mat, int> points;
+    typedef std::pair<arma::mat, arma::mat> Edge;
+    std::vector<Edge> edges;
+
+    for (const FeatureID& fi: fs.data())
     {
-      BRepAdaptor_Curve ac(e);
-      GCPnts_QuasiUniformDeflection qud(ac, abstol);
 
-      if (!qud.IsDone())
-	throw insight::Exception("Discretization of curves into eMesh failed!");
-
-      size_t iofs=points.size();
-
-      if (qud.NbPoints()<2)
-        throw insight::Exception("Edge discretizer returned less then 2 points !");
-
-      for (int j=2; j<=qud.NbPoints(); j++)
-      {
-        arma::mat lp=insight::Vector(ac.Value(qud.Parameter(j-1)));
-        if (j==2) points.push_back(lp);
-
-        arma::mat p=insight::Vector(ac.Value(qud.Parameter(j)));
-
-        double clen=norm(p-lp, 2);
-        double rlen=clen;
-        while (rlen>maxlen)
+        TopoDS_Edge e=fs.model()->edge(fi);
+        if (!BRep_Tool::Degenerated(e))
         {
-          arma::mat pi = lp + maxlen*(p-lp)/arma::norm(p-lp,2);
-          lp=pi;
-          points.push_back(pi); // insert intermediate point
-          rlen -= maxlen;
+            BRepAdaptor_Curve ac(e);
+            GCPnts_QuasiUniformDeflection qud(ac, abstol);
+
+            if (!qud.IsDone())
+                throw insight::Exception("Discretization of curves into eMesh failed!");
+
+            size_t iofs=points.size();
+
+            if (qud.NbPoints()<2)
+                throw insight::Exception("Edge discretizer returned less then 2 points !");
+
+            for (int j=2; j<=qud.NbPoints(); j++)
+            {
+                arma::mat lp=insight::Vector(ac.Value(qud.Parameter(j-1)));
+                // if (j==2) points[lp]=-1;
+
+                arma::mat p=insight::Vector(ac.Value(qud.Parameter(j)));
+
+                double clen=norm(p-lp, 2);
+                double rlen=clen;
+                while (rlen>maxlen)
+                {
+                    arma::mat pi = lp + maxlen*(p-lp)/arma::norm(p-lp,2);
+                    lp=pi;
+                    // points[pi]=-1; // insert intermediate point
+                    edges.push_back(Edge(lp,pi));
+                    rlen -= maxlen;
+                }
+                edges.push_back(Edge(lp,p));
+                // points[p]=-1;
+
+            }
+
+            // for (size_t i=1; i<points.size()-iofs; i++)
+            // {
+            //     int from=iofs+i-1;
+            //     int to=iofs+i;
+            //     //	if (splits.find(to)==splits.end())
+            //     edges.push_back(Edge(from,to));
+            // }
         }
-        points.push_back(p);
-
-      }
-      
-      for (size_t i=1; i<points.size()-iofs; i++)
-      {
-	int from=iofs+i-1;
-	int to=iofs+i;
-//	if (splits.find(to)==splits.end())
-	  edges.push_back(Edge(from,to));
-      }
     }
-  }
-  
-  std::ofstream f(filename.c_str());
-  f<<"FoamFile {"<<endl
-   <<" version     2.0;"<<endl
-   <<" format      ascii;"<<endl
-   <<" class       featureEdgeMesh;"<<endl
-   <<" location    \"\";"<<endl
-   <<" object      "<<filename.filename().string()<<";"<<endl
-   <<"}"<<endl;
-   
-  f<<points.size()<<endl
-   <<"("<<endl;
-  for (const arma::mat& p: points)
-  {
-    f<<OFDictData::vector3(p)<<endl;
-  }
-  f<<")"<<endl;
 
-  f<<edges.size()<<endl
-   <<"("<<endl;
-  for (const Edge& e: edges)
-  {
-    f<<"("<<e.first<<" "<<e.second<<")"<<endl;
-  }
-  f<<")"<<endl;
+    std::for_each(
+        edges.begin(), edges.end(),
+        [&](const Edge& e){
+            points[e.first]=-1;
+            points[e.second]=-1;
+        }
+    );
+
+    int i=0;
+    for (auto& p: points)
+    {
+        p.second = i++;
+    }
+
+    std::vector<arma::mat> ptList(i);
+    std::for_each(
+        points.begin(), points.end(),
+        [&]( const std::pair<arma::mat,int>& p )
+        {
+            ptList[p.second]=p.first;
+        }
+    );
+
+    std::ofstream f(filename.c_str());
+    f<<"FoamFile {"<<endl
+      <<" version     2.0;"<<endl
+      <<" format      ascii;"<<endl
+      <<" class       featureEdgeMesh;"<<endl
+      <<" location    \"\";"<<endl
+      <<" object      "<<filename.filename().string()<<";"<<endl
+      <<"}"<<endl;
+
+    f<<points.size()<<endl
+      <<"("<<endl;
+    for (auto& p: ptList)
+    {
+        f<<OFDictData::vector3(p)<<endl;
+    }
+    f<<")"<<endl;
+
+    f<<edges.size()<<endl
+      <<"("<<endl;
+    for (const Edge& e: edges)
+    {
+        f<<"("<<points.at(e.first)<<" "<<points.at(e.second)<<")"<<endl;
+    }
+    f<<")"<<endl;
 
 }
 

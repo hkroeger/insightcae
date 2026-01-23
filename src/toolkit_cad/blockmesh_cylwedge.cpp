@@ -80,7 +80,7 @@ blockMeshDict_CylWedge::supplementedInputData::supplementedInputData(
     if (el.size()!=1)
       throw insight::Exception(
           boost::str(boost::format("CAD file %s should contain only one single edge! (It actually contains %d edges)")
-                     % p().geometry.wedge_spine_curve->fileName().string()
+                     % p().geometry.wedge_spine_curve->filePath().string()
                      % el.size() )
           );
 
@@ -215,46 +215,6 @@ void blockMeshDict_CylWedge::create_bmd()
         pcyclp=&this->addOrDestroyPatch ( p().mesh.cyclpPatchName, new bmd::Patch() );
     }
 
-
-
-
-
-
-//    const int np=10;
-//    TopoDS_Edge c0;
-//    {
-//      std::vector<insight::cad::VectorPtr> pts;
-//      for (int i=0; i<np; i++)
-//      {
-//        double r=0.5*(p_.geometry.d + (p_.geometry.D-p_.geometry.d)*double(i)/double(np-1));
-//        pts.push_back(insight::cad::matconst(point_on_spine(r)));
-//      }
-//      cad::FeaturePtr spc=insight::cad::SplineCurve::create(pts);
-//      c0=TopoDS::Edge(spc->shape());
-//    }
-
-//    gp_Ax1 ax(to_Pnt(p0_), to_Vec(ex_));
-//    gp_Trsf trm; trm.SetRotation(ax, -0.5*p_.geometry.wedge_angle*SI::deg);
-//    gp_Trsf trp; trp.SetRotation(ax, 0.5*p_.geometry.wedge_angle*SI::deg);
-//    gp_Trsf tru; tru.SetTranslation(to_Vec(vL));
-
-//    TopoDS_Edge c0m=TopoDS::Edge(BRepBuilderAPI_Transform(c0, trm).Shape());
-//    TopoDS_Edge c0p=TopoDS::Edge(BRepBuilderAPI_Transform(c0, trp).Shape());
-//    TopoDS_Face cyclm = BRepFill::Face ( c0m,  TopoDS::Edge(BRepBuilderAPI_Transform(c0m, tru).Shape()));
-//    TopoDS_Face cyclp = BRepFill::Face ( c0p,  TopoDS::Edge(BRepBuilderAPI_Transform(c0p, tru).Shape()));
-
-//    {
-//      StlAPI_Writer stlwriter;
-//      stlwriter.ASCIIMode() = true;
-//      BRepMesh_IncrementalMesh Incm(cyclm, 1e-2);
-//      stlwriter.Write(cyclm, "cyclm.stl");
-//    }
-//    {
-//      StlAPI_Writer stlwriter;
-//      stlwriter.ASCIIMode() = true;
-//      BRepMesh_IncrementalMesh Incp(cyclp, 1e-2);
-//      stlwriter.Write(cyclp, "cyclp.stl");
-//    }
 
     supplementedInputData sp(
         p(), ".", consoleProgressDisplayer );

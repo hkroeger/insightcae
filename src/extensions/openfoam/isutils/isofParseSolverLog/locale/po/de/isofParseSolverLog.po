@@ -1,0 +1,38 @@
+# German translations for isofParseSolverLog package.
+# Copyright (C) 2026 hkroeger
+# This file is distributed under the same license as the isofParseSolverLog package.
+# Hannes Kröger <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: isofParseSolverLog \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-01-21 11:43+0100\n"
+"Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Allowed options"
+msgstr ""
+
+msgid "produce help message"
+msgstr ""
+
+msgid "Specifies input log file. Multiple files will be concatened."
+msgstr ""
+
+msgid "Specifies CSV output file."
+msgstr ""
+
+msgid "Usage:"
+msgstr ""
+
+msgid "options"
+msgstr ""
+
+msgid "Could not parse command line"
+msgstr ""

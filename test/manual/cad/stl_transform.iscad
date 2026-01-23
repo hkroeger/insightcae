@@ -1,0 +1,26 @@
+b:
+#STL("test.stl")
+Torus(O, 1*EY, 0.33)
+;
+b2:Transform(b, EY*2+EX*2, 25*deg*EY);
+b3:Transform(b2, EY*3, O);
+b4:Transform(b3, EX*1, 45*deg*EZ, 2);
+b4b:Transform(b4, O, O, 2);
+
+s:
+STL("test.stl")
+;
+s2:Transform(s, EY*2+EX*2, 25*deg*EY);
+s3:Transform(s2, EY*3, O);
+s4:Transform(s3, EX*1, 45*deg*EZ, 2);
+s4b:Transform(s4, O, O, 2);
+
+@post
+
+exportSTL("s2.stl", 0.001)<<s2;
+exportSTL("s3.stl", 0.001)<<s3;
+exportSTL("s4.stl", 0.001)<<s4;
+
+saveAs("s2_2.stl")<<s2;
+saveAs("s3_2.stl")<<s3;
+saveAs("s4_2.stl")<<s4;

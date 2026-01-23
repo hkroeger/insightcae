@@ -65,7 +65,7 @@ std::string FileResult::latexRepresentation (
   f<<  "\\texttt{" <<
       SimpleLatex(
         boost::filesystem::absolute(
-            fileName()).generic_string() )
+            filePath()).generic_string() )
         .toLaTeX() << "}";
   return f.str();
 }

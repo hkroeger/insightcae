@@ -18,6 +18,7 @@
  */
 
 #include "cone.h"
+#include "cadparameters.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/boost_include.h"
@@ -120,6 +121,15 @@ void Cone::build()
 
         cone=cutter.Shape();
     }
+
+    providedFeatureSets_["frontFace"]=makeFaceFeatureSet(
+        shared_from_this(), "isPlane && minimal(dist(CoG, %m0))",
+        {cad::matconst(*p1_)}
+        );
+    providedFeatureSets_["backFace"]=makeFaceFeatureSet(
+        shared_from_this(), "isPlane && minimal(dist(CoG, %m0))",
+        {cad::matconst(*p2_)}
+        );
 
     setShape ( cone );
 }

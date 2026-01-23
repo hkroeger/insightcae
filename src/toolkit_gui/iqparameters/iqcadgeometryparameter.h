@@ -10,7 +10,8 @@
 
 
 
-class IQCADGeometryParameter : public IQParameter
+class IQCADGeometryParameter
+    : public IQSpecializedParameter<insight::CADGeometryParameter>
 {
 public:
   declareType(insight::CADGeometryParameter::typeName_());
@@ -18,13 +19,10 @@ public:
   IQCADGeometryParameter
   (
       QObject* parent,
-      IQParameterSetModel* psmodel,
-      const QString& name,
-      insight::Parameter& parameter,
-      const insight::ParameterSet& defaultParameterSet
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element
   );
 
-  QString valueText() const override;
 
   QVBoxLayout* populateEditControls(
           QWidget* editControlsContainer,

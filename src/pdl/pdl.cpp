@@ -84,7 +84,13 @@ PDLParserRuleset::PDLParserRuleset()
 
   r_parameterset = (
          -( r_templateArg )
-      >> -( qi::lit("inherits") >> r_identifier )
+      >> (
+            ( qi::omit[qi::lit("skipDefaultBase")] )
+            |
+            *( qi::lit("inherits")
+                >> qi::matches[qi::char_('*')]
+                >> r_identifier )
+        )
       >> -( qi::lit("description") >> r_string )
       >> -( qi::lit("addTo_makeDefault") >> r_addcode )
       >> *( r_parametersetentry ) )
@@ -206,10 +212,12 @@ int main ( int argc, char *argv[] )
         auto parameterSetData = std::make_shared<ParameterSetGenerator>(
             *boost::fusion::get<1>(result_all) );
 
-        if (!parameterSetData->base_type_name_)
+        if (parameterSetData->base_types_ && parameterSetData->base_types_->empty())
         {
             headers.insert("\"base/supplementedinputdata.h\"");
-            parameterSetData->base_type_name_=defaultParameterSetBaseClass;
+            *parameterSetData->base_types_={
+                SubsetGenerator::BaseType{ false, defaultParameterSetBaseClass }
+            };
         }
 
         parameterSetData->setName(name);
@@ -240,8 +248,21 @@ int main ( int argc, char *argv[] )
 
           if (createGetter)
           {
-              if (parameterSetData->base_type_name_.value()
-                  == defaultParameterSetBaseClass)
+              bool isDerived =
+                  parameterSetData->base_types_
+                  &&
+                  (parameterSetData->base_types_->size()>0)
+                  &&
+                  ( std::find_if(
+                       parameterSetData->base_types_->begin(),
+                       parameterSetData->base_types_->end(),
+                       [&](const SubsetGenerator::BaseType&t)
+                       { return !boost::fusion::at_c<0>(t) &&
+                                (boost::fusion::at_c<1>(t)!=
+                                   defaultParameterSetBaseClass); })
+                      != parameterSetData->base_types_->end() );
+
+              if (!isDerived)
               {
                   f << "protected:\n"
                     <<  "ParameterSetInput p_;\n"

@@ -20,6 +20,8 @@
 
 
 #include "openfoamdict.h"
+#include "openfoamtools.h"
+#include <iterator>
 #include <sstream>
 
 #define BOOST_SPIRIT_DEBUG
@@ -61,93 +63,103 @@ struct skip_grammar : public qi::grammar<Iterator>
 
 };
 
-template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-struct OpenFOAMDictParser
-  : qi::grammar<Iterator, OFDictData::dict(), Skipper>
+template <typename Iterator, typename ResultType, typename Skipper = skip_grammar<Iterator> >
+struct OpenFOAMDictParserBase
+  : public qi::grammar<Iterator, ResultType(), Skipper>
 {
-    OpenFOAMDictParser()
-      : OpenFOAMDictParser::base_type(rquery)
+    typedef ResultType result_type;
+    typedef OpenFOAMDictParserBase<Iterator,ResultType,Skipper> base_type;
+
+    qi::rule<Iterator, ResultType(), Skipper> startRule;
+
+    qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
+    qi::rule<Iterator, std::string()> ridentifier;
+    qi::rule<Iterator, std::string()> rstring;
+    qi::rule<Iterator, std::string()> rraw;
+    qi::rule<Iterator, OFDictData::data(), Skipper> rentry;
+    qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
+    qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
+    qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
+
+    OpenFOAMDictParserBase()
+        : qi::grammar<Iterator, ResultType(), Skipper>(startRule)
     {
       using namespace qi;
-      
-        rquery =  *( rpair );
+
         rpair  =
             ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
         rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
         rraw = ( ~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
         qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
-        rentry = ( strict_double | rlist | qi::int_ |  rdimensionedData | rstring | ridentifier | rsubdict );
+        rentry = ( strict_double | rlist |  rdimensionedData | qi::int_ | rstring | ridentifier | rsubdict );
         rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
         rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
-
-//        BOOST_SPIRIT_DEBUG_NODE(ridentifier);
-//        BOOST_SPIRIT_DEBUG_NODE(rstring);
-//     	  BOOST_SPIRIT_DEBUG_NODE(rpair);
-//     	  BOOST_SPIRIT_DEBUG_NODE(rentry);
     }
 
-    qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
-    qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
-    qi::rule<Iterator, std::string()> ridentifier;
-    qi::rule<Iterator, std::string()> rstring;
-    qi::rule<Iterator, std::string()> rraw;
-    qi::rule<Iterator, OFDictData::data(), Skipper> rentry;
-    qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
-    qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
-    qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
-    
+};
+
+
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+struct OpenFOAMDictParser
+    : public OpenFOAMDictParserBase<Iterator,OFDictData::dict,Skipper>
+{
+
+    OpenFOAMDictParser()
+        : OpenFOAMDictParser::base_type()
+    {
+      using namespace qi;
+
+      this->startRule =
+          *( this->rpair );
+    }
+
 };
 
 
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct OpenFOAMBoundaryDictParser
-  : qi::grammar<Iterator, OFDictData::dict(), Skipper>
+  : public OpenFOAMDictParserBase<Iterator, OFDictData::dict,Skipper>
 {
     OpenFOAMBoundaryDictParser()
-      : OpenFOAMBoundaryDictParser::base_type(rquery)
+        : OpenFOAMBoundaryDictParser::base_type()
     {
       using namespace qi;
 
-        rquery =
-         rpair >>
-         qi::omit[ qi::int_ ] >> qi::lit('(') >> *(rpair) >> qi::lit(')') >> (-qi::lit(';'));
-
-        rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
-        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
-        rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
-        rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
-        qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
-        rentry = (strict_double | rlist | rdimensionedData | qi::int_ | rstring | ridentifier| rsubdict );
-        rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
-        rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
-        rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
-/*
-        BOOST_SPIRIT_DEBUG_NODE(rquery);
-        BOOST_SPIRIT_DEBUG_NODE(rpair);
-        BOOST_SPIRIT_DEBUG_NODE(ridentifier);
-        BOOST_SPIRIT_DEBUG_NODE(rstring);
-        BOOST_SPIRIT_DEBUG_NODE(rraw);
-        BOOST_SPIRIT_DEBUG_NODE(rentry);
-        BOOST_SPIRIT_DEBUG_NODE(rsubdict);
-        BOOST_SPIRIT_DEBUG_NODE(rlist);
-*/
+      this->startRule =
+         this->rpair >> //header
+         qi::omit[ qi::int_ ] >> qi::lit('(') // boundary list
+               >> *(this->rpair) // patch entry
+               >> qi::lit(')') >> (-qi::lit(';'));
     }
-
-    qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
-    qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
-    qi::rule<Iterator, std::string()> ridentifier;
-    qi::rule<Iterator, std::string()> rstring;
-    qi::rule<Iterator, std::string()> rraw;
-    qi::rule<Iterator, OFDictData::data(), Skipper> rentry;
-    qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
-    qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
-    qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
 
 };
 
+
+
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+struct OpenFOAMEMeshParser
+    : public OpenFOAMDictParserBase<
+          Iterator,
+          boost::fusion::vector<OFDictData::entry,OFDictData::list,OFDictData::list>,
+          Skipper>
+{
+
+    OpenFOAMEMeshParser()
+        : OpenFOAMEMeshParser::base_type()
+    {
+        using namespace qi;
+
+        this->startRule =
+               this->rpair  //header
+            >> this->rlist // point list
+            >> this->rlist // edges list
+            ;
+    }
+
+};
 
 
 template <typename Parser, typename Result, typename Iterator>
@@ -293,18 +305,59 @@ bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
         {
           std::cout << "\"" << i->first << "\"" << std::endl;
         }
-   /*
-    OFDictData::list bl;
-    for(OFDictData::dict::const_iterator i=d.begin();
-        i!=d.end(); i++)
-        {
-          //std::cout << i->first << std::endl;
-          bl.push_back( OFDictData::data(i->first) );
-          bl.push_back( i->second );
-        }
-    d2[""]=bl;
-    */
+
    return true;
+}
+
+
+bool readOpenFOAMEMesh(std::istream& in, insight::eMesh& em)
+{
+    std::istreambuf_iterator<char> eos;
+    std::string contents(std::istreambuf_iterator<char>(in), eos);
+
+    boost::fusion::vector<OFDictData::entry,OFDictData::list,OFDictData::list> d;
+    if (!parseOpenFOAMDict<OpenFOAMEMeshParser<std::string::iterator> >(
+            contents.begin(), contents.end(), d))
+    {
+        return false;
+    }
+
+    auto ptListRaw=boost::fusion::at_c<1>(d);
+    std::vector<arma::mat> ptList;
+    std::transform(
+        ptListRaw.begin(), ptListRaw.end(),
+        std::back_inserter(ptList),
+        [](const OFDictData::data& e)
+        {
+            auto&v=boost::get<OFDictData::list>(e);
+            return vec3(
+                as_scalar(v[0]),
+                as_scalar(v[1]),
+                as_scalar(v[2])
+                );
+        }
+        );
+
+
+    auto edgListRaw=boost::fusion::at_c<2>(d);
+    typedef std::pair<int,int> Edge;
+    std::vector<Edge> edges;
+    std::transform(
+        edgListRaw.begin(), edgListRaw.end(),
+        std::back_inserter(edges),
+        [](const OFDictData::data& e)
+        {
+            auto&el=boost::get<OFDictData::list>(e);
+            return Edge(
+                boost::get<int>(el[0]),
+                boost::get<int>(el[1])
+                );
+        }
+        );
+
+    em=eMesh(ptList, edges);
+
+    return true;
 }
 
 

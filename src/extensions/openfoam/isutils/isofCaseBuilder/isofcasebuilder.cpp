@@ -220,7 +220,7 @@ int main ( int argc, char** argv )
               {
                   std::vector<std::string> pair;
                   auto &p = split_and_check<PathParameter>(window, pair, s);
-                  p.setFileName(pair[2]);
+                  p.setFilePath(pair[2]);
               }
           }
 

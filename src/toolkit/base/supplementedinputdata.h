@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "base/exception.h"
-#include "base/parameters/subsetparameter.h"
+#include "base/parameters/selectablesubsetparameter.h"
 #include "base/units.h"
 #include "base/parameterset.h"
 #include "base/cppextensions.h"
@@ -194,6 +194,19 @@ public:
           toString(u)
           );
   }
+
+  /**
+   * @brief insertSupplementQuantities
+   * insert a set of quantities to report from e.g. subanalyses
+   * @param prefix
+   * a string to prepend to each quantity
+   * @param rsqt
+   * table of quantities to insert
+   */
+  void insertSupplementQuantities(
+      const std::string& prefix,
+      const ReportedSupplementQuantitiesTable& rsqt
+      );
 
   const ReportedSupplementQuantitiesTable& reportedSupplementQuantities() const;
 

@@ -285,7 +285,7 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
         {
 
         case Qt::EditRole:
-            if (index.column()==labelCol) // data
+            if (index.column()==labelCol) // change label
             {
                 auto *me = iqElementOfIndex(index);
                 auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(me->parentElement());

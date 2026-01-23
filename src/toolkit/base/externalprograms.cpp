@@ -47,21 +47,21 @@ std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints
 
 ExternalPrograms::ExternalPrograms()
 {
-    std::cout << "checking required exe files"<<std::endl;
+    dbg() << "checking required exe files"<<std::endl;
 
     for (const auto& exe: requiredPrograms_hints)
     {
         auto p = boost::process::search_path(exe.first);
-        std::cout << "for required exe "<<exe.first<<" found in search path: "<<p<<std::endl;
+        dbg() << "for required exe "<<exe.first<<" found in search path: "<<p<<std::endl;
         if (p.empty())
         {
             for (auto&h: exe.second) // go through hints
             {
-                std::cout << "trying hint "<<h<<std::endl;
+                dbg() << "trying hint "<<h<<std::endl;
                 auto matches=wildcardSearch(h);
                 for (auto& m: matches)
                 {
-                    std::cout << "found "<<m<<std::endl;
+                    dbg() << "found "<<m<<std::endl;
                 }
                 if (matches.size())
                 {

@@ -1,0 +1,10 @@
+e:import("test.eMesh");
+
+e1:Transform(e, 1*EX, 45*deg*EX);
+
+e2:Transform(e1, O, 45*deg*EZ);
+
+@post
+
+exportEMesh("e1.eMesh", 1, 10) << e1?alledges;
+exportEMesh("e2.eMesh", 1, 10) << e2?alledges;

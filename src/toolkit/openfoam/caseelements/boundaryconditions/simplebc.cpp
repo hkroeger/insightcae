@@ -55,7 +55,7 @@ void SimpleBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
 
         if ( ( BCtype_=="cyclic" ) && ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
-            MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
+            MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
         } else {
             std::string tname=BCtype_;
             BC["type"]=OFDictData::data ( tname );

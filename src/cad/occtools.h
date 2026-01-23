@@ -63,6 +63,50 @@ public:
 std::vector<arma::mat> orderedCornerPoints(const TopoDS_Shape& f);
 TopoDS_Face asSingleFace(const TopoDS_Shape& shape);
 
+template<class Trsf>
+void
+transformTriangulation(
+    TopoDS_Shape original,
+    TopoDS_Shape& transformed,
+    const Trsf& tr
+    )
+{
+    // transform triangulation as well
+    BRep_Builder aB;
+
+    TopTools_IndexedMapOfShape orgFaces, trsfFaces;
+    TopExp::MapShapes(original, TopAbs_FACE, orgFaces);
+    TopExp::MapShapes(transformed, TopAbs_FACE, trsfFaces);
+
+    for (int i=1; i<=orgFaces.Extent(); ++i)
+    {
+        TopLoc_Location lt;
+        TopoDS_Face ft=TopoDS::Face(trsfFaces.FindKey(i));
+        if (!BRep_Tool::Triangulation(ft, lt))
+        {
+            TopLoc_Location lo;
+            TopoDS_Face fo=TopoDS::Face(orgFaces.FindKey(i));
+            if (auto otri=BRep_Tool::Triangulation(fo, lo))
+            {
+                gp_Trsf lotr=lo;
+                gp_Trsf ltr=lt; ltr.Invert();
+                auto tri=otri->Copy();
+
+                for (int i=1; i<=tri->NbNodes(); ++i)
+                {
+                    auto xyz=tri->Node(i).XYZ();
+                    lotr.Transforms(xyz);
+                    tr.Transforms(xyz);
+                    ltr.Transforms(xyz);
+                    tri->ChangeNode(i)=xyz;
+                }
+
+                aB.UpdateFace(ft, tri);
+            }
+        }
+    }
+}
+
 }
 }
 

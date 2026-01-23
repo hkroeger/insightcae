@@ -105,6 +105,7 @@ public:
     boost::signals2::signal<void()> valueChanged, childValueChanged;
     boost::signals2::signal<void(int, int)> beforeChildInsertion, childInsertionDone;
     boost::signals2::signal<void(int, int)> beforeChildRemoval, childRemovalDone;
+    boost::signals2::signal<void(int, int)> beforeChildPositionMove, childPositionMoveDone;
 #endif
 
 

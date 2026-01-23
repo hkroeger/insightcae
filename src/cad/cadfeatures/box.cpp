@@ -18,6 +18,7 @@
  */
 
 #include "box.h"
+#include "cadexception.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/tools.h"
@@ -99,9 +100,20 @@ void Box::build()
     refvalues_["L2"]=arma::norm(L2_->value(), 2);
     refvalues_["L3"]=arma::norm(L3_->value(), 2);
 
-    refvectors_["e1"]=L1_->value()/arma::norm(L1_->value(), 2);
-    refvectors_["e2"]=L2_->value()/arma::norm(L2_->value(), 2);
-    refvectors_["e3"]=L3_->value()/arma::norm(L3_->value(), 2);
+    arma::mat e1=insight::normalized(L1_->value());
+    arma::mat e2=insight::normalized(L2_->value());
+    arma::mat e3=insight::normalized(L3_->value());
+
+    if (fabs(fabs(arma::dot(e1,e2))-1.)<SMALL)
+        throw insight::CADException(shared_from_this(), "edge 1 and 2 are colinear");
+    if (fabs(fabs(arma::dot(e1,e3))-1.)<SMALL)
+        throw insight::CADException(shared_from_this(), "edge 1 and 3 are colinear");
+    if (fabs(fabs(arma::dot(e2,e3))-1.)<SMALL)
+        throw insight::CADException(shared_from_this(), "edge 2 and 3 are colinear");
+
+    refvectors_["e1"]=e1;
+    refvectors_["e2"]=e2;
+    refvectors_["e3"]=e3;
 
     refvectors_["L1"]=L1_->value();
     refvectors_["L2"]=L2_->value();

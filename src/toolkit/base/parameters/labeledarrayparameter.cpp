@@ -418,22 +418,36 @@ void LabeledArrayParameter::changeLabelImpl(
         const std::string &label,
         const std::string &newLabel )
 {
-    auto& v=value();
+    if (label!=newLabel) // deletes element otherwise
+    {
+        auto& v=value();
 
-    auto idx=v.find(label);
+        auto idx=v.find(label);
 
-    insight::assertion(
-        idx!=v.end(),
-        "entry %s is not present (valid keys are: %s)",
-        label.c_str(),
-        containerKeyList_to_string(v, 10).c_str() );
+        insight::assertion(
+            idx!=v.end(),
+            "entry %s is not present (valid keys are: %s)",
+            label.c_str(),
+            containerKeyList_to_string(v, 10).c_str() );
 
-    std::swap(v[newLabel], idx->second);
-    v.erase(idx);
+        int iold=std::distance(v.begin(), idx);
+        int inew=predictInsertionLocation(v, newLabel);
 
-    itemRelabeled(label, newLabel);
+        bool positionChanged = (inew-iold>1)||(inew-iold<0);
 
-    triggerValueChanged();
+        if (positionChanged) // segfault otherwise
+            beforeChildPositionMove(iold, inew);
+
+        std::swap(v[newLabel], idx->second);
+        v.erase(idx);
+
+        itemRelabeled(label, newLabel);
+
+        if (positionChanged)
+            childPositionMoveDone(iold, inew);
+
+        triggerValueChanged();
+    }
 }
 
 

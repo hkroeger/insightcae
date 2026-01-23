@@ -184,6 +184,29 @@ void IQHierarchicalDataElement::connectSignals()
             }
             )
         );
+
+    disconnectAtEOL(
+        (*this)->beforeChildPositionMove.connect(
+            [this](int iold, int inew)
+            {
+                DBG_SLOT(beforeChildPositionMove)<<"iold="<<iold<<", inew="<<inew<<std::endl;
+
+                QModelIndex idx=model_->indexOfElement(*this, 0);
+                model_->beginMoveRows(idx, iold, iold, idx, inew);
+            }
+            )
+        );
+
+    disconnectAtEOL(
+        (*this)->childPositionMoveDone.connect(
+            [this](int, int)
+            {
+                DBG_SLOT(childPositionMoveDone);
+
+                model_->endMoveRows();
+            }
+            )
+        );
 }
 
 

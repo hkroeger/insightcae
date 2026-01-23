@@ -85,6 +85,7 @@ PARAMETERSET>>> ExternalGeometryFile Parameters
 inherits Base::Parameters
 
 geometry = cadgeometry "" "Geometry or geometry file (STL or CAD exchange format)" *necessary
+
 scalefactor = double 1 "Geometry scaling factor"
 inhomscale = vector (1 1 1) "Inhomogeneous scale factors for X, Y and Z direction respectively"
 translate = vector (0 0 0) "Translation vector"

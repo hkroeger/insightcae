@@ -94,11 +94,11 @@ transformTriangulation(
 
                 for (int i=1; i<=tri->NbNodes(); ++i)
                 {
-                    auto xyz=tri->Node(i).XYZ();
+                    auto xyz=tri->Nodes().Value(i).XYZ();
                     lotr.Transforms(xyz);
                     tr.Transforms(xyz);
                     ltr.Transforms(xyz);
-                    tri->ChangeNode(i)=xyz;
+                    tri->ChangeNodes().ChangeValue(i)=xyz;
                 }
 
                 aB.UpdateFace(ft, tri);

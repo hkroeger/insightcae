@@ -102,6 +102,7 @@
 #include "boost/timer/timer.hpp"
 
 #include "boost/range/adaptor/indexed.hpp"
+#include "boost/phoenix.hpp"
 
 #include <functional>
 #endif
@@ -117,6 +118,24 @@ boost::filesystem::path
     make_relative( boost::filesystem::path a_From, boost::filesystem::path a_To );
 
 }
+
+namespace phoenix {
+template <typename T>
+struct make_shared_f
+{
+    template <typename... A> struct result
+    { typedef std::shared_ptr<T> type; };
+
+    template <typename... A>
+    typename result<A...>::type operator()(A&&... a) const {
+        return std::make_shared<T>(std::forward<A>(a)...);
+    }
+};
+
+template <typename T>
+using make_shared_ = boost::phoenix::function<make_shared_f<T> >;
+}
+
 }
 
 namespace std

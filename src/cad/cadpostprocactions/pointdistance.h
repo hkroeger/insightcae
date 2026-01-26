@@ -48,13 +48,14 @@ public:
 
   arma::mat measureDirection() const;
 
+  Distance(VectorPtr p1, VectorPtr p2, VectorPtr distanceAlong=VectorPtr());
+
 protected:
   double calcDistance() const;
 
 public:
   declareType("ShowDistance");
-
-  Distance(VectorPtr p1, VectorPtr p2, VectorPtr distanceAlong=VectorPtr());
+  CREATE_FUNCTION(Distance);
 
   void build() override;
 
@@ -76,6 +77,8 @@ public:
 
   std::vector<vtkSmartPointer<vtkProp> > createVTKRepr(bool displayCoords) const;
   std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const override;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 

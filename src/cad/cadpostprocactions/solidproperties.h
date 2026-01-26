@@ -64,16 +64,20 @@ public:
   arma::mat bb_pmax_;
 
   virtual size_t calcHash() const;
+
+  SolidProperties(FeaturePtr model);
   
 public:
   declareType("SolidProperties");
 
-  SolidProperties(FeaturePtr model);
+  CREATE_FUNCTION(SolidProperties);
 
   virtual void build();
   
   virtual void write(std::ostream&) const;
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 

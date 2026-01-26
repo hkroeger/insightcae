@@ -54,18 +54,21 @@ class DrawingExport
   virtual size_t calcHash() const;
   virtual void build();
 
+  DrawingExport
+      (
+          const boost::filesystem::path& file,
+          std::vector<DrawingViewDefinitions> viewdefs
+          );
+
 public:
   declareType("DrawingExport");
 
-  DrawingExport
-  (
-    const boost::filesystem::path& file,
-    std::vector<DrawingViewDefinitions> viewdefs
-  );
-  
+  CREATE_FUNCTION(DrawingExport);
 
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 }
 }

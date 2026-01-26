@@ -28,23 +28,36 @@
 #include "vtkSmartPointer.h"
 #include "vtkProp.h"
 
-namespace insight 
+
+
+namespace insight
 {
-namespace cad 
+namespace cad
 {
+
+namespace parser
+{
+class ISCADParser;
+}
+
+
 
 class PostprocAction
-: public ASTBase
+    : public ASTBase
 {
 public:
-  declareType ( "PostprocAction" );
+    declareType ( "PostprocAction" );
 
-  virtual void execute();
-  
-  virtual void write(std::ostream&) const =0;
-//  virtual Handle_AIS_InteractiveObject createAISRepr() const =0;
+    declareStaticFunctionTable2(
+        InsertRule, insertrule,
+        void, parser::ISCADParser&);
 
-  virtual std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const;
+    virtual void execute();
+
+    virtual void write(std::ostream&) const =0;
+    //  virtual Handle_AIS_InteractiveObject createAISRepr() const =0;
+
+    virtual std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const;
 };
 
 }

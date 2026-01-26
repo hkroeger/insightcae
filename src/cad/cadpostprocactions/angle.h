@@ -19,10 +19,12 @@ public:
   VectorPtr p1_, p2_, pCtr_;
   double angle_;
 
+  Angle(VectorPtr p1, VectorPtr p2, VectorPtr pCtr);
+
 public:
   declareType("ShowAngle");
 
-  Angle(VectorPtr p1, VectorPtr p2, VectorPtr pCtr);
+  CREATE_FUNCTION(Angle);
 
   static double calculate(
           arma::mat p1,
@@ -43,6 +45,8 @@ public:
 
   arma::mat symbolLocation() const;
   std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const override;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 

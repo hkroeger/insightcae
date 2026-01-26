@@ -192,23 +192,43 @@ struct ISCADParser
              qi::locals<VectorFunctionRulePtr> > r_vectorFunction;
 
 
+
+    typedef qi::rule<std::string::iterator, PostprocActionPtr(), skip_grammar> PostProcFunctionRule;
+    typedef std::shared_ptr<PostProcFunctionRule> PostProcFunctionRulePtr;
+    qi::symbols<char, PostProcFunctionRulePtr> postProcFunctionRules;
+    qi::rule<std::string::iterator, skip_grammar,
+             qi::locals<PostProcFunctionRulePtr> > r_postproc;
+
     Model* model_;
 
 
+    qi::rule<std::string::iterator, std::shared_ptr<DescriptionWithParameters>(), skip_grammar >
+        r_description;
 
-    qi::rule<std::string::iterator, ScalarPtr(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
-    qi::rule<std::string::iterator, VectorPtr(), qi::locals<FeaturePtr>, skip_grammar > r_vector_primary, r_vector_term, r_vectorExpression;
+    qi::rule<std::string::iterator, ScalarPtr(), skip_grammar>
+        r_scalar_primary, r_scalar_term, r_scalarExpression;
+
+    qi::rule<std::string::iterator, VectorPtr(), qi::locals<FeaturePtr>, skip_grammar >
+        r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_vertexFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_edgeFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_faceFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> > r_solidFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> >
+        r_vertexFeaturesExpression;
+
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> >
+        r_edgeFeaturesExpression;
+
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> >
+        r_faceFeaturesExpression;
+
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<FeaturePtr,std::size_t> >
+        r_solidFeaturesExpression;
+
     qi::rule<std::string::iterator, DatumPtr(), skip_grammar> r_datumExpression;
     
     qi::rule<std::string::iterator, skip_grammar> r_model;
     qi::rule<std::string::iterator, skip_grammar, qi::locals<std::string,SyntaxElementPos> > r_assignment;
     qi::rule<std::string::iterator, qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_propertyAssignment;
-    qi::rule<std::string::iterator, skip_grammar> r_postproc, r_doc;
+    qi::rule<std::string::iterator, skip_grammar> r_doc;
     qi::rule<std::string::iterator, DrawingViewDefinition(), skip_grammar> r_viewDef;
 
     // ModelstepRule r_modelstep;

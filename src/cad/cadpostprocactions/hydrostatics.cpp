@@ -36,6 +36,10 @@ namespace cad
 
 defineType(Hydrostatics);
 
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    Hydrostatics, &Hydrostatics::insertrule );
+
 size_t Hydrostatics::calcHash() const
 {
   ParameterListHash h;
@@ -112,9 +116,36 @@ void Hydrostatics::build()
 }
 
 
+
+
 void Hydrostatics::write(std::ostream& ) const
 {
 }
+
+
+
+
+void Hydrostatics::insertrule(parser::ISCADParser& ruleset)
+{
+    ruleset.postProcFunctionRules.add
+        (
+            "Hydrostatics",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > ruleset.r_identifier > ','
+                 > ruleset.r_vectorExpression > ','
+                 > ruleset.r_vectorExpression > ','
+                 > ruleset.r_vectorExpression > ','
+                 > ruleset.r_vectorExpression > ')'
+                 > qi::lit("<<")
+                 > '(' > ruleset.r_solidmodel_expression > ','
+                 > ruleset.r_solidmodel_expression > ')' > ';' ) // (1) hull and (2) ship
+                    [ qi::_val = phx::bind(
+                     &Hydrostatics::create<FeaturePtr,FeaturePtr,VectorPtr,VectorPtr,VectorPtr,VectorPtr>,
+                     qi::_6, qi::_7, qi::_2, qi::_3, qi::_4, qi::_5) ]
+                )
+            );
+}
+
 
 }
 }

@@ -23,7 +23,9 @@ namespace cad {
 
 defineType(Angle);
 
-
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    Angle, &Angle::insertrule );
 
 
 size_t Angle::calcHash() const
@@ -266,6 +268,22 @@ std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
     return { lblActor, creaM(arc), creaM(ah1), creaM(ah2), creaM(dl1), creaM(dl2) };
 }
 
+
+void Angle::insertrule(parser::ISCADParser& ruleset)
+{
+    ruleset.postProcFunctionRules.add
+        (
+            "Angle",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+              ( '(' > ruleset.r_identifier > ','
+                 > ruleset.r_vectorExpression > ','
+                 > ruleset.r_vectorExpression > ','
+                 > ruleset.r_vectorExpression > ')' > ';' )
+                   [ qi::_val = phx::bind(&Angle::create<VectorPtr,VectorPtr,VectorPtr>,
+                                                qi::_2, qi::_3, qi::_4) ]
+            )
+        );
+}
 
 } // namespace cad
 } // namespace insight

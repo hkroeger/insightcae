@@ -231,18 +231,26 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
       syntax_element_locations(new SyntaxElementDirectory()),
       model_(model)
 {
+
+    r_description=
+        ( r_string > (('%' > r_scalarExpression % '%')
+                      | qi::attr(std::vector<ScalarPtr>())) )
+        [ qi::_val = phx::make_shared_<DescriptionWithParameters>()(qi::_1, qi::_2) ] ;
+
     r_model =
-//      current_pos.save_start_pos >>
-        ( r_string | qi::attr(std::string()) )
-            [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
-        >>
         ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) )
             [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
         >>
         *(
-            r_assignment
-            |
-            r_solidmodel_propertyAssignment
+          r_assignment
+          |
+          r_solidmodel_propertyAssignment
+          |
+          (qi::lit("@description")
+                > ( r_description | qi::attr(std::shared_ptr<DescriptionWithParameters>()) )
+                > ';' )
+              [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
+
         )
         >> -( lit("@doc") > *r_doc )
         >> -( lit("@post") > *r_postproc )

@@ -281,6 +281,8 @@ arma::mat Compound::modelInertia(double density_ovr) const
     return boost::fusion::at_c<2>(mco);
 }
 
+
+
 Compound &Compound::operator=(const Compound &o)
 {
     components_ = o.components_;
@@ -288,6 +290,25 @@ Compound &Compound::operator=(const Compound &o)
     return *this;
 }
 
+
+
+
+
+void Compound::addToBOM(BOM &bom) const
+{
+    auto myBD=BOMDescription();
+    if (myBD)
+    {
+        bom.insert(shared_from_this());
+    }
+    else
+    {
+        for (auto& c: components_)
+        {
+            c.second->addToBOM(bom);
+        }
+    }
+}
 
 
 

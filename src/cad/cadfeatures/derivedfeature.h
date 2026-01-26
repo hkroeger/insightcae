@@ -62,6 +62,8 @@ public:
   bool isSingleVolume() const override;
 
   void operator=(const DerivedFeature& o);
+
+  boost::optional<std::string> BOMDescription() const override;
 };
 
 

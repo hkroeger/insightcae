@@ -373,5 +373,16 @@ FeatureCmdInfoList STL::ruleDocumentation()
 
 
 
+boost::optional<string> STL::BOMDescription() const
+{
+    if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
+    {
+        return fname->filename().string();
+    }
+    return boost::optional<string>();
+}
+
+
+
 }
 }

@@ -174,5 +174,18 @@ void DerivedFeature::operator=(const DerivedFeature& o)
     Feature::operator=(o);
 }
 
+boost::optional<string> DerivedFeature::BOMDescription() const
+{
+    auto myBD=Feature::BOMDescription();
+    if (myBD)
+    {
+        return myBD;
+    }
+    else
+    {
+        return basefeat_->BOMDescription();
+    }
+}
+
 }
 }

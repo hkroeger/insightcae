@@ -301,5 +301,18 @@ FeatureCmdInfoList Import::ruleDocumentation()
 
 
 
+
+boost::optional<string> Import::BOMDescription() const
+{
+    if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
+    {
+        return f->filename().string();
+    }
+
+    return boost::optional<string>();
+}
+
+
+
 }
 }

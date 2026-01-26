@@ -2560,6 +2560,41 @@ vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
     return vmesh;
 }
 
+void Feature::setBOMDescription(
+    const std::string &descr,
+    const std::vector<ScalarPtr> &args )
+{
+    setBOMDescription(
+        DescriptionWithParameters(
+            descr, args ) );
+}
+
+void Feature::setBOMDescription(const DescriptionWithParameters &desc)
+{
+    BOMDescription_ = desc;
+}
+
+
+
+
+boost::optional<std::string> Feature::BOMDescription() const
+{
+    if (BOMDescription_.is_initialized())
+    {
+        return BOMDescription_->toString();
+    }
+    else
+    {
+        return boost::optional<std::string>();
+    }
+}
+
+
+
+
+void Feature::addToBOM(BOM &bom) const
+{}
+
 
 
 
@@ -2713,6 +2748,42 @@ bool SingleVolumeFeature::isSingleVolume() const
 }
 
 
+
+
+void BOM::report(ostream &os) const
+{
+    os << "=== BOM ===\n";
+    for (auto& entry: *this)
+    {
+        auto bd=entry->BOMDescription();
+        if (bd)
+        {
+            os<<"- "<<*bd<<"\n";
+        }
+    }
+}
+
+
+DescriptionWithParameters::DescriptionWithParameters(
+    const std::string& templ,
+    const std::vector<ScalarPtr>& args )
+ :  std::vector<ScalarPtr>(args), template_(templ)
+{}
+
+string DescriptionWithParameters::toString() const
+{
+    auto fmt=boost::format(template_);
+    for (auto& a: *this)
+    {
+        fmt = fmt % a->value() ;
+    }
+    return str(fmt);
+}
+
+DescriptionWithParameters::operator std::string() const
+{
+    return toString();
+}
 
 
 }

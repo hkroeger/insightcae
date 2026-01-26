@@ -145,5 +145,4 @@ install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 add_pybindings(cad "cad.i" insightcad)
 
-
 add_subdirectory(iscad)

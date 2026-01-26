@@ -56,23 +56,22 @@ size_t Offset::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*shell_;
   h+=*thickness_;
   h+=*tol_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 
 Offset::Offset(const Offset&o, TreeCloneMap& tcm)
-    : CL(shell_), CL(thickness_), CL(tol_)
+    : DerivedFeature(o, tcm), CL(thickness_), CL(tol_)
 {}
 
 
 
 Offset::Offset(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
-: shell_(shell), thickness_(thickness), tol_(tol)
+: DerivedFeature(shell), thickness_(thickness), tol_(tol)
 {}
 
 
@@ -86,7 +85,7 @@ void Offset::build()
 
   TopTools_ListOfShape ClosingFaces;
 
-  TopoDS_Shape s=*shell_;
+  TopoDS_Shape s=*baseFeature();
   BRepOffset_MakeOffset maker;
 
   double offs=thickness_->value();

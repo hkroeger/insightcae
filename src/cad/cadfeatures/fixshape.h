@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_FIXSHAPE_H
 #define INSIGHT_CAD_FIXSHAPE_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,11 +29,8 @@ namespace cad {
 
 
 class FixShape
-    : public Feature
+    : public DerivedFeature
 {
-    FeaturePtr in_;
-
-
     FixShape(const FixShape&o, TreeCloneMap& tcm);
     FixShape ( FeaturePtr in );
 
@@ -42,9 +39,7 @@ class FixShape
 
 public:
     declareType ( "FixShape" );
-#ifndef SWIG
-    DEPENDS((in_));
-#endif
+
     CREATE_FUNCTION(FixShape);
     CLONEABLE(FixShape);
 

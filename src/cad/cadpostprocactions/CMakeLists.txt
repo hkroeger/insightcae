@@ -7,6 +7,7 @@ add_sources(insightcad_SOURCES
  solidproperties.cpp
  pointdistance.h pointdistance.cpp
  angle.h angle.cpp
+ bom.h bom.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

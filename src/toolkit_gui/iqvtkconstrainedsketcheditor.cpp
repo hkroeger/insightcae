@@ -35,6 +35,7 @@
 #include <QComboBox>
 #include <QTableView>
 #include <qnamespace.h>
+#include <qpushbutton.h>
 
 #include "constrainedsketchentities/distanceconstraint.h"
 #include "constrainedsketchentities/tangentconstraint.h"
@@ -1139,6 +1140,35 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
 
     {
+        auto btns=new QHBoxLayout;
+        auto hidebtn=new QPushButton("Hide all");
+        btns->addWidget(hidebtn);
+        connect(hidebtn, &QPushButton::clicked,
+                [this]()
+                {
+                    for (const auto& g: **this)
+                    {
+                        if (auto dim =
+                            std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
+                                g.second ) )
+                        {
+                            hiddenEntities_.insert(g.first);
+                        }
+                    }
+                    updateActors();
+                });
+        auto showbtn=new QPushButton("Show all");
+        connect(showbtn, &QPushButton::clicked,
+                [this]()
+                {
+                    hiddenEntities_.clear();
+                    updateActors();
+                });
+        btns->addWidget(showbtn);
+        l->addRow("Dimensions", btns);
+    }
+
+    {
         auto  geolist = new QTableView;
         auto *model=new IQConstrainedSketchEntityListModel(this, this);
         model->update();
@@ -1588,8 +1618,13 @@ void IQVTKConstrainedSketchEditor::updateActors()
       }
 
       // add, if not filtered
-      if (hiddenLayers_.count(g.second->layerName())==0)
+      if (
+          (hiddenLayers_.count(g.second->layerName())==0)
+            &&
+          (hiddenEntities_.count(g.first)==0) )
+      {
         addActors(g.second);
+      }
   }
 
   // remove vanished geometry

@@ -97,6 +97,8 @@ private:
 
 
     std::set<std::string> hiddenLayers_;
+    std::set<int> hiddenEntities_;
+
 
     boost::optional<std::string> pathToEditedParameter_;
 

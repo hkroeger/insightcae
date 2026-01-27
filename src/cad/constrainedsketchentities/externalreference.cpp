@@ -20,7 +20,7 @@ void ExternalReference::build()
 }
 
 ExternalReference::ExternalReference(const ExternalReference &o, TreeCloneMap &tcm)
-    : CL(extRef_)
+    : Feature(o, tcm), CL(extRef_)
 {}
 
 ExternalReference::ExternalReference (

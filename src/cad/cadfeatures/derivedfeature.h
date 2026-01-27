@@ -63,7 +63,7 @@ public:
 
   void operator=(const DerivedFeature& o);
 
-  boost::optional<std::string> BOMDescription() const override;
+  boost::optional<BOMDescriptionData> BOMDescription() const override;
 };
 
 

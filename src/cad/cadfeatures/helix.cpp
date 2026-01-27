@@ -51,7 +51,7 @@ size_t Helix::calcHash() const
 
 
 Helix::Helix(const Helix&o, TreeCloneMap& tcm)
-    : CL(p0_), CL(p1_), CL(d_), CL(winds_)
+    : Feature(o, tcm), CL(p0_), CL(p1_), CL(d_), CL(winds_)
 {}
 
 

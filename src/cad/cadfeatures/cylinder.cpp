@@ -62,7 +62,7 @@ size_t Cylinder::calcHash() const
 
 
 Cylinder::Cylinder(const Cylinder&o, TreeCloneMap& tcm)
-    : p2isAxis_(o.p2isAxis_),
+    : SingleVolumeFeature(o, tcm),  p2isAxis_(o.p2isAxis_),
     CL(p1_), CL(p2_), CL(D_), CL(Di_),
     centered_(o.centered_)
 {}

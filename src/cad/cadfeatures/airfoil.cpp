@@ -61,7 +61,8 @@ size_t Airfoil::calcHash() const
 }
 
 Airfoil::Airfoil(const Airfoil&o, TreeCloneMap& tcm)
-    : name_(o.name_),
+    : SingleFaceFeature(o, tcm),
+    name_(o.name_),
     p0_(tcm.clone(o.p0_)),
     ez_(tcm.clone(o.ez_)),
     ex_(tcm.clone(o.ex_)),

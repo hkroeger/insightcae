@@ -17,6 +17,8 @@ class SingleEdgeFeature
 {
 
 public:
+    using Feature::Feature;
+
     virtual VectorPtr start() const;
     virtual VectorPtr end() const;
 

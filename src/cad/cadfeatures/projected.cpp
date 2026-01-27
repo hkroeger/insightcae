@@ -57,7 +57,7 @@ size_t Projected::calcHash() const
 
 
 Projected::Projected(const Projected&o, TreeCloneMap& tcm)
-    : CL(source_), CL(target_), CL(dir_)
+    : Feature(o, tcm), CL(source_), CL(target_), CL(dir_)
 {}
 
 

@@ -165,6 +165,7 @@ public:
 
 
 
+
 class DescriptionWithParameters
     : public std::vector<ScalarPtr>
 {
@@ -179,7 +180,30 @@ public:
 };
 
 
- 
+
+
+
+struct BOMDescriptionData
+{
+    DescriptionWithParameters
+        typeDescription_;
+
+    boost::optional<DescriptionWithParameters>
+        customizationDescription_;
+
+    BOMDescriptionData(
+        DescriptionWithParametersPtr td,
+        DescriptionWithParametersPtr cd );
+
+    std::string typeDescription() const;
+    boost::optional<std::string> customizationDescription() const;
+    std::string toString() const;
+    operator std::string() const;
+};
+
+
+
+
 /**
  * Base class of all CAD modelling features
  */
@@ -251,7 +275,7 @@ protected:
    */
   std::string featureSymbolName_;
 
-  boost::optional<DescriptionWithParameters> BOMDescription_;
+  boost::optional<BOMDescriptionData> BOMDescription_;
   
   void updateVolProps() const;
   virtual void setShape(const TopoDS_Shape& shape);
@@ -262,6 +286,7 @@ protected:
 
   Feature();
   Feature(const Feature& o);
+  Feature(const Feature&o, TreeCloneMap& tcm);
 
   void setLocalCoordinateSystem(
         const arma::mat& O,
@@ -526,12 +551,9 @@ public:
   vtkSmartPointer<vtkPolyData> triangulationToVTK(double tol=1e-3) const;
 
   void setBOMDescription(
-      const std::string& descr,
-      const std::vector<ScalarPtr>& args = {} );
+      const BOMDescriptionData &desc );
 
-  void setBOMDescription(const DescriptionWithParameters& desc);
-
-  virtual boost::optional<std::string> BOMDescription() const;
+  virtual boost::optional<BOMDescriptionData> BOMDescription() const;
   virtual void addToBOM(BOM& bom) const;
 
 };
@@ -551,6 +573,8 @@ class SingleFaceFeature
 : public Feature
 {
 public:
+  using Feature::Feature;
+
   virtual bool isSingleCloseWire() const;
   virtual TopoDS_Wire asSingleClosedWire() const;
   virtual bool isSingleFace() const;
@@ -561,6 +585,8 @@ class SingleVolumeFeature
 : public Feature
 {
 public:
+  using Feature::Feature;
+
   virtual bool isSingleVolume() const;
 };
 

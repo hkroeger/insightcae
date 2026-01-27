@@ -59,6 +59,7 @@ size_t ClosedPolyline::calcHash() const
 
 
 ClosedPolyline::ClosedPolyline(const ClosedPolyline&o, TreeCloneMap& tcm)
+: SingleFaceFeature(o, tcm)
 {
     for (auto& p: o.pts_)
     {

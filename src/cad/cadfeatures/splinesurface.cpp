@@ -61,6 +61,7 @@ size_t SplineSurface::calcHash() const
 
 
 SplineSurface::SplineSurface(const SplineSurface&o, TreeCloneMap& tcm)
+: SingleFaceFeature(o, tcm)
 {
     for (auto& opv: o.pts_)
     {

@@ -99,7 +99,7 @@ void Circle::build()
 
 
 Circle::Circle(const Circle&o, TreeCloneMap& tcm)
-    : CL(p0_), CL(n_), CL(D_), CL(d_)
+    : SingleFaceFeature(o, tcm), CL(p0_), CL(n_), CL(D_), CL(d_)
 {}
 
 

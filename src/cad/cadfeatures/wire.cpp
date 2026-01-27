@@ -66,6 +66,7 @@ size_t Wire::calcHash() const
 
 
 Wire::Wire(const Wire&o, TreeCloneMap& tcm)
+: Feature(o, tcm)
 {
     if (auto* fsp=boost::get<FeatureSetPtr>(&o.edges_))
     {

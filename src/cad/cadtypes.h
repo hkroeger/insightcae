@@ -70,7 +70,8 @@ class PostprocAction;
 class DependencyReplacement;
 class DependencySource;
 class TreeCloneMap;
-
+class DescriptionWithParameters;
+class BOMDescriptionData;
 
 
 typedef std::shared_ptr<Feature> FeaturePtr;
@@ -91,8 +92,10 @@ typedef std::shared_ptr<FeatureSet> FeatureSetPtr;
 typedef std::shared_ptr<FeatureSet const> ConstFeatureSetPtr;
 typedef std::shared_ptr<Filter> FilterPtr;
 typedef std::shared_ptr<Filter const> ConstFilterPtr;
-
-
+typedef std::shared_ptr<DescriptionWithParameters>
+        DescriptionWithParametersPtr;
+typedef std::shared_ptr<BOMDescriptionData>
+    BOMDescriptionDataPtr;
 
 
 typedef int FeatureID;

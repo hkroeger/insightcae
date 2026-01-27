@@ -55,7 +55,7 @@ size_t Ring::calcHash() const
 
 
 Ring::Ring(const Ring&o, TreeCloneMap& tcm)
-: CL(p1_), CL(p2_), CL(Da_), CL(Di_)
+: SingleVolumeFeature(o, tcm), CL(p1_), CL(p2_), CL(Da_), CL(Di_)
 {}
 
 

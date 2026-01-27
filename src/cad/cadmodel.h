@@ -89,7 +89,7 @@ public:
     typedef DatasetTableContents                                DatasetTable;
 
 protected:
-    std::shared_ptr<DescriptionWithParameters> description_;
+    BOMDescriptionDataPtr description_;
     double              cost_;
 
     ScalarTable 		scalars_;
@@ -127,7 +127,7 @@ public:
     Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
 
     void setDescription(
-        std::shared_ptr<DescriptionWithParameters> args );
+        BOMDescriptionDataPtr args );
     void setCost(double cost);
 
     const ScalarTable& 	scalarSymbols() const;
@@ -213,7 +213,7 @@ public:
 
     bool isComponent(const std::string& name) const;
     
-    std::shared_ptr<DescriptionWithParameters> description() const;
+    BOMDescriptionDataPtr description() const;
 
     /**
      * @brief cost

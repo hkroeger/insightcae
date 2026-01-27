@@ -64,7 +64,7 @@ public:
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
 
-    boost::optional<std::string> BOMDescription() const override;
+    boost::optional<BOMDescriptionData> BOMDescription() const override;
 };
 
 

@@ -103,7 +103,7 @@ void Tongue::build()
 
 
 Tongue::Tongue(const Tongue&o, TreeCloneMap& tcm)
-: CL(spine_), CL(direction_), CL(insidePt_),
+: Feature(o, tcm),  CL(spine_), CL(direction_), CL(insidePt_),
   CL(t_), CL(w_), CL(ovl_), CL(delta_)
 {}
 

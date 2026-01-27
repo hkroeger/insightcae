@@ -62,7 +62,7 @@ size_t Cone::calcHash() const
 
 
 Cone::Cone(const Cone&o, TreeCloneMap& tcm)
-    : CL(p1_), CL(p2_), CL(D1_), CL(D2_), CL(di_)
+    : SingleVolumeFeature(o, tcm), CL(p1_), CL(p2_), CL(D1_), CL(D2_), CL(di_)
 {}
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di)

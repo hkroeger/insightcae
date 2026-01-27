@@ -59,7 +59,7 @@ size_t Shoulder::calcHash() const
 
 
 Shoulder::Shoulder(const Shoulder&o, TreeCloneMap& tcm)
-: CL(p0_), CL(dir_), CL(d_), CL(Dmax_)
+: SingleVolumeFeature(o, tcm), CL(p0_), CL(dir_), CL(d_), CL(Dmax_)
 {}
 
 

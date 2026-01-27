@@ -61,7 +61,13 @@ size_t Compound::calcHash() const
 
 
 Compound::Compound(const Compound&o, TreeCloneMap& tcm)
+: Feature(o, tcm)
 {
+    if (auto bd=o.BOMDescription())
+    {
+        setBOMDescription(*bd);
+    }
+
     for (auto& c: o.components_)
     {
         components_.insert({c.first, tcm.clone(c.second)});

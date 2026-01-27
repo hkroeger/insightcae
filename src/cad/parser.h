@@ -203,7 +203,10 @@ struct ISCADParser
 
 
     qi::rule<std::string::iterator, std::shared_ptr<DescriptionWithParameters>(), skip_grammar >
-        r_description;
+        r_descriptionWithParameters;
+
+    qi::rule<std::string::iterator, BOMDescriptionDataPtr(), skip_grammar >
+        r_BOMDescriptionData;
 
     qi::rule<std::string::iterator, ScalarPtr(), skip_grammar>
         r_scalar_primary, r_scalar_term, r_scalarExpression;

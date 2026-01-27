@@ -61,7 +61,7 @@ size_t StitchedSolid::calcHash() const
 
 
 StitchedSolid::StitchedSolid(const StitchedSolid&o, TreeCloneMap& tcm)
-    : CL(tol_)
+    : Feature(o, tcm), CL(tol_)
 {
     for (auto& f: o.faces_)
     {

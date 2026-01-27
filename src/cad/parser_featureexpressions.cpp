@@ -206,10 +206,8 @@ void ISCADParser::createFeatureExpressions()
             ( lit("visresolution") >> '=' >> r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
             |
-            ( lit("BOMDescription") >> '=' >> r_description )
-                [ lazy( phx::bind(
-                    static_cast<void(Feature::*)(const DescriptionWithParameters&)>(
-                      &Feature::setBOMDescription),
+            ( lit("BOMDescription") >> '=' >> r_BOMDescriptionData )
+                [ lazy( phx::bind(&Feature::setBOMDescription,
                     *_a, *qi::_1) ) ]
         )
         >> ';'

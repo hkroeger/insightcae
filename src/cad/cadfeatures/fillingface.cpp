@@ -81,7 +81,7 @@ size_t FillingFace::calcHash() const
 
 
 FillingFace::FillingFace(const FillingFace&o, TreeCloneMap& tcm)
-    : inverted_(o.inverted_)
+    : SingleFaceFeature(o, tcm), inverted_(o.inverted_)
 {
     auto cl = [&](const EdgeInput& ei) -> EdgeInput
     {

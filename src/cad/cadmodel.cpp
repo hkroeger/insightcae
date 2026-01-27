@@ -201,7 +201,7 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
 
 
 void Model::setDescription(
-    std::shared_ptr<DescriptionWithParameters> arg )
+    BOMDescriptionDataPtr arg )
 {
     description_=arg;
 }
@@ -590,7 +590,7 @@ public:
   }
 };
 
-std::shared_ptr<DescriptionWithParameters> Model::description() const
+BOMDescriptionDataPtr Model::description() const
 {
   return description_;
 }

@@ -60,7 +60,7 @@ size_t Spiral::calcHash() const
 
 
 Spiral::Spiral(const Spiral&o, TreeCloneMap& tcm)
-: CL(p0_), CL(axis_), CL(n_), CL(a_), CL(P_)
+: Feature(o, tcm), CL(p0_), CL(axis_), CL(n_), CL(a_), CL(P_)
 {}
 
 

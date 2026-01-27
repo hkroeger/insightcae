@@ -36,7 +36,7 @@ size_t StitchedCompound::calcHash() const
 
 
 StitchedCompound::StitchedCompound(const StitchedCompound&o, TreeCloneMap& tcm)
-    : CL(faces_), CL(tol_)
+    : Feature(o, tcm), CL(faces_), CL(tol_)
 {}
 
 

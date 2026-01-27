@@ -62,6 +62,7 @@ size_t Sweep::calcHash() const
 
 
 Sweep::Sweep(const Sweep&o, TreeCloneMap& tcm)
+: Feature(o, tcm)
 {
     for (auto& s: o.secs_)
     {

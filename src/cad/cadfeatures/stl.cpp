@@ -121,7 +121,7 @@ size_t STL::calcHash() const
 
 
 STL::STL(const STL&o, TreeCloneMap& tcm)
-    : geometry_(o.geometry_)
+    : Feature(o, tcm), geometry_(o.geometry_)
 {
     if (auto *fp=boost::get<FeaturePtr>(&o.transform_))
     {
@@ -373,13 +373,18 @@ FeatureCmdInfoList STL::ruleDocumentation()
 
 
 
-boost::optional<string> STL::BOMDescription() const
+boost::optional<BOMDescriptionData> STL::BOMDescription() const
 {
     if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
     {
-        return fname->filename().string();
+        return BOMDescriptionData(
+                   std::make_shared<DescriptionWithParameters>(
+                       fname->filename().string(),
+                       std::vector<ScalarPtr>{}),
+                   nullptr
+                   );
     }
-    return boost::optional<string>();
+    return boost::optional<BOMDescriptionData>();
 }
 
 

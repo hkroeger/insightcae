@@ -184,42 +184,79 @@ std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
 
     auto arc = vtkSmartPointer<vtkArcSource>::New();
     arc->SetCenter( pCtr.memptr() );
+    // arrow arc tip end point 1
     arma::mat ap1=pCtr+rDimLine*er1;
     arc->SetPoint1( ap1.memptr() );
+    // arrow arc tip end point 2
     arma::mat ap2=pCtr+rDimLine*er2;
     arc->SetPoint2( ap2.memptr() );
     arc->SetResolution(32);
 
     // tangents pointing inwards
-    arma::mat et1=-normalized(arma::cross(er1, n));
-    arma::mat et2=normalized(arma::cross(er2, n));
+    double s=arrSize/(2.*rDimLine);
+    double ang;
+    if (fabs(s)>=1.)
+    {
+        ang=sgn(s)*M_PI;
+    }
+    else
+    {
+        ang=asin(s);
+    }
+    arma::mat er1t=rotMatrix(ang, n)*er1;
+    arma::mat et1=-normalized(arma::cross(er1t, n));
+
+    arma::mat er2t=rotMatrix(-ang, n)*er2;
+    arma::mat et2=normalized(arma::cross(er2t, n));
 
     auto addP = [&](vtkPolyLineSource& pp, int i, const arma::mat& p)
     {
         pp.SetPoint(i, p(0), p(1), p(2) );
     };
 
+    // arrow head 1
     auto ah1 = vtkSmartPointer<vtkPolyLineSource>::New();
     ah1->SetNumberOfPoints(3);
     ah1->ClosedOn();
+    arma::mat ap1i=ap1+arrSize*et1;
     addP(*ah1, 0, ap1);
-    addP(*ah1, 1, ap1+arrSize*(et1+er1/5./2.));
-    addP(*ah1, 2, ap1+arrSize*(et1-er1/5./2.));
+    addP(*ah1, 1, ap1i+arrSize*(er1t/5./2.));
+    addP(*ah1, 2, ap1i+arrSize*(-er1t/5./2.));
 
+    // arrow head 2
     auto ah2 = vtkSmartPointer<vtkPolyLineSource>::New();
     ah2->SetNumberOfPoints(3);
     ah2->ClosedOn();
+    arma::mat ap2i=ap2+arrSize*et2;
     addP(*ah2, 0, ap2);
-    addP(*ah2, 1, ap2+arrSize*(et2+er2/5./2.));
-    addP(*ah2, 2, ap2+arrSize*(et2-er2/5./2.));
+    addP(*ah2, 1, ap2i+arrSize*(er2t/5./2.));
+    addP(*ah2, 2, ap2i+arrSize*(-er2t/5./2.));
 
+    // radial dim line 1
+    arma::mat ep1=ap1+er1*arrSize*0.5;
     auto dl1 = vtkSmartPointer<vtkLineSource>::New();
-    dl1->SetPoint1(p1.memptr());
-    dl1->SetPoint2(arma::mat(ap1+er1*arrSize*2).memptr());
+    if (arma::norm(ep1-pCtr,2) < arma::norm(p1-pCtr,2))
+    {
+        dl1->SetPoint1(pCtr.memptr());
+    }
+    else
+    {
+        dl1->SetPoint1(p1.memptr());
+    }
+    dl1->SetPoint2(ep1.memptr());
 
+    // radial dim line 2
+    arma::mat ep2=ap2+er2*arrSize*0.5;
     auto dl2 = vtkSmartPointer<vtkLineSource>::New();
-    dl2->SetPoint1(p2.memptr());
-    dl2->SetPoint2(arma::mat(ap2+er2*arrSize*2).memptr());
+    if (arma::norm(ep2-pCtr,2) < arma::norm(p2-pCtr,2))
+    {
+        dl2->SetPoint1(pCtr.memptr());
+    }
+    else
+    {
+        dl2->SetPoint1(p2.memptr());
+    }
+    dl2->SetPoint2(ep2.memptr());
 
     auto creaM = [](vtkAlgorithm* algo) {
         auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();

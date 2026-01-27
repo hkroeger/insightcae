@@ -22,6 +22,7 @@
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include <memory>
 #include "base/tools.h"
 #include "base/translations.h"
 #include "cadparameters.h"
@@ -55,23 +56,22 @@ size_t Sheet::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*shell_;
   h+=*thickness_;
   h+=*tol_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 Sheet::Sheet(const Sheet&o, TreeCloneMap& tcm)
-: CL(shell_), CL(thickness_), CL(tol_)
+: DerivedFeature(o, tcm), CL(thickness_), CL(tol_)
 {}
 
 
 
 
 Sheet::Sheet(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
-: shell_(shell), thickness_(thickness), tol_(tol)
+: DerivedFeature(shell), thickness_(thickness), tol_(tol)
 {}
 
 
@@ -85,11 +85,12 @@ void Sheet::build()
 
   TopTools_ListOfShape ClosingFaces;
   
-  TopoDS_Shape s=*shell_;
+  TopoDS_Shape s=*baseFeature();
   
   double offs=thickness_->value();
 
-  providedSubshapes_["shell"]=shell_;
+  providedSubshapes_["shell"]=
+      std::const_pointer_cast<cad::Feature>(baseFeature());
 
   BRepOffset_MakeOffset maker;
   maker.Initialize

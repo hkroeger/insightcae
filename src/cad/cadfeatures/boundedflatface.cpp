@@ -71,6 +71,7 @@ size_t BoundedFlatFace::calcHash() const
 
 
 BoundedFlatFace::BoundedFlatFace(const BoundedFlatFace&o, TreeCloneMap& tcm)
+: SingleFaceFeature(o, tcm)
 {
     if (auto*fv=boost::get<std::vector<FeaturePtr> >(&o.edges_))
     {

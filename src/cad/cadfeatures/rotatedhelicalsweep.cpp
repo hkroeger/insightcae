@@ -124,7 +124,7 @@ TopoDS_Shape makeRotatedHelicalSweep(const Feature& sk, const arma::mat& p0, con
 
 
 RotatedHelicalSweep::RotatedHelicalSweep(const RotatedHelicalSweep&o, TreeCloneMap& tcm)
-: CL(sk_), CL(p0_), CL(axis_), CL(P_), CL(revoffset_)
+: Feature(o, tcm), CL(sk_), CL(p0_), CL(axis_), CL(P_), CL(revoffset_)
 {}
 
 

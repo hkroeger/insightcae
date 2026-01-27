@@ -67,7 +67,7 @@ size_t Exploded::calcHash() const
 
 
 Exploded::Exploded(const Exploded&o, TreeCloneMap& tcm)
-    : CL(axis_)
+    : Feature(o, tcm), CL(axis_)
 {
     for (auto& ec: o.components_)
     {

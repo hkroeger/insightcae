@@ -28,6 +28,10 @@ namespace cad
 
 defineType(Export);
 
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    Export, &Export::insertrule );
+
 size_t Export::calcHash() const
 {
   ParameterListHash h;
@@ -64,9 +68,30 @@ void Export::write(std::ostream& ) const
 {}
 
 
+void Export::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "saveAs",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > rs.r_path > ')' > qi::lit("<<")
+                 > rs.r_solidmodel_expression
+                 > *( rs.r_identifier > '=' > rs.r_faceFeaturesExpression )
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                         &Export::create<FeaturePtr, const boost::filesystem::path&, ExportNamedFeatures>,
+                         qi::_2, qi::_1, qi::_3) ]
+                )
+            );
+}
+
 
 
 defineType(ExportEMesh);
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    ExportEMesh, &ExportEMesh::insertrule );
 
 size_t ExportEMesh::calcHash() const
 {
@@ -102,10 +127,28 @@ Handle_AIS_InteractiveObject ExportEMesh::createAISRepr() const
 void ExportEMesh::write(std::ostream& ) const
 {}
 
-
+void ExportEMesh::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "exportEMesh",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > rs.r_path > ',' > rs.r_scalarExpression > ',' > rs.r_scalarExpression > ')'
+                 > qi::lit("<<") > rs.r_edgeFeaturesExpression > ';' )
+                    [ qi::_val = phx::bind(
+                         &ExportEMesh::create
+                         <FeatureSetPtr, const boost::filesystem::path&, ScalarPtr, ScalarPtr>,
+                         qi::_4, qi::_1, qi::_2, qi::_3) ]
+                )
+            );
+}
 
 
 defineType(ExportSTL);
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    ExportSTL, &ExportSTL::insertrule );
 
 size_t ExportSTL::calcHash() const
 {
@@ -159,6 +202,25 @@ Handle_AIS_InteractiveObject ExportSTL::createAISRepr() const
 
 void ExportSTL::write(std::ostream& ) const
 {}
+
+
+void ExportSTL::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "exportSTL",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '('
+                 > rs.r_path
+                 > ( (',' > rs.r_scalarExpression)|qi::attr(ScalarPtr()) )
+                 > ( (',' > qi::lit("ascii") > qi::attr(false) )|qi::attr(true) )
+                 > ')' > qi::lit("<<") > rs.r_solidmodel_expression > ';' )
+                    [ qi::_val = phx::bind(
+                        &ExportSTL::create<FeaturePtr, const boost::filesystem::path&, ScalarPtr, bool>,
+                        qi::_4, qi::_1, qi::_2, qi::_3) ]
+                )
+            );
+}
 
 
 }

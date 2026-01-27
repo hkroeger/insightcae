@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_THICKEN_H
 #define INSIGHT_CAD_THICKEN_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 #include "cadparameters.h"
 
 namespace insight {
@@ -30,9 +30,8 @@ namespace cad {
 
 
 class Sheet
-    : public Feature
+    : public DerivedFeature
 {
-    FeaturePtr shell_;
     ScalarPtr thickness_;
     ScalarPtr tol_;
 
@@ -45,7 +44,7 @@ class Sheet
 public:
     declareType ( "Sheet" );
 #ifndef SWIG
-    DEPENDS((shell_,thickness_,tol_));
+    DEPENDS_W_BASE(DerivedFeature, (thickness_,tol_));
 #endif
     CREATE_FUNCTION(Sheet);
     CLONEABLE(Sheet);

@@ -29,6 +29,7 @@
 
 #include "base/boost_include.h"
 #include "base/spatialtransformation.h"
+#include "cadtypes.h"
 
 #ifndef Q_MOC_RUN
 #include <boost/spirit/include/qi.hpp>
@@ -149,7 +150,60 @@ void copyDatumItems(
 }
 
 
- 
+
+
+/**
+ * @brief The BOM class
+ * a flattenend list of components the comprise the feature
+ */
+class BOM
+    : public std::set<ConstFeaturePtr>
+{
+public:
+    void report(std::ostream& os) const;
+};
+
+
+
+
+class DescriptionWithParameters
+    : public std::vector<ScalarPtr>
+{
+    std::string template_;
+public:
+    DescriptionWithParameters(
+        const std::string& templ,
+        const std::vector<ScalarPtr>& args );
+
+    std::string toString() const;
+    operator std::string() const;
+};
+
+
+
+
+
+struct BOMDescriptionData
+{
+    DescriptionWithParameters
+        typeDescription_;
+
+    boost::optional<DescriptionWithParameters>
+        customizationDescription_;
+
+    BOMDescriptionData(
+        DescriptionWithParametersPtr td,
+        DescriptionWithParametersPtr cd );
+
+    std::string typeDescription() const;
+    boost::optional<std::string> customizationDescription() const;
+    std::string toString() const;
+    operator std::string() const;
+};
+
+
+
+
 /**
  * Base class of all CAD modelling features
  */
@@ -220,6 +274,8 @@ protected:
    * symbol name of this feature in the defining model
    */
   std::string featureSymbolName_;
+
+  boost::optional<BOMDescriptionData> BOMDescription_;
   
   void updateVolProps() const;
   virtual void setShape(const TopoDS_Shape& shape);
@@ -230,6 +286,7 @@ protected:
 
   Feature();
   Feature(const Feature& o);
+  Feature(const Feature&o, TreeCloneMap& tcm);
 
   void setLocalCoordinateSystem(
         const arma::mat& O,
@@ -270,7 +327,7 @@ public:
   
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
-  virtual void checkForBuildDuringAccess() const;
+  void checkForBuildDuringAccess() const override;
     
   inline const DatumPtrMap& providedDatums() const 
     { checkForBuildDuringAccess(); return providedDatums_; }
@@ -493,6 +550,12 @@ public:
   Handle_Poly_Triangulation triangulation(double tol=1e-3) const;
   vtkSmartPointer<vtkPolyData> triangulationToVTK(double tol=1e-3) const;
 
+  void setBOMDescription(
+      const BOMDescriptionData &desc );
+
+  virtual boost::optional<BOMDescriptionData> BOMDescription() const;
+  virtual void addToBOM(BOM& bom) const;
+
 };
 
 
@@ -510,6 +573,8 @@ class SingleFaceFeature
 : public Feature
 {
 public:
+  using Feature::Feature;
+
   virtual bool isSingleCloseWire() const;
   virtual TopoDS_Wire asSingleClosedWire() const;
   virtual bool isSingleFace() const;
@@ -520,6 +585,8 @@ class SingleVolumeFeature
 : public Feature
 {
 public:
+  using Feature::Feature;
+
   virtual bool isSingleVolume() const;
 };
 

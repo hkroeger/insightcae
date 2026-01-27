@@ -60,7 +60,7 @@ size_t Torus::calcHash() const
 
 
 Torus::Torus(const Torus&o, TreeCloneMap& tcm)
-: CL(p0_), CL(axisTimesD_), CL(d_)
+: SingleVolumeFeature(o, tcm), CL(p0_), CL(axisTimesD_), CL(d_)
 {}
 
 

@@ -59,7 +59,7 @@ size_t Tri::calcHash() const
 
 
 Tri::Tri(const Tri&o, TreeCloneMap& tcm)
-: CL(p0_), CL(e1_), CL(e2_)
+: SingleFaceFeature(o, tcm), CL(p0_), CL(e1_), CL(e2_)
 {}
 
 

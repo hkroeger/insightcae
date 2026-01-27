@@ -54,7 +54,11 @@ size_t Mesh::calcHash() const
 }
 
 defineType(Mesh);
-  
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    Mesh, &Mesh::insertrule );
+
 Mesh::Mesh
 (
   const boost::filesystem::path& outpath, 
@@ -340,10 +344,48 @@ void Mesh::build()
 }
 
 
-
+void Mesh::insertrule(parser::ISCADParser& ruleset)
+{
+    ruleset.postProcFunctionRules.add
+        (
+            "gmsh",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( qi::lit("gmsh") > '(' > ruleset.r_path > ')' > qi::lit("<<")
+                  > ruleset.r_solidmodel_expression
+                  > qi::hold[ qi::lit("L") > '=' > '(' > ruleset.r_scalarExpression > ruleset.r_scalarExpression > ')' ] // Lmax, Lmin
+                  > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
+                  > qi::hold[
+                     ( ( qi::lit("vertexGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vertexFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) ) ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( qi::lit("edgeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_edgeFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( qi::lit("faceGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_faceFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( qi::lit("volumeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                    ]
+                  > ( ( qi::lit("vertices") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vectorExpression ) > ')'  )| qi::attr(NamedVertices()) )
+                  > ( ( qi::lit("meshSizes") > '(' > *( ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression ) >> ')' ) | qi::attr(std::vector<MeshSizeBall>()) )
+                  > qi::hold[
+                    ( ( qi::lit("screwHeads") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewHeads()) )
+                  > ( ( qi::lit("screwBases") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewBases()) )
+                  > ( ( qi::lit("screws")     > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier) ) > ')'  )| qi::attr(ScrewBodies()) )
+                    ]
+                  > ( ( qi::lit("keepTmpDir") > qi::attr(true) ) | qi::attr(false) )
+                  > ';' )
+                [ qi::_val = phx::bind(
+                    &Mesh::create<const boost::filesystem::path&,FeaturePtr,
+                                  boost::fusion::vector<ScalarPtr,ScalarPtr>,
+                                  bool, const GroupDefinitions&, const NamedVertices&,
+                                  const std::vector<MeshSizeBall>&, const ScrewInfos&, bool>,
+                                   qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8, qi::_9
+                                    ) ]
+                )
+            );
+}
 
 
 defineType(ExtrudedMesh);
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    ExtrudedMesh, &ExtrudedMesh::insertrule );
 
 ExtrudedMesh::ExtrudedMesh
 (
@@ -415,6 +457,38 @@ void ExtrudedMesh::build()
   c.doMeshing();
 }
 
+
+void ExtrudedMesh::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "gmshExtrusion",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > rs.r_path > ')' > qi::lit("<<")
+                 > rs.r_solidmodel_expression //>> lit("as") >> r_identifier
+                 > qi::hold[ ( qi::lit("L") > '=' > '(' > rs.r_scalarExpression > rs.r_scalarExpression > ')'  // Lmax, Lmin
+                             >  qi::lit("h") > '=' > rs.r_scalarExpression > qi::lit("nLayers") > '=' > rs.r_scalarExpression ) ]  // h nLayer
+                 > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
+                 > qi::hold[
+                     ( qi::lit("vertexGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_vertexFeaturesExpression > -( '@' > rs.r_scalarExpression ) ) ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("edgeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_edgeFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("baseFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("topFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("volumeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_solidFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                    ]
+                 > ( qi::lit("vertices") > '(' > *( (rs.r_identifier|rs.r_string) > '=' > rs.r_vectorExpression ) > ')' | qi::attr(NamedVertices()) )
+                 > ( (qi::lit("keepTmpDir") > qi::attr(true)) | qi::attr(false) )
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                         &ExtrudedMesh::create<
+                             const boost::filesystem::path&,FeaturePtr,
+                             boost::fusion::vector<ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr>,
+                             bool, const ExtrudedGroupDefinitions&, const NamedVertices&, bool>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
+                         ) ]
+                )
+            );
+}
 
 
 defineType(SnappyHexMesh);
@@ -583,6 +657,39 @@ void SnappyHexMesh::build()
 void SnappyHexMesh::write(std::ostream& ) const
 {
 }
-  
+
+
+
+void SnappyHexMesh::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "snappyHexMesh",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+
+                ( '(' > rs.r_path > ',' > rs.r_identifier > ')' > qi::lit("<<")
+
+                 > qi::lit("PiM") > '=' > rs.r_vectorExpression
+                 > qi::lit("dx") > '=' > rs.r_scalarExpression
+
+                 > *( rs.r_solidmodel_expression > qi::lit("as") > rs.r_identifier
+                     > ( ( qi::lit("resolution") > '=' > rs.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+                     > -( '@' > rs.r_scalarExpression > qi::lit("to") > rs.r_scalarExpression )
+                     > -( qi::lit(">>") > rs.r_scalarExpression )
+                     )
+
+                 > -( qi::lit("edgeRefinements") > '(' > *( rs.r_identifier > '=' > rs.r_edgeFeaturesExpression > '@' > rs.r_scalarExpression ) > ')' )
+
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                        &SnappyHexMesh::create<
+                            const boost::filesystem::path&, const std::string&,
+                            VectorPtr, ScalarPtr, GeometrysDesc, boost::optional<EdgeRefineDescs> >,
+                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6 ) ]
+                )
+            );
+}
+
+
 }
 }

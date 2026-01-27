@@ -123,7 +123,7 @@ void Stringer::build()
 
 
 Stringer::Stringer(const Stringer&o, TreeCloneMap& tcm)
-  : CL(spine_),
+  : Feature(o, tcm),  CL(spine_),
     CL(normal_),
     CL(t_), CL(w_), CL(delta_),
     CL(ext0_), CL(ext1_)

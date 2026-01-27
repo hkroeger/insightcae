@@ -197,11 +197,18 @@ void ISCADParser::createFeatureExpressions()
         qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ]
         >> lit("->") >>
         (
-            ( lit("density") >> '=' >> r_scalarExpression ) [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
+            ( lit("density") >> '=' >> r_scalarExpression )
+                [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
             |
-            ( lit("areaWeight") >> '=' >> r_scalarExpression ) [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
+            ( lit("areaWeight") >> '=' >> r_scalarExpression )
+                [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
             |
-            ( lit("visresolution") >> '=' >> r_scalarExpression ) [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
+            ( lit("visresolution") >> '=' >> r_scalarExpression )
+                [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
+            |
+            ( lit("BOMDescription") >> '=' >> r_BOMDescriptionData )
+                [ lazy( phx::bind(&Feature::setBOMDescription,
+                    *_a, *qi::_1) ) ]
         )
         >> ';'
         ;

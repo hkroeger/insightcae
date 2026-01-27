@@ -32,20 +32,19 @@ size_t CutUp::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*model_;
   for (const auto& c: clips_)
   {
     h+=*c;
   }
   h+=*n_;
   h+=*t_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 CutUp::CutUp(const CutUp&o, TreeCloneMap& tcm)
-    :CL(model_), CL(n_), CL(t_)
+    : DerivedFeature(o, tcm), CL(n_), CL(t_)
 {
     for (auto& cl: o.clips_)
     {
@@ -55,7 +54,7 @@ CutUp::CutUp(const CutUp&o, TreeCloneMap& tcm)
 
 
 CutUp::CutUp(FeaturePtr model, VectorPtr n, ScalarPtr t, Clips clips)
-: Feature(), model_(model), clips_(clips), n_(n), t_(t)
+: DerivedFeature(model), clips_(clips), n_(n), t_(t)
 {}
 
 
@@ -70,7 +69,7 @@ void CutUp::build()
   if (!cache.contains(hash()))
   {
 
-    auto bb = model_->modelBndBox();
+    auto bb = baseFeature()->modelBndBox();
     auto n = n_->value();
     double ln=arma::norm(n, 2);
     insight::assertion(fabs(ln)>1e-10, _("normal vector must not be zero"));
@@ -113,7 +112,7 @@ void CutUp::build()
       refpoints_[str(format("p1_%d")%i)]=x1 * n;
 
       providedSubshapes_[str(format("tool_%d")%i)]=tool;
-      providedSubshapes_[str(format("cut_%d")%i)]=BooleanIntersection::create(model_, tool);
+      providedSubshapes_[str(format("cut_%d")%i)]=BooleanIntersection::create(baseFeature(), tool);
     }
 
     setShape(TopoDS_Shape());

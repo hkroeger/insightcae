@@ -272,6 +272,11 @@ void ModelFeature::build()
 
         copyModelDatums(model);
 
+        if (auto bd=model->description())
+        {
+            setBOMDescription(*bd);
+        }
+
         Compound::build();
 
         cache.insert(shared_from_this());
@@ -543,6 +548,7 @@ FeatureCmdInfoList ModelFeature::ruleDocumentation()
         )
     };
 }
+
 
 
 

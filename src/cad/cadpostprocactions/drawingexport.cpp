@@ -29,7 +29,16 @@ namespace cad
 
 
 defineType(DrawingExport);
-    
+
+
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    DrawingExport, &DrawingExport::insertrule );
+
+
+
+
 size_t DrawingExport::calcHash() const
 {
   ParameterListHash h;
@@ -219,6 +228,22 @@ void DrawingExport::write(std::ostream& ) const
 {}
 
 
+
+void DrawingExport::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add(
+            "DXF",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > rs.r_path > ')'
+                 > qi::lit("<<")
+                 > ( (rs.r_solidmodel_expression > *rs.r_viewDef) % ',' )
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                         &DrawingExport::create<const boost::filesystem::path&,std::vector<DrawingViewDefinitions> >,
+                         qi::_1, qi::_2) ]
+                )
+            );
+}
 
 
 }

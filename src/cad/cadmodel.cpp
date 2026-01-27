@@ -132,7 +132,7 @@ size_t Model::calcHash() const
 {
   ParameterListHash h;
   h+=modelfile_;
-  h+=description_;
+  if (description_) h+=description_->toString();
   h+=cost_;
 #warning check, if hash is needed
   return h.getHash();
@@ -199,9 +199,11 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
     defaultVariables();
 }
 
-void Model::setDescription(const std::string& description)
+
+void Model::setDescription(
+    BOMDescriptionDataPtr arg )
 {
-  description_=description;
+    description_=arg;
 }
 
 
@@ -588,7 +590,7 @@ public:
   }
 };
 
-const std::string Model::description() const
+BOMDescriptionDataPtr Model::description() const
 {
   return description_;
 }

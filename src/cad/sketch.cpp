@@ -102,7 +102,7 @@ Sketch::Sketch
 
 
 Sketch::Sketch(const Sketch&o, TreeCloneMap& tcm)
-    : CL(pl_), fn_(o.fn_), ln_(o.ln_), tol_(o.tol_)
+    : Feature(o, tcm), CL(pl_), fn_(o.fn_), ln_(o.ln_), tol_(o.tol_)
 {
     for (auto& v: o.vars_)
     {

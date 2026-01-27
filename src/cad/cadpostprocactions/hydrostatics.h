@@ -75,21 +75,25 @@ public:
   virtual size_t calcHash() const;
   virtual void build();
 
+  Hydrostatics
+      (
+          FeaturePtr hullvolume,
+          FeaturePtr shipmodel,
+          VectorPtr psurf,
+          VectorPtr nsurf,
+          VectorPtr elong,
+          VectorPtr evert
+          );
+
 public:
   declareType("Hydrostatics");
 
-  Hydrostatics
-  (
-    FeaturePtr hullvolume, 
-    FeaturePtr shipmodel,
-    VectorPtr psurf, 
-    VectorPtr nsurf,
-    VectorPtr elong, 
-    VectorPtr evert
-  );
+  CREATE_FUNCTION(Hydrostatics);
   
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

@@ -127,7 +127,7 @@ void ConstrainedSketchPresentationDelegate::setEntityAppearance(
 
 
 ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm)
-    :CL(pl_),
+  : Feature(o, tcm), CL(pl_),
     propertiesParent_(o.propertiesParent_),
     solverSettings_(o.solverSettings_)
 {

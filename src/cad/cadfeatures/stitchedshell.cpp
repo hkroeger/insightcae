@@ -55,7 +55,7 @@ size_t StitchedShell::calcHash() const
 
 
 StitchedShell::StitchedShell(const StitchedShell&o, TreeCloneMap& tcm)
-    : CL(faces_), CL(tol_)
+    : Feature(o, tcm), CL(faces_), CL(tol_)
 {}
 
 StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)

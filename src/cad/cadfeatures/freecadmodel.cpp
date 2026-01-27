@@ -69,7 +69,7 @@ size_t FreeCADModel::calcHash() const
 
 
 FreeCADModel::FreeCADModel(const FreeCADModel&o, TreeCloneMap& tcm)
-    : filename_(o.filename_), solidname_(o.solidname_)
+    : Feature(o, tcm), filename_(o.filename_), solidname_(o.solidname_)
 {
     for (auto& v: o.vars_)
     {

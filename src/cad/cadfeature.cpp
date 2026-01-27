@@ -24,8 +24,10 @@
 #include "base/spatialtransformation.h"
 #include "boost/filesystem/operations.hpp"
 #include "base/zipfile.h"
+#include "cadtypes.h"
 #include "geotest.h"
 
+#include <algorithm>
 #include <fstream>
 #include <memory>
 
@@ -48,6 +50,7 @@
 
 #include <BRepLib_FindSurface.hxx>
 #include <BRepCheck_Shell.hxx>
+#include <numeric>
 #include <string>
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "HLRBRep_PolyHLRToShape.hxx"
@@ -479,10 +482,17 @@ Feature::Feature(const Feature& o)
   providedDatums_(o.providedDatums_),
   density_(o.density_),
   areaWeight_(o.areaWeight_),
-  featureSymbolName_(o.featureSymbolName_)
+  featureSymbolName_(o.featureSymbolName_),
+  BOMDescription_(o.BOMDescription_)
 {
   setShape(o.shape_);
 }
+
+
+
+Feature::Feature(const Feature &o, TreeCloneMap &tcm)
+: BOMDescription_(o.BOMDescription_)
+{}
 
 
 void Feature::setLocalCoordinateSystem(
@@ -697,6 +707,7 @@ Feature& Feature::operator=(const Feature& o)
   visresolution_=o.visresolution_;
   density_=o.density_;
   areaWeight_=o.areaWeight_;
+  BOMDescription_=o.BOMDescription_;
 
   if (o.valid())
   {
@@ -2562,6 +2573,33 @@ vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
 
 
 
+void Feature::setBOMDescription(
+    const BOMDescriptionData &desc )
+{
+    BOMDescription_ = desc;
+}
+
+
+
+
+boost::optional<BOMDescriptionData> Feature::BOMDescription() const
+{
+    return BOMDescription_;
+}
+
+
+
+
+void Feature::addToBOM(BOM &bom) const
+{
+    if (BOMDescription_.is_initialized())
+    {
+        bom.insert(shared_from_this());
+    }
+}
+
+
+
 
 Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
@@ -2713,6 +2751,124 @@ bool SingleVolumeFeature::isSingleVolume() const
 }
 
 
+
+
+void BOM::report(ostream &os) const
+{
+    os << "=== BOM: ===\n";
+
+    typedef std::map<std::string, int> Customizations;
+    typedef std::map<std::string, Customizations> Types;
+
+    Types types;
+    for (auto& entry: *this)
+    {
+        auto bd=entry->BOMDescription();
+        if (bd)
+        {
+            auto t=bd->typeDescription();
+            std::string cn;
+            if (auto c=bd->customizationDescription())
+                cn=*c;
+
+            auto existing=types.find(t);
+            if (existing==types.end())
+            {
+                types[t]=Customizations({{cn, 1}});
+            }
+            else
+            {
+                auto &ctl = existing->second;
+                auto ictl=ctl.find(cn);
+                if (ictl==ctl.end())
+                {
+                    ctl[cn]=1;
+                }
+                else
+                {
+                    ictl->second++;
+                }
+            }
+        }
+    }
+
+    for (auto& t:types)
+    {
+        auto name=t.first;
+        auto ctl=t.second;
+        int ntotal=0;
+        std::for_each(
+            ctl.begin(), ctl.end(),
+            [&](const decltype(ctl)::value_type& v)
+            { ntotal+=v.second; } );
+        os << "- " << ntotal << "x " << name << "\n";
+        if (ctl.size()>1)
+        {
+            for (auto& c: ctl)
+            {
+                os << " * " << c.second << "x " << c.first << "\n";
+            }
+        }
+    }
+
+    os << "== END BOM ==\n";
+}
+
+
+DescriptionWithParameters::DescriptionWithParameters(
+    const std::string& templ,
+    const std::vector<ScalarPtr>& args )
+ :  std::vector<ScalarPtr>(args), template_(templ)
+{}
+
+string DescriptionWithParameters::toString() const
+{
+    auto fmt=boost::format(template_);
+    for (auto& a: *this)
+    {
+        fmt = fmt % a->value() ;
+    }
+    return str(fmt);
+}
+
+DescriptionWithParameters::operator std::string() const
+{
+    return toString();
+}
+
+BOMDescriptionData::BOMDescriptionData(
+    DescriptionWithParametersPtr td,
+    DescriptionWithParametersPtr cd )
+    : typeDescription_(*td)
+{
+    if (cd) customizationDescription_=*cd;
+}
+
+std::string BOMDescriptionData::typeDescription() const
+{
+    return typeDescription_.toString();
+}
+
+boost::optional<std::string> BOMDescriptionData::customizationDescription() const
+{
+    if (customizationDescription_)
+        return customizationDescription_->toString();
+    else
+        return boost::none;
+}
+
+string BOMDescriptionData::toString() const
+{
+    auto s=typeDescription();
+    if (customizationDescription_)
+        s+=" ("+customizationDescription_->toString()+")";
+    return s;
+}
+
+BOMDescriptionData::operator std::string() const
+{
+    return toString();
+}
 
 
 }

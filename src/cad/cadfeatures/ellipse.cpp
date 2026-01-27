@@ -101,7 +101,7 @@ void Ellipse::build()
 
 
 Ellipse::Ellipse(const Ellipse&o, TreeCloneMap& tcm)
-    : CL(p0_), CL(axmaj_), CL(axmin_)
+    : SingleFaceFeature(o, tcm), CL(p0_), CL(axmaj_), CL(axmin_)
 {}
 
 

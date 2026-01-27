@@ -42,6 +42,10 @@ namespace insight
 namespace cad 
 {
 
+
+class DescriptionWithParameters;
+
+
 namespace parser {
 class SyntaxElementDirectory;
 typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
@@ -85,7 +89,7 @@ public:
     typedef DatasetTableContents                                DatasetTable;
 
 protected:
-    std::string         description_;
+    BOMDescriptionDataPtr description_;
     double              cost_;
 
     ScalarTable 		scalars_;
@@ -122,7 +126,8 @@ public:
     Model(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
     Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
 
-    void setDescription(const std::string& description);
+    void setDescription(
+        BOMDescriptionDataPtr args );
     void setCost(double cost);
 
     const ScalarTable& 	scalarSymbols() const;
@@ -208,7 +213,7 @@ public:
 
     bool isComponent(const std::string& name) const;
     
-    const std::string description() const;
+    BOMDescriptionDataPtr description() const;
 
     /**
      * @brief cost

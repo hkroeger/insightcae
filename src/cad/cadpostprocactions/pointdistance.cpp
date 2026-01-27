@@ -42,7 +42,9 @@ namespace cad {
 
 defineType(Distance);
 
-
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    Distance, &Distance::insertrule );
 
 size_t Distance::calcHash() const
 {
@@ -356,6 +358,21 @@ std::vector<vtkSmartPointer<vtkProp> >
 Distance::createVTKRepr() const
 {
     return createVTKRepr(true);
+}
+
+void Distance::insertrule(parser::ISCADParser& ruleset)
+{
+    ruleset.postProcFunctionRules.add
+        (
+            "Distance",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > ruleset.r_identifier > ','
+                      > ruleset.r_vectorExpression > ','
+                      > ruleset.r_vectorExpression > ')' > ';' )
+                [ qi::_val = phx::bind(&Distance::create<VectorPtr, VectorPtr>,
+                            qi::_2, qi::_3) ]
+                )
+            );
 }
 
 }

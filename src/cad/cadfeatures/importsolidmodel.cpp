@@ -77,6 +77,7 @@ addToStaticFunctionTable(Feature, Import, ruleDocumentation);
 
 
 Import::Import(const Import&o, TreeCloneMap& tcm)
+: Feature(o, tcm)
 {
     if (auto* fp=boost::get<FeatureSetPtr>(&o.importSource_))
     {
@@ -297,6 +298,24 @@ FeatureCmdInfoList Import::ruleDocumentation()
             "Creates a new feature from selected entities of an existing feature."
         )
     };
+}
+
+
+
+
+boost::optional<BOMDescriptionData> Import::BOMDescription() const
+{
+    if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
+    {
+        return BOMDescriptionData(
+            std::make_shared<DescriptionWithParameters>(
+                f->filename().string(),
+                std::vector<ScalarPtr>{}),
+            nullptr
+            );
+    }
+
+    return boost::optional<BOMDescriptionData>();
 }
 
 

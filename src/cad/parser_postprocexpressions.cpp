@@ -30,6 +30,7 @@
 #include "sketch.h"
 #include "cadpostprocactions.h"
 #include "cadpostprocactions/angle.h"
+#include "cadpostprocactions/bom.h"
 
 #include "base/analysis.h"
 #include "parser.h"
@@ -64,6 +65,11 @@ using namespace insight::cad;
 void ISCADParser::createPostProcExpressions()
 {
 
+    for (const auto& apr : PostprocAction::insertrule())
+    {
+        apr.second(*this);
+    }
+
     /**
      * \page iscad_postprocessing_commands ISCAD Postprocessing Actions
      * The following actions are available:
@@ -97,182 +103,11 @@ void ISCADParser::createPostProcExpressions()
 
     r_postproc =
 
-        /** \page iscad_postprocessing_DXF DXF: Save DXF drawing.
-        *
-        * Syntax:
-        *
-        * <b>DXF(\ref iscad_filename_expression "<filename>") << \ref iscad_feature_expression "<feature:feature to save>"
-        *     \ref iscad_identifier_expression "<identifier:viewname>"
-        *       (
-        *        \ref iscad_vector_expression "<vector:viewon>",
-        *        \ref iscad_vector_expression "<vector:viewnormal>"
-        *        [, up \ref iscad_vector_expression "<vector:upward direction>"]
-        *        [, section]
-        *        [, poly]
-        *        [, skiphl]
-        *        [, add [l] [r] [t] [b] [k] ]
-        *       )
-        *     [\ref iscad_identifier_expression "<identifier:viewname>" ...] </b>
-        *
-        */
-        ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> ( (r_solidmodel_expression >> *r_viewDef) % ',' ) >> ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2))) ]
-        |
-
-        /** \page iscad_postprocessing_saveas saveAs: Save model geometry to file
-        *
-        * Syntax:
-        *
-        * <b>saveAs(\ref iscad_filename_expression "<filename>") << \ref iscad_feature_expression "<feature:feature to save>" </b>
-        *
-        */
-        ( lit("saveAs") > '(' > r_path > ')' > lit("<<")
-          > r_solidmodel_expression
-          > *( r_identifier > '=' > r_faceFeaturesExpression )
-          > ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<Export>(qi::_2, qi::_1, qi::_3))) ]
-        |
-        ( (lit("exportSTL")|lit("STL")) > '('
-                            > r_path
-                            > ( (',' > r_scalarExpression)|qi::attr(ScalarPtr()) )
-                            > ( (',' > lit("ascii") > qi::attr(false) )|qi::attr(true) )
-                            > ')' > lit("<<") > r_solidmodel_expression > ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<ExportSTL>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
-        |
-        ( lit("exportEMesh") > '(' > r_path > ',' > r_scalarExpression > ',' > r_scalarExpression > ')'
-          > lit("<<") > r_edgeFeaturesExpression > ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<ExportEMesh>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
-        |
-
-        /** \page iscad_postprocessing_gmsh gmsh: Create a tringular mesh using gmsh
-        *
-        * Syntax:
-        *
-        * <b>gmsh(\ref iscad_filename_expression "<filename>") << \ref iscad_feature_expression "<feature:feature to save>" as \ref iscad_identifier_expression "<identifier:mesh name>"
-        *   L = ( \ref iscad_scalar_expression "<scalar:maxL>"  \ref iscad_scalar_expression "<scalar:minL>" )
-        *  [linear]
-        *  vertexGroups ( \ref iscad_identifier_expression "<identifier:vertex group name>" = \ref iscad_vertexfeat_expression "<vertex features:vertex group>" [ \@ \ref iscad_scalar_expression "<scalar:mesh size>" ] ... )
-        *  edgeGroups ( \ref iscad_identifier_expression "<identifier:edge group name>" = \ref iscad_edgefeat_expression "<edge features:edge group>" [ \@ \ref iscad_scalar_expression "<scalar:mesh size>" ] ... )
-        *  faceGroups ( \ref iscad_identifier_expression "<identifier:face group name>" = \ref iscad_facefeat_expression "<face features:face group>" [ \@ \ref iscad_scalar_expression "<scalar:mesh size>" ] ... )
-        *  vertices ( \ref iscad_identifier_expression "<identifier:vertex name>" = \ref iscad_vector_expression "<vector:vertex location>" ... )
-        * </b>
-        */
-        ( lit("gmsh") > '(' > r_path > ')' > lit("<<")
-          > r_solidmodel_expression
-          > hold[ lit("L") > '=' > '(' > r_scalarExpression > r_scalarExpression > ')' ] // Lmax, Lmin
-          > ( ( lit("linear") > attr(false) ) | attr(true) )
-          > hold[
-             ( ( lit("vertexGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_vertexFeaturesExpression > -( '@' > r_scalarExpression ) ) ) > ')' ) | attr(GroupsDesc()) )
-          > ( ( lit("edgeGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_edgeFeaturesExpression > -( '@' > r_scalarExpression ) )  ) > ')' ) | attr(GroupsDesc()) )
-          > ( ( lit("faceGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_faceFeaturesExpression > -( '@' > r_scalarExpression ) )  ) > ')' ) | attr(GroupsDesc()) )
-          > ( ( lit("volumeGroups") > '(' > *( ( (r_identifier|r_string) > '=' > r_solidFeaturesExpression > -( '@' > r_scalarExpression ) )  ) > ')' ) | attr(GroupsDesc()) )
-            ]
-          > ( ( lit("vertices") > '(' > *( (r_identifier|r_string) > '=' > r_vectorExpression ) > ')'  )| attr(NamedVertices()) )
-          > ( ( lit("meshSizes") > '(' > *( r_vectorExpression > ',' > r_scalarExpression > ',' > r_scalarExpression ) >> ')' ) | qi::attr(std::vector<MeshSizeBall>()) )
-          > qi::hold[
-            ( ( lit("screwHeads") > '(' > *( (r_identifier|r_string) > '=' > r_solidmodel_expression > -( qi::lit("sub") > r_identifier ) > -( '@' > r_scalarExpression ) ) > ')'  )| attr(ScrewHeads()) )
-          > ( ( lit("screwBases") > '(' > *( (r_identifier|r_string) > '=' > r_solidmodel_expression > -( qi::lit("sub") > r_identifier ) > -( '@' > r_scalarExpression ) ) > ')'  )| attr(ScrewBases()) )
-          > ( ( lit("screws")     > '(' > *( (r_identifier|r_string) > '=' > r_solidmodel_expression > -( qi::lit("sub") > r_identifier) ) > ')'  )| attr(ScrewBodies()) )
-            ]
-          > ( ( lit("keepTmpDir") > attr(true) ) | attr(false) )
-          > ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<Mesh>(
-                           qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8, qi::_9
-                            ))) ]
-        |
+        omit [ postProcFunctionRules [ qi::_a = qi::_1 ] ]
+        > qi::lazy(*qi::_a)
+            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1) ];
 
 
-        ( lit("gmshExtrusion") >> '(' >> r_path >> ')' >> lit("<<")
-          >> r_solidmodel_expression //>> lit("as") >> r_identifier
-          >> hold[ ( lit("L") >> '=' >> '(' >> r_scalarExpression >> r_scalarExpression >> ')'  // Lmax, Lmin
-          >>  lit("h") >> '=' >> r_scalarExpression >> lit("nLayers") >> '=' >> r_scalarExpression ) ]  // h nLayer
-          >> ( ( lit("linear") >> attr(false) ) | attr(true) )
-          >> hold[
-             ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("baseFaceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("topFaceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-          >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-             ]
-          >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
-          >> ( (lit("keepTmpDir")>attr(true)) | attr(false) )
-          >> ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<ExtrudedMesh>(
-                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
-                            ))) ]
-        |
-
-        ( lit("frame") >> '(' >> r_path >> ')' >> lit("<<")
-          >> lit("L") >> '=' >> r_scalarExpression
-          >> ( r_solidmodel_expression >>
-               -( r_solidmodel_expression >> (r_scalarExpression|qi::attr(scalarconst(0.5))) )
-               ) % ','
-//          >> hold[
-//             ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
-//          >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
-//             ]
-          >> ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<FrameMesh>(
-                                qi::_1, qi::_2, qi::_3/*, qi::_4*/
-                            ))) ]
-        |
-
-        ( lit("snappyHexMesh") >> '(' >> r_path >> ',' >> r_identifier >> ')' >> lit("<<")
-        
-          >> lit("PiM") >> '=' >> r_vectorExpression
-          >> lit("dx") >> '=' >> r_scalarExpression
-          
-          >> *( r_solidmodel_expression >> lit("as") >> r_identifier 
-                >> ( ( lit("resolution") >> '=' >> r_scalarExpression ) | qi::attr(ScalarPtr()) ) 
-                >> -( '@' >> r_scalarExpression >> lit("to") >> r_scalarExpression ) 
-                >> -( lit(">>") > r_scalarExpression ) 
-              )
-          
-          >> -( lit("edgeRefinements") >> '(' >> *( r_identifier >> '=' >> r_edgeFeaturesExpression >> '@' >> r_scalarExpression ) >> ')' )
-          
-          >> ';' )
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<cad::SnappyHexMesh>(
-                                qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6
-                            ))) ]
-        |
-        
-        
-        ( lit("SolidProperties") >> '(' >> r_identifier >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
-        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
-                    phx::construct<PostprocActionPtr>(new_<SolidProperties>(qi::_2)))
-        ]
-        |
-        ( lit("Hydrostatics") >> '('
-          >> r_identifier >> ','
-          >> r_vectorExpression >> ',' >> r_vectorExpression >> ','
-          >> r_vectorExpression >> ',' >> r_vectorExpression
-          >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' >> ';' ) // (1) hull and (2) ship
-        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
-                    phx::construct<PostprocActionPtr>(new_<Hydrostatics>(qi::_6, qi::_7, qi::_2, qi::_3, qi::_4, qi::_5)))
-        ]
-
-        |
-        ( lit("Distance") >> '(' >> r_identifier >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' )
-        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
-                    phx::construct<PostprocActionPtr>(new_<Distance>(qi::_2, qi::_3)))
-        ]
-        |
-        ( lit("Angle") >> '(' >> r_identifier >> ','
-                              >> r_vectorExpression >> ','
-                              >> r_vectorExpression >> ','
-                              >> r_vectorExpression >> ')' >> ';' )
-        [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
-                    phx::construct<PostprocActionPtr>(new_<Angle>(qi::_2, qi::_3, qi::_4)))
-        ]
-        ;
     r_postproc.name("postprocessing statement");
 
 }

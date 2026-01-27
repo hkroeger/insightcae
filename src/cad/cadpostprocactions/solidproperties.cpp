@@ -34,6 +34,11 @@ namespace cad {
 
 defineType(SolidProperties);
 
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    SolidProperties, &SolidProperties::insertrule );
+
+
 size_t SolidProperties::calcHash() const
 {
   ParameterListHash h;
@@ -73,6 +78,20 @@ void SolidProperties::build()
 void SolidProperties::write(ostream&) const
 {
 
+}
+
+
+void SolidProperties::insertrule(parser::ISCADParser& ruleset)
+{
+    ruleset.postProcFunctionRules.add
+        (
+            "SolidProperties",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > ruleset.r_identifier > ')'
+                 > qi::lit("<<")
+                 > ruleset.r_solidmodel_expression > ';' )
+                    [ qi::_val = phx::bind(&SolidProperties::create<FeaturePtr>, qi::_2) ]
+                ) );
 }
 
 

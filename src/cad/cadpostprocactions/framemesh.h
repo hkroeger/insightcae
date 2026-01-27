@@ -78,18 +78,21 @@ protected:
   size_t calcHash() const override;
   void build() override;
 
+  FrameMesh(
+          const boost::filesystem::path& outpath,
+          ScalarPtr L,
+          EdgesDesc edges
+          //    FeaturePtr model,
+          //    const FrameMeshGroupDefinitions& v_e_groups
+          );
+
 public:
   declareType("FrameMesh");
-  FrameMesh
-  (
-    const boost::filesystem::path& outpath,
-    ScalarPtr L,
-    EdgesDesc edges
-//    FeaturePtr model,
-//    const FrameMeshGroupDefinitions& v_e_groups
-  );
+    CREATE_FUNCTION(FrameMesh);
 
    void write(std::ostream& ) const override;
+
+   static void insertrule(parser::ISCADParser& ruleset);
 };
 
 

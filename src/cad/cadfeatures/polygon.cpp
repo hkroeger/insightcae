@@ -36,7 +36,7 @@ size_t Polygon::calcHash() const
 
 
 Polygon::Polygon(const Polygon&o, TreeCloneMap& tcm)
-    : close_(o.close_)
+    : Feature(o, tcm), close_(o.close_)
 {
     for (auto& c: o.corners_)
     {

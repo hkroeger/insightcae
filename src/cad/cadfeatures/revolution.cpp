@@ -62,7 +62,7 @@ size_t Revolution::calcHash() const
 
 
 Revolution::Revolution(const Revolution&o, TreeCloneMap& tcm)
-: CL(sk_), CL(p0_), CL(axis_), CL(angle_), centered_(o.centered_)
+: Feature(o, tcm), CL(sk_), CL(p0_), CL(axis_), CL(angle_), centered_(o.centered_)
 {}
 
 

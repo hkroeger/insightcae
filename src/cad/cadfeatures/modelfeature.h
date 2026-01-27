@@ -81,7 +81,6 @@ public:
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
-
 };
 
 typedef std::shared_ptr<ModelFeature> ModelFeaturePtr;

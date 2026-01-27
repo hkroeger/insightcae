@@ -61,7 +61,13 @@ size_t Compound::calcHash() const
 
 
 Compound::Compound(const Compound&o, TreeCloneMap& tcm)
+: Feature(o, tcm)
 {
+    if (auto bd=o.BOMDescription())
+    {
+        setBOMDescription(*bd);
+    }
+
     for (auto& c: o.components_)
     {
         components_.insert({c.first, tcm.clone(c.second)});
@@ -281,6 +287,8 @@ arma::mat Compound::modelInertia(double density_ovr) const
     return boost::fusion::at_c<2>(mco);
 }
 
+
+
 Compound &Compound::operator=(const Compound &o)
 {
     components_ = o.components_;
@@ -288,6 +296,25 @@ Compound &Compound::operator=(const Compound &o)
     return *this;
 }
 
+
+
+
+
+void Compound::addToBOM(BOM &bom) const
+{
+    auto myBD=BOMDescription();
+    if (myBD)
+    {
+        bom.insert(shared_from_this());
+    }
+    else
+    {
+        for (auto& c: components_)
+        {
+            c.second->addToBOM(bom);
+        }
+    }
+}
 
 
 

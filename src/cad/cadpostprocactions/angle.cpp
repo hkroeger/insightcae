@@ -182,15 +182,9 @@ std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
     else
         n=normalized(n);
 
-    auto arc = vtkSmartPointer<vtkArcSource>::New();
-    arc->SetCenter( pCtr.memptr() );
-    // arrow arc tip end point 1
     arma::mat ap1=pCtr+rDimLine*er1;
-    arc->SetPoint1( ap1.memptr() );
-    // arrow arc tip end point 2
     arma::mat ap2=pCtr+rDimLine*er2;
-    arc->SetPoint2( ap2.memptr() );
-    arc->SetResolution(32);
+
 
     // tangents pointing inwards
     double s=arrSize/(2.*rDimLine);
@@ -231,6 +225,16 @@ std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
     addP(*ah2, 0, ap2);
     addP(*ah2, 1, ap2i+arrSize*(er2t/5./2.));
     addP(*ah2, 2, ap2i+arrSize*(-er2t/5./2.));
+
+    // arc
+    auto arc = vtkSmartPointer<vtkArcSource>::New();
+    arc->SetCenter( pCtr.memptr() );
+    // arrow arc tip end point 1
+    arc->SetPoint1( ap1i.memptr() );
+    // arrow arc tip end point 2
+    arc->SetPoint2( ap2i.memptr() );
+    arc->SetResolution(32);
+
 
     // radial dim line 1
     arma::mat ep1=ap1+er1*arrSize*0.5;

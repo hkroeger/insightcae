@@ -143,6 +143,17 @@ if (STREAMPTRVAR.empty()) \
     }\
 }
 
+#if OF_VERSION<040000
+#define UNIOF_OBR_TO_MESH(OBR) \
+dynamic_cast<const fvMesh&>(OBR)
+#else
+#define UNIOF_OBR_TO_MESH(OBR) \
+dynamic_cast<const fvMesh&>( \
+    (OBR).lookupObject<objectRegistry>( \
+        dict.lookupOrDefault("region", polyMesh::defaultRegion)\
+        ))
+#endif
+
 #ifdef functionObject_H
 namespace Foam {
 

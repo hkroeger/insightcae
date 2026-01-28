@@ -139,7 +139,8 @@ bool zoneBalance::perform()
 
         scalar Vthreshold=timeUnresolvedVolPercent*sum(vol);
 
-        sortedOrder(rDT, order, typename UList<scalar>::greater(rDT));
+        sortedOrder(rDT, order/*, typename UList<scalar>::greater(rDT)*/);
+        Foam::reverse(order);
 
         scalar V=0.;
         forAll(order, oi)

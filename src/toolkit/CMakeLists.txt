@@ -294,6 +294,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
 
+    openfoam/caseelements/evaluation/zonebalance.h openfoam/caseelements/evaluation/zonebalance.cpp
 
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h

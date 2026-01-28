@@ -528,9 +528,9 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
                  .set_domain( surfaceIntegrate::Parameters::domain_patch_type( "inlet" ) )
                  .set_fields( { "p" } )
                  .set_operation( surfaceIntegrate::Parameters::areaAverage )
-                 .set_name("inlet_pressure")
                  .set_outputControl("timeStep")
                  .set_outputInterval(1)
+                 .set_name("inlet_pressure")
     ));
 
     if (const auto* thermsolve =
@@ -558,9 +558,9 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
                .set_domain( surfaceIntegrate::Parameters::domain_patch_type( "outlet" ) )
                .set_fields( { "T" } )
                .set_operation( surfaceIntegrate::Parameters::areaAverage )
-               .set_name("outlet_temperature")
                .set_outputControl("timeStep")
                .set_outputInterval(1)
+               .set_name("outlet_temperature")
        ));
     }
 

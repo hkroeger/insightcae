@@ -368,8 +368,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
-    .set_name("zzzaveraging") // shall be last FO in list
     .set_timeStart(sp().avgStart_)
+    .set_name("zzzaveraging") // shall be last FO in list
   ));
   
 //   std::vector<arma::mat> plocs;

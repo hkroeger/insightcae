@@ -339,8 +339,8 @@ void PipeBase::createCase
 //     .set_x(0.5*L)
     .set_axSpan(0.5*p().geometry.L)
     .set_tanSpan(M_PI)
-    .set_name("tpc_interior")
     .set_timeStart( (p().evaluation.inittime+p().evaluation.meantime)*sp().T_ )
+    .set_name("tpc_interior")
   ));
   
   cm.insert(new singlePhaseTransportProperties(

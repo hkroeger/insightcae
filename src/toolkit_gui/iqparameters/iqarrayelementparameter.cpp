@@ -3,6 +3,7 @@
 
 #include "iqarrayelementparameter.h"
 #include "base/parameters/arrayparameter.h"
+#include "cadgeometryparameter.h"
 #include "iqintparameter.h"
 #include "iqdoubleparameter.h"
 #include "iqboolparameter.h"
@@ -18,7 +19,7 @@
 #include "iqdoublerangeparameter.h"
 #include "iqspatialtransformationparameter.h"
 #include "iqparametersetmodel.h"
-
+#include "iqcadgeometryparameter.h"
 
 
 
@@ -73,6 +74,7 @@ createIQArrayElement(IQSubsetParameter, "subset");
 createIQArrayElement(IQSelectableSubsetParameter, "selectableSubset");
 createIQArrayElement(IQDoubleRangeParameter, "doubleRange");
 createIQArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
+createIQArrayElement(IQCADGeometryParameter, "cadgeometry");
 
 
 

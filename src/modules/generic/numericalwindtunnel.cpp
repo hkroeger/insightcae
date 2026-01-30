@@ -74,7 +74,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     const boost::filesystem::path &workDir,
     ProgressDisplayer &parentProgress )
   : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, parentProgress ),
-    FOname("forces")
+    FOname_allObjects("forcesAllObjects")
 {
   CurrentExceptionContext ex("computing further preprocessing informations");
 
@@ -101,12 +101,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
            toVec<gp_Dir>(p().geometry.forwarddir) )
   );
 
-  arma::mat
-      bb, // bounding box in SI, rotated to wind tunnel CS
-      bbAtt; // bounding box in SI, rotated to wind tunnel CS + applied attitude change
 
   parentProgress.message("Getting geometry file"); // extraction may take place now
-  std::string geom_file_ext = p().geometry.objectfile->fileExtension();
 
 
   gp_Trsf roll; roll.SetRotation(
@@ -128,38 +124,59 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
             .Multiplied(trim)
             .Multiplied(roll);
 
+  gp_Trsf scale; scale.SetScaleFactor(p().geometryscale);
+
   parentProgress.message("Loading geometry file, computing bounding box");
-  if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+
+  arma::mat bb=arma::zeros(3, 2);// bounding box in SI, rotated to wind tunnel CS
+  arma::mat bbAtt=arma::zeros(3, 2);// bounding box in SI, rotated to wind tunnel CS + applied attitude change
+
   {
-    vtk_ChangeCS trsf(
-          std::bind(&gp_Trsf::Value, &rot, std::placeholders::_1, std::placeholders::_2),
-          3, 1
-         );
+      auto loadprogress=parentProgress.forkNewAction(p().geometry.objects.size(), "loading geometry");
+      for (auto& g: p().geometry.objects)
+      {
+          auto geom=cad::Transform::create(g.second->geometry(), scale*rot);
+          bb=unitedBndBox(bb, geom->modelBndBox());
 
-    auto geopositioned=readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf });
-    bb = p().geometryscale
-         * STLBndBox(geopositioned);
+          geom=cad::Transform::create(geom, att);
+          bbAtt=unitedBndBox(bbAtt, geom->modelBndBox());
 
-    auto geofinal = att
-                        .toSpatialTransformation()
-                        .apply_VTK_Transform(geopositioned);
-    bbAtt = p().geometryscale
-            * STLBndBox( geofinal );
+          geometry_[g.first]=geom;
+
+          loadprogress.stepUp();
+      }
   }
-  else
-  {
-    boost::mutex::scoped_lock lock(mtx);
+  // if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+  // {
+  //   vtk_ChangeCS trsf(
+  //         std::bind(&gp_Trsf::Value, &rot, std::placeholders::_1, std::placeholders::_2),
+  //         3, 1
+  //        );
 
-    auto geopositioned = cad::Transform::create(
-          cad::Import::create(p().geometry.objectfile->accessibleFilePath()), rot);
-    bb = p().geometryscale
-         * geopositioned->modelBndBox(bbdefl);
+  //   auto geopositioned=readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf });
+  //   bb = p().geometryscale
+  //        * STLBndBox(geopositioned);
 
-    auto geofinal = cad::Transform::create(
-        geopositioned, att);
-    bbAtt = p().geometryscale
-         * geofinal->modelBndBox(bbdefl);
-  }
+  //   auto geofinal = att
+  //                       .toSpatialTransformation()
+  //                       .apply_VTK_Transform(geopositioned);
+  //   bbAtt = p().geometryscale
+  //           * STLBndBox( geofinal );
+  // }
+  // else
+  // {
+  //   boost::mutex::scoped_lock lock(mtx);
+
+  //   auto geopositioned = cad::Transform::create(
+  //         cad::Import::create(p().geometry.objectfile->accessibleFilePath()), rot);
+  //   bb = p().geometryscale
+  //        * geopositioned->modelBndBox(bbdefl);
+
+  //   auto geofinal = cad::Transform::create(
+  //       geopositioned, att);
+  //   bbAtt = p().geometryscale
+  //        * geofinal->modelBndBox(bbdefl);
+  // }
 
   Lref_ = arma::norm( bb.col(1)-bb.col(0), 2);
   reportSupplementQuantity("Lref", Lref_, "Reference length of object", "m");
@@ -208,10 +225,16 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       // no vertical translation
       h=0.;
   }
+  else if (boost::get<Parameters::geometry_type::verticalPlacement_onCeiling_type>(
+          &p().geometry.verticalPlacement))
+  {
+      // no vertical translation
+      h=Hdom-h_;
+  }
   else if (boost::get<Parameters::geometry_type::verticalPlacement_centered_type>(
           &p().geometry.verticalPlacement))
   {
-      h=Hdom*0.5;
+      h=(Hdom-h_)*0.5;
   }
   else if (auto * ah =
              boost::get<Parameters::geometry_type::verticalPlacement_atHeight_type>(
@@ -238,9 +261,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       throw insight::UnhandledSelection();
 
   h=std::max<double>(0,std::min<double>(Hdom,h));
-  gp_Vec deltaVert(0, 0, h);
 
-  Lup_=Hdom-h;
+  Lup_=Hdom-h-h_;
   reportSupplementQuantity("Lup", Lup_, "Domain height above lower bound of object", "m");
 
   Ldown_=h;
@@ -248,7 +270,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
   gp_Trsf sc; sc.SetScaleFactor(p().geometryscale);
   gp_Trsf tr; tr.SetTranslation(gp_Vec(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2)));
-  gp_Trsf mv; mv.SetTranslation(deltaVert);
+  gp_Trsf mv; mv.SetTranslation(gp_Vec(-bb(0,0), 0, h));
 
   cad_to_cfd_ = mv
         .Multiplied(tr)
@@ -259,7 +281,237 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
         // .Multiplied(roll)
         .Multiplied(rot);
 
+  // apply to geometry
+  for (auto& g: geometry_)
+  {
+      g.second=cad::Transform::create(g.second, mv);
+  }
 
+  double dx=Lref_/double(p().mesh.nx);
+
+  int nx=std::max(1, int(l_/dx));
+  int ny=std::max(1, int(w_/dx));
+  int nz=std::max(1, int(h_/dx));
+
+  int n_upstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_upstream).calc_n(dx, Lupstream_));
+  int n_downstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_downstream).calc_n(dx, Ldownstream_));
+  int n_up=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, Lup_));
+  int n_down=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, Ldown_));
+  int n_aside=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_aside).calc_n(dx, Laside_-0.5*w_));
+
+
+  using namespace insight::bmd;
+  blocking=std::make_shared<blockMeshBlocking>();
+
+  blocking->setScaleFactor(1.0);
+  blocking->setDefaultPatch("walls", "patch");
+
+
+  Patch& inlet = 	blocking->addPatch("inlet", new Patch());
+  Patch& outlet = 	blocking->addPatch("outlet", new Patch());
+  Patch& side1 = 	blocking->addPatch("side1", new Patch());
+  Patch& side2 = 	blocking->addPatch("side2", new Patch());
+  Patch& top = 		blocking->addPatch("top", new Patch("symmetryPlane"));
+  Patch& floor = 	blocking->addPatch("floor", new Patch("wall"));
+
+  // points in cross section
+  std::map<int, bmd::Point> pts = {
+      {100, 	vec3( -Lupstream_, 0, 0)},
+      {101, 	vec3( 0, 0, 0)},
+      {102, 	vec3( l_, 0, 0)},
+      {103, 	vec3( l_+Ldownstream_, 0, 0)},
+
+      {0, 	vec3( -Lupstream_, 0, Ldown_)},
+      {1, 	vec3( 0, 0, Ldown_)},
+      {2, 	vec3( l_, 0, Ldown_)},
+      {3, 	vec3( l_+Ldownstream_, 0,Ldown_)},
+
+      {4, 	vec3( -Lupstream_, 0, Ldown_+h_)},
+      {5, 	vec3( 0, 0, Ldown_+h_)},
+      {6, 	vec3( l_, 0, Ldown_+h_)},
+      {7, 	vec3( l_+Ldownstream_, 0,Ldown_+h_)},
+
+      {8, 	vec3( -Lupstream_, 0, Ldown_+Lup_+h_)},
+      {9, 	vec3( 0, 0, Ldown_+Lup_+h_)},
+      {10, 	vec3( l_, 0, Ldown_+Lup_+h_)},
+      {11, 	vec3( l_+Ldownstream_, 0, Ldown_+Lup_+h_)}
+  };
+  arma::mat Lv=vec3(0,1,0);
+
+  std::vector<int> nzs;
+  std::vector<double> grads;
+  std::vector<arma::mat> y0;
+
+  if (p().mesh.longitudinalSymmetry)
+  {
+      nzs= {n_aside, std::max(1,ny/2)};
+      grads = {1./p().mesh.grad_aside, 1};
+      y0 = {vec3(0,Laside_,0), vec3(0,0.5*w_,0), vec3(0,0,0)};
+  }
+  else
+  {
+      nzs= {n_aside, ny, n_aside};
+      grads = {1./p().mesh.grad_aside, 1, p().mesh.grad_aside};
+      y0 = {vec3(0,Laside_,0), vec3(0,0.5*w_,0), vec3(0,-0.5*w_,0), vec3(0,-Laside_,0)};
+  }
+
+  for (size_t i=0; i<nzs.size(); i++)
+  {
+      if (Ldown_>0.)
+      {
+          {
+              Block& bl = blocking->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[100]+y0[i], pts[101]+y0[i], pts[1]+y0[i], pts[0]+y0[i],
+                                            pts[100]+y0[i+1], pts[101]+y0[i+1], pts[1]+y0[i+1], pts[0]+y0[i+1]
+                                            ),
+                                        n_upstream, n_down, nzs[i],
+                                        { 1./p().mesh.grad_upstream, 1./p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+
+              inlet.addFace(bl.face("0473"));
+              floor.addFace(bl.face("0154"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+          {
+              Block& bl = blocking->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[101]+y0[i], pts[102]+y0[i], pts[2]+y0[i], pts[1]+y0[i],
+                                            pts[101]+y0[i+1], pts[102]+y0[i+1], pts[2]+y0[i+1], pts[1]+y0[i+1]
+                                            ),
+                                        nx, n_down, nzs[i],
+                                        { 1., 1./p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              floor.addFace(bl.face("0154"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+          {
+              Block& bl = blocking->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[102]+y0[i], pts[103]+y0[i], pts[3]+y0[i], pts[2]+y0[i],
+                                            pts[102]+y0[i+1], pts[103]+y0[i+1], pts[3]+y0[i+1], pts[2]+y0[i+1]
+                                            ),
+                                        n_downstream, n_down, nzs[i],
+                                        { p().mesh.grad_downstream, 1./p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              outlet.addFace(bl.face("1265"));
+              floor.addFace(bl.face("0154"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+      }
+
+      {
+          Block& bl = blocking->addBlock
+                      (
+                          new Block(P_8(
+                                        pts[0]+y0[i], pts[1]+y0[i], pts[5]+y0[i], pts[4]+y0[i],
+                                        pts[0]+y0[i+1], pts[1]+y0[i+1], pts[5]+y0[i+1], pts[4]+y0[i+1]
+                                        ),
+                                    n_upstream, nz, nzs[i],
+                                    { 1./p().mesh.grad_upstream, 1., grads[i] }
+                                    )
+                          );
+
+          inlet.addFace(bl.face("0473"));
+          if (!(Ldown_>0.)) floor.addFace(bl.face("0154"));
+          if (!(Lup_>0)) top.addFace(bl.face("2376"));
+          if (i==0) side1.addFace(bl.face("0321"));
+          if (i==2) side2.addFace(bl.face("4567"));
+      }
+      {
+          Block& bl = blocking->addBlock
+                      (
+                          new Block(P_8(
+                                        pts[1]+y0[i], pts[2]+y0[i], pts[6]+y0[i], pts[5]+y0[i],
+                                        pts[1]+y0[i+1], pts[2]+y0[i+1], pts[6]+y0[i+1], pts[5]+y0[i+1]
+                                        ),
+                                    nx, nz, nzs[i],
+                                    { 1., 1., grads[i] }
+                                    )
+                          );
+          if (!(Ldown_>0.)) floor.addFace(bl.face("0154"));
+          if (!(Lup_>0)) top.addFace(bl.face("2376"));
+          if (i==0) side1.addFace(bl.face("0321"));
+          if (i==2) side2.addFace(bl.face("4567"));
+      }
+      {
+          Block& bl = blocking->addBlock
+                      (
+                          new Block(P_8(
+                                        pts[2]+y0[i], pts[3]+y0[i], pts[7]+y0[i], pts[6]+y0[i],
+                                        pts[2]+y0[i+1], pts[3]+y0[i+1], pts[7]+y0[i+1], pts[6]+y0[i+1]
+                                        ),
+                                    n_downstream, nz, nzs[i],
+                                    { p().mesh.grad_downstream, 1., grads[i] }
+                                    )
+                          );
+          outlet.addFace(bl.face("1265"));
+          if (!(Ldown_>0.)) floor.addFace(bl.face("0154"));
+          if (!(Lup_>0)) top.addFace(bl.face("2376"));
+          if (i==0) side1.addFace(bl.face("0321"));
+          if (i==2) side2.addFace(bl.face("4567"));
+      }
+
+      if (Lup_>0)
+          {
+          {
+              Block& bl = blocking->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[4]+y0[i], pts[5]+y0[i], pts[9]+y0[i], pts[8]+y0[i],
+                                            pts[4]+y0[i+1], pts[5]+y0[i+1], pts[9]+y0[i+1], pts[8]+y0[i+1]
+                                            ),
+                                        n_upstream, n_up, nzs[i],
+                                        { 1./p().mesh.grad_upstream, p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              inlet.addFace(bl.face("0473"));
+              top.addFace(bl.face("2376"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+          {
+              Block& bl = blocking->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[5]+y0[i], pts[6]+y0[i], pts[10]+y0[i], pts[9]+y0[i],
+                                            pts[5]+y0[i+1], pts[6]+y0[i+1], pts[10]+y0[i+1], pts[9]+y0[i+1]
+                                            ),
+                                        nx, n_up, nzs[i],
+                                        { 1, p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              top.addFace(bl.face("2376"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+          {
+              Block& bl = blocking->addBlock
+                          (
+                              new Block(P_8(
+                                            pts[6]+y0[i], pts[7]+y0[i], pts[11]+y0[i], pts[10]+y0[i],
+                                            pts[6]+y0[i+1], pts[7]+y0[i+1], pts[11]+y0[i+1], pts[10]+y0[i+1]
+                                            ),
+                                        n_downstream, n_up, nzs[i],
+                                        { p().mesh.grad_downstream, p().mesh.grad_up, grads[i] }
+                                        )
+                              );
+              outlet.addFace(bl.face("1265"));
+              top.addFace(bl.face("2376"));
+              if (i==0) side1.addFace(bl.face("0321"));
+              if (i==2) side2.addFace(bl.face("4567"));
+          }
+      }
+  }
 }
 
 
@@ -284,275 +536,57 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
 {
   path dir = executionPath();
   
-  boost::filesystem::path objectSTLFile =
-   snappyHexMeshFeats::geometryDir(cm, executionPath())/
-   (p().geometry.objectfile->fileNameStem()+".stlb");
+  // boost::filesystem::path objectSTLFile =
+  //  snappyHexMeshFeats::geometryDir(cm, executionPath())/
+  //  (p().geometry.objectfile->fileNameStem()+".stlb");
 
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
     .set_np(np())
   ));
   cm.createOnDisk(executionPath());
   
-  
-  double dx=sp().Lref_/double(p().mesh.nx);
-
-  int nx=std::max(1, int(sp().l_/dx));
-  int ny=std::max(1, int(sp().w_/dx));
-  int nz=std::max(1, int(sp().h_/dx));
-
-  int n_upstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_upstream).calc_n(dx, sp().Lupstream_));
-  int n_downstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_downstream).calc_n(dx, sp().Ldownstream_));
-  int n_up=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, sp().Lup_-sp().h_));
-  int n_down=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_up).calc_n(dx, sp().Ldown_-sp().h_));
-  int n_aside=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_aside).calc_n(dx, sp().Laside_-0.5*sp().w_));
-  
-
-  using namespace insight::bmd;
-  std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
-  bmd->setScaleFactor(1.0);
-  bmd->setDefaultPatch("walls", "patch");
-
-
-  Patch& inlet = 	bmd->addPatch("inlet", new Patch());
-  Patch& outlet = 	bmd->addPatch("outlet", new Patch());
-  Patch& side1 = 	bmd->addPatch("side1", new Patch());
-  Patch& side2 = 	bmd->addPatch("side2", new Patch());
-  Patch& top = 		bmd->addPatch("top", new Patch("symmetryPlane"));
-  Patch& floor = 	bmd->addPatch("floor", new Patch("wall"));
-
-  // points in cross section
-  std::map<int, bmd::Point> pts = {
-        {100, 	vec3( -sp().Lupstream_, 0, 0)},
-        {101, 	vec3( 0, 0, 0)},
-        {102, 	vec3( sp().l_, 0, 0)},
-        {103, 	vec3( sp().l_+sp().Ldownstream_, 0, 0)},
-
-        {0, 	vec3( -sp().Lupstream_, 0, sp().Ldown_)},
-        {1, 	vec3( 0, 0, sp().Ldown_)},
-        {2, 	vec3( sp().l_, 0, sp().Ldown_)},
-        {3, 	vec3( sp().l_+sp().Ldownstream_, 0, sp().Ldown_)},
-
-        {4, 	vec3( -sp().Lupstream_, 0, sp().Ldown_+sp().h_)},
-        {5, 	vec3( 0, 0, sp().Ldown_+sp().h_)},
-        {6, 	vec3( sp().l_, 0, sp().Ldown_+sp().h_)},
-        {7, 	vec3( sp().l_+sp().Ldownstream_, 0, sp().Ldown_+sp().h_)},
-
-        {8, 	vec3( -sp().Lupstream_, 0, sp().Ldown_+sp().Lup_)},
-        {9, 	vec3( 0, 0, sp().Ldown_+sp().Lup_)},
-        {10, 	vec3( sp().l_, 0, sp().Ldown_+sp().Lup_)},
-        {11, 	vec3( sp().l_+sp().Ldownstream_, 0, sp().Ldown_+sp().Lup_)}
-  };
-  arma::mat Lv=vec3(0,1,0);
-
-  std::vector<int> nzs;
-  std::vector<double> grads;
-  std::vector<arma::mat> y0;
-
-  if (p().mesh.longitudinalSymmetry)
-  {
-    nzs= {n_aside, std::max(1,ny/2)};
-    grads = {1./p().mesh.grad_aside, 1};
-    y0 = {vec3(0,sp().Laside_,0), vec3(0,0.5*sp().w_,0), vec3(0,0,0)};
-  }
-  else
-  {
-    nzs= {n_aside, ny, n_aside};
-    grads = {1./p().mesh.grad_aside, 1, p().mesh.grad_aside};
-    y0 = {vec3(0,sp().Laside_,0), vec3(0,0.5*sp().w_,0), vec3(0,-0.5*sp().w_,0), vec3(0,-sp().Laside_,0)};
-  }
-  
-  for (size_t i=0; i<nzs.size(); i++)
-  {
-      if (sp().Ldown_>0.)
-      {
-          {
-              Block& bl = bmd->addBlock
-                          (
-                              new Block(P_8(
-                                            pts[100]+y0[i], pts[101]+y0[i], pts[1]+y0[i], pts[0]+y0[i],
-                                            pts[100]+y0[i+1], pts[101]+y0[i+1], pts[1]+y0[i+1], pts[0]+y0[i+1]
-                                            ),
-                                        n_upstream, n_down, nzs[i],
-                                        { 1./p().mesh.grad_upstream, 1./p().mesh.grad_up, grads[i] }
-                                        )
-                              );
-
-              inlet.addFace(bl.face("0473"));
-              floor.addFace(bl.face("0154"));
-              if (i==0) side1.addFace(bl.face("0321"));
-              if (i==2) side2.addFace(bl.face("4567"));
-          }
-          {
-              Block& bl = bmd->addBlock
-                          (
-                              new Block(P_8(
-                                            pts[101]+y0[i], pts[102]+y0[i], pts[2]+y0[i], pts[1]+y0[i],
-                                            pts[101]+y0[i+1], pts[102]+y0[i+1], pts[2]+y0[i+1], pts[1]+y0[i+1]
-                                            ),
-                                        nx, n_down, nzs[i],
-                                        { 1., 1./p().mesh.grad_up, grads[i] }
-                                        )
-                              );
-              floor.addFace(bl.face("0154"));
-              if (i==0) side1.addFace(bl.face("0321"));
-              if (i==2) side2.addFace(bl.face("4567"));
-          }
-          {
-              Block& bl = bmd->addBlock
-                          (
-                              new Block(P_8(
-                                            pts[102]+y0[i], pts[103]+y0[i], pts[3]+y0[i], pts[2]+y0[i],
-                                            pts[102]+y0[i+1], pts[103]+y0[i+1], pts[3]+y0[i+1], pts[2]+y0[i+1]
-                                            ),
-                                        n_downstream, n_down, nzs[i],
-                                        { p().mesh.grad_downstream, 1./p().mesh.grad_up, grads[i] }
-                                        )
-                              );
-              outlet.addFace(bl.face("1265"));
-              floor.addFace(bl.face("0154"));
-              if (i==0) side1.addFace(bl.face("0321"));
-              if (i==2) side2.addFace(bl.face("4567"));
-          }
-      }
-
-      {
-          Block& bl = bmd->addBlock
-                      (
-                          new Block(P_8(
-                                        pts[0]+y0[i], pts[1]+y0[i], pts[5]+y0[i], pts[4]+y0[i],
-                                        pts[0]+y0[i+1], pts[1]+y0[i+1], pts[5]+y0[i+1], pts[4]+y0[i+1]
-                                        ),
-                                    n_upstream, nz, nzs[i],
-                                    { 1./p().mesh.grad_upstream, 1., grads[i] }
-                                    )
-                          );
-
-          inlet.addFace(bl.face("0473"));
-          if (!(sp().Ldown_>0.)) floor.addFace(bl.face("0154"));
-          if (i==0) side1.addFace(bl.face("0321"));
-          if (i==2) side2.addFace(bl.face("4567"));
-    }
-    {
-        Block& bl = bmd->addBlock
-                    (
-                        new Block(P_8(
-                                      pts[1]+y0[i], pts[2]+y0[i], pts[6]+y0[i], pts[5]+y0[i],
-                                      pts[1]+y0[i+1], pts[2]+y0[i+1], pts[6]+y0[i+1], pts[5]+y0[i+1]
-                                      ),
-                                  nx, nz, nzs[i],
-                                  { 1., 1., grads[i] }
-                                  )
-                        );
-        if (!(sp().Ldown_>0.)) floor.addFace(bl.face("0154"));
-        if (i==0) side1.addFace(bl.face("0321"));
-        if (i==2) side2.addFace(bl.face("4567"));
-    }
-    {
-        Block& bl = bmd->addBlock
-                    (
-                        new Block(P_8(
-                                      pts[2]+y0[i], pts[3]+y0[i], pts[7]+y0[i], pts[6]+y0[i],
-                                      pts[2]+y0[i+1], pts[3]+y0[i+1], pts[7]+y0[i+1], pts[6]+y0[i+1]
-                                      ),
-                                  n_downstream, nz, nzs[i],
-                                  { p().mesh.grad_downstream, 1., grads[i] }
-                                  )
-                        );
-        outlet.addFace(bl.face("1265"));
-        if (!(sp().Ldown_>0.)) floor.addFace(bl.face("0154"));
-        if (i==0) side1.addFace(bl.face("0321"));
-        if (i==2) side2.addFace(bl.face("4567"));
-    }
-
-    {
-        Block& bl = bmd->addBlock
-                    (
-                        new Block(P_8(
-                                      pts[4]+y0[i], pts[5]+y0[i], pts[9]+y0[i], pts[8]+y0[i],
-                                      pts[4]+y0[i+1], pts[5]+y0[i+1], pts[9]+y0[i+1], pts[8]+y0[i+1]
-                                      ),
-                                  n_upstream, n_up, nzs[i],
-                                  { 1./p().mesh.grad_upstream, p().mesh.grad_up, grads[i] }
-                                  )
-                        );
-        inlet.addFace(bl.face("0473"));
-        top.addFace(bl.face("2376"));
-        if (i==0) side1.addFace(bl.face("0321"));
-        if (i==2) side2.addFace(bl.face("4567"));
-    }
-    {
-        Block& bl = bmd->addBlock
-                    (
-                        new Block(P_8(
-                                      pts[5]+y0[i], pts[6]+y0[i], pts[10]+y0[i], pts[9]+y0[i],
-                                      pts[5]+y0[i+1], pts[6]+y0[i+1], pts[10]+y0[i+1], pts[9]+y0[i+1]
-                                      ),
-                                  nx, n_up, nzs[i],
-                                  { 1, p().mesh.grad_up, grads[i] }
-                                  )
-                        );
-        top.addFace(bl.face("2376"));
-        if (i==0) side1.addFace(bl.face("0321"));
-        if (i==2) side2.addFace(bl.face("4567"));
-    }
-    {
-        Block& bl = bmd->addBlock
-                    (
-                        new Block(P_8(
-                                      pts[6]+y0[i], pts[7]+y0[i], pts[11]+y0[i], pts[10]+y0[i],
-                                      pts[6]+y0[i+1], pts[7]+y0[i+1], pts[11]+y0[i+1], pts[10]+y0[i+1]
-                                      ),
-                                  n_downstream, n_up, nzs[i],
-                                  { p().mesh.grad_downstream, p().mesh.grad_up, grads[i] }
-                                  )
-                        );
-        outlet.addFace(bl.face("1265"));
-        top.addFace(bl.face("2376"));
-        if (i==0) side1.addFace(bl.face("0321"));
-        if (i==2) side2.addFace(bl.face("4567"));
-    }
-  }
-  
-  int nb=bmd->nBlocks();
-  cm.insert(bmd.release());
+  int nb = cm.insert(new bmd::blockMesh(cm, *sp().blocking))->nBlocks();
   
   cm.createOnDisk(executionPath());
   cm.runBlockMesh(executionPath(), nb, &parentProgress);
     
-  create_directory(objectSTLFile.parent_path());
+  // create_directory(objectSTLFile.parent_path());
 
-  std::string geom_file_ext = p().geometry.objectfile->fileExtension();
+  // std::string geom_file_ext = p().geometry.objectfile->fileExtension();
 
-  if (geom_file_ext==".stl" || geom_file_ext==".stlb")
-  {
-    vtk_ChangeCS trsf(
-          std::bind(&gp_Trsf::Value, &sp().cad_to_cfd_, std::placeholders::_1, std::placeholders::_2),
-          3, 1
-         );
-    writeSTL( readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf }), objectSTLFile );
-  }
-  else
-  {
-    boost::mutex::scoped_lock lock(mtx);
+  // if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+  // {
+  //   vtk_ChangeCS trsf(
+  //         std::bind(&gp_Trsf::Value, &sp().cad_to_cfd_, std::placeholders::_1, std::placeholders::_2),
+  //         3, 1
+  //        );
+  //   writeSTL( readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf }), objectSTLFile );
+  // }
+  // else
+  // {
+  //   boost::mutex::scoped_lock lock(mtx);
 
-    auto obj = cad::Transform::create(
-          cad::Import::create(p().geometry.objectfile->accessibleFilePath()),
-          sp().cad_to_cfd_
-          );
-    obj->exportSTL(objectSTLFile);
-  }
+  //   auto obj = cad::Transform::create(
+  //         cad::Import::create(p().geometry.objectfile->accessibleFilePath()),
+  //         sp().cad_to_cfd_
+  //         );
+  //   obj->exportSTL(objectSTLFile);
+  // }
 
 
   snappyHexMeshConfiguration::Parameters shm_cfg;
   
-  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
-      new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-    .set_minLevel(p().mesh.lmsurf)
-    .set_maxLevel(p().mesh.lxsurf)
-    .set_nLayers(p().mesh.nlayer)
-    .set_geometry(make_geometryFile(objectSTLFile))
-    .set_name("object")
-  )));
+  for (auto& g: sp().geometry_)
+  {
+      shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
+          new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
+        .set_minLevel(p().mesh.lmsurf)
+        .set_maxLevel(p().mesh.lxsurf)
+        .set_nLayers(p().mesh.nlayer)
+        .set_geometry(make_geometryFile(g.second))
+        .set_name(g.first)
+      )));
+  }
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
    new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
     .set_min(vec3(-0.33*sp().l_, -(0.5+0.5)*sp().w_, sp().Ldown_))
@@ -642,16 +676,32 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
     .set_endTime(1000.0)
     .set_deltaT(1)
   ));
+
+  forces::Parameters::patches_type patchList;
+  for (auto& g: sp().geometry_)
+  {
+      std::string ppat="\""+g.first+".*\"";
+      patchList.push_back(ppat);
+
+      if (sp().geometry_.size()>1)
+      {
+          cm.insert(new forces(
+              cm, forces::Parameters()
+                  .set_rhoInf(p().fluid.rho)
+                  .set_patches({ ppat })
+                  .set_name("forces_"+g.first)
+              ));
+      }
+  }
   cm.insert(new forces(cm, forces::Parameters()
     .set_rhoInf(p().fluid.rho)
-    .set_patches({ "\"(object.*)\"" })
-    .set_name(sp().FOname)
+    .set_patches(patchList)
+    .set_name(sp().FOname_allObjects)
   ));
+
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters()
     .set_nu(p().fluid.nu)
   ));
-
-  cm.insert(new SimpleBC(cm, "top", boundaryDict, "symmetryPlane"));
 
   {
     cm.insert(new PressureOutletBC(cm, "side1", boundaryDict));
@@ -666,7 +716,9 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
     cm.insert(new PressureOutletBC(cm, "side2", boundaryDict));
   }
 
-  if (p().operation.lowerWallIsMoving)
+  auto *pl=boost::get<Parameters::geometry_type::verticalPlacement_onFloor_type>(
+      &p().geometry.verticalPlacement);
+  if (pl && pl->wallIsMoving)
   {
       cm.insert(new WallBC(cm, "floor", boundaryDict, WallBC::Parameters()
         .set_wallVelocity(vec3(p().operation.v,0,0)) // velocity of car vs ground! (wind excluded)
@@ -676,6 +728,20 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
   {
       cm.insert(new SimpleBC(cm, "floor", boundaryDict, "symmetryPlane"));
   }
+
+  auto *pt=boost::get<Parameters::geometry_type::verticalPlacement_onCeiling_type>(
+      &p().geometry.verticalPlacement);
+  if (pt && pt->wallIsMoving)
+  {
+      cm.insert(new WallBC(cm, "top", boundaryDict, WallBC::Parameters()
+                               .set_wallVelocity(vec3(p().operation.v,0,0))
+                           ));
+  }
+  else
+  {
+      cm.insert(new SimpleBC(cm, "top", boundaryDict, "symmetryPlane"));
+  }
+
 
   cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));
   cm.insert(new VelocityInletBC(cm, "inlet", boundaryDict, VelocityInletBC::Parameters()

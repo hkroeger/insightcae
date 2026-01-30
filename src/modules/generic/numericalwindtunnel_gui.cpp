@@ -5,7 +5,7 @@
 #include "cadfeatures/box.h"
 #include "cadfeatures/transform.h"
 #include "cadfeatures/importsolidmodel.h"
-
+#include "blockmeshvisualization.h"
 namespace insight
 {
 
@@ -18,54 +18,13 @@ public:
 
     void recreateVisualizationElements() override
     {
-        std::string geom_file_ext = p().geometry.objectfile->fileExtension();
-
-        cad::FeaturePtr org_geom;
-
-        if (geom_file_ext==".stl" || geom_file_ext==".stlb")
+        for (auto& g: sp().geometry_)
         {
-            org_geom = cad::STL::create(p().geometry.objectfile->accessibleFilePath(), sp().cad_to_cfd_);
-        }
-        else
-        {
-            org_geom = cad::Transform::create(
-                cad::Import::create(p().geometry.objectfile->accessibleFilePath()),
-                sp().cad_to_cfd_
-                );
+            addFeature("objects/"+g.first, g.second);
         }
 
-        addFeature("object", org_geom);
-
-
-        if (p().mesh.longitudinalSymmetry)
-        {
-            addFeature
-                (
-                    "domain",
-                    cad::Box::create(
-                        cad::matconst(vec3( -sp().Lupstream_, 0, 0)),
-                        cad::matconst(vec3( sp().Lupstream_+sp().l_+sp().Ldownstream_, 0, 0)),
-                        cad::matconst(vec3( 0, 0, sp().Ldown_+sp().Lup_)),
-                        cad::matconst(vec3( 0, sp().Laside_+0.5*sp().w_, 0))
-                        ),
-                    { insight::Wireframe }
-                    );
-        }
-        else
-        {
-            addFeature
-                (
-                    "domain",
-                    cad::Box::create(
-                        cad::matconst(vec3( -sp().Lupstream_, -0.5*sp().w_-sp().Laside_, 0)),
-                        cad::matconst(vec3( sp().Lupstream_+sp().l_+sp().Ldownstream_, 0, 0)),
-                        cad::matconst(vec3( 0, 0, sp().Ldown_+sp().Lup_)),
-                        cad::matconst(vec3( 0, 2.*sp().Laside_+sp().w_, 0))
-                        ),
-                    { insight::Wireframe }
-                    );
-        }
-
+        bmd::blockMeshVisualization(
+            *sp().blocking).addToVisualizer(*this, "domain");
 
         int iref=0;
         for (const Parameters::mesh_type::refinementZones_default_type& rz:

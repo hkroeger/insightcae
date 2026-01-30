@@ -77,6 +77,13 @@ public:
     zoneBalance(OpenFOAMCase &c, ParameterSetInput ip = Parameters());
     OFDictData::dict functionObjectDict() const override;
     std::set<std::string> requiredLibraries() const override;
+
+    static arma::mat readBalance
+        (
+            const OpenFOAMCase& c,
+            const boost::filesystem::path& location,
+            const std::string& foName
+            );
 };
 
 } // namespace insight

@@ -100,5 +100,20 @@ std::set<std::string> zoneBalance::requiredLibraries() const
 }
 
 
+arma::mat zoneBalance::readBalance(
+    const OpenFOAMCase& c,
+    const boost::filesystem::path& location,
+    const std::string& foName
+)
+{
+    return readAndCombineTabularFiles
+        (
+            c, location,
+            foName, "zonebalance.dat",
+            "()"
+            );
+}
+
+
 
 } // namespace insight

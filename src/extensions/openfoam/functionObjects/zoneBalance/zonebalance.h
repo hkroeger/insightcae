@@ -7,7 +7,7 @@
 #include "OFstream.H"
 
 #include "uniof.h"
-#include "uniof_helpers.h"
+#include "uniof_tools.h"
 #include "boost/variant.hpp"
 
 namespace Foam {

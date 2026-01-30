@@ -4,6 +4,7 @@
 #include "cellSet.H"
 #include "fieldToCell.H"
 #include "fvc.H"
+#include "uniof_tools.h"
 
 #include <memory>
 
@@ -65,8 +66,12 @@ bool zoneBalance::read(const dictionary &dict)
 bool zoneBalance::perform()
 {
 
-    tmp<surfaceScalarField> phi =
-        mesh_.lookupObject<surfaceScalarField>("phi");
+    auto&rho=mesh_.lookupObject<volScalarField>("rho");
+    auto&U=mesh_.lookupObject<volVectorField>("U");
+
+    surfaceScalarField phi(
+        // mesh_.lookupObject<surfaceScalarField>("phi");
+        linearInterpolate(rho*U)&mesh_.Sf() );
 
     for (auto& f: factorFields_)
     {
@@ -77,7 +82,7 @@ bool zoneBalance::perform()
 
     auto balance = fvc::surfaceSum(phi);
 
-    scalarList values;
+    // scalarList values;
 
     label nc;
     scalar V;
@@ -86,10 +91,18 @@ bool zoneBalance::perform()
 
     if (boost::get<boost::blank>(&cellSelection_))
     {
-        values=balance->internalField();
-
-        nc=balance->internalField().size();
-        V=gSum(mesh_.V());
+        // values=balance->internalField();
+        cells=std::make_shared<cellSet>(
+            IOobject(
+                "balanceSelection",
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE)
+            );
+        for(label i=0; i<mesh_.nCells(); ++i) cells->insert(i);
+        // nc=balance->internalField().size();
+        // V=gSum(mesh_.V());
     }
     else if (auto* hv=boost::get<HighestValueVolumeFraction>(&cellSelection_))
     {
@@ -188,7 +201,7 @@ bool zoneBalance::perform()
     {
         auto cellIds=cells->toc();
 
-        values=List(UIndirectList<scalar>(balance, cellIds));
+        // values=List(UIndirectList<scalar>(balance, cellIds));
 
         nc=cells->size();
         V=gSum(List(UIndirectList<scalar>(mesh_.V(), cellIds)));
@@ -196,7 +209,15 @@ bool zoneBalance::perform()
 
     reduce(nc, sumOp<label>());
 
-    balanceSum_ = gSum(values);
+    labelList bndfaces;
+    scalarField norm_dir;
+    findBndFaces(mesh_, *cells, bndfaces, norm_dir);
+
+    scalarField phif (pick_gf(phi, bndfaces, &norm_dir) );
+
+    balanceSum_=-gSum(phif); // we want inflow positive
+
+    // Info<<"compare: "<<balanceSum_<<" <<>> "<< gSum(values)<<endl;
 
     Info<<name()<<": balance of phi*"<<factorFields_<<" over "<<nc<< " cells (V="<<V<<") = "<<balanceSum_<<endl;
 

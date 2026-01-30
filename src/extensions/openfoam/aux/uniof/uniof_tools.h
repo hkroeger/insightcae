@@ -1,13 +1,49 @@
 #ifndef UNIOF_HELPERS_H
 #define UNIOF_HELPERS_H
 
-
+#include "uniof.h"
 #include "uniof_time.h"
 #include "Pstream.H"
 #include "OFstream.H"
 
+#include "fvMesh.H"
+#include "cellSet.H"
+
 namespace Foam
 {
+
+
+
+void findBndFaces(const fvMesh& mesh, const cellSet& cells, labelList& res, scalarField& normal_direction);
+
+
+
+template<class T>
+tmp<Field<T> > pick_gf(
+    const GeometricField<T, fvsPatchField, surfaceMesh>& data,
+    const labelList& idxs,
+    const scalarField* mult=nullptr )
+{
+    tmp<Field<T> > tres(new Field<T>(idxs.size(), pTraits<T>::zero));
+    Field<T>& res = UNIOF_TMP_NONCONST(tres);
+
+    forAll(idxs, i)
+    {
+        label fi=idxs[i];
+
+        if (fi<data.mesh().nInternalFaces())
+        {
+            res[i] = data[idxs[i]];
+        } else
+        {
+            label pi=data.mesh().boundaryMesh().whichPatch(fi);
+            res[i] = data.boundaryField()[pi][fi-data.mesh().boundaryMesh()[pi].start()];
+        }
+
+        if (mult!=nullptr) res[i] *= (*mult)[i];
+    }
+    return tres;
+}
 
 
 

@@ -22,7 +22,7 @@ public:
 
     declareType ( "OutputSectionReader" );
 
-    virtual bool parseNextLine(const std::string& line) =0;
+    virtual bool parseNextLine(const std::string& line);
     virtual void addProgressVariables(std::map<std::string, double>& progVars) const =0;
 };
 

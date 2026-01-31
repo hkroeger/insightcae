@@ -397,7 +397,7 @@ const rapidxml::xml_node<>* CADGeometryParameter::readFromNode(
         geometry_.reset();
 
         auto sourceType = getMandatoryAttribute(*child, "source");
-        if (sourceType=="fileName")
+        if (sourceType=="file")
         {
             auto fc=std::make_shared<FileContainer>();
             fc->readFromNode(*child, "fileName");

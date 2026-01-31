@@ -20,6 +20,9 @@
 #ifndef INSIGHT_NUMERICALWINDTUNNEL_H
 #define INSIGHT_NUMERICALWINDTUNNEL_H
 
+
+#include <map>
+
 #include "base/parameters/subsetparameter.h"
 #include "openfoam/openfoamanalysis.h"
 
@@ -29,6 +32,7 @@
 
 namespace insight {
 
+namespace bmd { class blockMeshBlocking; }
 
 class NumericalWindtunnel_ParameterSet_Visualizer;
 
@@ -55,7 +59,12 @@ geometry = set {
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
 
  verticalPlacement = selectablesubset {{
-  onFloor set {}
+  onFloor set {
+    wallIsMoving = bool true "if set, the lower wall moves with the same speed as the inflow."
+  }
+  onCeiling set {
+    wallIsMoving = bool true "if set, the upper wall moves with the same speed as the inflow."
+  }
   centered set {}
   atHeight set {
     height = selectablesubset {{
@@ -75,7 +84,12 @@ geometry = set {
   yaw = double 0. "[deg] Yaw angle which should applied to the positioned geometry. Around origin of imported geometry. Sequence of application is Roll > Trim > Yaw."
  } ""
  
- objectfile     = path "" "Path to object geometry. May be STL, STEP or IGES." *necessary
+ objects     = labeledarray "object%d" [
+    cadgeometry "" "Path to object geometry. May be STL, STEP or IGES." *necessary
+ ] *1
+"Objects in the wind tunnel. All objects are transformed equally,
+ thus they are expected to be initially already in the same coordinate system.
+ For each object, the individual forces are reported seperately."
  
 } "Geometrical properties of the domain"
       
@@ -124,8 +138,6 @@ operation = set {
 
  v              = double 1.0 "[m/s] incident velocity" *necessary
 
- lowerWallIsMoving = bool true "if set, the lower wall moves with the same speed as the inflow. This represents the street in vehicle aerodynamics."
- 
 } "Definition of the operation point under consideration"
       
 
@@ -158,6 +170,7 @@ eval = set
           const boost::filesystem::path& workDir,
           ProgressDisplayer& progress = consoleProgressDisplayer );
 
+    std::map<std::string,cad::FeaturePtr> geometry_;
     gp_Trsf cad_to_cfd_;
     double Lupstream_;
     double Ldownstream_;
@@ -165,7 +178,9 @@ eval = set
     double Laside_;
     double Lref_, l_, w_, h_;
 
-    const std::string FOname;
+    const std::string FOname_allObjects;
+
+    std::shared_ptr<bmd::blockMeshBlocking> blocking;
   };
 
   addParameterMembers_SupplementedInputData(NumericalWindtunnel::Parameters);

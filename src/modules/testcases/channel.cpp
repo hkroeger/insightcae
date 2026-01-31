@@ -453,17 +453,18 @@ void ChannelBase::createCase
       .set_p0(vec3(0., 0., -0.49*p().geometry.B))
       .set_axSpan(0.5*p().geometry.L)
       .set_tanSpan(0.45*p().geometry.B)
-      .set_name("tpc_interior")
       .set_timeStart( sp().avg2Start_ )
+      .set_name("tpc_interior")
     ));
   }
   
   {
     probes::Parameters pp;
-    pp .set_name("center_probes")
+    pp
        .set_outputControl("timeStep")
        .set_outputInterval(10.0)
-        ;
+       .set_name("center_probes")
+       ;
 
     std::copy(sp().probe_locations_.begin(),
               sp().probe_locations_.end(),

@@ -54,11 +54,47 @@ arma::mat readAndCombineTabularFiles
         const std::string& regionName = std::string()
         );
 
+
+class functionObject
+    : public OpenFOAMCaseElement
+{
+
+public:
+    declareFactoryTable
+        (
+            functionObject,
+            LIST
+            (
+                OpenFOAMCase& c,
+                ParameterSetInput&& ip
+                ),
+            LIST ( c, std::move(ip) )
+            );
+    declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> );
+    declareType("functionObject");
+
+    functionObject(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
+    virtual OFDictData::dict functionObjectDict() const =0;
+    virtual std::set<std::string> requiredLibraries() const;
+    void addIntoControlDict(OFDictData::dict& controlDict) const;
+    void addIntoDictionaries(OFdicts& dictionaries) const override;
+
+    virtual void evaluate
+        (
+            OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results,
+            const std::string& shortDescription
+            ) const;
+
+    static std::string category() { return "Postprocessing"; }
+};
+
+
+
 /** ===========================================================================
  * Base class for function objects, that understand the output* options
  */
 class outputFilterFunctionObject
-: public OpenFOAMCaseElement
+: public functionObject
 {
 public:
 
@@ -66,9 +102,8 @@ public:
 
 /*
 PARAMETERSET>>> outputFilterFunctionObject Parameters
-inherits OpenFOAMCaseElement::Parameters
+inherits functionObject::Parameters
 
-name = string "unnamed" "Name of the function object"
 region = string "region0" "name of the region, defaults to the value of polyMesh::defaultRegion"
 timeStart = double 0 "Time value, when the function object evaluation should start"
 outputControl = string "outputTime" "Output time control"
@@ -80,32 +115,10 @@ createGetter
 
   
 public:
-  declareFactoryTable 
-  ( 
-      outputFilterFunctionObject, 
-      LIST 
-      (  
-	  OpenFOAMCase& c, 
-      ParameterSetInput&& ip
-      ),
-      LIST ( c, std::move(ip) )
-  );
-  declareStaticFunctionTable ( defaultParameters, std::unique_ptr<ParameterSet> );
   declareType("outputFilterFunctionObject");
 
   outputFilterFunctionObject(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
-  virtual OFDictData::dict functionObjectDict() const =0;
-  virtual std::vector<std::string> requiredLibraries() const;
-  void addIntoControlDict(OFDictData::dict& controlDict) const;
-  void addIntoDictionaries(OFdicts& dictionaries) const override;
-
-  virtual void evaluate
-  (
-    OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
-    const std::string& shortDescription
-  ) const;
-  
-  static std::string category() { return "Postprocessing"; }
+  OFDictData::dict functionObjectDict() const override;
 };
 
 
@@ -489,7 +502,7 @@ public:
   forces(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
-  std::vector<std::string> requiredLibraries() const override;
+  std::set<std::string> requiredLibraries() const override;
   
   static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
   
@@ -522,7 +535,7 @@ public:
   declareType("extendedForces");
   extendedForces(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
   OFDictData::dict functionObjectDict() const override;
-  std::vector<std::string> requiredLibraries() const override;
+  std::set<std::string> requiredLibraries() const override;
 };
 
 
@@ -678,7 +691,6 @@ public:
   declareType(TypeName);
   
   TPCArray(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
-  virtual OFDictData::dict functionObjectDict() const;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
   virtual void evaluate(
       OpenFOAMCase& cm, const boost::filesystem::path& location,

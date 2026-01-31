@@ -8,7 +8,7 @@ set(genericmodules_SOURCES
 )
 
 set(genericmodules_LIBS
-  toolkit insightcad
+  toolkit toolkit_cad
 )
 
 if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)

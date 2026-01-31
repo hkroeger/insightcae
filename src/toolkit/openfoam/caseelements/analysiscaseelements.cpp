@@ -339,10 +339,10 @@ std::map<std::string,arma::mat> readAndCombineGroupedTabularFiles
 
 
 
-defineType(outputFilterFunctionObject);
+defineType(functionObject);
 defineFactoryTable
 (
-    outputFilterFunctionObject,
+    functionObject,
     LIST
     (
         OpenFOAMCase& c,
@@ -350,29 +350,65 @@ defineFactoryTable
     ),
     LIST ( c, std::move(ip) )
 );
-defineStaticFunctionTable(outputFilterFunctionObject, defaultParameters, std::unique_ptr<ParameterSet>);
+defineStaticFunctionTable(functionObject, defaultParameters, std::unique_ptr<ParameterSet>);
 
 
 
 
-outputFilterFunctionObject::outputFilterFunctionObject(
+functionObject::functionObject(
     OpenFOAMCase& c, ParameterSetInput ip )
-: OpenFOAMCaseElement(c, /*Parameters(ps).name+"outputFilterFunctionObject",*/
-                          ip.forward<Parameters>())
-{
-}
+: OpenFOAMCaseElement(c, ip.forward<Parameters>())
+{}
 
-std::vector<string> outputFilterFunctionObject::requiredLibraries() const
+std::set<string> functionObject::requiredLibraries() const
 {
     return {};
 }
 
 
-
-
-void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDict) const
+void functionObject::addIntoControlDict(OFDictData::dict& controlDict) const
 {
-  OFDictData::dict fod=functionObjectDict();
+    OFDictData::dict fod=functionObjectDict();
+    controlDict.subDict("functions")[name()]=fod;
+
+    auto libs=requiredLibraries();
+    for (const auto& l: libs)
+    {
+        controlDict.getList("libs").insertNoDuplicate("\""+l+"\"");
+    }
+}
+
+void functionObject::addIntoDictionaries(OFdicts& dictionaries) const
+{
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+    addIntoControlDict(controlDict);
+}
+
+
+
+void functionObject::evaluate
+    (
+        OpenFOAMCase& , const boost::filesystem::path& , ResultSetPtr& ,
+        const std::string&
+        ) const
+{}
+
+
+
+defineType(outputFilterFunctionObject);
+
+
+outputFilterFunctionObject::outputFilterFunctionObject(
+        OpenFOAMCase& c, ParameterSetInput ip )
+    : functionObject(c, ip.forward<Parameters>())
+{}
+
+
+
+OFDictData::dict outputFilterFunctionObject::functionObjectDict() const
+{
+  OFDictData::dict fod;
+
   fod["region"]=p().region;
   fod["enabled"]=true;
   if (OFversion()>=400)
@@ -387,34 +423,13 @@ void outputFilterFunctionObject::addIntoControlDict(OFDictData::dict& controlDic
     }
   fod["timeStart"]=p().timeStart;
 
-  controlDict.subDict("functions")[p().name]=fod;
-
-  auto libs=requiredLibraries();
-  for (const auto& l: libs)
-  {
-      controlDict.getList("libs").insertNoDuplicate(l);
-  }
+  return fod;
 }
 
 
 
 
-void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  addIntoControlDict(controlDict);
-}
 
-
-
-
-void outputFilterFunctionObject::evaluate
-(
-  OpenFOAMCase& , const boost::filesystem::path& , ResultSetPtr& ,
-  const std::string&
-) const
-{
-}
 
 
 
@@ -435,7 +450,9 @@ fieldAveraging::fieldAveraging(OpenFOAMCase& c,  ParameterSetInput ip)
 
 OFDictData::dict fieldAveraging::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
+
   fod["type"]="fieldAverage";
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
@@ -475,7 +492,9 @@ probes::probes(OpenFOAMCase& c,  ParameterSetInput ip )
 
 OFDictData::dict probes::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
+
   fod["type"]="probes";
   OFDictData::list libl; libl.push_back("\"libsampling.so\"");
   fod["functionObjectLibs"]=libl;
@@ -668,7 +687,9 @@ volumeIntegrate::volumeIntegrate(OpenFOAMCase& c,  ParameterSetInput ip )
 
 OFDictData::dict volumeIntegrate::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
+
   fod["type"]="volFieldValue";
 
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
@@ -745,7 +766,8 @@ surfaceIntegrate::surfaceIntegrate(OpenFOAMCase& c,  ParameterSetInput ip)
 OFDictData::dict surfaceIntegrate::functionObjectDict() const
 {
 //  insight::Warning("incomplete implementation");
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+    outputFilterFunctionObject::functionObjectDict();
 
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
@@ -902,7 +924,8 @@ OFDictData::dict fieldMinMax::functionObjectDict() const
 {
 //  insight::Warning("incomplete implementation");
 
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+    outputFilterFunctionObject::functionObjectDict();
   fod["type"]="fieldMinMax";
 
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
@@ -945,7 +968,8 @@ cuttingPlane::cuttingPlane(OpenFOAMCase& c, ParameterSetInput ip)
 
 OFDictData::dict cuttingPlane::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
 
   fod["type"]="surfaces";
   OFDictData::list l;
@@ -1020,7 +1044,9 @@ OFDictData::dict twoPointCorrelation::csysConfiguration() const
 
 OFDictData::dict twoPointCorrelation::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
+
   fod["type"]="twoPointCorrelation";
   OFDictData::list libl; libl.push_back("\"libLESFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
@@ -1164,7 +1190,9 @@ forces::forces(OpenFOAMCase& c,  ParameterSetInput ip)
 
 OFDictData::dict forces::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
+
   fod["type"]="forces";
 
   fod["log"]=true;
@@ -1194,9 +1222,9 @@ OFDictData::dict forces::functionObjectDict() const
   return fod;
 }
 
-std::vector<string> forces::requiredLibraries() const
+std::set<string> forces::requiredLibraries() const
 {
-    return { "\"libforces.so\"" };
+    return { "libforces.so" };
 }
 
 
@@ -1393,7 +1421,8 @@ extendedForces::extendedForces(OpenFOAMCase& c, ParameterSetInput ip)
 
 OFDictData::dict extendedForces::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
   fod["type"]="extendedForces";
 
   fod["log"]=true;
@@ -1422,9 +1451,9 @@ OFDictData::dict extendedForces::functionObjectDict() const
   return fod;
 }
 
-std::vector<string> extendedForces::requiredLibraries() const
+std::set<string> extendedForces::requiredLibraries() const
 {
-    return { "\"libextendedForcesFunctionObject.so\"" };
+    return { "libextendedForcesFunctionObject.so" };
 }
 
   

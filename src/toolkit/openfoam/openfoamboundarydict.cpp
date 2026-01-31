@@ -1,5 +1,6 @@
 #include "openfoamboundarydict.h"
 
+#include "boost/regex/v4/regex_match.hpp"
 #include "boost/spirit/include/qi.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
@@ -44,6 +45,27 @@ void OpenFOAMBoundaryDict::removeZeroSizedPatches()
   } while (erased);
 
 }
+
+
+
+
+std::set<string> OpenFOAMBoundaryDict::expandPatchNamePattern(
+    const std::string &reExpPattern ) const
+{
+    boost::regex re(reExpPattern);
+    std::set<string> result;
+    for (auto &p: *this)
+    {
+        if (boost::regex_match(p.first, re))
+        {
+            result.insert(p.first);
+        }
+    }
+    return result;
+}
+
+
+
 
 bool OpenFOAMBoundaryDict::patchExists(const std::string &name) const
 {

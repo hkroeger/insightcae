@@ -16,7 +16,8 @@ wallHeatFlux::wallHeatFlux ( OpenFOAMCase& c, ParameterSetInput ip )
 
 OFDictData::dict wallHeatFlux::functionObjectDict() const
 {
-  OFDictData::dict fod;
+  OFDictData::dict fod=
+        outputFilterFunctionObject::functionObjectDict();
 
   fod["type"]="wallHeatFlux";
   fod["region"]=p().region;

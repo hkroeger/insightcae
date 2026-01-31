@@ -30,6 +30,8 @@ public:
 
   void removeZeroSizedPatches();
 
+  std::set<std::string> expandPatchNamePattern(const std::string& reExpPattern) const;
+
   bool patchExists(const std::string& name) const;
 
   void renamePatch(

@@ -66,11 +66,7 @@ TPCArray<TPC,TypeName>::TPCArray(OpenFOAMCase& cm, ParameterSetInput ip )
     }
 }
 
-template<class TPC, const char* TypeName>
-OFDictData::dict TPCArray<TPC,TypeName>::functionObjectDict() const
-{
-    return OFDictData::dict();
-}
+
 
 template<class TPC, const char* TypeName>
 void TPCArray<TPC,TypeName>::addIntoDictionaries(OFdicts& dictionaries) const

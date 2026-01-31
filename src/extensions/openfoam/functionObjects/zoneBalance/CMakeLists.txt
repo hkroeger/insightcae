@@ -16,7 +16,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
-    uniof
+    uniof ${Boost_LIBRARIES}
 )
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "uniof_tools")

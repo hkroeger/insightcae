@@ -1755,8 +1755,8 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     {
         // take a closer look with other pick engine
         // which can detect multiple overlapping actors
-        auto picker3d = vtkSmartPointer<vtkPicker>::New();
-    //    picker3d->SetTolerance(1e-4);
+        auto picker3d = vtkSmartPointer<vtkCellPicker>::New();
+        picker3d->SetTolerance(1e-2);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
 
         // insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";

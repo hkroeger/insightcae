@@ -353,13 +353,82 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                         if (auto online =
                             std::dynamic_pointer_cast<SingleEdgeFeature>(
-                                addPoint->onFeature ) )
+                                addPoint->onFeature ) ) // line w. endpoints
                         {
                             // constrain distance to start of hit line
                             (*this)->insertGeometry(
                                 FixedDistanceConstraint::create(
                                     online->start(), addPoint->p,
                                     (*this)->sketchPlaneNormal() ) );
+                        }
+                        else // some other crazy curve
+                        {
+                            // if more along Y-axis, constrain y-coordinate;
+                            // otherwise, constrain x-coordinate
+                            auto s = addPoint->onFeature->shape();
+                            auto p = addPoint->p->value();
+                            TopoDS_Edge edge;
+
+                            struct Hit {
+                                Handle(Geom_Curve) curve;
+                                double parameter;
+                            };
+                            std::map<double,Hit> hits;
+
+                            for (TopExp_Explorer exp(s, TopAbs_EDGE); exp.More(); exp.Next())
+                            {
+                                Hit c;
+
+                                edge = TopoDS::Edge(exp.Current());
+
+                                Standard_Real first, last;
+                                c.curve = BRep_Tool::Curve(edge, first, last);
+                                if (c.curve.IsNull())
+                                    continue;
+
+                                GeomAPI_ProjectPointOnCurve projector(
+                                    to_Pnt(p), c.curve, first, last);
+
+                                if (projector.NbPoints() > 0)
+                                {
+                                    c.parameter=projector.LowerDistanceParameter();
+                                    hits[projector.LowerDistance()]=c;
+                                }
+                            }
+                            insight::assertion(
+                                hits.size()>0,
+                                 "no edge found for point");
+
+                            auto &c=hits.begin()->second;
+                            gp_Pnt pt;
+                            gp_Vec tan;
+                            c.curve->D1(c.parameter, pt, tan);
+                            arma::mat etan=normalized(vec3(tan));
+
+                            arma::mat p2=viewer().pointInPlane2D(
+                                sketch().plane()->plane(), p);
+                            arma::mat p2p=viewer().pointInPlane2D(
+                                sketch().plane()->plane(), p+etan);
+
+                            arma::mat dir2=normalized(p2p-p2);
+
+                            VectorPtr dimdir;
+                            if (fabs(dir2(1))>fabs(dir2(0)))
+                            {
+                                dimdir=vec3const(0,1,0);
+                            }
+                            else
+                            {
+                                dimdir=vec3const(1,0,0);
+                            }
+                            auto constr = FixedDistanceConstraint::create(
+                                vec3const(0,0,0), addPoint->p,
+                                (*this)->sketchPlaneNormal(),
+                                std::string(),
+                                dimdir );
+                            (*this)->insertGeometry(constr);
+                            (*this)->invalidate();
+                            Q_EMIT sketchChanged();
                         }
                     }
                 }

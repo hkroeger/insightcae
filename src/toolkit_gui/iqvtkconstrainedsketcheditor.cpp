@@ -3,6 +3,7 @@
 #include "base/units.h"
 #include "base/translations.h"
 #include "constrainedsketch.h"
+#include "constrainedsketchentities/externalreference.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -1230,11 +1231,56 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
         connect(showbtn, &QPushButton::clicked,
                 [this]()
                 {
-                    hiddenEntities_.clear();
+                    std::set<int> tbr;
+                    for (auto i: hiddenEntities_)
+                    {
+                        if ((**this).get<ConstraintWithDimensionLines>(i))
+                        {
+                            tbr.insert(i);
+                        }
+                    }
+                    for (auto i: tbr) hiddenEntities_.erase(i);
                     updateActors();
                 });
         btns->addWidget(showbtn);
         l->addRow("Dimensions", btns);
+    }
+
+    {
+        auto btns=new QHBoxLayout;
+        auto hidebtn=new QPushButton("Hide all");
+        btns->addWidget(hidebtn);
+        connect(hidebtn, &QPushButton::clicked,
+                [this]()
+                {
+                    for (const auto& g: **this)
+                    {
+                        if (auto dim =
+                            std::dynamic_pointer_cast<ExternalReference>(
+                                g.second ) )
+                        {
+                            hiddenEntities_.insert(g.first);
+                        }
+                    }
+                    updateActors();
+                });
+        auto showbtn=new QPushButton("Show all");
+        connect(showbtn, &QPushButton::clicked,
+                [this]()
+                {
+                    std::set<int> tbr;
+                    for (auto i: hiddenEntities_)
+                    {
+                        if ((**this).get<ExternalReference>(i))
+                        {
+                            tbr.insert(i);
+                        }
+                    }
+                    for (auto i: tbr) hiddenEntities_.erase(i);
+                    updateActors();
+                });
+        btns->addWidget(showbtn);
+        l->addRow("Ref. geom.", btns);
     }
 
     {

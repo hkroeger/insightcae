@@ -206,7 +206,7 @@ bool SpatialTransformation::isIdentityTransform() const
 }
 
 
-vtkSmartPointer<vtkTransform> SpatialTransformation::toVTKTransform() const
+vtkSmartPointer<vtkLinearTransform> SpatialTransformation::toVTKTransform() const
 {
   auto t = vtkSmartPointer<vtkTransform>::New();
   t->PostMultiply();

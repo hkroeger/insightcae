@@ -54,9 +54,17 @@ geometry = set {
  LupstreamByL   = double 4 "[-] upstream domain extent, divided by object diagonal" *hidden
  LdownstreamByL = double 10 "[-] downstream domain extent, divided by object diagonal" *hidden
  LasideByL      = double 3 "[-] lateral domain extent, divided by object diagonal" *hidden
- LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden
- forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
- upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
+ LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden#
+
+ transformation = set {
+   forwarddir     = vector (1 0 0) "direction from rear to forward end in CAD geometry CS"
+   upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
+   localOrigin    = vector (0 0 0)
+"Origin in CAD geometry CS.
+ This determines the pivot point for rotations.
+ Also, this point will be coincident with the floor, if verticalPlacement 'onFloor' is chosen
+ or at the defined height above the floor, if 'atHeight' is selected."
+ }
 
  verticalPlacement = selectablesubset {{
   onFloor set {
@@ -176,7 +184,7 @@ eval = set
     double Ldownstream_;
     double Lup_, Ldown_;
     double Laside_;
-    double Lref_, l_, w_, h_;
+    double Lref_, l_, w_, hup_, dlo_;
 
     const std::string FOname_allObjects;
 

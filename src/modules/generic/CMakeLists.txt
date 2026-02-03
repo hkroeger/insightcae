@@ -39,7 +39,7 @@ add_shared_file(genericmodules modules.d genericmodules.module)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
 set(genericmodulesgui_SOURCES
-    numericalwindtunnel_gui.cpp
+    numericalwindtunnel_gui.h numericalwindtunnel_gui.cpp
     internalpressureloss_gui.cpp
 )
 qt5_add_resources(genericmodulesgui_SOURCES genericmodules.qrc)
@@ -50,3 +50,8 @@ install(TARGETS genericmodulesgui LIBRARY DESTINATION lib COMPONENT ${INSIGHT_IN
 
 
 add_pybindings(GenericModules "genericmodules.i" genericmodules)
+
+target_sources(GenericModules_python
+  PRIVATE
+    numericalwindtunnel_gui.h
+)

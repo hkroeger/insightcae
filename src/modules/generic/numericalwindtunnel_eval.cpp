@@ -158,15 +158,15 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         camera->ParallelProjectionOn();
 
         insight::CoordinateSystem evalCS(
-            vec3(0.5*sp().l_, 0, sp().Ldown_+0.5*sp().h_),
+            vec3(0.5*sp().l_, 0, sp().Ldown_+0.5*(sp().hup_+sp().dlo_)),
             vec3X(), vec3Z() );
-        double maxObjSize=std::max(sp().l_, std::max(sp().w_, sp().h_));
+        double maxObjSize=std::max(sp().l_, std::max(sp().w_, (sp().hup_+sp().dlo_)));
         double camDist=10.*maxObjSize;
 
 
         auto im = scene.internalMesh();
 
-        double Hs=1.25*sp().h_;
+        double Hs=1.25*(sp().hup_+sp().dlo_);
         int ns=50;
         {
             auto seeds = vtkSmartPointer<vtkLineSource>::New();

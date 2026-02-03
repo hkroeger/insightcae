@@ -62,6 +62,10 @@ cellSelection = selectablesubset {{
   thresholdScalarFieldName = string "" "name of the selection scalar field"
   volumeFraction = double 1e-3 "fraction of volume with the highest values"
  }
+ aboveFractionOfMinimum set {
+  thresholdScalarFieldName = string "" "name of the selection scalar field"
+  minimumFraction = double 1.1 "lower threshold as fraction of minimum value"
+ }
 }} all ""
 
 factorFields = array [

@@ -88,6 +88,12 @@ OFDictData::dict zoneBalance::functionObjectDict() const
         fod["lowerThreshold"]=thr->lowerThreshold;
         fod["upperThreshold"]=thr->upperThreshold;
     }
+    else if (auto* thr=boost::get<Parameters::cellSelection_aboveFractionOfMinimum_type>(&p().cellSelection))
+    {
+        fod["cellSelection"]="aboveFractionOfMinimum";
+        fod["thresholdScalarFieldName"]=thr->thresholdScalarFieldName;
+        fod["minimumFraction"]=thr->minimumFraction;
+    }
     fod["factorFields"]=OFDictData::list(p().factorFields);
     return fod;
 }

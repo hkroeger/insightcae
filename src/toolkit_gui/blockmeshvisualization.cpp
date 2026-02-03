@@ -109,49 +109,57 @@ blockMeshVisualization::blockMeshVisualization(
             }
 
             TopTools_ListOfShape edgs;
-            edgs.Append(addEdge(facepts[0], facepts[1], tf));
-            edgs.Append(addEdge(facepts[1], facepts[2], tf));
-            edgs.Append(addEdge(facepts[2], facepts[3], tf));
-            edgs.Append(addEdge(facepts[3], facepts[0], tf));
-
-            BRepBuilderAPI_MakeWire wb;
-            TopoDS_Wire w;
-            try
+            for (auto& e: {
+                addEdge(facepts[0], facepts[1], tf),
+                addEdge(facepts[1], facepts[2], tf),
+                addEdge(facepts[2], facepts[3], tf),
+                addEdge(facepts[3], facepts[0], tf)})
             {
-                wb.Add(edgs);
-                w=wb.Wire();
-            }
-            catch (...)
-            {
-                TopTools_ListIteratorOfListOfShape i(edgs);
-                auto nextValue= [&]() {
-                    auto v=i.Value();
-                    i.Next();
-                    return v;
-                };
-                throw insight::CADException(
-                    {
-                     {"e1", cad::Import::create(nextValue()) },
-                     {"e2", cad::Import::create(nextValue()) },
-                     {"e3", cad::Import::create(nextValue()) },
-                     {"e4", cad::Import::create(nextValue()) }
-                    },
-                    "failed to create wire"
-                );
+                if (!e.IsNull())
+                    edgs.Append(e);
             }
 
-            try
+            if (edgs.Extent()>0)
             {
-                auto face = BRepBuilderAPI_MakeFace(w).Face();
-                sew.Add( face );
-            }
-            catch(...)
-            {
-                throw insight::CADException(
-                    {
-                        {"w", cad::Import::create(w) }
-                    },
-                    "failed to create face from wire");
+                BRepBuilderAPI_MakeWire wb;
+                TopoDS_Wire w;
+                try
+                {
+                    wb.Add(edgs);
+                    w=wb.Wire();
+                }
+                catch (...)
+                {
+                    TopTools_ListIteratorOfListOfShape i(edgs);
+                    auto nextValue= [&]() {
+                        auto v=i.Value();
+                        i.Next();
+                        return v;
+                    };
+                    throw insight::CADException(
+                        {
+                         {"e1", cad::Import::create(nextValue()) },
+                         {"e2", cad::Import::create(nextValue()) },
+                         {"e3", cad::Import::create(nextValue()) },
+                         {"e4", cad::Import::create(nextValue()) }
+                        },
+                        "failed to create wire"
+                    );
+                }
+
+                try
+                {
+                    auto face = BRepBuilderAPI_MakeFace(w).Face();
+                    sew.Add( face );
+                }
+                catch(...)
+                {
+                    throw insight::CADException(
+                        {
+                            {"w", cad::Import::create(w) }
+                        },
+                        "failed to create face from wire");
+                }
             }
         }
 

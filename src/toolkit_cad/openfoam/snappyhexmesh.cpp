@@ -618,10 +618,10 @@ void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["minFaceWeight"]=0.01;  
   qualityCtrls["minVolRatio"]=0.0005;  
   qualityCtrls["minTriangleTwist"]=-1.0;  
-  qualityCtrls["nSmoothScale"]=4;  
-  qualityCtrls["errorReduction"]=0.75;  
+  qualityCtrls["nSmoothScale"]=4;
+  qualityCtrls["errorReduction"]=0.75;
 
-  qualityCtrls["minTetQuality"]= 1e-40;
+  qualityCtrls["minTetQuality"]= -1;
 }
 
 void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls)

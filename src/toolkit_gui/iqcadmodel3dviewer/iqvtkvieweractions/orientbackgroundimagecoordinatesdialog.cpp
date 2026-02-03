@@ -4,15 +4,15 @@
 #include "base/linearalgebra.h"
 
 OrientBackgroundImageCoordinatesDialog::OrientBackgroundImageCoordinatesDialog(
-    const arma::mat& p1, const arma::mat& p2, QWidget *parent) :
+    const arma::mat& xy1, const arma::mat& xy2, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::OrientBackgroundImageCoordinatesDialog)
 {
     ui->setupUi(this);
-    ui->x1->setText(QString::number(p1[0]));
-    ui->y1->setText(QString::number(p1[1]));
-    ui->x2->setText(QString::number(p2[0]));
-    ui->y2->setText(QString::number(p2[1]));
+    ui->x1->setText(QString::number(xy1[0]));
+    ui->y1->setText(QString::number(xy1[1]));
+    ui->x2->setText(QString::number(xy2[0]));
+    ui->y2->setText(QString::number(xy2[1]));
 }
 
 OrientBackgroundImageCoordinatesDialog::~OrientBackgroundImageCoordinatesDialog()
@@ -21,7 +21,7 @@ OrientBackgroundImageCoordinatesDialog::~OrientBackgroundImageCoordinatesDialog(
 }
 
 
-arma::mat OrientBackgroundImageCoordinatesDialog::p1() const
+arma::mat OrientBackgroundImageCoordinatesDialog::xy1() const
 {
     bool ok1, ok2;
     arma::mat p = insight::vec3(
@@ -33,7 +33,7 @@ arma::mat OrientBackgroundImageCoordinatesDialog::p1() const
 }
 
 
-arma::mat OrientBackgroundImageCoordinatesDialog::p2() const
+arma::mat OrientBackgroundImageCoordinatesDialog::xy2() const
 {
     bool ok1, ok2;
     arma::mat p = insight::vec3(

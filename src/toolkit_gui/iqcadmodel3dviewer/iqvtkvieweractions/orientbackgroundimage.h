@@ -2,6 +2,7 @@
 #define INSIGHT_ORIENTBACKGROUNDIMAGE_H
 
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
+#include "iqcadmodel3dviewer/iqvtkbackgroundimage.h"
 
 #include "vtkSmartPointer.h"
 #include "vtkActor.h"
@@ -10,12 +11,6 @@ class IQVTKCADModel3DViewer;
 class vtkImageActor;
 
 
-struct OrientationSpec
-{
-    arma::mat pCtr_, p2_;
-    arma::mat xy1_, xy2_;
-};
-
 class IQVTKOrientBackgroundImage
 : public ViewWidgetAction<IQVTKCADModel3DViewer>
 {
@@ -23,20 +18,27 @@ public:
     boost::signals2::signal<void(OrientationSpec)> orientationSelected;
 
 private:
-    vtkImageActor* imageActor_;
+    BackgroundImage& image_;
 
     vtkSmartPointer<vtkActor> pAct_[2];
+    int curPoint_;
 
     OrientationSpec os_;
 
     void selectedNextPoint(const arma::mat& p);
+    void skip();
+    void finalDialog();
 
 public:
-    IQVTKOrientBackgroundImage(IQVTKCADModel3DViewer &viewWidget, vtkImageActor* imageActor);
+    IQVTKOrientBackgroundImage(IQVTKCADModel3DViewer &viewWidget, BackgroundImage& image);
 
     QString description() const override;
 
     void start() override;
+
+    bool onKeyPress(
+        Qt::KeyboardModifiers modifiers,
+        int key ) override;
 
     bool onMouseClick(
         Qt::MouseButtons btn,

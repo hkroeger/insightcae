@@ -58,6 +58,8 @@ set(toolkit_gui_SRCS
  iqcadmodel3dviewer/iqvtkcadmodel3dviewer_highlightitem.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewer_subshapeselection.cpp
  iqcadmodel3dviewer/iqvtkcadmodel3dviewer_clippingplanes.cpp
+ iqcadmodel3dviewer/iqvtkbackgroundimage.h iqcadmodel3dviewer/iqvtkbackgroundimage.cpp
+
  iqcadmodel3dviewer/viewwidgetaction.h iqcadmodel3dviewer/viewwidgetaction.cpp
  iqcadmodel3dviewer/viewwidgetinsertids.h iqcadmodel3dviewer/viewwidgetinsertids.cpp
  iqcadmodel3dviewer/qwidgettoinputreceiveradapter.h

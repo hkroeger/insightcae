@@ -6,6 +6,7 @@
 
 #include <limits>
 #include "vtkSmartPointer.h"
+#include "vtkLinearTransform.h"
 //#include "vtkTransform.h"
 //#include "vtkPolyDataAlgorithm.h"
 
@@ -233,7 +234,7 @@ public:
 
     bool isIdentityTransform() const;
 
-    vtkSmartPointer<vtkTransform> toVTKTransform() const;
+    vtkSmartPointer<vtkLinearTransform> toVTKTransform() const;
 
     vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(
             vtkSmartPointer<vtkPolyDataAlgorithm> in ) const override;

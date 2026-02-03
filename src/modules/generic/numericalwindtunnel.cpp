@@ -80,51 +80,63 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
   double bbdefl=0.5;
 
-  double L_upw=arma::norm(p().geometry.upwarddir,2);
+  double L_upw=arma::norm(p().geometry.transformation.upwarddir,2);
   if (L_upw<1e-12)
     throw insight::Exception("Upward direction vector has zero length!");
 
-  double L_fwd=arma::norm(p().geometry.forwarddir,2);
+  double L_fwd=arma::norm(p().geometry.transformation.forwarddir,2);
   if (L_fwd<1e-12)
     throw insight::Exception("Forward direction vector has zero length!");
 
-  if ( fabs(arma::dot(p().geometry.upwarddir/L_upw, p().geometry.forwarddir/L_fwd)-1.) < 1e-12 )
+  if ( fabs(arma::dot(p().geometry.transformation.upwarddir/L_upw,
+                     p().geometry.transformation.forwarddir/L_fwd)-1.) < 1e-12 )
   {
     throw insight::Exception("Upward and forward direction are colinear!");
   }
 
-  gp_Trsf rot; rot.SetTransformation
+  cad::is_gp_Trsf rot; rot.SetTransformation
   (
     gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(-1,0,0)), // other way round => wrong
-    gp_Ax3(gp_Pnt(0,0,0),
-           toVec<gp_Dir>(p().geometry.upwarddir),
-           toVec<gp_Dir>(p().geometry.forwarddir) )
+    gp_Ax3(toVec<gp_Pnt>(-p().geometry.transformation.localOrigin),
+           toVec<gp_Dir>(p().geometry.transformation.upwarddir),
+           toVec<gp_Dir>(p().geometry.transformation.forwarddir) )
   );
 
 
   parentProgress.message("Getting geometry file"); // extraction may take place now
 
 
-  gp_Trsf roll; roll.SetRotation(
-      gp::OX(),
-      toValue(
-          p().geometry.attitude.roll*si::angle_deg,
-          si::radians));
-  gp_Trsf trim; trim.SetRotation(
-      gp::OY(),
-      toValue(
-          p().geometry.attitude.trim*si::angle_deg,
-          si::radians));
-  gp_Trsf yaw; yaw.SetRotation(
-      gp::OZ(),
-      toValue(
-          p().geometry.attitude.yaw*si::angle_deg,
-          si::radians));
-  cad::is_gp_Trsf att=yaw
-            .Multiplied(trim)
-            .Multiplied(roll);
+  // gp_Trsf roll; roll.SetRotation(
+  //     gp::OX(),
+  //     toValue(
+  //         p().geometry.attitude.roll*si::angle_deg,
+  //         si::radians));
+  // gp_Trsf trim; trim.SetRotation(
+  //     gp::OY(),
+  //     toValue(
+  //         p().geometry.attitude.trim*si::angle_deg,
+  //         si::radians));
+  // gp_Trsf yaw; yaw.SetRotation(
+  //     gp::OZ(),
+  //     toValue(
+  //         p().geometry.attitude.yaw*si::angle_deg,
+  //         si::radians));
+  // cad::is_gp_Trsf att=yaw
+  //           .Multiplied(trim)
+  //           .Multiplied(roll);
 
-  gp_Trsf scale; scale.SetScaleFactor(p().geometryscale);
+
+
+  auto toWindTunnelCS =
+      SpatialTransformation( p().geometryscale ) // 2. scale
+      * rot.toSpatialTransformation(); // 1. rotate
+
+  SpatialTransformation toAttitude(
+      vec3Zero(),
+      vec3(
+          p().geometry.attitude.roll,
+          p().geometry.attitude.trim,
+          p().geometry.attitude.yaw) );
 
   parentProgress.message("Loading geometry file, computing bounding box");
 
@@ -135,10 +147,10 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       auto loadprogress=parentProgress.forkNewAction(p().geometry.objects.size(), "loading geometry");
       for (auto& g: p().geometry.objects)
       {
-          auto geom=cad::Transform::create(g.second->geometry(), scale*rot);
+          auto geom=cad::Transform::create(g.second->geometry(), toWindTunnelCS);
           bb=unitedBndBox(bb, geom->modelBndBox());
 
-          geom=cad::Transform::create(geom, att);
+          geom=cad::Transform::create(geom, toAttitude);
           bbAtt=unitedBndBox(bbAtt, geom->modelBndBox());
 
           geometry_[g.first]=geom;
@@ -202,9 +214,11 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
   if (w_<1e-12)
       throw insight::Exception("Width of the object is zero!");
 
-  h_=(pmax(2)-pmin(2));
-  reportSupplementQuantity("h", h_, "object height", "m");
-  if (h_<1e-12)
+  hup_=pmax(2);
+  dlo_=-pmin(2);
+  reportSupplementQuantity("hup", hup_, "object height above local origin", "m");
+  reportSupplementQuantity("dlo", dlo_, "object extent below local origin", "m");
+  if ((hup_+dlo_)<1e-12)
       throw insight::Exception("Height of the object is zero!");
 
 
@@ -229,12 +243,12 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
           &p().geometry.verticalPlacement))
   {
       // no vertical translation
-      h=Hdom-h_;
+      h=Hdom;
   }
   else if (boost::get<Parameters::geometry_type::verticalPlacement_centered_type>(
           &p().geometry.verticalPlacement))
   {
-      h=(Hdom-h_)*0.5;
+      h=Hdom*0.5;
   }
   else if (auto * ah =
              boost::get<Parameters::geometry_type::verticalPlacement_atHeight_type>(
@@ -262,36 +276,29 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
   h=std::max<double>(0,std::min<double>(Hdom,h));
 
-  Lup_=Hdom-h-h_;
+  Lup_=std::max(0., Hdom-h-hup_);
   reportSupplementQuantity("Lup", Lup_, "Domain height above lower bound of object", "m");
 
-  Ldown_=h;
+  Ldown_=std::max(0., h-dlo_);
   reportSupplementQuantity("Ldown", Ldown_, "Domain height below object", "m");
 
-  gp_Trsf sc; sc.SetScaleFactor(p().geometryscale);
-  gp_Trsf tr; tr.SetTranslation(gp_Vec(-pmin(0), -0.5*(pmax(1)+pmin(1)), -pmin(2)));
-  gp_Trsf mv; mv.SetTranslation(gp_Vec(-bb(0,0), 0, h));
 
-  cad_to_cfd_ = mv
-        .Multiplied(tr)
-        .Multiplied(sc)
-        .Multiplied(att)
-        // .Multiplied(yaw)
-        // .Multiplied(trim)
-        // .Multiplied(roll)
-        .Multiplied(rot);
+
+  SpatialTransformation windTunnelPlacement(
+      vec3(-pmin(0),-0.5*(pmin(1)+pmax(1)),h)
+      );
 
   // apply to geometry
   for (auto& g: geometry_)
   {
-      g.second=cad::Transform::create(g.second, mv);
+      g.second=cad::Transform::create(g.second, windTunnelPlacement);
   }
 
   double dx=Lref_/double(p().mesh.nx);
 
   int nx=std::max(1, int(l_/dx));
   int ny=std::max(1, int(w_/dx));
-  int nz=std::max(1, int(h_/dx));
+  int nz=std::max(1, int((hup_+dlo_)/dx));
 
   int n_upstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_upstream).calc_n(dx, Lupstream_));
   int n_downstream=std::max(1, bmd::GradingAnalyzer(p().mesh.grad_downstream).calc_n(dx, Ldownstream_));
@@ -326,15 +333,15 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
       {2, 	vec3( l_, 0, Ldown_)},
       {3, 	vec3( l_+Ldownstream_, 0,Ldown_)},
 
-      {4, 	vec3( -Lupstream_, 0, Ldown_+h_)},
-      {5, 	vec3( 0, 0, Ldown_+h_)},
-      {6, 	vec3( l_, 0, Ldown_+h_)},
-      {7, 	vec3( l_+Ldownstream_, 0,Ldown_+h_)},
+      {4, 	vec3( -Lupstream_, 0, Hdom-Lup_)},
+      {5, 	vec3( 0, 0, Hdom-Lup_)},
+      {6, 	vec3( l_, 0, Hdom-Lup_)},
+      {7, 	vec3( l_+Ldownstream_, 0, Hdom-Lup_)},
 
-      {8, 	vec3( -Lupstream_, 0, Ldown_+Lup_+h_)},
-      {9, 	vec3( 0, 0, Ldown_+Lup_+h_)},
-      {10, 	vec3( l_, 0, Ldown_+Lup_+h_)},
-      {11, 	vec3( l_+Ldownstream_, 0, Ldown_+Lup_+h_)}
+      {8, 	vec3( -Lupstream_, 0, Hdom)},
+      {9, 	vec3( 0, 0, Hdom)},
+      {10, 	vec3( l_, 0, Hdom)},
+      {11, 	vec3( l_+Ldownstream_, 0, Hdom)}
   };
   arma::mat Lv=vec3(0,1,0);
 
@@ -357,7 +364,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
   for (size_t i=0; i<nzs.size(); i++)
   {
-      if (Ldown_>0.)
+      if (Ldown_>SMALL)
       {
           {
               Block& bl = blocking->addBlock
@@ -461,7 +468,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
           if (i==2) side2.addFace(bl.face("4567"));
       }
 
-      if (Lup_>0)
+      if (Lup_>SMALL)
           {
           {
               Block& bl = blocking->addBlock
@@ -590,14 +597,14 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
    new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
     .set_min(vec3(-0.33*sp().l_, -(0.5+0.5)*sp().w_, sp().Ldown_))
-    .set_max(vec3(2.0*sp().l_, (0.5+0.5)*sp().w_, sp().Ldown_+1.33*sp().h_))
+    .set_max(vec3(2.0*sp().l_, (0.5+0.5)*sp().w_, sp().Ldown_+1.33*(sp().hup_+sp().dlo_)))
     
     .set_level(p().mesh.boxlevel)
     .set_name("refinement_box")
   )));
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::RefinementBox(snappyHexMeshFeats::RefinementBox::Parameters()
     .set_min(vec3(0.8*sp().l_, -(0.5+0.25)*sp().w_, sp().Ldown_))
-    .set_max(vec3(1.5*sp().l_, (0.5+0.25)*sp().w_, sp().Ldown_+1.2*sp().h_))
+    .set_max(vec3(1.5*sp().l_, (0.5+0.25)*sp().w_, sp().Ldown_+1.2*(sp().hup_+sp().dlo_)))
     
     .set_level(p().mesh.rearlevel)
     .set_name("refinement_rear")
@@ -663,7 +670,7 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
   //double vside=tan(yaw*M_PI/180.)*p.operation.v;
 
   double turbI=0.01; // Free-stream turbulence
-  double turbL=0.001*sp().h_; // Free-stream turbulence length scale => very low 0.1% of car height
+  double turbL=0.001*(sp().hup_+sp().dlo_); // Free-stream turbulence length scale => very low 0.1% of car height
 
   path dir = executionPath();
 

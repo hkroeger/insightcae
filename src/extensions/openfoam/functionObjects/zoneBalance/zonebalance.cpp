@@ -58,6 +58,13 @@ bool zoneBalance::read(const dictionary &dict)
             readScalar(dict.lookup("volumeFraction"))
         };
     }
+    else if (selType=="aboveFractionOfMinimum")
+    {
+        cellSelection_=AboveFractionOfMinimum{
+            word(dict.lookup("thresholdScalarFieldName")),
+            readScalar(dict.lookup("minimumFraction"))
+        };
+    }
     factorFields_=wordList(dict.lookup("factorFields"));
 
     return true;
@@ -190,13 +197,44 @@ bool zoneBalance::perform()
                 IOobject::NO_READ,
                 IOobject::NO_WRITE)
             );
-        fieldToCell fldSel(
-            mesh_,
-            thr->thresholdScalarFieldName,
-            thr->lowerThreshold, thr->upperThreshold );
-        fldSel.applyToSet(topoSetSource::ADD, *cells);
-    }
 
+        auto& field=mesh_.lookupObject<volScalarField>(
+            thr->thresholdScalarFieldName );
+        scalar mi=thr->lowerThreshold;
+        scalar ma=thr->upperThreshold;
+        forAll(field, celli)
+        {
+            if (field[celli] >= mi && field[celli] <= ma)
+            {
+                cells->set(celli);
+            }
+        }
+    }
+    else if (auto* thr=boost::get<AboveFractionOfMinimum>(&cellSelection_))
+    {
+        // auto& thrFld=mesh_.lookupObject<volScalarField>(thr->thresholdScalarFieldName);
+        // thrFld.
+        cells=std::make_shared<cellSet>(
+            IOobject(
+                "balanceSelection",
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE)
+            );
+
+        auto& field=mesh_.lookupObject<volScalarField>(
+            thr->thresholdScalarFieldName );
+        scalar mi=gMin(field)*thr->minimumFraction;
+        scalar ma=gMax(field);
+        forAll(field, celli)
+        {
+            if (field[celli] >= mi && field[celli] <= ma)
+            {
+                cells->set(celli);
+            }
+        }
+    }
     if (cells)
     {
         auto cellIds=cells->toc();

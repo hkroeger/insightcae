@@ -32,9 +32,21 @@ public:
         scalar volumeFraction;
     };
 
+    struct AboveFractionOfMinimum {
+        word thresholdScalarFieldName;
+        scalar minimumFraction;
+    };
+
 private:
     const fvMesh& mesh_;
-    boost::variant<boost::blank,cellSetSelection,ThresholdSelection,HighestValueVolumeFraction> cellSelection_;
+
+    boost::variant<
+        boost::blank,
+        cellSetSelection,
+        ThresholdSelection,
+        HighestValueVolumeFraction,
+        AboveFractionOfMinimum> cellSelection_;
+
     wordList factorFields_;
 
     scalar balanceSum_;

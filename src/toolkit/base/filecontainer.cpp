@@ -486,14 +486,14 @@ const char *FileContainer::binaryFileContent() const
 
 
 void FileContainer::resolveRelativePath(
-    const boost::filesystem::path &baseDirectory)
+    const boost::filesystem::path &newBaseDirectory)
 {
-    baseDirectory_=baseDirectory;
-    if (!filePath_.empty())
+    if (!filePath_.empty() && (baseDirectory_||filePath_.is_absolute()))
     {
         filePath_=boost::filesystem::make_relative(
-            *baseDirectory_, filePath_);
+            newBaseDirectory, expandedFilePath());
     }
+    baseDirectory_=newBaseDirectory;
 }
 
 boost::filesystem::path

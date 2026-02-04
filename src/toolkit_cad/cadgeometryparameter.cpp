@@ -32,7 +32,7 @@ cad::FeaturePtr CADGeometryParameter::createOrReadFeature()
 {
     if (auto *fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
     {
-        auto fn=(**fcp).expandedFilePath();
+        auto fn=(**fcp).accessibleFilePath();
         std::string ext=fn.extension().string();
         if ( (ext==".stl") || (ext==".stlb") )
         {

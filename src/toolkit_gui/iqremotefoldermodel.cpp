@@ -224,18 +224,19 @@ boost::filesystem::path IQRemoteFolderModel::folder(QModelIndex i) const
       return selfol->folderPath();
     }
   }
-  return "";
+  return baseFolder_->folderPath();
 }
 
 void IQRemoteFolderModel::refreshBelow(QModelIndex i)
 {
-  int n=rowCount(i);
-  if (auto *p = dynamic_qobject_cast<IQRemoteFolder>(i.internalPointer()))
-  {
+    int n=rowCount(i);
+    auto *p=dynamic_qobject_cast<IQRemoteFolder>(i.internalPointer());
+    if (!p) p=baseFolder_;
+
     beginRemoveRows(i, 0, n-1);
     for (auto* n: *p)
     {
-      delete n;
+        delete n;
     }
     p->clear();
     endRemoveRows();
@@ -243,5 +244,4 @@ void IQRemoteFolderModel::refreshBelow(QModelIndex i)
     beginInsertRows(i, 0, n);
     p->populate();
     endInsertRows();
-  }
 }

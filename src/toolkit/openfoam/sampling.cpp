@@ -357,10 +357,11 @@ arma::mat circumferentialAveragedUniformLine::readSamples
       int c0=ci.col;
           for (arma::uword j=0; j<datai.n_rows; j++)
       {
-        arma::mat t;
-        t << datai(j,c0)   << datai(j,c0+1) << datai(j,c0+2) << arma::endr
-          << datai(j,c0+1) << datai(j,c0+3) << datai(j,c0+4) << arma::endr
-          << datai(j,c0+2) << datai(j,c0+4) << datai(j,c0+5) << arma::endr;
+          arma::mat t = ArmaMatCmpts{
+              { datai(j,c0), datai(j,c0+1), datai(j,c0+2) },
+              { datai(j,c0+1), datai(j,c0+3), datai(j,c0+4) },
+              { datai(j,c0+2), datai(j,c0+4), datai(j,c0+5) }
+          };
 
         t = Ri * t * Ri.t();
         double symm=fabs(t(1,0)-t(0,1))+fabs(t(0,2)-t(2,0))+fabs(t(1,2)-t(2,1));

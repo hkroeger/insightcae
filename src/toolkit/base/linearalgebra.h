@@ -133,58 +133,66 @@ arma::mat tensor3(
 
 arma::mat tensor3Ident();
 
+
+typedef std::initializer_list< std::initializer_list<double> > ArmaMatCmpts;
+
 template<class T>
 arma::mat Tensor(const T& t)
 {
-  arma::mat rt;
-  rt << t.XX() << t.XY() << t.XZ() << arma::endr
-     << t.YX() << t.YY() << t.YZ() << arma::endr
-     << t.ZX() << t.ZY() << t.ZZ() << arma::endr;
-  return rt;
+    arma::mat rt = ArmaMatCmpts{
+        { t.XX(), t.XY(), t.XZ() },
+        { t.YX(), t.YY(), t.YZ() },
+        { t.ZX(), t.ZY(), t.ZZ() }
+    };
+    return rt;
 }
 
 template<class T>
 arma::mat tensor(const T& t)
 {
-  arma::mat rt;
-  rt << t.xx() << t.xy() << t.xz() << arma::endr
-     << t.yx() << t.yy() << t.yz() << arma::endr
-     << t.zx() << t.zx() << t.zz() << arma::endr;
-  return rt;
+    arma::mat rt = ArmaMatCmpts{
+        { t.xx(), t.xy(), t.xz() },
+        { t.yx(), t.yy(), t.yz() },
+        { t.zx(), t.zx(), t.zz() }
+    };
+    return rt;
 }
 
 template<class T>
 arma::mat vector(const T& t)
 {
-  arma::mat rt;
-  rt
-          << t.x() << arma::endr
-          << t.y() << arma::endr
-          << t.z() << arma::endr;
-  return rt;
+    arma::mat rt;
+    rt = ArmaMatCmpts{
+        { t.x() },
+        { t.y() },
+        { t.z() }
+    };
+    return rt;
 }
 
 
 template<class T>
 arma::mat Vector(const T& t)
 {
-  arma::mat rt;
-  rt
-          << t.X() << arma::endr
-          << t.Y() << arma::endr
-          << t.Z() << arma::endr;
-  return rt;
+    arma::mat rt;
+    rt = ArmaMatCmpts{
+        { t.X() },
+        { t.Y() },
+        { t.Z() }
+    };
+    return rt;
 }
 
 template<class T>
 arma::mat vec3(const T& t)
 {
-  arma::mat rt;
-  rt
-          << t.X() << arma::endr
-          << t.Y() << arma::endr
-          << t.Z() << arma::endr;
-  return rt;
+    arma::mat rt;
+    rt = ArmaMatCmpts{
+        { t.X() },
+        { t.Y() },
+        { t.Z() }
+    };
+    return rt;
 }
 
 bool operator!=(const arma::mat& m1, const arma::mat& m2);

@@ -204,7 +204,7 @@ public:
         const std::vector<TargetElement>& cellList,
         const std::string& keyword ) const
     {
-        TargetElement *lastelem=nullptr;
+        const TargetElement *lastelem=nullptr;
         for (const auto& c: cellList)
         {
             if (c.idx>0)

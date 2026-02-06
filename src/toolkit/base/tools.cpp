@@ -1004,11 +1004,11 @@ arma::mat PolyDataBndBox
   double bb[6];
   in->GetBounds(bb);
 
-  arma::mat bbm;
-  bbm
-    << bb[0] << bb[1] << arma::endr
-    << bb[2] << bb[3] << arma::endr
-    << bb[4] << bb[5] << arma::endr;
+  arma::mat bbm = ArmaMatCmpts{
+      { bb[0], bb[1] },
+      { bb[2], bb[3] },
+      { bb[4], bb[5] }
+  };
 
   return bbm;
 }
@@ -1016,14 +1016,12 @@ arma::mat PolyDataBndBox
 
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
 {
-  arma::mat bbm;
-  bbm
-    << std::min(bb1(0,0),bb2(0,0)) << std::max(bb1(0,1),bb2(0,1)) << arma::endr
-    << std::min(bb1(1,0),bb2(1,0)) << std::max(bb1(1,1),bb2(1,1)) << arma::endr
-    << std::min(bb1(2,0),bb2(2,0)) << std::max(bb1(2,1),bb2(2,1)) << arma::endr;
-
-  std::cout<<bb1<<bb2<<bbm<<std::endl;
-  return bbm;
+    arma::mat bbm = ArmaMatCmpts{
+        { std::min(bb1(0,0),bb2(0,0)), std::max(bb1(0,1),bb2(0,1)) },
+        { std::min(bb1(1,0),bb2(1,0)), std::max(bb1(1,1),bb2(1,1)) },
+        { std::min(bb1(2,0),bb2(2,0)), std::max(bb1(2,1),bb2(2,1)) }
+    };
+    return bbm;
 }
 
 void writeSTL

@@ -401,8 +401,7 @@ void RefPlace::build()
 //	  100000    // max number of objective function evaluations
 //	);
 
-    arma::mat steps;
-    steps << 1000.0 << 1000.0 << 1000.0 << 0.1 << 0.1 << 0.1;
+    arma::mat steps={ 1000.0, 1000.0, 1000.0, 0.1, 0.1, 0.1 };
         arma::mat tp=nonlinearMinimizeND(obj, x0, 1e-12, steps);
         double r=obj(tp);
 

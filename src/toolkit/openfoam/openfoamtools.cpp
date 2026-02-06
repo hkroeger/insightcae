@@ -780,21 +780,24 @@ void runPvPython
 arma::mat matchValue(const std::string& vs)
 {
   boost::regex re_vector ("^\\(([^ ]+) ([^ ]+) ([^ ]+)\\)$");
-  try {
-     arma::mat d;
-     d << toNumber<double> ( vs ) ;
-     return d;
+  try
+  {
+      arma::mat d = {
+          toNumber<double> ( vs )
+      };
+      return d;
   }
   catch (...)
   {
-    boost::match_results<std::string::const_iterator> w;
-    if (!boost::regex_match ( vs, w, re_vector))
-      throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
-    arma::mat d;
-    d << toNumber<double> ( w[1] )
-      << toNumber<double> ( w[2] )
-      << toNumber<double> ( w[3] );
-    return d;
+      boost::match_results<std::string::const_iterator> w;
+      if (!boost::regex_match ( vs, w, re_vector))
+          throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
+      arma::mat d = {
+          toNumber<double> ( w[1] ),
+          toNumber<double> ( w[2] ),
+          toNumber<double> ( w[3] )
+      };
+      return d;
   }
   return arma::mat();
 }
@@ -1862,8 +1865,12 @@ std::pair<arma::mat, arma::mat> zoneExtrema
     {
       double t=toNumber<double>(what[1]);
       arma::mat mir, mar;
-      mir<<t<<toNumber<double>(what[3])<<toNumber<double>(what[4])<<toNumber<double>(what[5])<<endr;
-      mar<<t<<toNumber<double>(what[6])<<toNumber<double>(what[7])<<toNumber<double>(what[8])<<endr;
+      mir = ArmaMatCmpts{
+          { t, toNumber<double>(what[3]), toNumber<double>(what[4]), toNumber<double>(what[5]) }
+      };
+      mar = ArmaMatCmpts{
+          {t, toNumber<double>(what[6]), toNumber<double>(what[7]), toNumber<double>(what[8]) }
+      };
       if (mi.n_rows==0) mi=mir; else mi=join_cols(mi, mir);
       if (ma.n_rows==0) ma=mar; else ma=join_cols(ma, mar);
     }

@@ -514,8 +514,8 @@ FileContainer::expandedFilePath(bool dontThrow) const
                     " but no base directory for full path resolution has been set")
                         % filePath_.string())
                     );
-                return boost::filesystem::path();
             }
+            return boost::filesystem::path();
         }
     }
     else

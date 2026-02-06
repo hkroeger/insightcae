@@ -121,23 +121,27 @@ int GSLException::gsl_errno() const
 
 arma::mat vec1(double x)
 {
-    arma::mat v;
-  v << x << endr;
-  return v;
+    arma::mat v = ArmaMatCmpts{ { x } };
+    return v;
 }
 
 arma::mat vec2(double x, double y)
 {
-    arma::mat v;
-  v << x <<endr << y << endr;
-  return v;
+    arma::mat v = ArmaMatCmpts{
+        { x },
+        { y }
+    };
+    return v;
 }
 
 arma::mat vec3(double x, double y, double z)
 {
-    arma::mat v;
-  v << x <<endr << y << endr << z <<endr;
-  return v;
+    arma::mat v = ArmaMatCmpts{
+        { x },
+        { y },
+        { z }
+    };
+    return v;
 }
 
 arma::mat vec3FromComponents(const double* c)
@@ -177,13 +181,13 @@ arma::mat tensor3(
   double zx, double zy, double zz
 )
 {
-    arma::mat v;
-  v 
-    << xx << xy <<  xz <<endr
-    << yx << yy <<  yz <<endr
-    << zx << zy <<  zz <<endr;
+    arma::mat v = ArmaMatCmpts{
+        { xx, xy, xz },
+        { yx, yy, yz },
+        { zx, zy, zz }
+    };
     
-  return v;
+    return v;
 }
 
 double* toArray(const arma::mat& v)
@@ -198,10 +202,11 @@ arma::mat rotMatrix( double theta, arma::mat u )
     double ux=u[0];
     double uy=u[1];
     double uz=u[2];
-    arma::mat m;
-    m << ux*ux+(1-ux*ux)*c << ux*uy*(1-c)-uz*s << ux*uz*(1-c)+uy*s << endr
-      << ux*uy*(1-c)+uz*s << uy*uy+(1-uy*uy)*c << uy*uz*(1-c)-ux*s << endr
-      << ux*uz*(1-c)-uy*s << uy*uz*(1-c)+ux*s << uz*uz+(1-uz*uz)*c << endr;
+    arma::mat m = ArmaMatCmpts{
+        { ux*ux+(1-ux*ux)*c, ux*uy*(1-c)-uz*s, ux*uz*(1-c)+uy*s },
+        { ux*uy*(1-c)+uz*s, uy*uy+(1-uy*uy)*c, uy*uz*(1-c)-ux*s },
+        { ux*uz*(1-c)-uy*s, uy*uz*(1-c)+ux*s, uz*uz+(1-uz*uz)*c }
+    };
     return m;
 }
 

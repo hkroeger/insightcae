@@ -32,7 +32,7 @@ int IQConstrainedSketchEntityListModel::columnCount(const QModelIndex &parent) c
 Qt::ItemFlags IQConstrainedSketchEntityListModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return 0;
+        return Qt::ItemFlags();
 
     auto f=QAbstractTableModel::flags(index);
 

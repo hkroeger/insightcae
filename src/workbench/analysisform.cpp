@@ -410,6 +410,10 @@ AnalysisForm::AnalysisForm(
             auto ist_file=boost::filesystem::absolute(newfn);
             resetExecutionEnvironment(ist_file.parent_path());
             updateWindowTitle();
+
+            // retrigger visualization build, since working directory is stored in supplementInputData
+            sid_.reset();
+            peditor_->rebuildVisualization();
         }
     );
 

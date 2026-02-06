@@ -55,31 +55,25 @@ double involute_intersect_angle (double base_radius, double radius)
 
 arma::mat rotate_point (double rotate, const arma::mat& coord)
 {
-    arma::mat r; 
-    r
-	 << ::cos (rotate) * coord[0] + ::sin (rotate) * coord[1]
-     << ::cos (rotate) * coord[1] - ::sin (rotate) * coord[0]
-    ;
+    arma::mat r {
+        ::cos (rotate) * coord[0] + ::sin (rotate) * coord[1],
+        ::cos (rotate) * coord[1] - ::sin (rotate) * coord[0]
+    };
     return r;
 }
 
 arma::mat mirror_point (const arma::mat& coord)
 {
-    arma::mat r;
-    r
-	 << coord[0]
-	 << -coord[1]
-    ;
+    arma::mat r = { coord[0], -coord[1] };
     return r;
 }
 
 arma::mat involute(double base_radius, double involute_angle)
 {
-    arma::mat r;
-    r 
-     << base_radius*(::cos (involute_angle) + involute_angle*::sin (involute_angle))
-     << base_radius*(::sin (involute_angle) - involute_angle*::cos (involute_angle))
-    ;
+    arma::mat r={
+        base_radius*(::cos (involute_angle) + involute_angle*::sin (involute_angle)),
+        base_radius*(::sin (involute_angle) - involute_angle*::cos (involute_angle))
+    };
     return r;
 }
 
@@ -575,7 +569,7 @@ public:
                 involute( base_radius*2,start_angle+(stop_angle - start_angle)*double(i)/double(resolution-1) );
             arma::mat side1_point = rotate_point (centre_angle, point);
             arma::mat side2_point = mirror_point (rotate_point (centre_angle, point));
-            arma::mat pend; pend << (back_cone_radius*2.+0.1) << 0 << (cone_distance*2.);
+            arma::mat pend= { (back_cone_radius*2.+0.1), 0, (cone_distance*2.) };
             
             std::cout<<i<<" "<<side1_point[0]<<" "<<side1_point[1]<<" "<<side2_point[0]<<" "<<side2_point[1]<<std::endl;
             

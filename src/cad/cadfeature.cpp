@@ -978,10 +978,11 @@ arma::mat Feature::modelBndBox(double deflection) const
       x1, y1, z1
     );
 
-    x
-    << x0 << x1 << arma::endr
-    << y0 << y1 << arma::endr
-    << z0 << z1 << arma::endr;
+    x = ArmaMatCmpts{
+        { x0, x1},
+        { y0, y1},
+        { z0, z1}
+    };
 
     x.col(0)+=g;
     x.col(1)-=g;
@@ -1019,10 +1020,11 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
 
     if (!boundingBox.IsVoid())
     {
-        arma::mat sizes;
-        sizes   << boundingBox.XHSize()
-                << boundingBox.YHSize()
-                << boundingBox.ZHSize();
+        arma::mat sizes=ArmaMatCmpts{
+            { boundingBox.XHSize() },
+            { boundingBox.YHSize() },
+            { boundingBox.ZHSize() }
+        };
 
 
 //        arma::uvec si = arma::reverse( arma::sort_index(sizes) );

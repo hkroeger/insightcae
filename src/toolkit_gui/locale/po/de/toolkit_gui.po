@@ -22,14 +22,6 @@ msgstr "Datei speichern"
 msgid "Open file"
 msgstr "Datei öffnen"
 
-#, c-format
-msgid "image file \"%s\" does not exist"
-msgstr "die Bitmap-Datei \"%s\" existiert nicht"
-
-#, c-format
-msgid "could not create reader for file \"%s\""
-msgstr "konnte die Datei %1 nicht erzeugen"
-
 msgid "Could not load background image"
 msgstr "Konnte das Hintergrundbild nicht laden"
 
@@ -58,6 +50,14 @@ msgstr "Wiederherstellen"
 #, c-format
 msgid "redo step %s"
 msgstr "%s wiederherstellen"
+
+#, c-format
+msgid "image file \"%s\" does not exist"
+msgstr "die Bitmap-Datei \"%s\" existiert nicht"
+
+#, c-format
+msgid "could not create reader for file \"%s\""
+msgstr "konnte die Datei %1 nicht erzeugen"
 
 msgid "Visible"
 msgstr "Sichtbar"
@@ -106,3 +106,6 @@ msgstr "Erzeugen der Datei fehlgeschlagen"
 
 msgid "Could not create file %1"
 msgstr "Konnte die Datei %1 nicht erzeugen"
+
+msgid "Select Remote Directory"
+msgstr ""

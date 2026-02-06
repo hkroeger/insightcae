@@ -200,7 +200,7 @@ void WSLLinuxServer::runRsync
 
   boost::process::ipstream is;
 
-  std::string joinedArgs="rsync --info=progress2";
+  std::string joinedArgs="/usr/bin/rsync --info=progress2";
   for (const auto& a: args)
   {
     joinedArgs+=" "+escapeShellSymbols(a);
@@ -208,10 +208,9 @@ void WSLLinuxServer::runRsync
   auto ca = config().commandAndArgs(joinedArgs);
 
   RSyncOutputAnalyzer rpa(pf);
-  auto job = std::make_shared<Job>(ca);
+  auto job = std::make_shared<Job>(ca, false); // don't use search_path! It will fail
   job->ios_run_with_interruption(&rpa);
   job->wait();
-
 }
 
 
@@ -267,7 +266,6 @@ void WSLLinuxServer::syncToRemote
          "-az",
          "--delete",
 
-//         "--exclude", "processor*",
          "--exclude", "*.foam",
          "--exclude", "postProcessing",
          "--exclude", "*.socket",
@@ -314,7 +312,7 @@ void WSLLinuxServer::syncToLocal
     args =
     {
       "-az",
-//      "--exclude", "processor*",
+
       "--exclude", "*.foam",
       "--exclude", "*.socket",
       "--exclude", "backup",
@@ -469,18 +467,15 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
       );
 
 
-  dbg()<<"ret="<<ret<<std::endl;
   if (ret==0)
   {
     boost::regex pat("^  Installed: (.*)\\.(.*)\\.(.*)-(.*)~(.*)$");
     std::string line;
     while (getline(out, line))
     {
-      dbg()<<line<<std::endl;
       boost::smatch m;
       if (boost::regex_search(line, m, pat))
       {
-        dbg()<<m[1]<<" "<<m[2]<<" "<<m[3]<<" "<<m[4]<<" "<<m[5]<<std::endl;
         int majorVersion = lexical_cast<int>(m[1]);
         int minorVersion = lexical_cast<int>(m[2]);
         int patchVersion = lexical_cast<int>(m[3]);

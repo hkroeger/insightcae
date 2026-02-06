@@ -25,6 +25,7 @@
 
 
 #include "base/analysis.h"
+#include "base/insightthread.h"
 #include "base/supplementedinputdata.h"
 #include "boost/filesystem/path.hpp"
 
@@ -42,26 +43,13 @@ namespace insight {
  * to the main thread.
  */
 class AnalysisThread
-    : public std::unique_ptr<insight::ResultSet>
+    : public std::unique_ptr<insight::ResultSet>,
+      public insight::Thread<>
 {
-
-  boost::thread thread_;
 
   mutable boost::mutex dataAccess_;
   boost::filesystem::path executionPath_;
   std::atomic<const Analysis*> analysis_;
-
-protected:
-
-  /**
-   * @brief exception
-   * stores the exception, if any occurred
-   */
-  std::exception_ptr exception_;
-
-  std::function<void(std::exception_ptr)> exceptionHandler_;
-
-  void launch(std::function<void(void)> action);
 
 public:
   typedef
@@ -81,31 +69,19 @@ public:
       ,
       std::function<void(void)> preAction = []()->void {},
       std::function<void(void)> postAction = []()->void {},
-      std::function<void(std::exception_ptr)> exHdlr = std::function<void(std::exception_ptr)>()
+      ExceptionHandler exHdlr = ExceptionHandler(),
+      InterruptHandler intHdlr = InterruptHandler()
 #endif
   );
 
 #ifndef SWIG
   AnalysisThread(
       std::function<void(void)> action,
-      std::function<void(std::exception_ptr)> exHdlr = std::function<void(std::exception_ptr)>()
+      ExceptionHandler exHdlr = ExceptionHandler(),
+      InterruptHandler intHdlr = InterruptHandler()
   );
 #endif
 
-  void interrupt();
-
-  /**
-   * @brief join
-   * join thread and rethrow any exception, if there was no handler set
-   * @return
-   */
-  void join();
-
-  template <class Rep, class Period>
-  bool try_join_for(const boost::chrono::duration<Rep, Period>& rel_time)
-  {
-    return thread_.try_join_for(rel_time);
-  }
 
   const boost::filesystem::path& executionPath() const;
   const Analysis* analysis() const;

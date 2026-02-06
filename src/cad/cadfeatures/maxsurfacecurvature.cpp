@@ -144,8 +144,8 @@ void MaxSurfaceCurvature::build()
     Obj obj(f);
     double delta_uv_max=std::max(obj.u2-obj.u1, obj.v2-obj.v1);
     arma::mat x0, steps;
-    x0 << 0.5 << 0.5;
-    steps << 0.25 << 0.25;
+    x0 = { 0.5, 0.5};
+    steps = {0.25, 0.25};
     arma::mat x = nonlinearMinimizeND(obj, x0, 1e-3, steps);
     gp_XY uv0=obj.uv(x);
     double global_max_curv=obj(x);
@@ -203,8 +203,8 @@ void MaxSurfaceCurvature::build()
           cout<<"uv="<<uv.X()<<", "<<uv.Y()<<" => "<<flush;
 
           arma::mat t0, steps;
-          t0 << 0.;
-          steps<<1e-3*delta_uv_max;
+          t0 = { 0. };
+          steps = { 1e-3*delta_uv_max };
           arma::mat t = nonlinearMinimizeND(obj2, t0, 1e-6, steps);
           uv=obj2.curuv(t);
 

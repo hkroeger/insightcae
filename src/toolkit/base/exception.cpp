@@ -20,7 +20,9 @@
 
 
 #include "exception.h"
+#include <boost/format/format_fwd.hpp>
 #include <exception>
+#include <ostream>
 #include <sstream>
 #include <cstdlib>
 #include <thread>
@@ -582,6 +584,13 @@ public:
         catch (insight::Exception& e)
         {
             return e.description();
+        }
+
+        catch (std::system_error& e)
+        {
+            return std::make_shared<ErrorDescription>(
+                str(boost::format("%s (std::system_error)")
+                    % e.what() ) );
         }
 
         catch (...)

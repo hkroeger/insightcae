@@ -111,7 +111,7 @@ Qt::DropActions IQParameterSetModel::supportedDropActions() const
         return Qt::CopyAction | Qt::MoveAction;
     }
     else
-        return 0;
+        return Qt::DropActions();
 }
 
 

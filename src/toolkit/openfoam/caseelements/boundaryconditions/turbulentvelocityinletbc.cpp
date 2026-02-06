@@ -181,8 +181,9 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC, OFdicts&) const
     double uprime=tu->intensity*U;
     double kBy3=std::max(1e-6, pow(uprime, 2)/2.);
     BC["type"]="fixedValue";
-    arma::mat R;
-    R << kBy3 << 0. << 0. << kBy3 << 0. << kBy3 << arma::endr;
+    arma::mat R = ArmaMatCmpts{
+        { kBy3, 0., 0., kBy3, 0., kBy3 }
+    };
     BC["value"]=OFDictData::toUniformField(R);
 
   }

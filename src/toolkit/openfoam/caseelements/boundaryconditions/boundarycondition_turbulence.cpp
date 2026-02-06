@@ -85,8 +85,9 @@ void uniformIntensityAndLengthScale::setDirichletBC_R(OFDictData::dict& BC, doub
 {
     double uprime=p().I*U;
     BC["type"]=OFDictData::data("inletOutlet");
-    arma::mat R;
-    R << uprime/3. << 0 <<  0 << uprime/3. << 0 << uprime/3. << arma::endr;
+    arma::mat R = ArmaMatCmpts{
+        { uprime/3., 0,  0, uprime/3., 0, uprime/3. }
+    };
     BC["inletValue"]=OFDictData::toUniformField(R);
     BC["value"]=OFDictData::toUniformField(R);
 }

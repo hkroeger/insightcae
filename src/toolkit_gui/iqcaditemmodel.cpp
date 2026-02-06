@@ -644,7 +644,7 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
 Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return 0;
+        return Qt::ItemFlags();
 
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 

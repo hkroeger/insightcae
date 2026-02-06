@@ -156,8 +156,11 @@ arma::mat ProjectedPointOnFeature::calcValue() const
     if (!found)
         throw insight::Exception("ProjectedPointOnFeature: did not find a projection!");
 
-    arma::mat resp;
-    resp << pproj.X()<<arma::endr << pproj.Y()<<arma::endr << pproj.Z();
+    arma::mat resp = ArmaMatCmpts{
+        { pproj.X() },
+        { pproj.Y() },
+        { pproj.Z() }
+    };
     return resp;
 }
 

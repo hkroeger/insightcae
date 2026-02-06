@@ -21,30 +21,26 @@ class Job
 {
 
 protected:
-    boost::asio::io_service ios_;
     boost::process::opstream in_;
-    boost::process::async_pipe out_, err_;
-    boost::asio::streambuf buf_out_, buf_err_;
+    boost::process::ipstream out_, err_;
 
     std::unique_ptr<boost::process::child> process_;
 
     std::function<void(const std::string& line)> processStdOut_, processStdErr_;
 
-    void read_start_out();
-    void read_start_err();
 
 public:
-
-
   Job();
 
   Job(
       const std::string& cmd,
-      std::vector<std::string> argv = std::vector<std::string>()
+      std::vector<std::string> argv = std::vector<std::string>(),
+      bool searchCmdInPath = true
   );
 
   Job(
-    const std::pair<boost::filesystem::path,std::vector<std::string> >& commandAndArgs
+    const std::pair<boost::filesystem::path,std::vector<std::string> >& commandAndArgs,
+    bool searchCmdInPath = true
   );
 
   ~Job();

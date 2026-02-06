@@ -83,10 +83,10 @@ PlotCurve::PlotCurve ( const arma::mat& x, const arma::mat& y, const std::string
 PlotCurve::PlotCurve ( const arma::mat& xrange, double y, const std::string& plaintextlabel, const std::string& plotcmd )
 : plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {
-    xy_
-     << arma::as_scalar(arma::min(xrange)) << y << arma::endr
-     << arma::as_scalar(arma::max(xrange)) << y << arma::endr
-     ;
+    xy_ = ArmaMatCmpts{
+        { arma::as_scalar(arma::min(xrange)), y },
+        { arma::as_scalar(arma::max(xrange)), y }
+    };
 }
 
 

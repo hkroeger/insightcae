@@ -56,6 +56,10 @@ msgid "There was no error output."
 msgstr ""
 
 #, c-format
+msgid "launch external command \"%s\" with arguments {%s}"
+msgstr ""
+
+#, c-format
 msgid "Error in GSL subroutine: %s (errno %d)"
 msgstr ""
 

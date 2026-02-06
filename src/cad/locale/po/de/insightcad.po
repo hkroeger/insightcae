@@ -499,6 +499,10 @@ msgid ""
 "goes through point origin."
 msgstr ""
 
+msgid ""
+"Scales the base feature by independent factors for each coordinate direction."
+msgstr ""
+
 msgid "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
 msgstr ""
 

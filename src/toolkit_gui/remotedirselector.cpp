@@ -5,6 +5,7 @@
 #include "base/remoteexecution.h"
 #include "base/remoteserverlist.h"
 #include "base/sshlinuxserver.h"
+#include "base/translations.h"
 #include <cstdlib>
 
 #include <QDebug>
@@ -19,12 +20,16 @@ RemoteDirSelector::RemoteDirSelector(QWidget *parent, insight::RemoteServerPtr s
   ui(new Ui::RemoteDirSelector)
 {
   ui->setupUi(this);
+  setWindowTitle(_("Select Remote Directory"));
 
   fs_model_ = new IQRemoteFolderModel(this, server, server->config().defaultDirectory_);
   ui->directory->setModel(fs_model_);
 
-  connect(ui->newdir, &QPushButton::clicked,
-          this, &RemoteDirSelector::createDir);
+  connect(ui->createDirTopLevel, &QPushButton::clicked, this,
+          std::bind(&RemoteDirSelector::createDirBelow, this, QModelIndex()) );
+  connect(ui->createDirBelowSelected, &QPushButton::clicked, this,
+          std::bind(&RemoteDirSelector::createDirBelow, this,
+            std::bind(&QTreeView::currentIndex, ui->directory) ) );
 
 
   connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &RemoteDirSelector::accept);
@@ -44,29 +49,26 @@ bfs_path RemoteDirSelector::selectedRemoteDir()
 
 
 
- void RemoteDirSelector::createDir()
- {
-     QModelIndex i=ui->directory->currentIndex();
-     if (i.isValid())
-     {
-         bool ok;
-         bfs_path base_dir( fs_model_->folder(i) );
 
-         bfs_path newdir
+ void RemoteDirSelector::createDirBelow(QModelIndex i)
+ {
+     boost::filesystem::path baseDir(fs_model_->folder(i));
+
+     bool ok=false;
+     bfs_path newdir
          (
-           QInputDialog::getText(
-                  this,
-                  "Create directory",
-                  "Create directory below "+QString::fromStdString(base_dir.string()),
-                  QLineEdit::Normal, "",
-                  &ok
+             QInputDialog::getText(
+                 this,
+                 "Create directory",
+                 "Create directory below "+QString::fromStdString(baseDir.string()),
+                 QLineEdit::Normal, "",
+                 &ok
                  ).toStdString()
-         );
-         if (ok)
-         {
-             server_->createDirectory(base_dir/newdir);
-             fs_model_->refreshBelow(i);
-         }
+             );
+     if (ok)
+     {
+         server_->createDirectory(baseDir/newdir);
+         fs_model_->refreshBelow(i);
      }
  }
 

@@ -27,8 +27,7 @@ public:
 
   bfs_path selectedRemoteDir();
 
-private Q_SLOTS:
-  void createDir();
+  void createDirBelow(QModelIndex i);
 
 private:
   Ui::RemoteDirSelector *ui;

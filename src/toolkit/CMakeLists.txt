@@ -37,6 +37,7 @@ set(toolkit_SOURCES
     base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp
     base/extendedgrammar.h base/extendedgrammar.cpp
 
+    base/insightthread.h base/insightthread.cpp
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h

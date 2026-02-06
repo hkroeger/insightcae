@@ -3,17 +3,17 @@
 
 #include "toolkit_gui_export.h"
 
+#include "base/insightthread.h"
+#include "base/remoteexecution.h"
 
 #include <QThread>
-#include "base/remoteexecution.h"
 
 
 namespace insight {
 
 
 class TOOLKIT_GUI_EXPORT RunSyncToRemote
-: public QObject,
-  public boost::thread
+: public QObject, public insight::Thread<>
 {
   Q_OBJECT
 
@@ -38,8 +38,7 @@ Q_SIGNALS:
 
 
 class TOOLKIT_GUI_EXPORT RunSyncToLocal
-: public QObject,
-  public boost::thread
+: public QObject, public insight::Thread<>
 {
   Q_OBJECT
 

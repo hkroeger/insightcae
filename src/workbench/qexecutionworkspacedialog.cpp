@@ -194,6 +194,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   lockRemoteExecution_(false)
 {
   ui->setupUi(this);
+  setWindowTitle(_("Setup Workspace"));
 
   // populate controls
 
@@ -247,6 +248,17 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
                 QToolTip::showText(
                             ui->leLocalWorkingDirectory->mapToGlobal(ui->leLocalWorkingDirectory->pos()),
                             msg);
+            }
+
+            if (on)
+            {
+                checkAndChangeRemoteConfig(
+                    ui->cbHost->currentText(),
+                    ui->leRemoteDirectory->text() );
+            }
+            else
+            {
+                remoteLocation_.reset();
             }
           }
   );

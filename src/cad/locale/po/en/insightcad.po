@@ -23,19 +23,6 @@ msgstr ""
 msgid "searching %s with name %s"
 msgstr ""
 
-msgid "Creates a topological vertex at the specified location."
-msgstr "Creates a topological vertex at the specified location."
-
-msgid "Creates an arc between point p0 and p1 through intermediate point pm."
-msgstr "Creates an arc between point p0 and p1 through intermediate point pm."
-
-msgid ""
-"Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
-"vector et0."
-msgstr ""
-"Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
-"vector et0."
-
 msgid "Failed to generate planar face!"
 msgstr "Failed to generate planar face!"
 
@@ -53,6 +40,23 @@ msgstr ""
 "leading edge is positioned at point p0. Length and direction of the chord "
 "line are specified by vector L. The normal direction of the foil section, i."
 "e. spanwise direction of the wing, is given by vector ez."
+
+msgid ""
+"align the extremities of the first object with those of other, measured "
+"along direction."
+msgstr ""
+"align the extremities of the first object with those of other, measured "
+"along direction."
+
+msgid "Creates an arc between point p0 and p1 through intermediate point pm."
+msgstr "Creates an arc between point p0 and p1 through intermediate point pm."
+
+msgid ""
+"Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
+"vector et0."
+msgstr ""
+"Creates an arc between point p0 and p1. At point p0, the arc is tangent to "
+"vector et0."
 
 msgid "Bar: length of vertical direction is zero!"
 msgstr "Bar: length of vertical direction is zero!"
@@ -194,16 +198,6 @@ msgstr ""
 msgid "Optionally, an internal hole is cout out with a diameter d."
 msgstr ""
 
-msgid "Given feature is not a wire! ClipWire can only operate on wires."
-msgstr "Given feature is not a wire! ClipWire can only operate on wires."
-
-msgid ""
-"Modifies an open wire feature by clipping its ends. From the beginning, a "
-"segment of length Ls is removed and from the end a segment of length Le."
-msgstr ""
-"Modifies an open wire feature by clipping its ends. From the beginning, a "
-"segment of length Ls is removed and from the end a segment of length Le."
-
 #, c-format
 msgid "CircularPattern: invalid filter expression! (was '%s')"
 msgstr "CircularPattern: invalid filter expression! (was '%s')"
@@ -227,451 +221,18 @@ msgstr ""
 "settings can be copied from an existing CircularPattern-feature "
 "other_pattern."
 
-msgid "Creates a compound (assembly) of multiple features c0 to cn"
-msgstr "Creates a compound (assembly) of multiple features c0 to cn"
-
-msgid "Cutaway: Given datum does not provide a planar reference!"
-msgstr "Cutaway: Given datum does not provide a planar reference!"
-
-msgid "Cutaway: origin and normal direction undefined!"
-msgstr "Cutaway: origin and normal direction undefined!"
-
-msgid "Could not create cutting surface!"
-msgstr "Could not create cutting surface!"
-
-msgid "Could not create cut!"
-msgstr "Could not create cut!"
+msgid "Given feature is not a wire! ClipWire can only operate on wires."
+msgstr "Given feature is not a wire! ClipWire can only operate on wires."
 
 msgid ""
-"Removes a halfspace from a feature. The halfspace is either specified by a "
-"point p0 and the normal vector n or by a datum plane. In the latter case, "
-"the removal side of plane can be toggled by giving the option inverted."
+"Modifies an open wire feature by clipping its ends. From the beginning, a "
+"segment of length Ls is removed and from the end a segment of length Le."
 msgstr ""
-"Removes a halfspace from a feature. The halfspace is either specified by a "
-"point p0 and the normal vector n or by a datum plane. In the latter case, "
-"the removal side of plane can be toggled by giving the option inverted."
-
-msgid "normal vector must not be zero"
-msgstr "normal vector must not be zero"
-
-msgid ""
-"Cuts up the base feature into several pieces with planar cuts at p0 to pn "
-"with normal n and cut thickness t. The result pieces are stored in subshapes "
-"of name \"cut_<int:i>\"."
-msgstr ""
-"Cuts up the base feature into several pieces with planar cuts at p0 to pn "
-"with normal n and cut thickness t. The result pieces are stored in subshapes "
-"of name \"cut_<int:i>\"."
-
-msgid ""
-"Creates a cylinder based on point p0. The cylinder extends up to point "
-"p1_or_axis or, if the keyword ax is given, along the length vector "
-"p1_or_axis. The outer diameter of the cylinder is Da. If an inner diameter "
-"Di is given, a hollow cylinder is created. The cylinder is centered with "
-"respect to p0, if the keyword centered is supplied."
-msgstr ""
-"Creates a cylinder based on point p0. The cylinder extends up to point "
-"p1_or_axis or, if the keyword ax is given, along the length vector "
-"p1_or_axis. The outer diameter of the cylinder is Da. If an inner diameter "
-"Di is given, a hollow cylinder is created. The cylinder is centered with "
-"respect to p0, if the keyword centered is supplied."
-
-msgid ""
-"Creates a cone between point p0 and p1. At point p0, the diameter is D0 and "
-"at p1 it is D1."
-msgstr ""
-"Creates a cone between point p0 and p1. At point p0, the diameter is D0 and "
-"at p1 it is D1."
-
-msgid ""
-"Creates a torus around center point p0. The axis is specified by the "
-"direction of axisTimesD and the torus diameter by its magnitude. The tube "
-"diameter is d."
-msgstr ""
-"Creates a torus around center point p0. The axis is specified by the "
-"direction of axisTimesD and the torus diameter by its magnitude. The tube "
-"diameter is d."
-
-msgid ""
-"Creates an extrusion of the planar feature sec. The direction and length of "
-"the extrusion is given by the vector L. If the keyword centered is given, "
-"the extrusion is centered around the base feature."
-msgstr ""
-"Creates an extrusion of the planar feature sec. The direction and length of "
-"the extrusion is given by the vector L. If the keyword centered is given, "
-"the extrusion is centered around the base feature."
-
-msgid ""
-"Creates an ellipse around point p0. The major axis has length and direction "
-"of axmaj. The minor axis length is that of axmin. Its direction is corrected "
-"to be orthogonal to axmaj."
-msgstr ""
-"Creates an ellipse around point p0. The major axis has length and direction "
-"of axmaj. The minor axis length is that of axmin. Its direction is corrected "
-"to be orthogonal to axmaj."
-
-msgid ""
-"Creates fillets at selected edges of a solid. All edges in the selection set "
-"edges are rounded with width r."
-msgstr ""
-"Creates fillets at selected edges of a solid. All edges in the selection set "
-"edges are rounded with width r."
-
-msgid "first edge feature is not a single edge!"
-msgstr "first edge feature is not a single edge!"
-
-msgid "first feature set has to contain only 1 edge!"
-msgstr "first feature set has to contain only 1 edge!"
-
-msgid "second edge feature is not a single edge!"
-msgstr "second edge feature is not a single edge!"
-
-msgid "second feature set has to contain only 1 edge!"
-msgstr "second feature set has to contain only 1 edge!"
-
-msgid "Failed to generate face!"
-msgstr "Failed to generate face!"
-
-msgid ""
-"Creates an interpolated surface between two edges. The two edges e0 and e1 "
-"can be given either as edge features or edge selection sets."
-msgstr ""
-"Creates an interpolated surface between two edges. The two edges e0 and e1 "
-"can be given either as edge features or edge selection sets."
-
-msgid "Runs some repair operations on output shape of feature in."
-msgstr "Runs some repair operations on output shape of feature in."
-
-msgid "Creates a curve in all selected faces along a constant parameter value."
-msgstr ""
-"Creates a curve in all selected faces along a constant parameter value."
-
-#, c-format
-msgid "File not found: %s"
-msgstr "File not found: %s"
-
-msgid ""
-"Imports a feature from a file. The format is recognized from the filename "
-"extension. Supported formats are IGS, STP, BREP."
-msgstr ""
-"Imports a feature from a file. The format is recognized from the filename "
-"extension. Supported formats are IGS, STP, BREP."
-
-msgid ""
-"Copies the bease feature base into a linear pattern. The copies of the base "
-"feature are shifted in increments of delta_l. The number of copies is n."
-msgstr ""
-"Copies the bease feature base into a linear pattern. The copies of the base "
-"feature are shifted in increments of delta_l. The number of copies is n."
-
-msgid "Creates a line between point p0 and p1."
-msgstr "Creates a line between point p0 and p1."
-
-msgid "Mirror: planar reference required!"
-msgstr "Mirror: planar reference required!"
-
-msgid "Mirrors the base feature base over the given datum plane."
-msgstr "Mirrors the base feature base over the given datum plane."
-
-msgid "Mirrors the base feature over the YZ plane."
-msgstr "Mirrors the base feature over the YZ plane."
-
-msgid "Mirrors the base feature over the XZ plane."
-msgstr "Mirrors the base feature over the XZ plane."
-
-msgid "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
-msgstr "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
-
-msgid "spine feature has to provide a single edge or a singly connected wire!"
-msgstr "spine feature has to provide a single edge or a singly connected wire!"
-
-msgid "xsec feature has to provide a face or wire!"
-msgstr "xsec feature has to provide a face or wire!"
-
-msgid "Pipe: reapproximation of spine failed!"
-msgstr "Pipe: reapproximation of spine failed!"
-
-msgid ""
-"Sweeps the planar section xsec along the curve feature spine. The xsec is "
-"expected at global origin [0,0,0] and is moved to the beginning of the "
-"spine. By fixing the binormal direction using keyword fixedbinormal and a "
-"fixed direction, problems with erratic twisting of the section on spiral "
-"paths can be avoided. By default, the section is not rotated. If keyword "
-"reorient is given, the z-axis of the section is aligned with the tangent of "
-"the spine. The keyword reapprox triggers an reapproximation of the spine "
-"wire into a single b-spline curve (experimental)."
-msgstr ""
-"Sweeps the planar section xsec along the curve feature spine. The xsec is "
-"expected at global origin [0,0,0] and is moved to the beginning of the "
-"spine. By fixing the binormal direction using keyword fixedbinormal and a "
-"fixed direction, problems with erratic twisting of the section on spiral "
-"paths can be avoided. By default, the section is not rotated. If keyword "
-"reorient is given, the z-axis of the section is aligned with the tangent of "
-"the spine. The keyword reapprox triggers an reapproximation of the spine "
-"wire into a single b-spline curve (experimental)."
-
-msgid ""
-"Places the feature base in a new coordinate system. The new origin is at "
-"point p0, the new x-axis along vector ex and the new z-direction is ez. "
-"Optionally, the point refpt is made coincident with p0 instead of the "
-"origin. Alternatively, the placement is copied from another Place-feature "
-"other_place."
-msgstr ""
-"Places the feature base in a new coordinate system. The new origin is at "
-"point p0, the new x-axis along vector ex and the new z-direction is ez. "
-"Optionally, the point refpt is made coincident with p0 instead of the "
-"origin. Alternatively, the placement is copied from another Place-feature "
-"other_place."
-
-msgid ""
-"Projects the feature base onto the feature target. The direction has to be "
-"prescribed by vector dir."
-msgstr ""
-"Projects the feature base onto the feature target. The direction has to be "
-"prescribed by vector dir."
-
-msgid "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
-msgstr "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
-
-#, c-format
-msgid "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
-msgstr "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
-
-#, c-format
-msgid "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
-msgstr "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
-
-#, c-format
-msgid ""
-"Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
-msgstr ""
-"Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
-
-#, c-format
-msgid ""
-"Invalid parameter: Wall thickness of quad is larger than half width or half "
-"height (%g > %g)!"
-msgstr ""
-"Invalid parameter: Wall thickness of quad is larger than half width or half "
-"height (%g > %g)!"
-
-msgid ""
-"Creates a quad face. The quad is located at point p0 and direction and edge "
-"lengths are defined by the vector Lx, Ly.\n"
-"Optionally, the edges are centered around p0. Either all directions (option "
-"centered) or only selected directions (option center [x][y] where x,y is "
-"associated with L1, L2 respectively)."
-msgstr ""
-"Creates a quad face. The quad is located at point p0 and direction and edge "
-"lengths are defined by the vector Lx, Ly.\n"
-"Optionally, the edges are centered around p0. Either all directions (option "
-"centered) or only selected directions (option center [x][y] where x,y is "
-"associated with L1, L2 respectively)."
-
-msgid ""
-"Creates a regular polygon. Center of the polygon is at point p0. Normal "
-"vector is n. The number of edges is ne. Radius of the outer circle is a. The "
-"direction from p0 to the first edge center is ez."
-msgstr ""
-"Creates a regular polygon. Center of the polygon is at point p0. Normal "
-"vector is n. The number of edges is ne. Radius of the outer circle is a. The "
-"direction from p0 to the first edge center is ez."
-
-msgid ""
-"Creates a polygon wire from a number of corners, connected by straight edges."
-msgstr ""
-"Creates a polygon wire from a number of corners, connected by straight edges."
-
-msgid ""
-"Creates a polyline wire from a number of corners, connected by straight "
-"edges."
-msgstr ""
-"Creates a polyline wire from a number of corners, connected by straight "
-"edges."
-
-msgid ""
-"Creates a revolution of the planar feature xsec. The rotation axis is "
-"specified by origin point p0 and the direction vector axis. Revolution angle "
-"is specified as angle. By giving the keyword centered, the revolution is "
-"created symmetrically around the base feature."
-msgstr ""
-"Creates a revolution of the planar feature xsec. The rotation axis is "
-"specified by origin point p0 and the direction vector axis. Revolution angle "
-"is specified as angle. By giving the keyword centered, the revolution is "
-"created symmetrically around the base feature."
-
-msgid "Creates a sphere around point p0 with diameter D."
-msgstr "Creates a sphere around point p0 with diameter D."
-
-msgid "Creates a spline curve through all given points p0 to pn."
-msgstr "Creates a spline curve through all given points p0 to pn."
-
-msgid "SplineSurface: not enough rows of point specified!"
-msgstr "SplineSurface: not enough rows of point specified!"
-
-msgid "SplineSurface: not enough cols of point specified!"
-msgstr "SplineSurface: not enough cols of point specified!"
-
-msgid "SplineSurface: all rows need to have an equal number of points!"
-msgstr "SplineSurface: all rows need to have an equal number of points!"
-
-msgid ""
-"Creates an spline surface through all the given points. Note that all rows "
-"need to have the same number of columns."
-msgstr ""
-"Creates an spline surface through all the given points. Note that all rows "
-"need to have the same number of columns."
-
-msgid "Creation of solid failed!"
-msgstr "Creation of solid failed!"
-
-msgid ""
-"Creates a sine curve (single period) with wave length l and amplitude A."
-msgstr ""
-"Creates a sine curve (single period) with wave length l and amplitude A."
-
-msgid "Create stitched shell from selected faces."
-msgstr "Create stitched shell from selected faces."
-
-msgid "Could not create a closed shell (B)!"
-msgstr "Could not create a closed shell (B)!"
-
-msgid "Orientation Error!"
-msgstr "Orientation Error!"
-
-msgid "Create stitched solid from all faces of the provided features."
-msgstr "Create stitched solid from all faces of the provided features."
-
-msgid "Creates a stringer along a curve or a wire on a surface."
-msgstr "Creates a stringer along a curve or a wire on a surface."
-
-msgid "reading STL geometry"
-msgstr "reading STL geometry"
-
-msgid "creating Poly_Triangulation"
-msgstr "creating Poly_Triangulation"
-
-msgid "STL mesh cell needs to have exactly 3 corners"
-msgstr "STL mesh cell needs to have exactly 3 corners"
-
-msgid "applying transformation"
-msgstr "applying transformation"
-
-msgid "computing STL bounding box"
-msgstr "computing STL bounding box"
-
-msgid "creating TopoDS_Shape"
-msgstr "creating TopoDS_Shape"
-
-msgid "insert proxy geometry in place of empty STL"
-msgstr "insert proxy geometry in place of empty STL"
-
-msgid ""
-"Import a triangulated surface for display. The result can only be used for "
-"display, no operations can be performed on it.Transformations can be reused "
-"from other transform features. The name of another transformed feature can "
-"be provided optionally."
-msgstr ""
-"Import a triangulated surface for display. The result can only be used for "
-"display, no operations can be performed on it.Transformations can be reused "
-"from other transform features. The name of another transformed feature can "
-"be provided optionally."
-
-msgid "Insufficient number of sections given!"
-msgstr "Insufficient number of sections given!"
-
-msgid "Incompatible section shape for Sweep!"
-msgstr "Incompatible section shape for Sweep!"
-
-msgid "Interpolates a solid through the planar sections xsec0 to xsecn."
-msgstr "Interpolates a solid through the planar sections xsec0 to xsecn."
-
-msgid "Creates a solid from a shell feature by adding thickness t."
-msgstr "Creates a solid from a shell feature by adding thickness t."
-
-msgid ""
-"Transforms the base feature by translating it by vector trans and rotates it "
-"around vector rot (magnitude gives angle, axis goes through global origin). "
-"Optionally scale the base feature by scale factor scale."
-msgstr ""
-"Transforms the base feature by translating it by vector trans and rotates it "
-"around vector rot (magnitude gives angle, axis goes through global origin). "
-"Optionally scale the base feature by scale factor scale."
-
-msgid ""
-"Rotates the base feature around vector rot (magnitude gives angle), the axis "
-"goes through point origin."
-msgstr ""
-"Rotates the base feature around vector rot (magnitude gives angle), the axis "
-"goes through point origin."
-
-msgid ""
-"Scales the base feature by independent factors for each coordinate direction."
-msgstr ""
-
-msgid "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
-msgstr ""
-"Creates a triangle face from point p0 and spanned by vectors L1 and L2."
-
-msgid ""
-"Creates a tongue extension along a section curve between two surface parts."
-msgstr ""
-"Creates a tongue extension along a section curve between two surface parts."
-
-msgid "Creates a wire from a number of edges."
-msgstr "Creates a wire from a number of edges."
-
-msgid ""
-"Creates fillets at selected vertices of a wire. All vertices in the "
-"selection set vertices are rounded with width r."
-msgstr ""
-"Creates fillets at selected vertices of a wire. All vertices in the "
-"selection set vertices are rounded with width r."
-
-#, c-format
-msgid "building model %s"
-msgstr "building model %s"
-
-msgid "ModelFeature: Model input unspecified!"
-msgstr "ModelFeature: Model input unspecified!"
-
-msgid ""
-"Imports a submodel. It is read from the file modelname.iscad. The file is "
-"searched first in the directory of the current model and then throughout the "
-"shared file search path. An arbitrary number of parameters are passed from "
-"the current model into the submodel."
-msgstr ""
-"Imports a submodel. It is read from the file modelname.iscad. The file is "
-"searched first in the directory of the current model and then throughout the "
-"shared file search path. An arbitrary number of parameters are passed from "
-"the current model into the submodel."
-
-msgid "Building 2D spline failed!"
-msgstr "Building 2D spline failed!"
-
-msgid ""
-"Computes the maximum curvature line on a surface originating from the point "
-"of maximum curvature in the selected faces. Returns a compound."
-msgstr ""
-"Computes the maximum curvature line on a surface originating from the point "
-"of maximum curvature in the selected faces. Returns a compound."
-
-#, c-format
-msgid "Invalid NACA code! (was %s)"
-msgstr "Invalid NACA code! (was %s)"
-
-msgid ""
-"Creates an airfoil section from the NACA four digit series. The four digit "
-"code is passed as a string. The leading edge is positioned at point p0. "
-"Length and direction of the chord line are specified by vector L. The normal "
-"direction of the foil section, i.e. spanwise direction of the wing, is given "
-"by vector ez."
-msgstr ""
-"Creates an airfoil section from the NACA four digit series. The four digit "
-"code is passed as a string. The leading edge is positioned at point p0. "
-"Length and direction of the chord line are specified by vector L. The normal "
-"direction of the foil section, i.e. spanwise direction of the wing, is given "
-"by vector ez."
+"Modifies an open wire feature by clipping its ends. From the beginning, a "
+"segment of length Ls is removed and from the end a segment of length Le."
+
+msgid "Creates a closed polyline from the given list of points p0 to pn."
+msgstr "Creates a closed polyline from the given list of points p0 to pn."
 
 msgid "Discretization of arc failed!"
 msgstr "Discretization of arc failed!"
@@ -734,38 +295,15 @@ msgstr ""
 "\n"
 "The motor axis is along EZ while the radial direction is EX."
 
-msgid "Internal error: zero length of parameter path!"
-msgstr "Internal error: zero length of parameter path!"
-
-#, c-format
-msgid "Conversion of FreeCAD file %s into BREP %s failed!"
-msgstr "Conversion of FreeCAD file %s into BREP %s failed!"
+msgid "Creates a compound (assembly) of multiple features c0 to cn"
+msgstr "Creates a compound (assembly) of multiple features c0 to cn"
 
 msgid ""
-"Rebuild a model in FreeCAD and imports the result. An arbitrary number of "
-"parameter/value pairs can be passed into FreeCAD."
+"Creates a cone between point p0 and p1. At point p0, the diameter is D0 and "
+"at p1 it is D1."
 msgstr ""
-"Rebuild a model in FreeCAD and imports the result. An arbitrary number of "
-"parameter/value pairs can be passed into FreeCAD."
-
-msgid "Creates a pyramid from the planar base feature and the tip point ptip."
-msgstr "Creates a pyramid from the planar base feature and the tip point ptip."
-
-msgid "Creates a closed polyline from the given list of points p0 to pn."
-msgstr "Creates a closed polyline from the given list of points p0 to pn."
-
-#, c-format
-msgid "number of teeth (%g) is lower than the minimum number of teeth (%g)!"
-msgstr "number of teeth (%g) is lower than the minimum number of teeth (%g)!"
-
-msgid ""
-"Creates a spur gear with thickness t. The diameter follows from module m and "
-"tooth number z. Optionally, the clearance (as a fraction of module) can be "
-"specified. If not specified, 0.2 is used."
-msgstr ""
-"Creates a spur gear with thickness t. The diameter follows from module m and "
-"tooth number z. Optionally, the clearance (as a fraction of module) can be "
-"specified. If not specified, 0.2 is used."
+"Creates a cone between point p0 and p1. At point p0, the diameter is D0 and "
+"at p1 it is D1."
 
 msgid "curve feature does not represent a single wire!"
 msgstr "curve feature does not represent a single wire!"
@@ -785,32 +323,60 @@ msgstr ""
 "(curve). The distance between subsequent copies is delta and n copies are "
 "created."
 
+msgid "Cutaway: Given datum does not provide a planar reference!"
+msgstr "Cutaway: Given datum does not provide a planar reference!"
+
+msgid "Cutaway: origin and normal direction undefined!"
+msgstr "Cutaway: origin and normal direction undefined!"
+
+msgid "Could not create cutting surface!"
+msgstr "Could not create cutting surface!"
+
+msgid "Could not create cut!"
+msgstr "Could not create cut!"
+
 msgid ""
-"Places the feature base by solving a set of placement conditions numerically "
-"(experimental).\n"
-"Available placement conditions are:\n"
-" - <vector> == <vector> (same point coordinates or vector components)\n"
-" - <vector> parallel <vector> (same vector orientation))\n"
-" - <datum> aligned <datum> [inverted] (direction properties of two datums "
-"are parallel or antiparallel. The latter holds, if keyword \"inverted\" is "
-"present)\n"
-" - <datum> inclined <datum> <scalar>\n"
-" - <datum> coaxial <datum> [inverted]\n"
-" - <vector> inplane <datum>\n"
-" - <vector> onaxis <datum>\n"
+"Removes a halfspace from a feature. The halfspace is either specified by a "
+"point p0 and the normal vector n or by a datum plane. In the latter case, "
+"the removal side of plane can be toggled by giving the option inverted."
 msgstr ""
-"Places the feature base by solving a set of placement conditions numerically "
-"(experimental).\n"
-"Available placement conditions are:\n"
-" - <vector> == <vector> (same point coordinates or vector components)\n"
-" - <vector> parallel <vector> (same vector orientation))\n"
-" - <datum> aligned <datum> [inverted] (direction properties of two datums "
-"are parallel or antiparallel. The latter holds, if keyword \"inverted\" is "
-"present)\n"
-" - <datum> inclined <datum> <scalar>\n"
-" - <datum> coaxial <datum> [inverted]\n"
-" - <vector> inplane <datum>\n"
-" - <vector> onaxis <datum>\n"
+"Removes a halfspace from a feature. The halfspace is either specified by a "
+"point p0 and the normal vector n or by a datum plane. In the latter case, "
+"the removal side of plane can be toggled by giving the option inverted."
+
+msgid "normal vector must not be zero"
+msgstr "normal vector must not be zero"
+
+msgid ""
+"Cuts up the base feature into several pieces with planar cuts at p0 to pn "
+"with normal n and cut thickness t. The result pieces are stored in subshapes "
+"of name \"cut_<int:i>\"."
+msgstr ""
+"Cuts up the base feature into several pieces with planar cuts at p0 to pn "
+"with normal n and cut thickness t. The result pieces are stored in subshapes "
+"of name \"cut_<int:i>\"."
+
+msgid ""
+"Creates a cylinder based on point p0. The cylinder extends up to point "
+"p1_or_axis or, if the keyword ax is given, along the length vector "
+"p1_or_axis. The outer diameter of the cylinder is Da. If an inner diameter "
+"Di is given, a hollow cylinder is created. The cylinder is centered with "
+"respect to p0, if the keyword centered is supplied."
+msgstr ""
+"Creates a cylinder based on point p0. The cylinder extends up to point "
+"p1_or_axis or, if the keyword ax is given, along the length vector "
+"p1_or_axis. The outer diameter of the cylinder is Da. If an inner diameter "
+"Di is given, a hollow cylinder is created. The cylinder is centered with "
+"respect to p0, if the keyword centered is supplied."
+
+msgid ""
+"Creates an ellipse around point p0. The major axis has length and direction "
+"of axmaj. The minor axis length is that of axmin. Its direction is corrected "
+"to be orthogonal to axmaj."
+msgstr ""
+"Creates an ellipse around point p0. The major axis has length and direction "
+"of axmaj. The minor axis length is that of axmin. Its direction is corrected "
+"to be orthogonal to axmaj."
 
 msgid "Exploded: datum does not provide axis reference!"
 msgstr "Exploded: datum does not provide axis reference!"
@@ -822,22 +388,456 @@ msgstr ""
 "Creates an exploded state from the supplied list of features. The components "
 "are translated along the direction of refaxis."
 
+msgid ""
+"Creates an extrusion of the planar feature sec. The direction and length of "
+"the extrusion is given by the vector L. If the keyword centered is given, "
+"the extrusion is centered around the base feature."
+msgstr ""
+"Creates an extrusion of the planar feature sec. The direction and length of "
+"the extrusion is given by the vector L. If the keyword centered is given, "
+"the extrusion is centered around the base feature."
+
+msgid "Creates a curve in all selected faces along a constant parameter value."
+msgstr ""
+"Creates a curve in all selected faces along a constant parameter value."
+
+msgid ""
+"Creates fillets at selected edges of a solid. All edges in the selection set "
+"edges are rounded with width r."
+msgstr ""
+"Creates fillets at selected edges of a solid. All edges in the selection set "
+"edges are rounded with width r."
+
+msgid "first edge feature is not a single edge!"
+msgstr "first edge feature is not a single edge!"
+
+msgid "first feature set has to contain only 1 edge!"
+msgstr "first feature set has to contain only 1 edge!"
+
+msgid "second edge feature is not a single edge!"
+msgstr "second edge feature is not a single edge!"
+
+msgid "second feature set has to contain only 1 edge!"
+msgstr "second feature set has to contain only 1 edge!"
+
+msgid "Failed to generate face!"
+msgstr "Failed to generate face!"
+
+msgid ""
+"Creates an interpolated surface between two edges. The two edges e0 and e1 "
+"can be given either as edge features or edge selection sets."
+msgstr ""
+"Creates an interpolated surface between two edges. The two edges e0 and e1 "
+"can be given either as edge features or edge selection sets."
+
+msgid "Runs some repair operations on output shape of feature in."
+msgstr "Runs some repair operations on output shape of feature in."
+
+msgid "Internal error: zero length of parameter path!"
+msgstr "Internal error: zero length of parameter path!"
+
+#, c-format
+msgid "Conversion of FreeCAD file %s into BREP %s failed!"
+msgstr "Conversion of FreeCAD file %s into BREP %s failed!"
+
+msgid ""
+"Rebuild a model in FreeCAD and imports the result. An arbitrary number of "
+"parameter/value pairs can be passed into FreeCAD."
+msgstr ""
+"Rebuild a model in FreeCAD and imports the result. An arbitrary number of "
+"parameter/value pairs can be passed into FreeCAD."
+
+#, c-format
+msgid "number of teeth (%g) is lower than the minimum number of teeth (%g)!"
+msgstr "number of teeth (%g) is lower than the minimum number of teeth (%g)!"
+
+msgid ""
+"Creates a spur gear with thickness t. The diameter follows from module m and "
+"tooth number z. Optionally, the clearance (as a fraction of module) can be "
+"specified. If not specified, 0.2 is used."
+msgstr ""
+"Creates a spur gear with thickness t. The diameter follows from module m and "
+"tooth number z. Optionally, the clearance (as a fraction of module) can be "
+"specified. If not specified, 0.2 is used."
+
+#, c-format
+msgid "File not found: %s"
+msgstr "File not found: %s"
+
+msgid ""
+"Imports a feature from a file. The format is recognized from the filename "
+"extension. Supported formats are IGS, STP, BREP."
+msgstr ""
+"Imports a feature from a file. The format is recognized from the filename "
+"extension. Supported formats are IGS, STP, BREP."
+
+msgid ""
+"Scales the base feature by independent factors for each coordinate direction."
+msgstr ""
+
+msgid ""
+"Copies the bease feature base into a linear pattern. The copies of the base "
+"feature are shifted in increments of delta_l. The number of copies is n."
+msgstr ""
+"Copies the bease feature base into a linear pattern. The copies of the base "
+"feature are shifted in increments of delta_l. The number of copies is n."
+
+msgid "Creates a line between point p0 and p1."
+msgstr "Creates a line between point p0 and p1."
+
+msgid "Building 2D spline failed!"
+msgstr "Building 2D spline failed!"
+
+msgid ""
+"Computes the maximum curvature line on a surface originating from the point "
+"of maximum curvature in the selected faces. Returns a compound."
+msgstr ""
+"Computes the maximum curvature line on a surface originating from the point "
+"of maximum curvature in the selected faces. Returns a compound."
+
+msgid "Mirror: planar reference required!"
+msgstr "Mirror: planar reference required!"
+
+msgid "Mirrors the base feature base over the given datum plane."
+msgstr "Mirrors the base feature base over the given datum plane."
+
+msgid "Mirrors the base feature over the YZ plane."
+msgstr "Mirrors the base feature over the YZ plane."
+
+msgid "Mirrors the base feature over the XZ plane."
+msgstr "Mirrors the base feature over the XZ plane."
+
+msgid "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
+msgstr "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
+
+#, c-format
+msgid "building model %s"
+msgstr "building model %s"
+
+msgid "ModelFeature: Model input unspecified!"
+msgstr "ModelFeature: Model input unspecified!"
+
+msgid ""
+"Imports a submodel. It is read from the file modelname.iscad. The file is "
+"searched first in the directory of the current model and then throughout the "
+"shared file search path. An arbitrary number of parameters are passed from "
+"the current model into the submodel."
+msgstr ""
+"Imports a submodel. It is read from the file modelname.iscad. The file is "
+"searched first in the directory of the current model and then throughout the "
+"shared file search path. An arbitrary number of parameters are passed from "
+"the current model into the submodel."
+
+#, c-format
+msgid "Invalid NACA code! (was %s)"
+msgstr "Invalid NACA code! (was %s)"
+
+msgid ""
+"Creates an airfoil section from the NACA four digit series. The four digit "
+"code is passed as a string. The leading edge is positioned at point p0. "
+"Length and direction of the chord line are specified by vector L. The normal "
+"direction of the foil section, i.e. spanwise direction of the wing, is given "
+"by vector ez."
+msgstr ""
+"Creates an airfoil section from the NACA four digit series. The four digit "
+"code is passed as a string. The leading edge is positioned at point p0. "
+"Length and direction of the chord line are specified by vector L. The normal "
+"direction of the foil section, i.e. spanwise direction of the wing, is given "
+"by vector ez."
+
+msgid ""
+"Creates an offset surface from a shell feature by displacing the surfaces in "
+"normal direction by distance t."
+msgstr ""
+"Creates an offset surface from a shell feature by displacing the surfaces in "
+"normal direction by distance t."
+
 msgid "Partionates of the base feature by the tool feature."
 msgstr "Partionates of the base feature by the tool feature."
 
-msgid ""
-"Creates an offset surface from a shell feature by displacing the surfaces in "
-"normal direction by distance t."
-msgstr ""
-"Creates an offset surface from a shell feature by displacing the surfaces in "
-"normal direction by distance t."
+msgid "spine feature has to provide a single edge or a singly connected wire!"
+msgstr "spine feature has to provide a single edge or a singly connected wire!"
+
+msgid "xsec feature has to provide a face or wire!"
+msgstr "xsec feature has to provide a face or wire!"
+
+msgid "Pipe: reapproximation of spine failed!"
+msgstr "Pipe: reapproximation of spine failed!"
 
 msgid ""
-"align the extremities of the first object with those of other, measured "
-"along direction."
+"Sweeps the planar section xsec along the curve feature spine. The xsec is "
+"expected at global origin [0,0,0] and is moved to the beginning of the "
+"spine. By fixing the binormal direction using keyword fixedbinormal and a "
+"fixed direction, problems with erratic twisting of the section on spiral "
+"paths can be avoided. By default, the section is not rotated. If keyword "
+"reorient is given, the z-axis of the section is aligned with the tangent of "
+"the spine. The keyword reapprox triggers an reapproximation of the spine "
+"wire into a single b-spline curve (experimental)."
 msgstr ""
-"align the extremities of the first object with those of other, measured "
-"along direction."
+"Sweeps the planar section xsec along the curve feature spine. The xsec is "
+"expected at global origin [0,0,0] and is moved to the beginning of the "
+"spine. By fixing the binormal direction using keyword fixedbinormal and a "
+"fixed direction, problems with erratic twisting of the section on spiral "
+"paths can be avoided. By default, the section is not rotated. If keyword "
+"reorient is given, the z-axis of the section is aligned with the tangent of "
+"the spine. The keyword reapprox triggers an reapproximation of the spine "
+"wire into a single b-spline curve (experimental)."
+
+msgid ""
+"Places the feature base in a new coordinate system. The new origin is at "
+"point p0, the new x-axis along vector ex and the new z-direction is ez. "
+"Optionally, the point refpt is made coincident with p0 instead of the "
+"origin. Alternatively, the placement is copied from another Place-feature "
+"other_place."
+msgstr ""
+"Places the feature base in a new coordinate system. The new origin is at "
+"point p0, the new x-axis along vector ex and the new z-direction is ez. "
+"Optionally, the point refpt is made coincident with p0 instead of the "
+"origin. Alternatively, the placement is copied from another Place-feature "
+"other_place."
+
+msgid ""
+"Creates a polygon wire from a number of corners, connected by straight edges."
+msgstr ""
+"Creates a polygon wire from a number of corners, connected by straight edges."
+
+msgid ""
+"Creates a polyline wire from a number of corners, connected by straight "
+"edges."
+msgstr ""
+"Creates a polyline wire from a number of corners, connected by straight "
+"edges."
+
+msgid ""
+"Projects the feature base onto the feature target. The direction has to be "
+"prescribed by vector dir."
+msgstr ""
+"Projects the feature base onto the feature target. The direction has to be "
+"prescribed by vector dir."
+
+msgid "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
+msgstr "Error: Wrong parameter. ProjectedOutline needs a planar reference!"
+
+msgid "Creation of solid failed!"
+msgstr "Creation of solid failed!"
+
+msgid "Creates a pyramid from the planar base feature and the tip point ptip."
+msgstr "Creates a pyramid from the planar base feature and the tip point ptip."
+
+#, c-format
+msgid "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
+msgstr "Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"
+
+#, c-format
+msgid "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
+msgstr "Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"
+
+#, c-format
+msgid ""
+"Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
+msgstr ""
+"Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"
+
+#, c-format
+msgid ""
+"Invalid parameter: Wall thickness of quad is larger than half width or half "
+"height (%g > %g)!"
+msgstr ""
+"Invalid parameter: Wall thickness of quad is larger than half width or half "
+"height (%g > %g)!"
+
+msgid ""
+"Creates a quad face. The quad is located at point p0 and direction and edge "
+"lengths are defined by the vector Lx, Ly.\n"
+"Optionally, the edges are centered around p0. Either all directions (option "
+"centered) or only selected directions (option center [x][y] where x,y is "
+"associated with L1, L2 respectively)."
+msgstr ""
+"Creates a quad face. The quad is located at point p0 and direction and edge "
+"lengths are defined by the vector Lx, Ly.\n"
+"Optionally, the edges are centered around p0. Either all directions (option "
+"centered) or only selected directions (option center [x][y] where x,y is "
+"associated with L1, L2 respectively)."
+
+msgid ""
+"Places the feature base by solving a set of placement conditions numerically "
+"(experimental).\n"
+"Available placement conditions are:\n"
+" - <vector> == <vector> (same point coordinates or vector components)\n"
+" - <vector> parallel <vector> (same vector orientation))\n"
+" - <datum> aligned <datum> [inverted] (direction properties of two datums "
+"are parallel or antiparallel. The latter holds, if keyword \"inverted\" is "
+"present)\n"
+" - <datum> inclined <datum> <scalar>\n"
+" - <datum> coaxial <datum> [inverted]\n"
+" - <vector> inplane <datum>\n"
+" - <vector> onaxis <datum>\n"
+msgstr ""
+"Places the feature base by solving a set of placement conditions numerically "
+"(experimental).\n"
+"Available placement conditions are:\n"
+" - <vector> == <vector> (same point coordinates or vector components)\n"
+" - <vector> parallel <vector> (same vector orientation))\n"
+" - <datum> aligned <datum> [inverted] (direction properties of two datums "
+"are parallel or antiparallel. The latter holds, if keyword \"inverted\" is "
+"present)\n"
+" - <datum> inclined <datum> <scalar>\n"
+" - <datum> coaxial <datum> [inverted]\n"
+" - <vector> inplane <datum>\n"
+" - <vector> onaxis <datum>\n"
+
+msgid ""
+"Creates a regular polygon. Center of the polygon is at point p0. Normal "
+"vector is n. The number of edges is ne. Radius of the outer circle is a. The "
+"direction from p0 to the first edge center is ez."
+msgstr ""
+"Creates a regular polygon. Center of the polygon is at point p0. Normal "
+"vector is n. The number of edges is ne. Radius of the outer circle is a. The "
+"direction from p0 to the first edge center is ez."
+
+msgid ""
+"Creates a revolution of the planar feature xsec. The rotation axis is "
+"specified by origin point p0 and the direction vector axis. Revolution angle "
+"is specified as angle. By giving the keyword centered, the revolution is "
+"created symmetrically around the base feature."
+msgstr ""
+"Creates a revolution of the planar feature xsec. The rotation axis is "
+"specified by origin point p0 and the direction vector axis. Revolution angle "
+"is specified as angle. By giving the keyword centered, the revolution is "
+"created symmetrically around the base feature."
+
+msgid "Creates a solid from a shell feature by adding thickness t."
+msgstr "Creates a solid from a shell feature by adding thickness t."
+
+msgid ""
+"Creates a sine curve (single period) with wave length l and amplitude A."
+msgstr ""
+"Creates a sine curve (single period) with wave length l and amplitude A."
+
+msgid "Creates a topological vertex at the specified location."
+msgstr "Creates a topological vertex at the specified location."
+
+msgid "Creates a sphere around point p0 with diameter D."
+msgstr "Creates a sphere around point p0 with diameter D."
+
+msgid "Creates a spline curve through all given points p0 to pn."
+msgstr "Creates a spline curve through all given points p0 to pn."
+
+msgid "SplineSurface: not enough rows of point specified!"
+msgstr "SplineSurface: not enough rows of point specified!"
+
+msgid "SplineSurface: not enough cols of point specified!"
+msgstr "SplineSurface: not enough cols of point specified!"
+
+msgid "SplineSurface: all rows need to have an equal number of points!"
+msgstr "SplineSurface: all rows need to have an equal number of points!"
+
+msgid ""
+"Creates an spline surface through all the given points. Note that all rows "
+"need to have the same number of columns."
+msgstr ""
+"Creates an spline surface through all the given points. Note that all rows "
+"need to have the same number of columns."
+
+msgid "Create stitched shell from selected faces."
+msgstr "Create stitched shell from selected faces."
+
+msgid "Could not create a closed shell (B)!"
+msgstr "Could not create a closed shell (B)!"
+
+msgid "Orientation Error!"
+msgstr "Orientation Error!"
+
+msgid "Create stitched solid from all faces of the provided features."
+msgstr "Create stitched solid from all faces of the provided features."
+
+msgid "reading STL geometry"
+msgstr "reading STL geometry"
+
+msgid "creating Poly_Triangulation"
+msgstr "creating Poly_Triangulation"
+
+msgid "STL mesh cell needs to have exactly 3 corners"
+msgstr "STL mesh cell needs to have exactly 3 corners"
+
+msgid "applying transformation"
+msgstr "applying transformation"
+
+msgid "computing STL bounding box"
+msgstr "computing STL bounding box"
+
+msgid "creating TopoDS_Shape"
+msgstr "creating TopoDS_Shape"
+
+msgid "insert proxy geometry in place of empty STL"
+msgstr "insert proxy geometry in place of empty STL"
+
+msgid ""
+"Import a triangulated surface for display. The result can only be used for "
+"display, no operations can be performed on it.Transformations can be reused "
+"from other transform features. The name of another transformed feature can "
+"be provided optionally."
+msgstr ""
+"Import a triangulated surface for display. The result can only be used for "
+"display, no operations can be performed on it.Transformations can be reused "
+"from other transform features. The name of another transformed feature can "
+"be provided optionally."
+
+msgid "Creates a stringer along a curve or a wire on a surface."
+msgstr "Creates a stringer along a curve or a wire on a surface."
+
+msgid "Insufficient number of sections given!"
+msgstr "Insufficient number of sections given!"
+
+msgid "Incompatible section shape for Sweep!"
+msgstr "Incompatible section shape for Sweep!"
+
+msgid "Interpolates a solid through the planar sections xsec0 to xsecn."
+msgstr "Interpolates a solid through the planar sections xsec0 to xsecn."
+
+msgid ""
+"Creates a tongue extension along a section curve between two surface parts."
+msgstr ""
+"Creates a tongue extension along a section curve between two surface parts."
+
+msgid ""
+"Creates a torus around center point p0. The axis is specified by the "
+"direction of axisTimesD and the torus diameter by its magnitude. The tube "
+"diameter is d."
+msgstr ""
+"Creates a torus around center point p0. The axis is specified by the "
+"direction of axisTimesD and the torus diameter by its magnitude. The tube "
+"diameter is d."
+
+msgid ""
+"Transforms the base feature by translating it by vector trans and rotates it "
+"around vector rot (magnitude gives angle, axis goes through global origin). "
+"Optionally scale the base feature by scale factor scale."
+msgstr ""
+"Transforms the base feature by translating it by vector trans and rotates it "
+"around vector rot (magnitude gives angle, axis goes through global origin). "
+"Optionally scale the base feature by scale factor scale."
+
+msgid ""
+"Rotates the base feature around vector rot (magnitude gives angle), the axis "
+"goes through point origin."
+msgstr ""
+"Rotates the base feature around vector rot (magnitude gives angle), the axis "
+"goes through point origin."
+
+msgid "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
+msgstr ""
+"Creates a triangle face from point p0 and spanned by vectors L1 and L2."
+
+msgid "Creates a wire from a number of edges."
+msgstr "Creates a wire from a number of edges."
+
+msgid ""
+"Creates fillets at selected vertices of a wire. All vertices in the "
+"selection set vertices are rounded with width r."
+msgstr ""
+"Creates fillets at selected vertices of a wire. All vertices in the "
+"selection set vertices are rounded with width r."
 
 #, c-format
 #~ msgid "datum value %s already present!"

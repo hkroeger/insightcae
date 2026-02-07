@@ -1,11 +1,5 @@
 project(testcases)
 
-#find_package(OpenCasCade REQUIRED)
-
-set(testcases_SOURCES 
-  airfoilsection.cpp airfoilsection.h
-  flatplatebl.cpp flatplatebl.h
-  )
 
 set(testcases_LIBS
   toolkit toolkit_cad
@@ -23,12 +17,14 @@ if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS) # required for refdata
         )
     ADD_DEFINITIONS( -DHAS_REFDATA )
 endif()
-  
-file(GLOB_RECURSE testcases_HEADERS "*.h")
 
 
-add_library(testcases SHARED ${testcases_SOURCES})
-add_PDL(testcases "${testcases_HEADERS}")
+add_library(testcases SHARED
+  airfoilsection.cpp airfoilsection.h
+  flatplatebl.cpp flatplatebl.h
+  ${testcases_SOURCES}
+)
+target_add_PDL(testcases)
 
 target_link_libraries(testcases ${testcases_LIBS})
 target_include_directories(testcases
@@ -55,12 +51,12 @@ install_script(isCreateChannelProfiles isCreateChannelProfiles.py)
 endif()
 
 
-find_package(Qt5Widgets CONFIG REQUIRED)
-set(testcasesgui_SOURCES
-    testcases_gui.cpp
+
+add_library(testcasesgui SHARED
+  testcases_gui.cpp
+  testcases.qrc
 )
-qt5_add_resources(testcasesgui_SOURCES testcases.qrc)
-add_library(testcasesgui SHARED ${testcasesgui_SOURCES})
+target_enable_qt(testcasesgui)
 target_link_libraries(testcasesgui testcases toolkit_gui)
 
 install(TARGETS testcasesgui LIBRARY DESTINATION lib COMPONENT ${INSIGHT_INSTALL_COMPONENT})

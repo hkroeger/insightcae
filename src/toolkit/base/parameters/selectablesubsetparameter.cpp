@@ -322,6 +322,17 @@ std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
 
 
 
+void SelectableSubsetParameter::resolveRelativePaths(
+    const boost::filesystem::path &baseDirectory)
+{
+    for (auto& v: value_)
+    {
+        v.second->resolveRelativePaths(baseDirectory);
+    }
+}
+
+
+
 
 bool SelectableSubsetParameter::isPacked() const
 {

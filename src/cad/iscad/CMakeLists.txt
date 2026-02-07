@@ -2,9 +2,10 @@ if (INSIGHT_BUILD_ISCAD)
 
 project(iscad)
 
-set(iscad_SRCS 
+
+add_executable(iscad
     iscad.cpp
-    
+
     iqiscadmainwindow.cpp iqiscadmainwindow.h
     iqiscadmodelwindow.h iqiscadmodelwindow.cpp
     iqiscadmodelscriptedit.cpp iqiscadmodelscriptedit.h
@@ -17,41 +18,25 @@ set(iscad_SRCS
     drawingviewsmodel.h drawingviewsmodel.cpp
     viewdefinitiondialog.h viewdefinitiondialog.cpp
     insertdrawingdialog.h insertdrawingdialog.cpp
-)
 
-set(iscad_FORMS
     modelcomponentselectordlg.ui
     insertfeaturedlg.ui
     loadmodeldialog.ui
     insertdrawingdialog.ui
     viewdefinitiondialog.ui
-    )
 
-set(iscad_RCCS
     iscad.qrc
-    )
-
-
-
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
-find_package(Qt5Widgets CONFIG REQUIRED)
-
-
-add_executable(iscad ${iscad_SRCS} ${iscad_FORMS} ${iscad_RCCS} )
-
+)
+target_enable_qt(iscad)
 target_link_libraries(iscad
   Qt5::Widgets
   toolkit_gui
-  #${OPENGL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${DXFLIB_LIBRARIES}
   )
 linkToolkitVtk(iscad Onscreen)
 
-setup_gettext(iscad iscad ${iscad_SRCS})
+target_setup_gettext(iscad iscad)
 
 target_include_directories(iscad
   PUBLIC ${QT_INCLUDES}

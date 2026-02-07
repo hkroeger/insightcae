@@ -2,9 +2,6 @@ add_subdirectory(analysispreview3d)
 add_subdirectory(graphprogressdisplayer)
 add_subdirectory(views)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Test CONFIG REQUIRED)
 find_package(Qt5Widgets CONFIG REQUIRED)

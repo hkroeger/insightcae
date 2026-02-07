@@ -1,14 +1,6 @@
 project(guitest)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
-set(guitest_SRCS
-    main.cpp
-    mainwindow.cpp
-    mainwindow.ui
-)
 
 set(guitest_LIBS
     toolkit_gui
@@ -16,8 +8,6 @@ set(guitest_LIBS
     genericmodules
 )
 
-
-find_package(Qt5Widgets CONFIG REQUIRED)
 
 if (wt_FOUND)
     message(STATUS "Found wt")
@@ -33,8 +23,12 @@ endif()
 
 
 
-add_executable(guitest ${guitest_SRCS})
-
+add_executable(guitest
+    main.cpp
+    mainwindow.cpp
+    mainwindow.ui
+)
+target_enable_qt(guitest)
 target_link_libraries(guitest ${guitest_LIBS})
 
 linkToolkitVtk(guitest Onscreen)

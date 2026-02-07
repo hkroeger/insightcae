@@ -1,18 +1,17 @@
 project(toolkit_remote)
 
 
-set(toolkit_remote_SRCS
-    analyzeclient.cpp analyzeclient.h
-    analyzeserverdetector.cpp analyzeserverdetector.h
-    detectionhandler.cpp detectionhandler.h
-    remoteparaview.cpp remoteparaview.h
-)
 
 if (wt_FOUND)
     message(STATUS "Found wt")
 
-    add_library(toolkit_remote SHARED ${toolkit_remote_SRCS})
-    add_PDL(toolkit_remote "${toolkit_remote_SRCS}")
+    add_library(toolkit_remote SHARED
+        analyzeclient.cpp analyzeclient.h
+        analyzeserverdetector.cpp analyzeserverdetector.h
+        detectionhandler.cpp detectionhandler.h
+        remoteparaview.cpp remoteparaview.h
+    )
+    target_add_PDL(toolkit_remote)
 
     target_link_libraries(toolkit_remote
      toolkit

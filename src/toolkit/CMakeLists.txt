@@ -21,7 +21,34 @@
 project(toolkit)
 
 
-set(toolkit_SOURCES
+
+if (INSIGHT_GNUPLOT_CHARTRENDERER)
+    list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp base/resultelements/gnuplotrenderer.h)
+    add_definitions(-DCHART_RENDERER_GNUPLOT)
+endif()
+
+if (INSIGHT_MATPLOTLIB_CHARTRENDERER)
+    list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp base/resultelements/matplotlibrenderer.h)
+    add_definitions(-DCHART_RENDERER_MATPLOTLIB)
+endif()
+
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+  LIST(APPEND toolkit_SOURCES
+   base/pythonanalysis.cpp base/pythonanalysis.h
+   base/pythoninterface.cpp base/pythoninterface.h
+  )
+ENDIF()
+
+
+find_package(OpenSSL)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
+PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
+
+
+link_directories(${Boost_LIBRARY_DIR})
+add_library(toolkit SHARED
     base/cppextensions.h base/cppextensions.cpp
     base/translations.h base/translations.cpp
 
@@ -318,44 +345,10 @@ set(toolkit_SOURCES
     lsdyna/contact.h lsdyna/contact.cpp
     lsdyna/radsoftwareenvironment.h lsdyna/radsoftwareenvironment.cpp
     lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
+
+    ${toolkit_SOURCES}
 )
 
-if (INSIGHT_GNUPLOT_CHARTRENDERER)
-    list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp base/resultelements/gnuplotrenderer.h)
-    add_definitions(-DCHART_RENDERER_GNUPLOT)
-endif()
-
-if (INSIGHT_MATPLOTLIB_CHARTRENDERER)
-    list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp base/resultelements/matplotlibrenderer.h)
-    add_definitions(-DCHART_RENDERER_MATPLOTLIB)
-endif()
-
-IF(INSIGHT_BUILD_PYTHONBINDINGS)
-  LIST(APPEND toolkit_SOURCES
-   base/pythonanalysis.cpp base/pythonanalysis.h
-   base/pythoninterface.cpp base/pythoninterface.h
-  )
-ENDIF()
-
-
-find_package(OpenSSL)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
-PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
-
-
-link_directories(${Boost_LIBRARY_DIR})
-add_library(toolkit SHARED ${toolkit_SOURCES})
-#set(toolkit_LINK_LIBS
-#    ${Boost_LIBRARIES}
-#    ${Intl_LIBRARY}
-#    ${ARMADILLO_LIBRARY}
-#    PkgConfig::poppler-cpp
-#    PkgConfig::minizip
-#    GSL::gsl GSL::gslcblas
-#    OpenSSL::SSL
-#)
 target_link_libraries(toolkit PUBLIC ${Boost_LIBRARIES})
 target_link_libraries(toolkit PUBLIC ${Intl_LIBRARY})
 target_link_libraries(toolkit PUBLIC ${ARMADILLO_LIBRARY})
@@ -366,11 +359,9 @@ target_link_libraries(toolkit PUBLIC OpenSSL::SSL)
 target_link_libraries(toolkit PUBLIC vtkHeaders)
 if (PYTHONLIBS_FOUND)
   target_link_libraries(toolkit PUBLIC ${PYTHON_LIBRARIES})
-    #list(APPEND toolkit_LINK_LIBS ${PYTHON_LIBRARIES})
 endif()
 if (WIN32)
   target_link_libraries(toolkit PUBLIC vtkOnscreen)
-    #list(APPEND toolkit_LINK_LIBS vtkOnscreen)
 endif()
 #target_link_libraries(toolkit ${toolkit_LINK_LIBS})
 # --export-all-symbols is not sufficient for signal/slots to work across DLLs
@@ -378,7 +369,7 @@ include(GenerateExportHeader)
 generate_export_header(toolkit)
 target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
 
-setup_gettext(toolkit toolkit ${toolkit_SOURCES})
+target_setup_gettext(toolkit toolkit)
 
 add_shared_file(toolkit "."
   base/materialLibrary.xml
@@ -489,7 +480,7 @@ endmacro()
 
 add_shared_file(toolkit thermophysical openfoam/caseelements/thermodynamics/gri.species)
 
-add_PDL(toolkit "${toolkit_SOURCES}")
+target_add_PDL(toolkit)
 
 
 if (INSIGHT_DEVELOPMENT_FILES)

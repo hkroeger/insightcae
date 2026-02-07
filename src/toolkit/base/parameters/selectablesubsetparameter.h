@@ -119,6 +119,8 @@ public:
 
   std::string plainTextRepresentation(int indent) const override;
 
+  void resolveRelativePaths(
+      const boost::filesystem::path &baseDirectory) override;
   bool isPacked() const override;
   void pack() override;
   void unpack(const boost::filesystem::path& basePath) override;

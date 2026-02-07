@@ -18,9 +18,8 @@ endmacro(install_headers)
 
 
 ## installs headers and PDL-generated headers
-macro (add_PDL TARGETNAME FILES)
-  #file(GLOB_RECURSE HEADERS "*.h")
-
+macro (target_add_PDL TARGETNAME)
+  get_target_property(FILES ${TARGETNAME} SOURCES)
   foreach (_hdrrel ${FILES})
     get_filename_component(_ext ${_hdrrel} EXT)
     if (_ext STREQUAL ".h")
@@ -71,4 +70,4 @@ macro (add_PDL TARGETNAME FILES)
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     )
-endmacro(add_PDL)
+endmacro(target_add_PDL)

@@ -16,7 +16,7 @@ add_executable(testexe_pdl test_pdl.cpp)
 #target_include_directories(testexe_pdl PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 linkToolkitVtk(testexe_pdl Offscreen)
 add_test(NAME unit_pdl COMMAND testexe_pdl)
-add_PDL(testexe_pdl "${test_pdl_SOURCES}")
+target_add_PDL(testexe_pdl)
 target_link_libraries(testexe_pdl toolkit_cad)
 
 add_toolkit_test(toolkit_dictparser)

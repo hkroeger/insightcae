@@ -2,7 +2,8 @@ if (INSIGHT_BUILD_ISCAD)
 
 project(toolkit_cad)
 
-set(toolkit_cad_SRCS
+
+add_library(toolkit_cad SHARED
     cadfeaturetransient.cpp cadfeaturetransient.h
 
     cadgeometryparameter.h cadgeometryparameter.cpp
@@ -14,10 +15,8 @@ set(toolkit_cad_SRCS
     blockmesh_cylwedge.cpp blockmesh_cylwedge.h
 
     openfoam/snappyhexmesh.h openfoam/snappyhexmesh.cpp
-    )
-
-add_library(toolkit_cad SHARED ${toolkit_cad_SRCS})
-add_PDL(toolkit_cad "${toolkit_cad_SRCS}")
+)
+target_add_PDL(toolkit_cad)
 
 include(GenerateExportHeader)
 generate_export_header(toolkit_cad)

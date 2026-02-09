@@ -156,9 +156,31 @@ class DirectoryParameter
 public:
     declareType ( "directory" );
 
-    DirectoryParameter (const rapidxml::xml_node<> & node);
-    DirectoryParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    DirectoryParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    DirectoryParameter (
+        const rapidxml::xml_node<> & node );
+
+    DirectoryParameter (
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
+
+    DirectoryParameter (
+        const boost::filesystem::path& value,
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
+
+    DirectoryParameter (
+        const FileContainer& fc,
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
 
     std::string latexRepresentation(
         const std::string& name,

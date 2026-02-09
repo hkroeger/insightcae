@@ -205,6 +205,8 @@ PathParameter::readFromNode
 }
 
 
+
+
 PathParameter::PathParameter(const rapidxml::xml_node<> &node)
     : Parameter(node)
 {
@@ -213,11 +215,16 @@ PathParameter::PathParameter(const rapidxml::xml_node<> &node)
 }
 
 
+
+
 std::unique_ptr<PathParameter> PathParameter::clonePathParameter() const
 {
     auto pp=cloneAs<PathParameter>();
     return pp;
 }
+
+
+
 
 std::unique_ptr<hierarchicalData::Element> PathParameter::clone() const
 {
@@ -230,12 +237,15 @@ std::unique_ptr<hierarchicalData::Element> PathParameter::clone() const
 
 
 
+
 void PathParameter::assignFrom(const Element& e)
 {
   auto& op=dynamic_cast<const PathParameter&>(e);
   FileContainer::operator=(op);
   Parameter::assignFrom(op);
 }
+
+
 
 
 bool PathParameter::isEqual(const Element &op) const
@@ -249,6 +259,8 @@ bool PathParameter::isEqual(const Element &op) const
     else
         return false;
 }
+
+
 
 
 int PathParameter::nChildren() const
@@ -271,6 +283,7 @@ std::shared_ptr<PathParameter> make_filepath(const FileContainer& fc)
 {
   return std::shared_ptr<PathParameter>(new PathParameter(fc, "temporary file path"));
 }
+
 
 
 
@@ -299,13 +312,35 @@ addParameterFactories(DirectoryParameter);
 
 
 
-DirectoryParameter::DirectoryParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: PathParameter(".", description, isHidden, isExpert, isNecessary, order)
+
+DirectoryParameter::DirectoryParameter(
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
+: PathParameter(description, isHidden, isExpert, isNecessary, order)
 {}
 
-DirectoryParameter::DirectoryParameter(const boost::filesystem::path& value, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+
+
+
+DirectoryParameter::DirectoryParameter(
+    const boost::filesystem::path& value,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
 : PathParameter(value, description, isHidden, isExpert, isNecessary, order)
 {}
+
+
+
+
+DirectoryParameter::DirectoryParameter(
+    const FileContainer& fc,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
+    : PathParameter(fc, description, isHidden, isExpert, isNecessary, order)
+{}
+
+
+
 
 std::string DirectoryParameter::latexRepresentation(
     const std::string&,
@@ -320,11 +355,18 @@ std::string DirectoryParameter::latexRepresentation(
       + "}";
 }
 
+
+
+
 void DirectoryParameter::pack()
 {}
 
+
+
+
 void DirectoryParameter::unpack(const boost::filesystem::path &basePath)
 {}
+
 
 
 
@@ -366,12 +408,18 @@ const rapidxml::xml_node<>* DirectoryParameter::readFromNode
   return child;
 }
 
+
+
+
 DirectoryParameter::DirectoryParameter(const rapidxml::xml_node<> &node)
     : PathParameter(node)
 {
     FileContainer::readFromNode(node);
     triggerValueChanged();
 }
+
+
+
 
 bool DirectoryParameter::isEqual(const Element &op) const
 {
@@ -389,11 +437,14 @@ bool DirectoryParameter::isEqual(const Element &op) const
 std::unique_ptr<hierarchicalData::Element> DirectoryParameter::clone() const
 {
     auto p=std::make_unique<DirectoryParameter>(
-        filePath(),
+        *this,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order() );
     return p;
 }
+
+
+
 
 std::unique_ptr<DirectoryParameter> DirectoryParameter::cloneDirectoryParameter() const
 {

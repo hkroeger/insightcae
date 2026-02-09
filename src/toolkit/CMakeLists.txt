@@ -347,6 +347,8 @@ add_library(toolkit SHARED
     lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
 
     ${toolkit_SOURCES}
+    base/parametersetinput.h base/parametersetinput.cpp
+    base/parametersbase.h base/parametersbase.cpp
 )
 
 target_link_libraries(toolkit PUBLIC ${Boost_LIBRARIES})

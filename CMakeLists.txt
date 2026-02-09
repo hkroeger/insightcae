@@ -171,6 +171,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 
+
+macro(target_enable_qt TARGET)
+  find_package(Qt5Widgets CONFIG REQUIRED)
+
+  set_target_properties(${TARGET} PROPERTIES
+      AUTOMOC ON
+      AUTORCC ON
+      AUTOUIC ON
+  )
+endmacro()
+
+
 macro(create_script SCRIPTFILE SCR_CONTENT)
 #   message(STATUS  "CTS: ${SCR_CONTENT}")
   set(SRC "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SCRIPTFILE}")
@@ -275,7 +287,7 @@ find_package(Intl REQUIRED)
 
 include("CMake/Gettext_helpers.cmake")
 
-macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
+macro(target_setup_gettext TARGET_NAME GETTEXT_DOMAIN)
     set(GETTEXT_TARGET "${TARGET_NAME}-gettext")
     set(GETTEXT_OUTPUT_DIR "locale")
     set(GETTEXT_LANGUAGES "en" "de")
@@ -283,10 +295,12 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
     target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_DOMAIN=\"${GETTEXT_DOMAIN}\"")
     target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_OUTPUT_DIR=\"${GETTEXT_OUTPUT_DIR}\"")
 
+    get_target_property(ALL_SOURCES ${TARGET_NAME} SOURCES)
+
     CONFIGURE_GETTEXT(
      DOMAIN ${GETTEXT_DOMAIN}
      TARGET_NAME ${GETTEXT_TARGET}
-     SOURCES ${ARGN}
+     SOURCES ${ALL_SOURCES}
      POTFILE_DESTINATION ${GETTEXT_OUTPUT_DIR}
 
      XGETTEXT_ARGS
@@ -307,7 +321,7 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
      INSTALL_COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      ALL
     )
-endmacro()
+endmacro(target_setup_gettext)
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)

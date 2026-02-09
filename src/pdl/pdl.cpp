@@ -268,6 +268,7 @@ int main ( int argc, char *argv[] )
                     <<  "ParameterSetInput p_;\n"
                     << "public:\n"
                     <<  "const ParameterSet& getParameters() const { return p_.parameterSet(); }\n"
+                    <<  "ParameterSetInput getInput() const { return p_.clone(); }\n"
                       ;
               }
               f << "public:\n"

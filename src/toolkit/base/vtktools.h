@@ -32,6 +32,7 @@
 #include <limits>
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
+#include "vtkPointSetAlgorithm.h"
 
 class vtkPolyData;
 class vtkUnstructuredGrid;
@@ -164,7 +165,6 @@ bool checkNormalsOrientation(vtkPolyData* vpm, const arma::mat& pFar, bool modif
 vtkSmartPointer<vtkUnstructuredGrid>
 multiBlockDataSetToUnstructuredGrid(
         vtkDataObject* mbds );
-
 
 
 size_t computeObjectSize(vtkSmartPointer<vtkPolyData> pd);

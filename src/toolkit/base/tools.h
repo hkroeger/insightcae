@@ -24,6 +24,7 @@ class vtkPolyData;
 class vtkCellArray;
 
 #include <limits>
+
 #include "vtkSmartPointer.h"
 #include "vtkPolyDataAlgorithm.h"
 
@@ -51,22 +52,22 @@ std::set<boost::filesystem::path>
 wildcardSearch(const boost::filesystem::path& pathWithRegex);
 
 
-template<class T, typename ...Args>
-class OnDemand
+template<class T, class SmartPtr, typename ...Args>
+class OnDemandBase
 {
 public:
-    typedef std::function<std::shared_ptr<T>(Args...)> InitFunction;
+    typedef std::function<SmartPtr(Args...)> InitFunction;
 
 private:
     InitFunction initFunction_;
-    mutable std::shared_ptr<T> value_;
+    mutable SmartPtr value_;
 
 public:
-    OnDemand(InitFunction inif)
+    OnDemandBase(InitFunction inif)
         : initFunction_(inif)
     {}
 
-    std::shared_ptr<T> ptr(Args...args) const
+    SmartPtr ptr(Args...args) const
     {
         if (!value_)
         {
@@ -89,6 +90,26 @@ public:
     {
         value_.reset();
     }
+};
+
+
+
+
+template<class T, typename ...Args>
+class OnDemand
+    : public OnDemandBase<T, std::shared_ptr<T>, Args...>
+{
+public:
+    using OnDemandBase<T, std::shared_ptr<T>, Args...>::OnDemandBase;
+};
+
+
+template<class T, typename ...Args>
+class vtkOnDemand
+    : public OnDemandBase<T, vtkSmartPointer<T>, Args...>
+{
+public:
+    using OnDemandBase<T, vtkSmartPointer<T>, Args...>::OnDemandBase;
 };
 
 

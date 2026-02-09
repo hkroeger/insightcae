@@ -1,22 +1,13 @@
 project(isResultTool)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5Charts CONFIG REQUIRED)
-
-
-set(isresulttool_SOURCES
+add_executable(isResultTool
     isresulttool.cpp
     resultviewwindow.cpp resultviewwindow.h resultviewwindow.ui
-    )
-SET(isresulttool_RCCS
     resultviewwindow.qrc
-    )
-
-add_executable(isResultTool ${isresulttool_SOURCES} ${isresulttool_RCCS})
+)
+find_package(Qt5Charts CONFIG REQUIRED)
+target_enable_qt(isResultTool)
 target_link_libraries(isResultTool
     toolkit_gui
     Qt5::Widgets Qt5::Charts

@@ -31,21 +31,12 @@ target_link_libraries(tsp Boost::filesystem)
 install(TARGETS tsp RUNTIME DESTINATION bin)
 
 if (INSIGHT_BUILD_WORKBENCH)
- set(CMAKE_AUTOMOC ON)
- SET(CMAKE_AUTOUIC ON)
- set(CMAKE_AUTORCC ON)
 
- find_package(Qt5Widgets CONFIG REQUIRED)
-
- set(tspmon_SRC
-    taskspoolermonitor.cpp
+ add_library(taskspoolermonitor SHARED
+     taskspoolermonitor.cpp
+     taskspoolermonitor.ui
  )
-
- SET(tspmon_FORMS
-    taskspoolermonitor.ui
- )
-
- add_library(taskspoolermonitor SHARED ${tspmon_SRC} ${tspmon_FORMS})
+ target_enable_qt(taskspoolermonitor)
  target_link_libraries(taskspoolermonitor
   toolkit toolkit_gui
   Qt5::Widgets #Qt5::WebEngineWidgets

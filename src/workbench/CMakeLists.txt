@@ -1,43 +1,7 @@
 project(workbench)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-
-set(workbench_SRCS
-    workbench.cpp
-
-    iqcasedirectorystate.h iqcasedirectorystate.cpp
-    iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
-    iqexecutionworkspace.h iqexecutionworkspace.cpp
-
-    newanalysisform.h newanalysisform.cpp
-    newanalysisdlg.h newanalysisdlg.cpp
-
-    analysisform.h analysisform.cpp
-    analysisform_gui.cpp
-    analysisform_localactions.cpp
-    analysisform_remoteactions.cpp
-    workbenchwindow.h workbenchwindow.cpp
-
-    workbenchaction.h workbenchaction.cpp
-    localrun.h localrun.cpp
-
-    qexecutionworkspacedialog.h qexecutionworkspacedialog.cpp
-)
-SET(workbench_FORMS
-    newanalysisdlg.ui
-    analysisform.ui
-    xml_display.ui
-    qsetupremotedialog.ui
-    qexecutionworkspacedialog.ui
-    newanalysisform.ui)
-
-SET(workbench_RCCS workbench.qrc)
 set(workbench_LIBS
     toolkit_gui
     Qt5::Widgets
@@ -58,8 +22,39 @@ else()
 endif()
 
 
-add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
+add_executable(workbench
+    workbench.cpp
 
+    iqcasedirectorystate.h iqcasedirectorystate.cpp
+    iqworkbenchremoteexecutionstate.h iqworkbenchremoteexecutionstate.cpp
+    iqexecutionworkspace.h iqexecutionworkspace.cpp
+
+    newanalysisform.h newanalysisform.cpp
+    newanalysisdlg.h newanalysisdlg.cpp
+
+    analysisform.h analysisform.cpp
+    analysisform_gui.cpp
+    analysisform_localactions.cpp
+    analysisform_remoteactions.cpp
+    workbenchwindow.h workbenchwindow.cpp
+
+    workbenchaction.h workbenchaction.cpp
+    localrun.h localrun.cpp
+
+    qexecutionworkspacedialog.h qexecutionworkspacedialog.cpp
+
+    workbench.qrc
+
+    newanalysisdlg.ui
+    analysisform.ui
+    xml_display.ui
+    qsetupremotedialog.ui
+    qexecutionworkspacedialog.ui
+    newanalysisform.ui
+
+    ${workbench_SRCS}
+)
+target_enable_qt(workbench)
 target_link_libraries(workbench ${workbench_LIBS})
 linkToolkitVtk(workbench Onscreen)
 
@@ -70,6 +65,6 @@ target_include_directories(workbench
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-setup_gettext(workbench workbench ${workbench_SRCS})
+target_setup_gettext(workbench workbench)
 
 install(TARGETS workbench RUNTIME DESTINATION bin)

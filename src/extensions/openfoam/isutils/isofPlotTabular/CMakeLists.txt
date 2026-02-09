@@ -1,28 +1,20 @@
 project(isofPlotTabular)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5Charts CONFIG REQUIRED)
 
-set(isofPlotTabular_SRCS
+add_executable(isofPlotTabular
     main.cpp
     isofplottabularwindow.cpp
     isofplottabularwindow.h
     plotwidget.cpp
     plotwidget.h
+    isofplottabularwindow.ui plotwidget.ui ${isofPlotTabular_RCCS}
 )
-SET(isofPlotTabular_FORMS isofplottabularwindow.ui plotwidget.ui)
-SET(isofPlotTabular_RCCS
-    #isofplottabular.qrc
-    )
 
-add_executable(isofPlotTabular ${isofPlotTabular_SRCS} ${isofPlotTabular_FORMS} ${isofPlotTabular_RCCS})
+find_package(Qt5Charts CONFIG REQUIRED)
+target_enable_qt(isofPlotTabular)
 target_link_libraries(isofPlotTabular
- toolkit_gui
- Qt5::Widgets Qt5::Charts
+ toolkit_gui Qt5::Widgets Qt5::Charts
 )
 linkToolkitVtk(isofPlotTabular Onscreen)
 target_include_directories(isofPlotTabular

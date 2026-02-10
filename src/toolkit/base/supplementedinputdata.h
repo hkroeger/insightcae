@@ -21,29 +21,6 @@ namespace insight {
 
 
 
-struct TemporaryParameterSetStorage
-{
-    ParameterSetInput ps_;
-
-    TemporaryParameterSetStorage()
-    {}
-
-    TemporaryParameterSetStorage(ParameterSetInput ps)
-        : ps_(std::move(ps))
-    {}
-
-    template<class Parameters>
-    ParametersReference<Parameters> pRef() const
-    {
-        return ParametersReference<Parameters>(
-            dynamic_cast<const Parameters&>(ps_.parameters()),
-            ps_.parameterSet().path() );
-    }
-};
-
-
-
-
 class supplementedInputDataBase
 {
 
@@ -82,7 +59,7 @@ protected:
 
 public:
   supplementedInputDataBase(
-        ParameterSetInput ip,
+        ParameterSetInput&& ip,
         const boost::filesystem::path& exePath,
         ProgressDisplayer& pd );
 

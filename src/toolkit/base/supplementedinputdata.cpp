@@ -18,7 +18,7 @@ supplementedInputDataBase::supplementedInputDataBase(
 {}
 
 supplementedInputDataBase::supplementedInputDataBase(
-    ParameterSetInput ip,
+    ParameterSetInput&& ip,
     const boost::filesystem::path& exePath,
     ProgressDisplayer& )
   : executionPath_(exePath)

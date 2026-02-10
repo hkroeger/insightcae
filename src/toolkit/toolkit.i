@@ -8,6 +8,7 @@
 #include "base/hierarchicalelement.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
+#include "base/parametersetinput.h"
 #include "base/supplementedinputdata.h"
 #include "base/resultelement.h"
 #include "base/resultelementcollection.h"
@@ -201,6 +202,7 @@ using namespace insight::createPatchOps;
 %include "base/parameter.h"
 %include "base/parameterset.h"
 
+%include "base/parametersetinput.h"
 %include "base/supplementedinputdata.h"
 %include "base/resultelement.h"
 %include "base/resultelementcollection.h"

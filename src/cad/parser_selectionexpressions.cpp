@@ -41,6 +41,7 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "parser_tools.h"
 
 using namespace std;
 using namespace boost;
@@ -73,7 +74,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_vertexFeaturesExpression =
         (
-            model_->vertexFeatureSymbols() [ qi::_val = qi::_1 ]
+            addAdditionalRule( map_lookup_parser(model_->vertexFeatures()) )  [ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [qi::_a=qi::_1, qi::_b=qi::_2 ]
             >> (
@@ -189,7 +190,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_edgeFeaturesExpression =
         (
-            model_->edgeFeatureSymbols() [ _val = qi::_1 ]
+            addAdditionalRule( map_lookup_parser(model_->edgeFeatures()) ) [ _val = qi::_1 ]
             |
             (r_solidmodel_expression >> current_pos.current_pos >> '?')
                [ qi::_a=qi::_1, qi::_b=qi::_2 ]
@@ -305,7 +306,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_faceFeaturesExpression =
         (
-            ( current_pos.current_pos >> model_->faceFeatureSymbols() >> current_pos.current_pos ) [
+            ( current_pos.current_pos >> addAdditionalRule( map_lookup_parser(model_->faceFeatures()) ) >> current_pos.current_pos ) [
                                     qi::_val = qi::_2,
 
                      phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
@@ -432,7 +433,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_solidFeaturesExpression =
         (
-            model_->solidFeatureSymbols()[ qi::_val = qi::_1 ]
+            addAdditionalRule( map_lookup_parser(model_->solidFeatures()) ) [ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [ _a=qi::_1, _b=qi::_2 ]
             >> ( ( (lit("solids")|lit("solid"))

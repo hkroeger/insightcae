@@ -42,6 +42,7 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "parser_tools.h"
 
 using namespace std;
 using namespace boost;
@@ -252,7 +253,7 @@ void ISCADParser::createScalarExpressions()
         | ('+' >> r_scalar_primary ) // expressions starting with plus
          [ _val = qi::_1 ]
 
-        | model_->scalarSymbols()
+        | addAdditionalRule( map_lookup_parser(model_->scalars()) ) //model_->scalarSymbols()
          [ qi::_val = qi::_1 ]
 
         | r_scalarFunction

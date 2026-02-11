@@ -41,6 +41,8 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "parser_tools.h"
+
 
 using namespace std;
 using namespace boost;
@@ -65,7 +67,8 @@ void ISCADParser::createDatumExpressions()
 // 	  qi::lexeme[model_->datumSymbols()]
 // 	    [ _val =  phx::bind(&Model::lookupDatum, model_, qi::_1) ]
       (
-        model_->datumSymbols()[ qi::_val = qi::_1 ]
+        addAdditionalRule( map_lookup_parser(model_->datums()) )
+                [ qi::_val = qi::_1 ]
         |
         ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2)) ]

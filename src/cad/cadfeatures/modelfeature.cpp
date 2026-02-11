@@ -20,6 +20,7 @@
 #include "modelfeature.h"
 #include "base/exception.h"
 #include "boost/phoenix/stl/algorithm/transformation.hpp"
+#include <algorithm>
 #include <boost/phoenix/stl/algorithm/iteration.hpp>
 #include "cadfeature.h"
 #include "cadmodel.h"
@@ -78,14 +79,17 @@ void ModelFeature::copyModelDatums(ModelPtr model_)
                    "datum", std::string(), {}, {"XY", "XZ", "YZ"} );
 
     auto addfs=
-        [this](const std::string& name, FeatureSetPtr fs)
+        [this]
+        //(const std::string& name, FeatureSetPtr fs)
+        (const std::pair<std::string,FeatureSetPtr>& v)
     {
+        auto [name, fs] = v;
         providedFeatureSets_[name]=fs;
     };
-    model_->vertexFeatureSymbols().for_each(addfs);
-    model_->edgeFeatureSymbols().for_each(addfs);
-    model_->faceFeatureSymbols().for_each(addfs);
-    model_->solidFeatureSymbols().for_each(addfs);
+    std::for_each(model_->vertexFeatures().begin(), model_->vertexFeatures().end(), addfs);
+    std::for_each(model_->edgeFeatures().begin(), model_->edgeFeatures().end(), addfs);
+    std::for_each(model_->faceFeatures().begin(), model_->faceFeatures().end(), addfs);
+    std::for_each(model_->solidFeatures().begin(), model_->solidFeatures().end(), addfs);
 
 }
 

@@ -13,15 +13,8 @@ struct MapLookup
 {
     const Map& map;
 
-    MapLookup(const MapLookup& o)
-        : map(o.map)
-    {}
-
     MapLookup(const Map& m)
         : map(m)
-    {}
-
-    ~MapLookup()
     {}
 
     template<typename Attrib, typename Context>

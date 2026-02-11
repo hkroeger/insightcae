@@ -144,8 +144,8 @@ void ISCADParser::createFeatureExpressions()
         '{'
         >> qi::eps
             [ qi::_a= phx::bind(
-                &std::make_shared<SubmodelRule, const cad::Model&, const ModelVariableTable&>,
-                    *model_, qi::_r1 ) ]
+                &SubmodelRule::create<const Model*, const ModelVariableTable&>,
+                    model_, qi::_r1 ) ]
         >> qi::lazy( phx::bind(&SubmodelRule::rule, qi::_a) )
             [ qi::_val = phx::bind(
                 &cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,

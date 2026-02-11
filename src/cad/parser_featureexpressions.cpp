@@ -40,6 +40,8 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "parser_tools.h"
+
 
 using namespace std;
 using namespace boost;
@@ -131,11 +133,10 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_term.name("feature term");
 
 
-
     r_modelstepSymbol =
-        current_pos.current_pos
-        >> model_->modelstepSymbols() >>
-        current_pos.current_pos
+        current_pos.current_pos >>
+        addAdditionalRule( map_lookup_parser(model_->modelsteps()) )
+        >> current_pos.current_pos
         ;
     r_modelstepSymbol.name("feature symbol");
 
@@ -146,8 +147,9 @@ void ISCADParser::createFeatureExpressions()
                 &std::make_shared<SubmodelRule, const cad::Model&, const ModelVariableTable&>,
                     *model_, qi::_r1 ) ]
         >> qi::lazy( phx::bind(&SubmodelRule::rule, qi::_a) )
-            [ qi::_val = phx::bind(&cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
-                    phx::bind(&SubmodelRule::model_, qi::_a), qi::_r1) ]
+            [ qi::_val = phx::bind(
+                &cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
+                    phx::bind(&SubmodelRule::submodel_, qi::_a), qi::_r1) ]
         >> '}';
     r_submodel.name("in-situ submodel");
 
@@ -194,7 +196,8 @@ void ISCADParser::createFeatureExpressions()
 
 
     r_solidmodel_propertyAssignment =
-        qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ]
+        //map_lookup_parser(model_->modelsteps()) [ _a = qi::_1 ]
+        r_modelstepSymbol [ _a = phx::at_c<1>(qi::_1) ]
         >> lit("->") >>
         (
             ( lit("density") >> '=' >> r_scalarExpression )

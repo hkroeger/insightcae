@@ -190,15 +190,15 @@ skip_grammar::skip_grammar()
 
 
 SubmodelRule::SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars)
-: model_(std::make_shared<Model>(
+: submodel_(std::make_shared<Model>(
              mergeMVTs(parentModel.allVariables(), addVars) ) ),
-    parser_(model_.get())
+    submodelParser_(submodel_.get())
 {}
 
 const qi::rule<std::string::iterator, skip_grammar>&
 SubmodelRule::rule() const
 {
-    return parser_.r_model;
+    return submodelParser_.r_model;
 }
 
 

@@ -77,7 +77,7 @@ public:
     typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
     typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
     typedef boost::spirit::qi::symbols<char, DatumPtr>          DatumTable;
-    typedef boost::spirit::qi::symbols<char, FeaturePtr> 	ModelstepTable;
+    // typedef boost::spirit::qi::symbols<char, FeaturePtr> 	ModelstepTable;
     typedef boost::spirit::qi::symbols<char, ModelPtr>          ModelTable;
     typedef std::set<std::string>                               ComponentSet;
 
@@ -95,7 +95,7 @@ protected:
     ScalarTable 		scalars_;
     VectorTable 		points_, directions_;
     DatumTable          datums_;
-    ModelstepTable      modelsteps_;
+    ModelstepTableContents   modelsteps_;
     ComponentSet		components_;
     VertexFeatureTable  vertexFeatures_;
     EdgeFeatureTable    edgeFeatures_;
@@ -134,7 +134,7 @@ public:
     const VectorTable&	pointSymbols() const;
     const VectorTable&	directionSymbols() const;
     const DatumTable&	datumSymbols() const;
-    const ModelstepTable&	modelstepSymbols() const;
+    // const ModelstepTable&	modelstepSymbols() const;
     const VertexFeatureTable&	vertexFeatureSymbols() const;
     const EdgeFeatureTable&	edgeFeatureSymbols() const;
     const FaceFeatureTable& 	faceFeatureSymbols() const;
@@ -233,7 +233,7 @@ public:
     VectorTableContents	points() const;
     VectorTableContents	directions() const;
     DatumTableContents	datums() const;
-    ModelstepTableContents	modelsteps() const;
+    const ModelstepTableContents&	modelsteps() const;
     VertexFeatureTableContents 	vertexFeatures() const;
     EdgeFeatureTableContents edgeFeatures() const;
     FaceFeatureTableContents faceFeatures() const;

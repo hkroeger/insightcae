@@ -138,25 +138,29 @@ void ForLoop::insertrule ( parser::ISCADParser& ruleset )
 {
     auto &for_loop_rule =
         ruleset.addAdditionalRule(
-        new         qi::rule<std::string::iterator,
-        FeaturePtr(),
-        parser::skip_grammar,
-        qi::locals<std::string,ScalarPtr> >(
-        '('
-        > ruleset.r_identifier [qi::_a = qi::_1 ] > ','
-        > ruleset.r_scalarExpression [ qi::_b = qi::_1 ] > ','
-        > ( ruleset.r_scalarExpression > ','
-           > ( (qi::lit("inc") > ruleset.r_scalarExpression > ',')|qi::attr(cad::scalarconst(1.)))
-           > (
-               ruleset.r_submodel ( phx::bind(&loopvar, qi::_a, qi::_b) )
-               |
-               ModelFeature::rule(ruleset) ( phx::bind(&loopvar, qi::_a, qi::_b) )
-               )
-           > ')' )
-            [ qi::_val = phx::bind (
-                 &ForLoop::create<const std::string&, ModelFeaturePtr, ScalarPtr, ScalarPtr, ScalarPtr>,
-                 qi::_a, qi::_3, qi::_b, qi::_1, qi::_2 ) ]
-            ));
+            new qi::rule<std::string::iterator,
+                         FeaturePtr(),
+                         parser::skip_grammar,
+                         qi::locals<std::string,ScalarPtr> >(
+                '('
+                > ruleset.r_identifier [qi::_a = qi::_1 ] > ','
+                > ruleset.r_scalarExpression [ qi::_b = qi::_1 ] > ','
+
+                > ( ruleset.r_scalarExpression > ','
+                > ( (qi::lit("inc") > ruleset.r_scalarExpression > ',')
+                    | qi::attr(cad::scalarconst(1.)) )
+                > (
+                    ruleset.r_submodel ( phx::bind(&loopvar, qi::_a, qi::_b) )
+                    |
+                    ModelFeature::rule(ruleset) ( phx::bind(&loopvar, qi::_a, qi::_b) )
+                  )
+                > ')' )
+                    [ qi::_val = phx::bind(
+                        &ForLoop::create<
+                         const std::string&, ModelFeaturePtr,
+                         ScalarPtr, ScalarPtr, ScalarPtr>,
+                        qi::_a, qi::_3, qi::_b, qi::_1, qi::_2 ) ]
+                ));
 
     ruleset.modelstepFunctionRules.add
         ("for",

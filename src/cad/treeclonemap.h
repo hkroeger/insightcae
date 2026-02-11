@@ -67,7 +67,21 @@ public:
             return nullptr;
     }
 
-
+    template<class X, class K=std::string>
+    void clone(
+        const std::map<K, X>& v,
+        std::map<K, X>& out
+        )
+    {
+        out.clear();
+        std::for_each(
+            v.begin(), v.end(),
+            [this,&out](const typename std::map<K, X>::value_type& v)
+            {
+                out[v.first]=this->clone(v.second);
+            }
+            );
+    }
 
     template<class PT, class C=char>
     void clone(

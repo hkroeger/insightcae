@@ -66,6 +66,7 @@ OFDictData::dict zoneBalance::functionObjectDict() const
     OFDictData::dict fod;
     fod["type"]="zoneBalance";
 
+    fod["fluxFieldName"]=p().fluxFieldName;
     if (boost::get<Parameters::cellSelection_all_type>(&p().cellSelection))
     {
         fod["cellSelection"]="all";

@@ -121,6 +121,17 @@ public:
             }
         }
 
+        template<class X, class K=std::string>
+        void operator()(const std::map<K, X>& v) const
+        {
+            std::for_each(
+                v.begin(), v.end(),
+                [this](const typename std::map<K, X>::value_type& v)
+                {
+                    DepListInserter(dl_, label_+"."+v.first)(v.second);
+                }
+                );
+        }
 
         template<class T, class C=char>
         void operator()(const boost::spirit::qi::symbols<C, T>& v) const

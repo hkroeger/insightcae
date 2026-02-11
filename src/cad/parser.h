@@ -157,6 +157,8 @@ public:
 class SubmodelRule;
 typedef std::shared_ptr<SubmodelRule> SubmodelRulePtr;
 
+
+
 struct ISCADParser
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >
 {
@@ -200,7 +202,6 @@ struct ISCADParser
              qi::locals<PostProcFunctionRulePtr> > r_postproc;
 
     Model* model_;
-
 
     qi::rule<std::string::iterator, std::shared_ptr<DescriptionWithParameters>(), skip_grammar >
         r_descriptionWithParameters;
@@ -264,8 +265,8 @@ struct ISCADParser
 class SubmodelRule
 {
 public:
-    std::shared_ptr<insight::cad::Model> model_;
-    ISCADParser parser_;
+    std::shared_ptr<insight::cad::Model> submodel_;
+    ISCADParser submodelParser_;
 
     SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars);
 

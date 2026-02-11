@@ -432,9 +432,11 @@ FeaturePtr ModelFeature::findModelstep(const std::string &name)
 
     if (auto* fp=boost::get<ModelPtr>(&modelinput_))
     {
-        if (auto *ms = (*fp)->modelstepSymbols().find(name))
+        //if (auto *ms = (*fp)->modelstepSymbols().find(name))
+        auto ms = (*fp)->modelsteps().find(name);
+        if (ms!=(*fp)->modelsteps().end())
         {
-            return *ms;
+            return ms->second;
         }
     }
     return nullptr;

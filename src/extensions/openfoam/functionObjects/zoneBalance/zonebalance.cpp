@@ -35,6 +35,8 @@ zoneBalance::zoneBalance(
 bool zoneBalance::read(const dictionary &dict)
 {
     word selType(dict.lookupOrDefault<word>("cellSelection", "all"));
+    fluxFieldName_=dict.lookupOrDefault<word>("fluxFieldName", "phi");
+
     if (selType=="all")
     {
         cellSelection_=boost::blank();
@@ -73,12 +75,8 @@ bool zoneBalance::read(const dictionary &dict)
 bool zoneBalance::perform()
 {
 
-    auto&rho=mesh_.lookupObject<volScalarField>("rho");
-    auto&U=mesh_.lookupObject<volVectorField>("U");
-
     surfaceScalarField phi(
-        // mesh_.lookupObject<surfaceScalarField>("phi");
-        linearInterpolate(rho*U)&mesh_.Sf() );
+        mesh_.lookupObject<surfaceScalarField>(fluxFieldName_) );
 
     for (auto& f: factorFields_)
     {

@@ -413,6 +413,7 @@ add_library(insightcad SHARED
   docitems/diameter.h
 
   ${insightcad_ADDITIONAL_SOURCES}
+  parser_tools.h
 )
 target_link_libraries(insightcad 
  toolkit 

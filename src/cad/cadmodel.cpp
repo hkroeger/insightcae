@@ -240,10 +240,12 @@ ModelVariableTable Model::allVariables() const
             mvt.push_back(ModelVariableTable::value_type{name, v});
         });
 
-    modelstepSymbols().for_each(
-        [&](const std::string& name, FeaturePtr v)
+    //modelstepSymbols().for_each(
+    std::for_each(
+        modelsteps().begin(), modelsteps().end(),
+        [&](const ModelVariableTable::value_type& v)
         {
-            mvt.push_back(ModelVariableTable::value_type{name, v});
+            mvt.push_back(v);
         });
 
     return mvt;
@@ -330,17 +332,16 @@ void Model::addModelstep(
 {
   value->setFeatureSymbolName(name);
 
-  if (modelsteps_.find(name))
-  {
-      modelsteps_.remove(name);
-  }
   if (components_.find(name)!=components_.end())
   {
       components_.erase(name);
   }
+  if (isComponent)
+  {
+      components_.insert(name);
+  }
 
-  if (isComponent) components_.insert(name);
-  modelsteps_.add(name, value);
+  modelsteps_[name]=value;
 }
 
 
@@ -352,9 +353,8 @@ void Model::addModelstepIfNotPresent(
     bool isComponent,
     const std::string& /*featureDescription*/)
 {
-    if (!modelsteps_.find(name))
+    if (!modelsteps_.count(name))
     {
-        value->setFeatureSymbolName(name);
         addModelstep(name, value, isComponent);
     }
 }
@@ -393,7 +393,7 @@ void Model::removeDatum(const std::string& name)
 
 void Model::removeModelstep(const std::string& name)
 {
-  modelsteps_.remove(name);
+  modelsteps_.erase(name);
 }
 
 
@@ -497,10 +497,10 @@ DatumPtr Model::lookupDatum(const std::string& name) const
 
 FeaturePtr Model::lookupModelstep(const std::string& name) const
 {
-  FeaturePtr *obj = const_cast<FeaturePtr*>(modelsteps_.find(name));
-  if (!obj)
+  auto obj=modelsteps_.find(name);
+  if (obj==modelsteps_.end())
     throw insight::Exception("Could not lookup model step "+name);
-  return *obj;    
+  return obj->second;
 }
 
 FeatureSetPtr Model::lookupVertexFeature(const std::string& name) const
@@ -560,7 +560,7 @@ const Model::ScalarTable& 	Model::scalarSymbols() const { return scalars_; }
 const Model::VectorTable&	Model::pointSymbols() const { return points_; }
 const Model::VectorTable&	Model::directionSymbols() const { return directions_; }
 const Model::DatumTable&	Model::datumSymbols() const { return datums_; }
-const Model::ModelstepTable&	Model::modelstepSymbols() const { return modelsteps_; }
+// const Model::ModelstepTable&	Model::modelstepSymbols() const { return modelsteps_; }
 const Model::VertexFeatureTable&	Model::vertexFeatureSymbols() const { return vertexFeatures_; }
 const Model::EdgeFeatureTable&	Model::edgeFeatureSymbols() const { return edgeFeatures_; }
 const Model::FaceFeatureTable& 	Model::faceFeatureSymbols() const { return faceFeatures_; }
@@ -635,11 +635,12 @@ Model::DatumTableContents Model::datums() const
   return result;
 }
 
-Model::ModelstepTableContents Model::modelsteps() const
+const Model::ModelstepTableContents& Model::modelsteps() const
 {
-  ModelstepTableContents result;
-  modelsteps_.for_each(SymbolTableContentsInserter<FeaturePtr>(result));
-  return result;
+  // ModelstepTableContents result;
+  // modelsteps_.for_each(SymbolTableContentsInserter<FeaturePtr>(result));
+  // return result;
+  return modelsteps_;
 }
 
 Model::VertexFeatureTableContents Model::vertexFeatures() const

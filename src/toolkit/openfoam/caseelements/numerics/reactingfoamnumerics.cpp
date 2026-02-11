@@ -59,7 +59,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["\"rho.*\""]=OFcase().stdSymmSolverSetup(0, 0);
-  solvers[pName_]=OFcase().stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers[pName_]=OFcase().stdSymmSolverSetup(1e-8*p().specieAccuracyMultiplier, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
   solvers["h"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
@@ -67,7 +67,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilon"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=OFcase().stdAsymmSolverSetup(1e-8, 0.1);
 
-  solvers[pName_+"Final"]=OFcase().stdSymmSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers[pName_+"Final"]=OFcase().stdSymmSolverSetup(1e-8*p().specieAccuracyMultiplier, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
   solvers["hFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
@@ -75,7 +75,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
 
-  solvers["Yi"]=OFcase().stdAsymmSolverSetup(1e-8, 0);
+  solvers["Yi"]=OFcase().stdAsymmSolverSetup(1e-8*p().specieAccuracyMultiplier, 0);
 
   // ============ setup fvSchemes ================================
 

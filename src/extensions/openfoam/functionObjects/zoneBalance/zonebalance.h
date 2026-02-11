@@ -47,6 +47,7 @@ private:
         HighestValueVolumeFraction,
         AboveFractionOfMinimum> cellSelection_;
 
+    word fluxFieldName_;
     wordList factorFields_;
 
     scalar balanceSum_;

@@ -48,6 +48,8 @@ inherits functionObject::Parameters
 description
 "This case element add an integration function object to the OpenFOAM case"
 
+fluxFieldName = string "phi" "name of the flux field to be multiplied and integrated"
+
 cellSelection = selectablesubset {{
  all set {}
  cellSet set {

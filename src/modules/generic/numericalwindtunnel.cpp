@@ -94,13 +94,16 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     throw insight::Exception("Upward and forward direction are colinear!");
   }
 
-  cad::is_gp_Trsf rot; rot.SetTransformation
+  SpatialTransformation initialMove(-p().geometry.transformation.localOrigin);
+
+  cad::is_gp_Trsf gprot; gprot.SetTransformation
   (
-    gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(-1,0,0)), // other way round => wrong
-    gp_Ax3(toVec<gp_Pnt>(-p().geometry.transformation.localOrigin),
+    gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(-1,0,0)),
+    gp_Ax3(gp_Pnt(0,0,0),
            toVec<gp_Dir>(p().geometry.transformation.upwarddir),
            toVec<gp_Dir>(p().geometry.transformation.forwarddir) )
   );
+  auto rot = gprot.toSpatialTransformation()*initialMove;
 
 
   parentProgress.message("Getting geometry file"); // extraction may take place now
@@ -109,7 +112,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
   auto toWindTunnelCS =
       SpatialTransformation( p().geometryscale ) // 2. scale
-      * rot.toSpatialTransformation(); // 1. rotate
+      * rot; // 1. rotate
 
   SpatialTransformation toAttitude(
       vec3Zero(),
@@ -120,8 +123,8 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
   parentProgress.message("Loading geometry file, computing bounding box");
 
-  arma::mat bb=arma::zeros(3, 2);// bounding box in SI, rotated to wind tunnel CS
-  arma::mat bbAtt=arma::zeros(3, 2);// bounding box in SI, rotated to wind tunnel CS + applied attitude change
+  arma::mat bb=initializedBndBox();// bounding box in SI, rotated to wind tunnel CS
+  arma::mat bbAtt=initializedBndBox();// bounding box in SI, rotated to wind tunnel CS + applied attitude change
 
   {
       auto loadprogress=parentProgress.forkNewAction(p().geometry.objects.size(), "loading geometry");

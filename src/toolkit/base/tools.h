@@ -554,6 +554,7 @@ arma::mat PolyDataBndBox(
   vtkSmartPointer<vtkDataSet> stl_data_Set
 );
 
+arma::mat initializedBndBox();
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);
 
 void writeSTL

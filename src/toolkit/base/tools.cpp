@@ -1014,6 +1014,14 @@ arma::mat PolyDataBndBox
 }
 
 
+arma::mat initializedBndBox()
+{
+    arma::mat bb=arma::zeros(3,2);
+    bb.col(0)=arma::ones(3,1)*DBL_MAX;
+    bb.col(1)=arma::ones(3,1)*(-DBL_MAX);
+    return bb;
+}
+
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
 {
     arma::mat bbm = ArmaMatCmpts{

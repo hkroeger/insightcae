@@ -739,11 +739,11 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         scene.fitAll();
 
         auto img = executionPath() / ("streamLines_"+lv.first+".png");
-        scene.exportImage(img);
+
         sec_sl->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
           (
-          executionPath(), img.filename(),
+          FileContainer(*scene.exportImage(), img.filename()),
           "Stream lines ("+lv.second.title+")", ""
         )));
 
@@ -768,11 +768,11 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         scene.fitAll();
 
         auto img = executionPath() / ("pressure_"+lv.first+".png");
-        scene.exportImage(img);
+
         sec_pres->insert(img.filename().stem().string(),
           std::unique_ptr<Image>(new Image
           (
-          executionPath(), img.filename(),
+          FileContainer(*scene.exportImage(), img.filename()),
           "Pressure on walls ("+lv.second.title+")", ""
         )));
 
@@ -826,11 +826,11 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       scene.fitAll();
 
       auto img = executionPath() / ("velocity_cut_"+lv.first+".png");
-      scene.exportImage(img);
+
       sec_u->insert(
           img.filename().stem().string(),
           std::make_unique<Image>(
-              executionPath(), img.filename(),
+              FileContainer(*scene.exportImage(), img.filename()),
               "Velocity in cut planes ("+lv.second.title+")", ""
               ));
 
@@ -853,11 +853,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       scene.fitAll();
 
       auto img = executionPath() / ("pressure_cut_"+lv.first+".png");
-      scene.exportImage(img);
       sec_pc->insert(
           img.filename().stem().string(),
           std::make_unique<Image>(
-              executionPath(), img.filename(),
+              FileContainer(*scene.exportImage(), img.filename()),
               "Pressure in cut planes ("+lv.second.title+")", ""
               ));
 
@@ -893,11 +892,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
               scene.fitAll();
 
               auto img = executionPath() / ("temperature_cut_"+lv.first+".png");
-              scene.exportImage(img);
               sec_T->insert(
                   img.filename().stem().string(),
                   std::make_unique<Image>(
-                      executionPath(), img.filename(),
+                      FileContainer(*scene.exportImage(), img.filename()),
                       "Temperature in cut planes ("+lv.second.title+")", ""
                       ));
 
@@ -940,11 +938,11 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
               scene.fitAll();
 
               auto img = executionPath() / ("streamLinesTemp_"+lv.first+".png");
-              scene.exportImage(img);
+
               sec_slt->insert(img.filename().stem().string(),
                              std::unique_ptr<Image>(new Image
                             (
-                                executionPath(), img.filename(),
+                                FileContainer(*scene.exportImage(), img.filename()),
                                 "Stream lines with temperature ("+lv.second.title+")", ""
                                 )));
 
@@ -985,11 +983,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                     +(i>=0?"_"+toString(i+1):"")
                                     +".png");
 
-                      scene.exportImage(img);
                       sec->insert(
                           img.filename().stem().string(),
                           std::make_unique<Image>(
-                              executionPath(), img.filename(),
+                              FileContainer(*scene.exportImage(), img.filename()),
                               "Temperature in outlet ("+lv.second.title+")", ""
                               ));
 
@@ -1037,11 +1034,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                       +(i>=0?"_"+toString(i+1):"")
                                       +".png");
 
-                          scene.exportImage(img);
                           sec->insert(
                               img.filename().stem().string(),
                               std::make_unique<Image>(
-                                  executionPath(), img.filename(),
+                                  FileContainer(*scene.exportImage(), img.filename()),
                                   "Streamlines from outlet ("+lv.second.title+")", ""
                                   ));
 

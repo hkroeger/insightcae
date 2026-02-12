@@ -470,12 +470,11 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
           auto img = executionPath() / figname;
           //      scene.fitAll();
           scene.setParallelScale(std::pair<double,double>(2.*sp().c_, 2.*sp().c_));
-          scene.exportImage(img);
 
           results->insert(img.filename().stem().string(),
               std::unique_ptr<Image>(new Image
               (
-                 executionPath(), img.filename(),
+                 FileContainer(*scene.exportImage(), img.filename()),
                  str(format("Relative velocity (angle of attack %gdeg)") % p().geometry.alpha), ""
                  )));
       }

@@ -106,26 +106,6 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
   parentProgress.message("Getting geometry file"); // extraction may take place now
 
 
-  // gp_Trsf roll; roll.SetRotation(
-  //     gp::OX(),
-  //     toValue(
-  //         p().geometry.attitude.roll*si::angle_deg,
-  //         si::radians));
-  // gp_Trsf trim; trim.SetRotation(
-  //     gp::OY(),
-  //     toValue(
-  //         p().geometry.attitude.trim*si::angle_deg,
-  //         si::radians));
-  // gp_Trsf yaw; yaw.SetRotation(
-  //     gp::OZ(),
-  //     toValue(
-  //         p().geometry.attitude.yaw*si::angle_deg,
-  //         si::radians));
-  // cad::is_gp_Trsf att=yaw
-  //           .Multiplied(trim)
-  //           .Multiplied(roll);
-
-
 
   auto toWindTunnelCS =
       SpatialTransformation( p().geometryscale ) // 2. scale
@@ -158,37 +138,6 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
           loadprogress.stepUp();
       }
   }
-  // if (geom_file_ext==".stl" || geom_file_ext==".stlb")
-  // {
-  //   vtk_ChangeCS trsf(
-  //         std::bind(&gp_Trsf::Value, &rot, std::placeholders::_1, std::placeholders::_2),
-  //         3, 1
-  //        );
-
-  //   auto geopositioned=readSTL(p().geometry.objectfile->accessibleFilePath(), { &trsf });
-  //   bb = p().geometryscale
-  //        * STLBndBox(geopositioned);
-
-  //   auto geofinal = att
-  //                       .toSpatialTransformation()
-  //                       .apply_VTK_Transform(geopositioned);
-  //   bbAtt = p().geometryscale
-  //           * STLBndBox( geofinal );
-  // }
-  // else
-  // {
-  //   boost::mutex::scoped_lock lock(mtx);
-
-  //   auto geopositioned = cad::Transform::create(
-  //         cad::Import::create(p().geometry.objectfile->accessibleFilePath()), rot);
-  //   bb = p().geometryscale
-  //        * geopositioned->modelBndBox(bbdefl);
-
-  //   auto geofinal = cad::Transform::create(
-  //       geopositioned, att);
-  //   bbAtt = p().geometryscale
-  //        * geofinal->modelBndBox(bbdefl);
-  // }
 
   Lref_ = arma::norm( bb.col(1)-bb.col(0), 2);
   reportSupplementQuantity("Lref", Lref_, "Reference length of object", "m");

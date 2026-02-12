@@ -40,6 +40,7 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "parser_tools.h"
 
 using namespace std;
 using namespace boost;
@@ -276,10 +277,10 @@ void ISCADParser::createVectorExpressions()
         | ( '+' >> r_vector_primary ) // expressions starting with plus
           [ _val = qi::_1 ]
 
-        | model_->pointSymbols()
+        | addAdditionalRule( map_lookup_parser(model_->points()) )
           [ qi::_val = qi::_1 ]
 
-        | model_->directionSymbols()
+        | addAdditionalRule( map_lookup_parser(model_->directions()) )
           [ qi::_val = qi::_1 ]
 
         | r_vectorFunction

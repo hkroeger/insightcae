@@ -264,11 +264,15 @@ struct ISCADParser
 
 class SubmodelRule
 {
+    SubmodelRule(
+        const Model* parentModel,
+        const ModelVariableTable& addVars );
+
 public:
-    std::shared_ptr<insight::cad::Model> submodel_;
+    insight::cad::ModelPtr submodel_;
     ISCADParser submodelParser_;
 
-    SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars);
+    CREATE_FUNCTION(SubmodelRule);
 
     const qi::rule<std::string::iterator, skip_grammar>&
     rule() const;

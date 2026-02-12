@@ -593,6 +593,13 @@ public:
                     % e.what() ) );
         }
 
+        catch (std::exception& e)
+        {
+            return std::make_shared<ErrorDescription>(
+                str(boost::format("%s (std::exception)")
+                    % e.what() ) );
+        }
+
         catch (...)
         {
             auto desc =

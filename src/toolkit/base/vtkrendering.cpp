@@ -76,7 +76,7 @@
 #include "base/resultelementcollection.h"
 #include "base/resultelements/attributeresulttable.h"
 #include "base/resultelements/image.h"
-
+#include "base/filecontainer.h"
 
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
@@ -1765,11 +1765,10 @@ void VTKOffscreenScene::addDiagonalViews(
         std::string name=
             basefilename.filename().stem().string()+"_"+lv.first,
             fname=name+".png";
-        exportImage(basefilename.parent_path() / fname);
 
         results.insert<Image> (
                    name,
-                   basefilename.parent_path(), fname,
+                   FileContainer(*exportImage(), fname),
                    viewDescription+" ("+lv.second.title+")", ""
                    ).setOrder(o.next());
     }

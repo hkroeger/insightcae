@@ -573,6 +573,12 @@ size_t computeObjectSize(vtkSmartPointer<vtkPolyData> pd)
 }
 
 
+size_t computeObjectSize(vtkSmartPointer<vtkUnstructuredGrid> pd)
+{
+    return pd->GetActualMemorySize()*1024;
+}
+
+
 size_t computeObjectSize(vtkSmartPointer<vtkPointSet> pd)
 {
     return pd->GetActualMemorySize()*1024;
@@ -632,6 +638,25 @@ std::size_t hash<vtkSmartPointer<vtkPolyData> >::operator()
       v->GetPoint(i, x);
       for (int j=0; j<3; ++j)
         std::hash_combine(h, std::hash<double>()(x[j]));
+    }
+    return h;
+}
+
+
+std::size_t hash<vtkSmartPointer<vtkUnstructuredGrid> >::operator()
+    (const vtkSmartPointer<vtkUnstructuredGrid>& v) const
+{
+    size_t h=0;
+    std::hash_combine(h, std::hash<vtkIdType>()(v->GetNumberOfPoints()));
+    std::hash_combine(h, std::hash<vtkIdType>()(v->GetNumberOfCells()));
+    auto np=v->GetNumberOfPoints();
+    auto step=std::max<vtkIdType>(1, np/4);
+    for (vtkIdType i=0; i<np; i+=step)
+    {
+        double x[3];
+        v->GetPoint(i, x);
+        for (int j=0; j<3; ++j)
+            std::hash_combine(h, std::hash<double>()(x[j]));
     }
     return h;
 }

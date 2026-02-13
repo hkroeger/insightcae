@@ -15,6 +15,9 @@
 #include "surfaceFields.H"
 #include "IOobjectList.H"
 
+#include <set>
+#include <memory>
+
 using namespace Foam;
 
 
@@ -100,6 +103,7 @@ int main(int argc, char *argv[])
 {
   argList::validArgs.append("VTK file");
   argList::validOptions.insert("fieldMatching", "map of extra corresponding source and target fields ( (<target field> <source field name>) ... )");
+  argList::validOptions.insert("createScalarFields", "list of fields to create before mapping");
 
 # include "setRootCase.H"
 # include "createTime.H"
@@ -113,6 +117,15 @@ int main(int argc, char *argv[])
       fieldMatching = HashTable<word, word>(
                   IStringStream(UNIOF_OPTION(args, "fieldMatching"))()
                   );
+  }
+
+  wordList createScalarFields;
+
+  if (UNIOF_OPTIONFOUND(args, "createScalarFields"))
+  {
+    createScalarFields=wordList(
+      IStringStream(UNIOF_OPTION(args, "createScalarFields"))()
+      );
   }
 
   Info << "Reading VTK data." << endl;
@@ -139,8 +152,29 @@ int main(int argc, char *argv[])
 
   Info << " Found correspondence for " << label(ip->GetValidPoints()->GetNumberOfValues()) << " out of " << mesh.C().internalField().size() << " cells." << endl;
 
-  IOobjectList objects(mesh, runTime.timeName());
+  std::set<std::unique_ptr<volScalarField> > createdFields; // need to keep them in memory until after mapping
 
+  for (auto& sf: createScalarFields)
+  {
+      std::unique_ptr<volScalarField> s(
+        new volScalarField(
+          IOobject(
+              sf,
+              runTime.timeName(),
+              mesh,
+              IOobject::NO_READ,
+              IOobject::AUTO_WRITE
+              ),
+          mesh,
+          dimensionedScalar("defl", dimless, 0),
+          calculatedFvPatchScalarField::typeName
+        ));
+
+      s->write();
+      createdFields.insert(std::move(s));
+  }
+
+  IOobjectList objects(mesh, runTime.timeName());
   ReadAndSetFields<volScalarField>(mesh, objects, ip, fieldMatching);
   ReadAndSetFields<volVectorField>(mesh, objects, ip, fieldMatching);
   ReadAndSetFields<volSymmTensorField>(mesh, objects, ip, fieldMatching);

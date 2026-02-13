@@ -1225,10 +1225,17 @@ std::string readSolverName(const boost::filesystem::path& ofcloc)
 
 int readDecomposeParDict(const boost::filesystem::path& ofcloc)
 {
-  OFDictData::dict decomposeParDict;
-  readOpenFOAMDict(ofcloc/"system"/"decomposeParDict", decomposeParDict);
-  //cout<<decomposeParDict<<endl;
-  return decomposeParDict.getInt("numberOfSubdomains");
+    boost::filesystem::path fn(ofcloc/"system"/"decomposeParDict");
+    if (boost::filesystem::exists(fn))
+    {
+        OFDictData::dict decomposeParDict;
+        readOpenFOAMDict(fn, decomposeParDict);
+        return decomposeParDict.getInt("numberOfSubdomains");
+    }
+    else
+    {
+        return 1;
+    }
 }
 
 std::string readTurbulenceModelName(const OpenFOAMCase& c, const boost::filesystem::path& ofcloc)

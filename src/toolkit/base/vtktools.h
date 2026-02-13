@@ -168,6 +168,7 @@ multiBlockDataSetToUnstructuredGrid(
 
 
 size_t computeObjectSize(vtkSmartPointer<vtkPolyData> pd);
+size_t computeObjectSize(vtkSmartPointer<vtkUnstructuredGrid> pd);
 size_t computeObjectSize(vtkSmartPointer<vtkPointSet> pd);
 size_t computeObjectSize(vtkSmartPointer<vtkDataObject> pd);
 
@@ -183,6 +184,11 @@ template<> struct hash<vtkSmartPointer<vtkDataObject> >
 template<> struct hash<vtkSmartPointer<vtkPolyData> >
 {
     std::size_t operator()(const vtkSmartPointer<vtkPolyData>& v) const;
+};
+
+template<> struct hash<vtkSmartPointer<vtkUnstructuredGrid> >
+{
+    std::size_t operator()(const vtkSmartPointer<vtkUnstructuredGrid>& v) const;
 };
 
 template<> struct hash<vtkSmartPointer<vtkPointSet> >

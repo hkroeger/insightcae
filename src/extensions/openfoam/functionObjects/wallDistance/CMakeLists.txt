@@ -1,7 +1,7 @@
-set(PRJ writeData)
+set(PRJ wallDistance)
 
 set(SRC 
- writeData.C
+ walldistance.cpp
 )
 
 set(OF_INCLUDE_DIRS

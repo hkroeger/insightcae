@@ -67,12 +67,8 @@ geometry = set {
  }
 
  verticalPlacement = selectablesubset {{
-  onFloor set {
-    wallIsMoving = bool true "if set, the lower wall moves with the same speed as the inflow."
-  }
-  onCeiling set {
-    wallIsMoving = bool true "if set, the upper wall moves with the same speed as the inflow."
-  }
+  onFloor set {}
+  onCeiling set {}
   centered set {}
   atHeight set {
     height = selectablesubset {{
@@ -144,7 +140,29 @@ mesh = set {
 
 operation = set {
 
- v              = double 1.0 "[m/s] incident velocity" *necessary
+ v              = double 1.0 "[m/s] incident velocity (or bulk velocity in case of cyclic BC)" *necessary
+
+ inflow = selectablesubset {{
+
+  homogeneousInflow set {}
+
+  cyclicBC set {}
+
+ }} homogeneousInflow ""
+
+
+ boundaryConditions = set {
+
+   topWall = selection (fixedTopWall movingTopWall topSymmetryPlane) fixedTopWall
+"boundary type of the upper end of the domain (ceiling)"
+
+   bottomWall = selection (fixedBottomWall movingBottomWall bottomSymmetryPlane) movingBottomWall
+"boundary type of the lower end of the domain (floor)"
+
+   sides = selection (fixedSideWalls sideSymmetryPlane sideOutlet) fixedSideWalls
+"boundary type of the lateral ends of the domain"
+
+ }
 
 } "Definition of the operation point under consideration"
       

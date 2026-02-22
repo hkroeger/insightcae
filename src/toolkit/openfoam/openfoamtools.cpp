@@ -669,6 +669,8 @@ void runPotentialFoam
   if (cm.OFversion()<170) solkey="SIMPLE";
   OFDictData::dict& potentialFlow=fvSolution.subDict(solkey);
   potentialFlow["nNonOrthogonalCorrectors"]=3;
+  potentialFlow["PhiRefCell"]=0;
+  potentialFlow["PhiRefValue"]=0.;
   
   OFDictData::dictFile fvSchemes;
   fvSchemes.subDict("ddtSchemes");

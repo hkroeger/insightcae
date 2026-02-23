@@ -27,7 +27,7 @@ protected:
 
 public:
   IQVTKViewWidgetInsertIDs(IQVTKCADModel3DViewer &viewWidget)
-    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget)
+    : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, false)
   {
       aboutToBeDestroyed.connect(
           [this](){
@@ -70,31 +70,36 @@ public:
 
   bool onMouseClick( Qt::MouseButtons btn, Qt::KeyboardModifiers nFlags, const QPoint point ) override
   {
-    if ( selection_
-          && (btn&Qt::RightButton) )
-    {
-        auto icmd = featureSelCmds.find(shapeType);
-
-        insight::assertion(
-              icmd!=featureSelCmds.end(),
-              "unhandled selection" );
-
-        QString text = QString::fromStdString(
-              selection_->model()->featureSymbolName() + "?" + icmd->second.cmdName + "=("
-              );
-        int j=0;
-        for (insight::cad::FeatureID i: selection_->data())
+      if (btn&Qt::RightButton)
+      {
+          if ( selection_ )
           {
-            text+=QString::number( i );
-            if (j++ < selection_->size()-1) text+=",";
-          }
-        text+=")";
-        Q_EMIT appendToNotepad(text);
-    }
-    
-    finishAction();
+              auto icmd = featureSelCmds.find(shapeType);
 
-    return true;
+              insight::assertion(
+                  icmd!=featureSelCmds.end(),
+                  "unhandled selection" );
+
+              QString text = QString::fromStdString(
+                  selection_->model()->featureSymbolName() + "?" + icmd->second.cmdName + "=("
+                  );
+              int j=0;
+              for (insight::cad::FeatureID i: selection_->data())
+              {
+                  text+=QString::number( i );
+                  if (j++ < selection_->size()-1) text+=",";
+              }
+              text+=")";
+              Q_EMIT appendToNotepad(text);
+          }
+
+          finishAction();
+          return true;
+      }
+
+      else
+          return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseClick(
+              btn, nFlags, point);
   }
 };
 

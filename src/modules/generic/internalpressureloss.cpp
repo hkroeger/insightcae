@@ -19,6 +19,7 @@
  */
 #include "internalpressureloss.h"
 
+#include "base/exception.h"
 #include "base/factory.h"
 #include "base/units.h"
 #include "boost/algorithm/string/case_conv.hpp"
@@ -26,8 +27,12 @@
 #include "boost/format/format_fwd.hpp"
 #include "boost/iterator_adaptors.hpp"
 #include "cadfeature.h"
+#include "cadgeometryparameter.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
 #include "openfoam/caseelements/boundaryconditions/exptdatainletbc.h"
+#include "openfoam/caseelements/boundaryconditions/suctioninletbc.h"
+#include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
+#include "openfoam/caseelements/basic/porouszone.h"
 #include "openfoam/caseelements/basic/limitquantities.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamtools.h"
@@ -45,6 +50,7 @@
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
 #include "openfoam/caseelements/basic/gravity.h"
 #include "openfoam/caseelements/thermophysicalcaseelements.h"
+#include "openfoam/caseelements/boundaryconditions/symmetrybc.h"
 #include "openfoam/caseelements/boundaryconditions/massflowbc.h"
 #include "openfoam/caseelements/boundaryconditions/pressureoutletbc.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
@@ -98,126 +104,6 @@ void InternalPressureLoss::modifyDefaults(ParameterSet& p)
 }
 
 
-InternalPressureLoss::supplementedInputData::supplementedInputData(
-    ParameterSetInput ip,
-    const boost::filesystem::path &executionPath,
-    ProgressDisplayer &prg )
-    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, prg )
-{
-  auto& p=this->p();
-
-
-  stldir_=snappyHexMeshFeats::geometryDir(OFEs::get(p.run.OFEname), executionPath);
-  fn_inlet_="inlet";
-  fn_outlet_="outlet";
-
-  // Analyze geometry
-  // Find:
-  // * Domain BB
-  // * Inlet hydraulic diam.
-
-  auto loadgeom = [](const boost::filesystem::path& fp) -> cad::FeaturePtr
-  {
-      auto ext = boost::to_lower_copy(
-          fp.extension().string());
-      if ( (ext==".stl")|(ext==".stlb") )
-      {
-          // STL file
-          return cad::STL::create(fp);
-      }
-      else
-      {
-          // CAD exchange format
-          return cad::Import::create(fp);
-      }
-  };
-
-  prg.message("Analyzing geometry...");
-  for (auto &w: p.geometry.walls)
-  {
-      auto file = w.second.file;
-      if (file->isValid())
-      {
-          cad::FeaturePtr f = loadgeom(file->accessibleFilePath());
-          walls_[w.first]=f;
-          if (bb_.empty())
-              bb_=f->modelBndBox();
-          else
-              bb_.extend(f->modelBndBox());
-      }
-  }
-
-  if (p.geometry.inlet->isValid())
-  {
-      cad::FeaturePtr f = loadgeom(p.geometry.inlet->accessibleFilePath());
-      inlet_=f;
-      bb_.extend(f->modelBndBox());
-  }
-
-  if (p.geometry.outlet->isValid())
-  {
-      cad::FeaturePtr f = loadgeom(p.geometry.outlet->accessibleFilePath());
-      outlet_=f;
-      bb_.extend(f->modelBndBox());
-  }
-
-
-  L_=bb_.col(1)-bb_.col(0);
-
-  if (L_(0)<1e-12)
-    throw insight::Exception("model size in x direction is zero!");
-  if (L_(1)<1e-12)
-    throw insight::Exception("model size in y direction is zero!");
-  if (L_(2)<1e-12)
-    throw insight::Exception("model size in z direction is zero!");
-
-  nx_=std::max(1, int(ceil(L_(0)/p.mesh.size)));
-  ny_=std::max(1, int(ceil(L_(1)/p.mesh.size)));
-  nz_=std::max(1, int(ceil(L_(2)/p.mesh.size)));
-
-  pAmbient_=0.;
-
-  if (const auto* thermsolve =
-      boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
-          &p.operation.thermalTreatment))
-  {
-      globalTmin=globalTmax=double(thermsolve->initialInternalTemperature)*si::degK;
-      auto updateTmima = [&](si::Temperature T)
-      {
-          globalTmin=std::min(globalTmin, T);
-          globalTmin=std::min(globalTmin, T);
-      };
-
-      updateTmima(double(thermsolve->inletTemperature)*si::degK);
-
-      for (auto& wbc: thermsolve->wallBCs)
-      {
-          WallBC::Parameters wp;
-          if (const auto* wallfixedT =
-              boost::get<Parameters::operation_type::thermalTreatment_solve_type::wallBCs_default_fixedTemperature_type>(
-                  &wbc.second))
-          {
-              updateTmima(double(wallfixedT->wallTemperature)*si::degK);
-          }
-      }
-
-      globalTmin *= 0.5;
-      globalTmax *= 1.5;
-
-
-      reportSupplementQuantity("globalTmin", toValue(globalTmin, si::degK), "lower temperature clip value", "K");
-      reportSupplementQuantity("globalTmax", toValue(globalTmax, si::degK), "upper temperature clip value", "K");
-
-      if (const auto *buoy =
-          boost::get<Parameters::operation_type::thermalTreatment_solve_type::includeBuoyancy_yes_type>(
-              &thermsolve->includeBuoyancy))
-      {
-          pAmbient_=buoy->outletPressure;
-      }
-  }
-}
-
-
 
 
 InternalPressureLoss::InternalPressureLoss(
@@ -244,8 +130,6 @@ void InternalPressureLoss::calcDerivedInputData(ProgressDisplayer& /*prg*/)
 
 void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
-  auto& p=this->p();
-
   cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
                                         .set_np(np())
                                 ));
@@ -253,7 +137,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
     
     using namespace insight::bmd;
     std::unique_ptr<blockMesh> bmd(new blockMesh(cm));
-    bmd->setScaleFactor(p.geometryscale);
+    bmd->setScaleFactor(p().geometryscale);
     bmd->setDefaultPatch("walls", "wall");
 
     double eps=0.01*arma::min(sp().bb_.col(1)-sp().bb_.col(0));
@@ -293,63 +177,59 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 
     snappyHexMeshConfiguration::Parameters shm_cfg;
 
-    for (const auto&w: sp().walls_)
+    for (const auto&w: p().geometry)
     {
-        auto fn=executionPath()/sp().stldir_/(w.first+".stlb");
 
-        w.second->saveAs(fn);
+        if (auto *vol = boost::get<Parameters::geometry_default_type::role_porousVolume_type>(
+                &w.second.role))
+        {
+            shm_cfg.features.push_back(
+                std::make_shared<snappyHexMeshFeats::RefinementGeometry>(
+                    snappyHexMeshFeats::RefinementGeometry::Parameters()
+                        .set_scalefactor(p().geometryscale)
+                        .set_geometry(w.second.file)
+                        .set_level(vol->lref)
+                        .set_name(w.first)
+                    ));
+        }
+        else
+        {
+            auto feat=surfaceFeatureExtract(w.second.file->geometry(), 30.);
 
-        surfaceFeatureExtract(cm, executionPath(), fn.filename().string());
-        auto efn=fn; efn.replace_extension(".eMesh");
+            shm_cfg.features.push_back(
+                snappyHexMeshFeats::FeaturePtr(
+                    new snappyHexMeshFeats::ExplicitFeatureCurve(
+                        snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
+                            .set_level(p().mesh.maxLevel)
+                            .set_scalefactor(p().geometryscale)
+                            .set_geometry(make_geometryFile(feat))
+                            .set_name(w.first+"_features")
+                       )));
 
-        shm_cfg.features.push_back(
-            snappyHexMeshFeats::FeaturePtr(
-                new snappyHexMeshFeats::ExplicitFeatureCurve(
-                    snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
-                       .set_level(p.mesh.maxLevel)
-                       .set_scalefactor(p.geometryscale)
-                       .set_geometry(make_geometryFile(efn))
-                   )));
-        shm_cfg.features.push_back(
-            snappyHexMeshFeats::FeaturePtr(
-                new snappyHexMeshFeats::Geometry(
-                    snappyHexMeshFeats::Geometry::Parameters()
-                       .set_minLevel(p.mesh.minLevel)
-                       .set_maxLevel(p.mesh.maxLevel)
-                       .set_nLayers(p.mesh.nLayers)
-                       .set_scalefactor(p.geometryscale)
-                       .set_geometry(make_geometryFile(fn))
-                       .set_name(w.first)
-                   )));
+            int nLayers=0;
+            if (boost::get<Parameters::geometry_default_type::role_wall_type>(&w.second.role))
+            {
+                nLayers=p().mesh.nLayers;
+            }
+
+            shm_cfg.features.push_back(
+                snappyHexMeshFeats::FeaturePtr(
+                    new snappyHexMeshFeats::Geometry(
+                        snappyHexMeshFeats::Geometry::Parameters()
+                            .set_minLevel(p().mesh.minLevel)
+                            .set_maxLevel(p().mesh.maxLevel)
+                           .set_nLayers(nLayers)
+                            .set_scalefactor(p().geometryscale)
+                           .set_geometry(w.second.file)
+                           .set_name(w.first)
+                       )));
+        }
     }
 
-    sp().inlet_->saveAs(executionPath()/sp().stldir_/(sp().fn_inlet_+".stlb"));
-    shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-      .set_minLevel(p.mesh.minLevel)
-      .set_maxLevel(p.mesh.maxLevel)
-      .set_nLayers(0)
-      .set_scalefactor(p.geometryscale)
-
-      .set_geometry(make_geometryFile(executionPath()/sp().stldir_/(sp().fn_inlet_+".stlb")))
-      .set_name("inlet")
-    )));
-
-    sp().outlet_->saveAs(executionPath()/sp().stldir_/(sp().fn_outlet_+".stlb"));
-    shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-      .set_minLevel(p.mesh.minLevel)
-      .set_maxLevel(p.mesh.maxLevel)
-      .set_nLayers(0)
-      .set_scalefactor(p.geometryscale)
-
-      .set_geometry(make_geometryFile(executionPath()/sp().stldir_/(sp().fn_outlet_+".stlb")))
-      .set_name("outlet")
-    )));
-
-
-    shm_cfg.PiM.push_back(p.mesh.PiM);
-    shm_cfg.tlayer=p.mesh.tlayer;
-    shm_cfg.erlayer=p.mesh.erlayer;
-    shm_cfg.relativeSizes=p.mesh.relativeSizes;
+    shm_cfg.PiM.push_back(p().mesh.PiM);
+    shm_cfg.tlayer=p().mesh.tlayer;
+    shm_cfg.erlayer=p().mesh.erlayer;
+    shm_cfg.relativeSizes=p().mesh.relativeSizes;
     
     snappyHexMesh
     (
@@ -367,16 +247,45 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 }
 
 
+void InternalPressureLoss::applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress)
+{
+    boost::filesystem::path STLOutPath =
+        snappyHexMeshFeats::geometryDir(cm, this->executionPath());
+
+    std::vector<std::string> cellSetCmds;
+
+    for (const auto&w: p().geometry)
+    {
+        if (auto *vol = boost::get<Parameters::geometry_default_type::role_porousVolume_type>(
+                &w.second.role))
+        {
+
+            auto stl=STLOutPath/(w.first+".stlb");
+            cellSetCmds.push_back(
+                "cellSet "+w.first+
+                " new surfaceToCell \""
+                +stl.string()
+                +"\" ("
+                +OFDictData::toString(
+                    OFDictData::vector3(
+                        p().mesh.PiM))
+                +") 0 1 0 0 0"
+                );
+        }
+    }
+
+    if (cellSetCmds.size())
+    {
+        setSet(cm, executionPath(), cellSetCmds);
+        cm.executeCommand(executionPath(), "setsToZones", { "-noFlipMap" } );
+    }
+}
 
 
 
 void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer&)
 {
-  auto&p=this->p();
-    // grid needs to be present
-    patchArea inletprops(OpenFOAMCase(OFEs::get(p.run.OFEname)), executionPath(), "inlet");
-//    double Ain=inletprops.A_;
-    double D=sqrt(inletprops.A_*4./M_PI);
+
 
     OFDictData::dict boundaryDict;
     cm.parseBoundaryDict(executionPath(), boundaryDict);
@@ -385,16 +294,16 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
     if (const auto* iso =
         boost::get<Parameters::operation_type::thermalTreatment_isothermal_type>(
-            &p.operation.thermalTreatment))
+            &p().operation.thermalTreatment))
     {
         if (boost::get<Parameters::operation_type::timeTreatment_steady_type>(
-                &p.operation.timeTreatment))
+                &p().operation.timeTreatment))
         {
             numeric.reset(new steadyIncompressibleNumerics(cm));
         }
         else if (const auto* unsteady =
                    boost::get<Parameters::operation_type::timeTreatment_unsteady_type>(
-                       &p.operation.timeTreatment))
+                       &p().operation.timeTreatment))
         {
             unsteadyIncompressibleNumerics::Parameters uinp;
             uinp.set_time_integration(
@@ -410,7 +319,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
     else if (const auto* thermsolve =
         boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
-            &p.operation.thermalTreatment))
+            &p().operation.thermalTreatment))
     {
 
         bool buoyancy=false;
@@ -429,7 +338,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
             psp.fieldname="T";
             psp.internal=thermsolve->initialInternalTemperature;
             if (boost::get<Parameters::operation_type::timeTreatment_steady_type>(
-                    &p.operation.timeTreatment))
+                    &p().operation.timeTreatment))
             {
                 psp.underrelax=0.7;
             }
@@ -437,7 +346,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
         }
 
         if (boost::get<Parameters::operation_type::timeTreatment_steady_type>(
-                &p.operation.timeTreatment))
+                &p().operation.timeTreatment))
         {
             if (buoyancy)
             {
@@ -452,7 +361,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
             }
         }
         else if (const auto* unsteady = boost::get<Parameters::operation_type::timeTreatment_unsteady_type>(
-                       &p.operation.timeTreatment) )
+                       &p().operation.timeTreatment) )
         {
             if (buoyancy)
             {
@@ -499,29 +408,180 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
     }
 
 
-    cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict, PressureOutletBC::Parameters()
-              .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
-                 FieldData::Parameters()
-                  .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(vec1(sp().pAmbient_))), false
-                ))
-              ));
+    /***********************************************************************************************
+     * boundary conditions
+     ***********************************************************************************************/
+
+    for (auto& g: p().geometry)
+    {
+
+        /****
+         * inlet
+         ****/
+        if (auto *in =boost::get<Parameters::geometry_default_type::role_inlet_type>(
+                &g.second.role))
+        {
+            // grid needs to be present
+            patchArea inletprops(
+                OpenFOAMCase(OFEs::get(p().run.OFEname)),
+                executionPath(), g.first);
+            double D=sqrt(inletprops.A_*4./M_PI);
+            double turbI=0.1;
+            double turbL=D*0.2;
+
+            auto turb = std::make_shared<turbulenceBC::uniformIntensityAndLengthScale>(
+                turbulenceBC::uniformIntensityAndLengthScale::Parameters()
+                    .set_I(turbI) .set_l(turbL)
+                );
+
+            double T=300.;
+            if (const auto* thermsolve =
+                boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
+                    &p().operation.thermalTreatment))
+            {
+                auto &tbcc=thermsolve->BCs.at(g.first);
+                if (auto* tbc=boost::get<Parameters::operation_type::thermalTreatment_solve_type
+                                           ::BCs_default_adiabatic_type>(
+                        &tbcc))
+                {
+                    throw insight::Exception("invalid temperature BC at boundary %s: fixed temperature required",
+                                             g.first.c_str());
+                }
+                else if (auto* tbc=boost::get<Parameters::operation_type::thermalTreatment_solve_type
+                                                  ::BCs_default_fixedTemperature_type>(
+                        &tbcc))
+                {
+                    T=tbc->temperature;
+                }
+                else
+                    throw insight::UnhandledSelection();
+            }
+
+            if (auto* mfl=boost::get<Parameters::geometry_default_type::role_inlet_type
+                                       ::specification_massFlow_type>(
+                    &in->specification))
+            {
+                MassflowBC::Parameters inp;
+                MassflowBC::Parameters::flowrate_massflow_type mf = { mfl->dotm };
+#warning check handling of rho for incompressible case
+                inp.flowrate = mf;
+                inp.turbulence=turb;
+                inp.T=T;
+                cm.insert(new MassflowBC(cm, g.first, boundaryDict, inp));
+            }
+            else if (auto* vfl=boost::get<Parameters::geometry_default_type::role_inlet_type
+                                            ::specification_volumetricFlow_type>(
+                         &in->specification))
+            {
+                MassflowBC::Parameters inp;
+                MassflowBC::Parameters::flowrate_volumetric_type mf = { vfl->Q };
+                inp.flowrate = mf;
+                inp.turbulence=turb;
+                inp.T=T;
+                cm.insert(new MassflowBC(cm, g.first, boundaryDict, inp));
+            }
+            else if (auto* vfl=boost::get<Parameters::geometry_default_type::role_inlet_type::specification_vector_type>(
+                    &in->specification))
+            {
+                VelocityInletBC::Parameters inp;
+                inp.velocity=FieldData::uniformSteady(vfl->velocity);
+                inp.turbulence=turb;
+                inp.T=FieldData::uniformSteady(T);
+                cm.insert(new VelocityInletBC(cm, g.first, boundaryDict, inp));
+            }
+            else if (auto* suc=boost::get<Parameters::geometry_default_type::role_inlet_type
+                                              ::specification_pressureInlet_type>(
+                         &in->specification))
+            {
+                SuctionInletBC::Parameters inp;
+                inp.turb_I=turbI;
+                inp.turb_L=turbL;
+                inp.pressure=suc->ambientPressure;
+                inp.T=T;
+                cm.insert(new SuctionInletBC(cm, g.first, boundaryDict, inp));
+            }
+        }
+        /*****
+         * outlet
+         *****/
+        else if (auto *out =boost::get<Parameters::geometry_default_type::role_outlet_type>(
+                &g.second.role))
+        {
+            cm.insert(new PressureOutletBC(
+                cm, g.first, boundaryDict, PressureOutletBC::Parameters()
+                    .set_behaviour( PressureOutletBC::Parameters::behaviour_uniform_type(
+                        FieldData::Parameters()
+                            .set_fielddata(FieldData::Parameters::fielddata_uniformSteady_type(
+                                vec1(sp().pAmbient_+out->pressure))), false
+                        ))
+                ));
+
+        }
+        /*****
+         * wall
+         *****/
+        else if (auto *wall =boost::get<Parameters::geometry_default_type::role_wall_type>(
+                &g.second.role))
+        {
+            WallBC::Parameters wp;
+
+            if (const auto* thermsolve =
+                boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
+                    &p().operation.thermalTreatment))
+            {
+                auto &tbcc=thermsolve->BCs.at(g.first);
+                if (auto* tbc=boost::get<Parameters::operation_type::thermalTreatment_solve_type
+                                           ::BCs_default_adiabatic_type>(
+                        &tbcc))
+                {
+                    wp.set_heattransfer(
+                        std::make_shared<HeatBC::AdiabaticBC>()
+                        );
+                }
+                else if (auto* tbc=boost::get<Parameters::operation_type::thermalTreatment_solve_type
+                                                ::BCs_default_fixedTemperature_type>(
+                             &tbcc))
+                {
+                    wp.set_heattransfer(
+                        std::make_shared<HeatBC::FixedTemperatureBC>(
+                            HeatBC::FixedTemperatureBC::Parameters()
+                                .set_T( FieldData::uniformSteady(vec1(tbc->temperature)) )
+                            ));
+                }
+                else
+                    throw insight::UnhandledSelection();
+            }
+
+            //else adiabtic (is default of WallBC)
+            cm.insert(new WallBC(cm, g.first, boundaryDict, wp));
+        }
+        /*****
+         * symmetry
+         *****/
+        else if (auto *symm =boost::get<Parameters::geometry_default_type::role_symmetry_type>(
+                     &g.second.role))
+        {
+            cm.insert(new SymmetryBC(cm, g.first, boundaryDict));
+        }
+        /*****
+         * porous zone
+         *****/
+        else if (auto *vol = boost::get<Parameters::geometry_default_type::role_porousVolume_type>(
+                &g.second.role))
+        {
+            porousZoneOption::Parameters pzp;
+            pzp.set_name(g.first);
+            pzp.porousZone.d=vec3(1,1,1)*vol->d/p().fluid.nu;
+            pzp.porousZone.f=vec3(1,1,1)*2.*vol->f/p().fluid.rho;
+
+            cm.insert(new porousZoneOption(cm, pzp));
+        }
+        else
+            throw insight::UnhandledSelection();
+    }
+
 
     {
-        MassflowBC::Parameters inp;
-        MassflowBC::Parameters::flowrate_volumetric_type mf = { p.operation.Q };
-        inp.flowrate = mf;
-        inp.turbulence.reset(new turbulenceBC::uniformIntensityAndLengthScale(
-                              turbulenceBC::uniformIntensityAndLengthScale::Parameters()
-                               .set_I(0.1)
-                               .set_l(D*0.2)
-        ));
-        if (const auto* thermsolve =
-            boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
-                &p.operation.thermalTreatment))
-        {
-            inp.set_T(thermsolve->inletTemperature);
-        }
-        cm.insert(new MassflowBC(cm, "inlet", boundaryDict, inp));
     }
         
     cm.insert(new surfaceIntegrate(cm, surfaceIntegrate::Parameters()
@@ -535,23 +595,10 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
     if (const auto* thermsolve =
         boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
-            &p.operation.thermalTreatment))
+            &p().operation.thermalTreatment))
     {
-        for (auto& wbc: thermsolve->wallBCs)
+        for (auto& wbc: thermsolve->BCs)
         {
-            WallBC::Parameters wp;
-            if (const auto* wallfixedT =
-                boost::get<Parameters::operation_type::thermalTreatment_solve_type::wallBCs_default_fixedTemperature_type>(
-                    &wbc.second))
-            {
-                wp.set_heattransfer(
-                    std::make_shared<HeatBC::FixedTemperatureBC>(
-                     HeatBC::FixedTemperatureBC::Parameters()
-                            .set_T( FieldData::uniformSteady(vec1(wallfixedT->wallTemperature)) )
-                    ));
-            }
-            //else adiabtic (is default of WallBC)
-            cm.insert(new WallBC(cm, wbc.first, boundaryDict, wp));
         }
 
         cm.insert(new surfaceIntegrate(cm, surfaceIntegrate::Parameters()
@@ -582,7 +629,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
         cm.insert(new limitQuantities(cm, lp));
     }
     
-    insertTurbulenceModel(cm, p.fluid.turbulenceModel);
+    insertTurbulenceModel(cm, p().fluid.turbulenceModel);
 }
 
 

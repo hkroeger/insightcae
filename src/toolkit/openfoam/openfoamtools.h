@@ -566,6 +566,7 @@ class OpenFOAMCaseDirs
   std::set<boost::filesystem::path> sysDirs_, postDirs_, procDirs_;
   std::vector<boost::filesystem::path> timeDirs_;
   std::set<boost::filesystem::path> procTimeDirs_;
+  std::set<boost::filesystem::path> subCaseDirs_;
 
 public:
   enum TimeDirOpt { All, OnlyFirst, OnlyLast, OnlyFirstAndLast, ExceptFirst };
@@ -590,7 +591,8 @@ public:
       bool cleanTimes = true,
       bool cleanPost = true,
       bool cleanSys = true,
-      bool cleanInconsistentParallelTimes = false
+      bool cleanInconsistentParallelTimes = false,
+      bool cleanSubCaseDirs = false
   );
 
   void packCase(const boost::filesystem::path& archive_file, TimeDirOpt td = TimeDirOpt::All);
@@ -607,7 +609,8 @@ public:
       bool cleanTimes=true,
       bool cleanPost=true,
       bool cleanSys=true,
-      bool cleanInconsistentParallelTimes = false
+      bool cleanInconsistentParallelTimes = false,
+      bool cleanSubCaseDirs = false
   );
 };
 

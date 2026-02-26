@@ -611,7 +611,7 @@ struct SolidFeatureFilterExprParser
   {
       FeatureFilterExprParser<Iterator>::r_filter_functions =
       ( lit("isSame") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' )
-        [ qi::_val = phx::construct<FilterPtr>(new_<sameFace>(*qi::_1)) ]
+        [ qi::_val = phx::construct<FilterPtr>(new_<sameSolid>(*qi::_1)) ]
       ;
 
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 

@@ -96,7 +96,6 @@ public:
           finishAction();
           return true;
       }
-
       else
           return ViewWidgetAction<IQVTKCADModel3DViewer>::onMouseClick(
               btn, nFlags, point);

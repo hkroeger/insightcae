@@ -28,13 +28,6 @@ OFCleanCaseForm::OFCleanCaseForm(const insight::OpenFOAMCase& ofc, const boost::
 
   connect(ui->cb_clean_all, &QCheckBox::toggled,
           [=](bool checked) {
-//           if (checked)
-//            {
-//              if (ui->cb_keep_first->isChecked())
-//              {
-//                 ui->cb_keep_first->setChecked(false);
-//              }
-//            }
            ui->cb_clean_times->setDisabled(checked);
            if (checked)
            {
@@ -46,6 +39,7 @@ OFCleanCaseForm::OFCleanCaseForm(const insight::OpenFOAMCase& ofc, const boost::
            }
            ui->cb_clean_post->setDisabled(checked);
            ui->cb_clean_proc->setDisabled(checked);
+           ui->cb_subdirs->setDisabled(checked);
          });
 
   connect(ui->cb_clean_times, &QCheckBox::toggled,
@@ -55,6 +49,8 @@ OFCleanCaseForm::OFCleanCaseForm(const insight::OpenFOAMCase& ofc, const boost::
   connect(ui->cb_clean_post, &QCheckBox::toggled,
           this, &OFCleanCaseForm::updateCandidateList);
   connect(ui->cb_clean_proc, &QCheckBox::toggled,
+          this, &OFCleanCaseForm::updateCandidateList);
+  connect(ui->cb_subdirs, &QCheckBox::toggled,
           this, &OFCleanCaseForm::updateCandidateList);
   connect(ui->cb_clean_all, &QCheckBox::toggled,
           this, &OFCleanCaseForm::updateCandidateList);
@@ -84,12 +80,14 @@ void OFCleanCaseForm::updateCandidateList()
   bool cleanproc=ui->cb_clean_proc->isChecked() || ui->cb_clean_all->isChecked();
   bool cleantimes=ui->cb_clean_times->isChecked() || ui->cb_clean_all->isChecked();
   bool cleanpost=ui->cb_clean_post->isChecked() || ui->cb_clean_all->isChecked();
+  bool cleansubdirs=ui->cb_subdirs->isChecked()|| ui->cb_clean_all->isChecked();
   bool cleanall=ui->cb_clean_all->isChecked();
 
   std::set<boost::filesystem::path> cands = cf_->caseFilesAndDirs
   (
       timeStepSelection(),
-      cleanproc, cleantimes, cleanpost, cleanall
+      cleanproc, cleantimes, cleanpost, cleanall,
+      false, cleansubdirs
   );
 
   ui->list_cand->clear();
@@ -145,6 +143,7 @@ void OFCleanCaseForm::executeDeletion()
   bool cleanproc=ui->cb_clean_proc->isChecked() || ui->cb_clean_all->isChecked();
   bool cleantimes=ui->cb_clean_times->isChecked() || ui->cb_clean_all->isChecked();
   bool cleanpost=ui->cb_clean_post->isChecked() || ui->cb_clean_all->isChecked();
+  bool cleansubdirs=ui->cb_subdirs->isChecked() || ui->cb_clean_all->isChecked();
   bool cleanall=ui->cb_clean_all->isChecked();
 
   emit statusMessage("Deleting...");
@@ -154,7 +153,8 @@ void OFCleanCaseForm::executeDeletion()
         cleanproc,
         cleantimes,
         cleanpost,
-        cleanall
+        cleanall,
+        false, cleansubdirs
       );
 
   emit statusMessage("Cleanup finished.");

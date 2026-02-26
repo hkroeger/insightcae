@@ -71,11 +71,25 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
         arma::mat Rtot = (f.col(1)+f.col(4)) *mult;
         arma::mat Flat = (f.col(2)+f.col(5)) *mult;
+        arma::mat Mz = (p().mesh.longitudinalSymmetry ? 0. : 1.) *
+                       ( f.col(9)+f.col(12) );
         arma::mat L = (f.col(3)+f.col(6)) *mult;
 
-        sec->insert<ScalarResult>("Rtot", Rtot(Rtot.n_rows-1), "Total resistance on "+description, "", "N");
-        sec->insert<ScalarResult>("Flat", Flat(Flat.n_rows-1), "Lateral force on "+description, "", "N");
-        sec->insert<ScalarResult>("L", L(L.n_rows-1), "Lifting force on "+description, "", "N");
+        sec->insert<ScalarResult>("Rtot", Rtot(Rtot.n_rows-1),
+                                  "Total resistance on "+description,
+                                  "The resistance force is along the flow direction, i.e. along the X axis, regardless of the attitude (yaw angle).",
+                                  "N");
+        sec->insert<ScalarResult>("Flat", Flat(Flat.n_rows-1),
+                                  "Lateral force on "+description,
+                                  "The lateral force is always measured orthogonal to the flow direction, i.e. along the Y axis, regardless of the attitude (yaw angle).",
+                                  "N");
+        sec->insert<ScalarResult>("Myaw", Mz(Mz.n_rows-1),
+                                  "Yaw moment on "+description,
+                                  "The yaw moment is measured around the Z axis,",
+                                  "Nm");
+        sec->insert<ScalarResult>("L", L(L.n_rows-1),
+                                  "Lifting force on "+description,
+                                  "The lifting force is measured along the Z axis, positive upward.", "N");
 
         double denom=(0.5*p().fluid.rho*pow(p().operation.v,2)*A);
 
@@ -117,9 +131,10 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
                 *sec, executionPath(), "chartResistance",
                 "Iteration", "F [N]",
                 {
-                    PlotCurve( arma::mat(join_rows(t, Rtot)),  "Rtot", "w l lw 2 t 'Total resistance'"),
+                    PlotCurve( arma::mat(join_rows(t, Rtot)), "Rtot", "w l lw 2 t 'Total resistance'"),
                     PlotCurve( arma::mat(join_rows(t, Flat)), "Flat", "w l lw 2 t 'Lateral force'"),
-                    PlotCurve( arma::mat(join_rows(t, L)),    "L", "w l lw 2 t 'Lift force'")
+                    PlotCurve( arma::mat(join_rows(t, L)),    "L", "w l lw 2 t 'Lift force'"),
+                    PlotCurve( arma::mat(join_rows(t, Mz)),   "Myaw", "w l axes x1y2 lw 2 t 'Yaw moment'")
                 },
                 "Convergence history of forces on "+description
                 );

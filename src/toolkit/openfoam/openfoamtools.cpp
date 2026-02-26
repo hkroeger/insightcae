@@ -23,6 +23,7 @@
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/tools.h"
 #include "base/translations.h"
 
 #include "openfoam/openfoamcase.h"
@@ -3207,7 +3208,7 @@ decompositionState::decompositionState(const boost::filesystem::path& casedir)
 
 
 BoundingBox::BoundingBox()
-  : arma::mat(arma::zeros(3,2))
+    : arma::mat(initializedBndBox())
 {
 }
 

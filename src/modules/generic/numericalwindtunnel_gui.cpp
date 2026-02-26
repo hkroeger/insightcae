@@ -6,6 +6,7 @@
 #include "cadfeatures/transform.h"
 #include "cadfeatures/importsolidmodel.h"
 #include "blockmeshvisualization.h"
+#include "datum.h"
 
 
 namespace insight
@@ -15,6 +16,12 @@ namespace insight
 
 void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements()
 {
+
+    addDatum(
+        "PiM",
+        std::make_shared<cad::ExplicitDatumPoint>(
+            cad::matconst(sp().PiM_) ) );
+
     for (auto& g: sp().geometry_)
     {
         addFeature("objects/"+g.first, g.second);

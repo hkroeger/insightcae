@@ -168,6 +168,8 @@ operation = set {
       
 
 
+
+
 fluid = set {
 
  rho            = double 1.0 "[kg/m^3] Density of the fluid"
@@ -176,10 +178,21 @@ fluid = set {
  
 } "Parameters of the fluid"
 
+
+
+
+
 eval = set
 {
     referenceAreaProjectionDirection = selection (frontal lateral vertical) frontal
 "A projected area of the geometry is used to calculate force coefficients. This selects the direction of the projection."
+
+    allForces = set {
+        includeTopWall = bool false "include upper wall (if not a symmetry plane) into to total force figure"
+        includeBottomWall = bool false "include lower wall (if not a symmetry plane) into to total force figure"
+    }
+
+    evaluateMeanResistance = bool false "if set, the mean wall shear stress will be evaluated"
 } "Parameters for evaluation after solver run"
 
 
@@ -200,9 +213,11 @@ eval = set
     gp_Trsf cad_to_cfd_;
     double Lupstream_;
     double Ldownstream_;
-    double Lup_, Ldown_;
+    double Hdom_, Lup_, Ldown_;
     double Laside_;
     double Lref_, l_, w_, hup_, dlo_;
+
+    arma::mat PiM_;
 
     const std::string FOname_allObjects;
 

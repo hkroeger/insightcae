@@ -221,6 +221,47 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
     }
 
+    if (p().eval.evaluateMeanResistance)
+    {
+        auto sec=std::make_unique<ResultSection>("Mean Resistance");
+
+        double FD=results->getScalar(sp().FOname_allObjects+"/Rtot");
+        sec->insert<ScalarResult>("FD", FD, "total drag", "", "N");
+
+        double L=sp().Lupstream_+sp().l_+sp().Ldownstream_;
+        double W=(sp().Laside_+0.5*sp().w_)*(p().mesh.longitudinalSymmetry?1.:2.);
+        double A=L*W;
+        sec->insert<ScalarResult>("A", A, "surface area", "", "m^2");
+
+        double tauw=FD/A;
+        sec->insert<ScalarResult>("tauw", tauw, "mean wall shear stress", "", "N/m^2");
+
+        double utau=sqrt(tauw/p().fluid.rho);
+        sec->insert<ScalarResult>("utau", utau, "wall shear stress velocity", "", "m/s");
+
+        double Retau=utau*sp().Hdom_/p().fluid.nu;
+        sec->insert<ScalarResult>("Retau", Retau, "Shear stress Reynolds Number", "", "");
+
+        const double kappa=0.41;
+
+        double Cplus=
+            p().operation.v/utau
+            -(1./kappa)*log(Retau)
+            -( -1.7 );
+        sec->insert<ScalarResult>("Cplus", Cplus, "", "", "");
+
+        double ksplus=exp(kappa*(8.-Cplus)-3.4);
+        sec->insert<ScalarResult>("ksplus", ksplus, "roughness", "", "");
+
+        double ks=ksplus*p().fluid.nu/utau;
+        sec->insert<ScalarResult>("ks", ks, "corresponding roughness", "", "m");
+
+        double z0=ks*0.5/9.793;
+        sec->insert<ScalarResult>("z0", z0, "aerodynamic roughness", "", "m");
+
+        results->insert("meanResistance", std::move(sec));
+    }
+
 
     return results;
 }

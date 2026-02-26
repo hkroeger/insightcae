@@ -452,19 +452,18 @@ int main(int argc, char *argv[])
           {
             pd = server.get();
             redirCout=std::make_unique<StreamToProgressDisplayer>(std::cout, *pd);
-//            redirCerr=std::make_unique<StreamToProgressDisplayer>(std::cerr, *pd);
+//              redirCerr=std::make_unique<StreamToProgressDisplayer>(std::cerr, *pd);
           }
 #endif
 
 #ifdef HAVE_WT
           if (server)
           {
-            server->setAnalysis( inputFileParentPath );
+              server->setAnalysis( inputFileParentPath );
           }
 #endif
 
           // run analysis
-
           AnalysisThread solver_thread(
               parameters->analysisTypeName(),
               AnalysisThread::ParameterSetAndExePath{parameters.get(), workdir},

@@ -3,6 +3,7 @@
 #include "iqcadmodel3dviewer.h"
 #include "datum.h"
 
+#include <algorithm>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/discrete_distribution.hpp>
 #include <boost/random/exponential_distribution.hpp>
@@ -10,9 +11,79 @@
 boost::mt19937 boostRanGen;
 
 
+void TreeNode::childEvent(QChildEvent *event)
+{
+    if (event->added())
+    {
+        // not yet fully constructed
+        tba_.insert(event->child());
+    }
+    else if (event->removed())
+    {
+        tbd_.insert(event->child());
+    }
+    QObject::childEvent(event);
+}
+
+
+const std::map<std::string, QObject*> &
+TreeNode::childrenList() const
+{
+    if (tba_.size())
+    {
+        std::for_each(
+            tba_.begin(), tba_.end(),
+            [this](QObject*o)
+            {
+                if (auto*n=dynamic_cast<TreeNode*>(o))
+                {
+                    childrenInOrder_[n->label.toStdString()]=n;
+                }
+            }
+        );
+        tba_.clear();
+    }
+    if (tbd_.size())
+    {
+        std::for_each(
+            tbd_.begin(), tbd_.end(),
+            [this](QObject*o)
+            {
+                auto i=std::find_if(
+                    childrenInOrder_.begin(),
+                    childrenInOrder_.end(),
+                    [&](const decltype(childrenInOrder_)::value_type& v)
+                    { return v.second==o; });
+                childrenInOrder_.erase(i);
+            }
+            );
+        tbd_.clear();
+    }
+    return childrenInOrder_;
+}
+
+
+
 TreeNode *TreeNode::parentNode() const
 {
     return dynamic_cast<TreeNode*>(parent());
+}
+
+
+int TreeNode::childRow(TreeNode *n) const
+{
+    auto i=std::find_if(
+        childrenList().begin(),
+        childrenList().end(),
+        [&](const decltype(childrenInOrder_)::value_type& v )
+        { return v.second==n; }
+        );
+    return std::distance(childrenList().begin(), i);
+}
+
+int TreeNode::nChildNodes() const
+{
+    return childrenList().size();
 }
 
 TreeNode::TreeNode(QString l, TreeNode *parent)
@@ -200,6 +271,61 @@ IQCADItemModel::IQCADItemModel(
     else
         model_=std::make_shared<insight::cad::Model>();
 
+    // add decorators for entities in model_
+    std::for_each(
+        model_->scalars().begin(),
+        model_->scalars().end(),
+        [this](const insight::cad::Model::ScalarTableContents::value_type& vt){
+            addDecoration<insight::cad::ScalarPtr, ScalarNode>(
+                vt.first, vt.second,
+                &sections[scalarVariable],
+                std::function<void(ScalarNode&)>() );
+        });
+    std::for_each(
+        model_->points().begin(),
+        model_->points().end(),
+        [this](const insight::cad::Model::VectorTableContents::value_type& vt){
+            addDecoration<insight::cad::VectorPtr, PointNode>(
+                vt.first, vt.second,
+                &sections[pointVariable],
+                std::function<void(PointNode&)>() );
+        });
+    std::for_each(
+        model_->directions().begin(),
+        model_->directions().end(),
+        [this](const insight::cad::Model::VectorTableContents::value_type& vt){
+            addDecoration<insight::cad::VectorPtr, VectorNode>(
+                vt.first, vt.second,
+                &sections[vectorVariable],
+                std::function<void(VectorNode&)>() );
+        });
+    std::for_each(
+        model_->datums().begin(),
+        model_->datums().end(),
+        [this](const insight::cad::Model::DatumTableContents::value_type& vt){
+            addDecoration<insight::cad::DatumPtr, DatumNode>(
+                vt.first, vt.second,
+                &sections[datum],
+                std::function<void(DatumNode&)>() );
+        });
+    std::for_each(
+        model_->modelsteps().begin(),
+        model_->modelsteps().end(),
+        [this](const insight::cad::Model::ModelstepTableContents::value_type& vt){
+            addDecoration<insight::cad::FeaturePtr, FeatureNode>(
+                vt.first, vt.second,
+                &sections[feature],
+                std::function<void(FeatureNode&)>() );
+        });
+    std::for_each(
+        model_->postprocActions().begin(),
+        model_->postprocActions().end(),
+        [this](const insight::cad::Model::PostprocActionTableContents::value_type& vt){
+            addDecoration<insight::cad::PostprocActionPtr, PostProcNode>(
+                vt.first, vt.second,
+                &sections[postproc],
+                std::function<void(PostProcNode&)>() );
+        });
     model_->checkForBuildDuringAccess();
 }
 
@@ -231,12 +357,14 @@ QVariant IQCADItemModel::headerData(int section, Qt::Orientation orientation, in
 
 
 QModelIndex IQCADItemModel::index(
-    int row, int column, const QModelIndex &parent) const
+    int row, int column,
+    const QModelIndex &parent ) const
 {
     if (!parent.isValid())
     {
         // top level
-        if (row>=0 && row<CADModelSection::numberOf)
+        if ( (row>=0) &&
+             (row<CADModelSection::numberOf) )
         {
             return createIndex(
                 row, column,
@@ -245,13 +373,13 @@ QModelIndex IQCADItemModel::index(
     }
     else
     {
-        if (auto *pn=static_cast<TreeNode*>(parent.internalPointer()))
+        if ( auto *pn = static_cast<TreeNode*>(
+                parent.internalPointer()) )
         {
-            if (row>=0 && row<pn->children().size())
+            if ( auto *n=pn->childNode(row) )
             {
                 return createIndex(
-                    row, column,
-                    pn->children()[row] );
+                    row, column, n );
             }
         }
     }
@@ -271,9 +399,10 @@ QModelIndex IQCADItemModel::parent(const QModelIndex &index) const
             if (auto *pn = n->parentNode())
             {
                 int row=-1;
+
                 if (auto *ppn = pn->parentNode())
                 {
-                    row=ppn->children().indexOf(pn);
+                    row=ppn->childRow(pn);
                 }
                 else
                 {
@@ -292,7 +421,8 @@ QModelIndex IQCADItemModel::parent(const QModelIndex &index) const
                         n->label.toStdString().c_str()
                         );
                 }
-                return createIndex(row, 0, static_cast<void*>(pn));
+
+                return createIndex(row, 0, pn);
             }
         }
     }
@@ -311,7 +441,10 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
     }
     else if (auto *n=static_cast<TreeNode*>(parent.internalPointer()))
     {
-        return n->children().size();
+        if (parent.column()==0) // only first column has children
+        {
+            return n->nChildNodes();
+        }
     }
     return 0;
 }
@@ -329,106 +462,109 @@ int IQCADItemModel::columnCount(const QModelIndex &parent) const
 
 QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
 {
-    auto *n=static_cast<TreeNode*>(index.internalPointer());
-    if (n && index.isValid())
+    if (index.isValid())
     {
-        if (role==Qt::DisplayRole)
+        auto *n=static_cast<TreeNode*>(index.internalPointer());
+        if (n && index.isValid())
         {
-            switch (index.column())
-            {
-            case labelCol:
-                return n->label;
-
-            case valueCol:
-                return n->valueString();
-
-            case entityCol:
-                return n->valueAsVariant();
-            }
-
-            if (auto *en=dynamic_cast<FeatureNode*>(n))
+            if (role==Qt::DisplayRole)
             {
                 switch (index.column())
                 {
-                case entityColorCol:
-                    return en->color;
+                case labelCol:
+                    return n->label;
 
-                case entityOpacityCol:
-                    return en->opacity;
+                case valueCol:
+                    return n->valueString();
 
-                case entityRepresentationCol:
-                    return en->representation;
-
-                case assocParamPathsCol:
-                    auto paths = boost::join(en->assocParamPaths, ":");
-                    return QString::fromStdString(paths);
+                case entityCol:
+                    return n->valueAsVariant();
                 }
-            }
 
-
-            if (auto *dn=dynamic_cast<DatasetNode*>(n))
-            {
-                switch (index.column())
+                if (auto *en=dynamic_cast<FeatureNode*>(n))
                 {
-                case datasetFieldNameCol:
-                    return QString::fromStdString(dn->fieldName);
-
-                case datasetPointCellCol:
-                    return int(dn->fieldSupport);
-
-                case datasetComponentCol:
-                    return int(dn->fieldComponent);
-
-                case datasetMinCol:
-                    if (dn->minVal) return double(*dn->minVal);
-                    break;
-
-                case datasetMaxCol:
-                    if (dn->maxVal) return double(*dn->maxVal);
-                    break;
-
-                case datasetRepresentationCol:
-                    return int(dn->representation);
-                }
-            }
-        }
-        else if (role == Qt::CheckStateRole)
-        {
-            if (auto *hn=dynamic_cast<HideableNode*>(n))
-            {
-                if (index.column()==visibilityCol)
-                {
-                    return Qt::CheckState(
-                        hn->visible?
-                            Qt::Checked : Qt::Unchecked );
-                }
-            }
-        }
-        else if (role == Qt::FontRole)
-        {
-            QFont font;
-
-            if (auto *fn=dynamic_cast<FeatureNode*>(n))
-            {
-                if (fn->parentNode()==&sections[feature])
-                {
-                    if (model_->isComponent(n->label.toStdString()))
+                    switch (index.column())
                     {
-                        font.setBold(true);
+                    case entityColorCol:
+                        return en->color;
+
+                    case entityOpacityCol:
+                        return en->opacity;
+
+                    case entityRepresentationCol:
+                        return en->representation;
+
+                    case assocParamPathsCol:
+                        auto paths = boost::join(en->assocParamPaths, ":");
+                        return QString::fromStdString(paths);
+                    }
+                }
+
+
+                if (auto *dn=dynamic_cast<DatasetNode*>(n))
+                {
+                    switch (index.column())
+                    {
+                    case datasetFieldNameCol:
+                        return QString::fromStdString(dn->fieldName);
+
+                    case datasetPointCellCol:
+                        return int(dn->fieldSupport);
+
+                    case datasetComponentCol:
+                        return int(dn->fieldComponent);
+
+                    case datasetMinCol:
+                        if (dn->minVal) return double(*dn->minVal);
+                        break;
+
+                    case datasetMaxCol:
+                        if (dn->maxVal) return double(*dn->maxVal);
+                        break;
+
+                    case datasetRepresentationCol:
+                        return int(dn->representation);
                     }
                 }
             }
-
-            return font;
-        }
-        else if (role == Qt::BackgroundRole)
-        {
-            QVariant bgcol;
-            if (auto* fn=dynamic_cast<FeatureNode*>(n))
+            else if (role == Qt::CheckStateRole)
             {
-                return fn->color;
+                if (auto *hn=dynamic_cast<HideableNode*>(n))
+                {
+                    if (index.column()==visibilityCol)
+                    {
+                        return Qt::CheckState(
+                            hn->visible?
+                                Qt::Checked : Qt::Unchecked );
+                    }
+                }
             }
-            return bgcol;
+            else if (role == Qt::FontRole)
+            {
+                QFont font;
+
+                if (auto *fn=dynamic_cast<FeatureNode*>(n))
+                {
+                    if (fn->parentNode()==&sections[feature])
+                    {
+                        if (model_->isComponent(n->label.toStdString()))
+                        {
+                            font.setBold(true);
+                        }
+                    }
+                }
+
+                return font;
+            }
+            else if (role == Qt::BackgroundRole)
+            {
+                QVariant bgcol;
+                if (auto* fn=dynamic_cast<FeatureNode*>(n))
+                {
+                    return fn->color;
+                }
+                return bgcol;
+            }
         }
     }
 
@@ -1070,10 +1206,9 @@ QModelIndex IQCADItemModel::sectionIndex(
     CADModelSection entitySection ) const
 {
     auto *parent=&sections[entitySection];
-    if (auto n=parent->childNode<TreeNode>(
-            QString::fromStdString(name) ))
+    if (auto n=parent->childNode(name))
     {
-        auto row = parent->children().indexOf(n);
+        auto row = parent->childRow(n);
         return index(row, 0, index(entitySection, 0) );
     }
     else

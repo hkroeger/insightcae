@@ -15,6 +15,7 @@
 #include <QApplication>
 #include <QColor>
 #include <QMenu>
+#include <iterator>
 #include <qnamespace.h>
 
 
@@ -27,24 +28,49 @@ struct TreeNode
 {
     Q_OBJECT
 
+protected:
+    mutable std::set<QObject*> tba_, tbd_;
+    mutable std::map<std::string, QObject*> childrenInOrder_;
+
+    void childEvent(QChildEvent *event) override;
+
 public:
+    const std::map<std::string, QObject*>&
+    childrenList() const;
+
     QString label;
     TreeNode* parentNode() const;
-    template<class TN>
-    TN* childNode(const QString& label) const
+
+
+    template<class TN=TreeNode>
+    TN* childNode(const std::string& label) const
     {
-        for (auto& c: children())
+        auto i=childrenList().find(label);
+        if (i!=childrenList().end())
         {
-            if (auto *tn=dynamic_cast<TN*>(c))
-            {
-                if (tn->label==label)
-                {
-                    return tn;
-                }
-            }
+            return dynamic_cast<TN*>(i->second);
         }
         return nullptr;
     }
+
+    template<class TN=TreeNode>
+    TN* childNode(int row) const
+    {
+        if ( (childrenList().size()>0) &&
+             (row>=0) &&
+             (row<=childrenList().size()) )
+        {
+            auto i=childrenList().begin();
+            std::advance(i, row);
+            return dynamic_cast<TN*>(i->second);
+        }
+        else
+            return nullptr;
+    }
+
+    int childRow(TreeNode* n) const;
+
+    int nChildNodes() const;
 
     virtual QString valueString() const =0;
     virtual QVariant valueAsVariant() const =0;
@@ -241,7 +267,7 @@ private:
         int row;
         if (auto *pn=n->parentNode())
         {
-            row=pn->children().indexOf(n);
+            row=pn->childRow(n);
         }
         else
         {
@@ -256,11 +282,10 @@ private:
         const std::string& name,
         E value,
         TreeNode* parentNode,
-      std::function<void(TN&)> modifyNode
-    )
+        std::function<void(TN&)> modifyNode
+        )
     {
-        if (auto n=parentNode->childNode<TN>(
-                QString::fromStdString(name) ) )
+        if (auto n=parentNode->childNode<TN>(name) )
         {
             if (n->value==value)
             {
@@ -279,19 +304,8 @@ private:
         else
         {
             // insert new
-            std::set<std::string> s;
-            std::transform(
-                parentNode->children().begin(),
-                parentNode->children().end(),
-                std::last_inserter(s),
-                [](QObject* o)
-                {
-                    return
-                        dynamic_cast<TreeNode*>(o)
-                        ->label
-                        .toStdString();
-                });
-            auto newrow = insight::predictSetInsertionLocation(s, name);
+            auto newrow = insight::predictInsertionLocation(
+                parentNode->childrenList(), name);
             beginInsertRows(indexOf(parentNode), newrow, newrow);
             auto *ntn=new TN(QString::fromStdString(name), parentNode);
             if (modifyNode) modifyNode(*ntn);
@@ -300,11 +314,8 @@ private:
         }
     }
 
-    void removeDecoration()
-    {
-    }
 
-  template<class E, class TN>
+    template<class E, class TN>
     void addEntity(
         const std::string& name,
         E value,
@@ -314,34 +325,34 @@ private:
         std::function<void(const std::string&,E)>
             modeladdfunc,
         std::function<void(TN&)> modifyNode =
-            std::function<void(TN&)>()
+        std::function<void(TN&)>()
         )
     {
-      TreeNode* parentNode=&sections[sc];
-      auto s = entityAccessFunction();
-      auto ss = s.find(name);
-      if (ss!=s.end())
-      {
-          if (ss->second==value)
-          {
-              // is present and the same
-              // Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
-          }
-          else
-          {
-              // content has changed
-              // replace
-              modeladdfunc(name, value);
-              addDecoration<E, TN>(name, value, parentNode, modifyNode);
-          }
-      }
-      else
-      {
-          // insert new
-          modeladdfunc(name, value);
-          addDecoration<E, TN>(name, value, parentNode, modifyNode);
-      }
-  }
+        TreeNode* parentNode=&sections[sc];
+        auto s = entityAccessFunction();
+        auto ss = s.find(name);
+        if (ss!=s.end())
+        {
+            if (ss->second==value)
+            {
+                // is present and the same
+                // Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
+            }
+            else
+            {
+                // content has changed
+                // replace
+                modeladdfunc(name, value);
+                addDecoration<E, TN>(name, value, parentNode, modifyNode);
+            }
+        }
+        else
+        {
+            // insert new
+            modeladdfunc(name, value);
+            addDecoration<E, TN>(name, value, parentNode, modifyNode);
+        }
+    }
 
   template<class E>
   void removeEntity(

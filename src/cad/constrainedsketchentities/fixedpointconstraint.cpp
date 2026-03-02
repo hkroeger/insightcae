@@ -101,10 +101,10 @@ void FixedPointConstraint::addParserRule(
         (
             typeName,
             ( '('
-             > qi::int_ > ','
-             > qi::int_
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-             > ruleset.r_parameters >
+             > qi::int_ > ',' //1
+             > qi::int_ // 2
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string())) // 3
+             > ruleset.r_parameters > // 4
              ')' )
             [
                 qi::_a = phx::bind(

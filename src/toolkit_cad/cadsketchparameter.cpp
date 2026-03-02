@@ -19,24 +19,29 @@ addParameterFactories(CADSketchParameter);
 
 insight::cad::ConstrainedSketch& DelayedCreatedSketch::sketchRef()
 {
-    if (!sketch_)
-    {
-        sketch_=createEmpty();
-        connectSignalsToSketch(sketch_);
-    }
 
     if (script_)
     {
         if (!script_->empty())
         {
-            *sketch_ = *createSketch(*script_);
+            sketch_ = createSketch(*script_);
+            connectSignalsToSketch(sketch_);
         }
         else
         {
-            sketch_->clear();
+            if (sketch_)
+            {
+                sketch_->clear();
+            }
         }
 
         script_.reset();
+    }
+
+    if (!sketch_)
+    {
+        sketch_=createEmpty();
+        connectSignalsToSketch(sketch_);
     }
 
     return *sketch_;

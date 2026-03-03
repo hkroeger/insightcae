@@ -136,7 +136,7 @@
       </property>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>1</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -459,7 +459,7 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_9">
          <item>
-          <widget class="GraphProgressDisplayer" name="graph" native="true">
+          <widget class="IQGraphProgressDisplayer" name="graph" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -647,9 +647,9 @@
    <header>logviewerwidget.h</header>
   </customwidget>
   <customwidget>
-   <class>GraphProgressDisplayer</class>
+   <class>IQGraphProgressDisplayer</class>
    <extends>QWidget</extends>
-   <header>graphprogressdisplayer.h</header>
+   <header>iqgraphprogressdisplayer.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

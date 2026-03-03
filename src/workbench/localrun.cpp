@@ -43,8 +43,6 @@ LocalRun::~LocalRun()
 {
   interrupt();
   join();
-
-  af_->progressDisplayer_.reset();
 }
 
 

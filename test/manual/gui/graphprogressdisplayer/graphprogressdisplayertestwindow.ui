@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="GraphProgressDisplayer" name="graph" native="true"/>
+     <widget class="IQGraphProgressDisplayer" name="graph" native="true"/>
     </item>
     <item>
      <widget class="QGroupBox" name="groupBox">
@@ -50,9 +50,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>GraphProgressDisplayer</class>
+   <class>IQGraphProgressDisplayer</class>
    <extends>QWidget</extends>
-   <header>graphprogressdisplayer.h</header>
+   <header>iqgraphprogressdisplayer.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -260,7 +260,7 @@ public:
       assocParamPathsCol=98;
 
 private:
-  mutable SectionNode sections[numberOf];
+  mutable std::array<SectionNode, numberOf> sections;
 
     QModelIndex indexOf(TreeNode *n) const
     {

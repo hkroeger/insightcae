@@ -47,6 +47,14 @@ namespace insight
 {
 
 
+/**
+ * @brief sanitizeStringForFileName
+ * remove all special characters, so that the string can be used as file name
+ * @param s
+ * @return
+ */
+boost::filesystem::path sanitizeStringForFileName(const std::string& s);
+
 
 std::set<boost::filesystem::path>
 wildcardSearch(const boost::filesystem::path& pathWithRegex);

@@ -185,7 +185,7 @@ add_library(toolkit_gui SHARED
        snappyhexmesh_gui.cpp snappyhexmesh_gui.h
        cadparametersetvisualizer.cpp cadparametersetvisualizer.h
        logviewerwidget.cpp logviewerwidget.h
-       graphprogressdisplayer.cpp graphprogressdisplayer.h
+       iqgraphprogressdisplayer.cpp iqgraphprogressdisplayer.h
        progressrelay.cpp progressrelay.h
        insightcaeapplication.cpp insightcaeapplication.h
        iqremotefoldermodel.h iqremotefoldermodel.cpp
@@ -250,6 +250,9 @@ add_library(toolkit_gui SHARED
 
 
        toolkit_gui.qrc insightcae_gui.qrc
+       iqgraphprogresschart.h iqgraphprogresschart.cpp
+       iqchartinteractivelegend.h iqchartinteractivelegend.cpp
+       iqlineseriesdata.h iqlineseriesdata.cpp
 )
 target_add_PDL(toolkit_gui)
 target_enable_qt(toolkit_gui)

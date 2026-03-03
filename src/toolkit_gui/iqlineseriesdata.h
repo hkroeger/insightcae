@@ -1,7 +1,7 @@
 #ifndef IQLINESERIESDATA_H
 #define IQLINESERIESDATA_H
 
-
+#include "base/boost_include.h"
 #include "iqchartinteractivelegend.h"
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
@@ -47,6 +47,8 @@ public:
     bool isVisible() const;
 
     inline const ChartBounds& bounds() const { return b_; }
+
+    void exportToCSV(std::ostream& os) const;
 
 public Q_SLOTS:
     void setVisibility(bool visible);

@@ -1,4 +1,9 @@
 #include "iqgraphprogresschart.h"
+#include "base/exception.h"
+#include "base/translations.h"
+
+#include "base/tools.h"
+#include "qtextensions.h"
 
 #include <cmath>
 
@@ -6,11 +11,13 @@
 #include <QHBoxLayout>
 #include <QCheckBox>
 #include <QLabel>
+#include <QPushButton>
 
 
 #include <QTimer>
 #include <QtCharts/QLogValueAxis>
 #include <QtCharts/QValueAxis>
+#include <fstream>
 
 
 
@@ -30,6 +37,38 @@ IQGraphProgressChart::IQGraphProgressChart(
     logscale_(logscale)
 {
     auto *graphLayout = new QVBoxLayout;
+    auto *toplayout=new QHBoxLayout;
+
+    auto clearbtn=new QPushButton(_("Clear"));
+    connect(
+        clearbtn, &QPushButton::clicked,
+        this, &IQGraphProgressChart::reset );
+
+    auto exportbtn=new QPushButton(_("Export..."));
+    connect(
+        exportbtn, &QPushButton::clicked,
+        this, &IQGraphProgressChart::exportToCSV );
+
+    toplayout->addWidget(clearbtn);
+    toplayout->addWidget(exportbtn);
+    fromx=new QLineEdit("");
+    fromx->setPlaceholderText("(minimum)");
+    fromx->setClearButtonEnabled(true);
+    tox=new QLineEdit("");
+    tox->setPlaceholderText("(maximum)");
+    tox->setClearButtonEnabled(true);
+    toplayout->addWidget(clearbtn);
+    toplayout->addWidget(new QLabel(_("X from:")));
+    toplayout->addWidget(fromx);
+    toplayout->addWidget(new QLabel(_("to:")));
+    toplayout->addWidget(tox);
+    toplayout->addItem(
+        new QSpacerItem(
+            10,10,
+            QSizePolicy::Expanding,
+            QSizePolicy::Minimum ));
+
+    graphLayout->addLayout(toplayout);
     graphLayout->addWidget(chartView_, 1);
     graphLayout->addWidget(legend_);
     setLayout(graphLayout);
@@ -117,6 +156,37 @@ void IQGraphProgressChart::reset()
 
 
 
+void IQGraphProgressChart::exportToCSV()
+{
+    if (auto fn = getFileName(
+            nullptr, "Save curves to file",
+            GetFileMode::Save,
+            {{ "csv", "Comma separated values" }} ) )
+    {
+        auto file = insight::ensureFileExtension(fn, "csv");
+
+        for ( auto& i: curve_)
+        {
+            boost::filesystem::path thisfn =
+                file.parent_path() /
+                (file.filename().stem().string()
+                    +"_"+insight::sanitizeStringForFileName(i.first).string()
+                    +file.filename().extension().string());
+
+            std::ofstream f(thisfn);
+            insight::assertion(
+                f.good(),
+                _("Failed to open file %s for writing"),
+                thisfn.c_str() );
+
+            i.second->exportToCSV(f);
+        }
+    }
+}
+
+
+
+
 void IQGraphProgressChart::checkForUpdate()
 {
     mutex_.lock();
@@ -142,12 +212,35 @@ void IQGraphProgressChart::checkForUpdate()
         if (fabs(b.ymax-b.ymin)<1e-20) { b.ymax=b.ymin+1e-4; }
         if (b.ymin>b.ymax) { b.ymin=0; b.ymax=1.; }
 
-        auto hax=chartData_->axes(Qt::Horizontal);
-        hax[0]->setRange(b.xmin, 1.05*b.xmax);
-
+        b.xmax*=1.05;
         double delta=fabs(b.ymax-b.ymin);
+        b.ymin=b.ymin - (logscale_?0.0:0.05*delta);
+        b.ymax=b.ymax+0.05*delta;
+
+        {
+            auto t=fromx->text();
+            if (!t.isEmpty())
+            {
+                bool ok=false;
+                double v=t.toDouble(&ok);
+                if (ok) b.xmin=v;
+            }
+        }
+        {
+            auto t=tox->text();
+            if (!t.isEmpty())
+            {
+                bool ok=false;
+                double v=t.toDouble(&ok);
+                if (ok) b.xmax=v;
+            }
+        }
+
+        auto hax=chartData_->axes(Qt::Horizontal);
+        hax[0]->setRange(b.xmin, b.xmax);
+
         auto vax=chartData_->axes(Qt::Vertical);
-        vax[0]->setRange(b.ymin - (logscale_?0.0:0.05*delta), b.ymax+0.05*delta);
+        vax[0]->setRange(b.ymin, b.ymax);
 
         repaint();
     }
@@ -156,15 +249,34 @@ void IQGraphProgressChart::checkForUpdate()
 }
 
 
+
+
 QColor IQLineSeriesData::color() const
 {
     return crv->color();
 }
 
+
+
+
 bool IQLineSeriesData::isVisible() const
 {
     return crv->isVisible();
 }
+
+
+
+
+void IQLineSeriesData::exportToCSV(std::ostream &os) const
+{
+    for (int i=0; i<crv->count(); ++i)
+    {
+        os<<crv->at(i).x()<<" "<<crv->at(i).y()<<"\n";
+    }
+}
+
+
+
 
 void IQLineSeriesData::setVisibility(bool visible)
 {

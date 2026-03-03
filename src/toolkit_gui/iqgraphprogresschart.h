@@ -5,6 +5,7 @@
 #include "iqlineseriesdata.h"
 
 #include <QMutex>
+#include <QLineEdit>
 
 #include <QtCharts/QChartView>
 
@@ -24,6 +25,8 @@ protected:
     QtCharts::QChart *chartData_;
     IQChartInteractiveLegend *legend_;
 
+    QLineEdit *fromx, *tox;
+
     size_t maxCnt_;
 
     CurveList curve_;
@@ -36,7 +39,10 @@ public:
     ~IQGraphProgressChart();
 
     virtual void update(double t, const std::string& name, double y_value);
+
+public Q_SLOTS:
     virtual void reset();
+    void exportToCSV();
 
 public slots:
     void checkForUpdate();

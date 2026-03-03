@@ -541,7 +541,6 @@ RemoteRun::~RemoteRun()
     disconnectRequested_=true;
     ac_->httpClient().abort();
     ac_->ioService().stop();
-    af_->progressDisplayer_.reset();
 }
 
 

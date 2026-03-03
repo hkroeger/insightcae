@@ -77,12 +77,10 @@ mesh = set
 
      cubical set {
         n_max = int 10 "Number of cells along longest direction. The other directions are discretized with the same cell size but with adjusted number of cells."
-        xcubical = double 0.5 "Cubical cells can only be assured at a single radius. This radius is specified dimensionless as $x=\\frac{r_{cube}-r_i}{r_a-r_i}$."
      }
 
      cubical_size set {
         delta = double 0.1 "Uniform cell length."
-        xcubical = double 0.5 "Cubical cells can only be assured at a single radius. This radius is specified dimensionless as $x=\\frac{r_{cube}-r_i}{r_a-r_i}$."
      }
 
      individual set {
@@ -104,6 +102,7 @@ mesh = set
      }
 
      pieSlice set {
+        xcubical = double 0.5 "Cubical cells can only be assured at a single radius. This radius is specified dimensionless as $x=\\frac{r_{cube}-r_i}{r_a-r_i}$."
      }
 
     }} oGrid "Topology of the grid. Note: if a nonzero inner radius is nonzero, pieSlice is always used."

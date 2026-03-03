@@ -109,3 +109,19 @@ msgstr ""
 
 msgid "Select Remote Directory"
 msgstr ""
+
+msgid "Clear"
+msgstr ""
+
+msgid "Export..."
+msgstr ""
+
+msgid "X from:"
+msgstr ""
+
+msgid "to:"
+msgstr ""
+
+#, c-format
+msgid "Failed to open file %s for writing"
+msgstr ""

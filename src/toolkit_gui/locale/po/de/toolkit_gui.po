@@ -93,13 +93,13 @@ msgid "InsightCAE Result Set"
 msgstr "InsightCAE Ergebnisdaten"
 
 msgid "An error has occurred"
-msgstr ""
+msgstr "Ein Fehler ist aufgetreten"
 
 msgid "Stack trace"
-msgstr ""
+msgstr "Aufrufstapel"
 
 msgid "More details on error origin."
-msgstr ""
+msgstr "Weitere Detail zur Fehlerursache"
 
 msgid "Create file failed"
 msgstr "Erzeugen der Datei fehlgeschlagen"
@@ -109,3 +109,19 @@ msgstr "Konnte die Datei %1 nicht erzeugen"
 
 msgid "Select Remote Directory"
 msgstr ""
+
+msgid "Clear"
+msgstr "Leeren"
+
+msgid "Export..."
+msgstr "Exportieren..."
+
+msgid "X from:"
+msgstr "X von:"
+
+msgid "to:"
+msgstr "bis:"
+
+#, c-format
+msgid "Failed to open file %s for writing"
+msgstr "Konnte Datei %s nicht zum Schreiben öffnen"

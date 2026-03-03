@@ -3,7 +3,7 @@
 #include <cfloat>
 
 #include <QRandomGenerator>
-
+#include <QToolTip>
 
 
 
@@ -65,6 +65,21 @@ IQLineSeriesData::IQLineSeriesData(
 
     legend_->addEntry(name, this);
 
+    QString n(name);
+    connect(crv, &QtCharts::QLineSeries::hovered, this,
+        [this,n](const QPointF &point, bool state)
+        {
+            if (state)
+            {
+                QString label = QString("%1(%2)=%3").arg(n).arg(point.x()).arg(point.y());
+                QToolTip::showText(QCursor::pos(), label);
+            }
+            else
+            {
+                QToolTip::hideText();
+            }
+        }
+    );
 }
 
 

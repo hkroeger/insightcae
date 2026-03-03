@@ -173,7 +173,7 @@ void IQGraphProgressChart::exportToCSV()
                     +"_"+insight::sanitizeStringForFileName(i.first).string()
                     +file.filename().extension().string());
 
-            std::ofstream f(thisfn);
+            std::ofstream f(thisfn.string());
             insight::assertion(
                 f.good(),
                 _("Failed to open file %s for writing"),

@@ -1467,4 +1467,18 @@ int realNp(int userInputNp)
 
 
 
+path sanitizeStringForFileName(const std::string &s)
+{
+    std::string result(s);
+    for (auto& c: result)
+    {
+        if (!(std::isalnum(c)||(c=='_')||(c=='-')||(c=='+')))
+            c='_';
+    }
+    boost::replace_all(result, "__", "_");
+    return result;
+}
+
+
+
 }

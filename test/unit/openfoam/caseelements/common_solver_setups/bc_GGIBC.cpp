@@ -22,7 +22,7 @@ int main(int argc, char*argv[])
             mp1.mesh.basePatchName="inlet";
             mp1.mesh.topPatchName="ggi1";
             mp1.mesh.resolution =
-                    bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{5,0.5};
+                    bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{5};
 
             bmd::blockMeshDict_Cylinder::Parameters mp2;
             mp2.geometry.p0 =
@@ -30,7 +30,7 @@ int main(int argc, char*argv[])
             mp2.mesh.basePatchName="ggi2";
             mp2.mesh.topPatchName="outlet";
             mp2.mesh.resolution =
-                    bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{5,0.5};
+                    bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{5};
 
 
             OpenFOAMCase mc1(ofe());

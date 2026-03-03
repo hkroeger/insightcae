@@ -93,7 +93,7 @@ OpenFOAMCaseWithCylinderMesh::OpenFOAMCaseWithCylinderMesh(const string &OFEname
     meshParameters_.mesh.basePatchName="inlet";
     meshParameters_.mesh.topPatchName="outlet";
     meshParameters_.mesh.resolution =
-            bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{9,0.5};
+            bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{9};
     meshParameters_.mesh.cellZoneName="wholeDomain";
 }
 

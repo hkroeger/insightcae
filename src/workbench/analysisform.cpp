@@ -218,7 +218,7 @@ AnalysisForm::AnalysisForm(
     connect( ui->btnShell, &QPushButton::clicked,
              this, &AnalysisForm::onShell);
 
-    graphProgress_=new GraphProgressDisplayer;
+    graphProgress_=new IQGraphProgressDisplayer;
     actionProgress_=new insight::QActionProgressDisplayerWidget;
 
     QSplitter* spl=new QSplitter(Qt::Vertical);

@@ -45,8 +45,7 @@ OpenFOAMParameterStudy<BaseAnalysis,var_params>::OpenFOAMParameterStudy
 )
 : ParameterStudy<BaseAnalysis,var_params>(sp),
   subcasesRemesh_(subcasesRemesh)
-{
-}
+{}
 
 
 
@@ -92,10 +91,8 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
 
     // generate the mesh in the top level case first
     path dir = this->executionPath();
-    //parameters_.saveToFile(dir/"parameters.ist", type());
 
     {
-//     OpenFOAMAnalysis* base_case=static_cast<OpenFOAMAnalysis*>(baseAnalysis_.get());
 
         auto machine = ps.getString("run/machine");
         auto OFEname = ps.getString("run/OFEname");
@@ -111,13 +108,11 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
         for (int j=0; j<var_params.size(); j++)
         {
             // Replace RangeParameter by first actual single value
-            const DoubleRangeParameter& rp = ps.template get<insight::DoubleRangeParameter>(var_params[j]);
+            auto& rp = ps.template get<insight::DoubleRangeParameter>(var_params[j]);
             auto dp=rp.toDoubleParameter(rp.values().begin());
             defp->replace(var_params[j], std::move(dp));
         }
-//     base_case->setParameters(defp);
 
-//     base_case->setExecutionPath(exep);
         base_case_ = std::dynamic_unique_ptr_cast<OpenFOAMAnalysis>(
             Analysis::analyses()(BaseAnalysis::typeName,
                 Analysis::supplementedInputDatas()(BaseAnalysis::typeName,

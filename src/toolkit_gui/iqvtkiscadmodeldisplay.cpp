@@ -23,6 +23,8 @@ IQVTKISCADModelDisplay::IQVTKISCADModelDisplay
     auto *gm = new IQGroupingItemModel(modeltree_);
     gm->setGroupColumn(IQCADItemModel::labelCol);
     gm->setSourceModel(model_);
+    // auto *gm=model_;
+
     modeltree_->setModel(gm);
     // modeltree_->setModel(model_);
 

@@ -7,6 +7,8 @@ add_library(genericmodules SHARED
     convergenceanalysis.cpp convergenceanalysis.h
     numericalwindtunnel.cpp numericalwindtunnel.h numericalwindtunnel_eval.cpp
     internalpressureloss.cpp internalpressureloss.h
+    internalpressureloss_supplementedinputdata.cpp
+    numericalwindtunnel_supplementedinputdata.cpp
 )
 target_add_PDL(genericmodules)
 target_link_libraries(genericmodules toolkit toolkit_cad)

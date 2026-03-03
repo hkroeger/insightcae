@@ -75,12 +75,15 @@ cad::FeaturePtr surfaceFeatureExtract
                 feo->GetPoint(l->GetPointId(0)));
             auto p2 = vec3FromComponents(
                 feo->GetPoint(l->GetPointId(1)));
-            bb.Add(
-                result,
-                BRepBuilderAPI_MakeEdge(
-                    to_Pnt(p1),
-                    to_Pnt(p2) ).Edge()
-                );
+            if (arma::norm(p2-p1,2)>SMALL)
+            {
+                bb.Add(
+                        result,
+                        BRepBuilderAPI_MakeEdge(
+                            to_Pnt(p1),
+                            to_Pnt(p2) ).Edge()
+                        );
+            }
         }
         else
         {

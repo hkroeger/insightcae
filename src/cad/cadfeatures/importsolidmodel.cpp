@@ -160,8 +160,11 @@ void Import::build()
           idx_->insertAllSolidTags(fsd);
           for (FeatureID i: fsd)
           {
-              providedSubshapes_[boost::str(boost::format("solid%d")%i)]=
-                  Import::create(idx_->solidByTag(i));
+              auto label=boost::str(boost::format("solid%d")%i);
+              auto feat=Import::create(idx_->solidByTag(i));
+              feat->setFeatureSymbolName(
+                  this->featureSymbolName()+"."+label );
+              providedSubshapes_[label]=feat;
           }
 
           setFeatureSymbolName("importedFrom_"+fp.string());

@@ -14,15 +14,76 @@
 #include <QColorDialog>
 #include <QFileDialog>
 
-void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, IQCADModel3DViewer* viewer)
+void IQCADItemModel::showMultiSelectionContextMenu(
+    const QModelIndexList& idxs,
+    const QPoint &pos,
+    IQCADModel3DViewer* viewer )
+{
+    QMenu cm;
+
+    auto show=new QAction("Show", &cm);
+    auto hide=new QAction("Hide", &cm);
+
+    bool allHideShow=true;
+    for (auto idx: idxs)
+    {
+        if (auto *fn=dynamic_cast<HideableNode*>(
+                static_cast<TreeNode*>(idx.internalPointer())))
+        {
+            connect(show, &QAction::triggered, show,
+                    [this,idx]() {
+                        QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+                        if (flags(visi)&Qt::ItemIsUserCheckable)
+                        {
+                            setData(visi, Qt::Checked, Qt::CheckStateRole);
+                        }
+                    });
+
+            connect(hide, &QAction::triggered, hide,
+                    [this,idx]() {
+                        QModelIndex visi=index(idx.row(), IQCADItemModel::visibilityCol, idx.parent());
+                        if (flags(visi)&Qt::ItemIsUserCheckable)
+                        {
+                            setData(visi, Qt::Unchecked, Qt::CheckStateRole);
+                        }
+                    });
+        }
+        else
+        {
+            allHideShow=false;
+        }
+    }
+
+    if (allHideShow)
+    {
+        cm.addAction(show);
+        cm.addAction(hide);
+
+        cm.exec(pos);
+    }
+    else
+    {
+        delete show;
+        delete hide;
+    }
+
+}
+
+
+void IQCADItemModel::showContextMenu(
+    const QModelIndex &idx,
+    const QPoint &pos,
+    IQCADModel3DViewer* viewer )
 {
     QMenu cm;
 
     QAction *a;
 
+    auto *n=static_cast<TreeNode*>(idx.internalPointer());
+
     if (!idx.parent().isValid()) // on top level node in tree view
     {
-        if (idx.row()==CADModelSection::datum)
+        if (n==&sections[datum])
         {
             a=new QAction("Create plane...", &cm);
             connect(a, &QAction::triggered,
@@ -30,7 +91,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
             cm.addAction(a);
         }
 
-        else if (idx.row()==CADModelSection::feature)
+        else if (n==&sections[feature])
         {
             a=new QAction("Import model...", &cm);
             connect(a, &QAction::triggered,
@@ -47,9 +108,9 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
 
     {
 
-        if (idx.internalId()==CADModelSection::feature)
+        if (auto *fn=dynamic_cast<FeatureNode*>(n))
         {
-            auto feat = data(idx.siblingAtColumn(IQCADItemModel::entityCol)).value<insight::cad::FeaturePtr>();
+            auto feat = fn->value;
             auto name = QString::fromStdString(feat->featureSymbolName());
             a=new QAction(name + ": Jump to Def.", &cm);
             connect(a, &QAction::triggered,
@@ -93,63 +154,59 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
 
             if (associatedParameterSetModel_)
             {
-                auto viz=featureVisibility_.find(name.toStdString());
-                if (viz!=featureVisibility_.end())
+                if (fn->assocParamPaths.size())
                 {
-                    if (viz->second.assocParamPaths.size())
+                    QList<QAction*> editActions;
+
+                    std::function<void(IQParameter* ip)> addEditActions;
+                    addEditActions = [&](IQParameter* ip)
                     {
-                        QList<QAction*> editActions;
-
-                        std::function<void(IQParameter* ip)> addEditActions;
-                        addEditActions = [&](IQParameter* ip)
+                        if (!dynamic_cast<const insight::ParameterSet*>(ip->get()))
                         {
-                            if (!dynamic_cast<const insight::ParameterSet*>(ip->get()))
-                            {
-                                auto a=new QAction(
-                                    QString::fromStdString(ip->get()->name()),
-                                    &cm);
+                            auto a=new QAction(
+                                QString::fromStdString(ip->get()->name()),
+                                &cm);
 
-                                connect(
-                                    a, &QAction::triggered, a,
-                                    [ip,viewer]()
-                                    {
-                                        QDialog dlg;
-                                        ip->populateEditControls(&dlg, viewer);
-                                        ip->checkEnabledOrDisabled();
-                                        dlg.exec();
-                                    }
-                                    );
-                                editActions.append(a);
-                            }
-
-                            auto ch=ip->children();
-                            for (auto& cp: ch)
-                            {
-                                if (auto* pcp=dynamic_cast<IQParameter*>(cp))
+                            connect(
+                                a, &QAction::triggered, a,
+                                [ip,viewer]()
                                 {
-                                    addEditActions(pcp);
+                                    QDialog dlg;
+                                    ip->populateEditControls(&dlg, viewer);
+                                    ip->checkEnabledOrDisabled();
+                                    dlg.exec();
                                 }
-                            }
-                        };
-
-                        for (auto& ap: viz->second.assocParamPaths)
-                        {
-                            auto psm = parameterSetModel(associatedParameterSetModel_);
-                            auto pi = psm->indexOfPath(ap, 0);
-                            auto iqp = psm->parameterFromIndex(pi);
-
-                            addEditActions(iqp);
+                                );
+                            editActions.append(a);
                         }
 
-                        if (editActions.size())
+                        auto ch=ip->children();
+                        for (auto& cp: ch)
                         {
-                            cm.addSeparator();
-                            for (auto a: qAsConst(editActions))
+                            if (auto* pcp=dynamic_cast<IQParameter*>(cp))
                             {
-                                cm.addAction(a);
+                                addEditActions(pcp);
                             }
-                            cm.addSeparator();
                         }
+                    };
+
+                    for (auto& ap: fn->assocParamPaths)
+                    {
+                        auto psm = parameterSetModel(associatedParameterSetModel_);
+                        auto pi = psm->indexOfPath(ap, 0);
+                        auto iqp = psm->parameterFromIndex(pi);
+
+                        addEditActions(iqp);
+                    }
+
+                    if (editActions.size())
+                    {
+                        cm.addSeparator();
+                        for (auto a: qAsConst(editActions))
+                        {
+                            cm.addAction(a);
+                        }
+                        cm.addSeparator();
                     }
                 }
             }
@@ -273,7 +330,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
 
         cm.addSeparator();
 
-        if (idx.internalId()==CADModelSection::datum)
+        if (dynamic_cast<DatumNode*>(n))
         {
             auto datum = data(idx.siblingAtColumn(IQCADItemModel::entityCol))
                              .value<insight::cad::DatumPtr>();
@@ -299,7 +356,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
             //        Q_EMIT dataChanged(index, index, {role});
             //        return true;
         }
-        else if (idx.internalId()==CADModelSection::feature)
+        else if (dynamic_cast<FeatureNode*>(n))
         {
             a=new QAction("Shaded", &cm);
             connect(a, &QAction::triggered,
@@ -386,7 +443,7 @@ void IQCADItemModel::showContextMenu(const QModelIndex &idx, const QPoint &pos, 
                     });
             cm.addAction(a);
         }
-        else if (idx.internalId()==CADModelSection::dataset)
+        else if (dynamic_cast<DatasetNode*>(n))
         {
             a=new QAction("Set representation...", &cm);
             connect(a, &QAction::triggered, this,

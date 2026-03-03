@@ -52,13 +52,53 @@ inherits OpenFOAMAnalysis::Parameters
 addTo_makeDefault { modifyDefaults(p); }
 
 
-geometry = set {
-      walls = labeledarray "wall_%d" [ set {
-        file = path "" 	"Part of the geometry, excluding in- and outlet. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
-      } ] *1 "Pieces of geometry. All pieces together must completely resemble the perimeter of the internal channel."
-      inlet = path "" "Triangulated geometry of inlet alone. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
-      outlet = path "" "Triangulated geometry of outlet alone. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
-} "Specification of geometry"
+geometry =  labeledarray "geometry_%d" [ set {
+
+    file = cadgeometry "" "Part of the geometry. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
+
+    role = selectablesubset {{
+        wall set {
+            roughness_z0 = double 0 "Wall roughness height"
+        }
+        symmetry set {
+        }
+
+        inlet set {
+            specification = selectablesubset {{
+              vector set {
+                velocity = vector (0 0 0) ""
+              }
+              massFlow set {
+                dotm = double 0.001 "[kg/s] mass flow"
+              }
+              volumetricFlow set {
+                Q = double 0.001 "[m^3/s] volume flow"
+              }
+              pressureInlet set {
+                ambientPressure = double 0. ""
+              }
+            }} vector "type of velocity specification"
+        }
+
+        outlet set {
+           pressure = double 0. "pressure difference to ambient pressure at the outlet"
+        }
+
+        porousVolume set {
+            lref = int 1 "refinement level"
+            d = double 0. "darcy contribution" *necessary
+            f = double 0. "forchheimer contribution" *necessary
+        }
+
+    }} wall "Boundary role of the geometry"
+
+} ] *1
+"Pieces of geometry.
+ All pieces together must completely resemble the perimeter of the internal channel
+ (except for the porousVolume)."
+
+
+
 
 
 geometryscale = double 1e-3     "scaling factor to scale geometry files to meters"
@@ -77,8 +117,6 @@ mesh=set
 
 operation=set
 {
-  Q		= double 	0.001 		"[m^3/s] volumetric flux into inlet" *necessary
-
   timeTreatment = selectablesubset {{
     steady set {}
     unsteady set {
@@ -100,14 +138,12 @@ operation=set
      }
     }} no "Whether to include buoyancy effects"
 
-    inletTemperature = double 300 "[K] Temperature at the inlet"
-
     initialInternalTemperature = double 300 "[K] Temperature in the domain at simulation start"
 
-    wallBCs = labeledarray keysFrom "../../../geometry/walls" [ selectablesubset {{
+    BCs = labeledarray keysFrom "../../../geometry" [ selectablesubset {{
      adiabatic set {}
      fixedTemperature set {
-      wallTemperature = double 300 "[K] Fixed temperature of the walls"
+      temperature = double 300 "[K] Fixed temperature of the wall or inlet"
      }
     }} adiabatic "" ] *0 ""
 
@@ -144,8 +180,8 @@ fluid=set
 
     int nx_, ny_, nz_;
 
-    cad::FeaturePtr inlet_, outlet_;
-    std::map<std::string, cad::FeaturePtr> walls_;
+    // cad::FeaturePtr inlet_, outlet_;
+    // std::map<std::string, cad::FeaturePtr> walls_;
 
     boost::filesystem::path stldir_;
     std::string fn_inlet_, fn_outlet_;
@@ -166,6 +202,7 @@ public:
     void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
     void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
     void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
+    void applyCustomPreprocessing(OpenFOAMCase& cm, ProgressDisplayer& progress) override;
     
     ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& parentActionProgress) override;
 

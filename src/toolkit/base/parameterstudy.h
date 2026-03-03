@@ -100,7 +100,16 @@ public:
   
   ResultSetPtr operator()(ProgressDisplayer& displayer = consoleProgressDisplayer) override;
 
-  static std::string category() { return BaseAnalysis::category(); }
+  static insight::OperatingSystemSet compatibleOperatingSystems()
+  {
+      return BaseAnalysis::compatibleOperatingSystems();
+  }
+
+  static std::string category()
+  {
+      return BaseAnalysis::category();
+  }
+
   static AnalysisDescription description()
   {
       auto basedesc=BaseAnalysis::description();

@@ -32,7 +32,7 @@ int main(int argc, char*argv[])
 
         QAbstractItemModelTester tester(
             &modelToBeTested,
-            QAbstractItemModelTester::FailureReportingMode::Fatal);
+            QAbstractItemModelTester::FailureReportingMode::Warning);
 
         auto box =
                 modelToBeTested

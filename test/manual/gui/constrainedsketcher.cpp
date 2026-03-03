@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QToolBar>
 #include <memory>
+#include <sstream>
 
 #include "constrainedsketch.h"
 #include "insightcaeapplication.h"
@@ -43,6 +44,8 @@ int main(int argc, char *argv[])
             m.model()->lookupDatum("XY"), *insight::cad::noParametersDelegate
         );
 
+
+
     class PD : public insight::cad::ConstrainedSketchParametersDelegate
     {
     public:
@@ -55,15 +58,53 @@ int main(int argc, char *argv[])
         }
     };
 
+    auto pd = std::make_shared<PD>();
+
+    {
+        std::istringstream is(
+            "layer standard\n"
+            "SketchPoint( 1, 195.677, 37.3457, layer standard),\n"
+            "FixedPoint( 0, 1, layer standard),\n"
+            "SketchPoint( 2, 215.105, 37.2737, layer standard),\n"
+            "FixedPoint( 3, 2, layer standard),\n"
+            "SketchPoint( 4, 224.137, 37.193, layer standard),\n"
+            "FixedPoint( 5, 4, layer standard)");
+        sketch->readFromStream(is, *pd);
+    }
+
     QObject::connect(ska, &QAction::triggered, ska,
         [&]()
         {
             v->editSketch(
                 *sketch,
-                std::make_shared<PD>(),
+                pd,
                 defaultGUIConstrainedSketchPresentationDelegate,
-                [](insight::cad::ConstrainedSketchPtr editedSk){
+                [&](insight::cad::ConstrainedSketchPtr editedSk){
                     // do nothing, just discard
+                    // clone once
+                    string scr;
+                    for (int i=0; i<3; ++i)
+                    {
+                        std::cout<<"round "<<i<<std::endl;
+
+                        std::ostringstream so;
+                        editedSk->generateScript(so);
+                        scr=so.str();
+
+                        std::cout<<" skript: \n\"\"\"\n"<<scr<<"\"\"\""<<std::endl;
+
+                        editedSk.reset();
+
+                        editedSk =
+                            insight::cad::ConstrainedSketch::create(
+                                m.model()->lookupDatum("XY"),
+                            *insight::cad::noParametersDelegate
+                                );
+                        std::istringstream is(scr);
+                        editedSk->readFromStream(
+                            is, *insight::cad::noParametersDelegate
+                            );
+                    }
                 }
             );
         }

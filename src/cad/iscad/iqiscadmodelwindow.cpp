@@ -19,7 +19,7 @@
 
 IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
 : QWidget(parent),
-  model_(new IQCADItemModel(insight::cad::ModelPtr(), this))
+  model_(new IQCADItemModel(insight::cad::ModelPtr(), this, true))
 {
     QHBoxLayout* layout = new QHBoxLayout(this);
     QSplitter *splitterHoriz=new QSplitter(Qt::Horizontal);
@@ -126,17 +126,27 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
 
 
     modelEdit_->setModel(model_);
-    modelTree_->setModel(model_);
     viewer_->setModel(model_);
     viewer_->connectNotepad(notepad_);
 
+    modelTree_->setModel(model_);
+    modelTree_->setSelectionMode(QTreeView::ExtendedSelection);
     modelTree_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(
                 modelTree_, &QTreeView::customContextMenuRequested, model_,
                 [this](const QPoint& pos)
     {
-        auto idx = modelTree_->indexAt(pos);
-        model_->showContextMenu(idx, modelTree_->mapToGlobal(pos), viewer_);
+        auto indices = modelTree_->selectionModel()->selectedIndexes();
+        if (indices.size()>1)
+        {
+            model_->showMultiSelectionContextMenu(
+                indices, modelTree_->mapToGlobal(pos), viewer_);
+        }
+        else
+        {
+            auto idx = modelTree_->indexAt(pos);
+            model_->showContextMenu(idx, modelTree_->mapToGlobal(pos), viewer_);
+        }
     }
     );
 
@@ -160,38 +170,8 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
     connect( modelEdit_, &IQISCADModelScriptEdit::unfocus,
             viewer_, &Model3DViewer::undoExposeItem );
 
-#warning reimplement!
-//    connect(modeltree_, &QModelTree::showItem,
-//            viewer_, &QoccViewWidget::onShow);
-//    connect(modeltree_, &QModelTree::hideItem,
-//            viewer_, &QoccViewWidget::onHide);
-//    connect(modeltree_, &QModelTree::setDisplayMode,
-//            viewer_, &QoccViewWidget::onSetDisplayMode);
-//    connect(modeltree_, &QModelTree::setColor,
-//            viewer_, &QoccViewWidget::onSetColor);
-//    connect(modeltree_, &QModelTree::setItemResolution,
-//            viewer_, &QoccViewWidget::onSetResolution);
-
-//    connect(modeltree_, &QModelTree::focus,
-//            viewer_, &QoccViewWidget::onFocus);
-//    connect(modeltree_, &QModelTree::unfocus,
-//            viewer_, &QoccViewWidget::onUnfocus);
-//    connect(model_, &ISCADModel::focus,
-//            viewer_, &QoccViewWidget::onFocus);
-//    connect(model_, &ISCADModel::unfocus,
-//            viewer_, &QoccViewWidget::onUnfocus);
-
-//    connect(modeltree_, &QModelTree::insertIntoNotebook,
-//            this, &IQISCADModelEditor::onInsertNotebookText);
-
     connect(modelEdit_, &IQISCADModelScriptEdit::updateTitle,
             this, &IQISCADModelWindow::onUpdateTitle);
-
-//    connect(viewer_, &QoccViewWidget::addEvaluationToModel,
-//            modeltree_, &QModelTree::onAddEvaluation);
-
-//    connect(viewer_, &QoccViewWidget::insertNotebookText,
-    //            this, &IQISCADModelEditor::onInsertNotebookText);
 }
 
 

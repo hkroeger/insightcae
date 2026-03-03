@@ -14,7 +14,7 @@
 #include "Pstream.H"
 #include "PstreamReduceOps.H"
 
-#include "uniof.h"
+#include "uniof_functionobject.h"
 
 namespace Foam
 {

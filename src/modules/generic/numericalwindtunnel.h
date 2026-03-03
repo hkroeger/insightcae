@@ -67,12 +67,8 @@ geometry = set {
  }
 
  verticalPlacement = selectablesubset {{
-  onFloor set {
-    wallIsMoving = bool true "if set, the lower wall moves with the same speed as the inflow."
-  }
-  onCeiling set {
-    wallIsMoving = bool true "if set, the upper wall moves with the same speed as the inflow."
-  }
+  onFloor set {}
+  onCeiling set {}
   centered set {}
   atHeight set {
     height = selectablesubset {{
@@ -144,10 +140,34 @@ mesh = set {
 
 operation = set {
 
- v              = double 1.0 "[m/s] incident velocity" *necessary
+ v              = double 1.0 "[m/s] incident velocity (or bulk velocity in case of cyclic BC)" *necessary
+
+ inflow = selectablesubset {{
+
+  homogeneousInflow set {}
+
+  cyclicBC set {}
+
+ }} homogeneousInflow ""
+
+
+ boundaryConditions = set {
+
+   topWall = selection (fixedTopWall movingTopWall topSymmetryPlane) fixedTopWall
+"boundary type of the upper end of the domain (ceiling)"
+
+   bottomWall = selection (fixedBottomWall movingBottomWall bottomSymmetryPlane) movingBottomWall
+"boundary type of the lower end of the domain (floor)"
+
+   sides = selection (fixedSideWalls sideSymmetryPlane sideOutlet) fixedSideWalls
+"boundary type of the lateral ends of the domain"
+
+ }
 
 } "Definition of the operation point under consideration"
       
+
+
 
 
 fluid = set {
@@ -158,10 +178,21 @@ fluid = set {
  
 } "Parameters of the fluid"
 
+
+
+
+
 eval = set
 {
     referenceAreaProjectionDirection = selection (frontal lateral vertical) frontal
 "A projected area of the geometry is used to calculate force coefficients. This selects the direction of the projection."
+
+    allForces = set {
+        includeTopWall = bool false "include upper wall (if not a symmetry plane) into to total force figure"
+        includeBottomWall = bool false "include lower wall (if not a symmetry plane) into to total force figure"
+    }
+
+    evaluateMeanResistance = bool false "if set, the mean wall shear stress will be evaluated"
 } "Parameters for evaluation after solver run"
 
 
@@ -182,9 +213,11 @@ eval = set
     gp_Trsf cad_to_cfd_;
     double Lupstream_;
     double Ldownstream_;
-    double Lup_, Ldown_;
+    double Hdom_, Lup_, Ldown_;
     double Laside_;
     double Lref_, l_, w_, hup_, dlo_;
+
+    arma::mat PiM_;
 
     const std::string FOname_allObjects;
 

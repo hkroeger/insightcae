@@ -23,6 +23,7 @@
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/tools.h"
 #include "base/translations.h"
 
 #include "openfoam/openfoamcase.h"
@@ -669,6 +670,8 @@ void runPotentialFoam
   if (cm.OFversion()<170) solkey="SIMPLE";
   OFDictData::dict& potentialFlow=fvSolution.subDict(solkey);
   potentialFlow["nNonOrthogonalCorrectors"]=3;
+  potentialFlow["PhiRefCell"]=0;
+  potentialFlow["PhiRefValue"]=0.;
   
   OFDictData::dictFile fvSchemes;
   fvSchemes.subDict("ddtSchemes");
@@ -2763,17 +2766,19 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
 
 
   directory_iterator end_itr; // default construction yields past-the-end
-  const boost::regex filter( "processor[0-9]+" );
-  for ( directory_iterator i( location ); i != end_itr; i++ )
   {
-      if ( is_directory(i->status()) )
+      const boost::regex filter( "processor[0-9]+" );
+      for ( directory_iterator i( location ); i != end_itr; i++ )
       {
-          std::string fn=i->path().filename().string();
-          boost::smatch what;
-          if ( boost::regex_match( i->path().filename().string(), what, filter ) )
-            {
-              procDirs_.insert(i->path());
-            }
+          if ( is_directory(i->status()) )
+          {
+              std::string fn=i->path().filename().string();
+              boost::smatch what;
+              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+              {
+                  procDirs_.insert(i->path());
+              }
+          }
       }
   }
 
@@ -2785,6 +2790,22 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
       for (const auto& ptd: ptds)
       {
           procTimeDirs_.insert(ptd.second.filename());
+      }
+  }
+
+  {
+      const boost::regex filter( "^subcase__.*" );
+      for ( directory_iterator i( location ); i != end_itr; i++ )
+      {
+          if ( is_directory(i->status()) )
+          {
+              std::string fn=i->path().filename().string();
+              boost::smatch what;
+              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+              {
+                  subCaseDirs_.insert(i->path());
+              }
+          }
       }
   }
 
@@ -2854,7 +2875,8 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
     bool cleanTimes,
     bool cleanPost,
     bool cleanSys,
-    bool cleanInconsistentParallelTimes
+    bool cleanInconsistentParallelTimes,
+    bool cleanSubCaseDirs
 )
 {
   std::set<boost::filesystem::path> all_cands;
@@ -2918,6 +2940,14 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
       }
   }
 
+  if (cleanSubCaseDirs)
+  {
+      std::copy(
+          subCaseDirs_.begin(), subCaseDirs_.end(),
+          std::inserter(all_cands, all_cands.begin())
+          );
+  }
+
   return all_cands;
 }
 
@@ -2956,11 +2986,16 @@ void OpenFOAMCaseDirs::cleanCase
     bool cleanTimes,
     bool cleanPost,
     bool cleanSys,
-    bool cleanInconsistentParallelTimes
+    bool cleanInconsistentParallelTimes,
+    bool cleanSubCaseDirs
 )
 {
 
-  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys, cleanInconsistentParallelTimes);
+  auto cands = caseFilesAndDirs(
+        td,
+        cleanProc, cleanTimes, cleanPost, cleanSys,
+        cleanInconsistentParallelTimes,
+        cleanSubCaseDirs );
 
   for (const auto& c: cands)
   {
@@ -3205,7 +3240,7 @@ decompositionState::decompositionState(const boost::filesystem::path& casedir)
 
 
 BoundingBox::BoundingBox()
-  : arma::mat(arma::zeros(3,2))
+    : arma::mat(initializedBndBox())
 {
 }
 

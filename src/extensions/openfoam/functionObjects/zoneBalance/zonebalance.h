@@ -6,8 +6,7 @@
 #include "fvMesh.H"
 #include "OFstream.H"
 
-#include "uniof.h"
-#include "uniof_tools.h"
+#include "uniof_functionobject.h"
 #include "boost/variant.hpp"
 
 namespace Foam {

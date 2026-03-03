@@ -22,12 +22,12 @@ public:
 
     void recreateVisualizationElements() override
     {
-        for (auto& w: sp().walls_)
+        for (auto& w: p().geometry)
         {
-            addFeature("walls/"+w.first, w.second, {insight::Surface, vec3(QColorConstants::Gray)});
+            addFeature("walls/"+w.first, w.second.file->geometry(), {insight::Surface, vec3(QColorConstants::Gray)});
         }
-        addFeature("inlet", sp().inlet_, {insight::Surface, vec3(QColorConstants::Blue)});
-        addFeature("outlet", sp().outlet_, {insight::Surface, vec3(QColorConstants::Green)});
+        // addFeature("inlet", sp().inlet_, {insight::Surface, vec3(QColorConstants::Blue)});
+        // addFeature("outlet", sp().outlet_, {insight::Surface, vec3(QColorConstants::Green)});
 
         addDatum(
             "PiM",

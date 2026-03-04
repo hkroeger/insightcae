@@ -22,9 +22,59 @@ public:
 
     void recreateVisualizationElements() override
     {
-        for (auto& w: p().geometry)
+        for (auto& g: p().geometry)
         {
-            addFeature("walls/"+w.first, w.second.file->geometry(), {insight::Surface, vec3(QColorConstants::Gray)});
+            /****
+         * inlet
+         ****/
+            if (auto *in =boost::get<Parameters::geometry_default_type::role_inlet_type>(
+                    &g.second.role))
+            {
+                addFeature("inlets/"+g.first, g.second.file->geometry(),
+                           {insight::Surface, vec3(QColorConstants::Red), {}, 0.7});
+            }
+            /*****
+         * outlet
+         *****/
+            else if (auto *out =boost::get<Parameters::geometry_default_type::role_outlet_type>(
+                         &g.second.role))
+            {
+                addFeature("outlets/"+g.first, g.second.file->geometry(),
+                           {insight::Surface, vec3(QColorConstants::DarkYellow), {}, 0.7});
+            }
+            /*****
+         * wall
+         *****/
+            else if (auto *wall =boost::get<Parameters::geometry_default_type::role_wall_type>(
+                         &g.second.role))
+            {
+                addFeature("walls/"+g.first, g.second.file->geometry(),
+                           {insight::Surface, vec3(QColorConstants::Gray), {}, 0.9});
+            }
+            /*****
+         * symmetry
+         *****/
+            else if (auto *symm =boost::get<Parameters::geometry_default_type::role_symmetry_type>(
+                         &g.second.role))
+            {
+                addFeature("symmetryPlanes/"+g.first, g.second.file->geometry(),
+                           {insight::Surface, vec3(QColorConstants::Yellow), {}, 0.9});
+            }
+            /*****
+         * porous zone
+         *****/
+            else if (auto *vol = boost::get<Parameters::geometry_default_type::role_porousVolume_type>(
+                         &g.second.role))
+            {
+                addFeature("porousZones/"+g.first, g.second.file->geometry(),
+                           {insight::Surface, vec3(QColorConstants::Blue), {}, 0.5});
+            }
+            else if (auto *ref = boost::get<Parameters::geometry_default_type::role_refinementOnly_type>(
+                    &g.second.role))
+            {
+                addFeature("refinements/"+g.first, g.second.file->geometry(),
+                           {insight::Surface, vec3(QColorConstants::LightGray), {}, 0.3});
+            }
         }
         // addFeature("inlet", sp().inlet_, {insight::Surface, vec3(QColorConstants::Blue)});
         // addFeature("outlet", sp().outlet_, {insight::Surface, vec3(QColorConstants::Green)});

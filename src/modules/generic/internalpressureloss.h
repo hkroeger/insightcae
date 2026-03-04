@@ -56,10 +56,20 @@ geometry =  labeledarray "geometry_%d" [ set {
 
     file = cadgeometry "" "Part of the geometry. May be an STL file or CAD exchange format (STEP or IGES)." *necessary
 
+    lm = int -1 "Minimum refinement level. If value is negative, the global minimum refinement level is used."
+    lx = int -1 "Maximum refinement level. If value is negative, the global maximum refinement level is used."
+
     role = selectablesubset {{
+
+        refinementOnly set {
+            mode = selection ( inside outside distance ) inside "Refinement mode"
+            dist = double 1e15 "Maximum distance for refinement. Set very large, if mode is inside." *necessary
+        }
+
         wall set {
             roughness_z0 = double 0 "Wall roughness height"
         }
+
         symmetry set {
         }
 
@@ -85,7 +95,6 @@ geometry =  labeledarray "geometry_%d" [ set {
         }
 
         porousVolume set {
-            lref = int 1 "refinement level"
             d = double 0. "darcy contribution" *necessary
             f = double 0. "forchheimer contribution" *necessary
         }

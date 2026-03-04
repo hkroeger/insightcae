@@ -179,8 +179,10 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
 
     for (const auto&w: p().geometry)
     {
+        int minLevel = w.second.lm>=0?w.second.lm:p().mesh.minLevel;
+        int maxLevel = w.second.lx>=0?w.second.lx:p().mesh.maxLevel;
 
-        if (auto *vol = boost::get<Parameters::geometry_default_type::role_porousVolume_type>(
+        if (auto *ref = boost::get<Parameters::geometry_default_type::role_refinementOnly_type>(
                 &w.second.role))
         {
             shm_cfg.features.push_back(
@@ -188,7 +190,23 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
                     snappyHexMeshFeats::RefinementGeometry::Parameters()
                         .set_scalefactor(p().geometryscale)
                         .set_geometry(w.second.file)
-                        .set_level(vol->lref)
+                        .set_dist(ref->dist)
+                        .set_mode(
+                            static_cast<snappyHexMeshFeats::RefinementGeometry::Parameters::mode_type>(
+                                ref->mode.value))
+                        .set_level(maxLevel)
+                        .set_name(w.first)
+                    ));
+        }
+        else if (auto *vol = boost::get<Parameters::geometry_default_type::role_porousVolume_type>(
+                &w.second.role))
+        {
+            shm_cfg.features.push_back(
+                std::make_shared<snappyHexMeshFeats::RefinementGeometry>(
+                    snappyHexMeshFeats::RefinementGeometry::Parameters()
+                        .set_scalefactor(p().geometryscale)
+                        .set_geometry(w.second.file)
+                        .set_level(maxLevel)
                         .set_name(w.first)
                     ));
         }
@@ -200,7 +218,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
                 snappyHexMeshFeats::FeaturePtr(
                     new snappyHexMeshFeats::ExplicitFeatureCurve(
                         snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
-                            .set_level(p().mesh.maxLevel)
+                            .set_level(maxLevel)
                             .set_scalefactor(p().geometryscale)
                             .set_geometry(make_geometryFile(feat))
                             .set_name(w.first+"_features")
@@ -216,9 +234,9 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm, ProgressDisplay
                 snappyHexMeshFeats::FeaturePtr(
                     new snappyHexMeshFeats::Geometry(
                         snappyHexMeshFeats::Geometry::Parameters()
-                            .set_minLevel(p().mesh.minLevel)
-                            .set_maxLevel(p().mesh.maxLevel)
-                           .set_nLayers(nLayers)
+                            .set_minLevel(minLevel)
+                            .set_maxLevel(maxLevel)
+                            .set_nLayers(nLayers)
                             .set_scalefactor(p().geometryscale)
                            .set_geometry(w.second.file)
                            .set_name(w.first)
@@ -576,8 +594,6 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
             cm.insert(new porousZoneOption(cm, pzp));
         }
-        else
-            throw insight::UnhandledSelection();
     }
 
 

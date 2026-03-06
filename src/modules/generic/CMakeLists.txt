@@ -9,6 +9,7 @@ add_library(genericmodules SHARED
     internalpressureloss.cpp internalpressureloss.h
     internalpressureloss_supplementedinputdata.cpp
     numericalwindtunnel_supplementedinputdata.cpp
+    internalpressureloss_eval.cpp
 )
 target_add_PDL(genericmodules)
 target_link_libraries(genericmodules toolkit toolkit_cad)

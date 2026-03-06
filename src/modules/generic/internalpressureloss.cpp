@@ -19,6 +19,7 @@
  */
 #include "internalpressureloss.h"
 
+#include "base/cppextensions.h"
 #include "base/exception.h"
 #include "base/factory.h"
 #include "base/units.h"
@@ -32,6 +33,7 @@
 #include "openfoam/caseelements/boundaryconditions/exptdatainletbc.h"
 #include "openfoam/caseelements/boundaryconditions/suctioninletbc.h"
 #include "openfoam/caseelements/boundaryconditions/velocityinletbc.h"
+#include "openfoam/caseelements/evaluation/calculatetotalpressure.h"
 #include "openfoam/caseelements/basic/porouszone.h"
 #include "openfoam/caseelements/basic/limitquantities.h"
 #include "openfoam/ofes.h"
@@ -78,6 +80,7 @@
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <tuple>
 
 using namespace std;
 using namespace boost;
@@ -425,6 +428,12 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
         cm.insert(new singlePhaseTransportProperties(cm, spp));
     }
 
+    if (!boost::filesystem::exists(executionPath()/"system"/"controlDict"))
+    {
+        // ensure there is a controlDict for patchArea later
+        cm.createOnDisk(executionPath());
+    }
+
 
     /***********************************************************************************************
      * boundary conditions
@@ -598,16 +607,54 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
 
     {
+        calculateTotalPressure::Parameters ctp;
+        ctp
+            .set_pName("p")
+            .set_UName("U")
+            .set_rho(calculateTotalPressure::Parameters::rho_rhoInf_type
+                     {p().fluid.rho}
+                     )
+            .set_name("calcTotalPressure")
+            ;
+
+        if (num->isCompressible())
+            ctp.set_rho(calculateTotalPressure::Parameters::rho_field_type
+                     {"rho"}
+                     );
+        else
+            ctp.set_rho(calculateTotalPressure::Parameters::rho_rhoInf_type
+                     {p().fluid.rho}
+                      );
+
+        cm.insert(new calculateTotalPressure( cm, ctp ));
     }
-        
-    cm.insert(new surfaceIntegrate(cm, surfaceIntegrate::Parameters()
-                 .set_domain( surfaceIntegrate::Parameters::domain_patch_type( "inlet" ) )
-                 .set_fields( { "p" } )
-                 .set_operation( surfaceIntegrate::Parameters::areaAverage )
-                 .set_outputControl("timeStep")
-                 .set_outputInterval(1)
-                 .set_name("inlet_pressure")
-    ));
+
+    for (auto& g: p().geometry)
+    {
+
+        /****
+         * inlet or outlet
+         ****/
+        if (
+            (boost::get<Parameters::geometry_default_type::role_inlet_type>(
+                &g.second.role))
+            ||
+            (boost::get<Parameters::geometry_default_type::role_outlet_type>(
+                &g.second.role))
+            )
+        {
+            cm.insert(new surfaceIntegrate(
+                cm, surfaceIntegrate::Parameters()
+                    .set_domain( surfaceIntegrate::Parameters::domain_patch_type( g.first ) )
+                    .set_fields( { "pTotal" } )
+                    .set_operation( surfaceIntegrate::Parameters::areaAverage )
+                    .set_outputControl("timeStep")
+                    .set_outputInterval(1)
+                    .set_name(g.first+"_pressure")
+                ));
+        }
+    }
+
 
     if (const auto* thermsolve =
         boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
@@ -653,8 +700,6 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 
 ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& pp)
 {
-    auto&p=this->p();
-
     OFDictData::dict boundaryDict;
     cm.parseBoundaryDict(executionPath(), boundaryDict);
     auto& numerics = cm.getUniqueElement<FVNumerics>();
@@ -663,38 +708,130 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
     auto ap = pp.forkNewAction(8, "Evaluation");
 
+    auto findInOutPatches = [&]()
+    {
+        std::set<std::string> inletPatches;
+        std::set<std::string> outletPatches;
+        for (auto& g: p().geometry)
+        {
+            /****
+             * inlet or outlet
+             ****/
+            if (auto *in=boost::get<Parameters::geometry_default_type::role_inlet_type>(
+                    &g.second.role))
+            {
+
+                if (auto *mf =
+                    boost::get<Parameters::geometry_default_type::role_inlet_type::specification_massFlow_type>(
+                        &in->specification))
+                {
+                    if (mf->dotm>0.)
+                        inletPatches.insert(g.first);
+                    else
+                        outletPatches.insert(g.first);
+                }
+                else if (auto *vf =
+                         boost::get<Parameters::geometry_default_type::role_inlet_type::specification_volumetricFlow_type>(
+                             &in->specification))
+                {
+                    if (vf->Q>0.)
+                        inletPatches.insert(g.first);
+                    else
+                        outletPatches.insert(g.first);
+                }
+                else
+                    inletPatches.insert(g.first);
+            }
+            else if (auto *out=boost::get<Parameters::geometry_default_type::role_outlet_type>(
+                         &g.second.role))
+            {
+                outletPatches.insert(g.first);
+            }
+        }
+        return std::pair{inletPatches, outletPatches};
+    };
+
     ap.message("Computing average surface pressure...");
-    arma::mat p_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "inlet_pressure");
+    {
+        std::map<std::string, double> inletPatches, outletPatches;
+
+        auto in_out=findInOutPatches();
+        for (auto& g: p().geometry)
+        {
+            decltype(inletPatches)* pl{nullptr};
+
+            /****
+             * inlet or outlet
+             ****/
+
+            if (in_out.first.count(g.first))
+                pl=&inletPatches;
+            else if (in_out.second.count(g.first))
+                pl=&outletPatches;
+            // else wall or so
+
+
+            if (pl) // if inlet or outlet
+            {
+                auto sec = std::make_unique<ResultSection>("Total pressure on boundary "+g.first);
+
+                arma::mat ptot_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), g.first+"_pressure");
+                arma::mat ptotsig = ptot_vs_t.rows(ptot_vs_t.n_rows/3, ptot_vs_t.n_rows-1).col(1);
+
+                addPlot
+                    (
+                        *sec, executionPath(), "chartPressureDifference",
+                        "Iteration", "$p_{total}=p+\\frac 1 2 \\rho |\\vec u|^2$",
+                        {
+                            PlotCurve(ptot_vs_t.col(0), ptot_vs_t.col(1), "ptotmean_vs_iter", "w l not")
+                        },
+                        "Plot of total pressure on boundary "+g.first,
+                        str ( format ( "set yrange [%g:%g]" )
+                            % ( min ( 0.0, 1.1*ptotsig.min() ) )
+                            % ( 1.1*ptotsig.max() ) )
+                        );
+
+                double finalValue=ptot_vs_t(ptot_vs_t.n_rows-1, 1);
+
+
+
+                (*pl)[g.first]=finalValue;
+
+                sec->insert<ScalarResult>(
+                    "totalPressure",
+                    finalValue, "area-averaged total pressure on boundary "+g.first, "", "Pa");
+
+                results->insert("totalPressureBoundary"+g.first, std::move(sec));
+            }
+        }
+
+
+        for (auto& in: inletPatches)
+        {
+            for (auto& out: outletPatches)
+            {
+                if (in.first!=out.first)
+                {
+                    double delta_p = in.second - out.second;
+
+                    results->insert<ScalarResult>(
+                        "deltaP_"+in.first+"_"+out.first,
+                        delta_p,
+                        "Pressure difference between inlet "+in.first+" and outlet "+out.first,
+                        "", "Pa");
+                }
+            }
+        }
+
+    }
   ++ap;
 
-    arma::mat psig = p_vs_t.rows(p_vs_t.n_rows/3, p_vs_t.n_rows-1).col(1);
 
-    ap.message("Producing convergence history plot...");
-    addPlot
-    (
-      *results, executionPath(), "chartPressureDifference",
-      "Iteration", numerics.isCompressible()?"$p$":"$p/\\rho$",
-      {
-         PlotCurve(p_vs_t.col(0), p_vs_t.col(1), "pmean_vs_iter", "w l not")
-      },
-      "Plot of pressure difference between inlet and outlet vs. iterations",
-      str ( format ( "set yrange [%g:%g]" )
-            % ( min ( 0.0, 1.1*psig.min() ) )
-            % ( 1.1*psig.max() ) )
-    );
-  ++ap;
-
-    double delta_p=
-      p_vs_t(p_vs_t.n_rows-1,1) * (numerics.isCompressible()? 1.0 : double(p.fluid.rho))
-       -
-      sp().pAmbient_;
-
-    results->insert<ScalarResult>("delta_p", delta_p, "Pressure difference", "", "Pa");
 
 
     if (const auto* thermsolve =
         boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
-            &p.operation.thermalTreatment))
+          &p().operation.thermalTreatment))
     {
         ap.message("Computing average outlet temperature...");
         arma::mat T_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "outlet_temperature");
@@ -726,8 +863,9 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       // A renderer and render window
       OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
 
-      auto inlet = scene.patchesFilter("inlet");
-      auto outlet = scene.patchesFilter("outlet");
+      auto in_out=findInOutPatches();
+      auto inlet = scene.patchesFilter("("+boost::join(in_out.first, "|")+")");
+      auto outlet = scene.patchesFilter("("+boost::join(in_out.second, "|")+")");
       std::vector<std::string> wallPatchNames;
       for (const auto&p: boundaryDict)
       {
@@ -754,8 +892,8 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
       FieldSelection U_field("U", FieldSupport::OnPoint, -1);
       FieldColor U_fc(p_field, createColorMap(), calcRange(p_field, {}, {internal}));
 
-      arma::mat L=p.geometryscale*sp().L_;
-      double Lmax=p.geometryscale*arma::as_scalar(arma::max(sp().L_));
+      arma::mat L=p().geometryscale*sp().L_;
+      double Lmax=p().geometryscale*arma::as_scalar(arma::max(sp().L_));
 
       CoordinateSystem objCS(
           ( bb.col(1) + bb.col(0) )*0.5,
@@ -930,7 +1068,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
       if (const auto* thermsolve =
           boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
-              &p.operation.thermalTreatment))
+              &p().operation.thermalTreatment))
       {
 
 

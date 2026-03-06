@@ -113,7 +113,7 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
             defp->replace(var_params[j], std::move(dp));
         }
 
-        base_case_ = std::dynamic_unique_ptr_cast<OpenFOAMAnalysis>(
+        base_case_ = std::dynamic_unique_ptr_cast<BaseAnalysis>(
             Analysis::analyses()(BaseAnalysis::typeName,
                 Analysis::supplementedInputDatas()(BaseAnalysis::typeName,
                     ParameterSetInput(*defp), exep, displayer)) );
@@ -135,12 +135,15 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(
         }
     }
 
-    path old_lp=ps.template get<PathParameter>("mesh/linkmesh").expandedFilePath();
+    auto &linkmesh = ps.template get<PathParameter>("mesh/linkmesh");
+    path old_lp=linkmesh.filePath();
     if (!subcasesRemesh_)
-        ps.template get<PathParameter>("mesh/linkmesh").setFilePath(
-            boost::filesystem::absolute(this->executionPath()) );
+    {
+        linkmesh.setFilePath(
+            boost::filesystem::absolute(this->executionPath())/"." );
+    }
     this->setupQueue();
-    ps.template get<PathParameter>("mesh/linkmesh").setFilePath( old_lp );
+    linkmesh.setFilePath( old_lp );
 
     this->processQueue(displayer);
     ResultSetPtr results = this->evaluateRuns();

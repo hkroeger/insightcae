@@ -121,6 +121,21 @@ const std::string& PlotCurve::plaintextlabel() const
     return plaintextlabel_;
 }
 
+std::pair<double, double>
+PlotCurve::significantMinMax(double lastPartFraction) const
+{
+    arma::mat ysig = xy_.rows(xy_.n_rows/3, xy_.n_rows-1).col(1);
+    double mi=ysig.min();
+    double ma=ysig.max();
+
+    if (mi<0.) mi*=1.1; else mi*=0.9;
+    if (ma>0.) ma*=1.1; else ma*=0.9;
+
+    std::set<double> lims{ mi, 0., ma };
+
+    return { *lims.begin(), *(--lims.end()) };
+}
+
 bool PlotCurve::operator==(const PlotCurve o) const
 {
     if (plotcmd_!=o.plotcmd_)

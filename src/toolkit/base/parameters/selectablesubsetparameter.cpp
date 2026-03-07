@@ -117,9 +117,15 @@ void SelectableSubsetParameter::setSelection(const key_type &nk)
         //     beforeChildRemoval(nAfter, nBefore-1);
         // }
 
-        beforeChildRemoval(0, nBefore-1);
+        if (nBefore>0)
+        {
+            beforeChildRemoval(0, nBefore-1);
+        }
         selection_=std::string();
-        childRemovalDone(0, nBefore-1);
+        if (nBefore>0)
+        {
+            childRemovalDone(0, nBefore-1);
+        }
 
         if (nAfter>0)
         {

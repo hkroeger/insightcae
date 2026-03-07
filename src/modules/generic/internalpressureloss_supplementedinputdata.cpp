@@ -32,24 +32,12 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
         auto file = w.second.file;
         if (file->isValid())
         {
-            // cad::FeaturePtr f = loadgeom(file->accessibleFilePath());
-            bb_.extend(file->geometry()->modelBndBox());
+            auto tbb=file->geometry()->modelBndBox();
+            std::cout<<w.first<<": BB="<<tbb<<std::endl;
+            bb_.extend(tbb);
         }
     }
 
-    // if (p.geometry.inlet->isValid())
-    // {
-    //     cad::FeaturePtr f = loadgeom(p.geometry.inlet->accessibleFilePath());
-    //     inlet_=f;
-    //     bb_.extend(f->modelBndBox());
-    // }
-
-    // if (p.geometry.outlet->isValid())
-    // {
-    //     cad::FeaturePtr f = loadgeom(p.geometry.outlet->accessibleFilePath());
-    //     outlet_=f;
-    //     bb_.extend(f->modelBndBox());
-    // }
 
 
     L_=bb_.col(1)-bb_.col(0);

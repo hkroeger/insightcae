@@ -137,20 +137,6 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
 {
     std::ostringstream n; n<<"subcase";
 
-    // auto newp = templ.cloneAs<ParameterSet>();
-    // for (int j=0; j<var_params.size(); j++)
-    // {
-    //   // Replace RangeParameter by actual single value
-    //   const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(var_params[j]);
-    //   auto p=rp.toDoubleParameter(i[j]);
-
-    //   std::string nameMod(var_params[j]);
-    //   boost::replace_all(nameMod, "/", "_");
-    //   n<<"__"<<nameMod<<"="<<(*p)();
-
-    //   newp->replace(var_params[j], std::move(p));
-    // }
-
     auto newp=std::make_unique<AnalysisParameterSet>(BaseAnalysis::typeName);
 
     newp->copyMatching(templ);
@@ -178,6 +164,14 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
     // Might be required by supplementedInputData constructor
     if (!boost::filesystem::exists(ep))
         boost::filesystem::create_directory(ep);
+
+    newp->resolveRelativePaths(ep);
+
+    std::cout<<std::string(80, '=')+'\n';
+    std::cout<<"Applied Parameters for instance "<<n.str()<<std::endl;
+    std::cout<<*newp;
+    std::cout<<std::string(80, '=')+"\n\n";
+    std::cout<<std::flush;
 
     // create analysis object
     auto newinst =

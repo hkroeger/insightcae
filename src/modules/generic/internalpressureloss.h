@@ -208,6 +208,9 @@ public:
     InternalPressureLoss(
         const std::shared_ptr<supplementedInputDataBase>& sp );
 
+    std::pair<std::set<std::string>, std::set<std::string> >
+    findInOutPatches() const;
+
     void calcDerivedInputData(ProgressDisplayer& parentActionProgress) override;
     void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
     void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;

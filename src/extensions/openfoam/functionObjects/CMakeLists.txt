@@ -1,4 +1,4 @@
-
+add_subdirectory(calculateTotalPressure)
 add_subdirectory(extendedForcesFunctionObject)
 add_subdirectory(provideFields)
 add_subdirectory(rangeWeightField)

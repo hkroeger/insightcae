@@ -26,6 +26,10 @@ public:
     std::string symbolText() const override;
     arma::mat symbolLocation() const override;
 
+
+    std::pair<double,double> getXY() const;
+    void setXY(const std::pair<double,double>& xy);
+
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
 

@@ -36,6 +36,20 @@ arma::mat FixedPointConstraint::symbolLocation() const
     return p_->value();
 }
 
+std::pair<double,double> FixedPointConstraint::getXY() const
+{
+    return {
+        parameters().getDouble("x"),
+        parameters().getDouble("y")
+    };
+}
+
+void FixedPointConstraint::setXY(const std::pair<double,double>& xy)
+{
+    parametersRef().setDouble("x", xy.first);
+    parametersRef().setDouble("y", xy.second);
+}
+
 
 int FixedPointConstraint::nConstraints() const
 {

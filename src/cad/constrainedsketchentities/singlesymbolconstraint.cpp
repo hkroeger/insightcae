@@ -23,7 +23,7 @@ SingleSymbolConstraint::createActor() const
     caption->GetCaptionTextProperty()->SetShadow(false);
     caption->GetCaptionTextProperty()->FrameOff();
     caption->GetCaptionTextProperty()->ShadowOff();
-    caption->GetCaptionTextProperty()->BoldOn();
+    caption->GetCaptionTextProperty()->BoldOff();
 
     return {caption};
 }

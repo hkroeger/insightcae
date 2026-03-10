@@ -1,3 +1,4 @@
+#include "base/cppextensions.h"
 #include "internalpressureloss.h"
 
 #include "openfoam/caseelements/numerics/steadyincompressiblenumerics.h"
@@ -18,6 +19,7 @@
 #include "vtkDataSetSurfaceFilter.h"
 #include "vtkPolyDataNormals.h"
 #include "vtkArrayCalculator.h"
+#include <memory>
 
 namespace insight
 {
@@ -227,7 +229,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         FieldColor p_fc(p_field, createColorMap(), calcRange(p_field, {}, {patches}));
 
         FieldSelection U_field("U", FieldSupport::OnPoint, -1);
-        FieldColor U_fc(p_field, createColorMap(), calcRange(p_field, {}, {internal}));
+        FieldColor U_fc(U_field, createColorMap(), calcRange(U_field, {}, {internal}));
 
         arma::mat L=p().geometryscale*sp().L_;
         double Lmax=p().geometryscale*arma::as_scalar(arma::max(sp().L_));
@@ -319,89 +321,139 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         results->insert("pressure_walls", std::move(sec_pres));
 
 
+        auto cpl = std::container_type_cast<std::map<std::string,arma::mat> >(
+            p().eval.additionalCutPlaneLocations);
+        cpl.emplace("center", objCS.origin);
 
-        auto cutplane1 = vtkSmartPointer<vtkCutter>::New();
-        auto cutplane3 = vtkSmartPointer<vtkCutter>::New();
-        auto cutplane2 = vtkSmartPointer<vtkCutter>::New();
-
+        for (auto& l: cpl)
         {
-            cutplane1->SetInputConnection(internal->GetOutputPort());
+            auto sec=std::make_unique<ResultSection>("Cut Plane "+l.first);
 
-            auto slpl = vtkSmartPointer<vtkPlane>::New();
-            slpl->SetOrigin(toArray(objCS.origin));
-            slpl->SetNormal(toArray(objCS.ex));
-            cutplane1->SetCutFunction(slpl);
+            auto cutplane1 = vtkSmartPointer<vtkCutter>::New();
+            auto cutplane3 = vtkSmartPointer<vtkCutter>::New();
+            auto cutplane2 = vtkSmartPointer<vtkCutter>::New();
+
+            {
+                cutplane1->SetInputConnection(internal->GetOutputPort());
+
+                auto slpl = vtkSmartPointer<vtkPlane>::New();
+                slpl->SetOrigin(toArray(l.second));
+                slpl->SetNormal(toArray(objCS.ex));
+                cutplane1->SetCutFunction(slpl);
+            }
+            {
+                cutplane2->SetInputConnection(internal->GetOutputPort());
+
+                auto slpl = vtkSmartPointer<vtkPlane>::New();
+                slpl->SetOrigin(toArray(l.second));
+                slpl->SetNormal(toArray(objCS.ey));
+                cutplane2->SetCutFunction(slpl);
+            }
+            {
+                cutplane3->SetInputConnection(internal->GetOutputPort());
+
+                auto slpl = vtkSmartPointer<vtkPlane>::New();
+                slpl->SetOrigin(toArray(l.second));
+                slpl->SetNormal(toArray(objCS.ez));
+                cutplane3->SetCutFunction(slpl);
+            }
+
+            scene.clearScene();
+
+            scene.addAlgo<vtkDataSetMapper>(cutplane1, U_fc);
+            scene.addAlgo<vtkDataSetMapper>(cutplane2, U_fc);
+            scene.addAlgo<vtkDataSetMapper>(cutplane3, U_fc);
+            scene.addColorBar("Velocity\n[m/s]", U_fc.lookupTable());
+
+
+            auto sec_u = std::make_unique<ResultSection>("Velocity in cut planes");
+            for (const auto& lv: views)
+            {
+                scene.setupActiveCamera(lv.second);
+                scene.fitAll();
+
+                auto img = executionPath() / ("velocity_cut_"+lv.first+".png");
+
+                sec_u->insert(
+                    img.filename().stem().string(),
+                    std::make_unique<Image>(
+                        FileContainer(*scene.exportImage(), img.filename()),
+                        "Velocity in cut planes ("+lv.second.title+")", ""
+                        ));
+
+                ++ap;
+            }
+            sec->insert("velocity_cutplanes", std::move(sec_u));
+
+
+            scene.clearScene();
+
+            scene.addAlgo<vtkDataSetMapper>(cutplane1, p_fc);
+            scene.addAlgo<vtkDataSetMapper>(cutplane2, p_fc);
+            scene.addAlgo<vtkDataSetMapper>(cutplane3, p_fc);
+            scene.addColorBar("Pressure\n[m^2/s^2]", p_fc.lookupTable());
+
+            auto sec_pc = std::make_unique<ResultSection>("Pressure in cut planes");
+            for (const auto& lv: views)
+            {
+                scene.setupActiveCamera(lv.second);
+                scene.fitAll();
+
+                auto img = executionPath() / ("pressure_cut_"+lv.first+".png");
+                sec_pc->insert(
+                    img.filename().stem().string(),
+                    std::make_unique<Image>(
+                        FileContainer(*scene.exportImage(), img.filename()),
+                        "Pressure in cut planes ("+lv.second.title+")", ""
+                        ));
+
+                ++ap;
+            }
+            sec->insert("pressure_cutplanes", std::move(sec_pc));
+
+            if (const auto* thermsolve =
+                boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
+                    &p().operation.thermalTreatment))
+            {
+
+
+                FieldSelection T_field("T", FieldSupport::OnPoint, -1);
+                FieldColor T_fc(T_field,
+                                createColorMap(colorMapData_CoolToWarm, 32, true),
+                                calcRange(T_field, {}, {internal})
+                                );
+
+                scene.clearScene();
+
+                scene.addAlgo<vtkDataSetMapper>(cutplane1, T_fc);
+                scene.addAlgo<vtkDataSetMapper>(cutplane2, T_fc);
+                scene.addAlgo<vtkDataSetMapper>(cutplane3, T_fc);
+                scene.addColorBar("Temperature\n[K]", T_fc.lookupTable());
+
+
+                auto sec_T = std::make_unique<ResultSection>("Temperature in cut planes");
+                for (const auto& lv: views)
+                {
+                    scene.setupActiveCamera(lv.second);
+                    scene.fitAll();
+
+                    auto img = executionPath() / ("temperature_cut_"+lv.first+".png");
+                    sec_T->insert(
+                        img.filename().stem().string(),
+                        std::make_unique<Image>(
+                            FileContainer(*scene.exportImage(), img.filename()),
+                            "Temperature in cut planes ("+lv.second.title+")", ""
+                            ));
+
+                    ++ap;
+                }
+                sec->insert("temperature_cutplanes", std::move(sec_T));
+
+                scene.clearScene();
+            }
+
+            results->insert("cutPlane_"+l.first, std::move(sec));
         }
-        {
-            cutplane2->SetInputConnection(internal->GetOutputPort());
-
-            auto slpl = vtkSmartPointer<vtkPlane>::New();
-            slpl->SetOrigin(toArray(objCS.origin));
-            slpl->SetNormal(toArray(objCS.ey));
-            cutplane2->SetCutFunction(slpl);
-        }
-        {
-            cutplane3->SetInputConnection(internal->GetOutputPort());
-
-            auto slpl = vtkSmartPointer<vtkPlane>::New();
-            slpl->SetOrigin(toArray(objCS.origin));
-            slpl->SetNormal(toArray(objCS.ez));
-            cutplane3->SetCutFunction(slpl);
-        }
-
-        scene.clearScene();
-
-        scene.addAlgo<vtkDataSetMapper>(cutplane1, U_fc);
-        scene.addAlgo<vtkDataSetMapper>(cutplane2, U_fc);
-        scene.addAlgo<vtkDataSetMapper>(cutplane3, U_fc);
-        scene.addColorBar("Velocity\n[m/s]", U_fc.lookupTable());
-
-
-        auto sec_u = std::make_unique<ResultSection>("Velocity in cut planes");
-        for (const auto& lv: views)
-        {
-            scene.setupActiveCamera(lv.second);
-            scene.fitAll();
-
-            auto img = executionPath() / ("velocity_cut_"+lv.first+".png");
-
-            sec_u->insert(
-                img.filename().stem().string(),
-                std::make_unique<Image>(
-                    FileContainer(*scene.exportImage(), img.filename()),
-                    "Velocity in cut planes ("+lv.second.title+")", ""
-                    ));
-
-            ++ap;
-        }
-        results->insert("velocity_cutplanes", std::move(sec_u));
-
-
-        scene.clearScene();
-
-        scene.addAlgo<vtkDataSetMapper>(cutplane1, p_fc);
-        scene.addAlgo<vtkDataSetMapper>(cutplane2, p_fc);
-        scene.addAlgo<vtkDataSetMapper>(cutplane3, p_fc);
-        scene.addColorBar("Pressure\n[m^2/s^2]", p_fc.lookupTable());
-
-        auto sec_pc = std::make_unique<ResultSection>("Pressure in cut planes");
-        for (const auto& lv: views)
-        {
-            scene.setupActiveCamera(lv.second);
-            scene.fitAll();
-
-            auto img = executionPath() / ("pressure_cut_"+lv.first+".png");
-            sec_pc->insert(
-                img.filename().stem().string(),
-                std::make_unique<Image>(
-                    FileContainer(*scene.exportImage(), img.filename()),
-                    "Pressure in cut planes ("+lv.second.title+")", ""
-                    ));
-
-            ++ap;
-        }
-        results->insert("pressure_cutplanes", std::move(sec_pc));
-
 
         if (const auto* thermsolve =
             boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
@@ -414,34 +466,6 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                             createColorMap(colorMapData_CoolToWarm, 32, true),
                             calcRange(T_field, {}, {internal})
                             );
-
-            scene.clearScene();
-
-            scene.addAlgo<vtkDataSetMapper>(cutplane1, T_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane2, T_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane3, T_fc);
-            scene.addColorBar("Temperature\n[K]", T_fc.lookupTable());
-
-
-            auto sec_T = std::make_unique<ResultSection>("Temperature in cut planes");
-            for (const auto& lv: views)
-            {
-                scene.setupActiveCamera(lv.second);
-                scene.fitAll();
-
-                auto img = executionPath() / ("temperature_cut_"+lv.first+".png");
-                sec_T->insert(
-                    img.filename().stem().string(),
-                    std::make_unique<Image>(
-                        FileContainer(*scene.exportImage(), img.filename()),
-                        "Temperature in cut planes ("+lv.second.title+")", ""
-                        ));
-
-                ++ap;
-            }
-            results->insert("temperature_cutplanes", std::move(sec_T));
-
-            scene.clearScene();
 
             // display streamtracers, colored by temperature
             {

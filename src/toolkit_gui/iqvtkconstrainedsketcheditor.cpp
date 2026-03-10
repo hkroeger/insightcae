@@ -129,6 +129,7 @@ IQVTKConstrainedSketchEditor::UndoState::UndoState(
 
 
 
+
 void IQVTKConstrainedSketchEditor
     ::applyUndoState(const IQUndoRedoStackState& state)
 {

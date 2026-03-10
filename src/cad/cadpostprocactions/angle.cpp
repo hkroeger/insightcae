@@ -295,6 +295,7 @@ std::vector<vtkSmartPointer<vtkProp> > Angle::createVTKRepr() const
     pts2Lbl->SetLabelArrayName("labels");
     pts2Lbl->SetPriorityArrayName("sizes");
     pts2Lbl->GetTextProperty()->SetColor(0,0,0);
+    pts2Lbl->GetTextProperty()->SetFontSize(15);
     pts2Lbl->Update();
 
     // Create a mapper and actor for the labels.

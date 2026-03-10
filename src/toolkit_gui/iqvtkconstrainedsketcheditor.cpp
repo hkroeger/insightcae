@@ -52,6 +52,7 @@
 #include "datum.h"
 #include "cadfeatures/singleedgefeature.h"
 
+#include "iqinplaceeditorwidget.h"
 
 using namespace insight;
 using namespace insight::cad;
@@ -1530,6 +1531,51 @@ IQVTKConstrainedSketchEditor::selectedItemUnderCursor() const
     return nullptr;
 }
 
+
+
+
+
+
+class XYEditor
+    : public IQInPlaceEditorWidget
+{
+public:
+    XYEditor(
+        const std::pair<double,double>& iniv,
+        std::function<void(std::pair<double,double>)> setNewValue,
+        QWidget *parent)
+        : IQInPlaceEditorWidget(QSize{200,100}, parent)
+    {
+        auto *l=new QFormLayout;
+        auto *ed1=new QLineEdit;
+        ed1->setText(QString::number(iniv.first));
+        ed1->installEventFilter(this);
+        auto *ed2=new QLineEdit;
+        ed2->setText(QString::number(iniv.second));
+        ed2->installEventFilter(this);
+        l->addRow("X:", ed1);
+        l->addRow("Y:", ed2);
+        setLayout(l);
+
+        auto accept = [this,ed1,ed2,setNewValue]() {
+            bool ok=false;
+            double x=ed1->text().toDouble(&ok);
+            double y=ed2->text().toDouble(&ok);
+            if (ok)
+            {
+                setNewValue(std::pair{x,y});
+                closeOverlay();
+            }
+        };
+
+        connect(ed1, &QLineEdit::returnPressed, ed1, accept);
+        connect(ed2, &QLineEdit::returnPressed, ed2, accept);
+    }
+};
+
+
+
+
 bool IQVTKConstrainedSketchEditor::onDoubleClick(
     Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
@@ -1560,6 +1606,7 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
         ed->setFocus(Qt::OtherFocusReason);
     };
 
+
     if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
     {
         if (auto selitem = selectedItemUnderCursor())
@@ -1580,6 +1627,19 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
                     dc->targetValue(),
                     std::bind(&FixedDistanceConstraint::setTargetValue, dc, std::placeholders::_1)
                     );
+                return true;
+            }
+            else if (auto dc = std::dynamic_pointer_cast<FixedPointConstraint>(selitem))
+            {
+                auto *eq=new XYEditor(
+                    dc->getXY(),
+                    [this,dc](const std::pair<double,double>& xy) {
+                        dc->setXY(xy);
+                        solve();
+                    },
+                    &viewer()
+                );
+                eq->showAt(point);
                 return true;
             }
             else

@@ -253,6 +253,7 @@ add_library(toolkit_gui SHARED
        iqgraphprogresschart.h iqgraphprogresschart.cpp
        iqchartinteractivelegend.h iqchartinteractivelegend.cpp
        iqlineseriesdata.h iqlineseriesdata.cpp
+       iqinplaceeditorwidget.h iqinplaceeditorwidget.cpp
 )
 target_add_PDL(toolkit_gui)
 target_enable_qt(toolkit_gui)

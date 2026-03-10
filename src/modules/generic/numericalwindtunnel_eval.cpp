@@ -265,7 +265,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
             -( -1.7 );
         sec->insert<ScalarResult>("Cplus", Cplus, "", "", "");
 
-        double ksplus=exp(kappa*(8.-Cplus)-3.4);
+        double ksplus=exp(-kappa*(Cplus-8.))-3.4;
         sec->insert<ScalarResult>("ksplus", ksplus, "roughness", "", "");
 
         double ks=ksplus*p().fluid.nu/utau;

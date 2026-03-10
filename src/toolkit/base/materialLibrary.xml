@@ -8,4 +8,16 @@
         density="7850" youngsModulus="212000" poissonNumber="0.3" specificHeatCapacity="460" heatConductivity="50"/>
 <entry label="GJS400_15"
         density="7100" youngsModulus="212000" poissonNumber="0.3" specificHeatCapacity="515" heatConductivity="36.2"/>
+
+<entry label="ENAW7075"
+        density="2800" youngsModulus="72000" poissonNumber="0.35" specificHeatCapacity="862" heatConductivity="145"/>
+
+
+<!-- https://www.hsm-stahl.de/wp-content/uploads/2023/08/HSM_Datenblatt_EN-AW-6061.pdf -->
+<entry label="ENAW6061"
+        density="2700" youngsModulus="70000" poissonNumber="0.35" specificHeatCapacity="895" heatConductivity="185"/>
+
+<entry label="CuAl10Ni5Fe4"
+        density="7600" youngsModulus="121000" poissonNumber="0.34" specificHeatCapacity="450" heatConductivity="40"/>
+
 </root>

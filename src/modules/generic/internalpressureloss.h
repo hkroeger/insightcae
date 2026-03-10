@@ -112,6 +112,8 @@ geometry =  labeledarray "geometry_%d" [ set {
 
 geometryscale = double 1e-3     "scaling factor to scale geometry files to meters"
 
+
+
 mesh=set
 {
   size		= double	10 		"[mm] Cell size of template mesh." *necessary
@@ -123,6 +125,9 @@ mesh=set
   relativeSizes = bool true "Whether tlayer specifies relative thickness (absolute thickness if set to false)"
   PiM           = vector        (0 0 0)         "Seed point inside flow domain." *necessary
 } "Properties of the computational mesh"
+
+
+
 
 operation=set
 {
@@ -162,6 +167,9 @@ operation=set
 
 } "Definition of the operation point under consideration"
 
+
+
+
 fluid=set
 {
 
@@ -170,6 +178,15 @@ fluid=set
   turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 
 } "Parameters of the fluid"
+
+
+
+eval = set {
+ additionalCutPlaneLocations = labeledarray "cutplane_%d" [
+   vector (0 0 0) ""
+ ] *0
+} "Parameters for evaluation"
+
 
 <<<PARAMETERSET
 */

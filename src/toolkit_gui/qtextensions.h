@@ -2,6 +2,7 @@
 #define QTEXTENSIONS_H
 
 #include <set>
+#include <type_traits>
 
 #include "base/boost_include.h"
 #include "base/latextools.h"
@@ -11,10 +12,53 @@
 #include <QTextEdit>
 #include <QLabel>
 #include <QResizeEvent>
+#include <QMetaObject>
+#include <QThread>
+#include <QCoreApplication>
 
 #include "boost/signals2.hpp"
 
 #include "toolkit_gui_export.h"
+
+
+/**
+ * @brief runInGUIThread
+ * Execute a callable on the GUI thread and return its result to the caller.
+ * Safe to call from any thread, including the GUI thread itself.
+ * When called from a background thread, the calling thread blocks until the
+ * GUI thread has finished executing func (Qt::BlockingQueuedConnection).
+ */
+template<typename Func>
+auto runInGUIThread(Func&& func)
+    -> std::enable_if_t<!std::is_void_v<decltype(func())>, decltype(func())>
+{
+    if (QThread::currentThread() == qApp->thread())
+        return func();
+
+    using R = decltype(func());
+    R result{};
+    QMetaObject::invokeMethod(
+        qApp,
+        [&result, f=std::forward<Func>(func)]() mutable { result = f(); },
+        Qt::BlockingQueuedConnection
+    );
+    return result;
+}
+
+template<typename Func>
+auto runInGUIThread(Func&& func)
+    -> std::enable_if_t<std::is_void_v<decltype(func())>>
+{
+    if (QThread::currentThread() == qApp->thread()) {
+        func();
+        return;
+    }
+    QMetaObject::invokeMethod(
+        qApp,
+        std::forward<Func>(func),
+        Qt::BlockingQueuedConnection
+    );
+}
 
 
 QLayout* findContainingLayout(QLayout* layout,QWidget *widget);

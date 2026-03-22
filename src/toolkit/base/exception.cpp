@@ -494,11 +494,6 @@ size_t WarningDispatcher::nWarnings() const
 }
 
 
-////#if !(defined(WIN32)&&defined(DEBUG))
-//thread_local
-////#endif
-//WarningDispatcher thisThreadsWarnings;
-
 WarningDispatcher& WarningDispatcher::getCurrent()
 {
   static thread_local WarningDispatcher thisThreadsWarnings;

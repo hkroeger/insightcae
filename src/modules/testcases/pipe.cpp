@@ -56,7 +56,7 @@ namespace insight
 PipeBase::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &workDir,
-    ProgressDisplayer &progress)
+    ActionProgress &progress)
   : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     cycl_in_("cycl_half0"),
     cycl_out_("cycl_half1")

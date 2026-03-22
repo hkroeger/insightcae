@@ -13,7 +13,7 @@ namespace insight {
 
 
 class TOOLKIT_GUI_EXPORT RunSyncToRemote
-: public QObject, public insight::Thread<>
+: public QObject, public insight::Thread
 {
   Q_OBJECT
 
@@ -38,7 +38,7 @@ Q_SIGNALS:
 
 
 class TOOLKIT_GUI_EXPORT RunSyncToLocal
-: public QObject, public insight::Thread<>
+: public QObject, public insight::Thread
 {
   Q_OBJECT
 

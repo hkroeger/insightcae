@@ -296,6 +296,7 @@ public:
       const std::set<int>& localListenerPorts
       );
 
+  virtual std::string IPaddress() const;
 };
 
 

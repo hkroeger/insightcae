@@ -17,7 +17,7 @@ public:
 private:
     boost::regex progressLinePattern_, timePattern_, animWritePattern_, animName_;
     double endTime_;
-    std::shared_ptr<ActionProgress> progr_;
+    ProgressDisplayer *progr_;
 
     std::unique_ptr<ProgressState> curPS_;
 

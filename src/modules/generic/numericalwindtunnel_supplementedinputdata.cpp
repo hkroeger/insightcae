@@ -13,8 +13,8 @@ namespace insight
 NumericalWindtunnel::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &workDir,
-    ProgressDisplayer &parentProgress )
-    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, parentProgress ),
+    ActionProgress &ap )
+    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, ap ),
     FOname_allObjects("forcesAllObjects")
 {
     CurrentExceptionContext ex("computing further preprocessing informations");
@@ -47,7 +47,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
     auto rot = gprot.toSpatialTransformation()*initialMove;
 
 
-    parentProgress.message("Getting geometry file"); // extraction may take place now
+    ap.message("Getting geometry file"); // extraction may take place now
 
 
 
@@ -62,13 +62,13 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
             p().geometry.attitude.trim,
             p().geometry.attitude.yaw) );
 
-    parentProgress.message("Loading geometry file, computing bounding box");
+    ap.message("Loading geometry file, computing bounding box");
 
     arma::mat bb=initializedBndBox();// bounding box in SI, rotated to wind tunnel CS
     arma::mat bbAtt=initializedBndBox();// bounding box in SI, rotated to wind tunnel CS + applied attitude change
 
     {
-        auto loadprogress=parentProgress.forkNewAction(p().geometry.objects.size(), "loading geometry");
+        auto loadprogress=ap.forkNewAction(p().geometry.objects.size(), "loading geometry");
         for (auto& g: p().geometry.objects)
         {
             auto geom=cad::Transform::create(g.second->geometry(), toWindTunnelCS);
@@ -79,7 +79,7 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
 
             geometry_[g.first]=geom;
 
-            loadprogress.stepUp();
+            loadprogress->stepUp();
         }
     }
 

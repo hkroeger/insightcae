@@ -9,6 +9,7 @@
 #include "base/parameterset.h"
 #include "constrainedsketchentities/sketchpoint.h"
 #include "constrainedsketchentities/externalreference.h"
+#include "base/progressdisplayer/textprogressdisplayer.h"
 #include <memory>
 
 
@@ -177,8 +178,18 @@ public:
     static const std::string defaultLayerName;
 
 #ifndef SWIG
-    typedef boost::signals2::signal<void(GeometryMap::key_type)> GeometryEditSignal;
-    GeometryEditSignal geometryAdded, geometryAboutToBeRemoved, geometryRemoved, geometryChanged;
+    typedef
+        boost::signals2::signal<
+        void(
+            GeometryMap::key_type /*key*/,
+            int /*index in geometry list*/
+        )
+        > GeometryEditSignal;
+
+    GeometryEditSignal
+        beforeGeometryInsertion, geometryAdded,
+        beforeGeometryRemoval, geometryRemoved,
+        geometryChanged;
 #endif
 
 private:
@@ -254,7 +265,8 @@ public:
     void clear();
 
     size_t size() const;
-    GeometryMap::const_iterator findGeometry(ConstrainedSketchEntityPtr geomEntity) const;
+    std::pair<ConstrainedSketch::GeometryMap::const_iterator,int>
+        findGeometry(ConstrainedSketchEntityPtr geomEntity) const;
     GeometryMap::const_iterator begin() const;
     GeometryMap::const_iterator end() const;
     GeometryMap::const_iterator cbegin() const;

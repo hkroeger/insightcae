@@ -15,16 +15,18 @@ OpenRadiossOutputAnalyzer::OpenRadiossOutputAnalyzer
       animWritePattern_("ANIMATION FILE: ([^ ]+) WRITTEN"),
       animName_("^(.+A)([0-9]+)$"),
       endTime_(endTime),
-      progr_( parentProgress?
-            std::make_shared<ActionProgress>(parentProgress->forkNewAction(endTime, "OpenRadioss solver"))
-            : nullptr
-           ),
+      progr_( parentProgress ),
       animWriteCallback_(animWriteCallback)
-{}
+{
+}
 
 void OpenRadiossOutputAnalyzer::update(const std::string &line)
 {
     boost::smatch match;
+
+    ActionProgressPtr ap;
+    if (progr_)
+        ap=progr_->forkNewAction(endTime_, "Solver run");
 
     if ( boost::regex_search(line, match, progressLinePattern_, boost::match_default) )
     {
@@ -34,7 +36,7 @@ void OpenRadiossOutputAnalyzer::update(const std::string &line)
         double dmBym=boost::lexical_cast<double>(match[5]);
         if (progr_)
         {
-            progr_->stepTo(t);
+            if (ap) ap->stepTo(t);
 
             if (curPS_)
             {

@@ -24,6 +24,7 @@
 #include "Wt/Json/Array.h"
 #include "Wt/Json/Parser.h"
 #include "Wt/Json/Serializer.h"
+#include "base/exception.h"
 #include "base/hierarchicalelement.h"
 
 #include <functional>
@@ -52,6 +53,8 @@ AnalyzeClientAction::AnalyzeClientAction(
       deadline_(cl_.ioService()),
       timeoutCallback_(onTimeout)
 {
+    insight::CurrentExceptionContext ex("creating analyze client action");
+
     connection_ = cl_.httpClient().done().connect
       (
         std::bind(&AnalyzeClientAction::handleHttpResponse, this,
@@ -123,6 +126,8 @@ QueryStatusAction::QueryStatusAction(
 
 void QueryStatusAction::start()
 {
+    insight::CurrentExceptionContext ex("sending query status request");
+
     if (!cl_.httpClient().get(cl_.url()+"/all"))
         throw insight::Exception("Could not query status of remote analysis!");
 }
@@ -311,6 +316,8 @@ LaunchAnalysisAction::LaunchAnalysisAction(
 
 void LaunchAnalysisAction::start()
 {
+    insight::CurrentExceptionContext ex("sending launch analysis request");
+
     if (!cl_.httpClient().post(cl_.url(), msg_))
       throw insight::Exception("Could not launch remote analysis!");
 }
@@ -320,6 +327,8 @@ void LaunchAnalysisAction::handleHttpResponse(
             boost::system::error_code err,
             const Wt::Http::Message& response )
 {
+    insight::CurrentExceptionContext ex("handling http response for launch analysis action");
+
     AnalyzeClientAction::handleHttpResponse(err, response);
 
     ReportSuccessResult rsr;
@@ -446,6 +455,8 @@ void AnalyzeClient::controlRequest(
         AnalyzeClientAction::ReportSuccessCallback onCompletion,
         AnalyzeClientAction::SimpleCallBack onTimeout )
 {
+  insight::CurrentExceptionContext ex("sending analyze client control request");
+
   launchAction(
               std::make_shared<ControlRequestAction>(
                   *this, action,
@@ -457,6 +468,8 @@ void AnalyzeClient::controlRequest(
 
 void AnalyzeClient::launchAction( std::shared_ptr<AnalyzeClientAction> action )
 {
+    insight::CurrentExceptionContext ex("launching analyze client action");
+
     if ( isBusy() )
         throw insight::Exception( "internal error: there is already a transaction in progress" );
 
@@ -477,6 +490,8 @@ AnalyzeClient::AnalyzeClient(
     httpClient_(ioService_),
     progressDisplayer_(progressDisplayer)
 {
+  insight::CurrentExceptionContext ex("creating client for analysis execution at URL %s", url.c_str());
+
   httpClient_.setMaximumResponseSize(512*1024*1024);
   httpClient_.setTimeout(std::chrono::seconds{15*60});
 

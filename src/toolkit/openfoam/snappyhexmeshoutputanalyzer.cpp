@@ -13,7 +13,7 @@ namespace insight {
 snappyHexMeshOutputAnalyzer::snappyHexMeshOutputAnalyzer(ProgressDisplayer* parentProgress)
     : OutputAnalyzer(parentProgress),
       bmp_( parentProgress?
-            std::make_shared<ActionProgress>(parentProgress->forkNewAction(9, "snappyHexMesh"))
+            parentProgress->forkNewAction(9, "snappyHexMesh")
             : nullptr
            ),
       read1("Read mesh in = (.+) s"),

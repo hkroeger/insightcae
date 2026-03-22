@@ -83,7 +83,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
     auto ap = pp.forkNewAction(8, "Evaluation");
 
 
-    ap.message("Computing average surface pressure...");
+    ap->message("Computing average surface pressure...");
     {
         std::map<std::string, double> inletPatches, outletPatches;
 
@@ -159,7 +159,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         }
 
     }
-    ++ap;
+    ++*ap;
 
 
 
@@ -168,13 +168,13 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
         boost::get<Parameters::operation_type::thermalTreatment_solve_type>(
             &p().operation.thermalTreatment))
     {
-        ap.message("Computing average outlet temperature...");
+        ap->message("Computing average outlet temperature...");
         arma::mat T_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), "outlet_temperature");
-        ++ap;
+        ++*ap;
 
         arma::mat Tsig = T_vs_t.rows(T_vs_t.n_rows/3, T_vs_t.n_rows-1).col(1);
 
-        ap.message("Producing temperature convergence history plot...");
+        ap->message("Producing temperature convergence history plot...");
         addPlot
             (
                 *results, executionPath(), "chartTemperature",
@@ -187,7 +187,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                     % ( std::min ( 0.0, 1.1*Tsig.min() ) )
                     % ( 1.1*Tsig.max() ) )
                 );
-        ++ap;
+        ++*ap;
 
         double Tfinal=T_vs_t(T_vs_t.n_rows-1,1);
         results->insert<ScalarResult>("Tfinal", Tfinal, "Temperature in outlet", "", "K");
@@ -196,7 +196,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
 
 
 
-    ap.message("Rendering images...");
+    ap->message("Rendering images...");
     {
         // A renderer and render window
         OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
@@ -287,7 +287,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                                       "Stream lines ("+lv.second.title+")", ""
                                                       )));
 
-            ++ap;
+            ++*ap;
         }
         results->insert("streamlines", std::move(sec_sl));
 
@@ -316,7 +316,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                                         "Pressure on walls ("+lv.second.title+")", ""
                                                         )));
 
-            ++ap;
+            ++*ap;
         }
         results->insert("pressure_walls", std::move(sec_pres));
 
@@ -381,7 +381,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                         "Velocity in cut planes ("+lv.second.title+")", ""
                         ));
 
-                ++ap;
+                ++*ap;
             }
             sec->insert("velocity_cutplanes", std::move(sec_u));
 
@@ -407,7 +407,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                         "Pressure in cut planes ("+lv.second.title+")", ""
                         ));
 
-                ++ap;
+                ++*ap;
             }
             sec->insert("pressure_cutplanes", std::move(sec_pc));
 
@@ -445,7 +445,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                             "Temperature in cut planes ("+lv.second.title+")", ""
                             ));
 
-                    ++ap;
+                    ++*ap;
                 }
                 sec->insert("temperature_cutplanes", std::move(sec_T));
 
@@ -508,7 +508,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                                            "Stream lines with temperature ("+lv.second.title+")", ""
                                                            )));
 
-                ++ap;
+                ++*ap;
             }
             results->insert("streamlines_temperature", std::move(sec_slt));
 
@@ -552,7 +552,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                     "Temperature in outlet ("+lv.second.title+")", ""
                                     ));
 
-                            ++ap;
+                            ++*ap;
                         }
                     }
 
@@ -603,7 +603,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                                         "Streamlines from outlet ("+lv.second.title+")", ""
                                         ));
 
-                                ++ap;
+                                ++*ap;
                             }
                         }
                     }

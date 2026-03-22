@@ -72,7 +72,9 @@ protected:
     std::map<int, std::string> references_;
 
     boost::signals2::scoped_connection
-        addSlotConn_, removeSlotConn_, changeSlotConn_;
+        befAddSlotConn_, addSlotConn_,
+        befRemoveSlotConn_, removeSlotConn_,
+        changeSlotConn_;
 
 
     void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch) override;

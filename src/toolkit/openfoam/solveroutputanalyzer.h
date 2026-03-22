@@ -92,7 +92,7 @@ public:
 
     void update (const std::string& line) override;
 
-    bool stopRun() const override;
+    bool stopIsDemanded() const override;
 };
 
 

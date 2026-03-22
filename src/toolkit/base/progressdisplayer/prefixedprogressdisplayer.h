@@ -35,7 +35,7 @@ public:
   void logMessage(const std::string& line)  override;
   void reset() override;
 
-  bool stopRun() const override;
+  bool stopIsDemanded() const override;
 };
 
 }

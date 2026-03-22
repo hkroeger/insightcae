@@ -264,10 +264,6 @@ public:
   ~AnalyzeClient();
 
 
-//  void waitForContact(AnalyzeClientAction::SimpleCallBack onContact,
-//                      AnalyzeClientAction::SimpleCallBack onNoContact,
-//                      int maxAttempts=20);
-
   bool isBusy() const;
   void forgetRequest();
 

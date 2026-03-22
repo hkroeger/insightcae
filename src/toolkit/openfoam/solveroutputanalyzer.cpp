@@ -56,10 +56,7 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pd, double endTime
   region_pattern("^Solving for (.+) region (.+)"),
   minMax_pattern("^Min/max (.+):(.+) (.+)")
 {
-  solverActionProgress_ = std::make_shared<ActionProgress>
-      (
-        pd.forkNewAction(endTime, "Solver run")
-      );
+  solverActionProgress_ = pd.forkNewAction(endTime, "Solver run");
 }
 
 
@@ -319,9 +316,9 @@ void SolverOutputAnalyzer::update(const std::string& line)
 
 }
 
-bool SolverOutputAnalyzer::stopRun() const
+bool SolverOutputAnalyzer::stopIsDemanded() const
 {
-  return progress_->stopRun();
+  return progress_->stopIsDemanded();
 }
 
 

@@ -1,9 +1,11 @@
 #include "progressdisplayer.h"
 #include "base/exception.h"
-
+#include "base/boost_include.h"
+#include "base/actionprogress.h"
+#include "base/elementpath.h"
+#include "boost/algorithm/string/classification.hpp"
 
 namespace insight {
-
 
 
 
@@ -23,131 +25,72 @@ ProgressState::ProgressState(
 
 
 
+ProgressDisplayer::ProgressDisplayer()
+{}
 
 
 
-std::string ProgressDisplayer::actionPath() const
-{
-  return "";
-}
 
 ProgressDisplayer::~ProgressDisplayer()
 {
+    // Set the flag on every still-alive root action so that their destructors
+    // neither call the pure-virtual finishActionProgress() nor try to erase
+    // from childActions_ on this already-dying object.
+    std::lock_guard<std::mutex> lock(childActionsMutex_);
+    for (auto* ap : childActions_)
+        ap->skipFinishOnDestroy_ = true;
 }
 
-ActionProgress ProgressDisplayer::forkNewAction(double nSteps, const std::string& name)
+
+ActionProgressPtr ProgressDisplayer::forkNewAction(
+    double nSteps, const std::string& name)
 {
-  return ActionProgress(*this, name, nSteps);
+    ActionProgressPtr ap(new ActionProgress(this, name, nSteps));
+    ap->startAction();
+    return ap;
 }
 
-void ProgressDisplayer::stepUp(double steps)
+
+ActionProgress* ProgressDisplayer::findAction(const std::string& pathstr)
 {
-  stepTo(ci_+steps);
+    ElementPath ep(pathstr);
+
+    insight::assertion(!ep.empty(), "empty action path");
+
+    const auto rootName = ep.front();
+    ep.erase(ep.begin());
+
+    std::lock_guard<std::mutex> lock(childActionsMutex_);
+
+    auto i = std::find_if(
+        childActions_.begin(), childActions_.end(),
+        [&rootName](ActionProgress* ap)
+        { return ap->name() == rootName; });
+
+    if (i == childActions_.end())
+        return nullptr;
+
+    if (ep.empty())
+        return *i;
+
+    return (*i)->getChildAction(ep);
 }
 
-void ProgressDisplayer::stepTo(double i)
+
+void ProgressDisplayer::triggerStop(const std::string &actionPath)
 {
-    ci_=std::min(maxi_,i);
-    insight::dbg()<<actionPath()<<": progress "<<ci_<<"/"<<maxi_<<std::endl;
-    setActionProgressValue(actionPath(), ci_/maxi_);
-    if (ci_ >= maxi_)
-    {
-        insight::dbg()<<actionPath()<<": finish progress"<<std::endl;
-        finishActionProgress(actionPath());
-    }
+    if (auto *a=findAction(actionPath))
+        a->triggerStop();
 }
 
-void ProgressDisplayer::completed()
+
+
+
+bool ProgressDisplayer::stopIsDemanded() const
 {
-    if (ci_<maxi_)
-    {
-        stepTo(maxi_);
-    }
+  return stopTriggered_;
 }
 
-void ProgressDisplayer::operator++()
-{
-  stepUp();
-}
-
-void ProgressDisplayer::operator+=(double n)
-{
-  stepUp(n);
-}
-
-void ProgressDisplayer::message(const std::string &message)
-{
-  insight::dbg()<<actionPath()<<": "<<message<<std::endl;
-  setMessageText(actionPath(), message);
-}
-
-
-
-
-bool ProgressDisplayer::stopRun() const
-{
-  return false;
-}
-
-
-void ActionProgress::setActionProgressValue(const std::string &path, double value)
-{
-  parentAction_.setActionProgressValue(path, value);
-}
-
-void ActionProgress::setMessageText(const std::string &path, const std::string &message)
-{
-  parentAction_.setMessageText(path, message);
-}
-
-void ActionProgress::finishActionProgress(const std::string &path)
-{
-    parentAction_.finishActionProgress(path);
-}
-
-void ActionProgress::update(const ProgressState &pi)
-{
-    parentAction_.update(pi);
-}
-
-void ActionProgress::logMessage(const std::string &line)
-{
-    parentAction_.logMessage(line);
-}
-
-void ActionProgress::reset()
-{
-  // ignore
-}
-
-std::string ActionProgress::actionPath() const
-{
-  std::string p = name_;
-
-  if (!parentAction_.actionPath().empty())
-    p=parentAction_.actionPath()+"/"+p;
-
-  return p;
-}
-
-ActionProgress::ActionProgress
-(
-    const ProgressDisplayer &parentAction,
-    std::string name,
-    double nSteps
-)
-  : parentAction_(const_cast<ProgressDisplayer&>(parentAction)),
-    name_(name)
-{
-  maxi_=nSteps;
-  stepTo(0); // enforce creation of progress bar
-}
-
-
-ActionProgress::~ActionProgress()
-{
-  finishActionProgress(name_);
-}
 
 
 

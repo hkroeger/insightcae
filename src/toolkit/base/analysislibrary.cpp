@@ -1,6 +1,7 @@
 #include "base/analysislibrary.h"
 
 #include "base/analysis.h"
+#include "base/cppextensions.h"
 #include "base/exception.h"
 
 #include <dlfcn.h>
@@ -30,61 +31,77 @@ AnalysisLibraryLoader::AnalysisLibraryLoader(LoadableItem it)
 {
   CurrentExceptionContext ex("loading analysis libraries");
 
+  std::set<std::string> moduleFilter; // only load modules contained in this list, if something is in the list
+
+  if (auto *e = getenv("INSIGHT_FILTERMODULES"))
+  {
+      std::vector<std::string> tokens;
+      boost::split(tokens, e,
+                   boost::is_space(), boost::token_compress_on);
+      std::copy(tokens.begin(), tokens.end(),
+                std::last_inserter(moduleFilter));
+  }
+
   auto paths = SharedPathList::global();
   for ( const path& p: paths )
   {
-    CurrentExceptionContext ex("checking path "+p.string());
+      CurrentExceptionContext ex("checking path "+p.string());
 
-    if ( exists(p) && is_directory ( p ) )
-    {
-      path userconfigdir ( p );
-      userconfigdir /= "modules.d";
-
-      CurrentExceptionContext ex("checking directory "+userconfigdir.string());
-
-      if ( exists(userconfigdir) )
+      if ( exists(p) && is_directory ( p ) )
       {
-        if ( is_directory ( userconfigdir ) )
-        {
-          for ( directory_iterator itr ( userconfigdir );
-                itr != directory_iterator(); ++itr )
+          path userconfigdir ( p );
+          userconfigdir /= "modules.d";
+
+          CurrentExceptionContext ex("checking directory "+userconfigdir.string());
+
+          if ( exists(userconfigdir) )
           {
-            if ( is_regular_file ( itr->status() ) )
-            {
-              if ( itr->path().extension() == ".module" )
+              if ( is_directory ( userconfigdir ) )
               {
-                CurrentExceptionContext ex("processing config file "+itr->path().string());
-
-                std::ifstream f ( itr->path().string() );
-
-                std::string line;
-                while (getline(f, line))
-                {
-                  istringstream is(line);
-
-                  std::string type;
-                  is>>type;
-
-                  if ( (type=="library") && (it==AnalysisLibrary) )
+                  for ( directory_iterator itr ( userconfigdir );
+                       itr != directory_iterator(); ++itr )
                   {
-                    path location;
-                    is>>location;
-                    addLibrary(location);
-                  }
-                  else if ( (type=="guilibrary")  && (it==AnalysisVisualizationLibrary) )
-                  {
-                    path location;
-                    is>>location;
-                    addLibrary(location);
-                  }
-                }
+                      if ( is_regular_file ( itr->status() ) )
+                      {
+                          if ( itr->path().extension() == ".module" )
+                          {
+                              CurrentExceptionContext ex("processing config file "+itr->path().string());
 
+                              std::string label=itr->path().filename().stem().string();
+
+                              if (moduleFilter.empty() || moduleFilter.count(label))
+                              {
+                                  std::ifstream f ( itr->path().string() );
+
+                                  std::string line;
+                                  while (getline(f, line))
+                                  {
+                                      istringstream is(line);
+
+                                      std::string type;
+                                      is>>type;
+
+                                      if ( (type=="library") && (it==AnalysisLibrary) )
+                                      {
+                                          path location;
+                                          is>>location;
+                                          addLibrary(location);
+                                      }
+                                      else if ( (type=="guilibrary")  && (it==AnalysisVisualizationLibrary) )
+                                      {
+                                          path location;
+                                          is>>location;
+                                          addLibrary(location);
+                                      }
+                                  }
+                              }
+
+                          }
+                      }
+                  }
               }
-            }
           }
-        }
       }
-    }
     else
     {
       //cout<<"Not existing: "<<p<<endl;

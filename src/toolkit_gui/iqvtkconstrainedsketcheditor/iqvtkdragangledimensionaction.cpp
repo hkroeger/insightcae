@@ -33,8 +33,8 @@ bool IQVTKDragAngleDimensionAction::onMouseDrag  (
 
     editor_->invalidate();
 
-    editor_->geometryChanged(
-        editor_->findGeometry(ac_)->first);
+    auto i=editor_->findGeometry(ac_);
+    editor_->geometryChanged(i.first->first, i.second);
 
     if (eventType==Final) finishAction();
 

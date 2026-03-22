@@ -350,6 +350,8 @@ add_library(toolkit SHARED
     base/parametersetinput.h base/parametersetinput.cpp
     base/parametersbase.h base/parametersbase.cpp
     openfoam/caseelements/evaluation/calculatetotalpressure.cpp openfoam/caseelements/evaluation/calculatetotalpressure.h
+    base/actionprogress.h base/actionprogress.cpp
+    base/elementpath.h base/elementpath.cpp
 )
 
 target_link_libraries(toolkit PUBLIC ${Boost_LIBRARIES})

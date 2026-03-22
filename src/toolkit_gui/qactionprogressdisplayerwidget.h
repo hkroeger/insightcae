@@ -9,55 +9,81 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
+#include <QMap>
 
 #include "base/progressdisplayer.h"
-
+#include "iqbackgroundtask.h"
 
 namespace insight {
 
-class TOOLKIT_GUI_EXPORT QActionProgressDisplayerWidget
-: public QWidget,
-  public insight::ProgressDisplayer
+
+class TOOLKIT_GUI_EXPORT IQProgressWidget
+    : public QWidget
 {
-
-protected:
-    struct ProgressItem
-    {
-      QLabel* lbl;
-      QProgressBar* p;
-      inline void deleteLater()
-      {
-        p->setValue(p->maximum());
-        p->deleteLater();
-        lbl->deleteLater();
-      }
-    };
-
-    struct Rows
-    {
-      QVBoxLayout* vlayout;
-      QLabel* lbl;
-      std::map<std::string,ProgressItem> items;
-      inline void deleteLater()
-      {
-        lbl->deleteLater();
-        for (auto& i: items)
-          i.second.deleteLater();
-        items.clear();
-      }
-    };
-    typedef std::map<std::string,Rows> Columns;
-
-    QHBoxLayout *hlayout_;
-    Columns columns_;
-
-    Columns::iterator getColumn(const std::string& path, std::vector<std::string>& splitPath);
-    ProgressItem getOrCreateItem(const std::string& path, bool forbidCreation=false);
-    void deleteItem(const std::string& path);
-
+    Q_OBJECT
 
 public:
-    QActionProgressDisplayerWidget(QWidget* parent=nullptr);
+    typedef std::pair<ProgressDisplayer*,std::string> Action;
+
+protected:
+    Action          trackedAction_;
+    QFrame*         card = nullptr;
+    QLabel*         titleLabel_    = nullptr;
+    QLabel*         messageLabel_  = nullptr;
+    QPushButton*    cancelButton_  = nullptr;
+    QProgressBar*   progressBar_   = nullptr;
+
+    void setupUi(const QString& title);
+    void setCancelButton(bool enabled);
+    void recheckCancelButton();
+
+public:
+    IQProgressWidget(
+        const QString& progressTitle,
+        const Action& trackedAction,
+        QWidget* parent = nullptr );
+    ~IQProgressWidget();
+
+public Q_SLOTS:
+    void onStatusMessage(const QString& message);
+    void onProgressChanged(int percent);
+    void onCancelClicked();
+
+Q_SIGNALS:
+    /// Emitted just before this widget is about to be destroyed.
+    void widgetClosing(IQProgressWidget* self);
+};
+
+
+
+
+
+class TOOLKIT_GUI_EXPORT IQActionProgressDisplayManager
+: public QObject,
+  public insight::ProgressDisplayer
+{
+    Q_OBJECT
+
+    QWidget*                  hostWidget_ = nullptr;
+    QWidget*                  statusBar_  = nullptr;
+    std::map<std::string, IQProgressWidget*>  overlays_;
+
+    static constexpr int k_margin  = 2; ///< Distance from the window edge.
+    static constexpr int k_spacing = 1; ///< Vertical gap between cards.
+
+
+protected:
+    IQProgressWidget* getItem(const std::string& path, bool createIfNonExistent = true);
+
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
+private Q_SLOTS:
+    void relayout();
+    void onWidgetClosing(IQProgressWidget* widget);
+
+public:
+    IQActionProgressDisplayManager(QWidget* parent, QWidget* statusBar = nullptr);
 
     void update ( const ProgressState& pi ) override;
     void logMessage(const std::string& line) override;
@@ -66,6 +92,8 @@ public:
     void finishActionProgress(const std::string& path) override;
     void reset() override;
 };
+
+
 
 } // namespace insight
 

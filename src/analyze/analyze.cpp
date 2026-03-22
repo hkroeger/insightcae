@@ -522,19 +522,15 @@ int main(int argc, char *argv[])
                 boost::filesystem::path resoutpath=workdir/ (filestem+".isr");
                 results->saveToFile( resoutpath );
 
-                boost::filesystem::path outpath=workdir/ (filestem+".tex");
-                results->writeLatexFile( outpath );
-
-                if (!vm.count("skiplatex"))
+                if (vm.count("skiplatex"))
                 {
-                    for (int i=0; i<2; i++)
-                    {
-                        if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % workdir.string() % outpath.string() ).c_str() ))
-                        {
-                            Warning(_("TeX input file was written but could not execute pdflatex successfully."));
-                            break;
-                        }
-                    }
+                    boost::filesystem::path outpath=workdir/ (filestem+".tex");
+                    results->writeLatexFile( outpath );
+                }
+                else
+                {
+                    boost::filesystem::path outpath=workdir/ (filestem+".pdf");
+                    results->generatePDF( outpath );
                 }
             }
             else

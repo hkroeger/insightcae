@@ -423,19 +423,23 @@ ConstrainedSketch::insertGeometry(
             geomEntity->parametersRef().setParent(
                 propertiesParent_.get());
         }
+        int r=predictInsertionLocation(geometry_, key);
+        beforeGeometryInsertion(key, r);
         geometry_.insert({key, geomEntity});
         geomEntity->notifyAboutParameterChanges(
             this,
-            [this, key](const ParameterSet&) {
+            [this,key,r](const ParameterSet&) {
                 DBG_SLOT(parametersChanged);
-                geometryChanged(key);
+                geometryChanged(key, r);
             } );
-        geometryAdded(key);
+        geometryAdded(key, r);
     }
     else
     {
         *i->second = *geomEntity;
-        geometryChanged(key);
+        geometryChanged(
+            key,
+            std::distance(geometry_.begin(), i));
     }
     return key;
 }
@@ -461,19 +465,24 @@ ConstrainedSketch::setExternalReference(
     auto i = geometry_.find(key);
     if (i==geometry_.end())
     {
+        int r=predictInsertionLocation(geometry_, key);
+        beforeGeometryInsertion(key, r);
         geometry_.insert({ key, extRef });
         extRef->notifyAboutParameterChanges(
             this,
-            [this, key](const ParameterSet&) {
+            [this, key,r](const ParameterSet&) {
                 DBG_SLOT(parametersChanged);
-                geometryChanged(key);
+                geometryChanged(key, r);
             } );
-        geometryAdded(key);
+        geometryAdded(key,r);
     }
     else
     {
         *i->second = *extRef;
-        geometryChanged(key);
+        geometryChanged(
+            key,
+            std::distance(geometry_.begin(), i)
+        );
     }
     return key;
 }
@@ -483,9 +492,11 @@ ConstrainedSketch::setExternalReference(
 
 void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 {
-    geometryAboutToBeRemoved(geomEntityId);
-    geometry_.erase(geomEntityId);
-    geometryRemoved(geomEntityId);
+    auto i=geometry_.find(geomEntityId);
+    int r=std::distance(geometry_.begin(), i);
+    beforeGeometryRemoval(geomEntityId, r);
+    geometry_.erase(i);
+    geometryRemoved(geomEntityId, r);
 }
 
 
@@ -494,9 +505,9 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 {
     auto i=findGeometry(geomEntity);
-    if (i!=GeometryMap::const_iterator())
+    if (i.first!=GeometryMap::const_iterator())
     {
-        eraseGeometry(i->first);
+        eraseGeometry(i.first->first);
     }
 }
 
@@ -523,15 +534,19 @@ void ConstrainedSketch::clear()
 
 
 
-ConstrainedSketch::GeometryMap::const_iterator
+std::pair<ConstrainedSketch::GeometryMap::const_iterator,int>
 ConstrainedSketch::findGeometry(
     ConstrainedSketchEntityPtr geomEntity ) const
 {
-    return std::find_if(
+    auto i = std::find_if(
         geometry_.begin(), geometry_.end(),
         [&geomEntity](const GeometryMap::value_type& e)
           { return geomEntity==e.second; }
         );
+    int r=-1;
+    if (i!=geometry_.end())
+        r=std::distance(geometry_.begin(), i);
+    return {i,r};
 }
 
 
@@ -649,7 +664,10 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
            )
         {
             *g->second = *og->second;
-            geometryChanged(curId);
+            geometryChanged(
+                curId,
+                std::distance(geometry_.begin(), g)
+            );
             remaining.erase(curId);
             cem[og->second]=g->second;
         }

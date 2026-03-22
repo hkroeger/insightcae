@@ -136,29 +136,63 @@ CADSketchParameter::createEmpty() const
     return s;
 }
 
-void CADSketchParameter::connectSignalsToSketch(cad::ConstrainedSketchPtr s)
+void CADSketchParameter::connectSignalsToSketch(
+    cad::ConstrainedSketchPtr s )
 {
     s->setParentParameter(this);
 
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type befAddSlot_=
+        [this](int,int r) {
+            DBG_SLOT(beforeGeometryAdded);
+            if (!valueChangeSignalBlocked())
+            {
+                // childValueChanged();
+                beforeChildInsertion(r,r);
+            }
+        };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
-        [this](int) {
+        [this](int,int r) {
             DBG_SLOT(geometryAdded);
-            if (!valueChangeSignalBlocked()) childValueChanged();
+            if (!valueChangeSignalBlocked())
+            {
+                // childValueChanged();
+                childInsertionDone(r,r);
+            }
+        };
+    cad::ConstrainedSketch::GeometryEditSignal::slot_type befRemoveSlot_=
+        [this](int, int r) {
+            DBG_SLOT(beforeGeometryRemoved);
+            if (!valueChangeSignalBlocked())
+            {
+                //childValueChanged();
+                beforeChildRemoval(r,r);
+            }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
-        [this](int) {
+        [this](int,int r) {
             DBG_SLOT(geometryRemoved);
-            if (!valueChangeSignalBlocked()) childValueChanged();
+            if (!valueChangeSignalBlocked())
+            {
+                // childValueChanged();
+                childRemovalDone(r,r);
+            }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
-        [this](int) {
+        [this](int, int) {
             DBG_SLOT(geometryChanged);
-            if (!valueChangeSignalBlocked()) childValueChanged();
+            if (!valueChangeSignalBlocked())
+            {
+                childValueChanged();
+            }
         };
 
+    befAddSlot_.track_foreign(s);
+    befAddSlotConn_=s->beforeGeometryInsertion.connect(befAddSlot_);
     addSlot_.track_foreign(s);
     addSlotConn_=s->geometryAdded.connect(addSlot_);
 
+    removeSlot_.track_foreign(s);
+    befRemoveSlotConn_=s->beforeGeometryRemoval.connect(befRemoveSlot_);
     removeSlot_.track_foreign(s);
     removeSlotConn_=s->geometryRemoved.connect(removeSlot_);
 

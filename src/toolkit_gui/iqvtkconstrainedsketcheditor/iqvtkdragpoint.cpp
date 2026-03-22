@@ -36,8 +36,8 @@ bool IQVTKDragPoint::onMouseDrag  (
 
     editor_->invalidate();
 
-    editor_->geometryChanged(
-        editor_->findGeometry(p_)->first);
+    auto i=editor_->findGeometry(p_);
+    editor_->geometryChanged(i.first->first, i.second);
 
     if (eventType==Final) finishAction();
 

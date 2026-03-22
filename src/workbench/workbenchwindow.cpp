@@ -338,22 +338,6 @@ void WorkbenchMainWindow::checkInstallation()
     {
         installationWasChecked_=true;
 
-        // auto *bt=new IQBackgroundTask(
-        //     "Dummy task 1",
-        //     globalActionsProgress_
-        //     );
-        // bt->start(
-        //     [](insight::ActionProgress& ap)
-        //     {
-        //         const int ns=30;
-        //         ap.setNSteps(ns);
-        //         for (int i=0; i<ns; ++i)
-        //         {
-        //             ap.stepUp(str(boost::format("step nr. %d")%(i+1)));
-        //             sleep(1);
-        //             boost::this_thread::interruption_point();
-        //         }
-        //     });
 
         auto bt1=new IQBackgroundTask(
             "Checking external programs",

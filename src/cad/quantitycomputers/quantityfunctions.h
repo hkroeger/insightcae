@@ -123,7 +123,7 @@ public:\
     T1 value1 = qtc1_->evaluate(f);\
     T2 value2 = qtc2_->evaluate(f);\
     typename RESULT_T<T1,T2>::type value=OPERATED_QTC_OP;\
-    std::cout<<#OPERATED_QTC_NAME<<"="<<value<<std::endl;\
+    insight::dbg()<<#OPERATED_QTC_NAME<<"="<<value<<std::endl;\
     return value;\
   }\
   \

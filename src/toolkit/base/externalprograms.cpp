@@ -161,12 +161,17 @@ void ExternalPrograms::writeConfiguration(const boost::filesystem::path &file)
 
 
 
-std::vector<std::string> ExternalPrograms::missingPrograms() const
+std::vector<std::string> ExternalPrograms::findMissingPrograms(
+    ActionProgress &prg) const
 {
+    prg.setNSteps(size());
     std::vector<std::string> mp;
     for (const auto& p: *this)
     {
-        if (p.second.empty())
+        prg.stepUp(str(boost::format("Checking for program %s")%p.first));
+        if ( p.second.empty()
+            || !boost::filesystem::exists(p.second)
+            || !boost::filesystem::is_executable(p.second) )
             mp.push_back(p.first);
     }
     return mp;

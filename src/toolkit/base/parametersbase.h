@@ -15,6 +15,8 @@ namespace insight {
 
 struct ParametersBase
 {
+    boost::optional<std::string> parameterPath;
+
     ParametersBase();
     ParametersBase(const insight::ParameterSet& p);
     virtual ~ParametersBase();

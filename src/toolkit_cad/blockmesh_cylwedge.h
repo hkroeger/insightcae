@@ -114,7 +114,7 @@ createGetters
     supplementedInputData(
           ParameterSetInput ip,
           const boost::filesystem::path& workDir,
-          ProgressDisplayer& progress );
+          ActionProgress& progress );
 
     arma::mat p0_, ex_, er_, ey_;
     Handle_Geom_Curve spine_;

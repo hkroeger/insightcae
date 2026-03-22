@@ -199,7 +199,7 @@ eval = set {
     supplementedInputData(
           ParameterSetInput ip,
           const boost::filesystem::path& workDir,
-          ProgressDisplayer& progress = consoleProgressDisplayer );
+          ActionProgress& progress );
 
     BoundingBox bb_;
     arma::mat L_;

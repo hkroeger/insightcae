@@ -157,13 +157,15 @@ void AnalysisForm::scheduleAutosave() const
 
 AnalysisForm::AnalysisForm(
     QWidget* parent,
+    insight::IQActionProgressDisplayManager* actionProgress,
     const std::string& analysisName,
     bool logToConsole
     )
 : QWidget(parent),
   IQExecutionWorkspace(this),
   isOpenFOAMAnalysis_(false),
-  pack_parameterset_(true)
+  pack_parameterset_(true),
+  actionProgress_(actionProgress)
 {
     autosaveLastWriteTimer_.setSingleShot(true);
     autosaveLastWriteTimer_.setInterval(autosaveMaxWaitInterval);
@@ -219,7 +221,7 @@ AnalysisForm::AnalysisForm(
              this, &AnalysisForm::onShell);
 
     graphProgress_=new IQGraphProgressDisplayer;
-    actionProgress_=new insight::QActionProgressDisplayerWidget;
+    // actionProgress_=new insight::IQActionProgressDisplayManager(parent, parent->statusBar());
 
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
@@ -248,7 +250,7 @@ AnalysisForm::AnalysisForm(
     vbl->addSpacerItem(new QSpacerItem(0,0,QSizePolicy::Minimum,QSizePolicy::Expanding));
     ui->runTabLayout->addWidget(spl);
     //ui->runTabLayout->addWidget(actionProgress_);
-    ui->verticalLayout_5->addWidget(actionProgress_);
+    // ui->verticalLayout_5->addWidget(actionProgress_);
 
 //    ui->verticalLayout->addWidget(actionProgress_);
     

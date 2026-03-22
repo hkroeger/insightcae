@@ -39,7 +39,7 @@ public:
 
   virtual void update(const std::string& line) =0;
 
-  virtual bool stopRun() const;
+  virtual bool stopIsDemanded() const;
 };
 
 } // namespace insight

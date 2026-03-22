@@ -8,6 +8,7 @@
 #include "base/boost_include.h"
 #include "base/filestorageinfo.h"
 #include "base/hierarchicaldatafilter.h"
+#include "base/elementpath.h"
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -15,18 +16,6 @@
 namespace insight {
 
 namespace hierarchicalData {
-
-namespace elementPath {
-
-std::string
-join(const std::string& p1, const std::string& p2);
-
-std::string
-join(const std::vector<std::string>& ps);
-
-}
-
-
 
 
 class Ordering

@@ -125,7 +125,7 @@ protected:
   QProgressBar* progressbar_;
 
   IQGraphProgressDisplayer *graphProgress_;
-  insight::QActionProgressDisplayerWidget* actionProgress_;
+  insight::IQActionProgressDisplayManager* actionProgress_;
   insight::CombinedProgressDisplayer progressDisplayer_;
 
   // ====================================================================================
@@ -204,6 +204,7 @@ protected:
 public:
   AnalysisForm(
       QWidget* parent,
+      insight::IQActionProgressDisplayManager* actionProgress,
       const std::string& analysisName,
       bool logToConsole=false
       );

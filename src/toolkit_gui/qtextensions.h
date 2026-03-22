@@ -17,6 +17,9 @@
 #include "toolkit_gui_export.h"
 
 
+QLayout* findContainingLayout(QLayout* layout,QWidget *widget);
+QLayout* findContainingLayout(QWidget *widget);
+
 // helper for boost::signals: disconnect at QObject destruction
 void disconnectAtEOL(
     QObject *o,

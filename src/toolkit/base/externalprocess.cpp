@@ -224,7 +224,7 @@ void Job::ios_run_with_interruption(
   processStdErr_ = processStdErr;
 
 
-  insight::Thread<> outReader([this](){
+  insight::Thread outReader([this](){
       std::string line;
       while (extendedGetline<std::istream>(out_, line))
       {
@@ -235,7 +235,7 @@ void Job::ios_run_with_interruption(
       }
   });
 
-  insight::Thread<> errReader([this](){
+  insight::Thread errReader([this](){
       std::string line;
       while (extendedGetline<std::istream>(err_, line))
       {
@@ -278,7 +278,7 @@ void Job::ios_run_with_interruption(OutputAnalyzer *oa)
                 if (oa)
                 {
                     oa->update(line);
-                    if (oa->stopRun())
+                    if (oa->stopIsDemanded())
                     {
                       terminate();
                     }

@@ -289,9 +289,7 @@ searchVisibleParent(const insight::hierarchicalData::Element& p, int* row=nullpt
 QModelIndex IQHierarchicalDataModel::indexOfElement(
     const insight::hierarchicalData::Element &p, int col) const
 {
-    auto *model = const_cast<IQHierarchicalDataModel*>(this);
     auto *element = const_cast<insight::hierarchicalData::Element*>(&p);
-
 
     if (&p == data_.get())
         return QModelIndex();

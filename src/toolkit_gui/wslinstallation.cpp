@@ -1,5 +1,6 @@
 #include "wslinstallation.h"
 
+#include "base/remoteserver.h"
 #include "base/tools.h"
 #include "base/remoteserverlist.h"
 #include "base/externalprograms.h"
@@ -20,12 +21,14 @@ namespace insight {
 
 
 
-void checkWSLVersions(bool reportSummary, QWidget *parent)
+void checkWSLVersions(ActionProgress& prog, QWidget* parent)
 {
   bool anythingChecked=false, anythingOutdated=false;
 
   // ===============================================================================================
   // ====== go through all defined remote servers and check them, if they are WSL remotes
+
+  prog.setNSteps(insight::remoteServers.size());
 
   for (auto& rs: insight::remoteServers)
   {
@@ -34,6 +37,9 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
       // check installed version inside WSL distribution
       if (auto wsl = std::dynamic_pointer_cast<insight::WSLLinuxServer>(wslcfg->instance()))
       {
+        prog.stepUp(str(boost::format("Checking WSL distribution %s...")
+                          %wsl->myDistributionLabel()));
+
         try
         {
           auto wslVersion = wsl->checkInstalledVersion();
@@ -133,19 +139,6 @@ void checkWSLVersions(bool reportSummary, QWidget *parent)
       {
           IQRemoteServerEditDialog dlg(parent);
           dlg.exec();
-      }
-  }
-  else
-  {
-      if (reportSummary)
-      {
-          if (!anythingOutdated)
-          {
-              QMessageBox::information(
-                          parent,
-                          "WSL backend version check",
-                          "All backend versions are correct!");
-          }
       }
   }
 }
@@ -266,8 +259,9 @@ void UpdateWSLProgressDialog::changeCloseBtnText(const QString& label)
     btn_->setText("Close");
 }
 
-void checkExternalPrograms(QWidget *parent)
+void checkExternalPrograms(ActionProgress& prog, QWidget *parent)
 {
+    prog.setNSteps(1);
     auto mp = insight::ExternalPrograms::globalInstance().missingPrograms();
     if (mp.size()>0)
     {
@@ -287,6 +281,7 @@ void checkExternalPrograms(QWidget *parent)
             dlg.exec();
         }
     }
+    prog.stepUp("All programs checked");
 }
 
 

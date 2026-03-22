@@ -44,7 +44,10 @@ AnalysisThread::AnalysisThread(
                   auto psp=std::get<0>(*pap);
                   sid =
                       insight::Analysis::supplementedInputDatas()(
-                          analysisName, ParameterSetInput(*psp), executionPath_, *pd );
+                          analysisName,
+                          ParameterSetInput(*psp),
+                          executionPath_,
+                          *pd->forkNewAction(99, "Processing input data") );
               }
               else if (auto *sibp =
                        boost::get<insight::supplementedInputDataBasePtr>(
@@ -69,27 +72,30 @@ AnalysisThread::AnalysisThread(
           exHdlr, intHdlr)
 {}
 
+
+
+
 AnalysisThread::AnalysisThread
 (
     std::function<void(void)> action,
     ExceptionHandler exHdlr,
     InterruptHandler intHdlr
 )
-    : analysis_(nullptr),
-    Thread(
-        [action]()
-        {
-            action();
-        },
-        exHdlr, intHdlr
-        )
+  : analysis_(nullptr),
+    Thread( action, exHdlr, intHdlr )
 {}
+
+
+
 
 const boost::filesystem::path &AnalysisThread::executionPath() const
 {
     boost::mutex::scoped_lock lck(dataAccess_);
     return executionPath_;
 }
+
+
+
 
 const Analysis *AnalysisThread::analysis() const
 {

@@ -2,6 +2,7 @@
 #define INSIGHT_WSLINSTALLATION_H
 
 #include "base/wsllinuxserver.h"
+#include "base/progressdisplayer.h"
 
 #include <QDialog>
 #include <QWidget>
@@ -12,8 +13,8 @@
 
 namespace insight {
 
-void checkWSLVersions(bool reportSummary, QWidget *parent=nullptr);
-void checkExternalPrograms(QWidget *parent=nullptr);
+void checkWSLVersions(ActionProgress& prog, QWidget *parent=nullptr);
+void checkExternalPrograms(ActionProgress& prog, QWidget *parent=nullptr);
 
 void launchUpdateWSLVersion(
         std::shared_ptr<insight::WSLLinuxServer> wsl,

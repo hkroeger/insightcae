@@ -34,7 +34,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         objectPatchNames.insert(pns.begin(), pns.end());
     }
 
-    ap.message("Computing projected area");
+    ap->message("Computing projected area");
     arma::mat projDir;
     switch (p().eval.referenceAreaProjectionDirection)
     {
@@ -50,14 +50,14 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
             objectPatchNames) );
 
     double A=Ah(Ah.n_rows-1,1);
-    ++ap;
+    ++*ap;
 
 
     double Re=p().operation.v*sp().Lref_/p().fluid.nu;
     results->insert<ScalarResult>("Re", Re, "Reynolds number", "", "");
     results->insert<ScalarResult>("Afront", A, "Projected frontal area", "", "$m^2$");
 
-    ap.message("Evaluating forces");
+    ap->message("Evaluating forces");
 
     auto evalForces = [&](const std::string& FOname, const std::string& description)
     {
@@ -65,7 +65,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
 
         arma::mat f=forces::readForces(cm, executionPath(), FOname);
         arma::mat t = f.col(0);
-        ++ap;
+        ++*ap;
 
         double mult = p().mesh.longitudinalSymmetry ? 2.0 : 1.0;
 
@@ -124,7 +124,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
             "Effective power $P_e=R_{tot} v$ of "+description,
             "", "W");
 
-        ap.message("Creating resistance plot");
+        ap->message("Creating resistance plot");
         // Resistance convergence
         addPlot
             (
@@ -151,10 +151,10 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         }
     }
 
-    ++ap;
+    ++*ap;
 
 
-    ap.message("Rendering images");
+    ap->message("Rendering images");
     {
         // A renderer and render window
         OpenFOAMCaseScene scene( executionPath()/"system"/"controlDict" );
@@ -202,7 +202,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
             st->Update();
             scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
         }
-      ++ap;
+      ++*ap;
 
         {
             auto seeds = vtkSmartPointer<vtkLineSource>::New();
@@ -223,7 +223,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
             st->Update();
             scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
         }
-        ++ap;
+        ++*ap;
 
 
         scene.addDiagonalViews(
@@ -232,7 +232,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
             executionPath() / "streamLines.png",
             "Stream lines around object",
             VTKOffscreenScene::ParallelScale(maxObjSize) );
-        ++ap;
+        ++*ap;
 
     }
 

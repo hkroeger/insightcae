@@ -179,7 +179,8 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstance(
             BaseAnalysis::typeName,
                 Analysis::supplementedInputDatas()(
                     BaseAnalysis::typeName,
-                    ParameterSetInput(*newp), ep, consoleProgressDisplayer ) );
+                    ParameterSetInput(*newp), ep,
+            *consoleProgressDisplayer.forkNewAction(99, "Processing input data") ) );
 
     instances.enqueue(
         AnalysisInstance{

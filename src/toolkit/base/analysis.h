@@ -77,7 +77,7 @@ public:
     declareStaticFunctionTable2(
         SupplementedInputDataFactories, supplementedInputDatas,
         std::unique_ptr<supplementedInputDataBase>,
-        ParameterSetInput&&, const boost::filesystem::path&, ProgressDisplayer& );
+        ParameterSetInput&&, const boost::filesystem::path&, ActionProgress& );
 
     declareStaticFunctionTable2(
         DefaultParameterFactories, defaultParameters,
@@ -123,7 +123,7 @@ public:
                     typename AnalysisInstance::supplementedInputData,
                     ParameterSetInput&&,
                     const boost::filesystem::path&,
-                    ProgressDisplayer&>) );
+                    ActionProgress&>) );
 
             addToStaticFunctionTable2(
                 Analysis,

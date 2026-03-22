@@ -36,10 +36,7 @@ CASolverOutputAnalyzer::CASolverOutputAnalyzer ( ProgressDisplayer& pd, double e
   re_instant("Instant de calcul:  (.*)$"),
   endTime_(endTime)
 {
-  solverActionProgress_ = std::make_shared<ActionProgress>
-      (
-        pd.forkNewAction(endTime, "Solver run")
-      );
+  solverActionProgress_ = pd.forkNewAction(endTime, "Solver run");
 }
 
 
@@ -111,7 +108,7 @@ void CASolverOutputAnalyzer::update (const std::string& line)
 
 
 
-bool CASolverOutputAnalyzer::stopRun() const
+bool CASolverOutputAnalyzer::stopIsDemanded() const
 {
   return false;
 }

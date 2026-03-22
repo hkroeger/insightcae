@@ -116,7 +116,7 @@ The maximum relative change between the last 15 average values needs to stay bel
     supplementedInputData(
         ParameterSetInput ip,
         const boost::filesystem::path& workDir,
-        ProgressDisplayer& progress = consoleProgressDisplayer
+        ActionProgress& progress
         );
 
     std::string in_, out_, up_, down_, fb_, foil_;

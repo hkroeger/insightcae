@@ -12,6 +12,7 @@
 
 #include "base/cppextensions.h"
 #include "boost/filesystem/path.hpp"
+#include "base/actionprogress.h"
 #include "boost/variant/detail/apply_visitor_binary.hpp"
 #include "boost/variant/static_visitor.hpp"
 
@@ -61,7 +62,7 @@ public:
   supplementedInputDataBase(
         ParameterSetInput&& ip,
         const boost::filesystem::path& exePath,
-        ProgressDisplayer& pd );
+        ActionProgress& ap );
 
   virtual ~supplementedInputDataBase();
 
@@ -140,7 +141,7 @@ public:
     supplementedInputDataFromParameters(
         ParameterSetInput ip,
         const boost::filesystem::path& exePath,
-        ProgressDisplayer& pd );
+        ActionProgress& ap );
 
 
     inline const ParametersBase* baseParametersPtr() const
@@ -175,10 +176,10 @@ public:
         AddArgs&&... addArgs,
         ParameterSetInput ip,
         const boost::filesystem::path& exePath,
-        ProgressDisplayer& pd)
+        ActionProgress& ap)
         : SupplementedInputDataBaseType(
               std::forward<AddArgs>(addArgs)...,
-              std::move(ip), exePath, pd)
+              std::move(ip), exePath, ap)
     {}
 
 

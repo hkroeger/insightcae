@@ -7,17 +7,17 @@
 #include <QObject>
 
 #include "base/analysisthread.h"
+#include "iqbackgroundtask.h"
 #include "progressrelay.h"
 
 namespace insight
 {
 
 class TOOLKIT_GUI_EXPORT QAnalysisThread
-    : public QObject,
+    : public IQBackgroundTaskInterface,
       public AnalysisThread
 {
   Q_OBJECT
-
 
 public:
   QAnalysisThread(
@@ -39,26 +39,6 @@ public:
       );
 #endif
 
-Q_SIGNALS:
-  /**
-   * @brief finished
-   * this is only emitted, if action is successfully completed without exceptions
-   */
-  void finished();
-
-  /**
-   * @brief failed
-   * the action failed with an exception
-   * @param exception
-   * the exception, which occurred
-   */
-  void failed(::std::exception_ptr exception);
-
-  /**
-   * @brief cancelled
-   * the action was interrupted
-   */
-  void cancelled();
 };
 
 }

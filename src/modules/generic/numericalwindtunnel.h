@@ -207,7 +207,7 @@ eval = set
     supplementedInputData(
           ParameterSetInput ip,
           const boost::filesystem::path& workDir,
-          ProgressDisplayer& progress = consoleProgressDisplayer );
+          ActionProgress& progress );
 
     std::map<std::string,cad::FeaturePtr> geometry_;
     gp_Trsf cad_to_cfd_;

@@ -100,14 +100,14 @@ void RemoteRun::launch()
 
   ac_ = std::make_unique<insight::AnalyzeClient>(
       af_->psmodel_->getAnalysisName(),
-      str(format("http://127.0.0.1:%d")
+      str(format("http://"+remote_->exeConfig().server()->IPaddress()+":%d")
           % portMappings_->localListenerPort(remote_->exeConfig().port()) ),
       &af_->progressDisplayer_
   );
 
   if (!resume_)
   {
-      launchProgress_.message(_("Setting up the remote workspace..."));
+      launchProgress_->message(_("Setting up the remote workspace..."));
       ac_->ioService().post( std::bind(&RemoteRun::setupRemoteEnvironment, this) );
   }
   else
@@ -138,8 +138,8 @@ void RemoteRun::setupRemoteEnvironment()
             _("setting up the execution environment")
         );
 
-        launchProgress_.stepTo(1);
-        launchProgress_.message(_("Launching remote execution server..."));
+        launchProgress_->stepTo(1);
+        launchProgress_->message(_("Launching remote execution server..."));
 
         ac_->ioService().post( std::bind(&RemoteRun::uploadInputFile, this) );
 
@@ -189,8 +189,8 @@ void RemoteRun::uploadInputFile()
                 insight::hierarchicalData::Element::OutputProperties());
         }
 
-        launchProgress_.stepTo(2);
-        launchProgress_.message(_("Writing input file in execution directory...") );
+        launchProgress_->stepTo(2);
+        launchProgress_->message(_("Writing input file in execution directory...") );
 
         ac_->ioService().post( std::bind(&RemoteRun::launchRemoteExecutionServer, this) );
 
@@ -223,8 +223,8 @@ void RemoteRun::launchRemoteExecutionServer()
         addUndoStep( std::bind(&RemoteRun::undoLaunchRemoteExecutionServer, this),
                     _("launching the remote execution server") );
 
-        launchProgress_.stepTo(3);
-        launchProgress_.message(_("Establishing contact to remote execution server...") );
+        launchProgress_->stepTo(3);
+        launchProgress_->message(_("Establishing contact to remote execution server...") );
 
         ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, 20) );
 
@@ -255,6 +255,7 @@ void RemoteRun::waitForContact( int maxAttempts )
         // schedule next attempt in 10 secs, if some remain
         if (maxAttempts>0)
         {
+            insight::dbg()<<"schedule next contact attempt"<<std::endl;
             ac_->ioService().schedule(
                     std::chrono::seconds(2),
                     std::bind( &RemoteRun::waitForContact, this,
@@ -262,6 +263,7 @@ void RemoteRun::waitForContact( int maxAttempts )
         }
         else
         {
+            insight::dbg()<<"cancel after too many attempts"<<std::endl;
             // cancel otherwise
             ac_->ioService().post(
                         std::bind(
@@ -284,8 +286,8 @@ void RemoteRun::waitForContact( int maxAttempts )
                     {
                         // execute callback on success
 
-                        launchProgress_.stepTo(4);
-                        launchProgress_.message(_("Monitoring analysis..."));
+                        launchProgress_->stepTo(4);
+                        launchProgress_->message(_("Monitoring analysis..."));
 
                         ac_->ioService().post( std::bind( &RemoteRun::monitor, this ));
                     }
@@ -326,9 +328,9 @@ void RemoteRun::waitForContact( int maxAttempts )
 //                     {
 //                         if (r.success)
 //                         {
-//                             launchProgress_.stepTo(5);
-//                             launchProgress_.message(_("Monitoring remote run"));
-//                             launchProgress_.completed();
+//                             launchProgress_->stepTo(5);
+//                             launchProgress_->message(_("Monitoring remote run"));
+//                             launchProgress_->completed();
 
 //                             ac_->ioService().post(std::bind(
 //                                                       &RemoteRun::monitor, this));
@@ -557,6 +559,7 @@ void RemoteRun::onCancel()
 {
     killRequested_=true;
     ac_->httpClient().abort();
+    Q_EMIT cancelled();
 }
 
 

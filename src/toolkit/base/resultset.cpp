@@ -376,20 +376,17 @@ void ResultSet::generatePDF (
 
       writeLatexFile( report_src_out, outProps );
 
-      bool success=true;
-      for (int i=0; i<2; i++)
-      {
-          if ( ::system( str( format(
-                               "cd \"%s\" && pdflatex -interaction=batchmode \"%s\""
-                               ) % tmp.string() % report_src_out.filename().string()
-                           ).c_str() ))
-          {
-              success=false;
-          }
-      }
+      auto outputFileName = report_src_out;
+      outputFileName.replace_extension(".pdf");
+
+      bool success=LatexRunner(report_src_out).build();
+
+      insight::assertion(
+          boost::filesystem::exists(outputFileName),
+          "pdflatex failed to create output file" );
 
       boost::filesystem::copy_file(
-          tmp/ (report_src.filename().stem().string()+".pdf"),
+          outputFileName,
           file, copy_option::overwrite_if_exists );
 
       copyDirectoryRecursively( dataDir, file.parent_path()/dataDir.filename(), false );

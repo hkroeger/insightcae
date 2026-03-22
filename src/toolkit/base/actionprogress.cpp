@@ -196,7 +196,7 @@ void ActionProgress::message(const std::string &message)
 
 void ActionProgress::setNSteps(int nSteps)
 {
-    maxi_=nSteps;
+    maxi_=nSteps+1;
 }
 
 bool ActionProgress::isStoppable()

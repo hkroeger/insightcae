@@ -267,7 +267,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
       QAction* be = new QAction(_("Check backend installation version..."), this);
         helpMenu->addAction( be );
         connect(be, &QAction::triggered,
-                this, [&]() { checkInstallation(true); } );
+                this, [&]() { checkInstallation(); } );
     }
 #endif
 }

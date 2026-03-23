@@ -53,9 +53,10 @@ void IQVTKSplitLine::start()
                         lineOrg->end()))
                 {
                     lineOrg->replaceDependency(p2, sp->p);
+
                     // notify change
-                    sketch().geometryChanged(
-                        sketch().findGeometry(lineOrg)->first );
+                    auto i=sketch().findGeometry(lineOrg);
+                    sketch().geometryChanged(i.first->first, i.second);
 
                     auto line2 = insight::cad::Line::create(sp->p, p2);
 

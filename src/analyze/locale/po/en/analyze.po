@@ -182,10 +182,6 @@ msgstr "Setting int '%s'= %d"
 msgid "Applied Parameters for this run"
 msgstr "Applied Parameters for this run"
 
-msgid "TeX input file was written but could not execute pdflatex successfully."
-msgstr ""
-"TeX input file was written but could not execute pdflatex successfully."
-
 msgid "ANALYSIS FINISHED SUCCESSFULLY."
 msgstr "ANALYSIS FINISHED SUCCESSFULLY."
 
@@ -194,6 +190,11 @@ msgstr "ANALYSIS STOPPED WITHOUT RESULTS."
 
 msgid "The analysis was stopped due to this error:"
 msgstr "The analysis was stopped due to this error:"
+
+#~ msgid ""
+#~ "TeX input file was written but could not execute pdflatex successfully."
+#~ msgstr ""
+#~ "TeX input file was written but could not execute pdflatex successfully."
 
 #~ msgid "Error: input file does not exist"
 #~ msgstr "Error: input file does not exist"

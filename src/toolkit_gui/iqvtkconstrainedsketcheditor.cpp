@@ -1368,21 +1368,21 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             delete toolBar_;
         });
 
-    (*this)->geometryAboutToBeRemoved.connect(
-        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+    (*this)->beforeGeometryRemoval.connect(
+        [this](ConstrainedSketch::GeometryMap::key_type geoId, int) {
             DBG_SLOT(geometryAboutToBeRemoved);
             removeActors((*this)->get(geoId));
         });
 
     (*this)->geometryAdded.connect(
-        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+        [this](ConstrainedSketch::GeometryMap::key_type geoId, int) {
             DBG_SLOT(geometryAdded);
             addActors((*this)->get(geoId));
             onSketchSizeChanged();
         });
 
     (*this)->geometryChanged.connect(
-        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+        [this](ConstrainedSketch::GeometryMap::key_type geoId, int) {
                 DBG_SLOT(geometryChanged);
               // redisplay, if displayed already
               auto g=(*this)->get(geoId);
@@ -1808,7 +1808,7 @@ void IQVTKConstrainedSketchEditor::updateActors()
   {
       auto g=sga.first;
       auto i=(*this)->findGeometry(g);
-      if (i==ConstrainedSketch::GeometryMap::const_iterator())
+      if (i.first==ConstrainedSketch::GeometryMap::const_iterator())
       {
         removeActors(g);
       }

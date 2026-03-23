@@ -4,6 +4,7 @@
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
+#include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
 namespace insight {
@@ -17,7 +18,12 @@ std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints
      }
     },
     { "pdflatex",
-     {}
+        {
+#ifdef WIN32
+            "C:\\Program Files\\MiKTeX\\miktex\\bin\\x64\\pdflatex.exe",
+            std::string("C:\\Users\\")+std::getenv("USERNAME")+"\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\pdflatex.exe"
+#endif
+        }
     },
     { "gnuplot",
      {
@@ -155,12 +161,17 @@ void ExternalPrograms::writeConfiguration(const boost::filesystem::path &file)
 
 
 
-std::vector<std::string> ExternalPrograms::missingPrograms() const
+std::vector<std::string> ExternalPrograms::findMissingPrograms(
+    ActionProgress &prg) const
 {
+    prg.setNSteps(size());
     std::vector<std::string> mp;
     for (const auto& p: *this)
     {
-        if (p.second.empty())
+        prg.stepUp(str(boost::format("Checking for program %s")%p.first));
+        if ( p.second.empty()
+            || !boost::filesystem::exists(p.second)
+            || !boost::filesystem::is_executable(p.second) )
             mp.push_back(p.first);
     }
     return mp;
@@ -175,11 +186,30 @@ ExternalPrograms& ExternalPrograms::globalInstance()
 
 boost::filesystem::path ExternalPrograms::path(const std::string &exeName)
 {
+    boost::filesystem::path thePath;
+
     auto i=globalInstance().find(exeName);
     if (i!=globalInstance().end())
-        return i->second;
+    {
+        thePath = i->second;
+    }
     else
-        throw insight::Exception("No path known to executable "+exeName+"! Please check external programs configuration!");
+    {
+        throw insight::Exception(
+            "No path known to executable %s!"
+            " Please check external programs configuration!",
+            exeName.c_str());
+    }
+
+    if (!boost::filesystem::exists(thePath))
+    {
+        throw insight::Exception(
+            "The executable %s does not exist!"
+            " Please check external programs configuration!",
+            thePath.c_str());
+    }
+
+    return thePath;
 }
 
 } // namespace insight

@@ -831,7 +831,7 @@ void OpenFOAMCase::runSolver
           cout<<line<<endl; // mirror to console
           analyzer.update(line);
 
-          if (analyzer.stopRun())
+          if (analyzer.stopIsDemanded())
           {
             std::ofstream f( (location/"wnowandstop").string() );
             f<<"STOP"<<std::endl;

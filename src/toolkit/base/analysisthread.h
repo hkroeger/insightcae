@@ -35,7 +35,6 @@
 namespace insight {
 
 
-
 /**
  * @brief The AnalysisThread class
  * This class wraps the execution of an analysis in a separate thread.
@@ -44,7 +43,7 @@ namespace insight {
  */
 class AnalysisThread
     : public std::unique_ptr<insight::ResultSet>,
-      public insight::Thread<>
+      public insight::Thread
 {
 
   mutable boost::mutex dataAccess_;
@@ -61,6 +60,10 @@ public:
         insight::supplementedInputDataBasePtr>
       ParameterInput;
 
+  typedef std::function<void(std::exception_ptr)> ExceptionHandler;
+  typedef std::function<void(void)> InterruptHandler;
+
+
   AnalysisThread(
       const std::string& analysisName,
       const ParameterInput& input,
@@ -72,14 +75,15 @@ public:
       ExceptionHandler exHdlr = ExceptionHandler(),
       InterruptHandler intHdlr = InterruptHandler()
 #endif
-  );
+      );
+
 
 #ifndef SWIG
   AnalysisThread(
       std::function<void(void)> action,
       ExceptionHandler exHdlr = ExceptionHandler(),
       InterruptHandler intHdlr = InterruptHandler()
-  );
+      );
 #endif
 
 

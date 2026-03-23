@@ -70,12 +70,28 @@ public:
         = boost::optional<const insight::ParameterSet&>(),
       QObject* parent=nullptr);
 
+  bool isInsertableContainer(const QModelIndex &index) const;
 
   Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+  Qt::DropActions supportedDragActions() const override;
   Qt::DropActions supportedDropActions() const override;
+
   QStringList mimeTypes() const override;
-  QMimeData * mimeData(const QModelIndexList & indexes) const override;
-  bool dropMimeData(const QMimeData * data, Qt::DropAction action, int row, int column, const QModelIndex & parent) override;
+
+  QMimeData * mimeData(
+      const QModelIndexList & indexes) const override;
+
+  bool canDropMimeData(
+      const QMimeData *data,
+      Qt::DropAction action, int row, int col,
+      const QModelIndex &parent) const override;
+
+  bool dropMimeData(
+      const QMimeData * data,
+      Qt::DropAction action, int row, int column,
+      const QModelIndex & parent) override;
+
 
   // QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role) override;
@@ -152,7 +168,7 @@ public Q_SLOTS:
 
 IQParameterSetModel *parameterSetModel(QAbstractItemModel* model);
 const insight::ParameterSet& getParameterSet(QAbstractItemModel* model);
-const std::string& getAnalysisName(QAbstractItemModel* model);
+std::string getAnalysisName(QAbstractItemModel* model);
 
 template<class ...Args>
 void connectParameterSetChanged(

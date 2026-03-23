@@ -20,7 +20,7 @@ supplementedInputDataBase::supplementedInputDataBase(
 supplementedInputDataBase::supplementedInputDataBase(
     ParameterSetInput&& ip,
     const boost::filesystem::path& exePath,
-    ProgressDisplayer& )
+    ActionProgress& )
   : executionPath_(exePath)
 {
 #warning check, if can be avoided
@@ -72,9 +72,9 @@ const ParameterSet& supplementedInputDataBase::parameters() const
 supplementedInputDataFromParameters::supplementedInputDataFromParameters(
     ParameterSetInput ip,
     const boost::filesystem::path& exePath,
-    ProgressDisplayer& progress)
+    ActionProgress& ap)
 : std::unique_ptr<ParametersBase>(ip.moveParameters()),
-    supplementedInputDataBase(std::move(ip), exePath, progress)
+    supplementedInputDataBase(std::move(ip), exePath, ap)
 {}
 
 

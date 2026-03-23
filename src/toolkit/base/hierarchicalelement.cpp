@@ -1,8 +1,10 @@
 #include "hierarchicalelement.h"
 
+#include "base/cppextensions.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
 #include "base/translations.h"
+#include "boost/algorithm/string/constants.hpp"
 #include "boost/filesystem/operations.hpp"
 
 namespace insight {
@@ -11,33 +13,6 @@ namespace insight {
 
 namespace hierarchicalData {
 
-
-
-std::string
-elementPath::join(const std::string& p1, const std::string& p2)
-{
-    return
-        p1
-        + (
-            (!p1.empty()) && (!p2.empty())
-                ? "/" : ""
-            ) +
-        p2;
-}
-
-
-
-
-std::string
-elementPath::join(const std::vector<std::string>& ps)
-{
-    std::string result;
-    for (auto& p: ps)
-    {
-        result=join(result, p);
-    }
-    return result;
-}
 
 
 Ordering::Ordering ( double ordering_base, double ordering_step_fraction )
@@ -868,7 +843,8 @@ std::vector<std::string> Element::childElementFullPathList() const
     auto res = childElementNameList();
     for (auto &r: res)
     {
-        r=elementPath::join({path(), r});
+        r = ElementPath(path()) / r;
+        // r=elementPath::join({path(), r});
     }
     return res;
 }

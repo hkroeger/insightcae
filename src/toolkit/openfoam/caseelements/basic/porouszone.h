@@ -16,8 +16,8 @@ public:
 /*
 PARAMETERSET>>> porousZoneConfig Parameters
 
-d = vector (1 1 1) "Darcy coefficients for each direction"
-f = vector (0 0 0) "Forchheimer coefficients for each direction"
+d = vector (1 1 1) "[1/m^2] Darcy coefficients for each direction"
+f = vector (0 0 0) "[1/m] Forchheimer coefficients for each direction"
 
 direction_x = vector (1 0 0) "X direction of the porosity coordinate system"
 direction_y = vector (0 1 0) "Y direction of the porosity coordinate system"

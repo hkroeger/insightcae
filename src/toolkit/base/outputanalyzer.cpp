@@ -15,10 +15,10 @@ OutputAnalyzer::~OutputAnalyzer()
 
 
 
-bool OutputAnalyzer::stopRun() const
+bool OutputAnalyzer::stopIsDemanded() const
 {
   if (progress_)
-    return progress_->stopRun();
+    return progress_->stopIsDemanded();
   else
     return false;
 }

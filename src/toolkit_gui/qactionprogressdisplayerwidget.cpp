@@ -1,12 +1,16 @@
 
 #include <QApplication>
 #include <QDebug>
+#include <QGraphicsEffect>
 
 #include "qactionprogressdisplayerwidget.h"
+#include "qtextensions.h"
 
 #include "boost/algorithm/string.hpp"
 #include "base/exception.h"
+#include "base/linearalgebra.h"
 
+#include <boost/algorithm/string/classification.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -16,141 +20,430 @@ using namespace boost;
 namespace insight {
 
 
-QActionProgressDisplayerWidget::Columns::iterator
-QActionProgressDisplayerWidget::getColumn(const string &path, std::vector<std::string>& splitPath)
+void IQProgressWidget::setupUi(const QString& title)
 {
-  string colname;
-  std::vector<std::string> variant_path;
-  split(variant_path, path, is_any_of(":"));
-  if (variant_path.size()==2)
-  {
-    colname=variant_path[0];
-    split(splitPath, variant_path[1], is_any_of("/"));
-  }
-  else if (variant_path.size()==1)
-  {
-    colname="";
-    split(splitPath, variant_path[0], is_any_of("/"));
-  }
+    // ── Outer container (gives us drop shadow + rounded corners) ──────────────
+    auto* shadow = new QGraphicsDropShadowEffect(this);
+    shadow->setBlurRadius(18);
+    shadow->setOffset(0, 4);
+    shadow->setColor(QColor(0, 0, 0, 80));
 
-  auto ic = columns_.find(colname);
-  if (ic==columns_.end())
-  {
-    Rows nc;
-    nc.vlayout=new QVBoxLayout;
-    nc.lbl=new QLabel("<b>"+QString::fromStdString(colname)+"</b>");
-    nc.vlayout->addWidget(nc.lbl);
-    hlayout_->addLayout(nc.vlayout);
-    columns_[colname]=nc;
-    ic=columns_.find(colname);
-  }
+    card = new QFrame(this);
+    card->setObjectName("card");
+    card->setGraphicsEffect(shadow);
+    card->setStyleSheet(R"(
+        QFrame#card {
+            background: #ededed;
+            border: 1px solid #000000;
+            border-radius: 2px;
+        }
+        QLabel#title {
+            #color: #cdd6f4;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        QLabel#message {
+            #color: #a6adc8;
+            font-size: 11px;
+        }
+        QProgressBar {
+            border: none;
+            border-radius: 3px;
+            background: #313244;
+            height: 6px;
+            text-align: center;
+            color: transparent;
+        }
+        QProgressBar::chunk {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                        stop:0 #89b4fa, stop:1 #cba6f7);
+            border-radius: 3px;
+        }
+        QPushButton#cancel {
+            background: transparent;
+            border: 1px solid #45475a;
+            border-radius: 5px;
+            color: #f38ba8;
+            font-size: 11px;
+            padding: 3px 10px;
+        }
+        QPushButton#cancel:hover {
+            background: #f38ba8;
+            color: #1e1e2e;
+            border-color: #f38ba8;
+        }
+    )");
 
+    // ── Inner layout ──────────────────────────────────────────────────────────
+    titleLabel_   = new QLabel(title, card);
+    titleLabel_->setObjectName("title");
 
-  return ic;
+    messageLabel_ = new QLabel(tr("Starting…"), card);
+    messageLabel_->setObjectName("message");
+    messageLabel_->setWordWrap(true);
+
+    progressBar_  = new QProgressBar(card);
+    progressBar_->setRange(0, 100);
+    progressBar_->setValue(0);
+    progressBar_->setFixedHeight(6);
+    progressBar_->setTextVisible(false);
+
+    // Header row: title + cancel button
+    auto* headerRow = new QHBoxLayout;
+    headerRow->addWidget(titleLabel_, 1);
+
+    auto* cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(14, 10, 14, 12);
+    cardLayout->setSpacing(6);
+    cardLayout->addLayout(headerRow);
+    cardLayout->addWidget(messageLabel_);
+    cardLayout->addWidget(progressBar_);
+
+    // Outer layout (transparent, just holds the card so shadow is visible)
+    auto* outerLayout = new QVBoxLayout(this);
+    outerLayout->setContentsMargins(10, 10, 10, 10);
+    outerLayout->addWidget(card);
+
+    setFixedWidth(300);
 }
 
 
 
 
 
-QActionProgressDisplayerWidget::ProgressItem
-QActionProgressDisplayerWidget::getOrCreateItem
-(const std::string &path, bool forbidCreation)
+void IQProgressWidget::setCancelButton(bool enabled)
 {
-  vector<string> splitPath;
-  Rows *c = &(getColumn(path, splitPath)->second);
-
-  for (auto& r: splitPath)
-  {
-    auto ir=c->items.find(r);
-    if (ir==c->items.end())
+    if (enabled)
     {
-      insight::assertion(!forbidCreation, "internal error: creation of progress bar inhibited!");
+        if (!cancelButton_)
+        {
+            insight::dbg()<<"enabling cancel button for action "<<titleLabel_->text().toStdString()<<std::endl;
+            auto *headerRow=findContainingLayout(titleLabel_);
 
-      qDebug()<<"adding progress bar "<<QString::fromStdString(path);
-      ProgressItem pi;
-
-      pi.p=new QProgressBar;
-      pi.p->setMinimum(0);
-      pi.p->setMaximum(100);
-      pi.p->setTextVisible(true);
-      pi.p->setAlignment(Qt::AlignCenter);
-      pi.lbl=new QLabel(QString::fromStdString(r));
-
-      c->vlayout->addWidget(pi.lbl);
-      c->vlayout->addWidget(pi.p);
-      c->items[r]=pi;
+            cancelButton_ = new QPushButton(tr("Cancel"), card);
+            cancelButton_->setObjectName("cancel");
+            cancelButton_->setCursor(Qt::PointingHandCursor);
+            connect(cancelButton_, &QPushButton::clicked,
+                    this, &IQProgressWidget::onCancelClicked );
+            headerRow->addWidget(cancelButton_);
+        }
     }
-  }
-
-  return c->items.at( splitPath.back() );
-}
-
-
-
-
-void QActionProgressDisplayerWidget::deleteItem(const string &path)
-{
-  qDebug()<<"deleting progress bar "<<QString::fromStdString(path);
-
-  vector<string> splitPath;
-  auto ic=getColumn(path, splitPath);
-
-  if (ic!=columns_.end())
-  {
-    Rows *c=&(ic->second);
-
-    auto ir=c->items.find(splitPath.back());
-    if (ir!=c->items.end())
+    else
     {
-      ir->second.deleteLater();
-      c->items.erase(ir);
+        if (cancelButton_)
+        {
+            insight::dbg()<<"disabling cancel button for action "<<titleLabel_->text().toStdString()<<std::endl;
+            cancelButton_->deleteLater();
+            cancelButton_=nullptr;
+        }
     }
-
-    if (c->items.size()==0)
-    {
-      c->deleteLater();
-      columns_.erase(ic);
-    }
-  }
-
 }
 
 
 
 
-QActionProgressDisplayerWidget::QActionProgressDisplayerWidget
-(QWidget *parent)
-  : QWidget(parent)
+
+void IQProgressWidget::recheckCancelButton()
 {
-  hlayout_=new QHBoxLayout;
-  setLayout(hlayout_);
+    // for very short tasks, findAction might fail, because the task is already deleted
+    // In this case, just ignore, the widget will be deleted by a subsequently queued finishActionProgress event
+    if ( auto *act = trackedAction_.first
+          ->findAction(trackedAction_.second) )
+    {
+        if (act->isStoppable())
+        {
+            setCancelButton(true);
+        }
+        else
+        {
+            setCancelButton(false);
+        }
+    }
+    else
+    {
+        setCancelButton(false);
+    }
+}
+
+
+IQProgressWidget::IQProgressWidget(
+    const QString& title,
+    const Action& action,
+    QWidget* parent )
+    : QWidget(parent),
+    trackedAction_(action)
+{
+    setAttribute(Qt::WA_TranslucentBackground);
+
+    setupUi(title);
+    recheckCancelButton();
+}
+
+IQProgressWidget::~IQProgressWidget()
+{
+    Q_EMIT widgetClosing(this);
+}
+
+
+void IQProgressWidget::onCancelClicked()
+{
+    if (cancelButton_)
+    {
+        cancelButton_->setEnabled(false);
+        cancelButton_->setText(tr("Cancelling…"));
+
+        trackedAction_.first->triggerStop(trackedAction_.second);
+    }
+    // The task will emit taskCancelled → onTaskDone → we close.
+}
+
+
+void IQProgressWidget::onStatusMessage(const QString& message)
+{
+    recheckCancelButton();
+
+    messageLabel_->setText(message);
+}
+
+void IQProgressWidget::onProgressChanged(int percent)
+{
+    recheckCancelButton();
+
+    if (percent < 0)
+    {
+        // Indeterminate mode
+        progressBar_->setRange(0, 0);
+    }
+    else
+    {
+        progressBar_->setRange(0, 100);
+        progressBar_->setValue(qBound(0, percent, 100));
+    }
 }
 
 
 
 
-void QActionProgressDisplayerWidget::update(const ProgressState &/*pi*/)
+
+
+
+
+
+void IQActionProgressDisplayManager::relayout()
+{
+    if (overlays_.empty())
+        return;
+
+    const QRect windowRect = hostWidget_->rect();
+
+    // The bottom anchor sits just above the status bar (if any) and the margin.
+    const int statusBarH = (statusBar_ && statusBar_->isVisible())
+                               ? statusBar_->height()
+                               : 0;
+
+    // ── Build a hierarchically ordered list ──────────────────────────────────
+    // overlays_ keys are "/"-separated action paths (e.g. "step/fork/sub").
+    // We want the visual layout (top → bottom) to group children directly
+    // below their parent, indented by depth:
+    //
+    //   Root B           ← top (alphabetically later)
+    //   Root A
+    //     Child A/1      ← indented, below parent
+    //     Child A/2
+    //
+    // The stacking loop below places the *first* item in the list at the
+    // bottom of the screen and the *last* at the top.  Sorting with a
+    // comparator that puts a child before its parent (without requiring the
+    // parent to be present in overlays_) gives the desired layout robustly.
+
+    // Depth == number of '/' separators.
+    auto depthOf = [](const std::string& path) -> int {
+        return static_cast<int>(std::count(path.begin(), path.end(), '/'));
+    };
+
+    // isAncestor: returns true when `anc` is a strict ancestor of `path`
+    // (i.e. path == anc + "/" + something).
+    auto isAncestor = [](const std::string& anc, const std::string& path) -> bool {
+        return path.size() > anc.size() + 1
+            && path[anc.size()] == '/'
+            && path.compare(0, anc.size(), anc) == 0;
+    };
+
+    struct Entry { std::string path; int depth; };
+
+    // Comparator: child < parent (child goes to bottom, parent above it),
+    // unrelated paths ordered lexicographically (preserves alphabetical
+    // ordering of siblings).  This is a valid strict weak ordering.
+    auto hierarchyLess = [&](const Entry& a, const Entry& b) -> bool {
+        if (isAncestor(b.path, a.path)) return true;   // a is descendant of b → a first
+        if (isAncestor(a.path, b.path)) return false;  // b is descendant of a → b first
+        return a.path < b.path;                        // siblings / unrelated: alphabetical
+    };
+
+    std::vector<Entry> order;
+    order.reserve(overlays_.size());
+    int maxDepth=0;
+    for (const auto& [path, _] : overlays_)
+    {
+        auto d=depthOf(path);
+        order.push_back({ path, d });
+        maxDepth=std::max(maxDepth, d);
+    }
+    std::sort(order.begin(), order.end(), hierarchyLess);
+
+    // Start from the bottom and stack upward.
+    int bottomY = windowRect.height() - statusBarH - k_margin;
+    int leftXOfs = maxDepth * k_indent;
+
+    for (const auto& entry : order)
+    {
+        auto* w = overlays_.at(entry.path);
+
+        // Make sure the widget has been properly laid out so sizeHint() is valid.
+        w->adjustSize();
+
+        const int ww = w->geometry().width();
+        const int wh = w->geometry().height();
+
+        // Indent children to the left so they visually nest under their parent.
+        const int x =
+            windowRect.width() - ww
+                      - k_margin
+                      - leftXOfs
+                      + entry.depth * k_indent;
+
+        bottomY -= wh + k_spacing;
+
+        w->setGeometry(x, bottomY, ww, wh);
+        w->raise();
+    }
+}
+
+
+
+IQProgressWidget* IQActionProgressDisplayManager::getItem(
+    const std::string& path, bool createIfNonExistent )
+{
+    insight::CurrentExceptionContext ex(
+        "returning progress widget for action %s", path.c_str() );
+
+    auto i=overlays_.find(path);
+    if (i!=overlays_.end())
+    {
+        return i->second;
+    }
+    else
+    {
+        if (createIfNonExistent)
+        {
+            insight::CurrentExceptionContext ex2(
+                "creating new progress widget for action %s", path.c_str() );
+
+            auto *iqpw=new IQProgressWidget(
+                QString::fromStdString(path),
+                {this,path},
+                hostWidget_ );
+            connect(iqpw, &IQProgressWidget::widgetClosing,
+                    this, &IQActionProgressDisplayManager::onWidgetClosing );
+            connect(iqpw, &IQProgressWidget::destroyed,
+                    this, &IQActionProgressDisplayManager::relayout );
+            overlays_[path]=iqpw;
+
+            iqpw->show();
+            QMetaObject::invokeMethod(
+                this, &IQActionProgressDisplayManager::relayout,
+                Qt::QueuedConnection);
+
+            return iqpw;
+        }
+    }
+
+    return nullptr;
+}
+
+bool IQActionProgressDisplayManager::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == hostWidget_)
+    {
+        if (event->type() == QEvent::Resize)
+            relayout();
+    }
+    else if (watched == statusBar_)
+    {
+        switch (event->type())
+        {
+        case QEvent::Show:
+        case QEvent::Hide:
+        case QEvent::Resize:
+            relayout();
+            break;
+        default:
+            break;
+        }
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+
+
+void IQActionProgressDisplayManager::onWidgetClosing(IQProgressWidget *widget)
+{
+    auto i=std::find_if(
+        overlays_.begin(), overlays_.end(),
+        [widget](const decltype(overlays_)::value_type& i)
+        { return i.second==widget; } );
+
+    if (i!=overlays_.end())
+    {
+        overlays_.erase(i);
+        // widget will be deleted via deleteLater() by itself; just relayout the rest.
+        relayout();
+    }
+}
+
+
+IQActionProgressDisplayManager::IQActionProgressDisplayManager(
+    QWidget *parent, QWidget* statusBar )
+  : QObject(parent),
+    hostWidget_(parent),
+    statusBar_(statusBar)
+{
+    parent->installEventFilter(this);
+    if (statusBar_)
+        statusBar_->installEventFilter(this);
+
+}
+
+
+
+
+void IQActionProgressDisplayManager::update(const ProgressState &/*pi*/)
 {}
 
 
 
 
-void QActionProgressDisplayerWidget::logMessage(const std::string &line)
+void IQActionProgressDisplayManager::logMessage(const std::string &line)
 {}
 
 
 
 
-void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &path, double value)
+void IQActionProgressDisplayManager::setActionProgressValue(
+    const std::string &path, double value )
 {
+  qDebug() << "setActionProgressValue called: path=" << QString::fromStdString(path) << "value=" << value;
   QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
-        qApp,
+        this,
         [this,path,value]()
         {
-          insight::dbg()<<"setting value for "<<path<<" to "<<100.*value<<std::endl;
-          auto i=getOrCreateItem(path);
-          i.p->setValue(std::round(100.*value));
+            if (auto i=getItem(
+                    path,
+                    fabs(value)<SMALL // allow progress widget creation only on first call with value=0
+                    ))
+            {
+                i->onProgressChanged(std::round(100.*value));
+            }
         },
         Qt::QueuedConnection
   );
@@ -159,22 +452,25 @@ void QActionProgressDisplayerWidget::setActionProgressValue(const std::string &p
 
 
 
-void QActionProgressDisplayerWidget::setMessageText(const std::string &path, const std::string &message)
+void IQActionProgressDisplayManager::setMessageText(
+    const std::string &path, const std::string &message )
 {
   QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
-        qApp,
+        this,
         [this,path,message]()
         {
-          try
-          {
-              insight::dbg()<<"setting text for "<<path<<" to "<<message<<std::endl;
-              auto i=getOrCreateItem(path, true);
-              i.p->setFormat( QString::fromStdString(message) );
-          }
-          catch (const insight::Exception& ex)
-          {
-              // ignore, progress bar was either not yet created or already removed
-          }
+            try
+            {
+                if (auto i=getItem(path, false))
+                {
+                    insight::dbg()<<"setting text for "<<path<<" to "<<message<<std::endl;
+                    i->onStatusMessage( QString::fromStdString(message) );
+                }
+            }
+            catch (const insight::Exception& ex)
+            {
+                // ignore, progress bar was either not yet created or already removed
+            }
         },
         Qt::QueuedConnection
   );
@@ -183,13 +479,18 @@ void QActionProgressDisplayerWidget::setMessageText(const std::string &path, con
 
 
 
-void QActionProgressDisplayerWidget::finishActionProgress(const string &path)
+void IQActionProgressDisplayManager::finishActionProgress(const string &path)
 {
   QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
-        qApp,
+        this,
         [this,path]()
         {
-          deleteItem(path);
+            insight::CurrentExceptionContext ex("removing progress widget %s", path.c_str());
+            if (auto i=getItem(path, false))
+            {
+                i->deleteLater();
+                overlays_.erase(path);
+            }
         },
         Qt::QueuedConnection
   );
@@ -198,11 +499,13 @@ void QActionProgressDisplayerWidget::finishActionProgress(const string &path)
 
 
 
-void QActionProgressDisplayerWidget::reset()
+void IQActionProgressDisplayManager::reset()
 {
-  for (auto& c: columns_)
-    c.second.deleteLater();
-  columns_.clear();
+    for (auto& c: overlays_)
+    {
+        c.second->deleteLater();
+    }
+    overlays_.clear();
 }
 
 

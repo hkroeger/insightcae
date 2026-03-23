@@ -51,7 +51,8 @@ MainWindow::MainWindow(QWidget *parent) :
    parameters_ = insight::Analysis::defaultParameters()("Numerical Wind Tunnel");
    auto a = insight::Analysis::analyses()("Numerical Wind Tunnel",
                 insight::Analysis::supplementedInputDatas()(
-                    "Numerical Wind Tunnel", *parameters_, ".", insight::consoleProgressDisplayer ) );
+                    "Numerical Wind Tunnel", *parameters_, ".",
+                    *insight::consoleProgressDisplayer.forkNewAction(99, "Process input data") ) );
 //  insight::AnalysisPtr a( new insight::GasDispersion(defaultParams, "") );
 
   setCentralWidget(new QoccViewWidget(this));

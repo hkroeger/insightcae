@@ -70,7 +70,7 @@ Analysis::Add<AirfoilSection> addAirfoilSection;
 AirfoilSection::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const path &workDir,
-    ProgressDisplayer &progress )
+    ActionProgress &progress )
   : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     in_("in"),
     out_("out"),

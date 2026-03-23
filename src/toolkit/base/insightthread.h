@@ -9,25 +9,15 @@
 
 
 
-
 namespace insight {
 
 
 
-template<
-    typename InterruptHandlerType = std::function<void(void)>,
-    typename ExceptionHandlerType = std::function<void(std::exception_ptr)> >
+
 class Thread
 {
-public:
-    typedef InterruptHandlerType InterruptHandler;
-    typedef ExceptionHandlerType ExceptionHandler;
-
 private:
     boost::thread thread_;
-
-    ExceptionHandler exceptionHandler_;
-    InterruptHandler interruptHandler_;
 
     /**
    * @brief exception
@@ -36,39 +26,41 @@ private:
     std::exception_ptr exception_;
 
 public:
-    Thread(
-        ExceptionHandler exHdlr = ExceptionHandler(),
-        InterruptHandler intHdlr = InterruptHandler()
-        )
-      : exceptionHandler_(exHdlr),
-        interruptHandler_(intHdlr)
-    {}
-
-    template<class Function>
+    template<
+        class Function,
+        typename ExceptionHandler = std::function<void(std::exception_ptr)>,
+        typename InterruptHandler = std::function<void(void)>
+        >
     Thread(
         Function functionToExecute,
         ExceptionHandler exHdlr = ExceptionHandler(),
         InterruptHandler intHdlr = InterruptHandler()
         )
-        : Thread(exHdlr, intHdlr)
     {
-        launch(functionToExecute);
+        launch(functionToExecute, exHdlr, intHdlr);
     }
 
-    ~Thread()
-    {
-        if (thread_.joinable())
-            thread_.join();
-    }
+    Thread();
+    ~Thread();
 
-
-    template<class Function>
+    template<
+        class Function,
+        typename ExceptionHandler = std::function<void(std::exception_ptr)>,
+        typename InterruptHandler = std::function<void(void)>
+        >
     void launch(
-        Function functionToExecute )
+        Function functionToExecute,
+        ExceptionHandler exHndlr = ExceptionHandler(),
+        InterruptHandler intHndlr = InterruptHandler() )
     {
+        insight::assertion(
+            !thread_.joinable(),
+            "launch() called on already-running task" );
+
         thread_ = boost::thread(
 
-            [this,functionToExecute](WarningDispatcher* globalWarning)
+            [this,functionToExecute,exHndlr,intHndlr](
+                WarningDispatcher* globalWarning)
             {
                 try
                 {
@@ -78,17 +70,17 @@ public:
                 }
                 catch (const boost::thread_interrupted& i)
                 {
-                    if (interruptHandler_)
+                    if (intHndlr)
                     {
-                        interruptHandler_();
+                        intHndlr();
                     }
                 }
                 catch (...)
                 {
                     auto e = std::current_exception();
-                    if (exceptionHandler_)
+                    if (exHndlr)
                     {
-                        exceptionHandler_(e);
+                        exHndlr(e);
                     }
                     else
                     {
@@ -102,28 +94,14 @@ public:
     }
 
 
+    void interrupt();
 
-
-
-
-    void interrupt()
-    {
-        thread_.interrupt();
-    }
-
-
-  /**
+    /**
    * @brief join
    * join thread and rethrow any exception, if there was no handler set
    * @return
    */
-    void join()
-    {
-        thread_.join();
-        if (exception_) std::rethrow_exception(exception_);
-    }
-
-
+    void join();
 
 
     template <class Rep, class Period>
@@ -132,6 +110,8 @@ public:
         return thread_.try_join_for(rel_time);
     }
 };
+
+
 
 
 

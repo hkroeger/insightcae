@@ -35,13 +35,16 @@
 #include "cadparametersetvisualizer.h"
 #include "newanalysisdlg.h"
 #include "analysisform.h"
+#include "qactionprogressdisplayerwidget.h"
 #include "qinsighterror.h"
 #include "iqremoteservereditdialog.h"
 #include "iqconfigureexternalprogramsdialog.h"
 #include "iqmanagereporttemplatesdialog.h"
 #include "qanalysisthread.h"
+#include "iqbackgroundtask.h"
 #include "qtextensions.h"
 
+#include <boost/thread/detail/thread.hpp>
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
@@ -105,6 +108,7 @@ AnalysisForm* WorkbenchMainWindow::addAnalysisTabWithDefaults(const std::string 
     auto *form = new AnalysisForm(
         //mdiArea_,
         tw,
+        globalActionsProgress_,
         analysisType,
         logToConsole_ );
 
@@ -131,7 +135,10 @@ void WorkbenchMainWindow::setDefaultTitle()
 }
 
 WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
-  : logToConsole_(logToConsole)
+  : logToConsole_(logToConsole),
+    globalActionsProgress_(
+          new insight::IQActionProgressDisplayManager(
+              this, statusBar() ))
 {
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
   setDefaultTitle();
@@ -260,7 +267,7 @@ WorkbenchMainWindow::WorkbenchMainWindow(bool logToConsole)
       QAction* be = new QAction(_("Check backend installation version..."), this);
         helpMenu->addAction( be );
         connect(be, &QAction::triggered,
-                this, [&]() { checkInstallation(true); } );
+                this, [&]() { checkInstallation(); } );
     }
 #endif
 }
@@ -325,12 +332,27 @@ void WorkbenchMainWindow::openRecentFile()
 
 
 
-void WorkbenchMainWindow::checkInstallation(bool reportSummary)
+void WorkbenchMainWindow::checkInstallation()
 {
-    insight::checkExternalPrograms(this);
+    if (!installationWasChecked_)
+    {
+        installationWasChecked_=true;
+
+
+        auto bt1=new IQBackgroundTask(
+            "Checking external programs",
+            globalActionsProgress_
+            );
+        bt1->start(std::bind(&insight::checkExternalPrograms, std::placeholders::_1, this));
+
 #ifdef WIN32
-    insight::checkWSLVersions(reportSummary, this);
+        auto b2=new IQBackgroundTask(
+            "Checking WSL Installations",
+            globalActionsProgress_
+            );
+        b2->start(std::bind(&insight::checkWSLVersions, std::placeholders::_1, this));
 #endif
+    }
 }
 
 
@@ -415,9 +437,8 @@ void WorkbenchMainWindow::readSettings()
 void WorkbenchMainWindow::show()
 {
     QMainWindow::show();
-#ifdef WIN32
-    checkInstallation(false);
-#endif
+
+    checkInstallation();
 }
 
 

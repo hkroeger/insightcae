@@ -28,7 +28,7 @@ public:
   void finishActionProgress(const std::string& path) override;
   void reset() override;
 
-  bool stopRun() const override;
+  bool stopIsDemanded() const override;
 };
 
 typedef std::shared_ptr<ConvergenceAnalysisDisplayer>

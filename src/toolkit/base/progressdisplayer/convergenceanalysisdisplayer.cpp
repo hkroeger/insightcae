@@ -70,7 +70,7 @@ void ConvergenceAnalysisDisplayer::finishActionProgress(const string &)
 void ConvergenceAnalysisDisplayer::reset()
 {}
 
-bool ConvergenceAnalysisDisplayer::stopRun() const
+bool ConvergenceAnalysisDisplayer::stopIsDemanded() const
 {
     return converged_;
 }

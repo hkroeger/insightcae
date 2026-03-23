@@ -114,6 +114,11 @@ const RemoteServer::Config& WSLLinuxServer::config() const
     return serverConfig_;
 }
 
+const string &WSLLinuxServer::myDistributionLabel() const
+{
+    return dynamic_cast<const Config&>(config()).distributionLabel_;
+}
+
 const WSLLinuxServer::Config& WSLLinuxServer::WSLServerConfig() const
 {
   return dynamic_cast<const Config&>(config());
@@ -525,6 +530,148 @@ void WSLLinuxServer::updateInstallation(
     {
      throw insight::Exception("WSL update command failed");
     }
+}
+
+int WSLLinuxServer::detectWslVersion() const
+{
+
+    boost::process::wipstream out;
+
+    int ret = boost::process::system(
+        WSLcommand(),
+        boost::process::args({"--list", "--verbose"}),
+        boost::process::std_out > out,
+        boost::process::std_err > stderr,
+        boost::process::std_in < boost::process::null
+        );
+
+    if (ret==0)
+    {
+        using convert_type = std::codecvt_utf8<wchar_t>;
+        std::wstring_convert<convert_type, wchar_t> converter;
+        wstring wline;
+        while (getline(out, wline))
+        {
+            std::string line=converter.to_bytes( wline );
+            boost::trim(line);
+            if (!line.empty())
+            {
+                insight::dbg()<<line<<std::endl;
+
+                // line starts with distro name
+                if (line.find(myDistributionLabel()) >= 0)
+                {
+                    // Last token is version number
+                    std::istringstream ls(line);
+                    std::string tok, last;
+                    while (ls >> tok) last = tok;
+                    if (!last.empty() && std::isdigit(static_cast<unsigned char>(last[0])))
+                        return std::stoi(last);
+                }
+            }
+        }
+    }
+
+    throw insight::Exception("failed to detect WSL distribution version");
+    return -1; // unknown
+}
+
+
+
+
+string WSLLinuxServer::IPaddress() const
+{
+    // return const_cast<WSLLinuxServer*>(this)->getWslIp();
+    return LinuxRemoteServer::IPaddress();
+}
+
+
+
+
+string WSLLinuxServer::getDefaultRouteDeviceName()
+{
+    boost::process::ipstream out;
+
+    executeCommand(
+        "/usr/sbin/ip -4 route show default", true,
+        boost::process::std_out > out,
+        boost::process::std_err > stderr,
+        boost::process::std_in < boost::process::null
+        );
+
+    std::string line;
+    insight::assertion(
+        bool(getline(out, line)),
+        "no default route reported" );
+
+    std::string iface;
+    {
+        std::istringstream ss(line);
+        std::string tok;
+        while (ss >> tok)
+        {
+            if (tok == "dev") {
+                ss >> iface;   // token immediately after "dev"
+                return iface;
+            }
+        }
+    }
+
+    throw insight::Exception(
+        "failed to detect default network device of WSL distribution %s",
+        myDistributionLabel().c_str() );
+    return {}; // unknown
+}
+
+
+
+
+string WSLLinuxServer::getWslIp()
+{
+    auto wslvers=detectWslVersion();
+    if (wslvers==1)
+    {
+        return "127.0.0.1";
+    }
+    else if (wslvers==2)
+    {
+        auto devname = getDefaultRouteDeviceName();
+
+        boost::process::ipstream out;
+
+        executeCommand(
+            "/usr/sbin/ip -4 addr show "+devname, true,
+            boost::process::std_out > out,
+            boost::process::std_err > stderr,
+            boost::process::std_in < boost::process::null
+            );
+
+        std::string line;
+        while (getline(out, line))
+        {
+            boost::trim(line);
+            if (!line.empty())
+            {
+                insight::dbg()<<line<<std::endl;
+                boost::trim(line);
+                if (line.substr(0, 4) == "inet")
+                {
+                    std::istringstream ls(line);
+                    std::string token, addr;
+                    ls >> token >> addr;          // "inet"  "172.x.x.x/20"
+                    auto slash = addr.find('/');
+                    if (slash != std::string::npos)
+                        addr = addr.substr(0, slash);
+                    if (!addr.empty())
+                        return addr;
+                }
+            }
+        }
+    }
+
+    throw insight::Exception("failed to detect IP adress of WSL distribution %s",
+                             myDistributionLabel().c_str());
+    return {}; // unknown
 }
 
 

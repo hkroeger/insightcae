@@ -12,8 +12,8 @@ namespace insight
 InternalPressureLoss::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &executionPath,
-    ProgressDisplayer &prg )
-    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, prg )
+    ActionProgress &ap )
+    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, ap )
 {
     stldir_=snappyHexMeshFeats::geometryDir(OFEs::get(p().run.OFEname), executionPath);
     fn_inlet_="inlet";
@@ -25,7 +25,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
     // * Inlet hydraulic diam.
 
 
-    prg.message("Analyzing geometry...");
+    ap.message("Analyzing geometry...");
 
     for (auto &w: p().geometry)
     {

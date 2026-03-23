@@ -39,6 +39,8 @@
 #include "GeomAPI_ExtremaCurveSurface.hxx"
 #include "BRepBuilderAPI_NurbsConvert.hxx"
 
+#include "base/progressdisplayer/textprogressdisplayer.h"
+
 
 using namespace std;
 using namespace boost;
@@ -58,7 +60,7 @@ addToOpenFOAMCaseElementFactoryTable(blockMeshDict_CylWedge );
 blockMeshDict_CylWedge::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &workDir,
-    ProgressDisplayer &progress )
+    ActionProgress &progress )
   : supplementedInputDataDerived<Parameters>(
           ip.forward<Parameters>(), workDir, progress )
 {
@@ -217,7 +219,8 @@ void blockMeshDict_CylWedge::create_bmd()
 
 
     supplementedInputData sp(
-        p(), ".", consoleProgressDisplayer );
+        p(), ".",
+        *consoleProgressDisplayer.forkNewAction(99, "Processing input data") );
 
 
     auto phi_lim = sp.limit_angles();

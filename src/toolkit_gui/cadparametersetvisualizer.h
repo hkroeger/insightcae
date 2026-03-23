@@ -328,7 +328,8 @@ public:
     computeSupplementedInput() override
     {
         return std::make_shared<typename AnalysisInstance::supplementedInputData>(
-            ParameterSetInput(this->parameters()), this->workDir_, this->progress_);
+            ParameterSetInput(this->parameters()), this->workDir_,
+            *this->progress_.forkNewAction(99, "Processing input data"));
     }
 
     const typename AnalysisInstance::supplementedInputData& sp() const

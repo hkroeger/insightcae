@@ -99,7 +99,7 @@ public:
 
     void ios_run_with_interruption( )
     {
-        insight::Thread<> outReader([this](){
+        insight::Thread outReader([this](){
             std::string line;
             while (extendedGetline<std::istream>(out_, line))
             {
@@ -108,7 +108,7 @@ public:
             std::cout<<"end out"<<std::endl;
         });
 
-        insight::Thread<> errReader([this](){
+        insight::Thread errReader([this](){
             std::string line;
             while (extendedGetline<std::istream>(err_, line))
             {

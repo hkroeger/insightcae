@@ -114,8 +114,29 @@ namespace boost
 namespace filesystem
 {
 
+template < >
+path& path::append< typename path::iterator >(
+    typename path::iterator begin,
+    typename path::iterator end,
+    const codecvt_type& cvt );
+
+
+
 boost::filesystem::path
-    make_relative( boost::filesystem::path a_From, boost::filesystem::path a_To );
+make_relative(
+    boost::filesystem::path a_From,
+    boost::filesystem::path a_To );
+
+bool path_contains_file(
+    path dir,
+    path file );
+
+
+bool weakly_equivalent(
+    path first,
+    path second );
+
+bool is_executable(const boost::filesystem::path& p);
 
 }
 

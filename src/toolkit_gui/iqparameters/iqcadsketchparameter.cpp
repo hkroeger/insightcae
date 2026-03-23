@@ -36,18 +36,18 @@ IQCADSketchParameter::IQCADSketchParameter
 
 void IQCADSketchParameter::connectSignals()
 {
-    IQParameter::connectSignals();
+    // IQParameter::connectSignals();
 
-    disconnectAtEOL(
-        parameterRef().childValueChanged.connect(
-            [this]() {
-                DBG_SLOT(childValueChanged);
+    // disconnectAtEOL(
+    //     parameterRef().childValueChanged.connect(
+    //         [this]() {
+    //             DBG_SLOT(childValueChanged);
 
-                auto blocker = block_all();
-                model()->notifyElementChange( *this );
-            }
-        )
-    );
+    //             auto blocker = block_all();
+    //             model()->notifyElementChange( *this );
+    //         }
+    //     )
+    // );
 }
 
 
@@ -101,10 +101,10 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
         auto applyFunction = [=]()
         {
             auto&p = this->parameterRef();
-            p.setUpdateValueSignalBlockage(true);
+            // p.setUpdateValueSignalBlockage(true);
             p.setScript( teScript->document()->toPlainText().toStdString() );
-            p.setUpdateValueSignalBlockage(false);
-            p.triggerValueChanged();
+            // p.setUpdateValueSignalBlockage(false);
+            // p.triggerValueChanged();
         };
         connect(apply, &QPushButton::pressed, applyFunction);
 

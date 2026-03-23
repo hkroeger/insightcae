@@ -98,7 +98,7 @@ evaluation = set {
     supplementedInputData(
         ParameterSetInput ip,
         const boost::filesystem::path& workDir,
-        ProgressDisplayer& progress = consoleProgressDisplayer
+        ActionProgress& progress
         );
 
     std::string cycl_in_, cycl_out_;

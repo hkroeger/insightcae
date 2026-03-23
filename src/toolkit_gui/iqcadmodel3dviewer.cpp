@@ -188,7 +188,7 @@ IQCADModel3DViewer::editSketchParameter(
                     psm->parameterRef(parameterPath) );
 
                 {
-                    auto blocker{skp.blockUpdateValueSignal()};
+                    // auto blocker{skp.blockUpdateValueSignal()};
 
                     std::ostringstream os;
                     accSk->generateScript(os);
@@ -197,7 +197,7 @@ IQCADModel3DViewer::editSketchParameter(
                     skp.sketch(); //trigger rebuild
                 }
 
-                skp.triggerValueChanged();
+                // skp.triggerValueChanged();
             },
 
             [](insight::cad::ConstrainedSketchPtr) // on cancel

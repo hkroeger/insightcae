@@ -14,8 +14,10 @@ ParametersBase::ParametersBase()
 
 
 
-ParametersBase::ParametersBase(const insight::ParameterSet& /*p*/)
-{}
+ParametersBase::ParametersBase(const insight::ParameterSet& p)
+{
+    parameterPath=p.path();
+}
 
 
 

@@ -72,7 +72,7 @@ void CombinedProgressDisplayer::reset()
 }
 
 
-bool CombinedProgressDisplayer::stopRun() const
+bool CombinedProgressDisplayer::stopIsDemanded() const
 {
     bool stop=false;
 
@@ -82,9 +82,9 @@ bool CombinedProgressDisplayer::stopRun() const
 
     for ( const ProgressDisplayer* d: displayers_ ) {
         if ( op_==AND ) {
-            stop = stop && d->stopRun();
+            stop = stop && d->stopIsDemanded();
         } else if ( op_==OR ) {
-            stop = stop || d->stopRun();
+            stop = stop || d->stopIsDemanded();
         }
     }
     return stop;

@@ -63,7 +63,7 @@ const std::vector<double> FlatPlateBL::supplementedInputData::sec_locs_
 FlatPlateBL::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &workDir,
-    ProgressDisplayer &progress)
+    ActionProgress &progress)
     : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress )
 {
   Retheta0_= p().operation.Retheta0;

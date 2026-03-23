@@ -50,7 +50,8 @@ std::shared_ptr<supplementedInputDataBase>
 blockMeshDict_CylWedge_ParameterSet_Visualizer::computeSupplementedInput()
 {
     return std::make_shared<blockMeshDict_CylWedge::supplementedInputData>(
-        parameters(), workDir_, progress_ );
+        parameters(), workDir_,
+        *progress_.forkNewAction(99, "Processing input data") );
 }
 
 

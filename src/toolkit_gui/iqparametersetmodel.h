@@ -152,7 +152,7 @@ public Q_SLOTS:
 
 IQParameterSetModel *parameterSetModel(QAbstractItemModel* model);
 const insight::ParameterSet& getParameterSet(QAbstractItemModel* model);
-const std::string& getAnalysisName(QAbstractItemModel* model);
+std::string getAnalysisName(QAbstractItemModel* model);
 
 template<class ...Args>
 void connectParameterSetChanged(

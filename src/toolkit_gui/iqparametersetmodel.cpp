@@ -12,6 +12,7 @@
 
 #include "iqparametersetmodel.h"
 #include "base/cppextensions.h"
+#include "base/hierarchicalelement.h"
 #include "base/parameter.h"
 #include "base/parameters/arrayparameter.h"
 #include "base/parameters/selectablesubsetparameter.h"
@@ -129,15 +130,8 @@ QMimeData *IQParameterSetModel::mimeData(const QModelIndexList &indexes) const
 {
   auto* mimeData = new QMimeData();
 
-  std::ostringstream os;
-  using namespace rapidxml;
-  xml_document<> doc;
-  xml_node<>* decl = doc.allocate_node(node_declaration);
-  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-  doc.append_node(decl);
-  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
-  doc.append_node(rootnode);
+
+  insight::XMLDocument doc;
   for (const auto& index: indexes)
   {
     if (index.column()==0) // one index per col is issued
@@ -145,11 +139,14 @@ QMimeData *IQParameterSetModel::mimeData(const QModelIndexList &indexes) const
         auto *ip=elementOfIndex(index);
 
         ip->appendToNode(
-            ip->name(), doc, *rootnode,
+            ip->name(), doc, *doc.rootNode,
             insight::hierarchicalData::Element::OutputProperties());
     }
   }
-  os << doc;
+
+
+  std::ostringstream os;
+  doc.saveToStream(os);
 
 
   mimeData->setData(
@@ -168,96 +165,91 @@ bool IQParameterSetModel::dropMimeData(
     int row, int column,
     const QModelIndex &parent )
 {
-  // if (action == Qt::IgnoreAction)
-  // {
-  //   return true;
-  // }
-  // else if (action == Qt::MoveAction || action == Qt::CopyAction)
-  // {
+  if (action == Qt::IgnoreAction)
+  {
+    return true;
+  }
+  else if (action == Qt::MoveAction || action == Qt::CopyAction)
+  {
 
-  //   // parse, what we got
-  //   std::string contents(data->data("application/xml").toStdString());
-  //   using namespace rapidxml;
-  //   xml_document<> doc;
-  //   doc.parse<0>(&contents[0]);
-  //   xml_node<> *rootnode = doc.first_node("root");
+    // parse, what we got
+    std::string contents(data->data("application/xml").toStdString());
+    insight::XMLDocument doc(contents.begin(), contents.end());
 
-  //   std::string allTypesEqual(rootnode->first_node()->name());
-  //   int nArgs = 0;
-  //   for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-  //   {
-  //       std::string type(e->name());
-  //       nArgs++;
-  //       if (type!=allTypesEqual) allTypesEqual="";
-  //   }
+    std::string allTypesEqual(doc.rootNode->first_node()->name());
+    int nArgs = 0;
+    for (auto *e = doc.rootNode->first_node(); e!=nullptr; e=e->next_sibling())
+    {
+        std::string type(e->name());
+        nArgs++;
+        if (type!=allTypesEqual) allTypesEqual="";
+    }
 
-  //   insight::ArrayParameter *iap = nullptr;
-  //   if (auto *ip=indexData(parent))
-  //   {
-  //       iap = dynamic_cast<insight::ArrayParameter*>(ip);
-  //   }
+    insight::ArrayParameter *iap = nullptr;
+    if (auto *ip=elementOfIndex(parent))
+    {
+        iap = dynamic_cast<insight::ArrayParameter*>(ip);
+    }
 
-  //   if (iap && allTypesEqual==iap->defaultValue().type())
-  //   {
-  //       // Parent is Array and all given parameters are of the same and child type of array? -> inserted/append children
-  //       std::vector<insight::ParameterPtr> args;
-  //       for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-  //       {
-  //           insight::ParameterPtr np(
-  //               iap->defaultValue().clone() );
+    // Parent is Array and all given parameters are of the same and child type of array?
+    // -> inserted/append children
+    if (iap && allTypesEqual==iap->defaultValue().type())
+    {
+        std::vector<std::unique_ptr<insight::Parameter> > args;
+        for (auto *e = doc.rootNode->first_node(); e!=nullptr; e=e->next_sibling())
+        {
+            auto np = iap->defaultValue()
+                .cloneAs<insight::Parameter>();
 
-  //           np->readFromNode(
-  //               e->first_attribute("name")->value(),
-  //               *rootnode,
-  //               ""
-  //               );
+            np->readFromNode(
+                e->first_attribute("name")->value(),
+                *doc.rootNode );
 
-  //           args.push_back(np);
-  //       }
+            args.push_back(std::move(np));
+        }
 
-  //       auto row=parent.row();
-  //       if (row<0) // append
-  //       {
-  //           for (auto& arg: args)
-  //           {
-  //               appendArrayElement(parent, *arg);
-  //           }
-  //           return true;
-  //       }
-  //       else if (row>=0)
-  //       {
-  //           // insert in reverse order
-  //           std::reverse(args.begin(), args.end());
-  //           for (auto& arg: args)
-  //           {
-  //               insertArrayElement(parent, *arg);
-  //           }
-  //           return true;
-  //       }
-  //   }
-  //   else if (nArgs==1)
-  //   {
-  //       // expect a single given item of same type as indexed parameter
-  //       auto targetIndex = index(row, column, parent);
-  //       if (!targetIndex.isValid())
-  //           targetIndex=parent;
+        auto row=parent.row();
+        if (row<0) // append
+        {
+            for (auto& arg: args)
+            {
+                appendArrayElement(parent, *arg);
+            }
+            return true;
+        }
+        else if (row>=0)
+        {
+            // insert in reverse order
+            std::reverse(args.begin(), args.end());
+            for (auto& arg: args)
+            {
+                insertArrayElement(parent, *arg);
+            }
+            return true;
+        }
+    }
+    else if (nArgs==1)
+    {
+        // expect a single given item of same type as indexed parameter
+        auto targetIndex = index(row, column, parent);
+        if (!targetIndex.isValid())
+            targetIndex=parent;
 
-  //       auto *ip=indexData(targetIndex);
-  //       if (allTypesEqual==ip->type())
-  //       {
-  //           insight::ParameterPtr np(iqp->parameter().clone());
-  //           np->readFromNode(
-  //                   rootnode->first_node()->first_attribute("name")->value(),
-  //                   *rootnode,
-  //                   ""
-  //               );
-  //           iqp->parameterRef().copyFrom( *np );
-  //           return true;
-  //       }
-  //   }
+        auto *ip=dynamic_cast<insight::Parameter*>(
+            elementOfIndex(targetIndex));
+        if (allTypesEqual==ip->type())
+        {
+            auto np=ip->clone();
+            np->readFromNode(
+                    doc.rootNode->first_node()->first_attribute("name")->value(),
+                    *doc.rootNode );
+            ip->assignFrom( *np );
+            return true;
+        }
+    }
 
 
-  // }
+  }
 
   return false;
 }
@@ -693,7 +685,7 @@ const insight::ParameterSet &getParameterSet(QAbstractItemModel *model)
     return parameterSetModel(model)->getParameterSet();
 }
 
-const std::string &getAnalysisName(QAbstractItemModel *model)
+std::string getAnalysisName(QAbstractItemModel *model)
 {
     return parameterSetModel(model)->getAnalysisName();
 }

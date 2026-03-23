@@ -69,8 +69,9 @@ class TOOLKIT_GUI_EXPORT IQActionProgressDisplayManager
     QWidget*                  statusBar_  = nullptr;
     std::map<std::string, IQProgressWidget*>  overlays_;
 
-    static constexpr int k_margin  = 2; ///< Distance from the window edge.
-    static constexpr int k_spacing = 1; ///< Vertical gap between cards.
+    static constexpr int k_margin  = 2;  ///< Distance from the window edge.
+    static constexpr int k_spacing = 1;  ///< Vertical gap between cards.
+    static constexpr int k_indent  = 16; ///< Horizontal indent per depth level for child actions.
 
 
 protected:

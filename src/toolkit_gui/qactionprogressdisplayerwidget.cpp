@@ -11,7 +11,6 @@
 #include "base/linearalgebra.h"
 
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/range/adaptor/indexed.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -151,21 +150,17 @@ void IQProgressWidget::recheckCancelButton()
     if ( auto *act = trackedAction_.first
           ->findAction(trackedAction_.second) )
     {
-        insight::dbg()<<"found action "<<trackedAction_.second<<std::endl;
         if (act->isStoppable())
         {
-            insight::dbg()<<"action is stoppable"<<std::endl;
             setCancelButton(true);
         }
         else
         {
-            insight::dbg()<<"action is not stoppable"<<std::endl;
             setCancelButton(false);
         }
     }
     else
     {
-        insight::dbg()<<"*NOT* found action "<<trackedAction_.second<<std::endl;
         setCancelButton(false);
     }
 }
@@ -236,7 +231,7 @@ void IQProgressWidget::onProgressChanged(int percent)
 
 void IQActionProgressDisplayManager::relayout()
 {
-    if (overlays_.size()<1)
+    if (overlays_.empty())
         return;
 
     const QRect windowRect = hostWidget_->rect();
@@ -246,12 +241,63 @@ void IQActionProgressDisplayManager::relayout()
                                ? statusBar_->height()
                                : 0;
 
+    // ── Build a hierarchically ordered list ──────────────────────────────────
+    // overlays_ keys are "/"-separated action paths (e.g. "step/fork/sub").
+    // We want the visual layout (top → bottom) to group children directly
+    // below their parent, indented by depth:
+    //
+    //   Root B           ← top (alphabetically later)
+    //   Root A
+    //     Child A/1      ← indented, below parent
+    //     Child A/2
+    //
+    // The stacking loop below places the *first* item in the list at the
+    // bottom of the screen and the *last* at the top.  Sorting with a
+    // comparator that puts a child before its parent (without requiring the
+    // parent to be present in overlays_) gives the desired layout robustly.
+
+    // Depth == number of '/' separators.
+    auto depthOf = [](const std::string& path) -> int {
+        return static_cast<int>(std::count(path.begin(), path.end(), '/'));
+    };
+
+    // isAncestor: returns true when `anc` is a strict ancestor of `path`
+    // (i.e. path == anc + "/" + something).
+    auto isAncestor = [](const std::string& anc, const std::string& path) -> bool {
+        return path.size() > anc.size() + 1
+            && path[anc.size()] == '/'
+            && path.compare(0, anc.size(), anc) == 0;
+    };
+
+    struct Entry { std::string path; int depth; };
+
+    // Comparator: child < parent (child goes to bottom, parent above it),
+    // unrelated paths ordered lexicographically (preserves alphabetical
+    // ordering of siblings).  This is a valid strict weak ordering.
+    auto hierarchyLess = [&](const Entry& a, const Entry& b) -> bool {
+        if (isAncestor(b.path, a.path)) return true;   // a is descendant of b → a first
+        if (isAncestor(a.path, b.path)) return false;  // b is descendant of a → b first
+        return a.path < b.path;                        // siblings / unrelated: alphabetical
+    };
+
+    std::vector<Entry> order;
+    order.reserve(overlays_.size());
+    int maxDepth=0;
+    for (const auto& [path, _] : overlays_)
+    {
+        auto d=depthOf(path);
+        order.push_back({ path, d });
+        maxDepth=std::max(maxDepth, d);
+    }
+    std::sort(order.begin(), order.end(), hierarchyLess);
+
     // Start from the bottom and stack upward.
     int bottomY = windowRect.height() - statusBarH - k_margin;
+    int leftXOfs = maxDepth * k_indent;
 
-    for (auto o: boost::adaptors::index(overlays_))
+    for (const auto& entry : order)
     {
-        auto* w = o.value().second;
+        auto* w = overlays_.at(entry.path);
 
         // Make sure the widget has been properly laid out so sizeHint() is valid.
         w->adjustSize();
@@ -259,12 +305,17 @@ void IQActionProgressDisplayManager::relayout()
         const int ww = w->geometry().width();
         const int wh = w->geometry().height();
 
-        const int x = windowRect.width() - ww - k_margin;
-        bottomY -= wh+k_spacing;
+        // Indent children to the left so they visually nest under their parent.
+        const int x =
+            windowRect.width() - ww
+                      - k_margin
+                      - leftXOfs
+                      + entry.depth * k_indent;
+
+        bottomY -= wh + k_spacing;
 
         w->setGeometry(x, bottomY, ww, wh);
         w->raise();
-
     }
 }
 
@@ -294,6 +345,8 @@ IQProgressWidget* IQActionProgressDisplayManager::getItem(
                 hostWidget_ );
             connect(iqpw, &IQProgressWidget::widgetClosing,
                     this, &IQActionProgressDisplayManager::onWidgetClosing );
+            connect(iqpw, &IQProgressWidget::destroyed,
+                    this, &IQActionProgressDisplayManager::relayout );
             overlays_[path]=iqpw;
 
             iqpw->show();
@@ -339,6 +392,7 @@ void IQActionProgressDisplayManager::onWidgetClosing(IQProgressWidget *widget)
         overlays_.begin(), overlays_.end(),
         [widget](const decltype(overlays_)::value_type& i)
         { return i.second==widget; } );
+
     if (i!=overlays_.end())
     {
         overlays_.erase(i);
@@ -378,6 +432,7 @@ void IQActionProgressDisplayManager::logMessage(const std::string &line)
 void IQActionProgressDisplayManager::setActionProgressValue(
     const std::string &path, double value )
 {
+  qDebug() << "setActionProgressValue called: path=" << QString::fromStdString(path) << "value=" << value;
   QMetaObject::invokeMethod( // post into GUI thread as this method might be called from different thread
         this,
         [this,path,value]()

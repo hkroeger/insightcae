@@ -95,8 +95,8 @@ geometry =  labeledarray "geometry_%d" [ set {
         }
 
         porousVolume set {
-            d = double 0. "darcy contribution" *necessary
-            f = double 0. "forchheimer contribution" *necessary
+            d = double 0. "[Pa/m^2] darcy contribution" *necessary
+            f = double 0. "[kg/m^3] forchheimer contribution" *necessary
         }
 
     }} wall "Boundary role of the geometry"
@@ -182,6 +182,10 @@ fluid=set
 
 
 eval = set {
+ averageFraction = double 0.2
+"fraction of the the total simulation duration,
+ over which the iteration history of each quantity is averaged to obtain the reported figure."
+
  additionalCutPlaneLocations = labeledarray "cutplane_%d" [
    vector (0 0 0) ""
  ] *0

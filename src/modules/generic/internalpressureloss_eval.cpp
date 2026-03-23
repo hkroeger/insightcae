@@ -107,11 +107,12 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
             {
                 auto sec = std::make_unique<ResultSection>("Total pressure on boundary "+g.first);
 
-                arma::mat ptot_vs_t = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), g.first+"_pressure");
+                arma::mat ptot_vs_t_raw = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), g.first+"_pressure");
+                arma::mat ptot_vs_t = movingAverage ( ptot_vs_t_raw, p().eval.averageFraction );
 
                 PlotCurve pc(
                     ptot_vs_t.col(0), ptot_vs_t.col(1),
-                    "ptotmean_vs_iter", "w l not");
+                    "ptotmean_vs_iter", "w l t 'moving average'");
                 auto mima=pc.significantMinMax();
 
                 addPlot
@@ -119,6 +120,9 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm, ProgressDis
                         *sec, executionPath(), "chartPressureDifference",
                         "Iteration", "$p_{total}=p+\\frac 1 2 \\rho |\\vec u|^2$",
                         {
+                            PlotCurve(
+                                ptot_vs_t_raw.col(0), ptot_vs_t_raw.col(1),
+                                "ptot_raw_vs_iter", "w l t 'raw value'"),
                             pc
                         },
                         "Plot of total pressure on boundary "+g.first,

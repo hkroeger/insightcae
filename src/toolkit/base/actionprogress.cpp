@@ -125,7 +125,9 @@ ActionProgress::~ActionProgress()
 
 bool ActionProgress::stopIsDemanded() const
 {
-    return parentDisplayer().stopIsDemanded();
+    return const_cast<ActionProgress*>(this)
+        ->parentDisplayer()
+        .stopIsDemanded();
 }
 
 

@@ -3,6 +3,7 @@
 #include "base/exception.h"
 #include "base/progressdisplayer.h"
 #include "base/boost_include.h"
+#include <iostream>
 
 namespace insight {
 
@@ -14,8 +15,6 @@ std::string ActionProgress::actionPath() const
 
     if (auto *pa=boost::get<ActionProgressPtr>(&parent_))
         prefix=(*pa)->actionPath();
-    else
-        //parent is progress displayer, no more prefix
 
     if (!prefix.empty())
         p=prefix/p;

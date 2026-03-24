@@ -138,12 +138,15 @@ findNode(
     }
     else
     {
+
         for (
             auto *child = father.first_node(typeName.c_str());
             child;
             child = child->next_sibling(typeName.c_str()) )
         {
-            if (child->first_attribute("name")->value() == name)
+            std::string curName =
+                child->first_attribute("name")->value();
+            if (curName == name)
             {
                 return child;
             }
@@ -153,7 +156,21 @@ findNode(
     return nullptr;
 }
 
-
+std::set<std::string>
+listNodes(const rapidxml::xml_node<> &father)
+{
+    std::set<std::string> names;
+    for (
+        auto *child = father.first_node();
+        child;
+        child = child->next_sibling() )
+    {
+        std::string curName =
+            child->first_attribute("name")->value();
+        names.insert(curName+" ("+child->name()+")");
+    }
+    return names;
+}
 
 void writeMatToXMLNode(
     const arma::mat& matrix,
@@ -166,6 +183,8 @@ void writeMatToXMLNode(
     // set stringified table values as node value
     node.value(doc.allocate_string(voss.str().c_str()));
 }
+
+
 
 
 

@@ -163,8 +163,13 @@ public:
           insight::Warning(
                 boost::str(
                   boost::format(
-                   "No xml node found with type '%s' and name '%s', default value '%s' is used."
-                   ) % type() % name % plainTextRepresentation(0)
+                   "No xml node found with type '%s' and name '%s',"
+                        " default value '%s' is used."
+                        " Available nodes: %s"
+                   )
+                    % type() % name
+                    % plainTextRepresentation(0)
+                    % valueList_to_string(listNodes(node), 99)
                  )
               );
         }

@@ -14,12 +14,15 @@
 #include <QResizeEvent>
 #include <QMetaObject>
 #include <QThread>
+#include <QMainWindow>
 #include <QCoreApplication>
 
 #include "boost/signals2.hpp"
 
 #include "toolkit_gui_export.h"
 
+
+QMainWindow* getMainWindow();
 
 /**
  * @brief runInGUIThread

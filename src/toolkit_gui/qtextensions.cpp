@@ -4,11 +4,31 @@
 
 #include <QFileDialog>
 #include <QDebug>
+#include <QApplication>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string.hpp>
 #include <qnamespace.h>
+
+
+
+QMainWindow *getMainWindow()
+{
+    auto* mainWin = qobject_cast<QMainWindow*>(
+        QApplication::activeWindow());
+
+    if (!mainWin)
+    {
+        for (auto* w : QApplication::topLevelWidgets())
+        {
+            mainWin = qobject_cast<QMainWindow*>(w);
+            if (mainWin) break;
+        }
+    }
+
+    return mainWin;
+}
 
 
 

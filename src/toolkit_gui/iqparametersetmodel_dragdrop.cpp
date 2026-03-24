@@ -83,7 +83,7 @@ Qt::DropActions IQParameterSetModel::supportedDropActions() const
 
 QStringList IQParameterSetModel::mimeTypes() const
 {
-    return { "application/xml" };
+    return { "application/xml", "text/plain" };
 }
 
 
@@ -169,17 +169,19 @@ bool IQParameterSetModel::dropMimeData(
                 if (type!=allTypesEqual) allTypesEqual="";
             }
 
-            auto setIntoParameter = [](
+            auto setIntoParameter = [this](
                 const rapidxml::xml_node<>& node, insight::Parameter& target)
             {
-                target.readFromNode(std::string(), node);
+                if (!target.readFromNode(std::string(), node))
+                    issueEphemeralError(target.path(), "could not set parameter value");
             };
 
             auto setIntoSubset = [&](insight::ParameterSet& target)
             {
+                auto *pn = doc.rootNode->first_node("subset");
                 for (auto& e: target)
                 {
-                    e.readFromNode(e.name(), *doc.rootNode);
+                    e.readFromNode(e.name(), *pn);
                 }
             };
 
@@ -271,6 +273,9 @@ bool IQParameterSetModel::dropMimeData(
                             ->first_node(),
                         *ip);
                 }
+                else
+                    issueEphemeralError(ip->path(), "Parameter types do not match!");
+
                 return false;
             }
         }

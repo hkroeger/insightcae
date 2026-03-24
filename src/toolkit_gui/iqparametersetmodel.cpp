@@ -37,8 +37,6 @@
 
 
 
-
-
 IQParameterSetModel::IQParameterSetModel(
     std::unique_ptr<insight::ParameterSet>&& ps,
     boost::optional<const insight::ParameterSet&> defaultps,

@@ -1,6 +1,7 @@
 #ifndef IQPARAMETERSETMODEL_H
 #define IQPARAMETERSETMODEL_H
 
+#include "base/cppextensions.h"
 #include "base/parameter.h"
 #include "base/parameters/subsetparameter.h"
 #include "parametersetwithguicontext.h"
@@ -40,6 +41,9 @@ class Feature;
 typedef std::shared_ptr<Feature> FeaturePtr;
 }
 }
+
+
+
 
 
 

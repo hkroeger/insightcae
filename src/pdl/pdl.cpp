@@ -18,11 +18,11 @@
  *
  */
 
-
 #include "parametergenerator.h"
-
 #include "parametersetgenerator.h"
 
+#include "boost/spirit/repository/include/qi_confix.hpp"
+#include "boost/fusion/tuple.hpp"
 
 /**
  * \defgroup PDL PDL - Parameter Definition Language

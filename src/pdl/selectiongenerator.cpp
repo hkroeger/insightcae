@@ -1,5 +1,4 @@
 #include "selectiongenerator.h"
-#include "boost/algorithm/string/predicate.hpp"
 
 
 using namespace std;

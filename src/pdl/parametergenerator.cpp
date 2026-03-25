@@ -1,8 +1,8 @@
 #include "parametergenerator.h"
-#include "boost/algorithm/string/predicate.hpp"
-#include "boost/algorithm/string/trim.hpp"
-#include "boost/lexical_cast.hpp"
+
 #include <string>
+
+#include "boost/lexical_cast.hpp"
 
 
 

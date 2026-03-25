@@ -1,4 +1,6 @@
 #include "datetimeparameterparser.h"
+#include "boost/format.hpp"
+
 
 using namespace std;
 
@@ -28,7 +30,9 @@ std::string DateTimeGenerator::cppStaticType() const
 
 std::string DateTimeGenerator::cppDefaultValueExpression() const
 {
-    return str(boost::format("boost::posix_time::ptime{ boost::gregorian::date{%d,%d,%d}, boost::posix_time::time_duration{%d, %d, 0, 0} }")
+    return boost::str(boost::format(
+            "boost::posix_time::ptime{ boost::gregorian::date{%d,%d,%d},"
+            " boost::posix_time::time_duration{%d, %d, 0, 0} }")
                % value.date().year() % value.date().month().as_number() % value.date().day().as_number()
                % value.time_of_day().hours() % value.time_of_day().minutes() );
 }

@@ -1,6 +1,5 @@
 #include "selectablesubsetgenerator.h"
-#include "boost/algorithm/string/erase.hpp"
-#include "boost/algorithm/string/join.hpp"
+#include "boost/fusion/tuple.hpp"
 #include "parametergenerator.h"
 #include "subsetgenerator.h"
 #include "includedsubsetparameterparser.h"

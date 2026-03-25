@@ -1,5 +1,7 @@
 #include "labeledarraygenerator.h"
 
+#include "boost/format.hpp"
+
 using namespace std;
 
 
@@ -71,7 +73,7 @@ std::string LabeledArrayGenerator::cppDefaultValueExpression() const
         {
             if (i>0) rep<<",";
             rep << "{\n";
-            rep << "\""<< str(boost::format(pattern) % i) << "\", ";
+            rep << "\""<< boost::str(boost::format(pattern) % i) << "\", ";
             rep << value->cppConstructorParameters() ;
             rep << "}\n";
         }

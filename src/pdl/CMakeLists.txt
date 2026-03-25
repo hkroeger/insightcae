@@ -33,8 +33,19 @@ set(pdl_SOURCES
 )
 
 add_executable(pdl ${pdl_SOURCES})
-target_link_libraries(pdl ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
-
+target_link_libraries(pdl
+    Boost::regex
+    Boost::system
+    Boost::filesystem
+    Boost::date_time
+    Boost::program_options
+)
+target_compile_definitions(pdl
+    PRIVATE
+        BOOST_SPIRIT_USE_PHOENIX_V3
+        BOOST_NO_SCOPED_ENUMS
+        BOOST_NO_CXX11_SCOPED_ENUMS
+    )
 install(TARGETS pdl RUNTIME DESTINATION bin)
 
 endif()

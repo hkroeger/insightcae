@@ -961,6 +961,9 @@ macro (add_pybindings TARGETNAME IFFILE LIBS)
     swig_add_library(${PYTARGET}
         LANGUAGE python
         SOURCES ${IFFILE})
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.20")
+      set_property(TARGET ${PYTARGET} PROPERTY SWIG_USE_SWIG_DEPENDENCIES TRUE)
+    endif()
     target_link_libraries(${PYTARGET} ${LIBS})
     #linkToolkitVtk(${PYTARGET} Offscreen) # causes clash in workbench (links onscreen and offscreen at the same time)
     set_target_properties(${PYTARGET}

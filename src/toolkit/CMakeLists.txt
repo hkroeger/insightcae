@@ -374,6 +374,12 @@ include(GenerateExportHeader)
 generate_export_header(toolkit)
 target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
 
+target_precompile_headers(toolkit PRIVATE
+   base/boost_include.h
+   base/parameter.h
+   base/parameterset.h
+ )
+
 target_setup_gettext(toolkit toolkit)
 
 add_shared_file(toolkit "."
@@ -388,6 +394,12 @@ target_include_directories(toolkit
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+
+set_target_properties(toolkit PROPERTIES
+   UNITY_BUILD ON
+   UNITY_BUILD_BATCH_SIZE 16
+)
+
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
 target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})

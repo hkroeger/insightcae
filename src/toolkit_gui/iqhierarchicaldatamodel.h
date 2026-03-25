@@ -18,6 +18,38 @@
 
 class IQCADModel3DViewer;
 class IQHierarchicalDataElement;
+class IQHierarchicalDataModel;
+
+/**
+ * @brief The ParameterErrorState class
+ * as long as an object of this class exists,
+ * an error is signalled in all connected views.
+ */
+class TOOLKIT_GUI_EXPORT ParameterErrorState
+    : public boost::noncopyable,
+      public std::observable
+{
+public:
+    enum Severity
+    {
+        Yellow, Red
+    };
+private:
+    IQHierarchicalDataModel& model_;
+    std::string parameterPath_;
+    Severity severity_;
+    QString explanation_;
+
+public:
+    ParameterErrorState(
+        IQHierarchicalDataModel& model,
+        const std::string& parameterPath,
+        const QString& explanation,
+        Severity s = Severity::Yellow );
+    ~ParameterErrorState();
+
+    QVariant data(const QModelIndex &index, int role) const;
+};
 
 
 
@@ -36,7 +68,7 @@ public:
 
 private:
     friend class IQHierarchicalDataElement;
-
+    friend class ParameterErrorState;
 
     std::unique_ptr<insight::hierarchicalData::Element> data_;
     mutable std::unique_ptr<insight::hierarchicalData::Element> dataBeforeLastChange_;
@@ -56,6 +88,9 @@ private:
     void editingOn();
 
     bool selectableElements_;
+
+    std::set<ParameterErrorState*> errors_;
+
 
 public:
     bool editingIsEnabled() const;
@@ -178,6 +213,12 @@ public:
     {
         return bool(data_);
     }
+
+    void issueEphemeralError(
+        const std::string& parameterPath,
+        const QString& explanation,
+        ParameterErrorState::Severity s =
+            ParameterErrorState::Severity::Yellow );
 };
 
 

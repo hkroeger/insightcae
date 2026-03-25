@@ -1,5 +1,8 @@
 #include "iqbackgroundtask.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include <exception>
+
+#include <QApplication>
 
 using namespace insight;
 
@@ -11,9 +14,19 @@ IQBackgroundTask::IQBackgroundTask(
 {}
 
 void IQBackgroundTask::start(
-    std::function<void(insight::ActionProgress&)> action
+    std::function<void(insight::ActionProgress&)> action,
+    bool installDefaultFailureSignalReceiver
     )
 {
+
+    if (installDefaultFailureSignalReceiver)
+    {
+        QObject::connect(
+            this, &IQBackgroundTask::failed, qApp,
+            [](std::exception_ptr e) { std::rethrow_exception(e); }
+            );
+    }
+
     launch(
           [this,action]()
           {

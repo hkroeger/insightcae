@@ -556,8 +556,8 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 
     auto act_save_rpt_=new QAction(_("Create &report..."), this);
     menu_results->addAction( act_save_rpt_ );
-    connect( act_save_rpt_, &QAction::triggered,
-             resultsViewer_, &IQResultSetDisplayerWidget::renderReport );
+    connect( act_save_rpt_, &QAction::triggered, resultsViewer_,
+             std::bind(&IQResultSetDisplayerWidget::renderReport, resultsViewer_, actionProgress_) );
 
 
     menu_results->addSeparator();

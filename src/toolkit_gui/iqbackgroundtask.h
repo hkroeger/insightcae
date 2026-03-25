@@ -55,8 +55,9 @@ public:
      * @param action
      */
     void start(
-        std::function<void(insight::ActionProgress&)> action
-        );
+        std::function<void(insight::ActionProgress&)> action,
+        bool installDefaultFailureSignalReceiver = true
+    );
 };
 
 #endif //

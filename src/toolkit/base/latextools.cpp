@@ -699,7 +699,7 @@ bool LatexRunner::run_bibtex()
 bool LatexRunner::needs_rerun()
 {
     std::string log_file = base_name + ".log";
-    std::ifstream log(log_file);
+    std::ifstream log( (workdir/log_file).string() );
     if (!log.is_open()) return false;
 
     std::string line;
@@ -726,7 +726,7 @@ bool LatexRunner::needs_rerun()
 // Check .aux for \bibdata (means bibtex is needed)
 bool LatexRunner::needs_bibtex(const std::string& aux_file)
 {
-    std::ifstream aux(aux_file);
+    std::ifstream aux( (workdir/aux_file).string() );
     if (!aux.is_open()) return false;
     std::string line;
     while (std::getline(aux, line))

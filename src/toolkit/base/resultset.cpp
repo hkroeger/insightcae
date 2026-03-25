@@ -258,7 +258,7 @@ void ResultSet::exportDataToFile (
 
 
 
-void ResultSet::saveAs(const boost::filesystem::path &outfile) const
+void ResultSet::saveAs(const boost::filesystem::path &outfile, ActionProgress *ap) const
 {
     auto ext=boost::algorithm::to_lower_copy(outfile.extension().string());
     if (ext==".isr")
@@ -267,11 +267,11 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
     }
     else if (ext==".tex")
     {
-        writeLatexFile(outfile);
+        writeLatexFile(outfile, ap);
     }
     else if (ext==".pdf")
     {
-        generatePDF(outfile);
+        generatePDF(outfile, ap);
     }
     else
     {
@@ -286,12 +286,16 @@ void ResultSet::saveAs(const boost::filesystem::path &outfile) const
 
 void ResultSet::writeLatexFile (
     const boost::filesystem::path& file,
+    ActionProgress* ap,
     const OutputProperties& outProps ) const
 {
+    if (ap) ap->setNSteps(3 + static_cast<const ResultElement&>(*this).nChildren());
+
   CurrentExceptionContext ec(
               "writing latex representation of result set into file "
               + file.string() );
 
+    if (ap) ap->stepUp("Creating file");
     auto filepath = boost::filesystem::absolute ( file );
 
     std::ostringstream header, content;
@@ -309,9 +313,11 @@ void ResultSet::writeLatexFile (
           ;
 
     std::set<std::string> headerCode;
+    if (ap) ap->addSteps(headerCode.size());
     insertLatexHeaderCode ( headerCode );
     for (const auto& hc: headerCode)
     {
+        if (ap) ap->stepUp("Creating content buffer");
         header << hc << std::endl;
     }
 
@@ -323,9 +329,11 @@ void ResultSet::writeLatexFile (
     content << latexRepresentation (
         "", 0, fsi );
 
+
+    if (ap) ap->stepUp("Inserting content into template");
+
     auto &reportTemplate =
             ResultReportTemplates::globalInstance().defaultItem();
-
 
     auto reportInput = std::make_unique<TemplateFile>(
                 static_cast<const std::string&>(reportTemplate) );
@@ -346,8 +354,14 @@ void ResultSet::writeLatexFile (
     for ( auto& i: static_cast<const ResultElement&>(*this) )
     {
         if (auto *re=dynamic_cast<const ResultElement*>(&i))
+        {
+            if (ap) ap->stepUp(boost::str(boost::format("Adding %s to report")%re->name()));
             re->exportDataToFile ( re->name(), reportData );
+        }
     }
+
+    if (ap) ap->stepUp("Finished");
+
 }
 
 
@@ -355,8 +369,10 @@ void ResultSet::writeLatexFile (
 
 void ResultSet::generatePDF (
     const boost::filesystem::path& file,
+    ActionProgress* ap,
     const OutputProperties& outProps ) const
 {
+    if (ap) ap->setNSteps(4);
   std::string stem = file.filename().stem().string();
 
   boost::filesystem::path report_src = (stem+".tex");
@@ -367,6 +383,7 @@ void ResultSet::generatePDF (
       auto report_src_out = tmp/report_src;
       auto dataDir = reportDataPath(report_src_out);
 
+      if (ap) ap->stepUp("Creating temporary directory");
       create_directory ( dataDir );
       for ( auto& i: static_cast<const ResultElement&>(*this) )
       {
@@ -374,17 +391,23 @@ void ResultSet::generatePDF (
             re->exportDataToFile ( re->name(), dataDir );
       }
 
-      writeLatexFile( report_src_out, outProps );
+     if (ap) ap->stepUp("Creating LaTeX file");
+      writeLatexFile(
+          report_src_out,
+          ap?ap->forkNewAction(99, "Write LaTeX file").get():nullptr,
+          outProps );
 
       auto outputFileName = report_src_out;
       outputFileName.replace_extension(".pdf");
 
+      if (ap) ap->stepUp("Running PDF compiler");
       bool success=LatexRunner(report_src_out).build();
 
       insight::assertion(
           boost::filesystem::exists(outputFileName),
           "pdflatex failed to create output file" );
 
+      if (ap) ap->stepUp("Copy data to selected location");
       boost::filesystem::copy_file(
           outputFileName,
           file, copy_option::overwrite_if_exists );
@@ -394,6 +417,8 @@ void ResultSet::generatePDF (
       if (!success)
         throw insight::Exception(
               "TeX input file was written but could not execute pdflatex successfully.");
+
+      if (ap) ap->stepUp("Finished");
   }
 
 

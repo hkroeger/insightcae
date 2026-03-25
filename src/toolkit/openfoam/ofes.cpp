@@ -1,6 +1,6 @@
 #include "ofes.h"
 #include "base/tools.h"
-#include "rapidxml/rapidxml.hpp"
+#include "base/rapidxml.h"
 
 #include <iostream>
 #include <fstream>
@@ -138,15 +138,10 @@ OFEs::OFEs()
          {
           path fn= itr->path();
           try
-          {   
-              std::string contents;
-              std::ifstream in(fn.c_str());
-              istreambuf_iterator<char> fbegin(in), fend;
-              std::copy(fbegin, fend, back_inserter(contents));
-              xml_document<> doc;
-              doc.parse<0>(&contents[0]);
+          {
+              XMLDocument doc(fn);
+              xml_node<> *rootnode = doc.rootNode;
 
-              xml_node<> *rootnode = doc.first_node("root");
               for (xml_node<> *e = rootnode->first_node("ofe"); e; e = e->next_sibling("ofe"))
               {
                std::string label(e->first_attribute("label")->value());

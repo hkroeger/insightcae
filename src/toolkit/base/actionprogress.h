@@ -71,6 +71,7 @@ public:
     void message(const std::string& message);
 
     void setNSteps( int nSteps );
+    void addSteps( int nSteps );
 
     StopSignal& stopSignal( );
 

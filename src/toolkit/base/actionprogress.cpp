@@ -75,7 +75,7 @@ void ActionProgress::startAction()
     }
 
     stepTo(0); // trigger creation of progress bar // virtual functions...
-    message(str(boost::format("Starting %d...")%name_));
+    message(boost::str(boost::format("Starting %d...")%name_));
 }
 
 
@@ -198,6 +198,11 @@ void ActionProgress::message(const std::string &message)
 void ActionProgress::setNSteps(int nSteps)
 {
     maxi_=nSteps+1;
+}
+
+void ActionProgress::addSteps(int nSteps)
+{
+    maxi_+=nSteps;
 }
 
 bool ActionProgress::isStoppable()

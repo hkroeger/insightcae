@@ -76,14 +76,9 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValid
   else
   {
     // read xml
-    string content;
-    readFileIntoString(mf, content);
+    XMLDocument doc(mf);
 
-    using namespace rapidxml;
-    xml_document<> doc;
-    doc.parse<0>(&content[0]);
-
-    auto *rootnode = doc.first_node();
+    auto *rootnode = doc.rootNode;
     if (!rootnode || rootnode->name()!=string("remote") )
       throw insight::Exception("No valid \"remote\" node found in XML!");
 

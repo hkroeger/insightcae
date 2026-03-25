@@ -88,7 +88,7 @@ struct OpenFOAMDictParserBase
 
         rpair  =
             ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
-        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
+        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|qi::space)) >> !(~char_("\"\\/;{}")-(eol|qi::space)) ];
         rstring = qi::lexeme[ char_('"') >> *(~qi::char_('"')) >> char_('"') ];
         rraw = ( ~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
         qi::real_parser<double, qi::strict_real_policies<double> > strict_double;

@@ -172,6 +172,16 @@ findNode(
     const std::string& typeName
     );
 
+
+
+
+std::set<std::string>
+listNodes(
+    const rapidxml::xml_node<>& father );
+
+
+
+
 template<class T = std::string>
 T getAttribute(
     const rapidxml::xml_node<> &node,

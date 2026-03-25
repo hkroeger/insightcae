@@ -6,6 +6,7 @@
 #include "base/translations.h"
 #include "boost/algorithm/string/constants.hpp"
 #include "boost/filesystem/operations.hpp"
+#include <ios>
 
 namespace insight {
 
@@ -589,7 +590,7 @@ void Element::saveToFile(
         insight::VerbosityLevel::BasicBusiness,
         "writing parameter set to file %s", file.string().c_str());
 
-    std::ofstream f(file.c_str());
+    std::ofstream f(file.c_str(), std::ios::binary);
     saveToStream(f, outProps);
     f << std::endl;
     f << std::flush;

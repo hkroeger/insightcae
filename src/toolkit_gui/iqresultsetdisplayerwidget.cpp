@@ -330,17 +330,8 @@ void IQResultSetDisplayerWidget::saveFilter()
 
 
         // prepare XML document
-        rapidxml::xml_document<> doc;
-        rapidxml::xml_node<>* decl = doc.allocate_node(rapidxml::node_declaration);
-        decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-        decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-        doc.append_node(decl);
-        rapidxml::xml_node<> *rootnode = doc.allocate_node(rapidxml::node_element, "root");
-        doc.append_node(rootnode);
-
-        filterModel_->filter().appendToNode(doc, *rootnode);
-
-        std::ofstream f(outf.asString());
-        f << doc << std::endl;
+        insight::XMLDocument doc;
+        filterModel_->filter().appendToNode(doc, *doc.rootNode);
+        doc.saveToFile(outf);
     }
 }

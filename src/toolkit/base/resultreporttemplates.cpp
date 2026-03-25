@@ -4,6 +4,7 @@
 #include "base/tools.h"
 #include "base/filecontainer.h"
 #include "base/zipfile.h"
+#include <algorithm>
 
 namespace insight {
 
@@ -32,6 +33,7 @@ void ResultReportTemplate::unpackAndRead(const boost::filesystem::path &filepath
 
         if (fp.parent_path().empty() && ext==".tex")
         {
+
             templfs.insert(fp);
         }
     }

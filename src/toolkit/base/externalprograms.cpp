@@ -135,12 +135,7 @@ void ExternalPrograms::writeConfiguration(const boost::filesystem::path &file)
     if (!boost::filesystem::exists(file.parent_path()))
         boost::filesystem::create_directories(file.parent_path());
 
-    xml_document<> doc;
-    xml_node<>* decl = doc.allocate_node(node_declaration);
-    decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-    decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-    doc.append_node(decl);
-    xml_node<> *rootnode = doc.allocate_node(node_element, "root");
+    XMLDocument doc;
     for (const auto& rs: *this)
     {
       xml_node<> *exenode = doc.allocate_node(node_element, "externalProgram");
@@ -150,13 +145,9 @@ void ExternalPrograms::writeConfiguration(const boost::filesystem::path &file)
       exenode->append_attribute(doc.allocate_attribute
                                    ("path",
                                      doc.allocate_string(rs.second.string().c_str()) ) );
-      rootnode->append_node(exenode);
+      doc.rootNode->append_node(exenode);
     }
-
-    doc.append_node(rootnode);
-
-    std::ofstream f(file.string());
-    f << doc;
+    doc.saveToFile(file);
 }
 
 

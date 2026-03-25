@@ -119,7 +119,7 @@ void XMLDocument::saveToStream(std::ostream &os) const
 
 void XMLDocument::saveToFile(const boost::filesystem::path& file) const
 {
-    std::ofstream f(file.string());
+    std::ofstream f(file.string(), std::ios::binary);
     saveToStream(f);
     f.close();
 }

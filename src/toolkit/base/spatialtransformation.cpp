@@ -456,7 +456,7 @@ View::View(const boost::filesystem::path &pvccFile)
 
 void View::savePVCC(const boost::filesystem::path &file) const
 {
-    std::ofstream f(file.string());
+    std::ofstream f(file.string(), std::ios::binary);
     savePVCC(f);
 }
 

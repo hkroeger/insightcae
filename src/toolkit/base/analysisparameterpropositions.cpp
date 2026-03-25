@@ -1,6 +1,7 @@
 #include "analysisparameterpropositions.h"
 
 #include "base/analysis.h"
+#include "base/rapidxml.h"
 
 #include <dlfcn.h>
 
@@ -173,24 +174,11 @@ AnalysisParameterPropositions::AnalysisParameterPropositions()
     CurrentExceptionContext ex("reading external parameter proposition sources from "+fp.string());
 
     // read xml
-    std::string content;
-    readFileIntoString(fp, content);
+    XMLDocument doc(fp);
 
-    using namespace rapidxml;
-    xml_document<> doc;
-
-    try
+    if (auto *rootnode = doc.rootNode)
     {
-        doc.parse<0>(&content[0]);
-    }
-    catch (...)
-    {
-        throw insight::Exception("Failed to parse XML");
-    }
-
-    if (auto *rootnode = doc.first_node("root"))
-    {
-        for (xml_node<> *e = rootnode->first_node("analysis"); e; e = e->next_sibling("analysis"))
+        for (auto *e = rootnode->first_node("analysis"); e; e = e->next_sibling("analysis"))
         {
                 if (auto *l=e->first_attribute("label"))
                 {

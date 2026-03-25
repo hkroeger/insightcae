@@ -200,6 +200,11 @@ void ActionProgress::setNSteps(int nSteps)
     maxi_=nSteps+1;
 }
 
+void ActionProgress::addSteps(int nSteps)
+{
+    maxi_+=nSteps;
+}
+
 bool ActionProgress::isStoppable()
 {
     return stopSignal_.num_slots();

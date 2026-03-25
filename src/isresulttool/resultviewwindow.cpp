@@ -30,8 +30,8 @@ ResultViewWindow::ResultViewWindow(QWidget *parent) :
   connect(ui->actionSaveAs, &QAction::triggered,
           viewer_, &IQResultSetDisplayerWidget::saveResultSetAs );
 
-  connect(ui->actionRender, &QAction::triggered,
-          viewer_, &IQResultSetDisplayerWidget::renderReport );
+  connect(ui->actionRender, &QAction::triggered, viewer_,
+          std::bind(&IQResultSetDisplayerWidget::renderReport, viewer_, nullptr) );
 
   connect(ui->actionLoad_filter, &QAction::triggered,
           viewer_, &IQResultSetDisplayerWidget::loadFilter );

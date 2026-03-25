@@ -192,15 +192,15 @@ void TPCArray<TPC,TypeName>::evaluateSingle
             tpc_curves[k].push_back
             (
                 PlotCurve(data,
-                          str( format("r%.2g")%r_[ir]),
-                          "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+"'")
+                          boost::str( format("r%.2g")%r_[ir]),
+                          "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+boost::str( format("%.2g")%r_[ir])+"'")
             );
 
             tpc_curves[k].push_back
             (
                 PlotCurve(regressiondata,
-                          str( format("r%.2gfit")%r_[ir]),
-                          "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+" (fit)'")
+                          boost::str( format("r%.2gfit")%r_[ir]),
+                          "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+boost::str( format("%.2g")%r_[ir])+" (fit)'")
             );
 
         }

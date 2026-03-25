@@ -75,7 +75,7 @@ void ActionProgress::startAction()
     }
 
     stepTo(0); // trigger creation of progress bar // virtual functions...
-    message(str(boost::format("Starting %d...")%name_));
+    message(boost::str(boost::format("Starting %d...")%name_));
 }
 
 

@@ -7,7 +7,10 @@
 #include <limits>
 #include <thread>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
+#include <boost/variant.hpp>
+#include <boost/fusion/tuple.hpp>
 #include "base/linearalgebra.h"
 #include "base/spatialtransformation.h"
 #include "base/tools.h"

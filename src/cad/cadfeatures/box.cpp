@@ -189,8 +189,7 @@ void Box::insertrule(parser::ISCADParser& ruleset)
 
 FeatureCmdInfoList Box::ruleDocumentation()
 {
-    return boost::assign::list_of
-    (
+    return {
         FeatureCmdInfo
         (
             "Box",
@@ -203,7 +202,7 @@ FeatureCmdInfoList Box::ruleDocumentation()
             " Optionally, the edges are centered around p0."
             " Either all directions (option centered) or only selected directions (option center [x][y][z] where x,y,z is associated with L1, L2, and L3 respectively).")
         )
-    );
+    };
 }
 
 

@@ -1,5 +1,6 @@
 #include "selectionparameter.h"
 
+#include "boost/range/adaptors.hpp"
 
 
 

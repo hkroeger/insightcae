@@ -17,12 +17,7 @@ set(OF_LIBS
 #meshTools forces surfMesh sampling
 )
 
-set(INCLUDE_DIRS 
-#   ${insight_INCLUDE_DIR}
-#   ${ARMADILLO_INCLUDE_DIRS}
-#   ${Boost_INCLUDE_DIRS}
-#   ${toolkit_SOURCE_DIR}
-#   ${CMAKE_CURRENT_LIST_DIR}
+set(INCLUDE_DIRS
 )
 
 set(LIBS 

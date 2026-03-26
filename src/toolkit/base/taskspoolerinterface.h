@@ -1,7 +1,7 @@
 #ifndef TASKSPOOLERINTERFACE_H
 #define TASKSPOOLERINTERFACE_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/remoteserverlist.h"
 #include "boost/process.hpp"
 #include "boost/asio/io_service.hpp"

@@ -43,7 +43,9 @@
 
 #include "openfoamtools.h"
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
+#include <boost/variant.hpp>
 
 
 #include "openfoamanalysis__OpenFOAMAnalysis__Parameters_headers.h"

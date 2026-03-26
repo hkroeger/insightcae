@@ -8,8 +8,7 @@
 #include <memory>
 #include <armadillo>
 
-#include "base/boost_include.h"
-#include "boost/regex.hpp"
+#include <boost/regex.hpp>
 
 namespace insight {
 

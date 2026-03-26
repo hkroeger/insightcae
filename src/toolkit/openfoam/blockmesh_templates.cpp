@@ -18,7 +18,8 @@
  *
  */
 
-#include "base/boost_include.h"
+#include <boost/assign/list_of.hpp>
+#include <boost/variant.hpp>
 #include "blockmesh_templates.h"
 
 #include "base/exception.h"

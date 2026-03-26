@@ -24,7 +24,6 @@
 #include <string>
 #include <vector>
 
-#include "base/boost_include.h"
 #include "openfoam/openfoamcase.h"
 
 

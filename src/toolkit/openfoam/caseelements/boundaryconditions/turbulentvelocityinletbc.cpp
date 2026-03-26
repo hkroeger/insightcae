@@ -30,18 +30,18 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
  BCtype_="patch";
 }
 
-const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types = boost::assign::list_of
-   ("inflowGenerator<hatSpot>")
-   ("inflowGenerator<gaussianSpot>")
-   ("inflowGenerator<decayingTurbulenceSpot>")
-   ("inflowGenerator<decayingTurbulenceVorton>")
-   ("inflowGenerator<anisotropicVorton_Analytic>")
-   ("inflowGenerator<anisotropicVorton_PseudoInv>")
-   ("inflowGenerator<anisotropicVorton_NumOpt>")
-   ("inflowGenerator<anisotropicVorton2>")
-   ("inflowGenerator<combinedVorton>")
-   ("modalTurbulence")
-   .convert_to_container<std::vector<std::string> >();
+const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types{
+   "inflowGenerator<hatSpot>",
+   "inflowGenerator<gaussianSpot>",
+   "inflowGenerator<decayingTurbulenceSpot>",
+   "inflowGenerator<decayingTurbulenceVorton>",
+   "inflowGenerator<anisotropicVorton_Analytic>",
+   "inflowGenerator<anisotropicVorton_PseudoInv>",
+   "inflowGenerator<anisotropicVorton_NumOpt>",
+   "inflowGenerator<anisotropicVorton2>",
+   "inflowGenerator<combinedVorton>",
+   "modalTurbulence"
+};
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& dictionaries) const
 {

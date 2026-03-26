@@ -14,7 +14,6 @@ target_link_libraries(isResultTool
     )
 linkToolkitVtk(isResultTool Onscreen)
 target_include_directories(isResultTool
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )

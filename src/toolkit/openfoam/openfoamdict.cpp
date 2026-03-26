@@ -30,6 +30,7 @@
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
 
+#include <boost/fusion/include/std_pair.hpp>
 #include "boost/lexical_cast.hpp"
 
 #include "boost/iostreams/filtering_stream.hpp"
@@ -226,12 +227,15 @@ void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict&
 }
 
 
+
+
 bool readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
 {
     std::istreambuf_iterator<char> eos;
     std::string contents(std::istreambuf_iterator<char>(in), eos);
     
-    if (!parseOpenFOAMDict<OpenFOAMDictParser<std::string::iterator> >(contents.begin(), contents.end(), d))
+    if (!parseOpenFOAMDict<OpenFOAMDictParser<std::string::iterator> >(
+            contents.begin(), contents.end(), d))
     {
         return false;
     }
@@ -242,17 +246,16 @@ bool readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
     {
       d.erase(i);
     }
-    
-//     for(OFDictData::dict::const_iterator i=d.begin();
-// 	i!=d.end(); i++)
-// 	{
-// 	  std::cout << i->first << std::endl;
-// 	}
 
     return true;
 }
 
-void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData::dictFile& dict)
+
+
+
+void writeOpenFOAMDict(
+    const boost::filesystem::path& dictpath,
+    const OFDictData::dictFile& dict )
 {
   if (!exists(dictpath.parent_path())) 
   {
@@ -262,6 +265,9 @@ void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData
   std::ofstream out(dictpath.c_str());
   writeOpenFOAMDict( out, dict, boost::filesystem::basename(dictpath) );
 }
+
+
+
 
 void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
 {

@@ -16,11 +16,11 @@ set(OF_LIBS
 #surfMesh sampling fvOptions
 )
 
-set(INCLUDE_DIRS 
- ${Boost_INCLUDE_DIR}
+set(INCLUDE_DIRS
 )
 
 set(LIBS 
+  Boost::system
 )
 
 # set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack

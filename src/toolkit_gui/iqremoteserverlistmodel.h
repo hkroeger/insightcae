@@ -4,6 +4,7 @@
 #include "toolkit_gui_export.h"
 
 #include "base/remoteserverlist.h"
+#include "boost/variant.hpp"
 
 #include <QAbstractItemModel>
 #include <memory>

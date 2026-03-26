@@ -131,7 +131,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                     sd.isSequential=true;
 
                     OFDictData::list p_list;
-                    BOOST_FOREACH(const auto& p, tvu->sequel)
+                    for(const auto& p: tvu->sequel)
                     {
                       OFDictData::list inst;
                       inst.push_back(p.time); inst.push_back(p.pressure);

@@ -7,7 +7,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -260,7 +259,7 @@ std::unique_ptr<ResultElement> polynomialFitResult
     int minorder
 )
 {
-    std::vector<std::string> header=boost::assign::list_of ( "Term" ) ( "Coefficient" );
+    std::vector<std::string> header{ "Term", "Coefficient" };
     AttributeTableResult::AttributeNames names;
     AttributeTableResult::AttributeValues values;
 

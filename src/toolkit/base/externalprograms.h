@@ -1,7 +1,7 @@
 #ifndef INSIGHT_EXTERNALPROGRAMS_H
 #define INSIGHT_EXTERNALPROGRAMS_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/actionprogress.h"
 
 namespace insight {

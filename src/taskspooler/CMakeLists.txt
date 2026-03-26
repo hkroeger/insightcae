@@ -40,12 +40,10 @@ if (INSIGHT_BUILD_WORKBENCH)
  target_link_libraries(taskspoolermonitor
   toolkit toolkit_gui
   Qt5::Widgets #Qt5::WebEngineWidgets
-  ${Boost_LIBRARIES}
  )
 
  target_include_directories(taskspoolermonitor
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
  )

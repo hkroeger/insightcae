@@ -21,6 +21,7 @@
 #include "exploded.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include <boost/fusion/adapted/boost_tuple.hpp>
 #include "datum.h"
 #include "base/translations.h"
 #include "cadparameters.h"

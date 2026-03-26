@@ -1,6 +1,6 @@
 
 #include "translations.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 GettextInit::GettextInit(const char* domain, const char* directory, InitType it)
 {

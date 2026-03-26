@@ -101,12 +101,12 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
                 .subDict ( "boundaryField" )
                 .subDict ( patchName_ );
 
-        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) )
+        if ( ( field.first=="U" ) && ( boost::fusion::get<0> ( field.second ) ==vectorField ) )
         {
             setField_U ( BC, dictionaries );
         }
         else if (
-            ( field.first=="p" ) && ( get<0> ( field.second ) ==scalarField )
+            ( field.first=="p" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField )
         )
         {
             setField_p ( BC, dictionaries, false );
@@ -114,7 +114,7 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
         else if (
             ( field.first=="T" )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         )
         {
             T.setDirichletBC ( BC, dictionaries );
@@ -123,36 +123,36 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
         {
             setField_p ( BC, dictionaries, true );
         }
-        else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="rho" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
         {
             rho.setDirichletBC ( BC, dictionaries );
         }
-        else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="k" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
         {
             turbulence->setDirichletBC_k ( BC, velocity.representativeValueMag() );
         }
-        else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="omega" ) && (boost::fusion:: get<0> ( field.second ) ==scalarField ) )
         {
             turbulence->setDirichletBC_omega ( BC, velocity.representativeValueMag() );
         }
-        else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="epsilon" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
         {
             turbulence->setDirichletBC_epsilon ( BC, velocity.representativeValueMag() );
         }
-        else if ( ( field.first=="nut" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="nut" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
         {
             BC["type"]=OFDictData::data ( "calculated" );
             BC["value"]=OFDictData::toUniformField( 1e-10 );
         }
-        else if ( ( field.first=="nuTilda" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="nuTilda" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
         {
             turbulence->setDirichletBC_nuTilda ( BC, velocity.representativeValueMag() );
         }
-        else if ( ( field.first=="R" ) && ( get<0> ( field.second ) ==symmTensorField ) )
+        else if ( ( field.first=="R" ) && ( boost::fusion::get<0> ( field.second ) ==symmTensorField ) )
         {
             turbulence->setDirichletBC_R ( BC, velocity.representativeValueMag() );
         }
-        else if ( ( field.first=="nuSgs" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="nuSgs" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
         {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField(1e-10);

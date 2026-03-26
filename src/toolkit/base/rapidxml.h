@@ -4,7 +4,7 @@
 #include <string>
 
 #include <armadillo>
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 #include "base/tools.h"
 #include "base/exception.h"

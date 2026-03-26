@@ -7,7 +7,7 @@ set(psdoc_SOURCES
 )
 
 add_executable(isGenerateParameterSetReference ${psdoc_SOURCES})
-target_link_libraries(isGenerateParameterSetReference ${Boost_LIBRARIES})
+target_link_libraries(isGenerateParameterSetReference Boost::system Boost::filesystem Boost::program_options)
 linkToolkitVtk(isGenerateParameterSetReference Offscreen)
 
 install(TARGETS isGenerateParameterSetReference RUNTIME DESTINATION bin)

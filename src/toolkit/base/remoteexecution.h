@@ -1,7 +1,7 @@
 #ifndef REMOTEEXECUTION_H
 #define REMOTEEXECUTION_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "boost/process.hpp"
 #include "base/remotelocation.h"
 #include "base/remoteserverlist.h"

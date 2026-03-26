@@ -1,7 +1,7 @@
 #ifndef INSIGHT_RESULTREPORTTEMPLATES_H
 #define INSIGHT_RESULTREPORTTEMPLATES_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 #include "base/globalconfiguration.h"
 #include "rapidxml/rapidxml.hpp"

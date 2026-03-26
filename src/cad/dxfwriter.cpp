@@ -32,7 +32,6 @@
 
 using namespace std;
 using namespace boost;
-using namespace boost::assign;
 
 namespace insight {
 
@@ -497,27 +496,26 @@ HatchGenerator::HatchData::HatchData(double s, double a)
 
 
 
-std::vector<HatchGenerator::HatchData> HatchGenerator::hatches_ =
- list_of<HatchGenerator::HatchData>
-  (HatchData(0.33, 0.0))
-  (HatchData(0.33, -90.0))
-  (HatchData(0.33, 10.0))
-  (HatchData(0.33, -80.0))
-  (HatchData(0.33, 20.0))
-  (HatchData(0.33, -70.0))
-  (HatchData(0.5, 0.0))
-  (HatchData(0.5, -90.0))
-  (HatchData(0.5, 10.0))
-  (HatchData(0.5, -80.0))
-  (HatchData(0.5, 20.0))
-  (HatchData(0.5, -70.0))
-  (HatchData(0.66, 0.0))
-  (HatchData(0.66, -90.0))
-  (HatchData(0.66, 10.0))
-  (HatchData(0.66, -80.0))
-  (HatchData(0.66, 20.0))
-  (HatchData(0.66, -70.0))
- ;
+std::vector<HatchGenerator::HatchData> HatchGenerator::hatches_ {
+  HatchData(0.33, 0.0),
+  HatchData(0.33, -90.0),
+  HatchData(0.33, 10.0),
+  HatchData(0.33, -80.0),
+  HatchData(0.33, 20.0),
+  HatchData(0.33, -70.0),
+  HatchData(0.5, 0.0),
+  HatchData(0.5, -90.0),
+  HatchData(0.5, 10.0),
+  HatchData(0.5, -80.0),
+  HatchData(0.5, 20.0),
+  HatchData(0.5, -70.0),
+  HatchData(0.66, 0.0),
+  HatchData(0.66, -90.0),
+  HatchData(0.66, 10.0),
+  HatchData(0.66, -80.0),
+  HatchData(0.66, 20.0),
+  HatchData(0.66, -70.0)
+};
 
  
  

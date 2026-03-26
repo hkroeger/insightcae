@@ -1,5 +1,5 @@
 #include "elementpath.h"
-#include "base/boost_include.h"
+#include <boost/algorithm/string.hpp>
 #include "base/cppextensions.h"
 
 namespace insight {

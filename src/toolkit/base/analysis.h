@@ -41,8 +41,8 @@
 #include <queue>
 #include <thread>
 
-#include "base/boost_include.h"
-#include "boost/thread.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 
 #include "analysis__AnalysisWithParameters__Parameters_headers.h"
 

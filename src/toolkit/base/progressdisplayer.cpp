@@ -1,6 +1,5 @@
 #include "progressdisplayer.h"
 #include "base/exception.h"
-#include "base/boost_include.h"
 #include "base/actionprogress.h"
 #include "base/elementpath.h"
 #include "boost/algorithm/string/classification.hpp"

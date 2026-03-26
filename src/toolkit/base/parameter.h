@@ -40,8 +40,9 @@
 #include <sstream>
 #include <type_traits>
 
-#include "base/boost_include.h"
-#include "boost/signals2.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
+#include <boost/signals2.hpp>
 
 #include <openssl/md5.h>
 

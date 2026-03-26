@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <memory>
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 namespace insight {
 

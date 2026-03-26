@@ -6,7 +6,8 @@
 
 #include "base/supplementedinputdata.h"
 #include "openfoam/openfoamcase.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 
 

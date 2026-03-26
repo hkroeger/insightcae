@@ -2,7 +2,8 @@
 
 #include "base/exception.h"
 #include "base/progressdisplayer.h"
-#include "base/boost_include.h"
+#include <boost/variant.hpp>
+#include <boost/format.hpp>
 #include <iostream>
 
 namespace insight {

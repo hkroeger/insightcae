@@ -1,7 +1,9 @@
 #ifndef INSIGHT_OFDICTS_H
 #define INSIGHT_OFDICTS_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/fusion/tuple.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
 #include "base/parameters/pathparameter.h"
 #include "openfoam/openfoamdict.h"
 

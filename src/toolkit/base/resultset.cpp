@@ -34,9 +34,12 @@
 #include <memory>
 #include <sstream>
 
-#include "base/boost_include.h"
-
-#include "boost/filesystem/operations.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/date_time.hpp>
 #include "rapidxml/rapidxml_print.hpp"
 
 

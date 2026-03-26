@@ -3,7 +3,8 @@
 
 #include "base/linearalgebra.h"
 #include "base/tools.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <array>
 #include <vector>

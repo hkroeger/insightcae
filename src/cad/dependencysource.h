@@ -14,7 +14,7 @@
 #include "boost/variant/static_visitor.hpp"
 #include "boost/spirit/include/qi.hpp"
 
-
+#include "boost/range/adaptor/indexed.hpp"
 
 namespace insight {
 namespace cad {

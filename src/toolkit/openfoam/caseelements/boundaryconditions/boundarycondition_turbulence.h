@@ -1,7 +1,6 @@
 #ifndef BOUNDARYCONDITION_TURBULENCE_H
 #define BOUNDARYCONDITION_TURBULENCE_H
 
-#include "base/boost_include.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"

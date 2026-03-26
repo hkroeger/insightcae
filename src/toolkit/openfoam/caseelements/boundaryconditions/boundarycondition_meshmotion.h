@@ -1,7 +1,6 @@
 #ifndef BOUNDARYCONDITION_MESHMOTION_H
 #define BOUNDARYCONDITION_MESHMOTION_H
 
-#include "base/boost_include.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"

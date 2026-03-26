@@ -268,7 +268,6 @@ target_compile_definitions(toolkit_gui PRIVATE toolkit_gui_EXPORTS)
 target_link_libraries(toolkit_gui
  toolkit toolkit_cad insightcad toolkit_remote
  Qt5::Widgets Qt5::Charts Qt5::Network Qt5::Multimedia Qt5::MultimediaWidgets
- ${Boost_LIBRARIES}
  ${OCC_GUI_LIBRARIES}
  ${DXFLIB_LIBRARIES}
  ${VTK_LIBRARIES}
@@ -276,7 +275,6 @@ target_link_libraries(toolkit_gui
 
 target_include_directories(toolkit_gui
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
  )

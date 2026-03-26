@@ -29,7 +29,7 @@
 #include <functional>
 #include <memory>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "boost/function.hpp"
 #include "boost/thread.hpp"
 #include "boost/process.hpp"

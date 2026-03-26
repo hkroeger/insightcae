@@ -1,6 +1,5 @@
 #include "chartrenderer.h"
 
-#include "base/boost_include.h"
 
 #ifdef CHART_RENDERER_GNUPLOT
 #include "base/resultelements/latexgnuplotrenderer.h"

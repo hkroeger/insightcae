@@ -2,7 +2,7 @@
 #define INSIGHT_EXTERNALPROCESS_H
 
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "boost/process.hpp"
 #include "base/cppextensions.h"
 #include "base/outputanalyzer.h"

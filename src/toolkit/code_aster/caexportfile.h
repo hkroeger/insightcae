@@ -21,9 +21,10 @@
 #ifndef INSIGHT_CAEXPORTFILE_H
 #define INSIGHT_CAEXPORTFILE_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include <vector>
 #include <map>
+#include <set>
 
 namespace insight {
 

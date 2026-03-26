@@ -6,7 +6,11 @@
 #include "openfoam/caseelements/numerics/steadycompressiblenumerics.h"
 #include "openfoam/caseelements/numerics/unsteadycompressiblenumerics.h"
 #include "openfoam/caseelements/numerics/chtmultiregionnumerics.h"
+
 #include <memory>
+
+#include "boost/range/adaptor/indexed.hpp"
+
 
 namespace insight {
 

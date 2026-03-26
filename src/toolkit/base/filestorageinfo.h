@@ -1,7 +1,8 @@
 #ifndef FILESTORAGEINFO_H
 #define FILESTORAGEINFO_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
 #include "base/hierarchicaldatafilter.h"
 
 namespace insight {

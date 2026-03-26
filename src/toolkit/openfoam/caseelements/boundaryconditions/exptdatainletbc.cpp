@@ -99,7 +99,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
 
-        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+        if ( ( field.first=="U" ) && ( boost::fusion::get<0> ( field.second ) ==vectorField ) ) {
             BC["type"]=OFDictData::data ( "timeVaryingMappedFixedValue" );
             BC["offset"]=OFDictData::vector3 ( vec3 ( 0,0,0 ) );
             BC["setAverage"]=false;
@@ -108,7 +108,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         }
 
         else if (
-            ( field.first=="p" ) && ( get<0> ( field.second ) ==scalarField )
+            ( field.first=="p" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "zeroGradient" );
         }
@@ -119,30 +119,30 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 BC["type"]=OFDictData::data ( "buoyantPressure" );
             }
         }
-        else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        else if ( ( field.first=="k" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "timeVaryingMappedFixedValue" );
             BC["offset"]=0.0;
             BC["setAverage"]=false;
             BC["perturb"]=1e-3;
             addDataDict ( dictionaries, prefix, "k", TKE );
-        } else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="omega" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "timeVaryingMappedFixedValue" );
             BC["offset"]=0.0;
             BC["setAverage"]=false;
             BC["perturb"]=1e-3;
             addDataDict ( dictionaries, prefix, "omega", epsilon/ ( 0.09*TKE ) );
-        } else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="epsilon" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "timeVaryingMappedFixedValue" );
             BC["offset"]=0.0;
             BC["setAverage"]=false;
             BC["perturb"]=1e-3;
             addDataDict ( dictionaries, prefix, "epsilon", epsilon );
-        } else if ( ( field.first=="nut" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="nut" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             double nutilda=1e-10; //sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField( nutilda );
         }
-        else if ( ( field.first=="nuSgs" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        else if ( ( field.first=="nuSgs" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField(1e-10);
         } else {

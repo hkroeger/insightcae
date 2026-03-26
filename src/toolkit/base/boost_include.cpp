@@ -65,6 +65,8 @@ make_relative(
 // https://stackoverflow.com/users/33732/rob-kennedy
 bool path_contains_file(path dir, path file)
 {
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
     // If dir ends with "/" and isn't the root directory, then the final
     // component returned by iterators will include "." and will interfere
     // with the std::equal check below, so we strip it before proceeding.

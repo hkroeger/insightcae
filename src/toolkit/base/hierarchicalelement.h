@@ -5,7 +5,11 @@
 #include <string>
 
 #include "base/cppextensions.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/utility.hpp>
+#include <boost/optional.hpp>
+#include <boost/format.hpp>
+#include <boost/signals2.hpp>
 #include "base/filestorageinfo.h"
 #include "base/hierarchicaldatafilter.h"
 #include "base/elementpath.h"

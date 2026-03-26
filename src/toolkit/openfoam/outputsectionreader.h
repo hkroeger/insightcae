@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "base/factory.h"
-#include "base/boost_include.h"
 
 namespace insight {
 

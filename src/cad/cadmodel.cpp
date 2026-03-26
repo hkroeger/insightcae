@@ -26,6 +26,7 @@
 #include "parser.h"
 
 #include "base/boost_include.h"
+#include <boost/fusion/include/std_pair.hpp>
 #include <memory>
 
 #include "cadfeatures/sphere.h"

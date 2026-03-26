@@ -1,7 +1,7 @@
 #ifndef INSIGHT_XMLFILE_H
 #define INSIGHT_XMLFILE_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "rapidxml/rapidxml.hpp"
 
 

@@ -60,15 +60,15 @@ void CyclicACMIBC::addIntoFieldDictionaries(OFdicts &dictionaries) const
         {
           BC["type"]=OFDictData::data("cyclicACMI");
           OFDictData::data value;
-          if (get<0> ( field.second ) ==scalarField)
+          if (boost::fusion::get<0> ( field.second ) ==scalarField)
           {
               value=OFDictData::toUniformField(0.);
           }
-          else if (get<0> ( field.second ) ==vectorField)
+          else if (boost::fusion::get<0> ( field.second ) ==vectorField)
           {
               value=OFDictData::toUniformField(vec3Zero());
           }
-          else if (get<0> ( field.second ) ==symmTensorField)
+          else if (boost::fusion::get<0> ( field.second ) ==symmTensorField)
           {
               arma::mat R=arma::zeros(6, 1);
               value=OFDictData::toUniformField(R);

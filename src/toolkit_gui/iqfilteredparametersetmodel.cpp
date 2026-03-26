@@ -10,36 +10,59 @@ void IQFilteredParameterSetModel::searchRootSourceIndices(
     for (int r=0; r<sourceModel->rowCount(parent); ++r)
     {
         auto i=sourceModel->index(r, IQParameterSetModel::stringPathCol, parent);
-        auto curPath=sourceModel->data(i).toString();
+        insight::ElementPath curPath( sourceModel->data(i).toString().toStdString() );
 
         bool searchDown=false;
-        for (const auto& sourceParam: qAsConst(sourceRootParameterPaths_))
+        bool addThis=false;
+
+        for (auto& sp: qAsConst(sourceRootParameterPaths_))
         {
-            if (boost::ends_with(sourceParam, "/*") // support wildcard to select all below
-                &&  boost::starts_with(curPath, sourceParam.substr(0, sourceParam.size()-2))
-                &&  curPath.size()>sourceParam.size()-2 )
+            insight::ElementPath sourceParam(sp);
+            bool wildcard=false;
+            if (!sourceParam.empty() && sourceParam.back()=="*")
             {
-                rootSourceIndices.append(i.siblingAtColumn(0));
-                searchDown=false;
+                wildcard=true;
+                sourceParam.pop_back();
             }
-            else if (boost::starts_with(sourceParam, curPath)) // sourceParam starts with curPath?
+
+            if (wildcard)
             {
-                if (curPath.size()==sourceParam.size())
+                if ( curPath.size()==sourceParam.size()+1
+                     && curPath.isBelow(sourceParam) )
                 {
-                    rootSourceIndices.append(i.siblingAtColumn(0));
+                    // curPath is a direct child of the wildcard prefix: add as root
+                    addThis=true;
                 }
-                else if (curPath.size()<sourceParam.size())
+                else if ( curPath.size()<=sourceParam.size()
+                          && sourceParam.isBelow(curPath) )
                 {
+                    // curPath is an ancestor of (or equal to) the wildcard prefix:
+                    // descend to find the direct children
+                    searchDown=true;
+                }
+            }
+            else
+            {
+                if ( curPath.size()==sourceParam.size()
+                     && curPath.isBelow(sourceParam) )
+                {
+                    // exact match
+                    addThis=true;
+                }
+                else if ( curPath.size()<sourceParam.size()
+                          && sourceParam.isBelow(curPath) )
+                {
+                    // curPath is an ancestor of sourceParam: descend to find it
                     searchDown=true;
                 }
             }
         }
 
-        if (searchDown)
-        {
-            searchRootSourceIndices(sourceModel, i.siblingAtColumn(0));
-        }
+        if (addThis)
+            rootSourceIndices.append(i.siblingAtColumn(0));
 
+        if (searchDown && !addThis)
+            searchRootSourceIndices(sourceModel, i.siblingAtColumn(0));
     }
 }
 

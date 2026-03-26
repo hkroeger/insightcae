@@ -33,6 +33,20 @@ ElementPath ElementPath::operator/(const ElementPath& o) const
     return r;
 }
 
+bool ElementPath::isBelow(const ElementPath &other) const
+{
+    if (other.size()<=size())
+    {
+        for (int i=0; i<other.size(); ++i)
+        {
+            if (other[i]!=(*this)[i])
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 ElementPath ElementPath::operator/(const std::string& o) const
 {
     ElementPath r(*this);

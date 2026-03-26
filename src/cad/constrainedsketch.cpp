@@ -210,6 +210,10 @@ void ConstrainedSketch::setParentParameter(Parameter *p)
         {
             g.second->parametersRef().setParent(propertiesParent_.get());
         }
+        for (auto& lp: layerProperties_)
+        {
+            lp.second->setParent(propertiesParent_.get());
+        }
     }
 }
 
@@ -276,6 +280,10 @@ void ConstrainedSketch::readFromStream(
         for (auto& g: geometry_)
         {
             g.second->parametersRef().setParent(propertiesParent_.get());
+        }
+        for (auto& lp: layerProperties_)
+        {
+            lp.second->setParent(propertiesParent_.get());
         }
     }
 }
@@ -631,10 +639,25 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
 
     for (auto &lp: o.layerProperties_)
     {
-        layerProperties_.insert({
-            lp.first,
-            lp.second->cloneLayerProperties()
-        });
+        auto it = layerProperties_.find(lp.first);
+        if (it != layerProperties_.end())
+        {
+            int r = std::distance(layerProperties_.begin(), it);
+            it->second->ParameterSet::assignFrom(*lp.second);
+            layerChanged(lp.first, r);
+        }
+        else
+        {
+            int r = predictInsertionLocation(layerProperties_, lp.first);
+            beforeLayerInsertion(lp.first, r);
+            auto& newLp = layerProperties_.insert({
+                lp.first,
+                lp.second->cloneLayerProperties()
+            }).first->second;
+            if (propertiesParent_)
+                newLp->setParent(propertiesParent_.get());
+            layerAdded(lp.first, r);
+        }
     }
 
     std::set<GeometryMap::key_type> remaining;
@@ -1094,10 +1117,15 @@ void ConstrainedSketch::addLayer(
     const std::string& layerName,
     const ConstrainedSketchParametersDelegate& pd )
 {
-    layerProperties_.insert({
+    int r = predictInsertionLocation(layerProperties_, layerName);
+    beforeLayerInsertion(layerName, r);
+    auto& lp = layerProperties_.insert({
         layerName,
         pd.createDefaultLayerProperties(layerName)
-    });
+    }).first->second;
+    if (propertiesParent_)
+        lp->setParent(propertiesParent_.get());
+    layerAdded(layerName, r);
 }
 
 const LayerProperties&
@@ -1107,11 +1135,39 @@ ConstrainedSketch::layerProperties(
     return *layerProperties_.at(layerName);
 }
 
+size_t ConstrainedSketch::layerPropertiesCount() const
+{
+    return layerProperties_.size();
+}
+
+const std::string& ConstrainedSketch::layerPropertiesName(size_t i) const
+{
+    auto it = layerProperties_.begin();
+    std::advance(it, i);
+    return it->first;
+}
+
+LayerProperties& ConstrainedSketch::layerPropertiesAt(size_t i)
+{
+    auto it = layerProperties_.begin();
+    std::advance(it, i);
+    return *it->second;
+}
+
+const LayerProperties& ConstrainedSketch::layerPropertiesAt(size_t i) const
+{
+    auto it = layerProperties_.begin();
+    std::advance(it, i);
+    return *it->second;
+}
+
 void ConstrainedSketch::setLayerProperties(
     const std::string& layerName,
     const ParameterSet &ps)
 {
     layerProperties_.at(layerName)->ParameterSet::assignFrom(ps);
+    int r = std::distance(layerProperties_.begin(), layerProperties_.find(layerName));
+    layerChanged(layerName, r);
 }
 
 
@@ -1137,7 +1193,12 @@ void ConstrainedSketch::parseLayerProperties(
 void ConstrainedSketch::removeLayer(const std::string &layerName)
 {
     if (!layerIsUsed(layerName))
+    {
+        int r = std::distance(layerProperties_.begin(), layerProperties_.find(layerName));
+        beforeLayerRemoval(layerName, r);
         layerProperties_.erase(layerName);
+        layerRemoved(layerName, r);
+    }
     else
         throw insight::Exception(
             "cannot remove layer properties for layer %s, it is still in use",

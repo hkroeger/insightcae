@@ -76,6 +76,11 @@ protected:
         befRemoveSlotConn_, removeSlotConn_,
         changeSlotConn_;
 
+    boost::signals2::scoped_connection
+        befAddLayerSlotConn_, addLayerSlotConn_,
+        befRemoveLayerSlotConn_, removeLayerSlotConn_,
+        changeLayerSlotConn_;
+
 
     void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch) override;
     cad::ConstrainedSketchPtr createSketch(const std::string& script) const override;

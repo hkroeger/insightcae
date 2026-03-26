@@ -146,8 +146,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(beforeGeometryAdded);
             if (!valueChangeSignalBlocked())
             {
-                // childValueChanged();
-                beforeChildInsertion(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                beforeChildInsertion(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
@@ -155,8 +155,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(geometryAdded);
             if (!valueChangeSignalBlocked())
             {
-                // childValueChanged();
-                childInsertionDone(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                childInsertionDone(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type befRemoveSlot_=
@@ -164,8 +164,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(beforeGeometryRemoved);
             if (!valueChangeSignalBlocked())
             {
-                //childValueChanged();
-                beforeChildRemoval(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                beforeChildRemoval(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
@@ -173,8 +173,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(geometryRemoved);
             if (!valueChangeSignalBlocked())
             {
-                // childValueChanged();
-                childRemovalDone(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                childRemovalDone(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
@@ -191,13 +191,52 @@ void CADSketchParameter::connectSignalsToSketch(
     addSlot_.track_foreign(s);
     addSlotConn_=s->geometryAdded.connect(addSlot_);
 
-    removeSlot_.track_foreign(s);
+    befRemoveSlot_.track_foreign(s);
     befRemoveSlotConn_=s->beforeGeometryRemoval.connect(befRemoveSlot_);
     removeSlot_.track_foreign(s);
     removeSlotConn_=s->geometryRemoved.connect(removeSlot_);
 
     changeSlot_.track_foreign(s);
     changeSlotConn_=s->geometryChanged.connect(changeSlot_);
+
+    cad::ConstrainedSketch::LayerEditSignal::slot_type befAddLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                beforeChildInsertion(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type addLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                childInsertionDone(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type befRemoveLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                beforeChildRemoval(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type removeLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                childRemovalDone(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type changeLayerSlot_=
+        [this](const std::string&, int) {
+            if (!valueChangeSignalBlocked())
+                childValueChanged();
+        };
+
+    befAddLayerSlot_.track_foreign(s);
+    befAddLayerSlotConn_=s->beforeLayerInsertion.connect(befAddLayerSlot_);
+    addLayerSlot_.track_foreign(s);
+    addLayerSlotConn_=s->layerAdded.connect(addLayerSlot_);
+
+    befRemoveLayerSlot_.track_foreign(s);
+    befRemoveLayerSlotConn_=s->beforeLayerRemoval.connect(befRemoveLayerSlot_);
+    removeLayerSlot_.track_foreign(s);
+    removeLayerSlotConn_=s->layerRemoved.connect(removeLayerSlot_);
+
+    changeLayerSlot_.track_foreign(s);
+    changeLayerSlotConn_=s->layerChanged.connect(changeLayerSlot_);
 
 }
 
@@ -417,7 +456,7 @@ bool CADSketchParameter::isDifferent(const Parameter & op) const
 
 int CADSketchParameter::nChildren() const
 {
-    return sketch().size();
+    return sketch().layerPropertiesCount() + sketch().size();
 }
 
 
@@ -428,7 +467,11 @@ std::string CADSketchParameter::childElementName( int i, bool ) const
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
-    return str(boost::format("entity_%d")%i);
+    auto nlp = static_cast<int>(sketch().layerPropertiesCount());
+    if (i < nlp)
+        return sketch().layerPropertiesName(i);
+
+    return str(boost::format("entity_%d")%(i - nlp));
 }
 
 
@@ -439,8 +482,12 @@ Parameter& CADSketchParameter::childElementRef ( int i )
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
+    auto nlp = static_cast<int>(sketch().layerPropertiesCount());
+    if (i < nlp)
+        return sketchRef().layerPropertiesAt(i);
+
     auto g = sketch().begin();
-    std::advance(g, i);
+    std::advance(g, i - nlp);
     return g->second->parametersRef();
 }
 
@@ -452,8 +499,12 @@ const Parameter& CADSketchParameter::childElement( int i ) const
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
+    auto nlp = static_cast<int>(sketch().layerPropertiesCount());
+    if (i < nlp)
+        return sketch().layerPropertiesAt(i);
+
     auto g = sketch().begin();
-    std::advance(g, i);
+    std::advance(g, i - nlp);
     return g->second->parameters();
 }
 

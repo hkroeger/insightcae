@@ -190,6 +190,19 @@ public:
         beforeGeometryInsertion, geometryAdded,
         beforeGeometryRemoval, geometryRemoved,
         geometryChanged;
+
+    typedef
+        boost::signals2::signal<
+        void(
+            const std::string& /*layerName*/,
+            int /*index in sorted layerProperties_ map*/
+        )
+        > LayerEditSignal;
+
+    LayerEditSignal
+        beforeLayerInsertion, layerAdded,
+        beforeLayerRemoval, layerRemoved,
+        layerChanged;
 #endif
 
 private:
@@ -317,6 +330,11 @@ public:
 
     const LayerProperties& layerProperties(
         const std::string& layerName ) const;
+
+    size_t layerPropertiesCount() const;
+    const std::string& layerPropertiesName(size_t i) const;
+    LayerProperties& layerPropertiesAt(size_t i);
+    const LayerProperties& layerPropertiesAt(size_t i) const;
 
     void setLayerProperties(
         const std::string& layerName,

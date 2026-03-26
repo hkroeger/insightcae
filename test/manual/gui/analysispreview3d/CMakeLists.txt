@@ -35,7 +35,6 @@ linkToolkitVtk(guitest Onscreen)
 
 target_include_directories(guitest
     PUBLIC ${QT_INCLUDES}
-    PUBLIC ${Boost_INCLUDE_DIR}
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )

@@ -2,6 +2,7 @@
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
 #include "base/boost_include.h"
+#include "boost/format.hpp"
 
 #include "vtkTransform.h"
 

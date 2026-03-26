@@ -4,6 +4,8 @@
 #include "base/filecontainer.h"
 #include "base/parameters/pathparameter.h"
 
+#include "boost/thread.hpp"
+
 using namespace insight;
 
 void checkFileContent(const boost::filesystem::path& p, const std::string& content)

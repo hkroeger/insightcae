@@ -1,4 +1,8 @@
 
+# Capture the directory of this file at include time so macros can reference
+# sibling scripts regardless of where the macro is called from.
+set(_INSIGHT_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
+
 macro(install_headers NAME HEADERS)
   foreach (_hdr ${HEADERS})
       file (RELATIVE_PATH _relName "${CMAKE_CURRENT_LIST_DIR}" ${_hdr})
@@ -62,7 +66,22 @@ macro (target_add_PDL TARGETNAME)
       COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      )
   endforeach()
-  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
+  # Write current header basenames so the cleanup script can detect removed/renamed headers
+  set(_pdl_basenames "")
+  foreach(_hdr ${HEADERS})
+      get_filename_component(_bn ${_hdr} NAME_WE)
+      list(APPEND _pdl_basenames ${_bn})
+  endforeach()
+  string(REPLACE ";" "\n" _pdl_basenames_str "${_pdl_basenames}")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}_pdl_headers.txt" "${_pdl_basenames_str}\n")
+
+  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator
+                    COMMAND ${CMAKE_COMMAND}
+                        -DTARGET_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+                        -DTARGET_NAME=${TARGETNAME}
+                        -DINCLUDE_MIRROR_DIR=${CMAKE_BINARY_DIR}/include/insightcae
+                        -P ${_INSIGHT_CMAKE_DIR}/pdl_stale_cleanup.cmake
+                    DEPENDS ${${TARGETNAME}_TIMESTAMPS}
                     COMMENT "Checking if PDL re-generation is required" )
   ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
 

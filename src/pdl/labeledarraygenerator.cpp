@@ -1,5 +1,7 @@
 #include "labeledarraygenerator.h"
 
+#include "boost/format.hpp"
+
 using namespace std;
 
 
@@ -71,7 +73,7 @@ std::string LabeledArrayGenerator::cppDefaultValueExpression() const
         {
             if (i>0) rep<<",";
             rep << "{\n";
-            rep << "\""<< str(boost::format(pattern) % i) << "\", ";
+            rep << "\""<< boost::str(boost::format(pattern) % i) << "\", ";
             rep << value->cppConstructorParameters() ;
             rep << "}\n";
         }
@@ -152,9 +154,9 @@ void LabeledArrayGenerator::cppWriteSetStatement(
     os<<
         "for (int iii="<<dynvarname<<".nChildren()-1; iii>=0; --iii)\n"
         "{\n"
-          "auto key="<<dynvarname<<".childElementName(iii);\n"
-          "if ("<<staticvarname<<".count(key)==0)"
-            <<dynvarname<<".eraseValue(key);\n"
+          "auto k="<<dynvarname<<".childElementName(iii);\n"
+          "if ("<<staticvarname<<".count(k)==0)"
+            <<dynvarname<<".eraseValue(k);\n"
         "}\n";
 }
 

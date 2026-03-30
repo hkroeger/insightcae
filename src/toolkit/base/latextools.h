@@ -22,7 +22,7 @@
 #define INSIGHT_LATEXTOOLS_H
 
 #include <string>
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 namespace insight 
 {

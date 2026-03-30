@@ -11,10 +11,10 @@ class ExternalReference
 : public Feature,
   public ConstrainedSketchEntity
 {
-    FeaturePtr extRef_;
+    ConstFeaturePtr extRef_;
 
     ExternalReference(const ExternalReference&o, TreeCloneMap& tcm);
-    ExternalReference ( FeaturePtr extRef, const std::string& layerName = std::string() );
+    ExternalReference ( ConstFeaturePtr extRef, const std::string& layerName = std::string() );
 
     size_t calcHash() const override;
     void build() override;
@@ -39,7 +39,7 @@ public:
         const std::weak_ptr<ConstrainedSketchEntity>& entity,
         const std::shared_ptr<ConstrainedSketchEntity>& newEntity) override;
 
-    FeaturePtr referencedFeature() const;
+    ConstFeaturePtr referencedFeature() const;
 
     bool isInside( SelectionRect r) const override;
 

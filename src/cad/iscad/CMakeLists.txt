@@ -31,7 +31,6 @@ target_enable_qt(iscad)
 target_link_libraries(iscad
   Qt5::Widgets
   toolkit_gui
-  ${Boost_LIBRARIES}
   ${DXFLIB_LIBRARIES}
   )
 linkToolkitVtk(iscad Onscreen)
@@ -40,7 +39,6 @@ target_setup_gettext(iscad iscad)
 
 target_include_directories(iscad
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
  )

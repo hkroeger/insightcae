@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
                 auto& ap = parameters->get<ArrayParameter>(pair[0]);
                 for (size_t i=ap.size(); i<ns; ++i)
                 {
-                    ap.appendEmpty(true);
+                    ap.appendEmpty();
                 }
             }
         }

@@ -30,7 +30,11 @@
 #include <typeinfo>
 #include <cxxabi.h>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/variant.hpp>
+#include <boost/variant/recursive_variant.hpp>
+#include <boost/fusion/tuple.hpp>
+#include <boost/regex.hpp>
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"

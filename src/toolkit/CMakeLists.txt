@@ -47,7 +47,6 @@ pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
 PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
 
 
-link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED
     base/cppextensions.h base/cppextensions.cpp
     base/translations.h base/translations.cpp
@@ -352,9 +351,37 @@ add_library(toolkit SHARED
     openfoam/caseelements/evaluation/calculatetotalpressure.cpp openfoam/caseelements/evaluation/calculatetotalpressure.h
     base/actionprogress.h base/actionprogress.cpp
     base/elementpath.h base/elementpath.cpp
+
 )
 
-target_link_libraries(toolkit PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(toolkit PUBLIC
+    Boost::regex
+    Boost::system
+    Boost::filesystem
+    Boost::date_time
+    Boost::timer
+    Boost::thread
+    Boost::iostreams
+    Boost::program_options
+)
+if (PYTHONLIBS_FOUND)
+    target_link_libraries(toolkit PUBLIC
+        Boost::python3)
+endif()
+
+target_compile_definitions(toolkit
+    PUBLIC
+        BOOST_SPIRIT_USE_PHOENIX_V3
+)
+
+if(NOT WIN32)
+    target_compile_definitions(toolkit
+        PUBLIC
+            BOOST_NO_SCOPED_ENUMS
+            BOOST_NO_CXX11_SCOPED_ENUMS
+    )
+endif()
+
 target_link_libraries(toolkit PUBLIC ${Intl_LIBRARY})
 target_link_libraries(toolkit PUBLIC ${ARMADILLO_LIBRARY})
 target_link_libraries(toolkit PUBLIC PkgConfig::poppler-cpp)
@@ -388,7 +415,6 @@ add_shared_file(toolkit "."
 
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${Intl_INCLUDE_DIRS}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>

@@ -231,8 +231,7 @@ if (INSIGHT_BUILD_TOOLKIT)
         list(APPEND BOOST_COMPONENTS python3)
     endif()
 
-    find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED
-        )
+    find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 
     add_subdirectory(CMake/vtkTargets/vtkOffscreen)
     add_subdirectory(CMake/vtkTargets/vtkOnscreen)
@@ -241,7 +240,6 @@ endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 

@@ -1,7 +1,7 @@
 #ifndef INSIGHT_LSDYNAINPUTDECK_H
 #define INSIGHT_LSDYNAINPUTDECK_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/linearalgebra.h"
 #include "base/units.h"
 

@@ -1,6 +1,8 @@
 #include "cadsketchgenerator.h"
 
 #include "boost/range/adaptors.hpp"
+#include "boost/format.hpp"
+#include "boost/fusion/tuple.hpp"
 
 defineType(CADSketchGenerator);
 addToStaticFunctionTable(ParameterGenerator, CADSketchGenerator, insertrule);

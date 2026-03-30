@@ -46,7 +46,7 @@ ParameterSet::ParameterSet(
 {
     for (auto& p: defaultValue)
     {
-        insert(
+        insertUninitialized(
             p.first,
             std::move(p.second) );
     }
@@ -63,17 +63,46 @@ ParameterSet::ParameterSet(
 {
     for (auto& p: defaultValue)
     {
-        insert(
+        insertUninitialized(
             p.first,
-            p.second->cloneAs<Parameter>() );
+            p.second->cloneAsUninitialized<Parameter>() );
     }
 }
+
+
+Parameter& ParameterSet::insertUninitialized(const std::string &name, std::unique_ptr<Parameter>&& p)
+{
+
+    auto ie = value_.find(name);
+    if (ie!=value_.end())
+    {
+        valueChangedConnections_.erase(ie->second.get());
+        childValueChangedConnections_.erase(ie->second.get());
+        value_.erase(ie);
+    }
+
+    auto ins = value_.insert({name, std::move(p)});
+
+    ins.first->second->setParent(this);
+
+    valueChangedConnections_.insert(ins.first->second.get(),
+                                    std::make_shared<boost::signals2::scoped_connection>(
+                                        ins.first->second->valueChanged.connect(childValueChanged)));
+    childValueChangedConnections_.insert(ins.first->second.get(),
+                                         std::make_shared<boost::signals2::scoped_connection>(
+                                             ins.first->second->childValueChanged.connect( childValueChanged )));
+
+    return *ins.first->second;
+}
+
 
 
 
 std::unique_ptr<ParameterSet> ParameterSet::create()
 {
-    return std::unique_ptr<ParameterSet>(new ParameterSet());
+    std::unique_ptr<ParameterSet> p(new ParameterSet());
+    p->initializeHierarchy();
+    return p;
 }
 
 std::unique_ptr<ParameterSet> ParameterSet::create_uninitialized(
@@ -93,6 +122,7 @@ std::unique_ptr<ParameterSet> ParameterSet::create(
     auto p=create_uninitialized(
         description,
         isHidden, isExpert, isNecessary, order );
+    p->initializeHierarchy();
     return p;
 }
 
@@ -104,6 +134,7 @@ std::unique_ptr<ParameterSet> ParameterSet::create(
     auto p=std::unique_ptr<ParameterSet>(new ParameterSet(
         std::move(defaultValue), description,
         isHidden, isExpert, isNecessary, order ));
+    p->initializeHierarchy();
     return p;
 }
 
@@ -126,6 +157,18 @@ std::unique_ptr<ParameterSet> ParameterSet::create(
     auto p=create_uninitialized(
         defaultValue, description,
         isHidden, isExpert, isNecessary, order );
+    p->initializeHierarchy();
+    return p;
+}
+
+std::unique_ptr<ParameterSet> ParameterSet::create(
+    const rapidxml::xml_node<> & node )
+{
+    auto p=std::unique_ptr<ParameterSet>(
+        new ParameterSet( node ));
+    // no initialization of hierarchy
+    // - hierarchies constructed this way are only intended for use in
+    //   documentation (accompanying ResultSets) -
     return p;
 }
 
@@ -189,29 +232,12 @@ bool ParameterSet::isDifferent(const Parameter& p) const
 
 Parameter& ParameterSet::insert(const std::string &name, std::unique_ptr<Parameter>&& p)
 {
+  auto&ins = insertUninitialized(name, std::move(p));
 
-  auto ie = value_.find(name);
-  if (ie!=value_.end())
-  {
-    valueChangedConnections_.erase(ie->second.get());
-    childValueChangedConnections_.erase(ie->second.get());
-    value_.erase(ie);
-  }
-
-  auto ins = value_.insert({name, std::move(p)});
-
-  ins.first->second->setParent(this);
-
-  valueChangedConnections_.insert(ins.first->second.get(),
-      std::make_shared<boost::signals2::scoped_connection>(
-      ins.first->second->valueChanged.connect(childValueChanged)));
-  childValueChangedConnections_.insert(ins.first->second.get(),
-      std::make_shared<boost::signals2::scoped_connection>(
-      ins.first->second->childValueChanged.connect( childValueChanged )));
-
+  ins.initializeHierarchy();
   triggerValueChanged();
 
-  return *ins.first->second;
+  return ins;
 }
 
 
@@ -396,7 +422,7 @@ ParameterSet::ParameterSet(const rapidxml::xml_node<> &node)
         if (std::string(e->name())!="analysis") // this is no element
         {
             auto name=getMandatoryAttribute(*e, "name");
-            insert(name, Parameter::createFromNode(*e));
+            insertUninitialized(name, Parameter::createFromNode(*e));
         }
     }
 }
@@ -648,13 +674,13 @@ void ParameterSet::replace ( const std::string& key, std::unique_ptr<Parameter> 
 
 
 
-std::unique_ptr<hierarchicalData::Element> ParameterSet::clone() const
+std::unique_ptr<hierarchicalData::Element> ParameterSet::cloneUninitialized() const
 {
-    auto p =std::unique_ptr<ParameterSet>(new ParameterSet(
+    auto p =ParameterSet::create_uninitialized(
         entries(),
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order()
-        ));
+        );
     return p;
 }
 

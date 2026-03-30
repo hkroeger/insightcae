@@ -7,7 +7,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -238,7 +237,7 @@ xml_node< char >* AttributeTableResult::appendToNode (
 
 
 std::unique_ptr<hierarchicalData::Element>
-AttributeTableResult::clone() const
+AttributeTableResult::cloneUninitialized() const
 {
     auto cl = std::make_unique<AttributeTableResult>(
         names_, values_,
@@ -260,7 +259,7 @@ std::unique_ptr<ResultElement> polynomialFitResult
     int minorder
 )
 {
-    std::vector<std::string> header=boost::assign::list_of ( "Term" ) ( "Coefficient" );
+    std::vector<std::string> header{ "Term", "Coefficient" };
     AttributeTableResult::AttributeNames names;
     AttributeTableResult::AttributeValues values;
 

@@ -38,9 +38,9 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 {
   for ( auto &i: defaultValue )
   {
-        addItem(
+        addItemUninitialized(
           i.first,
-          i.second->cloneAs<ParameterSet>() );
+          i.second->cloneAsUninitialized<ParameterSet>() );
   }
   setSelection(defaultSelection);
 }
@@ -56,9 +56,19 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 {
   for ( auto &i: defaultValue )
   {
-        addItem(i.first, std::move(i.second) );
+        addItemUninitialized(i.first, std::move(i.second) );
   }
   setSelection(defaultSelection);
+}
+
+
+
+void SelectableSubsetParameter::initializeHierarchy()
+{
+    for (auto& ss: value_)
+    {
+        ss.second->initializeHierarchy();
+    }
 }
 
 
@@ -233,23 +243,9 @@ void SelectableSubsetParameter::addItem(
     key_type key,
     std::unique_ptr<ParameterSet>&& ps )
 {
-    insight::assertion(
-        selection_.empty() || (key!=selection()),
-        "inserted item must not be currently selected" );
-
-    auto ins = value_.insert({key, std::move(ps)});
-
-    ins.first->second->valueChanged
-        .connect(childValueChanged);
-    ins.first->second->childValueChanged
-        .connect(childValueChanged);
-
-    ins.first->second->setParent(this);
-
-    // if (ins.first->first == selection_)
-    // {
-    //   triggerValueChanged();
-    // }
+    auto *pins=ps.get();
+    addItemUninitialized(key, std::move(ps));
+    pins->initializeHierarchy();
 }
 
 void SelectableSubsetParameter::removeItem(key_type key)
@@ -434,6 +430,30 @@ SelectableSubsetParameter::readFromNode
 }
 
 
+void SelectableSubsetParameter::addItemUninitialized(
+    key_type key,
+    std::unique_ptr<ParameterSet>&& ps )
+{
+    insight::assertion(
+        selection_.empty() || (key!=selection()),
+        "inserted item must not be currently selected" );
+
+    auto ins = value_.insert({key, std::move(ps)});
+
+    ins.first->second->valueChanged
+        .connect(childValueChanged);
+    ins.first->second->childValueChanged
+        .connect(childValueChanged);
+
+    ins.first->second->setParent(this);
+
+    // if (ins.first->first == selection_)
+    // {
+    //   triggerValueChanged();
+    // }
+}
+
+
 
 SelectableSubsetParameter::SelectableSubsetParameter(
     const rapidxml::xml_node<> &node)
@@ -442,14 +462,14 @@ SelectableSubsetParameter::SelectableSubsetParameter(
     auto sel=getMandatoryAttribute(node, "value");
     addItem(
         sel,
-        std::make_unique<ParameterSet>(node) );
+        ParameterSet::create(node) );
     setSelection(sel);
 }
 
 
 
 std::unique_ptr<hierarchicalData::Element>
-SelectableSubsetParameter::clone () const
+SelectableSubsetParameter::cloneUninitialized() const
 {
   auto np=
       std::make_unique<SelectableSubsetParameter>(
@@ -458,9 +478,9 @@ SelectableSubsetParameter::clone () const
 
   for (auto i=value_.begin(); i!=value_.end(); i++)
   {
-    np->addItem(
+    np->addItemUninitialized(
           i->first,
-          i->second->cloneAs<ParameterSet>()
+          i->second->cloneAsUninitialized<ParameterSet>()
           );
   }
 

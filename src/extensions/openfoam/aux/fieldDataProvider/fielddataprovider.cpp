@@ -27,12 +27,6 @@
 #include "base/vtktools.h"
 #include "boost/foreach.hpp"
 
-#include "boost/version.hpp"
-#if ( BOOST_VERSION < 105100 )
-#define BOOST_NO_SCOPED_ENUMS
-#else
-#define BOOST_NO_CXX11_SCOPED_ENUMS
-#endif
 #include "boost/filesystem.hpp"
 
 

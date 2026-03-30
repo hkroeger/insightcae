@@ -6,7 +6,8 @@
 #include <vector>
 #include <string>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include "base/exception.h"
 #include "base/tools.h"
 #include "base/rapidxml.h"

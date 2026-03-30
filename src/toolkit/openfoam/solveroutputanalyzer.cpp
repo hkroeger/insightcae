@@ -5,7 +5,7 @@
 #include "base/progressdisplayer.h"
 #include "base/tools.h"
 #include "base/units.h"
-#include "base/boost_include.h"
+#include <boost/regex.hpp>
 
 
 using namespace std;

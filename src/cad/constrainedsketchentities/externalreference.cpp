@@ -24,7 +24,7 @@ ExternalReference::ExternalReference(const ExternalReference &o, TreeCloneMap &t
 {}
 
 ExternalReference::ExternalReference (
-    FeaturePtr extRef, const std::string& layerName )
+    ConstFeaturePtr extRef, const std::string& layerName )
   : ConstrainedSketchEntity(layerName),
     extRef_(extRef)
 {}
@@ -48,7 +48,7 @@ void ExternalReference::replaceDependency(
     const std::shared_ptr<ConstrainedSketchEntity>& newEntity)
 {}
 
-FeaturePtr ExternalReference::referencedFeature() const
+ConstFeaturePtr ExternalReference::referencedFeature() const
 {
     return extRef_;
 }

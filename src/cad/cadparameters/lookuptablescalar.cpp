@@ -22,6 +22,7 @@
 #include "lookuptablescalar.h"
 #include "base/tools.h"
 #include "base/boost_include.h"
+#include "boost/algorithm/string.hpp"
 
 using namespace boost;
 

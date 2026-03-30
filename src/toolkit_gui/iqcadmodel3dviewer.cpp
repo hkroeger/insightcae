@@ -188,16 +188,17 @@ IQCADModel3DViewer::editSketchParameter(
                     psm->parameterRef(parameterPath) );
 
                 {
-                    // auto blocker{skp.blockUpdateValueSignal()};
+                    auto bulkGuard = psm->beginBulkUpdate();
 
                     std::ostringstream os;
                     accSk->generateScript(os);
 
                     skp.setScript(os.str());
                     skp.sketch(); //trigger rebuild
-                }
 
-                // skp.triggerValueChanged();
+                    // bulkGuard destroyed at end of scope →
+                    // bulkUpdateFinished → single rebuildVisualization + autosave
+                }
             },
 
             [](insight::cad::ConstrainedSketchPtr) // on cancel

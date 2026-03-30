@@ -3,7 +3,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -43,7 +42,7 @@ VectorResult::latexRepresentation(
 }
 
 
-std::unique_ptr<hierarchicalData::Element> VectorResult::clone() const
+std::unique_ptr<hierarchicalData::Element> VectorResult::cloneUninitialized() const
 {
     auto res = std::make_unique<VectorResult> (
         value_, shortDescription_.simpleLatex(),

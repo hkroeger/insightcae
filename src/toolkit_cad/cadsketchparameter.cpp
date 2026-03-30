@@ -7,8 +7,14 @@
 
 #include "cadpostprocactions/pointdistance.h"
 #include "base/parameters/simpleparameter.h"
+#include <memory>
+
+
+
 
 namespace insight {
+
+
 
 
 defineType(CADSketchParameter);
@@ -17,124 +23,13 @@ addParameterFactories(CADSketchParameter);
 
 
 
-insight::cad::ConstrainedSketch& DelayedCreatedSketch::sketchRef()
+bool CADSketchParameter::hasReferences() const
 {
-
-    if (script_)
-    {
-        if (!script_->empty())
-        {
-            sketch_ = createSketch(*script_);
-            connectSignalsToSketch(sketch_);
-        }
-        else
-        {
-            if (sketch_)
-            {
-                sketch_->clear();
-            }
-        }
-
-        script_.reset();
-    }
-
-    if (!sketch_)
-    {
-        sketch_=createEmpty();
-        connectSignalsToSketch(sketch_);
-    }
-
-    return *sketch_;
-}
-
-void DelayedCreatedSketch::setScript(const std::string& script)
-{
-    script_ = std::make_unique<std::string>(script);
-}
-
-std::string DelayedCreatedSketch::script() const
-{
-    if (script_)
-    {
-        return *script_;
-    }
-    else if (sketch_)
-    {
-        std::ostringstream so;
-        sketch_->generateScript(so);
-        auto s=so.str();
-        return s;
-    }
-    else
-    {
-        return std::string();
-    }
-}
-
-
-void DelayedCreatedSketch::assignFrom(
-    const DelayedCreatedSketch &os)
-{
-    if (os.script_)
-    {
-        script_=std::make_unique<std::string>(*os.script_);
-    }
-    else
-    {
-        script_.reset();
-    }
-
-    if (os.sketch_)
-    {
-        if (!sketch_)
-        {
-            sketch_=createEmpty();
-            connectSignalsToSketch(sketch_);
-        }
-        *sketch_ = *os.sketch_;
-    }
-    else
-    {
-        sketch_.reset();
-    }
+    return references_.size();
 }
 
 
 
-
-
-
-
-
-std::shared_ptr<insight::cad::ConstrainedSketch>
-CADSketchParameter::createEmpty() const
-{
-    auto s = insight::cad::ConstrainedSketch::create(
-        std::make_shared<cad::DatumPlane>(
-            cad::vec3const(0,0,0),
-            cad::vec3const(0,0,1) ),
-        *entityProperties() );
-
-    for (auto& ref: references_)
-    {
-        try
-        {
-            auto &r =
-                const_cast<CADSketchParameter&>(*this)
-                          .parentSet()
-                          .get<CADGeometryParameterBase>(ref.second);
-
-            s->setExternalReference(
-                cad::ExternalReference::create(r.geometry()),
-                ref.first
-                );
-        }
-        catch (const ElementNotFoundException&)
-        {}
-    }
-
-    return s;
-}
 
 void CADSketchParameter::connectSignalsToSketch(
     cad::ConstrainedSketchPtr s )
@@ -146,8 +41,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(beforeGeometryAdded);
             if (!valueChangeSignalBlocked())
             {
-                // childValueChanged();
-                beforeChildInsertion(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                beforeChildInsertion(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type addSlot_=
@@ -155,8 +50,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(geometryAdded);
             if (!valueChangeSignalBlocked())
             {
-                // childValueChanged();
-                childInsertionDone(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                childInsertionDone(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type befRemoveSlot_=
@@ -164,8 +59,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(beforeGeometryRemoved);
             if (!valueChangeSignalBlocked())
             {
-                //childValueChanged();
-                beforeChildRemoval(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                beforeChildRemoval(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type removeSlot_=
@@ -173,8 +68,8 @@ void CADSketchParameter::connectSignalsToSketch(
             DBG_SLOT(geometryRemoved);
             if (!valueChangeSignalBlocked())
             {
-                // childValueChanged();
-                childRemovalDone(r,r);
+                int nlp = static_cast<int>(sketch().layerPropertiesCount());
+                childRemovalDone(nlp+r, nlp+r);
             }
         };
     cad::ConstrainedSketch::GeometryEditSignal::slot_type changeSlot_=
@@ -191,7 +86,7 @@ void CADSketchParameter::connectSignalsToSketch(
     addSlot_.track_foreign(s);
     addSlotConn_=s->geometryAdded.connect(addSlot_);
 
-    removeSlot_.track_foreign(s);
+    befRemoveSlot_.track_foreign(s);
     befRemoveSlotConn_=s->beforeGeometryRemoval.connect(befRemoveSlot_);
     removeSlot_.track_foreign(s);
     removeSlotConn_=s->geometryRemoved.connect(removeSlot_);
@@ -199,6 +94,52 @@ void CADSketchParameter::connectSignalsToSketch(
     changeSlot_.track_foreign(s);
     changeSlotConn_=s->geometryChanged.connect(changeSlot_);
 
+    cad::ConstrainedSketch::LayerEditSignal::slot_type befAddLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                beforeChildInsertion(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type addLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                childInsertionDone(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type befRemoveLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                beforeChildRemoval(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type removeLayerSlot_=
+        [this](const std::string&, int r) {
+            if (!valueChangeSignalBlocked())
+                childRemovalDone(r, r);
+        };
+    cad::ConstrainedSketch::LayerEditSignal::slot_type changeLayerSlot_=
+        [this](const std::string&, int) {
+            if (!valueChangeSignalBlocked())
+                childValueChanged();
+        };
+
+    befAddLayerSlot_.track_foreign(s);
+    befAddLayerSlotConn_=s->beforeLayerInsertion.connect(befAddLayerSlot_);
+    addLayerSlot_.track_foreign(s);
+    addLayerSlotConn_=s->layerAdded.connect(addLayerSlot_);
+
+    befRemoveLayerSlot_.track_foreign(s);
+    befRemoveLayerSlotConn_=s->beforeLayerRemoval.connect(befRemoveLayerSlot_);
+    removeLayerSlot_.track_foreign(s);
+    removeLayerSlotConn_=s->layerRemoved.connect(removeLayerSlot_);
+
+    changeLayerSlot_.track_foreign(s);
+    changeLayerSlotConn_=s->layerChanged.connect(changeLayerSlot_);
+
+}
+
+
+
+void CADSketchParameter::afterInPlaceSketchUpdate(cad::ConstrainedSketchPtr s)
+{
+    s->setParentParameter(this);
 }
 
 
@@ -220,8 +161,12 @@ CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order)
-{}
+  : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order),
+    entityProperties_( insight::cad::noParametersDelegate ),
+    sketch_(createEmpty())
+{
+    connectSignalsToSketch(sketch_);
+}
 
 
 
@@ -231,9 +176,12 @@ CADSketchParameter::CADSketchParameter(
     const std::string& description,
     bool isHidden, bool isExpert, bool isNecessary, int order
     )
-    : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order)
+  : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order),
+    entityProperties_( insight::cad::noParametersDelegate ),
+    initialScript_(std::make_unique<std::string>(script)),
+    sketch_(createEmpty())
 {
-    setScript(script);
+    connectSignalsToSketch(sketch_);
 }
 
 
@@ -247,12 +195,14 @@ CADSketchParameter::CADSketchParameter(
    )
     : CADGeometryParameterBase(description, isHidden, isExpert, isNecessary, order),
     entityProperties_(
-          bool(entityProperties)?
+        bool(entityProperties)?
             entityProperties : insight::cad::noParametersDelegate ),
+    initialScript_(std::make_unique<std::string>(script)),
+    sketch_(createEmpty()),
     presentationDelegateKey_(presentationDelegateKey),
     references_(references)
 {
-    setScript(script);
+    connectSignalsToSketch(sketch_);
 }
 
 
@@ -263,12 +213,49 @@ CADSketchParameter::~CADSketchParameter()
 
 
 
-
-void CADSketchParameter::setReferences(
-    const std::map<int, std::string> &references )
+void CADSketchParameter::initializeHierarchy()
 {
-    references_=references;
+    for (auto& ref: references_)
+    {
+        try
+        {
+            auto &r =
+                const_cast<CADSketchParameter&>(*this)
+                    .parentSet()
+                    .get<CADGeometryParameterBase>(ref.second);
+
+            sketch_->setExternalReference(
+                cad::ExternalReference::create(r.geometry()),
+                ref.first
+                );
+        }
+        catch (const ElementNotFoundException&)
+        {}
+    }
+
+    if (initialScript_)
+    {
+        setScript(*initialScript_);
+        initialScript_.reset();
+    }
+
+    Parameter::initializeHierarchy();
 }
+
+
+
+std::shared_ptr<insight::cad::ConstrainedSketch>
+CADSketchParameter::createEmpty() const
+{
+    return insight::cad::ConstrainedSketch::create(
+        std::make_shared<cad::DatumPlane>(
+            cad::vec3const(0,0,0),
+            cad::vec3const(0,0,1) ),
+        *entityProperties() );
+}
+
+
+
 
 
 std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate>
@@ -276,6 +263,9 @@ CADSketchParameter::entityProperties() const
 {
     return entityProperties_;
 }
+
+
+
 
 const std::string&
 CADSketchParameter::presentationDelegateKey() const
@@ -287,17 +277,63 @@ CADSketchParameter::presentationDelegateKey() const
 
 void CADSketchParameter::setScript(const std::string& script)
 {
-    DelayedCreatedSketch::setScript(script);
+    auto newSk = createSketch(script);
+    *sketch_ = *newSk;
+    afterInPlaceSketchUpdate(sketch_);
+
     triggerValueChanged();
+}
+
+
+
+std::string CADSketchParameter::script() const
+{
+    std::ostringstream so;
+    sketch_->generateScript(so);
+    auto s=so.str();
+    return s;
 }
 
 
 
 cad::FeaturePtr CADSketchParameter::geometry() const
 {
-    return const_cast<CADSketchParameter*>(this)
-        ->featureGeometryRef();
+    return std::const_pointer_cast<cad::Feature>(featureGeometry());
 }
+
+
+
+const cad::ConstrainedSketch &CADSketchParameter::sketch() const
+{
+    insight::assertion(bool(sketch_), "attempt to access uninitialized sketch");
+    return *sketch_;
+}
+
+
+
+
+insight::cad::ConstrainedSketch& CADSketchParameter::sketchRef()
+{
+    return *sketch_;
+}
+
+
+
+
+cad::ConstFeaturePtr CADSketchParameter::featureGeometry() const
+{
+    insight::assertion(bool(sketch_), "attempt to access uninitialized sketch");
+    return sketch_;
+}
+
+
+
+
+cad::FeaturePtr CADSketchParameter::featureGeometryRef()
+{
+    return sketch_;
+}
+
 
 
 std::string CADSketchParameter::latexRepresentation(
@@ -308,10 +344,15 @@ std::string CADSketchParameter::latexRepresentation(
     return "(sketched)";
 }
 
+
+
+
 std::string CADSketchParameter::plainTextRepresentation(int indent) const
 {
     return "(sketched)";
 }
+
+
 
 rapidxml::xml_node<>* CADSketchParameter::appendToNode
     (
@@ -326,6 +367,9 @@ rapidxml::xml_node<>* CADSketchParameter::appendToNode
     n->value(doc.allocate_string(s.c_str()));
     return n;
 }
+
+
+
 
 const rapidxml::xml_node<>* CADSketchParameter::readFromNode
     (
@@ -343,6 +387,8 @@ const rapidxml::xml_node<>* CADSketchParameter::readFromNode
 }
 
 
+
+
 CADSketchParameter::CADSketchParameter(
     const rapidxml::xml_node<> &node)
     : CADGeometryParameterBase(node)
@@ -352,7 +398,7 @@ CADSketchParameter::CADSketchParameter(
 
 
 
-std::unique_ptr<hierarchicalData::Element> CADSketchParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> CADSketchParameter::cloneUninitialized() const
 {
     return std::make_unique<CADSketchParameter>(
         script(),
@@ -373,7 +419,7 @@ void CADSketchParameter::assignFrom(const Element& oe)
     presentationDelegateKey_ = op.presentationDelegateKey_;
     references_ = op.references_;
 
-    DelayedCreatedSketch::assignFrom(op);
+    sketchRef() = op.sketch();
 
     Parameter::assignFrom(op);
 }
@@ -417,7 +463,7 @@ bool CADSketchParameter::isDifferent(const Parameter & op) const
 
 int CADSketchParameter::nChildren() const
 {
-    return sketch().size();
+    return sketch().layerPropertiesCount() + sketch().size();
 }
 
 
@@ -428,7 +474,11 @@ std::string CADSketchParameter::childElementName( int i, bool ) const
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
-    return str(boost::format("entity_%d")%i);
+    auto nlp = static_cast<int>(sketch().layerPropertiesCount());
+    if (i < nlp)
+        return sketch().layerPropertiesName(i);
+
+    return str(boost::format("entity_%d")%(i - nlp));
 }
 
 
@@ -439,8 +489,12 @@ Parameter& CADSketchParameter::childElementRef ( int i )
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
+    auto nlp = static_cast<int>(sketch().layerPropertiesCount());
+    if (i < nlp)
+        return sketchRef().layerPropertiesAt(i);
+
     auto g = sketch().begin();
-    std::advance(g, i);
+    std::advance(g, i - nlp);
     return g->second->parametersRef();
 }
 
@@ -452,8 +506,12 @@ const Parameter& CADSketchParameter::childElement( int i ) const
         "invalid child parameter index %d (must be in range 0...%d)",
         i, nChildren() );
 
+    auto nlp = static_cast<int>(sketch().layerPropertiesCount());
+    if (i < nlp)
+        return sketch().layerPropertiesAt(i);
+
     auto g = sketch().begin();
-    std::advance(g, i);
+    std::advance(g, i - nlp);
     return g->second->parameters();
 }
 

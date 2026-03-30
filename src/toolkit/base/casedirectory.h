@@ -1,7 +1,7 @@
 #ifndef INSIGHT_CASEDIRECTORY_H
 #define INSIGHT_CASEDIRECTORY_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 namespace insight {
 

@@ -65,7 +65,7 @@ DynamicClassParametersSelectableSubsetGenerator
     std::ostream& os ) const
 {
     os
-        << "struct " <<cppTypeName()<<" "
+        << "struct " <<cppTypeName()<<" : public insight::ParameterSetBuilder "
         << "{\n"
         <<  "std::string selection;\n"
         <<   cppStaticType()<< " parameters;\n"

@@ -43,7 +43,7 @@ void IncludedSubsetGenerator::cppWriteCreateStatement
 ) const
 {
     os<<"auto "<<psvarname<<" = "
-    <<cppInsightType()<<"::create_uninitialized("
+    <<cppInsightType()<<"::create_uninitialized( ParameterSetBuilder::key(),"
        << value <<"::makeDefault()->entries(), "
        <<cppInsightTypeConstructorParameters()<<");\n";
 
@@ -104,13 +104,13 @@ void IncludedSubsetGenerator::cppWriteInsertStatement
 ) const
 {
     os<<"{ ";
-    os<<" std::string key(\""<<name<<"\"); ";
+    os<<" std::string k(\""<<name<<"\"); ";
     this->cppWriteCreateStatement(os, name/*, extendtype(thisscope, name+"_type")*/);
 
-    os<<" if ("<<psvarname<<".contains(key)) {\n";
-    os<<  psvarname<<".getSubset(key).copyMatching(*"<<name<<"); ";
+    os<<" if ("<<psvarname<<".contains(k)) {\n";
+    os<<  psvarname<<".getSubset(k).copyMatching(*"<<name<<"); ";
     os<<" } else {"<<endl;
-    os<<  psvarname<<".insert(key, std::move("<<name<<"));\n";
+    os<<  psvarname<<".insertUninitialized(ParameterSetBuilder::key(), k, std::move("<<name<<"));\n";
     os<<" }"<<endl;
     os<<"}"<<endl;
 }

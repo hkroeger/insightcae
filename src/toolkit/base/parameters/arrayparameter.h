@@ -49,6 +49,11 @@ protected:
         valueChangedConnections_,
         childValueChangedConnections_;
 
+    void resizeImpl(int newSize, bool init);
+    void appendValueImpl( std::unique_ptr<Parameter>&& np, bool initializeHierarchy=true );
+    void insertValueImpl( int i, std::unique_ptr<Parameter>&& np, bool initializeHierarchy=true );
+    void appendEmptyImpl(bool initializeHierarchy=true);
+
 public:
     declareType ( "array" );
 
@@ -76,11 +81,17 @@ public:
     const Parameter& defaultValue() const;
 
     int defaultSize() const;
-    void resize(int newSize, bool init);
+    inline void resize(int newSize) { resizeImpl(newSize, true); }
     void eraseValue ( int i );
-    void appendValue ( std::unique_ptr<Parameter>&& np );
-    void insertValue ( int i, std::unique_ptr<Parameter>&& np );
-    void appendEmpty(bool init);
+
+    inline void appendValue( std::unique_ptr<Parameter>&& np) { appendValueImpl(std::move(np), true); }
+    inline void insertValue( int i, std::unique_ptr<Parameter>&& np ) { insertValueImpl(i, std::move(np), true); }
+    inline void appendEmpty() { appendEmptyImpl(true); }
+
+#ifndef SWIG
+    inline void appendEmptyUninitialized(ParameterSetBuilder::Key) { appendEmptyImpl(false); }
+#endif
+
     Parameter& operator[] ( int i );
     const Parameter& operator[] ( int i ) const;
 
@@ -124,8 +135,10 @@ public:
         const rapidxml::xml_node<>& node) override;
 
 
-    std::unique_ptr<Element> clone () const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
     void assignFrom( const Element& rhs ) override;
     void copyMatching( const Element& rhs ) override;
     void extend( const Element& op ) override;

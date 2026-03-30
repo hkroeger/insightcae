@@ -2,18 +2,32 @@
 #define PARAMETERSBASE_H
 
 
-#include "base/parameterset.h"
 
 #include <memory>
-
+#include <boost/optional.hpp>
 
 
 
 namespace insight {
 
+class Parameter;
+class ParameterSet;
 
+class ParameterSetBuilder
+{
+public:
+    struct Key {
+    private:
+        Key() = default;
+        friend class ParameterSet;
+    };
+protected:
+    static inline Key key() { return {}; }
+
+};
 
 struct ParametersBase
+: public ParameterSetBuilder
 {
     boost::optional<std::string> parameterPath;
 

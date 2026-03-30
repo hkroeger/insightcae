@@ -1,6 +1,7 @@
 
 #include "base/exception.h"
 #include "base/translations.h"
+#include "base/boost_include.h"
 #include "boost/algorithm/string/join.hpp"
 #include "openfoam/solveroutputanalyzer.h"
 #include "base/linearalgebra.h"

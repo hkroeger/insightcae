@@ -34,9 +34,12 @@
 #include <memory>
 #include <sstream>
 
-#include "base/boost_include.h"
-
-#include "boost/filesystem/operations.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/date_time.hpp>
 #include "rapidxml/rapidxml_print.hpp"
 
 
@@ -466,7 +469,7 @@ const rapidxml::xml_node<>* ResultSet::readFromNode(
         }
         else
         {
-            p_=std::make_unique<ParameterSet>(*pn);
+            p_=ParameterSet::create(*pn);
         }
         p_->setParent(this);
     }
@@ -569,7 +572,7 @@ const hierarchicalData::Element& ResultSet::childElement( int i ) const
 
 
 
-std::unique_ptr<hierarchicalData::Element> ResultSet::clone() const
+std::unique_ptr<hierarchicalData::Element> ResultSet::cloneUninitialized() const
 {
      auto nr =std::make_unique<ResultSet> (
             p_ ? p_->cloneAs<ParameterSet>() : std::unique_ptr<ParameterSet>(),

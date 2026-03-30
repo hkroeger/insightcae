@@ -23,7 +23,6 @@
 
 using namespace std;
 using namespace boost;
-using namespace boost::assign;
 using namespace boost::filesystem;
 
 namespace insight {

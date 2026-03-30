@@ -6,7 +6,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -116,7 +115,7 @@ xml_node< char >* ResultSection::appendToNode (
 }
 
 
-std::unique_ptr<hierarchicalData::Element> ResultSection::clone() const
+std::unique_ptr<hierarchicalData::Element> ResultSection::cloneUninitialized() const
 {
     auto res = std::make_unique<ResultSection>( sectionName_ );
     for ( auto& re: static_cast<const ResultElement&>(*this) ) {

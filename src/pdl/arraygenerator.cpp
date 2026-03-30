@@ -96,7 +96,7 @@ void ArrayGenerator::cppWriteCreateStatement
   {
     os << "for (size_t i=0; i<"<<num<<"; i++)\n"
        << "{\n"
-       <<  psvarname<<"->appendEmpty(false);\n"
+       <<  psvarname<<"->appendEmptyUninitialized(ParameterSetBuilder::key());\n"
        << "}\n";
   }
   os<<"}\n";
@@ -117,7 +117,7 @@ void ArrayGenerator::cppWriteSetStatement
   os << "for (size_t k=0; k<"<<staticname<<".size(); k++)\n";
   os << "{\n";
 
-  os <<  varname<<".appendEmpty(false);"<<endl;
+  os <<  varname<<".appendEmptyUninitialized(ParameterSetBuilder::key());"<<endl;
 
   os <<  "auto& "<<varname<<"_cur = "
      <<     "dynamic_cast< "<< value->cppInsightType() <<"& >"

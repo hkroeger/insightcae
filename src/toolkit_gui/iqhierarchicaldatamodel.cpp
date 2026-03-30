@@ -268,6 +268,9 @@ void IQHierarchicalDataModel::handleDataChangeForUndo(
     const QModelIndex &bottomRight,
     const QVector<int> &roles)
 {
+    if (bulkUpdateInProgress_)
+        return;
+
     // qDebug() << "store undo "<<topLeft<<bottomRight<<roles;
     // qDebug()<<data(topLeft.siblingAtColumn(labelCol), Qt::DisplayRole);
     // qDebug()<<data(bottomRight.siblingAtColumn(labelCol), Qt::DisplayRole);
@@ -305,7 +308,8 @@ IQHierarchicalDataModel::elementOfIndex(const QModelIndex& idx)
 
 
 
-IQHierarchicalDataElement* IQHierarchicalDataModel::iqElementOfIndex(const QModelIndex& idx)
+IQHierarchicalDataElement* IQHierarchicalDataModel::iqElementOfIndex(
+    const QModelIndex& idx )
 {
     // create wrapper on the fly
 
@@ -353,6 +357,9 @@ const IQHierarchicalDataElement* IQHierarchicalDataModel::iqElementOfIndex(
 const insight::hierarchicalData::Element*
 searchVisibleParent(const insight::hierarchicalData::Element& p, int* row=nullptr)
 {
+    if (!p.hasParent())
+        return nullptr;
+
     const insight::hierarchicalData::Element *pp, *upmostParent;
     upmostParent = pp = &p.parent();
     while (pp)
@@ -747,6 +754,33 @@ std::shared_ptr<IQHierarchicalDataModel::EditingDisabler>
 IQHierarchicalDataModel::disableEditing()
 {
     return std::make_shared<EditingDisabler>(*this);
+}
+
+
+
+IQHierarchicalDataModel::BulkUpdateGuard::BulkUpdateGuard(IQHierarchicalDataModel& m)
+    : m_(m)
+{
+    m_.bulkUpdateInProgress_ = true;
+}
+
+IQHierarchicalDataModel::BulkUpdateGuard::~BulkUpdateGuard()
+{
+    m_.bulkUpdateInProgress_ = false;
+    m_.storeUndoState("sketch update");
+    m_.dataBeforeLastChange_ = m_.data_->clone();
+    Q_EMIT m_.bulkUpdateFinished();
+}
+
+std::shared_ptr<IQHierarchicalDataModel::BulkUpdateGuard>
+IQHierarchicalDataModel::beginBulkUpdate()
+{
+    return std::make_shared<BulkUpdateGuard>(*this);
+}
+
+bool IQHierarchicalDataModel::isBulkUpdateInProgress() const
+{
+    return bulkUpdateInProgress_;
 }
 
 

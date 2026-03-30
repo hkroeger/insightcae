@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+#include "boost/ptr_container/ptr_map.hpp"
+
 namespace insight {
 
 

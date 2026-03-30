@@ -27,7 +27,8 @@
 #include <dlfcn.h>
 #include <functional>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include "boost/function.hpp"
 #include "boost/python.hpp"
 

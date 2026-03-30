@@ -34,22 +34,6 @@ IQCADSketchParameter::IQCADSketchParameter
 {}
 
 
-void IQCADSketchParameter::connectSignals()
-{
-    // IQParameter::connectSignals();
-
-    // disconnectAtEOL(
-    //     parameterRef().childValueChanged.connect(
-    //         [this]() {
-    //             DBG_SLOT(childValueChanged);
-
-    //             auto blocker = block_all();
-    //             model()->notifyElementChange( *this );
-    //         }
-    //     )
-    // );
-}
-
 
 
 

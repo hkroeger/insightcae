@@ -3,7 +3,8 @@
 
 #include <set>
 #include <string>
-#include "base/boost_include.h"
+#include <boost/variant.hpp>
+#include <boost/regex.hpp>
 
 #include "rapidxml/rapidxml.hpp"
 

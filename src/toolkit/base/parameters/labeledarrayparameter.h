@@ -40,11 +40,15 @@ protected:
     void insertWithDefaultsImpl(const std::string& label);
     void insertValueImpl(
         const std::string& label,
-        std::unique_ptr<Parameter>&& np );
+        std::unique_ptr<Parameter>&& np,
+        bool initializeHierarchy = true );
     void changeLabelImpl( const std::string& label, const std::string& newLabel );
     Parameter& getOrInsertDefaultValueImpl( const std::string& label );
 
-    void initialize() override;
+    void setKeySourceParameterPathImpl(const std::string& pp, bool initializeHierarchy = true);
+
+    void initializeHierarchy() override;
+
 
 public:
     declareType ( "labeledarray" );
@@ -72,7 +76,9 @@ public:
 
     void setLabelPattern(const std::string& pat);
 
-    void setKeySourceParameterPath(const std::string& pp);
+    inline void setKeySourceParameterPath(const std::string& pp)
+    { setKeySourceParameterPathImpl(pp, true); };
+
     void unsetKeySourceParameterPath();
     bool keysAreLocked() const;
 
@@ -134,8 +140,10 @@ public:
         const std::string& name,
         const rapidxml::xml_node<>& node ) override;
 
-    std::unique_ptr<Element> clone () const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
     void assignFrom( const Element& rhs ) override;
     void copyMatching( const Element& rhs ) override;
     void extend( const Element& op ) override;

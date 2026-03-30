@@ -4,7 +4,6 @@ project(analyze)
 
 set(analyze_LIBS
     toolkit_remote
-    ${Boost_LIBRARIES}
 )
 
 if (wt_FOUND)

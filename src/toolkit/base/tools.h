@@ -29,7 +29,9 @@ class vtkCellArray;
 #include "vtkPolyDataAlgorithm.h"
 
 #include "base/exception.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 #include "boost/process.hpp"
 #include "boost/process/args.hpp"
 #include "base/linearalgebra.h"
@@ -39,6 +41,11 @@ class vtkCellArray;
 #include <istream>
 
 #include <boost/mpl/clear.hpp>
+#include "boost/timer/timer.hpp"
+#include "boost/regex.hpp"
+
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "rapidxml/rapidxml.hpp"
 

@@ -1274,7 +1274,8 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 this, "Select background image file", GetFileMode::Open,
                 {
                     {"jpg jpeg", "JPEG bitmap"},
-                    {"png", "Portable Network Graphic"}
+                    {"png", "Portable Network Graphic"},
+                    {"pdf", "Portable Document Format"}
                 } ))
         {
             auto bgi = new BackgroundImage(fn, *this);
@@ -2122,7 +2123,7 @@ void IQVTKCADModel3DViewer::saveState(
     for (const auto& bgi: backgroundImages_)
     {
         auto bgin = insight::appendNode(doc, node, bgiNodeName);
-        bgi->write(doc, bgin);
+        bgi->write(doc, bgin, parentPath);
     }
 
     if (auto sketcher = runningAction<IQVTKConstrainedSketchEditor>())
@@ -2184,7 +2185,7 @@ void IQVTKCADModel3DViewer::restoreState(
     {
         try
         {
-            auto *bgi=new BackgroundImage(*n, *this);
+            auto *bgi=new BackgroundImage(*n, parentPath, *this);
             backgroundImages_.append(bgi);
             connectBackgroundImageCommands(bgi);
         }

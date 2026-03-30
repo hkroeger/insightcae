@@ -1,5 +1,5 @@
 #include "elementpath.h"
-#include "base/boost_include.h"
+#include <boost/algorithm/string.hpp>
 #include "base/cppextensions.h"
 
 namespace insight {
@@ -31,6 +31,20 @@ ElementPath ElementPath::operator/(const ElementPath& o) const
     ElementPath r(*this);
     std::copy(o.begin(), o.end(), std::last_inserter(r));
     return r;
+}
+
+bool ElementPath::isBelow(const ElementPath &other) const
+{
+    if (other.size()<=size())
+    {
+        for (int i=0; i<other.size(); ++i)
+        {
+            if (other[i]!=(*this)[i])
+                return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 ElementPath ElementPath::operator/(const std::string& o) const

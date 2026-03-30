@@ -456,7 +456,6 @@ public:
 
     void setSelectionModel(QItemSelectionModel *selmodel) override;
 
-#warning unify with iqvtkviewer
     arma::mat pointInPlane3D(const gp_Ax3& plane, const arma::mat& pip2d) const;
     arma::mat pointInPlane3D(const gp_Ax3& plane, const QPoint& screenPos) const;
     arma::mat pointInPlane2D(const gp_Ax3& plane, const QPoint& screenPos) const;

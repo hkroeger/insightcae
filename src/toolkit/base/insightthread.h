@@ -5,7 +5,7 @@
 #include "base/progressdisplayer.h"
 #include "base/exception.h"
 
-#include "base/boost_include.h"
+#include <boost/thread.hpp>
 
 
 

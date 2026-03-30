@@ -1,6 +1,6 @@
 #include "blockmeshoutputanalyzer.h"
 
-#include "base/boost_include.h"
+#include <boost/regex.hpp>
 
 using namespace std;
 using namespace boost;

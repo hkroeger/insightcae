@@ -24,11 +24,11 @@ target_link_libraries(isofCaseBuilder
  toolkit_gui
  taskspoolermonitor
  Qt5::Widgets
+ Boost::program_options
 )
 linkToolkitVtk(isofCaseBuilder Onscreen)
 target_include_directories(isofCaseBuilder
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )

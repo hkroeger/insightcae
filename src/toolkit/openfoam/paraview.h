@@ -2,7 +2,7 @@
 #define PARAVIEW_H
 
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/tools.h"
 #include "base/externalprocess.h"
 

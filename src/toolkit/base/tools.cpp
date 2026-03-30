@@ -23,11 +23,16 @@
 #include <dlfcn.h>
 
 #include "base/boost_include.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include "boost/range/iterator_range.hpp"
+#include <boost/range/adaptor/reversed.hpp>
+
 #include "boost/asio.hpp"
 #include "base/exception.h"
 #include "base/cppextensions.h"
 #include "base/externalprograms.h"
 #include "base/externalprocess.h"
+
 
 #include "vtkSTLReader.h"
 #include "vtkSTLWriter.h"
@@ -360,7 +365,7 @@ std::string timeCodePrefix()
 {
   ptime now = second_clock::universal_time();
   static std::locale loc(std::locale::classic(), //std::cout.getloc(),
-                           new time_facet("%Y%m%d%H%M%S"));
+                           new boost::posix_time::time_facet("%Y%m%d%H%M%S"));
   std::ostringstream ss;
   ss.imbue(loc);
   ss << now;
@@ -577,7 +582,7 @@ SharedPathList &SharedPathList::global()
 path SharedPathList::getSharedFilePath(const path& file, bool* foundPtr)
 {
   if (foundPtr) *foundPtr=true;
-  BOOST_REVERSE_FOREACH( const path& p, *this)
+  for( auto& p: boost::adaptors::reverse(*this))
   {
     if (exists(p/file)) 
       return p/file;

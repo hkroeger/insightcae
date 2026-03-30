@@ -11,7 +11,7 @@ if (PYTHONLIBS_FOUND AND INSIGHT_BUILD_PYTHONBINDINGS)
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       )
-    target_link_libraries(refdata toolkit) # ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY}) #${PYTHON_LIBRARIES}
+    target_link_libraries(refdata toolkit)
 
     install(TARGETS refdata LIBRARY DESTINATION lib)
     install(

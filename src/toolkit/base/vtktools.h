@@ -24,7 +24,7 @@
 #include <vector>
 #include <map>
 
-#include "boost_include.h"
+#include <boost/filesystem.hpp>
 #include <boost/concept_check.hpp>
 
 #include "base/linearalgebra.h"

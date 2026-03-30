@@ -30,6 +30,7 @@
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 #include "base/cppextensions.h"
+#include "base/parametersbase.h"
 
 #include <memory>
 #include <string>
@@ -40,8 +41,9 @@
 #include <sstream>
 #include <type_traits>
 
-#include "base/boost_include.h"
-#include "boost/signals2.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
+#include <boost/signals2.hpp>
 
 #include <openssl/md5.h>
 
@@ -130,6 +132,10 @@ public:
     StaticValueWrap&
     setPath(const std::string &p)
     {
+        if constexpr (std::is_base_of_v<insight::ParametersBase, T>)
+        {
+            static_cast<insight::ParametersBase&>(*this).parameterPath = p;
+        }
         parameterPath=p;
         return *this;
     }
@@ -275,6 +281,7 @@ public:
         int order=0 );
 
 
+    bool hasParentSet() const;
     ParameterSet& parentSet();
 
     bool isHidden() const;

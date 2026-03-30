@@ -2,7 +2,6 @@
 #define INSIGHT_CELLSETOPTION_SELECTION_H
 
 #include <string>
-#include "base/boost_include.h"
 
 #include "cellsetoption_selection__cellSetOption_Selection__Parameters_headers.h"
 

@@ -1,7 +1,7 @@
 #include "gradinganalyzer.h"
 
 #include "base/exception.h"
-#include "base/boost_include.h"
+#include <boost/tuple/tuple.hpp>
 #include "base/linearalgebra.h"
 
 

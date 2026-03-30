@@ -1,7 +1,7 @@
 
 #include "base/exception.h"
 #include "base/intervals.h"
-#include "base/boost_include.h"
+#include <boost/format.hpp>
 
 namespace insight {
 

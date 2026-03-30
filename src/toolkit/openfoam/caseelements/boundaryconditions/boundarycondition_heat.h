@@ -1,7 +1,6 @@
 #ifndef BOUNDARYCONDITION_HEAT_H
 #define BOUNDARYCONDITION_HEAT_H
 
-#include "base/boost_include.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"

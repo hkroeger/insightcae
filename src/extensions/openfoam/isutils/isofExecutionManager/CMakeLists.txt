@@ -21,11 +21,11 @@ add_executable(isofExecutionManager
 )
 target_enable_qt(isofExecutionManager)
 target_link_libraries(isofExecutionManager
-    ${Boost_LIBRARIES} Qt5::Widgets toolkit_gui
+    Qt5::Widgets toolkit_gui
+
     ${isofExecutionManager_LIBS})
 target_include_directories(isofExecutionManager
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )

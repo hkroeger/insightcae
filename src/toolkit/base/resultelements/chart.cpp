@@ -10,7 +10,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -386,7 +385,7 @@ Chart::readFromNode(
 
 
 
-std::unique_ptr<hierarchicalData::Element> Chart::clone() const
+std::unique_ptr<hierarchicalData::Element> Chart::cloneUninitialized() const
 {
     auto res=std::make_unique<Chart>(
         xlabel_, ylabel_, plc_,

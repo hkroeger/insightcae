@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "setfields__setFieldOperator__Parameters_headers.h"
 
 namespace insight {

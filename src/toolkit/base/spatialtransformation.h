@@ -1,7 +1,8 @@
 #ifndef INSIGHT_SPATIALTRANSFORMATION_H
 #define INSIGHT_SPATIALTRANSFORMATION_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
 #include "base/linearalgebra.h"
 
 #include <limits>

@@ -238,13 +238,13 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
     r_descriptionWithParameters =
         ( r_string > (('%' > r_scalarExpression % '%')
                       | qi::attr(std::vector<ScalarPtr>())) )
-        [ qi::_val = phx::make_shared_<DescriptionWithParameters>()(qi::_1, qi::_2) ] ;
+        [ qi::_val = insight::cad::parser::make_shared_<DescriptionWithParameters>()(qi::_1, qi::_2) ] ;
 
 
     r_BOMDescriptionData =
         ( r_descriptionWithParameters >
          ( ( '(' > r_descriptionWithParameters > ')' ) | qi::attr(DescriptionWithParametersPtr()) ) )
-        [ qi::_val = phx::make_shared_<BOMDescriptionData>()(qi::_1, qi::_2) ]
+        [ qi::_val = insight::cad::parser::make_shared_<BOMDescriptionData>()(qi::_1, qi::_2) ]
         ;
 
     r_model =

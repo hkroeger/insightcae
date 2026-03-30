@@ -44,7 +44,6 @@
 
 using namespace std;
 using namespace boost;
-using namespace boost::assign;
 
 namespace insight
 {
@@ -448,7 +447,7 @@ void blockMeshDict_CylWedge::create_bmd()
                                           rm*p_i+vL1, rm*p_o+vL1, p_o+vL1, p_rc+vL1
                                       ),
                                       nr, nu1, nx,
-                                      list_of<double> ( 1./p().mesh.gradr ) ( 1 ) ( 1 )
+                                      { 1./p().mesh.gradr, 1., 1. }
                                     )
                       );
           if ( i->lowerEnd && base ) {
@@ -473,7 +472,7 @@ void blockMeshDict_CylWedge::create_bmd()
                                           p_rc+vL1, p_o+vL1, rp*p_o+vL1, rp*p_i+vL1
                                       ),
                                       nr, nu2, nx,
-                                      list_of<double> ( 1./p().mesh.gradr ) ( 1 ) ( 1 )
+                                      { 1./p().mesh.gradr, 1., 1. }
                                     )
                       );
           if ( i->lowerEnd && base ) {

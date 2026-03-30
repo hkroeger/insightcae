@@ -99,7 +99,7 @@ target_enable_qt(qtermwidget)
 #	VERSION ${qtermwidget_VERSION}
 #)
 
-target_link_libraries ( qtermwidget Qt5::Widgets )
+target_link_libraries ( qtermwidget Qt5::Widgets Boost::filesystem)
 
 install(TARGETS qtermwidget DESTINATION lib)
 

@@ -5,7 +5,10 @@
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcase.h"
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/fusion/tuple.hpp>
+#include <boost/variant.hpp>
 
 #include "vtkXMLMultiBlockDataReader.h"
 #include "vtkGenericDataObjectReader.h"

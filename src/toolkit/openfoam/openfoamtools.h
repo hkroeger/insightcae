@@ -25,7 +25,8 @@
 #include <vector>
 #include <float.h>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "base/analysis.h"
 #include "base/resultset.h"
@@ -242,7 +243,7 @@ arma::mat viscousForceProfile
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
   const arma::mat& axis, int n,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 arma::mat projectedArea
@@ -251,7 +252,7 @@ arma::mat projectedArea
   const boost::filesystem::path& location,
   const arma::mat& direction,
   const std::vector<std::string>& patches,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 arma::mat minPatchPressure
@@ -260,7 +261,7 @@ arma::mat minPatchPressure
   const boost::filesystem::path& location,
   const std::string& patch,
   const double& Af=0.025,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 void surfaceFeatureExtract
@@ -328,7 +329,7 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   const boost::filesystem::path& location,
   const std::string fieldName,
   const std::string zoneName,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 void removeCellSetFromMesh
@@ -343,7 +344,7 @@ arma::mat interiorPressureFluctuationProfile
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
   const arma::mat& axis, int n,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts= {"-latestTime"}
 );
 
 
@@ -443,14 +444,14 @@ void calcR
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts= {"-latestTime"}
 );
 
 void calcLambda2
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts= {"-latestTime"}
 );
 
 /**

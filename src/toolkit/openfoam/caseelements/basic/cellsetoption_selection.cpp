@@ -5,7 +5,7 @@
 
 #include "cellsetoption_selection.h"
 
-#include "base/boost_include.h"
+#include <boost/variant.hpp>
 #include "base/exception.h"
 
 

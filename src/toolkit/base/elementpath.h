@@ -17,6 +17,16 @@ public:
     ElementPath operator/(const ElementPath& o) const;
     ElementPath operator/(const std::string& o) const;
 
+    /**
+     * @brief isBelow
+     * check if this path is below the other,
+     * i.e. the other is shorter and all ist elements match this
+     * path's first elements
+     * @param other
+     * @return
+     */
+    bool isBelow(const ElementPath& other) const;
+
     operator std::string() const;
 };
 

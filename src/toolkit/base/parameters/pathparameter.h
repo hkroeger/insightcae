@@ -107,8 +107,10 @@ public:
       const rapidxml::xml_node<>& node) override;
 
   std::unique_ptr<PathParameter> clonePathParameter() const;
-  std::unique_ptr<Element> clone() const override;
+protected:
+  std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
   void assignFrom(const Element& e) override;
   bool isEqual(const Element& op) const override;
 
@@ -202,7 +204,9 @@ public:
 
     bool isEqual(const Element& op) const override;
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
+public:
     std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };
 

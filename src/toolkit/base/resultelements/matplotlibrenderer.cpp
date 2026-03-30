@@ -2,7 +2,8 @@
 
 #include "base/linearalgebra.h"
 #include "base/resultelements/chart.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include "boost/process.hpp"
 
 #include <iterator>

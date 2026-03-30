@@ -1,6 +1,8 @@
 
 #include "base/exception.h"
 #include "base/boost_include.h"
+#include "boost/format.hpp"
+
 
 using namespace boost;
 

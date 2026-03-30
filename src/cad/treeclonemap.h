@@ -2,6 +2,8 @@
 #define TREECLONEMAP_H
 
 #include <map>
+#include <set>
+
 #include "base/exception.h"
 #include "base/boost_include.h"
 #include "boost/spirit/include/qi.hpp"

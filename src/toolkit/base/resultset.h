@@ -182,7 +182,8 @@ public:
     Element& childElementRef ( int i ) override;
     const Element& childElement( int i ) const override;
 
-    std::unique_ptr<hierarchicalData::Element> clone() const override;
+protected:
+    std::unique_ptr<hierarchicalData::Element> cloneUninitialized() const override;
 };
 
 

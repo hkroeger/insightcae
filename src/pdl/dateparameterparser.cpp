@@ -1,5 +1,7 @@
 #include "dateparameterparser.h"
 
+#include "boost/format.hpp"
+
 using namespace std;
 
 defineType(DateGenerator);
@@ -26,6 +28,6 @@ std::string DateGenerator::cppStaticType() const
 
 std::string DateGenerator::cppDefaultValueExpression() const
 {
-    return str(boost::format("boost::gregorian::date{%d,%d,%d}")
+    return boost::str(boost::format("boost::gregorian::date{%d,%d,%d}")
                % value.year() % value.month().as_number() % value.day().as_number());
 }

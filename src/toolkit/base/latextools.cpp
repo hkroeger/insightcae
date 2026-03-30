@@ -24,7 +24,7 @@
 
 #include <string>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "base/tools.h"

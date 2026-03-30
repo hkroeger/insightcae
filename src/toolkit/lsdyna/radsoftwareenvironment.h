@@ -1,7 +1,7 @@
 #ifndef INSIGHT_RADSOFTWAREENVIRONMENT_H
 #define INSIGHT_RADSOFTWAREENVIRONMENT_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/softwareenvironment.h"
 #include "base/outputanalyzer.h"
 

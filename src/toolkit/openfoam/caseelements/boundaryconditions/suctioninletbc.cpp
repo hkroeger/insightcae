@@ -4,6 +4,8 @@
 #include "openfoam/openfoamdict.h"
 #include "openfoam/openfoamcase.h"
 
+#include "boost/fusion/tuple.hpp"
+
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
 
 namespace insight {
@@ -49,7 +51,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
-        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+        if ( ( field.first=="U" ) && ( boost::fusion::get<0> ( field.second ) ==vectorField ) ) {
 
           if (const auto *normal = boost::get<Parameters::inletBehaviour_normal_type>(
                     &p().inletBehaviour))
@@ -70,7 +72,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         } else if (
             ( field.first=="T" )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "inletOutletTotalTemperature" );
             BC["inletValue"]=OFDictData::toUniformField( p().T );
@@ -83,7 +85,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         } else if (
             ( ( field.first=="p" ) || isPrghPressureField(field) )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "totalPressure" );
             BC["p0"]=OFDictData::toUniformField( p().pressure );
@@ -94,18 +96,18 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["gamma"]=OFDictData::data ( p().gamma );
             BC["value"]=OFDictData::toUniformField( p().pressure );
         }
-        else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="rho" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField( p().rho );
           }
-        else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="k" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "turbulentIntensityKineticEnergyInlet" );
             BC["intensity"]=p().turb_I;
             BC["value"]=OFDictData::toUniformField( 0.1 );
           }
-        else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="omega" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=
                 (compressible_case&&(OFversion()<300) ? "compressible::" : "")
@@ -113,7 +115,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["mixingLength"]=p().turb_L;
             BC["value"]=OFDictData::toUniformField( 1.0 );
           }
-        else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
+        else if ( ( field.first=="epsilon" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=
                 (compressible_case&&(OFversion()<300) ? "compressible::" : "")
@@ -124,7 +126,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         else if ( (
                     ( field.first=="nut" ) ||
                     ( field.first=="nuSgs" )
-                   ) && ( get<0> ( field.second ) ==scalarField ) )
+                   ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) )
           {
             BC["type"]=OFDictData::data ( "calculated" );
             BC["value"]=OFDictData::toUniformField( 0.0 );
@@ -135,7 +137,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 ( field.first=="nuTilda" )
               )
               &&
-              ( get<0> ( field.second ) ==scalarField )
+              ( boost::fusion::get<0> ( field.second ) ==scalarField )
           )
           {
             BC["type"]=OFDictData::data ( "zeroGradient" );

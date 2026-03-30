@@ -424,6 +424,12 @@ target_link_libraries(insightcad
 
 target_setup_gettext(insightcad insightcad)
 
+## disabled: propduces issue due to "using namespace" statements
+# set_target_properties(insightcad PROPERTIES
+#    UNITY_BUILD ON
+#    UNITY_BUILD_BATCH_SIZE 16
+# )
+
 include(GenerateExportHeader)
 generate_export_header(insightcad)
 

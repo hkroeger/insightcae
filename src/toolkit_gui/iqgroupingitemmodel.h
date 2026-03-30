@@ -5,6 +5,7 @@
 
 #include "base/boost_include.h"
 
+#include <set>
 
 class Node;
 class IQGroupingItemModel;

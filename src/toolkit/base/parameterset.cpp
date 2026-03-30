@@ -87,7 +87,9 @@ AnalysisParameterSet::AnalysisParameterSet(
           ->entries(),
           "Parameters of "+ analysisTypeName),
     analysisTypeName_(analysisTypeName)
-{}
+{
+    initializeHierarchy();
+}
 
 
 
@@ -167,7 +169,7 @@ void AnalysisParameterSet::assignFrom(const Element &rhs)
 }
 
 
-std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::clone() const
+std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::cloneUninitialized() const
 {
     auto res = std::make_unique<AnalysisParameterSet>(analysisTypeName_);
     res->assignFrom(*this);

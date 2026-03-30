@@ -25,7 +25,7 @@
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
 #include "base/linearalgebra.h"
-
+#include "boost/ptr_container/ptr_map.hpp"
 #include "boost/variant.hpp"
 
 #include <cmath>

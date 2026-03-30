@@ -17,12 +17,11 @@ set(OF_INCLUDE_DIRS
 set(OF_LIBS 
 )
 
-set(INCLUDE_DIRS 
-    ${Boost_INCLUDE_DIR}
+set(INCLUDE_DIRS
 )
 
 set(LIBS
-    ${Boost_system_LIBRARY}
+    Boost::system
 )
 
 set(OF_VERSIONS OFplus OFesi1806 OFesi1906 OFesi2112)

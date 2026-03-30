@@ -16,11 +16,9 @@ if (wt_FOUND)
     target_link_libraries(toolkit_remote
      toolkit
      Wt::Wt Wt::HTTP
-     ${Boost_LIBRARIES}
      )
 
     target_include_directories(toolkit_remote
-      PUBLIC ${Boost_INCLUDE_DIR}
       PUBLIC ${wt_INCLUDE_DIR}
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>

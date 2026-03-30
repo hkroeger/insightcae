@@ -119,7 +119,8 @@ public:
     }
 
 
-    std::unique_ptr<Element> clone() const override
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override
     {
         auto p= std::make_unique<SimpleParameter<T, N> >(
             value_,
@@ -128,7 +129,7 @@ public:
         return p;
     }
 
-
+public:
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
@@ -281,7 +282,8 @@ public:
         return vectorType_;
     }
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 };
 
 

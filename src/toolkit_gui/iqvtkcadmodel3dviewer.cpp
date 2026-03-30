@@ -1274,7 +1274,8 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
                 this, "Select background image file", GetFileMode::Open,
                 {
                     {"jpg jpeg", "JPEG bitmap"},
-                    {"png", "Portable Network Graphic"}
+                    {"png", "Portable Network Graphic"},
+                    {"pdf", "Portable Document Format"}
                 } ))
         {
             auto bgi = new BackgroundImage(fn, *this);

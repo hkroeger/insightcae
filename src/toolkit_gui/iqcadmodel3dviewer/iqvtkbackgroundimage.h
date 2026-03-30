@@ -10,6 +10,7 @@
 
 #include "vtkSmartPointer.h"
 #include "vtkImageActor.h"
+#include "vtkImageData.h"
 
 class IQVTKCADModel3DViewer;
 
@@ -36,6 +37,8 @@ class BackgroundImage
 
     IQVTKCADModel3DViewer& viewer();
 
+    static vtkSmartPointer<vtkImageData>
+        loadImageData(const boost::filesystem::path& fp);
 
 public:
     /**

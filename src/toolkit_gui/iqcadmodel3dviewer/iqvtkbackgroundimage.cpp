@@ -10,9 +10,104 @@
 #include "vtkImageReader2Factory.h"
 #include "vtkImageData.h"
 
+#include "cpp/poppler-document.h"
+#include "cpp/poppler-page.h"
+#include "cpp/poppler-page-renderer.h"
+
+#include <boost/algorithm/string/case_conv.hpp>
+
 
 
 using namespace insight;
+
+
+static const int PDF_RENDER_DPI = 150;
+
+
+vtkSmartPointer<vtkImageData>
+BackgroundImage::loadImageData(const boost::filesystem::path& fp)
+{
+    std::string ext = fp.extension().string();
+    boost::algorithm::to_lower(ext);
+
+    if (ext == ".pdf")
+    {
+        std::shared_ptr<poppler::document> doc(
+            poppler::document::load_from_file(fp.string()));
+        insight::assertion(
+            doc && !doc->is_locked(),
+            "could not open PDF file \"%s\"", fp.string().c_str());
+        insight::assertion(
+            doc->pages() >= 1,
+            "PDF has no pages: \"%s\"", fp.string().c_str());
+
+        std::shared_ptr<poppler::page> page(doc->create_page(0));
+        insight::assertion(
+            page != nullptr,
+            "could not read page 0 of \"%s\"", fp.string().c_str());
+
+        poppler::page_renderer pr;
+        pr.set_render_hint(poppler::page_renderer::antialiasing, true);
+        pr.set_render_hint(poppler::page_renderer::text_antialiasing, true);
+        poppler::image img = pr.render_page(page.get(), PDF_RENDER_DPI, PDF_RENDER_DPI);
+        insight::assertion(
+            img.is_valid(),
+            "PDF rendering failed for \"%s\"", fp.string().c_str());
+
+        int w = img.width(), h = img.height();
+        auto vtkImg = vtkSmartPointer<vtkImageData>::New();
+        vtkImg->SetDimensions(w, h, 1);
+        vtkImg->AllocateScalars(VTK_UNSIGNED_CHAR, 3); // RGB
+
+        // poppler renders top-down; VTK stores bottom-up → flip Y.
+        // format_argb32 stores pixels as [B, G, R, A] in memory (little-endian ARGB).
+        for (int y = 0; y < h; ++y)
+        {
+            const unsigned char* src =
+                reinterpret_cast<const unsigned char*>(img.data())
+                + (h - 1 - y) * img.bytes_per_row();
+            for (int x = 0; x < w; ++x)
+            {
+                unsigned char* dst = static_cast<unsigned char*>(
+                    vtkImg->GetScalarPointer(x, y, 0));
+                dst[0] = src[x*4 + 2]; // R
+                dst[1] = src[x*4 + 1]; // G
+                dst[2] = src[x*4 + 0]; // B
+            }
+        }
+        return vtkImg;
+    }
+    else
+    {
+        auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
+        vtkSmartPointer<vtkImageReader2> imageReader;
+        auto ir = readerFactory->CreateImageReader2(fp.string().c_str());
+
+        insight::assertion(
+            ir != nullptr,
+            _("could not create reader for file \"%s\""), fp.string().c_str());
+
+        imageReader.TakeReference(ir);
+        imageReader->SetFileName(fp.string().c_str());
+        imageReader->Update();
+
+        auto imageData = imageReader->GetOutput();
+
+        {
+            int na = imageData->GetPointData()->GetNumberOfArrays();
+            insight::assertion(
+                na == 1,
+                "expected a single image array! Got %d arrays.", na);
+
+            int nc = imageData->GetPointData()->GetArray(0)->GetNumberOfComponents();
+            insight::assertion(
+                (nc == 3) || (nc == 1),
+                "expected image array with three or one components! Got %d.", nc);
+        }
+
+        return imageData;
+    }
+}
 
 
 
@@ -37,31 +132,7 @@ BackgroundImage::BackgroundImage(
         boost::filesystem::exists(imageFileName_),
         _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
-    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
-    vtkSmartPointer<vtkImageReader2> imageReader;
-    auto ir=readerFactory->CreateImageReader2(imageFileName_.string().c_str());
-
-    insight::assertion(
-        ir!=nullptr,
-        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
-
-    imageReader.TakeReference(ir);
-    imageReader->SetFileName(imageFileName_.string().c_str());
-    imageReader->Update();
-
-    auto imageData = imageReader->GetOutput();
-
-    {
-        int na=imageData->GetPointData()->GetNumberOfArrays();
-        insight::assertion(
-            na==1,
-            "expected a single image array! Got %d arrays.", na);
-
-        int nc=imageData->GetPointData()->GetArray(0)->GetNumberOfComponents();
-        insight::assertion(
-            (nc==3)||(nc==1),
-            "expected image array with three or one components! Got %d.", nc);
-    }
+    auto imageData = loadImageData(imageFileName_);
 
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
@@ -124,20 +195,11 @@ BackgroundImage::BackgroundImage(
         boost::filesystem::exists(imageFileName_),
         _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
-    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
-    vtkSmartPointer<vtkImageReader2> imageReader;
-    auto ir=readerFactory->CreateImageReader2(imageFileName_.string().c_str());
+    auto imageData = loadImageData(imageFileName_);
 
-    insight::assertion(
-        ir!=nullptr,
-        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
-
-    imageReader.TakeReference(ir);
-    imageReader->SetFileName(imageFileName_.string().c_str());
-    imageReader->Update();
-    auto imageData = imageReader->GetOutput();
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
     imageActor_->SetInputData(imageData);
+
     usedRenderer_=viewer().renderer();
     usedRenderer_->AddActor(imageActor_);
 

@@ -12,7 +12,7 @@ target_include_directories(test_pdl_header INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
 target_include_directories(test_pdl_header INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 
 set(test_pdl_SOURCES test_pdl.h test_pdl.cpp)
-add_executable(testexe_pdl test_pdl.cpp)
+add_executable(testexe_pdl test_pdl.cpp test_pdl.h)
 #target_include_directories(testexe_pdl PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 linkToolkitVtk(testexe_pdl Offscreen)
 add_test(NAME unit_pdl COMMAND testexe_pdl)

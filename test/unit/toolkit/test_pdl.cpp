@@ -102,7 +102,7 @@ void assign(InsightParameter& ip, const TestValue& tv)
 template<class TestValue>
 void assign(insight::ArrayParameter& ip, const TestValue& tv)
 {
-    ip.resize(tv.size(), false);
+    ip.resize(tv.size());
     for (size_t i=0; i< tv.size(); ++i)
         dynamic_cast<DoubleParameter&>(ip[i]).set(double(tv[i]));
 }

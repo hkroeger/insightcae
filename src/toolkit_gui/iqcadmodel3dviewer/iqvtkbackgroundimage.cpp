@@ -1,5 +1,6 @@
 #include "iqvtkbackgroundimage.h"
 
+#include "base/boost_include.h"
 #include "base/spatialtransformation.h"
 #include "base/translations.h"
 
@@ -181,6 +182,7 @@ void BackgroundImage::reorientImage()
 
 BackgroundImage::BackgroundImage(
     const rapidxml::xml_node<>& node,
+    const boost::filesystem::path& parentPath,
     IQVTKCADModel3DViewer& v )
 
     : QObject(&v)
@@ -190,6 +192,11 @@ BackgroundImage::BackgroundImage(
 
     imageFileName_= boost::filesystem::path(
         getMandatoryAttribute(node, "imageFileName") );
+
+    if (imageFileName_.is_relative())
+    {
+        imageFileName_ = parentPath/imageFileName_;
+    }
 
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
@@ -276,15 +283,21 @@ QString BackgroundImage::label() const
 
 void BackgroundImage::write(
     rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node ) const
+    rapidxml::xml_node<> &node,
+    const boost::filesystem::path& parentPath ) const
 {
     insight::appendAttribute(
         doc, node,
         "label", label_.toStdString());
 
+    auto fn=boost::filesystem::absolute(imageFileName_);
+    if (boost::filesystem::path_contains_file(parentPath, fn))
+    {
+        fn=boost::filesystem::make_relative(parentPath, fn);
+    }
     insight::appendAttribute(
         doc, node, "imageFileName",
-        imageFileName_.string());
+        fn.string());
 
     insight::appendAttribute(
         doc, node,

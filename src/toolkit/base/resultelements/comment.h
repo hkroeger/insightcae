@@ -58,7 +58,8 @@ public:
 
     bool isEqual(const Element& op) const override;
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 };
 
 

@@ -47,7 +47,7 @@ std::string Video::latexRepresentation(
 
 
 
-std::unique_ptr<hierarchicalData::Element> Video::clone() const
+std::unique_ptr<hierarchicalData::Element> Video::cloneUninitialized() const
 {
     auto res =
         std::make_unique<Video>

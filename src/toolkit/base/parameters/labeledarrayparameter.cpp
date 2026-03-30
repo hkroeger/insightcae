@@ -21,7 +21,7 @@ addParameterFactories(LabeledArrayParameter);
 
 
 
-void LabeledArrayParameter::initialize()
+void LabeledArrayParameter::initializeHierarchy()
 {
     syncConnections_.clear();
 
@@ -103,7 +103,7 @@ void LabeledArrayParameter::initialize()
             ));
     }
 
-    Parameter::initialize();
+    Parameter::initializeHierarchy();
 }
 
 
@@ -132,10 +132,13 @@ LabeledArrayParameter::LabeledArrayParameter (
 : Parameter(description, isHidden, isExpert, isNecessary, order),
     labelPattern_("entry_%d")
 {
-    setDefaultValue(defaultValue.cloneAs<Parameter>());
+    setDefaultValue(defaultValue.cloneAsUninitialized<Parameter>());
     for (int i=0; i<n; i++)
     {
-        appendEmpty();
+        insertValueImpl(
+            findUniqueNewKey(),
+            defaultValue_->cloneAsUninitialized<Parameter>(),
+            false );
     }
 }
 
@@ -172,17 +175,17 @@ void LabeledArrayParameter::setLabelPattern(const std::string& pat)
 }
 
 
-void LabeledArrayParameter::setKeySourceParameterPath(const std::string& pp)
+void LabeledArrayParameter::setKeySourceParameterPathImpl(const std::string& pp, bool init)
 {
     keySourceParameterPath_=pp;
-    resetInitialization();
+    if (init) initializeHierarchy();
 }
 
 void LabeledArrayParameter::unsetKeySourceParameterPath()
 {
     setKeySourceParameterPath(std::string());
     syncConnections_.clear();
-    resetInitialization();
+    initializeHierarchy();
 }
 
 bool LabeledArrayParameter::keysAreLocked() const
@@ -192,8 +195,6 @@ bool LabeledArrayParameter::keysAreLocked() const
 
 std::set<std::string> LabeledArrayParameter::keys() const
 {
-    ensureInitialization();
-
     std::set<std::string> r;
     std::transform(
         value_.begin(), value_.end(),
@@ -209,14 +210,12 @@ bool LabeledArrayParameter::hasKey(const std::string &label) const
 
 LabeledArrayParameter::value_type &LabeledArrayParameter::value()
 {
-    ensureInitialization();
     return value_;
 }
 
 
 const LabeledArrayParameter::value_type &LabeledArrayParameter::value() const
 {
-    ensureInitialization();
     return value_;
 }
 
@@ -260,7 +259,6 @@ void LabeledArrayParameter::eraseValue ( const std::string& label )
 {
     insight::assertion(
         !keysAreLocked(), "attempt to erase entry from synchronized array");
-    ensureInitialization();
     eraseValueImpl(label);
 }
 
@@ -313,13 +311,13 @@ void LabeledArrayParameter::insertValue (
     insight::assertion(
         !keysAreLocked(),
         "attempt to insert %s entry to synchronized array", label.c_str());
-    ensureInitialization();
     insertValueImpl(label, std::move(np));
 }
 
 void LabeledArrayParameter::insertValueImpl(
     const std::string& label,
-    std::unique_ptr<Parameter>&& np )
+    std::unique_ptr<Parameter>&& np,
+    bool initializeHierarchy )
 {
     auto &v = value();
 
@@ -337,7 +335,9 @@ void LabeledArrayParameter::insertValueImpl(
         std::make_shared<boost::signals2::scoped_connection>(
             ins.first->second->childValueChanged.connect( childValueChanged )));
     newItemAdded(ins.first->first, ins.first->second);
+
     ins.first->second->setParent(this);
+    if (initializeHierarchy) ins.first->second->initializeHierarchy();
 
     childInsertionDone(i, i);
 
@@ -346,12 +346,12 @@ void LabeledArrayParameter::insertValueImpl(
 
 
 
+
 Parameter &LabeledArrayParameter::getOrInsertDefaultValue(const std::string &label)
 {
     insight::assertion(
         !(keysAreLocked()&&(!hasKey(label))),
         "attempt to insert %s entry to synchronized array", label.c_str());
-    ensureInitialization();
     return getOrInsertDefaultValueImpl(label);
 
 }
@@ -385,7 +385,6 @@ void LabeledArrayParameter::insertWithDefaults(const std::string &label)
     insight::assertion(
         !keysAreLocked(),
         "attempt to insert %s entry to synchronized array", label.c_str());
-    ensureInitialization();
     insertWithDefaultsImpl(label);
 }
 
@@ -411,7 +410,6 @@ void LabeledArrayParameter::changeLabel(
         !keysAreLocked(),
         "attempt to change label %s of entry %s in synchronized array",
         label.c_str(), newLabel.c_str());
-    ensureInitialization();
     changeLabelImpl(label, newLabel);
 }
 
@@ -720,8 +718,6 @@ LabeledArrayParameter::readFromNode (
             }
         }
 
-        resetInitialization();
-
         triggerValueChanged();
     };
 
@@ -789,7 +785,7 @@ LabeledArrayParameter::LabeledArrayParameter(const rapidxml::xml_node<> &node)
 
 
 
-std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::cloneUninitialized() const
 {
     auto np=std::make_unique<LabeledArrayParameter>(
         *defaultValue_, 0,
@@ -802,10 +798,11 @@ std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::clone() const
     {
         np->insertValueImpl(
             v.first,
-            v.second->cloneAs<Parameter>() );
+            v.second->cloneAsUninitialized<Parameter>(),
+            false );
     }
 
-    np->setKeySourceParameterPath(keySourceParameterPath_);
+    np->setKeySourceParameterPathImpl(keySourceParameterPath_, false);
 
     return np;
 }
@@ -867,8 +864,6 @@ void LabeledArrayParameter::copyMatching(const Element& oe)
             myv->second->copyMatching( *ov.second );
         }
     }
-
-    resetInitialization();
 
     Parameter::assignFrom(op);
 }

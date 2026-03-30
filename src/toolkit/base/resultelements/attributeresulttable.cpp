@@ -237,7 +237,7 @@ xml_node< char >* AttributeTableResult::appendToNode (
 
 
 std::unique_ptr<hierarchicalData::Element>
-AttributeTableResult::clone() const
+AttributeTableResult::cloneUninitialized() const
 {
     auto cl = std::make_unique<AttributeTableResult>(
         names_, values_,

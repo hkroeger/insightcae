@@ -285,10 +285,31 @@ public:
     struct Add
         : public FactoryBase::template Add<Instance>
     {
+#ifndef SWIG
+    private:
+        template<class I, class = void>
+        struct has_create : std::false_type {};
+
+        template<class I>
+        struct has_create<I,
+            std::void_t<decltype(I::create(std::declval<FunctionArgs>()...))>>
+            : std::true_type {};
+
+        static std::unique_ptr<BaseClass, Del> createInstance(FunctionArgs... args)
+        {
+            if constexpr (has_create<Instance>::value)
+                return Instance::create(std::forward<FunctionArgs>(args)...);
+            else
+                return std::make_unique_with_deleter<Instance, Del>(
+                    std::forward<FunctionArgs>(args)...);
+        }
+#endif
+
+    public:
         Add(std::function<FactoryWithDeleter&(void)> factory)
         : FactoryBase::template Add<Instance>(
             [factory]() -> FactoryBase& { return factory(); },
-            &std::make_unique_with_deleter<Instance, Del, FunctionArgs...> )
+            &Add::createInstance )
         {}
     };
 };

@@ -3,7 +3,7 @@
 
 
 #include "base/parametersbase.h"
-
+#include "base/cppextensions.h"
 
 namespace insight {
 

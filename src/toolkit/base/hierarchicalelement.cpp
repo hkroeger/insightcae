@@ -7,6 +7,7 @@
 #include "boost/algorithm/string/constants.hpp"
 #include "boost/filesystem/operations.hpp"
 #include <ios>
+#include <typeinfo>
 
 namespace insight {
 
@@ -336,47 +337,13 @@ void Element::setParent(Element* parent)
 }
 
 
-void Element::markAsInitialized()
-{
-    requiresInit_=false;
-}
 
-void Element::ensureInitialization() const
+void Element::initializeHierarchy()
 {
-    if (!isInitialized())
+    for (int i=0; i<nChildren(); ++i)
     {
-        if (this->hasParent())
-        {
-            // this will lead to re-entry into ensureInitialization()
-            this->parent().ensureInitialization();
-        }
-
-        // intialized myself
-        if (!isInitialized())
-        {
-            auto nct=const_cast<Element*>(this);
-            nct->markAsInitialized(); // mark first to prevent recursion
-            nct->initialize();
-        }
-
-        // children will be initialized upon request
+        childElementRef(i).initializeHierarchy();
     }
-}
-
-void Element::resetInitialization()
-{
-    requiresInit_=true;
-}
-
-
-
-void Element::initialize()
-{
-    // for (int i=0; i<nChildren(); ++i)
-    // {
-    //     if (auto *cp=dynamic_cast<Element*>(&childElementRef(i)))
-    //         cp->initialize();
-    // }
 }
 
 
@@ -399,8 +366,7 @@ void Element::setWorkingDirectory(const boost::filesystem::path& wd) const
 Element::Element(int order)
 :   valueChangeSignalBlocked_(false),
     parent_(nullptr),
-    order_(order),
-    requiresInit_(true)
+    order_(order)
 {}
 
 
@@ -408,11 +374,6 @@ Element::Element(int order)
 Element::~Element()
 {}
 
-
-bool Element::isInitialized() const
-{
-    return !requiresInit_;
-}
 
 
 
@@ -689,13 +650,18 @@ void Element::readFromString(
     readFromRootNode(*doc.rootNode, startAtSubnode);
 }
 
+std::unique_ptr<Element> Element::clone() const
+{
+    auto n=cloneUninitialized();
+    n->initializeHierarchy();
+    return n;
+}
+
 
 
 void Element::assignFrom(const Element &rhs)
 {
     order_=rhs.order_;
-
-    resetInitialization();
 
     if (!valueChangeSignalBlocked()) valueChanged();
 }
@@ -761,12 +727,12 @@ std::string Element::childElementName(
     {
         std::vector<std::string> cands;
         for (int k=0; k<nChildren(); ++k)
-            cands.push_back(childElementName(k));
+            cands.push_back(str(boost::format("%d")%&childElement(k)));
 
         throw insight::Exception(
-            "Parameter %d not found in children list. Candidates are: %s",
-            childParam,
-            boost::join(cands, ", ").c_str() );
+            str(boost::format("Parameter %d not found in children list. Candidates are: %s")
+            % childParam
+            % boost::join(cands, ", ")) );
     }
     return std::string();
 }

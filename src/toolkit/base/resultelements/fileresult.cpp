@@ -117,7 +117,7 @@ xml_node< char >* FileResult::appendToNode (
 
 
 
-std::unique_ptr<hierarchicalData::Element> FileResult::clone() const
+std::unique_ptr<hierarchicalData::Element> FileResult::cloneUninitialized() const
 {
     auto res =
         std::make_unique<FileResult>

@@ -12,61 +12,33 @@
 #include "constrainedsketchentity.h"
 #include <memory>
 
+
+
+
 namespace insight {
+
+
 
 namespace cad {
 class ConstrainedSketch;
 }
 
 
-/**
- * @brief The DelayedCreatedSketch class
- * keeps a script and converts it into a sketch when needed first
- * (i.e. when sketchRef() is called)
- */
-class DelayedCreatedSketch
-{
-    mutable std::unique_ptr<std::string> script_;
-    std::shared_ptr<insight::cad::ConstrainedSketch> sketch_;
-
-    virtual void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch) =0;
-    virtual cad::ConstrainedSketchPtr createSketch(const std::string& script) const =0;
-
-public:
-    virtual cad::ConstrainedSketchPtr createEmpty() const =0;
-
-    insight::cad::ConstrainedSketch& sketchRef();
-
-    inline const insight::cad::ConstrainedSketch& sketch() const
-    { return const_cast<DelayedCreatedSketch&>(*this).sketchRef(); }
-
-    inline cad::FeaturePtr featureGeometry() const
-    { return const_cast<DelayedCreatedSketch&>(*this).featureGeometry(); }
-
-    inline cad::FeaturePtr featureGeometryRef() const
-    {
-        sketch(); // trigger creation
-        return sketch_;
-    }
-
-    void setScript(const std::string& script);
-    std::string script() const;
-
-    void assignFrom(const DelayedCreatedSketch& dcs);
-};
-
 
 
 class CADSketchParameter
-: public CADGeometryParameterBase,
-  public DelayedCreatedSketch
+: public CADGeometryParameterBase
 {
 
 public:
     typedef std::map<int, std::string> References;
 
 protected:
-    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties_;
+    std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties_; ///< needs to be first
+
+    mutable std::unique_ptr<std::string> initialScript_;
+    std::shared_ptr<insight::cad::ConstrainedSketch> sketch_;
+
     std::string presentationDelegateKey_;
 
     std::map<int, std::string> references_;
@@ -82,8 +54,9 @@ protected:
         changeLayerSlotConn_;
 
 
-    void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch) override;
-    cad::ConstrainedSketchPtr createSketch(const std::string& script) const override;
+    void connectSignalsToSketch(insight::cad::ConstrainedSketchPtr sketch);
+    void afterInPlaceSketchUpdate(insight::cad::ConstrainedSketchPtr sketch);
+    cad::ConstrainedSketchPtr createSketch(const std::string& script) const;
 
 public:
     declareType ( "cadsketch" );
@@ -119,16 +92,26 @@ public:
 
     ~CADSketchParameter();
 
-    std::shared_ptr<insight::cad::ConstrainedSketch> createEmpty() const override;
+    void initializeHierarchy() override;
 
-    void setReferences(const std::map<int, std::string>& references);
+    std::shared_ptr<insight::cad::ConstrainedSketch> createEmpty() const;
+
+    bool hasReferences() const;
+    // void setReferences(const std::map<int, std::string>& references);
 
     std::shared_ptr<insight::cad::ConstrainedSketchParametersDelegate> entityProperties() const;
     const std::string& presentationDelegateKey() const;
 
     void setScript(const std::string& script);
+    std::string script() const;
 
     cad::FeaturePtr geometry() const override;
+
+    const insight::cad::ConstrainedSketch& sketch() const;
+    insight::cad::ConstrainedSketch& sketchRef();
+
+    cad::ConstFeaturePtr featureGeometry() const;
+    cad::FeaturePtr featureGeometryRef();
 
     std::string latexRepresentation(
         const std::string& name,
@@ -151,8 +134,10 @@ public:
             const rapidxml::xml_node<>& node
         ) override;
 
-    std::unique_ptr<hierarchicalData::Element> clone() const override;
+protected:
+    std::unique_ptr<hierarchicalData::Element> cloneUninitialized() const override;
 
+public:
     void assignFrom( const Element& rhs ) override;
     void copyMatching( const Element& rhs ) override;
     void extend( const Element& op ) override;

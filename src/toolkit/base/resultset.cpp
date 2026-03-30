@@ -469,7 +469,7 @@ const rapidxml::xml_node<>* ResultSet::readFromNode(
         }
         else
         {
-            p_=std::make_unique<ParameterSet>(*pn);
+            p_=ParameterSet::create(*pn);
         }
         p_->setParent(this);
     }
@@ -572,7 +572,7 @@ const hierarchicalData::Element& ResultSet::childElement( int i ) const
 
 
 
-std::unique_ptr<hierarchicalData::Element> ResultSet::clone() const
+std::unique_ptr<hierarchicalData::Element> ResultSet::cloneUninitialized() const
 {
      auto nr =std::make_unique<ResultSet> (
             p_ ? p_->cloneAs<ParameterSet>() : std::unique_ptr<ParameterSet>(),

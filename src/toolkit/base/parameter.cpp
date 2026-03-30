@@ -61,7 +61,6 @@ defineFactoryTable2(Parameter, ParameterFromNode, createParameterFromNode);
 void Parameter::setParent(Element *parent)
 {
     Element::setParent(parent);
-    resetInitialization();
 }
 
 
@@ -84,6 +83,15 @@ Parameter::Parameter(
   description_(description),
   isHidden_(isHidden), isExpert_(isExpert), isNecessary_(isNecessary)
 {
+}
+
+
+
+
+bool Parameter::hasParentSet() const
+{
+    return hasParent()
+           && dynamic_cast<const ParameterSet*>(&parent());
 }
 
 

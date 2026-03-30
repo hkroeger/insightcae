@@ -75,7 +75,7 @@ void PolarChart::generatePlotImage(const boost::filesystem::path &imagepath) con
 
 
 
-std::unique_ptr<hierarchicalData::Element> PolarChart::clone() const
+std::unique_ptr<hierarchicalData::Element> PolarChart::cloneUninitialized() const
 {
     auto res = std::make_unique<PolarChart> (
         ylabel_, plc_,

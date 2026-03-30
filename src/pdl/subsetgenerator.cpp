@@ -237,7 +237,7 @@ void SubsetGenerator::writeCppTypeDeclMakeDefaultFunction_populate(std::ostream 
 {
 
     os<< "auto "<<name<<"Ptr = "
-       << cppInsightType()<<"::create_uninitialized( "
+       << cppInsightType()<<"::create_uninitialized( ParameterSetBuilder::key(), "
        <<   cppInsightTypeConstructorParameters()<<" ); "
        << "auto &"<<name<<" = *"<<name<<"Ptr;\n";
 
@@ -301,6 +301,10 @@ void SubsetGenerator::writeCppTypeDecl(
 
         os<<": "<<boost::join(bt, ",\n")<<"\n";
     }
+    else
+    {
+        os << ": public ParameterSetBuilder\n";
+    }
     os << "{\n";
 
     writeCppTypeDeclMemberDefinitions(os);
@@ -320,13 +324,13 @@ void SubsetGenerator::cppWriteInsertStatement
 ) const
 {
     os<<"{ ";
-      os<<"std::string key(\""<<name<<"\"); ";
+      os<<"std::string k(\""<<name<<"\"); ";
       this->cppWriteCreateStatement(os, name/*, extendtype(thisscope, name+"_type")*/);
-      os<<"if ("<<psvarname<<".contains(key)) {"<<endl;
-        os<<psvarname<<".getSubset(key).extend(*"<<name<<");\n";
-        os<<psvarname<<".getSubset(key).copyMatching(*"<<name<<");\n";
+      os<<"if ("<<psvarname<<".contains(k)) {"<<endl;
+        os<<psvarname<<".getSubset(k).extend(*"<<name<<");\n";
+        os<<psvarname<<".getSubset(k).copyMatching(*"<<name<<");\n";
       os<<"} else {"<<endl;
-        os<<psvarname<<".insert(key, std::move("<<name<<")); ";
+        os<<psvarname<<".insertUninitialized(ParameterSetBuilder::key(), k, std::move("<<name<<")); ";
       os<<"}"<<endl;
     os<<"}"<<endl;
 }

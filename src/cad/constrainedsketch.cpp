@@ -513,10 +513,10 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 
 void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 {
-    auto i=findGeometry(geomEntity);
-    if (i.first!=GeometryMap::const_iterator())
+    auto i=findGeometry(geomEntity).first;
+    if (i!=GeometryMap::const_iterator())
     {
-        eraseGeometry(i.first->first);
+        eraseGeometry(i->first);
     }
 }
 
@@ -706,19 +706,24 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
             cem[og->second]=mycopy;
         }
     }
+
+    // redirect any reference to other sketch entity to this
+    for (auto& g: geometry_)
+    {
+        if (!remaining.count(g.first))
+        {
+            for (const auto& d: cem)
+            {
+                g.second->replaceDependency(d.first, d.second);
+            }
+        }
+    }
+
     for (auto i: remaining)
     {
         eraseGeometry(i);
     }
 
-    // redirect any reference to other sketch entity to this
-    for (auto& g: geometry_)
-    {
-        for (const auto& d: cem)
-        {
-            g.second->replaceDependency(d.first, d.second);
-        }
-    }
 }
 
 

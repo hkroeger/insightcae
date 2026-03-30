@@ -226,7 +226,7 @@ std::unique_ptr<PathParameter> PathParameter::clonePathParameter() const
 
 
 
-std::unique_ptr<hierarchicalData::Element> PathParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> PathParameter::cloneUninitialized() const
 {
     auto p= std::make_unique<PathParameter>(
         *this,
@@ -434,7 +434,7 @@ bool DirectoryParameter::isEqual(const Element &op) const
 
 
 
-std::unique_ptr<hierarchicalData::Element> DirectoryParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> DirectoryParameter::cloneUninitialized() const
 {
     auto p=std::make_unique<DirectoryParameter>(
         *this,

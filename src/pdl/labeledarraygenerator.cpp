@@ -154,9 +154,9 @@ void LabeledArrayGenerator::cppWriteSetStatement(
     os<<
         "for (int iii="<<dynvarname<<".nChildren()-1; iii>=0; --iii)\n"
         "{\n"
-          "auto key="<<dynvarname<<".childElementName(iii);\n"
-          "if ("<<staticvarname<<".count(key)==0)"
-            <<dynvarname<<".eraseValue(key);\n"
+          "auto k="<<dynvarname<<".childElementName(iii);\n"
+          "if ("<<staticvarname<<".count(k)==0)"
+            <<dynvarname<<".eraseValue(k);\n"
         "}\n";
 }
 

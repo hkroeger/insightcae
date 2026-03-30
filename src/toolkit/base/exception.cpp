@@ -383,7 +383,7 @@ std::ostream& dbg(int verbosityLevel)
 
 ostream &dbg_slot(const std::string &signalName)
 {
-    ostream& os=dbg(DetailedBusiness);
+    ostream& os=dbg(DeepDetail);
     os << "handling signal " << signalName << ".\n";
     return os;
 }

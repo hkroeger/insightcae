@@ -51,7 +51,7 @@ public:
         LIST(const insight::CaseElement& e) );
 
   declareType ( "CaseElement" );
-  
+
 public:
 #include "caseelement__CaseElement__Parameters.h"
 /*

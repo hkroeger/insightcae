@@ -39,7 +39,7 @@ string ScalarResult::latexRepresentation(
 
 
 
-std::unique_ptr<hierarchicalData::Element> ScalarResult::clone() const
+std::unique_ptr<hierarchicalData::Element> ScalarResult::cloneUninitialized() const
 {
     auto res =std::make_unique<ScalarResult>(
         value_,

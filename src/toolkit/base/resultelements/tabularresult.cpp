@@ -129,7 +129,7 @@ void TabularResult::writeGnuplotData ( std::ostream& f ) const
 }
 
 
-std::unique_ptr<hierarchicalData::Element> TabularResult::clone() const
+std::unique_ptr<hierarchicalData::Element> TabularResult::cloneUninitialized() const
 {
     auto res=std::make_unique<TabularResult>(
         headings_, rows_,

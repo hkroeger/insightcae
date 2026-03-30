@@ -68,23 +68,40 @@ protected:
         const std::string& description,
         bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
-public:
-  declareType ( "subset" );
-
-  ParameterSet(
+    ParameterSet(
         const rapidxml::xml_node<> & node );
 
-  ParameterSet(
-      const std::string& description,
-      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    ParameterSet(
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+
+    /**
+   * @brief insertUninitialized
+   * this is for insertion during staged construction, i.e. building subset first
+   * and then insert them into a parent set
+   * @param name
+   * @param p
+   * @return
+   */
+    Parameter& insertUninitialized(const std::string &name, std::unique_ptr<Parameter>&& p);
+
+    static std::unique_ptr<ParameterSet> create_uninitialized(
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+    static std::unique_ptr<ParameterSet> create_uninitialized(
+        const EntryReferences &defaultValue,
+        const std::string& description,
+        bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+
+
+public:
+  declareType ( "subset" );
 
   static std::unique_ptr<ParameterSet> create();
 
   static std::unique_ptr<ParameterSet> create(
-      const std::string& description,
-      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-
-  static std::unique_ptr<ParameterSet> create_uninitialized(
       const std::string& description,
       bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
@@ -98,18 +115,53 @@ public:
       const std::string& description,
       bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
-  static std::unique_ptr<ParameterSet> create_uninitialized(
+
+  static std::unique_ptr<ParameterSet> create(
+      const rapidxml::xml_node<> & node );
+
+#ifndef SWIG
+  inline Parameter& insertUninitialized(
+      ParameterSetBuilder::Key,
+      const std::string &name, std::unique_ptr<Parameter>&& p)
+  {
+      return insertUninitialized(name, std::move(p));
+  }
+
+  inline static std::unique_ptr<ParameterSet> create_uninitialized(
+      ParameterSetBuilder::Key,
+      const std::string& description,
+      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
+  {
+      return create_uninitialized(
+          description,
+          isHidden, isExpert, isNecessary, order);
+  }
+
+  inline static std::unique_ptr<ParameterSet> create_uninitialized(
+      ParameterSetBuilder::Key,
       const EntryReferences &defaultValue,
       const std::string& description,
-      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-
+      bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
+  {
+      return create_uninitialized(
+          defaultValue,
+          description,
+          isHidden, isExpert, isNecessary, order );
+  }
+#endif
 
   EntryReferences entries() const;
   Entries copyEntries() const;
 
   bool isDifferent(const Parameter& p) const override;
 
-
+  /**
+   * @brief insert
+   * the normal insert function
+   * @param name
+   * @param p
+   * @return
+   */
   Parameter& insert(const std::string &name, std::unique_ptr<Parameter>&& p);
 
   template<class RT, class ...Args>
@@ -234,8 +286,10 @@ public:
 
   void replace ( const std::string& key, std::unique_ptr<Parameter> newp );
 
-  std::unique_ptr<Element> clone() const override;
+protected:
+  std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
   void assignFrom( const Element& rhs ) override;
   void copyMatching( const Element& o ) override;
   void extend ( const Element& op ) override;

@@ -79,7 +79,7 @@ void IQArrayParameter::populateContextMenu(QMenu *cm, IQCADModel3DViewer */*view
 
 void IQArrayParameter::appendEmpty()
 {
-    parameterRef().appendEmpty(true);
+    parameterRef().appendEmpty();
 }
 
 

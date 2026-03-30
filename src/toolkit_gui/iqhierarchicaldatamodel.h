@@ -69,6 +69,7 @@ public:
 private:
     friend class IQHierarchicalDataElement;
     friend class ParameterErrorState;
+    friend class BulkUpdateGuard;
 
     std::unique_ptr<insight::hierarchicalData::Element> data_;
     mutable std::unique_ptr<insight::hierarchicalData::Element> dataBeforeLastChange_;
@@ -83,6 +84,8 @@ private:
 
     std::atomic<bool>
         editingIsDisabled_;
+
+    bool bulkUpdateInProgress_ = false;
 
     void editingOff();
     void editingOn();
@@ -193,6 +196,16 @@ public:
     };
     std::shared_ptr<EditingDisabler> disableEditing();
 
+    class BulkUpdateGuard
+    {
+        IQHierarchicalDataModel& m_;
+    public:
+        BulkUpdateGuard(IQHierarchicalDataModel& m);
+        ~BulkUpdateGuard();
+    };
+    std::shared_ptr<BulkUpdateGuard> beginBulkUpdate();
+    bool isBulkUpdateInProgress() const;
+
     /**
    * @brief notifyParameterChange
    * update parameter and redecorate all children, if necessary
@@ -219,6 +232,9 @@ public:
         const QString& explanation,
         ParameterErrorState::Severity s =
             ParameterErrorState::Severity::Yellow );
+
+Q_SIGNALS:
+    void bulkUpdateFinished();
 };
 
 

@@ -347,11 +347,19 @@ bool ParameterEditorWidget::hasVisualizer() const
 
 void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 {
-    if (!model && model_)
+    if (model_)
     {
         disconnectParameterSetChanged(model_, this);
-        parameterTreeView_->setModel(nullptr);
-        if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
+        if (auto *hdm = dynamic_cast<IQHierarchicalDataModel*>(model_))
+        {
+            QObject::disconnect(hdm, &IQHierarchicalDataModel::bulkUpdateFinished,
+                                this, &ParameterEditorWidget::onParameterSetChanged);
+        }
+        if (!model)
+        {
+            parameterTreeView_->setModel(nullptr);
+            if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
+        }
     }
 
     model_=model;
@@ -359,6 +367,12 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     connectParameterSetChanged(
         model_,
         this, &ParameterEditorWidget::onParameterSetChanged );
+
+    if (auto *hdm = dynamic_cast<IQHierarchicalDataModel*>(model_))
+    {
+        connect(hdm, &IQHierarchicalDataModel::bulkUpdateFinished,
+                this, &ParameterEditorWidget::onParameterSetChanged);
+    }
 
     parameterTreeView_->setModel(model_);
     parameterTreeView_->setItemDelegate(
@@ -450,6 +464,10 @@ void ParameterEditorWidget::rebuildVisualization()
 void ParameterEditorWidget::onParameterSetChanged()
 {
     DBG_SLOT(QAbstractItemModel::{dataChanged;rowsInserted;rowsRemoved});
+
+    if (auto *hdm = dynamic_cast<IQHierarchicalDataModel*>(model_))
+        if (hdm->isBulkUpdateInProgress())
+            return;
 
     rebuildVisualization();
     Q_EMIT parameterSetChanged();

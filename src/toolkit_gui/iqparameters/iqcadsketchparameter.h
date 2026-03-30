@@ -19,8 +19,6 @@ public:
             insight::hierarchicalData::Element* element
             );
 
-    void connectSignals() override;
-
     QVariant value() const override;
 
     QVBoxLayout* populateEditControls(

@@ -447,7 +447,7 @@ void ParameterEditorWidget::rebuildVisualization()
                         +"\n\n"
                         +_("Reason:")
                         +"\n\n"
-                        +"**"+(ex.message())+"**\n\n"
+                        +boost::replace_all_copy(ex.message(), "\n", "\n\n")+"\n\n"
                         +boost::replace_all_copy(ex.context(), "\n", "\n\n")
                         ));
                     overlayText_->show();

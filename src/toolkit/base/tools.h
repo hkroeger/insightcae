@@ -32,6 +32,7 @@ class vtkCellArray;
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include "boost/process.hpp"
 #include "boost/process/args.hpp"
 #include "base/linearalgebra.h"

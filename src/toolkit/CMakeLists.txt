@@ -429,7 +429,7 @@ set_target_properties(toolkit PROPERTIES
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
 target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
-
+target_link_libraries(toolkitHeaders INTERFACE Boost::boost)
 
 
 

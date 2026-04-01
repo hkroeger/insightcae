@@ -34,9 +34,6 @@
 #include "featurefilters/commonfacearea.h"
 #include "featurefilters/edgeconnectingvertices.h"
 
-#define BOOST_SPIRIT_USE_PHOENIX_V3
-// #define BOOST_SPIRIT_DEBUG
-
 #include "base/boost_include.h"
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"

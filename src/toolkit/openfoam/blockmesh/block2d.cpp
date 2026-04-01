@@ -15,18 +15,20 @@ Block2D::Block2D
 )
 : Block
   (
-    (boost::assign::list_of
-    (t2d.rvs(corners[0])),
-    (t2d.rvs(corners[1])),
-    (t2d.rvs(corners[2])),
-    (t2d.rvs(corners[3])),
-    (t2d.fwd(corners[0])),
-    (t2d.fwd(corners[1])),
-    (t2d.fwd(corners[2])),
-    (t2d.fwd(corners[3]))),
+    {
+        t2d.rvs(corners[0]),
+        t2d.rvs(corners[1]),
+        t2d.rvs(corners[2]),
+        t2d.rvs(corners[3]),
+        t2d.fwd(corners[0]),
+        t2d.fwd(corners[1]),
+        t2d.fwd(corners[2]),
+        t2d.fwd(corners[3])
+    },
     resx, resy, 1,
-    (boost::assign::list_of
-    (grading[0]), (grading[1]), (1)),
+    {
+     grading[0], grading[1], 1
+    },
     zone,
     inv
   ),

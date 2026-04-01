@@ -37,7 +37,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
 
-    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    if ( (field.first=="U") && (boost::fusion::get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("pressureInletOutletParSlipVelocity");
       BC["value"]=OFDictData::toUniformField(vec3Zero());
@@ -45,7 +45,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     else if (
       (field.first=="T")
       &&
-      (get<0>(field.second)==scalarField)
+      (boost::fusion::get<0>(field.second)==scalarField)
     )
     {
       BC["type"]="zeroGradient";
@@ -53,7 +53,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     else if (
       ( (field.first=="p_gh") )
       &&
-      (get<0>(field.second)==scalarField)
+      (boost::fusion::get<0>(field.second)==scalarField)
     )
     {
         BC["type"]=OFDictData::data("waveSurfacePressure");
@@ -62,7 +62,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
     else if (
       ( (field.first=="p") )
       &&
-      (get<0>(field.second)==scalarField)
+      (boost::fusion::get<0>(field.second)==scalarField)
     )
     {
         BC["type"]=OFDictData::data("zeroGradient");
@@ -78,7 +78,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
         (field.first=="nuTilda")
       )
       &&
-      (get<0>(field.second)==scalarField)
+      (boost::fusion::get<0>(field.second)==scalarField)
     )
     {
       BC["type"]=OFDictData::data("zeroGradient");

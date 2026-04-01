@@ -60,7 +60,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 .subDict ( "boundaryField" )
                 .subDict ( patchName_ );
 
-        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+        if ( ( field.first=="U" ) && ( boost::fusion::get<0> ( field.second ) ==vectorField ) ) {
             const auto* unif =
                 boost::get<Parameters::behaviour_uniform_type>(
                 &p().behaviour);
@@ -87,13 +87,13 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         } else if (
             ( field.first=="T" )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]="zeroGradient";
         } else if (
                ( ( field.first=="p" ) || isPrghPressureField(field) )
                &&
-               ( get<0> ( field.second ) ==scalarField )
+               ( boost::fusion::get<0> ( field.second ) ==scalarField )
               )
         {
             if ( (field.first=="p") && OFcase().hasPrghPressureField() )
@@ -177,7 +177,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 }
               }
 
-        } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="rho" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField( p().rho );
         } else if
@@ -191,7 +191,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 ( field.first=="nuTilda" )
             )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else {

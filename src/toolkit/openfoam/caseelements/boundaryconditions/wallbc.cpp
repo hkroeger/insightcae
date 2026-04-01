@@ -51,7 +51,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
                                .subDict("boundaryField").subDict(patchName_);
 
         // velocity
-        if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+        if ( (field.first=="U") && (boost::fusion::get<0>(field.second)==vectorField) )
         {
             if (p().rotating)
             {
@@ -69,7 +69,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
         }
 
         // pressure
-        else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
+        else if ( (field.first=="p") && (boost::fusion::get<0>(field.second)==scalarField) )
         {
             BC["type"]=OFDictData::data("zeroGradient");
         }
@@ -89,7 +89,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
               (field.first=="nut") || (field.first=="nuSgs") || (field.first=="nuTilda") ||
               (field.first=="alphat") )
             &&
-            (get<0>(field.second)==scalarField)
+            (boost::fusion::get<0>(field.second)==scalarField)
         )
         {
             OFcase().findUniqueElement<turbulenceModel>()

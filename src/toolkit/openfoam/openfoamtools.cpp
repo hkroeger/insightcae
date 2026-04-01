@@ -56,7 +56,6 @@ using namespace std;
 using namespace arma;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 
 namespace insight
 {
@@ -240,7 +239,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   std::string cmd("ls "); cmd+=source.string();
   ::system(cmd.c_str());
   
-  std::vector<std::string> files=list_of<std::string>("boundary")("faces")("neighbour")("owner")("points");
+  std::vector<std::string> files={"boundary", "faces", "neighbour", "owner", "points"};
   if (include_zones)
   {
     files.push_back("pointZones");
@@ -365,8 +364,7 @@ void linkPolyMesh(
   }
 
   for (const std::string& fname:
-		list_of<std::string>/*("boundary")*/("faces")("neighbour")("owner")("points")
-		.convert_to_container<std::vector<std::string> >())
+       {/*"boundary", */"faces", "neighbour", "owner", "points"})
   {
     path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
@@ -734,7 +732,7 @@ void runPotentialFoam
   TextProgressDisplayer displayer;
   SolverOutputAnalyzer analyzer(displayer);
   cm.runSolver(location, analyzer, "potentialFoam", np,
-			 list_of<std::string>("-noFunctionObjects"));
+             {"-noFunctionObjects"} );
 
   if (exists(controlBackup)) copy_file(controlBackup, control, copy_option::overwrite_if_exists);
   if (exists(fvSolBackup)) copy_file(fvSolBackup, fvSol, copy_option::overwrite_if_exists);
@@ -963,7 +961,7 @@ patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& loca
 {
 
   std::vector<std::string> output;
-  cm.executeCommand ( location, "patchArea", list_of(patchName), &output );
+  cm.executeCommand ( location, "patchArea", {patchName}, &output );
 
   boost::regex
       re_total ( "^TOTAL A=(.+) normal=\\((.+) (.+) (.+)\\) ctr=\\((.+) (.+) (.+)\\)$" )
@@ -1480,11 +1478,10 @@ void currentNumericalSettingsReport
   for
   (
     const boost::filesystem::path& dictname:
-    list_of<boost::filesystem::path> 
-      ("system/controlDict")("system/fvSchemes")("system/fvSchemes")
-      ("constant/RASProperties")("constant/LESProperties")
-      ("constant/transportProperties")
-      .convert_to_container<std::vector<boost::filesystem::path> >()
+    {
+      "system/controlDict", "system/fvSchemes", "system/fvSchemes",
+      "constant/RASProperties", "constant/LESProperties",
+      "constant/transportProperties" }
   )
   {
     try

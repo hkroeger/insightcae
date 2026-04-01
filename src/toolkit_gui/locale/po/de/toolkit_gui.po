@@ -52,12 +52,12 @@ msgid "redo step %s"
 msgstr "%s wiederherstellen"
 
 #, c-format
-msgid "image file \"%s\" does not exist"
-msgstr "die Bitmap-Datei \"%s\" existiert nicht"
-
-#, c-format
 msgid "could not create reader for file \"%s\""
 msgstr "konnte die Datei %1 nicht erzeugen"
+
+#, c-format
+msgid "image file \"%s\" does not exist"
+msgstr "die Bitmap-Datei \"%s\" existiert nicht"
 
 msgid "Visible"
 msgstr "Sichtbar"

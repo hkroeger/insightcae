@@ -10,7 +10,7 @@ OpenFOAM_blockMeshTemplate_Test::OpenFOAM_blockMeshTemplate_Test(const string &O
   insert(new MeshingNumerics(*this));
 }
 
-void OpenFOAM_blockMeshTemplate_Test::runTest()
+void OpenFOAM_blockMeshTemplate_Test::run()
 {
   CaseDirectory dir(false);
   createOnDisk(dir);

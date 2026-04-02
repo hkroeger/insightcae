@@ -9,7 +9,7 @@ class OpenFOAM_blockMeshTemplate_Test
 public:
   OpenFOAM_blockMeshTemplate_Test(const string& OFEname);
 
-  void runTest() override;
+  void run() override;
 };
 
 #endif // OPENFOAM_BLOCKMESH_TEMPLATES_TEST_H

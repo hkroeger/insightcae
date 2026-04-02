@@ -31,6 +31,7 @@ class BackgroundImage
 
     QString label_;
     boost::filesystem::path imageFileName_;
+    int pdfRenderDpi_ = 300;
     vtkSmartPointer<vtkImageActor> imageActor_;
     vtkRenderer *usedRenderer_;
     OrientationSpec os_;
@@ -38,7 +39,7 @@ class BackgroundImage
     IQVTKCADModel3DViewer& viewer();
 
     static vtkSmartPointer<vtkImageData>
-        loadImageData(const boost::filesystem::path& fp);
+        loadImageData(const boost::filesystem::path& fp, int pdfRenderDpi = 300);
 
 public:
     /**
@@ -49,7 +50,8 @@ public:
      */
     BackgroundImage(
         const boost::filesystem::path& fp,
-        IQVTKCADModel3DViewer& viewer );
+        IQVTKCADModel3DViewer& viewer,
+        int pdfRenderDpi = 300 );
 
     /**
      * @brief BackgroundImage

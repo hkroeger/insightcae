@@ -10,6 +10,7 @@
 #include "vtkImageReader2.h"
 #include "vtkImageReader2Factory.h"
 #include "vtkImageData.h"
+#include "vtkImageMapper3D.h"
 
 #include "cpp/poppler-document.h"
 #include "cpp/poppler-page.h"
@@ -123,6 +124,18 @@ BackgroundImage::loadImageData(const boost::filesystem::path& fp, int pdfRenderD
     }
 }
 
+void BackgroundImage::setDimFilter()
+{
+    dimFilter_ = vtkSmartPointer<vtkImageShiftScale>::New();
+    dimFilter_->SetInputData(imageData_);
+    dimFilter_->SetScale(1);
+    dimFilter_->SetShift(0);
+    dimFilter_->SetOutputScalarTypeToUnsignedChar();
+    dimFilter_->ClampOverflowOn();
+
+    imageActor_->GetMapper()->SetInputConnection(dimFilter_->GetOutputPort());
+}
+
 
 
 
@@ -148,10 +161,11 @@ BackgroundImage::BackgroundImage(
         boost::filesystem::exists(imageFileName_),
         _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
-    auto imageData = loadImageData(imageFileName_, pdfRenderDpi_);
+    imageData_ = loadImageData(imageFileName_, pdfRenderDpi_);
 
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
+    imageActor_->SetInputData(imageData_);
+    setDimFilter();
 
     imageActor_->SetScale( 1 );
     imageActor_->SetOrientation(0, 0, 0);
@@ -163,6 +177,7 @@ BackgroundImage::BackgroundImage(
 
     os_.xy_[0] = os_.p_[0] = vec3Zero();
     os_.xy_[1] = os_.p_[1] = vec3(b[1], b[3], 0);
+
 
     reorientImage();
 }
@@ -219,10 +234,11 @@ BackgroundImage::BackgroundImage(
         boost::filesystem::exists(imageFileName_),
         _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
-    auto imageData = loadImageData(imageFileName_, pdfRenderDpi_);
+    imageData_ = loadImageData(imageFileName_, pdfRenderDpi_);
 
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
+    imageActor_->SetInputData(imageData_);
+    setDimFilter();
 
     usedRenderer_=viewer().renderer();
     usedRenderer_->AddActor(imageActor_);
@@ -283,6 +299,9 @@ void BackgroundImage::setOrientation(OrientationSpec os)
         os_.trsf().toVTKTransform() );
 
     imageActor_->SetOpacity(0.8); // restore opacity
+
+    dimFilter_->SetScale(1.5); // bleech out
+    dimFilter_->SetShift(100.0);
 
     viewer().scheduleRedraw();
 }
@@ -348,5 +367,13 @@ vtkImageActor *BackgroundImage::imageActor()
 void BackgroundImage::toggleVisibility(bool show)
 {
     imageActor_->SetVisibility(show);
+    viewer().scheduleRedraw();
+}
+
+
+void BackgroundImage::changeBleech(int percent)
+{
+    dimFilter_->SetScale(int( 1. +0.02*double(percent) )); // bleech out
+    dimFilter_->SetShift( 33.0 *pow(double(percent), 0.25) );
     viewer().scheduleRedraw();
 }

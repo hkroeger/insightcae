@@ -37,6 +37,7 @@
 #include <QToolButton>
 #include <QStatusBar>
 #include <QSettings>
+#include <QSlider>
 
 #include <boost/lexical_cast.hpp>
 #include <sstream>
@@ -1172,6 +1173,10 @@ void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
 
     showHideAct->setChecked(true);
 
+    bgi->changeBleech(bgBleechSlider_->value()); // set initial value
+    connect(this, &IQVTKCADModel3DViewer::changeBackgroundImageBleech,
+            bgi, &BackgroundImage::changeBleech);
+
 }
 
 void IQVTKCADModel3DViewer::resetNavigationManager(
@@ -1266,6 +1271,13 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
 
     auto addBGAction = btntb->addAction(
         QPixmap(":/icons/icon_bgimage.svg"), "Add Background Image");
+
+    bgBleechSlider_ = new QSlider(Qt::Horizontal);
+    bgBleechSlider_->setRange(0, 100);
+    bgBleechSlider_->setToolTip(_("Bleeching of background images"));
+    connect(bgBleechSlider_, &QSlider::valueChanged,
+            this, &IQVTKCADModel3DViewer::changeBackgroundImageBleech);
+    btntb->addWidget(bgBleechSlider_);
 
     addBGBtn=
         dynamic_cast<QToolButton*>(btntb->widgetForAction(addBGAction));

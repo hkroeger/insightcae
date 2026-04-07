@@ -30,11 +30,14 @@
 #include <QTextEdit>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QLabel>
+#include <QSpinBox>
 #include <QMessageBox>
 #include <QToolBar>
 #include <QToolButton>
 #include <QStatusBar>
 #include <QSettings>
+#include <QSlider>
 
 #include <boost/lexical_cast.hpp>
 #include <sstream>
@@ -1170,6 +1173,10 @@ void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
 
     showHideAct->setChecked(true);
 
+    bgi->changeBleech(bgBleechSlider_->value()); // set initial value
+    connect(this, &IQVTKCADModel3DViewer::changeBackgroundImageBleech,
+            bgi, &BackgroundImage::changeBleech);
+
 }
 
 void IQVTKCADModel3DViewer::resetNavigationManager(
@@ -1265,23 +1272,75 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     auto addBGAction = btntb->addAction(
         QPixmap(":/icons/icon_bgimage.svg"), "Add Background Image");
 
+    bgBleechSlider_ = new QSlider(Qt::Horizontal);
+    bgBleechSlider_->setRange(0, 100);
+    bgBleechSlider_->setToolTip(_("Bleeching of background images"));
+    connect(bgBleechSlider_, &QSlider::valueChanged,
+            this, &IQVTKCADModel3DViewer::changeBackgroundImageBleech);
+    btntb->addWidget(bgBleechSlider_);
+
     addBGBtn=
         dynamic_cast<QToolButton*>(btntb->widgetForAction(addBGAction));
 
     connect(addBGAction, &QAction::triggered, addBGAction,
     [this]() {
+        int pdfDpi = 300;
         if (auto fn = getFileName(
                 this, "Select background image file", GetFileMode::Open,
                 {
                     {"jpg jpeg", "JPEG bitmap"},
                     {"png", "Portable Network Graphic"},
                     {"pdf", "Portable Document Format"}
-                } ))
-        {
-            auto bgi = new BackgroundImage(fn, *this);
-            backgroundImages_.push_back(bgi);
+                },
+                boost::none,
+                [&pdfDpi](QGridLayout* fdl)
+                {
+                    auto* label   = new QLabel("Render DPI:");
+                    auto* spinBox = new QSpinBox;
+                    spinBox->setRange(72, 1200);
+                    spinBox->setValue(300);
 
-            connectBackgroundImageCommands(bgi);
+                    int row = fdl->rowCount();
+                    fdl->addWidget(label,   row, 0);
+                    fdl->addWidget(spinBox, row, 1);
+
+                    auto* dlg = qobject_cast<QFileDialog*>(fdl->parent());
+                    if (dlg)
+                    {
+                        bool isPdf = dlg->selectedNameFilter()
+                                         .contains("pdf", Qt::CaseInsensitive);
+                        label->setVisible(isPdf);
+                        spinBox->setVisible(isPdf);
+
+                        QObject::connect(
+                            dlg, &QFileDialog::filterSelected, dlg,
+                            [label, spinBox](const QString& filter)
+                            {
+                                bool isPdf = filter.contains("pdf", Qt::CaseInsensitive);
+                                label->setVisible(isPdf);
+                                spinBox->setVisible(isPdf);
+                            });
+                    }
+
+                    QObject::connect(
+                        spinBox, &QSpinBox::destroyed, spinBox,
+                        [&pdfDpi, spinBox](){ pdfDpi = spinBox->value(); });
+                }
+            ))
+        {
+            try
+            {
+                auto bgi = new BackgroundImage(fn, *this, pdfDpi);
+                backgroundImages_.push_back(bgi);
+                connectBackgroundImageCommands(bgi);
+            }
+            catch (const std::exception& e)
+            {
+                QMessageBox::critical(
+                    this,
+                    tr("Error loading background image"),
+                    QString::fromStdString(e.what()));
+            }
         }
     }
     );

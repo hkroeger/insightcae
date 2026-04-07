@@ -10,7 +10,7 @@ int main(int argc, char*argv[])
 
     insight::assertion(argc==2, "expected exactly one command line argument");
 
-    class Case : public OpenFOAMCaseWithBoxMesh
+    class Case : public OpenFOAMCaseWithBoxMesh<>
     {
     public:
         Case(const std::string& ofe) : OpenFOAMCaseWithBoxMesh(ofe) {}

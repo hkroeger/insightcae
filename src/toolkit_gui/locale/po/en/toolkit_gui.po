@@ -22,6 +22,9 @@ msgstr ""
 msgid "Open file"
 msgstr ""
 
+msgid "Bleeching of background images"
+msgstr ""
+
 msgid "Could not load background image"
 msgstr ""
 

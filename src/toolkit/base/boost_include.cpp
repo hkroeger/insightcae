@@ -30,6 +30,20 @@ path::append< typename path::iterator >(
 
 
 
+bool startsWith(const path& p, const path& prefix)
+{
+    auto it = p.begin();
+    for (const auto& part : prefix)
+    {
+        if (it == p.end() || *it != part)
+            return false;
+        ++it;
+    }
+    return true;
+}
+
+
+
 // Return path when appended to a_From will resolve to same as a_To
 path
 make_relative(

@@ -46,6 +46,9 @@ namespace boost
 namespace filesystem
 {
 
+
+
+
 template < >
 path& path::append< typename path::iterator >(
     typename path::iterator begin,
@@ -54,10 +57,17 @@ path& path::append< typename path::iterator >(
 
 
 
+bool startsWith(const path& p, const path& prefix);
+
+
+
+
 boost::filesystem::path
 make_relative(
     boost::filesystem::path a_From,
     boost::filesystem::path a_To );
+
+
 
 bool path_contains_file(
     path dir,

@@ -84,7 +84,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValid
 
     if (auto s = rootnode->first_attribute("server"))
     {
-      serverConfig_=remoteServers.findServer(std::string(s->value()));
+      serverConfig_=remoteServers().findServer(std::string(s->value()));
 
     }
     else

@@ -31,9 +31,9 @@ void checkWSLVersions(ActionProgress& prog, QWidget* parent)
   // ===============================================================================================
   // ====== go through all defined remote servers and check them, if they are WSL remotes
 
-  prog.setNSteps(insight::remoteServers.size());
+  prog.setNSteps(insight::remoteServers().size());
 
-  for (auto& rs: insight::remoteServers)
+  for (auto& rs: insight::remoteServers())
   {
     if ( auto wslcfg = std::dynamic_pointer_cast<insight::WSLLinuxServer::Config>(rs) )
     {
@@ -126,8 +126,8 @@ void checkWSLVersions(ActionProgress& prog, QWidget* parent)
                             wizdlg.distributionLabel().toStdString()
                             );
                       auto lbl = insight::findUnusedLabel(
-                                  insight::remoteServers.begin(),
-                                  insight::remoteServers.end(),
+                                  insight::remoteServers().begin(),
+                                  insight::remoteServers().end(),
                                   wizdlg.distributionLabel().toStdString(),
                                   [](insight::RemoteServerList::iterator it)
                                    -> std::string
@@ -137,15 +137,15 @@ void checkWSLVersions(ActionProgress& prog, QWidget* parent)
                                   );
                       static_cast<std::string&>(*wslcfg) = lbl;
 
-                      insight::remoteServers.insert(wslcfg);
+                      insight::remoteServers().insert(wslcfg);
 
-                      auto serverlist = insight::remoteServers.firstWritableLocation();
+                      auto serverlist = insight::remoteServers().firstWritableLocation();
                       if (serverlist.empty())
                       {
                           throw insight::Exception("There is no writable location for the remoteservers.list file!\n"
                                                    "Please contact your system administrator or the support!");
                       }
-                      insight::remoteServers.writeConfiguration(serverlist);
+                      insight::remoteServers().writeConfiguration(serverlist);
                   }
                   catch (...)
                   {

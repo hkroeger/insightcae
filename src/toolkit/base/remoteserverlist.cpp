@@ -310,8 +310,11 @@ RemoteServer::ConfigPtr RemoteServerList::requestUnoccupiedServer(int np, const 
 
 
 
-
-RemoteServerList remoteServers;
+RemoteServerList& remoteServers()
+{
+    static RemoteServerList theRemoteServers;
+    return theRemoteServers;
+}
 
 
 

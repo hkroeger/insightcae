@@ -392,7 +392,8 @@ public:
    */
   virtual arma::mat modelInertia(double density_ovr=-1.) const;
   
-  void createTriangulation(double deflection);
+  bool hasTriangulation() const;
+  void createTriangulation(double deflection=1e-3);
 
   /**
    * return bounding box of model

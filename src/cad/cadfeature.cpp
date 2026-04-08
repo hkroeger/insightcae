@@ -943,6 +943,21 @@ arma::mat Feature::modelInertia(double density_ovr) const
   return rho*T*Ip*T.t();
 }
 
+bool Feature::hasTriangulation() const
+{
+    checkForBuildDuringAccess();
+    for (TopExp_Explorer exp(shape(), TopAbs_FACE); exp.More(); exp.Next())
+    {
+        const TopoDS_Face& face = TopoDS::Face(exp.Current());
+        TopLoc_Location loc;
+        Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
+
+        if (tri.IsNull())
+            return false; // at least one face has no mesh
+    }
+    return true; // all faces have triangulation
+}
+
 
 void Feature::createTriangulation(double deflection)
 {

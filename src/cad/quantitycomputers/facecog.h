@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class faceCoG
-    : public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>, public EnableCreateFunction<faceCoG>
 {
 public:
     faceCoG();

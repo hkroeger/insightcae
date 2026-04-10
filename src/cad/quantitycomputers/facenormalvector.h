@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class faceNormalVector
-: public QuantityComputer<arma::mat>
+: public QuantityComputer<arma::mat>, public EnableCreateFunction<faceNormalVector>
 {
 public:
     faceNormalVector();

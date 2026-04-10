@@ -33,8 +33,12 @@ namespace cad
 
 boundaryOfFace::boundaryOfFace(FeatureSet faces)
 : faces_(faces)
-{
-}
+{}
+
+boundaryOfFace::boundaryOfFace(FeatureSetPtr faces)
+    : faces_(*faces)
+{}
+
 
 bool boundaryOfFace::checkMatch(FeatureID feature) const
 {

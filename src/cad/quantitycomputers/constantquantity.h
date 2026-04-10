@@ -29,7 +29,8 @@ namespace cad
 
 template<class T>
 class constantQuantity
-: public QuantityComputer<T>
+   : public QuantityComputer<T>,
+      public EnableCreateFunction<constantQuantity<T> >
 {
 protected:
     T refValue_;

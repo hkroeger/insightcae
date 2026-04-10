@@ -34,8 +34,8 @@ double minimal::criterion(FeatureID feature)
     return qtc_->evaluate(feature);
 }
 
-minimal::minimal(const scalarQuantityComputer& qtc, int rank, int lrank)
-: extremal(qtc, rank, lrank)
+minimal::minimal(ScalarArg qtc, int rank, int lrank)
+: extremal(std::move(qtc), rank, lrank)
 {}
 
 

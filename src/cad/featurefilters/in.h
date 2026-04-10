@@ -26,13 +26,15 @@ namespace insight {
 namespace cad {
 
 class in
-    : public Filter
+    : public Filter, public EnableCreateFunction<in>
 {
 protected:
     FeatureSet set_;
 
 public:
     in(FeatureSet set);
+    in(FeatureSetPtr set);
+
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

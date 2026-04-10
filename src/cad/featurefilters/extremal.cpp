@@ -6,10 +6,10 @@ namespace insight {
 namespace cad {
 
 
-extremal::extremal(const scalarQuantityComputer& qtc, int rank, int lrank)
+extremal::extremal(ScalarArg qtc, int rank, int lrank)
   : rank_(rank),
     lrank_(std::max(rank,lrank)),
-    qtc_(qtc.clone())
+    qtc_(std::move(qtc.ptr))
 {
 }
 

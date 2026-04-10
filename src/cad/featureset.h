@@ -90,6 +90,12 @@ inline FilterPtr new_clone(const Filter& f)
     return f.clone();
 }
 
+struct FilterArg {
+    FilterPtr ptr;
+    FilterArg(const Filter& f) : ptr(f.clone()) {}
+    FilterArg(FilterPtr p)     : ptr(std::move(p)) {}
+};
+
 
 
 
@@ -140,6 +146,15 @@ typedef QuantityComputer<double> scalarQuantityComputer;
 typedef QuantityComputer<arma::mat> matQuantityComputer;
 typedef std::shared_ptr<scalarQuantityComputer> scalarQuantityComputerPtr;
 typedef std::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
+
+template<class T>
+struct QCArg {
+    typename QuantityComputer<T>::Ptr ptr;
+    QCArg(const QuantityComputer<T>& q) : ptr(q.clone()) {}
+    QCArg(typename QuantityComputer<T>::Ptr p) : ptr(std::move(p)) {}
+};
+using ScalarArg = QCArg<double>;
+using MatArg    = QCArg<arma::mat>;
 
 
 

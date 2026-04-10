@@ -26,29 +26,34 @@ namespace insight {
 namespace cad {
 
 
+
+
 class AND
-    : public Filter
+    : public Filter, public EnableCreateFunction<AND>
 {
 protected:
     FilterPtr f1_;
     FilterPtr f2_;
 public:
-    AND(const Filter& f1, const Filter& f2);
+    AND(FilterArg f1, FilterArg f2);
     virtual void initialize(ConstFeaturePtr m);
     virtual void firstPass(FeatureID feature);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;
 };
+
+
+
 
 class OR
-    : public Filter
+    : public Filter, public EnableCreateFunction<OR>
 {
 protected:
     FilterPtr f1_;
     FilterPtr f2_;
 public:
-    OR(const Filter& f1, const Filter& f2);
+    OR(FilterArg f1, FilterArg f2);
     virtual void initialize(ConstFeaturePtr m);
     virtual void firstPass(FeatureID feature);
     virtual bool checkMatch(FeatureID feature) const;
@@ -56,19 +61,24 @@ public:
     virtual FilterPtr clone() const;
 };
 
+
+
+
 class NOT
-    : public Filter
+    : public Filter, public EnableCreateFunction<NOT>
 {
 protected:
     FilterPtr f1_;
 public:
-    NOT(const Filter& f1);
+    NOT(FilterArg f1);
     virtual void firstPass(FeatureID feature);
     virtual void initialize(ConstFeaturePtr m);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;
 };
+
+
 
 
 }

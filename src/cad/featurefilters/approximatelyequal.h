@@ -28,7 +28,7 @@ namespace cad {
 
 template <class T>
 class approximatelyEqual
-    : public Filter
+    : public Filter, public EnableCreateFunction<approximatelyEqual<T> >
 {
 protected:
     std::shared_ptr<QuantityComputer<T> > qtc1_;
@@ -36,9 +36,9 @@ protected:
     double tol_;
 
 public:
-    approximatelyEqual(const QuantityComputer<T>& qtc1, const QuantityComputer<T>& qtc2, double tol)
-        : qtc1_(qtc1.clone()),
-          qtc2_(qtc2.clone()),
+    approximatelyEqual(QCArg<T> qtc1, QCArg<T> qtc2, double tol)
+        : qtc1_(std::move(qtc1.ptr)),
+          qtc2_(std::move(qtc2.ptr)),
           tol_(tol)
     {}
 

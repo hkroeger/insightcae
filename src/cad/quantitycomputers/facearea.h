@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class faceArea
-    : public QuantityComputer<double>
+    : public QuantityComputer<double>, public EnableCreateFunction<faceArea>
 {
 public:
     faceArea();

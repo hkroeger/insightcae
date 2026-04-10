@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class solidVolume
-    : public QuantityComputer<double>
+    : public QuantityComputer<double>, public EnableCreateFunction<solidVolume>
 {
 public:
     solidVolume();

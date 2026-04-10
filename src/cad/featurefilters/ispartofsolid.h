@@ -31,7 +31,7 @@ namespace cad {
 
 template<EntityType T>
 class isPartOfSolid
-    : public Filter
+    : public Filter, public EnableCreateFunction<isPartOfSolid<T> >
 {
 protected:
     std::vector<TopoDS_Solid> s_;

@@ -40,6 +40,7 @@ namespace cad
 
 
 
+#ifndef SWIG
 namespace qi = boost::spirit::qi;
 using FeatureFilterIter = std::string::iterator;
 using FeatureFilterSkipper = qi::space_type;
@@ -113,6 +114,7 @@ FilterPtr parseFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 
     return result;
 }
+#endif // SWIG
 
 
 

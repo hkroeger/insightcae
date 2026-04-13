@@ -170,6 +170,38 @@ TopoDS_Face asSingleFace(const TopoDS_Shape &shape)
 
 
 
+arma::mat calcBndBox(TopoDS_Shape s)
+{
+    Bnd_Box boundingBox;
+    BRepBndLib::Add(s, boundingBox);
+
+    arma::mat x=arma::zeros(3,2);
+    if (!boundingBox.IsVoid())
+    {
+        double g=boundingBox.GetGap();
+        double x0, x1, y0, y1, z0, z1;
+
+        boundingBox.Get
+            (
+                x0, y0, z0,
+                x1, y1, z1
+                );
+
+        x = ArmaMatCmpts{
+            { x0, x1},
+            { y0, y1},
+            { z0, z1}
+        };
+
+        x.col(0)+=g;
+        x.col(1)-=g;
+    }
+
+    return x;
+}
+
+
+
 
 }
 }

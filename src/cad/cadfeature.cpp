@@ -24,6 +24,7 @@
 #include "base/spatialtransformation.h"
 #include "boost/filesystem/operations.hpp"
 #include "base/zipfile.h"
+#include "cadparameters/constantscalar.h"
 #include "cadtypes.h"
 #include "geotest.h"
 
@@ -101,6 +102,8 @@
 #include "Poly_ListOfTriangulation.hxx"
 
 #include "openfoam/openfoamdict.h"
+
+#include "occtools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -205,6 +208,14 @@ int FreelyIndexedMapOfShape::getMaxIndex() const
     {
         return rbegin()->first;
     }
+}
+
+
+TesselationResolution
+TesselationResolution::absolute(double res)
+{
+    return TesselationResolution{
+            Absolute, scalarconst(res) };
 }
     
 
@@ -554,9 +565,17 @@ string Feature::label() const
 }
 
 
-void Feature::setVisResolution( ScalarPtr r )
-{ 
-    visresolution_=r;
+void Feature::setAbsoluteVisResolution( ScalarPtr r )
+{
+    visresolution_=TesselationResolution{
+        TesselationResolution::Absolute, r};
+}
+
+
+void Feature::setRelativeVisResolution( ScalarPtr r )
+{
+    visresolution_=TesselationResolution{
+        TesselationResolution::Relative, r};
 }
 
 
@@ -945,7 +964,6 @@ arma::mat Feature::modelInertia(double density_ovr) const
 
 bool Feature::hasTriangulation() const
 {
-    checkForBuildDuringAccess();
     for (TopExp_Explorer exp(shape(), TopAbs_FACE); exp.More(); exp.Next())
     {
         const TopoDS_Face& face = TopoDS::Face(exp.Current());
@@ -959,68 +977,53 @@ bool Feature::hasTriangulation() const
 }
 
 
-void Feature::createTriangulation(double deflection)
+void Feature::createTriangulation(ResoArg deflection) const
 {
     checkForBuildDuringAccess();
 
-    if (deflection>0)
+    if (deflection||visresolution_)
     {
-        BRepMesh_IncrementalMesh Inc(shape(), deflection);
+        if (deflection)
+            performTriangulationBuilding(*deflection);
+        else if (visresolution_)
+            performTriangulationBuilding(*visresolution_);
+    }
+    else
+    {
+        // triangulate with default settings
+        auto bb=calcBndBox(shape_);
+        double aDmc=(bb.col(1)-bb.col(0)).max();
+        performTriangulationBuilding(
+            TesselationResolution{
+                TesselationResolution::Absolute,
+                cad::scalarconst(aDmc*0.001*4.) });
     }
 }
 
-arma::mat Feature::modelBndBox(double deflection) const
+arma::mat Feature::modelBndBox(ResoArg deflection) const
 {
   checkForBuildDuringAccess();
-  
-  if (deflection>0)
-  {
-      BRepMesh_IncrementalMesh Inc(shape(), deflection);
-  }
 
-  Bnd_Box boundingBox;
-  BRepBndLib::Add(shape(), boundingBox);
+  if (!hasTriangulation() || deflection )
+      createTriangulation(deflection);
 
-  arma::mat x=arma::zeros(3,2);
-  if (!boundingBox.IsVoid())
-  {
-    double g=boundingBox.GetGap();
-    double x0, x1, y0, y1, z0, z1;
-
-    boundingBox.Get
-    (
-      x0, y0, z0,
-      x1, y1, z1
-    );
-
-    x = ArmaMatCmpts{
-        { x0, x1},
-        { y0, y1},
-        { z0, z1}
-    };
-
-    x.col(0)+=g;
-    x.col(1)-=g;
-  }
-
-  return x;
+  return calcBndBox(shape());
 }
 
 
-arma::mat Feature::modelBndBoxSize(double deflection) const
+arma::mat Feature::modelBndBoxSize(ResoArg deflection) const
 {
     arma::mat bb=modelBndBox(deflection);
     return bb.col(1)-bb.col(0);
 }
 
-std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double deflection) const
+std::pair<CoordinateSystem, arma::mat>
+Feature::orientedModelBndBox(ResoArg deflection) const
 {
     checkForBuildDuringAccess();
 
-    if (deflection>0)
-    {
-        BRepMesh_IncrementalMesh Inc(shape(), deflection);
-    }
+    if (!hasTriangulation() || deflection )
+        createTriangulation(deflection);
 
 #if (OCC_VERSION_MAJOR<7)
     ISOCC::Bnd_OBB boundingBox;
@@ -1102,7 +1105,9 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
 
 
 
-std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBoxSize(double deflection) const
+std::pair<CoordinateSystem, arma::mat>
+Feature::orientedModelBndBoxSize(
+    ResoArg deflection) const
 {
     auto r=orientedModelBndBox(deflection);
     r.second = r.second.col(1)-r.second.col(0);
@@ -1808,6 +1813,8 @@ Feature::operator const TopoDS_Shape& () const
   return shape(); 
 }
 
+
+
 const TopoDS_Shape& Feature::shape() const
 {
   // if (building())
@@ -1816,19 +1823,28 @@ const TopoDS_Shape& Feature::shape() const
   checkForBuildDuringAccess();
 
   if (visresolution_)
-  {
-//     Bnd_Box box;
-//     BRepMesh_FastDiscret m
-//     (
-//       visresolution_->value(), 
-//       0.5, box, 
-//       true, false, false, false
-//     );
-//     m.Perform(shape_);  
-    BRepMesh_IncrementalMesh aMesher(shape_, visresolution_->value());
-  }
+      performTriangulationBuilding(*visresolution_);
+
   return shape_;
 }
+
+
+
+void Feature::performTriangulationBuilding(TesselationResolution res) const
+{
+    //     Bnd_Box box;
+    //     BRepMesh_FastDiscret m
+    //     (
+    //       visresolution_->value(),
+    //       0.5, box,
+    //       true, false, false, false
+    //     );
+    //     m.Perform(shape_);
+    BRepMesh_IncrementalMesh aMesher(
+        shape_, res.value->value(),
+        res.specification==TesselationResolution::Relative );
+}
+
 
 
 Feature::View Feature::createView
@@ -1906,8 +1922,8 @@ Feature::View Feature::createView
         // extracting the result sets:
         Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
         HLRBRep_PolyHLRToShape shapes;
-        if (visresolution_)
-            aHlrPolyAlgo->TolCoef(visresolution_->value());
+        // if (visresolution_)
+        //     aHlrPolyAlgo->TolCoef(visresolution_->value());
         aHlrPolyAlgo->Load(dispshape);
         aHlrPolyAlgo->Projector(projector);
         aHlrPolyAlgo->Update();

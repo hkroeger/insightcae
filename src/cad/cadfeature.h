@@ -203,6 +203,17 @@ struct BOMDescriptionData
 
 
 
+struct TesselationResolution
+{
+    enum Specification { Relative, Absolute } specification;
+    ScalarPtr value;
+
+    static TesselationResolution absolute(double res);
+};
+
+typedef boost::optional<TesselationResolution> ResoArg;
+
+
 
 /**
  * Base class of all CAD modelling features
@@ -252,7 +263,9 @@ private:
   // the shape
   // shall only be accessed via the shape() function, which triggers the build function if needed
   TopoDS_Shape shape_;
-  
+
+  void performTriangulationBuilding(TesselationResolution res) const;
+
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
   std::unique_ptr<SubshapeNumbering> idx_;
@@ -266,7 +279,7 @@ protected:
   RefPointsList refpoints_;
   RefVectorsList refvectors_;
   
-  ScalarPtr visresolution_;
+  boost::optional<TesselationResolution> visresolution_;
   ScalarPtr density_;
   ScalarPtr areaWeight_;
   
@@ -316,7 +329,8 @@ public:
   std::string featureSymbolName() const;
   std::string label() const override;
   
-  virtual void setVisResolution( ScalarPtr r );
+  virtual void setAbsoluteVisResolution( ScalarPtr r );
+  virtual void setRelativeVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);
   virtual double density() const;
   
@@ -393,14 +407,16 @@ public:
   virtual arma::mat modelInertia(double density_ovr=-1.) const;
   
   bool hasTriangulation() const;
-  void createTriangulation(double deflection=1e-3);
+  void createTriangulation(
+      ResoArg deflection = ResoArg() ) const;
 
   /**
    * return bounding box of model
    * first col: min point
    * second col: max point
    */
-  arma::mat modelBndBox(double deflection=-1) const;
+  arma::mat modelBndBox(
+      ResoArg deflection = ResoArg() ) const;
 
   /**
    * @brief modelBndBoxSize
@@ -408,10 +424,14 @@ public:
    * @return
    * max point-min point, i.e. vector across diagonal
    */
-  arma::mat modelBndBoxSize(double deflection=-1) const;
+  arma::mat modelBndBoxSize(
+      ResoArg deflection = ResoArg() ) const;
 
-  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
-  std::pair<CoordinateSystem,arma::mat> orientedModelBndBoxSize(double deflection=-1) const;
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(
+      ResoArg deflection = ResoArg() ) const;
+
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBoxSize(
+      ResoArg deflection = ResoArg() ) const;
 
   arma::mat faceNormal(FeatureID i) const;
   arma::mat averageFaceNormal() const;

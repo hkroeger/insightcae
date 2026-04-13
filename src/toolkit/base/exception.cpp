@@ -27,6 +27,10 @@
 #include <cstdlib>
 #include <thread>
 
+#ifdef WIN32
+#include <windows.h>  // FlsAlloc / FlsGetValue / FlsSetValue
+#endif
+
 #include <dlfcn.h>    // for dladdr
 #include <cxxabi.h>   // for __cxa_demangle
 #include <cstdio>
@@ -405,11 +409,17 @@ ExceptionContext& ExceptionContext::getCurrent()
 {
 #ifdef WIN32
   // thread_local with non-trivial destructor in a DLL causes crashes on
-  // Windows/MinGW: the FLS cleanup fires after DLL pages are protected,
-  // resulting in a SIGSEGV in ~ExceptionContext. Use a trivially-destructible
-  // thread_local pointer to avoid this. The object is intentionally not freed
-  // (acceptable leak: one instance per thread, process-lifetime).
-  static thread_local ExceptionContext* p = new ExceptionContext();
+  // Windows/MinGW because __cxa_thread_atexit fires after the DLL is unmapped.
+  // Use FlsAlloc so the destructor callback runs during DLL_THREAD_DETACH /
+  // DLL_PROCESS_DETACH, while the DLL is still mapped — no crash, no leak.
+  static DWORD flsIdx = FlsAlloc([](PVOID ptr) {
+      delete static_cast<ExceptionContext*>(ptr);
+  });
+  auto* p = static_cast<ExceptionContext*>(FlsGetValue(flsIdx));
+  if (!p) {
+      p = new ExceptionContext();
+      FlsSetValue(flsIdx, p);
+  }
   return *p;
 #else
   static thread_local ExceptionContext thisThreadsExceptionContext;
@@ -507,12 +517,15 @@ size_t WarningDispatcher::nWarnings() const
 WarningDispatcher& WarningDispatcher::getCurrent()
 {
 #ifdef WIN32
-  // thread_local with non-trivial destructor in a DLL causes crashes on
-  // Windows/MinGW: the FLS cleanup fires after DLL pages are protected,
-  // resulting in a SIGSEGV in ~WarningDispatcher. Use a trivially-destructible
-  // thread_local pointer to avoid this. The object is intentionally not freed
-  // (acceptable leak: one instance per thread, process-lifetime).
-  static thread_local WarningDispatcher* p = new WarningDispatcher();
+  // Same FLS-based fix as ExceptionContext::getCurrent() above.
+  static DWORD flsIdx = FlsAlloc([](PVOID ptr) {
+      delete static_cast<WarningDispatcher*>(ptr);
+  });
+  auto* p = static_cast<WarningDispatcher*>(FlsGetValue(flsIdx));
+  if (!p) {
+      p = new WarningDispatcher();
+      FlsSetValue(flsIdx, p);
+  }
   return *p;
 #else
   static thread_local WarningDispatcher thisThreadsWarnings;

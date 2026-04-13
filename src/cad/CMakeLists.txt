@@ -419,12 +419,13 @@ add_library(insightcad SHARED
   featurefilter_face.cpp
   featurefilter_solid.cpp
 )
-target_link_libraries(insightcad 
- toolkit 
+target_link_libraries(insightcad
+ toolkit
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
- ${DXFLIB_LIBRARY} 
+ ${DXFLIB_LIBRARY}
  ${MED_LIBRARIES}
  )
+
 
 target_setup_gettext(insightcad insightcad)
 

@@ -403,8 +403,18 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
 
 ExceptionContext& ExceptionContext::getCurrent()
 {
+#ifdef WIN32
+  // thread_local with non-trivial destructor in a DLL causes crashes on
+  // Windows/MinGW: the FLS cleanup fires after DLL pages are protected,
+  // resulting in a SIGSEGV in ~ExceptionContext. Use a trivially-destructible
+  // thread_local pointer to avoid this. The object is intentionally not freed
+  // (acceptable leak: one instance per thread, process-lifetime).
+  static thread_local ExceptionContext* p = new ExceptionContext();
+  return *p;
+#else
   static thread_local ExceptionContext thisThreadsExceptionContext;
   return thisThreadsExceptionContext;
+#endif
 }
 
 
@@ -496,8 +506,18 @@ size_t WarningDispatcher::nWarnings() const
 
 WarningDispatcher& WarningDispatcher::getCurrent()
 {
+#ifdef WIN32
+  // thread_local with non-trivial destructor in a DLL causes crashes on
+  // Windows/MinGW: the FLS cleanup fires after DLL pages are protected,
+  // resulting in a SIGSEGV in ~WarningDispatcher. Use a trivially-destructible
+  // thread_local pointer to avoid this. The object is intentionally not freed
+  // (acceptable leak: one instance per thread, process-lifetime).
+  static thread_local WarningDispatcher* p = new WarningDispatcher();
+  return *p;
+#else
   static thread_local WarningDispatcher thisThreadsWarnings;
   return thisThreadsWarnings;
+#endif
 }
 
 

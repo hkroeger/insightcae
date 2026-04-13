@@ -132,7 +132,15 @@ boost::filesystem::path WSLLinuxServer::WSLcommand()
   {
     windir=wdv;
   }
-  auto wsl =boost::filesystem::path(windir+"\\Sysnative\\wsl.exe"); // weird: system32 does not work...
+  // Sysnative is a virtual directory that only exists for 32-bit processes
+  // (WOW64 filesystem redirector bypass). 64-bit processes must use System32
+  // directly; 32-bit processes need Sysnative because System32 is silently
+  // redirected to SysWOW64 (which does not contain wsl.exe).
+#ifdef _WIN64
+  auto wsl = boost::filesystem::path(windir+"\\System32\\wsl.exe");
+#else
+  auto wsl = boost::filesystem::path(windir+"\\Sysnative\\wsl.exe");
+#endif
 
   insight::dbg()<<"WSL executable: "<<wsl<<std::endl;
   return wsl;

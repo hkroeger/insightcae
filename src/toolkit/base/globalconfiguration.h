@@ -131,8 +131,6 @@ public:
 
         writeAdditionalData(doc, doc.rootNode);
 
-        doc.append_node(doc.rootNode);
-
         doc.saveToFile(file);
     }
 

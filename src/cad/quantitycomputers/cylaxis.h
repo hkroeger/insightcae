@@ -25,8 +25,8 @@
 namespace insight {
 namespace cad {
 
-class cylAxis 
-: public QuantityComputer<arma::mat>
+class cylAxis
+: public QuantityComputer<arma::mat>, public EnableCreateFunction<cylAxis>
 {
 public:
     cylAxis();
@@ -39,7 +39,7 @@ public:
 };
 
 class cylCenter
-    : public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>, public EnableCreateFunction<cylCenter>
 {
 public:
     cylCenter();

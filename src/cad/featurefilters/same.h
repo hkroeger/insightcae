@@ -11,7 +11,7 @@ namespace cad {
 
 template<EntityType T, class TopoDS_Type>
 class same
-: public Filter
+    : public Filter, public EnableCreateFunction<same<T, TopoDS_Type> >
 {
 protected:
     FeatureSetPtr f_; // to match

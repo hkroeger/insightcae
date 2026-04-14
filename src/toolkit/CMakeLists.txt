@@ -352,6 +352,7 @@ add_library(toolkit SHARED
     base/actionprogress.h base/actionprogress.cpp
     base/elementpath.h base/elementpath.cpp
 
+
 )
 
 target_link_libraries(toolkit PUBLIC
@@ -421,10 +422,10 @@ target_include_directories(toolkit
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
 
-set_target_properties(toolkit PROPERTIES
-   UNITY_BUILD ON
-   UNITY_BUILD_BATCH_SIZE 16
-)
+# set_target_properties(toolkit PROPERTIES
+#    UNITY_BUILD ON
+#    UNITY_BUILD_BATCH_SIZE 16
+# )
 
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)

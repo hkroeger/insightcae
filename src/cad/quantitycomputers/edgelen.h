@@ -27,7 +27,7 @@ namespace insight {
 namespace cad {
 
 class edgeLen
-    : public QuantityComputer<double>
+    : public QuantityComputer<double>, public EnableCreateFunction<edgeLen>
 {
 public:
     edgeLen();
@@ -39,7 +39,7 @@ public:
 };
 
 class circRadius
-    : public QuantityComputer<double>
+    : public QuantityComputer<double>, public EnableCreateFunction<circRadius>
 {
 public:
     circRadius();

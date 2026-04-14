@@ -114,7 +114,7 @@ void QExecutionWorkspaceDialog::checkAndChangeRemoteConfig(
     auto newDirPath = newDir.toStdString();
 
     auto rl = std::make_unique<insight::RemoteLocation>(
-                insight::remoteServers.findServer(
+                insight::remoteServers().findServer(
                     serverName.toStdString() ),
                 newDirPath,
                 newDirPath.empty()?true:false
@@ -200,7 +200,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
 
   defaultPal_ = ui->leRemoteDirectory->palette();
 
-  for (const auto& i: insight::remoteServers)
+  for (const auto& i: insight::remoteServers())
   {
     ui->cbHost->addItem( QString::fromStdString(*i) );
   }
@@ -327,7 +327,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
             {
               remoteLocation_.reset(
                     new insight::RemoteLocation(
-                      insight::remoteServers.findServer(
+                      insight::remoteServers().findServer(
                         ui->cbHost->currentText().toStdString() ),
                       ui->leRemoteDirectory->text().toStdString()
                       )

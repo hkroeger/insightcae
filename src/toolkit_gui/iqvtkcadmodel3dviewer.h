@@ -343,6 +343,7 @@ private:
     void redrawNow(bool force=true);
 
     friend class BackgroundImage;
+    QSlider* bgBleechSlider_;
     QList<BackgroundImage*> backgroundImages_;
 
     QItemSelectionModel *defaultSelectionModel_, *customSelectionModel_;
@@ -365,6 +366,7 @@ private Q_SLOT:
 
 Q_SIGNALS:
     void contextMenuClick(QPoint pGlob);
+    void changeBackgroundImageBleech(int newPercent);
 
 public:
     void closeEvent(QCloseEvent *ev) override;

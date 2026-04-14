@@ -28,7 +28,7 @@ namespace cad {
 
 
 class boundaryEdge
-    : public Filter
+    : public Filter, public EnableCreateFunction<boundaryEdge>
 {
 protected:
   mutable std::shared_ptr<ShapeAnalysis_FreeBounds> safb_;

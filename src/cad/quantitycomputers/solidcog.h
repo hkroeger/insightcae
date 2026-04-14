@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class solidCoG
-    : public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>, public EnableCreateFunction<solidCoG>
 {
 public:
     solidCoG();

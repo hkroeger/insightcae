@@ -8,7 +8,7 @@ int main(int argc, char*argv[])
 
       insight::assertion(argc==2, "expected exactly one command line argument");
 
-      SteadyCompressibleOpenFOAMCase tc(argv[1]);
+      SteadyCompressibleOpenFOAMCase<OpenFOAMCaseWithBoxMesh<> > tc(argv[1]);
 
 //      try
 //      {

@@ -1,5 +1,5 @@
 #include "openfoamcasewithcylindermesh.h"
-#include "openfoam/caseelements/turbulencemodels/komegasst_lowre_rasmodel.h"
+#include "openfoam/caseelements/turbulencemodels/realizablekepsilon_rasmodel.h"
 
 
 int main(int argc, char*argv[])
@@ -20,7 +20,7 @@ int main(int argc, char*argv[])
             void createCaseElements() override
             {
                 SimpleFoamOpenFOAMCase::createCaseElements();
-                this->insert(new kOmegaSST_LowRe_RASModel(*this));
+                this->insert(new realizablekEpsilon_RASModel(*this));
             }
         } tc(argv[1], CaseFeatures{CaseFeature::TurbulenceModel});
 

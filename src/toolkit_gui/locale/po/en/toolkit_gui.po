@@ -22,6 +22,9 @@ msgstr ""
 msgid "Open file"
 msgstr ""
 
+msgid "Bleeching of background images"
+msgstr ""
+
 msgid "Could not load background image"
 msgstr ""
 
@@ -52,11 +55,11 @@ msgid "redo step %s"
 msgstr ""
 
 #, c-format
-msgid "image file \"%s\" does not exist"
+msgid "could not create reader for file \"%s\""
 msgstr ""
 
 #, c-format
-msgid "could not create reader for file \"%s\""
+msgid "image file \"%s\" does not exist"
 msgstr ""
 
 msgid "Visible"

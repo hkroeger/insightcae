@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class everything
-    : public Filter
+    : public Filter, public EnableCreateFunction<everything>
 {
 
 public:

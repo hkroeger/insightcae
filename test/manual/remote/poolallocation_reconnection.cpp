@@ -13,7 +13,7 @@ int main()
     try
     {
         // request server from pool
-        auto scfg = insight::remoteServers.requestUnoccupiedServer(1, "docker_test_pool");
+        auto scfg = insight::remoteServers().requestUnoccupiedServer(1, "docker_test_pool");
         insight::assertion(
             bool(scfg), "expected to find a server!");
 

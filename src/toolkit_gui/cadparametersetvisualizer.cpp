@@ -87,6 +87,12 @@ void CADParameterSetVisualizerGenerator::addFeature(
     const insight::cad::FeatureVisualizationStyle& fvs )
 {
   CurrentExceptionContext ec(GUIEvents, "adding visualizer feature "+name);
+  if (!feat->hasTriangulation()) // tesselate here, if needed. Will happen in GUI thread otherwise
+  {
+      insight::CurrentExceptionContext ex(
+          str(boost::format("pre-tesselating feature %s")%name));
+      feat->createTriangulation();
+  }
   Q_EMIT createdFeature( QString::fromStdString(name), feat, true, fvs );
 }
 

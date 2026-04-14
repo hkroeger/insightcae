@@ -4,6 +4,8 @@ import os,sys,subprocess,re,copy,hashlib
 import xml.etree.cElementTree as ET
 import urllib.request as req
 
+arch="i686"
+
 def sanitizeId(orgname):
     clean="id"+"".join(filter(str.isalnum, orgname))
     print (orgname, " ==>> ", clean)
@@ -223,8 +225,7 @@ def findFile(f, mxepath):
     if f in alreadySearched:
         return alreadySearched[f]
     else:
-        ret=subprocess.run(["find", os.path.join(mxepath, "usr/i686-w64-mingw32.shared"), "-iname", f], stdout=subprocess.PIPE)
-        #ret=subprocess.run(["locate", "-i", "-r", "^"+os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared")+".*"+f+"$"], stdout=subprocess.PIPE)
+        ret=subprocess.run(["find", os.path.join(mxepath, "usr/%s-w64-mingw32.shared"%arch), "-iname", f], stdout=subprocess.PIPE)
         found=[l.decode('UTF-8') for l in ret.stdout.split()]
         #print("found:", found)
         ff=None

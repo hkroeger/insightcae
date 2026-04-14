@@ -58,7 +58,7 @@ and/or
 For InsightCAD:
 
 * [OpenCASCADE](https://www.opencascade.com/) (7.2.0, liboce-insightcae, available through http://downloads.silentdynamics.de)
-* [FreeCAD](https://www.freecadweb.org/), (0.17, freecad-insightcae, available through http://downloads.silentdynamics.de)
+* [FreeCAD](https://FreeCAD.Org), (0.17, freecad-insightcae, available through http://downloads.silentdynamics.de)
 * [DXFlib](http://www.ribbonsoft.com/de/what-is-dxflib) (3.7, libdxflib, available through http://downloads.silentdynamics.de)
 
 ### Setting Up the Environment

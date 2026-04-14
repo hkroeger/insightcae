@@ -23,6 +23,7 @@
 #include <dlfcn.h>
 
 #include "base/boost_include.h"
+#include "boost/thread.hpp"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "boost/range/iterator_range.hpp"
 #include <boost/range/adaptor/reversed.hpp>

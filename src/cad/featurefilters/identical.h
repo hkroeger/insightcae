@@ -31,7 +31,7 @@ namespace cad
 
 template<EntityType T>
 class identical
-: public Filter
+    : public Filter, public EnableCreateFunction<identical<T> >
 {
 protected:
     FeatureSetPtr f_;

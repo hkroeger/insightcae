@@ -410,18 +410,30 @@ void ParameterEditorWidget::rebuildVisualization()
     {
         if (viz_ && !viz_->isFinished())
         {
+            insight::CurrentExceptionContext ex("cancelling running visualizer");
             viz_->stopVisualizationComputation();
+        }
+
+        if (viz_)
+        {
+            insight::CurrentExceptionContext ex("removing old visualizer");
             viz_->deleteLater();
         }
 
 
-        viz_ = createVisualizer_(
-                this,
-                dynamic_cast<IQParameterSetModel*>(model_)
-            );
+        {
+            insight::CurrentExceptionContext ex("creating new visualizer");
+
+            viz_ = createVisualizer_(
+                    this,
+                    dynamic_cast<IQParameterSetModel*>(model_)
+                );
+        }
 
         if (viz_ && !viz_->isFinished())
         {
+            insight::CurrentExceptionContext ex("connecting new visualizer");
+
             connect(
                 viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
                 this, &ParameterEditorWidget::updateSupplementedInputData
@@ -453,6 +465,8 @@ void ParameterEditorWidget::rebuildVisualization()
                     overlayText_->show();
                 }
             );
+
+            insight::dbg(insight::DetailedBusiness) << "launching visualized" << std::endl;
 
             viz_->launch(display_->model());
         }

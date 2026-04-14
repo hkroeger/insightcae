@@ -11,7 +11,7 @@ namespace cad {
 
 template<EntityType T>
 class isPartOfFace
-    : public Filter
+    : public Filter, public EnableCreateFunction<isPartOfFace<T> >
 {
 protected:
     TopoDS_Face f_;

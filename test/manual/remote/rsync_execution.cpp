@@ -69,7 +69,9 @@ public:
     {
         process_ =
             std::make_unique<boost::process::child>(
-#ifdef WIN32
+#ifdef _WIN64
+                "c:\\Windows\\System32\\wsl.exe"
+#elif defined(WIN32)
                 "c:\\Windows\\Sysnative\\wsl.exe"
 #else
                 "/bin/bash"

@@ -22,6 +22,7 @@
 #define INSIGHT_CAD_RELATIONFILTERS_H
 
 #include "featureset.h"
+#include "insightcad_export.h"
 
 namespace insight
 {
@@ -32,16 +33,16 @@ namespace cad
 #define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
 template <class T1, class T2>\
 class RELATION_QTY_FILTER_NAME\
-: public Filter\
+: public Filter, public EnableCreateFunction<RELATION_QTY_FILTER_NAME<T1,T2> >\
 {\
 protected:\
   std::shared_ptr<QuantityComputer<T1> > qtc1_;\
   std::shared_ptr<QuantityComputer<T2> > qtc2_;\
   \
 public:\
-  RELATION_QTY_FILTER_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2)\
-  : qtc1_(qtc1.clone()),\
-    qtc2_(qtc2.clone())\
+  RELATION_QTY_FILTER_NAME(QCArg<T1> qtc1, QCArg<T2> qtc2)\
+  : qtc1_(std::move(qtc1.ptr)),\
+    qtc2_(std::move(qtc2.ptr))\
   {}\
   \
   virtual void initialize(ConstFeaturePtr m)\

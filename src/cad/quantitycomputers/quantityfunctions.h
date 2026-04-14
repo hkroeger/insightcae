@@ -38,11 +38,14 @@ class OPERATED_QTC_NAME \
 protected: \
   std::shared_ptr<QuantityComputer<T> > qtc_; \
 public:\
-  OPERATED_QTC_NAME(const QuantityComputer<T>& qtc) \
-  : qtc_(qtc.clone())\
+  OPERATED_QTC_NAME(QCArg<T> qtc) \
+  : qtc_(std::move(qtc.ptr))\
   {}\
   \
   ~OPERATED_QTC_NAME() {}\
+  \
+  static std::shared_ptr<QuantityComputer<T> > create(QCArg<T> qtc) \
+  { return std::make_shared<OPERATED_QTC_NAME>(qtc); }\
   \
   virtual void initialize(ConstFeaturePtr m)\
   {\
@@ -70,11 +73,15 @@ class OPERATED_QTC_NAME \
 protected: \
   std::shared_ptr<QuantityComputer<T> > qtc_; \
 public:\
-  OPERATED_QTC_NAME(const QuantityComputer<T>& qtc) \
-  : qtc_(qtc.clone())\
+  OPERATED_QTC_NAME(QCArg<T> qtc) \
+  : qtc_(std::move(qtc.ptr))\
   {}\
   \
   ~OPERATED_QTC_NAME() {}\
+  \
+  static std::shared_ptr<QuantityComputer<RETURN_T> > create( \
+    QCArg<T> qtc) \
+  { return std::make_shared<OPERATED_QTC_NAME>(qtc); }\
   \
   virtual void initialize(ConstFeaturePtr m)\
   {\
@@ -103,11 +110,15 @@ protected: \
   std::shared_ptr<QuantityComputer<T1> > qtc1_; \
   std::shared_ptr<QuantityComputer<T2> > qtc2_; \
 public:\
-  OPERATED_QTC_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2) \
-  : qtc1_(qtc1.clone()), qtc2_(qtc2.clone())\
+  OPERATED_QTC_NAME(QCArg<T1> qtc1, QCArg<T2> qtc2) \
+  : qtc1_(std::move(qtc1.ptr)), qtc2_(std::move(qtc2.ptr))\
   {}\
   \
   ~OPERATED_QTC_NAME() {}\
+  \
+  static std::shared_ptr<QuantityComputer< typename RESULT_T<T1,T2>::type > > create( \
+     QCArg<T1> qtc1, QCArg<T1> qtc2) \
+  { return std::make_shared<OPERATED_QTC_NAME>(qtc1, qtc2); }\
   \
   virtual void initialize(ConstFeaturePtr m)\
   {\

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "base/boost_include.h"
 
 namespace insight {
 
@@ -12,6 +13,7 @@ class ElementPath
 public:
     ElementPath();
     ElementPath(const std::string& p);
+    ElementPath(const boost::filesystem::path& p);
     ElementPath(const std::vector<std::string>& ps);
 
     ElementPath operator/(const ElementPath& o) const;

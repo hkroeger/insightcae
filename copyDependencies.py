@@ -16,10 +16,15 @@ parser = OptionParser()
 parser.add_option("-x", "--mxepath", dest="mxepath", metavar='mxepath', default="/opt/mxe",
                 help="path to mxe cross compile environment")
 
+parser.add_option("-a", "--arch", dest="arch", metavar='arch', default="i686",
+                help="architecture, either i686 or x86_64")
+
 parser.add_option("-s", "--insightSourcePath", dest="insightSourcePath", metavar='InsightCAE source path', default=superbuildSourcePath,
                   help="path to insightcae source code (not superbuild source)")
 
 (opts, args) = parser.parse_args()
+
+wix.arch=opts.arch
 
 
 directories=["bin", "share/insight"]
@@ -36,14 +41,14 @@ for d in directories:
 
 fl.addFile( 
     os.path.join(opts.mxepath,
-                 "usr/i686-w64-mingw32.shared/qt5/plugins/platforms/qwindows.dll"), 
+                 "usr/%s-w64-mingw32.shared/qt5/plugins/platforms/qwindows.dll"%opts.arch), 
     "bin/plugins/platforms" )
 fl.addFile( 
     os.path.join(opts.mxepath, 
-                 "usr/i686-w64-mingw32.shared/qt5/plugins/styles/qwindowsvistastyle.dll"), 
+                 "usr/%s-w64-mingw32.shared/qt5/plugins/styles/qwindowsvistastyle.dll"%opts.arch), 
     "bin/plugins/styles" )
 
-sp=os.path.join(opts.mxepath, "usr/i686-w64-mingw32.shared/share/oce-0.18/src/Shaders")
+sp=os.path.join(opts.mxepath, "usr/%s-w64-mingw32.shared/share/oce-0.18/src/Shaders"%opts.arch)
 fl.addFiles( sp, ".*", "share/oce-0.18/Shaders", sp)
 #wxs.addEnvVar('CSF_ShadersDirectory','[INSTALLDIR]share\\oce-0.18\\Shaders','3b4ab883-6637-4969-a006-d47ab6e8072b')
 #wxs.addEnvVar('INSIGHT_GLOBALSHAREDDIRS','[INSTALLDIR]share\\insight','2dba120f-def7-441d-93a8-abef0b5448e0')

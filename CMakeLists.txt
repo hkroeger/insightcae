@@ -11,7 +11,9 @@ enable_language (Fortran OPTIONAL)
 
 
 if(WIN32)
- add_link_options(LINKER:--export-all-symbols)
+ add_link_options(LINKER:--export-all-symbols) ## too big files with debug in WIN32
+ #set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+ #set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
 enable_testing()
@@ -171,6 +173,26 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 
+## DEBUG
+if (WIN32)
+#  # Root CMakeLists.txt — strip -g out of the Debug flag string
+#  string(REGEX REPLACE "-g[0-9]?" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+#  # CMAKE_CXX_FLAGS_DEBUG is now just "-O0" (or whatever remains)
+  # foreach(lang C CXX)
+  #   string(REPLACE "-g" "-g1" CMAKE_${lang}_FLAGS_DEBUG "${CMAKE_${lang}_FLAGS_DEBUG}")
+  #   string(REPLACE "-O0" "" CMAKE_${lang}_FLAGS_DEBUG "${CMAKE_${lang}_FLAGS_DEBUG}")
+  # endforeach()
+  add_compile_options(-Wa,-mbig-obj -gdwarf-2 -O1)
+endif()
+
+## profiling
+# if (WIN32)
+#     add_compile_options(-pg -mno-fentry)
+#     add_link_options(-pg)
+# else()
+#     add_compile_options(-pg)
+#     add_link_options(-pg)
+# endif()
 
 macro(target_enable_qt TARGET)
   find_package(Qt5Widgets CONFIG REQUIRED)

@@ -27,7 +27,7 @@
 namespace insight {
 namespace cad {
 
-
+arma::mat calcBndBox(TopoDS_Shape);
 
 class is_gp_Trsf
     : public gp_Trsf

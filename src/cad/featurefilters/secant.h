@@ -29,7 +29,7 @@ namespace cad {
 
 template<EntityType T>
 class secant
-: public Filter
+    : public Filter, public EnableCreateFunction<secant<T> >
 {
 protected:
     arma::mat dir_;

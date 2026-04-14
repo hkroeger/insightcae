@@ -31,7 +31,7 @@ namespace cad
 
 template<EntityType T>
 class coincident
-: public Filter
+    : public Filter, public EnableCreateFunction<coincident<T> >
 {
 protected:
     FeatureSetPtr f_;

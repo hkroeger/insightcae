@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class cylRadius
-    : public QuantityComputer<double>
+    : public QuantityComputer<double>, public EnableCreateFunction<cylRadius>
 {
 public:
     cylRadius();

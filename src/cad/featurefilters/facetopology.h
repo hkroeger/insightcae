@@ -27,7 +27,7 @@ namespace insight {
 namespace cad {
 
 class faceTopology
-: public Filter
+: public Filter, public EnableCreateFunction<faceTopology>
 {
 protected:
     GeomAbs_SurfaceType ct_;

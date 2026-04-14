@@ -13,7 +13,7 @@ TaskSpoolerMonitor::TaskSpoolerMonitor(const boost::filesystem::path& tsp_socket
   insight::TaskSpoolerInterface (
     tsp_socket,
     remote_machine.isEmpty() ? nullptr :
-    insight::remoteServers.findServer(remote_machine.toStdString())->getInstanceIfRunning() ),
+    insight::remoteServers().findServer(remote_machine.toStdString())->getInstanceIfRunning() ),
   ui(new Ui::TaskSpoolerMonitor)
 {
   ui->setupUi(this);

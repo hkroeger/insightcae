@@ -128,7 +128,7 @@ ExternalProject_Get_Property( vtkdicom-onscreen INSTALL_DIR )
 ExternalProject_Get_Property( vtkdicom-onscreen SOURCE_DIR )
 
 if (WIN32)
-  set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include)
+  set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-9.0)
 else()
   set(VTKDICOMONSCREEN_INCLUDE_DIR ${INSTALL_DIR}/include/vtk-8.90)
 endif()

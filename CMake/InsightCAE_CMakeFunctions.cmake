@@ -10,7 +10,7 @@ macro(install_headers NAME HEADERS)
       add_custom_command(
           TARGET ${NAME} POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae/${_pd}
-          COMMAND ${CMAKE_COMMAND} -E copy ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_hdr} ${CMAKE_BINARY_DIR}/include/insightcae/${_relName}
       )
       install(
         FILES ${_hdr}
@@ -23,6 +23,15 @@ endmacro(install_headers)
 
 ## installs headers and PDL-generated headers
 macro (target_add_PDL TARGETNAME)
+  set(PDL pdl)
+  set(GENSETSPY gen-sets.py)
+  if (IS_INSIGHTCAE_PROJECT AND NOT CMAKE_CROSSCOMPILING)
+      set(GENSETSPY ${CMAKE_SOURCE_DIR}/gen-sets.py)
+      set(PDL "${CMAKE_BINARY_DIR}/bin/pdl")
+      list(APPEND PDLDEPS ${PDL} ${GENSETSPY})
+  endif()
+
+  # find all headers in target's sources, store in HEADERS
   get_target_property(FILES ${TARGETNAME} SOURCES)
   foreach (_hdrrel ${FILES})
     get_filename_component(_ext ${_hdrrel} EXT)
@@ -36,25 +45,22 @@ macro (target_add_PDL TARGETNAME)
     endif()
   endforeach()
 
+  #mark headers for inclusion in installation
   install_headers(${TARGETNAME} "${HEADERS}")
 
+  # examine each header for PDL code
   foreach (_hdr ${HEADERS})
-    #message(STATUS "${_hdr} ${_hdrrel}")
+
+    # basename into BN
     get_filename_component(BN ${_hdr} NAME_WE)
 
-    #message(STATUS ${_hdr} ${BN})
     list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
 
-    set(PDL pdl)
-    set(GENSETSPY gen-sets.py)
-    set(DEPS ${_hdr})
-    if (IS_INSIGHTCAE_PROJECT AND NOT CMAKE_CROSSCOMPILING)
-        set(GENSETSPY ${CMAKE_SOURCE_DIR}/gen-sets.py)
-        set(PDL "${CMAKE_BINARY_DIR}/bin/pdl")
-        list(APPEND DEPS ${PDL} ${GENSETSPY})
-    endif()
+    set(DEPS ${PDLDEPS})
+    list(APPEND DEPS ${_hdr})
 
-    ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
+    # add rule on how to generate ${BN}_pdl.timestamp, if needed
+    add_custom_command( OUTPUT ${BN}_pdl.timestamp
                         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae
                         COMMAND "${GENSETSPY}" "${_hdr}" "${PDL}" "${CMAKE_BINARY_DIR}/include/insightcae/"
                         COMMAND touch ${BN}_pdl.timestamp
@@ -66,6 +72,7 @@ macro (target_add_PDL TARGETNAME)
       COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      )
   endforeach()
+
   # Write current header basenames so the cleanup script can detect removed/renamed headers
   set(_pdl_basenames "")
   foreach(_hdr ${HEADERS})
@@ -75,7 +82,7 @@ macro (target_add_PDL TARGETNAME)
   string(REPLACE ";" "\n" _pdl_basenames_str "${_pdl_basenames}")
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}_pdl_headers.txt" "${_pdl_basenames_str}\n")
 
-  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator
+  add_custom_target( ${TARGETNAME}_PDLGenerator
                     COMMAND ${CMAKE_COMMAND}
                         -DTARGET_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
                         -DTARGET_NAME=${TARGETNAME}
@@ -83,7 +90,7 @@ macro (target_add_PDL TARGETNAME)
                         -P ${_INSIGHT_CMAKE_DIR}/pdl_stale_cleanup.cmake
                     DEPENDS ${${TARGETNAME}_TIMESTAMPS}
                     COMMENT "Checking if PDL re-generation is required" )
-  ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
+  add_dependencies( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
 
   target_include_directories(${TARGETNAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>

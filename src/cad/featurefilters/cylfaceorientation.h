@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class cylFaceOrientation
-: public Filter
+: public Filter, public EnableCreateFunction<cylFaceOrientation>
 {
 protected:
     bool io_;

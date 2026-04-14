@@ -10,23 +10,22 @@
 #include "vtkImageReader2.h"
 #include "vtkImageReader2Factory.h"
 #include "vtkImageData.h"
+#include "vtkImageMapper3D.h"
 
 #include "cpp/poppler-document.h"
 #include "cpp/poppler-page.h"
 #include "cpp/poppler-page-renderer.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <limits>
 
 
 
 using namespace insight;
 
 
-static const int PDF_RENDER_DPI = 150;
-
-
 vtkSmartPointer<vtkImageData>
-BackgroundImage::loadImageData(const boost::filesystem::path& fp)
+BackgroundImage::loadImageData(const boost::filesystem::path& fp, int pdfRenderDpi)
 {
     std::string ext = fp.extension().string();
     boost::algorithm::to_lower(ext);
@@ -47,13 +46,28 @@ BackgroundImage::loadImageData(const boost::filesystem::path& fp)
             page != nullptr,
             "could not read page 0 of \"%s\"", fp.string().c_str());
 
+        // Pre-validate: poppler uses int arithmetic for buffer allocation.
+        // width * height * 4 overflowing int causes a silent "Bogus memory
+        // allocation size" without throwing any C++ exception.
+        {
+            auto rect = page->page_rect();
+            auto expectedW = static_cast<long long>(rect.width()  * pdfRenderDpi / 72.0 + 0.5);
+            auto expectedH = static_cast<long long>(rect.height() * pdfRenderDpi / 72.0 + 0.5);
+            insight::assertion(
+                expectedW > 0 && expectedH > 0 &&
+                expectedW * expectedH * 4 <= std::numeric_limits<int>::max(),
+                "DPI %d would require a %lldx%lld pixel image for \"%s\","
+                " which exceeds the poppler rendering limit; reduce the DPI",
+                pdfRenderDpi, expectedW, expectedH, fp.string().c_str());
+        }
+
         poppler::page_renderer pr;
         pr.set_render_hint(poppler::page_renderer::antialiasing, true);
         pr.set_render_hint(poppler::page_renderer::text_antialiasing, true);
-        poppler::image img = pr.render_page(page.get(), PDF_RENDER_DPI, PDF_RENDER_DPI);
+        poppler::image img = pr.render_page(page.get(), pdfRenderDpi, pdfRenderDpi);
         insight::assertion(
-            img.is_valid(),
-            "PDF rendering failed for \"%s\"", fp.string().c_str());
+            img.is_valid() && img.data() != nullptr,
+            "PDF rendering failed for \"%s\" (try a lower DPI value)", fp.string().c_str());
 
         int w = img.width(), h = img.height();
         auto vtkImg = vtkSmartPointer<vtkImageData>::New();
@@ -110,6 +124,18 @@ BackgroundImage::loadImageData(const boost::filesystem::path& fp)
     }
 }
 
+void BackgroundImage::setDimFilter()
+{
+    dimFilter_ = vtkSmartPointer<vtkImageShiftScale>::New();
+    dimFilter_->SetInputData(imageData_);
+    dimFilter_->SetScale(1);
+    dimFilter_->SetShift(0);
+    dimFilter_->SetOutputScalarTypeToUnsignedChar();
+    dimFilter_->ClampOverflowOn();
+
+    imageActor_->GetMapper()->SetInputConnection(dimFilter_->GetOutputPort());
+}
+
 
 
 
@@ -123,20 +149,23 @@ IQVTKCADModel3DViewer &BackgroundImage::viewer()
 
 BackgroundImage::BackgroundImage(
     const boost::filesystem::path& imageFile,
-    IQVTKCADModel3DViewer& v )
+    IQVTKCADModel3DViewer& v,
+    int pdfRenderDpi )
 
     : QObject(&v),
     imageFileName_(imageFile),
+    pdfRenderDpi_(pdfRenderDpi),
     label_(QString::fromStdString(imageFile.filename().string()))
 {
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
         _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
-    auto imageData = loadImageData(imageFileName_);
+    imageData_ = loadImageData(imageFileName_, pdfRenderDpi_);
 
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
+    imageActor_->SetInputData(imageData_);
+    setDimFilter();
 
     imageActor_->SetScale( 1 );
     imageActor_->SetOrientation(0, 0, 0);
@@ -148,6 +177,7 @@ BackgroundImage::BackgroundImage(
 
     os_.xy_[0] = os_.p_[0] = vec3Zero();
     os_.xy_[1] = os_.p_[1] = vec3(b[1], b[3], 0);
+
 
     reorientImage();
 }
@@ -198,14 +228,17 @@ BackgroundImage::BackgroundImage(
         imageFileName_ = parentPath/imageFileName_;
     }
 
+    pdfRenderDpi_ = getOptionalAttributeOrDefault<int>(node, "pdfRenderDpi", 300);
+
     insight::assertion(
         boost::filesystem::exists(imageFileName_),
         _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
 
-    auto imageData = loadImageData(imageFileName_);
+    imageData_ = loadImageData(imageFileName_, pdfRenderDpi_);
 
     imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
+    imageActor_->SetInputData(imageData_);
+    setDimFilter();
 
     usedRenderer_=viewer().renderer();
     usedRenderer_->AddActor(imageActor_);
@@ -267,6 +300,9 @@ void BackgroundImage::setOrientation(OrientationSpec os)
 
     imageActor_->SetOpacity(0.8); // restore opacity
 
+    dimFilter_->SetScale(1.5); // bleech out
+    dimFilter_->SetShift(100.0);
+
     viewer().scheduleRedraw();
 }
 
@@ -289,6 +325,10 @@ void BackgroundImage::write(
     insight::appendAttribute(
         doc, node,
         "label", label_.toStdString());
+
+    insight::appendAttribute(
+        doc, node,
+        "pdfRenderDpi", pdfRenderDpi_);
 
     auto fn=boost::filesystem::absolute(imageFileName_);
     if (boost::filesystem::path_contains_file(parentPath, fn))
@@ -327,5 +367,13 @@ vtkImageActor *BackgroundImage::imageActor()
 void BackgroundImage::toggleVisibility(bool show)
 {
     imageActor_->SetVisibility(show);
+    viewer().scheduleRedraw();
+}
+
+
+void BackgroundImage::changeBleech(int percent)
+{
+    dimFilter_->SetScale(int( 1. +0.02*double(percent) )); // bleech out
+    dimFilter_->SetShift( 33.0 *pow(double(percent), 0.25) );
     viewer().scheduleRedraw();
 }

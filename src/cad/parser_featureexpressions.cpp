@@ -207,7 +207,7 @@ void ISCADParser::createFeatureExpressions()
                 [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
             |
             ( lit("visresolution") >> '=' >> r_scalarExpression )
-                [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
+                [ lazy( phx::bind(&Feature::setAbsoluteVisResolution, *_a, qi::_1) ) ]
             |
             ( lit("BOMDescription") >> '=' >> r_BOMDescriptionData )
                 [ lazy( phx::bind(&Feature::setBOMDescription,

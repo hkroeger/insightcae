@@ -44,6 +44,16 @@ using namespace insight;
 using namespace insight::cad;
 %}
 
+// Suppress SWIG warnings for C++ patterns that don't need Python bindings
+%warnfilter(325);  // Nested struct not currently supported (factory Add<>)
+%warnfilter(317);  // Specialisation of non-template (is_arithmetic<arma::mat>)
+%warnfilter(381);  // operator&& ignored
+%warnfilter(361);  // operator! ignored
+%warnfilter(362);  // operator= ignored
+%warnfilter(401);  // Nothing known about base class (DependencySource, ASTBasedFeatureSet, …)
+%warnfilter(503);  // Can't wrap conversion operator unless renamed
+%warnfilter(504);  // CLONEABLE macro — function must have a return type
+
 %include "base/factory.h"
 %include "featureset.h"
 %include "featurefilter.h"

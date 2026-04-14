@@ -414,13 +414,18 @@ add_library(insightcad SHARED
 
   ${insightcad_ADDITIONAL_SOURCES}
   parser_tools.h
+  featurefilter_vertex.cpp
+  featurefilter_edge.cpp
+  featurefilter_face.cpp
+  featurefilter_solid.cpp
 )
-target_link_libraries(insightcad 
- toolkit 
+target_link_libraries(insightcad
+ toolkit
  ${OCC_LIBRARIES} # TKXSDRAW # don't include: leads to segfault on program exit!
- ${DXFLIB_LIBRARY} 
+ ${DXFLIB_LIBRARY}
  ${MED_LIBRARIES}
  )
+
 
 target_setup_gettext(insightcad insightcad)
 
@@ -433,8 +438,7 @@ target_setup_gettext(insightcad insightcad)
 include(GenerateExportHeader)
 generate_export_header(insightcad)
 
-## PROFILING
-# set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
+
 
 target_include_directories(insightcad
   PUBLIC ${OCC_INCLUDE_DIR}
@@ -443,6 +447,7 @@ target_include_directories(insightcad
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   PUBLIC ${MED_INCLUDE_DIRS}
   )
+
 
 if (INSIGHT_DEVELOPMENT_FILES)
  install(

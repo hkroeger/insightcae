@@ -31,8 +31,8 @@ double maximal::criterion(FeatureID feature)
     return -qtc_->evaluate(feature);
 }
   
-maximal::maximal(const scalarQuantityComputer& qtc, int rank, int lrank)
-    : extremal(qtc, rank, lrank)
+maximal::maximal(ScalarArg qtc, int rank, int lrank)
+    : extremal(std::move(qtc), rank, lrank)
 {
 }
 

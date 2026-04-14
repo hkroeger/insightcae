@@ -14,7 +14,7 @@ IQRemoteExecutionState* IQExecutionWorkspace::defaultOpenFOAMRemoteWorkspace()
 #ifdef WSL_DEFAULT
     return IQRemoteExecutionState::New<IQWorkbenchRemoteExecutionState>(
                 af_,
-                insight::remoteServers.findFirstServerOfType<insight::WSLLinuxServer>(".*")
+        insight::remoteServers().findFirstServerOfType<insight::WSLLinuxServer>(".*")
                 );
 //#else
 //    // for test purposes only

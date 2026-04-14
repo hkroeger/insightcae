@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class edgeStart
-    : public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>, public EnableCreateFunction<edgeStart>
 {
 public:
     edgeStart();

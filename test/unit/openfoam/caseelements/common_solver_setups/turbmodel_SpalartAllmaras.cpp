@@ -1,13 +1,29 @@
 #include "openfoamcasewithcylindermesh.h"
+#include "openfoam/caseelements/turbulencemodels/spalartallmaras_rasmodel.h"
 
-using namespace insight;
 
 int main(int argc, char*argv[])
 {
-  return executeTest([=](){
+    using namespace insight;
 
-    insight::assertion(argc==2, "expected exactly one command line argument");
+    return executeTest([=](){
 
+        insight::assertion(argc==2, "expected exactly one command line argument");
 
-  });
+        struct TC
+            : public SimpleFoamOpenFOAMCase<OpenFOAMCaseWithBoxMesh<> >
+        {
+        public:
+            using SimpleFoamOpenFOAMCase<OpenFOAMCaseWithBoxMesh<> >
+                ::SimpleFoamOpenFOAMCase;
+
+            void createCaseElements() override
+            {
+                SimpleFoamOpenFOAMCase::createCaseElements();
+                this->insert(new SpalartAllmaras_RASModel(*this));
+            }
+        } tc(argv[1], CaseFeatures{CaseFeature::TurbulenceModel});
+
+        tc.runTest();
+    });
 }

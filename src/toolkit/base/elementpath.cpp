@@ -17,6 +17,13 @@ ElementPath::ElementPath(const std::string& p)
         boost::token_compress_on );
 }
 
+
+ElementPath::ElementPath(const boost::filesystem::path& p)
+{
+    for (const auto& part : p)
+        push_back(part.string());
+}
+
 /**
      * @brief elementPath
      * join elements together

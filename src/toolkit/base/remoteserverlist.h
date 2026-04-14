@@ -121,14 +121,13 @@ public:
       int np,
       const std::string& poolLabel = std::string()
       ) const;
+
+
 };
 
 
 
-
-extern RemoteServerList remoteServers;
-
-
+RemoteServerList& remoteServers();
 
 
 } // namespace insight

@@ -28,10 +28,13 @@ namespace insight
 {
 namespace cad 
 {
-  
-AND::AND(const Filter& f1, const Filter& f2)
+
+
+
+
+AND::AND(FilterArg f1, FilterArg f2)
 : Filter(),
-  f1_(f1.clone()), f2_(f2.clone())
+  f1_(std::move(f1.ptr)), f2_(std::move(f2.ptr))
 {
 }
 
@@ -61,9 +64,10 @@ FilterPtr AND::clone() const
 
 
 
-OR::OR(const Filter& f1, const Filter& f2)
+
+OR::OR(FilterArg f1, FilterArg f2)
 : Filter(),
-  f1_(f1.clone()), f2_(f2.clone())
+  f1_(std::move(f1.ptr)), f2_(std::move(f2.ptr))
 {
 }
 
@@ -93,9 +97,10 @@ FilterPtr OR::clone() const
 
 
 
-NOT::NOT(const Filter& f1)
+
+NOT::NOT(FilterArg f1)
 : Filter(),
-  f1_(f1.clone())
+  f1_(std::move(f1.ptr))
 {
 }
 void NOT::initialize(ConstFeaturePtr m)
@@ -122,15 +127,20 @@ FilterPtr NOT::clone() const
   return FilterPtr(new NOT(*f1_));
 }
 
-FilterPtr Filter::operator&&(const Filter& f2)
+
+
+FilterPtr operator&&(FilterPtr f1, FilterPtr f2)
 {
-  return FilterPtr(new AND(*this, f2));
+    return AND::create(f1, f2);
 }
 
-FilterPtr Filter::operator!()
+
+
+FilterPtr operator!(FilterPtr f)
 {
-  return FilterPtr(new NOT(*this));
+    return NOT::create(f);
 }
+
 
 }
 }

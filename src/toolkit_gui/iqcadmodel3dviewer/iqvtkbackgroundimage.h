@@ -11,6 +11,7 @@
 #include "vtkSmartPointer.h"
 #include "vtkImageActor.h"
 #include "vtkImageData.h"
+#include "vtkImageShiftScale.h"
 
 class IQVTKCADModel3DViewer;
 
@@ -31,6 +32,9 @@ class BackgroundImage
 
     QString label_;
     boost::filesystem::path imageFileName_;
+    int pdfRenderDpi_ = 300;
+    vtkSmartPointer<vtkImageData> imageData_;
+    vtkSmartPointer<vtkImageShiftScale> dimFilter_;
     vtkSmartPointer<vtkImageActor> imageActor_;
     vtkRenderer *usedRenderer_;
     OrientationSpec os_;
@@ -38,7 +42,9 @@ class BackgroundImage
     IQVTKCADModel3DViewer& viewer();
 
     static vtkSmartPointer<vtkImageData>
-        loadImageData(const boost::filesystem::path& fp);
+        loadImageData(const boost::filesystem::path& fp, int pdfRenderDpi = 300);
+
+    void setDimFilter();
 
 public:
     /**
@@ -49,7 +55,8 @@ public:
      */
     BackgroundImage(
         const boost::filesystem::path& fp,
-        IQVTKCADModel3DViewer& viewer );
+        IQVTKCADModel3DViewer& viewer,
+        int pdfRenderDpi = 300 );
 
     /**
      * @brief BackgroundImage
@@ -79,6 +86,7 @@ public:
 
 public Q_SLOTS:
     void toggleVisibility(bool show);
+    void changeBleech(int percent);
 };
 
 

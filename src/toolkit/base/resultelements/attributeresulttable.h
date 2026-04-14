@@ -58,6 +58,8 @@ public:
         return values_;
     }
 
+    std::string value(int i) const;
+
     std::string latexRepresentation(
         const std::string& name,
         int documentHierarchyLevel,

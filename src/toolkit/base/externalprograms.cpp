@@ -35,7 +35,7 @@ std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints
     { "iscad",
      {
 #ifdef WIN32
-        "c:\\Program Files (x86)\\silentdynamics.*\\.*\\bin\\iscad.exe",
+        "c:\\Program Files.*\\silentdynamics.*\\.*\\bin\\iscad.exe",
          ".\\iscad.exe"
 #endif
      }

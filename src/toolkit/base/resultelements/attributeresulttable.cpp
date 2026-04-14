@@ -1,6 +1,7 @@
 #include "attributeresulttable.h"
 #include "base/hierarchicalelement.h"
 #include "base/rapidxml.h"
+#include <boost/lexical_cast.hpp>
 #include <sstream>
 
 
@@ -68,6 +69,24 @@ const SimpleLatex& AttributeTableResult::valueColumnTitle() const
     return valueColumnTitle_;
 }
 
+string AttributeTableResult::value(int i) const
+{
+    if (auto* s=boost::get<std::string>(&values_[i]))
+    {
+        return *s;
+    }
+    else if (auto* d=boost::get<double>(&values_[i]))
+    {
+        return insight::toString(*d);
+    }
+    else if (auto* d=boost::get<int>(&values_[i]))
+    {
+        return insight::toString(*d);
+    }
+
+    return std::string();
+}
+
 
 
 std::string AttributeTableResult::latexRepresentation(
@@ -77,16 +96,19 @@ std::string AttributeTableResult::latexRepresentation(
 {
     std::ostringstream f;
     f<< "\\begin{longtable}{lc}\n"
+     << "\\hline\n"
      << labelColumnTitle_.toLaTeX()
      << " & "
      << valueColumnTitle_.toLaTeX()
      <<" \\\\\n"
-     "\\hline\\\\"
+     "\\hline\n"
      "\\endfirsthead\n"
      "\\endhead\n";
-    for ( size_t i=0; i<names_.size(); i++ ) {
-        f<<names_[i].toLaTeX()<<" & "<<values_[i]<<"\\\\"<<endl;
+    for ( size_t i=0; i<names_.size(); i++ )
+    {
+        f<<names_[i].toLaTeX()<<" & "<<value(i)<<"\\\\"<<endl;
     }
+    f<<"\\hline\n";
     f<<"\\end{longtable}\n";
     return f.str();
 }
@@ -102,7 +124,7 @@ void AttributeTableResult::exportDataToFile (
     std::ofstream f ( fname.c_str() );
 
     for ( size_t i=0; i<names_.size(); i++ ) {
-        f<<"\""<<names_[i].toPlainText()<<"\"\t"<<values_[i]<<endl;
+        f<<"\""<<names_[i].toPlainText()<<"\"\t"<<value(i)<<endl;
     }
 }
 
@@ -227,7 +249,7 @@ xml_node< char >* AttributeTableResult::appendToNode (
         else if ( const std::string* v = boost::get<std::string> ( &values_[i] ) )
         {
             appendAttribute(doc, cattr, "type", "string" );
-            appendAttribute(doc, cattr, "value", v);
+            appendAttribute(doc, cattr, "value", *v);
         }
 
     }

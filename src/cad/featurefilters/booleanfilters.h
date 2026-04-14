@@ -79,6 +79,8 @@ public:
 };
 
 
+FilterPtr operator&&(FilterPtr& f1, FilterPtr f2);
+FilterPtr operator!(FilterPtr f);
 
 
 }

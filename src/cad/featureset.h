@@ -77,11 +77,8 @@ public:
     inline const Feature& model() const { return *model_; }
 
     virtual FilterPtr clone() const =0;
-
-    FilterPtr operator&&(const Filter& f2);
-    FilterPtr operator!();
-
 };
+
 
 
 

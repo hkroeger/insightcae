@@ -127,15 +127,20 @@ FilterPtr NOT::clone() const
   return FilterPtr(new NOT(*f1_));
 }
 
-FilterPtr Filter::operator&&(const Filter& f2)
+
+
+FilterPtr operator&&(FilterPtr f1, FilterPtr f2)
 {
-  return FilterPtr(new AND(*this, f2));
+    return AND::create(f1, f2);
 }
 
-FilterPtr Filter::operator!()
+
+
+FilterPtr operator!(FilterPtr f)
 {
-  return FilterPtr(new NOT(*this));
+    return NOT::create(f);
 }
+
 
 }
 }

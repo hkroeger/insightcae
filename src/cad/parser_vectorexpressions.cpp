@@ -136,6 +136,12 @@ void ISCADParser::createVectorExpressions()
     );
 
     ADD_VECTOR_FUNCTION(
+        "pointOnEdge",
+        ( '(' > r_solidmodel_expression > ',' > r_scalarExpression > ')' ),
+        [ _val = phx::bind(&PointOnEdgeCoords::create<ConstFeaturePtr, ScalarPtr>, qi::_1, qi::_2) ]
+        );
+
+    ADD_VECTOR_FUNCTION(
         "surfcog",
         ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceCOG>(qi::_1)) ]

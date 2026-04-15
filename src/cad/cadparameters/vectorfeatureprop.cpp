@@ -193,6 +193,40 @@ arma::mat insight::cad::CircleEdgeCenterCoords::calcValue() const
 
 
 
+insight::cad::PointOnEdgeCoords::PointOnEdgeCoords(const PointOnEdgeCoords&o, TreeCloneMap& tcm)
+    : CL(f_), CL(x_)
+{}
+
+insight::cad::PointOnEdgeCoords::PointOnEdgeCoords(ConstFeaturePtr f, ScalarPtr x)
+    : f_(f), x_(x)
+{}
+
+
+
+size_t insight::cad::PointOnEdgeCoords::calcHash() const
+{
+    ParameterListHash h;
+    h+=*f_;
+    h+=x_->hash();
+    return h.getHash();
+}
+
+arma::mat insight::cad::PointOnEdgeCoords::calcValue() const
+{
+    TopoDS_Edge e=TopoDS::Edge(f_->shape());
+    double a, b;
+    auto crv=BRep_Tool::Curve(e, a, b);
+    auto x=x_->value();
+    insight::assertion(
+        (x>=0.)&&(x<=1.),
+        "x value should be inside (0..1), got %g", x);
+    return vec3(crv->Value( x*b + (1.-x)*a) );
+}
+
+
+
+
+
 insight::cad::DatumPointCoord::DatumPointCoord(const DatumPointCoord &o, TreeCloneMap &tcm)
     : CL(pfs_)
 {}

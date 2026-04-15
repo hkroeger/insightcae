@@ -114,6 +114,27 @@ public:
 
 
 
+class PointOnEdgeCoords
+    : public insight::cad::Vector
+{
+    ConstFeaturePtr f_;
+    ScalarPtr x_;
+
+    PointOnEdgeCoords(const PointOnEdgeCoords&o, TreeCloneMap& tcm);
+    PointOnEdgeCoords(ConstFeaturePtr f, ScalarPtr x);
+public:
+#ifndef SWIG
+    DEPENDS((f_,x_));
+#endif
+    CLONEABLE(PointOnEdgeCoords);
+    CREATE_FUNCTION(PointOnEdgeCoords);
+
+    size_t calcHash() const override;
+    arma::mat calcValue() const override;
+};
+
+
+
 class DatumPointCoord
 : public insight::cad::Vector
 {

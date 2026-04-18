@@ -203,8 +203,8 @@ void ISCADParser::createScalarExpressions()
         "TableLookup",
         ( '(' > r_identifier > ','
            > r_identifier > ','
-         > r_scalarExpression > ','
-         > r_identifier
+           > r_scalarExpression > ','
+           > r_identifier
            > ( ( ',' > lit("nearest") > qi::attr(true) ) | qi::attr(false) )
            > ')' ),
         [ _val = phx::construct<ScalarPtr>(phx::new_<LookupTableScalar>(

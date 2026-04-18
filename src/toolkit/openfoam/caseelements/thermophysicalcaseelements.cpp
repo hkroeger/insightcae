@@ -567,5 +567,82 @@ void compressibleMixtureThermophysicalProperties::addIntoDictionaries(OFdicts& d
   }
 }
 
+
+std::pair<double, double>
+compressibleMixtureThermophysicalProperties::lumpSpecies(
+    const SpeciesMassFractionList &speciesToLump,
+    const std::string& lumpedSpecieName )
+{
+    auto mixprop = mixtureSpeciesData(speciesToLump);
+
+    for (const auto& rs: speciesToLump)
+    {
+        removeSpecie(rs.first);
+    }
+    addSpecie(lumpedSpecieName, mixprop);
+
+    return mixprop.temperatureLimits();
+}
+
+
+std::pair<double,double>
+compressibleMixtureThermophysicalProperties::commonTemperatureLimits(
+    const std::set<std::string>& spcs ) const
+{
+    std::pair<double,double> mima(0, 1e10);
+    auto species=this->species();
+
+    for (const auto& rs: spcs)
+    {
+        auto name = rs;
+
+        auto s = species.find(name);
+
+        if (s==species.end())
+            throw insight::Exception("Released specie "+name+" is not contained in fluid/composition list!");
+
+        if (const auto* sd = boost::get<SpeciesData>(&(s->second)))
+        {
+            auto tl = sd->temperatureLimits();
+            mima.first=std::max(mima.first, tl.first);
+            mima.second=std::min(mima.second, tl.second);
+        }
+        else
+        {
+            insight::Warning("Cannot analyze temperature limits of species if fromFile option was used in thermo case element!");
+        }
+    }
+
+    return mima;
+}
+
+SpeciesData compressibleMixtureThermophysicalProperties::mixtureSpeciesData(
+    const SpeciesMassFractionList &spcs) const
+{
+    SpeciesData::SpeciesMixture mix;
+    auto species=this->species();
+
+    for (const auto& rs: spcs)
+    {
+        auto name = rs.first;
+
+        auto s = species.find(name);
+
+        if (s==species.end())
+            throw insight::Exception("Released specie "+name+" is not contained in fluid/composition list!");
+
+        if (const auto* sd = boost::get<SpeciesData>(&(s->second)))
+        {
+            mix.push_back({rs.second, *sd});
+        }
+        else
+        {
+            throw insight::Exception("Cannot lump species if fromFile option was used in thermo case element!");
+        }
+    }
+    return SpeciesData(mix);
+}
+
+
 }
 

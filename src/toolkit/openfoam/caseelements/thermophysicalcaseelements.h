@@ -146,6 +146,26 @@ public:
   void addFields( OpenFOAMCase& c ) const override;
   void addIntoDictionaries(OFdicts& dictionaries) const override;
 
+  /**
+     * @brief lumpSpeciesIfRequired
+     * modifies the object so
+     * that the mixture is lumped into single specie.
+     * The individual species are removed and the lumped specie is added
+     * @param th
+     * The thermo case element to be modified
+     * @return
+     * the temperature range for setting up limiters
+     */
+  std::pair<double,double> lumpSpecies(
+        const SpeciesMassFractionList& speciesToLump,
+        const std::string& lumpedSpecieName );
+
+
+  std::pair<double,double> commonTemperatureLimits(
+      const std::set<std::string>& species ) const;
+
+  SpeciesData mixtureSpeciesData(
+      const SpeciesMassFractionList& species ) const;
 };
 
 

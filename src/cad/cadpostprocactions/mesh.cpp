@@ -350,12 +350,12 @@ void Mesh::insertrule(parser::ISCADParser& ruleset)
         (
             "gmsh",
             std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
-                ( qi::lit("gmsh") > '(' > ruleset.r_path > ')' > qi::lit("<<")
+                ( '(' > ruleset.r_path > ')' > qi::lit("<<")
                   > ruleset.r_solidmodel_expression
                   > qi::hold[ qi::lit("L") > '=' > '(' > ruleset.r_scalarExpression > ruleset.r_scalarExpression > ')' ] // Lmax, Lmin
                   > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
                   > qi::hold[
-                     ( ( qi::lit("vertexGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vertexFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) ) ) > ')' ) | qi::attr(GroupsDesc()) )
+                    ( ( qi::lit("vertexGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vertexFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) ) ) > ')' ) | qi::attr(GroupsDesc()) )
                   > ( ( qi::lit("edgeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_edgeFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
                   > ( ( qi::lit("faceGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_faceFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
                   > ( ( qi::lit("volumeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )

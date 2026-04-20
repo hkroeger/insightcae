@@ -163,6 +163,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
         | r_filter_and
             [ qi::_val = qi::_1 ]
         ;
+    r_filter_or.name("or");
 
     r_filter_and =
         ( r_filter_primary >> lit("&&") > r_filter_primary )
@@ -171,6 +172,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
         | r_filter_primary
             [ qi::_val = qi::_1 ]
         ;
+    r_filter_and.name("and");
 
     r_filter_primary =
         ( r_filter_functions ) [ qi::_val = qi::_1 ]
@@ -203,6 +205,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
         ( '!' >> r_filter_primary )
             [ qi::_val = phx::bind(&NOT::create<FilterArg>, qi::_1) ]
         ;
+    r_filter_primary.name("filter primary");
 
     r_qty_comparison =
         ( r_scalar_qty_expression >> lit("==") >> r_scalar_qty_expression )
@@ -235,6 +238,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
                 &lessequal<double, double>::create<QCArg<double>,QCArg<double> >,
                                 qi::_1, qi::_2) ]
         ;
+    r_qty_comparison.name("filter quantity comparison");
 
     r_scalar_qty_expression =
         r_scalar_term [qi::_val=qi::_1] >>
@@ -246,6 +250,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
                 [ qi::_val = phx::bind(&subtracted<double,double>::create, qi::_val, qi::_1) ]
             )
         ;
+    r_scalar_qty_expression.name("filter scalar quantity expression");
 
     r_scalar_term =
         (
@@ -262,6 +267,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
         ( r_mat_primary >> '&' >> r_mat_primary )
             [ qi::_val = phx::bind(dotted<arma::mat,arma::mat>::create, qi::_1, qi::_2) ]
         ;
+    r_scalar_term.name("filter scalar quantity term");
 
     r_scalar_primary =
         double_
@@ -309,6 +315,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
         | ( r_mat_qty_expression >> '.' >> 'z' )
             [ _val = phx::bind(&compZ<arma::mat>::create, qi::_1) ]
         ;
+    r_scalar_primary.name("filter scalar quantity primary");
 
     r_mat_qty_expression =
         r_mat_term [ qi::_val = qi::_1 ]
@@ -321,6 +328,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
                 [ qi::_val = phx::bind(&subtracted<arma::mat,arma::mat>::create, qi::_val, qi::_1) ]
             )
         ;
+    r_mat_qty_expression.name("filter matrix quantity expression");
 
     r_mat_term =
         (
@@ -337,6 +345,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
                 )
             )
         ;
+    r_mat_term.name("filter matrix quantity term");
 
     r_mat_primary =
         ( '[' >> double_ >> ',' >> double_ >> ',' >> double_ >> ']' )
@@ -354,6 +363,7 @@ FeatureFilterExprParser::FeatureFilterExprParser(
                ( &constantQuantity<arma::mat>::create< const arma::mat&>,
                     phx::bind(&lookupMat, externalFeatureSets_, qi::_1) ) ];
     ;
+    r_mat_primary.name("filter matrix quantity primary");
 
 
     on_error<fail>(r_filter,

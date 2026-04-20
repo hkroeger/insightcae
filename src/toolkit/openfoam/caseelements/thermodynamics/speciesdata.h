@@ -2,6 +2,7 @@
 #define SPECIESDATA_H
 
 #include "base/parameterset.h"
+#include "base/units.h"
 #include "openfoam/openfoamdict.h"
 #include "base/propertylibrary.h"
 
@@ -210,10 +211,11 @@ public:
     SpeciesData(const Parameters& p);
     SpeciesData(const SpeciesMixture& mixture);
 
-    double M() const;
+    si::MolarWeight M() const; ///< kg/kmol
+    si::SpecificHeatCapacity R() const; ///< J/kg/K
 
-    double density(double T, double p) const;
-    double cp(double T, double p) const;
+    si::Density density(si::Temperature T, si::Pressure p) const;
+    si::SpecificHeatCapacity cp(si::Temperature T, si::Pressure p) const;
 
     std::string transportType() const;
     std::string thermoType() const;

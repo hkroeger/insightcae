@@ -596,7 +596,8 @@ struct EnableCreateFunction
     template<class... Args>
     static std::shared_ptr<Derived> create(Args... args)
     {
-        return std::make_shared<Derived>(std::forward<Args>(args)...);
+        return std::shared_ptr<Derived>(
+            new Derived(std::forward<Args>(args)...) );
     }
 };
 

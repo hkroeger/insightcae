@@ -2,6 +2,7 @@
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/units.h"
 
 
 namespace insight {
@@ -93,8 +94,13 @@ SpeciesLibrary::SpeciesLibrary()
                                               std::back_inserter(data->elements),
                                               [](const OFDictData::dict::value_type& e)
                                               {
-                                                  return SpeciesData::Parameters::properties_custom_type::elements_default_type
-                                                      {e.first, boost::get<int>(e.second)};
+                                                  return SpeciesData
+                                                      ::Parameters
+                                                      ::properties_custom_type
+                                                      ::elements_default_type
+                                                      { e.first,
+                                                       static_cast<double>(
+                                                           boost::get<int>(e.second)) };
                                               }
                                               );
                                 }
@@ -348,12 +354,13 @@ SpeciesData::SpeciesData(
 
     Parameters::properties_custom_type::elements_type elements;
 
-    double wtotal=0.0, Mq=0.;
+    double wtotal=0.0;
+    boost::units::quantity<decltype(si::mole/si::kilogram),double> iMq{};
     for (auto s=mixture.begin(); s!=mixture.end(); ++s)
     {
-        Mq+=s->first / s->second.M();
+        iMq+=s->first / s->second.M();
     }
-    Mq=1./Mq;
+    si::MolarWeight Mq=1./iMq;
 
     for (auto s=mixture.begin(); s!=mixture.end(); ++s)
     {
@@ -445,7 +452,7 @@ SpeciesData::SpeciesData(
 
 
 
-double SpeciesData::M() const
+si::MolarWeight SpeciesData::M() const
 {
     double result=0;
 
@@ -459,28 +466,39 @@ double SpeciesData::M() const
         result += e.number * ed->second.M;
     }
 
-    return result;
+    return result*si::kilogram/(1000.*si::mole);
 }
 
 
-double SpeciesData::density(double T, double p) const
-{
-    const double RRjoule = 8314.51; // kJ/kg-mol-K
 
+si::SpecificHeatCapacity SpeciesData::R() const
+{
+    return si::constants::codata::R / M();
+}
+
+
+
+
+si::Density SpeciesData::density(si::Temperature T, si::Pressure p) const
+{
     if (boost::get<Parameters::properties_custom_type::equationOfState_perfectGas_type>(
             &p_.equationOfState))
     {
-        double MM=M();
-        return p/(RRjoule/MM)/T;
+        return p/R()/ (toValue(T, si::degK)*si::kelvin);
     }
     else
         throw insight::Exception("option not implemented");
 
-    return 1.;
+    return 1.*si::kilogram/pow<3>(si::meter);
 }
 
-double SpeciesData::cp(double T, double p) const
+
+
+
+si::SpecificHeatCapacity SpeciesData::cp(si::Temperature Temp, si::Pressure p) const
 {
+    double T=toValue(Temp, si::degK);
+
     auto evalPoly = [](double T, const arma::mat& a)
     {
         return ((((a[4]*T + a[3])*T + a[2])*T + a[1])*T + a[0]);
@@ -488,18 +506,23 @@ double SpeciesData::cp(double T, double p) const
 
     if (const auto *ct = boost::get<Parameters::properties_custom_type::thermo_constant_type>(&p_.thermo))
     {
-        return ct->Cp;
+        return ct->Cp * si::joule/si::kilogram/si::kelvin;  // J/kg/K
     }
     else if (const auto *jt = boost::get<Parameters::properties_custom_type::thermo_janaf_type>(&p_.thermo))
     {
         if (T<jt->Tmid)
-            return evalPoly(T, jt->coeffs_lo);
+        {
+            return evalPoly(T, jt->coeffs_lo)*R();
+        }
         else
-            return evalPoly(T, jt->coeffs_hi);
+        {
+            return evalPoly(T, jt->coeffs_hi)*R();
+        }
     }
     else
         throw insight::Exception("cp computation not implemented");
-    return 0.;
+
+    return si::SpecificHeatCapacity();
 }
 
 
@@ -600,7 +623,7 @@ std::string SpeciesData::equationOfStateType() const
 void SpeciesData::insertSpecieEntries(OFDictData::dict& d) const
 {
     OFDictData::dict specie;
-    specie["molWeight"]=M();
+    specie["molWeight"]=toValue(M(), si::kilogram/si::kilomole);
     d["specie"]=specie;
 }
 

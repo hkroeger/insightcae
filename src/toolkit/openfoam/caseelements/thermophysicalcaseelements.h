@@ -164,8 +164,10 @@ public:
   std::pair<double,double> commonTemperatureLimits(
       const std::set<std::string>& species ) const;
 
+#ifndef SWIG
   SpeciesData mixtureSpeciesData(
       const SpeciesMassFractionList& species ) const;
+#endif
 };
 
 

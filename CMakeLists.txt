@@ -174,7 +174,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 
 ## DEBUG
-if (WIN32)
+if (WIN32 AND (CMAKE_BUILD_TYPE STREQUAL "Debug"))
 #  # Root CMakeLists.txt — strip -g out of the Debug flag string
 #  string(REGEX REPLACE "-g[0-9]?" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 #  # CMAKE_CXX_FLAGS_DEBUG is now just "-O0" (or whatever remains)

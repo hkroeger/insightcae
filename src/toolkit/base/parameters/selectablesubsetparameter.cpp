@@ -229,7 +229,7 @@ SelectableSubsetParameter::copyItems() const
     result.insert(
         {
          sp.first,
-         sp.second->cloneAs<ParameterSet>()
+         sp.second->cloneAsUninitialized<ParameterSet>()
         });
   }
   return result;
@@ -513,7 +513,9 @@ void SelectableSubsetParameter::assignFrom(const Element &p)
         }
         else
         {
-            addItem(ov.first, ov.second->cloneAs<ParameterSet>());
+            addItem(
+                ov.first,
+                ov.second->cloneAsUninitialized<ParameterSet>());
         }
     }
 
@@ -601,7 +603,7 @@ SelectableSubsetParameter::intersection(
           {
               np->addItem(
                   key,
-                  issp->cloneAs<ParameterSet>() );
+                  issp->cloneAsUninitialized<ParameterSet>() );
           }
       }
     }

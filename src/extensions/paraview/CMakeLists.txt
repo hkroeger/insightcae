@@ -2,6 +2,9 @@ project(paraviewextensions)
 
 install_package_script(Paraview __init__.py)
 #install(files __init__.py destination share/insight/python/Insight/Paraview)
+copy_shared_files(paraview_addons paraview-addons
+     regex_block_extractor.py
+)
 
 if (MED_DIR)
     list(APPEND VTK_CMAKE_ADDARGS "-DMED3HOME=${MED_DIR}")

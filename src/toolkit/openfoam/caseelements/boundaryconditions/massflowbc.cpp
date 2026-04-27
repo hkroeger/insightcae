@@ -68,9 +68,23 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
-            BC["type"]=OFDictData::data ( "inletOutlet" );
-            BC["inletValue"]=OFDictData::toUniformField( p().T );
-            BC["value"]=OFDictData::toUniformField( p().T );
+            if (auto* Tstatic=boost::get<Parameters::temperature_staticTemperature_type>(
+                    &p().temperature))
+            {
+                BC["type"]=OFDictData::data ( "inletOutlet" );
+                BC["inletValue"]=OFDictData::toUniformField( Tstatic->T );
+                BC["value"]=OFDictData::toUniformField( Tstatic->T );
+            }
+            else if (auto* Ttot=boost::get<Parameters::temperature_totalTemperature_type>(
+                    &p().temperature))
+            {
+                BC["type"]=OFDictData::data ( "totalTemperature" );
+                BC["gamma"]=1.4;
+                BC["T0"]=OFDictData::toUniformField( Ttot->T0 );
+                BC["value"]=OFDictData::toUniformField( Ttot->T0 );
+            }
+            else
+                throw UnhandledSelection();
         } else if (isPrghPressureField(field)) {
             if ( OFversion() >=210 ) {
                 BC["type"]=OFDictData::data ( "fixedFluxPressure" );

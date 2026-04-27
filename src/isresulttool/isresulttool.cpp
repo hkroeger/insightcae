@@ -366,13 +366,16 @@ int main(int argc, char *argv[])
           insight::assertion( boost::filesystem::exists(inpath),
                               "input file "+inpath.string()+" does not exist!" );
 
-          cout<<"Reading results file "<<inpath<<"..."<<flush;
-          auto result=ResultSet::createFromFile(
-              boost::filesystem::path(fn),
-              std::move(deflPtr) );
+          {
+              cout<<"Reading results file "<<inpath<<"..."<<flush;
+              auto result=ResultSet::createFromFile(
+                  boost::filesystem::path(fn),
+                  std::move(deflPtr) );
 
-          results.push_back( std::move(result) );
-          cout<<"done."<<endl;
+              results.push_back( std::move(result) );
+              cout<<"done."<<endl;
+          }
+          auto result=results.back().get();
 
           if (vm.count("list"))
           {

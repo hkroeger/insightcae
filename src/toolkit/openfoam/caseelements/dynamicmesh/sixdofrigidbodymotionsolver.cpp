@@ -200,8 +200,6 @@ void SixDOFRigidBodyMotionSolver::addIntoDict(OFDictData::dict& rbmc) const
     {
         insertExtendedMotionParameters(rbmc, p(), *impl);
 
-        rbmc["relativeMovingBodies"]=OFDictData::list();
-
         OFDictData::list rudders;
         for (const auto& r: impl->rudders)
         {

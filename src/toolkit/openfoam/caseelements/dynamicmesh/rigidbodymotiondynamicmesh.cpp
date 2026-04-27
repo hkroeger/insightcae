@@ -13,7 +13,7 @@ addToOpenFOAMCaseElementFactoryTable(rigidBodyMotionDynamicMesh);
 
 rigidBodyMotionDynamicMesh::rigidBodyMotionDynamicMesh(
     OpenFOAMCase& c, ParameterSetInput ip )
-: dynamicMesh(c, ip.forward<Parameters>())
+: rigidBodyMotionBasedDynamicMesh(c, ip.forward<Parameters>())
 {
 }
 

@@ -10,22 +10,17 @@
 namespace insight {
 
 class dynamicOversetFvMesh
-    : public dynamicMesh
+    : public rigidBodyMotionBasedDynamicMesh
 {
 public:
 #include "dynamicoversetfvmesh__dynamicOversetFvMesh__Parameters.h"
 /*
 PARAMETERSET>>> dynamicOversetFvMesh Parameters
-inherits dynamicMesh::Parameters
-
-rigidBodyMotion = includedset "SixDOFRigidBodyMotionSolver::Parameters" "Parameters of the rigid body motion solver"
+inherits rigidBodyMotionBasedDynamicMesh::Parameters
 
 createGetter
 <<<PARAMETERSET
 */
-
-// protected:
-//     ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
 
 public:
   declareType ( "dynamicOversetFvMesh" );

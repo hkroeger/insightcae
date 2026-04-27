@@ -351,6 +351,7 @@ add_library(toolkit SHARED
     openfoam/caseelements/evaluation/calculatetotalpressure.cpp openfoam/caseelements/evaluation/calculatetotalpressure.h
     base/actionprogress.h base/actionprogress.cpp
     base/elementpath.h base/elementpath.cpp
+    openfoam/caseelements/dynamicmesh/solidbodymotionfunction.h openfoam/caseelements/dynamicmesh/solidbodymotionfunction.cpp
 
 
 )

@@ -12,20 +12,37 @@
 #include <QDockWidget>
 #include <QToolBox>
 
+#include <map>
+
 class CADEntityMultiSelection
     : public QObject,
       public std::set<IQCADModel3DViewer::CADEntity>
 {
     Q_OBJECT
 
-    std::unique_ptr<insight::ParameterSet> commonParameters_, defaultCommonParameters_;
+    struct TopLevelEntry { std::string label; std::string absPath; };
+
     IQVTKCADModel3DViewer& viewer_;
 
     QWidget *editorContainerWidget_;
     ParameterEditorWidget* editorWidget_;
 
+    // Current entity1 top-level entries that are common to all selected entities
+    std::vector<TopLevelEntry> currentEntries_;
+    // entity1 absPath -> [entity2 absPath, entity3 absPath, ...] (for copy-on-change)
+    std::map<std::string, std::vector<std::string>> copyMapping_;
+    // guard: prevent recursive copy
+    bool copyingInProgress_ = false;
+    // handle for the copy-on-change connection
+    QMetaObject::Connection copyConnection_;
+
     void showParameterEditor();
     void removeParameterEditor();
+    void rebuildEditor();
+
+    std::vector<std::string> getParamListForFeature(const insight::cad::FeaturePtr& feat) const;
+    std::vector<TopLevelEntry> getTopLevelEntries(const std::vector<std::string>& assocParamPaths,
+                                                   QAbstractItemModel* apsm) const;
 
 public:
     CADEntityMultiSelection(IQVTKCADModel3DViewer& viewer);
@@ -75,6 +92,8 @@ public:
         Qt::MouseButtons btn,
         Qt::KeyboardModifiers nFlags,
         const QPoint point ) override;
+
+    bool onKeyPress(Qt::KeyboardModifiers modifiers, int key) override;
 
     void start() override;
 };

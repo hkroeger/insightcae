@@ -388,6 +388,61 @@ arma::mat nonlinearSolveND(
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 
+/**
+ * Computes a variance-based convergence measure (Coefficient of Variation)
+ * over a trailing window for each column of the input matrix.
+ *
+ * For each row i and column j the result is:
+ *   CoV = stddev / |mean|   when |mean| > eps  (dimensionless, scale-free)
+ *   CoV = stddev / range    when |mean| <= eps and range > eps  (near-zero mean)
+ *   CoV = stddev            otherwise (near-constant near-zero signal)
+ *
+ * The result converges to zero as the signal stabilises.
+ *
+ * @param values   n x m matrix; each row is one sample (iteration / time step),
+ *                 each column is one component of the quantity to monitor.
+ * @param fraction trailing window size as a fraction of total rows (default 0.1 = 10 %).
+ * @return         n x m matrix of CoV values with the same shape as input.
+ */
+arma::mat convergenceByVariance(const arma::mat& values, double fraction=0.1);
+
+/**
+ * Incremental variant of convergenceByVariance.
+ *
+ * Accepts samples one at a time via operator() and maintains the full
+ * history of input values and their CoV-based convergence measure.
+ * The trailing window grows with the total sample count:
+ *   windowSize = max(2, round(fraction * n_total))
+ * so behaviour is consistent with the batch function.
+ */
+class ConvergenceByVariance
+{
+public:
+    explicit ConvergenceByVariance(double fraction=0.1);
+
+    /**
+     * Append one new sample (row-vector, one element per quantity component).
+     * Recomputes the current window size, evaluates CoV, appends to history.
+     * @return  CoV row-vector for the newly appended sample.
+     */
+    arma::rowvec operator()(const arma::rowvec& sample);
+
+    /** All input samples appended so far (n_samples x n_cols). */
+    const arma::mat& values() const;
+
+    /** CoV history parallel to values() (n_samples x n_cols). */
+    const arma::mat& convergenceMeasure() const;
+
+private:
+    double       fraction_;
+    arma::mat    values_;        // full input history (for values() accessor and x_old lookup)
+    arma::mat    result_;        // full CoV history
+    double       globalAbsMax_; // running max(|x|) for eps scaling
+    arma::rowvec mean_;          // per-column running mean of current window
+    arma::rowvec M2_;            // per-column running sum of squared deviations
+    arma::uword  windowSize_;    // current window size
+};
+
 arma::mat sortedByCol(const arma::mat&m, int c);
 
 /**

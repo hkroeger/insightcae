@@ -10,6 +10,8 @@
 #include <QToolBox>
 #include <QLabel>
 
+#include <vector>
+
 #include "iqcaditemmodel.h"
 #include "constrainedsketch.h"
 #include "iqparametersetmodel.h"
@@ -63,6 +65,20 @@ public:
     virtual QColor getBackgroundColor() const =0;
 
     virtual void setSelectionModel(QItemSelectionModel *selmodel);
+    virtual QItemSelectionModel* selectionModel() const { return nullptr; }
+
+    virtual void externallySelectByModelIndex(const QModelIndex& /*sourceModelIdx*/) {}
+    virtual void externallyDeselectByModelIndex(const QModelIndex& /*sourceModelIdx*/) {}
+    virtual void externallySelectByModelIndices(const std::vector<QModelIndex>& indices)
+    { for (const auto& idx : indices) externallySelectByModelIndex(idx); }
+    virtual void externallyDeselectByModelIndices(const std::vector<QModelIndex>& indices)
+    { for (const auto& idx : indices) externallyDeselectByModelIndex(idx); }
+    virtual void externallyClearViewerSelection() {}
+
+Q_SIGNALS:
+    void viewerEntitySelected(QPersistentModelIndex sourceModelIdx);
+    void viewerEntityDeselected(QPersistentModelIndex sourceModelIdx);
+    void viewerSelectionCleared();
 
 public Q_SLOT:
     virtual void exposeItem( insight::cad::FeaturePtr feat ) =0;

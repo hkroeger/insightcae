@@ -457,6 +457,13 @@ public:
     ItemAtCursor findUnderCursorAt(const QPoint& clickPos) const;
 
     void setSelectionModel(QItemSelectionModel *selmodel) override;
+    QItemSelectionModel* selectionModel() const override;
+
+    void externallySelectByModelIndex(const QModelIndex& sourceModelIdx) override;
+    void externallyDeselectByModelIndex(const QModelIndex& sourceModelIdx) override;
+    void externallySelectByModelIndices(const std::vector<QModelIndex>& indices) override;
+    void externallyDeselectByModelIndices(const std::vector<QModelIndex>& indices) override;
+    void externallyClearViewerSelection() override;
 
     arma::mat pointInPlane3D(const gp_Ax3& plane, const arma::mat& pip2d) const;
     arma::mat pointInPlane3D(const gp_Ax3& plane, const QPoint& screenPos) const;

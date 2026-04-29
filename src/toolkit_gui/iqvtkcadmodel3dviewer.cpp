@@ -1740,7 +1740,7 @@ void IQVTKCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
 //        }
 //    );
 
-    connect(customSelectionModel_, &QItemSelectionModel::currentChanged, customSelectionModel_,
+    connect(customSelectionModel_, &QItemSelectionModel::currentChanged, this,
         [this](const QModelIndex &current, const QModelIndex &previous)
         {
             if (current.isValid())
@@ -1757,6 +1757,70 @@ void IQVTKCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
             }
         }
     );
+}
+
+
+
+
+QItemSelectionModel* IQVTKCADModel3DViewer::selectionModel() const
+{
+    return customSelectionModel_ ? customSelectionModel_ : defaultSelectionModel_;
+}
+
+void IQVTKCADModel3DViewer::externallySelectByModelIndex(const QModelIndex& sourceModelIdx)
+{
+    auto it = displayedData_.find(QPersistentModelIndex(sourceModelIdx.siblingAtColumn(0)));
+    if (it == displayedData_.end()) return;
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+        a->externallySelect(it->second.ce_);
+}
+
+void IQVTKCADModel3DViewer::externallyDeselectByModelIndex(const QModelIndex& sourceModelIdx)
+{
+    auto it = displayedData_.find(QPersistentModelIndex(sourceModelIdx.siblingAtColumn(0)));
+    if (it == displayedData_.end()) return;
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+        a->externallyUnselect(it->second.ce_);
+}
+
+void IQVTKCADModel3DViewer::externallySelectByModelIndices(
+    const std::vector<QModelIndex>& indices)
+{
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+    {
+        std::vector<IQCADModel3DViewer::CADEntity> entities;
+        entities.reserve(indices.size());
+        for (const auto& idx : indices)
+        {
+            auto it = displayedData_.find(QPersistentModelIndex(idx.siblingAtColumn(0)));
+            if (it != displayedData_.end())
+                entities.push_back(it->second.ce_);
+        }
+        a->externallySelectList(entities);
+    }
+}
+
+void IQVTKCADModel3DViewer::externallyDeselectByModelIndices(
+    const std::vector<QModelIndex>& indices)
+{
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+    {
+        std::vector<IQCADModel3DViewer::CADEntity> entities;
+        entities.reserve(indices.size());
+        for (const auto& idx : indices)
+        {
+            auto it = displayedData_.find(QPersistentModelIndex(idx.siblingAtColumn(0)));
+            if (it != displayedData_.end())
+                entities.push_back(it->second.ce_);
+        }
+        a->externallyUnselectList(entities);
+    }
+}
+
+void IQVTKCADModel3DViewer::externallyClearViewerSelection()
+{
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+        a->clearSelection();
 }
 
 

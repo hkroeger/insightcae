@@ -65,6 +65,15 @@ boost::filesystem::path
 geometryDir(const OpenFOAMCase& cm, const boost::filesystem::path& caseDir);
 
 
+/**
+ * @brief cleanedName
+ * modifies a string so that it is suitable as a patchname in OpenFOAM,
+ * i.e. no spaces, umlauts, dashes...
+ * @param fn
+ * input string
+ * @return
+ * cleaned string
+ */
 std::string cleanedName(const std::string& fn);
 
 }

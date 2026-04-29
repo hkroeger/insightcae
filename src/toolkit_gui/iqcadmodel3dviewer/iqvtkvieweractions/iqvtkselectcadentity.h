@@ -30,7 +30,7 @@ class CADEntityMultiSelection
     // Current entity1 top-level entries that are common to all selected entities
     std::vector<TopLevelEntry> currentEntries_;
     // entity1 absPath -> [entity2 absPath, entity3 absPath, ...] (for copy-on-change)
-    std::map<std::string, std::vector<std::string>> copyMapping_;
+    std::map<std::string, std::set<std::string> > copyMapping_;
     // guard: prevent recursive copy
     bool copyingInProgress_ = false;
     // handle for the copy-on-change connection
@@ -49,7 +49,14 @@ public:
     ~CADEntityMultiSelection();
 
     void insert(IQCADModel3DViewer::CADEntity entity);
+    void insertMany(const std::vector<IQCADModel3DViewer::CADEntity>& entities);
     void erase(IQCADModel3DViewer::CADEntity entity);
+    void eraseMany(const std::vector<IQCADModel3DViewer::CADEntity>& entities);
+
+Q_SIGNALS:
+    void entityInserted(IQCADModel3DViewer::CADEntity entity);
+    void entityErased(IQCADModel3DViewer::CADEntity entity);
+    void selectionCleared();
 };
 
 
@@ -96,6 +103,11 @@ public:
     bool onKeyPress(Qt::KeyboardModifiers modifiers, int key) override;
 
     void start() override;
+
+private Q_SLOTS:
+    void onEntityInserted(IQCADModel3DViewer::CADEntity entity);
+    void onEntityErased(IQCADModel3DViewer::CADEntity entity);
+    void onSelectionCleared();
 };
 
 

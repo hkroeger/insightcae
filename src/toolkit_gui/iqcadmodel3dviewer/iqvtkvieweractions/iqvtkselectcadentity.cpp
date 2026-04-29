@@ -2,6 +2,8 @@
 #include "iqfilteredparametersetmodel.h"
 #include "iqparametersetmodel.h"
 
+#include "base/elementpath.h"
+
 #include <QCheckBox>
 #include <QToolBar>
 
@@ -74,18 +76,33 @@ CADEntityMultiSelection::getTopLevelEntries(
     std::vector<TopLevelEntry> result;
     if (assocParamPaths.empty()) return result;
 
-    // Temporary model — QObject destructor auto-disconnects apsm signals on exit
-    IQFilteredParameterSetModel tmp(assocParamPaths, nullptr);
-    tmp.setSourceModel(apsm);
+    auto* psm = parameterSetModel(apsm);
 
-    for (int i = 0; i < tmp.rowCount(); ++i)
+    auto addFromIndex = [&](QModelIndex idx)
     {
         std::string label =
-            tmp.data(tmp.index(i, 0), Qt::DisplayRole).toString().toStdString();
-        std::string absPath =
-            tmp.data(tmp.index(i, IQParameterSetModel::stringPathCol))
-               .toString().toStdString();
-        result.push_back({label, absPath});
+            psm->data(idx, Qt::DisplayRole).toString().toStdString();
+        auto path = psm->elementOfIndex(idx)->path();
+        result.push_back({label, path});
+    };
+
+    for (const auto& path : assocParamPaths)
+    {
+        insight::ElementPath ep(path);
+        if (ep.back()!="*")
+        {
+            auto idx = psm->indexOfPath(path, IQParameterSetModel::labelCol);
+            addFromIndex(idx);
+        }
+        else
+        {
+            ep.erase(--ep.end()); // remove "/*"
+            auto pidx = psm->indexOfPath(ep, IQParameterSetModel::labelCol);
+            for (int r=0; r<psm->rowCount(pidx); ++r)
+            {
+                addFromIndex(psm->index(r, 0, pidx));
+            }
+        }
     }
     return result;
 }
@@ -106,6 +123,7 @@ CADEntityMultiSelection::CADEntityMultiSelection(
 
 CADEntityMultiSelection::~CADEntityMultiSelection()
 {
+    if (!empty()) emit selectionCleared();
     removeParameterEditor();
 }
 
@@ -162,7 +180,11 @@ void CADEntityMultiSelection::rebuildEditor()
                     { ++usedIdx; continue; }
                 } catch (...) { continue; }
 
-                copyMapping_[ce.absPath].push_back(entries[it->second[usedIdx++]].absPath);
+                auto tba=entries[it->second[usedIdx++]].absPath;
+                if (tba!=ce.absPath)
+                {
+                    copyMapping_[ce.absPath].insert(tba);
+                }
                 newEntries.push_back(ce);
             }
             currentEntries_ = newEntries;
@@ -209,15 +231,18 @@ void CADEntityMultiSelection::rebuildEditor()
                         ? "" : changedPath.substr(P1.size() + 1);
 
                     copyingInProgress_ = true;
-                    for (auto& Pk : pkList)
                     {
-                        std::string targetPath = relPath.empty() ? Pk : Pk + "/" + relPath;
-                        try {
-                            psm->parameterRef(targetPath)
-                               .assignFrom(psm->parameterRef(changedPath));
-                            psm->notifyElementChange(psm->parameterRef(targetPath));
-                        } catch (...) {}
-                    }
+                        auto bulkGuard = psm->beginBulkUpdate();
+                        for (auto& Pk : pkList)
+                        {
+                            std::string targetPath = relPath.empty() ? Pk : Pk + "/" + relPath;
+                            try {
+                                psm->parameterRef(targetPath)
+                                   .assignFrom(psm->parameterRef(changedPath));
+                                psm->notifyElementChange(psm->parameterRef(targetPath));
+                            } catch (...) {}
+                        }
+                    }  // BulkUpdateGuard dtor: one undo state stored, bulkUpdateFinished emitted
                     copyingInProgress_ = false;
                     break;
                 }
@@ -234,6 +259,7 @@ void CADEntityMultiSelection::insert(
     if (count(entity) >= 1) // don't add multiple times
         return;
     std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
+    emit entityInserted(entity);
     rebuildEditor();
 }
 
@@ -243,10 +269,37 @@ void CADEntityMultiSelection::insert(
 void CADEntityMultiSelection::erase(IQCADModel3DViewer::CADEntity entity)
 {
     std::set<IQCADModel3DViewer::CADEntity>::erase(entity);
+    emit entityErased(entity);
     rebuildEditor();
 }
 
 
+void CADEntityMultiSelection::insertMany(
+    const std::vector<IQCADModel3DViewer::CADEntity>& entities)
+{
+    for (const auto& entity : entities)
+    {
+        if (count(entity) >= 1)
+            continue;
+        std::set<IQCADModel3DViewer::CADEntity>::insert(entity);
+        emit entityInserted(entity);
+    }
+    rebuildEditor();
+}
+
+
+void CADEntityMultiSelection::eraseMany(
+    const std::vector<IQCADModel3DViewer::CADEntity>& entities)
+{
+    for (const auto& entity : entities)
+    {
+        if (count(entity) < 1)
+            continue;
+        std::set<IQCADModel3DViewer::CADEntity>::erase(entity);
+        emit entityErased(entity);
+    }
+    rebuildEditor();
+}
 
 
 std::vector<IQCADModel3DViewer::CADEntity>
@@ -297,8 +350,19 @@ IQVTKCADModel3DViewer::HighlightingHandleSet IQVTKSelectCADEntity::highlightEnti
 
 IQVTKSelectCADEntity::IQVTKSelectCADEntity(IQVTKCADModel3DViewer& viewer)
     : IQVTKCADModel3DViewerSelectionLogic(
-        [&viewer]()
-        { return std::make_shared<CADEntityMultiSelection>(viewer); },
+        [this, &viewer]() {
+            auto ms = std::make_shared<CADEntityMultiSelection>(viewer);
+            connect(ms.get(), &CADEntityMultiSelection::entityInserted,
+                    this, &IQVTKSelectCADEntity::onEntityInserted,
+                    Qt::DirectConnection);
+            connect(ms.get(), &CADEntityMultiSelection::entityErased,
+                    this, &IQVTKSelectCADEntity::onEntityErased,
+                    Qt::DirectConnection);
+            connect(ms.get(), &CADEntityMultiSelection::selectionCleared,
+                    this, &IQVTKSelectCADEntity::onSelectionCleared,
+                    Qt::DirectConnection);
+            return ms;
+        },
         viewer,
         false // captureAllInput
     )
@@ -331,6 +395,25 @@ bool IQVTKSelectCADEntity::onMouseClick  (
     return IQVTKCADModel3DViewerSelectionLogic
         ::onMouseClick(btn, nFlags, point);
 }
+
+void IQVTKSelectCADEntity::onEntityInserted(IQCADModel3DViewer::CADEntity entity)
+{
+    for (auto& [midx, dd] : viewer().displayedData_)
+        if (dd.ce_ == entity) { viewer().viewerEntitySelected(midx); break; }
+}
+
+void IQVTKSelectCADEntity::onEntityErased(IQCADModel3DViewer::CADEntity entity)
+{
+    for (auto& [midx, dd] : viewer().displayedData_)
+        if (dd.ce_ == entity) { viewer().viewerEntityDeselected(midx); break; }
+}
+
+void IQVTKSelectCADEntity::onSelectionCleared()
+{
+    viewer().viewerSelectionCleared();
+}
+
+
 
 bool IQVTKSelectCADEntity::onKeyPress(
     Qt::KeyboardModifiers modifiers, int key)

@@ -367,7 +367,9 @@ Parameter &LabeledArrayParameter::getOrInsertDefaultValueImpl(const std::string 
     }
     else
     {
-        insertValueImpl(label, defaultValue_->cloneAs<Parameter>());
+        insertValueImpl(
+            label,
+            defaultValue_->cloneAsUninitialized<Parameter>() );
         return *v.at(label);
     }
 }
@@ -377,7 +379,7 @@ Parameter &LabeledArrayParameter::getOrInsertDefaultValueImpl(const std::string 
 
 void LabeledArrayParameter::appendEmpty()
 {
-    appendValue(defaultValue_->cloneAs<Parameter>());
+    appendValue(defaultValue_->cloneAsUninitialized<Parameter>());
 }
 
 void LabeledArrayParameter::insertWithDefaults(const std::string &label)
@@ -395,7 +397,9 @@ void LabeledArrayParameter::insertWithDefaultsImpl(const std::string &label)
     auto i=v.find(label);
     if (i==v.end())
     {
-        insertValueImpl(label, defaultValue_->cloneAs<Parameter>());
+        insertValueImpl(
+            label,
+            defaultValue_->cloneAsUninitialized<Parameter>());
     }
 }
 
@@ -840,7 +844,9 @@ void LabeledArrayParameter::assignFrom(const Element& oe)
         }
         else
         {
-            insertValueImpl(ov.first, ov.second->cloneAs<Parameter>() );
+            insertValueImpl(
+                ov.first,
+                ov.second->cloneAsUninitialized<Parameter>() );
         }
     }
 

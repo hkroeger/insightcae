@@ -2,7 +2,7 @@
 #define INSIGHT_SIXDOFRIGIDBODYMOTIONSOLVER_H
 
 #include "openfoam/openfoamdict.h"
-#include "openfoam/caseelements/dynamicmesh/solidbodymotiondynamicmesh.h"
+#include "openfoam/caseelements/dynamicmesh/solidbodymotionfunction.h"
 #include "sixdofrigidbodymotionsolver__SixDOFRigidBodyMotionSolver__Parameters_headers.h"
 
 namespace insight {

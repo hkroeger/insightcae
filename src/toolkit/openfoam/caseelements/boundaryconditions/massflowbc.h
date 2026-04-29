@@ -26,7 +26,16 @@ flowrate = selectablesubset {{
 }} massflow "Specification of flow rate through boundary."
 
 rho = double 1025.0 "Density at boundary"
-T = double 300.0 "Temperature at boundary"
+
+temperature = selectablesubset {{
+ staticTemperature set {
+   T = double 300.0 "Static temperature at boundary"
+ }
+ totalTemperature set {
+   T0 = double 300.0 "Total temperature at boundary"
+ }
+}} staticTemperature ""
+
 gamma = double 1.0 "Ratio of specific heats at boundary"
 phiName = string "phi" "Name of flux field"
 psiName = string "none" "Name of compressibility field"

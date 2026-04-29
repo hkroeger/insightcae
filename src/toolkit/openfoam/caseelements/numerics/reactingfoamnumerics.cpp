@@ -5,6 +5,7 @@
 #include "openfoam/openfoamcase.h"
 
 #include "openfoam/caseelements/turbulencemodel.h"
+#include "openfoam/caseelements/thermophysicalcaseelements.h"
 
 using namespace std;
 
@@ -125,6 +126,10 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     }
   }
 
+  auto &thermo=OFcase().findUniqueElement<compressibleMixtureThermophysicalProperties>();
+  auto speciesNames=thermo.speciesNames();
+
+  OFDictData::dict mvs;
   if (LES)
   {
     /*if (OFversion()>=220)
@@ -134,7 +139,21 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
     div["div(phid,p)"]="Gauss limitedLinear 1";
     div["div(phi,k)"]="Gauss limitedLinear 1";
-    div["div(phi,Yi_h)"]="Gauss limitedLinear 1";
+
+    std::string limitFactor;
+    switch (p().speciesTransportAccuracy)
+    {
+    case Parameters::speciesTransportAccuracy_type::accurate:
+        limitFactor="1";
+        break;
+    case Parameters::speciesTransportAccuracy_type::stable:
+        limitFactor="0.33";
+        break;
+    }
+    mvs["h"]="limitedLinear "+limitFactor;
+    for (auto &s: speciesNames)
+        mvs[s]="limitedLinear01 "+limitFactor;
+
     div["div(phi,epsilon)"]="Gauss limitedLinear 1";
     div["div(phi,omega)"]="Gauss limitedLinear 1";
     div["div(phi,nuTilda)"]="Gauss limitedLinear 1";
@@ -144,11 +163,27 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     div["div(phi,U)"]="Gauss linearUpwindV limitedGrad";
     div["div(phid,p)"]="Gauss limitedLinear 1";
     div["div(phi,k)"]="Gauss linearUpwind limitedGrad";
-    div["div(phi,Yi_h)"]="Gauss upwind";
+
+
+    switch (p().speciesTransportAccuracy)
+    {
+    case Parameters::speciesTransportAccuracy_type::accurate:
+        mvs["h"]="limitedLinear 1";
+        for (auto &s: speciesNames)
+            mvs[s]="limitedLinear01 1";
+        break;
+    case Parameters::speciesTransportAccuracy_type::stable:
+        mvs["h"]="upwind";
+        for (auto &s: speciesNames)
+            mvs[s]="upwind";
+        break;
+    }
+
     div["div(phi,epsilon)"]="Gauss linearUpwind limitedGrad";
     div["div(phi,omega)"]="Gauss linearUpwind limitedGrad";
     div["div(phi,nuTilda)"]="Gauss linearUpwind limitedGrad";
   }
+  div["div(phi,Yi_h) Gauss multivariateSelection"]=mvs;
 
   if (OFversion()>=600)
   {
@@ -172,6 +207,18 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
   fluxRequired[pName_]="";
+
+  if (p().lewisNumbers.size())
+  {
+      auto& thermophysicalProperties=
+          dictionaries.lookupDict("constant/thermophysicalProperties");
+
+      auto& lns=thermophysicalProperties.subDict("LewisNumbers");
+      for (auto &ln: p().lewisNumbers)
+      {
+          lns[ln.first]=ln.second;
+      }
+  }
 }
 
 

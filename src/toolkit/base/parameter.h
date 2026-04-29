@@ -140,6 +140,8 @@ public:
         return *this;
     }
 
+    inline T& wrappedValue() { return *this; }
+    inline const T& wrappedValue() const { return *this; }
     // operator const T&() const { return *this; }
 };
 

@@ -183,7 +183,7 @@ void ArrayParameter::appendEmptyImpl(bool initializeHierarchy)
     int i=value_.size();
     beforeChildInsertion(i, i);
 
-  value_.push_back ( defaultValue_->cloneAs<Parameter>() );
+  value_.push_back ( defaultValue_->cloneAsUninitialized<Parameter>() );
   // if (init) initialize();
 
   auto& ins=value_.back();

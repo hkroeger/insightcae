@@ -193,7 +193,7 @@ ParameterSet::Entries ParameterSet::copyEntries() const
         result.insert(
             {
              p.first,
-             p.second->cloneAs<Parameter>()
+             p.second->cloneAsUninitialized<Parameter>()
             });
     }
     return result;
@@ -704,7 +704,7 @@ void ParameterSet::assignFrom( const Element& rhs )
         {
             insert(
                 p.first,
-                p.second->cloneAs<Parameter>() );
+                p.second->cloneAsUninitialized<Parameter>() );
         }
         if (nonMatching.count(p.first))
             nonMatching.erase(p.first);
@@ -754,7 +754,7 @@ void ParameterSet::extend ( const Element& other )
     {
           insert(
             i.first,
-            i.second->cloneAs<Parameter>() );
+            i.second->cloneAsUninitialized<Parameter>() );
     }
   }
 }

@@ -480,7 +480,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
 #warning check handling of rho for incompressible case
                 inp.flowrate = mf;
                 inp.turbulence=turb;
-                inp.T=T;
+                inp.temperature=MassflowBC::Parameters::temperature_staticTemperature_type{ T };
                 cm.insert(new MassflowBC(cm, g.first, boundaryDict, inp));
             }
             else if (auto* vfl=boost::get<Parameters::geometry_default_type::role_inlet_type
@@ -491,7 +491,7 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm, ProgressDisplay
                 MassflowBC::Parameters::flowrate_volumetric_type mf = { vfl->Q };
                 inp.flowrate = mf;
                 inp.turbulence=turb;
-                inp.T=T;
+                inp.temperature=MassflowBC::Parameters::temperature_staticTemperature_type{T};
                 cm.insert(new MassflowBC(cm, g.first, boundaryDict, inp));
             }
             else if (auto* vfl=boost::get<Parameters::geometry_default_type::role_inlet_type::specification_vector_type>(

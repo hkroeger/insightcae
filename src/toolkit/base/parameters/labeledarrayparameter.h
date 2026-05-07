@@ -140,8 +140,19 @@ public:
         const std::string& name,
         const rapidxml::xml_node<>& node ) override;
 
+#ifndef SWIG
+    void appendEmptyUninitialized(ParameterSetBuilder::Key);
+
+    inline void setKeySourceParameterPathUninitialized(
+        ParameterSetBuilder::Key, const std::string& pp)
+    { setKeySourceParameterPathImpl(pp, false); };
+#endif
+
 protected:
     std::unique_ptr<Element> cloneUninitialized() const override;
+
+
+
 
 public:
     void assignFrom( const Element& rhs ) override;

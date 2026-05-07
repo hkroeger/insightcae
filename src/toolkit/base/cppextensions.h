@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <functional>
+#include <type_traits>
 #include <vector>
 #include <set>
 #include <iterator>
@@ -80,6 +81,14 @@ Container transform_copy(
 
 // taken from https://stackoverflow.com/a/3611374
 
+template<typename T, typename = void>
+struct has_push_back : std::false_type {};
+
+template<typename T>
+struct has_push_back<T, std::void_t<
+    decltype(std::declval<T&>().push_back(std::declval<typename T::value_type>()))
+>> : std::true_type {};
+
 template<class Container>
 class last_inserter_iterator
 /*: public std::_Outit*/
@@ -129,15 +138,19 @@ protected:
 
     typename Container::iterator get_insert_hint() const
     {
-        // Container is empty: no last element to insert ahead of; just insert at begin.
-        if (container.empty())
-            return container.begin();
+        if constexpr (has_push_back<Container>::value)
+        {
+            // Sequence containers (vector, deque, ...): insert(pos, val) inserts
+            // *before* pos, so end() appends correctly in all cases.
+            return container.end();
+        }
         else
         {
-            // Otherwise return iterator to last element in the container.  std::set wants the
-            // element *preceding* the insert position as a hint, so this should be an iterator
-            // to the last actual element, not end().
-            return (--container.end());
+            // Associative containers (set, map, ...): insert(hint, val) uses hint
+            // as a search hint. Last element is the right hint for ordered appending.
+            if (container.empty())
+                return container.end();
+            return --container.end();
         }
     }
 };

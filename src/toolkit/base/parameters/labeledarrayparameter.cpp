@@ -382,6 +382,17 @@ void LabeledArrayParameter::appendEmpty()
     appendValue(defaultValue_->cloneAsUninitialized<Parameter>());
 }
 
+
+void LabeledArrayParameter::appendEmptyUninitialized(ParameterSetBuilder::Key)
+{
+    insertValueImpl(
+        findUniqueNewKey(),
+        defaultValue_->cloneAsUninitialized<Parameter>(),
+        false );
+}
+
+
+
 void LabeledArrayParameter::insertWithDefaults(const std::string &label)
 {
     insight::assertion(
@@ -764,6 +775,8 @@ LabeledArrayParameter::readFromNode (
     }
     return child;
 }
+
+
 
 
 

@@ -114,7 +114,7 @@ void LabeledArrayGenerator::cppWriteCreateStatement
     else if (argType==KeysPath)
     {
         auto keyPath = patternOrKeysPath;
-        os<<psvarname<<"->setKeySourceParameterPath(\""<<keyPath<<"\");";
+        os<<psvarname<<"->setKeySourceParameterPathUninitialized(ParameterSetBuilder::key(), \""<<keyPath<<"\");";
     }
 
     value->cppWriteCreateStatement(os, name+"_default_value");
@@ -123,7 +123,7 @@ void LabeledArrayGenerator::cppWriteCreateStatement
     if (num>0)
     {
         os<<"for (size_t i=0; i<"<<num<<"; i++) "
-           <<psvarname<<"->appendEmpty();\n";
+           <<psvarname<<"->appendEmptyUninitialized(ParameterSetBuilder::key());\n";
     }
     os<<"}\n";
 }

@@ -180,7 +180,7 @@ skip_grammar::skip_grammar()
     : skip_grammar::base_type(skip, "PL/0")
 {
     skip
-        =   boost::spirit::ascii::space
+        =   qi::char_(" \t\n\r\f\v") // not isspace since this causes segfault with non-ascii-characters
             | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
             | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
             | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]

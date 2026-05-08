@@ -182,8 +182,8 @@ skip_grammar::skip_grammar()
     skip
         =   qi::char_(" \t\n\r\f\v") // not isspace since this causes segfault with non-ascii-characters
             | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
-            | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
-            | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+            | ("//" >> *(qi::char_ - qi::eol))
+            | ("#"  >> *(qi::char_ - qi::eol))
             ;
 }
 

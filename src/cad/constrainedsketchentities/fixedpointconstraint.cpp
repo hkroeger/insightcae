@@ -36,6 +36,20 @@ arma::mat FixedPointConstraint::symbolLocation() const
     return p_->value();
 }
 
+std::pair<double,double> FixedPointConstraint::getXY() const
+{
+    return {
+        parameters().getDouble("x"),
+        parameters().getDouble("y")
+    };
+}
+
+void FixedPointConstraint::setXY(const std::pair<double,double>& xy)
+{
+    parametersRef().setDouble("x", xy.first);
+    parametersRef().setDouble("y", xy.second);
+}
+
 
 int FixedPointConstraint::nConstraints() const
 {
@@ -101,10 +115,10 @@ void FixedPointConstraint::addParserRule(
         (
             typeName,
             ( '('
-             > qi::int_ > ','
-             > qi::int_
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
-             > ruleset.r_parameters >
+             > qi::int_ > ',' //1
+             > qi::int_ // 2
+             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string())) // 3
+             > ruleset.r_parameters > // 4
              ')' )
             [
                 qi::_a = phx::bind(

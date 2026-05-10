@@ -1,7 +1,8 @@
 #ifndef INSIGHT_EXTERNALPROGRAMS_H
 #define INSIGHT_EXTERNALPROGRAMS_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include "base/actionprogress.h"
 
 namespace insight {
 
@@ -16,7 +17,8 @@ public:
     boost::filesystem::path firstWritableLocation() const;
     void writeConfiguration(const boost::filesystem::path& file);
 
-    std::vector<std::string> missingPrograms() const;
+    std::vector<std::string> findMissingPrograms(
+        ActionProgress &prg ) const;
 
     static ExternalPrograms& globalInstance();
     static boost::filesystem::path path(const std::string& exeName);

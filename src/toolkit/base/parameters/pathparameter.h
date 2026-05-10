@@ -94,23 +94,7 @@ public:
   void clearPackedData() override;
 
 
-  /**
-   * @brief filePath
-   * Get the path of the file.
-   * It will be created, if it does not exist on the filesystem yet
-   * but its content is available in memory.
-   * @param baseDirectory
-   * The working directory, relative to which relative paths are resolved.
-   * If the file is only in memory, it will be created in a temporary directory
-   * under this path.
-   * @return
-   */
-  boost::filesystem::path filePath(
-      bool unpackIfNoLocalCopy=true,
-      boost::optional<boost::filesystem::path> overrideBaseDirectory
-        = boost::optional<boost::filesystem::path>() ) const;
-
-
+  void setFilePath(const boost::filesystem::path& fn) override;
 
   rapidxml::xml_node<>* appendToNode(
       const std::string& name,
@@ -123,8 +107,10 @@ public:
       const rapidxml::xml_node<>& node) override;
 
   std::unique_ptr<PathParameter> clonePathParameter() const;
-  std::unique_ptr<Element> clone() const override;
+protected:
+  std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
   void assignFrom(const Element& e) override;
   bool isEqual(const Element& op) const override;
 
@@ -172,9 +158,31 @@ class DirectoryParameter
 public:
     declareType ( "directory" );
 
-    DirectoryParameter (const rapidxml::xml_node<> & node);
-    DirectoryParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
-    DirectoryParameter ( const boost::filesystem::path& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
+    DirectoryParameter (
+        const rapidxml::xml_node<> & node );
+
+    DirectoryParameter (
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
+
+    DirectoryParameter (
+        const boost::filesystem::path& value,
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
+
+    DirectoryParameter (
+        const FileContainer& fc,
+        const std::string& description,
+        bool isHidden=false,
+        bool isExpert=false,
+        bool isNecessary=false,
+        int order=0 );
 
     std::string latexRepresentation(
         const std::string& name,
@@ -196,7 +204,9 @@ public:
 
     bool isEqual(const Element& op) const override;
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
+public:
     std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };
 

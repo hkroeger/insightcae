@@ -9,7 +9,7 @@ namespace insight {
 namespace cad {
 
 class EdgeConnectingVertices
- : public Filter
+    : public Filter, public EnableCreateFunction<EdgeConnectingVertices>
 {
 protected:
     FeatureID v0_, v1_;
@@ -17,6 +17,7 @@ protected:
 public:
     EdgeConnectingVertices(FeatureID v0, FeatureID v1);
     EdgeConnectingVertices(const FeatureSet& v0, const FeatureSet& v1);
+    EdgeConnectingVertices(FeatureSetPtr v0, FeatureSetPtr v1);
     bool checkMatch(FeatureID feature) const override;
 
     FilterPtr clone() const override;

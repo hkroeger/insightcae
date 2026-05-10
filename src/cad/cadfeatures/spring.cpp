@@ -53,7 +53,7 @@ size_t Spring::calcHash() const
 
 
 Spring::Spring(const Spring&o, TreeCloneMap& tcm)
-: CL(p0_), CL(p1_), CL(d_), CL(winds_)
+: Feature(o, tcm), CL(p0_), CL(p1_), CL(d_), CL(winds_)
 {}
 
 

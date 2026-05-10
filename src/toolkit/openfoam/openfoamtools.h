@@ -25,7 +25,8 @@
 #include <vector>
 #include <float.h>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "base/analysis.h"
 #include "base/resultset.h"
@@ -42,7 +43,18 @@
 
 namespace insight
 {
-  
+
+
+void createCellZoneFromRegionSeedPoint(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& dir,
+    const std::string& zoneName,
+    const arma::mat& PiM,
+    const std::vector<std::string>& additionalSetCommands={}
+    );
+
+
+
 typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
 
 
@@ -231,7 +243,7 @@ arma::mat viscousForceProfile
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
   const arma::mat& axis, int n,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 arma::mat projectedArea
@@ -240,7 +252,7 @@ arma::mat projectedArea
   const boost::filesystem::path& location,
   const arma::mat& direction,
   const std::vector<std::string>& patches,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 arma::mat minPatchPressure
@@ -249,15 +261,17 @@ arma::mat minPatchPressure
   const boost::filesystem::path& location,
   const std::string& patch,
   const double& Af=0.025,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 void surfaceFeatureExtract
 (
-  const OpenFOAMCase& cm, 
-  const boost::filesystem::path& location,
-  const std::string& surfaceName
-);
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    const std::string& surfaceName,
+    double featureAngle = 60.
+    );
+
 
 
 /**
@@ -315,7 +329,7 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   const boost::filesystem::path& location,
   const std::string fieldName,
   const std::string zoneName,
-  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+    const std::vector<std::string>& addopts = {"-latestTime"}
 );
 
 void removeCellSetFromMesh
@@ -330,7 +344,7 @@ arma::mat interiorPressureFluctuationProfile
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
   const arma::mat& axis, int n,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts= {"-latestTime"}
 );
 
 
@@ -356,19 +370,7 @@ public:
     void setByPattern(const std::string& regex_pattern, int nLayers);
 };
 
-void createPrismLayers
-(
-  const OpenFOAMCase& cm,
-  const boost::filesystem::path& casePath,
-  double finalLayerThickness, 
-  bool relativeSizes, 
-  const PatchLayers& nLayers,
-  double expRatio,
-  bool twodForExtrusion = false,
-  bool isalreadydecomposed = false,
-  bool keepdecomposedafterfinish = false,
-  ProgressDisplayer* progress = nullptr
-);
+
 
 arma::mat surfaceProjectLine
 (
@@ -442,14 +444,14 @@ void calcR
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts= {"-latestTime"}
 );
 
 void calcLambda2
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+    const std::vector<std::string>& addopts= {"-latestTime"}
 );
 
 /**
@@ -521,18 +523,30 @@ typedef std::vector<EMeshPtsList> EMeshPtsListList;
 
 class eMesh
 {
+public:
+    typedef std::pair<int, int> Edge;
+    typedef std::vector<arma::mat> PointList;
+    typedef std::vector<Edge> EdgeList;
+
 protected:
-    std::vector<arma::mat> points_;
-    std::vector<std::pair<int, int> > edges_;
+    PointList points_;
+    EdgeList edges_;
 
 public:
     eMesh();
     eMesh(const EMeshPtsList& pts);
     eMesh(const EMeshPtsListList& pts);
+    eMesh(
+        const PointList&pts,
+        const EdgeList&edges );
+
     int nPoints() const;
     int nEdges() const;
     void write(std::ostream& os) const;
     void write(const boost::filesystem::path& filename) const;
+
+    inline const PointList& points() const { return points_; }
+    inline const EdgeList& edges() const { return edges_; }
 };
 
 #ifndef SWIG
@@ -553,6 +567,7 @@ class OpenFOAMCaseDirs
   std::set<boost::filesystem::path> sysDirs_, postDirs_, procDirs_;
   std::vector<boost::filesystem::path> timeDirs_;
   std::set<boost::filesystem::path> procTimeDirs_;
+  std::set<boost::filesystem::path> subCaseDirs_;
 
 public:
   enum TimeDirOpt { All, OnlyFirst, OnlyLast, OnlyFirstAndLast, ExceptFirst };
@@ -577,7 +592,8 @@ public:
       bool cleanTimes = true,
       bool cleanPost = true,
       bool cleanSys = true,
-      bool cleanInconsistentParallelTimes = false
+      bool cleanInconsistentParallelTimes = false,
+      bool cleanSubCaseDirs = false
   );
 
   void packCase(const boost::filesystem::path& archive_file, TimeDirOpt td = TimeDirOpt::All);
@@ -594,7 +610,8 @@ public:
       bool cleanTimes=true,
       bool cleanPost=true,
       bool cleanSys=true,
-      bool cleanInconsistentParallelTimes = false
+      bool cleanInconsistentParallelTimes = false,
+      bool cleanSubCaseDirs = false
   );
 };
 

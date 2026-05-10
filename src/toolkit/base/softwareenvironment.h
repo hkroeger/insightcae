@@ -30,7 +30,7 @@
 
 // #include "boost/foreach.hpp"
 // #include "boost/algorithm/string.hpp"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/externalprocess.h"
 
 #include "boost/process.hpp"

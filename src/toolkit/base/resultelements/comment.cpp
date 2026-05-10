@@ -5,7 +5,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -95,7 +94,7 @@ xml_node< char >* Comment::appendToNode (
 }
 
 
-std::unique_ptr<hierarchicalData::Element> Comment::clone() const
+std::unique_ptr<hierarchicalData::Element> Comment::cloneUninitialized() const
 {
     auto res = std::make_unique<Comment> ( value_, shortDescription_.simpleLatex() );
     res->setOrder ( order() );

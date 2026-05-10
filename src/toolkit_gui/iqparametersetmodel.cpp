@@ -12,6 +12,7 @@
 
 #include "iqparametersetmodel.h"
 #include "base/cppextensions.h"
+#include "base/hierarchicalelement.h"
 #include "base/parameter.h"
 #include "base/parameters/arrayparameter.h"
 #include "base/parameters/selectablesubsetparameter.h"
@@ -32,8 +33,6 @@
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
-
-
 
 
 
@@ -74,193 +73,7 @@ IQParameterSetModel::IQParameterSetModel(
 
 
 
-Qt::ItemFlags IQParameterSetModel::flags(const QModelIndex &index) const
-{
-    auto flags = IQHierarchicalDataModel::flags(index);
 
-    if (index.isValid())
-    {
-        auto *iqp=iqElementOfIndex(index);
-        auto *p=iqp->get();
-
-
-        if (editingIsEnabled())
-        {
-            if (index.column()==labelCol)
-            {
-                if (auto *lap = dynamic_cast<const insight::LabeledArrayParameter*>(&p->parent())
-                    )
-                {
-                    if (!lap->keysAreLocked())
-                        flags |= Qt::ItemIsEditable;
-                }
-            }
-        }
-    }
-
-    return flags;
-}
-
-
-
-
-Qt::DropActions IQParameterSetModel::supportedDropActions() const
-{
-    if (editingIsEnabled())
-    {
-        return Qt::CopyAction | Qt::MoveAction;
-    }
-    else
-        return 0;
-}
-
-
-
-
-QStringList IQParameterSetModel::mimeTypes() const
-{
-  return { "application/xml" };
-}
-
-
-
-
-QMimeData *IQParameterSetModel::mimeData(const QModelIndexList &indexes) const
-{
-  auto* mimeData = new QMimeData();
-
-  std::ostringstream os;
-  using namespace rapidxml;
-  xml_document<> doc;
-  xml_node<>* decl = doc.allocate_node(node_declaration);
-  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-  doc.append_node(decl);
-  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
-  doc.append_node(rootnode);
-  for (const auto& index: indexes)
-  {
-    if (index.column()==0) // one index per col is issued
-    {
-        auto *ip=elementOfIndex(index);
-
-        ip->appendToNode(
-            ip->name(), doc, *rootnode,
-            insight::hierarchicalData::Element::OutputProperties());
-    }
-  }
-  os << doc;
-
-
-  mimeData->setData(
-      "application/xml",
-      QByteArray::fromStdString(os.str()) );
-
-  return mimeData;
-}
-
-
-
-
-bool IQParameterSetModel::dropMimeData(
-    const QMimeData *data,
-    Qt::DropAction action,
-    int row, int column,
-    const QModelIndex &parent )
-{
-  // if (action == Qt::IgnoreAction)
-  // {
-  //   return true;
-  // }
-  // else if (action == Qt::MoveAction || action == Qt::CopyAction)
-  // {
-
-  //   // parse, what we got
-  //   std::string contents(data->data("application/xml").toStdString());
-  //   using namespace rapidxml;
-  //   xml_document<> doc;
-  //   doc.parse<0>(&contents[0]);
-  //   xml_node<> *rootnode = doc.first_node("root");
-
-  //   std::string allTypesEqual(rootnode->first_node()->name());
-  //   int nArgs = 0;
-  //   for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-  //   {
-  //       std::string type(e->name());
-  //       nArgs++;
-  //       if (type!=allTypesEqual) allTypesEqual="";
-  //   }
-
-  //   insight::ArrayParameter *iap = nullptr;
-  //   if (auto *ip=indexData(parent))
-  //   {
-  //       iap = dynamic_cast<insight::ArrayParameter*>(ip);
-  //   }
-
-  //   if (iap && allTypesEqual==iap->defaultValue().type())
-  //   {
-  //       // Parent is Array and all given parameters are of the same and child type of array? -> inserted/append children
-  //       std::vector<insight::ParameterPtr> args;
-  //       for (auto *e = rootnode->first_node(); e!=nullptr; e=e->next_sibling())
-  //       {
-  //           insight::ParameterPtr np(
-  //               iap->defaultValue().clone() );
-
-  //           np->readFromNode(
-  //               e->first_attribute("name")->value(),
-  //               *rootnode,
-  //               ""
-  //               );
-
-  //           args.push_back(np);
-  //       }
-
-  //       auto row=parent.row();
-  //       if (row<0) // append
-  //       {
-  //           for (auto& arg: args)
-  //           {
-  //               appendArrayElement(parent, *arg);
-  //           }
-  //           return true;
-  //       }
-  //       else if (row>=0)
-  //       {
-  //           // insert in reverse order
-  //           std::reverse(args.begin(), args.end());
-  //           for (auto& arg: args)
-  //           {
-  //               insertArrayElement(parent, *arg);
-  //           }
-  //           return true;
-  //       }
-  //   }
-  //   else if (nArgs==1)
-  //   {
-  //       // expect a single given item of same type as indexed parameter
-  //       auto targetIndex = index(row, column, parent);
-  //       if (!targetIndex.isValid())
-  //           targetIndex=parent;
-
-  //       auto *ip=indexData(targetIndex);
-  //       if (allTypesEqual==ip->type())
-  //       {
-  //           insight::ParameterPtr np(iqp->parameter().clone());
-  //           np->readFromNode(
-  //                   rootnode->first_node()->first_attribute("name")->value(),
-  //                   *rootnode,
-  //                   ""
-  //               );
-  //           iqp->parameterRef().copyFrom( *np );
-  //           return true;
-  //       }
-  //   }
-
-
-  // }
-
-  return false;
-}
 
 // QVariant IQParameterSetModel::data(const QModelIndex &index, int role) const
 // {
@@ -285,7 +98,7 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
         {
 
         case Qt::EditRole:
-            if (index.column()==labelCol) // data
+            if (index.column()==labelCol) // change label
             {
                 auto *me = iqElementOfIndex(index);
                 auto *iqp = dynamic_cast<IQLabeledArrayParameter*>(me->parentElement());
@@ -594,50 +407,16 @@ void IQParameterSetModel::removeLabeledArrayElement(const QModelIndex &index)
 
 
 
-
-
-
-
-
-
-void IQParameterSetModel::addGeometryToSpatialTransformationParameter(
-        const std::string &parameterPath,
-        insight::cad::FeaturePtr geom )
+insight::ParameterSetGUIContext* IQParameterSetModel::GUIContext()
 {
-    transformedGeometry_[parameterPath]=geom;
+    return dynamic_cast<insight::ParameterSetGUIContext*>(
+        const_cast<insight::hierarchicalData::Element*>(
+            &getHierarchicalData()) );
 }
 
 
 
 
-void IQParameterSetModel::addVectorBasePoint(const std::string &parameterPath, const arma::mat &pBase)
-{
-    vectorBasePoints_[parameterPath]=pBase;
-}
-
-insight::cad::FeaturePtr IQParameterSetModel::getGeometryToSpatialTransformationParameter(
-        const std::string &parameterPath )
-{
-    auto i = transformedGeometry_.find(parameterPath);
-    if (i!=transformedGeometry_.end())
-    {
-        return i->second;
-    }
-    return insight::cad::FeaturePtr();
-}
-
-
-
-
-const arma::mat * const IQParameterSetModel::getVectorBasePoint(const std::string &parameterPath)
-{
-    auto i = vectorBasePoints_.find(parameterPath);
-    if (i!=vectorBasePoints_.end())
-    {
-        return &i->second;
-    }
-    return nullptr;
-}
 
 
 void IQParameterSetModel::pack()
@@ -664,6 +443,18 @@ std::string IQParameterSetModel::getAnalysisName() const
         return aps->analysisTypeName();
     }
     return std::string();
+}
+
+void IQParameterSetModel::resolveRelativePaths(
+    const boost::filesystem::path &parentPath )
+{
+    if (auto *p = dynamic_cast<const insight::Parameter*>(
+            &getHierarchicalData()))
+    {
+        const_cast<insight::Parameter*>(p)
+            ->resolveRelativePaths(
+                parentPath );
+    }
 }
 
 
@@ -715,7 +506,7 @@ const insight::ParameterSet &getParameterSet(QAbstractItemModel *model)
     return parameterSetModel(model)->getParameterSet();
 }
 
-const std::string &getAnalysisName(QAbstractItemModel *model)
+std::string getAnalysisName(QAbstractItemModel *model)
 {
     return parameterSetModel(model)->getAnalysisName();
 }

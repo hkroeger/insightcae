@@ -131,58 +131,68 @@ arma::mat tensor3(
   double zx, double zy, double zz
 );
 
+arma::mat tensor3Ident();
+
+
+typedef std::initializer_list< std::initializer_list<double> > ArmaMatCmpts;
+
 template<class T>
 arma::mat Tensor(const T& t)
 {
-  arma::mat rt;
-  rt << t.XX() << t.XY() << t.XZ() << arma::endr
-     << t.YX() << t.YY() << t.YZ() << arma::endr
-     << t.ZX() << t.ZY() << t.ZZ() << arma::endr;
-  return rt;
+    arma::mat rt = ArmaMatCmpts{
+        { t.XX(), t.XY(), t.XZ() },
+        { t.YX(), t.YY(), t.YZ() },
+        { t.ZX(), t.ZY(), t.ZZ() }
+    };
+    return rt;
 }
 
 template<class T>
 arma::mat tensor(const T& t)
 {
-  arma::mat rt;
-  rt << t.xx() << t.xy() << t.xz() << arma::endr
-     << t.yx() << t.yy() << t.yz() << arma::endr
-     << t.zx() << t.zx() << t.zz() << arma::endr;
-  return rt;
+    arma::mat rt = ArmaMatCmpts{
+        { t.xx(), t.xy(), t.xz() },
+        { t.yx(), t.yy(), t.yz() },
+        { t.zx(), t.zx(), t.zz() }
+    };
+    return rt;
 }
 
 template<class T>
 arma::mat vector(const T& t)
 {
-  arma::mat rt;
-  rt
-          << t.x() << arma::endr
-          << t.y() << arma::endr
-          << t.z() << arma::endr;
-  return rt;
+    arma::mat rt;
+    rt = ArmaMatCmpts{
+        { t.x() },
+        { t.y() },
+        { t.z() }
+    };
+    return rt;
 }
 
 
 template<class T>
 arma::mat Vector(const T& t)
 {
-  arma::mat rt;
-  rt
-          << t.X() << arma::endr
-          << t.Y() << arma::endr
-          << t.Z() << arma::endr;
-  return rt;
+    arma::mat rt;
+    rt = ArmaMatCmpts{
+        { t.X() },
+        { t.Y() },
+        { t.Z() }
+    };
+    return rt;
 }
 
 template<class T>
 arma::mat vec3(const T& t)
 {
-  arma::mat rt;
-  rt
-          << t.X() << arma::endr
-          << t.Y() << arma::endr
-          << t.Z() << arma::endr;
-  return rt;
+    arma::mat rt;
+    rt = ArmaMatCmpts{
+        { t.X() },
+        { t.Y() },
+        { t.Z() }
+    };
+    return rt;
 }
 
 bool operator!=(const arma::mat& m1, const arma::mat& m2);
@@ -221,6 +231,9 @@ double* toArray(const arma::mat& v); // !non-const! return value to match VTK fu
  */
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis=vec3(0,0,1), const arma::mat& p0 = vec3(0,0,0) );
+
+arma::mat orthogonalPart(const arma::mat& vec, const arma::mat& iaxis);
+double rotAngle(const arma::mat& dir, const arma::mat& dir0, const arma::mat& axis);
 
 /**
  * @brief rotationMatrixToRollPitchYaw
@@ -374,6 +387,61 @@ arma::mat nonlinearSolveND(
     );
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
+
+/**
+ * Computes a variance-based convergence measure (Coefficient of Variation)
+ * over a trailing window for each column of the input matrix.
+ *
+ * For each row i and column j the result is:
+ *   CoV = stddev / |mean|   when |mean| > eps  (dimensionless, scale-free)
+ *   CoV = stddev / range    when |mean| <= eps and range > eps  (near-zero mean)
+ *   CoV = stddev            otherwise (near-constant near-zero signal)
+ *
+ * The result converges to zero as the signal stabilises.
+ *
+ * @param values   n x m matrix; each row is one sample (iteration / time step),
+ *                 each column is one component of the quantity to monitor.
+ * @param fraction trailing window size as a fraction of total rows (default 0.1 = 10 %).
+ * @return         n x m matrix of CoV values with the same shape as input.
+ */
+arma::mat convergenceByVariance(const arma::mat& values, double fraction=0.1);
+
+/**
+ * Incremental variant of convergenceByVariance.
+ *
+ * Accepts samples one at a time via operator() and maintains the full
+ * history of input values and their CoV-based convergence measure.
+ * The trailing window grows with the total sample count:
+ *   windowSize = max(2, round(fraction * n_total))
+ * so behaviour is consistent with the batch function.
+ */
+class ConvergenceByVariance
+{
+public:
+    explicit ConvergenceByVariance(double fraction=0.1);
+
+    /**
+     * Append one new sample (row-vector, one element per quantity component).
+     * Recomputes the current window size, evaluates CoV, appends to history.
+     * @return  CoV row-vector for the newly appended sample.
+     */
+    arma::rowvec operator()(const arma::rowvec& sample);
+
+    /** All input samples appended so far (n_samples x n_cols). */
+    const arma::mat& values() const;
+
+    /** CoV history parallel to values() (n_samples x n_cols). */
+    const arma::mat& convergenceMeasure() const;
+
+private:
+    double       fraction_;
+    arma::mat    values_;        // full input history (for values() accessor and x_old lookup)
+    arma::mat    result_;        // full CoV history
+    double       globalAbsMax_; // running max(|x|) for eps scaling
+    arma::rowvec mean_;          // per-column running mean of current window
+    arma::rowvec M2_;            // per-column running sum of squared deviations
+    arma::uword  windowSize_;    // current window size
+};
 
 arma::mat sortedByCol(const arma::mat&m, int c);
 

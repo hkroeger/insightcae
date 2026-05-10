@@ -1,11 +1,13 @@
 #ifndef INSIGHT_SPATIALTRANSFORMATION_H
 #define INSIGHT_SPATIALTRANSFORMATION_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
 #include "base/linearalgebra.h"
 
 #include <limits>
 #include "vtkSmartPointer.h"
+#include "vtkLinearTransform.h"
 //#include "vtkTransform.h"
 //#include "vtkPolyDataAlgorithm.h"
 
@@ -34,6 +36,7 @@ typedef std::vector<const vtk_Transformer*> vtk_TransformerList;
 
 class SpatialTransformation;
 class OpenFOAMCase;
+struct CoordinateSystem;
 
 #ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const SpatialTransformation& st);
@@ -79,6 +82,8 @@ public:
      */
     SpatialTransformation();
 
+    SpatialTransformation(const SpatialTransformation& o);
+
     /**
      * @brief SpatialTransformation
      * construct from components
@@ -106,6 +111,7 @@ public:
         const arma::mat& ez,
         const arma::mat& O
         );
+
 
     /**
      * @brief SpatialTransformation
@@ -220,6 +226,7 @@ public:
      * @brief appendTransformation
      * modify this transformation, so that it yields this transform,
      * followed by the provided, "appended" transformation
+     * (equals PreMultiply)
      * @param st
      */
     void appendTransformation(const SpatialTransformation& st);
@@ -228,7 +235,7 @@ public:
 
     bool isIdentityTransform() const;
 
-    vtkSmartPointer<vtkTransform> toVTKTransform() const;
+    vtkSmartPointer<vtkLinearTransform> toVTKTransform() const;
 
     vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(
             vtkSmartPointer<vtkPolyDataAlgorithm> in ) const override;
@@ -245,8 +252,13 @@ public:
     void invert();
     SpatialTransformation inverted() const;
 
+    CoordinateSystem localCoordinateSystem() const;
 };
 
+
+SpatialTransformation operator*(
+    const SpatialTransformation& t1,
+    const SpatialTransformation& t2 );
 
 
 struct CoordinateSystem
@@ -255,14 +267,20 @@ struct CoordinateSystem
 
     CoordinateSystem();
 
+    enum DirDef {
+        X, Z
+    };
+
     CoordinateSystem(
         const arma::mat& p0,
-        const arma::mat& ex );
+        const arma::mat& e,
+        DirDef def = X );
 
     CoordinateSystem(
         const arma::mat& p0,
         const arma::mat& ex,
         const arma::mat& ez );
+
 
     void rotate(double angle, const arma::mat& axis);
 
@@ -276,6 +294,9 @@ struct CoordinateSystem
     void setVTKMatrix(vtkMatrix4x4* m);
 };
 
+#ifndef SWIG
+std::ostream& operator<<(std::ostream& os, const CoordinateSystem& cs);
+#endif
 
 
 /**

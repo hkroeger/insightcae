@@ -71,7 +71,7 @@ bool testEquality(const MatrixParameter& ip, const StaticParameter& sp)
 template<class StaticParameter>
 bool testEquality(const PathParameter& ip, const StaticParameter& sp)
 {
-    return ip.fileName()==sp->fileName();
+    return ip.filePath()==sp->filePath();
 }
 
 template<class StaticParameter>
@@ -102,7 +102,7 @@ void assign(InsightParameter& ip, const TestValue& tv)
 template<class TestValue>
 void assign(insight::ArrayParameter& ip, const TestValue& tv)
 {
-    ip.resize(tv.size(), false);
+    ip.resize(tv.size());
     for (size_t i=0; i< tv.size(); ++i)
         dynamic_cast<DoubleParameter&>(ip[i]).set(double(tv[i]));
 }

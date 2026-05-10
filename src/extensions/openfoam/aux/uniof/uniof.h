@@ -143,75 +143,16 @@ if (STREAMPTRVAR.empty()) \
     }\
 }
 
-#ifdef functionObject_H
-namespace Foam {
-
-class UniFunctionObject : public Foam::functionObject
-{
-    autoPtr<dictionary> initialDict_;
-
-public:
-    UniFunctionObject(const word& name, const dictionary& dict)
-        : functionObject(name)
-    {
-        initialDict_.reset(new dictionary(dict));
-    }
-
-public:
-#if (defined(OF_FORK_extend)) || (!defined(OF_FORK_extend) && OF_VERSION<040000)
-    bool start() override { return true; }
-#endif
-
-#if (defined(OF_FORK_extend))
-    virtual bool write() =0;
-#endif
-
-    virtual bool perform() =0;
-
-#if (defined(OF_FORK_extend) && OF_VERSION>=010604) || (!defined(OF_FORK_extend) && OF_VERSION<040000)
-    bool execute(bool forceWrite) override
-    {
-        bool ok=true;
-        if (initialDict_.valid())
-        {
-            ok = ok && read(initialDict_());
-            initialDict_.reset();
-        }
-        if (ok) ok = ok && perform();
-        if (ok && forceWrite) ok = ok && write();
-        return ok;
-    }
+#if OF_VERSION<040000
+#define UNIOF_OBR_TO_MESH(OBR) \
+dynamic_cast<const fvMesh&>(OBR)
 #else
-    bool execute() override
-    {
-        bool ok=true;
-        if (initialDict_.valid())
-        {
-            ok = ok && read(initialDict_());
-            initialDict_.reset();
-        }
-        ok = perform();
-        return ok;
-    }
+#define UNIOF_OBR_TO_MESH(OBR) \
+dynamic_cast<const fvMesh&>( \
+    (OBR).lookupObject<objectRegistry>( \
+        dict.lookupOrDefault("region", polyMesh::defaultRegion)\
+        ))
 #endif
 
-#if OF_VERSION>=020100 || (defined(OF_FORK_extend) && OF_VERSION>=010604) //(!defined(OF16ext)||defined(Fx41)) && !defined(OF21x)
-          //- Update for changes of mesh
-        void updateMesh(const mapPolyMesh& mpm) override
-        {}
-
-        //- Update for changes of mesh
-        void movePoints(
-    #if (defined(OF_FORK_extend) && OF_VERSION>=010604) //defined(Fx41)
-            const pointField&
-    #else
-            const polyMesh& mesh
-    #endif
-           ) override
-        {}
-#endif
-};
-}
-#endif // functionObject_H
 
 #endif

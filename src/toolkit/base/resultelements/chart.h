@@ -87,6 +87,8 @@ struct PlotCurve {
     const arma::mat& xy() const;
     const std::string& plaintextlabel() const;
 
+    std::pair<double, double> significantMinMax(double lastPartFraction=1./3.) const;
+
     bool operator==(const PlotCurve o) const;
 };
 
@@ -176,7 +178,8 @@ public:
 
     bool isEqual(const Element& op) const override;
 
-    std::unique_ptr<hierarchicalData::Element> clone() const override;
+protected:
+    std::unique_ptr<hierarchicalData::Element> cloneUninitialized() const override;
 };
 
 

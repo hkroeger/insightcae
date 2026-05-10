@@ -30,6 +30,12 @@ EdgeConnectingVertices::EdgeConnectingVertices(const FeatureSet& v0, const Featu
     v1_=*v1.data().begin();
 }
 
+EdgeConnectingVertices::EdgeConnectingVertices(
+    FeatureSetPtr v0, FeatureSetPtr v1)
+    : EdgeConnectingVertices(*v0, *v1)
+{}
+
+
 bool EdgeConnectingVertices::checkMatch(FeatureID feature) const
 {
     auto edge = model_->edge(feature);

@@ -46,7 +46,7 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
-        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+        if ( ( field.first=="U" ) && ( boost::fusion::get<0> ( field.second ) ==vectorField ) ) {
             BC["type"]=OFDictData::data ( "flowRateInletVelocity" );
             if (const auto *mf = boost::get<Parameters::flowrate_massflow_type>(
                     &p().flowrate))
@@ -66,39 +66,53 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         } else if (
             ( field.first=="T" )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
-            BC["type"]=OFDictData::data ( "inletOutlet" );
-            BC["inletValue"]=OFDictData::toUniformField( p().T );
-            BC["value"]=OFDictData::toUniformField( p().T );
+            if (auto* Tstatic=boost::get<Parameters::temperature_staticTemperature_type>(
+                    &p().temperature))
+            {
+                BC["type"]=OFDictData::data ( "inletOutlet" );
+                BC["inletValue"]=OFDictData::toUniformField( Tstatic->T );
+                BC["value"]=OFDictData::toUniformField( Tstatic->T );
+            }
+            else if (auto* Ttot=boost::get<Parameters::temperature_totalTemperature_type>(
+                    &p().temperature))
+            {
+                BC["type"]=OFDictData::data ( "totalTemperature" );
+                BC["gamma"]=1.4;
+                BC["T0"]=OFDictData::toUniformField( Ttot->T0 );
+                BC["value"]=OFDictData::toUniformField( Ttot->T0 );
+            }
+            else
+                throw UnhandledSelection();
         } else if (isPrghPressureField(field)) {
             if ( OFversion() >=210 ) {
                 BC["type"]=OFDictData::data ( "fixedFluxPressure" );
             } else {
                 BC["type"]=OFDictData::data ( "buoyantPressure" );
             }
-        } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="rho" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField( p().rho );
-        } else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="k" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             turbulence->setDirichletBC_k ( BC, velocity );
-        } else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="omega" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             turbulence->setDirichletBC_omega ( BC, velocity );
-        } else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="epsilon" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             turbulence->setDirichletBC_epsilon ( BC, velocity );
-        } else if ( ( field.first=="nut" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="nut" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "calculated" );
             BC["value"]=OFDictData::toUniformField( 1e-10 );
-        } else if ( ( field.first=="nuTilda" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="nuTilda" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             turbulence->setDirichletBC_nuTilda ( BC, velocity );
-        } else if ( ( field.first=="R" ) && ( get<0> ( field.second ) ==symmTensorField ) ) {
+        } else if ( ( field.first=="R" ) && ( boost::fusion::get<0> ( field.second ) ==symmTensorField ) ) {
             turbulence->setDirichletBC_R ( BC, velocity );
-        } else if ( ( field.first=="nuSgs" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="nuSgs" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField(1e-10);
         } else {
             if ( ! (
-                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
                         ||
                         phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
                     ) )

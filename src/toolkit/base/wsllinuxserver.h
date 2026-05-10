@@ -55,6 +55,7 @@ public:
   WSLLinuxServer(const Config& serverConfig);
 
   const RemoteServer::Config& config() const override;
+  const std::string& myDistributionLabel() const;
   const Config& WSLServerConfig() const;
 
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
@@ -114,6 +115,12 @@ public:
           std::function<void(const std::string&)> logCallback = [](const std::string&){}
           );
 
+  int detectWslVersion() const;
+
+  std::string getDefaultRouteDeviceName();
+  std::string getWslIp();
+
+  std::string IPaddress() const override;
 };
 
 

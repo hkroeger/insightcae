@@ -6,6 +6,12 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <set>
+#include <functional>
+#include <mutex>
+
+#include "boost/optional.hpp"
+#include "base/actionprogress.h"
 
 
 namespace insight {
@@ -53,57 +59,29 @@ typedef std::vector<ProgressStatePtr> ProgressStatePtrList;
 
 
 
-class ActionProgress;
-
-
 
 
 class ProgressDisplayer
 {
-  friend class ActionProgress;
+    friend class ActionProgress;
 
 protected:
-    // action status
-    double ci_=0., maxi_=1.;
+    bool stopTriggered_=false;
 
-    // ====================================================================================
-    // ======== to be used internally only:
-
-
-    virtual std::string actionPath() const;
+    mutable std::mutex childActionsMutex_;
+    std::set<ActionProgress*> childActions_;
 
 public:
+    ProgressDisplayer();
     virtual ~ProgressDisplayer();
 
-    // ====================================================================================
-    // ======== convergence state reporting
-
     /**
-     * @brief update
-     * implementations must be safe to be called from different thread!
-     * @param pi
+     * @brief forkNewAction
+     * Create a new top-level ActionProgress directly under this displayer.
+     * Multiple calls produce independent sibling actions, all traversable
+     * via findAction().
      */
-    virtual void update ( const ProgressState& pi ) =0;
-
-    // ====================================================================================
-    // ======== log message
-    /**
-     * @brief logMessage
-     * implementations must be safe to be called from different thread!
-     * @param line
-     */
-    virtual void logMessage(const std::string& line) =0;
-
-
-    // ====================================================================================
-    // ======== action progress reporting
-    ActionProgress forkNewAction(double nSteps, const std::string& name="Overall" );
-    void stepUp(double steps=1);
-    void stepTo(double i);
-    void completed();
-    void operator++();
-    void operator+=(double n);
-    void message(const std::string& message);
+    ActionProgressPtr forkNewAction(double nSteps, const std::string& name);
 
 
     // ====================================================================================
@@ -113,6 +91,7 @@ public:
      * implementations must be safe to be called from different thread!
      * @param path
      * @param value
+     * progress indicator between 0 and 1
      */
     virtual void setActionProgressValue(const std::string &path, double value) =0;
     /**
@@ -134,44 +113,45 @@ public:
      * implementations must be safe to be called from different thread!
      */
     virtual void reset() =0;
-    virtual bool stopRun() const;
-};
 
+    // ====================================================================================
+    // ======== convergence state reporting
 
+    /**
+     * @brief update
+     * implementations must be safe to be called from different thread!
+     * @param pi
+     */
+    virtual void update ( const ProgressState& pi ) =0;
 
+    // ====================================================================================
+    // ======== log message
+    /**
+     * @brief logMessage
+     * implementations must be safe to be called from different thread!
+     * @param line
+     */
+    virtual void logMessage(const std::string& line) =0;
 
-class ActionProgress
-    : public ProgressDisplayer
-{
+    /**
+     * @brief findAction
+     * Traverse the action hierarchy to find the ActionProgress identified by
+     * @p path (action names concatenated with "/", rooted at overallAction()).
+     */
+    ActionProgress* findAction(const std::string& path);
 
-protected:
-  ProgressDisplayer& parentAction_;
-  std::string name_;
+    void triggerStop(const std::string& actionPath);
 
+    virtual bool stopIsDemanded() const;
 
-  std::string actionPath() const override;
-
-public:
-  ActionProgress(const ProgressDisplayer& parentAction, std::string path, double nSteps);
-  virtual ~ActionProgress();
-
-  void update ( const ProgressState& pi ) override;
-  void logMessage(const std::string& line) override;
-
-  void setActionProgressValue(const std::string &path, double value) override;
-  void setMessageText(const std::string &path, const std::string& message) override;
-  void finishActionProgress(const std::string &path) override;
-
-  void reset() override;
+    // ActionProgress methods forwarded via overallAction() for convenience:
+    // use pd.overallAction().forkNewAction(...) / pd.overallAction().message(...) etc.
 };
 
 
 
 
 } // namespace insight
-
-
-#include "base/progressdisplayer/textprogressdisplayer.h"
 
 
 #endif // INSIGHT_PROGRESSDISPLAYER_H

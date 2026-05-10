@@ -69,6 +69,7 @@ bool SingleEdgeFeature::isSingleOpenWire() const
 
 ImportedSingleEdgeFeature::ImportedSingleEdgeFeature(
     const ImportedSingleEdgeFeature&o, TreeCloneMap& tcm)
+: SingleEdgeFeature(o, tcm)
 {
     if (auto *fp=boost::get<FeatureSetPtr>(&o.importSource_))
     {

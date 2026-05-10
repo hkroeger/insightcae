@@ -1,16 +1,18 @@
 
 #include "femmesh.h"
 
+#include "base/cppextensions.h"
 #include "vtkGenericDataObjectReader.h"
 #include "vtkCellData.h"
+#include "vtkQuadraticEdge.h"
 
 namespace insight {
 
 
-const std::array<int, 3> FEMMesh::triNodeMapping = { 0, 1, 2 };
+const std::array<int, 4> FEMMesh::triNodeMapping = { 0, 1, 2, 2 };
 const std::array<int, 4> FEMMesh::quadNodeMapping = { 0, 1, 2, 3 };
 const std::array<int, 4> FEMMesh::tetNodeMapping = { 0, 1, 2, 3 };
-const std::array<int, 2> FEMMesh::lineNodeMapping = { 0, 1 };
+const std::array<int, 3> FEMMesh::lineNodeMapping = { 0, 1, 1 };
 
 
 
@@ -88,13 +90,33 @@ void FEMMesh::findShellsOfPart(std::set<int> &shellSet, int part_id) const
 
 
 
-int FEMMesh::findNodeAt(const arma::mat &x, double tol) const
+int FEMMesh::findNodeAt(
+    const arma::mat &x,
+    const std::set<int>& constrainToNodeSets,
+    double tol ) const
 {
-    for (auto& n: nodes_)
+    std::set<vtkIdType> nodeIdForSearch;
+    if (!constrainToNodeSets.size())
     {
-        if (arma::norm(n.second-x,2)<=tol)
+        nodeIdForSearch=std::map_keys(nodes_);
+    }
+    else
+    {
+        for (auto& sid: constrainToNodeSets)
         {
-            return n.first;
+            auto &ns=nodeSets_.at(sid);
+            std::copy(
+                ns.begin(), ns.end(),
+                std::last_inserter(nodeIdForSearch) );
+        }
+    }
+
+    for (auto& n: nodeIdForSearch)
+    {
+        auto p=nodes_.at(n);
+        if (arma::norm(p-x,2)<=tol)
+        {
+            return n;
         }
     }
     throw insight::Exception("no node found at location (%g %g %g)",
@@ -116,6 +138,22 @@ FEMMesh::IdSet &FEMMesh::shellSet(int setId)
 }
 
 
+
+void FEMMesh::setBeamRefPoint(const arma::mat &pref)
+{
+    if (nodes_.size())
+    {
+        auto brn=(--nodes_.end())->first;
+        while (nodes_.count(brn)) brn++;
+        beamRefNode_=brn;
+    }
+    else
+    {
+        beamRefNode_=1;
+    }
+
+    nodes_.insert({beamRefNode_, pref});
+}
 
 void FEMMesh::addVTK(const boost::filesystem::path &fn, int partId)
 {
@@ -154,6 +192,10 @@ void FEMMesh::addVTK(const boost::filesystem::path &fn, int partId)
             else if (auto *l = vtkLine::SafeDownCast(c))
             {
                 addLineElement(smesh, l, effectivePartId, nodeIdsOfs);
+            }
+            else if (auto *ql = vtkQuadraticEdge::SafeDownCast(c))
+            {
+                addLineElement(smesh, ql, effectivePartId, nodeIdsOfs);
             }
             else
             {
@@ -207,7 +249,14 @@ void FEMMesh::addTetElement(vtkDataSet* ds, vtkTetra* t, int part_id, vtkIdType 
 
 void FEMMesh::addLineElement(vtkDataSet *ds, vtkLine *l, int part_id, vtkIdType nodeIdOfs)
 {
-    addElement(ds, l, part_id, lines_, nodeIdOfs);
+    auto &le=addElement(ds, l, part_id, lines_, nodeIdOfs);
+    le.n[2]=beamRefNode_;
+}
+
+void FEMMesh::addLineElement(vtkDataSet *ds, vtkQuadraticEdge *ql, int part_id, vtkIdType nodeIdOfs)
+{
+    auto& le=addElement(ds, ql, part_id, lines_, nodeIdOfs);
+    le.n[2]=beamRefNode_;
 }
 
 vtkIdType FEMMesh::maxNodeId() const

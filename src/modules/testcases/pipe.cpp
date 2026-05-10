@@ -56,7 +56,7 @@ namespace insight
 PipeBase::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &workDir,
-    ProgressDisplayer &progress)
+    ActionProgress &progress)
   : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     cycl_in_("cycl_half0"),
     cycl_out_("cycl_half1")
@@ -339,8 +339,8 @@ void PipeBase::createCase
 //     .set_x(0.5*L)
     .set_axSpan(0.5*p().geometry.L)
     .set_tanSpan(M_PI)
-    .set_name("tpc_interior")
     .set_timeStart( (p().evaluation.inittime+p().evaluation.meantime)*sp().T_ )
+    .set_name("tpc_interior")
   ));
   
   cm.insert(new singlePhaseTransportProperties(

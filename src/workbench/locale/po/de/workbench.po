@@ -398,6 +398,9 @@ msgid ""
 "Please make sure that it is existing!"
 msgstr ""
 
+msgid "Setup Workspace"
+msgstr ""
+
 msgid "Please select working directory"
 msgstr ""
 

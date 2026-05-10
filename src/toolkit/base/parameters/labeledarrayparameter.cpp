@@ -5,6 +5,7 @@
 #include "base/tools.h"
 #include "base/translations.h"
 #include "base/parameters/subsetparameter.h"
+#include "base/parameters/arrayparameter.h"
 #include <algorithm>
 #include <iterator>
 
@@ -20,7 +21,7 @@ addParameterFactories(LabeledArrayParameter);
 
 
 
-void LabeledArrayParameter::initialize()
+void LabeledArrayParameter::initializeHierarchy()
 {
     syncConnections_.clear();
 
@@ -102,7 +103,7 @@ void LabeledArrayParameter::initialize()
             ));
     }
 
-    Parameter::initialize();
+    Parameter::initializeHierarchy();
 }
 
 
@@ -131,10 +132,13 @@ LabeledArrayParameter::LabeledArrayParameter (
 : Parameter(description, isHidden, isExpert, isNecessary, order),
     labelPattern_("entry_%d")
 {
-    setDefaultValue(defaultValue.cloneAs<Parameter>());
+    setDefaultValue(defaultValue.cloneAsUninitialized<Parameter>());
     for (int i=0; i<n; i++)
     {
-        appendEmpty();
+        insertValueImpl(
+            findUniqueNewKey(),
+            defaultValue_->cloneAsUninitialized<Parameter>(),
+            false );
     }
 }
 
@@ -171,17 +175,17 @@ void LabeledArrayParameter::setLabelPattern(const std::string& pat)
 }
 
 
-void LabeledArrayParameter::setKeySourceParameterPath(const std::string& pp)
+void LabeledArrayParameter::setKeySourceParameterPathImpl(const std::string& pp, bool init)
 {
     keySourceParameterPath_=pp;
-    resetInitialization();
+    if (init) initializeHierarchy();
 }
 
 void LabeledArrayParameter::unsetKeySourceParameterPath()
 {
     setKeySourceParameterPath(std::string());
     syncConnections_.clear();
-    resetInitialization();
+    initializeHierarchy();
 }
 
 bool LabeledArrayParameter::keysAreLocked() const
@@ -191,8 +195,6 @@ bool LabeledArrayParameter::keysAreLocked() const
 
 std::set<std::string> LabeledArrayParameter::keys() const
 {
-    ensureInitialization();
-
     std::set<std::string> r;
     std::transform(
         value_.begin(), value_.end(),
@@ -208,14 +210,12 @@ bool LabeledArrayParameter::hasKey(const std::string &label) const
 
 LabeledArrayParameter::value_type &LabeledArrayParameter::value()
 {
-    ensureInitialization();
     return value_;
 }
 
 
 const LabeledArrayParameter::value_type &LabeledArrayParameter::value() const
 {
-    ensureInitialization();
     return value_;
 }
 
@@ -259,7 +259,6 @@ void LabeledArrayParameter::eraseValue ( const std::string& label )
 {
     insight::assertion(
         !keysAreLocked(), "attempt to erase entry from synchronized array");
-    ensureInitialization();
     eraseValueImpl(label);
 }
 
@@ -312,13 +311,13 @@ void LabeledArrayParameter::insertValue (
     insight::assertion(
         !keysAreLocked(),
         "attempt to insert %s entry to synchronized array", label.c_str());
-    ensureInitialization();
     insertValueImpl(label, std::move(np));
 }
 
 void LabeledArrayParameter::insertValueImpl(
     const std::string& label,
-    std::unique_ptr<Parameter>&& np )
+    std::unique_ptr<Parameter>&& np,
+    bool initializeHierarchy )
 {
     auto &v = value();
 
@@ -326,7 +325,8 @@ void LabeledArrayParameter::insertValueImpl(
 
     beforeChildInsertion(i, i);
 
-    auto ins = v.insert({ label, std::move(np) });
+    //should overwrite
+    auto ins = v.insert_or_assign(label, std::move(np));
 
     valueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(
@@ -335,7 +335,9 @@ void LabeledArrayParameter::insertValueImpl(
         std::make_shared<boost::signals2::scoped_connection>(
             ins.first->second->childValueChanged.connect( childValueChanged )));
     newItemAdded(ins.first->first, ins.first->second);
+
     ins.first->second->setParent(this);
+    if (initializeHierarchy) ins.first->second->initializeHierarchy();
 
     childInsertionDone(i, i);
 
@@ -344,12 +346,12 @@ void LabeledArrayParameter::insertValueImpl(
 
 
 
+
 Parameter &LabeledArrayParameter::getOrInsertDefaultValue(const std::string &label)
 {
     insight::assertion(
         !(keysAreLocked()&&(!hasKey(label))),
         "attempt to insert %s entry to synchronized array", label.c_str());
-    ensureInitialization();
     return getOrInsertDefaultValueImpl(label);
 
 }
@@ -365,7 +367,9 @@ Parameter &LabeledArrayParameter::getOrInsertDefaultValueImpl(const std::string 
     }
     else
     {
-        insertValueImpl(label, defaultValue_->cloneAs<Parameter>());
+        insertValueImpl(
+            label,
+            defaultValue_->cloneAsUninitialized<Parameter>() );
         return *v.at(label);
     }
 }
@@ -375,15 +379,25 @@ Parameter &LabeledArrayParameter::getOrInsertDefaultValueImpl(const std::string 
 
 void LabeledArrayParameter::appendEmpty()
 {
-    appendValue(defaultValue_->cloneAs<Parameter>());
+    appendValue(defaultValue_->cloneAsUninitialized<Parameter>());
 }
+
+
+void LabeledArrayParameter::appendEmptyUninitialized(ParameterSetBuilder::Key)
+{
+    insertValueImpl(
+        findUniqueNewKey(),
+        defaultValue_->cloneAsUninitialized<Parameter>(),
+        false );
+}
+
+
 
 void LabeledArrayParameter::insertWithDefaults(const std::string &label)
 {
     insight::assertion(
         !keysAreLocked(),
         "attempt to insert %s entry to synchronized array", label.c_str());
-    ensureInitialization();
     insertWithDefaultsImpl(label);
 }
 
@@ -394,7 +408,9 @@ void LabeledArrayParameter::insertWithDefaultsImpl(const std::string &label)
     auto i=v.find(label);
     if (i==v.end())
     {
-        insertValueImpl(label, defaultValue_->cloneAs<Parameter>());
+        insertValueImpl(
+            label,
+            defaultValue_->cloneAsUninitialized<Parameter>());
     }
 }
 
@@ -409,7 +425,6 @@ void LabeledArrayParameter::changeLabel(
         !keysAreLocked(),
         "attempt to change label %s of entry %s in synchronized array",
         label.c_str(), newLabel.c_str());
-    ensureInitialization();
     changeLabelImpl(label, newLabel);
 }
 
@@ -417,22 +432,36 @@ void LabeledArrayParameter::changeLabelImpl(
         const std::string &label,
         const std::string &newLabel )
 {
-    auto& v=value();
+    if (label!=newLabel) // deletes element otherwise
+    {
+        auto& v=value();
 
-    auto idx=v.find(label);
+        auto idx=v.find(label);
 
-    insight::assertion(
-        idx!=v.end(),
-        "entry %s is not present (valid keys are: %s)",
-        label.c_str(),
-        containerKeyList_to_string(v, 10).c_str() );
+        insight::assertion(
+            idx!=v.end(),
+            "entry %s is not present (valid keys are: %s)",
+            label.c_str(),
+            containerKeyList_to_string(v, 10).c_str() );
 
-    std::swap(v[newLabel], idx->second);
-    v.erase(idx);
+        int iold=std::distance(v.begin(), idx);
+        int inew=predictInsertionLocation(v, newLabel);
 
-    itemRelabeled(label, newLabel);
+        bool positionChanged = (inew-iold>1)||(inew-iold<0);
 
-    triggerValueChanged();
+        if (positionChanged) // segfault otherwise
+            beforeChildPositionMove(iold, inew);
+
+        std::swap(v[newLabel], idx->second);
+        v.erase(idx);
+
+        itemRelabeled(label, newLabel);
+
+        if (positionChanged)
+            childPositionMoveDone(iold, inew);
+
+        triggerValueChanged();
+    }
 }
 
 
@@ -687,16 +716,9 @@ LabeledArrayParameter::readFromNode (
     using namespace rapidxml;
     auto* child = findNode(node, name, type());
 
-    if (child)
-    {
-        std::set<std::string> readKeys;
-        for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
-        {
-            std::string name(e->first_attribute("name")->value());
-            readKeys.insert(name);
-            getOrInsertDefaultValueImpl(name).readFromNode( name, *child );
-        }
+    std::set<std::string> readKeys;
 
+    auto finalizeRead = [&]() {
         // remove entries not read
         {
             std::vector<std::string> keys;
@@ -711,9 +733,35 @@ LabeledArrayParameter::readFromNode (
             }
         }
 
-        resetInitialization();
-
         triggerValueChanged();
+    };
+
+    if (child)
+    {
+        for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
+        {
+            std::string name(e->first_attribute("name")->value());
+            readKeys.insert(name);
+            getOrInsertDefaultValueImpl(name).readFromNode( name, *child );
+        }
+
+        finalizeRead();
+    }
+    else if ( (child = findNode(node, name, ArrayParameter::typeName) ) ) // attempt compatibility read
+    {
+        for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
+        {
+            std::string name(e->first_attribute("name")->value());
+            if (name!="default")
+            {
+                std::string key = str( boost::format(labelPattern_) % toNumber<int>(name) );
+                readKeys.insert(key);
+                getOrInsertDefaultValueImpl(key)
+                    .readFromNode( name, *child );
+            }
+        }
+
+        finalizeRead();
     }
     else
     {
@@ -727,6 +775,8 @@ LabeledArrayParameter::readFromNode (
     }
     return child;
 }
+
+
 
 
 
@@ -752,7 +802,7 @@ LabeledArrayParameter::LabeledArrayParameter(const rapidxml::xml_node<> &node)
 
 
 
-std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::cloneUninitialized() const
 {
     auto np=std::make_unique<LabeledArrayParameter>(
         *defaultValue_, 0,
@@ -765,10 +815,11 @@ std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::clone() const
     {
         np->insertValueImpl(
             v.first,
-            v.second->cloneAs<Parameter>() );
+            v.second->cloneAsUninitialized<Parameter>(),
+            false );
     }
 
-    np->setKeySourceParameterPath(keySourceParameterPath_);
+    np->setKeySourceParameterPathImpl(keySourceParameterPath_, false);
 
     return np;
 }
@@ -806,7 +857,9 @@ void LabeledArrayParameter::assignFrom(const Element& oe)
         }
         else
         {
-            insertValueImpl(ov.first, ov.second->cloneAs<Parameter>() );
+            insertValueImpl(
+                ov.first,
+                ov.second->cloneAsUninitialized<Parameter>() );
         }
     }
 
@@ -830,8 +883,6 @@ void LabeledArrayParameter::copyMatching(const Element& oe)
             myv->second->copyMatching( *ov.second );
         }
     }
-
-    resetInitialization();
 
     Parameter::assignFrom(op);
 }

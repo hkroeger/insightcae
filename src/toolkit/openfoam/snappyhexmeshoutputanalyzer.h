@@ -4,7 +4,7 @@
 #include "base/outputanalyzer.h"
 #include "base/progressdisplayer.h"
 #include <memory>
-#include "base/boost_include.h"
+#include <boost/regex.hpp>
 
 namespace insight {
 

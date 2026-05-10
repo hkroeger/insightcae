@@ -18,10 +18,13 @@
  *
  */
 
-#include "base/boost_include.h"
+#include <boost/assign/list_of.hpp>
+#include <boost/variant.hpp>
 #include "blockmesh_templates.h"
 
+#include "base/exception.h"
 #include "base/units.h"
+#include "openfoam/blockmesh/gradinganalyzer.h"
 
 using namespace boost;
 using namespace boost::assign;
@@ -85,18 +88,40 @@ void blockMeshDict_Cylinder::create_bmd()
 {
     this->setDefaultPatch(p().mesh.defaultPatchName);
 
+    const double al = M_PI/2.;
     bool hollow = p().geometry.d > 1e-10;
 
-    int nu, nx, nr;
-    double L_r, L_u;
+    double rc, L_r, L_u;
 
-    auto setLrLu = [&](double x)
+    if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(
+            &p().mesh.topology))
     {
-        L_r = 0.5*(p().geometry.D-p().geometry.d),
-        L_u = 2.*M_PI * ( (1.-x)*p().geometry.d + x*p().geometry.D ) /4.;
-    };
+        insight::assertion(
+            og->core_fraction>0. && og->core_fraction<0.5,
+            "parameter core_fraction must be between 0 and 0.5, is actually %g",
+            og->core_fraction.value
+            );
 
-    setLrLu(0.5);
+        rc = p().geometry.D*og->core_fraction;
+        L_r = p().geometry.D*0.5-rc;
+        L_u = cos(0.5*al)*2.*rc;
+    }
+    else if (auto *pie=boost::get<Parameters::mesh_type::topology_pieSlice_type>(
+                   &p().mesh.topology))
+    {
+        insight::assertion(
+            pie->xcubical>0. && pie->xcubical<1.,
+            "xcubical has to be between 0 and 1. Got %g", pie->xcubical.value );
+
+        rc = 0.;
+        L_r = 0.5*(p().geometry.D-p().geometry.d);
+        L_u = 2.*M_PI * ( (1.-pie->xcubical)*p().geometry.d + pie->xcubical*p().geometry.D ) /4.;
+    }
+    if (hollow) rc=p().geometry.d*0.5;
+
+
+    int nu, nx, nr;
+
 
     if (const auto* ic = boost::get<Parameters::mesh_type::resolution_individual_type>(&p().mesh.resolution))
     {
@@ -106,20 +131,17 @@ void blockMeshDict_Cylinder::create_bmd()
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p().mesh.resolution))
     {
-      setLrLu(ic->xcubical);
       nx=std::max(1, int(std::ceil(p().geometry.L/ic->delta)));
-      nr=std::max(1, int(std::ceil(L_r/ic->delta)));
+      nr=GradingAnalyzer(p().mesh.gradr).calc_n(ic->delta, L_r);
       nu=std::max(1, int(std::ceil(L_u/ic->delta)));
     }
     else if (const auto* ic = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p().mesh.resolution))
     {
-      setLrLu(ic->xcubical);
-
       std::vector<double> Ls={p().geometry.L, L_r, L_u};
       double delta = *std::max_element(Ls.begin(), Ls.end()) / double(ic->n_max);
 
       nx=std::max(1, int(std::ceil(p().geometry.L/delta)));
-      nr=std::max(1, int(std::ceil(L_r/delta)));
+      nr=GradingAnalyzer(p().mesh.gradr).calc_n(delta, L_r);
       nu=std::max(1, int(std::ceil(L_u/delta)));
     }
     else throw insight::UnhandledSelection();
@@ -129,22 +151,14 @@ void blockMeshDict_Cylinder::create_bmd()
     arma::mat er=p().geometry.er;
     arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, er);
 
-    double al = M_PI/2.;
 
-    double Lc=0.;
-    if (auto *og = boost::get<Parameters::mesh_type::topology_oGrid_type>(&p().mesh.topology))
-    {
-        Lc=p().geometry.D*og->core_fraction;
-    }
-    if (hollow) Lc=p().geometry.d*0.5;
 
     std::map<int, Point> pts = {
           { 1, 	0.5*p().geometry.D*ey },
-          { 0, 	/*::cos ( al/2. ) **/Lc*ey }
+          { 0, 	rc*ey }
     };
     arma::mat vL=p().geometry.L*ex;
 
-//     std::cout<<pts[0]<<pts[1]<<std::endl;
     Patch* base=nullptr;
     Patch* top=nullptr;
     Patch* outer=nullptr;
@@ -164,7 +178,7 @@ void blockMeshDict_Cylinder::create_bmd()
     }
 
     // core block
-    if ( !hollow && (Lc>1e-10) )
+    if ( !hollow && (rc>1e-10) )
     {
         arma::mat r0=rotMatrix ( 0.5*al, ex );
         arma::mat r1=rotMatrix ( 1.5*al, ex );
@@ -251,7 +265,7 @@ void blockMeshDict_Cylinder::create_bmd()
                 double linfrac=0.2;
                 auto& e1 = this->addEdge(new SplineEdge(
                                 {pstart, //(1.-linfrac)*pstart + linfrac*pend,
-                                 pmido + elo*(0.5*p().geometry.D-Lc),
+                                 pmido + elo*(0.5*p().geometry.D-rc),
                                  /*linfrac*pstart+(1.-linfrac)*pend, */pend}));
                 this->addEdge(e1.transformed(arma::eye(3,3), vL));
               }

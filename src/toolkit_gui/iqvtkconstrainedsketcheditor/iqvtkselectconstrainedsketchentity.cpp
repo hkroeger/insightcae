@@ -73,8 +73,8 @@ void SketchEntityMultiSelection::showPropertiesEditor(bool includeParameterEdito
                     if (e->layerName()!=newLayerName)
                     {
                         e->setLayerName(newLayerName);
-                        (*editor_).geometryChanged(
-                            editor_->findGeometry(e)->first );
+                        auto i=editor_->findGeometry(e);
+                        editor_->geometryChanged(i.first->first, i.second);
                         anythingDone=true;
                     }
                 }

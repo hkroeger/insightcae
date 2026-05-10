@@ -80,14 +80,22 @@ void MatrixParameterParser::cppWriteCreateStatement(
   os<<"std::unique_ptr< "<<cppInsightType()<<" > "<<psvarname<<";"<<endl;
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
   os<<"{"<<endl;
-  os<<"arma::mat data; data"<<endl;
+  os<<"arma::mat data = insight::ArmaMatCmpts{"<<endl;
   for (arma::uword i=0; i<value.n_rows;i++)
   {
-    for (arma::uword j=0; j<value.n_cols;j++)
-    {
-      os<<"<<"<<value(i,j)<<endl;
-    }
-    os<<"<<arma::endr";
+      os << "{";
+      for (arma::uword j=0; j<value.n_cols;j++)
+      {
+          os<<value(i,j);
+          if (j<value.n_cols-1)
+              os << ",";
+      }
+      os << "}";
+
+      if (i<value.n_rows-1)
+          os<<",\n";
+      else
+          os<<"\n}";
   };
   os<<";"<<endl;
   os<<psvarname<<".reset(new "<<cppInsightType()<<"(data, "<<cppInsightTypeConstructorParameters()<<"));\n";

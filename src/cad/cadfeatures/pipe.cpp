@@ -62,7 +62,7 @@ size_t Pipe::calcHash() const
 
 
 Pipe::Pipe(const Pipe&o, TreeCloneMap& tcm)
-    : CL(spine_), CL(xsec_),
+    : Feature(o, tcm), CL(spine_), CL(xsec_),
     orient_(o.orient_),
     reapprox_spine_(o.reapprox_spine_),
     CL(fixed_binormal_)
@@ -140,30 +140,19 @@ void Pipe::build()
         if (ex.IsParallel(vp0, SMALL))
             ex=gp_Dir(0,1,0);
 
-//        gp_Trsf tr1;
-        tr/*1*/.SetTransformation
+        tr.SetTransformation
         (
                     gp_Ax3(w.Value(p0).XYZ()/*gp_Pnt(0,0,0)*/, gp_Dir(vp0), ex),
             gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(1,0,0))
         );
-//        xsec=BRepBuilderAPI_Transform(xsec, tr1).Shape();
 
-//        tr.SetTranslationPart(v0.XYZ());
     }
 
     TopoDS_Shape xsecs=BRepBuilderAPI_Transform(xsec, tr).Shape();
 
     BRepOffsetAPI_MakePipe/*Shell*/ p(spinew, xsecs);
-//    p.SetTransitionMode(BRepBuilderAPI_RightCorner);
-//    p.Add(xsecs);
-    
-//    if (fixed_binormal_)
-//    {
-//        p.SetMode(gp_Dir(to_Vec(fixed_binormal_->value())));
-//    }
     
     p.Build();
-//    p.MakeSolid();
     
     providedSubshapes_["frontFace"]=Import::create(p.FirstShape());
     providedSubshapes_["backFace"]=Import::create(p.LastShape());

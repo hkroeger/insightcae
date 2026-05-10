@@ -3,6 +3,7 @@
 #include "base/units.h"
 #include "base/translations.h"
 #include "constrainedsketch.h"
+#include "constrainedsketchentities/externalreference.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragdimensionlineaction.h"
 #include "iqvtkconstrainedsketcheditor/iqvtkdragangledimensionaction.h"
 #include "iqvtkcadmodel3dviewer.h"
@@ -35,6 +36,7 @@
 #include <QComboBox>
 #include <QTableView>
 #include <qnamespace.h>
+#include <qpushbutton.h>
 
 #include "constrainedsketchentities/distanceconstraint.h"
 #include "constrainedsketchentities/tangentconstraint.h"
@@ -50,6 +52,7 @@
 #include "datum.h"
 #include "cadfeatures/singleedgefeature.h"
 
+#include "iqinplaceeditorwidget.h"
 
 using namespace insight;
 using namespace insight::cad;
@@ -124,6 +127,7 @@ IQVTKConstrainedSketchEditor::UndoState::UndoState(
   std::shared_ptr<insight::cad::ConstrainedSketch>(
      insight::cad::ConstrainedSketch::create(other)  )
 {}
+
 
 
 
@@ -352,13 +356,82 @@ void IQVTKConstrainedSketchEditor::drawLine()
 
                         if (auto online =
                             std::dynamic_pointer_cast<SingleEdgeFeature>(
-                                addPoint->onFeature ) )
+                                addPoint->onFeature ) ) // line w. endpoints
                         {
                             // constrain distance to start of hit line
                             (*this)->insertGeometry(
                                 FixedDistanceConstraint::create(
                                     online->start(), addPoint->p,
                                     (*this)->sketchPlaneNormal() ) );
+                        }
+                        else // some other crazy curve
+                        {
+                            // if more along Y-axis, constrain y-coordinate;
+                            // otherwise, constrain x-coordinate
+                            auto s = addPoint->onFeature->shape();
+                            auto p = addPoint->p->value();
+                            TopoDS_Edge edge;
+
+                            struct Hit {
+                                Handle(Geom_Curve) curve;
+                                double parameter;
+                            };
+                            std::map<double,Hit> hits;
+
+                            for (TopExp_Explorer exp(s, TopAbs_EDGE); exp.More(); exp.Next())
+                            {
+                                Hit c;
+
+                                edge = TopoDS::Edge(exp.Current());
+
+                                Standard_Real first, last;
+                                c.curve = BRep_Tool::Curve(edge, first, last);
+                                if (c.curve.IsNull())
+                                    continue;
+
+                                GeomAPI_ProjectPointOnCurve projector(
+                                    to_Pnt(p), c.curve, first, last);
+
+                                if (projector.NbPoints() > 0)
+                                {
+                                    c.parameter=projector.LowerDistanceParameter();
+                                    hits[projector.LowerDistance()]=c;
+                                }
+                            }
+                            insight::assertion(
+                                hits.size()>0,
+                                 "no edge found for point");
+
+                            auto &c=hits.begin()->second;
+                            gp_Pnt pt;
+                            gp_Vec tan;
+                            c.curve->D1(c.parameter, pt, tan);
+                            arma::mat etan=normalized(vec3(tan));
+
+                            arma::mat p2=viewer().pointInPlane2D(
+                                sketch().plane()->plane(), p);
+                            arma::mat p2p=viewer().pointInPlane2D(
+                                sketch().plane()->plane(), p+etan);
+
+                            arma::mat dir2=normalized(p2p-p2);
+
+                            VectorPtr dimdir;
+                            if (fabs(dir2(1))>fabs(dir2(0)))
+                            {
+                                dimdir=vec3const(0,1,0);
+                            }
+                            else
+                            {
+                                dimdir=vec3const(1,0,0);
+                            }
+                            auto constr = FixedDistanceConstraint::create(
+                                vec3const(0,0,0), addPoint->p,
+                                (*this)->sketchPlaneNormal(),
+                                std::string(),
+                                dimdir );
+                            (*this)->insertGeometry(constr);
+                            (*this)->invalidate();
+                            Q_EMIT sketchChanged();
                         }
                     }
                 }
@@ -1139,6 +1212,80 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
 
 
     {
+        auto btns=new QHBoxLayout;
+        auto hidebtn=new QPushButton("Hide all");
+        btns->addWidget(hidebtn);
+        connect(hidebtn, &QPushButton::clicked,
+                [this]()
+                {
+                    for (const auto& g: **this)
+                    {
+                        if (auto dim =
+                            std::dynamic_pointer_cast<ConstraintWithDimensionLines>(
+                                g.second ) )
+                        {
+                            hiddenEntities_.insert(g.first);
+                        }
+                    }
+                    updateActors();
+                });
+        auto showbtn=new QPushButton("Show all");
+        connect(showbtn, &QPushButton::clicked,
+                [this]()
+                {
+                    std::set<int> tbr;
+                    for (auto i: hiddenEntities_)
+                    {
+                        if ((**this).get<ConstraintWithDimensionLines>(i))
+                        {
+                            tbr.insert(i);
+                        }
+                    }
+                    for (auto i: tbr) hiddenEntities_.erase(i);
+                    updateActors();
+                });
+        btns->addWidget(showbtn);
+        l->addRow("Dimensions", btns);
+    }
+
+    {
+        auto btns=new QHBoxLayout;
+        auto hidebtn=new QPushButton("Hide all");
+        btns->addWidget(hidebtn);
+        connect(hidebtn, &QPushButton::clicked,
+                [this]()
+                {
+                    for (const auto& g: **this)
+                    {
+                        if (auto dim =
+                            std::dynamic_pointer_cast<ExternalReference>(
+                                g.second ) )
+                        {
+                            hiddenEntities_.insert(g.first);
+                        }
+                    }
+                    updateActors();
+                });
+        auto showbtn=new QPushButton("Show all");
+        connect(showbtn, &QPushButton::clicked,
+                [this]()
+                {
+                    std::set<int> tbr;
+                    for (auto i: hiddenEntities_)
+                    {
+                        if ((**this).get<ExternalReference>(i))
+                        {
+                            tbr.insert(i);
+                        }
+                    }
+                    for (auto i: tbr) hiddenEntities_.erase(i);
+                    updateActors();
+                });
+        btns->addWidget(showbtn);
+        l->addRow("Ref. geom.", btns);
+    }
+
+    {
         auto  geolist = new QTableView;
         auto *model=new IQConstrainedSketchEntityListModel(this, this);
         model->update();
@@ -1221,21 +1368,21 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
             delete toolBar_;
         });
 
-    (*this)->geometryAboutToBeRemoved.connect(
-        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+    (*this)->beforeGeometryRemoval.connect(
+        [this](ConstrainedSketch::GeometryMap::key_type geoId, int) {
             DBG_SLOT(geometryAboutToBeRemoved);
             removeActors((*this)->get(geoId));
         });
 
     (*this)->geometryAdded.connect(
-        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+        [this](ConstrainedSketch::GeometryMap::key_type geoId, int) {
             DBG_SLOT(geometryAdded);
             addActors((*this)->get(geoId));
             onSketchSizeChanged();
         });
 
     (*this)->geometryChanged.connect(
-        [this](ConstrainedSketch::GeometryMap::key_type geoId) {
+        [this](ConstrainedSketch::GeometryMap::key_type geoId, int) {
                 DBG_SLOT(geometryChanged);
               // redisplay, if displayed already
               auto g=(*this)->get(geoId);
@@ -1384,6 +1531,51 @@ IQVTKConstrainedSketchEditor::selectedItemUnderCursor() const
     return nullptr;
 }
 
+
+
+
+
+
+class XYEditor
+    : public IQInPlaceEditorWidget
+{
+public:
+    XYEditor(
+        const std::pair<double,double>& iniv,
+        std::function<void(std::pair<double,double>)> setNewValue,
+        QWidget *parent)
+        : IQInPlaceEditorWidget(QSize{200,100}, parent)
+    {
+        auto *l=new QFormLayout;
+        auto *ed1=new QLineEdit;
+        ed1->setText(QString::number(iniv.first));
+        ed1->installEventFilter(this);
+        auto *ed2=new QLineEdit;
+        ed2->setText(QString::number(iniv.second));
+        ed2->installEventFilter(this);
+        l->addRow("X:", ed1);
+        l->addRow("Y:", ed2);
+        setLayout(l);
+
+        auto accept = [this,ed1,ed2,setNewValue]() {
+            bool ok=false;
+            double x=ed1->text().toDouble(&ok);
+            double y=ed2->text().toDouble(&ok);
+            if (ok)
+            {
+                setNewValue(std::pair{x,y});
+                closeOverlay();
+            }
+        };
+
+        connect(ed1, &QLineEdit::returnPressed, ed1, accept);
+        connect(ed2, &QLineEdit::returnPressed, ed2, accept);
+    }
+};
+
+
+
+
 bool IQVTKConstrainedSketchEditor::onDoubleClick(
     Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
@@ -1414,6 +1606,7 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
         ed->setFocus(Qt::OtherFocusReason);
     };
 
+
     if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
     {
         if (auto selitem = selectedItemUnderCursor())
@@ -1434,6 +1627,19 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
                     dc->targetValue(),
                     std::bind(&FixedDistanceConstraint::setTargetValue, dc, std::placeholders::_1)
                     );
+                return true;
+            }
+            else if (auto dc = std::dynamic_pointer_cast<FixedPointConstraint>(selitem))
+            {
+                auto *eq=new XYEditor(
+                    dc->getXY(),
+                    [this,dc](const std::pair<double,double>& xy) {
+                        dc->setXY(xy);
+                        solve();
+                    },
+                    &viewer()
+                );
+                eq->showAt(point);
                 return true;
             }
             else
@@ -1588,8 +1794,13 @@ void IQVTKConstrainedSketchEditor::updateActors()
       }
 
       // add, if not filtered
-      if (hiddenLayers_.count(g.second->layerName())==0)
+      if (
+          (hiddenLayers_.count(g.second->layerName())==0)
+            &&
+          (hiddenEntities_.count(g.first)==0) )
+      {
         addActors(g.second);
+      }
   }
 
   // remove vanished geometry
@@ -1597,7 +1808,7 @@ void IQVTKConstrainedSketchEditor::updateActors()
   {
       auto g=sga.first;
       auto i=(*this)->findGeometry(g);
-      if (i==ConstrainedSketch::GeometryMap::const_iterator())
+      if (i.first==ConstrainedSketch::GeometryMap::const_iterator())
       {
         removeActors(g);
       }

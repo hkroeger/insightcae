@@ -76,12 +76,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValid
   else
   {
     // read xml
-    string content;
-    readFileIntoString(mf, content);
-
-    using namespace rapidxml;
-    xml_document<> doc;
-    doc.parse<0>(&content[0]);
+    XMLDocument doc(mf);
 
     auto *rootnode = doc.first_node();
     if (!rootnode || rootnode->name()!=string("remote") )
@@ -89,7 +84,7 @@ RemoteLocation::RemoteLocation(const boost::filesystem::path& mf, bool skipValid
 
     if (auto s = rootnode->first_attribute("server"))
     {
-      serverConfig_=remoteServers.findServer(std::string(s->value()));
+      serverConfig_=remoteServers().findServer(std::string(s->value()));
 
     }
     else

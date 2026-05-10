@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>617</width>
-    <height>318</height>
+    <width>705</width>
+    <height>364</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -128,6 +128,13 @@
       <widget class="QCheckBox" name="cb_clean_proc">
        <property name="text">
         <string>Clean processor directories</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="cb_subdirs">
+       <property name="text">
+        <string>Clean parameter study sub directories</string>
        </property>
       </widget>
      </item>

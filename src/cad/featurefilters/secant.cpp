@@ -36,7 +36,7 @@ bool secant<Edge>::checkMatch(FeatureID feature) const
 
   TopoDS_Vertex v0=TopExp::FirstVertex(e1);
   TopoDS_Vertex v1=TopExp::LastVertex(e1);
-  arma::mat v = Vector( BRep_Tool::Pnt(v0).XYZ() - BRep_Tool::Pnt(v1).XYZ() );
+  arma::mat v = insight::Vector( BRep_Tool::Pnt(v0).XYZ() - BRep_Tool::Pnt(v1).XYZ() );
   
   return (1.0 - fabs(arma::dot( v/arma::norm(v,2), dir_/arma::norm(dir_,2) ))) < 1e-10;
 }

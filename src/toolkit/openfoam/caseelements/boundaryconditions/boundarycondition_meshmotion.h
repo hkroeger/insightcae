@@ -1,7 +1,6 @@
 #ifndef BOUNDARYCONDITION_MESHMOTION_H
 #define BOUNDARYCONDITION_MESHMOTION_H
 
-#include "base/boost_include.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
@@ -41,20 +40,20 @@ public:
 typedef std::shared_ptr<MeshMotionBC> MeshMotionBCPtr;
 
 
-class NoMeshMotion
+class PassiveMeshMotion
   : public MeshMotionBC
 {
 public:
-  declareType ( "NoMeshMotion" );
+  declareType ( "PassiveMeshMotion" );
 
-  NoMeshMotion();
-  NoMeshMotion ( ParameterSetInput ip );
+  PassiveMeshMotion();
+  PassiveMeshMotion ( ParameterSetInput ip );
 
   bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const override;
 };
 
 
-extern const NoMeshMotion noMeshMotion;
+extern const PassiveMeshMotion passiveMeshMotion;
 
 
 class CAFSIBC

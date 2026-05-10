@@ -124,7 +124,8 @@ public:
     }
 
 
-    std::unique_ptr<Element> clone() const override
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override
     {
         using namespace boost::units;
         auto p = std::make_unique<SimpleDimensionedParameter<T, Unit, N> >
@@ -136,6 +137,7 @@ public:
         return p;
     }
 
+public:
     rapidxml::xml_node<>* appendToNode (
         const std::string& name,
         rapidxml::xml_document<>& doc,
@@ -147,7 +149,7 @@ public:
         xml_node<>* child = Parameter::appendToNode (
             name, doc, node, outProps );
 
-        appendAttribute(doc, *child, "value", value_.value() );
+        appendAttribute(doc, *child, "value", getInDefaultUnit() );
 
         return child;
     }
@@ -163,8 +165,9 @@ public:
         auto* child = Parameter::readFromNode ( name, node );
         if ( child )
         {
-          value_ = value_type(getMandatoryAttribute<base_value_type>(*child, "value") * Unit());
-          triggerValueChanged();
+            setInDefaultUnit(
+                getMandatoryAttribute<base_value_type>(*child, "value")
+                );
         }
         else
         {
@@ -183,8 +186,9 @@ public:
     SimpleDimensionedParameter(const rapidxml::xml_node<> & node)
         : Parameter(node)
     {
-#warning need to restore unit
-        value_ = value_type(getMandatoryAttribute<base_value_type>(node, "value") * Unit());
+        setInDefaultUnit(
+            getMandatoryAttribute<base_value_type>(node, "value")
+            );
     }
 
 

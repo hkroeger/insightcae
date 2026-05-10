@@ -89,13 +89,19 @@ QVBoxLayout* IQVectorParameter::populateEditControls(
           case insight::VectorParameter::VectorType::Direction: {
               arma::mat O=insight::vec3Zero();
               if (auto bp =
-                  psModel()->getVectorBasePoint(parameter().path()))
+                  psModel()->GUIContext()->getData<insight::VectorParameter>(parameter().path()))
               {
-                  O=*bp;
+                  O=bp->basePoint;
               }
 
               auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
-                  *v->topmostActionHost(), insight::CoordinateSystem(O, parameter()()), true );
+                  *v->topmostActionHost(), insight::CoordinateSystem(O, parameter()()),
+                    true,
+                    IQVTKManipulateCoordinateSystem::ActorMask{
+                        IQVTKManipulateCoordinateSystem::Ex,
+                        IQVTKManipulateCoordinateSystem::XZ,
+                        IQVTKManipulateCoordinateSystem::XY } );
+
               connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
                       [this,applyFunction](const insight::CoordinateSystem& cs)
                       {

@@ -23,7 +23,8 @@ public:
         const FileStorageInfo& fsi ) const override;
 
 
-    std::unique_ptr<hierarchicalData::Element> clone() const override;
+protected:
+    std::unique_ptr<hierarchicalData::Element> cloneUninitialized() const override;
 };
 
 

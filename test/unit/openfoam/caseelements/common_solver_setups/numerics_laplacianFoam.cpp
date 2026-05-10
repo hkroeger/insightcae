@@ -4,7 +4,7 @@
 
 int main(int argc, char*argv[])
 {
-    std::unique_ptr<OpenFOAMCaseWithCylinderMesh> cm;
+    std::unique_ptr<OpenFOAMCaseWithCylinderMesh<> > cm;
 
     return executeTest([&](){
 

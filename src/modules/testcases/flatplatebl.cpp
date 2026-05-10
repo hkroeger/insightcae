@@ -63,7 +63,7 @@ const std::vector<double> FlatPlateBL::supplementedInputData::sec_locs_
 FlatPlateBL::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &workDir,
-    ProgressDisplayer &progress)
+    ActionProgress &progress)
     : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress )
 {
   Retheta0_= p().operation.Retheta0;
@@ -302,7 +302,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     // mean value profile
     umean_data.values.resize(1);
     umean_data.values[0].time=0;
-    umean_data.values[0].profile->setFileName(inlet_velocity_profile_tabfile); // without path! otherwise problems after case copying!
+    umean_data.values[0].profile->setFilePath(inlet_velocity_profile_tabfile); // without path! otherwise problems after case copying!
     
     umean_data.p0=vec3(0,0,0);      
     umean_data.ep=vec3(0,1,0);    
@@ -368,8 +368,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progr
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
-    .set_name("zzzaveraging") // shall be last FO in list
     .set_timeStart(sp().avgStart_)
+    .set_name("zzzaveraging") // shall be last FO in list
   ));
   
 //   std::vector<arma::mat> plocs;

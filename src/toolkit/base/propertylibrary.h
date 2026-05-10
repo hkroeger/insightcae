@@ -6,9 +6,11 @@
 #include <vector>
 #include <string>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/rapidxml.h"
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -138,24 +140,11 @@ public:
             bool anythingRead=false;
 
             // read xml
-            std::string content;
-            readFileIntoString(fp, content);
+            XMLDocument doc(fp);
 
-            using namespace rapidxml;
-            xml_document<> doc;
-
-            try
+            if (auto *rootnode = doc.rootNode)
             {
-              doc.parse<0>(&content[0]);
-            }
-            catch (...)
-            {
-              throw insight::Exception("Failed to parse XML from file "+fp.string());
-            }
-
-            if (auto *rootnode = doc.first_node("root"))
-            {
-              for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+              for (auto *e = rootnode->first_node(); e; e = e->next_sibling())
               {
                 std::string nodeName(e->name());
                 if (nodeName=="entry")

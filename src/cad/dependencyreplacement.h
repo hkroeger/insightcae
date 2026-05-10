@@ -99,6 +99,21 @@ public:
         std::for_each(v.begin(), v.end(), *this);
     }
 
+    template<class X, class K=std::string>
+    void operator()(std::map<K, X>& v) const
+    {
+        std::for_each(
+            v.begin(), v.end(),
+              [this](typename std::map<K, X>::value_type& e)
+              {
+                  (*this)(e.second);
+              }
+          );
+        // for (auto& e: v)
+        // {
+        //     (*this)(e.second);
+        // }
+    }
 
     template<class T, class C=char>
     void operator()(boost::spirit::qi::symbols<C, T>& v) const

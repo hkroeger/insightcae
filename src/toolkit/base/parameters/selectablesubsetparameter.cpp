@@ -38,9 +38,9 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 {
   for ( auto &i: defaultValue )
   {
-        addItem(
+        addItemUninitialized(
           i.first,
-          i.second->cloneAs<ParameterSet>() );
+          i.second->cloneAsUninitialized<ParameterSet>() );
   }
   setSelection(defaultSelection);
 }
@@ -56,9 +56,19 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 {
   for ( auto &i: defaultValue )
   {
-        addItem(i.first, std::move(i.second) );
+        addItemUninitialized(i.first, std::move(i.second) );
   }
   setSelection(defaultSelection);
+}
+
+
+
+void SelectableSubsetParameter::initializeHierarchy()
+{
+    for (auto& ss: value_)
+    {
+        ss.second->initializeHierarchy();
+    }
 }
 
 
@@ -117,9 +127,15 @@ void SelectableSubsetParameter::setSelection(const key_type &nk)
         //     beforeChildRemoval(nAfter, nBefore-1);
         // }
 
-        beforeChildRemoval(0, nBefore-1);
+        if (nBefore>0)
+        {
+            beforeChildRemoval(0, nBefore-1);
+        }
         selection_=std::string();
-        childRemovalDone(0, nBefore-1);
+        if (nBefore>0)
+        {
+            childRemovalDone(0, nBefore-1);
+        }
 
         if (nAfter>0)
         {
@@ -213,7 +229,7 @@ SelectableSubsetParameter::copyItems() const
     result.insert(
         {
          sp.first,
-         sp.second->cloneAs<ParameterSet>()
+         sp.second->cloneAsUninitialized<ParameterSet>()
         });
   }
   return result;
@@ -227,23 +243,9 @@ void SelectableSubsetParameter::addItem(
     key_type key,
     std::unique_ptr<ParameterSet>&& ps )
 {
-    insight::assertion(
-        selection_.empty() || (key!=selection()),
-        "inserted item must not be currently selected" );
-
-    auto ins = value_.insert({key, std::move(ps)});
-
-    ins.first->second->valueChanged
-        .connect(childValueChanged);
-    ins.first->second->childValueChanged
-        .connect(childValueChanged);
-
-    ins.first->second->setParent(this);
-
-    // if (ins.first->first == selection_)
-    // {
-    //   triggerValueChanged();
-    // }
+    auto *pins=ps.get();
+    addItemUninitialized(key, std::move(ps));
+    pins->initializeHierarchy();
 }
 
 void SelectableSubsetParameter::removeItem(key_type key)
@@ -318,6 +320,17 @@ std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
       os<<operator()().plainTextRepresentation(indent+1);
   }
   return os.str();
+}
+
+
+
+void SelectableSubsetParameter::resolveRelativePaths(
+    const boost::filesystem::path &baseDirectory)
+{
+    for (auto& v: value_)
+    {
+        v.second->resolveRelativePaths(baseDirectory);
+    }
 }
 
 
@@ -417,6 +430,30 @@ SelectableSubsetParameter::readFromNode
 }
 
 
+void SelectableSubsetParameter::addItemUninitialized(
+    key_type key,
+    std::unique_ptr<ParameterSet>&& ps )
+{
+    insight::assertion(
+        selection_.empty() || (key!=selection()),
+        "inserted item must not be currently selected" );
+
+    auto ins = value_.insert({key, std::move(ps)});
+
+    ins.first->second->valueChanged
+        .connect(childValueChanged);
+    ins.first->second->childValueChanged
+        .connect(childValueChanged);
+
+    ins.first->second->setParent(this);
+
+    // if (ins.first->first == selection_)
+    // {
+    //   triggerValueChanged();
+    // }
+}
+
+
 
 SelectableSubsetParameter::SelectableSubsetParameter(
     const rapidxml::xml_node<> &node)
@@ -425,14 +462,14 @@ SelectableSubsetParameter::SelectableSubsetParameter(
     auto sel=getMandatoryAttribute(node, "value");
     addItem(
         sel,
-        std::make_unique<ParameterSet>(node) );
+        ParameterSet::create(node) );
     setSelection(sel);
 }
 
 
 
 std::unique_ptr<hierarchicalData::Element>
-SelectableSubsetParameter::clone () const
+SelectableSubsetParameter::cloneUninitialized() const
 {
   auto np=
       std::make_unique<SelectableSubsetParameter>(
@@ -441,9 +478,9 @@ SelectableSubsetParameter::clone () const
 
   for (auto i=value_.begin(); i!=value_.end(); i++)
   {
-    np->addItem(
+    np->addItemUninitialized(
           i->first,
-          i->second->cloneAs<ParameterSet>()
+          i->second->cloneAsUninitialized<ParameterSet>()
           );
   }
 
@@ -476,7 +513,9 @@ void SelectableSubsetParameter::assignFrom(const Element &p)
         }
         else
         {
-            addItem(ov.first, ov.second->cloneAs<ParameterSet>());
+            addItem(
+                ov.first,
+                ov.second->cloneAsUninitialized<ParameterSet>());
         }
     }
 
@@ -564,7 +603,7 @@ SelectableSubsetParameter::intersection(
           {
               np->addItem(
                   key,
-                  issp->cloneAs<ParameterSet>() );
+                  issp->cloneAsUninitialized<ParameterSet>() );
           }
       }
     }

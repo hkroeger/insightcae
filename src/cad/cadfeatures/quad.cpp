@@ -64,7 +64,7 @@ size_t Quad::calcHash() const
 
 
 Quad::Quad(const Quad&o, TreeCloneMap& tcm)
-    : CL(p0_), CL(L_), CL(W_), CL(t_), center_(o.center_)
+    : SingleFaceFeature(o, tcm), CL(p0_), CL(L_), CL(W_), CL(t_), center_(o.center_)
 {}
 
 

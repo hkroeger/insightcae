@@ -119,28 +119,19 @@ public:
         if (!boost::filesystem::exists(file.parent_path()))
             boost::filesystem::create_directories(file.parent_path());
 
-        xml_document<> doc;
+        XMLDocument doc;
 
-        xml_node<>* decl = doc.allocate_node(node_declaration);
-        decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-        decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-        doc.append_node(decl);
-
-        xml_node<> *rootnode = doc.allocate_node(node_element, "root");
         for (const auto& rs: *this)
         {
             if (xml_node<> *node = rs.second.createNode(doc))
             {
-                rootnode->append_node(node);
+                doc.rootNode->append_node(node);
             }
         }
 
-        writeAdditionalData(doc, rootnode);
+        writeAdditionalData(doc, doc.rootNode);
 
-        doc.append_node(rootnode);
-
-        std::ofstream f(file.string());
-        f << doc;
+        doc.saveToFile(file);
     }
 
     void reload() const

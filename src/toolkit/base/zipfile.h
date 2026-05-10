@@ -1,7 +1,7 @@
 #ifndef INSIGHT_ZIPFILE_H
 #define INSIGHT_ZIPFILE_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 namespace insight {
 

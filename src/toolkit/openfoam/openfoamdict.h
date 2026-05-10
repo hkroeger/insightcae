@@ -30,14 +30,19 @@
 #include <typeinfo>
 #include <cxxabi.h>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/variant.hpp>
+#include <boost/variant/recursive_variant.hpp>
+#include <boost/fusion/tuple.hpp>
+#include <boost/regex.hpp>
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 
 namespace insight
 {
- 
+
+class eMesh;
 
 namespace OFDictData
 {
@@ -273,6 +278,8 @@ void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData
 bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d, bool filterZeroSizesPatches=false);
 bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
+
+bool readOpenFOAMEMesh(std::istream& in, insight::eMesh& emd);
 
 void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname, bool skip_header=false);
 

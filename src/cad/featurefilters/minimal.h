@@ -26,13 +26,13 @@ namespace insight {
 namespace cad {
 
 class minimal
-    : public extremal
+    : public extremal, public EnableCreateFunction<minimal>
 {
 protected:
     double criterion(FeatureID feature) override;
 
 public:
-    minimal(const scalarQuantityComputer& qtc, int rank=0, int lrank=-1);
+    minimal(ScalarArg qtc, int rank=0, int lrank=-1);
 
     FilterPtr clone() const override;
 };

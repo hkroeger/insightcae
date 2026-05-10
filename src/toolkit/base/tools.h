@@ -24,11 +24,15 @@ class vtkPolyData;
 class vtkCellArray;
 
 #include <limits>
+
 #include "vtkSmartPointer.h"
 #include "vtkPolyDataAlgorithm.h"
 
 #include "base/exception.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include "boost/process.hpp"
 #include "boost/process/args.hpp"
 #include "base/linearalgebra.h"
@@ -38,6 +42,11 @@ class vtkCellArray;
 #include <istream>
 
 #include <boost/mpl/clear.hpp>
+#include "boost/timer/timer.hpp"
+#include "boost/regex.hpp"
+
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -46,16 +55,86 @@ namespace insight
 {
 
 
+/**
+ * @brief sanitizeStringForFileName
+ * remove all special characters, so that the string can be used as file name
+ * @param s
+ * @return
+ */
+boost::filesystem::path sanitizeStringForFileName(const std::string& s);
+
 
 std::set<boost::filesystem::path>
 wildcardSearch(const boost::filesystem::path& pathWithRegex);
 
 
+template<class T, class SmartPtr, typename ...Args>
+class OnDemandBase
+{
+public:
+    typedef std::function<SmartPtr(Args...)> InitFunction;
+
+private:
+    InitFunction initFunction_;
+    mutable SmartPtr value_;
+
+public:
+    OnDemandBase(InitFunction inif)
+        : initFunction_(inif)
+    {}
+
+    SmartPtr ptr(Args...args) const
+    {
+        if (!value_)
+        {
+            value_=initFunction_(args...);
+        }
+        return value_;
+    }
+
+    T& operator()(Args...args)
+    {
+        return *ptr(args...);
+    }
+
+    const T& operator()(Args...args) const
+    {
+        return *ptr(args...);
+    }
+
+    void reset()
+    {
+        value_.reset();
+    }
+};
+
+
+
+
+template<class T, typename ...Args>
+class OnDemand
+    : public OnDemandBase<T, std::shared_ptr<T>, Args...>
+{
+public:
+    using OnDemandBase<T, std::shared_ptr<T>, Args...>::OnDemandBase;
+};
+
+
+template<class T, typename ...Args>
+class vtkOnDemand
+    : public OnDemandBase<T, vtkSmartPointer<T>, Args...>
+{
+public:
+    using OnDemandBase<T, vtkSmartPointer<T>, Args...>::OnDemandBase;
+};
 
 
 
 std::string base64_encode(const std::string& s);
 std::string base64_encode(const boost::filesystem::path& f);
+char* base64_encode(
+    rapidxml::xml_document<> &doc,
+    const std::string& file_content_ );
 
 std::shared_ptr<std::string> base64_decode(const std::string& sourceBuffer);
 
@@ -491,6 +570,7 @@ arma::mat PolyDataBndBox(
   vtkSmartPointer<vtkDataSet> stl_data_Set
 );
 
+arma::mat initializedBndBox();
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2);
 
 void writeSTL

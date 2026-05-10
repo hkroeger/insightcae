@@ -11,27 +11,22 @@ RunSyncToRemote::RunSyncToRemote(insight::RemoteExecutionConfig& rec, bool inclu
 
 void RunSyncToRemote::start()
 {
-    boost::thread::operator=(
-        boost::thread(
-            [this]() {
-                try
-                {
-                    rec_.syncToRemote
-                    (
-                        includeProcDirs_,
-                        {},
-                        [&](int progress, const std::string& progress_text)
-                        {
-                            Q_EMIT progressValueChanged(progress);
-                            Q_EMIT progressTextChanged(QString(progress_text.c_str()));
-                        }
+    launch(
+        [this]()
+        {
+            rec_.syncToRemote
+                (
+                    includeProcDirs_,
+                    {},
+                    [&](int progress, const std::string& progress_text)
+                    {
+                        Q_EMIT progressValueChanged(progress);
+                        Q_EMIT progressTextChanged(QString(progress_text.c_str()));
+                    }
                     );
-                }
-                catch (const boost::thread_interrupted& i)
-                {}
-                Q_EMIT transferFinished();
-            }
-            )
+
+            Q_EMIT transferFinished();
+        }
         );
 }
 
@@ -49,28 +44,22 @@ RunSyncToLocal::RunSyncToLocal(insight::RemoteExecutionConfig& rec, bool include
 
 void RunSyncToLocal::start()
 {
-    boost::thread::operator=(
-        boost::thread(
-            [this]() {
-                try
-                {
-                    rec_.syncToLocal
-                    (
-                        includeProcDirs_,
-                        false,
-                        {},
-                        [&](int progress, const std::string& progress_text)
-                        {
-                            Q_EMIT progressValueChanged(progress);
-                            Q_EMIT progressTextChanged(QString(progress_text.c_str()));
-                        }
+    launch(
+        [this]()
+        {
+            rec_.syncToLocal
+                (
+                    includeProcDirs_,
+                    false,
+                    {},
+                    [&](int progress, const std::string& progress_text)
+                    {
+                        Q_EMIT progressValueChanged(progress);
+                        Q_EMIT progressTextChanged(QString(progress_text.c_str()));
+                    }
                     );
-                }
-                catch (const boost::thread_interrupted& i)
-                {}
-                Q_EMIT transferFinished();
-            }
-            )
+            Q_EMIT transferFinished();
+        }
         );
 }
 

@@ -354,6 +354,10 @@ void applyLocation(Poly_Triangulation& pt, const TopLoc_Location& loc)
 
 defineType(FrameMesh);
 
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    FrameMesh, &FrameMesh::insertrule );
+
 size_t FrameMesh::calcHash() const
 {
     return 0;
@@ -569,6 +573,27 @@ FrameMesh::FrameMesh
 
 void FrameMesh::write(std::ostream& ) const
 {}
+
+void FrameMesh::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "frame",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > rs.r_path > ')'
+                 > qi::lit("<<")
+                 > qi::lit("L") > '=' > rs.r_scalarExpression
+                 > ( rs.r_solidmodel_expression >
+                    -( rs.r_solidmodel_expression > (rs.r_scalarExpression|qi::attr(scalarconst(0.5))) )
+                    ) % ','
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                        &FrameMesh::create<const boost::filesystem::path&,ScalarPtr,EdgesDesc>,
+                        qi::_1, qi::_2, qi::_3/*, qi::_4*/
+                        ) ]
+                )
+            );
+}
 
 } // namespace cad
 } // namespace insight

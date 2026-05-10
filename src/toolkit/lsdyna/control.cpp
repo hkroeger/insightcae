@@ -119,7 +119,10 @@ Control_Timestep::Control_Timestep(double DtScalingCoeff, const si::Time& minDt)
 void Control_Timestep::write(std::ostream& os) const
 {
     os << "*CONTROL_TIMESTEP\n";
-    os << ", "<<DtScalingCoeff_<<",,, "<<toValue(-minDt_, inputDeck().timeUnit())<<"\n";
+    os << ", "<<DtScalingCoeff_<<",,, "<<
+        boost::str(boost::format("%4.1e")
+            % toValue(-minDt_, inputDeck().timeUnit()))
+       <<"\n";
 }
 
 

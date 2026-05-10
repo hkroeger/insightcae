@@ -9,7 +9,9 @@
 #include "GC_MakeArcOfCircle.hxx"
 
 #include "base/exception.h"
+#include "base/spatialtransformation.h"
 #include "occinclude.h"
+#include "occtools.h"
 #include "cadfeatures/importsolidmodel.h"
 #include "cadfeatures/transform.h"
 #include "cadparametersetvisualizer.h"
@@ -35,13 +37,16 @@ namespace insight
 namespace bmd
 {
 
+blockMeshVisualization::TransformFunction
+    blockMeshVisualization::NoTransformFunction =
+        [](const arma::mat& p) { return p; };
 
-TopoDS_Edge blockMeshVisualization::addEdge(const arma::mat& p0, const arma::mat& p1)
+
+TopoDS_Edge blockMeshVisualization::addEdge(
+    const arma::mat& p0, const arma::mat& p1,
+    TransformFunction tf )
 {
     bmd::PointPair pp(p0, p1), pp2(p1, p0);
-//    if (includedEdges.find(pp)==includedEdges.end()
-//            &&
-//        includedEdges.find(pp2)==includedEdges.end())
     {
         includedEdges.insert(pp);
         TopoDS_Edge edg;
@@ -53,7 +58,7 @@ TopoDS_Edge blockMeshVisualization::addEdge(const arma::mat& p0, const arma::mat
                 Handle_TColgp_HArray1OfPnt pts_col = new TColgp_HArray1OfPnt( 1, pts.size() );
                 for ( int j=0; j<pts.size(); j++ )
                 {
-                    pts_col->SetValue ( j+1, to_Pnt ( pts[j] ) );
+                    pts_col->SetValue ( j+1, to_Pnt ( tf(pts[j]) ) );
                 }
                 GeomAPI_Interpolate splbuilder ( pts_col, false, 1e-6 );
                 splbuilder.Perform();
@@ -64,21 +69,23 @@ TopoDS_Edge blockMeshVisualization::addEdge(const arma::mat& p0, const arma::mat
             else if (auto* ae = dynamic_cast<const bmd::ArcEdge*>(e))
             {
                 auto crv = GC_MakeArcOfCircle(
-                    to_Pnt(p0), to_Pnt(ae->midpoint()), to_Pnt(p1) ).Value();
+                    to_Pnt(tf(p0)), to_Pnt(tf(ae->midpoint())), to_Pnt(tf(p1)) ).Value();
                 edg=BRepBuilderAPI_MakeEdge(crv).Edge();
             }
         }
         if (edg.IsNull())
         {
             if (arma::norm(p0-p1,2)>insight::SMALL)
-                edg=BRepBuilderAPI_MakeEdge(to_Pnt(p0), to_Pnt(p1)).Edge();
+                edg=BRepBuilderAPI_MakeEdge(to_Pnt(tf(p0)), to_Pnt(tf(p1))).Edge();
         }
 
         return edg;
     }
 }
 
-blockMeshVisualization::blockMeshVisualization(const bmd::blockMesh& bm)
+blockMeshVisualization::blockMeshVisualization(
+    const bmd::blockMeshBlocking& bm,
+    TransformFunction tf )
     : bm_(bm)
 {
     for (const auto& bl: bm.allBlocks())
@@ -102,49 +109,57 @@ blockMeshVisualization::blockMeshVisualization(const bmd::blockMesh& bm)
             }
 
             TopTools_ListOfShape edgs;
-            edgs.Append(addEdge(facepts[0], facepts[1]));
-            edgs.Append(addEdge(facepts[1], facepts[2]));
-            edgs.Append(addEdge(facepts[2], facepts[3]));
-            edgs.Append(addEdge(facepts[3], facepts[0]));
-
-            BRepBuilderAPI_MakeWire wb;
-            TopoDS_Wire w;
-            try
+            for (auto& e: {
+                addEdge(facepts[0], facepts[1], tf),
+                addEdge(facepts[1], facepts[2], tf),
+                addEdge(facepts[2], facepts[3], tf),
+                addEdge(facepts[3], facepts[0], tf)})
             {
-                wb.Add(edgs);
-                w=wb.Wire();
-            }
-            catch (...)
-            {
-                TopTools_ListIteratorOfListOfShape i(edgs);
-                auto nextValue= [&]() {
-                    auto v=i.Value();
-                    i.Next();
-                    return v;
-                };
-                throw insight::CADException(
-                    {
-                     {"e1", cad::Import::create(nextValue()) },
-                     {"e2", cad::Import::create(nextValue()) },
-                     {"e3", cad::Import::create(nextValue()) },
-                     {"e4", cad::Import::create(nextValue()) }
-                    },
-                    "failed to create wire"
-                );
+                if (!e.IsNull())
+                    edgs.Append(e);
             }
 
-            try
+            if (edgs.Extent()>0)
             {
-                auto face = BRepBuilderAPI_MakeFace(w).Face();
-                sew.Add( face );
-            }
-            catch(...)
-            {
-                throw insight::CADException(
-                    {
-                        {"w", cad::Import::create(w) }
-                    },
-                    "failed to create face from wire");
+                BRepBuilderAPI_MakeWire wb;
+                TopoDS_Wire w;
+                try
+                {
+                    wb.Add(edgs);
+                    w=wb.Wire();
+                }
+                catch (...)
+                {
+                    TopTools_ListIteratorOfListOfShape i(edgs);
+                    auto nextValue= [&]() {
+                        auto v=i.Value();
+                        i.Next();
+                        return v;
+                    };
+                    throw insight::CADException(
+                        {
+                         {"e1", cad::Import::create(nextValue()) },
+                         {"e2", cad::Import::create(nextValue()) },
+                         {"e3", cad::Import::create(nextValue()) },
+                         {"e4", cad::Import::create(nextValue()) }
+                        },
+                        "failed to create wire"
+                    );
+                }
+
+                try
+                {
+                    auto face = BRepBuilderAPI_MakeFace(w).Face();
+                    sew.Add( face );
+                }
+                catch(...)
+                {
+                    throw insight::CADException(
+                        {
+                            {"w", cad::Import::create(w) }
+                        },
+                        "failed to create face from wire");
+                }
             }
         }
 
@@ -152,11 +167,6 @@ blockMeshVisualization::blockMeshVisualization(const bmd::blockMesh& bm)
 
         push_back(sew.SewedShape());
     }
-
-//    for (const auto& e: bm.allEdges())
-//    {
-//        addEdge(e.c0(), e.c1());
-//    }
 }
 
 
@@ -164,7 +174,7 @@ blockMeshVisualization::blockMeshVisualization(const bmd::blockMesh& bm)
 void blockMeshVisualization::addToVisualizer(
     CADParameterSetModelVisualizer &vz,
     const std::string &prefix,
-    const boost::variant<double,gp_Trsf>& s_or_t ) const
+    const boost::variant<double,gp_Trsf,insight::SpatialTransformation>& s_or_t ) const
 {
     std::string p=prefix;
     if (!p.empty()) p+="/";
@@ -172,6 +182,8 @@ void blockMeshVisualization::addToVisualizer(
     gp_Trsf trsf;
     if (auto* tr = boost::get<gp_Trsf>(&s_or_t))
         trsf=*tr;
+    else if (auto* tr = boost::get<insight::SpatialTransformation>(&s_or_t))
+        trsf=cad::is_gp_Trsf(*tr);
     else if (auto* sf = boost::get<double>(&s_or_t))
         trsf.SetScaleFactor(*sf);
     else

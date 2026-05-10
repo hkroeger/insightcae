@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class faceAdjacentToFaces
-    : public Filter
+    : public Filter, public EnableCreateFunction<faceAdjacentToFaces>
 {
 protected:
     ConstFeatureSetPtr faces_;

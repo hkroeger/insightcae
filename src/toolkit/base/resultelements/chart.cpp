@@ -10,7 +10,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -83,10 +82,10 @@ PlotCurve::PlotCurve ( const arma::mat& x, const arma::mat& y, const std::string
 PlotCurve::PlotCurve ( const arma::mat& xrange, double y, const std::string& plaintextlabel, const std::string& plotcmd )
 : plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {
-    xy_
-     << arma::as_scalar(arma::min(xrange)) << y << arma::endr
-     << arma::as_scalar(arma::max(xrange)) << y << arma::endr
-     ;
+    xy_ = ArmaMatCmpts{
+        { arma::as_scalar(arma::min(xrange)), y },
+        { arma::as_scalar(arma::max(xrange)), y }
+    };
 }
 
 
@@ -119,6 +118,21 @@ const arma::mat& PlotCurve::xy() const
 const std::string& PlotCurve::plaintextlabel() const
 {
     return plaintextlabel_;
+}
+
+std::pair<double, double>
+PlotCurve::significantMinMax(double lastPartFraction) const
+{
+    arma::mat ysig = xy_.rows(xy_.n_rows/3, xy_.n_rows-1).col(1);
+    double mi=ysig.min();
+    double ma=ysig.max();
+
+    if (mi<0.) mi*=1.1; else mi*=0.9;
+    if (ma>0.) ma*=1.1; else ma*=0.9;
+
+    std::set<double> lims{ mi, 0., ma };
+
+    return { *lims.begin(), *(--lims.end()) };
 }
 
 bool PlotCurve::operator==(const PlotCurve o) const
@@ -371,7 +385,7 @@ Chart::readFromNode(
 
 
 
-std::unique_ptr<hierarchicalData::Element> Chart::clone() const
+std::unique_ptr<hierarchicalData::Element> Chart::cloneUninitialized() const
 {
     auto res=std::make_unique<Chart>(
         xlabel_, ylabel_, plc_,

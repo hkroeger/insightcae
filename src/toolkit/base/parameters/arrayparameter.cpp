@@ -31,10 +31,12 @@ ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const st
 : Parameter(description, isHidden, isExpert, isNecessary, order),
   defaultSize_(size)
 {
-    setDefaultValue(defaultValue.cloneAs<Parameter>());
+    setDefaultValue(
+        defaultValue.cloneAsUninitialized<Parameter>());
+
     for (int i=0; i<defaultSize_; i++)
     {
-        appendEmpty(false);
+        appendEmptyImpl(false);
     }
 }
 
@@ -78,7 +80,7 @@ int ArrayParameter::defaultSize() const
   return defaultSize_;
 }
 
-void ArrayParameter::resize(int newSize, bool init)
+void ArrayParameter::resizeImpl(int newSize, bool init)
 {
   if (newSize<size())
   {
@@ -91,7 +93,7 @@ void ArrayParameter::resize(int newSize, bool init)
   {
     for (int k=size(); k<newSize; ++k)
     {
-      appendEmpty(init);
+      appendEmptyImpl(init);
     }
   }
 
@@ -124,7 +126,8 @@ void ArrayParameter::eraseValue ( int i )
 }
 
 
-void ArrayParameter::appendValue ( std::unique_ptr<Parameter>&& np )
+void ArrayParameter::appendValueImpl (
+    std::unique_ptr<Parameter>&& np, bool initializeHierarchy )
 {
     int i=value_.size();
   beforeChildInsertion(i, i);
@@ -140,6 +143,7 @@ void ArrayParameter::appendValue ( std::unique_ptr<Parameter>&& np )
           ins->childValueChanged.connect( childValueChanged )));
   newItemAdded(ins.get());
   ins->setParent(this);
+  if (initializeHierarchy) ins->initializeHierarchy();
 
   childInsertionDone(i, i);
 
@@ -147,7 +151,8 @@ void ArrayParameter::appendValue ( std::unique_ptr<Parameter>&& np )
 }
 
 
-void ArrayParameter::insertValue ( int i, std::unique_ptr<Parameter>&& np )
+void ArrayParameter::insertValueImpl (
+    int i, std::unique_ptr<Parameter>&& np, bool initializeHierarchy )
 {
   insight::assertion(
       i>=0 && i<size(),
@@ -165,6 +170,7 @@ void ArrayParameter::insertValue ( int i, std::unique_ptr<Parameter>&& np )
        (*ins)->childValueChanged.connect( childValueChanged )));
   newItemAdded(ins->get());
   (*ins)->setParent(this);
+  if (initializeHierarchy) (*ins)->initializeHierarchy();
 
   childInsertionDone(i, i);
 
@@ -172,12 +178,12 @@ void ArrayParameter::insertValue ( int i, std::unique_ptr<Parameter>&& np )
 }
 
 
-void ArrayParameter::appendEmpty(bool init)
+void ArrayParameter::appendEmptyImpl(bool initializeHierarchy)
 {
     int i=value_.size();
     beforeChildInsertion(i, i);
 
-  value_.push_back ( defaultValue_->cloneAs<Parameter>() );
+  value_.push_back ( defaultValue_->cloneAsUninitialized<Parameter>() );
   // if (init) initialize();
 
   auto& ins=value_.back();
@@ -189,6 +195,7 @@ void ArrayParameter::appendEmpty(bool init)
         ins->childValueChanged.connect( childValueChanged )));
   newItemAdded(ins.get());
   ins->setParent(this);
+  if (initializeHierarchy) ins->initializeHierarchy();
 
   childInsertionDone(i, i);
 
@@ -450,14 +457,14 @@ const rapidxml::xml_node<>* ArrayParameter::readFromNode(
             {
                 int i=boost::lexical_cast<int>(name);
                 imax=std::max(imax,i);
-                if (i>size()-1) resize(i+1, false);
+                if (i>size()-1) resize(i+1);
                 value_[i]->readFromNode( name, *child );
             }
         }
         if (imax<0)
             clear();
         else
-            resize(imax+1, false);
+            resize(imax+1);
 
         triggerValueChanged();
     }
@@ -500,7 +507,7 @@ ArrayParameter::ArrayParameter(const rapidxml::xml_node<> &node)
 
             int i=boost::lexical_cast<int>(name);
             imax=std::max(imax,i);
-            if (i>size()-1) resize(i+1, false);
+            if (i>size()-1) resizeImpl(i+1, false);
             v->setParent(this);
             value_[i]=std::move(v);
         }
@@ -518,7 +525,7 @@ ArrayParameter::ArrayParameter(const rapidxml::xml_node<> &node)
 
 
 
-std::unique_ptr<hierarchicalData::Element> ArrayParameter::clone () const
+std::unique_ptr<hierarchicalData::Element> ArrayParameter::cloneUninitialized() const
 {
   auto np=std::make_unique<ArrayParameter>(
         *defaultValue_,
@@ -528,7 +535,9 @@ std::unique_ptr<hierarchicalData::Element> ArrayParameter::clone () const
 
   for (int i=0; i<size(); i++)
   {
-    np->appendValue( value_[i]->cloneAs<Parameter>() );
+    np->appendValueImpl(
+          value_[i]->cloneAsUninitialized<Parameter>(),
+          false );
   }
 
   return np;
@@ -544,7 +553,7 @@ void ArrayParameter::assignFrom( const Element& rhs )
   (*defaultValue_).assignFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
 
-  resize(op.size(), true);
+  resize(op.size());
 
   for (int i=0; i<op.size(); ++i)
   {
@@ -562,7 +571,7 @@ void ArrayParameter::copyMatching( const Element& rhs )
     (*defaultValue_).copyMatching(*op.defaultValue_);
     defaultSize_ = op.defaultSize_;
 
-    resize(op.size(), true);
+    resize(op.size());
 
     for (int i=0; i<size(); ++i)
     {

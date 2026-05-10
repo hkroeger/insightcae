@@ -31,7 +31,7 @@ public:
 public Q_SLOTS:
     void loadResultSet();
     void saveResultSetAs();
-    void renderReport();
+    void renderReport(insight::ProgressDisplayer *pd = nullptr);
     void loadFilter();
     void saveFilter();
 

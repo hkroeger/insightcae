@@ -77,6 +77,7 @@ addToStaticFunctionTable(Feature, Import, ruleDocumentation);
 
 
 Import::Import(const Import&o, TreeCloneMap& tcm)
+: Feature(o, tcm)
 {
     if (auto* fp=boost::get<FeatureSetPtr>(&o.importSource_))
     {
@@ -155,9 +156,15 @@ void Import::build()
           }
           setShapeFromFile(fp);
 
-          for (FeatureID i: allSolidsSet())
+          FeatureSetData fsd;
+          idx_->insertAllSolidTags(fsd);
+          for (FeatureID i: fsd)
           {
-              providedSubshapes_[boost::str(boost::format("solid%d")%i)]=Import::create(subsolid(i));
+              auto label=boost::str(boost::format("solid%d")%i);
+              auto feat=Import::create(idx_->solidByTag(i));
+              feat->setFeatureSymbolName(
+                  this->featureSymbolName()+"."+label );
+              providedSubshapes_[label]=feat;
           }
 
           setFeatureSymbolName("importedFrom_"+fp.string());
@@ -294,6 +301,24 @@ FeatureCmdInfoList Import::ruleDocumentation()
             "Creates a new feature from selected entities of an existing feature."
         )
     };
+}
+
+
+
+
+boost::optional<BOMDescriptionData> Import::BOMDescription() const
+{
+    if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
+    {
+        return BOMDescriptionData(
+            std::make_shared<DescriptionWithParameters>(
+                f->filename().string(),
+                std::vector<ScalarPtr>{}),
+            nullptr
+            );
+    }
+
+    return boost::optional<BOMDescriptionData>();
 }
 
 

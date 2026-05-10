@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
     {
 
       string server=vm["create-remote-temp"].as<std::string>();
-      auto i = insight::remoteServers.findServer(server);
+      auto i = insight::remoteServers().findServer(server);
 
       insight::RemoteExecutionConfig rec(i, location); // creates config file
       rec.initialize();

@@ -5,9 +5,14 @@
 #include <string>
 
 #include "base/cppextensions.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/utility.hpp>
+#include <boost/optional.hpp>
+#include <boost/format.hpp>
+#include <boost/signals2.hpp>
 #include "base/filestorageinfo.h"
 #include "base/hierarchicaldatafilter.h"
+#include "base/elementpath.h"
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -15,18 +20,6 @@
 namespace insight {
 
 namespace hierarchicalData {
-
-namespace elementPath {
-
-std::string
-join(const std::string& p1, const std::string& p2);
-
-std::string
-join(const std::vector<std::string>& ps);
-
-}
-
-
 
 
 class Ordering
@@ -105,6 +98,7 @@ public:
     boost::signals2::signal<void()> valueChanged, childValueChanged;
     boost::signals2::signal<void(int, int)> beforeChildInsertion, childInsertionDone;
     boost::signals2::signal<void(int, int)> beforeChildRemoval, childRemovalDone;
+    boost::signals2::signal<void(int, int)> beforeChildPositionMove, childPositionMoveDone;
 #endif
 
 
@@ -198,20 +192,17 @@ private:
      */
     mutable boost::optional<boost::filesystem::path> workingDirectory_;
 
-    virtual bool hasWorkingDirectory() const;
-    virtual boost::filesystem::path workingDirectory() const;
     virtual void setWorkingDirectory(const boost::filesystem::path& wd) const;
 
-    bool requiresInit_;
+protected:
+    virtual bool hasWorkingDirectory() const;
+    virtual boost::filesystem::path workingDirectory() const;
+
 
 public: // needs to be accessible from ResultElementCollection
     virtual void setParent(Element* parent);
 
 protected:
-    void markAsInitialized();
-    void ensureInitialization() const;
-    void resetInitialization();
-
     /**
      * @brief initialize
      * called after entire hierarchy of objects is readily constructed
@@ -219,11 +210,19 @@ protected:
      * does nothing by default.
      * required by synchronized parameters (LabeledArrayParameter) that get a selection from other parameters
      */
-    virtual void initialize();
+    virtual void initializeHierarchy();
 
     inline bool valueChangeSignalBlocked() const
     {
         return valueChangeSignalBlocked_;
+    }
+
+    virtual std::unique_ptr<insight::hierarchicalData::Element> cloneUninitialized() const =0;
+
+    template<class T>
+    std::unique_ptr<T> cloneAsUninitialized() const
+    {
+        return std::dynamic_unique_ptr_cast<T>(this->cloneUninitialized());
     }
 
 public:
@@ -231,10 +230,6 @@ public:
 
     Element(int order);
     virtual ~Element();
-
-
-    bool isInitialized() const;
-
 
     virtual bool canSetDataFromString() const;
     virtual void setDataFromString(const std::string& newValue, bool* ok = nullptr);
@@ -348,7 +343,7 @@ public:
 
 
     // use fully qualified type for SWIG
-    virtual std::unique_ptr<insight::hierarchicalData::Element> clone() const =0;
+    std::unique_ptr<insight::hierarchicalData::Element> clone() const;
 
     template<class T>
     std::unique_ptr<T> cloneAs() const

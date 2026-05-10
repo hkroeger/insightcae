@@ -12,7 +12,7 @@ namespace cad
 
 template<EntityType T>
 class connected
-: public Filter
+    : public Filter, public EnableCreateFunction<connected<T> >
 {
 protected:
     /**

@@ -115,6 +115,7 @@ namespace si {
  static const auto degC = 1.*absolute<celsius::temperature>();
  static const auto degK = 1.*absolute<si::temperature>();
 
+ static const auto kilomole = kilo*mole;
  static const auto kilojoule = kilo*joule;
  static const auto megajoule = mega*joule;
  static const auto kilojoule_per_hour_squaremeter_kelvin
@@ -195,17 +196,26 @@ namespace si {
 
  typedef quantity<pressure, double> Pressure;
 
+
+ typedef quantity<temperature, double> TemperatureDifference;
  typedef quantity<absolute<temperature>, double> Temperature;
+
+ Temperature tempDiff2Abs(TemperatureDifference deltaT);
+ TemperatureDifference tempDiffToZero(Temperature T);
+
 
  typedef quantity<energy, double> Energy;
 
  typedef quantity<power, double> Power;
 
+ typedef quantity<decltype(kilogram/second)::unit_type, double> MassFlux;
  typedef quantity<decltype(cubic_meter_per_second)::unit_type, double> VolumeFlux;
 
  typedef quantity<decltype(kelvin_per_meter)::unit_type, double> TemperatureGradient;
 
  typedef quantity<unit<heat_capacity_dimension,system>, double> HeatCapacity;
+
+ typedef quantity<decltype(si::kilogram/(1000.*si::mole))::unit_type, double> MolarWeight;
 
  typedef quantity<decltype(joule/kilogram/kelvin), double> SpecificHeatCapacity;
 

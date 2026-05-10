@@ -18,6 +18,7 @@
  */
 
 #include "cone.h"
+#include "cadparameters.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/boost_include.h"
@@ -61,7 +62,7 @@ size_t Cone::calcHash() const
 
 
 Cone::Cone(const Cone&o, TreeCloneMap& tcm)
-    : CL(p1_), CL(p2_), CL(D1_), CL(D2_), CL(di_)
+    : SingleVolumeFeature(o, tcm), CL(p1_), CL(p2_), CL(D1_), CL(D2_), CL(di_)
 {}
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2, ScalarPtr di)
@@ -120,6 +121,15 @@ void Cone::build()
 
         cone=cutter.Shape();
     }
+
+    providedFeatureSets_["frontFace"]=makeFaceFeatureSet(
+        shared_from_this(), "isPlane && minimal(dist(CoG, %m0))",
+        {cad::matconst(*p1_)}
+        );
+    providedFeatureSets_["backFace"]=makeFaceFeatureSet(
+        shared_from_this(), "isPlane && minimal(dist(CoG, %m0))",
+        {cad::matconst(*p2_)}
+        );
 
     setShape ( cone );
 }

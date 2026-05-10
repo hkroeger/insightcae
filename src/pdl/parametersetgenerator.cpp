@@ -27,11 +27,20 @@ void ParameterSetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) co
 {
     SubsetGenerator::writeCppTypeDeclGetSetFunctions(os);
 
-    // convert static data into a ParameterSet
-    os << "std::unique_ptr<ParameterSet> cloneParameterSet() const override\n"
-       << "{ auto p=makeDefault(); set(*p); return p; }\n";
+    if (
+        base_types_ &&
+        (std::find_if( base_types_->begin(), base_types_->end(),
+                        [](const BaseType& bt)
+                        { return !boost::fusion::at_c<0>(bt); } )
+            !=base_types_->end())
+        )
+    {
+        // convert static data into a ParameterSet
+        os << "std::unique_ptr<ParameterSet> cloneParameterSet() const override\n"
+           << "{ auto p=makeDefault(); set(*p); return p; }\n";
 
-    // clone function
-    os << "std::unique_ptr<insight::ParametersBase> clone() const override\n"
-       << "{ return std::unique_ptr<"<<name<<">(new "<<name<<"(*this)); }\n";
+        // clone function
+        os << "std::unique_ptr<insight::ParametersBase> clone() const override\n"
+           << "{ return std::unique_ptr<"<<name<<">(new "<<name<<"(*this)); }\n";
+    }
 }

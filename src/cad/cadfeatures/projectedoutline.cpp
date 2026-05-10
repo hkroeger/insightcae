@@ -136,7 +136,7 @@ TopoDS_Shape makeOutlineProjectionEdges
 
 
 ProjectedOutline::ProjectedOutline(const ProjectedOutline&o, TreeCloneMap& tcm)
-    : CL(source_), CL(target_)
+    : Feature(o, tcm), CL(source_), CL(target_)
 {}
 
 

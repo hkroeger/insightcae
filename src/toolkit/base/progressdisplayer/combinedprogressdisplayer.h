@@ -30,7 +30,7 @@ public:
     void finishActionProgress(const std::string& path) override;
     void reset() override;
 
-    bool stopRun() const override;
+    bool stopIsDemanded() const override;
 };
 
 

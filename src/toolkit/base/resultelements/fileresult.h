@@ -42,7 +42,6 @@ public:
         int documentHierarchyLevel,
         const FileStorageInfo& fsi ) const override;
 
-    boost::filesystem::path filePath(boost::filesystem::path baseDirectory = "") const;
 
     /**
      * append the contents of this element to the given xml node
@@ -63,7 +62,8 @@ public:
 
     bool isEqual(const Element& op) const override;
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 };
 
 } // namespace insight

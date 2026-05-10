@@ -48,6 +48,7 @@ SourceFiles
 
 #include "directforce.h"
 #include "patchmomentumforce.h"
+#include "relativemovingbody.h"
 
 #include "extendedForcesFunctionObject.H"
 #include "forcesourcecombination.h"
@@ -204,6 +205,8 @@ public:
         scalar rampDuration_;
         
         mutable autoPtr<OFstream> rbmLogFile_;
+
+        PtrList<relativeMovingBody> relativeMovingBodies_;
 
     // Private Member Functions
 

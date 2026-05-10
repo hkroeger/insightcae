@@ -26,7 +26,6 @@
 #include "occinclude.h"
 
 using namespace boost;
-using namespace boost::assign;
 
 namespace insight
 {
@@ -159,7 +158,7 @@ void blockMeshDict_CurvedCylinder::create_bmd()
                                 ec.origin+r11*yc1, ec.origin+r01*yc1, ec.origin+r01*yo1, ec.origin+r11*yo1
                             ),
                             p().mesh.nu, p().mesh.nr, p().mesh.nx,
-                            list_of<double> ( 1 ) ( 1./p().mesh.gradr ) ( 1 )
+                            { 1, 1./p().mesh.gradr, 1 }
                           )
             );
             if ( base ) {

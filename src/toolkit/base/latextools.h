@@ -22,7 +22,7 @@
 #define INSIGHT_LATEXTOOLS_H
 
 #include <string>
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 namespace insight 
 {
@@ -71,6 +71,35 @@ public:
 
   bool operator!=(const SimpleLatex& o) const;
 };
+
+
+
+
+struct LatexRunner
+{
+    boost::filesystem::path tex_file;
+    boost::filesystem::path workdir;
+    std::string base_name;   // without extension
+    int max_runs = 5;
+
+    LatexRunner(const boost::filesystem::path& tex);
+
+    // Run pdflatex once, return exit code
+    int run_pdflatex();
+
+    // // Run bibtex once if .aux references a bibliography
+    bool run_bibtex();
+
+    // Check .log for "Rerun" warnings
+    bool needs_rerun();
+
+    // Check .aux for \bibdata (means bibtex is needed)
+    bool needs_bibtex(const std::string& aux_file);
+
+    // Full build loop
+    bool build();
+};
+
 
 }
 

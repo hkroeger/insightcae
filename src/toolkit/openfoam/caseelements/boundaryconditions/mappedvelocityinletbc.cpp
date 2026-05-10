@@ -71,7 +71,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
     for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
-        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+        if ( ( field.first=="U" ) && ( boost::fusion::get<0> ( field.second ) ==vectorField ) ) {
             BC["type"]="mapped";
             BC["fieldName"]="U";
             BC["setAverage"]=true;
@@ -81,17 +81,17 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
         } else if (
             ( field.first=="T" )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField( p().T );
         } else if (
             ( ( field.first=="p" ) || isPrghPressureField(field) )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "zeroGradient" );
-        } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        } else if ( ( field.first=="rho" ) && ( boost::fusion::get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::toUniformField( p().rho );
         } else if
@@ -105,12 +105,12 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
                 ( field.first=="nuTilda" )
             )
             &&
-            ( get<0> ( field.second ) ==scalarField )
+            ( boost::fusion::get<0> ( field.second ) ==scalarField )
         ) {
             BC["type"]=OFDictData::data ( "zeroGradient" );
         } else {
             if ( ! (
-                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
                         ||
                         phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
                     ) )

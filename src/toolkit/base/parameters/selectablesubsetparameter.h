@@ -45,6 +45,7 @@ protected:
   key_type selection_;
   ItemList value_;
 
+
 public:
   declareType ( "selectableSubset" );
 
@@ -82,6 +83,7 @@ public:
       bool isNecessary=false,
       int order=0 );
 
+  void initializeHierarchy() override;
 
   bool isDifferent(const Parameter& p) const override;
 
@@ -96,7 +98,22 @@ public:
   EntryReferences items() const;
   Entries copyItems() const;
 
+  /**
+   * @brief addItemUninitialized
+   * for use in stage construction (subsets first, then insert into parent set)
+   * @param key
+   * @param ps
+   */
+  void addItemUninitialized(key_type key, std::unique_ptr<ParameterSet>&& ps );
+
+  /**
+   * @brief addItem
+   * preferred insertion method
+   * @param key
+   * @param ps
+   */
   void addItem(key_type key, std::unique_ptr<ParameterSet>&& ps );
+
   void removeItem(key_type key);
 
   inline ParameterSet& operator() ()
@@ -119,6 +136,8 @@ public:
 
   std::string plainTextRepresentation(int indent) const override;
 
+  void resolveRelativePaths(
+      const boost::filesystem::path &baseDirectory) override;
   bool isPacked() const override;
   void pack() override;
   void unpack(const boost::filesystem::path& basePath) override;
@@ -137,8 +156,10 @@ public:
       const std::string& name,
       const rapidxml::xml_node<>& node ) override;
 
-  std::unique_ptr<Element> clone () const override;
+protected:
+  std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
   void assignFrom(const Element& p) override;
   void copyMatching(const Element& p) override;
   void extend( const Element& op ) override;

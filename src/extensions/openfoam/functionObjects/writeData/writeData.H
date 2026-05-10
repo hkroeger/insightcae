@@ -54,7 +54,7 @@ SourceFiles
 #include "Time.H"
 #endif
 
-#include "uniof.h"
+#include "uniof_functionobject.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

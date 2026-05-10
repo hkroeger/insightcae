@@ -33,7 +33,7 @@ int IQConstrainedSketchLayerListModel::columnCount(const QModelIndex &parent) co
 Qt::ItemFlags IQConstrainedSketchLayerListModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return 0;
+        return Qt::ItemFlags();
 
     auto f=QAbstractTableModel::flags(index);
 

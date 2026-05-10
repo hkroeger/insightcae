@@ -1,7 +1,7 @@
 #ifndef INSIGHT_BMD_GEOMETRY_H
 #define INSIGHT_BMD_GEOMETRY_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 
 namespace insight {

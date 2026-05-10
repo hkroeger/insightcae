@@ -1,8 +1,8 @@
 #include "parametergenerator.h"
-#include "boost/algorithm/string/predicate.hpp"
-#include "boost/algorithm/string/trim.hpp"
-#include "boost/lexical_cast.hpp"
+
 #include <string>
+
+#include "boost/lexical_cast.hpp"
 
 
 
@@ -239,7 +239,7 @@ void ParameterGenerator::cppWriteInsertStatement(
 {
     os<<"{ ";
     this->cppWriteCreateStatement(os, name);
-    os << psvarname << ".insert( \""<<name<<"\", std::move("<<name<<") ); ";
+    os << psvarname << ".insertUninitialized( ParameterSetBuilder::key(), \""<<name<<"\", std::move("<<name<<") ); ";
     os<<"}"<<std::endl;
 }
 

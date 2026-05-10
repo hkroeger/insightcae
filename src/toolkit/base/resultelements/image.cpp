@@ -3,7 +3,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 namespace insight {
@@ -88,7 +87,7 @@ int Image::nChildren() const
 
 
 
-std::unique_ptr<hierarchicalData::Element> Image::clone() const
+std::unique_ptr<hierarchicalData::Element> Image::cloneUninitialized() const
 {
     auto res =
         std::make_unique<Image>

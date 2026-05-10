@@ -4,106 +4,21 @@
 
 #include <memory>
 
+#include "base/parametersbase.h"
+#include "base/parametersetinput.h"
 #include "base/exception.h"
-#include "base/parameters/subsetparameter.h"
+#include "base/parameters/selectablesubsetparameter.h"
 #include "base/units.h"
-#include "base/parameterset.h"
+
 #include "base/cppextensions.h"
 #include "boost/filesystem/path.hpp"
+#include "base/actionprogress.h"
 #include "boost/variant/detail/apply_visitor_binary.hpp"
 #include "boost/variant/static_visitor.hpp"
 
 
 
 namespace insight {
-
-
-
-
-struct ParametersBase
-{
-  ParametersBase();
-  ParametersBase(const insight::ParameterSet& p);
-  virtual ~ParametersBase();
-
-  virtual void set(insight::ParameterSet& p) const;
-  virtual void get(const insight::ParameterSet& p);
-
-  static std::unique_ptr<ParameterSet> makeDefault();
-
-  virtual std::unique_ptr<ParameterSet> cloneParameterSet() const =0;
-
-  virtual std::unique_ptr<ParametersBase> clone() const =0;
-};
-
-
-
-
-
-struct ParameterSetInput
-{
-private:
-    std::observer_ptr<const ParameterSet> ps_;
-    std::unique_ptr<insight::ParametersBase> p_;
-
-public:
-
-    ParameterSetInput();
-    ParameterSetInput(ParameterSetInput&& o);
-    ParameterSetInput(const ParameterSet& subs);
-    ParameterSetInput(const ParameterSet* ps, std::unique_ptr<insight::ParametersBase>&& p );
-
-    // store a copy of given parameters without source parameter set
-    ParameterSetInput( const insight::ParametersBase& p );
-
-    template<class P>
-    // std::unique_ptr<insight::ParametersBase>
-    std::unique_ptr<insight::ParametersBase>
-    create()
-    {
-        if (p_)
-            return std::move(p_);
-        else
-            return std::make_unique<P>(parameterSet());
-    }
-
-    template<class P>
-    // std::unique_ptr<insight::ParametersBase>
-    ParameterSetInput
-    forward()
-    {
-        // forward_visitor<P> v;
-        // return boost::apply_visitor(v, *this);
-        return ParameterSetInput(ps_.valid()?ps_.get():nullptr, create<P>() );
-    }
-
-    // void operator=(ParameterSetInput& other);
-    ParameterSetInput& operator=(ParameterSetInput&& o);
-
-    bool hasParameters() const;
-    const ParametersBase& parameters() const;
-    /**
-     * @brief tweakParameters
-     * returns a writable reference to the parameters.
-     * Invalidates the parameter set pointer, since it is out of sync after modification
-     * @return
-     * a reference to the parameters
-     */
-    ParametersBase& tweakParameters();
-
-    std::unique_ptr<insight::ParametersBase> moveParameters();
-
-    bool hasParameterSet() const;
-    const ParameterSet& parameterSet() const;
-    std::unique_ptr<ParameterSet> parameterSetCopy() const;
-
-    ParameterSetInput clone() const;
-
-private:
-    ParameterSetInput( const ParameterSetInput& o ) = delete;
-    ParameterSetInput& operator=( const ParameterSetInput& o ) = delete;
-};
-
 
 
 
@@ -145,9 +60,9 @@ protected:
 
 public:
   supplementedInputDataBase(
-        ParameterSetInput ip,
+        ParameterSetInput&& ip,
         const boost::filesystem::path& exePath,
-        ProgressDisplayer& pd );
+        ActionProgress& ap );
 
   virtual ~supplementedInputDataBase();
 
@@ -171,6 +86,19 @@ public:
           toString(u)
           );
   }
+
+  /**
+   * @brief insertSupplementQuantities
+   * insert a set of quantities to report from e.g. subanalyses
+   * @param prefix
+   * a string to prepend to each quantity
+   * @param rsqt
+   * table of quantities to insert
+   */
+  void insertSupplementQuantities(
+      const std::string& prefix,
+      const ReportedSupplementQuantitiesTable& rsqt
+      );
 
   const ReportedSupplementQuantitiesTable& reportedSupplementQuantities() const;
 
@@ -213,7 +141,7 @@ public:
     supplementedInputDataFromParameters(
         ParameterSetInput ip,
         const boost::filesystem::path& exePath,
-        ProgressDisplayer& pd );
+        ActionProgress& ap );
 
 
     inline const ParametersBase* baseParametersPtr() const
@@ -248,10 +176,10 @@ public:
         AddArgs&&... addArgs,
         ParameterSetInput ip,
         const boost::filesystem::path& exePath,
-        ProgressDisplayer& pd)
+        ActionProgress& ap)
         : SupplementedInputDataBaseType(
               std::forward<AddArgs>(addArgs)...,
-              std::move(ip), exePath, pd)
+              std::move(ip), exePath, ap)
     {}
 
 

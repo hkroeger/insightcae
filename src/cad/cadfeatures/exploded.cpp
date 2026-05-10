@@ -21,6 +21,7 @@
 #include "exploded.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include <boost/fusion/adapted/boost_tuple.hpp>
 #include "datum.h"
 #include "base/translations.h"
 #include "cadparameters.h"
@@ -67,7 +68,7 @@ size_t Exploded::calcHash() const
 
 
 Exploded::Exploded(const Exploded&o, TreeCloneMap& tcm)
-    : CL(axis_)
+    : Feature(o, tcm), CL(axis_)
 {
     for (auto& ec: o.components_)
     {

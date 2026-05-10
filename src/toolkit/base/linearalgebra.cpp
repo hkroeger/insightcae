@@ -121,23 +121,27 @@ int GSLException::gsl_errno() const
 
 arma::mat vec1(double x)
 {
-    arma::mat v;
-  v << x << endr;
-  return v;
+    arma::mat v = ArmaMatCmpts{ { x } };
+    return v;
 }
 
 arma::mat vec2(double x, double y)
 {
-    arma::mat v;
-  v << x <<endr << y << endr;
-  return v;
+    arma::mat v = ArmaMatCmpts{
+        { x },
+        { y }
+    };
+    return v;
 }
 
 arma::mat vec3(double x, double y, double z)
 {
-    arma::mat v;
-  v << x <<endr << y << endr << z <<endr;
-  return v;
+    arma::mat v = ArmaMatCmpts{
+        { x },
+        { y },
+        { z }
+    };
+    return v;
 }
 
 arma::mat vec3FromComponents(const double* c)
@@ -177,13 +181,13 @@ arma::mat tensor3(
   double zx, double zy, double zz
 )
 {
-    arma::mat v;
-  v 
-    << xx << xy <<  xz <<endr
-    << yx << yy <<  yz <<endr
-    << zx << zy <<  zz <<endr;
+    arma::mat v = ArmaMatCmpts{
+        { xx, xy, xz },
+        { yx, yy, yz },
+        { zx, zy, zz }
+    };
     
-  return v;
+    return v;
 }
 
 double* toArray(const arma::mat& v)
@@ -198,10 +202,11 @@ arma::mat rotMatrix( double theta, arma::mat u )
     double ux=u[0];
     double uy=u[1];
     double uz=u[2];
-    arma::mat m;
-    m << ux*ux+(1-ux*ux)*c << ux*uy*(1-c)-uz*s << ux*uz*(1-c)+uy*s << endr
-      << ux*uy*(1-c)+uz*s << uy*uy+(1-uy*uy)*c << uy*uz*(1-c)-ux*s << endr
-      << ux*uz*(1-c)-uy*s << uy*uz*(1-c)+ux*s << uz*uz+(1-uz*uz)*c << endr;
+    arma::mat m = ArmaMatCmpts{
+        { ux*ux+(1-ux*ux)*c, ux*uy*(1-c)-uz*s, ux*uz*(1-c)+uy*s },
+        { ux*uy*(1-c)+uz*s, uy*uy+(1-uy*uy)*c, uy*uz*(1-c)-ux*s },
+        { ux*uz*(1-c)-uy*s, uy*uz*(1-c)+ux*s, uz*uz+(1-uz*uz)*c }
+    };
     return m;
 }
 
@@ -242,6 +247,7 @@ arma::mat rotationMatrixToEulerAngles(const arma::mat& R, EulerAngleSequence con
   double cy=0;
 
 #define RCOMP(i,j) R(i-1,j-1)
+
 
   switch (convention)
   {
@@ -411,6 +417,10 @@ arma::mat rotationMatrixToEulerAngles(const arma::mat& R, EulerAngleSequence con
       break;
  }
 #undef RCOMP
+
+ // std::cout<<R<<std::endl;
+ // std::cout<<"phi, theta, psi="<<phi<<" "<<theta<<" "<<psi<<std::endl;
+
   return vec3(phi/SI::deg, theta/SI::deg, psi/SI::deg);
 }
 
@@ -1321,6 +1331,142 @@ arma::mat movingAverage(
   }
 }
 
+
+
+
+arma::mat convergenceByVariance(const arma::mat& values, double fraction)
+{
+  if (values.n_cols < 1)
+    throw insight::Exception(
+        "convergenceByVariance: empty input matrix.");
+
+  if (values.n_rows < 2)
+    return arma::zeros(values.n_rows, values.n_cols);
+
+  const arma::uword n = values.n_rows;
+  const arma::uword windowSize =
+      std::max<arma::uword>(2, static_cast<arma::uword>(std::round(fraction * n)));
+
+  // Global scale for the epsilon threshold (relative to data magnitude)
+  const double eps = 1e-14 * std::max(1.0, arma::as_scalar(arma::max(arma::max(arma::abs(values)))));
+
+  arma::mat result(n, values.n_cols, arma::fill::zeros);
+
+  for (arma::uword i = 0; i < n; ++i)
+  {
+    const arma::uword start = (i + 1 >= windowSize) ? i + 1 - windowSize : 0;
+    const arma::mat window = values.rows(start, i);
+
+    for (arma::uword j = 0; j < values.n_cols; ++j)
+    {
+      const arma::mat col = window.col(j);
+      const double mu  = arma::as_scalar(arma::mean(col));
+      const double sig = (window.n_rows > 1)
+                           ? arma::as_scalar(arma::stddev(col))
+                           : 0.0;
+      const double range = arma::as_scalar(arma::max(col)) -
+                           arma::as_scalar(arma::min(col));
+
+      if (std::abs(mu) > eps)
+        result(i, j) = sig / std::abs(mu);
+      else if (range > eps)
+        result(i, j) = sig / range;
+      else
+        result(i, j) = sig;
+    }
+  }
+
+  return result;
+}
+
+
+ConvergenceByVariance::ConvergenceByVariance(double fraction)
+  : fraction_(fraction), globalAbsMax_(0.0), windowSize_(0)
+{}
+
+arma::rowvec ConvergenceByVariance::operator()(const arma::rowvec& sample)
+{
+  const arma::uword m = sample.n_cols;
+  const arma::uword n_old = values_.n_rows;  // count BEFORE appending
+  const arma::uword W_old = windowSize_;
+  const arma::uword W_new = std::max<arma::uword>(
+      2, static_cast<arma::uword>(std::round(fraction_ * (n_old + 1))));
+
+  // Update running scale for epsilon
+  const double sampleMax = arma::as_scalar(arma::max(arma::abs(sample)));
+  if (sampleMax > globalAbsMax_)
+    globalAbsMax_ = sampleMax;
+
+  values_.insert_rows(n_old, sample);  // append; values_.n_rows is now n_old+1
+
+  arma::rowvec cov(m, arma::fill::zeros);
+
+  if (n_old == 0)
+  {
+    // First sample: initialise running state, no variance yet
+    mean_ = sample;
+    M2_   = arma::zeros<arma::rowvec>(m);
+    windowSize_ = W_new;
+    result_.insert_rows(0, cov);
+    return cov;
+  }
+
+  const double eps = 1e-14 * std::max(1.0, globalAbsMax_);
+
+  for (arma::uword j = 0; j < m; ++j)
+  {
+    const double x_new   = sample(j);
+    const double mu_old  = mean_(j);
+
+    if (W_new == W_old)
+    {
+      // SLIDE: add x_new, remove the value that just left the window.
+      // After appending, the leaving element is at index n_old - W_old (0-based).
+      const double x_old = values_(n_old - W_old, j);
+      mean_(j) += (x_new - x_old) / static_cast<double>(W_new);
+      M2_(j)   += (x_new - x_old) * (x_new - mean_(j) + x_old - mu_old);
+    }
+    else
+    {
+      // EXPAND: W_new == W_old + 1 — add x_new, nothing removed.
+      const double delta = x_new - mu_old;
+      mean_(j) += delta / static_cast<double>(W_new);
+      M2_(j)   += delta * (x_new - mean_(j));
+    }
+
+    const double sig = (W_new > 1) ? std::sqrt(M2_(j) / static_cast<double>(W_new - 1)) : 0.0;
+
+    if (std::abs(mean_(j)) > eps)
+    {
+      cov(j) = sig / std::abs(mean_(j));
+    }
+    else
+    {
+      // Range fallback (rare: only when mean ≈ 0).
+      // O(W) slice — acceptable given infrequency.
+      const arma::uword start = (n_old + 1 >= W_new) ? n_old + 1 - W_new : 0;
+      const double range = arma::as_scalar(arma::max(values_.col(j).rows(start, n_old)))
+                         - arma::as_scalar(arma::min(values_.col(j).rows(start, n_old)));
+      cov(j) = (range > eps) ? sig / range : sig;
+    }
+  }
+
+  windowSize_ = W_new;
+  result_.insert_rows(result_.n_rows, cov);
+  return cov;
+}
+
+const arma::mat& ConvergenceByVariance::values() const
+{
+  return values_;
+}
+
+const arma::mat& ConvergenceByVariance::convergenceMeasure() const
+{
+  return result_;
+}
+
+
 arma::mat sortedByCol(const arma::mat&m, int c)
 {
 
@@ -1714,6 +1860,40 @@ NonConvergenceException::NonConvergenceException(
         "the solver did not converge towards a solution after %d iterations",
         performedIterations )
 {}
+
+arma::mat orthogonalPart(const arma::mat& vec, const arma::mat& iaxis)
+{
+    auto axis=normalized(iaxis);
+    arma::mat elat=arma::cross(axis, vec);
+    arma::mat eorth=normalized(arma::cross(elat,axis));
+    return eorth*arma::dot(eorth,vec);
+}
+
+double rotAngle(
+    const arma::mat &idir,
+    const arma::mat &idir0,
+    const arma::mat &iaxis )
+{
+    auto dir0 = normalized(orthogonalPart(idir0, iaxis));
+    auto dir = normalized(orthogonalPart(idir, iaxis));
+
+    double az=0;
+    if (fabs(1.-arma::dot(dir0,dir))<SMALL)
+        az=0.;
+    else if (fabs(1.+arma::dot(dir0,dir))<SMALL)
+        az=M_PI;
+    else
+    {
+        arma::mat v=arma::cross(dir0,dir);
+        az = sgn(arma::dot(v,iaxis)) * asin(arma::norm(v,2));
+    }
+    return az;
+}
+
+arma::mat tensor3Ident()
+{
+    return tensor3(1., 0, 0, 0, 1., 0, 0, 0, 1.);
+}
 
 
 

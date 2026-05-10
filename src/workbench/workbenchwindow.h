@@ -38,7 +38,7 @@
 #include <array>
 
 #include "base/wsllinuxserver.h"
-
+#include "qactionprogressdisplayerwidget.h"
 
 
 class AnalysisForm;
@@ -78,6 +78,8 @@ private:
 
   QTabWidget *tw;
 
+  insight::IQActionProgressDisplayManager *globalActionsProgress_;
+
   bool logToConsole_;
 
   void updateRecentFileActions();
@@ -85,6 +87,8 @@ private:
   AnalysisForm* addAnalysisTabWithDefaults(const std::string& analysisType);
 
   void setDefaultTitle();
+
+  bool installationWasChecked_=false;
 
 public:
   QMenu* settingsMenu_;
@@ -106,7 +110,7 @@ public Q_SLOTS:
 private Q_SLOTS:
     void onOpenAnalysis();
     void openRecentFile();
-    void checkInstallation(bool reportSummary=false);
+    void checkInstallation();
     void onAnalysisFormActivated( QWidget * analysisForm );
 };
 

@@ -25,7 +25,7 @@
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
 #include "base/linearalgebra.h"
-
+#include "boost/ptr_container/ptr_map.hpp"
 #include "boost/variant.hpp"
 
 #include <cmath>
@@ -62,125 +62,136 @@ namespace insight {
 namespace bmd {
 
 
-
-class blockMesh 
-: public OpenFOAMCaseElement
+class blockMeshBlocking
 {
 
 public:
-  typedef boost::ptr_map<std::string, Patch> PatchMap;
+    typedef boost::ptr_map<std::string, Patch> PatchMap;
 
 protected:
-  double scaleFactor_;
-  std::string defaultPatchName_;
-  std::string defaultPatchType_;
-  
-  PointMap allPoints_;
-  boost::ptr_vector<Block> allBlocks_;
-  boost::ptr_vector<Edge> allEdges_;
-  PatchMap allPatches_;
-  std::vector<Geometry> geometries_;
-  std::map<Point,std::string> projectedVertices_;
-  std::vector<ProjectedFace> projectedFaces_;
-  
+    double scaleFactor_;
+    std::string defaultPatchName_;
+    std::string defaultPatchType_;
+
+    PointMap allPoints_;
+    boost::ptr_vector<Block> allBlocks_;
+    boost::ptr_vector<Edge> allEdges_;
+    PatchMap allPatches_;
+    std::vector<Geometry> geometries_;
+    std::map<Point,std::string> projectedVertices_;
+    std::vector<ProjectedFace> projectedFaces_;
+
 public:
-  blockMesh(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
-  blockMesh(OpenFOAMCase& c, const blockMesh& o );
+    blockMeshBlocking();
+    blockMeshBlocking(const blockMeshBlocking& o);
 
-  void copy(const blockMesh& other);
-  
-  void setScaleFactor(double sf);
-  void setDefaultPatch(const std::string& name, std::string type="patch");
+    void copy(const blockMeshBlocking& other);
 
-  void addGeometry(const Geometry& geo);
-  const std::vector<Geometry>& allGeometry() const;
+    void setScaleFactor(double sf);
+    void setDefaultPatch(const std::string& name, std::string type="patch");
 
-  void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
+    void addGeometry(const Geometry& geo);
+    const std::vector<Geometry>& allGeometry() const;
 
-  void addProjectedFace(const ProjectedFace& pf);
-  const std::vector<ProjectedFace>& allProjectedFaces() const;
+    void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
 
-  inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
-  inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }
-  inline const PatchMap& allPatches() const { return allPatches_; }
-  
-  inline Patch& patch(const std::string& name) { return allPatches_.at(name); }
-  
-  inline void addPoint(const Point& p) 
-  { 
-    allPoints_[p]=0; 
-  }
-  
-  void numberVertices(PointMap& pts) const;
-  
-  inline Block& addBlock(Block *block) 
-  { 
-    block->registerPoints(*this);
-    allBlocks_.push_back(block);
-    return *block;
-  }
-  
-  Edge& addEdge(Edge *edge);
-  
-  inline Patch& addPatch(const std::string& name, Patch *patch) 
-  { 
-    if (name=="")
-      throw insight::Exception("Empty patch names are not allowed!");
-    
-    std::string key(name);
-    allPatches_.insert(key, patch); 
-    return *patch; 
-  }
+    void addProjectedFace(const ProjectedFace& pf);
+    const std::vector<ProjectedFace>& allProjectedFaces() const;
 
-  template<class EdgeType = Edge>
-  const EdgeType* edgeBetween(const Point& p1, const Point& p2) const
-  {
-      for (const auto& e: allEdges_)
-      {
-          if (e.connectsPoints(p1, p2))
-          {
-              auto *te = dynamic_cast<const EdgeType*>(&e);
-              insight::assertion(
-                          te!=nullptr,
-                          "edge not of assumed type!" );
-              return te;
-          }
-      }
-      return nullptr;
-  }
+    inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
+    inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }
+    inline const PatchMap& allPatches() const { return allPatches_; }
 
-  bool hasEdgeBetween(const Point& p1, const Point& p2) const;
-  
-  /**
+    inline Patch& patch(const std::string& name) { return allPatches_.at(name); }
+
+    inline void addPoint(const Point& p)
+    {
+        allPoints_[p]=0;
+    }
+
+    void numberVertices(PointMap& pts) const;
+
+    inline Block& addBlock(Block *block)
+    {
+        block->registerPoints(*this);
+        allBlocks_.push_back(block);
+        return *block;
+    }
+
+    Edge& addEdge(Edge *edge);
+
+    inline Patch& addPatch(const std::string& name, Patch *patch)
+    {
+        if (name=="")
+            throw insight::Exception("Empty patch names are not allowed!");
+
+        std::string key(name);
+        allPatches_.insert(key, patch);
+        return *patch;
+    }
+
+    template<class EdgeType = Edge>
+    const EdgeType* edgeBetween(const Point& p1, const Point& p2) const
+    {
+        for (const auto& e: allEdges_)
+        {
+            if (e.connectsPoints(p1, p2))
+            {
+                auto *te = dynamic_cast<const EdgeType*>(&e);
+                insight::assertion(
+                    te!=nullptr,
+                    "edge not of assumed type!" );
+                return te;
+            }
+        }
+        return nullptr;
+    }
+
+    bool hasEdgeBetween(const Point& p1, const Point& p2) const;
+
+    /**
    * Add the given patch, if none with the same name is present.
    * If it is present, the supplied object is deleted and the existing patch is returned.
    */
-  inline Patch& addOrDestroyPatch(const std::string& name, Patch *patch) 
-  { 
-    if (name=="")
-      throw insight::Exception("Empty patch names are not allowed!");
-    
-    std::string key(name);
-    if ( allPatches_.find(name)!=allPatches_.end())
+    inline Patch& addOrDestroyPatch(const std::string& name, Patch *patch)
     {
-      delete patch;
-      return *allPatches_.find(name)->second;
+        if (name=="")
+            throw insight::Exception("Empty patch names are not allowed!");
+
+        std::string key(name);
+        if ( allPatches_.find(name)!=allPatches_.end())
+        {
+            delete patch;
+            return *allPatches_.find(name)->second;
+        }
+        else
+        {
+            allPatches_.insert(key, patch);
+            return *patch;
+        }
     }
-    else
-    {
-      allPatches_.insert(key, patch); 
-      return *patch; 
-    }
-  }
-  
-  void removePatch(const std::string& name);
+
+    void removePatch(const std::string& name);
+
+    void writeVTK(const boost::filesystem::path& fn) const;
+
+    int nBlocks() const;
+};
+
+
+
+
+class blockMesh 
+: public OpenFOAMCaseElement,
+  public blockMeshBlocking
+{
+public:
+  blockMesh(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
+  blockMesh(OpenFOAMCase& c, const blockMeshBlocking& o );
+
   
   OFDictData::dict& getBlockMeshDict(insight::OFdicts& dictionaries) const;
   void addIntoDictionaries(insight::OFdicts& dictionaries) const override;
-
-  void writeVTK(const boost::filesystem::path& fn) const;
-
-  int nBlocks() const;
   
   static std::string category() { return "Meshing"; }
 };

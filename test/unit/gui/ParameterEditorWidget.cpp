@@ -24,7 +24,8 @@ public:
     {
         return std::make_shared<supplementedInputDataFromParameters>(
             ParameterSetInput(this->parameters()).forward<TestPDL::Parameters>(),
-            this->workDir_, this->progress_ );
+            this->workDir_,
+            *this->progress_.forkNewAction(99, "Process input data") );
     }
 
     const supplementedInputDataFromParameters& sp() const

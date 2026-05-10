@@ -26,6 +26,7 @@
 #include "parser.h"
 
 #include "base/boost_include.h"
+#include <boost/fusion/include/std_pair.hpp>
 #include <memory>
 
 #include "cadfeatures/sphere.h"
@@ -82,15 +83,16 @@ std::ostream& operator<<(std::ostream& os, const Model& m)
 
 void Model::defaultVariables()
 {
-    addScalar   ( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
-    addScalar   ( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
-    addPoint    ( "O",          VectorPtr(new ConstantVector(vec3(0,0,0))) );
-    addDirection( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
-    addDirection( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
-    addDirection( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
-    addDatum    ( "XY", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EZ"), lookupDirection("EY"))) );
-    addDatum    ( "XZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EY"), lookupDirection("EX"))) );
-    addDatum    ( "YZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EX"), lookupDirection("EY"))) );
+    addScalarIfNotPresent   ( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
+    addScalarIfNotPresent   ( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
+
+    addPointIfNotPresent    ( "O",      VectorPtr(new ConstantVector(vec3(0,0,0))) );
+    addDirectionIfNotPresent( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
+    addDirectionIfNotPresent( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
+    addDirectionIfNotPresent( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
+    addDatumIfNotPresent    ( "XY", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EZ"), lookupDirection("EY"))) );
+    addDatumIfNotPresent    ( "XZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EY"), lookupDirection("EX"))) );
+    addDatumIfNotPresent    ( "YZ", 	DatumPtr(new DatumPlane(lookupPoint("O"), lookupDirection("EX"), lookupDirection("EY"))) );
 }
 
 void Model::copyVariables(const ModelVariableTable& vars)
@@ -131,7 +133,7 @@ size_t Model::calcHash() const
 {
   ParameterListHash h;
   h+=modelfile_;
-  h+=description_;
+  if (description_) h+=description_->toString();
   h+=cost_;
 #warning check, if hash is needed
   return h.getHash();
@@ -169,8 +171,8 @@ defineType(Model);
 Model::Model(const ModelVariableTable& vars)
   : cost_(0.0)
 {
-    defaultVariables();
     copyVariables(vars);
+    defaultVariables();
 
     setValid();
 }
@@ -182,8 +184,8 @@ Model::Model(const std::string& modelname, const ModelVariableTable& vars)
     : modelfile_(sharedModelFilePath(modelname+".iscad")),
       cost_(0.)
 {
-    defaultVariables();
     copyVariables(vars);
+    defaultVariables();
 }
 
 
@@ -194,13 +196,15 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
 {
 #warning local extension of search path required
     insight::SharedPathList::global().insertFileDirectoyIfNotPresent(modelfile_);
-    defaultVariables();
     copyVariables(vars);
+    defaultVariables();
 }
 
-void Model::setDescription(const std::string& description)
+
+void Model::setDescription(
+    BOMDescriptionDataPtr arg )
 {
-  description_=description;
+    description_=arg;
 }
 
 
@@ -213,34 +217,42 @@ ModelVariableTable Model::allVariables() const
 {
     ModelVariableTable mvt;
 
-    scalarSymbols().for_each(
-        [&](const std::string& name, ScalarPtr v)
+    //scalarSymbols().for_each(
+        //[&](const std::string& name, ScalarPtr v)
+    std::for_each(
+        scalars().begin(), scalars().end(),
+        [&](const ScalarTableContents::value_type& v)
         {
-            mvt.push_back(ModelVariableTable::value_type{name, v});
+            mvt.push_back(/*ModelVariableTable::value_type{name, */ v /*}*/);
         });
 
-    pointSymbols().for_each(
-        [&](const std::string& name, VectorPtr v)
+    std::for_each(
+        points().begin(), points().end(),
+        [&](const VectorTableContents::value_type& v)
         {
-            mvt.push_back(ModelVariableTable::value_type{name, VectorPtrAndType{v, Point}});
+            mvt.push_back(ModelVariableTable::value_type{v.first, VectorPtrAndType{v.second, Point}});
         });
 
-    directionSymbols().for_each(
-        [&](const std::string& name, VectorPtr v)
+    std::for_each(
+        directions().begin(), directions().end(),
+        [&](const VectorTableContents::value_type& v)
         {
-            mvt.push_back(ModelVariableTable::value_type{name, VectorPtrAndType{v, Direction}});
+            mvt.push_back(ModelVariableTable::value_type{v.first, VectorPtrAndType{v.second, Direction}});
         });
 
-    datumSymbols().for_each(
-        [&](const std::string& name, DatumPtr v)
+    std::for_each(
+        datums().begin(), datums().end(),
+        [&](const DatumTableContents::value_type& v)
         {
-            mvt.push_back(ModelVariableTable::value_type{name, v});
+            mvt.push_back(v);
         });
 
-    modelstepSymbols().for_each(
-        [&](const std::string& name, FeaturePtr v)
+    //modelstepSymbols().for_each(
+    std::for_each(
+        modelsteps().begin(), modelsteps().end(),
+        [&](const ModelVariableTable::value_type& v)
         {
-            mvt.push_back(ModelVariableTable::value_type{name, v});
+            mvt.push_back(v);
         });
 
     return mvt;
@@ -270,49 +282,47 @@ void Model::build()
 
 void Model::addScalar(const std::string& name, ScalarPtr value)
 {
-  if (scalars_.find(name)) scalars_.remove(name);
-  scalars_.add(name, value);
+  // if (scalars_.find(name)) scalars_.remove(name);
+  // scalars_.add(name, value);
+  scalars_[name]=value;
 }
 
 void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
 {
-  if (!scalars_.find(name))
+  if (!scalars_.count(name))
     addScalar(name, value);
 }
 
 void Model::addPoint(const std::string& name, VectorPtr value)
 {
-  if (points_.find(name)) points_.remove(name);
-  points_.add(name, value);
+  points_[name]=value;
 }
 
 void Model::addPointIfNotPresent(const std::string& name, VectorPtr value)
 {
-  if (!points_.find(name))
+  if (!points_.count(name))
     addPoint(name, value);
 }
 
 void Model::addDirection(const std::string& name, VectorPtr value)
 {
-  if (directions_.find(name)) directions_.remove(name);
-  directions_.add(name, value);
+  directions_[name]=value;
 }
 
 void Model::addDirectionIfNotPresent(const std::string& name, VectorPtr value)
 {
-  if (!directions_.find(name))
+  if (!directions_.count(name))
     addDirection(name, value);
 }
 
 void Model::addDatum(const std::string& name, DatumPtr value)
 {
-  if (datums_.find(name)) datums_.remove(name);
-  datums_.add(name, value);
+  datums_[name]=value;
 }
 
 void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
 {
-    if (!datums_.find(name))
+    if (!datums_.count(name))
         addDatum(name, value);
 }
 
@@ -327,17 +337,16 @@ void Model::addModelstep(
 {
   value->setFeatureSymbolName(name);
 
-  if (modelsteps_.find(name))
-  {
-      modelsteps_.remove(name);
-  }
   if (components_.find(name)!=components_.end())
   {
       components_.erase(name);
   }
+  if (isComponent)
+  {
+      components_.insert(name);
+  }
 
-  if (isComponent) components_.insert(name);
-  modelsteps_.add(name, value);
+  modelsteps_[name]=value;
 }
 
 
@@ -349,9 +358,8 @@ void Model::addModelstepIfNotPresent(
     bool isComponent,
     const std::string& /*featureDescription*/)
 {
-    if (!modelsteps_.find(name))
+    if (!modelsteps_.count(name))
     {
-        value->setFeatureSymbolName(name);
         addModelstep(name, value, isComponent);
     }
 }
@@ -370,59 +378,59 @@ void Model::addModelstepIfNotPresent(
 
 void Model::removeScalar(const string& name)
 {
-  scalars_.remove(name);
+  scalars_.erase(name);
 }
 
 void Model::removePoint(const std::string& name)
 {
-  points_.remove(name);
+  points_.erase(name);
 }
 
 void Model::removeDirection(const std::string& name)
 {
-  directions_.remove(name);
+  directions_.erase(name);
 }
 
 void Model::removeDatum(const std::string& name)
 {
-  datums_.remove(name);
+  datums_.erase(name);
 }
 
 void Model::removeModelstep(const std::string& name)
 {
-  modelsteps_.remove(name);
+  modelsteps_.erase(name);
 }
 
 
 
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 {
-  vertexFeatures_.add(name, value);
+  vertexFeatures_[name]=value;
 }
 
 void Model::addEdgeFeature(const std::string& name, FeatureSetPtr value)
 {
-  edgeFeatures_.add(name, value);
+  edgeFeatures_[name]=value;
 }
 
 void Model::addFaceFeature(const std::string& name, FeatureSetPtr value)
 {
-  faceFeatures_.add(name, value);
+  faceFeatures_[name]=value;
 }
 
 void Model::addSolidFeature(const std::string& name, FeatureSetPtr value)
 {
-  solidFeatures_.add(name, value);
+  solidFeatures_[name]=value;
 }
 
 void Model::addModel(const std::string& name, ModelPtr value)
 {
-  models_.add(name, value);
+  models_[name]=value;
 }
 
 void Model::addPostprocAction(const std::string& name, PostprocActionPtr value)
 {
-  postprocActions_.add(name, value);
+  postprocActions_[name]=value;
 }
 
 std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
@@ -437,15 +445,15 @@ std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
       throw insight::Exception("Model::addPostprocActionUnnamed: No valid name found within 1000 attempts!");
     i++;
   }
-  while (postprocActions_.find(name));
+  while (postprocActions_.count(name));
   
-  postprocActions_.add(name, value);
+  postprocActions_.insert({name, value});
   return name;
 }
 
 void Model::removePostprocAction(const std::string &name)
 {
-    postprocActions_.remove(name);
+    postprocActions_.erase(name);
 }
 
 
@@ -462,90 +470,109 @@ void Model::removeDataset(const std::string &name)
 
 ScalarPtr Model::lookupScalar(const std::string& name) const
 {
-  ScalarPtr *obj = const_cast<ScalarPtr*>(scalars_.find(name));
-  if (!obj)
+  //ScalarPtr *obj = const_cast<ScalarPtr*>(scalars_.find(name));
+  auto obj=scalars_.find(name);
+  if (obj==scalars_.end())
     throw insight::Exception("Could not lookup scalar "+name);
-  return *obj;
+  return obj->second;
 }
 
 VectorPtr Model::lookupPoint(const std::string& name) const
 {
-  VectorPtr *obj = const_cast<VectorPtr*>(points_.find(name));
-  if (!obj)
+  // VectorPtr *obj = const_cast<VectorPtr*>(points_.find(name));
+  // if (!obj)
+  auto obj=points_.find(name);
+  if (obj==points_.end())
     throw insight::Exception("Could not lookup point "+name);
-  return *obj;
+  return obj->second;
 }
 
 VectorPtr Model::lookupDirection(const std::string& name) const
 {
-  VectorPtr *obj = const_cast<VectorPtr*>(directions_.find(name));
-  if (!obj)
+  // VectorPtr *obj = const_cast<VectorPtr*>(directions_.find(name));
+  // if (!obj)
+  auto obj=directions_.find(name);
+  if (obj==directions_.end())
     throw insight::Exception("Could not lookup direction "+name);
-  return *obj;
+  return obj->second;
 }
 
 DatumPtr Model::lookupDatum(const std::string& name) const
 {
-  DatumPtr *obj = const_cast<DatumPtr*>(datums_.find(name));
-  if (!obj)
+  // DatumPtr *obj = const_cast<DatumPtr*>(datums_.find(name));
+  // if (!obj)
+  auto obj=datums_.find(name);
+  if (obj==datums_.end())
     throw insight::Exception("Could not lookup datum "+name);
-  return *obj;
+  return obj->second;
 }
 
 FeaturePtr Model::lookupModelstep(const std::string& name) const
 {
-  FeaturePtr *obj = const_cast<FeaturePtr*>(modelsteps_.find(name));
-  if (!obj)
+  auto obj=modelsteps_.find(name);
+  if (obj==modelsteps_.end())
     throw insight::Exception("Could not lookup model step "+name);
-  return *obj;    
+  return obj->second;
 }
 
 FeatureSetPtr Model::lookupVertexFeature(const std::string& name) const
 {
-  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(vertexFeatures_.find(name));
-  if (!obj)
-    throw insight::Exception("Could not lookup vertex feature "+name);
-  return *obj;    
+  // FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(vertexFeatures_.find(name));
+  // if (!obj)
+  auto obj=vertexFeatures_.find(name);
+  if (obj==vertexFeatures_.end())
+      throw insight::Exception("Could not lookup vertex feature "+name);
+  return obj->second;
 }
 
 FeatureSetPtr Model::lookupEdgeFeature(const std::string& name) const
 {
-  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(edgeFeatures_.find(name));
-  if (!obj)
+  // FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(edgeFeatures_.find(name));
+  // if (!obj)
+  auto obj=edgeFeatures_.find(name);
+  if (obj==edgeFeatures_.end())
     throw insight::Exception("Could not lookup edge feature "+name);
-  return *obj;    
+  return obj->second;
 }
 
 FeatureSetPtr Model::lookupFaceFeature(const std::string& name) const
 {
-  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(faceFeatures_.find(name));
-  if (!obj)
+  // FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(faceFeatures_.find(name));
+  // if (!obj)
+  auto obj=faceFeatures_.find(name);
+  if (obj==faceFeatures_.end())
     throw insight::Exception("Could not lookup face feature "+name);
-  return *obj;    
+  return obj->second;
 }
 
 FeatureSetPtr Model::lookupSolidFeature(const std::string& name) const
 {
-  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(solidFeatures_.find(name));
-  if (!obj)
+  // FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(solidFeatures_.find(name));
+  // if (!obj)
+  auto obj=solidFeatures_.find(name);
+  if (obj==solidFeatures_.end())
     throw insight::Exception("Could not lookup solid feature "+name);
-  return *obj;    
+  return obj->second;
 }
 
 ModelPtr Model::lookupModel(const std::string& name) const
 {
-  ModelPtr *obj = const_cast<ModelPtr*>(models_.find(name));
-  if (!obj)
+  // ModelPtr *obj = const_cast<ModelPtr*>(models_.find(name));
+  // if (!obj)
+  auto obj=models_.find(name);
+  if (obj==models_.end())
     throw insight::Exception("Could not lookup model "+name);
-  return *obj;    
+  return obj->second;
 }
 
 PostprocActionPtr Model::lookupPostprocActionSymbol(const std::string& name) const
 {
-  PostprocActionPtr *obj = const_cast<PostprocActionPtr*>(postprocActions_.find(name));
-  if (!obj)
+  // PostprocActionPtr *obj = const_cast<PostprocActionPtr*>(postprocActions_.find(name));
+  // if (!obj)
+  auto obj=postprocActions_.find(name);
+  if (obj==postprocActions_.end())
     throw insight::Exception("Could not lookup postprocessing action "+name);
-  return *obj;
+  return obj->second;
 }
 
 bool Model::isComponent(const std::string &name) const
@@ -553,17 +580,17 @@ bool Model::isComponent(const std::string &name) const
     return components_.find(name)!=components_.end();
 }
 
-const Model::ScalarTable& 	Model::scalarSymbols() const { return scalars_; }
-const Model::VectorTable&	Model::pointSymbols() const { return points_; }
-const Model::VectorTable&	Model::directionSymbols() const { return directions_; }
-const Model::DatumTable&	Model::datumSymbols() const { return datums_; }
-const Model::ModelstepTable&	Model::modelstepSymbols() const { return modelsteps_; }
-const Model::VertexFeatureTable&	Model::vertexFeatureSymbols() const { return vertexFeatures_; }
-const Model::EdgeFeatureTable&	Model::edgeFeatureSymbols() const { return edgeFeatures_; }
-const Model::FaceFeatureTable& 	Model::faceFeatureSymbols() const { return faceFeatures_; }
-const Model::SolidFeatureTable& 	Model::solidFeatureSymbols() const { return solidFeatures_; }
-const Model::ModelTable& 	Model::modelSymbols() const { return models_; }
-const Model::PostprocActionTable& 	Model::postprocActionSymbols() const { return postprocActions_; }
+// const Model::ScalarTable& 	Model::scalarSymbols() const { return scalars_; }
+// const Model::VectorTable&	Model::pointSymbols() const { return points_; }
+// const Model::VectorTable&	Model::directionSymbols() const { return directions_; }
+// const Model::DatumTable&	Model::datumSymbols() const { return datums_; }
+// const Model::ModelstepTable&	Model::modelstepSymbols() const { return modelsteps_; }
+// const Model::VertexFeatureTable&	Model::vertexFeatureSymbols() const { return vertexFeatures_; }
+// const Model::EdgeFeatureTable&	Model::edgeFeatureSymbols() const { return edgeFeatures_; }
+// const Model::FaceFeatureTable& 	Model::faceFeatureSymbols() const { return faceFeatures_; }
+// const Model::SolidFeatureTable& 	Model::solidFeatureSymbols() const { return solidFeatures_; }
+// const Model::ModelTable& 	Model::modelSymbols() const { return models_; }
+// const Model::PostprocActionTable& 	Model::postprocActionSymbols() const { return postprocActions_; }
 
 const Model::DatasetTable &Model::datasets() const
 {
@@ -587,7 +614,7 @@ public:
   }
 };
 
-const std::string Model::description() const
+BOMDescriptionDataPtr Model::description() const
 {
   return description_;
 }
@@ -604,81 +631,92 @@ double Model::totalCost() const
   return tc;
 }
 
-Model::ScalarTableContents Model::scalars() const
+const Model::ScalarTableContents& Model::scalars() const
 {
-  ScalarTableContents result;
-  scalars_.for_each(SymbolTableContentsInserter<ScalarPtr>(result));
-  return result;
+  // ScalarTableContents result;
+  // scalars_.for_each(SymbolTableContentsInserter<ScalarPtr>(result));
+  // return result;
+  return scalars_;
 }
 
-Model::VectorTableContents Model::points() const
+const Model::VectorTableContents& Model::points() const
 {
-  VectorTableContents result;
-  points_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
-  return result;
+  // VectorTableContents result;
+  // points_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
+  // return result;
+  return points_;
 }
 
-Model::VectorTableContents Model::directions() const
+const Model::VectorTableContents& Model::directions() const
 {
-  VectorTableContents result;
-  directions_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
-  return result;
+  // VectorTableContents result;
+  // directions_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
+  // return result;
+  return directions_;
 }
 
-Model::DatumTableContents Model::datums() const
+const Model::DatumTableContents& Model::datums() const
 {
-  DatumTableContents result;
-  datums_.for_each(SymbolTableContentsInserter<DatumPtr>(result));
-  return result;
+  // DatumTableContents result;
+  // datums_.for_each(SymbolTableContentsInserter<DatumPtr>(result));
+  // return result;
+  return datums_;
 }
 
-Model::ModelstepTableContents Model::modelsteps() const
+const Model::ModelstepTableContents& Model::modelsteps() const
 {
-  ModelstepTableContents result;
-  modelsteps_.for_each(SymbolTableContentsInserter<FeaturePtr>(result));
-  return result;
+  // ModelstepTableContents result;
+  // modelsteps_.for_each(SymbolTableContentsInserter<FeaturePtr>(result));
+  // return result;
+  return modelsteps_;
 }
 
-Model::VertexFeatureTableContents Model::vertexFeatures() const
+const Model::VertexFeatureTableContents& Model::vertexFeatures() const
 {
-  VertexFeatureTableContents result;
-  vertexFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
-  return result;
+  // VertexFeatureTableContents result;
+  // vertexFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
+  // return result;
+  return vertexFeatures_;
 }
 
-Model::EdgeFeatureTableContents Model::edgeFeatures() const
+const Model::EdgeFeatureTableContents& Model::edgeFeatures() const
 {
-  EdgeFeatureTableContents result;
-  edgeFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
-  return result;
+  // EdgeFeatureTableContents result;
+  // edgeFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
+  // return result;
+  return edgeFeatures_;
 }
 
-Model::FaceFeatureTableContents Model::faceFeatures() const
+const Model::FaceFeatureTableContents& Model::faceFeatures() const
 {
-  FaceFeatureTableContents result;
-  faceFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
-  return result;
+  // FaceFeatureTableContents result;
+  // faceFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
+  // return result;
+  return faceFeatures_;
 }
 
-Model::SolidFeatureTableContents Model::solidFeatures() const
+const Model::SolidFeatureTableContents& Model::solidFeatures() const
 {
-  SolidFeatureTableContents result;
-  solidFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
-  return result;
+  // SolidFeatureTableContents result;
+  // solidFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
+  // return result;
+  return solidFeatures_;
 }
 
-Model::ModelTableContents Model::models() const
+const Model::ModelTableContents& Model::models() const
 {
-  ModelTableContents result;
-  models_.for_each(SymbolTableContentsInserter<ModelPtr>(result));
-  return result;
+  // ModelTableContents result;
+  // models_.for_each(SymbolTableContentsInserter<ModelPtr>(result));
+  // return result;
+  return models_;
 }
 
-Model::PostprocActionTableContents Model::postprocActions() const
+const Model::PostprocActionTableContents& Model::postprocActions() const
 {
-  PostprocActionTableContents result;
-  postprocActions_.for_each(SymbolTableContentsInserter<PostprocActionPtr>(result));
-  return result;
+  // PostprocActionTableContents result;
+  // postprocActions_.for_each(SymbolTableContentsInserter<PostprocActionPtr>(result));
+  // return result;
+  return postprocActions_;
 }
 
 

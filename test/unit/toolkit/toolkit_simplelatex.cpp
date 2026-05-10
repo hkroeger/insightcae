@@ -1,5 +1,6 @@
 
 #include "base/latextools.h"
+#include <iostream>
 
 using namespace insight;
 

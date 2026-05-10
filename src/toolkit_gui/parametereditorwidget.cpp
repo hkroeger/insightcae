@@ -347,11 +347,19 @@ bool ParameterEditorWidget::hasVisualizer() const
 
 void ParameterEditorWidget::setModel(QAbstractItemModel *model)
 {
-    if (!model && model_)
+    if (model_)
     {
         disconnectParameterSetChanged(model_, this);
-        parameterTreeView_->setModel(nullptr);
-        if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
+        if (auto *hdm = dynamic_cast<IQHierarchicalDataModel*>(model_))
+        {
+            QObject::disconnect(hdm, &IQHierarchicalDataModel::bulkUpdateFinished,
+                                this, &ParameterEditorWidget::onParameterSetChanged);
+        }
+        if (!model)
+        {
+            parameterTreeView_->setModel(nullptr);
+            if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
+        }
     }
 
     model_=model;
@@ -359,6 +367,12 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     connectParameterSetChanged(
         model_,
         this, &ParameterEditorWidget::onParameterSetChanged );
+
+    if (auto *hdm = dynamic_cast<IQHierarchicalDataModel*>(model_))
+    {
+        connect(hdm, &IQHierarchicalDataModel::bulkUpdateFinished,
+                this, &ParameterEditorWidget::onParameterSetChanged);
+    }
 
     parameterTreeView_->setModel(model_);
     parameterTreeView_->setItemDelegate(
@@ -396,18 +410,30 @@ void ParameterEditorWidget::rebuildVisualization()
     {
         if (viz_ && !viz_->isFinished())
         {
+            insight::CurrentExceptionContext ex("cancelling running visualizer");
             viz_->stopVisualizationComputation();
+        }
+
+        if (viz_)
+        {
+            insight::CurrentExceptionContext ex("removing old visualizer");
             viz_->deleteLater();
         }
 
 
-        viz_ = createVisualizer_(
-                this,
-                dynamic_cast<IQParameterSetModel*>(model_)
-            );
+        {
+            insight::CurrentExceptionContext ex("creating new visualizer");
+
+            viz_ = createVisualizer_(
+                    this,
+                    dynamic_cast<IQParameterSetModel*>(model_)
+                );
+        }
 
         if (viz_ && !viz_->isFinished())
         {
+            insight::CurrentExceptionContext ex("connecting new visualizer");
+
             connect(
                 viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
                 this, &ParameterEditorWidget::updateSupplementedInputData
@@ -433,12 +459,14 @@ void ParameterEditorWidget::rebuildVisualization()
                         +"\n\n"
                         +_("Reason:")
                         +"\n\n"
-                        +"**"+(ex.message())+"**\n\n"
+                        +boost::replace_all_copy(ex.message(), "\n", "\n\n")+"\n\n"
                         +boost::replace_all_copy(ex.context(), "\n", "\n\n")
                         ));
                     overlayText_->show();
                 }
             );
+
+            insight::dbg(insight::DetailedBusiness) << "launching visualized" << std::endl;
 
             viz_->launch(display_->model());
         }
@@ -450,6 +478,10 @@ void ParameterEditorWidget::rebuildVisualization()
 void ParameterEditorWidget::onParameterSetChanged()
 {
     DBG_SLOT(QAbstractItemModel::{dataChanged;rowsInserted;rowsRemoved});
+
+    if (auto *hdm = dynamic_cast<IQHierarchicalDataModel*>(model_))
+        if (hdm->isBulkUpdateInProgress())
+            return;
 
     rebuildVisualization();
     Q_EMIT parameterSetChanged();

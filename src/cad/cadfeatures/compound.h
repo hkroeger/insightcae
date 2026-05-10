@@ -68,6 +68,8 @@ public:
     arma::mat modelInertia ( double density_ovr=-1. ) const override;
 
     Compound& operator=(const Compound& o);
+
+    void addToBOM(BOM& bom) const override;
 };
 
 

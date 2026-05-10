@@ -15,6 +15,8 @@
 #include "iqcadtransformationcommand.h"
 #include "ivtkoccshape.h"
 
+#include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkmanipulatecoordinatesystem.h"
+
 #include "cadfeature.h"
 
 
@@ -44,26 +46,31 @@ QVariant IQSpatialTransformationParameter::value() const
       return QString("identity");
   else
   {
-      arma::mat tr=parameter()().translate();
-      bool trZero = arma::norm(tr, 2)<insight::SMALL;
-      arma::mat rpy=parameter()().rollPitchYaw();
 
       QStringList shortDescActions;
 
-      if (!trZero)
-          shortDescActions<<QString("+[%1 %2 %3]").arg(tr(0)).arg(tr(1)).arg(tr(2));
+      {
+          arma::mat tr=parameter()().translate();
+          if (arma::norm(tr, 2)>insight::SMALL)
+              shortDescActions<<QString("+[%1 %2 %3]").arg(tr(0)).arg(tr(1)).arg(tr(2));
+      }
 
-      if (fabs(rpy(0))>insight::SMALL)
-          shortDescActions<<QString("Roll %1°").arg(tr(0));
+      {
+          arma::mat rpy=parameter()().rollPitchYaw();
+          if (fabs(rpy(0))>insight::SMALL)
+              shortDescActions<<QString("Roll %1°").arg(rpy(0));
 
-      if (fabs(rpy(1))>insight::SMALL)
-          shortDescActions<<QString("Pitch %1°").arg(tr(1));
+          if (fabs(rpy(1))>insight::SMALL)
+              shortDescActions<<QString("Pitch %1°").arg(rpy(1));
 
-      if (fabs(rpy(2))>insight::SMALL)
-          shortDescActions<<QString("Yaw %1°]").arg(tr(2));
+          if (fabs(rpy(2))>insight::SMALL)
+              shortDescActions<<QString("Yaw %1°").arg(rpy(2));
+      }
 
-      if (fabs(parameter()().scale()-1.)>insight::SMALL)
-          shortDescActions<<QString("*%1").arg(parameter()().scale());
+      {
+          if (fabs(parameter()().scale()-1.)>insight::SMALL)
+              shortDescActions<<QString("*%1").arg(parameter()().scale());
+      }
 
       return shortDescActions.join(" > ");
   }
@@ -158,11 +165,11 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
     connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
           [this,translateLE,v,setValuesToControls,apply]()
           {
-            if (insight::cad::FeaturePtr geom =
-              psModel()->getGeometryToSpatialTransformationParameter(get()->path()))
+            if (auto cd =
+              psModel()->GUIContext()->getData<insight::SpatialTransformationParameter>(get()->path()))
             {
                 vtkNew<ivtkOCCShape> shape;
-                shape->SetShape( geom->shape() );
+                shape->SetShape( cd->geometry->shape() );
                 auto actor = vtkSmartPointer<vtkActor>::New();
                 actor->SetMapper( vtkSmartPointer<vtkPolyDataMapper>::New() );
                 actor->GetMapper()->SetInputConnection(shape->GetOutputPort());
@@ -174,7 +181,26 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                         dynamic_cast<const insight::SpatialTransformationParameter&>(
                             parameter() );
                 {
-                    auto tini = p().toVTKTransform();
+                    auto initialCS =
+                        ( parameter()() * cd->referenceCS.localToGlobal() )
+                                         .localCoordinateSystem();
+
+                    auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
+                        *v->topmostActionHost(), initialCS );
+
+                    connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
+                            [this,cd](const insight::CoordinateSystem& newCS)
+                            {
+                                auto stc=newCS.localToGlobal();
+
+                                auto newTr = stc * cd->referenceCS.localToGlobal().inverted();
+
+                                parameterRef().set( newTr );
+                            }
+                            );
+                    v->topmostActionHost()->launchAction(std::move(mani));
+
+                    /*
 
                   auto curMod =
                         new IQCADTransformationCommand(
@@ -192,6 +218,7 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                            {
                              setValuesToControls(curMod->getSpatialTransformation());
                            } );
+*/
                 }
             }
           }

@@ -2,6 +2,7 @@
 #include "openfoam/paraview.h"
 #include "base/cppextensions.h"
 #include "base/externalprograms.h"
+#include <boost/filesystem/operations.hpp>
 
 namespace insight
 {
@@ -61,28 +62,47 @@ Paraview::Paraview(
     if (stateFile.empty())
     {
         ls << str(boost::format(
-    "ofs=[OpenFOAMReader(FileName='%s/system/controlDict', SkipZeroTime=False)]\n"
-    "times=ofs[0].TimestepValues\n"
-    "print(times)\n"
-    ) % dataDirectory_.generic_path().string() );
+          "ofs=[OpenFOAMReader(FileName='%s/system/controlDict', SkipZeroTime=False)]\n"
+          "times=ofs[0].TimestepValues\n"
+          "print(times)\n"
+          ) % dataDirectory_.generic_path().string() );
     }
     else
     {
+        boost::filesystem::path sf(stateFile);
+
+        if (!boost::filesystem::exists(sf))
+        {
+            std::string fn=sf.filename().string();
+            if (sf.filename().extension()!=".pvsm")
+            {
+                fn+=".pvsm";
+            }
+
+            bool found=false;
+            sf=SharedPathList::global().getSharedFilePath(
+                boost::filesystem::path("paraview") / fn, &found );
+
+            if (!found)
+                throw insight::Exception("state file %s not found in shared directory",
+                                         sf.c_str() );
+        }
+
         ls << str(boost::format(
-     "LoadState('%s',"
-           "LoadStateDataFileOptions='Search files under specified directory',"
-           "DataDirectory='%s/system')\n"
-     "ofs=list(filter(lambda s: 'OpenFOAMReader' in str(type(s)), "
-                     "GetSources().values()))\n"
-     "print(ofs)\n"
-     "alltimes=set()\n"
-     "for o in list(GetSources().values()):\n"
-     " if hasattr(o, 'TimestepValues'):\n"
-     "  if not o in ofs: ExtendFileSeries(o)\n"
-     "  alltimes=set.union(alltimes,o.TimestepValues)\n"
-     "times=sorted(list(alltimes))\n"
-     "print(times)\n"
-    ) % stateFile.generic_path().string()
+          "LoadState('%s',"
+          "LoadStateDataFileOptions='Search files under specified directory',"
+          "DataDirectory='%s/system')\n"
+          "ofs=list(filter(lambda s: 'OpenFOAMReader' in str(type(s)), "
+          "GetSources().values()))\n"
+          "print(ofs)\n"
+          "alltimes=set()\n"
+          "for o in list(GetSources().values()):\n"
+          " if hasattr(o, 'TimestepValues'):\n"
+          "  if not o in ofs: ExtendFileSeries(o)\n"
+          "  alltimes=set.union(alltimes,o.TimestepValues)\n"
+          "times=sorted(list(alltimes))\n"
+          "print(times)\n"
+          ) % sf.generic_path().string()
       % dataDirectory_.generic_path().string() );
     }
 

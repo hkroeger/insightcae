@@ -41,7 +41,7 @@ class RebuildCancelException
  */
 class ASTBase
 {
-  bool valid_;
+  std::atomic<bool> valid_;
   mutable std::atomic<bool> building_;
 
   

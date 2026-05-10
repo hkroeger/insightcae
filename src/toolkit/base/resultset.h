@@ -140,12 +140,15 @@ public:
 
     void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const override;
 
-    virtual void writeLatexFile (
+    void writeLatexFile(
         const boost::filesystem::path& file,
+        ActionProgress* ap=nullptr,
         const OutputProperties& outProps =
             insight::hierarchicalData::Element::OutputProperties() ) const;
-    virtual void generatePDF (
+
+    void generatePDF(
         const boost::filesystem::path& file,
+        ActionProgress* ap=nullptr,
         const OutputProperties& outProps =
             insight::hierarchicalData::Element::OutputProperties() ) const;
 
@@ -165,7 +168,7 @@ public:
         const std::string& name,
         const rapidxml::xml_node<>& node) override;
 
-    void saveAs(const boost::filesystem::path &outfile) const;
+    void saveAs(const boost::filesystem::path &outfile, ActionProgress *ap=nullptr) const;
 
     std::unique_ptr<ParameterSet> convertIntoParameterSet() const;
     std::unique_ptr<Parameter> convertIntoParameter() const override;
@@ -179,7 +182,8 @@ public:
     Element& childElementRef ( int i ) override;
     const Element& childElement( int i ) const override;
 
-    std::unique_ptr<hierarchicalData::Element> clone() const override;
+protected:
+    std::unique_ptr<hierarchicalData::Element> cloneUninitialized() const override;
 };
 
 

@@ -28,6 +28,8 @@
 #include <memory>
 
 #include "base/boost_include.h"
+#include "base/spatialtransformation.h"
+#include "cadtypes.h"
 
 #ifndef Q_MOC_RUN
 #include <boost/spirit/include/qi.hpp>
@@ -123,7 +125,96 @@ typedef std::vector<vtkSmartPointer<vtkProp> >  VTKActorList;
 
 
 
- 
+template<class SourceContainer, class TargetContainer, class TrsfFunction>
+void copyDatumItems(
+    const SourceContainer& source, TargetContainer& target,
+    TrsfFunction tr, const std::string& lbl,
+    const std::string& prefix = std::string(),
+    std::set<std::string> excludes = {},
+    std::set<std::string> enforce = {} )
+{
+    for (const auto& e: source)
+    {
+        if (excludes.count(e.first)==0)
+        {
+            if (
+                (target.find(prefix+e.first)!=target.end())
+                && !enforce.count(e.first) )
+            {
+                throw insight::Exception(lbl+" "+prefix+e.first+" already present!");
+            }
+
+            target[prefix+e.first]=tr(e.second);
+        }
+    }
+}
+
+
+
+
+/**
+ * @brief The BOM class
+ * a flattenend list of components the comprise the feature
+ */
+class BOM
+    : public std::set<ConstFeaturePtr>
+{
+public:
+    void report(std::ostream& os) const;
+};
+
+
+
+
+class DescriptionWithParameters
+    : public std::vector<ScalarPtr>
+{
+    std::string template_;
+public:
+    DescriptionWithParameters(
+        const std::string& templ,
+        const std::vector<ScalarPtr>& args );
+
+    std::string toString() const;
+    operator std::string() const;
+};
+
+
+
+
+
+struct BOMDescriptionData
+{
+    DescriptionWithParameters
+        typeDescription_;
+
+    boost::optional<DescriptionWithParameters>
+        customizationDescription_;
+
+    BOMDescriptionData(
+        DescriptionWithParametersPtr td,
+        DescriptionWithParametersPtr cd );
+
+    std::string typeDescription() const;
+    boost::optional<std::string> customizationDescription() const;
+    std::string toString() const;
+    operator std::string() const;
+};
+
+
+
+struct TesselationResolution
+{
+    enum Specification { Relative, Absolute } specification;
+    ScalarPtr value;
+
+    static TesselationResolution absolute(double res);
+};
+
+typedef boost::optional<TesselationResolution> ResoArg;
+
+
+
 /**
  * Base class of all CAD modelling features
  */
@@ -172,7 +263,9 @@ private:
   // the shape
   // shall only be accessed via the shape() function, which triggers the build function if needed
   TopoDS_Shape shape_;
-  
+
+  void performTriangulationBuilding(TesselationResolution res) const;
+
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
   std::unique_ptr<SubshapeNumbering> idx_;
@@ -186,7 +279,7 @@ protected:
   RefPointsList refpoints_;
   RefVectorsList refvectors_;
   
-  ScalarPtr visresolution_;
+  boost::optional<TesselationResolution> visresolution_;
   ScalarPtr density_;
   ScalarPtr areaWeight_;
   
@@ -194,6 +287,8 @@ protected:
    * symbol name of this feature in the defining model
    */
   std::string featureSymbolName_;
+
+  boost::optional<BOMDescriptionData> BOMDescription_;
   
   void updateVolProps() const;
   virtual void setShape(const TopoDS_Shape& shape);
@@ -204,6 +299,7 @@ protected:
 
   Feature();
   Feature(const Feature& o);
+  Feature(const Feature&o, TreeCloneMap& tcm);
 
   void setLocalCoordinateSystem(
         const arma::mat& O,
@@ -233,16 +329,19 @@ public:
   std::string featureSymbolName() const;
   std::string label() const override;
   
-  virtual void setVisResolution( ScalarPtr r );
+  virtual void setAbsoluteVisResolution( ScalarPtr r );
+  virtual void setRelativeVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);
   virtual double density() const;
   
   virtual void setAreaWeight(ScalarPtr rho);
   virtual double areaWeight() const;
+
+  insight::CoordinateSystem getLocalCoordinateSystem() const;
   
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
-  virtual void checkForBuildDuringAccess() const;
+  void checkForBuildDuringAccess() const override;
     
   inline const DatumPtrMap& providedDatums() const 
     { checkForBuildDuringAccess(); return providedDatums_; }
@@ -307,12 +406,17 @@ public:
    */
   virtual arma::mat modelInertia(double density_ovr=-1.) const;
   
+  bool hasTriangulation() const;
+  void createTriangulation(
+      ResoArg deflection = ResoArg() ) const;
+
   /**
    * return bounding box of model
    * first col: min point
    * second col: max point
    */
-  arma::mat modelBndBox(double deflection=-1) const;
+  arma::mat modelBndBox(
+      ResoArg deflection = ResoArg() ) const;
 
   /**
    * @brief modelBndBoxSize
@@ -320,10 +424,14 @@ public:
    * @return
    * max point-min point, i.e. vector across diagonal
    */
-  arma::mat modelBndBoxSize(double deflection=-1) const;
+  arma::mat modelBndBoxSize(
+      ResoArg deflection = ResoArg() ) const;
 
-  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(double deflection=-1) const;
-  std::pair<CoordinateSystem,arma::mat> orientedModelBndBoxSize(double deflection=-1) const;
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBox(
+      ResoArg deflection = ResoArg() ) const;
+
+  std::pair<CoordinateSystem,arma::mat> orientedModelBndBoxSize(
+      ResoArg deflection = ResoArg() ) const;
 
   arma::mat faceNormal(FeatureID i) const;
   arma::mat averageFaceNormal() const;
@@ -408,8 +516,16 @@ public:
   virtual TopoDS_Face asSingleFace() const;
   virtual TopoDS_Shape asSingleVolume() const;
   
-  void copyDatums(const Feature& m1, const std::string& prefix="", std::set<std::string> excludes = std::set<std::string>() );
-  void copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix="", std::set<std::string> excludes = std::set<std::string>() );
+  void copyDatums(
+      const Feature& m1,
+      const std::string& prefix=std::string(),
+      std::set<std::string> excludes = {} );
+
+  void copyDatumsTransformed(
+      const Feature& m1,
+      const gp_Trsf& trsf,
+      const std::string& prefix=std::string(),
+      std::set<std::string> excludes = {} );
 
   virtual const RefValuesList& getDatumScalars() const;
   virtual double getDatumScalar(const std::string& name="") const;
@@ -455,6 +571,12 @@ public:
   Handle_Poly_Triangulation triangulation(double tol=1e-3) const;
   vtkSmartPointer<vtkPolyData> triangulationToVTK(double tol=1e-3) const;
 
+  void setBOMDescription(
+      const BOMDescriptionData &desc );
+
+  virtual boost::optional<BOMDescriptionData> BOMDescription() const;
+  virtual void addToBOM(BOM& bom) const;
+
 };
 
 
@@ -472,6 +594,8 @@ class SingleFaceFeature
 : public Feature
 {
 public:
+  using Feature::Feature;
+
   virtual bool isSingleCloseWire() const;
   virtual TopoDS_Wire asSingleClosedWire() const;
   virtual bool isSingleFace() const;
@@ -482,6 +606,8 @@ class SingleVolumeFeature
 : public Feature
 {
 public:
+  using Feature::Feature;
+
   virtual bool isSingleVolume() const;
 };
 

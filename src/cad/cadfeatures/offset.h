@@ -21,7 +21,7 @@
 #define OFFSET_H
 
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 #include "cadparameters.h"
 
 namespace insight {
@@ -31,9 +31,8 @@ namespace cad {
 
 
 class Offset
-    : public Feature
+    : public DerivedFeature
 {
-    FeaturePtr shell_;
     ScalarPtr thickness_;
     ScalarPtr tol_;
 
@@ -49,7 +48,7 @@ public:
     CREATE_FUNCTION(Offset);
     CLONEABLE(Offset);
 #ifndef SWIG
-    DEPENDS((shell_,thickness_,tol_));
+    DEPENDS_W_BASE(DerivedFeature, (thickness_,tol_));
 #endif
 
     static void insertrule ( parser::ISCADParser& ruleset );

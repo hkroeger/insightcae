@@ -21,7 +21,7 @@ int main()
     {
 
         // allocate single server
-        auto srvcfg = remoteServers.findServer(
+        auto srvcfg = remoteServers().findServer(
             "docker_test_pool/dcksrv1"
             //"localhost"
             );

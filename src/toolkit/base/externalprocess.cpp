@@ -1,8 +1,11 @@
 #include "externalprocess.h"
 #include "base/exception.h"
+#include "base/translations.h"
+#include "base/insightthread.h"
 
 #include <boost/process/async.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <iostream>
 
 namespace bp = boost::process;
 
@@ -10,121 +13,70 @@ namespace insight {
 
 
 
-std::istream& extendedGetline(std::istream& is, std::string& t)
+template<class Stream = std::istream>
+Stream& extendedGetline(Stream& is, std::string& t)
 {
-  t.clear();
+    t.clear();
 
-  std::istream::sentry se(is, true);
-  std::streambuf* sb = is.rdbuf();
+    typename Stream::sentry se(is, true);
+    auto *sb = is.rdbuf();
 
-  for(;;) {
-    int c = sb->sbumpc();
-    switch (c) {
-    case '\n':
-      return is;
-    case '\r':
-      if(sb->sgetc() == '\n')
+    while (is.good())
+    {
+        int c = sb->sbumpc();
+        switch (c) {
+        case '\n':
+            return is;
+        case '\r':
+        {
+            auto next=sb->sgetc();
+            if (next == '\n')
+            {
                 sb->sbumpc();
-      return is;
-    case std::streambuf::traits_type::eof():
-      // Also handle the case when the last line has no line ending
-      if(t.empty())
+            }
+            return is;
+        }
+        case std::streambuf::traits_type::eof():
+            // Also handle the case when the last line has no line ending
+            if (t.empty())
                 is.setstate(std::ios::eofbit);
-      return is;
-    default:
-      t += (char)c;
+            return is;
+        default:
+            t += (char)c;
+        }
     }
-  }
+    return is;
 }
 
-typedef boost::asio::buffers_iterator<
-    boost::asio::streambuf::const_buffers_type> iterator;
-
-std::pair<iterator, bool>
-match_endline(iterator begin, iterator end)
-{
-  auto i = begin;
-  while (i != end)
-  {
-    if (*i=='\n' || *i=='\r')
-      return std::make_pair(i, true);
-    i++;
-  }
-  return std::make_pair(i, false);
-}
-
-
-void Job::read_start_out()
-{
-  boost::asio::async_read_until(
-      out_, buf_out_, match_endline,
-   [&](const boost::system::error_code &error, std::size_t /*size*/)
-   {
-    if (!error)
-    {
-      // read a line
-     std::string line;
-     std::istream is(&(buf_out_));
-     extendedGetline(is, line);
-
-     // process line
-     if (processStdOut_) processStdOut_(line);
-
-     // restart read
-     read_start_out();
-    }
-   }
-  );
-}
-
-
-void Job::read_start_err()
-{
-  boost::asio::async_read_until(
-   err_, buf_err_, match_endline,
-   [&](const boost::system::error_code &error, std::size_t /*size*/)
-   {
-    if (!error)
-    {
-      // read a line
-     std::string line;
-     std::istream is(&buf_err_);
-     extendedGetline(is, line);
-
-     // process this line
-     if (processStdErr_) processStdErr_(line);
-
-     // restart
-     read_start_err();
-    }
-   }
-  );
-}
 
 
 Job::Job()
-  : out_(ios_), err_(ios_)
 {}
 
 
 
 Job::Job(
     const std::string &cmd,
-    std::vector<std::string> argv
+    std::vector<std::string> argv,
+    bool searchCmdInPath
     )
-  : out_(ios_), err_(ios_),
-    process_(
-          std::make_unique<boost::process::child>(
-            bp::search_path(cmd),
+{
+  insight::CurrentExceptionContext ex(
+        _("launch external command \"%s\" with arguments {%s}"),
+        cmd.c_str(),
+        ((argv.size()?"'":"")
+         +boost::join(argv, "', '")+
+         (argv.size()?"'":"")).c_str()
+        );
+  process_ =
+        std::make_unique<boost::process::child>(
+            searchCmdInPath ? bp::search_path(cmd) : cmd,
             bp::args( argv ),
             bp::std_in < in_,
             bp::std_out > out_,
             bp::std_err > err_
-          )
-    )
+        );
 
-{
-  insight::CurrentExceptionContext ex("launch external command \""+cmd+"\"");
   if (!process_->running())
   {
         throw insight::Exception(
@@ -134,12 +86,19 @@ Job::Job(
 }
 
 
+
+
 Job::Job(
-    const std::pair<boost::filesystem::path,std::vector<std::string> >& ca
+    const std::pair<
+        boost::filesystem::path,
+        std::vector<std::string > >& ca,
+    bool searchCmdInPath
 )
-    : Job(ca.first.string(), ca.second)
-{
-}
+    : Job(ca.first.string(), ca.second, searchCmdInPath)
+{}
+
+
+
 
 Job::~Job()
 {
@@ -152,11 +111,14 @@ Job::~Job()
 
 
 
+
 void Job::forkProcess(
     std::unique_ptr<boost::process::child> child
 )
-{
-}
+{}
+
+
+
 
 void Job::wait()
 {
@@ -176,10 +138,14 @@ void Job::wait()
 
 
 
+
 bool Job::isRunning() const
 {
   return process_ && process_->running();
 }
+
+
+
 
 void Job::terminate()
 {
@@ -189,20 +155,31 @@ void Job::terminate()
   }
 }
 
+
+
+
 std::ostream& Job::input()
 {
   return in_;
 }
+
+
+
 
 void Job::closeInput()
 {
   in_.pipe().close();
 }
 
+
+
+
 const boost::process::child &Job::process() const
 {
   return *process_;
 }
+
+
 
 
 void Job::runAndTransferOutput
@@ -246,33 +223,46 @@ void Job::ios_run_with_interruption(
   processStdOut_ = processStdOut;
   processStdErr_ = processStdErr;
 
-  read_start_out();
-  read_start_err();
 
-  boost::asio::steady_timer t(ios_);
+  insight::Thread outReader([this](){
+      std::string line;
+      while (extendedGetline<std::istream>(out_, line))
+      {
+          if (processStdOut_)
+          {
+              processStdOut_(line);
+          }
+      }
+  });
 
-  std::function<void(boost::system::error_code)> interruption_handler =
-   [&] (boost::system::error_code) {
-    try
-    {
-      boost::this_thread::interruption_point();
-    }
-    catch (const boost::thread_interrupted& i)
-    {
+  insight::Thread errReader([this](){
+      std::string line;
+      while (extendedGetline<std::istream>(err_, line))
+      {
+          if (processStdErr_)
+          {
+              processStdErr_(line);
+          }
+      }
+  });
+
+
+  while (process_->running())
+  {
+      try
+      {
+          boost::this_thread::interruption_point();
+      }
+      catch (const boost::thread_interrupted& i)
+      {
 #ifdef WIN32
-      process_->terminate();
+          process_->terminate();
 #else
-      ::kill(process_->id(), SIGTERM);
+          ::kill(process_->id(), SIGTERM);
 #endif
-      throw i;
-    }
-
-    t.expires_from_now(std::chrono::seconds( 1 ));
-    if (process_->running())
-      t.async_wait(interruption_handler);
-   };
-  interruption_handler({});
-  ios_.run();
+          throw i;
+      }
+  }
 }
 
 
@@ -288,7 +278,7 @@ void Job::ios_run_with_interruption(OutputAnalyzer *oa)
                 if (oa)
                 {
                     oa->update(line);
-                    if (oa->stopRun())
+                    if (oa->stopIsDemanded())
                     {
                       terminate();
                     }

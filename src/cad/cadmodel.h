@@ -42,6 +42,10 @@ namespace insight
 namespace cad 
 {
 
+
+class DescriptionWithParameters;
+
+
 namespace parser {
 class SyntaxElementDirectory;
 typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
@@ -70,35 +74,35 @@ public:
     typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTableContents;
     typedef std::map<std::string, vtkSmartPointer<vtkDataObject> > 	DatasetTableContents;
 
-    typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
-    typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
-    typedef boost::spirit::qi::symbols<char, DatumPtr>          DatumTable;
-    typedef boost::spirit::qi::symbols<char, FeaturePtr> 	ModelstepTable;
-    typedef boost::spirit::qi::symbols<char, ModelPtr>          ModelTable;
+    // typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
+    // typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
+    // typedef boost::spirit::qi::symbols<char, DatumPtr>          DatumTable;
+    // typedef boost::spirit::qi::symbols<char, FeaturePtr> 	ModelstepTable;
+    // typedef boost::spirit::qi::symbols<char, ModelPtr>          ModelTable;
     typedef std::set<std::string>                               ComponentSet;
 
-    typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	VertexFeatureTable;
-    typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	EdgeFeatureTable;
-    typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	FaceFeatureTable;
-    typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	SolidFeatureTable;
-    typedef boost::spirit::qi::symbols<char, PostprocActionPtr> PostprocActionTable;
+    // typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	VertexFeatureTable;
+    // typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	EdgeFeatureTable;
+    // typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	FaceFeatureTable;
+    // typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	SolidFeatureTable;
+    // typedef boost::spirit::qi::symbols<char, PostprocActionPtr> PostprocActionTable;
     typedef DatasetTableContents                                DatasetTable;
 
 protected:
-    std::string         description_;
+    BOMDescriptionDataPtr description_;
     double              cost_;
 
-    ScalarTable 		scalars_;
-    VectorTable 		points_, directions_;
-    DatumTable          datums_;
-    ModelstepTable      modelsteps_;
+    ScalarTableContents scalars_;
+    VectorTableContents 		points_, directions_;
+    DatumTableContents          datums_;
+    ModelstepTableContents modelsteps_;
     ComponentSet		components_;
-    VertexFeatureTable  vertexFeatures_;
-    EdgeFeatureTable    edgeFeatures_;
-    FaceFeatureTable    faceFeatures_;
-    SolidFeatureTable   solidFeatures_;
-    ModelTable          models_;
-    PostprocActionTable postprocActions_;
+    VertexFeatureTableContents  vertexFeatures_;
+    EdgeFeatureTableContents    edgeFeatures_;
+    FaceFeatureTableContents    faceFeatures_;
+    SolidFeatureTableContents   solidFeatures_;
+    ModelTableContents          models_;
+    PostprocActionTableContents postprocActions_;
     DatasetTable        datasets_;
 
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
@@ -122,20 +126,21 @@ public:
     Model(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
     Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
 
-    void setDescription(const std::string& description);
+    void setDescription(
+        BOMDescriptionDataPtr args );
     void setCost(double cost);
 
-    const ScalarTable& 	scalarSymbols() const;
-    const VectorTable&	pointSymbols() const;
-    const VectorTable&	directionSymbols() const;
-    const DatumTable&	datumSymbols() const;
-    const ModelstepTable&	modelstepSymbols() const;
-    const VertexFeatureTable&	vertexFeatureSymbols() const;
-    const EdgeFeatureTable&	edgeFeatureSymbols() const;
-    const FaceFeatureTable& 	faceFeatureSymbols() const;
-    const SolidFeatureTable& 	solidFeatureSymbols() const;
-    const ModelTable& 	modelSymbols() const;
-    const PostprocActionTable& 	postprocActionSymbols() const;
+    // const ScalarTable& 	scalarSymbols() const;
+    // const VectorTable&	pointSymbols() const;
+    // const VectorTable&	directionSymbols() const;
+    // const DatumTable&	datumSymbols() const;
+    // const ModelstepTable&	modelstepSymbols() const;
+    // const VertexFeatureTable&	vertexFeatureSymbols() const;
+    // const EdgeFeatureTable&	edgeFeatureSymbols() const;
+    // const FaceFeatureTable& 	faceFeatureSymbols() const;
+    // const SolidFeatureTable& 	solidFeatureSymbols() const;
+    // const ModelTable& 	modelSymbols() const;
+    // const PostprocActionTable& 	postprocActionSymbols() const;
     const DatasetTable& 	datasets() const;
 
     ModelVariableTable allVariables() const;
@@ -208,7 +213,7 @@ public:
 
     bool isComponent(const std::string& name) const;
     
-    const std::string description() const;
+    BOMDescriptionDataPtr description() const;
 
     /**
      * @brief cost
@@ -224,17 +229,17 @@ public:
      */
     double totalCost() const;
 
-    ScalarTableContents scalars() const;
-    VectorTableContents	points() const;
-    VectorTableContents	directions() const;
-    DatumTableContents	datums() const;
-    ModelstepTableContents	modelsteps() const;
-    VertexFeatureTableContents 	vertexFeatures() const;
-    EdgeFeatureTableContents edgeFeatures() const;
-    FaceFeatureTableContents faceFeatures() const;
-    SolidFeatureTableContents solidFeatures() const;
-    ModelTableContents models() const;
-    PostprocActionTableContents postprocActions() const;
+    const ScalarTableContents& scalars() const;
+    const VectorTableContents&	points() const;
+    const VectorTableContents&	directions() const;
+    const DatumTableContents&	datums() const;
+    const ModelstepTableContents&	modelsteps() const;
+    const VertexFeatureTableContents& 	vertexFeatures() const;
+    const EdgeFeatureTableContents& edgeFeatures() const;
+    const FaceFeatureTableContents& faceFeatures() const;
+    const SolidFeatureTableContents& solidFeatures() const;
+    const ModelTableContents& models() const;
+    const PostprocActionTableContents& postprocActions() const;
 
     std::shared_ptr<DependencySource>
     shallowClone(TreeCloneMap& tcm) const override;

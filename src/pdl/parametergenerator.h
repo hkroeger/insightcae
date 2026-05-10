@@ -1,58 +1,27 @@
 #ifndef PARAMETERGENERATOR_H
 #define PARAMETERGENERATOR_H
 
-#include <algorithm>
 #include <memory>
 #include <string>
 
-#define BOOST_NO_CXX11_SCOPED_ENUMS
 
-#include "boost/filesystem.hpp"
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-#include "boost/assign.hpp"
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/ptr_map_inserter.hpp>
-#include "boost/format.hpp"
+#include <boost/filesystem.hpp>
 #include <boost/tokenizer.hpp>
-#include "boost/regex.hpp"
-#include "boost/lexical_cast.hpp"
 #include <boost/algorithm/string.hpp>
-#include "boost/date_time.hpp"
-#include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/regex.hpp>
-#include "boost/concept_check.hpp"
-#include "boost/utility.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/shared_ptr.hpp"
-#include "boost/foreach.hpp"
-#include <boost/graph/graph_concepts.hpp>
-#include <boost/graph/buffer_concepts.hpp>
 #include <boost/fusion/include/std_pair.hpp>
-#include "boost/tuple/tuple.hpp"
-#include "boost/fusion/tuple.hpp"
-#include "boost/variant.hpp"
-#include "boost/variant/recursive_variant.hpp"
 #include <boost/fusion/adapted/boost_tuple.hpp>
 #include <boost/fusion/adapted.hpp>
-#include "boost/thread.hpp"
 
 #include <armadillo>
 
-#define BOOST_SPIRIT_USE_PHOENIX_V3
-// #define BOOST_SPIRIT_DEBUG
 
-#include "boost/spirit/include/qi.hpp"
-#include "boost/variant/recursive_variant.hpp"
-#include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/phoenix/function.hpp>
 #include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
 #include <boost/spirit/home/classic/utility/distinct.hpp>
-#include <boost/fusion/adapted.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 
@@ -82,6 +51,11 @@ public:
 
 void writeVec3Constant(std::ostream&, const arma::mat& m);
 
+//forward declare namespace
+namespace boost {
+namespace spirit {
+namespace repository {
+}}}
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

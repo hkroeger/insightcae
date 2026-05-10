@@ -73,8 +73,8 @@ void CyclicPairBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             OFDictData::dict& BC1=boundaryField.subDict ( patchName_+"_half1" );
 
             if ( ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
-                MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
-                MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC1 );
+                MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
+                MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC1 );
             } else {
                 BC["type"]="cyclic";
                 BC1["type"]="cyclic";
@@ -83,7 +83,7 @@ void CyclicPairBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             OFDictData::dict& BC=boundaryField.subDict ( patchName_ );
 
             if ( ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
-                MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
+                MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
             } else {
                 BC["type"]="cyclic";
             }

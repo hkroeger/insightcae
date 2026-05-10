@@ -24,6 +24,7 @@
 
 
 #include "base/boost_include.h"
+#include "boost/format.hpp"
 
 #include "base/cppextensions.h""
 #include "base/qt5_helper.h"

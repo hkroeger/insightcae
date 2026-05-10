@@ -1,13 +1,9 @@
 project(analyze)
 
 
-set(analyze_SOURCES
-    analyze.cpp
-)
 
 set(analyze_LIBS
     toolkit_remote
-    ${Boost_LIBRARIES}
 )
 
 if (wt_FOUND)
@@ -25,9 +21,12 @@ else()
     message(STATUS "Did not found wt, disabling server.")
 endif()
 
-add_executable(analyze ${analyze_SOURCES})
+add_executable(analyze
+    analyze.cpp
+    ${analyze_SOURCES}
+)
 target_link_libraries(analyze ${analyze_LIBS})
 linkToolkitVtk(analyze Offscreen)
-setup_gettext(analyze analyze ${analyze_SOURCES})
+target_setup_gettext(analyze analyze)
 
 install(TARGETS analyze RUNTIME DESTINATION bin)

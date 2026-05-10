@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class vertexLocation
-    : public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>, public EnableCreateFunction<vertexLocation>
 {
 public:
     vertexLocation();

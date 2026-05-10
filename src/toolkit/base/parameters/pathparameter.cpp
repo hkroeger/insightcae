@@ -64,22 +64,7 @@ bool PathParameter::isDifferent(const Parameter& p) const
 {
   if (const auto *pp = dynamic_cast<const PathParameter*>(&p))
   {
-    if (pp->fileName()!=fileName())
-      return true;
-
-    if (isPacked())
-    {
-      if (!pp->isPacked())
-        return true;
-
-      if (!(pp->contentModificationTime()==contentModificationTime()))
-        return true;
-
-      if (pp->contentBufferSize()!=contentBufferSize())
-        return true;
-    }
-
-    return false;
+    return FileContainer::isDifferent(*pp);
   }
   else
     return true;
@@ -91,7 +76,7 @@ std::string PathParameter::latexRepresentation(
     int,
     const FileStorageInfo& ) const
 {
-    return SimpleLatex( fileName().string() ).toLaTeX();
+    return SimpleLatex( filePath().string() ).toLaTeX();
 }
 
 
@@ -99,7 +84,7 @@ std::string PathParameter::latexRepresentation(
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
-  return SimpleLatex( fileName().generic_string() ).toPlainText();
+  return SimpleLatex( filePath().generic_string() ).toPlainText();
 }
 
 
@@ -107,8 +92,11 @@ std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 
 void PathParameter::resolveRelativePaths(const boost::filesystem::path &baseDirectory)
 {
+    auto org=filePath();
     FileContainer::resolveRelativePath(baseDirectory);
     Parameter::resolveRelativePaths(baseDirectory);
+    if (filePath()!=org)
+        triggerValueChanged();
 }
 
 
@@ -126,7 +114,7 @@ void PathParameter::pack()
 {
     if (isValid())
     {
-        auto lfp=localFilePath();
+        auto lfp=expandedFilePath();
         if (boost::filesystem::exists(lfp))
             replaceContent(lfp);
     }
@@ -137,7 +125,7 @@ void PathParameter::pack()
 
 void PathParameter::unpack(const boost::filesystem::path &basePath)
 {
-    filePath(true, basePath); // triggers unpack
+    accessibleFilePath(true, basePath); // triggers unpack
 }
 
 
@@ -151,46 +139,12 @@ void PathParameter::clearPackedData()
 
 
 
-boost::filesystem::path
-PathParameter::filePath(
-    bool unpackIfNoLocalCopy,
-    boost::optional<boost::filesystem::path> overrideBaseDirectory ) const
+
+
+void PathParameter::setFilePath(const boost::filesystem::path &fn)
 {
-    boost::filesystem::path fp = localFilePath();
-
-    if (!boost::filesystem::exists(fp) && unpackIfNoLocalCopy && hasFileContent())
-    {
-        auto baseDir = baseDirectory();
-
-        if (overrideBaseDirectory)
-            baseDir=*overrideBaseDirectory;
-
-        if (!baseDir)
-        {
-          fp = GlobalTemporaryDirectory::path()/fileName();
-        }
-        else
-        {
-            fp = *baseDir / "embeddedFiles";
-            if (!fileName().parent_path().empty())
-            {
-                auto dirHash = std::hash<std::string>()(
-                    fileName().parent_path().string());
-                fp /= toString(dirHash);
-            }
-            fp /= fileName();
-        }
-    }
-
-    if (unpackIfNoLocalCopy && hasFileContent())
-    {
-        if (!boost::filesystem::exists(fp))
-        {
-            copyTo(fp, true);
-        }
-    }
-
-    return fp;
+    FileContainer::setFilePath(fn);
+    triggerValueChanged();
 }
 
 
@@ -245,10 +199,12 @@ PathParameter::readFromNode
           boost::str(
             boost::format(
              "No xml node found with type '%s' and name '%s', default value '%s' is used."
-            ) % type() % name % fileName().c_str() ) );
+            ) % type() % name % filePath().c_str() ) );
   }
   return child;
 }
+
+
 
 
 PathParameter::PathParameter(const rapidxml::xml_node<> &node)
@@ -259,13 +215,18 @@ PathParameter::PathParameter(const rapidxml::xml_node<> &node)
 }
 
 
+
+
 std::unique_ptr<PathParameter> PathParameter::clonePathParameter() const
 {
     auto pp=cloneAs<PathParameter>();
     return pp;
 }
 
-std::unique_ptr<hierarchicalData::Element> PathParameter::clone() const
+
+
+
+std::unique_ptr<hierarchicalData::Element> PathParameter::cloneUninitialized() const
 {
     auto p= std::make_unique<PathParameter>(
         *this,
@@ -276,12 +237,15 @@ std::unique_ptr<hierarchicalData::Element> PathParameter::clone() const
 
 
 
+
 void PathParameter::assignFrom(const Element& e)
 {
   auto& op=dynamic_cast<const PathParameter&>(e);
   FileContainer::operator=(op);
   Parameter::assignFrom(op);
 }
+
+
 
 
 bool PathParameter::isEqual(const Element &op) const
@@ -295,6 +259,8 @@ bool PathParameter::isEqual(const Element &op) const
     else
         return false;
 }
+
+
 
 
 int PathParameter::nChildren() const
@@ -317,6 +283,7 @@ std::shared_ptr<PathParameter> make_filepath(const FileContainer& fc)
 {
   return std::shared_ptr<PathParameter>(new PathParameter(fc, "temporary file path"));
 }
+
 
 
 
@@ -345,13 +312,35 @@ addParameterFactories(DirectoryParameter);
 
 
 
-DirectoryParameter::DirectoryParameter(const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
-: PathParameter(".", description, isHidden, isExpert, isNecessary, order)
+
+DirectoryParameter::DirectoryParameter(
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
+: PathParameter(description, isHidden, isExpert, isNecessary, order)
 {}
 
-DirectoryParameter::DirectoryParameter(const boost::filesystem::path& value, const std::string& description,  bool isHidden, bool isExpert, bool isNecessary, int order)
+
+
+
+DirectoryParameter::DirectoryParameter(
+    const boost::filesystem::path& value,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
 : PathParameter(value, description, isHidden, isExpert, isNecessary, order)
 {}
+
+
+
+
+DirectoryParameter::DirectoryParameter(
+    const FileContainer& fc,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order)
+    : PathParameter(fc, description, isHidden, isExpert, isNecessary, order)
+{}
+
+
+
 
 std::string DirectoryParameter::latexRepresentation(
     const std::string&,
@@ -361,16 +350,23 @@ std::string DirectoryParameter::latexRepresentation(
     return std::string()
       + "{\\ttfamily "
       + SimpleLatex(
-            fileName().string()
+            filePath().string()
         ).toLaTeX()
       + "}";
 }
 
+
+
+
 void DirectoryParameter::pack()
 {}
 
+
+
+
 void DirectoryParameter::unpack(const boost::filesystem::path &basePath)
 {}
+
 
 
 
@@ -406,11 +402,14 @@ const rapidxml::xml_node<>* DirectoryParameter::readFromNode
   {
     insight::Warning(
              "No xml node found with type '%s' and name '%s', default value '%s' is used.",
-              type().c_str(), name.c_str(), fileName().c_str()
+              type().c_str(), name.c_str(), filePath().c_str()
         );
   }
   return child;
 }
+
+
+
 
 DirectoryParameter::DirectoryParameter(const rapidxml::xml_node<> &node)
     : PathParameter(node)
@@ -418,6 +417,9 @@ DirectoryParameter::DirectoryParameter(const rapidxml::xml_node<> &node)
     FileContainer::readFromNode(node);
     triggerValueChanged();
 }
+
+
+
 
 bool DirectoryParameter::isEqual(const Element &op) const
 {
@@ -432,14 +434,17 @@ bool DirectoryParameter::isEqual(const Element &op) const
 
 
 
-std::unique_ptr<hierarchicalData::Element> DirectoryParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> DirectoryParameter::cloneUninitialized() const
 {
     auto p=std::make_unique<DirectoryParameter>(
-        fileName(),
+        *this,
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order() );
     return p;
 }
+
+
+
 
 std::unique_ptr<DirectoryParameter> DirectoryParameter::cloneDirectoryParameter() const
 {

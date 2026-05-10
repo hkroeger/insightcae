@@ -83,7 +83,7 @@ SectionBeam::SectionBeam(
     Properties properties,
     int nip )
 : Section(id),
-    nip_(id), props_(properties)
+    nip_(nip), props_(properties)
 {}
 
 

@@ -21,6 +21,7 @@
 #include "cadfeature.h"
 #include "iqiscadmodelgenerator.h"
 #include "iqiscadmodelrebuilder.h"
+#include "parametersetwithguicontext.h"
 
 #include "AIS_DisplayMode.hxx"
 
@@ -254,13 +255,7 @@ public:
 
   IQParameterSetModel* parameterSetModel() const;
 
-  void addGeometryToSpatialTransformationParameter(
-      const std::string& parameterPath,
-      insight::cad::FeaturePtr geom );
-
-  void addVectorBasePoint(
-      const std::string& parameterPath,
-      const arma::mat& pBase );
+  insight::ParameterSetGUIContext* GUIContext();
 
   virtual std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() = 0;
 
@@ -333,7 +328,8 @@ public:
     computeSupplementedInput() override
     {
         return std::make_shared<typename AnalysisInstance::supplementedInputData>(
-            ParameterSetInput(this->parameters()), this->workDir_, this->progress_);
+            ParameterSetInput(this->parameters()), this->workDir_,
+            *this->progress_.forkNewAction(99, "Processing input data"));
     }
 
     const typename AnalysisInstance::supplementedInputData& sp() const

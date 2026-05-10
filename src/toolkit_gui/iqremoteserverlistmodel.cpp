@@ -12,18 +12,18 @@
 IQRemoteServerListModel::IQRemoteServerListModel(QObject *parent)
   : QAbstractItemModel(parent)
 {
-    for (auto &rs: insight::remoteServers)
+    for (auto &rs: insight::remoteServers())
     {
         if (!rs->wasExpanded())
         {
             auto crs=rs->clone();
             remoteServers_.push_back(crs);
-            if (rs==insight::remoteServers.getPreferredServer())
+            if (rs==insight::remoteServers().getPreferredServer())
                 preferredServer_=crs;
         }
     }
 
-    for (auto &rsp: insight::remoteServers.serverPools())
+    for (auto &rsp: insight::remoteServers().serverPools())
     {
         remoteServers_.push_back(rsp);
     }

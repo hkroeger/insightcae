@@ -26,14 +26,14 @@ namespace insight {
 namespace cad {
 
 class maximal
-    : public extremal
+    : public extremal, public EnableCreateFunction<maximal>
 {
 
 protected:
     double criterion(FeatureID feature) override;
 
 public:
-    maximal(const scalarQuantityComputer& qtc, int rank=0, int lrank=-1);
+    maximal(ScalarArg qtc, int rank=0, int lrank=-1);
 
     FilterPtr clone() const override;
 };

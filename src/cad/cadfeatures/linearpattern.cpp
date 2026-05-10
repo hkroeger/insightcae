@@ -114,7 +114,6 @@ void LinearPattern::build()
     for ( int i=0; i<n; i++ ) {
         gp_Trsf tr;
         tr.SetTranslation ( ax*delta_x*double ( i ) );
-//     bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
 
         components_[str ( format ( "component%d" ) % ( j+1 ) )] = Transform::create ( m1_, tr );
         j++;

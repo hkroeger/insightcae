@@ -240,7 +240,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
       [&]()
       {
         QStringList servers;
-        for (const auto& s: insight::remoteServers)
+          for (const auto& s: insight::remoteServers())
         {
           servers<<QString::fromStdString(*s);
         }
@@ -263,7 +263,7 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
         {
           remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
                 this,
-                insight::remoteServers.findServer(
+                insight::remoteServers().findServer(
                   selectedServer.toStdString() )
                 );
           remote_->location().writeConfigFile(

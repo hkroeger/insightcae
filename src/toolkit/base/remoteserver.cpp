@@ -179,6 +179,11 @@ int RemoteServer::transferBandWidthLimit() const
     return -1;
 }
 
+string RemoteServer::IPaddress() const
+{
+    return "127.0.0.1"; // usually through a tunnel to our local host
+}
+
 
 
 RemoteServer::PortMapping::~PortMapping()

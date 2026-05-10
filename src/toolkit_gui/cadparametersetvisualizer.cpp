@@ -87,6 +87,12 @@ void CADParameterSetVisualizerGenerator::addFeature(
     const insight::cad::FeatureVisualizationStyle& fvs )
 {
   CurrentExceptionContext ec(GUIEvents, "adding visualizer feature "+name);
+  if (!feat->hasTriangulation()) // tesselate here, if needed. Will happen in GUI thread otherwise
+  {
+      insight::CurrentExceptionContext ex(
+          str(boost::format("pre-tesselating feature %s")%name));
+      feat->createTriangulation();
+  }
   Q_EMIT createdFeature( QString::fromStdString(name), feat, true, fvs );
 }
 
@@ -162,27 +168,6 @@ CADParameterSetModelVisualizer::CADParameterSetModelVisualizer(
     psmodel_(psm),
     status_(BeforeLaunch), success_(false)
 {}
-
-void CADParameterSetModelVisualizer::addGeometryToSpatialTransformationParameter(
-        const std::string &parameterPath,
-        cad::FeaturePtr geom )
-{
-    psmodel_->addGeometryToSpatialTransformationParameter(
-                    parameterPath,
-                    geom );
-}
-
-
-
-
-void CADParameterSetModelVisualizer::addVectorBasePoint(
-        const std::string &parameterPath,
-        const arma::mat &pBase )
-{
-    psmodel_->addVectorBasePoint(
-                    parameterPath,
-                    pBase );
-}
 
 
 
@@ -315,7 +300,10 @@ IQParameterSetModel* CADParameterSetModelVisualizer::parameterSetModel() const
     return psmodel_;
 }
 
-
+insight::ParameterSetGUIContext* CADParameterSetModelVisualizer::GUIContext()
+{
+    return parameterSetModel()->GUIContext();
+}
 
 
 

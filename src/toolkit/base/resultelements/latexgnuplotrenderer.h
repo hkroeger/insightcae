@@ -58,45 +58,60 @@ public:
 
     CaseDirectory tmp ( keep, bn+"-generate" );
 
+    auto gpfname = (tmp/(bn+".tex")).generic_path();
+
     {
       CurrentExceptionContext ex("executing gnuplot");
 
       auto gp = make_Gnuplot();
-
-      std::string gpfname = (tmp/(bn+".tex")).generic_path().string();
 
       double w=15.;
       *gp<<str(format(
           "set terminal cairolatex pdf standalone color dash linewidth 3 size %gcm,%gcm;")
                % w % (w*this->canvasSizeRatio())
                );
-      *gp<<"set output '" << gpfname << "';";
+      *gp<<"set output '" << gpfname.string() << "';";
       insight::dbg()<<gpfname<<std::endl;
 
       gnuplotCommand(*gp);
     }
 
     boost::process::system(
-          boost::process::search_path("pdflatex"),
+        /*boost::process::search_path("pdflatex"),*/
+          ExternalPrograms::path("pdflatex"),
           boost::process::args(
             { "-interaction=batchmode", "-shell-escape", bn+".tex" }),
           boost::process::start_dir(tmp)
           );
 
-    std::shared_ptr<document> doc( document::load_from_file( (tmp/(bn+".pdf")).string() ) );
-    if (!doc) {
-      throw insight::Exception("loading error");
+    auto tmppdf = gpfname.replace_extension(".pdf");
+
+    std::shared_ptr<document> doc(
+        document::load_from_file( tmppdf.string() ) );
+    if (!doc)
+    {
+      throw insight::Exception(
+            "failed to load PDF document from %s!",
+            tmppdf.c_str() );
     }
 
-    if (doc->is_locked()) {
-      throw insight::Exception("pdflatex produced encrypted document");
+    if (doc->is_locked())
+    {
+      throw insight::Exception(
+            "pdflatex produced encrypted document" );
     }
 
     if (doc->pages()!=1)
-      throw insight::Exception(str(format("expected one single page in chart PDF, got %d!")%doc->pages()));
+    {
+      throw insight::Exception(
+            "expected one single page in chart PDF, got %d!",
+            doc->pages()
+        );
+    }
 
     std::shared_ptr<poppler::page> page(doc->create_page(0));
-    if (!page) {
+    if (!page)
+    {
       throw insight::Exception("could not extract page from PDF document");
     }
     poppler::page_renderer pr;
@@ -104,11 +119,13 @@ public:
     pr.set_render_hint(poppler::page_renderer::text_antialiasing, true);
 
     poppler::image img = pr.render_page(page.get(), 600, 600);
-    if (!img.is_valid()) {
+    if (!img.is_valid())
+    {
       throw insight::Exception("rendering failed");
     }
 
-    if (!img.save( boost::filesystem::absolute(outimagepath).string(), "png", 600)) {
+    if (!img.save( boost::filesystem::absolute(outimagepath).string(), "png", 600))
+    {
       throw insight::Exception("saving to file failed");
     }
   }

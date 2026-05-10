@@ -3,7 +3,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 namespace insight {
@@ -48,7 +47,7 @@ std::string Video::latexRepresentation(
 
 
 
-std::unique_ptr<hierarchicalData::Element> Video::clone() const
+std::unique_ptr<hierarchicalData::Element> Video::cloneUninitialized() const
 {
     auto res =
         std::make_unique<Video>

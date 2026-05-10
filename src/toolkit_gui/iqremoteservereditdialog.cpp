@@ -96,7 +96,7 @@ IQRemoteServerEditDialog::~IQRemoteServerEditDialog()
 
 void IQRemoteServerEditDialog::accept()
 {
-  auto serverlist = insight::remoteServers.firstWritableLocation();
+  auto serverlist = insight::remoteServers().firstWritableLocation();
 
   if (!serverlist.empty())
   {
@@ -110,8 +110,8 @@ void IQRemoteServerEditDialog::accept()
 
       if ( decision == QMessageBox::Yes )
       {
-        insight::remoteServers = serverListModel_.remoteServers();
-        insight::remoteServers.writeConfiguration(serverlist);
+        insight::remoteServers()= serverListModel_.remoteServers();
+        insight::remoteServers().writeConfiguration(serverlist);
         QDialog::accept();
         return;
       }

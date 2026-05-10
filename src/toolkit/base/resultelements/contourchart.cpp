@@ -12,7 +12,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -336,7 +335,7 @@ int PolarContourChart::nChildren() const
     return 0;
 }
 
-std::unique_ptr<hierarchicalData::Element> PolarContourChart::clone() const
+std::unique_ptr<hierarchicalData::Element> PolarContourChart::cloneUninitialized() const
 {
     auto res = std::make_unique<PolarContourChart>(
                 rlabel_, cblabel_,

@@ -1,4 +1,5 @@
 #include "orientbackgroundimage.h"
+#include "base/exception.h"
 #include "iqvtkcadmodel3dviewer.h"
 
 #include "vtkPropPicker.h"
@@ -9,7 +10,11 @@
 #include "orientbackgroundimagecoordinatesdialog.h"
 #include <qnamespace.h>
 
-void IQVTKOrientBackgroundImage::selectedNextPoint(const arma::mat &p)
+
+
+
+
+vtkSmartPointer<vtkActor> createPointActor(const arma::mat& p)
 {
     vtkNew<vtkPointSource> point;
     point->SetCenter(p[0], p[1], p[2]);
@@ -23,39 +28,95 @@ void IQVTKOrientBackgroundImage::selectedNextPoint(const arma::mat &p)
     prop->SetPointSize(8);
     prop->SetColor(1., 0, 0);
 
-    viewer().renderer()->AddActor(actor);
+    return actor;
+}
 
-    if (os_.pCtr_.empty())
+
+
+
+void IQVTKOrientBackgroundImage::selectedNextPoint(const arma::mat &p)
+{
+    if (curPoint_>=0 && curPoint_<2)
     {
-        os_.pCtr_=p;
-        pAct_[0]=actor;
-        userPrompt("Please select second point!");
+        auto oldTrsf=image_.orientation().trsf().inverted();
+
+        auto actor=createPointActor(p);
+
+        viewer().renderer()->RemoveActor(pAct_[curPoint_]);
+        pAct_[curPoint_]=actor;
+        viewer().renderer()->AddActor(actor);
+        viewer().scheduleRedraw();
+        os_.p_[curPoint_]=oldTrsf.trsfPt(p); // where it were on the original image
     }
-    else if (os_.p2_.empty())
+
+    switch (curPoint_)
     {
-        os_.p2_=p;
-        pAct_[1]=actor;
+    case 0: {
+        userPrompt("Please select second point!");
+        curPoint_++;
+    } break;
 
-        OrientBackgroundImageCoordinatesDialog dlg(os_.pCtr_, os_.p2_, &viewer());
+    case 1: {
+        finalDialog();
+    } break;
 
-        if (dlg.exec()==QDialog::Accepted)
-        {
-            os_.xy1_=dlg.p1();
-            os_.xy2_=dlg.p2();
-            orientationSelected(os_);
-        }
-
-        finishAction(true);
+    default:
+        throw insight::UnhandledSelection();
     }
 }
 
+void IQVTKOrientBackgroundImage::skip()
+{
+    os_.p_[curPoint_]=image_.orientation().p_[curPoint_];
+
+    if (curPoint_<1)
+    {
+        userPrompt("Keeping first point. Please select second point!");
+        curPoint_++;
+    }
+    else
+    {
+        finalDialog();
+    }
+}
+
+
+void IQVTKOrientBackgroundImage::finalDialog()
+{
+    auto oldTrsf=image_.orientation().trsf();
+
+    OrientBackgroundImageCoordinatesDialog dlg(
+        oldTrsf.trsfPt(os_.p_[0]),
+        oldTrsf.trsfPt(os_.p_[1]),
+        &viewer());
+
+    if (dlg.exec()==QDialog::Accepted)
+    {
+        os_.xy_[0]=dlg.xy1();
+        os_.xy_[1]=dlg.xy2();
+        orientationSelected(os_);
+    }
+
+    finishAction(true);
+}
+
+
+
 IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(
     IQVTKCADModel3DViewer &viewWidget,
-    vtkImageActor* imageActor
+    BackgroundImage& image
     )
   : ViewWidgetAction<IQVTKCADModel3DViewer>(viewWidget, false),
-    imageActor_(imageActor)
+    image_(image), curPoint_(0)
 {
+    auto os=image_.orientation();
+    for (int i=0; i<2; ++i)
+    {
+        pAct_[i]=createPointActor(os.xy_[i]);
+        viewer().renderer()->AddActor(pAct_[i]);
+    }
+    viewer().scheduleRedraw();
+
     aboutToBeDestroyed.connect(
         [this](){
             DBG_SLOT(aboutToBeDestroyed);
@@ -64,8 +125,12 @@ IQVTKOrientBackgroundImage::IQVTKOrientBackgroundImage(
             {
                 viewer().renderer()->RemoveActor(pAct);
             }
+            viewer().scheduleRedraw();
         });
 }
+
+
+
 
 QString IQVTKOrientBackgroundImage::description() const
 {
@@ -80,6 +145,21 @@ void IQVTKOrientBackgroundImage::start()
 }
 
 
+bool IQVTKOrientBackgroundImage::onKeyPress(
+    Qt::KeyboardModifiers modifiers,
+    int key )
+{
+    if (key == Qt::Key_Enter)
+    {
+        skip();
+        return true;
+    }
+
+    return ViewWidgetAction<IQVTKCADModel3DViewer>
+        ::onKeyPress( modifiers, key );
+}
+
+
 bool IQVTKOrientBackgroundImage::onMouseClick(
     Qt::MouseButtons btn,
     Qt::KeyboardModifiers nFlags,
@@ -88,7 +168,7 @@ bool IQVTKOrientBackgroundImage::onMouseClick(
     if (btn==Qt::LeftButton)
     {
         auto picker = vtkSmartPointer<vtkPropPicker>::New();
-        picker->AddPickList(imageActor_);
+        picker->AddPickList(image_.imageActor());
         picker->SetPickFromList(true);
 
         auto p = viewer().widgetCoordsToVTK(point);
@@ -108,7 +188,7 @@ bool IQVTKOrientBackgroundImage::onMouseClick(
             for (int i = 0; i < path->GetNumberOfItems() && !validPick; ++i)
             {
                 auto node = path->GetNextNode(sit);
-                if (imageActor_ == dynamic_cast<vtkImageActor*>(node->GetViewProp()))
+                if (image_.imageActor() == dynamic_cast<vtkImageActor*>(node->GetViewProp()))
                 {
                     validPick = true;
                 }
@@ -127,6 +207,11 @@ bool IQVTKOrientBackgroundImage::onMouseClick(
             selectedNextPoint(p);
             return true;
         }
+    }
+    else if (btn==Qt::MiddleButton)
+    {
+        skip();
+        return true;
     }
     else if (btn==Qt::RightButton)
     {

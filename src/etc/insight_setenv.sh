@@ -48,6 +48,11 @@ if [ ! $INSIGHT_GLOBALPYTHONMODULES ]; then
     fi
 fi
 
+if [ -n "$PV_PLUGIN_PATH" ]; then
+ PV_PLUGIN_PATH="$PV_PLUGIN_PATH:"
+fi
+export PV_PLUGIN_PATH="${PV_PLUGIN_PATH}${INSIGHT_INSTDIR}/share/insight/paraview-addons"
+
 case "$-" in
  # interactive shell
  *i*) source insight_aliases.sh ;;

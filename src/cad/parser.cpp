@@ -180,25 +180,28 @@ skip_grammar::skip_grammar()
     : skip_grammar::base_type(skip, "PL/0")
 {
     skip
-        =   boost::spirit::ascii::space
+        =   qi::char_(" \t\n\r\f\v") // not isspace since this causes segfault with non-ascii-characters
             | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
-            | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
-            | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+            | ("//" >> *(qi::char_ - qi::eol))
+            | ("#"  >> *(qi::char_ - qi::eol))
             ;
 }
 
 
 
-SubmodelRule::SubmodelRule(const cad::Model& parentModel, const ModelVariableTable& addVars)
-: model_(std::make_shared<Model>(
-             mergeMVTs(parentModel.allVariables(), addVars) ) ),
-    parser_(model_.get())
+SubmodelRule::SubmodelRule(
+    const Model* parentModel,
+    const ModelVariableTable& addVars )
+  : submodel_(std::make_shared<Model>(
+          mergeMVTs(parentModel->allVariables(),
+                    addVars) ) ),
+    submodelParser_(submodel_.get())
 {}
 
 const qi::rule<std::string::iterator, skip_grammar>&
 SubmodelRule::rule() const
 {
-    return parser_.r_model;
+    return submodelParser_.r_model;
 }
 
 
@@ -231,18 +234,33 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
       syntax_element_locations(new SyntaxElementDirectory()),
       model_(model)
 {
+
+    r_descriptionWithParameters =
+        ( r_string > (('%' > r_scalarExpression % '%')
+                      | qi::attr(std::vector<ScalarPtr>())) )
+        [ qi::_val = insight::cad::parser::make_shared_<DescriptionWithParameters>()(qi::_1, qi::_2) ] ;
+
+
+    r_BOMDescriptionData =
+        ( r_descriptionWithParameters >
+         ( ( '(' > r_descriptionWithParameters > ')' ) | qi::attr(DescriptionWithParametersPtr()) ) )
+        [ qi::_val = insight::cad::parser::make_shared_<BOMDescriptionData>()(qi::_1, qi::_2) ]
+        ;
+
     r_model =
-//      current_pos.save_start_pos >>
-        ( r_string | qi::attr(std::string()) )
-            [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
-        >>
         ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) )
             [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
         >>
         *(
-            r_assignment
-            |
-            r_solidmodel_propertyAssignment
+          r_assignment
+          |
+          r_solidmodel_propertyAssignment
+          |
+          (qi::lit("@description")
+                > r_BOMDescriptionData
+                > ';' )
+              [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
+
         )
         >> -( lit("@doc") > *r_doc )
         >> -( lit("@post") > *r_postproc )

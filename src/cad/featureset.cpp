@@ -54,6 +54,7 @@ void Filter::firstPass(FeatureID feature)
 }
 
 
+
 FeatureSet::FeatureSet(const FeatureSet& o, TreeCloneMap& tcm)
 : CL(model_),
   shape_(o.shape_),
@@ -117,6 +118,8 @@ FeatureSet::operator TopAbs_ShapeEnum () const
   else if (shape_==Solid) return TopAbs_SOLID;
   else throw insight::Exception("Unknown EntityType: %d", shape_);
 }
+
+
 
 const FeatureSetData& FeatureSet::data() const
 {
@@ -184,12 +187,19 @@ void FeatureSet::write() const
 }
 
 
+
+
+
+
 void FeatureSet::operator=(const FeatureSet& o)
 {
     model_=o.model_;
     shape_=o.shape_;
     data_=o.data();
 }
+
+
+
 
 
 size_t FeatureSet::calcFeatureSetHash() const

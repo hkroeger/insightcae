@@ -52,19 +52,18 @@ size_t GlueFaces::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=*feat_;
   h+=*tol_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 GlueFaces::GlueFaces(const GlueFaces&o, TreeCloneMap& tcm)
-    : CL(feat_), CL(tol_)
+    : DerivedFeature(o, tcm), CL(tol_)
 {}
 
 
 GlueFaces::GlueFaces(FeaturePtr feat, ScalarPtr tol)
-: feat_(feat), tol_(tol)
+: DerivedFeature(feat), tol_(tol)
 {
 }
 
@@ -76,7 +75,7 @@ void GlueFaces::build()
   // Example: https://github.com/FedoraScientific/salome-geom/blob/master/src/GEOMImpl/GEOMImpl_GlueDriver.cxx
   GEOMAlgo_Gluer2 ggl;
   
-  ggl.SetArgument(feat_->shape());
+  ggl.SetArgument(baseFeature()->shape());
   ggl.SetTolerance(tol_->value());
 
   ggl.Detect();

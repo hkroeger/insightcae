@@ -24,8 +24,6 @@
 #include <string>
 #include <vector>
 
-#include "openfoam/snappyhexmesh.h"
-#include "base/boost_include.h"
 #include "openfoam/openfoamcase.h"
 
 

@@ -1,6 +1,7 @@
 #ifndef IQCADMODELCONTAINER_H
 #define IQCADMODELCONTAINER_H
 
+#include "cadtypes.h"
 #include "toolkit_gui_export.h"
 #include "iscadmetatyperegistrator.h"
 
@@ -14,16 +15,206 @@
 #include <QApplication>
 #include <QColor>
 #include <QMenu>
+#include <iterator>
+#include <qnamespace.h>
 
 
 class IQCADModel3DViewer;
 class IQParameterSetModel;
+
+
+struct TreeNode
+: public QObject
+{
+    Q_OBJECT
+
+protected:
+    mutable std::set<QObject*> tba_, tbd_;
+    mutable std::map<std::string, QObject*> childrenInOrder_;
+
+    void childEvent(QChildEvent *event) override;
+
+public:
+    const std::map<std::string, QObject*>&
+    childrenList() const;
+
+    QString label;
+    TreeNode* parentNode() const;
+
+
+    template<class TN=TreeNode>
+    TN* childNode(const std::string& label) const
+    {
+        auto i=childrenList().find(label);
+        if (i!=childrenList().end())
+        {
+            return dynamic_cast<TN*>(i->second);
+        }
+        return nullptr;
+    }
+
+    template<class TN=TreeNode>
+    TN* childNode(int row) const
+    {
+        if ( (childrenList().size()>0) &&
+             (row>=0) &&
+             (row<=childrenList().size()) )
+        {
+            auto i=childrenList().begin();
+            std::advance(i, row);
+            return dynamic_cast<TN*>(i->second);
+        }
+        else
+            return nullptr;
+    }
+
+    int childRow(TreeNode* n) const;
+
+    int nChildNodes() const;
+
+    virtual QString valueString() const =0;
+    virtual QVariant valueAsVariant() const =0;
+
+    TreeNode(QString label, TreeNode *parent=nullptr);
+};
+
+
+
+
+struct SectionNode
+    : public TreeNode
+{
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    SectionNode(QString label, TreeNode *parent=nullptr);
+};
+
+
+struct ScalarNode
+    : public TreeNode
+{
+    insight::cad::ScalarPtr value;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    using TreeNode::TreeNode;
+};
+
+struct HideableNode
+    : public TreeNode
+{
+    bool visible;
+
+    HideableNode(QString label, TreeNode *parent);
+};
+
+struct PointNode
+    : public HideableNode
+{
+    insight::cad::VectorPtr value;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    using HideableNode::HideableNode;
+};
+
+struct VectorNode
+    : public HideableNode
+{
+    insight::cad::VectorPtr value;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    using HideableNode::HideableNode;
+};
+
+struct DatumNode
+    : public HideableNode
+{
+    insight::cad::DatumPtr value;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    using HideableNode::HideableNode;
+};
+
+
+
+struct FeatureNode
+    : public HideableNode
+{
+    double opacity;
+    QColor color;
+    insight::DatasetRepresentation representation;
+    std::vector<std::string> assocParamPaths;
+
+    insight::cad::FeaturePtr value;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    void operator=(const insight::cad::FeatureVisualizationStyle& fvs);
+
+    FeatureNode(QString label, TreeNode *parent);
+};
+
+struct PostProcNode
+    : public HideableNode
+{
+    insight::cad::PostprocActionPtr value;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    using HideableNode::HideableNode;
+};
+
+
+struct DatasetNode
+    : public HideableNode
+{
+    vtkSmartPointer<vtkDataObject> value;
+
+    /**
+       * @brief fieldName
+       * empty string: first field
+       */
+    std::string fieldName = "";
+
+    insight::FieldSupport fieldSupport = insight::OnPoint;
+
+    insight::DatasetRepresentation representation = insight::Surface;
+
+    /**
+       * @brief fieldComponent
+       * -1 for mag
+       */
+    int fieldComponent = -1;
+
+    boost::optional<double> minVal;
+    boost::optional<double> maxVal;
+
+    QString valueString() const override;
+    QVariant valueAsVariant() const override;
+
+    using HideableNode::HideableNode;
+};
+
+
+
 
 class TOOLKIT_GUI_EXPORT IQCADItemModel
     : public QAbstractItemModel
 {
   Q_OBJECT
 
+
+  bool addSubshapesAsLeafs_;
     /**
    * @brief model_
    * The underlying CAD model.
@@ -33,52 +224,9 @@ class TOOLKIT_GUI_EXPORT IQCADItemModel
 
   QAbstractItemModel* associatedParameterSetModel_;
 
-  mutable std::map<std::string, bool>
-        pointVisibility_,
-        vectorVisibility_,
-        postprocVisibility_,
-        datumVisibility_;
-
-  struct FeatureVisibility
-  {
-      bool visible;
-      double opacity;
-      QColor color;
-      insight::DatasetRepresentation representation;
-      std::vector<std::string> assocParamPaths;
-
-      FeatureVisibility();
-      FeatureVisibility(const insight::cad::FeatureVisualizationStyle& fvs);
-  };
-  mutable std::map<std::string, FeatureVisibility> featureVisibility_;
-
-  struct DatasetVisibility
-  {
-      bool visible = true;
-
-      /**
-       * @brief fieldName
-       * empty string: first field
-       */
-      std::string fieldName = "";
-
-      insight::FieldSupport fieldSupport = insight::OnPoint;
-
-      insight::DatasetRepresentation representation = insight::Surface;
-
-      /**
-       * @brief fieldComponent
-       * -1 for mag
-       */
-      int fieldComponent = -1;
-
-      boost::optional<double> minVal;
-      boost::optional<double> maxVal;
-  };
-  mutable std::map<std::string, DatasetVisibility> datasetVisibility_;
-
   std::set<std::string>
     staticFeatures_;
+
 
 public:
   enum CADModelSection {
@@ -112,43 +260,99 @@ public:
       assocParamPathsCol=98;
 
 private:
-  template<class E>
-  void addEntity(
-          const std::string& name,
-          E value,
-          std::function<std::map<std::string,E>(void)> efunc,
-          std::function<QModelIndex(const std::string&)> eidxfunc,
-          std::function<void(const std::string&,E)> modeladdfunc,
-          CADModelSection esect
-          )
-  {
-      auto s=efunc();
-      auto ss = s.find(name);
-      if (ss!=s.end())
-      {
-          auto i = eidxfunc(name);
-          auto ie = index(i.row(), 0, i.parent());
-          if (ss->second==value)
-          {
-              // is present and the same
-              // Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
-          }
-          else
-          {
-              // replace
-              modeladdfunc(name, value);
-              Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
-          }
-      }
-      else
-      {
-          // insert new
-          auto newrow = insight::predictInsertionLocation(s, name);
-          beginInsertRows(index(esect, 0), newrow, newrow);
-          modeladdfunc(name, value);
-          endInsertRows();
-      }
-  }
+  mutable std::array<SectionNode, numberOf> sections;
+
+    QModelIndex indexOf(TreeNode *n) const
+    {
+        int row;
+        if (auto *pn=n->parentNode())
+        {
+            row=pn->childRow(n);
+        }
+        else
+        {
+            for (row=0; row<numberOf; ++row)
+            { if (&sections[row]==n) break; }
+        }
+        return createIndex(row, 0, n);
+    }
+
+    template<class E, class TN>
+    void addDecoration(
+        const std::string& name,
+        E value,
+        TreeNode* parentNode,
+        std::function<void(TN&)> modifyNode
+        )
+    {
+        if (auto n=parentNode->childNode<TN>(name) )
+        {
+            if (n->value==value)
+            {
+                // is present and the same
+                // Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
+            }
+            else
+            {
+                // content has changed
+                // replace
+                n->value=value;
+                auto ie=indexOf(n);
+                Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
+            }
+        }
+        else
+        {
+            // insert new
+            auto newrow = insight::predictInsertionLocation(
+                parentNode->childrenList(), name);
+            beginInsertRows(indexOf(parentNode), newrow, newrow);
+            auto *ntn=new TN(QString::fromStdString(name), parentNode);
+            if (modifyNode) modifyNode(*ntn);
+            ntn->value=value;
+            endInsertRows();
+        }
+    }
+
+
+    template<class E, class TN>
+    void addEntity(
+        const std::string& name,
+        E value,
+        CADModelSection sc,
+        std::function<const std::map<std::string,E>&(void)>
+            entityAccessFunction,
+        std::function<void(const std::string&,E)>
+            modeladdfunc,
+        std::function<void(TN&)> modifyNode =
+        std::function<void(TN&)>()
+        )
+    {
+        TreeNode* parentNode=&sections[sc];
+        auto s = entityAccessFunction();
+        auto ss = s.find(name);
+        if (ss!=s.end())
+        {
+            if (ss->second==value)
+            {
+                // is present and the same
+                // Q_EMIT dataChanged(ie, ie.siblingAtColumn(entityCol), {Qt::EditRole});
+            }
+            else
+            {
+                // content has changed
+                // replace
+                modeladdfunc(name, value);
+                addDecoration<E, TN>(name, value, parentNode, modifyNode);
+            }
+        }
+        else
+        {
+            // insert new
+            modeladdfunc(name, value);
+            addDecoration<E, TN>(name, value, parentNode, modifyNode);
+        }
+    }
 
   template<class E>
   void removeEntity(
@@ -162,31 +366,20 @@ private:
       if (idx.isValid())
       {
           beginRemoveRows(index(esect, 0), idx.row(), idx.row());
+          if (auto *n=static_cast<TreeNode*>(idx.internalPointer()))
+          {
+              delete n;
+          }
           modelremovefunc(name);
           endRemoveRows();
       }
   }
 
 
-  template<class E>
   QModelIndex sectionIndex(
           const std::string& name,
-          std::function<std::map<std::string,E>(void)> getList,
           CADModelSection entitySection
-          ) const
-  {
-      auto list = getList();
-      auto si = list.find(name);
-      if (si == list.end())
-      {
-          return QModelIndex();
-      }
-      else
-      {
-          auto row = std::distance(list.begin(), si);
-          return index(row, 0, index(entitySection, 0) );
-      }
-  }
+      ) const;
 
   void addSymbolsToSubmenu(
           const QString& name,
@@ -196,7 +389,10 @@ private:
           bool *someHoverDisplay = nullptr );
 
 public:
-  IQCADItemModel(insight::cad::ModelPtr model=insight::cad::ModelPtr(), QObject* parent=nullptr);
+  IQCADItemModel(
+        insight::cad::ModelPtr model=insight::cad::ModelPtr(),
+        QObject* parent=nullptr,
+        bool addSubshapesAsLeafs = false );
   virtual ~IQCADItemModel();
 
   /**
@@ -227,12 +423,12 @@ public:
   /**
    * read access functions
    */
-  insight::cad::Model::ScalarTableContents scalars() const;
-  insight::cad::Model::VectorTableContents points() const;
-  insight::cad::Model::VectorTableContents directions() const;
-  insight::cad::Model::DatumTableContents datums() const;
-  insight::cad::Model::ModelstepTableContents modelsteps() const;
-  insight::cad::Model::PostprocActionTableContents postprocActions() const;
+  const insight::cad::Model::ScalarTableContents& scalars() const;
+  const insight::cad::Model::VectorTableContents& points() const;
+  const insight::cad::Model::VectorTableContents& directions() const;
+  const insight::cad::Model::DatumTableContents& datums() const;
+  const insight::cad::Model::ModelstepTableContents& modelsteps() const;
+  const insight::cad::Model::PostprocActionTableContents& postprocActions() const;
   const insight::cad::Model::DatasetTableContents& datasets() const;
 
   QModelIndex scalarIndex(const std::string& name) const;
@@ -284,6 +480,7 @@ public:
 
 public Q_SLOTS:
   void showContextMenu(const QModelIndex& idx, const QPoint &pos, IQCADModel3DViewer* viewer);
+  void showMultiSelectionContextMenu(const QModelIndexList& idxs, const QPoint &pos, IQCADModel3DViewer* viewer);
 
   void addPlane();
   void addImportedFeature();

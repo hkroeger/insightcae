@@ -157,13 +157,15 @@ void AnalysisForm::scheduleAutosave() const
 
 AnalysisForm::AnalysisForm(
     QWidget* parent,
+    insight::IQActionProgressDisplayManager* actionProgress,
     const std::string& analysisName,
     bool logToConsole
     )
 : QWidget(parent),
   IQExecutionWorkspace(this),
   isOpenFOAMAnalysis_(false),
-  pack_parameterset_(true)
+  pack_parameterset_(true),
+  actionProgress_(actionProgress)
 {
     autosaveLastWriteTimer_.setSingleShot(true);
     autosaveLastWriteTimer_.setInterval(autosaveMaxWaitInterval);
@@ -183,8 +185,10 @@ AnalysisForm::AnalysisForm(
 
     // load default parameters
     auto defaultParams =
-        std::make_unique<insight::AnalysisParameterSet>(
-          analysisName);
+        std::make_unique<
+            insight::ParameterSetWithGUIContext<
+                insight::AnalysisParameterSet> >(
+                    analysisName );
 
     isOpenFOAMAnalysis_ =
         defaultParams->hasPath("run/OFEname");
@@ -216,8 +220,8 @@ AnalysisForm::AnalysisForm(
     connect( ui->btnShell, &QPushButton::clicked,
              this, &AnalysisForm::onShell);
 
-    graphProgress_=new GraphProgressDisplayer;
-    actionProgress_=new insight::QActionProgressDisplayerWidget;
+    graphProgress_=new IQGraphProgressDisplayer;
+    // actionProgress_=new insight::IQActionProgressDisplayManager(parent, parent->statusBar());
 
     QSplitter* spl=new QSplitter(Qt::Vertical);
     QWidget* lower = new QWidget;
@@ -246,7 +250,7 @@ AnalysisForm::AnalysisForm(
     vbl->addSpacerItem(new QSpacerItem(0,0,QSizePolicy::Minimum,QSizePolicy::Expanding));
     ui->runTabLayout->addWidget(spl);
     //ui->runTabLayout->addWidget(actionProgress_);
-    ui->verticalLayout_5->addWidget(actionProgress_);
+    // ui->verticalLayout_5->addWidget(actionProgress_);
 
 //    ui->verticalLayout->addWidget(actionProgress_);
     
@@ -408,6 +412,10 @@ AnalysisForm::AnalysisForm(
             auto ist_file=boost::filesystem::absolute(newfn);
             resetExecutionEnvironment(ist_file.parent_path());
             updateWindowTitle();
+
+            // retrigger visualization build, since working directory is stored in supplementInputData
+            sid_.reset();
+            peditor_->rebuildVisualization();
         }
     );
 
@@ -548,8 +556,8 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 
     auto act_save_rpt_=new QAction(_("Create &report..."), this);
     menu_results->addAction( act_save_rpt_ );
-    connect( act_save_rpt_, &QAction::triggered,
-             resultsViewer_, &IQResultSetDisplayerWidget::renderReport );
+    connect( act_save_rpt_, &QAction::triggered, resultsViewer_,
+             std::bind(&IQResultSetDisplayerWidget::renderReport, resultsViewer_, actionProgress_) );
 
 
     menu_results->addSeparator();
@@ -685,7 +693,12 @@ void AnalysisForm::onSaveParametersAs()
   {
     updateSaveMenuLabel();
 
-    saveAs(fn.asFilesystemPath());
+    auto fp = fn.asFilesystemPath();
+
+    psmodel_->resolveRelativePaths(
+        fp.parent_path() );
+
+    saveAs(fp);
   }
 }
 

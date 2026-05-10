@@ -8,6 +8,7 @@
 #include "base/hierarchicalelement.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
+#include "base/parametersetinput.h"
 #include "base/supplementedinputdata.h"
 #include "base/resultelement.h"
 #include "base/resultelementcollection.h"
@@ -40,7 +41,6 @@
 #include "openfoam/openfoamdict.h"
 #include "openfoam/ofenvironment.h"
 #include "openfoam/openfoamparameterstudy.h"
-#include "openfoam/snappyhexmesh.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/stretchtransformation.h"
 #include "openfoam/ofes.h"
@@ -202,6 +202,7 @@ using namespace insight::createPatchOps;
 %include "base/parameter.h"
 %include "base/parameterset.h"
 
+%include "base/parametersetinput.h"
 %include "base/supplementedinputdata.h"
 %include "base/resultelement.h"
 %include "base/resultelementcollection.h"

@@ -10,7 +10,7 @@ int main(int argc, char*argv[])
 
     insight::assertion(argc==2, "expected exactly one command line argument");
 
-    class Case : public OpenFOAMCaseWithCylinderMesh
+    class Case : public OpenFOAMCaseWithCylinderMesh<>
     {
     public:
         Case(const std::string& ofe) : OpenFOAMCaseWithCylinderMesh(ofe)
@@ -46,19 +46,20 @@ int main(int argc, char*argv[])
                       rigidBodyMotionDynamicMesh::Parameters()
                       .set_rigidBodyMotion(rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type()
                       .set_bodies({
-                                      rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type
-                                      {
-                                          "body",
-                                          meshParameters_.geometry.p0 + 0.5*meshParameters_.geometry.L,
-                                          1.0,
-                                          100., 100., 100.,
-                                          { "inner" },
-                                          0.5, 1.,
-                                          { rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type::Pxyz }
-                                      }
-                                  })
-                          )
-                      ));
+                        { "body",
+                          rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type
+                          {
+                              meshParameters_.geometry.p0 + 0.5*meshParameters_.geometry.L,
+                              1.0,
+                              100., 100., 100.,
+                              { "inner" },
+                              0.5, 1.,
+                              { rigidBodyMotionDynamicMesh::Parameters::rigidBodyMotion_type::bodies_default_type::Pxyz },
+                              tensor3Ident()
+                          }}
+                      })
+                  )
+              ));
         }
     };
 

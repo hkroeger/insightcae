@@ -1,13 +1,13 @@
 #ifndef INSIGHT_CAD_CUTUP_H
 #define INSIGHT_CAD_CUTUP_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class CutUp
-    : public Feature
+    : public DerivedFeature
 {
 
 public:
@@ -15,7 +15,6 @@ public:
     typedef std::vector<Clip> Clips;
 
 protected:
-    FeaturePtr model_;
     Clips clips_;
     VectorPtr n_;
     ScalarPtr t_;
@@ -29,7 +28,7 @@ protected:
 public:
     declareType ( "CutUp" );
 #ifndef SWIG
-    DEPENDS((model_, clips_, n_, t_));
+    DEPENDS_W_BASE(DerivedFeature, (clips_, n_, t_));
 #endif
     CREATE_FUNCTION(CutUp);
     CLONEABLE(CutUp);

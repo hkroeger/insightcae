@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <functional>
+#include <type_traits>
 #include <vector>
 #include <set>
 #include <iterator>
@@ -78,27 +79,15 @@ Container transform_copy(
     return res;
 }
 
-template<class Container, class Container1>
-Container container_type_cast(
-    Container1 c1)
-{
-    Container res;
-    std::transform(
-        c1.begin(), c1.end(),
-        std::back_inserter(res),
-        [](const typename Container::value_type& e) { return e; } );
-    return res;
-}
-
-template<class T, class Container1>
-std::vector<T> vector_cast(
-    Container1 c1)
-{
-    return std::container_type_cast<std::vector<T> >(c1);
-}
-
-
 // taken from https://stackoverflow.com/a/3611374
+
+template<typename T, typename = void>
+struct has_push_back : std::false_type {};
+
+template<typename T>
+struct has_push_back<T, std::void_t<
+    decltype(std::declval<T&>().push_back(std::declval<typename T::value_type>()))
+>> : std::true_type {};
 
 template<class Container>
 class last_inserter_iterator
@@ -149,15 +138,19 @@ protected:
 
     typename Container::iterator get_insert_hint() const
     {
-        // Container is empty: no last element to insert ahead of; just insert at begin.
-        if (container.empty())
-            return container.begin();
+        if constexpr (has_push_back<Container>::value)
+        {
+            // Sequence containers (vector, deque, ...): insert(pos, val) inserts
+            // *before* pos, so end() appends correctly in all cases.
+            return container.end();
+        }
         else
         {
-            // Otherwise return iterator to last element in the container.  std::set wants the
-            // element *preceding* the insert position as a hint, so this should be an iterator
-            // to the last actual element, not end().
-            return (--container.end());
+            // Associative containers (set, map, ...): insert(hint, val) uses hint
+            // as a search hint. Last element is the right hint for ordered appending.
+            if (container.empty())
+                return container.end();
+            return --container.end();
         }
     }
 };
@@ -166,6 +159,56 @@ template<typename Container>
 inline last_inserter_iterator<Container> last_inserter(Container& cont)
 {
     return last_inserter_iterator<Container>(cont);
+}
+
+
+
+
+
+template<class Container, class Container1>
+Container container_type_cast(
+    Container1 c1)
+{
+    Container res;
+    std::transform(
+        c1.begin(), c1.end(),
+        std::last_inserter(res),
+        [](const typename Container::value_type& e) { return e; } );
+    return res;
+}
+
+template<class T, class Container1>
+std::vector<T> vector_cast(
+    Container1 c1)
+{
+    return std::container_type_cast<std::vector<T> >(c1);
+}
+
+template<class Map>
+std::set<typename Map::key_type>
+map_keys(const Map& m)
+{
+    std::set<typename Map::key_type> result;
+    std::transform(
+        m.begin(), m.end(),
+        std::last_inserter(result),
+        [](const typename Map::value_type& v){ return v.first; }
+        );
+    return result;
+}
+
+
+template<class Map>
+std::vector<typename Map::mapped_type>
+map_items(const Map& m)
+{
+    std::vector<typename Map::mapped_type> result;
+    std::transform(
+        m.begin(), m.end(),
+        std::last_inserter(result),
+        [](const typename Map::value_type& v){ return v.second; }
+        );
+    return result;
 }
 
 

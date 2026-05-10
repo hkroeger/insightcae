@@ -165,12 +165,8 @@ void RemoteServerList::writeConfiguration(const boost::filesystem::path& file)
   if (!boost::filesystem::exists(file.parent_path()))
       boost::filesystem::create_directories(file.parent_path());
 
-  xml_document<> doc;
-  xml_node<>* decl = doc.allocate_node(node_declaration);
-  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-  doc.append_node(decl);
-  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
+  XMLDocument doc;
+  xml_node<> *rootnode = doc.rootNode;
   for (const auto& rs: *this)
   {
       if (!rs->wasExpanded())
@@ -195,10 +191,7 @@ void RemoteServerList::writeConfiguration(const boost::filesystem::path& file)
     rootnode->append_node(prefSrvNode);
   }
 
-  doc.append_node(rootnode);
-
-  ofstream f(file.string());
-  f << doc;
+  doc.saveToFile(file);
 }
 
 
@@ -317,8 +310,11 @@ RemoteServer::ConfigPtr RemoteServerList::requestUnoccupiedServer(int np, const 
 
 
 
-
-RemoteServerList remoteServers;
+RemoteServerList& remoteServers()
+{
+    static RemoteServerList theRemoteServers;
+    return theRemoteServers;
+}
 
 
 

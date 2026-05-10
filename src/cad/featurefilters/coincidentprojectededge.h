@@ -27,7 +27,7 @@ namespace cad {
 
 
 class coincidentProjectedEdge
-: public Filter
+: public Filter, public EnableCreateFunction<coincidentProjectedEdge>
 {
 protected:
     FeatureSet f_;

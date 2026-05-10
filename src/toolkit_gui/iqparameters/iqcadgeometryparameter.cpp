@@ -3,11 +3,14 @@
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
 
+#include "qtextensions.h"
+
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QInputDialog>
+#include <QFileDialog>
 
 
 defineType(IQCADGeometryParameter);
@@ -19,23 +22,12 @@ addToFactoryTable(IQParameter, IQCADGeometryParameter);
 IQCADGeometryParameter::IQCADGeometryParameter
 (
     QObject* parent,
-    IQParameterSetModel* psmodel,
-    const QString& name,
-    insight::Parameter& parameter,
-    const insight::ParameterSet& defaultParameterSet
+    IQHierarchicalDataModel* hdmodel,
+    insight::hierarchicalData::Element* element
 )
-  : IQParameter(parent, psmodel, name, parameter, defaultParameterSet)
+  : IQSpecializedParameter<insight::CADGeometryParameter>(
+          parent, hdmodel, element )
 {
-}
-
-
-
-
-QString IQCADGeometryParameter::valueText() const
-{
-  const auto& p = dynamic_cast<const insight::CADGeometryParameter&>(parameter());
-
-  return QString::fromStdString( p.featureLabel() );
 }
 
 
@@ -51,18 +43,43 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
 
 
   QHBoxLayout *layout2=new QHBoxLayout;
-  QLabel *promptLabel = new QLabel("Feature label:", editControlsContainer);
-  layout2->addWidget(promptLabel);
-  auto *leFeatureLabel = new QLineEdit(editControlsContainer);
-  leFeatureLabel->setText(QString::fromStdString(p.featureLabel()));
-  layout2->addWidget(leFeatureLabel);
-  layout->addLayout(layout2);
+  // QLabel *promptLabel = new QLabel("Feature label:", editControlsContainer);
+  // layout2->addWidget(promptLabel);
+  // auto *leFeatureLabel = new QLineEdit(editControlsContainer);
+  // leFeatureLabel->setText(QString::fromStdString(p.featureLabel()));
+  // layout2->addWidget(leFeatureLabel);
+  // layout->addLayout(layout2);
 
-  auto *teScript = new QTextEdit(editControlsContainer);
-  teScript->document()->setPlainText(QString::fromStdString(p.script()));
-  layout->addWidget(teScript);
+  // auto *teScript = new QTextEdit(editControlsContainer);
+  // teScript->document()->setPlainText(QString::fromStdString(p.script()));
+  // layout->addWidget(teScript);
 
   QHBoxLayout *layout3=new QHBoxLayout;
+  QLabel *promptLabel = new QLabel("Value:", editControlsContainer);
+  layout2->addWidget(promptLabel);
+  auto *lineEdit = new QLineEdit(editControlsContainer);
+  //  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
+  if (auto fn=parameter().filePath())
+  {
+    lineEdit->setText(QString::fromStdString(
+      fn->string()));
+  }
+
+  ::disconnectAtEOL(
+      lineEdit,
+      parameterRef().valueChanged.connect(
+          [lineEdit,this](){
+              DBG_SLOT(valueChanged);
+              if (auto fn=parameter().filePath())
+              {
+                  lineEdit->setText(QString::fromStdString(
+                      fn->string()));
+              }
+          }
+          )
+      );
+  layout2->addWidget(lineEdit);
+
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
   layout->addLayout(layout3);
@@ -73,57 +90,68 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
 
   auto applyFunction = [=]()
   {
-    auto&p = dynamic_cast<insight::CADGeometryParameter&>(this->parameterRef());
+    // auto&p = dynamic_cast<insight::CADGeometryParameter&>(this->parameterRef());
 //    p.setCADModel( viewer->cadmodel()->model() );
-    p.setFeatureLabel( leFeatureLabel->text().toStdString() );
-    p.setScript( teScript->document()->toPlainText().toStdString() );
+    //p.setScript( teScript->document()->toPlainText().toStdString() );
+    this->parameterRef().setGeometryFile(lineEdit->text().toStdString());
 //    model->notifyParameterChange(index);
   };
 
-  connect(leFeatureLabel, &QLineEdit::returnPressed, applyFunction);
+  // connect(leFeatureLabel, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
 
 
-  connect(leFeatureLabel, &QLineEdit::textChanged, [=]()
-  {
-    leFeatureLabel->setToolTip
-    (
-      QString("(Evaluates to \"")+boost::filesystem::absolute(leFeatureLabel->text().toStdString()).string().c_str()+"\")"
-    );
-  }
-  );
+  // connect(leFeatureLabel, &QLineEdit::textChanged, [=]()
+  // {
+  //   leFeatureLabel->setToolTip
+  //   (
+  //     QString("(Evaluates to \"")+boost::filesystem::absolute(leFeatureLabel->text().toStdString()).string().c_str()+"\")"
+  //   );
+  // }
+  // );
 
 
   connect(dlgBtn_, &QPushButton::clicked, dlgBtn_,
           [=]()
           {
-            bool ok=false;
-            QStringList items;
-            auto mf = viewer->cadmodel()->modelsteps();
-            std::transform(
-                      mf.begin(), mf.end(),
-                      std::back_inserter(items),
-                      [](const decltype(mf)::value_type& mfv)
-                      { return QString::fromStdString(mfv.first); }
-            );
-            auto itemLbl = QInputDialog::getItem(
-                      editControlsContainer,
-                      "Select feature",
-                      leFeatureLabel->text(),
-                      items, items.indexOf(leFeatureLabel->text()),
-                      false, &ok);
-            if (ok)
-            {
-                auto symbolName = itemLbl.toStdString();
-                auto selfeat = viewer->cadmodel()->model()->modelsteps().at(symbolName);
-                leFeatureLabel->setText(itemLbl);
-                teScript->setPlainText( QString::fromStdString(
-                    symbolName+": "+
-                    selfeat->generateScriptCommand()
-                    ) );
-                applyFunction();
-            }
+              QString fn = QFileDialog::getOpenFileName(
+          editControlsContainer,
+          "Select file",
+          lineEdit->text());
+              if (!fn.isEmpty())
+              {
+                  parameterRef().setGeometryFile(fn.toStdString());
+                  // lineEdit->setText(fn);
+                  // applyFunction();
+              }
+
+            // bool ok=false;
+            // QStringList items;
+            // auto mf = viewer->cadmodel()->modelsteps();
+            // std::transform(
+            //           mf.begin(), mf.end(),
+            //           std::back_inserter(items),
+            //           [](const decltype(mf)::value_type& mfv)
+            //           { return QString::fromStdString(mfv.first); }
+            // );
+            // auto itemLbl = QInputDialog::getItem(
+            //           editControlsContainer,
+            //           "Select feature",
+            //           leFeatureLabel->text(),
+            //           items, items.indexOf(leFeatureLabel->text()),
+            //           false, &ok);
+            // if (ok)
+            // {
+            //     auto symbolName = itemLbl.toStdString();
+            //     auto selfeat = viewer->cadmodel()->model()->modelsteps().at(symbolName);
+            //     leFeatureLabel->setText(itemLbl);
+            //     teScript->setPlainText( QString::fromStdString(
+            //         symbolName+": "+
+            //         selfeat->generateScriptCommand()
+            //         ) );
+            //     applyFunction();
+            // }
           }
   );
 

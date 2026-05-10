@@ -1,14 +1,188 @@
 #include "iqcaditemmodel.h"
+#include "base/exception.h"
 #include "iqcadmodel3dviewer.h"
 #include "datum.h"
 
+#include <algorithm>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/discrete_distribution.hpp>
 #include <boost/random/exponential_distribution.hpp>
 
 boost::mt19937 boostRanGen;
 
-IQCADItemModel::FeatureVisibility::FeatureVisibility()
+
+void TreeNode::childEvent(QChildEvent *event)
+{
+    if (event->added())
+    {
+        // not yet fully constructed
+        tba_.insert(event->child());
+    }
+    else if (event->removed())
+    {
+        tbd_.insert(event->child());
+    }
+    QObject::childEvent(event);
+}
+
+
+const std::map<std::string, QObject*> &
+TreeNode::childrenList() const
+{
+    if (tba_.size())
+    {
+        std::for_each(
+            tba_.begin(), tba_.end(),
+            [this](QObject*o)
+            {
+                if (auto*n=dynamic_cast<TreeNode*>(o))
+                {
+                    childrenInOrder_[n->label.toStdString()]=n;
+                }
+            }
+        );
+        tba_.clear();
+    }
+    if (tbd_.size())
+    {
+        std::for_each(
+            tbd_.begin(), tbd_.end(),
+            [this](QObject*o)
+            {
+                auto i=std::find_if(
+                    childrenInOrder_.begin(),
+                    childrenInOrder_.end(),
+                    [&](const decltype(childrenInOrder_)::value_type& v)
+                    { return v.second==o; });
+                childrenInOrder_.erase(i);
+            }
+            );
+        tbd_.clear();
+    }
+    return childrenInOrder_;
+}
+
+
+
+TreeNode *TreeNode::parentNode() const
+{
+    return dynamic_cast<TreeNode*>(parent());
+}
+
+
+int TreeNode::childRow(TreeNode *n) const
+{
+    auto i=std::find_if(
+        childrenList().begin(),
+        childrenList().end(),
+        [&](const decltype(childrenInOrder_)::value_type& v )
+        { return v.second==n; }
+        );
+    return std::distance(childrenList().begin(), i);
+}
+
+int TreeNode::nChildNodes() const
+{
+    return childrenList().size();
+}
+
+TreeNode::TreeNode(QString l, TreeNode *parent)
+    :QObject(parent),
+    label(l)
+{}
+
+
+QString SectionNode::valueString() const
+{
+    return QString();
+}
+
+QVariant SectionNode::valueAsVariant() const
+{
+    return QVariant();
+}
+
+SectionNode::SectionNode(QString label, TreeNode *parent)
+    :TreeNode(label, parent)
+{}
+
+
+QString ScalarNode::valueString() const
+{
+    return QString::number(value->value());
+}
+
+QVariant ScalarNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
+
+HideableNode::HideableNode(QString label, TreeNode *parent)
+    :TreeNode(label, parent),
+    visible(true)
+{
+
+}
+
+QString PointNode::valueString() const
+{
+    arma::mat v=value->value();
+    return QString("[%1, %2, %3]")
+        .arg(v(0)).arg(v(1)).arg(v(2));
+}
+
+QVariant PointNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
+
+QString VectorNode::valueString() const
+{
+    arma::mat v=value->value();
+    return QString("[%1, %2, %3]")
+        .arg(v(0)).arg(v(1)).arg(v(2));
+}
+
+QVariant VectorNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
+
+
+QString DatumNode::valueString() const
+{
+    return QString::fromStdString(value->type());
+}
+
+QVariant DatumNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
+
+
+
+QString FeatureNode::valueString() const
+{
+    return QString::fromStdString(value->type());
+}
+
+QVariant FeatureNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
+
+FeatureNode::FeatureNode(QString label, TreeNode *parent)
+    : HideableNode(label, parent)
 {
     boost::random::exponential_distribution<> ed( 5. /* larger => lighter colors */ );
     color.setRedF(      1.-std::max(0., std::min(1., ed(boostRanGen))) );
@@ -21,10 +195,8 @@ IQCADItemModel::FeatureVisibility::FeatureVisibility()
 
 
 
-
-IQCADItemModel::FeatureVisibility::FeatureVisibility(
+void FeatureNode::operator=(
     const insight::cad::FeatureVisualizationStyle& fvs)
-: FeatureVisibility()
 {
     if (auto*s=boost::get<insight::DatasetRepresentation>(&fvs.style))
     {
@@ -50,17 +222,110 @@ IQCADItemModel::FeatureVisibility::FeatureVisibility(
 }
 
 
+QString PostProcNode::valueString() const
+{
+    return QString::fromStdString(value->type());
+}
+
+QVariant PostProcNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
 
 
-IQCADItemModel::IQCADItemModel(insight::cad::ModelPtr m, QObject* parent)
+
+QString DatasetNode::valueString() const
+{
+    return QString::fromStdString(value->GetClassName());
+}
+
+QVariant DatasetNode::valueAsVariant() const
+{
+    QVariant v;
+    v.setValue(value);
+    return v;
+}
+
+
+IQCADItemModel::IQCADItemModel(
+    insight::cad::ModelPtr m,
+    QObject* parent,
+    bool addSubshapesAsLeafs )
   : QAbstractItemModel(parent),
-    associatedParameterSetModel_(nullptr)
+    associatedParameterSetModel_(nullptr),
+    addSubshapesAsLeafs_(addSubshapesAsLeafs),
+    sections{
+        SectionNode("Scalars"),
+        SectionNode("Points"),
+        SectionNode("Vectors"),
+        SectionNode("Datums"),
+        SectionNode("Features"),
+        SectionNode("Post Proc"),
+        SectionNode("Datasets")
+    }
 {
     if (m)
         model_=m;
     else
         model_=std::make_shared<insight::cad::Model>();
 
+    // add decorators for entities in model_
+    std::for_each(
+        model_->scalars().begin(),
+        model_->scalars().end(),
+        [this](const insight::cad::Model::ScalarTableContents::value_type& vt){
+            addDecoration<insight::cad::ScalarPtr, ScalarNode>(
+                vt.first, vt.second,
+                &sections[scalarVariable],
+                std::function<void(ScalarNode&)>() );
+        });
+    std::for_each(
+        model_->points().begin(),
+        model_->points().end(),
+        [this](const insight::cad::Model::VectorTableContents::value_type& vt){
+            addDecoration<insight::cad::VectorPtr, PointNode>(
+                vt.first, vt.second,
+                &sections[pointVariable],
+                std::function<void(PointNode&)>() );
+        });
+    std::for_each(
+        model_->directions().begin(),
+        model_->directions().end(),
+        [this](const insight::cad::Model::VectorTableContents::value_type& vt){
+            addDecoration<insight::cad::VectorPtr, VectorNode>(
+                vt.first, vt.second,
+                &sections[vectorVariable],
+                std::function<void(VectorNode&)>() );
+        });
+    std::for_each(
+        model_->datums().begin(),
+        model_->datums().end(),
+        [this](const insight::cad::Model::DatumTableContents::value_type& vt){
+            addDecoration<insight::cad::DatumPtr, DatumNode>(
+                vt.first, vt.second,
+                &sections[datum],
+                std::function<void(DatumNode&)>() );
+        });
+    std::for_each(
+        model_->modelsteps().begin(),
+        model_->modelsteps().end(),
+        [this](const insight::cad::Model::ModelstepTableContents::value_type& vt){
+            addDecoration<insight::cad::FeaturePtr, FeatureNode>(
+                vt.first, vt.second,
+                &sections[feature],
+                std::function<void(FeatureNode&)>() );
+        });
+    std::for_each(
+        model_->postprocActions().begin(),
+        model_->postprocActions().end(),
+        [this](const insight::cad::Model::PostprocActionTableContents::value_type& vt){
+            addDecoration<insight::cad::PostprocActionPtr, PostProcNode>(
+                vt.first, vt.second,
+                &sections[postproc],
+                std::function<void(PostProcNode&)>() );
+        });
     model_->checkForBuildDuringAccess();
 }
 
@@ -91,62 +356,31 @@ QVariant IQCADItemModel::headerData(int section, Qt::Orientation orientation, in
 
 
 
-QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex IQCADItemModel::index(
+    int row, int column,
+    const QModelIndex &parent ) const
 {
     if (!parent.isValid())
     {
         // top level
-        if (row>=0 && row<CADModelSection::numberOf)
+        if ( (row>=0) &&
+             (row<CADModelSection::numberOf) )
         {
-            return createIndex(row, column, quintptr(INT_MAX));
+            return createIndex(
+                row, column,
+                static_cast<void*>(&sections[row]) );
         }
     }
     else
     {
-        switch (parent.row())
+        if ( auto *pn = static_cast<TreeNode*>(
+                parent.internalPointer()) )
         {
-        case CADModelSection::scalarVariable:
-            if (row>=0 && row<model_->scalars().size())
+            if ( auto *n=pn->childNode(row) )
             {
-                return createIndex(row, column, quintptr(parent.row()));
+                return createIndex(
+                    row, column, n );
             }
-            break;
-        case CADModelSection::pointVariable:
-            if (row>=0 && row<model_->points().size())
-            {
-                return createIndex(row, column, quintptr(parent.row()));
-            }
-            break;
-        case CADModelSection::vectorVariable:
-            if (row>=0 && row<model_->directions().size())
-            {
-                return createIndex(row, column, quintptr(parent.row()));
-            }
-            break;
-        case CADModelSection::datum:
-            if (row>=0 && row<model_->datums().size())
-            {
-                return createIndex(row, column, quintptr(parent.row()));
-            }
-            break;
-        case CADModelSection::feature:
-            if (row>=0 && row<model_->modelsteps().size())
-            {
-                return createIndex(row, column, quintptr(parent.row()));
-            }
-            break;
-        case CADModelSection::postproc:
-            if (row>=0 && row<model_->postprocActions().size())
-            {
-                return createIndex(row, column, quintptr(parent.row()));
-            }
-            break;
-        case CADModelSection::dataset:
-            if (row>=0 && row<model_->datasets().size())
-            {
-                return createIndex(row, column, quintptr(parent.row()));
-            }
-            break;
         }
     }
 
@@ -158,10 +392,41 @@ QModelIndex IQCADItemModel::index(int row, int column, const QModelIndex &parent
 
 QModelIndex IQCADItemModel::parent(const QModelIndex &index) const
 {
-    if (index.isValid() && index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+    if (index.isValid())
     {
-        return createIndex(index.internalId(), 0, quintptr(INT_MAX));
+        if (auto *n=static_cast<TreeNode*>(index.internalPointer()))
+        {
+            if (auto *pn = n->parentNode())
+            {
+                int row=-1;
+
+                if (auto *ppn = pn->parentNode())
+                {
+                    row=ppn->childRow(pn);
+                }
+                else
+                {
+                    for (int i=0;i<numberOf; ++i)
+                    {
+                        if (pn==&sections[i])
+                        {
+                            row=i;
+                            break;
+                        }
+                    }
+                    insight::assertion(
+                        row>=0,
+                        "internal error: assumed parent %s of %s is a section but was not found among section nodes",
+                        pn->label.toStdString().c_str(),
+                        n->label.toStdString().c_str()
+                        );
+                }
+
+                return createIndex(row, 0, pn);
+            }
+        }
     }
+
     return QModelIndex();
 }
 
@@ -174,34 +439,11 @@ int IQCADItemModel::rowCount(const QModelIndex &parent) const
     {
         return CADModelSection::numberOf;
     }
-    else if (!parent.parent().isValid())
+    else if (auto *n=static_cast<TreeNode*>(parent.internalPointer()))
     {
-        if (parent.column()==0)
+        if (parent.column()==0) // only first column has children
         {
-            switch (parent.row())
-            {
-            case CADModelSection::scalarVariable:
-                return model_->scalars().size();
-                break;
-            case CADModelSection::pointVariable:
-                return model_->points().size();
-                break;
-            case CADModelSection::vectorVariable:
-                return model_->directions().size();
-                break;
-            case CADModelSection::datum:
-                return model_->datums().size();
-                break;
-            case CADModelSection::feature:
-                return model_->modelsteps().size();
-                break;
-            case CADModelSection::postproc:
-                return model_->postprocActions().size();
-                break;
-            case CADModelSection::dataset:
-                return model_->datasets().size();
-                break;
-            }
+            return n->nChildNodes();
         }
     }
     return 0;
@@ -222,416 +464,107 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
 {
     if (index.isValid())
     {
-        if (role==Qt::DisplayRole)
+        auto *n=static_cast<TreeNode*>(index.internalPointer());
+        if (n && index.isValid())
         {
-            if (!index.parent().isValid() && index.column()==labelCol)
+            if (role==Qt::DisplayRole)
             {
-                switch (index.row())
+                switch (index.column())
                 {
-                case CADModelSection::scalarVariable:
-                    return "Scalars";
-                    break;
-                case CADModelSection::pointVariable:
-                    return "Points";
-                    break;
-                case CADModelSection::vectorVariable:
-                    return "Vectors";
-                    break;
-                case CADModelSection::datum:
-                    return "Datums";
-                    break;
-                case CADModelSection::feature:
-                    return "Features";
-                    break;
-                case CADModelSection::postproc:
-                    return "Post Proc";
-                    break;
-                case CADModelSection::dataset:
-                    return "Datasets";
-                    break;
+                case labelCol:
+                    return n->label;
+
+                case valueCol:
+                    return n->valueString();
+
+                case entityCol:
+                    return n->valueAsVariant();
+                }
+
+                if (auto *en=dynamic_cast<FeatureNode*>(n))
+                {
+                    switch (index.column())
+                    {
+                    case entityColorCol:
+                        return en->color;
+
+                    case entityOpacityCol:
+                        return en->opacity;
+
+                    case entityRepresentationCol:
+                        return en->representation;
+
+                    case assocParamPathsCol:
+                        auto paths = boost::join(en->assocParamPaths, ":");
+                        return QString::fromStdString(paths);
+                    }
+                }
+
+
+                if (auto *dn=dynamic_cast<DatasetNode*>(n))
+                {
+                    switch (index.column())
+                    {
+                    case datasetFieldNameCol:
+                        return QString::fromStdString(dn->fieldName);
+
+                    case datasetPointCellCol:
+                        return int(dn->fieldSupport);
+
+                    case datasetComponentCol:
+                        return int(dn->fieldComponent);
+
+                    case datasetMinCol:
+                        if (dn->minVal) return double(*dn->minVal);
+                        break;
+
+                    case datasetMaxCol:
+                        if (dn->maxVal) return double(*dn->maxVal);
+                        break;
+
+                    case datasetRepresentationCol:
+                        return int(dn->representation);
+                    }
                 }
             }
-            else if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+            else if (role == Qt::CheckStateRole)
             {
-                switch (index.internalId())
+                if (auto *hn=dynamic_cast<HideableNode*>(n))
                 {
-                case CADModelSection::scalarVariable:
+                    if (index.column()==visibilityCol)
                     {
-                        auto scalars = model_->scalars();
-                        if (index.row()<scalars.size())
-                        {
-                            auto i = scalars.begin();
-                            std::advance(i, index.row());
-
-                            if (index.column()==labelCol)
-                                return QString::fromStdString(i->first);
-                            else if (index.column()==valueCol)
-                                return QString::number(i->second->value());
-                        }
+                        return Qt::CheckState(
+                            hn->visible?
+                                Qt::Checked : Qt::Unchecked );
                     }
-                    break;
-                case CADModelSection::pointVariable:
-                    {
-                        auto points = model_->points();
-                        if (index.row()<points.size())
-                        {
-                            auto i = points.begin();
-                            std::advance(i, index.row());
-
-                            if (index.column()==labelCol)
-                                return QString::fromStdString(i->first);
-                            else if (index.column()==valueCol)
-                            {
-                                auto v=i->second->value();
-                                return QString("[%1 %2 %3]").arg(v[0]).arg(v[1]).arg(v[2]);
-                            }
-                            else if (index.column()==entityCol)
-                            {
-                                QVariant r;
-                                r.setValue(i->second);
-                                return r;
-                            }
-                        }
-                    }
-                    break;
-                case CADModelSection::vectorVariable:
-                    {
-                        auto directions = model_->directions();
-                        if (index.row()<directions.size())
-                        {
-                            auto i = directions.begin();
-                            std::advance(i, index.row());
-
-                            if (index.column()==labelCol)
-                                return QString::fromStdString(i->first);
-                            else if (index.column()==valueCol)
-                            {
-                                auto v=i->second->value();
-                                return QString("[%1 %2 %3]").arg(v[0]).arg(v[1]).arg(v[2]);
-                            }
-                            else if (index.column()==entityCol)
-                            {
-                                QVariant r;
-                                r.setValue(i->second);
-                                return r;
-                            }
-                        }
-                    }
-                    break;
-                case CADModelSection::datum:
-                    {
-                        auto datums = model_->datums();
-                        if (index.row()<datums.size())
-                        {
-                            auto i = datums.begin();
-                            std::advance(i, index.row());
-                            if (index.column()==labelCol)
-                            {
-                                return QString::fromStdString(i->first);
-                            }
-                            else if (index.column()==entityCol)
-                            {
-                                QVariant r;
-                                r.setValue(i->second);
-                                return r;
-                            }
-                        }
-                    }
-                    break;
-                case CADModelSection::feature:
-                    {
-                        auto features = model_->modelsteps();
-                        if (index.row()<features.size())
-                        {
-                            auto i = features.begin();
-                            std::advance(i, index.row());
-                            if (index.column()==labelCol)
-                            {
-                                return QString::fromStdString(i->first);
-                            }
-                            else if (index.column()==valueCol)
-                            {
-                                return QString::fromStdString(i->second->type());
-                            }
-                            else if (index.column()==entityCol)
-                            {
-                                QVariant r;
-                                r.setValue(i->second);
-                                return r;
-                            }
-                            else if (index.column()==entityColorCol)
-                            {
-                                return featureVisibility_[i->first].color;
-                            }
-                            else if (index.column()==entityOpacityCol)
-                            {
-                                return featureVisibility_[i->first].opacity;
-                            }
-                            else if (index.column()==entityRepresentationCol)
-                            {
-                                auto mi = featureVisibility_[i->first];
-                                return int(mi.representation);
-                            }
-                            else if (index.column()==assocParamPathsCol)
-                            {
-                                auto mi = featureVisibility_[i->first];
-                                auto paths = boost::join(mi.assocParamPaths, ":");
-                                return QString::fromStdString(paths);
-                            }
-                        }
-                    }
-                    break;
-                case CADModelSection::postproc:
-                    {
-                        auto postprocacts = model_->postprocActions();
-                        if (index.row()<postprocacts.size())
-                        {
-                            auto i = postprocacts.begin();
-                            std::advance(i, index.row());
-                            if (index.column()==labelCol)
-                            {
-                                return QString::fromStdString(i->first);
-                            }
-                            else if (index.column()==valueCol)
-                            {
-                                return QString::fromStdString(i->second->type());
-                            }
-                            else if (index.column()==entityCol)
-                            {
-                                QVariant r;
-                                r.setValue(i->second);
-                                return r;
-                            }
-                        }
-                    }
-                    break;
-                case CADModelSection::dataset:
-                    {
-                        auto ds = model_->datasets();
-                        if (index.row()<ds.size())
-                        {
-                            auto i = ds.begin();
-                            std::advance(i, index.row());
-                            if (index.column()==labelCol)
-                            {
-                                return QString::fromStdString(i->first);
-                            }
-                            else if (index.column()==valueCol)
-                            {
-                                return QString::fromStdString(i->second->GetClassName());
-                            }
-                            else if (index.column()==entityCol)
-                            {
-                                QVariant r;
-                                r.setValue(i->second);
-                                return r;
-                            }
-                            else if (index.column()==datasetFieldNameCol)
-                            {
-                                return QString::fromStdString(
-                                            datasetVisibility_[i->first].fieldName
-                                            );
-                            }
-                            else if (index.column()==datasetPointCellCol)
-                            {
-                                return int(
-                                            datasetVisibility_[i->first].fieldSupport
-                                            );
-                            }
-                            else if (index.column()==datasetComponentCol)
-                            {
-                                return int(
-                                            datasetVisibility_[i->first].fieldComponent
-                                            );
-                            }
-                            else if (index.column()==datasetMinCol)
-                            {
-                                auto mi = datasetVisibility_[i->first];
-                                if (mi.minVal) return double(*mi.minVal);
-                            }
-                            else if (index.column()==datasetMaxCol)
-                            {
-                                auto mi = datasetVisibility_[i->first];
-                                if (mi.maxVal) return double(*mi.maxVal);
-                            }
-                            else if (index.column()==datasetRepresentationCol)
-                            {
-                                auto mi = datasetVisibility_[i->first];
-                                return int(mi.representation);
-                            }
-                        }
-                    }
-                    break;
                 }
             }
-        }
-        else if (role == Qt::CheckStateRole)
-        {
-            if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+            else if (role == Qt::FontRole)
             {
-                switch (index.internalId())
-                {
-                    case CADModelSection::pointVariable:
-                        {
-                            auto points = model_->points();
-                            if (index.row()<points.size())
-                            {
-                                auto i = points.begin();
-                                std::advance(i, index.row());
-                                if (index.column()==visibilityCol)
-                                {
-                                    return Qt::CheckState( pointVisibility_[i->first]?
-                                                Qt::Checked : Qt::Unchecked );
-                                }
-                            }
-                        }
-                        break;
-                    case CADModelSection::vectorVariable:
-                        {
-                            auto vectors = model_->directions();
-                            if (index.row()<vectors.size())
-                            {
-                                auto i = vectors.begin();
-                                std::advance(i, index.row());
-                                if (index.column()==visibilityCol)
-                                {
-                                    return Qt::CheckState( vectorVisibility_[i->first]?
-                                                Qt::Checked : Qt::Unchecked );
-                                }
-                            }
-                        }
-                    break;
-                    case CADModelSection::datum:
-                        {
-                            auto datums = model_->datums();
-                            if (index.row()<datums.size())
-                            {
-                                auto i = datums.begin();
-                                std::advance(i, index.row());
-                                if (index.column()==visibilityCol)
-                                {
-                                    return Qt::CheckState( datumVisibility_[i->first]?
-                                                Qt::Checked : Qt::Unchecked );
-                                }
-                            }
-                        }
-                        break;
-                    case CADModelSection::feature:
-                        {
-                            auto features = model_->modelsteps();
-                            if (index.row()<features.size())
-                            {
-                                auto i = features.begin();
-                                std::advance(i, index.row());
-                                if (index.column()==visibilityCol)
-                                {
-                                    auto viz = featureVisibility_.find(i->first);
-                                    if (viz==featureVisibility_.end())
-                                    {
-                                        auto si=featureVisibility_.insert({
-                                            i->first,
-                                            FeatureVisibility(
-                                               model_->isComponent(i->first) ?
-                                                insight::cad::FeatureVisualizationStyle::componentStyle() :
-                                                insight::cad::FeatureVisualizationStyle::intermediateFeatureStyle()
-                                            )
-                                           });
-                                        insight::assertion(
-                                                    si.second,
-                                                    "could not store visibility information");
-                                        viz=si.first;
-                                    }
-                                    return Qt::CheckState(
-                                                viz->second.visible?
-                                                Qt::Checked:Qt::Unchecked );
-                                }
-                            }
-                        }
-                        break;
-                    case CADModelSection::postproc:
-                        {
-                            auto ppa = model_->postprocActions();
-                            if (index.row()<ppa.size())
-                            {
-                                auto i = ppa.begin();
-                                std::advance(i, index.row());
-                                if (index.column()==visibilityCol)
-                                {
-                                    return Qt::CheckState(
-                                                postprocVisibility_[i->first]?
-                                                Qt::Checked:Qt::Unchecked
-                                                );
-                                }
-                            }
-                        }
-                    case CADModelSection::dataset:
-                        {
-                            auto ds = model_->datasets();
-                            if (index.row()<ds.size())
-                            {
-                                auto i = ds.begin();
-                                std::advance(i, index.row());
-                                if (index.column()==visibilityCol)
-                                {
-                                    return Qt::CheckState(
-                                                datasetVisibility_[i->first].visible?
-                                                Qt::Checked:Qt::Unchecked
-                                                );
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
+                QFont font;
 
-        }
-        else if (role == Qt::FontRole)
-        {
-            QFont font;
-
-            if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
-            {
-                switch (index.internalId())
+                if (auto *fn=dynamic_cast<FeatureNode*>(n))
                 {
-                case CADModelSection::feature:
-                   {
-                    auto features = model_->modelsteps();
-                    if (index.row()<features.size())
+                    if (fn->parentNode()==&sections[feature])
                     {
-                        auto i = features.begin();
-                        std::advance(i, index.row());
-                        if (model_->isComponent(i->first))
+                        if (model_->isComponent(n->label.toStdString()))
                         {
                             font.setBold(true);
                         }
                     }
-                   }
-                   break;
                 }
+
+                return font;
             }
-            return font;
-        }
-        else if (role == Qt::BackgroundRole)
-        {
-            QVariant bgcol;
-            if (index.internalId()>=0 && index.internalId()<CADModelSection::numberOf)
+            else if (role == Qt::BackgroundRole)
             {
-                switch (index.internalId())
+                QVariant bgcol;
+                if (auto* fn=dynamic_cast<FeatureNode*>(n))
                 {
-                    case CADModelSection::feature:
-                    {
-                        auto features = model_->modelsteps();
-                        if (index.row()<features.size())
-                        {
-                            auto i = features.begin();
-                            std::advance(i, index.row());
-                            return featureVisibility_[i->first].color;
-                        }
-                    }
-                    break;
+                    return fn->color;
                 }
+                return bgcol;
             }
-            return bgcol;
         }
     }
 
@@ -644,20 +577,18 @@ QVariant IQCADItemModel::data(const QModelIndex &index, int role) const
 Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return 0;
+        return Qt::ItemFlags();
 
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-    if ( index.column() == visibilityCol && (
-                index.internalId()==CADModelSection::pointVariable
-             || index.internalId()==CADModelSection::vectorVariable
-             || index.internalId()==CADModelSection::datum
-             || index.internalId()==CADModelSection::feature
-             || index.internalId()==CADModelSection::postproc
-             || index.internalId()==CADModelSection::dataset
-             ) )
+    if (auto *n=static_cast<TreeNode*>(index.internalPointer()))
     {
-        flags |= Qt::ItemIsUserCheckable;
+
+        if ( index.column() == visibilityCol
+            && dynamic_cast<HideableNode*>(n) )
+        {
+            flags |= Qt::ItemIsUserCheckable;
+        }
     }
 
     return flags;
@@ -668,68 +599,20 @@ Qt::ItemFlags IQCADItemModel::flags(const QModelIndex &index) const
 
 bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
+    if (!index.isValid())
+        return false;
+
+    auto *n=static_cast<TreeNode*>(index.internalPointer());
+
     if (role == Qt::CheckStateRole)
     {
-        if ( index.column() == visibilityCol )
+        if (auto *hn=dynamic_cast<HideableNode*>(n))
         {
-            if (index.internalId()==CADModelSection::pointVariable)
+            if ( index.column() == visibilityCol )
             {
-                auto points = model_->points();
-                auto i=points.begin();
-                std::advance(i, index.row());
-                pointVisibility_[i->first] =
-                        ( value.value<Qt::CheckState>()==Qt::Checked );
-                Q_EMIT dataChanged(index, index, {role});
-                return true;
-            }
-            else if (index.internalId()==CADModelSection::vectorVariable)
-            {
-                auto vectors = model_->directions();
-                auto i=vectors.begin();
-                std::advance(i, index.row());
-                vectorVisibility_[i->first] =
-                        ( value.value<Qt::CheckState>()==Qt::Checked );
-                Q_EMIT dataChanged(index, index, {role});
-                return true;
-            }
-            else if (index.internalId()==CADModelSection::datum)
-            {
-                auto datums = model_->datums();
-                auto i=datums.begin();
-                std::advance(i, index.row());
-                datumVisibility_[i->first] =
-                        ( value.value<Qt::CheckState>()==Qt::Checked );
-                Q_EMIT dataChanged(index, index, {role});
-                return true;
-            }
-            else if (index.internalId()==CADModelSection::feature)
-            {
-                auto features = model_->modelsteps();
-                auto i=features.begin();
-                std::advance(i, index.row());
-                auto desiredState=value.value<Qt::CheckState>();
-                featureVisibility_[i->first].visible =
-                        ( desiredState==Qt::Checked );
-                Q_EMIT dataChanged(index, index, {role});
-                return true;
-            }
-            else if (index.internalId()==CADModelSection::postproc)
-            {
-                auto ppa = model_->postprocActions();
-                auto i=ppa.begin();
-                std::advance(i, index.row());
-                postprocVisibility_[i->first] =
-                        ( value.value<Qt::CheckState>()==Qt::Checked );
-                Q_EMIT dataChanged(index, index, {role});
-                return true;
-            }
-            else if (index.internalId()==CADModelSection::dataset)
-            {
-                auto ds = model_->datasets();
-                auto i=ds.begin();
-                std::advance(i, index.row());
-                datasetVisibility_[i->first].visible =
-                        ( value.value<Qt::CheckState>()==Qt::Checked );
+                hn->visible =
+                    value.value<Qt::CheckState>()==Qt::Checked;
+
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
@@ -737,64 +620,56 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
     }
     if (role == Qt::EditRole)
     {
-        if (index.internalId()==CADModelSection::feature)
+        if (auto *en = dynamic_cast<FeatureNode*>(n))
         {
-            auto feat = model_->modelsteps();
-            auto i=feat.begin();
-            std::advance(i, index.row());
-
             if (index.column()==entityColorCol)
             {
-                featureVisibility_[i->first].color =
+                en->color =
                         value.value<QColor>();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==entityOpacityCol)
             {
-                featureVisibility_[i->first].opacity =
+                en->opacity =
                         value.toDouble();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==entityRepresentationCol)
             {
-               featureVisibility_[i->first].representation =
+               en->representation =
                        insight::DatasetRepresentation(value.toInt());
                Q_EMIT dataChanged(index, index, {role});
                return true;
             }
         }
-        else if (index.internalId()==CADModelSection::dataset)
+        else if (auto *ds=dynamic_cast<DatasetNode*>(n))
         {
-            auto ds = model_->datasets();
-            auto i=ds.begin();
-            std::advance(i, index.row());
-
             if (index.column()==datasetFieldNameCol)
             {
-                datasetVisibility_[i->first].fieldName =
+                ds->fieldName =
                         value.toString().toStdString();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==datasetPointCellCol)
             {
-                datasetVisibility_[i->first].fieldSupport =
+                ds->fieldSupport =
                         insight::FieldSupport(value.toInt());
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==datasetComponentCol)
             {
-                datasetVisibility_[i->first].fieldComponent =
+                ds->fieldComponent =
                         value.toInt();
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
             else if (index.column()==datasetMinCol)
             {
-                auto& minVal=datasetVisibility_[i->first].minVal;
+                auto& minVal=ds->minVal;
                 if (value.isValid())
                 {
                     minVal = value.toDouble();
@@ -808,7 +683,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
             }
             else if (index.column()==datasetMaxCol)
             {
-                auto& maxVal=datasetVisibility_[i->first].maxVal;
+                auto& maxVal=ds->maxVal;
                 if (value.isValid())
                 {
                     maxVal = value.toDouble();
@@ -822,8 +697,7 @@ bool IQCADItemModel::setData(const QModelIndex &index, const QVariant &value, in
             }
             else if (index.column()==datasetRepresentationCol)
             {
-                auto& dv=datasetVisibility_[i->first];
-                dv.representation=insight::DatasetRepresentation(value.toInt());
+                ds->representation=insight::DatasetRepresentation(value.toInt());
                 Q_EMIT dataChanged(index, index, {role});
                 return true;
             }
@@ -857,7 +731,7 @@ QAbstractItemModel *IQCADItemModel::associatedParameterSetModel() const
 
 
 
-insight::cad::Model::ScalarTableContents IQCADItemModel::scalars() const
+const insight::cad::Model::ScalarTableContents& IQCADItemModel::scalars() const
 {
     return model_->scalars();
 }
@@ -865,7 +739,7 @@ insight::cad::Model::ScalarTableContents IQCADItemModel::scalars() const
 
 
 
-insight::cad::Model::VectorTableContents IQCADItemModel::points() const
+const insight::cad::Model::VectorTableContents& IQCADItemModel::points() const
 {
     return model_->points();
 }
@@ -873,7 +747,7 @@ insight::cad::Model::VectorTableContents IQCADItemModel::points() const
 
 
 
-insight::cad::Model::VectorTableContents IQCADItemModel::directions() const
+const insight::cad::Model::VectorTableContents& IQCADItemModel::directions() const
 {
     return model_->directions();
 }
@@ -881,7 +755,7 @@ insight::cad::Model::VectorTableContents IQCADItemModel::directions() const
 
 
 
-insight::cad::Model::DatumTableContents IQCADItemModel::datums() const
+const insight::cad::Model::DatumTableContents& IQCADItemModel::datums() const
 {
     return model_->datums();
 }
@@ -889,7 +763,7 @@ insight::cad::Model::DatumTableContents IQCADItemModel::datums() const
 
 
 
-insight::cad::Model::ModelstepTableContents IQCADItemModel::modelsteps() const
+const insight::cad::Model::ModelstepTableContents& IQCADItemModel::modelsteps() const
 {
     return model_->modelsteps();
 }
@@ -897,7 +771,7 @@ insight::cad::Model::ModelstepTableContents IQCADItemModel::modelsteps() const
 
 
 
-insight::cad::Model::PostprocActionTableContents IQCADItemModel::postprocActions() const
+const insight::cad::Model::PostprocActionTableContents& IQCADItemModel::postprocActions() const
 {
     return model_->postprocActions();
 }
@@ -913,60 +787,61 @@ const insight::cad::Model::DatasetTableContents &IQCADItemModel::datasets() cons
 
 
 
-QModelIndex IQCADItemModel::scalarIndex(const std::string& name) const
+QModelIndex IQCADItemModel::scalarIndex(
+    const std::string& name ) const
 {
-    return sectionIndex<insight::cad::ScalarPtr>(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::scalars, model_),
-                CADModelSection::scalarVariable);
+                CADModelSection::scalarVariable );
 }
 
 
 
 
-QModelIndex IQCADItemModel::pointIndex(const std::string& name) const
+QModelIndex IQCADItemModel::pointIndex(
+    const std::string& name ) const
 {
-    return sectionIndex<insight::cad::VectorPtr>(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::points, model_),
                 CADModelSection::pointVariable);
 }
 
 
 
 
-QModelIndex IQCADItemModel::directionIndex(const std::string& name) const
+QModelIndex IQCADItemModel::directionIndex(
+    const std::string& name) const
 {
-    return sectionIndex<insight::cad::VectorPtr>(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::directions, model_),
-                CADModelSection::vectorVariable);
+                CADModelSection::vectorVariable );
 }
 
 
 
 
-QModelIndex IQCADItemModel::datumIndex(const std::string& name) const
+QModelIndex IQCADItemModel::datumIndex(
+    const std::string& name ) const
 {
-    return sectionIndex<insight::cad::DatumPtr>(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::datums, model_),
-                CADModelSection::datum);
+                CADModelSection::datum );
 }
 
 
 
 
-QModelIndex IQCADItemModel::modelstepIndex(const std::string& name) const
+QModelIndex IQCADItemModel::modelstepIndex(
+    const std::string& name ) const
 {
-    return sectionIndex<insight::cad::FeaturePtr>(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::modelsteps, model_),
-                CADModelSection::feature);
+                CADModelSection::feature );
 }
 
 
-QModelIndex IQCADItemModel::modelstepIndexFromValue(insight::cad::FeaturePtr feat) const
+QModelIndex IQCADItemModel::modelstepIndexFromValue(
+    insight::cad::FeaturePtr feat) const
 {
     auto list = modelsteps();
     auto si = std::find_if(
@@ -985,36 +860,39 @@ QModelIndex IQCADItemModel::modelstepIndexFromValue(insight::cad::FeaturePtr fea
 
 
 
-QModelIndex IQCADItemModel::postprocActionIndex(const std::string& name) const
+QModelIndex IQCADItemModel::postprocActionIndex(
+    const std::string& name ) const
 {
-    return sectionIndex<insight::cad::PostprocActionPtr>(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::postprocActions, model_),
-                CADModelSection::postproc);
+                CADModelSection::postproc );
 }
 
 
 
 
-QModelIndex IQCADItemModel::datasetIndex(const std::string& name) const
+QModelIndex IQCADItemModel::datasetIndex(
+    const std::string& name ) const
 {
-    return sectionIndex<vtkSmartPointer<vtkDataObject> >(
+    return sectionIndex(
                 name,
-                std::bind(&insight::cad::Model::datasets, model_),
-                CADModelSection::dataset);
+                CADModelSection::dataset );
 }
 
 
 
 
-void IQCADItemModel::addScalar(const std::string& name, insight::cad::ScalarPtr value)
+void IQCADItemModel::addScalar(
+    const std::string& name,
+    insight::cad::ScalarPtr value)
 {
-    addEntity<insight::cad::ScalarPtr>(
-              name, value,
-              std::bind(&insight::cad::Model::scalars, model_.get()),
-              std::bind(&IQCADItemModel::scalarIndex, this, std::placeholders::_1),
-              std::bind(&insight::cad::Model::addScalar, model_.get(), std::placeholders::_1, std::placeholders::_2),
-              CADModelSection::scalarVariable );
+    addEntity<insight::cad::ScalarPtr, ScalarNode>(
+        name, value,
+        scalarVariable,
+        std::bind(&insight::cad::Model::scalars, model_.get()),
+        std::bind(&insight::cad::Model::addScalar, model_.get(),
+             std::placeholders::_1, std::placeholders::_2)//,
+        );
 }
 
 
@@ -1022,17 +900,16 @@ void IQCADItemModel::addScalar(const std::string& name, insight::cad::ScalarPtr 
 
 void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr value, bool initialVisibility)
 {
-    if (pointVisibility_.find(name)==pointVisibility_.end())
-    {
-        auto&dvv = pointVisibility_[name];
-        dvv=initialVisibility;
-    }
-    addEntity<insight::cad::VectorPtr>(
-              name, value,
-              std::bind(&insight::cad::Model::points, model_.get()),
-              std::bind(&IQCADItemModel::pointIndex, this, std::placeholders::_1),
-              std::bind(&insight::cad::Model::addPoint, model_.get(), std::placeholders::_1, std::placeholders::_2),
-              CADModelSection::pointVariable );
+    addEntity<insight::cad::VectorPtr, PointNode>(
+        name, value,
+        CADModelSection::pointVariable,
+        std::bind(&insight::cad::Model::points, model_.get()),
+        std::bind(&insight::cad::Model::addPoint, model_.get(), std::placeholders::_1, std::placeholders::_2),
+        [&](PointNode& pn)
+        {
+            pn.visible=initialVisibility;
+        }
+        );
 }
 
 
@@ -1040,17 +917,16 @@ void IQCADItemModel::addPoint(const std::string& name, insight::cad::VectorPtr v
 
 void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorPtr value, bool initialVisibility )
 {
-    if (vectorVisibility_.find(name)==vectorVisibility_.end())
-    {
-        auto&dvv = vectorVisibility_[name];
-        dvv=initialVisibility;
-    }
-    addEntity<insight::cad::VectorPtr>(
-              name, value,
-              std::bind(&insight::cad::Model::directions, model_.get()),
-              std::bind(&IQCADItemModel::directionIndex, this, std::placeholders::_1),
-              std::bind(&insight::cad::Model::addDirection, model_.get(), std::placeholders::_1, std::placeholders::_2),
-              CADModelSection::pointVariable );
+    addEntity<insight::cad::VectorPtr, VectorNode>(
+        name, value,
+        CADModelSection::pointVariable,
+        std::bind(&insight::cad::Model::directions, model_.get()),
+        std::bind(&insight::cad::Model::addDirection, model_.get(), std::placeholders::_1, std::placeholders::_2),
+        [&](VectorNode& pn)
+        {
+            pn.visible=initialVisibility;
+        }
+        );
 }
 
 
@@ -1058,17 +934,16 @@ void IQCADItemModel::addDirection(const std::string& name, insight::cad::VectorP
 
 void IQCADItemModel::addDatum(const std::string& name, insight::cad::DatumPtr value, bool initialVisibility)
 {
-    if (datumVisibility_.find(name)==datumVisibility_.end())
-    {
-        auto&dvv = datumVisibility_[name];
-        dvv=initialVisibility;
-    }
-    addEntity<insight::cad::DatumPtr>(
-              name, value,
-              std::bind(&insight::cad::Model::datums, model_.get()),
-              std::bind(&IQCADItemModel::datumIndex, this, std::placeholders::_1),
-              std::bind(&insight::cad::Model::addDatum, model_.get(), std::placeholders::_1, std::placeholders::_2),
-              CADModelSection::datum );
+    addEntity<insight::cad::DatumPtr, DatumNode>(
+        name, value,
+        CADModelSection::datum,
+        std::bind(&insight::cad::Model::datums, model_.get()),
+        std::bind(&insight::cad::Model::addDatum, model_.get(), std::placeholders::_1, std::placeholders::_2),
+        [&](DatumNode& pn)
+        {
+            pn.visible=initialVisibility;
+        }
+        );
 }
 
 
@@ -1081,27 +956,50 @@ void IQCADItemModel::addModelstep(
     const std::string& featureDescription,
     const boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>& optfvs)
 {
+    addEntity<insight::cad::FeaturePtr, FeatureNode>(
+        name, value,
+        CADModelSection::feature,
+        std::bind(&insight::cad::Model::modelsteps, model_.get()),
+        std::bind(
+            &insight::cad::Model::addModelstep, model_.get(),
+            std::placeholders::_1, std::placeholders::_2,
+            isComponent, std::string() ),
+        [&](FeatureNode& pn)
+        {
+            if (auto* fvs = boost::get<insight::cad::FeatureVisualizationStyle>(&optfvs))
+            {
+                pn=*fvs;
+            }
+            if (!isComponent)
+                pn.visible=false;
+        }
+        );
+
+    auto newidx=modelstepIndex(name);
+    auto *featnode=dynamic_cast<FeatureNode*>(
+        static_cast<TreeNode*>(
+            newidx.internalPointer() ) );
+
     if (auto* fvs = boost::get<insight::cad::FeatureVisualizationStyle>(&optfvs))
     {
-        // set *before* addEntity
-        if (featureVisibility_.find(name)==featureVisibility_.end())
-        {
-            auto&dvv = (featureVisibility_[name] = FeatureVisibility(*fvs));
-        }
-
-        featureVisibility_[name].assocParamPaths = fvs->associatedParameterPaths;
+        featnode
+            ->assocParamPaths = fvs->associatedParameterPaths;
     }
 
-
-    addEntity<insight::cad::FeaturePtr>(
-              name, value,
-              std::bind(&insight::cad::Model::modelsteps, model_.get()),
-              std::bind(&IQCADItemModel::modelstepIndex, this, std::placeholders::_1),
-              std::bind(
-                    &insight::cad::Model::addModelstep, model_.get(),
-                    std::placeholders::_1, std::placeholders::_2,
-                    isComponent, std::string() ),
-                CADModelSection::feature );
+    if (addSubshapesAsLeafs_)
+    {
+        for (auto& ss: value->providedSubshapes())
+        {
+            addDecoration<insight::cad::FeaturePtr, FeatureNode>(
+                ss.first, ss.second,
+                featnode,
+                [&](FeatureNode& pn)
+                {
+                    pn.visible=false;
+                }
+            );
+        }
+    }
 }
 
 
@@ -1135,16 +1033,17 @@ void IQCADItemModel::addPostprocAction(
         const std::string& name,
         insight::cad::PostprocActionPtr value )
 {
-    if (postprocVisibility_.find(name)==postprocVisibility_.end())
-    {
-        postprocVisibility_[name]=true;
-    }
-    addEntity<insight::cad::PostprocActionPtr>(
-              name, value,
-              std::bind(&insight::cad::Model::postprocActions, model_.get()),
-              std::bind(&IQCADItemModel::postprocActionIndex, this, std::placeholders::_1),
-              std::bind(&insight::cad::Model::addPostprocAction, model_.get(), std::placeholders::_1, std::placeholders::_2),
-                CADModelSection::postproc );
+    addEntity<insight::cad::PostprocActionPtr, PostProcNode>(
+        name, value,
+        CADModelSection::postproc,
+        std::bind(&insight::cad::Model::postprocActions, model_.get()),
+        std::bind(&insight::cad::Model::addPostprocAction, model_.get(),
+                  std::placeholders::_1, std::placeholders::_2),
+        [&](PostProcNode& pn)
+        {
+            pn.visible=true;
+        }
+        );
 }
 
 
@@ -1152,23 +1051,21 @@ void IQCADItemModel::addPostprocAction(
 
 void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkDataObject> value)
 {
-    if (datasetVisibility_.find(name)==datasetVisibility_.end())
-    {
-        // set *before* addEntity
-        auto&dvv = datasetVisibility_[name];
-        if (auto* ds=vtkDataSet::SafeDownCast(value))
+    addEntity<vtkSmartPointer<vtkDataObject>, DatasetNode >(
+        name, value,
+        CADModelSection::dataset,
+        std::bind(&insight::cad::Model::datasets, model_.get()),
+        std::bind(&insight::cad::Model::addDataset, model_.get(),
+                  std::placeholders::_1, std::placeholders::_2),
+        [&](DatasetNode& pn)
         {
-            if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
-                dvv.representation=insight::Points;
+            if (auto* ds=vtkDataSet::SafeDownCast(value))
+            {
+                if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
+                    pn.representation=insight::Points;
+            }
         }
-    }
-
-    addEntity<vtkSmartPointer<vtkDataObject> >(
-              name, value,
-              std::bind(&insight::cad::Model::datasets, model_.get()),
-              std::bind(&IQCADItemModel::datasetIndex, this, std::placeholders::_1),
-              std::bind(&insight::cad::Model::addDataset, model_.get(), std::placeholders::_1, std::placeholders::_2),
-                CADModelSection::dataset );
+        );
 }
 
 
@@ -1304,6 +1201,24 @@ void IQCADItemModel::populateClipPlaneMenu(QMenu *clipplanemenu, IQCADModel3DVie
 
 
 
+QModelIndex IQCADItemModel::sectionIndex(
+    const std::string &name,
+    CADModelSection entitySection ) const
+{
+    auto *parent=&sections[entitySection];
+    if (auto n=parent->childNode(name))
+    {
+        auto row = parent->childRow(n);
+        return index(row, 0, index(entitySection, 0) );
+    }
+    else
+    {
+        return QModelIndex();
+    }
+}
+
+
+
 void IQCADItemModel::addSymbolsToSubmenu(
         const QString& name,
         QMenu *menu,
@@ -1415,4 +1330,6 @@ void IQCADItemModel::addSymbolsToSubmenu(
     }
   }
 }
+
+
 

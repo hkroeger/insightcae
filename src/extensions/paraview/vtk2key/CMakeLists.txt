@@ -1,13 +1,10 @@
 project(vtk2key)
 
 
-set(vtk2key_SOURCES
+add_executable(vtk2key
     vtk2key.cpp
 )
-
-
-add_executable(vtk2key ${vtk2key_SOURCES})
 linkToolkitVtk(vtk2key Offscreen)
-setup_gettext(vtk2key vtk2key ${vtk2key_SOURCES})
+target_setup_gettext(vtk2key vtk2key)
 
 install(TARGETS vtk2key RUNTIME DESTINATION bin)

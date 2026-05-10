@@ -70,7 +70,7 @@ Analysis::Add<AirfoilSection> addAirfoilSection;
 AirfoilSection::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const path &workDir,
-    ProgressDisplayer &progress )
+    ActionProgress &progress )
   : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), workDir, progress ),
     in_("in"),
     out_("out"),
@@ -81,12 +81,12 @@ AirfoilSection::supplementedInputData::supplementedInputData(
 {
 
   if (!p().geometry.foilfile->isValid())
-    throw insight::Exception("Foil data file does not exist: "+p().geometry.foilfile->fileName().string());
+    throw insight::Exception("Foil data file does not exist: "+p().geometry.foilfile->filePath().string());
 
-  std::cout<<"Reading foil from "<<p().geometry.foilfile->fileName().string()<<std::endl;
+  std::cout<<"Reading foil from "<<p().geometry.foilfile->filePath().string()<<std::endl;
   {
     std::string data;
-    std::string ext = p().geometry.foilfile->fileName().extension().string();
+    std::string ext = p().geometry.foilfile->fileExtension();
 
     int lnr=0;
 
@@ -107,8 +107,9 @@ AirfoilSection::supplementedInputData::supplementedInputData(
           std::istringstream l(line);
           double x, y;
           l >> x >> y;
-          if (l.fail()) throw insight::Exception(boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
-                                                            % p().geometry.foilfile->fileName().string() % lnr % line));
+          if (l.fail()) throw insight::Exception(
+                  boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
+                    % p().geometry.foilfile->filePath().string() % lnr % line));
           data += boost::str(boost::format("%g %g\n") % x % y);
         }
 
@@ -231,8 +232,8 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
     .set_maxLevel(p().mesh.lxfoil)
     .set_nLayers(p().mesh.nlayer)
 
-    .set_fileName(make_filepath(targ_path))
-    .set_scale(vec3(sp().c_, sp().c_, 1))
+    .set_geometry(make_geometryFile(targ_path))
+    .set_scalefactor(sp().c_)
     .set_rollPitchYaw(vec3(0,0,-p().geometry.alpha))
     .set_name(sp().foil_)
   )));
@@ -469,12 +470,11 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
           auto img = executionPath() / figname;
           //      scene.fitAll();
           scene.setParallelScale(std::pair<double,double>(2.*sp().c_, 2.*sp().c_));
-          scene.exportImage(img);
 
           results->insert(img.filename().stem().string(),
               std::unique_ptr<Image>(new Image
               (
-                 executionPath(), img.filename(),
+                 FileContainer(*scene.exportImage(), img.filename()),
                  str(format("Relative velocity (angle of attack %gdeg)") % p().geometry.alpha), ""
                  )));
       }

@@ -1,7 +1,8 @@
 #ifndef INSIGHT_FILEWATCHER_H
 #define INSIGHT_FILEWATCHER_H
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 
 namespace insight {
 

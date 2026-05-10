@@ -68,6 +68,8 @@
 #include "vtkTriangleFilter.h"
 #include "vtkCell.h"
 
+#include "BRep_TFace.hxx"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -119,7 +121,7 @@ size_t STL::calcHash() const
 
 
 STL::STL(const STL&o, TreeCloneMap& tcm)
-    : geometry_(o.geometry_)
+    : Feature(o, tcm), geometry_(o.geometry_)
 {
     if (auto *fp=boost::get<FeaturePtr>(&o.transform_))
     {
@@ -276,6 +278,8 @@ void STL::build()
       }
     }
 
+    refvalues_["isSTLGeometry"]=1;
+
     if (!bb.IsVoid())
     {
       CurrentExceptionContext ex(_("creating TopoDS_Shape"));
@@ -288,6 +292,9 @@ void STL::build()
       //  aB.MakeFace(aFace, aSTLMesh);
       aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
       aB.UpdateFace(aFace, aSTLMesh_);
+      TopLoc_Location nl;
+      nl.Identity();
+      aFace.Location(nl);
 
       setShape( aFace );
 
@@ -362,6 +369,22 @@ FeatureCmdInfoList STL::ruleDocumentation()
             "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally.")
           )
         };
+}
+
+
+
+boost::optional<BOMDescriptionData> STL::BOMDescription() const
+{
+    if (const auto* fname = boost::get<boost::filesystem::path>(&geometry_))
+    {
+        return BOMDescriptionData(
+                   std::make_shared<DescriptionWithParameters>(
+                       fname->filename().string(),
+                       std::vector<ScalarPtr>{}),
+                   nullptr
+                   );
+    }
+    return boost::optional<BOMDescriptionData>();
 }
 
 

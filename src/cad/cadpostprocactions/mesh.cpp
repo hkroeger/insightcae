@@ -34,7 +34,7 @@
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamdict.h"
-#include "openfoam/snappyhexmesh.h"
+// #include "openfoam/snappyhexmesh.h"
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 
 #include "openfoam/blockmesh_templates.h"
@@ -54,7 +54,11 @@ size_t Mesh::calcHash() const
 }
 
 defineType(Mesh);
-  
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    Mesh, &Mesh::insertrule );
+
 Mesh::Mesh
 (
   const boost::filesystem::path& outpath, 
@@ -340,10 +344,48 @@ void Mesh::build()
 }
 
 
-
+void Mesh::insertrule(parser::ISCADParser& ruleset)
+{
+    ruleset.postProcFunctionRules.add
+        (
+            "gmsh",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > ruleset.r_path > ')' > qi::lit("<<")
+                  > ruleset.r_solidmodel_expression
+                  > qi::hold[ qi::lit("L") > '=' > '(' > ruleset.r_scalarExpression > ruleset.r_scalarExpression > ')' ] // Lmax, Lmin
+                  > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
+                  > qi::hold[
+                    ( ( qi::lit("vertexGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vertexFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) ) ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( qi::lit("edgeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_edgeFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( qi::lit("faceGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_faceFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( qi::lit("volumeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                    ]
+                  > ( ( qi::lit("vertices") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vectorExpression ) > ')'  )| qi::attr(NamedVertices()) )
+                  > ( ( qi::lit("meshSizes") > '(' > *( ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression ) >> ')' ) | qi::attr(std::vector<MeshSizeBall>()) )
+                  > qi::hold[
+                    ( ( qi::lit("screwHeads") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewHeads()) )
+                  > ( ( qi::lit("screwBases") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewBases()) )
+                  > ( ( qi::lit("screws")     > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier) ) > ')'  )| qi::attr(ScrewBodies()) )
+                    ]
+                  > ( ( qi::lit("keepTmpDir") > qi::attr(true) ) | qi::attr(false) )
+                  > ';' )
+                [ qi::_val = phx::bind(
+                    &Mesh::create<const boost::filesystem::path&,FeaturePtr,
+                                  boost::fusion::vector<ScalarPtr,ScalarPtr>,
+                                  bool, const GroupDefinitions&, const NamedVertices&,
+                                  const std::vector<MeshSizeBall>&, const ScrewInfos&, bool>,
+                                   qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8, qi::_9
+                                    ) ]
+                )
+            );
+}
 
 
 defineType(ExtrudedMesh);
+
+addToStaticFunctionTable2(
+    PostprocAction, InsertRule, insertrule,
+    ExtrudedMesh, &ExtrudedMesh::insertrule );
 
 ExtrudedMesh::ExtrudedMesh
 (
@@ -416,6 +458,38 @@ void ExtrudedMesh::build()
 }
 
 
+void ExtrudedMesh::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "gmshExtrusion",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+                ( '(' > rs.r_path > ')' > qi::lit("<<")
+                 > rs.r_solidmodel_expression //>> lit("as") >> r_identifier
+                 > qi::hold[ ( qi::lit("L") > '=' > '(' > rs.r_scalarExpression > rs.r_scalarExpression > ')'  // Lmax, Lmin
+                             >  qi::lit("h") > '=' > rs.r_scalarExpression > qi::lit("nLayers") > '=' > rs.r_scalarExpression ) ]  // h nLayer
+                 > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
+                 > qi::hold[
+                     ( qi::lit("vertexGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_vertexFeaturesExpression > -( '@' > rs.r_scalarExpression ) ) ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("edgeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_edgeFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("baseFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("topFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( qi::lit("volumeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_solidFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                    ]
+                 > ( qi::lit("vertices") > '(' > *( (rs.r_identifier|rs.r_string) > '=' > rs.r_vectorExpression ) > ')' | qi::attr(NamedVertices()) )
+                 > ( (qi::lit("keepTmpDir") > qi::attr(true)) | qi::attr(false) )
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                         &ExtrudedMesh::create<
+                             const boost::filesystem::path&,FeaturePtr,
+                             boost::fusion::vector<ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr>,
+                             bool, const ExtrudedGroupDefinitions&, const NamedVertices&, bool>,
+                         qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7
+                         ) ]
+                )
+            );
+}
+
 
 defineType(SnappyHexMesh);
 
@@ -447,141 +521,175 @@ SnappyHexMesh::SnappyHexMesh
 
 void SnappyHexMesh::build()
 {
-    boost::filesystem::create_directory(outpath_); // create dir, if not existing
+#warning reimplement
+//     boost::filesystem::create_directory(outpath_); // create dir, if not existing
         
-    OpenFOAMCase ofc( OFEs::get(OFEname_) );
+//     OpenFOAMCase ofc( OFEs::get(OFEname_) );
 
-    snappyHexMeshConfiguration::Parameters shm_cfg;
+//     snappyHexMeshConfiguration::Parameters shm_cfg;
 
-    arma::mat pmin = vec3(1e10, 1e10, 1e10);
-    arma::mat pmax = vec3(-1e10, -1e10, -1e10);
+//     arma::mat pmin = vec3(1e10, 1e10, 1e10);
+//     arma::mat pmax = vec3(-1e10, -1e10, -1e10);
     
-    for (const GeometryDesc& geom: geometries_)
-    {
-        const FeaturePtr geo = boost::fusion::at_c<0>(geom);
-        const std::string& name = boost::fusion::at_c<1>(geom);
+//     for (const GeometryDesc& geom: geometries_)
+//     {
+//         const FeaturePtr geo = boost::fusion::at_c<0>(geom);
+//         const std::string& name = boost::fusion::at_c<1>(geom);
         
-        boost::filesystem::path filepath = outpath_/(name+".stlb");
-        ScalarPtr res= boost::fusion::at_c<2>(geom);
-        if (res)
-        {
-            geo->exportSTL(filepath, res->value());
-        }
-        else
-        {
-            geo->saveAs(filepath);
-        }
+//         boost::filesystem::path filepath = outpath_/(name+".stlb");
+//         ScalarPtr res= boost::fusion::at_c<2>(geom);
+//         if (res)
+//         {
+//             geo->exportSTL(filepath, res->value());
+//         }
+//         else
+//         {
+//             geo->saveAs(filepath);
+//         }
         
-        arma::mat bb = geo->modelBndBox();
-        for (int i=0; i<3; i++)
-        {
-            pmin(i) = std::min( pmin(i), bb(i,0) );
-            pmax(i) = std::max( pmax(i), bb(i,1) );
-        }
+//         arma::mat bb = geo->modelBndBox();
+//         for (int i=0; i<3; i++)
+//         {
+//             pmin(i) = std::min( pmin(i), bb(i,0) );
+//             pmax(i) = std::max( pmax(i), bb(i,1) );
+//         }
         
-        int minlevel=0, maxlevel=0;
-        if (boost::fusion::at_c<3>(geom))
-        {
-            const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<3>(geom);
-            minlevel=boost::fusion::at_c<0>(levels)->value();
-            maxlevel=boost::fusion::at_c<1>(levels)->value();
-        }
+//         int minlevel=0, maxlevel=0;
+//         if (boost::fusion::at_c<3>(geom))
+//         {
+//             const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<3>(geom);
+//             minlevel=boost::fusion::at_c<0>(levels)->value();
+//             maxlevel=boost::fusion::at_c<1>(levels)->value();
+//         }
         
-        int nlayers=0;
-        if (boost::fusion::at_c<4>(geom))
-        {
-            nlayers=(*boost::fusion::at_c<4>(geom))->value();
-        }
+//         int nlayers=0;
+//         if (boost::fusion::at_c<4>(geom))
+//         {
+//             nlayers=(*boost::fusion::at_c<4>(geom))->value();
+//         }
         
-        shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(  
-            new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-            .set_minLevel(minlevel)
-            .set_maxLevel(maxlevel)
-            .set_nLayers(nlayers)
-            //.set_regionRefinements(rl)
+//         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
+//             new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
+//             .set_minLevel(minlevel)
+//             .set_maxLevel(maxlevel)
+//             .set_nLayers(nlayers)
+//             //.set_regionRefinements(rl)
 
-            .set_fileName(make_filepath(filepath))
-            .set_name(name)
-        )));
-    }
+//             .set_fileName(make_filepath(filepath))
+//             .set_name(name)
+//         )));
+//     }
     
-    for (const EdgeRefineDesc& edgref: edgerefines_)
-    {
-        const std::string& name = boost::fusion::at_c<0>(edgref);
-        FeatureSetPtr fsp = boost::fusion::at_c<1>(edgref);
-        int level = boost::fusion::at_c<2>(edgref)->value();
+//     for (const EdgeRefineDesc& edgref: edgerefines_)
+//     {
+//         const std::string& name = boost::fusion::at_c<0>(edgref);
+//         FeatureSetPtr fsp = boost::fusion::at_c<1>(edgref);
+//         int level = boost::fusion::at_c<2>(edgref)->value();
         
-        boost::filesystem::path filepath = outpath_/(name+".eMesh");
-        fsp->model()->exportEMesh(filepath, *fsp);
+//         boost::filesystem::path filepath = outpath_/(name+".eMesh");
+//         fsp->model()->exportEMesh(filepath, *fsp);
 
-        shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
-            new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
-            .set_level(level)
-            .set_fileName(make_filepath(filepath))
-        )));
-    }
+//         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(
+//             new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
+//             .set_level(level)
+//             .set_fileName(make_filepath(filepath))
+//         )));
+//     }
     
-    shm_cfg
-      .set_relativeSizes(true)
-      .set_stopOnBadPrismLayer(false)
-      .set_erlayer(1.3)
-      .set_tlayer(0.5);
+//     shm_cfg
+//       .set_relativeSizes(true)
+//       .set_stopOnBadPrismLayer(false)
+//       .set_erlayer(1.3)
+//       .set_tlayer(0.5);
   
-    shm_cfg.PiM.push_back(PiM_->value());
+//     shm_cfg.PiM.push_back(PiM_->value());
     
-    ofc.insert(new MeshingNumerics(ofc, MeshingNumerics::Parameters()
-//                                   .set_np(np)
-                                 ));
+//     ofc.insert(new MeshingNumerics(ofc, MeshingNumerics::Parameters()
+// //                                   .set_np(np)
+//                                  ));
     
-    {
-     double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
-     double maxs = std::max(L, std::max(W, H));
-     double add = 0.05*maxs;
-     pmin -= add;
-     pmax += add;
-    }
+//     {
+//      double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
+//      double maxs = std::max(L, std::max(W, H));
+//      double add = 0.05*maxs;
+//      pmin -= add;
+//      pmax += add;
+//     }
     
-    double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
-    int nx=std::max(1, int(ceil(L/templCellSize_->value())) );
-    int ny=std::max(1, int(ceil(W/templCellSize_->value())) );
-    int nz=std::max(1, int(ceil(H/templCellSize_->value())) );
+//     double L = pmax(0)-pmin(0), W=pmax(1)-pmin(1), H=pmax(2)-pmin(2);
+//     int nx=std::max(1, int(ceil(L/templCellSize_->value())) );
+//     int ny=std::max(1, int(ceil(W/templCellSize_->value())) );
+//     int nz=std::max(1, int(ceil(H/templCellSize_->value())) );
     
-    bmd::blockMeshDict_Box::Parameters bmd_p;
-    bmd_p.geometry.p0=pmin;
-    bmd_p.geometry.L=L;
-    bmd_p.geometry.W=W;
-    bmd_p.geometry.H=H;
-    {
-      bmd::blockMeshDict_Box::Parameters::mesh_type::resolution_individual_type res;
-      res.nx=nx;
-      res.ny=ny;
-      res.nz=nz;
-      bmd_p.mesh.resolution=res;
-    }
-    ofc.insert(new bmd::blockMeshDict_Box(ofc, bmd_p));
+//     bmd::blockMeshDict_Box::Parameters bmd_p;
+//     bmd_p.geometry.p0=pmin;
+//     bmd_p.geometry.L=L;
+//     bmd_p.geometry.W=W;
+//     bmd_p.geometry.H=H;
+//     {
+//       bmd::blockMeshDict_Box::Parameters::mesh_type::resolution_individual_type res;
+//       res.nx=nx;
+//       res.ny=ny;
+//       res.nz=nz;
+//       bmd_p.mesh.resolution=res;
+//     }
+//     ofc.insert(new bmd::blockMeshDict_Box(ofc, bmd_p));
     
-    ofc.createOnDisk(outpath_);
-    ofc.executeCommand(outpath_, "blockMesh");
+//     ofc.createOnDisk(outpath_);
+//     ofc.executeCommand(outpath_, "blockMesh");
     
-    snappyHexMesh
-    (
-        ofc, outpath_,
-        shm_cfg,
-        true,
-        false,
-        false
-    );
+//     snappyHexMesh
+//     (
+//         ofc, outpath_,
+//         shm_cfg,
+//         true,
+//         false,
+//         false
+//     );
 }
 
-//Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
-//{
+// Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
+// {
 //  checkForBuildDuringAccess();
 //  return Handle_AIS_InteractiveObject();
-//}
+// }
 
 void SnappyHexMesh::write(std::ostream& ) const
 {
 }
-  
+
+
+
+void SnappyHexMesh::insertrule(parser::ISCADParser& rs)
+{
+    rs.postProcFunctionRules.add
+        (
+            "snappyHexMesh",
+            std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
+
+                ( '(' > rs.r_path > ',' > rs.r_identifier > ')' > qi::lit("<<")
+
+                 > qi::lit("PiM") > '=' > rs.r_vectorExpression
+                 > qi::lit("dx") > '=' > rs.r_scalarExpression
+
+                 > *( rs.r_solidmodel_expression > qi::lit("as") > rs.r_identifier
+                     > ( ( qi::lit("resolution") > '=' > rs.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+                     > -( '@' > rs.r_scalarExpression > qi::lit("to") > rs.r_scalarExpression )
+                     > -( qi::lit(">>") > rs.r_scalarExpression )
+                     )
+
+                 > -( qi::lit("edgeRefinements") > '(' > *( rs.r_identifier > '=' > rs.r_edgeFeaturesExpression > '@' > rs.r_scalarExpression ) > ')' )
+
+                 > ';' )
+                    [ qi::_val = phx::bind(
+                        &SnappyHexMesh::create<
+                            const boost::filesystem::path&, const std::string&,
+                            VectorPtr, ScalarPtr, GeometrysDesc, boost::optional<EdgeRefineDescs> >,
+                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6 ) ]
+                )
+            );
+}
+
+
 }
 }

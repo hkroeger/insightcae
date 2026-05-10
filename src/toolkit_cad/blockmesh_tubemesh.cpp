@@ -9,7 +9,6 @@
 #include "BRepTools.hxx"
 
 using namespace boost;
-using namespace boost::assign;
 
 namespace insight
 {

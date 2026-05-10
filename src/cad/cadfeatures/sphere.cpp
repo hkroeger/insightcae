@@ -56,7 +56,7 @@ size_t Sphere::calcHash() const
 
 
 Sphere::Sphere(const Sphere&o, TreeCloneMap& tcm)
-    : CL(p_), CL(D_)
+    : SingleVolumeFeature(o, tcm), CL(p_), CL(D_)
 {}
 
 

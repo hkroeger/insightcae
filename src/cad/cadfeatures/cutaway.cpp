@@ -121,7 +121,8 @@ void Cutaway::build()
           n=n_->value();
         }
 
-      arma::mat bb=baseFeature()->modelBndBox ( 0.1 );
+      arma::mat bb=baseFeature()->modelBndBox (
+            TesselationResolution::absolute(0.1) );
       double delta=arma::norm(p0 - 0.5*(bb.col(0)+bb.col(1)),2);
       double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 )+ delta, 2 ) ;
 

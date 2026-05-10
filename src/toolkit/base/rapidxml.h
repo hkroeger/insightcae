@@ -4,7 +4,7 @@
 #include <string>
 
 #include <armadillo>
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 
 #include "base/tools.h"
 #include "base/exception.h"
@@ -171,6 +171,16 @@ findNode(
     const std::string& name,
     const std::string& typeName
     );
+
+
+
+
+std::set<std::string>
+listNodes(
+    const rapidxml::xml_node<>& father );
+
+
+
 
 template<class T = std::string>
 T getAttribute(

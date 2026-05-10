@@ -53,22 +53,22 @@ void CyclicACMIBC::addIntoFieldDictionaries(OFdicts &dictionaries) const
         .subDict("boundaryField").subDict(patchName_);
 
       if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
-        MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+        MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
       else
       {
         if (OFversion()>=230)
         {
           BC["type"]=OFDictData::data("cyclicACMI");
           OFDictData::data value;
-          if (get<0> ( field.second ) ==scalarField)
+          if (boost::fusion::get<0> ( field.second ) ==scalarField)
           {
               value=OFDictData::toUniformField(0.);
           }
-          else if (get<0> ( field.second ) ==vectorField)
+          else if (boost::fusion::get<0> ( field.second ) ==vectorField)
           {
               value=OFDictData::toUniformField(vec3Zero());
           }
-          else if (get<0> ( field.second ) ==symmTensorField)
+          else if (boost::fusion::get<0> ( field.second ) ==symmTensorField)
           {
               arma::mat R=arma::zeros(6, 1);
               value=OFDictData::toUniformField(R);

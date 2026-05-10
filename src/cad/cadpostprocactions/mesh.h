@@ -87,24 +87,27 @@ protected:
   virtual void setupGmshCase(GmshCase& c);
   void build() override;
 
+  Mesh
+      (
+          const boost::filesystem::path& outpath,
+          FeaturePtr model,
+          boost::fusion::vector<ScalarPtr,ScalarPtr> L,
+          bool quad,
+          const GroupDefinitions& v_e_f_s_groups,
+          const NamedVertices& namedVertices,
+          const std::vector<MeshSizeBall>& meshSizeBalls,
+          const ScrewInfos& screwInfos,
+          bool keepTmpDir=false
+          );
 public:
   declareType("Mesh");
-  Mesh
-  (
-    const boost::filesystem::path& outpath,
-    FeaturePtr model,
-    boost::fusion::vector<ScalarPtr,ScalarPtr> L,
-    bool quad,
-    const GroupDefinitions& v_e_f_s_groups,
-    const NamedVertices& namedVertices,
-    const std::vector<MeshSizeBall>& meshSizeBalls,
-    const ScrewInfos& screwInfos,
-    bool keepTmpDir=false
-  );
-  
+
+  CREATE_FUNCTION(Mesh);
 
 //  Handle_AIS_InteractiveObject createAISRepr() const override;
   void write(std::ostream& ) const override;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 
@@ -131,18 +134,21 @@ protected:
 
   void build() override;
 
+  ExtrudedMesh(
+          const boost::filesystem::path& outpath,
+          FeaturePtr model,
+          boost::fusion::vector<ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr> L_h_nLayers,
+          bool quad,
+          const ExtrudedGroupDefinitions& v_e_bf_tf_s_groups,
+          const NamedVertices& namedVertices,
+          bool keepTmpDir=false
+          );
+
 public:
   declareType("ExtrudedMesh");
-  ExtrudedMesh
-  (
-    const boost::filesystem::path& outpath,
-    FeaturePtr model,
-    boost::fusion::vector<ScalarPtr,ScalarPtr,ScalarPtr,ScalarPtr> L_h_nLayers,
-    bool quad,
-    const ExtrudedGroupDefinitions& v_e_bf_tf_s_groups,
-    const NamedVertices& namedVertices,
-    bool keepTmpDir=false
-  );
+  CREATE_FUNCTION(ExtrudedMesh);
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 
@@ -171,22 +177,25 @@ class SnappyHexMesh
   virtual size_t calcHash() const;
   virtual void build();
 
+  SnappyHexMesh
+      (
+          const boost::filesystem::path& outpath,
+          const std::string OFEname,
+          VectorPtr PiM,
+          ScalarPtr templCellSize,
+          GeometrysDesc geometries,
+          boost::optional<EdgeRefineDescs> edgerefines
+          );
+
 public:
   declareType("SnappyHexMesh");
-
-  SnappyHexMesh
-  (
-    const boost::filesystem::path& outpath,
-    const std::string OFEname,
-    VectorPtr PiM,
-    ScalarPtr templCellSize,
-    GeometrysDesc geometries,
-    boost::optional<EdgeRefineDescs> edgerefines
-  );
+  CREATE_FUNCTION(SnappyHexMesh);
   
 
 //  virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 

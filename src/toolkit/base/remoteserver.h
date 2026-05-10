@@ -2,7 +2,8 @@
 #define INSIGHT_REMOTESERVER_H
 
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 #include "base/exception.h"
 
 #include "boost/process.hpp"
@@ -296,6 +297,7 @@ public:
       const std::set<int>& localListenerPorts
       );
 
+  virtual std::string IPaddress() const;
 };
 
 

@@ -5,9 +5,11 @@
 #include "ui_iqresultsetdisplayerwidget.h"
 
 #include "iqaddfilterdialog.h"
+#include "iqbackgroundtask.h"
 
 #include <QFileDialog>
 #include <QCheckBox>
+#include <qmessagebox.h>
 
 #include "base/cppextensions.h"
 #include "rapidxml/rapidxml_print.hpp"
@@ -202,7 +204,7 @@ void IQResultSetDisplayerWidget::saveResultSetAs()
     }
 }
 
-void IQResultSetDisplayerWidget::renderReport()
+void IQResultSetDisplayerWidget::renderReport(insight::ProgressDisplayer *pd)
 {
     if (resultsModel_)
     {
@@ -225,50 +227,74 @@ void IQResultSetDisplayerWidget::renderReport()
 
         if ( fd.exec() == QDialog::Accepted )
         {
+            auto filename=fd.selectedFiles()[0];
+            bool saveFiltered=cb->isChecked();
+
+            auto bt=new IQBackgroundTask("Creating report", pd);
+
+            connect(
+                bt, &IQBackgroundTask::finished, this,
+                [this]()
+                {
+                    QMessageBox::information(
+                        this, "Report finished",
+                        "The report has been created",
+                        QMessageBox::Ok, QMessageBox::Ok);
+                });
+
             if (fd.selectedNameFilter()==PDF)
             {
-                  boost::filesystem::path outf =
-                          insight::ensureFileExtension(
-                              fd.selectedFiles()[0].toStdString(),
-                              ".pdf"
-                          );
-                  if (cb->isChecked())
-                  {
-                      resultsModel_->resultSet().generatePDF(outf,
-                        insight::hierarchicalData::Element::OutputProperties(
-                          filteredResultsModel_->filter() )
-                      );
-
-                      // filteredResultsModel_->filteredResultSet()->generatePDF(outf);
-                  }
-                  else
-                  {
-                      resultsModel_->resultSet().generatePDF(outf);
-                  }
+                bt->start(
+                    [this,filename,saveFiltered,pd](insight::ActionProgress& ap)
+                    {
+                        boost::filesystem::path outf =
+                            insight::ensureFileExtension(
+                                filename.toStdString(),
+                                ".pdf"
+                                );
+                        if (saveFiltered)
+                        {
+                            resultsModel_->resultSet().generatePDF(
+                                outf, &ap,
+                                insight::hierarchicalData::Element::OutputProperties(
+                                    filteredResultsModel_->filter() )
+                                );
+                        }
+                        else
+                        {
+                            resultsModel_->resultSet().generatePDF(outf);
+                        }
+                    });
             }
             else if (fd.selectedNameFilter()==TEX)
             {
-                boost::filesystem::path outf =
-                    insight::ensureFileExtension(
-                        fd.selectedFiles()[0].toStdString(),
-                        ".tex"
-                        );
-                if (cb->isChecked())
-                {
-                    resultsModel_->resultSet().writeLatexFile(
-                        outf,
-                        insight::hierarchicalData::Element::OutputProperties(
-                            filteredResultsModel_->filter() )
-                    );
-                    //filteredResultsModel_->filteredResultSet()->writeLatexFile(outf);
-                }
-                else
-                {
-                    resultsModel_->resultSet().writeLatexFile(outf);
-                }
+                bt->start(
+                    [this,filename,saveFiltered,pd](insight::ActionProgress& ap)
+                    {
+                        boost::filesystem::path outf =
+                            insight::ensureFileExtension(
+                                filename.toStdString(),
+                                ".tex"
+                                );
+                        if (saveFiltered)
+                        {
+                            resultsModel_->resultSet().writeLatexFile(
+                                outf, &ap,
+                                insight::hierarchicalData::Element::OutputProperties(
+                                    filteredResultsModel_->filter() )
+                                );
+                        }
+                        else
+                        {
+                            resultsModel_->resultSet().writeLatexFile(outf);
+                        }
+                    });
             }
             else
+            {
+                delete bt;
                 throw insight::UnhandledSelection();
+            }
         }
     }
 }
@@ -304,17 +330,8 @@ void IQResultSetDisplayerWidget::saveFilter()
 
 
         // prepare XML document
-        rapidxml::xml_document<> doc;
-        rapidxml::xml_node<>* decl = doc.allocate_node(rapidxml::node_declaration);
-        decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-        decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-        doc.append_node(decl);
-        rapidxml::xml_node<> *rootnode = doc.allocate_node(rapidxml::node_element, "root");
-        doc.append_node(rootnode);
-
-        filterModel_->filter().appendToNode(doc, *rootnode);
-
-        std::ofstream f(outf.asString());
-        f << doc << std::endl;
+        insight::XMLDocument doc;
+        filterModel_->filter().appendToNode(doc, *doc.rootNode);
+        doc.saveToFile(outf);
     }
 }

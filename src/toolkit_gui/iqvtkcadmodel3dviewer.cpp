@@ -15,6 +15,7 @@
 #include "iqcadmodel3dviewer/iqvtkvieweractions/iqvtkcadmodel3dviewerpickpoint.h"
 
 #include "iqvtkconstrainedsketcheditor/iqvtkcadmodel3dviewerdrawline.h"
+#include "iqcadmodel3dviewer/iqvtkbackgroundimage.h"
 #include "iqcadmodel3dviewer/iqvtkvieweractions/orientbackgroundimage.h"
 #include "iqvtkconstrainedsketcheditor.h"
 
@@ -29,11 +30,14 @@
 #include <QTextEdit>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QLabel>
+#include <QSpinBox>
 #include <QMessageBox>
 #include <QToolBar>
 #include <QToolButton>
 #include <QStatusBar>
 #include <QSettings>
+#include <QSlider>
 
 #include <boost/lexical_cast.hpp>
 #include <sstream>
@@ -52,12 +56,13 @@
 #include "vtkPropPicker.h"
 #include "vtkCellPicker.h"
 #include "vtkAreaPicker.h"
-#include "vtkImageReader2Factory.h"
-#include "vtkImageReader2.h"
+
+
 #include "vtkCaptionActor2D.h"
 #include "vtkInteractorStyleUser.h"
 #include "vtkProp3DCollection.h"
 #include "vtkRendererCollection.h"
+#include "vtkHardwareSelector.h"
 
 #include <vtkCubeSource.h>
 #include "vtkImageData.h"
@@ -151,231 +156,6 @@ void MyVTKWidget::keyReleaseEvent(QKeyEvent* e)
 
 
 
-IQVTKCADModel3DViewer &BackgroundImage::viewer()
-{
-    return dynamic_cast<IQVTKCADModel3DViewer&>(*parent());
-}
-
-BackgroundImage::BackgroundImage(
-    const boost::filesystem::path& imageFile,
-    IQVTKCADModel3DViewer& v )
-
-  : QObject(&v),
-    imageFileName_(imageFile),
-    label_(QString::fromStdString(imageFile.filename().string()))
-{
-    insight::assertion(
-        boost::filesystem::exists(imageFileName_),
-        _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
-
-    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
-    vtkSmartPointer<vtkImageReader2> imageReader;
-    auto ir=readerFactory->CreateImageReader2(imageFileName_.string().c_str());
-
-    insight::assertion(
-        ir!=nullptr,
-        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
-
-    imageReader.TakeReference(ir);
-    imageReader->SetFileName(imageFileName_.string().c_str());
-    imageReader->Update();
-
-    auto imageData = imageReader->GetOutput();
-
-    {
-        int na=imageData->GetPointData()->GetNumberOfArrays();
-        insight::assertion(
-            na==1,
-            "expected a single image array! Got %d arrays.", na);
-
-        int nc=imageData->GetPointData()->GetArray(0)->GetNumberOfComponents();
-        insight::assertion(
-            (nc==3)||(nc==1),
-            "expected image array with three or one components! Got %d.", nc);
-    }
-
-    imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
-
-    reorientImage();
-}
-
-void BackgroundImage::reorientImage()
-{
-    // QMessageBox questionBox;
-    // questionBox.setWindowTitle("Image display");
-    // questionBox.setText("Shall the image be a static background or dynamic rotatable/zoomable?");
-    // auto* pButtonStatic = questionBox.addButton("Static", QMessageBox::YesRole);
-    // auto* pButtonDynamic = questionBox.addButton("Dynamic", QMessageBox::NoRole);
-    // auto* pButtonCancel = questionBox.addButton(QMessageBox::StandardButton::Cancel);
-
-    // questionBox.exec();
-
-    // auto answer = questionBox.clickedButton();
-
-    // if (answer==pButtonStatic)
-    // {
-    //     usedRenderer_ = viewer().backgroundRen_;
-    //     usedRenderer_->AddActor(imageActor_);
-
-    //     viewer().renWin()->Render();
-
-    //     IQImageReferencePointSelectorWindow::setupCameraForImage(
-    //         imageData, usedRenderer_->GetActiveCamera());
-
-    //     viewer().scheduleRedraw();
-    // }
-    // else if (answer==pButtonDynamic)
-    // {
-        imageActor_->SetScale( 1 );
-        imageActor_->SetOrientation(0, 0, 0);
-        imageActor_->SetPosition( 0, 0, 0 );
-        imageActor_->SetOpacity(1.0);// can't pick if opacity is lower than 1
-
-        usedRenderer_=viewer().renderer();
-        usedRenderer_->AddActor(imageActor_);
-        viewer().scheduleRedraw();
-
-        auto obia=make_viewWidgetAction<IQVTKOrientBackgroundImage>(viewer(), imageActor_);
-        obia->orientationSelected.connect(
-            [this](OrientationSpec os)
-            {
-                DBG_SLOT(orientationSelected);
-
-                arma::mat D=os.xy2_-os.xy1_;
-                arma::mat d=os.p2_-os.pCtr_;
-                double scale =
-                    arma::norm(D,2)
-                    /
-                    arma::norm(d,2);
-
-                double ang=atan2(D[1], D[0]);
-                double ang2=atan2(d[1], d[0]);
-                imageActor_->SetOrientation(0, 0, (ang-ang2)*180./M_PI);
-
-                arma::mat R = rotMatrix(ang-ang2);
-
-                imageActor_->SetScale( scale );
-
-                arma::mat newPosition( -scale*R*os.pCtr_ +os.xy1_ );
-                imageActor_->SetPosition( newPosition.memptr() );
-
-                imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
-
-                viewer().scheduleRedraw();
-            }
-            );
-
-        viewer().launchAction(
-            std::move(obia),
-            true );
-    // }
-}
-
-BackgroundImage::BackgroundImage(
-    const rapidxml::xml_node<>& node,
-    IQVTKCADModel3DViewer& v )
-
-  : QObject(&v)
-{
-    label_= QString::fromStdString(
-        getMandatoryAttribute(node,"label") );
-
-    imageFileName_= boost::filesystem::path(
-        getMandatoryAttribute(node, "imageFileName") );
-
-    insight::assertion(
-        boost::filesystem::exists(imageFileName_),
-        _("image file \"%s\" does not exist"), imageFileName_.string().c_str() );
-
-    auto readerFactory = vtkSmartPointer<vtkImageReader2Factory>::New();
-    vtkSmartPointer<vtkImageReader2> imageReader;
-    auto ir=readerFactory->CreateImageReader2(imageFileName_.string().c_str());
-
-    insight::assertion(
-        ir!=nullptr,
-        _("could not create reader for file \"%s\""), imageFileName_.string().c_str() );
-
-    imageReader.TakeReference(ir);
-    imageReader->SetFileName(imageFileName_.string().c_str());
-    imageReader->Update();
-    auto imageData = imageReader->GetOutput();
-    imageActor_ = vtkSmartPointer<vtkImageActor>::New();
-    imageActor_->SetInputData(imageData);
-
-    imageActor_->SetOrientation(0, 0, getMandatoryAttribute<double>(node, "rotationAngle"));
-
-    imageActor_->SetScale( getMandatoryAttribute<double>(node, "scale") );
-
-    imageActor_->SetPosition( getMandatoryAttribute<arma::mat>(node, "position").memptr() );
-
-    imageActor_->SetOpacity(0.8); // can't pick if opacity is lower than 1
-
-    usedRenderer_=viewer().renderer();
-    usedRenderer_->AddActor(imageActor_);
-    viewer().scheduleRedraw();
-}
-
-
-
-
-BackgroundImage::~BackgroundImage()
-{
-    usedRenderer_->RemoveActor( imageActor_ );
-    viewer().scheduleRedraw();
-}
-
-
-
-
-QString BackgroundImage::label() const
-{
-    return label_;
-}
-
-
-
-
-void BackgroundImage::write(
-    rapidxml::xml_document<> &doc,
-    rapidxml::xml_node<> &node ) const
-{
-    insight::appendAttribute(
-        doc, node,
-        "label", label_.toStdString());
-
-    insight::appendAttribute(
-        doc, node, "imageFileName",
-        imageFileName_.string());
-
-    insight::appendAttribute(
-        doc, node,
-        "rotationAngle",
-        imageActor_->GetOrientation()[2] );
-
-    insight::appendAttribute(
-        doc, node,
-        "scale",
-        imageActor_->GetScale()[0] );
-
-
-    arma::mat position = vec3Zero();
-    imageActor_->GetPosition(position.memptr());
-    insight::appendAttribute(
-        doc, node,
-        "position", position );
-}
-
-
-
-
-void BackgroundImage::toggleVisibility(bool show)
-{
-    imageActor_->SetVisibility(show);
-    viewer().scheduleRedraw();
-}
-
-
 
 
 
@@ -439,7 +219,7 @@ IQVTKCADModel3DViewer::highlightActor(vtkProp *prop, QColor hicol)
             {
                 actorHighlight.reset(
                     new SilhouetteHighlighter(
-                        *this, pdm, hicol
+                        *this, actor, hicol
                     ));
             }
             else if (pdm->GetInput()->GetNumberOfLines()>0
@@ -1393,6 +1173,10 @@ void IQVTKCADModel3DViewer::connectBackgroundImageCommands(BackgroundImage *bgi)
 
     showHideAct->setChecked(true);
 
+    bgi->changeBleech(bgBleechSlider_->value()); // set initial value
+    connect(this, &IQVTKCADModel3DViewer::changeBackgroundImageBleech,
+            bgi, &BackgroundImage::changeBleech);
+
 }
 
 void IQVTKCADModel3DViewer::resetNavigationManager(
@@ -1488,22 +1272,75 @@ IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
     auto addBGAction = btntb->addAction(
         QPixmap(":/icons/icon_bgimage.svg"), "Add Background Image");
 
+    bgBleechSlider_ = new QSlider(Qt::Horizontal);
+    bgBleechSlider_->setRange(0, 100);
+    bgBleechSlider_->setToolTip(_("Bleeching of background images"));
+    connect(bgBleechSlider_, &QSlider::valueChanged,
+            this, &IQVTKCADModel3DViewer::changeBackgroundImageBleech);
+    btntb->addWidget(bgBleechSlider_);
+
     addBGBtn=
         dynamic_cast<QToolButton*>(btntb->widgetForAction(addBGAction));
 
     connect(addBGAction, &QAction::triggered, addBGAction,
     [this]() {
+        int pdfDpi = 300;
         if (auto fn = getFileName(
                 this, "Select background image file", GetFileMode::Open,
                 {
                     {"jpg jpeg", "JPEG bitmap"},
-                    {"png", "Portable Network Graphic"}
-                } ))
-        {
-            auto bgi = new BackgroundImage(fn, *this);
-            backgroundImages_.push_back(bgi);
+                    {"png", "Portable Network Graphic"},
+                    {"pdf", "Portable Document Format"}
+                },
+                boost::none,
+                [&pdfDpi](QGridLayout* fdl)
+                {
+                    auto* label   = new QLabel("Render DPI:");
+                    auto* spinBox = new QSpinBox;
+                    spinBox->setRange(72, 1200);
+                    spinBox->setValue(300);
 
-            connectBackgroundImageCommands(bgi);
+                    int row = fdl->rowCount();
+                    fdl->addWidget(label,   row, 0);
+                    fdl->addWidget(spinBox, row, 1);
+
+                    auto* dlg = qobject_cast<QFileDialog*>(fdl->parent());
+                    if (dlg)
+                    {
+                        bool isPdf = dlg->selectedNameFilter()
+                                         .contains("pdf", Qt::CaseInsensitive);
+                        label->setVisible(isPdf);
+                        spinBox->setVisible(isPdf);
+
+                        QObject::connect(
+                            dlg, &QFileDialog::filterSelected, dlg,
+                            [label, spinBox](const QString& filter)
+                            {
+                                bool isPdf = filter.contains("pdf", Qt::CaseInsensitive);
+                                label->setVisible(isPdf);
+                                spinBox->setVisible(isPdf);
+                            });
+                    }
+
+                    QObject::connect(
+                        spinBox, &QSpinBox::destroyed, spinBox,
+                        [&pdfDpi, spinBox](){ pdfDpi = spinBox->value(); });
+                }
+            ))
+        {
+            try
+            {
+                auto bgi = new BackgroundImage(fn, *this, pdfDpi);
+                backgroundImages_.push_back(bgi);
+                connectBackgroundImageCommands(bgi);
+            }
+            catch (const std::exception& e)
+            {
+                QMessageBox::critical(
+                    this,
+                    tr("Error loading background image"),
+                    QString::fromStdString(e.what()));
+            }
         }
     }
     );
@@ -1708,7 +1545,7 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
 //    }
 //    else
     {
-        auto picker3d = vtkSmartPointer<vtkPicker>::New();
+        auto picker3d = vtkSmartPointer<vtkCellPicker>::New();
         if (restrictPicking.size())
         {
             picker3d->InitializePickList();
@@ -1716,7 +1553,7 @@ vtkProp *IQVTKCADModel3DViewer::findActorUnderCursorAt(
                 picker3d->AddPickList(i);
             picker3d->SetPickFromList(true);
         }
-        picker3d->SetTolerance(1e-4);
+        picker3d->SetTolerance(1e-2);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
         auto pi = picker3d->GetProp3Ds();
 //        std::cout<<"# under cursors = "<<pi->GetNumberOfItems()<<std::endl;
@@ -1754,8 +1591,8 @@ std::vector<vtkProp *> IQVTKCADModel3DViewer::findAllActorsUnderCursorAt(const Q
     {
         // take a closer look with other pick engine
         // which can detect multiple overlapping actors
-        auto picker3d = vtkSmartPointer<vtkPicker>::New();
-    //    picker3d->SetTolerance(1e-4);
+        auto picker3d = vtkSmartPointer<vtkCellPicker>::New();
+        picker3d->SetTolerance(1e-2);
         picker3d->Pick(p.x(), p.y(), 0, ren_);
 
         // insight::dbg()<<"========== Pick "<<p.x()<<", "<<p.y()<<"=====\n";
@@ -1903,7 +1740,7 @@ void IQVTKCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
 //        }
 //    );
 
-    connect(customSelectionModel_, &QItemSelectionModel::currentChanged, customSelectionModel_,
+    connect(customSelectionModel_, &QItemSelectionModel::currentChanged, this,
         [this](const QModelIndex &current, const QModelIndex &previous)
         {
             if (current.isValid())
@@ -1920,6 +1757,70 @@ void IQVTKCADModel3DViewer::setSelectionModel(QItemSelectionModel *selmodel)
             }
         }
     );
+}
+
+
+
+
+QItemSelectionModel* IQVTKCADModel3DViewer::selectionModel() const
+{
+    return customSelectionModel_ ? customSelectionModel_ : defaultSelectionModel_;
+}
+
+void IQVTKCADModel3DViewer::externallySelectByModelIndex(const QModelIndex& sourceModelIdx)
+{
+    auto it = displayedData_.find(QPersistentModelIndex(sourceModelIdx.siblingAtColumn(0)));
+    if (it == displayedData_.end()) return;
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+        a->externallySelect(it->second.ce_);
+}
+
+void IQVTKCADModel3DViewer::externallyDeselectByModelIndex(const QModelIndex& sourceModelIdx)
+{
+    auto it = displayedData_.find(QPersistentModelIndex(sourceModelIdx.siblingAtColumn(0)));
+    if (it == displayedData_.end()) return;
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+        a->externallyUnselect(it->second.ce_);
+}
+
+void IQVTKCADModel3DViewer::externallySelectByModelIndices(
+    const std::vector<QModelIndex>& indices)
+{
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+    {
+        std::vector<IQCADModel3DViewer::CADEntity> entities;
+        entities.reserve(indices.size());
+        for (const auto& idx : indices)
+        {
+            auto it = displayedData_.find(QPersistentModelIndex(idx.siblingAtColumn(0)));
+            if (it != displayedData_.end())
+                entities.push_back(it->second.ce_);
+        }
+        a->externallySelectList(entities);
+    }
+}
+
+void IQVTKCADModel3DViewer::externallyDeselectByModelIndices(
+    const std::vector<QModelIndex>& indices)
+{
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+    {
+        std::vector<IQCADModel3DViewer::CADEntity> entities;
+        entities.reserve(indices.size());
+        for (const auto& idx : indices)
+        {
+            auto it = displayedData_.find(QPersistentModelIndex(idx.siblingAtColumn(0)));
+            if (it != displayedData_.end())
+                entities.push_back(it->second.ce_);
+        }
+        a->externallyUnselectList(entities);
+    }
+}
+
+void IQVTKCADModel3DViewer::externallyClearViewerSelection()
+{
+    if (auto* a = runningAction<IQVTKSelectCADEntity>())
+        a->clearSelection();
 }
 
 
@@ -2345,7 +2246,7 @@ void IQVTKCADModel3DViewer::saveState(
     for (const auto& bgi: backgroundImages_)
     {
         auto bgin = insight::appendNode(doc, node, bgiNodeName);
-        bgi->write(doc, bgin);
+        bgi->write(doc, bgin, parentPath);
     }
 
     if (auto sketcher = runningAction<IQVTKConstrainedSketchEditor>())
@@ -2407,7 +2308,7 @@ void IQVTKCADModel3DViewer::restoreState(
     {
         try
         {
-            auto *bgi=new BackgroundImage(*n, *this);
+            auto *bgi=new BackgroundImage(*n, parentPath, *this);
             backgroundImages_.append(bgi);
             connectBackgroundImageCommands(bgi);
         }

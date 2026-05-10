@@ -1,8 +1,11 @@
 #ifndef IQPARAMETERSETMODEL_H
 #define IQPARAMETERSETMODEL_H
 
+#include "base/cppextensions.h"
 #include "base/parameter.h"
 #include "base/parameters/subsetparameter.h"
+#include "parametersetwithguicontext.h"
+
 #include "toolkit_gui_export.h"
 
 #include <QSet>
@@ -11,11 +14,13 @@
 #include <QAbstractProxyModel>
 #include <QScopedPointer>
 #include <atomic>
+#include <boost/filesystem/path.hpp>
 #include <memory>
 
 #include "base/parameterset.h"
 #include "iqparameter.h"
 #include "iqhierarchicaldatamodel.h"
+#include "cadtypes.h"
 
 
 
@@ -39,6 +44,9 @@ typedef std::shared_ptr<Feature> FeaturePtr;
 
 
 
+
+
+
 class TOOLKIT_GUI_EXPORT IQParameterSetModel
     : public IQHierarchicalDataModel
 {
@@ -57,16 +65,6 @@ private:
 
   std::unique_ptr<insight::ParameterSet> defaultParameterSet_;
 
-  mutable std::map<std::string, insight::cad::FeaturePtr> transformedGeometry_;
-
-  /**
-   * @brief vectorBasePoints_
-   * if a vector parameter represents a direction, this map contains the base point.
-   * If there is no base point for a vector parameter, it treated as a point (location vector)
-   */
-  mutable std::map<std::string, arma::mat> vectorBasePoints_;
-
-
   std::pair<QString, const insight::Parameter*> getParameterAndName(const QModelIndex& index) const;
 
 public:
@@ -76,12 +74,28 @@ public:
         = boost::optional<const insight::ParameterSet&>(),
       QObject* parent=nullptr);
 
+  bool isInsertableContainer(const QModelIndex &index) const;
 
   Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+  Qt::DropActions supportedDragActions() const override;
   Qt::DropActions supportedDropActions() const override;
+
   QStringList mimeTypes() const override;
-  QMimeData * mimeData(const QModelIndexList & indexes) const override;
-  bool dropMimeData(const QMimeData * data, Qt::DropAction action, int row, int column, const QModelIndex & parent) override;
+
+  QMimeData * mimeData(
+      const QModelIndexList & indexes) const override;
+
+  bool canDropMimeData(
+      const QMimeData *data,
+      Qt::DropAction action, int row, int col,
+      const QModelIndex &parent) const override;
+
+  bool dropMimeData(
+      const QMimeData * data,
+      Qt::DropAction action, int row, int column,
+      const QModelIndex & parent) override;
+
 
   // QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
   bool setData(const QModelIndex &index, const QVariant &value, int role) override;
@@ -135,17 +149,7 @@ public:
   void removeArrayElement(const QModelIndex &index);
   void removeLabeledArrayElement(const QModelIndex &index);
 
-
-  void addGeometryToSpatialTransformationParameter(
-          const std::string& parameterPath, insight::cad::FeaturePtr geom );
-  void addVectorBasePoint(
-          const std::string& parameterPath, const arma::mat& pBase );
-
-  insight::cad::FeaturePtr
-  getGeometryToSpatialTransformationParameter(
-          const std::string& parameterPath );
-  const arma::mat* const getVectorBasePoint(
-          const std::string& parameterPath );
+  insight::ParameterSetGUIContext* GUIContext();
 
   void pack();
   void clearPackedData();
@@ -153,6 +157,7 @@ public:
   std::string getAnalysisName() const;
 
 
+  void resolveRelativePaths(const boost::filesystem::path& parentPath);
 
 
 public Q_SLOTS:
@@ -167,7 +172,7 @@ public Q_SLOTS:
 
 IQParameterSetModel *parameterSetModel(QAbstractItemModel* model);
 const insight::ParameterSet& getParameterSet(QAbstractItemModel* model);
-const std::string& getAnalysisName(QAbstractItemModel* model);
+std::string getAnalysisName(QAbstractItemModel* model);
 
 template<class ...Args>
 void connectParameterSetChanged(

@@ -1,4 +1,4 @@
-
+add_subdirectory(calculateTotalPressure)
 add_subdirectory(extendedForcesFunctionObject)
 add_subdirectory(provideFields)
 add_subdirectory(rangeWeightField)
@@ -8,3 +8,5 @@ add_subdirectory(numericsFunctionObjects)
 add_subdirectory(scaledField)
 add_subdirectory(scalarTransport2FunctionObject)
 add_subdirectory(writeData)
+add_subdirectory(wallDistance)
+add_subdirectory(zoneBalance)

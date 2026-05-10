@@ -1,12 +1,17 @@
 #include "compressiblesinglephasethermophysicalproperties.h"
 
+#include "base/units.h"
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/numerics/buoyantsimplefoamnumerics.h"
 #include "openfoam/caseelements/numerics/buoyantpimplefoamnumerics.h"
 #include "openfoam/caseelements/numerics/steadycompressiblenumerics.h"
 #include "openfoam/caseelements/numerics/unsteadycompressiblenumerics.h"
 #include "openfoam/caseelements/numerics/chtmultiregionnumerics.h"
+
 #include <memory>
+
+#include "boost/range/adaptor/indexed.hpp"
+
 
 namespace insight {
 
@@ -107,7 +112,7 @@ compressibleSinglePhaseThermophysicalProperties::speciesData() const
              boost::get<Parameters::composition_staticSpeciesMixture_type>(&p().composition))
     {
         SpeciesData::SpeciesMixture mix;
-        double Mq=0.;
+        si::MolarWeight Mq{};
 
         for (auto& part: mixdesc->components)
         {
@@ -124,12 +129,11 @@ compressibleSinglePhaseThermophysicalProperties::speciesData() const
                      boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_moleFraction_type>(
                          &part.fraction))
             {
-                double
-                    xi = mf->value,
-                    Mi = sd.M();
+                double xi = mf->value;
+                auto Mi = sd.M();
 
                 Mq += xi*Mi;
-                w = xi*Mi;
+                w = xi * toValue(Mi, si::kilogram/si::kilomole);
             }
             else throw UnhandledSelection();
 
@@ -141,7 +145,8 @@ compressibleSinglePhaseThermophysicalProperties::speciesData() const
             if (boost::get<Parameters::composition_staticSpeciesMixture_type::components_default_type::fraction_moleFraction_type>(
                     &part.value().fraction))
             {
-                mix[part.index()].first /= Mq;
+                mix[part.index()].first /=
+                    toValue(Mq, si::kilogram/si::kilomole);
             }
         }
 

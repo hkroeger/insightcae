@@ -21,7 +21,33 @@
 project(toolkit)
 
 
-set(toolkit_SOURCES
+
+if (INSIGHT_GNUPLOT_CHARTRENDERER)
+    list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp base/resultelements/gnuplotrenderer.h)
+    add_definitions(-DCHART_RENDERER_GNUPLOT)
+endif()
+
+if (INSIGHT_MATPLOTLIB_CHARTRENDERER)
+    list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp base/resultelements/matplotlibrenderer.h)
+    add_definitions(-DCHART_RENDERER_MATPLOTLIB)
+endif()
+
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+  LIST(APPEND toolkit_SOURCES
+   base/pythonanalysis.cpp base/pythonanalysis.h
+   base/pythoninterface.cpp base/pythoninterface.h
+  )
+ENDIF()
+
+
+find_package(OpenSSL)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
+PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
+
+
+add_library(toolkit SHARED
     base/cppextensions.h base/cppextensions.cpp
     base/translations.h base/translations.cpp
 
@@ -37,6 +63,7 @@ set(toolkit_SOURCES
     base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp
     base/extendedgrammar.h base/extendedgrammar.cpp
 
+    base/insightthread.h base/insightthread.cpp
     base/analysisthread.cpp base/analysisthread.h
     base/cacheableentity.cpp base/cacheableentity.h
     base/cacheableentityhashes.cpp base/cacheableentityhashes.h
@@ -132,7 +159,6 @@ set(toolkit_SOURCES
     openfoam/blockmesh_templates.cpp openfoam/blockmesh_templates.h
     openfoam/openfoamanalysis.cpp openfoam/openfoamanalysis.h
     openfoam/openfoamcase.cpp openfoam/openfoamcase.h
-    openfoam/snappyhexmesh.cpp openfoam/snappyhexmesh.h
     openfoam/cfmesh.cpp openfoam/cfmesh.h
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
@@ -161,7 +187,13 @@ set(toolkit_SOURCES
     openfoam/fielddata.cpp openfoam/fielddata.h
     openfoam/paraview.cpp openfoam/paraview.h
     openfoam/stretchtransformation.cpp openfoam/stretchtransformation.h
+
+
+    openfoam/outputsectionreader.h openfoam/outputsectionreader.cpp
+    openfoam/outputsectionreaders/minmax.h openfoam/outputsectionreaders/minmax.cpp
     openfoam/solveroutputanalyzer.cpp openfoam/solveroutputanalyzer.h
+
+
     openfoam/blockmeshoutputanalyzer.cpp openfoam/blockmeshoutputanalyzer.h
     openfoam/snappyhexmeshoutputanalyzer.cpp openfoam/snappyhexmeshoutputanalyzer.h
     openfoam/ofdicts.cpp openfoam/ofdicts.h
@@ -289,6 +321,7 @@ set(toolkit_SOURCES
     openfoam/caseelements/electromagneticscaseelements.cpp openfoam/caseelements/electromagneticscaseelements.h
     openfoam/caseelements/options/enforcefarfieldvelocity.h openfoam/caseelements/options/enforcefarfieldvelocity.cpp
 
+    openfoam/caseelements/evaluation/zonebalance.h openfoam/caseelements/evaluation/zonebalance.cpp
 
     code_aster/caexportfile.cpp code_aster/caexportfile.h
     code_aster/codeasterrun.cpp code_aster/codeasterrun.h
@@ -311,45 +344,46 @@ set(toolkit_SOURCES
     lsdyna/contact.h lsdyna/contact.cpp
     lsdyna/radsoftwareenvironment.h lsdyna/radsoftwareenvironment.cpp
     lsdyna/openradiossoutputanalyzer.h lsdyna/openradiossoutputanalyzer.cpp
+
+    ${toolkit_SOURCES}
+    base/parametersetinput.h base/parametersetinput.cpp
+    base/parametersbase.h base/parametersbase.cpp
+    openfoam/caseelements/evaluation/calculatetotalpressure.cpp openfoam/caseelements/evaluation/calculatetotalpressure.h
+    base/actionprogress.h base/actionprogress.cpp
+    base/elementpath.h base/elementpath.cpp
+    openfoam/caseelements/dynamicmesh/solidbodymotionfunction.h openfoam/caseelements/dynamicmesh/solidbodymotionfunction.cpp
+
+
 )
 
-if (INSIGHT_GNUPLOT_CHARTRENDERER)
-    list(APPEND toolkit_SOURCES base/resultelements/gnuplotrenderer.cpp base/resultelements/gnuplotrenderer.h)
-    add_definitions(-DCHART_RENDERER_GNUPLOT)
+target_link_libraries(toolkit PUBLIC
+    Boost::regex
+    Boost::system
+    Boost::filesystem
+    Boost::date_time
+    Boost::timer
+    Boost::thread
+    Boost::iostreams
+    Boost::program_options
+)
+if (PYTHONLIBS_FOUND)
+    target_link_libraries(toolkit PUBLIC
+        Boost::python3)
 endif()
 
-if (INSIGHT_MATPLOTLIB_CHARTRENDERER)
-    list(APPEND toolkit_SOURCES base/resultelements/matplotlibrenderer.cpp base/resultelements/matplotlibrenderer.h)
-    add_definitions(-DCHART_RENDERER_MATPLOTLIB)
+target_compile_definitions(toolkit
+    PUBLIC
+        BOOST_SPIRIT_USE_PHOENIX_V3
+)
+
+if(NOT WIN32)
+    target_compile_definitions(toolkit
+        PUBLIC
+            BOOST_NO_SCOPED_ENUMS
+            BOOST_NO_CXX11_SCOPED_ENUMS
+    )
 endif()
 
-IF(INSIGHT_BUILD_PYTHONBINDINGS)
-  LIST(APPEND toolkit_SOURCES
-   base/pythonanalysis.cpp base/pythonanalysis.h
-   base/pythoninterface.cpp base/pythoninterface.h
-  )
-ENDIF()
-
-
-find_package(OpenSSL)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(poppler-cpp REQUIRED IMPORTED_TARGET poppler-cpp)
-PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
-
-
-link_directories(${Boost_LIBRARY_DIR})
-add_library(toolkit SHARED ${toolkit_SOURCES})
-#set(toolkit_LINK_LIBS
-#    ${Boost_LIBRARIES}
-#    ${Intl_LIBRARY}
-#    ${ARMADILLO_LIBRARY}
-#    PkgConfig::poppler-cpp
-#    PkgConfig::minizip
-#    GSL::gsl GSL::gslcblas
-#    OpenSSL::SSL
-#)
-target_link_libraries(toolkit PUBLIC ${Boost_LIBRARIES})
 target_link_libraries(toolkit PUBLIC ${Intl_LIBRARY})
 target_link_libraries(toolkit PUBLIC ${ARMADILLO_LIBRARY})
 target_link_libraries(toolkit PUBLIC PkgConfig::poppler-cpp)
@@ -359,11 +393,9 @@ target_link_libraries(toolkit PUBLIC OpenSSL::SSL)
 target_link_libraries(toolkit PUBLIC vtkHeaders)
 if (PYTHONLIBS_FOUND)
   target_link_libraries(toolkit PUBLIC ${PYTHON_LIBRARIES})
-    #list(APPEND toolkit_LINK_LIBS ${PYTHON_LIBRARIES})
 endif()
 if (WIN32)
   target_link_libraries(toolkit PUBLIC vtkOnscreen)
-    #list(APPEND toolkit_LINK_LIBS vtkOnscreen)
 endif()
 #target_link_libraries(toolkit ${toolkit_LINK_LIBS})
 # --export-all-symbols is not sufficient for signal/slots to work across DLLs
@@ -371,7 +403,13 @@ include(GenerateExportHeader)
 generate_export_header(toolkit)
 target_compile_definitions(toolkit PRIVATE toolkit_EXPORTS)
 
-setup_gettext(toolkit toolkit ${toolkit_SOURCES})
+target_precompile_headers(toolkit PRIVATE
+   base/boost_include.h
+   base/parameter.h
+   base/parameterset.h
+ )
+
+target_setup_gettext(toolkit toolkit)
 
 add_shared_file(toolkit "."
   base/materialLibrary.xml
@@ -379,16 +417,21 @@ add_shared_file(toolkit "."
 
 target_include_directories(toolkit
   PUBLIC ${PYTHON_INCLUDE_DIR}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${Intl_INCLUDE_DIRS}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+
+# set_target_properties(toolkit PROPERTIES
+#    UNITY_BUILD ON
+#    UNITY_BUILD_BATCH_SIZE 16
+# )
+
 add_library(toolkitHeaders INTERFACE)
 get_target_property(toolkit_INCLUDE_DIRS toolkit INCLUDE_DIRECTORIES)
 target_include_directories(toolkitHeaders INTERFACE ${toolkit_INCLUDE_DIRS})
-
+target_link_libraries(toolkitHeaders INTERFACE Boost::boost)
 
 
 
@@ -482,7 +525,7 @@ endmacro()
 
 add_shared_file(toolkit thermophysical openfoam/caseelements/thermodynamics/gri.species)
 
-add_PDL(toolkit "${toolkit_SOURCES}")
+target_add_PDL(toolkit)
 
 
 if (INSIGHT_DEVELOPMENT_FILES)

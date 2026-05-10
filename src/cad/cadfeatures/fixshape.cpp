@@ -49,19 +49,18 @@ size_t FixShape::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+= *in_;
-  return h.getHash();
+  return h.getHash()+DerivedFeature::calcHash();
 }
 
 
 
 FixShape::FixShape(const FixShape&o, TreeCloneMap& tcm)
-    : CL(in_)
+    : DerivedFeature(o, tcm)
 {}
 
 
 FixShape::FixShape ( FeaturePtr in )
-    : in_ ( in )
+    : DerivedFeature ( in )
 {
 }
 
@@ -74,7 +73,7 @@ FixShape::FixShape ( FeaturePtr in )
 void FixShape::build()
 {
     ShapeFix_Shape FixShape;
-    FixShape.Init ( in_->shape() );
+    FixShape.Init ( baseFeature()->shape() );
     FixShape.Perform();
 
     setShape ( FixShape.Shape() );

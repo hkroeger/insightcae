@@ -67,7 +67,7 @@ size_t Extrusion::calcHash() const
 
 
 Extrusion::Extrusion(const Extrusion&o, TreeCloneMap& tcm)
-    : CL(sk_), centered_(o.centered_)
+    : Feature(o, tcm), CL(sk_), centered_(o.centered_)
 {
     if (auto *vp=boost::get<VectorPtr>(&o.L_))
     {

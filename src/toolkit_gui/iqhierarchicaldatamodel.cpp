@@ -1,6 +1,81 @@
 #include "iqhierarchicaldatamodel.h"
 #include "base/hierarchicalelement.h"
 #include "iqhierarchicaldataelement.h"
+#include "qtextensions.h"
+
+#include <QTimer>
+#include <QApplication>
+#include <QStyle>
+#include <QStatusBar>
+
+
+ParameterErrorState::ParameterErrorState(
+    IQHierarchicalDataModel& model,
+    const std::string& parameterPath,
+    const QString& explanation,
+    Severity s )
+    : model_(model),
+    parameterPath_(parameterPath),
+    severity_(s),
+    explanation_(explanation)
+{
+    model_.errors_.insert(this);
+
+    auto idx=model_.indexOfPath(parameterPath_, 0);
+    model_.notifyElementChange(idx);
+
+    if (auto *mainWin = getMainWindow())
+    {
+        mainWin->statusBar()
+            ->showMessage(explanation_, 10000);
+    }
+}
+
+
+
+
+ParameterErrorState::~ParameterErrorState()
+{
+    model_.errors_.erase(this);
+    auto idx=model_.indexOfPath(parameterPath_, 0);
+    model_.notifyElementChange(idx);
+}
+
+
+
+
+
+
+QVariant ParameterErrorState::data(const QModelIndex &index, int role) const
+{
+    if (model_.indexOfPath(parameterPath_, index.column()) == index)
+    {
+        switch (role)
+        {
+        case Qt::BackgroundRole:
+            if (severity_ == Red)
+                return QBrush(Qt::red);
+            else if (severity_ == Yellow)
+                return QBrush(Qt::yellow);
+
+        case Qt::DecorationRole:
+            if (index.column() == IQHierarchicalDataModel::labelCol)
+            {
+                if (severity_ == Red)
+                    return QApplication::style()
+                        ->standardIcon(QStyle::SP_MessageBoxCritical);
+                else
+                    return QApplication::style()
+                        ->standardIcon(QStyle::SP_MessageBoxWarning);
+            }
+            break;
+
+        case Qt::ToolTipRole:
+            return explanation_;
+        }
+    }
+    return QVariant();
+}
 
 
 
@@ -28,6 +103,7 @@ IQHierarchicalDataModel::findWrapper(
 
 
 
+
 int IQHierarchicalDataModel::countDisplayedChildren(const QModelIndex &index) const
 {
     auto iqp=iqElementOfIndex(index);
@@ -42,10 +118,12 @@ int IQHierarchicalDataModel::countDisplayedChildren(const QModelIndex &index) co
 
 
 
+
 void IQHierarchicalDataModel::editingOff()
 {
     editingIsDisabled_=true;
 }
+
 
 
 
@@ -54,10 +132,15 @@ void IQHierarchicalDataModel::editingOn()
     editingIsDisabled_=false;
 }
 
+
+
+
 bool IQHierarchicalDataModel::editingIsEnabled() const
 {
     return !editingIsDisabled_;
 }
+
+
 
 
 IQHierarchicalDataModel::UndoState::UndoState(
@@ -112,6 +195,7 @@ void IQHierarchicalDataModel::setCheckState(const QModelIndex &idx, bool checked
         updateParentCheckState( idx );
     }
 }
+
 
 
 
@@ -178,11 +262,15 @@ void IQHierarchicalDataModel::setChildrenCheckstate(const QModelIndex& idx, bool
 
 
 
+
 void IQHierarchicalDataModel::handleDataChangeForUndo(
     const QModelIndex &topLeft,
     const QModelIndex &bottomRight,
     const QVector<int> &roles)
 {
+    if (bulkUpdateInProgress_)
+        return;
+
     // qDebug() << "store undo "<<topLeft<<bottomRight<<roles;
     // qDebug()<<data(topLeft.siblingAtColumn(labelCol), Qt::DisplayRole);
     // qDebug()<<data(bottomRight.siblingAtColumn(labelCol), Qt::DisplayRole);
@@ -207,6 +295,8 @@ void IQHierarchicalDataModel::handleDataChangeForUndo(
 }
 
 
+
+
 insight::hierarchicalData::Element*
 IQHierarchicalDataModel::elementOfIndex(const QModelIndex& idx)
 {
@@ -218,7 +308,8 @@ IQHierarchicalDataModel::elementOfIndex(const QModelIndex& idx)
 
 
 
-IQHierarchicalDataElement* IQHierarchicalDataModel::iqElementOfIndex(const QModelIndex& idx)
+IQHierarchicalDataElement* IQHierarchicalDataModel::iqElementOfIndex(
+    const QModelIndex& idx )
 {
     // create wrapper on the fly
 
@@ -261,9 +352,14 @@ const IQHierarchicalDataElement* IQHierarchicalDataModel::iqElementOfIndex(
 }
 
 
+
+
 const insight::hierarchicalData::Element*
 searchVisibleParent(const insight::hierarchicalData::Element& p, int* row=nullptr)
 {
+    if (!p.hasParent())
+        return nullptr;
+
     const insight::hierarchicalData::Element *pp, *upmostParent;
     upmostParent = pp = &p.parent();
     while (pp)
@@ -286,12 +382,12 @@ searchVisibleParent(const insight::hierarchicalData::Element& p, int* row=nullpt
 }
 
 
+
+
 QModelIndex IQHierarchicalDataModel::indexOfElement(
     const insight::hierarchicalData::Element &p, int col) const
 {
-    auto *model = const_cast<IQHierarchicalDataModel*>(this);
     auto *element = const_cast<insight::hierarchicalData::Element*>(&p);
-
 
     if (&p == data_.get())
         return QModelIndex();
@@ -304,6 +400,9 @@ QModelIndex IQHierarchicalDataModel::indexOfElement(
     return createIndex(
         row, col, element );
 }
+
+
+
 
 QModelIndex IQHierarchicalDataModel::indexOfPath(
     const std::string &pp, int col ) const
@@ -331,6 +430,9 @@ void IQHierarchicalDataModel::resetData(
     dataBeforeLastChange_ =
         data_->clone();
 }
+
+
+
 
 void IQHierarchicalDataModel::resetValue(
     const insight::hierarchicalData::Element &data)
@@ -414,6 +516,8 @@ int	IQHierarchicalDataModel::rowCount(const QModelIndex &parent) const
 }
 
 
+
+
 QModelIndex	IQHierarchicalDataModel::index(int row, int column, const QModelIndex &parent) const
 {
     QModelIndex i;
@@ -439,6 +543,8 @@ QModelIndex	IQHierarchicalDataModel::index(int row, int column, const QModelInde
 }
 
 
+
+
 QModelIndex	IQHierarchicalDataModel::parent(const QModelIndex &index) const
 {
     QModelIndex i;
@@ -457,6 +563,8 @@ QModelIndex	IQHierarchicalDataModel::parent(const QModelIndex &index) const
 
     return i;
 }
+
+
 
 
 Qt::ItemFlags IQHierarchicalDataModel::flags(const QModelIndex &index) const
@@ -499,11 +607,22 @@ Qt::ItemFlags IQHierarchicalDataModel::flags(const QModelIndex &index) const
     return flags;
 }
 
+
+
+
 QVariant IQHierarchicalDataModel::data(const QModelIndex &index, int role) const
 {
+    for (auto*e: errors_)
+    {
+        auto r=e->data(index, role);
+        if (!r.isNull())
+            return r;
+    }
+
     if (auto *iqp = iqElementOfIndex(index))
     {
         auto *p=iqp->get();
+
 
         switch (role)
         {
@@ -558,6 +677,9 @@ QVariant IQHierarchicalDataModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+
+
+
 bool IQHierarchicalDataModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (editingIsEnabled())
@@ -608,6 +730,8 @@ bool IQHierarchicalDataModel::setData(const QModelIndex &index, const QVariant &
 }
 
 
+
+
 IQHierarchicalDataModel::EditingDisabler::EditingDisabler(IQHierarchicalDataModel &psm)
     : psm_(psm)
 {
@@ -630,6 +754,33 @@ std::shared_ptr<IQHierarchicalDataModel::EditingDisabler>
 IQHierarchicalDataModel::disableEditing()
 {
     return std::make_shared<EditingDisabler>(*this);
+}
+
+
+
+IQHierarchicalDataModel::BulkUpdateGuard::BulkUpdateGuard(IQHierarchicalDataModel& m)
+    : m_(m)
+{
+    m_.bulkUpdateInProgress_ = true;
+}
+
+IQHierarchicalDataModel::BulkUpdateGuard::~BulkUpdateGuard()
+{
+    m_.bulkUpdateInProgress_ = false;
+    m_.storeUndoState("sketch update");
+    m_.dataBeforeLastChange_ = m_.data_->clone();
+    Q_EMIT m_.bulkUpdateFinished();
+}
+
+std::shared_ptr<IQHierarchicalDataModel::BulkUpdateGuard>
+IQHierarchicalDataModel::beginBulkUpdate()
+{
+    return std::make_shared<BulkUpdateGuard>(*this);
+}
+
+bool IQHierarchicalDataModel::isBulkUpdateInProgress() const
+{
+    return bulkUpdateInProgress_;
 }
 
 
@@ -657,8 +808,28 @@ void IQHierarchicalDataModel::notifyElementChange(const QModelIndex &index)
         );
 }
 
+
+
+
 const insight::hierarchicalData::Element &IQHierarchicalDataModel::getHierarchicalData() const
 {
     return *data_;
+}
+
+
+
+
+void IQHierarchicalDataModel::issueEphemeralError(
+    const std::string &parameterPath,
+    const QString &explanation,
+    ParameterErrorState::Severity s)
+{
+    auto err=std::make_shared<ParameterErrorState>(
+        *this, parameterPath, explanation, s);
+
+    QTimer::singleShot(
+        10000,
+        [err]() mutable { err.reset(); }
+    );
 }
 

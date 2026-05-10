@@ -50,7 +50,7 @@ class RemoteRun
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
   bool killRequested_, disconnectRequested_;
-  insight::ActionProgress launchProgress_;
+  insight::ActionProgressPtr launchProgress_;
 
   std::unique_ptr<insight::ResultSet> results_;
 

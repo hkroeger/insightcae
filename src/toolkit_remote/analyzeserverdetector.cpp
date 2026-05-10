@@ -21,6 +21,9 @@
 #include "analyzeserverdetector.h"
 
 #include "base/boost_include.h"
+#include "boost/lexical_cast.hpp"
+#include "boost/algorithm/string.hpp"
+#include <iostream>
 
 using namespace std;
 using namespace boost;

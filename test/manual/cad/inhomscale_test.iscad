@@ -1,0 +1,5 @@
+s:STL("test.stl");
+is2:InhomScale(s, [2, 3, 4]);
+
+#s2:Torus( O, EZ, 0.5 );
+#is22:InhomScale(s2, [4, 5, 6]);

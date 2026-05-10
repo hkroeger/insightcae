@@ -21,13 +21,20 @@
 #include "TopAbs_State.hxx"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/spatialtransformation.h"
+#include "boost/filesystem/operations.hpp"
+#include "base/zipfile.h"
+#include "cadparameters/constantscalar.h"
+#include "cadtypes.h"
 #include "geotest.h"
 
+#include <algorithm>
 #include <fstream>
 #include <memory>
 
 #include "cadfeature.h"
 #include "datum.h"
+#include "openfoam/openfoamtools.h"
 #include "sketch.h"
 #include "cadfeatures/transform.h"
 #include "base/tools.h"
@@ -44,6 +51,8 @@
 
 #include <BRepLib_FindSurface.hxx>
 #include <BRepCheck_Shell.hxx>
+#include <numeric>
+#include <string>
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "HLRBRep_PolyHLRToShape.hxx"
 #include "HLRBRep_PolyAlgo.hxx"
@@ -91,6 +100,10 @@
 
 #include "Poly.hxx"
 #include "Poly_ListOfTriangulation.hxx"
+
+#include "openfoam/openfoamdict.h"
+
+#include "occtools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -195,6 +208,14 @@ int FreelyIndexedMapOfShape::getMaxIndex() const
     {
         return rbegin()->first;
     }
+}
+
+
+TesselationResolution
+TesselationResolution::absolute(double res)
+{
+    return TesselationResolution{
+            Absolute, scalarconst(res) };
 }
     
 
@@ -366,6 +387,58 @@ void Feature::setShapeFromFile(const boost::filesystem::path& filename)
         //        }
 
     }
+    else if ( ext==".emesh" )
+    {
+        insight::eMesh emd;
+
+        {
+            std::shared_ptr<std::string> fc;
+            std::shared_ptr<std::istream> f;
+            if (!boost::filesystem::exists(filename))
+            {
+                boost::filesystem::path fn2(filename.string()+".gz");
+                if (boost::filesystem::exists(fn2))
+                {
+                    auto unz=ZipFile(fn2).uncompressFiles();
+                    insight::assertion(
+                        unz.size()==1,
+                        "expected a single file in archive %s, got %d",
+                        fn2.string().c_str(), unz.size() );
+
+                    fc=unz.begin()->second;
+                    f=std::make_shared<std::istringstream>(*fc);
+                }
+                else
+                    throw insight::Exception(
+                            "neither %s nor %s found",
+                            filename.string().c_str(),
+                            fn2.string().c_str()
+                        );
+            }
+            else
+            {
+                f=std::make_shared<std::ifstream>(filename.string());
+            }
+
+            readOpenFOAMEMesh(*f, emd);
+        }
+
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+
+        for (auto& e: emd.edges())
+        {
+            bb.Add(
+                result,
+                BRepBuilderAPI_MakeEdge(
+                    to_Pnt(emd.points()[e.first]),
+                    to_Pnt(emd.points()[e.second]) ).Edge()
+                );
+        }
+
+        setShape(result);
+    }
     else
     {
         throw insight::Exception("Unknown import file format! (Extension "+ext+")");
@@ -404,6 +477,9 @@ Feature::Feature()
 //   areaWeight_(0.0),
   featureSymbolName_()
 {
+    setLocalCoordinateSystem(
+        vec3Zero(),
+        vec3X(), vec3Z() );
 }
 
 
@@ -417,10 +493,17 @@ Feature::Feature(const Feature& o)
   providedDatums_(o.providedDatums_),
   density_(o.density_),
   areaWeight_(o.areaWeight_),
-  featureSymbolName_(o.featureSymbolName_)
+  featureSymbolName_(o.featureSymbolName_),
+  BOMDescription_(o.BOMDescription_)
 {
   setShape(o.shape_);
 }
+
+
+
+Feature::Feature(const Feature &o, TreeCloneMap &tcm)
+: BOMDescription_(o.BOMDescription_)
+{}
 
 
 void Feature::setLocalCoordinateSystem(
@@ -482,9 +565,17 @@ string Feature::label() const
 }
 
 
-void Feature::setVisResolution( ScalarPtr r )
-{ 
-    visresolution_=r;
+void Feature::setAbsoluteVisResolution( ScalarPtr r )
+{
+    visresolution_=TesselationResolution{
+        TesselationResolution::Absolute, r};
+}
+
+
+void Feature::setRelativeVisResolution( ScalarPtr r )
+{
+    visresolution_=TesselationResolution{
+        TesselationResolution::Relative, r};
 }
 
 
@@ -513,6 +604,15 @@ double Feature::areaWeight() const
     return areaWeight_->value(); 
   else
     return 0.0;
+}
+
+CoordinateSystem Feature::getLocalCoordinateSystem() const
+{
+    checkForBuildDuringAccess();
+    return insight::CoordinateSystem(
+        refpoints_.at("O"),
+        refvectors_.at("EX"),
+        refvectors_.at("EZ") );
 }
 
 double Feature::mass(double density_ovr, double aw_ovr) const
@@ -626,6 +726,7 @@ Feature& Feature::operator=(const Feature& o)
   visresolution_=o.visresolution_;
   density_=o.density_;
   areaWeight_=o.areaWeight_;
+  BOMDescription_=o.BOMDescription_;
 
   if (o.valid())
   {
@@ -861,57 +962,68 @@ arma::mat Feature::modelInertia(double density_ovr) const
   return rho*T*Ip*T.t();
 }
 
-arma::mat Feature::modelBndBox(double deflection) const
+bool Feature::hasTriangulation() const
 {
-  checkForBuildDuringAccess();
-  
-  if (deflection>0)
-  {
-      BRepMesh_IncrementalMesh Inc(shape(), deflection);
-  }
+    for (TopExp_Explorer exp(shape(), TopAbs_FACE); exp.More(); exp.Next())
+    {
+        const TopoDS_Face& face = TopoDS::Face(exp.Current());
+        TopLoc_Location loc;
+        Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
 
-  Bnd_Box boundingBox;
-  BRepBndLib::Add(shape(), boundingBox);
-
-  arma::mat x=arma::zeros(3,2);
-  if (!boundingBox.IsVoid())
-  {
-    double g=boundingBox.GetGap();
-    double x0, x1, y0, y1, z0, z1;
-
-    boundingBox.Get
-    (
-      x0, y0, z0,
-      x1, y1, z1
-    );
-
-    x
-    << x0 << x1 << arma::endr
-    << y0 << y1 << arma::endr
-    << z0 << z1 << arma::endr;
-
-    x.col(0)+=g;
-    x.col(1)-=g;
-  }
-
-  return x;
+        if (tri.IsNull())
+            return false; // at least one face has no mesh
+    }
+    return true; // all faces have triangulation
 }
 
 
-arma::mat Feature::modelBndBoxSize(double deflection) const
+void Feature::createTriangulation(ResoArg deflection) const
+{
+    checkForBuildDuringAccess();
+
+    if (deflection||visresolution_)
+    {
+        if (deflection)
+            performTriangulationBuilding(*deflection);
+        else if (visresolution_)
+            performTriangulationBuilding(*visresolution_);
+    }
+    else
+    {
+        // triangulate with default settings
+        auto bb=calcBndBox(shape_);
+        double aDmc=(bb.col(1)-bb.col(0)).max();
+        performTriangulationBuilding(
+            TesselationResolution{
+                TesselationResolution::Absolute,
+                cad::scalarconst(aDmc*0.001*4.) });
+    }
+}
+
+arma::mat Feature::modelBndBox(ResoArg deflection) const
+{
+  checkForBuildDuringAccess();
+
+  if (!hasTriangulation() || deflection )
+      createTriangulation(deflection);
+
+  return calcBndBox(shape());
+}
+
+
+arma::mat Feature::modelBndBoxSize(ResoArg deflection) const
 {
     arma::mat bb=modelBndBox(deflection);
     return bb.col(1)-bb.col(0);
 }
 
-std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double deflection) const
+std::pair<CoordinateSystem, arma::mat>
+Feature::orientedModelBndBox(ResoArg deflection) const
 {
     checkForBuildDuringAccess();
 
-    if (deflection>0)
-    {
-        BRepMesh_IncrementalMesh Inc(shape(), deflection);
-    }
+    if (!hasTriangulation() || deflection )
+        createTriangulation(deflection);
 
 #if (OCC_VERSION_MAJOR<7)
     ISOCC::Bnd_OBB boundingBox;
@@ -926,10 +1038,11 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
 
     if (!boundingBox.IsVoid())
     {
-        arma::mat sizes;
-        sizes   << boundingBox.XHSize()
-                << boundingBox.YHSize()
-                << boundingBox.ZHSize();
+        arma::mat sizes=ArmaMatCmpts{
+            { boundingBox.XHSize() },
+            { boundingBox.YHSize() },
+            { boundingBox.ZHSize() }
+        };
 
 
 //        arma::uvec si = arma::reverse( arma::sort_index(sizes) );
@@ -992,7 +1105,9 @@ std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBox(double defle
 
 
 
-std::pair<CoordinateSystem, arma::mat> Feature::orientedModelBndBoxSize(double deflection) const
+std::pair<CoordinateSystem, arma::mat>
+Feature::orientedModelBndBoxSize(
+    ResoArg deflection) const
 {
     auto r=orientedModelBndBox(deflection);
     r.second = r.second.col(1)-r.second.col(0);
@@ -1081,7 +1196,6 @@ FeatureSetPtr Feature::allOf(EntityType et) const
 
 FeatureSetPtr Feature::vertexAt(const arma::mat& p) const
 {
-    checkForBuildDuringAccess();
     return makeVertexFeatureSet(
         shared_from_this(),
         "dist(loc,%m0)<1e-6",
@@ -1514,7 +1628,11 @@ void Feature::saveAs
 
   else if ( (ext==".stl") || (ext==".stlb") )
   {
-    BRepMesh_IncrementalMesh Inc(shape(), 1e-2);
+    if (!refvalues_.count("isSTLGeometry"))
+    {
+        BRepMesh_IncrementalMesh Inc(shape(), 1e-2);
+    }
+
     StlAPI_Writer stlwriter;
 
     stlwriter.ASCIIMode() = (ext==".stl");
@@ -1533,6 +1651,10 @@ void Feature::saveAs
         printDependencies(dot);
       }
   }
+  else if ( ext==".emesh" )
+  {
+      exportEMesh(filename, *allEdges());
+  }
   else
   {
     throw insight::Exception("Unknown export file format! (Extension "+ext+")");
@@ -1541,23 +1663,33 @@ void Feature::saveAs
 
 void Feature::exportSTL(const boost::filesystem::path& filename, double abstol, bool binary) const
 {
-  BRepBuilderAPI_Copy aCopy( shape(), Standard_False );
-  TopoDS_Shape os=aCopy.Shape();
-
-  StlAPI_Writer stlwriter;
-  stlwriter.ASCIIMode() = !binary; //false;
+    StlAPI_Writer stlwriter;
+    stlwriter.ASCIIMode() = !binary; //false;
 
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
-  stlwriter.RelativeMode()=false;
-  stlwriter.SetDeflection(abstol);
-#else
-  BRepTools::Clean( os );
-//  ShapeFix_ShapeTolerance sf;
-//  sf.SetTolerance(os, abstol);
-  BRepMesh_IncrementalMesh binc(os, abstol);
+    stlwriter.RelativeMode()=false;
+    stlwriter.SetDeflection(abstol);
 #endif
 
-  stlwriter.Write(os, filename.string().c_str());
+    BRepBuilderAPI_Copy aCopy( shape(), Standard_False );
+    TopoDS_Shape os=aCopy.Shape();
+
+    if (refvalues_.count("isSTLGeometry"))
+    {
+        os=shape();
+    }
+    else
+    {
+
+#if !((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
+        BRepTools::Clean( os );
+        //  ShapeFix_ShapeTolerance sf;
+        //  sf.SetTolerance(os, abstol);
+        BRepMesh_IncrementalMesh binc(os, abstol);
+#endif
+    }
+
+    stlwriter.Write(os, filename.string().c_str());
 }
 
 
@@ -1569,84 +1701,109 @@ void Feature::exportEMesh
   double maxlen
 )
 {
-  if (fs.shape()!=Edge) 
-    throw insight::Exception("Called with incompatible feature set!");
-  
-  std::vector<arma::mat> points;
-  typedef std::pair<int, int> Edge;
-  std::vector<Edge> edges;
-  
-  for (const FeatureID& fi: fs.data())
-  {
-    
-    TopoDS_Edge e=fs.model()->edge(fi);
-    if (!BRep_Tool::Degenerated(e))
+    if (fs.shape()!=Edge)
+        throw insight::Exception("Called with incompatible feature set!");
+
+    std::map<arma::mat, int> points;
+    typedef std::pair<arma::mat, arma::mat> Edge;
+    std::vector<Edge> edges;
+
+    for (const FeatureID& fi: fs.data())
     {
-      BRepAdaptor_Curve ac(e);
-      GCPnts_QuasiUniformDeflection qud(ac, abstol);
 
-      if (!qud.IsDone())
-	throw insight::Exception("Discretization of curves into eMesh failed!");
-
-      size_t iofs=points.size();
-
-      if (qud.NbPoints()<2)
-        throw insight::Exception("Edge discretizer returned less then 2 points !");
-
-      for (int j=2; j<=qud.NbPoints(); j++)
-      {
-        arma::mat lp=insight::Vector(ac.Value(qud.Parameter(j-1)));
-        if (j==2) points.push_back(lp);
-
-        arma::mat p=insight::Vector(ac.Value(qud.Parameter(j)));
-
-        double clen=norm(p-lp, 2);
-        double rlen=clen;
-        while (rlen>maxlen)
+        TopoDS_Edge e=fs.model()->edge(fi);
+        if (!BRep_Tool::Degenerated(e))
         {
-          arma::mat pi = lp + maxlen*(p-lp)/arma::norm(p-lp,2);
-          lp=pi;
-          points.push_back(pi); // insert intermediate point
-          rlen -= maxlen;
+            BRepAdaptor_Curve ac(e);
+            GCPnts_QuasiUniformDeflection qud(ac, abstol);
+
+            if (!qud.IsDone())
+                throw insight::Exception("Discretization of curves into eMesh failed!");
+
+            size_t iofs=points.size();
+
+            if (qud.NbPoints()<2)
+                throw insight::Exception("Edge discretizer returned less then 2 points !");
+
+            for (int j=2; j<=qud.NbPoints(); j++)
+            {
+                arma::mat lp=insight::Vector(ac.Value(qud.Parameter(j-1)));
+                // if (j==2) points[lp]=-1;
+
+                arma::mat p=insight::Vector(ac.Value(qud.Parameter(j)));
+
+                double clen=norm(p-lp, 2);
+                double rlen=clen;
+                while (rlen>maxlen)
+                {
+                    arma::mat pi = lp + maxlen*(p-lp)/arma::norm(p-lp,2);
+                    lp=pi;
+                    // points[pi]=-1; // insert intermediate point
+                    edges.push_back(Edge(lp,pi));
+                    rlen -= maxlen;
+                }
+                edges.push_back(Edge(lp,p));
+                // points[p]=-1;
+
+            }
+
+            // for (size_t i=1; i<points.size()-iofs; i++)
+            // {
+            //     int from=iofs+i-1;
+            //     int to=iofs+i;
+            //     //	if (splits.find(to)==splits.end())
+            //     edges.push_back(Edge(from,to));
+            // }
         }
-        points.push_back(p);
-
-      }
-      
-      for (size_t i=1; i<points.size()-iofs; i++)
-      {
-	int from=iofs+i-1;
-	int to=iofs+i;
-//	if (splits.find(to)==splits.end())
-	  edges.push_back(Edge(from,to));
-      }
     }
-  }
-  
-  std::ofstream f(filename.c_str());
-  f<<"FoamFile {"<<endl
-   <<" version     2.0;"<<endl
-   <<" format      ascii;"<<endl
-   <<" class       featureEdgeMesh;"<<endl
-   <<" location    \"\";"<<endl
-   <<" object      "<<filename.filename().string()<<";"<<endl
-   <<"}"<<endl;
-   
-  f<<points.size()<<endl
-   <<"("<<endl;
-  for (const arma::mat& p: points)
-  {
-    f<<OFDictData::vector3(p)<<endl;
-  }
-  f<<")"<<endl;
 
-  f<<edges.size()<<endl
-   <<"("<<endl;
-  for (const Edge& e: edges)
-  {
-    f<<"("<<e.first<<" "<<e.second<<")"<<endl;
-  }
-  f<<")"<<endl;
+    std::for_each(
+        edges.begin(), edges.end(),
+        [&](const Edge& e){
+            points[e.first]=-1;
+            points[e.second]=-1;
+        }
+    );
+
+    int i=0;
+    for (auto& p: points)
+    {
+        p.second = i++;
+    }
+
+    std::vector<arma::mat> ptList(i);
+    std::for_each(
+        points.begin(), points.end(),
+        [&]( const std::pair<arma::mat,int>& p )
+        {
+            ptList[p.second]=p.first;
+        }
+    );
+
+    std::ofstream f(filename.c_str());
+    f<<"FoamFile {"<<endl
+      <<" version     2.0;"<<endl
+      <<" format      ascii;"<<endl
+      <<" class       featureEdgeMesh;"<<endl
+      <<" location    \"\";"<<endl
+      <<" object      "<<filename.filename().string()<<";"<<endl
+      <<"}"<<endl;
+
+    f<<points.size()<<endl
+      <<"("<<endl;
+    for (auto& p: ptList)
+    {
+        f<<OFDictData::vector3(p)<<endl;
+    }
+    f<<")"<<endl;
+
+    f<<edges.size()<<endl
+      <<"("<<endl;
+    for (const Edge& e: edges)
+    {
+        f<<"("<<points.at(e.first)<<" "<<points.at(e.second)<<")"<<endl;
+    }
+    f<<")"<<endl;
 
 }
 
@@ -1656,27 +1813,38 @@ Feature::operator const TopoDS_Shape& () const
   return shape(); 
 }
 
+
+
 const TopoDS_Shape& Feature::shape() const
 {
-  if (building())
-    throw insight::CADException(shared_from_this(), "Internal error: recursion during build!");
+  // if (building())
+  //   throw insight::CADException(shared_from_this(), "Internal error: recursion during build!");
 
   checkForBuildDuringAccess();
 
   if (visresolution_)
-  {
-//     Bnd_Box box;
-//     BRepMesh_FastDiscret m
-//     (
-//       visresolution_->value(), 
-//       0.5, box, 
-//       true, false, false, false
-//     );
-//     m.Perform(shape_);  
-    BRepMesh_IncrementalMesh aMesher(shape_, visresolution_->value());
-  }
+      performTriangulationBuilding(*visresolution_);
+
   return shape_;
 }
+
+
+
+void Feature::performTriangulationBuilding(TesselationResolution res) const
+{
+    //     Bnd_Box box;
+    //     BRepMesh_FastDiscret m
+    //     (
+    //       visresolution_->value(),
+    //       0.5, box,
+    //       true, false, false, false
+    //     );
+    //     m.Perform(shape_);
+    BRepMesh_IncrementalMesh aMesher(
+        shape_, res.value->value(),
+        res.specification==TesselationResolution::Relative );
+}
+
 
 
 Feature::View Feature::createView
@@ -1754,8 +1922,8 @@ Feature::View Feature::createView
         // extracting the result sets:
         Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
         HLRBRep_PolyHLRToShape shapes;
-        if (visresolution_)
-            aHlrPolyAlgo->TolCoef(visresolution_->value());
+        // if (visresolution_)
+        //     aHlrPolyAlgo->TolCoef(visresolution_->value());
         aHlrPolyAlgo->Load(dispshape);
         aHlrPolyAlgo->Projector(projector);
         aHlrPolyAlgo->Update();
@@ -1922,151 +2090,56 @@ TopoDS_Shape Feature::asSingleVolume() const
 
 
 
-
 void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<std::string> excludes)
 {
-    // Transform all ref points and ref vectors
-    for (const RefValuesList::value_type& v: m1.getDatumScalars())
-    {
-        if (excludes.find(v.first)==excludes.end())
-        {
-            if (refvalues_.find(prefix+v.first)!=refvalues_.end())
-                throw insight::Exception("datum value "+prefix+v.first+" already present!");
-            refvalues_[prefix+v.first]=v.second;
-        }
-    }
-    for (const RefPointsList::value_type& p: m1.getDatumPoints())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refpoints_.find(prefix+p.first)!=refpoints_.end())
-                throw insight::Exception("datum point "+prefix+p.first+" already present!");
-            refpoints_[prefix+p.first]=p.second;
-        }
-    }
-    for (const RefVectorsList::value_type& p: m1.getDatumVectors())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refvectors_.find(prefix+p.first)!=refvectors_.end())
-                throw insight::Exception("datum vector "+prefix+p.first+" already present!");
-            refvectors_[prefix+p.first]=p.second;
-        }
-    }
-    for (const SubfeatureMap::value_type& sf: m1.providedSubshapes())
-    {
-        if (excludes.find(sf.first)==excludes.end())
-        {
-            if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
-                throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=sf.second;
-        }
-    }
-    for (const DatumPtrMap::value_type& df: m1.providedDatums())
-    {
-        if (excludes.find(df.first)==excludes.end())
-        {
-            if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
-                throw insight::Exception("datum "+prefix+df.first+" already present!");
-            providedDatums_[prefix+df.first]=df.second;
-        }
-    }
-
-    for (const auto& fs: m1.providedFeatureSets_)
-    {
-        providedFeatureSets_[prefix+fs.first]=fs.second;
-        // switch (fs.second->shape())
-        // {
-        //     case Vertex:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //         // same IDs but on this model
-        //         makeFeatureSet<Vertex>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     case Edge:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //             // same IDs but on this model
-        //             makeFeatureSet<Edge>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     case Face:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //             // same IDs but on this model
-        //             makeFeatureSet<Face>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     case Solid:
-        //         providedFeatureSets_[prefix+fs.first]=
-        //             // same IDs but on this model
-        //             makeFeatureSet<Solid>(
-        //                 shared_from_this(),
-        //                 "isSame(%0)",
-        //                 { fs.second });
-        //         break;
-        //     default:
-        //         throw insight::UnhandledSelection();
-        // }
-    };
-
+    copyDatumsTransformed(m1, gp_Trsf(), prefix, excludes);
 }
 
-
-
-
-void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix, std::set<std::string> excludes)
+bool isIdentity(const gp_Trsf& trsf)
 {
+    gp_Trsf identity;
+    bool equal=true;
+    for (int i=1; i<=3; ++i)
+        for (int j=1; j<=4; ++j)
+        {
+            if (fabs(trsf.Value(i,j)-identity.Value(i,j))>SMALL)
+                equal=false;
+        }
+    return equal;
+}
+
+void Feature::copyDatumsTransformed(
+    const Feature& m1,
+    const gp_Trsf& trsf,
+    const std::string& prefix,
+    std::set<std::string> excludes)
+{
+
     // Transform all ref points and ref vectors
-    for (const RefValuesList::value_type& v: m1.getDatumScalars())
-    {
-        if (excludes.find(v.first)==excludes.end())
-        {
-            if (refvalues_.find(prefix+v.first)!=refvalues_.end())
-                throw insight::Exception("datum value "+prefix+v.first+" already present!");
-            refvalues_[prefix+v.first]=v.second;
-        }
-    }
-    for (const RefPointsList::value_type& p: m1.getDatumPoints())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refpoints_.find(prefix+p.first)!=refpoints_.end())
-                throw insight::Exception("datum point "+prefix+p.first+" already present!");
-            refpoints_[prefix+p.first]=vec3(to_Pnt(p.second).Transformed(trsf));
-        }
-    }
-    for (const RefVectorsList::value_type& p: m1.getDatumVectors())
-    {
-        if (excludes.find(p.first)==excludes.end())
-        {
-            if (refvectors_.find(prefix+p.first)!=refvectors_.end())
-                throw insight::Exception("datum vector "+prefix+p.first+" already present!");
-            refvectors_[prefix+p.first]=vec3(to_Vec(p.second).Transformed(trsf));
-        }
-    }
-    for (const SubfeatureMap::value_type& sf: m1.providedSubshapes())
-    {
-        if (excludes.find(sf.first)==excludes.end())
-        {
-            if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
-                throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-            providedSubshapes_[prefix+sf.first]=Transform::create(sf.second, trsf);
-        }
-    }
-    for (const DatumPtrMap::value_type& df: m1.providedDatums())
-    {
-        if (excludes.find(df.first)==excludes.end())
-        {
-            if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
-                throw insight::Exception("datum "+prefix+df.first+" already present!");
-            providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
-        }
-    }
+    copyDatumItems(m1.getDatumScalars(), refvalues_,
+              [](double s)
+                { return s; },
+              "datum value", prefix, excludes);
+
+    copyDatumItems(m1.getDatumPoints(), refpoints_,
+              [&trsf](const arma::mat& p)
+                { return vec3(to_Pnt(p).Transformed(trsf)); },
+              "datum point", prefix, excludes, {"O"} );
+
+    copyDatumItems(m1.getDatumVectors(), refvectors_,
+              [&trsf](const arma::mat& v)
+              { return vec3(to_Vec(v).Transformed(trsf)); },
+              "datum vector", prefix, excludes, {"EX", "EY", "EZ"} );
+
+    copyDatumItems(m1.providedSubshapes(), providedSubshapes_,
+              [&trsf](FeaturePtr ss)
+              { return isIdentity(trsf)?ss:Transform::create(ss, trsf); },
+              "subshape", prefix, excludes);
+
+    copyDatumItems(m1.providedDatums(), providedDatums_,
+              [&trsf](DatumPtr sd)
+              { return isIdentity(trsf)?sd:DatumPtr(new TransformedDatum(sd, trsf)); },
+              "datum", prefix, excludes, {"XY", "XZ", "YZ"} );
 
     for (const auto& fs: m1.providedFeatureSets_)
     {
@@ -2533,6 +2606,33 @@ vtkSmartPointer<vtkPolyData> Feature::triangulationToVTK(double tol) const
 
 
 
+void Feature::setBOMDescription(
+    const BOMDescriptionData &desc )
+{
+    BOMDescription_ = desc;
+}
+
+
+
+
+boost::optional<BOMDescriptionData> Feature::BOMDescription() const
+{
+    return BOMDescription_;
+}
+
+
+
+
+void Feature::addToBOM(BOM &bom) const
+{
+    if (BOMDescription_.is_initialized())
+    {
+        bom.insert(shared_from_this());
+    }
+}
+
+
+
 
 Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
@@ -2684,6 +2784,124 @@ bool SingleVolumeFeature::isSingleVolume() const
 }
 
 
+
+
+void BOM::report(ostream &os) const
+{
+    os << "=== BOM: ===\n";
+
+    typedef std::map<std::string, int> Customizations;
+    typedef std::map<std::string, Customizations> Types;
+
+    Types types;
+    for (auto& entry: *this)
+    {
+        auto bd=entry->BOMDescription();
+        if (bd)
+        {
+            auto t=bd->typeDescription();
+            std::string cn;
+            if (auto c=bd->customizationDescription())
+                cn=*c;
+
+            auto existing=types.find(t);
+            if (existing==types.end())
+            {
+                types[t]=Customizations({{cn, 1}});
+            }
+            else
+            {
+                auto &ctl = existing->second;
+                auto ictl=ctl.find(cn);
+                if (ictl==ctl.end())
+                {
+                    ctl[cn]=1;
+                }
+                else
+                {
+                    ictl->second++;
+                }
+            }
+        }
+    }
+
+    for (auto& t:types)
+    {
+        auto name=t.first;
+        auto ctl=t.second;
+        int ntotal=0;
+        std::for_each(
+            ctl.begin(), ctl.end(),
+            [&](const decltype(ctl)::value_type& v)
+            { ntotal+=v.second; } );
+        os << "- " << ntotal << "x " << name << "\n";
+        if (ctl.size()>1)
+        {
+            for (auto& c: ctl)
+            {
+                os << " * " << c.second << "x " << c.first << "\n";
+            }
+        }
+    }
+
+    os << "== END BOM ==\n";
+}
+
+
+DescriptionWithParameters::DescriptionWithParameters(
+    const std::string& templ,
+    const std::vector<ScalarPtr>& args )
+ :  std::vector<ScalarPtr>(args), template_(templ)
+{}
+
+string DescriptionWithParameters::toString() const
+{
+    auto fmt=boost::format(template_);
+    for (auto& a: *this)
+    {
+        fmt = fmt % a->value() ;
+    }
+    return str(fmt);
+}
+
+DescriptionWithParameters::operator std::string() const
+{
+    return toString();
+}
+
+BOMDescriptionData::BOMDescriptionData(
+    DescriptionWithParametersPtr td,
+    DescriptionWithParametersPtr cd )
+    : typeDescription_(*td)
+{
+    if (cd) customizationDescription_=*cd;
+}
+
+std::string BOMDescriptionData::typeDescription() const
+{
+    return typeDescription_.toString();
+}
+
+boost::optional<std::string> BOMDescriptionData::customizationDescription() const
+{
+    if (customizationDescription_)
+        return customizationDescription_->toString();
+    else
+        return boost::none;
+}
+
+string BOMDescriptionData::toString() const
+{
+    auto s=typeDescription();
+    if (customizationDescription_)
+        s+=" ("+customizationDescription_->toString()+")";
+    return s;
+}
+
+BOMDescriptionData::operator std::string() const
+{
+    return toString();
+}
 
 
 }

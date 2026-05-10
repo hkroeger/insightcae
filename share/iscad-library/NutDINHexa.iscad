@@ -6,6 +6,7 @@ d3=TableLookup(ScrewDIN, Dn, Dn, d3);
 dh=TableLookup(ScrewDIN, Dn, Dn, dh);
 m=TableLookup(ScrewDIN, Dn, Dn, m);
 hk=0.5*P;
+mult_bore?=1.05;
 L=24;
 
 Mat=loadmodel(material_props);
@@ -31,12 +32,12 @@ headhole=
 Cylinder(
  O,
  ax Lhh*EX,
- d3
+ mult_bore*d3
 );
 
 Leh?=5*m;
 embedhole=
 Extrusion(
- RegPoly(O,[1,0,0],6,1.05*s/2.),
- Leh*EX
+ RegPoly(O,[1,0,0],6,mult_bore*s/2.),
+ mult_bore*Leh*EX
 );

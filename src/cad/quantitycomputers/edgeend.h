@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class edgeEnd
-    : public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>, public EnableCreateFunction<edgeEnd>
 {
 public:
     edgeEnd();

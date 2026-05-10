@@ -43,7 +43,9 @@
 
 #include "openfoamtools.h"
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
+#include <boost/variant.hpp>
 
 
 #include "openfoamanalysis__OpenFOAMAnalysis__Parameters_headers.h"
@@ -225,7 +227,7 @@ public:
 
     void changeMapFromPath(const boost::filesystem::path& newMapFromPath)
     {
-        p().run.mapFrom->setFileName(newMapFromPath);
+        p().run.mapFrom->setFilePath(newMapFromPath);
     }
 
 
@@ -255,7 +257,7 @@ public:
                 if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
                 {
                     CurrentExceptionContext ex("converting turbulence quantities in case \""+mapFromPath.string()+"\" since the turbulence model is different.");
-                    parentAction.message(ex);
+                    parentAction.logMessage(ex);
                     oc.executeCommand(mapFromPath, "createTurbulenceFields", { "-latestTime" } );
                 }
             }
@@ -265,7 +267,7 @@ public:
             }
         }
 
-        parentAction.message("Executing mapFields");
+        parentAction.logMessage("Executing mapFields");
         mapFields(cm, mapFromPath, this->executionPath(), is_parallel, cm.fieldNames());
     }
 #endif
@@ -295,7 +297,7 @@ public:
     /**
      * integrate all steps before the actual run
      */
-    virtual void createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer& parentActionProgress)
+    virtual void createCaseOnDisk(OpenFOAMCase& runCase, ProgressDisplayer& parentProgress)
 #ifdef SWIG
 ;
 #else
@@ -309,8 +311,8 @@ public:
         OFEnvironment ofe = OFEs::get(p().run.OFEname);
         ofe.setExecutionMachine(p().run.machine);
 
-        parentActionProgress.message(_("Computing derived input quantities"));
-        calcDerivedInputData(parentActionProgress);
+        parentProgress.logMessage(_("Computing derived input quantities"));
+        calcDerivedInputData(parentProgress);
 
         bool evaluateonly=p().run.evaluateonly;
         if (evaluateonly)
@@ -330,16 +332,16 @@ public:
                 meshcreated=true;
                 if (p().mesh.linkmesh->isValid())
                 {
-                    parentActionProgress.message(
+                    parentProgress.logMessage(
                         str(boost::format(
                                 _("Linking the mesh to OpenFOAM case in directory %s.")
                                 ) % dir.string() ) );
-                    linkPolyMesh(p().mesh.linkmesh->filePath(true)/"constant", dir/"constant", &ofe);
+                    linkPolyMesh(p().mesh.linkmesh->expandedFilePath()/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
-                    parentActionProgress.message(_("Creating the mesh."));
-                    createMesh(*meshCase, parentActionProgress);
+                    parentProgress.logMessage(_("Creating the mesh."));
+                    createMesh(*meshCase, parentProgress);
                 }
             }
             else
@@ -363,15 +365,15 @@ public:
         }
 
 
-        parentActionProgress.message(_("Creating the case setup."));
-        createCase(runCase, parentActionProgress);
+        parentProgress.logMessage(_("Creating the case setup."));
+        createCase(runCase, parentProgress);
 
         std::shared_ptr<OFdicts> dicts;
 
-        parentActionProgress.message(_("Creating the dictionaries."));
+        parentProgress.logMessage(_("Creating the dictionaries."));
         createDictsInMemory(runCase, dicts);
 
-        parentActionProgress.message(_("Applying custom modifications to dictionaries."));
+        parentProgress.logMessage(_("Applying custom modifications to dictionaries."));
         applyCustomOptions(runCase, dicts);
 
         // might have changed
@@ -385,15 +387,15 @@ public:
         {
             if (meshcreated)
             {
-                parentActionProgress.message(_("Applying custom modifications mesh."));
+                parentProgress.logMessage(_("Applying custom modifications mesh."));
                 runCase.modifyMeshOnDisk(dir);
             }
 
-            parentActionProgress.message(_("Writing dictionaries to disk."));
+            parentProgress.logMessage(_("Writing dictionaries to disk."));
             writeDictsToDisk(runCase, dicts);
 
-            parentActionProgress.message(_("Applying custom preprocessing steps to OpenFOAM case."));
-            applyCustomPreprocessing(runCase, parentActionProgress);
+            parentProgress.logMessage(_("Applying custom preprocessing steps to OpenFOAM case."));
+            applyCustomPreprocessing(runCase, parentProgress);
         }
         else
         {
@@ -425,7 +427,7 @@ public:
             if ((cm.OFversion()>=230) && (p().run.mapFrom->isValid()))
             {
                 // parallelTarget option is not present in OF2.3.x
-                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(true), false);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->expandedFilePath(), false);
             }
         }
 
@@ -433,7 +435,7 @@ public:
         {
             if (!exists(exepath/"processor0"))
             {
-                parentProgress.message(_("Executing decomposePar"));
+                parentProgress.logMessage(_("Executing decomposePar"));
 
                 std::vector<std::string> opts;
                 if (exists(exepath/"constant"/"regionProperties"))
@@ -447,7 +449,7 @@ public:
         {
             if ( (!(cm.OFversion()>=230)) && (p().run.mapFrom->isValid()) )
             {
-                mapFromOther(cm, parentProgress, p().run.mapFrom->filePath(true), is_parallel);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->expandedFilePath(), is_parallel);
             }
             else
             {
@@ -455,7 +457,7 @@ public:
                 {
                     if (p().run.mapFrom->isValid())
                     {
-                        parentProgress.message(
+                        parentProgress.logMessage(
                             str(boost::format(
                                 _("case in \"%s\": solution was mapped from other case, skipping potentialFoam.")
                                     ) % exepath.string() ) );
@@ -466,7 +468,7 @@ public:
                     }
                     else
                     {
-                        parentProgress.message(_("Executing potentialFoam"));
+                        parentProgress.logMessage(_("Executing potentialFoam"));
                         runPotentialFoam(cm, exepath, np);
                     }
                 }
@@ -474,7 +476,7 @@ public:
         }
         else
         {
-            parentProgress.message(
+            parentProgress.logMessage(
                 str(boost::format(
                         _("case in \"%s\": output timestep are already there, skipping initialization.")
                         ) % exepath.string() )
@@ -516,7 +518,7 @@ public:
 
         SolverOutputAnalyzer analyzer(cpd, endTime);
 
-        parentProgress.message(
+        parentProgress.logMessage(
             str(boost::format(_("Executing application %s until end time %g."))
                 % solverName % endTime) );
 
@@ -544,7 +546,7 @@ public:
             {
                 if (checkIfReconstructLatestTimestepNeeded(cm, exepath))
                 {
-                    parentAction.message(_("Running reconstructPar for latest time step"));
+                    parentAction.logMessage(_("Running reconstructPar for latest time step"));
 
                     std::vector<std::string> opts={"-latestTime"};
                     if (exists(exepath/"constant"/"regionProperties"))
@@ -554,7 +556,7 @@ public:
                 }
                 else
                 {
-                    parentAction.message(_("No reconstruct needed"));
+                    parentAction.logMessage(_("No reconstruct needed"));
                 }
             }
             else
@@ -581,19 +583,19 @@ public:
 
         if (!p().eval.skipmeshquality)
         {
-            parentActionProgress.message("Generating mesh quality report");
+            parentActionProgress.logMessage("Generating mesh quality report");
             meshQualityReport(cm, exepath, *results);
         }
 
         if (p().eval.reportdicts)
         {
-            parentActionProgress.message("Adding numerical settings to report");
+            parentActionProgress.logMessage("Adding numerical settings to report");
             currentNumericalSettingsReport(cm, exepath, *results);
         }
 
         if (derivedInputData_)
         {
-            parentActionProgress.message("Inserting derived input quantities into report");
+            parentActionProgress.logMessage("Inserting derived input quantities into report");
             results->insert(
                        "DerivedInputData",
                        derivedInputData_->cloneAs<ResultElement>()
@@ -613,53 +615,53 @@ public:
     {
         CurrentExceptionContext ex(_("running OpenFOAM analysis"));
 
-        auto ofprg = progress.forkNewAction( p().run.evaluateonly? 4 : 6 );
+        auto ofprg = progress.forkNewAction( p().run.evaluateonly? 4 : 6, "executing solver" );
 
 
         OFEnvironment ofe = OFEs::get(p().run.OFEname);
         ofe.setExecutionMachine(p().run.machine);
 
-        ofprg.message(_("Preparing case creation"));
-        prepareCaseCreation(ofprg);
-        ++ofprg;
+        ofprg->message(_("Preparing case creation"));
+        prepareCaseCreation(progress);
+        ++*ofprg;
 
         OpenFOAMCase runCase(ofe);
-        ofprg.message(_("Creating case on disk"));
-        createCaseOnDisk(runCase, ofprg);
-        ++ofprg;
+        ofprg->message(_("Creating case on disk"));
+        createCaseOnDisk(runCase, progress);
+        ++*ofprg;
 
         auto dir = this->executionPath();
 
         if (!p().run.evaluateonly)
         {
             PrefixedProgressDisplayer iniprogdisp(
-                &ofprg, "initrun",
+                &progress, "initrun",
                 PrefixedProgressDisplayer::Prefixed,
                 PrefixedProgressDisplayer::NoActionProgressPrefix
                 );
 
-            ofprg.message(_("Initializing solver run"));
+            ofprg->message(_("Initializing solver run"));
             initializeSolverRun(iniprogdisp, runCase);
-            ++ofprg;
+            ++*ofprg;
         }
 
         if (!p().run.evaluateonly && !p().run.preprocessonly)
         {
-            ofprg.message(_("Running solver"));
-            runSolver(ofprg, runCase);
-            ++ofprg;
+            ofprg->message(_("Running solver"));
+            runSolver(progress, runCase);
+            ++*ofprg;
         }
 
         ResultSetPtr results;
         if (!p().run.preprocessonly)
         {
-            ofprg.message(_("Finalizing solver run"));
-            finalizeSolverRun(runCase, ofprg);
-            ++ofprg;
+            ofprg->message(_("Finalizing solver run"));
+            finalizeSolverRun(runCase, progress);
+            ++*ofprg;
 
-            ofprg.message(_("Evaluating results"));
-            results = evaluateResults(runCase, ofprg);
-            ++ofprg;
+            ofprg->message(_("Evaluating results"));
+            results = evaluateResults(runCase, progress);
+            ++*ofprg;
         }
         else
         {

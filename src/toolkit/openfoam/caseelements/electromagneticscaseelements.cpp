@@ -24,7 +24,9 @@
 #include "openfoam/openfoamtools.h"
 #include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/fusion/tuple.hpp>
 
 using namespace std;
 using namespace boost;
@@ -100,7 +102,7 @@ void FarFieldBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
         else
         {
             if (!(
-                    MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+                    MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
                     ))
             {
                 BC["type"]=OFDictData::data("zeroGradient");

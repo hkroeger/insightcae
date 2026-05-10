@@ -45,113 +45,6 @@ namespace insight
 
 
 
-// ParameterSet::ParameterSet()
-//     : SubsetParameter(std::string())
-// {}
-
-// // ParameterSet::ParameterSet(const ParameterSet &o)
-// //     : SubsetParameter(o.description().simpleLatex())
-// // {
-// //     operator=(o);
-// // }
-
-
-// // ParameterSet::ParameterSet ( const SubsetParameter& o )
-// //     : SubsetParameter(o.description().simpleLatex())
-// // {
-// //     SubsetParameter::operator=(o);
-// //     initialize();
-// // }
-
-
-// ParameterSet::ParameterSet(Entries &&defaultValue, const std::string &description)
-//     : SubsetParameter(std::move(defaultValue), description)
-// {
-//     initialize();
-// }
-
-
-// ParameterSet::ParameterSet(const EntryReferences &defaultValue, const std::string &description)
-//     : SubsetParameter(defaultValue, description)
-// {
-//     initialize();
-// }
-
-
-// ParameterSet::~ParameterSet()
-// {
-// }
-
-
-
-
-
-// void ParameterSet::copyFrom(const Parameter& o)
-// {
-//   operator=(dynamic_cast<const ParameterSet&>(o));
-// }
-
-
-// void ParameterSet::operator=(const ParameterSet &o)
-// {
-//   SubsetParameter::operator=(o);
-//   initialize();
-// }
-
-
-
-
-// ParameterSet& ParameterSet::merge(const ParameterSet& other )
-// {
-//   SubsetParameter::merge(other);
-//   initialize();
-//   return *this;
-// }
-
-
-
-// std::unique_ptr<ParameterSet>
-// ParameterSet::intersection(const ParameterSet &other) const
-// {
-//   auto ps=std::make_unique<ParameterSet>();
-//   ps->SubsetParameter::copyFrom( *SubsetParameter::intersection(other) );
-//   return std::move(ps);
-// }
-
-
-
-
-// std::unique_ptr<ParameterSet> ParameterSet::cloneParameterSet() const
-// {
-//   auto np=std::make_unique<ParameterSet>();
-//   np->SubsetParameter::copyFrom( *this );
-//   np->initialize();
-//   return np;
-// }
-
-// void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-//     boost::filesystem::path inputfilepath) const
-// {
-//   SubsetParameter::appendToNode(std::string(), doc, node, inputfilepath);
-// }
-
-// void ParameterSet::readFromNode(
-//     rapidxml::xml_node<>& node,
-//     boost::filesystem::path inputfilepath)
-// {
-//   SubsetParameter::readFromNode(std::string(), node, inputfilepath);
-//   initialize();
-// }
-
-
-
-
-
-
-
-
-
-
 
 
 ParameterSet_Validator::~ParameterSet_Validator()
@@ -194,7 +87,9 @@ AnalysisParameterSet::AnalysisParameterSet(
           ->entries(),
           "Parameters of "+ analysisTypeName),
     analysisTypeName_(analysisTypeName)
-{}
+{
+    initializeHierarchy();
+}
 
 
 
@@ -274,7 +169,7 @@ void AnalysisParameterSet::assignFrom(const Element &rhs)
 }
 
 
-std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::clone() const
+std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::cloneUninitialized() const
 {
     auto res = std::make_unique<AnalysisParameterSet>(analysisTypeName_);
     res->assignFrom(*this);

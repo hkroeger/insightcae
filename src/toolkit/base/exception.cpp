@@ -20,10 +20,16 @@
 
 
 #include "exception.h"
+#include <boost/format/format_fwd.hpp>
 #include <exception>
+#include <ostream>
 #include <sstream>
 #include <cstdlib>
 #include <thread>
+
+#ifdef WIN32
+#include <windows.h>  // FlsAlloc / FlsGetValue / FlsSetValue
+#endif
 
 #include <dlfcn.h>    // for dladdr
 #include <cxxabi.h>   // for __cxa_demangle
@@ -176,14 +182,18 @@ void ExceptionBase::saveContext(bool strace)
       }
   }
 
-  if (strace)
+  errorDescription_->strace_="";
+
+  if (const char* iv = getenv("INSIGHT_VERBOSE"))
   {
-    ostringstream trace_buf;
-    trace_buf  << boost::stacktrace::stacktrace();
-    errorDescription_->strace_=trace_buf.str();
+      if (strace && (atoi(iv)>=VerbosityLevel::DeepDetail) )
+      {
+        ostringstream trace_buf;
+        trace_buf  << boost::stacktrace::stacktrace();
+        errorDescription_->strace_=trace_buf.str();
+      }
   }
-  else
-    errorDescription_->strace_="";
+
 }
 
 
@@ -377,7 +387,7 @@ std::ostream& dbg(int verbosityLevel)
 
 ostream &dbg_slot(const std::string &signalName)
 {
-    ostream& os=dbg(DetailedBusiness);
+    ostream& os=dbg(DeepDetail);
     os << "handling signal " << signalName << ".\n";
     return os;
 }
@@ -397,8 +407,24 @@ void ExceptionContext::snapshot(std::vector<std::string>& context)
 
 ExceptionContext& ExceptionContext::getCurrent()
 {
+#ifdef WIN32
+  // thread_local with non-trivial destructor in a DLL causes crashes on
+  // Windows/MinGW because __cxa_thread_atexit fires after the DLL is unmapped.
+  // Use FlsAlloc so the destructor callback runs during DLL_THREAD_DETACH /
+  // DLL_PROCESS_DETACH, while the DLL is still mapped — no crash, no leak.
+  static DWORD flsIdx = FlsAlloc([](PVOID ptr) {
+      delete static_cast<ExceptionContext*>(ptr);
+  });
+  auto* p = static_cast<ExceptionContext*>(FlsGetValue(flsIdx));
+  if (!p) {
+      p = new ExceptionContext();
+      FlsSetValue(flsIdx, p);
+  }
+  return *p;
+#else
   static thread_local ExceptionContext thisThreadsExceptionContext;
   return thisThreadsExceptionContext;
+#endif
 }
 
 
@@ -488,15 +514,23 @@ size_t WarningDispatcher::nWarnings() const
 }
 
 
-////#if !(defined(WIN32)&&defined(DEBUG))
-//thread_local
-////#endif
-//WarningDispatcher thisThreadsWarnings;
-
 WarningDispatcher& WarningDispatcher::getCurrent()
 {
+#ifdef WIN32
+  // Same FLS-based fix as ExceptionContext::getCurrent() above.
+  static DWORD flsIdx = FlsAlloc([](PVOID ptr) {
+      delete static_cast<WarningDispatcher*>(ptr);
+  });
+  auto* p = static_cast<WarningDispatcher*>(FlsGetValue(flsIdx));
+  if (!p) {
+      p = new WarningDispatcher();
+      FlsSetValue(flsIdx, p);
+  }
+  return *p;
+#else
   static thread_local WarningDispatcher thisThreadsWarnings;
   return thisThreadsWarnings;
+#endif
 }
 
 
@@ -578,6 +612,20 @@ public:
         catch (insight::Exception& e)
         {
             return e.description();
+        }
+
+        catch (std::system_error& e)
+        {
+            return std::make_shared<ErrorDescription>(
+                str(boost::format("%s (std::system_error)")
+                    % e.what() ) );
+        }
+
+        catch (std::exception& e)
+        {
+            return std::make_shared<ErrorDescription>(
+                str(boost::format("%s (std::exception)")
+                    % e.what() ) );
         }
 
         catch (...)

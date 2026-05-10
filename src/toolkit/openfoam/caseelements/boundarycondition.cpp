@@ -189,7 +189,7 @@ bool BoundaryCondition::isPrghPressureField(const FieldList::value_type &field)
   return
       ( ( field.first=="pd" ) || ( field.first=="p_gh" ) || ( field.first=="p_rgh" ) )
       &&
-      ( get<0> ( field.second ) == scalarField );
+      ( boost::fusion::get<0> ( field.second ) == scalarField );
 }
 
 

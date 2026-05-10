@@ -14,5 +14,5 @@ set(INCLUDE_DIRS
   ${insight_INCLUDE_DIR}
 )
 
-setup_exe_target_OF(momentumBalance "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
+setup_exe_target_OF(momentumBalance "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "uniof_tools")
 linkToolkit_OF_Exe( momentumBalance )

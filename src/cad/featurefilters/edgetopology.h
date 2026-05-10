@@ -27,7 +27,7 @@ namespace insight {
 namespace cad {
 
 class edgeTopology
-: public Filter
+: public Filter, public EnableCreateFunction<edgeTopology>
 {
 protected:
     GeomAbs_CurveType ct_;

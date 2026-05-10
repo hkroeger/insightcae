@@ -4,7 +4,7 @@
 #include "base/outputanalyzer.h"
 #include "base/progressdisplayer.h"
 
-#include "base/boost_include.h"
+#include <boost/regex.hpp>
 
 namespace insight {
 
@@ -17,7 +17,7 @@ public:
 private:
     boost::regex progressLinePattern_, timePattern_, animWritePattern_, animName_;
     double endTime_;
-    std::shared_ptr<ActionProgress> progr_;
+    ProgressDisplayer *progr_;
 
     std::unique_ptr<ProgressState> curPS_;
 

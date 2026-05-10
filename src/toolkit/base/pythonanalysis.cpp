@@ -27,7 +27,8 @@
 #include <dlfcn.h>
 #include <functional>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include "boost/function.hpp"
 #include "boost/python.hpp"
 
@@ -235,8 +236,8 @@ PythonAnalysisLoader::PythonAnalysisLoader()
                                 analysisName,
                                 [](ParameterSetInput ip,
                                    const boost::filesystem::path& exePath,
-                                   ProgressDisplayer& pd)
-                                { return std::make_unique<supplementedInputDataBase>(std::move(ip), exePath, pd); }
+                                   ActionProgress& ap)
+                                { return std::make_unique<supplementedInputDataBase>(std::move(ip), exePath, ap); }
                                 );
 
                             Analysis::analyses().emplace(

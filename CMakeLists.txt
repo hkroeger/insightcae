@@ -11,7 +11,9 @@ enable_language (Fortran OPTIONAL)
 
 
 if(WIN32)
- add_link_options(LINKER:--export-all-symbols)
+ add_link_options(LINKER:--export-all-symbols) ## too big files with debug in WIN32
+ #set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+ #set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
 enable_testing()
@@ -52,6 +54,9 @@ if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt is required)" ON)
  OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
 endif()
+
+SET(INSIGHT_PACKAGE_NAME_SUFFIX "" CACHE STRING "suffix to add to package name (with a dash)")
+
 
 if (CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_WRAPPER "/opt/mxe/usr/bin/i686-w64-mingw32.shared-cmake" CACHE STRING "required in MXE cross build, cmake is called through wrapper script there")
@@ -136,6 +141,9 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "InsightCAE")
 
 ### change package name according to build options
 SET(CPACK_PACKAGE_NAME "insightcae")
+if (NOT "${INSIGHT_PACKAGE_NAME_SUFFIX}" STREQUAL "")
+  SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-${INSIGHT_PACKAGE_NAME_SUFFIX}")
+endif()
 
 set(CPACK_DEB_COMPONENT_INSTALL OFF)
 set(CPACK_RPM_COMPONENT_INSTALL OFF)
@@ -163,6 +171,38 @@ SET(CPACK_SET_DESTDIR ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+
+## DEBUG
+if (WIN32 AND (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+#  # Root CMakeLists.txt — strip -g out of the Debug flag string
+#  string(REGEX REPLACE "-g[0-9]?" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+#  # CMAKE_CXX_FLAGS_DEBUG is now just "-O0" (or whatever remains)
+  # foreach(lang C CXX)
+  #   string(REPLACE "-g" "-g1" CMAKE_${lang}_FLAGS_DEBUG "${CMAKE_${lang}_FLAGS_DEBUG}")
+  #   string(REPLACE "-O0" "" CMAKE_${lang}_FLAGS_DEBUG "${CMAKE_${lang}_FLAGS_DEBUG}")
+  # endforeach()
+  add_compile_options(-Wa,-mbig-obj -gdwarf-2 -O1)
+endif()
+
+## profiling
+# if (WIN32)
+#     add_compile_options(-pg -mno-fentry)
+#     add_link_options(-pg)
+# else()
+#     add_compile_options(-pg)
+#     add_link_options(-pg)
+# endif()
+
+macro(target_enable_qt TARGET)
+  find_package(Qt5Widgets CONFIG REQUIRED)
+
+  set_target_properties(${TARGET} PROPERTIES
+      AUTOMOC ON
+      AUTORCC ON
+      AUTOUIC ON
+  )
+endmacro()
 
 
 macro(create_script SCRIPTFILE SCR_CONTENT)
@@ -213,8 +253,7 @@ if (INSIGHT_BUILD_TOOLKIT)
         list(APPEND BOOST_COMPONENTS python3)
     endif()
 
-    find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED
-        )
+    find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 
     add_subdirectory(CMake/vtkTargets/vtkOffscreen)
     add_subdirectory(CMake/vtkTargets/vtkOnscreen)
@@ -223,7 +262,6 @@ endif()
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 
@@ -269,7 +307,7 @@ find_package(Intl REQUIRED)
 
 include("CMake/Gettext_helpers.cmake")
 
-macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
+macro(target_setup_gettext TARGET_NAME GETTEXT_DOMAIN)
     set(GETTEXT_TARGET "${TARGET_NAME}-gettext")
     set(GETTEXT_OUTPUT_DIR "locale")
     set(GETTEXT_LANGUAGES "en" "de")
@@ -277,10 +315,12 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
     target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_DOMAIN=\"${GETTEXT_DOMAIN}\"")
     target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_OUTPUT_DIR=\"${GETTEXT_OUTPUT_DIR}\"")
 
+    get_target_property(ALL_SOURCES ${TARGET_NAME} SOURCES)
+
     CONFIGURE_GETTEXT(
      DOMAIN ${GETTEXT_DOMAIN}
      TARGET_NAME ${GETTEXT_TARGET}
-     SOURCES ${ARGN}
+     SOURCES ${ALL_SOURCES}
      POTFILE_DESTINATION ${GETTEXT_OUTPUT_DIR}
 
      XGETTEXT_ARGS
@@ -301,7 +341,7 @@ macro(setup_gettext TARGET_NAME GETTEXT_DOMAIN)
      INSTALL_COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      ALL
     )
-endmacro()
+endmacro(target_setup_gettext)
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)
@@ -941,6 +981,9 @@ macro (add_pybindings TARGETNAME IFFILE LIBS)
     swig_add_library(${PYTARGET}
         LANGUAGE python
         SOURCES ${IFFILE})
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.20")
+      set_property(TARGET ${PYTARGET} PROPERTY SWIG_USE_SWIG_DEPENDENCIES TRUE)
+    endif()
     target_link_libraries(${PYTARGET} ${LIBS})
     #linkToolkitVtk(${PYTARGET} Offscreen) # causes clash in workbench (links onscreen and offscreen at the same time)
     set_target_properties(${PYTARGET}

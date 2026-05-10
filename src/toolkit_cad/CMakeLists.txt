@@ -2,15 +2,26 @@ if (INSIGHT_BUILD_ISCAD)
 
 project(toolkit_cad)
 
-set(toolkit_cad_SRCS
+
+add_library(toolkit_cad SHARED
+    cadfeaturetransient.cpp cadfeaturetransient.h
+
+    cadgeometryparameter.h cadgeometryparameter.cpp
+    cadsketchparameter.h cadsketchparameter.cpp
+
     blockmesh_curvedcylinder.cpp blockmesh_curvedcylinder.h
     blockmesh_cylwedgeortho.cpp blockmesh_cylwedgeortho.h
     blockmesh_tubemesh.cpp blockmesh_tubemesh.h
     blockmesh_cylwedge.cpp blockmesh_cylwedge.h
-    )
 
-add_library(toolkit_cad SHARED ${toolkit_cad_SRCS})
-add_PDL(toolkit_cad "${toolkit_cad_SRCS}")
+    openfoam/snappyhexmesh.h openfoam/snappyhexmesh.cpp
+)
+target_add_PDL(toolkit_cad)
+
+include(GenerateExportHeader)
+generate_export_header(toolkit_cad)
+target_compile_definitions(toolkit_cad PRIVATE toolkit_cad_EXPORTS)
+
 target_link_libraries(toolkit_cad insightcad toolkit)
 target_include_directories(toolkit_cad
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/insightcae>

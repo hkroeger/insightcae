@@ -15,7 +15,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS
-    uniof ${Boost_system_LIBRARY}
+    uniof Boost::system
 )
 
 set(OF_VERSIONS OFesi2112)

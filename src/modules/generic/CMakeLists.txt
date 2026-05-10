@@ -1,30 +1,18 @@
 project(genericmodules)
 
-#find_package(OpenCasCade REQUIRED)
 
-set(genericmodules_SOURCES 
-  filetemplate.cpp filetemplate.h
-  convergenceanalysis.cpp convergenceanalysis.h
+
+add_library(genericmodules SHARED
+    filetemplate.cpp filetemplate.h
+    convergenceanalysis.cpp convergenceanalysis.h
+    numericalwindtunnel.cpp numericalwindtunnel.h numericalwindtunnel_eval.cpp
+    internalpressureloss.cpp internalpressureloss.h
+    internalpressureloss_supplementedinputdata.cpp
+    numericalwindtunnel_supplementedinputdata.cpp
+    internalpressureloss_eval.cpp
 )
-
-set(genericmodules_LIBS
-  toolkit insightcad
-)
-
-if (INSIGHT_BUILD_OPENFOAM AND INSIGHT_BUILD_CAD)
-    LIST(APPEND genericmodules_SOURCES
-        numericalwindtunnel.cpp numericalwindtunnel.h
-        internalpressureloss.cpp internalpressureloss.h
-    )
-    LIST(APPEND genericmodules_LIBS insightcad)
-endif()
-
-file(GLOB_RECURSE genericmodules_HEADERS "*.h")
-
-add_library(genericmodules SHARED ${genericmodules_SOURCES})
-
-add_PDL(genericmodules "${genericmodules_HEADERS}")
-target_link_libraries(genericmodules ${genericmodules_LIBS})
+target_add_PDL(genericmodules)
+target_link_libraries(genericmodules toolkit toolkit_cad)
 target_include_directories(genericmodules
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -37,16 +25,22 @@ endif()
 
 add_shared_file(genericmodules modules.d genericmodules.module)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
-set(genericmodulesgui_SOURCES
-    numericalwindtunnel_gui.cpp
+
+
+add_library(genericmodulesgui SHARED
+    numericalwindtunnel_gui.h numericalwindtunnel_gui.cpp
     internalpressureloss_gui.cpp
+    genericmodules.qrc
 )
-qt5_add_resources(genericmodulesgui_SOURCES genericmodules.qrc)
-add_library(genericmodulesgui SHARED ${genericmodulesgui_SOURCES})
+target_enable_qt(genericmodulesgui)
 target_link_libraries(genericmodulesgui genericmodules toolkit_gui)
 
 install(TARGETS genericmodulesgui LIBRARY DESTINATION lib COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
 
 add_pybindings(GenericModules "genericmodules.i" genericmodules)
+
+target_sources(GenericModules_python
+  PRIVATE
+    numericalwindtunnel_gui.h
+)

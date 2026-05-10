@@ -4,7 +4,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 using namespace rapidxml;
 
 
@@ -65,7 +64,7 @@ std::string FileResult::latexRepresentation (
   f<<  "\\texttt{" <<
       SimpleLatex(
         boost::filesystem::absolute(
-            fileName()).generic_string() )
+            filePath()).generic_string() )
         .toLaTeX() << "}";
   return f.str();
 }
@@ -118,7 +117,7 @@ xml_node< char >* FileResult::appendToNode (
 
 
 
-std::unique_ptr<hierarchicalData::Element> FileResult::clone() const
+std::unique_ptr<hierarchicalData::Element> FileResult::cloneUninitialized() const
 {
     auto res =
         std::make_unique<FileResult>

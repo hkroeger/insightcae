@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class edgeRadialLen
-    : public QuantityComputer<double>
+    : public QuantityComputer<double>, public EnableCreateFunction<edgeRadialLen>
 {
 protected:
     std::shared_ptr<matQuantityComputer > ax_;

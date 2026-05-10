@@ -149,7 +149,7 @@ MatrixParameter::MatrixParameter(const rapidxml::xml_node<> &node)
 }
 
 
-std::unique_ptr<hierarchicalData::Element> MatrixParameter::clone() const
+std::unique_ptr<hierarchicalData::Element> MatrixParameter::cloneUninitialized() const
 {
     auto p=std::make_unique<MatrixParameter>(
         value_,

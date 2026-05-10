@@ -8,7 +8,7 @@ int main(int argc, char*argv[])
 
         assertion( argc==2, "Exactly one command line arguments are required!");
 
-        class Case : public OpenFOAMCaseWithCylinderMesh
+        class Case : public OpenFOAMCaseWithCylinderMesh<>
         {
 
         public:

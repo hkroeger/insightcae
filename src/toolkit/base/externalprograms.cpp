@@ -4,6 +4,7 @@
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
+#include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
 namespace insight {
@@ -17,7 +18,12 @@ std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints
      }
     },
     { "pdflatex",
-     {}
+        {
+#ifdef WIN32
+            "C:\\Program Files\\MiKTeX\\miktex\\bin\\x64\\pdflatex.exe",
+            std::string("C:\\Users\\")+std::getenv("USERNAME")+"\\AppData\\Local\\Programs\\MiKTeX\\miktex\\bin\\x64\\pdflatex.exe"
+#endif
+        }
     },
     { "gnuplot",
      {
@@ -29,7 +35,7 @@ std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints
     { "iscad",
      {
 #ifdef WIN32
-        "c:\\Program Files (x86)\\silentdynamics.*\\.*\\bin\\iscad.exe",
+        "c:\\Program Files.*\\silentdynamics.*\\.*\\bin\\iscad.exe",
          ".\\iscad.exe"
 #endif
      }
@@ -47,21 +53,21 @@ std::map<std::string, std::set<boost::filesystem::path> > requiredPrograms_hints
 
 ExternalPrograms::ExternalPrograms()
 {
-    std::cout << "checking required exe files"<<std::endl;
+    dbg() << "checking required exe files"<<std::endl;
 
     for (const auto& exe: requiredPrograms_hints)
     {
         auto p = boost::process::search_path(exe.first);
-        std::cout << "for required exe "<<exe.first<<" found in search path: "<<p<<std::endl;
+        dbg() << "for required exe "<<exe.first<<" found in search path: "<<p<<std::endl;
         if (p.empty())
         {
             for (auto&h: exe.second) // go through hints
             {
-                std::cout << "trying hint "<<h<<std::endl;
+                dbg() << "trying hint "<<h<<std::endl;
                 auto matches=wildcardSearch(h);
                 for (auto& m: matches)
                 {
-                    std::cout << "found "<<m<<std::endl;
+                    dbg() << "found "<<m<<std::endl;
                 }
                 if (matches.size())
                 {
@@ -129,12 +135,7 @@ void ExternalPrograms::writeConfiguration(const boost::filesystem::path &file)
     if (!boost::filesystem::exists(file.parent_path()))
         boost::filesystem::create_directories(file.parent_path());
 
-    xml_document<> doc;
-    xml_node<>* decl = doc.allocate_node(node_declaration);
-    decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-    decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-    doc.append_node(decl);
-    xml_node<> *rootnode = doc.allocate_node(node_element, "root");
+    XMLDocument doc;
     for (const auto& rs: *this)
     {
       xml_node<> *exenode = doc.allocate_node(node_element, "externalProgram");
@@ -144,23 +145,24 @@ void ExternalPrograms::writeConfiguration(const boost::filesystem::path &file)
       exenode->append_attribute(doc.allocate_attribute
                                    ("path",
                                      doc.allocate_string(rs.second.string().c_str()) ) );
-      rootnode->append_node(exenode);
+      doc.rootNode->append_node(exenode);
     }
-
-    doc.append_node(rootnode);
-
-    std::ofstream f(file.string());
-    f << doc;
+    doc.saveToFile(file);
 }
 
 
 
-std::vector<std::string> ExternalPrograms::missingPrograms() const
+std::vector<std::string> ExternalPrograms::findMissingPrograms(
+    ActionProgress &prg) const
 {
+    prg.setNSteps(size());
     std::vector<std::string> mp;
     for (const auto& p: *this)
     {
-        if (p.second.empty())
+        prg.stepUp(str(boost::format("Checking for program %s")%p.first));
+        if ( p.second.empty()
+            || !boost::filesystem::exists(p.second)
+            || !boost::filesystem::is_executable(p.second) )
             mp.push_back(p.first);
     }
     return mp;
@@ -175,11 +177,30 @@ ExternalPrograms& ExternalPrograms::globalInstance()
 
 boost::filesystem::path ExternalPrograms::path(const std::string &exeName)
 {
+    boost::filesystem::path thePath;
+
     auto i=globalInstance().find(exeName);
     if (i!=globalInstance().end())
-        return i->second;
+    {
+        thePath = i->second;
+    }
     else
-        throw insight::Exception("No path known to executable "+exeName+"! Please check external programs configuration!");
+    {
+        throw insight::Exception(
+            "No path known to executable %s!"
+            " Please check external programs configuration!",
+            exeName.c_str());
+    }
+
+    if (!boost::filesystem::exists(thePath))
+    {
+        throw insight::Exception(
+            "The executable %s does not exist!"
+            " Please check external programs configuration!",
+            thePath.c_str());
+    }
+
+    return thePath;
 }
 
 } // namespace insight

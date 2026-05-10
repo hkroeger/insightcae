@@ -49,6 +49,7 @@ class vtkRenderWindowInteractor;
 class IQVTKSelectCADEntity;
 class IQVTKSelectSubshape;
 class IQVTKCADModel3DViewer;
+class BackgroundImage;
 
 typedef
 #if VTK_MAJOR_VERSION>=8
@@ -80,53 +81,6 @@ Q_SIGNALS:
 };
 
 
-
-class BackgroundImage
-    : public QObject
-{
-    Q_OBJECT
-
-    QString label_;
-    boost::filesystem::path imageFileName_;
-    vtkSmartPointer<vtkImageActor> imageActor_;
-    vtkRenderer *usedRenderer_;
-
-    IQVTKCADModel3DViewer& viewer();
-
-public:
-    /**
-     * @brief BackgroundImage
-     * load image and launch orientation action
-     * @param fp
-     * @param viewer
-     */
-    BackgroundImage(
-        const boost::filesystem::path& fp,
-        IQVTKCADModel3DViewer& viewer );
-
-    /**
-     * @brief BackgroundImage
-     * restore from XML saved config
-     * @param node
-     * @param viewer
-     */
-    BackgroundImage(
-        const rapidxml::xml_node<>& node,
-        IQVTKCADModel3DViewer& viewer );
-
-    ~BackgroundImage();
-
-    void reorientImage();
-
-    QString label() const;
-
-    void write(
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node ) const;
-
-public Q_SLOTS:
-    void toggleVisibility(bool show);
-};
 
 
 
@@ -264,6 +218,8 @@ private:
                 QColor hicol = QColorConstants::Red );
         ~ExposeItem();
 
+        std::set<vtkProp*> affectedActors() const override;
+
         const CADEntity& entity() const;
         QModelIndex index() const;
 
@@ -277,8 +233,20 @@ private:
      * highlighting => make thick frame or something to
      * indicate that object is selected
      */
+    class ActorHighlighter : public IQVTKViewerState
+    {
+    protected:
+        vtkSmartPointer<vtkActor> actor_;
 
-    class SilhouetteHighlighter : public IQVTKViewerState
+    public:
+        ActorHighlighter(
+            IQVTKCADModel3DViewer& viewer,
+            vtkActor* actorToHighlight );
+
+        std::set<vtkProp*> affectedActors() const override;
+    };
+
+    class SilhouetteHighlighter : public ActorHighlighter
     {
         vtkSmartPointer<vtkPolyDataSilhouette> silhouette_;
         vtkSmartPointer<vtkActor> silhouetteActor_;
@@ -286,15 +254,14 @@ private:
     public:
         SilhouetteHighlighter(
             IQVTKCADModel3DViewer& viewer,
-            vtkPolyDataMapper* mapperToHighlight,
+            vtkActor* actorToHighlight,
             QColor hicol = QColorConstants::Red );
         ~SilhouetteHighlighter();
     };
     friend class SilhouetteHighlighter;
 
-    class LinewidthHighlighter : public IQVTKViewerState
+    class LinewidthHighlighter : public ActorHighlighter
     {
-        vtkSmartPointer<vtkActor> actor_;
         double oldColor_[3];
         float oldLineWidth_;
 
@@ -309,9 +276,8 @@ private:
 
 
 
-    class PointSizeHighlighter : public IQVTKViewerState
+    class PointSizeHighlighter : public ActorHighlighter
     {
-        vtkSmartPointer<vtkActor> actor_;
         double oldColor_[3];
         float oldPointSize_;
 
@@ -337,6 +303,7 @@ private:
             vtkCaptionActor2D* actorToHighlight,
             QColor hicol = QColorConstants::Red );
         ~TextActorHighlighter();
+        std::set<vtkProp*> affectedActors() const override;
     };
     friend class TextActorHighlighter;
 
@@ -376,6 +343,7 @@ private:
     void redrawNow(bool force=true);
 
     friend class BackgroundImage;
+    QSlider* bgBleechSlider_;
     QList<BackgroundImage*> backgroundImages_;
 
     QItemSelectionModel *defaultSelectionModel_, *customSelectionModel_;
@@ -398,6 +366,7 @@ private Q_SLOT:
 
 Q_SIGNALS:
     void contextMenuClick(QPoint pGlob);
+    void changeBackgroundImageBleech(int newPercent);
 
 public:
     void closeEvent(QCloseEvent *ev) override;
@@ -488,8 +457,14 @@ public:
     ItemAtCursor findUnderCursorAt(const QPoint& clickPos) const;
 
     void setSelectionModel(QItemSelectionModel *selmodel) override;
+    QItemSelectionModel* selectionModel() const override;
 
-#warning unify with iqvtkviewer
+    void externallySelectByModelIndex(const QModelIndex& sourceModelIdx) override;
+    void externallyDeselectByModelIndex(const QModelIndex& sourceModelIdx) override;
+    void externallySelectByModelIndices(const std::vector<QModelIndex>& indices) override;
+    void externallyDeselectByModelIndices(const std::vector<QModelIndex>& indices) override;
+    void externallyClearViewerSelection() override;
+
     arma::mat pointInPlane3D(const gp_Ax3& plane, const arma::mat& pip2d) const;
     arma::mat pointInPlane3D(const gp_Ax3& plane, const QPoint& screenPos) const;
     arma::mat pointInPlane2D(const gp_Ax3& plane, const QPoint& screenPos) const;

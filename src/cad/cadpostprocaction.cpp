@@ -24,6 +24,12 @@ namespace cad {
 
 defineType(PostprocAction);
 
+defineStaticFunctionTable2(
+    "rules for postprocessing actions",
+    PostprocAction, InsertRule, insertrule );
+
+
+
 void PostprocAction::execute()
 {
   if (!valid()) build();

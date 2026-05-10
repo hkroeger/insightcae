@@ -81,9 +81,9 @@ void PrefixedProgressDisplayer::reset()
 {}
 
 
-bool PrefixedProgressDisplayer::stopRun() const
+bool PrefixedProgressDisplayer::stopIsDemanded() const
 {
-  return parent_->stopRun();
+  return parent_->stopIsDemanded();
 }
 
 

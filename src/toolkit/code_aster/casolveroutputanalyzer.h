@@ -8,8 +8,7 @@
 #include <memory>
 #include <armadillo>
 
-#include "base/boost_include.h"
-#include "boost/regex.hpp"
+#include <boost/regex.hpp>
 
 namespace insight {
 
@@ -39,7 +38,7 @@ public:
 
   void update (const std::string& line) override;
 
-  bool stopRun() const override;
+  bool stopIsDemanded() const override;
 
   std::vector<std::shared_ptr<Message> > messages(Message::MsgType t) const;
   std::vector<std::shared_ptr<Message> > warnings() const;

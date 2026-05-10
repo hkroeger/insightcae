@@ -49,19 +49,19 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
          e; e = e->next_sibling("OpenFOAMCaseElement"))
     {
         std::string FOtype = e->first_attribute("type")->value();
-    if (outputFilterFunctionObject::factories_->find(FOtype) !=
-            outputFilterFunctionObject::factories_->end())
-	{
-      auto ps = outputFilterFunctionObject::defaultParametersFor(FOtype);
-      ps->readFromNode( std::string(), *e);
-      ps->resolveRelativePaths( cfgfile.parent_path() );
-      std::shared_ptr<outputFilterFunctionObject> fo(outputFilterFunctionObject::lookup(FOtype, cm, *ps));
-	  fo->evaluate
-	  (
-	    cm, boost::filesystem::current_path(), results, 
-        "Evaluation of function object "+ps->get<StringParameter>("name")()
-	  );
-	}
+        if (functionObject::factories_->find(FOtype) !=
+            functionObject::factories_->end())
+        {
+            auto ps = functionObject::defaultParametersFor(FOtype);
+            ps->readFromNode( std::string(), *e);
+            ps->resolveRelativePaths( cfgfile.parent_path() );
+            std::shared_ptr<functionObject> fo(functionObject::lookup(FOtype, cm, *ps));
+            fo->evaluate
+                (
+                    cm, boost::filesystem::current_path(), results,
+                    "Evaluation of function object "+ps->get<StringParameter>("name")()
+                    );
+        }
     }    
     
     std::string filestem=cfgfile.stem().string();

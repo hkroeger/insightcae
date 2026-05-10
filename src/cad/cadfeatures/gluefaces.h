@@ -20,16 +20,15 @@
 #ifndef INSIGHT_CAD_GLUEFACES_H
 #define INSIGHT_CAD_GLUEFACES_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 #include "cadparameters.h"
 
 namespace insight {
 namespace cad {
 
 class GlueFaces
-: public Feature
+: public DerivedFeature
 {
-  FeaturePtr feat_;
   ScalarPtr tol_;
   
   size_t calcHash() const override;
@@ -41,7 +40,7 @@ class GlueFaces
 public:
   declareType("GlueFaces");
 #ifndef SWIG
-  DEPENDS((feat_,tol_));
+  DEPENDS_W_BASE(DerivedFeature, (tol_));
 #endif
   CREATE_FUNCTION(GlueFaces);
   CLONEABLE(GlueFaces);

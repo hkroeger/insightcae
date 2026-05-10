@@ -4,6 +4,8 @@
 #include "detectionhandler.h"
 #include "analyzeserverdetector.h"
 
+#include <iostream>
+
 using namespace std;
 using namespace insight;
 using namespace boost;

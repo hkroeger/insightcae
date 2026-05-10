@@ -48,7 +48,7 @@ size_t DerivedFeature::calcHash() const
 }
 
 DerivedFeature::DerivedFeature(const DerivedFeature&o, TreeCloneMap& tcm)
-    : CL(basefeat_)
+    : Feature(o, tcm), CL(basefeat_)
 {}
 
 DerivedFeature::DerivedFeature(ConstFeaturePtr basefeat)
@@ -172,6 +172,19 @@ void DerivedFeature::operator=(const DerivedFeature& o)
 {
     basefeat_=o.basefeat_;
     Feature::operator=(o);
+}
+
+boost::optional<BOMDescriptionData> DerivedFeature::BOMDescription() const
+{
+    auto myBD=Feature::BOMDescription();
+    if (myBD)
+    {
+        return myBD;
+    }
+    else
+    {
+        return basefeat_->BOMDescription();
+    }
 }
 
 }

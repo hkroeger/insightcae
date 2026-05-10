@@ -11,7 +11,7 @@ namespace insight {
 namespace cad {
 
 class hasCommonFaceArea
-    : public Filter
+    : public Filter, public EnableCreateFunction<hasCommonFaceArea>
 {
 protected:
     FeatureSetPtr f_; // to match

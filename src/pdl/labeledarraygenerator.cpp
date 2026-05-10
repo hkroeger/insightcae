@@ -1,5 +1,7 @@
 #include "labeledarraygenerator.h"
 
+#include "boost/format.hpp"
+
 using namespace std;
 
 
@@ -71,7 +73,7 @@ std::string LabeledArrayGenerator::cppDefaultValueExpression() const
         {
             if (i>0) rep<<",";
             rep << "{\n";
-            rep << "\""<< str(boost::format(pattern) % i) << "\", ";
+            rep << "\""<< boost::str(boost::format(pattern) % i) << "\", ";
             rep << value->cppConstructorParameters() ;
             rep << "}\n";
         }
@@ -112,7 +114,7 @@ void LabeledArrayGenerator::cppWriteCreateStatement
     else if (argType==KeysPath)
     {
         auto keyPath = patternOrKeysPath;
-        os<<psvarname<<"->setKeySourceParameterPath(\""<<keyPath<<"\");";
+        os<<psvarname<<"->setKeySourceParameterPathUninitialized(ParameterSetBuilder::key(), \""<<keyPath<<"\");";
     }
 
     value->cppWriteCreateStatement(os, name+"_default_value");
@@ -121,7 +123,7 @@ void LabeledArrayGenerator::cppWriteCreateStatement
     if (num>0)
     {
         os<<"for (size_t i=0; i<"<<num<<"; i++) "
-           <<psvarname<<"->appendEmpty();\n";
+           <<psvarname<<"->appendEmptyUninitialized(ParameterSetBuilder::key());\n";
     }
     os<<"}\n";
 }
@@ -152,9 +154,9 @@ void LabeledArrayGenerator::cppWriteSetStatement(
     os<<
         "for (int iii="<<dynvarname<<".nChildren()-1; iii>=0; --iii)\n"
         "{\n"
-          "auto key="<<dynvarname<<".childElementName(iii);\n"
-          "if ("<<staticvarname<<".count(key)==0)"
-            <<dynvarname<<".eraseValue(key);\n"
+          "auto k="<<dynvarname<<".childElementName(iii);\n"
+          "if ("<<staticvarname<<".count(k)==0)"
+            <<dynvarname<<".eraseValue(k);\n"
         "}\n";
 }
 

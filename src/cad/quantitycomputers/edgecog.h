@@ -30,7 +30,7 @@ namespace cad
 {
   
 class edgeCoG
-: public QuantityComputer<arma::mat>
+: public QuantityComputer<arma::mat>, public EnableCreateFunction<edgeCoG>
 {
 public:
     edgeCoG();

@@ -6,7 +6,7 @@
 namespace insight {
 namespace bmd {
 
-class blockMesh;
+class blockMeshBlocking;
 
 class Edge
 {
@@ -24,7 +24,7 @@ public:
   virtual std::vector<OFDictData::data>
   bmdEntry(const PointMap& allPoints, int OFversion) const =0;
 
-  virtual void registerPoints(blockMesh& bmd) const;
+  virtual void registerPoints(blockMeshBlocking& bmd) const;
 
   virtual Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const =0;
   virtual Edge* clone() const =0;

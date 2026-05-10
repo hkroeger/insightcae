@@ -58,6 +58,8 @@ public:
         return values_;
     }
 
+    std::string value(int i) const;
+
     std::string latexRepresentation(
         const std::string& name,
         int documentHierarchyLevel,
@@ -88,7 +90,8 @@ public:
 
     bool isEqual(const Element& op) const override;
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 };
 
 

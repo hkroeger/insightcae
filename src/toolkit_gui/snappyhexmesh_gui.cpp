@@ -34,6 +34,7 @@ snappyHexMeshConfiguration_ParameterSet_Visualizer::computeSupplementedInput()
 
 void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationElements()
 {
+#warning reenable
   snappyHexMeshConfiguration::Parameters p(parameters());
 
   for (const auto& feat: p.features)
@@ -42,13 +43,13 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
     {
       const auto& gp = geo->p();
 
-      if (gp.fileName->isValid())
+      if (gp.geometry->isValid())
       {
-          cad::is_gp_Trsf tr(gp.translate, gp.rollPitchYaw, gp.scale);
+          cad::is_gp_Trsf tr(gp.translate, gp.rollPitchYaw, gp.scalefactor);
 
         addFeature(
               "geometry:"+gp.name,
-              cad::STL::create(gp.fileName->filePath(), tr)
+              cad::Transform::create(gp.geometry->geometry(), tr)
               );
       }
     } else if ( const auto* refbox = dynamic_cast<snappyHexMeshFeats::RefinementBox*>(feat.get()) )
@@ -86,12 +87,12 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
     {
       const auto& gp = refgeo->p();
 
-      if (gp.fileName->isValid())
+      if (gp.geometry->isValid())
       {
         addFeature( "refinement:"+gp.name,
-                    cad::STL::create(
-                       gp.fileName->filePath(),
-                        cad::is_gp_Trsf(gp.translate, gp.rollPitchYaw, gp.scale))
+                    cad::Transform::create(
+                       gp.geometry->geometry(),
+                        cad::is_gp_Trsf(gp.translate, gp.rollPitchYaw, gp.scalefactor))
                     );
       }
     }

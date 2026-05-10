@@ -215,36 +215,6 @@ public:
         }
     }
 
-    // bool onMouseClick(
-    //     typename Base::MouseButton btn,
-    //     Qt::KeyboardModifiers nFlags,
-    //     const QPoint point ) override
-    // {
-    //     if (!this->hasChildReceivers() || !Base::onMouseClick(btn, nFlags, point))
-    //     {
-    //         if (!nextSelectionCandidates_ )
-    //         {
-    //             auto selectedEntities = findEntitiesUnderCursorFiltered(point);
-
-    //             if (selectedEntities.size()>0)
-    //             {
-    //                 previewHighlight_ = boost::blank();
-    //                 nextSelectionCandidates_=
-    //                     std::make_shared<SelectionCandidates>
-    //                     (*this, selectedEntities);
-
-    //                 this->userPrompt(
-    //                     QString(
-    //                         "There are %1 entities at picked location."
-    //                         " Hold mouse button and press <Space> to cycle selection." )
-    //                     .arg(nextSelectionCandidates_->size() ) );
-
-    //                 return true;
-    //             }
-    //         }
-    //     }
-    //     return false;
-    // }
 
 
 
@@ -534,6 +504,68 @@ public:
             externallyUnselect(e);
         }
     }
+
+    void externallySelectList(const std::vector<SelectedEntity>& entities)
+    {
+        if (entities.empty()) return;
+        if (!currentSelection_)
+            currentSelection_ = multiSelectionContainerFactory_();
+
+        std::vector<SelectedEntity> toInsert;
+        for (const auto& entity : entities)
+            if (currentSelection_->count(entity) < 1)
+                toInsert.push_back(entity);
+
+        callInsertMany_(*currentSelection_, toInsert, 0);
+
+        for (const auto& entity : toInsert)
+        {
+            if (highlights_.count(entity) < 1)
+                highlights_[entity] = highlightEntity(entity, selectionColor);
+            entitySelected(entity);
+        }
+        this->userPrompt(
+            QString("Added %1 to selection. Now %2 entities selected.")
+                .arg(toInsert.size()).arg(currentSelection_->size()));
+    }
+
+    void externallyUnselectList(const std::vector<SelectedEntity>& entities)
+    {
+        if (!currentSelection_) return;
+
+        std::vector<SelectedEntity> toErase;
+        for (const auto& entity : entities)
+            if (currentSelection_->count(entity) > 0)
+                toErase.push_back(entity);
+
+        callEraseMany_(*currentSelection_, toErase, 0);
+
+        for (const auto& entity : toErase)
+            highlights_.erase(entity);
+
+        this->userPrompt(
+            QString("Removed %1 from selection. Now %2 entities selected.")
+                .arg(toErase.size()).arg(currentSelection_->size()));
+    }
+
+private:
+    template<class C, class E>
+    auto callInsertMany_(C& c, const std::vector<E>& v, int)
+        -> decltype(c.insertMany(v), void())
+    { c.insertMany(v); }
+
+    template<class C, class E>
+    void callInsertMany_(C& c, const std::vector<E>& v, ...)
+    { for (const auto& e : v) c.insert(e); }
+
+    template<class C, class E>
+    auto callEraseMany_(C& c, const std::vector<E>& v, int)
+        -> decltype(c.eraseMany(v), void())
+    { c.eraseMany(v); }
+
+    template<class C, class E>
+    void callEraseMany_(C& c, const std::vector<E>& v, ...)
+    { for (const auto& e : v) c.erase(e); }
 
 };
 

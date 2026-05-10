@@ -41,7 +41,7 @@
 
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "workbenchwindow.h"
-#include "graphprogressdisplayer.h"
+#include "iqgraphprogressdisplayer.h"
 
 #include "iqdebugstream.h"
 #include "logviewerwidget.h"
@@ -124,8 +124,8 @@ protected:
 
   QProgressBar* progressbar_;
 
-  GraphProgressDisplayer *graphProgress_;
-  insight::QActionProgressDisplayerWidget* actionProgress_;
+  IQGraphProgressDisplayer *graphProgress_;
+  insight::IQActionProgressDisplayManager* actionProgress_;
   insight::CombinedProgressDisplayer progressDisplayer_;
 
   // ====================================================================================
@@ -204,6 +204,7 @@ protected:
 public:
   AnalysisForm(
       QWidget* parent,
+      insight::IQActionProgressDisplayManager* actionProgress,
       const std::string& analysisName,
       bool logToConsole=false
       );

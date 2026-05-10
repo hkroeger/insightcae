@@ -30,8 +30,11 @@ namespace cad
 
 in::in(FeatureSet set)
 : set_(set)
-{
-}
+{}
+
+in::in(FeatureSetPtr set)
+    : set_(*set)
+{}
 
 bool in::checkMatch(FeatureID feature) const
 {

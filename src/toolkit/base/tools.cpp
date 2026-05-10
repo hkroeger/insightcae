@@ -23,11 +23,17 @@
 #include <dlfcn.h>
 
 #include "base/boost_include.h"
+#include "boost/thread.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include "boost/range/iterator_range.hpp"
+#include <boost/range/adaptor/reversed.hpp>
+
 #include "boost/asio.hpp"
 #include "base/exception.h"
 #include "base/cppextensions.h"
 #include "base/externalprograms.h"
 #include "base/externalprocess.h"
+
 
 #include "vtkSTLReader.h"
 #include "vtkSTLWriter.h"
@@ -162,6 +168,55 @@ std::string base64_encode(const std::string& s)
   return os.str();
 }
 
+
+char* base64_encode(
+    rapidxml::xml_document<> &doc,
+    const std::string& file_content_ )
+{
+    using namespace boost::archive::iterators;
+    typedef
+        //          insert_linebreaks<         // insert line breaks every 72 characters
+        base64_from_binary<    // convert binary values to base64 characters
+            transform_width<   // retrieve 6 bit integers from a sequence of 8 bit bytes
+                const char*, 6, 8
+                >
+            >
+            //              ,72 >
+            base64_enc; // compose all the above operations in to a new iterator
+
+    char tail[3] = {0,0,0};
+    size_t len=file_content_.size();
+    unsigned int one_third_len = len/3;
+    unsigned int len_rounded_down = one_third_len*3;
+    unsigned int j = len_rounded_down + one_third_len;
+    unsigned int base64length = ((4 * file_content_.size() / 3) + 3) & ~3;
+
+    auto *xml_content = doc.allocate_string(0, base64length+1);
+    std::copy(
+        base64_enc(file_content_.c_str()),
+        base64_enc(file_content_.c_str()+len_rounded_down),
+        xml_content
+        );
+
+    if (len_rounded_down != len)
+    {
+        unsigned int i=0;
+        for(; i < len - len_rounded_down; ++i)
+        {
+            tail[i] = file_content_[len_rounded_down+i];
+        }
+
+        std::copy(base64_enc(tail), base64_enc(tail + 3), xml_content + j);
+
+        for(i=len + one_third_len + 1; i < j+4; ++i)
+        {
+            xml_content[i] = '=';
+        }
+    }
+
+    xml_content[base64length]=0;
+    return xml_content;
+}
 
 
 
@@ -311,7 +366,7 @@ std::string timeCodePrefix()
 {
   ptime now = second_clock::universal_time();
   static std::locale loc(std::locale::classic(), //std::cout.getloc(),
-                           new time_facet("%Y%m%d%H%M%S"));
+                           new boost::posix_time::time_facet("%Y%m%d%H%M%S"));
   std::ostringstream ss;
   ss.imbue(loc);
   ss << now;
@@ -528,7 +583,7 @@ SharedPathList &SharedPathList::global()
 path SharedPathList::getSharedFilePath(const path& file, bool* foundPtr)
 {
   if (foundPtr) *foundPtr=true;
-  BOOST_REVERSE_FOREACH( const path& p, *this)
+  for( auto& p: boost::adaptors::reverse(*this))
   {
     if (exists(p/file)) 
       return p/file;
@@ -955,26 +1010,32 @@ arma::mat PolyDataBndBox
   double bb[6];
   in->GetBounds(bb);
 
-  arma::mat bbm;
-  bbm
-    << bb[0] << bb[1] << arma::endr
-    << bb[2] << bb[3] << arma::endr
-    << bb[4] << bb[5] << arma::endr;
+  arma::mat bbm = ArmaMatCmpts{
+      { bb[0], bb[1] },
+      { bb[2], bb[3] },
+      { bb[4], bb[5] }
+  };
 
   return bbm;
 }
 
 
+arma::mat initializedBndBox()
+{
+    arma::mat bb=arma::zeros(3,2);
+    bb.col(0)=arma::ones(3,1)*DBL_MAX;
+    bb.col(1)=arma::ones(3,1)*(-DBL_MAX);
+    return bb;
+}
+
 arma::mat unitedBndBox(const arma::mat& bb1, const arma::mat& bb2)
 {
-  arma::mat bbm;
-  bbm
-    << std::min(bb1(0,0),bb2(0,0)) << std::max(bb1(0,1),bb2(0,1)) << arma::endr
-    << std::min(bb1(1,0),bb2(1,0)) << std::max(bb1(1,1),bb2(1,1)) << arma::endr
-    << std::min(bb1(2,0),bb2(2,0)) << std::max(bb1(2,1),bb2(2,1)) << arma::endr;
-
-  std::cout<<bb1<<bb2<<bbm<<std::endl;
-  return bbm;
+    arma::mat bbm = ArmaMatCmpts{
+        { std::min(bb1(0,0),bb2(0,0)), std::max(bb1(0,1),bb2(0,1)) },
+        { std::min(bb1(1,0),bb2(1,0)), std::max(bb1(1,1),bb2(1,1)) },
+        { std::min(bb1(2,0),bb2(2,0)), std::max(bb1(2,1),bb2(2,1)) }
+    };
+    return bbm;
 }
 
 void writeSTL
@@ -1408,6 +1469,20 @@ int realNp(int userInputNp)
             boost::thread::physical_concurrency()+userInputNp
             );
     }
+}
+
+
+
+path sanitizeStringForFileName(const std::string &s)
+{
+    std::string result(s);
+    for (auto& c: result)
+    {
+        if (!(std::isalnum(c)||(c=='_')||(c=='-')||(c=='+')))
+            c='_';
+    }
+    boost::replace_all(result, "__", "_");
+    return result;
 }
 
 

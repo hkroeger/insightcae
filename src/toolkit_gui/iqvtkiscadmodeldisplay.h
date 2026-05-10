@@ -6,6 +6,7 @@
 
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
+#include "iqgroupingitemmodel.h"
 
 
 /**
@@ -22,6 +23,8 @@ class IQVTKISCADModelDisplay
 
   IQCADModel3DViewer* viewer_;
   QTreeView* modeltree_;
+  IQGroupingItemModel* groupingModel_ = nullptr;
+  bool syncingSelection_ = false;
 
 
 public:

@@ -36,9 +36,9 @@ public:
   MultiregionTestAnalysis(const boost::filesystem::path& exepath)
     : OpenFOAMAnalysis(
               std::make_shared<supplementedInputDataBase>(
-                  Parameters(), ".", consoleProgressDisplayer ))
-  {
-  }
+                  Parameters(), ".",
+                  *consoleProgressDisplayer.forkNewAction(99, "Process input data") ))
+  {}
 
   static AnalysisDescription description() { return {"multiregion test", ""}; }
 

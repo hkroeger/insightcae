@@ -9,6 +9,8 @@
 #include <vtkTransformFilter.h>
 
 class IQVTKCADModel3DViewer;
+class IQVTKViewerState;
+
 
 class IQVTKManipulateCoordinateSystem
     : public QObject,
@@ -25,33 +27,46 @@ class IQVTKManipulateCoordinateSystem
     vtkSmartPointer<vtkTransformFilter>
         ex_, ey_, ez_, pxy_, pxz_, pyz_;
 
-    vtkSmartPointer<vtkActor>
-        aP0_, aEx_, aEy_, aEz_, aXY_, aXZ_, aYZ_;
+    std::shared_ptr<IQVTKViewerState> currentHighlight_;
+
+public:
+    enum Actor {
+       P0, Ex, Ey, Ez, XY, XZ, YZ
+    };
+
+    typedef std::set<Actor> ActorMask;
+
+private:
+    ActorMask actorsToShow_;
+    bool locPosition_;
+
+    std::map<Actor,vtkSmartPointer<vtkActor> > actors_;
+
+    vtkActor *actorIfActive(Actor a) const;
 
     struct Manip
     {
         IQVTKManipulateCoordinateSystem* parent;
-        boost::optional<QPoint> start;
         virtual void update(const QPoint& newp) =0;
     };
 
     struct ManipPlane : Manip
     {
         std::function<arma::mat(void)> normal;
+        boost::optional<arma::mat> startPt;
         void update(const QPoint& newp) override;
     };
-    // struct ManipEX : Manip
-    // {
-    //     void update(const QPoint& newp) override;
-    // };
-    // struct ManipEY : Manip
-    // {
-    //     void update(const QPoint& newp) override;
-    // };
-    // struct ManipEZ : Manip
-    // {
-    //     void update(const QPoint& newp) override;
-    // };
+
+    struct ManipAlong : Manip
+    {
+        arma::mat p2, d2;
+
+        boost::optional<arma::mat> startDiff_;
+        arma::mat closestPt(const QPoint& newp);
+
+        void update(const QPoint& newp) override;
+    };
+
     struct ManipP0 : Manip
     {
         void update(const QPoint& newp) override;
@@ -61,15 +76,22 @@ class IQVTKManipulateCoordinateSystem
 
     void setCS();
 
+
 public:
     IQVTKManipulateCoordinateSystem(
         ViewWidgetActionHost<IQVTKCADModel3DViewer> &parent,
         const insight::CoordinateSystem& cs,
-        bool showOnlyX=false );
+        bool locPosition = false,
+        ActorMask actorsToShow = {} );
 
     QString description() const override;
 
     void start() override;
+
+    bool onMouseMove(
+        const QPoint point,
+        Qt::KeyboardModifiers curFlags
+        ) override;
 
     bool onMouseDrag(
         Qt::MouseButtons btn,

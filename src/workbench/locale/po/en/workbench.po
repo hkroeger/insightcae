@@ -434,6 +434,9 @@ msgstr ""
 "yet!\n"
 "Please make sure that it is existing!"
 
+msgid "Setup Workspace"
+msgstr ""
+
 msgid "Please select working directory"
 msgstr "Please select working directory"
 

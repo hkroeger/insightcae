@@ -26,7 +26,7 @@ void copyFiles::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& /*cm*/
 {
   for (const auto& f: p().files)
   {
-    boost::filesystem::path src = f.source->localFilePath();
+    boost::filesystem::path src = f.source->expandedFilePath();
     boost::filesystem::path targ = location / static_cast<const std::string&>(f.target);
 
     if (!exists(src))

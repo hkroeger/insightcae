@@ -24,13 +24,13 @@
 
 #include <string>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "base/tools.h"
 #include "base/casedirectory.h"
 #include "boost/process.hpp"
-
+#include "base/externalprograms.h"
 
 #ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"
@@ -645,6 +645,134 @@ std::string SimpleLatex::LaTeXFromPlainText(const std::string&)
 bool SimpleLatex::operator!=(const SimpleLatex &o) const
 {
     return simpleLatex_code_!=o.simpleLatex_code_;
+}
+
+
+
+
+
+LatexRunner::LatexRunner(const boost::filesystem::path& tex)
+  : tex_file(tex.filename()),
+    workdir(boost::filesystem::absolute(tex.parent_path())),
+    base_name(tex_file.stem().string())
+{}
+
+
+
+// Run pdflatex once, return exit code
+int LatexRunner::run_pdflatex()
+{
+    int ret = boost::process::system(
+        ExternalPrograms::path("pdflatex"),
+        boost::process::args({"-interaction=nonstopmode", tex_file.string()}),
+        boost::process::std_out > boost::process::null,
+        boost::process::std_err > boost::process::null,
+        boost::process::start_dir(workdir)
+        );
+    return ret;
+}
+
+
+
+
+// Run bibtex once if .aux references a bibliography
+bool LatexRunner::run_bibtex()
+{
+    std::string aux_file = base_name + ".aux";
+    if (!needs_bibtex(aux_file))
+        return false;
+
+    boost::process::system(
+        "bibtex",
+        boost::process::args({base_name}),
+        boost::process::std_out > boost::process::null,
+        boost::process::std_err > boost::process::null,
+        boost::process::start_dir(workdir)
+        );
+    return true;
+}
+
+
+
+
+// Check .log for "Rerun" warnings
+bool LatexRunner::needs_rerun()
+{
+    std::string log_file = base_name + ".log";
+    std::ifstream log( (workdir/log_file).string() );
+    if (!log.is_open()) return false;
+
+    std::string line;
+    // Standard patterns that require a rerun
+    static const std::vector<boost::regex> rerun_patterns = {
+        boost::regex("Rerun to get cross-references right"),
+        boost::regex("Rerun to get outlines right"),
+        boost::regex("Rerun LaTeX"),
+        boost::regex("There were undefined references"),
+        boost::regex("Label\\(s\\) may have changed"),
+    };
+
+    while (std::getline(log, line)) {
+        for (const auto& pattern : rerun_patterns) {
+            if (boost::regex_search(line, pattern))
+                return true;
+        }
+    }
+    return false;
+}
+
+
+
+// Check .aux for \bibdata (means bibtex is needed)
+bool LatexRunner::needs_bibtex(const std::string& aux_file)
+{
+    std::ifstream aux( (workdir/aux_file).string() );
+    if (!aux.is_open()) return false;
+    std::string line;
+    while (std::getline(aux, line))
+    {
+        if (line.find("\\bibdata") != std::string::npos)
+            return true;
+    }
+    return false;
+}
+
+
+
+// Full build loop
+bool LatexRunner::build()
+{
+    std::cout << "[1] Running pdflatex..." << std::endl;
+    if (run_pdflatex() != 0)
+    {
+        std::cerr << "pdflatex failed. Check " << base_name << ".log" << std::endl;
+        return false;
+    }
+
+    // Run bibtex if needed (after first pdflatex pass)
+    if (run_bibtex())
+    {
+        std::cout << "[bibtex] Running bibtex..." << std::endl;
+    }
+
+    for (int i = 2; i <= max_runs; ++i)
+    {
+        if (!needs_rerun())
+        {
+            std::cout << "Done. Stable after " << (i - 1) << " run(s)." << std::endl;
+            return true;
+        }
+
+        std::cout << "[" << i << "] Rerun needed, running pdflatex..." << std::endl;
+        if (run_pdflatex() != 0)
+        {
+            std::cerr << "pdflatex failed on run " << i << std::endl;
+            return false;
+        }
+    }
+
+    std::cerr << "Warning: reached max runs (" << max_runs << "), references may be unresolved." << std::endl;
+    return true;
 }
 
 

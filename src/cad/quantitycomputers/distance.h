@@ -35,6 +35,12 @@ protected:
     
 public:
     distance(const matQuantityComputerPtr& p0, const matQuantityComputerPtr& p1);
+
+    inline static std::shared_ptr<scalarQuantityComputer> create(
+        const matQuantityComputerPtr& p0, const matQuantityComputerPtr& p1)
+    {
+        return std::make_shared<distance>(p0, p1);
+    }
     
     virtual void initialize(ConstFeaturePtr m);
     

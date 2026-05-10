@@ -17,7 +17,6 @@ public:
 PARAMETERSET>>> gravity Parameters
 inherits OpenFOAMCaseElement::Parameters
 
-
 description
 "This case elements adds the information about the gravity acceleration vector to the OpenFOAM case."
 

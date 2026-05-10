@@ -1,27 +1,20 @@
 project(test_graphprogressdisplayer)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
-set(SRC
+
+add_executable(test_graphprogressdisplayer
     main.cpp
-    graphprogressdisplayertestwindow.h graphprogressdisplayertestwindow.cpp graphprogressdisplayertestwindow.ui
+    graphprogressdisplayertestwindow.h graphprogressdisplayertestwindow.cpp
+    graphprogressdisplayertestwindow.ui
     )
-
-set(LIBS
-    toolkit_gui
-    Qt5::Widgets
-)
-
-
-find_package(Qt5Widgets CONFIG REQUIRED)
-
-add_executable(test_graphprogressdisplayer ${SRC})
+target_enable_qt(test_graphprogressdisplayer)
 linkToolkitVtk(test_graphprogressdisplayer Onscreen)
 
 target_include_directories(test_graphprogressdisplayer
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_link_libraries(test_graphprogressdisplayer ${LIBS})
+target_link_libraries(test_graphprogressdisplayer
+    toolkit_gui
+    Qt5::Widgets
+)

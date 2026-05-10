@@ -10,7 +10,7 @@ namespace bmd {
 
 
 
-class blockMesh;
+class blockMeshBlocking;
 
 
 
@@ -39,7 +39,7 @@ public:
     bool inv=false);
   virtual ~Block();
 
-  void registerPoints(blockMesh& bmd) const;
+  void registerPoints(blockMeshBlocking& bmd) const;
 
   PointList face(const std::string& id) const;
 

@@ -26,13 +26,14 @@ namespace insight {
 namespace cad {
 
 class boundaryOfFace
-    : public Filter
+    : public Filter, public EnableCreateFunction<boundaryOfFace>
 {
 protected:
     FeatureSet faces_;
 
 public:
     boundaryOfFace(FeatureSet faces);
+    boundaryOfFace(FeatureSetPtr faces);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

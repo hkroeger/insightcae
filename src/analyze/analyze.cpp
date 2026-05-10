@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
                 auto& ap = parameters->get<ArrayParameter>(pair[0]);
                 for (size_t i=ap.size(); i<ns; ++i)
                 {
-                    ap.appendEmpty(true);
+                    ap.appendEmpty();
                 }
             }
         }
@@ -452,19 +452,18 @@ int main(int argc, char *argv[])
           {
             pd = server.get();
             redirCout=std::make_unique<StreamToProgressDisplayer>(std::cout, *pd);
-//            redirCerr=std::make_unique<StreamToProgressDisplayer>(std::cerr, *pd);
+//              redirCerr=std::make_unique<StreamToProgressDisplayer>(std::cerr, *pd);
           }
 #endif
 
 #ifdef HAVE_WT
           if (server)
           {
-            server->setAnalysis( inputFileParentPath );
+              server->setAnalysis( inputFileParentPath );
           }
 #endif
 
           // run analysis
-
           AnalysisThread solver_thread(
               parameters->analysisTypeName(),
               AnalysisThread::ParameterSetAndExePath{parameters.get(), workdir},
@@ -523,19 +522,15 @@ int main(int argc, char *argv[])
                 boost::filesystem::path resoutpath=workdir/ (filestem+".isr");
                 results->saveToFile( resoutpath );
 
-                boost::filesystem::path outpath=workdir/ (filestem+".tex");
-                results->writeLatexFile( outpath );
-
-                if (!vm.count("skiplatex"))
+                if (vm.count("skiplatex"))
                 {
-                    for (int i=0; i<2; i++)
-                    {
-                        if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % workdir.string() % outpath.string() ).c_str() ))
-                        {
-                            Warning(_("TeX input file was written but could not execute pdflatex successfully."));
-                            break;
-                        }
-                    }
+                    boost::filesystem::path outpath=workdir/ (filestem+".tex");
+                    results->writeLatexFile( outpath );
+                }
+                else
+                {
+                    boost::filesystem::path outpath=workdir/ (filestem+".pdf");
+                    results->generatePDF( outpath );
                 }
             }
             else

@@ -2,10 +2,6 @@ project(unittests_gui)
 
 if (INSIGHT_BUILD_CAD)
 
-    set(CMAKE_AUTOMOC ON)
-    SET(CMAKE_AUTOUIC ON)
-    set(CMAKE_AUTORCC ON)
-
     find_package(Qt5Test CONFIG REQUIRED)
 
     add_executable(IQHierarchicalDataModel iqhierarchicaldatamodeltest.cpp)
@@ -40,7 +36,7 @@ if (INSIGHT_BUILD_CAD)
     Qt5::Test
     )
     linkToolkitVtk(IQFilteredParameterSetModel Offscreen)
-    add_PDL(IQFilteredParameterSetModel "sampleparameterset.h")
+    target_add_PDL(IQFilteredParameterSetModel)
     add_test(NAME gui_IQFilteredParameterSetModel COMMAND IQFilteredParameterSetModel nogui)
 
 

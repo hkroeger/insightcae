@@ -53,3 +53,17 @@ double Pa=1.0;
 double bar=1e5;
 
 }
+
+
+
+boost::units::si::Temperature
+boost::units::si::tempDiff2Abs(TemperatureDifference deltaT)
+{
+    return toValue(deltaT, si::kelvin)*si::degK;
+}
+
+boost::units::si::TemperatureDifference
+boost::units::si::tempDiffToZero(Temperature T)
+{
+    return T - 0.*si::degK;
+}

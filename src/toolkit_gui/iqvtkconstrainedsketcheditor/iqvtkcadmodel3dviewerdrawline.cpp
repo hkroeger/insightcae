@@ -151,35 +151,39 @@ void IQVTKCADModel3DViewerDrawLine::start()
             {
                 p2_ = std::make_shared_aggr<PointProperty>(pp);
 
-                if (!pp.isAnExistingPoint)
+                if (arma::norm( p2_->p->value() - p1_->p->value(), 2)>LSMALL)
                 {
-                    sketch().insertGeometry(
-                        std::dynamic_pointer_cast
-                        <ConstrainedSketchEntity>( p2_->p ) );
-                }
-                Q_EMIT endPointSelected(p2_.get(), p1_->p);
+                    if (!pp.isAnExistingPoint)
+                    {
+                        sketch().insertGeometry(
+                            std::dynamic_pointer_cast
+                            <ConstrainedSketchEntity>( p2_->p ) );
+                    }
+                    Q_EMIT endPointSelected(p2_.get(), p1_->p);
 
-                auto line = Line::create(p1_->p, p2_->p);
+                    auto line = Line::create(p1_->p, p2_->p);
 
-                sketch().insertGeometry(line);
-                sketch().invalidate();
+                    sketch().insertGeometry(line);
+                    sketch().invalidate();
 
-                Q_EMIT lineAdded(line, prevLine_, p2_.get(), p1_.get() );
+                    Q_EMIT lineAdded(line, prevLine_, p2_.get(), p1_.get() );
 
-                prevLine_=line.get();
+                    prevLine_=line.get();
 
-                // continue with next line
-                p1_=p2_;
-                p2_.reset();
+                    // continue with next line
+                    p1_=p2_;
+                    p2_.reset();
 
-                if (p1_->isAnExistingPoint)
-                {
-                    // end line here, restart
-                    previewLine_->SetVisibility(false);
-                    viewer().renderer()->RemoveActor(previewLine_);
-                    previewLine_=nullptr;
-                    prevLine_=nullptr;
-                    p1_.reset();
+                    if (p1_->isAnExistingPoint)
+                    {
+                        // end line here, restart
+                        //previewLine_->SetVisibility(false);
+                        //viewer().renderer()->RemoveActor(previewLine_);
+                        //previewLine_=nullptr;
+                        prevLine_=nullptr;
+                        Q_EMIT endPointSelected(p1_.get(), nullptr);
+                        //p1_.reset();
+                    }
                 }
             }
         }

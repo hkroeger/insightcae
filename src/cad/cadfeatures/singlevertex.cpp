@@ -25,7 +25,7 @@ size_t SingleVertex::calcHash() const
 
 
 SingleVertex::SingleVertex(const SingleVertex&o, TreeCloneMap& tcm)
-    : CL(p_)
+    : Feature(o, tcm), CL(p_)
 {}
 
 SingleVertex::SingleVertex(VectorPtr p)

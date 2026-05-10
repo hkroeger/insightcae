@@ -1,6 +1,6 @@
 #include "table.h"
 
-#include "base/boost_include.h"
+#include <boost/algorithm/string.hpp>
 #include "base/tools.h"
 
 

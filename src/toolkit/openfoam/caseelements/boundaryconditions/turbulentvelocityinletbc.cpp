@@ -30,18 +30,18 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
  BCtype_="patch";
 }
 
-const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types = boost::assign::list_of
-   ("inflowGenerator<hatSpot>")
-   ("inflowGenerator<gaussianSpot>")
-   ("inflowGenerator<decayingTurbulenceSpot>")
-   ("inflowGenerator<decayingTurbulenceVorton>")
-   ("inflowGenerator<anisotropicVorton_Analytic>")
-   ("inflowGenerator<anisotropicVorton_PseudoInv>")
-   ("inflowGenerator<anisotropicVorton_NumOpt>")
-   ("inflowGenerator<anisotropicVorton2>")
-   ("inflowGenerator<combinedVorton>")
-   ("modalTurbulence")
-   .convert_to_container<std::vector<std::string> >();
+const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types{
+   "inflowGenerator<hatSpot>",
+   "inflowGenerator<gaussianSpot>",
+   "inflowGenerator<decayingTurbulenceSpot>",
+   "inflowGenerator<decayingTurbulenceVorton>",
+   "inflowGenerator<anisotropicVorton_Analytic>",
+   "inflowGenerator<anisotropicVorton_PseudoInv>",
+   "inflowGenerator<anisotropicVorton_NumOpt>",
+   "inflowGenerator<anisotropicVorton2>",
+   "inflowGenerator<combinedVorton>",
+   "modalTurbulence"
+};
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& dictionaries) const
 {
@@ -181,8 +181,9 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC, OFdicts&) const
     double uprime=tu->intensity*U;
     double kBy3=std::max(1e-6, pow(uprime, 2)/2.);
     BC["type"]="fixedValue";
-    arma::mat R;
-    R << kBy3 << 0. << 0. << kBy3 << 0. << kBy3 << arma::endr;
+    arma::mat R = ArmaMatCmpts{
+        { kBy3, 0., 0., kBy3, 0., kBy3 }
+    };
     BC["value"]=OFDictData::toUniformField(R);
 
   }
@@ -212,50 +213,50 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
-    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    if ( (field.first=="U") && (boost::fusion::get<0>(field.second)==vectorField) )
     {
       setField_U(BC, dictionaries);
     }
 
     else if (
-      (field.first=="p") && (get<0>(field.second)==scalarField)
+      (field.first=="p") && (boost::fusion::get<0>(field.second)==scalarField)
     )
     {
       setField_p(BC, dictionaries);
     }
-    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    else if ( (field.first=="k") && (boost::fusion::get<0>(field.second)==scalarField) )
     {
       setField_k(BC, dictionaries);
     }
-    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    else if ( (field.first=="omega") && (boost::fusion::get<0>(field.second)==scalarField) )
     {
       setField_omega(BC, dictionaries);
     }
-    else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
+    else if ( (field.first=="epsilon") && (boost::fusion::get<0>(field.second)==scalarField) )
     {
       setField_epsilon(BC, dictionaries);
     }
-    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    else if ( (field.first=="nut") && (boost::fusion::get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("calculated");
       BC["value"]=OFDictData::toUniformField(1e-10);
     }
-    else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
+    else if ( (field.first=="nuTilda") && (boost::fusion::get<0>(field.second)==scalarField) )
     {
       setField_nuTilda(BC, dictionaries);
     }
-    else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
+    else if ( (field.first=="R") && (boost::fusion::get<0>(field.second)==symmTensorField) )
     {
       setField_R(BC, dictionaries);
     }
-    else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
+    else if ( (field.first=="nuSgs") && (boost::fusion::get<0>(field.second)==scalarField) )
     {
       BC["type"]="zeroGradient";
     }
     else
     {
       if (!(
-          MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+          MeshMotionBC::passiveMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
           ||
           phasefractions->addIntoFieldDictionary(field.first, field.second, BC)
           ))

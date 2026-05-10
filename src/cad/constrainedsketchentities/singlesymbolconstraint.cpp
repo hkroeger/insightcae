@@ -18,7 +18,7 @@ SingleSymbolConstraint::createActor() const
     caption->SetAttachmentPoint( symbolLocation().memptr() );
     caption->GetTextActor()->SetTextScaleModeToNone(); //key: fix the font size
     caption->GetCaptionTextProperty()->SetColor(0,0,0);
-    caption->GetCaptionTextProperty()->SetFontSize(10);
+    caption->GetCaptionTextProperty()->SetFontSize(15);
     caption->GetCaptionTextProperty()->SetFrame(false);
     caption->GetCaptionTextProperty()->SetShadow(false);
     caption->GetCaptionTextProperty()->FrameOff();

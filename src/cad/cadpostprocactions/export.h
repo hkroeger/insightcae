@@ -43,12 +43,16 @@ class Export
   virtual size_t calcHash() const;
   virtual void build();
 
+  Export(FeaturePtr model, const boost::filesystem::path& filename, ExportNamedFeatures namedfeats = ExportNamedFeatures() );
+
 public:
   declareType("Export");
-  Export(FeaturePtr model, const boost::filesystem::path& filename, ExportNamedFeatures namedfeats = ExportNamedFeatures() );
+  CREATE_FUNCTION(Export);
   
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 
@@ -63,12 +67,17 @@ class ExportEMesh
   virtual size_t calcHash() const;
   virtual void build();
 
+  ExportEMesh(FeatureSetPtr eMesh_featureSet, const boost::filesystem::path& filename, ScalarPtr eMesh_accuracy, ScalarPtr eMesh_maxlen);
+
 public:
   declareType("ExportEMesh");
-  ExportEMesh(FeatureSetPtr eMesh_featureSet, const boost::filesystem::path& filename, ScalarPtr eMesh_accuracy, ScalarPtr eMesh_maxlen);
+  CREATE_FUNCTION(ExportEMesh);
+
 
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 
@@ -84,12 +93,16 @@ class ExportSTL
   virtual size_t calcHash() const;
   virtual void build();
 
+  ExportSTL(FeaturePtr model, const boost::filesystem::path& filename, ScalarPtr STL_accuracy, bool force_binary=false);
+
 public:
   declareType("ExportSTL");
-  ExportSTL(FeaturePtr model, const boost::filesystem::path& filename, ScalarPtr STL_accuracy, bool force_binary=false);
+  CREATE_FUNCTION(ExportSTL);
 
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
+
+  static void insertrule(parser::ISCADParser& ruleset);
 };
 
 }

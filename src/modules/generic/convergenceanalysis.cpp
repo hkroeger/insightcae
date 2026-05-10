@@ -120,11 +120,11 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
             ;
 
   {
-    arma::mat tabdata;
-    tabdata
-        << 1 << S1 << epsilon21 << 1e2*epsilon21/S1 << arma::endr
-        << 2 << S2 << epsilon32 << 1e2*epsilon32/S2 << arma::endr
-        << 3 << S3 << NAN << NAN << arma::endr;
+      arma::mat tabdata = ArmaMatCmpts{
+          { 1, S1, epsilon21, 1e2*epsilon21/S1 },
+          { 2, S2, epsilon32, 1e2*epsilon32/S2 },
+          { 3, S3, NAN, NAN }
+      };
 
     results->insert<TabularResult>
     (
@@ -267,8 +267,9 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
                                p().yunit )
         .setOrder ( 1 );
 
-        arma::mat xyz;
-        xyz << p().solutions[2].deltax << p().solutions[2].S << U << arma::endr;
+        arma::mat xyz=ArmaMatCmpts{
+            { p().solutions[2].deltax, p().solutions[2].S, U }
+        };
         plotcrvs.push_back ( PlotCurve ( xyz, "erroruncorrected", "w errorlines lt 1 lc 3 lw 2 t 'Error estimate (uncorrected)'" ) );
 
         results->insert ( "uncorrected", std::move(subsection) ) .setOrder ( so.next() );
@@ -320,8 +321,9 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer& displayer)
                                "$$ S_C = S_1-\\delta_G$$\n", p().yunit )
         .setOrder ( 3 );
 
-        arma::mat xyz;
-        xyz << 1.05*p().solutions[2].deltax << qcorr << U << arma::endr;
+        arma::mat xyz=ArmaMatCmpts{
+            { 1.05*p().solutions[2].deltax, qcorr, U }
+        };
         plotcrvs.push_back ( PlotCurve ( xyz, "corrected", "w errorlines lt 2 lc 7 lw 2 t 'Corrected solution and error estimate'" ) );
 
         results->insert ( "corrected", std::move(subsection) ) .setOrder ( so.next() );

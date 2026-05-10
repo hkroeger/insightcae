@@ -9,8 +9,9 @@
 
 
 
-#include "base/boost_include.h"
+#include <boost/functional/hash.hpp>
 #include "base/cppextensions.h"
+#include "base/boost_include.h"
 #include "boost/enable_shared_from_this.hpp"
 #include <boost/preprocessor.hpp>
 #include "base/cacheableentityhashes.h"

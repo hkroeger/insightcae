@@ -1,14 +1,10 @@
 project(isofCaseBuilder)
 
-set(CMAKE_AUTOMOC ON)
-SET(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
-find_package(Qt5Widgets CONFIG REQUIRED)
 
-set(isofCaseBuilder_SRCS
+
+add_executable(isofCaseBuilder
     isofcasebuilder.cpp
-
 
     caseelementdata.h caseelementdata.cpp
     insertedcaseelement.cpp insertedcaseelement.h
@@ -19,20 +15,20 @@ set(isofCaseBuilder_SRCS
     availablebcsmodel.h availablebcsmodel.cpp
     caseconfigurationmodel.h caseconfigurationmodel.cpp
     boundaryconfigurationmodel.h boundaryconfigurationmodel.cpp
-)
-SET(isofCaseBuilder_FORMS isofcasebuilderwindow.ui)
-SET(isofCaseBuilder_RCCS isofCaseBuilder.qrc)
 
-add_executable(isofCaseBuilder ${isofCaseBuilder_SRCS} ${isofCaseBuilder_FORMS} ${isofCaseBuilder_RCCS})
+    isofcasebuilderwindow.ui
+    isofCaseBuilder.qrc
+)
+target_enable_qt(isofCaseBuilder)
 target_link_libraries(isofCaseBuilder
  toolkit_gui
  taskspoolermonitor
  Qt5::Widgets
+ Boost::program_options
 )
 linkToolkitVtk(isofCaseBuilder Onscreen)
 target_include_directories(isofCaseBuilder
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )

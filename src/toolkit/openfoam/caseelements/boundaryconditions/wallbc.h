@@ -27,7 +27,7 @@ rotating = bool false "Whether the wall is rotating"
 CofR = vector (0 0 0) "Center of rotation"
 roughness_z0 = double 0 "Wall roughness height"
 
-meshmotion = dynamicclassconfig "insight::MeshMotionBC::MeshMotionBC" default "NoMeshMotion" "Mesh motion properties at the boundary"
+meshmotion = dynamicclassconfig "insight::MeshMotionBC::MeshMotionBC" default "PassiveMeshMotion" "Mesh motion properties at the boundary"
 phasefractions = dynamicclassconfig "insight::multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 heattransfer = dynamicclassconfig "insight::HeatBC::HeatBC" default "Adiabatic" "Definition of the heat transfer through the wall"
 

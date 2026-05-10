@@ -22,6 +22,7 @@
 #include "iqselectablesubsetparameter.h"
 #include "iqdoublerangeparameter.h"
 #include "iqspatialtransformationparameter.h"
+#include "iqcadgeometryparameter.h"
 
 #include "iqparametersetmodel.h"
 
@@ -70,7 +71,7 @@ createIQLabeledArrayElement(IQSubsetParameter, "subset");
 createIQLabeledArrayElement(IQSelectableSubsetParameter, "selectableSubset");
 createIQLabeledArrayElement(IQDoubleRangeParameter, "doubleRange");
 createIQLabeledArrayElement(IQSpatialTransformationParameter, "spatialTransformation");
-
+createIQLabeledArrayElement(IQCADGeometryParameter, "cadgeometry");
 
 
 

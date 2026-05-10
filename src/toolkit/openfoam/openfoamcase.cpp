@@ -23,7 +23,12 @@
 #include "base/exception.h"
 #include "base/shelltools.h"
 #include "base/analysis.h"
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/fusion/tuple.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
 #include "base/outputanalyzer.h"
 #include "openfoam/blockmeshoutputanalyzer.h"
 
@@ -831,7 +836,7 @@ void OpenFOAMCase::runSolver
           cout<<line<<endl; // mirror to console
           analyzer.update(line);
 
-          if (analyzer.stopRun())
+          if (analyzer.stopIsDemanded())
           {
             std::ofstream f( (location/"wnowandstop").string() );
             f<<"STOP"<<std::endl;

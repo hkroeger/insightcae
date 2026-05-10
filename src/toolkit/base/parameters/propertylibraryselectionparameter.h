@@ -80,8 +80,10 @@ public:
         const rapidxml::xml_node<>& node
     ) override;
 
-    std::unique_ptr<Element> clone() const override;
+protected:
+    std::unique_ptr<Element> cloneUninitialized() const override;
 
+public:
     void assignFrom(const Element& p) override;
 
     int nChildren() const override;

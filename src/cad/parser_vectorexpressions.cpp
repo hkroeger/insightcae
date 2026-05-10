@@ -40,6 +40,7 @@
 #include "cadfeatures.h"
 #include "meshing.h"
 
+#include "parser_tools.h"
 
 using namespace std;
 using namespace boost;
@@ -133,6 +134,12 @@ void ISCADParser::createVectorExpressions()
         ( '(' > r_solidmodel_expression > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<COG>(qi::_1)) ]
     );
+
+    ADD_VECTOR_FUNCTION(
+        "pointOnEdge",
+        ( '(' > r_solidmodel_expression > ',' > r_scalarExpression > ')' ),
+        [ _val = phx::bind(&PointOnEdgeCoords::create<ConstFeaturePtr, ScalarPtr>, qi::_1, qi::_2) ]
+        );
 
     ADD_VECTOR_FUNCTION(
         "surfcog",
@@ -276,10 +283,10 @@ void ISCADParser::createVectorExpressions()
         | ( '+' >> r_vector_primary ) // expressions starting with plus
           [ _val = qi::_1 ]
 
-        | model_->pointSymbols()
+        | addAdditionalRule( map_lookup_parser(model_->points()) )
           [ qi::_val = qi::_1 ]
 
-        | model_->directionSymbols()
+        | addAdditionalRule( map_lookup_parser(model_->directions()) )
           [ qi::_val = qi::_1 ]
 
         | r_vectorFunction

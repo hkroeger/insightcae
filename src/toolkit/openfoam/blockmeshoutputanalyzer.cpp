@@ -1,6 +1,6 @@
 #include "blockmeshoutputanalyzer.h"
 
-#include "base/boost_include.h"
+#include <boost/regex.hpp>
 
 using namespace std;
 using namespace boost;
@@ -11,7 +11,7 @@ BlockMeshOutputAnalyzer::BlockMeshOutputAnalyzer(ProgressDisplayer* parentProgre
     : OutputAnalyzer(parentProgress),
       nBlocks_(nb),
       bmp_( parentProgress?
-            std::make_shared<ActionProgress>(parentProgress->forkNewAction(nb+4, "blockMesh"))
+            parentProgress->forkNewAction(nb+4, "blockMesh")
             : nullptr
            )
 {

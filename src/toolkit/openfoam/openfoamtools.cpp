@@ -23,12 +23,12 @@
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/tools.h"
 #include "base/translations.h"
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamtools.h"
-#include "openfoam/snappyhexmesh.h"
 #include "openfoam/solveroutputanalyzer.h"
 #include "openfoam/caseelements/numerics/meshingnumerics.h"
 #include "openfoam/createpatch.h"
@@ -49,15 +49,50 @@
 #include "vtkCellData.h"
 #include "vtkPolyData.h"
 
+
+
+
 using namespace std;
 using namespace arma;
 using namespace boost;
 using namespace boost::filesystem;
-using namespace boost::assign;
 
 namespace insight
 {
-  
+
+
+
+
+void createCellZoneFromRegionSeedPoint(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& dir,
+    const std::string& zoneName,
+    const arma::mat& PiM,
+    const std::vector<std::string>& asc
+    )
+{
+    std::string pims=OFDictData::toString(OFDictData::vector3(PiM)), nErode="";
+    if (cm.OFversion()>=220) pims="("+pims+")";
+    if (cm.OFversion()>=400) nErode=" 0";
+
+    std::vector<std::string> setCmds={
+        "cellSet dummy new boxToCell (-1e10 -1e10 -1e10) (1e10 1e10 1e10)",
+        "cellSet "+zoneName+" new regionToCell dummy "+pims+nErode,
+        "cellSet dummy remove"
+    };
+
+    std::copy(
+        asc.begin(), asc.end(),
+        std::last_inserter(setCmds)
+        );
+
+    setSet(cm, dir, setCmds);
+    cm.executeCommand(dir, "setsToZones", { "-noFlipMap" } );
+}
+
+
+
+
 TimeDirectoryList listTimeDirectories(
     const boost::filesystem::path& dir,
     const boost::filesystem::path& fta )
@@ -204,7 +239,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   std::string cmd("ls "); cmd+=source.string();
   ::system(cmd.c_str());
   
-  std::vector<std::string> files=list_of<std::string>("boundary")("faces")("neighbour")("owner")("points");
+  std::vector<std::string> files={"boundary", "faces", "neighbour", "owner", "points"};
   if (include_zones)
   {
     files.push_back("pointZones");
@@ -329,8 +364,7 @@ void linkPolyMesh(
   }
 
   for (const std::string& fname:
-		list_of<std::string>/*("boundary")*/("faces")("neighbour")("owner")("points")
-		.convert_to_container<std::vector<std::string> >())
+       {/*"boundary", */"faces", "neighbour", "owner", "points"})
   {
     path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
@@ -634,6 +668,8 @@ void runPotentialFoam
   if (cm.OFversion()<170) solkey="SIMPLE";
   OFDictData::dict& potentialFlow=fvSolution.subDict(solkey);
   potentialFlow["nNonOrthogonalCorrectors"]=3;
+  potentialFlow["PhiRefCell"]=0;
+  potentialFlow["PhiRefValue"]=0.;
   
   OFDictData::dictFile fvSchemes;
   fvSchemes.subDict("ddtSchemes");
@@ -696,7 +732,7 @@ void runPotentialFoam
   TextProgressDisplayer displayer;
   SolverOutputAnalyzer analyzer(displayer);
   cm.runSolver(location, analyzer, "potentialFoam", np,
-			 list_of<std::string>("-noFunctionObjects"));
+             {"-noFunctionObjects"} );
 
   if (exists(controlBackup)) copy_file(controlBackup, control, copy_option::overwrite_if_exists);
   if (exists(fvSolBackup)) copy_file(fvSolBackup, fvSol, copy_option::overwrite_if_exists);
@@ -745,21 +781,24 @@ void runPvPython
 arma::mat matchValue(const std::string& vs)
 {
   boost::regex re_vector ("^\\(([^ ]+) ([^ ]+) ([^ ]+)\\)$");
-  try {
-     arma::mat d;
-     d << toNumber<double> ( vs ) ;
-     return d;
+  try
+  {
+      arma::mat d = {
+          toNumber<double> ( vs )
+      };
+      return d;
   }
   catch (...)
   {
-    boost::match_results<std::string::const_iterator> w;
-    if (!boost::regex_match ( vs, w, re_vector))
-      throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
-    arma::mat d;
-    d << toNumber<double> ( w[1] )
-      << toNumber<double> ( w[2] )
-      << toNumber<double> ( w[3] );
-    return d;
+      boost::match_results<std::string::const_iterator> w;
+      if (!boost::regex_match ( vs, w, re_vector))
+          throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
+      arma::mat d = {
+          toNumber<double> ( w[1] ),
+          toNumber<double> ( w[2] ),
+          toNumber<double> ( w[3] )
+      };
+      return d;
   }
   return arma::mat();
 }
@@ -922,7 +961,7 @@ patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& loca
 {
 
   std::vector<std::string> output;
-  cm.executeCommand ( location, "patchArea", list_of(patchName), &output );
+  cm.executeCommand ( location, "patchArea", {patchName}, &output );
 
   boost::regex
       re_total ( "^TOTAL A=(.+) normal=\\((.+) (.+) (.+)\\) ctr=\\((.+) (.+) (.+)\\)$" )
@@ -1187,10 +1226,17 @@ std::string readSolverName(const boost::filesystem::path& ofcloc)
 
 int readDecomposeParDict(const boost::filesystem::path& ofcloc)
 {
-  OFDictData::dict decomposeParDict;
-  readOpenFOAMDict(ofcloc/"system"/"decomposeParDict", decomposeParDict);
-  //cout<<decomposeParDict<<endl;
-  return decomposeParDict.getInt("numberOfSubdomains");
+    boost::filesystem::path fn(ofcloc/"system"/"decomposeParDict");
+    if (boost::filesystem::exists(fn))
+    {
+        OFDictData::dict decomposeParDict;
+        readOpenFOAMDict(fn, decomposeParDict);
+        return decomposeParDict.getInt("numberOfSubdomains");
+    }
+    else
+    {
+        return 1;
+    }
 }
 
 std::string readTurbulenceModelName(const OpenFOAMCase& c, const boost::filesystem::path& ofcloc)
@@ -1432,11 +1478,10 @@ void currentNumericalSettingsReport
   for
   (
     const boost::filesystem::path& dictname:
-    list_of<boost::filesystem::path> 
-      ("system/controlDict")("system/fvSchemes")("system/fvSchemes")
-      ("constant/RASProperties")("constant/LESProperties")
-      ("constant/transportProperties")
-      .convert_to_container<std::vector<boost::filesystem::path> >()
+    {
+      "system/controlDict", "system/fvSchemes", "system/fvSchemes",
+      "constant/RASProperties", "constant/LESProperties",
+      "constant/transportProperties" }
   )
   {
     try
@@ -1589,7 +1634,8 @@ void surfaceFeatureExtract
 (
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location,
-  const std::string& surfaceName
+  const std::string& surfaceName,
+  double featureAngle
 )
 {
   OFDictData::dictFile sfeDict;
@@ -1599,7 +1645,7 @@ void surfaceFeatureExtract
   opts["extractionMethod"]="extractFromSurface";
   
   OFDictData::dict coeffs;
-  coeffs["includedAngle"]=120.0;
+  coeffs["includedAngle"]=180.-featureAngle; //120.0;
   coeffs["geometricTestOnly"]=true;
   opts["extractFromSurfaceCoeffs"]=coeffs;
   
@@ -1616,6 +1662,8 @@ void surfaceFeatureExtract
     
   cm.executeCommand(location, "surfaceFeatureExtract", opt);
 }
+
+
 
 void extrude2DMesh
 (
@@ -1824,8 +1872,12 @@ std::pair<arma::mat, arma::mat> zoneExtrema
     {
       double t=toNumber<double>(what[1]);
       arma::mat mir, mar;
-      mir<<t<<toNumber<double>(what[3])<<toNumber<double>(what[4])<<toNumber<double>(what[5])<<endr;
-      mar<<t<<toNumber<double>(what[6])<<toNumber<double>(what[7])<<toNumber<double>(what[8])<<endr;
+      mir = ArmaMatCmpts{
+          { t, toNumber<double>(what[3]), toNumber<double>(what[4]), toNumber<double>(what[5]) }
+      };
+      mar = ArmaMatCmpts{
+          {t, toNumber<double>(what[6]), toNumber<double>(what[7]), toNumber<double>(what[8]) }
+      };
       if (mi.n_rows==0) mi=mir; else mi=join_cols(mi, mir);
       if (ma.n_rows==0) ma=mar; else ma=join_cols(ma, mar);
     }
@@ -1952,85 +2004,6 @@ void PatchLayers::setByPattern(const std::string& regex_pattern, int nLayers)
     }
 }
 
-
-void createPrismLayers
-(
-  const OpenFOAMCase& cm,
-  const boost::filesystem::path& casePath,
-  double finalLayerThickness, 
-  bool relativeSizes, 
-  const insight::PatchLayers& nLayers,
-  double expRatio,
-  bool twodForExtrusion,
-  bool isalreadydecomposed,
-  bool keepdecomposedafterfinish,
-  ProgressDisplayer* progress
-)
-{
-    
-//   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
-    snappyHexMeshConfiguration::Parameters shm_cfg;
-    
-    shm_cfg.set_erlayer(expRatio)
-      .set_tlayer(finalLayerThickness)
-      .set_relativeSizes(relativeSizes)
-      
-      .set_doCastellatedMesh(false)
-      .set_doSnap(false)
-      .set_doAddLayers(true)
-  ;
-  for (const PatchLayers::value_type& pl: nLayers)
-  {
-//     shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
-      shm_cfg.features.push_back( snappyHexMeshFeats::FeaturePtr( new snappyHexMeshFeats::PatchLayers( snappyHexMeshFeats::PatchLayers::Parameters()
-      .set_nLayers(pl.second)
-      .set_name(pl.first)
-    )));
-  }
-  
-  if (twodForExtrusion)
-  {
-//     setNoQualityCtrls(*qualityCtrls);
-      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::disabled;
-  }
-  else
-  {
-      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::relaxed;
-//      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::standard;
-//     setRelaxedQualityCtrls(*qualityCtrls);
-//     (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
-//     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
-  }
-  
-  shm_cfg.PiM.push_back(vec3(0,0,0));
-  snappyHexMesh
-  (
-    cm, casePath,
-//     OFDictData::vector3(vec3(0,0,0)),
-//     shm_feats,
-//     snappyHexMeshOpts::Parameters()
-// //       .set_stopOnBadPrismLayer(p.getBool("mesh/prismfailcheck"))
-//       .set_erlayer(expRatio)
-//       .set_tlayer(finalLayerThickness)
-//       .set_relativeSizes(relativeSizes)
-//       
-//       .set_doCastellatedMesh(false)
-//       .set_doSnap(false)
-//       .set_doAddLayers(true)
-//       
-//       .set_qualityCtrls(qualityCtrls)
-// /*
-//       .set_tlayer(p.getDouble("mesh/mlayer"))
-//       .set_relativeSizes(true)
-//   */
-//     ,
-    shm_cfg,
-    true,
-    isalreadydecomposed,
-    keepdecomposedafterfinish,
-    progress
-  ); 
-}
 
 arma::mat surfaceProjectLine
 (
@@ -2176,7 +2149,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
     .set_name(p().profile_name)
   ));
 
-  auto casepath = p().casepath->localFilePath();
+  auto casepath = p().casepath->expandedFilePath();
 
   sample(
       cm, casepath,
@@ -2622,6 +2595,13 @@ eMesh::eMesh(const EMeshPtsListList &pts)
     }
 }
 
+eMesh::eMesh(
+    const std::vector<arma::mat>&pts,
+    const std::vector<std::pair<int, int> >&edges )
+  : points_(pts),
+    edges_(edges)
+{}
+
 int eMesh::nPoints() const
 {
     return points_.size();
@@ -2783,17 +2763,19 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
 
 
   directory_iterator end_itr; // default construction yields past-the-end
-  const boost::regex filter( "processor[0-9]+" );
-  for ( directory_iterator i( location ); i != end_itr; i++ )
   {
-      if ( is_directory(i->status()) )
+      const boost::regex filter( "processor[0-9]+" );
+      for ( directory_iterator i( location ); i != end_itr; i++ )
       {
-          std::string fn=i->path().filename().string();
-          boost::smatch what;
-          if ( boost::regex_match( i->path().filename().string(), what, filter ) )
-            {
-              procDirs_.insert(i->path());
-            }
+          if ( is_directory(i->status()) )
+          {
+              std::string fn=i->path().filename().string();
+              boost::smatch what;
+              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+              {
+                  procDirs_.insert(i->path());
+              }
+          }
       }
   }
 
@@ -2805,6 +2787,22 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
       for (const auto& ptd: ptds)
       {
           procTimeDirs_.insert(ptd.second.filename());
+      }
+  }
+
+  {
+      const boost::regex filter( "^subcase__.*" );
+      for ( directory_iterator i( location ); i != end_itr; i++ )
+      {
+          if ( is_directory(i->status()) )
+          {
+              std::string fn=i->path().filename().string();
+              boost::smatch what;
+              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+              {
+                  subCaseDirs_.insert(i->path());
+              }
+          }
       }
   }
 
@@ -2874,7 +2872,8 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
     bool cleanTimes,
     bool cleanPost,
     bool cleanSys,
-    bool cleanInconsistentParallelTimes
+    bool cleanInconsistentParallelTimes,
+    bool cleanSubCaseDirs
 )
 {
   std::set<boost::filesystem::path> all_cands;
@@ -2938,6 +2937,14 @@ std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
       }
   }
 
+  if (cleanSubCaseDirs)
+  {
+      std::copy(
+          subCaseDirs_.begin(), subCaseDirs_.end(),
+          std::inserter(all_cands, all_cands.begin())
+          );
+  }
+
   return all_cands;
 }
 
@@ -2976,11 +2983,16 @@ void OpenFOAMCaseDirs::cleanCase
     bool cleanTimes,
     bool cleanPost,
     bool cleanSys,
-    bool cleanInconsistentParallelTimes
+    bool cleanInconsistentParallelTimes,
+    bool cleanSubCaseDirs
 )
 {
 
-  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys, cleanInconsistentParallelTimes);
+  auto cands = caseFilesAndDirs(
+        td,
+        cleanProc, cleanTimes, cleanPost, cleanSys,
+        cleanInconsistentParallelTimes,
+        cleanSubCaseDirs );
 
   for (const auto& c: cands)
   {
@@ -3225,7 +3237,7 @@ decompositionState::decompositionState(const boost::filesystem::path& casedir)
 
 
 BoundingBox::BoundingBox()
-  : arma::mat(arma::zeros(3,2))
+    : arma::mat(initializedBndBox())
 {
 }
 

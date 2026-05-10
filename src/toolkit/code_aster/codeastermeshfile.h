@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "base/boost_include.h"
+#include <boost/filesystem.hpp>
 #include "base/linearalgebra.h"
 
 namespace insight {

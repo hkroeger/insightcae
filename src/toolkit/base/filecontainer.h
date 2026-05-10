@@ -10,19 +10,6 @@
 #include "rapidxml/rapidxml.hpp"
 
 
-namespace boost
-{
-namespace filesystem
-{
-
-template < >
-path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end, const codecvt_type& cvt);
-
-//boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::filesystem::path a_To );
-
-}
-}
-
 
 
 namespace insight
@@ -66,7 +53,7 @@ class FileContainer
    * Relative paths are resolved with the baseDirectory,
    * which might change later.
    */
-  boost::filesystem::path fileName_;
+  boost::filesystem::path filePath_;
 
 
   /**
@@ -88,12 +75,13 @@ class FileContainer
 protected:
     virtual void signalContentChange();
 
+
+public:
     inline const boost::optional<boost::filesystem::path> baseDirectory() const
     {
         return baseDirectory_;
     }
 
-public:
   FileContainer();
 
     /**
@@ -147,6 +135,7 @@ public:
       std::shared_ptr<std::string> content,
       const boost::filesystem::path& fileName );
 
+  bool isDifferent(const FileContainer& o) const;
 
   virtual ~FileContainer();
 
@@ -158,9 +147,25 @@ public:
    * @brief fileName
    * @return returns the file name component only
    */
-  const boost::filesystem::path& fileName() const;
+  boost::filesystem::path fileName() const;
 
-  void setFileName(const boost::filesystem::path& fn);
+  std::string fileNameStem() const;
+
+  /**
+   * @brief fileExtension
+   * @return
+   * file extension in lower case with leading dot
+   */
+  std::string fileExtension() const;
+
+  /**
+   * @brief filePath
+   * @return
+   * the file path (without base directory prepended)
+   */
+  boost::filesystem::path filePath() const;
+
+  virtual void setFilePath(const boost::filesystem::path& fn);
 
 
   std::unique_ptr<std::istream> stream() const;
@@ -168,7 +173,29 @@ public:
 
   void resolveRelativePath(const boost::filesystem::path& baseDirectory);
 
-  boost::filesystem::path localFilePath() const;
+  /**
+   * @brief expandedFilePath
+   * @return
+   * an absolute file path expanded with the base directory
+   */
+  boost::filesystem::path expandedFilePath(bool dontThrow=false) const;
+
+  /**
+   * @brief filePath
+   * Get the path of the file.
+   * It will be created, if it does not exist on the filesystem yet
+   * but its content is available in memory.
+   * @param baseDirectory
+   * The working directory, relative to which relative paths are resolved.
+   * If the file is only in memory, it will be created in a temporary directory
+   * under this path.
+   * @return
+   */
+  boost::filesystem::path accessibleFilePath(
+      bool unpackIfNoLocalCopy=true,
+      boost::optional<boost::filesystem::path> overrideBaseDirectory
+      = boost::optional<boost::filesystem::path>() ) const;
+
 
   /**
    * @brief copyTo

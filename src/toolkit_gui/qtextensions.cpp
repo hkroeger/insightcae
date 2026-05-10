@@ -4,6 +4,7 @@
 
 #include <QFileDialog>
 #include <QDebug>
+#include <QApplication>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -11,6 +12,50 @@
 #include <qnamespace.h>
 
 
+
+QMainWindow *getMainWindow()
+{
+    auto* mainWin = qobject_cast<QMainWindow*>(
+        QApplication::activeWindow());
+
+    if (!mainWin)
+    {
+        for (auto* w : QApplication::topLevelWidgets())
+        {
+            mainWin = qobject_cast<QMainWindow*>(w);
+            if (mainWin) break;
+        }
+    }
+
+    return mainWin;
+}
+
+
+
+QLayout* findContainingLayout(QLayout *layout, QWidget *widget)
+{
+    for (int i = 0; i < layout->count(); ++i) {
+        QLayoutItem *item = layout->itemAt(i);
+
+        if (item->widget() == widget)
+            return layout; // Found: this layout directly contains the widget
+
+        if (item->layout()) {
+            // Recurse into sub-layouts
+            QLayout *found = findContainingLayout(item->layout(), widget);
+            if (found)
+                return found;
+        }
+    }
+    return nullptr;
+}
+
+
+QLayout* findContainingLayout(QWidget *widget)
+{
+    QLayout *layout = widget->parentWidget()->layout();
+    return findContainingLayout(layout, widget);
+}
 
 
 void disconnectAtEOL(QObject *o, const boost::signals2::connection &connection)

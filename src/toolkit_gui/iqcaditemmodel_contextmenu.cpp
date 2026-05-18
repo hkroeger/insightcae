@@ -193,10 +193,24 @@ void IQCADItemModel::showContextMenu(
                     for (auto& ap: fn->assocParamPaths)
                     {
                         auto psm = parameterSetModel(associatedParameterSetModel_);
-                        auto pi = psm->indexOfPath(ap, 0);
-                        auto iqp = psm->parameterFromIndex(pi);
-
-                        addEditActions(iqp);
+                        if (boost::ends_with(ap, "/*"))
+                        {
+                            // expect subset
+                            auto app=boost::erase_tail_copy(ap, 2);
+                            auto ppi = psm->indexOfPath(app, 0);
+                            for (int i=0; i<psm->rowCount(ppi); ++i)
+                            {
+                                auto pi=psm->index(i, 0, ppi);
+                                auto iqp = psm->parameterFromIndex(pi);
+                                addEditActions(iqp);
+                            }
+                        }
+                        else
+                        {
+                            auto pi = psm->indexOfPath(ap, 0);
+                            auto iqp = psm->parameterFromIndex(pi);
+                            addEditActions(iqp);
+                        }
                     }
 
                     if (editActions.size())

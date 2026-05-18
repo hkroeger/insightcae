@@ -43,6 +43,15 @@ size_t hash_value(const boost::filesystem::path&);
 namespace std
 {
 
+template<typename T>
+std::vector<T>& append(std::vector<T>& dst, const std::vector<T>& src)
+{
+    dst.insert(
+        dst.end(),
+        src.begin(), src.end() );
+
+    return dst;
+}
 
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique_aggr(Args&&... args)

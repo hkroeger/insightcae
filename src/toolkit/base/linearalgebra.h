@@ -24,6 +24,8 @@
 #include <armadillo>
 #include <map>
 #include <set>
+#include <type_traits>
+#include <iterator>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
@@ -628,6 +630,73 @@ double integrate_indef(F f, double a=0)
 
 
 double stabilize(double value, double nonZeroThreshold);
+
+
+
+template<class ResultType, ResultType (*compute)(double*, std::size_t)>
+class Processor
+{
+public:
+    typedef ResultType result_type;
+
+private:
+    result_type value_;
+
+public:
+    // ── Konstruktor 1a: std::vector<double> per copy ─────────────────────────
+    explicit Processor(const std::vector<double>& v)
+        : value_(compute(v.data(), v.size()))
+    {}
+
+    // ── Konstruktor 1b: c-array and size ─────────────────────────
+    explicit Processor(const double* v, std::size_t n)
+        : value_(compute(v, n))
+    {}
+
+    // ── Konstruktor 2: beliebiger STL-Container oder Iterator-Paar ───────────
+    // Unterscheidung zur Laufzeit per if constexpr
+    template <typename T, typename U = void>
+    explicit Processor(const T& a, const U& b = {})
+    {
+        if constexpr (std::is_same_v<U, void>)
+        {
+            // T ist ein Container
+            static_assert(
+                std::is_same_v<typename T::value_type, double>,
+                "Container must hold doubles");
+            std::vector<double> tmp(a.begin(), a.end());
+            value_ = compute(tmp.data(), tmp.size());
+        }
+        else
+        {
+            // T und U sind Iteratoren
+            static_assert(
+                std::is_same_v<
+                typename std::iterator_traits<T>::value_type, double>,
+                "Iterators must point to doubles");
+            std::vector<double> tmp(a, b);
+            value_ = compute(tmp.data(), tmp.size());
+        }
+    }
+
+
+    // ── Konstruktor 3: arma::mat ──────────────────────────────────────────────
+    explicit Processor(const arma::mat& m)
+        : Processor(m.memptr(), m.memptr() + m.n_elem)
+    {}
+
+
+    // ── Wertabfrage ───────────────────────────────────────────────────────────
+    result_type value() const { return value_; }
+    operator result_type()  const { return value(); }
+};
+
+
+
+double computeMedian(double* p, std::size_t n);
+typedef Processor<double, computeMedian> median;
+
+
 
 
 }

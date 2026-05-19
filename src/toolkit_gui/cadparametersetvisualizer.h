@@ -127,6 +127,11 @@ public:
         const std::string& name,
         vtkSmartPointer<vtkDataObject> ds );
 
+    virtual void addEvaluation(
+        const std::string& name,
+        insight::cad::PostprocActionPtr ppa,
+        bool visible = true );
+
 
 Q_SIGNALS:
     void visualizationCalculationFinished(bool success);

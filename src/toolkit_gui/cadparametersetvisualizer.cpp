@@ -110,6 +110,18 @@ void CADParameterSetVisualizerGenerator::addDataset(
 
 
 
+void CADParameterSetVisualizerGenerator::addEvaluation(
+    const std::string& name,
+    insight::cad::PostprocActionPtr ppa,
+    bool visible )
+{
+  CurrentExceptionContext ec(GUIEvents, "adding visualizer evaluation "+name);
+  Q_EMIT createdEvaluation( QString::fromStdString(name), ppa, visible );
+}
+
+
+
+
 defineType(CADParameterSetModelVisualizer);
 
 defineStaticFunctionTableAccessFunction2(

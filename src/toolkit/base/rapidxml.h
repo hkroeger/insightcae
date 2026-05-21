@@ -115,7 +115,7 @@ class XMLDocument
     : public rapidxml::xml_document<>
 {
     std::string buffer_; // needs to persist during the lifetime of xml_document
-    void parseBuffer();
+    void parseBuffer(const std::string& rootNodeName);
 
 public:
     xml_node<> *rootNode = nullptr;
@@ -130,7 +130,8 @@ public:
      * @brief XMLDocument
      * create empty XML document with a single rootNode named "root"
      */
-    XMLDocument(const RootNodeProperties& rootNode = { "root", {} });
+    XMLDocument(
+        const RootNodeProperties& rootNode = { "root", {} });
 
     /**
      * @brief XMLDocument
@@ -138,10 +139,12 @@ public:
      * @param file
      */
     template<class Iterator>
-    XMLDocument(Iterator beg, Iterator end)
+    XMLDocument(
+        Iterator beg, Iterator end,
+        const std::string& rootNodeName="root" )
         : buffer_(beg, end)
     {
-        parseBuffer();
+        parseBuffer(rootNodeName);
     }
 
     /**
@@ -149,14 +152,18 @@ public:
      * parse the specified stream. Find the top level node named "root", if it exists.
      * @param file
      */
-    XMLDocument(std::istream& ons);
+    XMLDocument(
+        std::istream& ons,
+        const std::string& rootNodeName="root" );
 
     /**
      * @brief XMLDocument
      * parse the specified file. Find the top level node named "root", if it exists.
      * @param file
      */
-    XMLDocument(const boost::filesystem::path& file);
+    XMLDocument(
+        const boost::filesystem::path& file,
+        const std::string& rootNodeName="root" );
 
     void saveToStream(std::ostream& os) const;
     void saveToFile(const boost::filesystem::path& file) const;

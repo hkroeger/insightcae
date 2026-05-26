@@ -51,10 +51,10 @@ appendNode(
 
 
 
-void XMLDocument::parseBuffer()
+void XMLDocument::parseBuffer(const std::string& rootNodeName)
 {
     this->parse<0>(const_cast<char*>(buffer_.c_str()));
-    rootNode = this->first_node("root");
+    rootNode = this->first_node(rootNodeName.c_str());
 }
 
 
@@ -82,17 +82,21 @@ XMLDocument::XMLDocument(const RootNodeProperties& rootNodeProps)
 
 
 
-XMLDocument::XMLDocument(std::istream& ins)
+XMLDocument::XMLDocument(
+    std::istream& ins,
+    const std::string& rootNodeName )
 {
     insight::CurrentExceptionContext ex(
         "parsing XML from stream" );
 
     readStreamIntoString(ins, buffer_);
-    parseBuffer();
+    parseBuffer(rootNodeName);
 }
 
 
-XMLDocument::XMLDocument(const boost::filesystem::path &file)
+XMLDocument::XMLDocument(
+    const boost::filesystem::path &file,
+    const std::string& rootNodeName )
 {
     insight::CurrentExceptionContext ex(
         "parsing XML from file %s", file.c_str() );
@@ -106,8 +110,9 @@ XMLDocument::XMLDocument(const boost::filesystem::path &file)
     }
 
     readFileIntoString(file, buffer_);
-    parseBuffer();
+    parseBuffer(rootNodeName);
 }
+
 
 void XMLDocument::saveToStream(std::ostream &os) const
 {

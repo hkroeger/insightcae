@@ -69,6 +69,7 @@ Usage
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+#include <thread>
 
 using namespace Foam;
 
@@ -161,19 +162,19 @@ public:
             if (p_[i] <= p_[i-1])
                 FatalErrorIn("SaturationCurve")
                     << "Saturation curve pressures must be strictly ascending. "
-                    << "Problem at row " << i+1
+                    << "Problem at row " << label(i+1)
                     << exit(FatalError);
         }
 
-        Info<< "Saturation curve: read " << p_.size()
+        Info<< "Saturation curve: read " << label(p_.size())
             << " points from " << csvFile
             << " (p range: " << p_.front() << " – " << p_.back() << " Pa)"
             << nl;
 
         if (!hfg_.empty() && hfg_.size() != p_.size())
             FatalErrorIn("SaturationCurve")
-                << "Inconsistent CSV: h_fg column has " << hfg_.size()
-                << " entries but p column has " << p_.size()
+                << "Inconsistent CSV: h_fg column has " << label(hfg_.size())
+                << " entries but p column has " << label(p_.size())
                 << exit(FatalError);
     }
 
@@ -228,15 +229,22 @@ int main(int argc, char *argv[])
     argList::validArgs.append("precursorCase");
     argList::validArgs.append("satCurveFile");
 
+    scalar pClip(100.);
+
     UNIOF_ADDOPT(argList, "T",           "K",      "initial liquid temperature [K] (required)");
     UNIOF_ADDOPT(argList, "pRef",        "Pa",     "absolute reference pressure [Pa] (required)");
-    UNIOF_ADDOPT(argList, "pClip",       "Pa",     "minimum absolute pressure [Pa] (default: 1000Pa)");
+    UNIOF_ADDOPT(argList, "pClip",       "Pa",     "minimum absolute pressure [Pa] (default: 100Pa)");
     UNIOF_ADDOPT(argList, "phaseLiquid", "word",   "liquid phase name (default: liquid)");
     UNIOF_ADDOPT(argList, "phaseGas",   "word",   "gas phase name (default: gas)");
     UNIOF_ADDOPT(argList, "cpl",         "J/kgK",  "liquid specific heat [J/(kg K)] (default: 4182)");
     UNIOF_ADDOPT(argList, "hfg",         "J/kg",   "latent heat [J/kg] – overrides CSV column 3");
     UNIOF_ADDOPT(argList, "rhoLiquid",   "kg/m3",  "liquid density for pressure conversion (default: 1000)");
     UNIOF_ADDOPT(argList, "rhoGas",      "kg/m3",  "gas density for void-fraction conversion (default: 1)");
+    UNIOF_ADDOPT(argList, "maxIter",     "int",    "max iterations for isochoric temperature correction (default: 50)");
+    UNIOF_ADDOPT(argList, "tol",         "-",      "convergence tolerance on flash quality (default: 1e-6)");
+    UNIOF_ADDOPT(argList, "relaxation",  "-",      "under-relaxation factor for quality iteration 0..1 (default: 0.5)");
+    UNIOF_ADDOPT(argList, "alphaGasMin",    "-",   "minimum gas volume fraction to avoid numerical instabilities (default: 1e-3)");
+    UNIOF_ADDOPT(argList, "expansionFactor", "-",  "polytropic expansion factor kappa >= 1: kappa=1 is isochoric, kappa>1 enhances cooling from vapour pressure drop (default: 1)");
 
 #   include "setRootCase.H"
 #   include "createTime.H"       // runTime → target two-phase case
@@ -261,7 +269,6 @@ int main(int argc, char *argv[])
     const scalar pRef =
         readScalar(IStringStream(UNIOF_OPTION(args, "pRef"))());
 
-    scalar pClip(1000.);
     if (UNIOF_OPTIONFOUND(args, "pClip"))
         pClip = pTraits<scalar>(IStringStream(UNIOF_OPTION(args, "pClip"))());
 
@@ -290,16 +297,52 @@ int main(int argc, char *argv[])
     if (UNIOF_OPTIONFOUND(args, "rhoGas"))
         rhoGas = readScalar(IStringStream(UNIOF_OPTION(args, "rhoGas"))());
 
+    label maxIter = 50;
+    if (UNIOF_OPTIONFOUND(args, "maxIter"))
+        maxIter = readLabel(IStringStream(UNIOF_OPTION(args, "maxIter"))());
+
+    scalar tol = 1e-6;
+    if (UNIOF_OPTIONFOUND(args, "tol"))
+        tol = readScalar(IStringStream(UNIOF_OPTION(args, "tol"))());
+
+    scalar relaxation = 0.5;
+    if (UNIOF_OPTIONFOUND(args, "relaxation"))
+        relaxation = readScalar(IStringStream(UNIOF_OPTION(args, "relaxation"))());
+
+    if (relaxation <= 0.0 || relaxation > 1.0)
+        FatalErrorIn("flashInit")
+            << "relaxation must be in (0, 1], got " << relaxation
+            << exit(FatalError);
+
+    scalar alphaGasMin = 1e-3;
+    if (UNIOF_OPTIONFOUND(args, "alphaGasMin"))
+        alphaGasMin = readScalar(IStringStream(UNIOF_OPTION(args, "alphaGasMin"))());
+
+    scalar expansionFactor = 1.0;
+    if (UNIOF_OPTIONFOUND(args, "expansionFactor"))
+        expansionFactor = readScalar(IStringStream(UNIOF_OPTION(args, "expansionFactor"))());
+
+    if (expansionFactor < 1.0)
+        FatalErrorIn("flashInit")
+            << "expansionFactor must be >= 1 (1 = isochoric), got "
+            << expansionFactor << exit(FatalError);
+
     Info<< "Settings:" << nl
         << "  precursor case : " << precursorCase << nl
         << "  saturation CSV : " << satCurveFile  << nl
         << "  T              : " << T_in           << " K"   << nl
         << "  pRef           : " << pRef            << " Pa"  << nl
+        << "  pClip          : " << pClip            << " Pa"  << nl
         << "  liquid phase   : " << phaseLiquid               << nl
         << "  gas phase      : " << phaseGas                  << nl
         << "  cpl            : " << cpl             << " J/(kg K)" << nl
         << "  rhoLiquid      : " << rhoLiquid        << " kg/m3"   << nl
-        << "  rhoGas         : " << rhoGas           << " kg/m3"   << nl;
+        << "  rhoGas         : " << rhoGas           << " kg/m3"   << nl
+        << "  maxIter        : " << maxIter                          << nl
+        << "  tol            : " << tol                              << nl
+        << "  relaxation     : " << relaxation                       << nl
+        << "  alphaGasMin    : " << alphaGasMin                      << nl
+        << "  expansionFactor: " << expansionFactor                  << nl;
     if (hfgFromCmdline)
         Info<< "  hfg (fixed)    : " << hfg_fixed << " J/kg" << nl;
     Info<< endl;
@@ -513,55 +556,186 @@ int main(int argc, char *argv[])
 
     const scalarField& ghI = UNIOF_INTERNALFIELD(gh);
 
-    forAll(mesh.cells(), cellI)
+    label totalIters    = 0;   // total iterations summed over all flashing cells
+    label nNotConverged = 0;   // cells that hit maxIter without converging
+    label maxItersUsed  = 0;   // highest iteration count seen in a single cell
+    scalar sumQualityChange = 0.0;  // sum of |x_polytropic - x_isochoric|
+    scalar maxQualityChange = 0.0;  // max  |x_polytropic - x_isochoric|
+
+    const label nCells = mesh.nCells();
+
+    // ── thread-parallel cell loop ─────────────────────────────────────────────
+
+    struct ThreadStats
     {
-        // ── absolute local pressure ───────────────────────────────────────────
-        const scalar p_local = std::max(1000., pRef + rhoLiquid * pPrecI[cellI]);
-        pAbsI[cellI] = p_local;
+        label  totalIters     = 0;
+        label  nNotConverged  = 0;
+        label  maxItersUsed   = 0;
+        label  nFlashing      = 0;
+        scalar sumQuality     = 0.0;
+        scalar maxQuality     = 0.0;
+        scalar sumQualityChange = 0.0;
+        scalar maxQualityChange = 0.0;
+    };
 
-        // ── saturation properties at local pressure ───────────────────────────
-        const scalar Tsat_loc = satCurve.Tsat(p_local);
-        const scalar hfg_loc  = hfgFromCmdline ? hfg_fixed : satCurve.hfg(p_local);
+    const unsigned nThreads =
+        max(1u, std::thread::hardware_concurrency());
 
-        // ── equilibrium flash quality x = cp_l*(T - T_sat)/h_fg ──────────────
-        const scalar superheat = T_in - Tsat_loc;
-        const scalar x = (superheat > 0.0)
-            ? min(scalar(1), cpl * superheat / hfg_loc)
-            : scalar(0);
+    Info<< "Parallelising cell loop over " << nThreads
+        << " thread(s)" << nl << endl;
 
-        // ── void fraction from quality ────────────────────────────────────────
-        // alpha_gas = x*rhoL / (x*rhoL + (1-x)*rhoG)
-        scalar alphaG = 0.0;
-        if (x > 0.0)
+    std::vector<ThreadStats>  tStats(nThreads);
+    std::vector<std::thread>  threads;
+    threads.reserve(nThreads);
+
+    // chunk size: ceiling division so all cells are covered
+    const label chunk = (nCells + label(nThreads) - 1) / label(nThreads);
+
+    auto cellWork = [&](label start, label end, ThreadStats& st)
+    {
+        for (label cellI = start; cellI < end; ++cellI)
         {
-            const scalar num = x * rhoLiquid;
-            const scalar den = num + (1.0 - x) * rhoGas;
-            alphaG = std::max(1e-3, std::min(1.0,
-                        (den > SMALL) ? num / den : 1.0) );
+            // ── absolute local pressure ───────────────────────────────────────
+            const scalar p_local = max(pClip, pRef + rhoLiquid * pPrecI[cellI]);
+            pAbsI[cellI] = p_local;
+
+            // ── saturation properties at local pressure ───────────────────────
+            const scalar Tsat_loc = satCurve.Tsat(p_local);
+            const scalar hfg_loc  = hfgFromCmdline ? hfg_fixed : satCurve.hfg(p_local);
+
+            // ── polytropic flash quality: iterative correction ────────────────
+            //
+            //  Physical model (polytropic expansion with factor kappa):
+            //  When quality x of the liquid evaporates, the vapour expands
+            //  polytropically, dropping in temperature due to the pressure decrease.
+            //  This additional cooling is absorbed from the remaining liquid fraction
+            //  (1-x), which therefore cools further than in the isochoric case.
+            //  The expansion factor kappa >= 1 amplifies the effective latent heat
+            //  that must be supplied by the liquid per unit of evaporation:
+            //
+            //      (1-x) * cpl * (T_in - T_liq) = x * h_fg * kappa   ... (energy)
+            //      x = cpl * (T_liq - T_sat) / h_fg                   ... (superheat)
+            //
+            //  These two equations are coupled; the iteration resolves them.
+            //  At convergence T_liq > T_sat: residual superheat retained in liquid.
+            //
+            //  Closed-form (for reference):
+            //      x_converged = cpl*DT / (kappa*h_fg + cpl*DT),  DT = T_in - T_sat
+            //  kappa=1 → isochoric;  kappa→∞ → x→0.
+
+            scalar x        = 0.0;
+            label  cellIters = 0;
+
+            if (T_in > Tsat_loc && hfg_loc > SMALL)
+            {
+                bool converged = false;
+
+                for (label iter = 0; iter < maxIter; ++iter)
+                {
+                    ++cellIters;
+
+                    // liquid temperature from energy balance on remaining liquid
+                    const scalar liqFrac = max(1.0 - x, SMALL);
+                    const scalar T_liq =
+                        T_in - x * hfg_loc * expansionFactor / (liqFrac * cpl);
+
+                    // quality from remaining superheat at T_liq
+                    const scalar x_new = max(
+                        scalar(0),
+                        min(scalar(1), cpl * (T_liq - Tsat_loc) / hfg_loc)
+                    );
+
+                    // under-relaxed update
+                    const scalar x_upd = (1.0 - relaxation)*x + relaxation*x_new;
+
+                    if (mag(x_upd - x) < tol)
+                    {
+                        x = x_upd;
+                        converged = true;
+                        break;
+                    }
+                    x = x_upd;
+                }
+
+                st.totalIters   += cellIters;
+                st.maxItersUsed  = max(st.maxItersUsed, cellIters);
+                if (!converged) ++st.nNotConverged;
+            }
+
+            // ── liquid temperature at converged quality ───────────────────────
+            //  T_liq > T_sat: residual superheat retained in the liquid
+            const scalar liqFrac = max(1.0 - x, SMALL);
+            const scalar T_liq   = (x > 0.0)
+                ? T_in - x * hfg_loc * expansionFactor / (liqFrac * cpl)
+                : T_in;
+
+            // ── void fraction from quality ────────────────────────────────────
+            //  alpha_gas = x*rhoL / (x*rhoL + (1-x)*rhoG)
+            scalar alphaG = 0.0;
+            if (x > 0.0)
+            {
+                const scalar num = x * rhoLiquid;
+                const scalar den = num + (1.0 - x) * rhoGas;
+                alphaG = (den > SMALL) ? num / den : 1.0;
+            }
+
+            alphaGasI[cellI] = max(alphaG, alphaGasMin);
+            alphaLiqI[cellI] = 1.0 - alphaGasI[cellI];
+
+            // ── velocity: copy from precursor ─────────────────────────────────
+            ULiqI[cellI] = UPrecI[cellI];
+            UGasI[cellI] = UPrecI[cellI];
+
+            // ── temperature ───────────────────────────────────────────────────
+            //  liquid: residual-superheat temperature (> T_sat when x > 0)
+            //  gas:    saturation temperature
+            TliqI[cellI] = T_liq;
+            TgasI[cellI] = (x > 0.0) ? Tsat_loc : T_in;
+
+            // ── p_rgh ─────────────────────────────────────────────────────────
+            const scalar rhoMix =
+                alphaLiqI[cellI]*rhoLiquid + alphaGasI[cellI]*rhoGas;
+            p_rghI[cellI] = p_local - rhoMix * ghI[cellI];
+
+            // ── per-thread statistics ─────────────────────────────────────────
+            if (x > 0.0)
+            {
+                ++st.nFlashing;
+                st.sumQuality += x;
+                st.maxQuality  = max(st.maxQuality, x);
+
+                // quality change relative to isochoric baseline (kappa=1):
+                //   x_iso = cpl*DT / (h_fg + cpl*DT)
+                const scalar DT    = T_in - Tsat_loc;
+                const scalar denom = hfg_loc + cpl*DT;
+                const scalar x_iso = (denom > SMALL) ? cpl*DT/denom : 0.0;
+                const scalar dq    = mag(x - x_iso);
+                st.sumQualityChange += dq;
+                st.maxQualityChange  = max(st.maxQualityChange, dq);
+            }
         }
+    };
 
-        alphaGasI[cellI]  = alphaG;
-        alphaLiqI[cellI]  = 1.0 - alphaG;
+    for (unsigned t = 0; t < nThreads; ++t)
+    {
+        const label start = label(t) * chunk;
+        const label end   = min(start + chunk, nCells);
+        if (start >= nCells) break;
+        threads.emplace_back(cellWork, start, end, std::ref(tStats[t]));
+    }
+    for (auto& th : threads) th.join();
 
-        // ── velocity: copy from precursor ─────────────────────────────────────
-        ULiqI[cellI] = UPrecI[cellI];
-        UGasI[cellI] = UPrecI[cellI];
-
-        // ── temperature ───────────────────────────────────────────────────────
-        TliqI[cellI] = T_in;
-        TgasI[cellI] = (x > 0.0) ? Tsat_loc : T_in;
-
-        // ── p_rgh ─────────────────────────────────────────────────────────────
-        const scalar rhoMix = alphaLiqI[cellI]*rhoLiquid + alphaGasI[cellI]*rhoGas;
-        p_rghI[cellI] = p_local - rhoMix * ghI[cellI];
-
-        // statistics
-        if (x > 0.0)
-        {
-            ++nFlashing;
-            sumQuality += x;
-            maxQuality = max(maxQuality, x);
-        }
+    // ── reduce per-thread statistics ──────────────────────────────────────────
+    for (const ThreadStats& st : tStats)
+    {
+        totalIters      += st.totalIters;
+        nNotConverged   += st.nNotConverged;
+        maxItersUsed     = max(maxItersUsed, st.maxItersUsed);
+        nFlashing       += st.nFlashing;
+        sumQuality      += st.sumQuality;
+        maxQuality       = max(maxQuality, st.maxQuality);
+        sumQualityChange += st.sumQualityChange;
+        maxQualityChange = max(maxQualityChange, st.maxQualityChange);
     }
 
     // ── boundary conditions (copy precursor BCs for U) ────────────────────────
@@ -575,7 +749,6 @@ int main(int argc, char *argv[])
 
     // ── report statistics ─────────────────────────────────────────────────────
 
-    const label nCells = mesh.nCells();
     Info<< "Flash boiling statistics:" << nl
         << "  Cells with flashing  : " << nFlashing
         << " / " << nCells
@@ -589,6 +762,19 @@ int main(int argc, char *argv[])
         << min(alphaGas).value()  << " / " << max(alphaGas).value()  << nl
         << "  min/max p_abs        : "
         << min(pAbs).value()      << " / " << max(pAbs).value() << " Pa" << nl
+        << nl
+        << "Iterative correction statistics (flashing cells: "
+        << nFlashing << "):" << nl
+        << "  Non-converged cells  : " << nNotConverged
+        << " / " << nFlashing
+        << (nNotConverged > 0 ? " *** increase maxIter or relaxation ***" : "") << nl
+        << "  Max iterations used  : " << maxItersUsed
+        << " / " << maxIter << nl
+        << "  Mean iterations used : "
+        << (nFlashing > 0 ? scalar(totalIters)/scalar(nFlashing) : 0.0) << nl
+        << "  Max quality change vs. isochoric  : " << maxQualityChange << nl
+        << "  Mean quality change vs. isochoric : "
+        << (nFlashing > 0 ? sumQualityChange/nFlashing : 0.0) << nl
         << endl;
 
     // ── write ─────────────────────────────────────────────────────────────────

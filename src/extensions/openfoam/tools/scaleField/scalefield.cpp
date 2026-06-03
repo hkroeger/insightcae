@@ -59,7 +59,7 @@ template<class T>
 void add(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
 {
     IStringStream is(valueSource);
-    T sm(is);
+    T sm = pTraits<T>(is);
 
     Info << "Reading field "<<ioo.name()<<"\n" << endl;
     GeometricField<T, fvPatchField, volMesh> f(ioo, mesh);
@@ -70,19 +70,34 @@ void add(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
     f.write();
 }
 
-template<>
-void add<scalar>(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
+
+
+template<class T>
+void enforceLowerBound(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
 {
     IStringStream is(valueSource);
-    scalar sm=readScalar(is);
+    T sm = pTraits<T>(is);
 
     Info << "Reading field "<<ioo.name()<<"\n" << endl;
-    GeometricField<scalar, fvPatchField, volMesh> f(ioo, mesh);
+    GeometricField<T, fvPatchField, volMesh> f(ioo, mesh);
 
-    f+=dimensioned<scalar>("", f.dimensions(), sm);
+    f.max(dimensioned<T>("", f.dimensions(), sm));
 
     Info << "Writing field "<<ioo.name()<<"\n" << endl;
     f.write();
+}
+
+
+
+template<class T>
+void process(const Foam::argList& args, const fvMesh& mesh, const IOobject& ioo)
+{
+    if (UNIOF_OPTIONFOUND(args, "scale"))
+        scale<T>(mesh, ioo, readScalar(IStringStream( args.options()["scale"] )()) );
+    if (UNIOF_OPTIONFOUND(args, "add"))
+        add<T>(mesh, ioo, args.options()["add"]);
+    if (UNIOF_OPTIONFOUND(args, "enforceLowerBound"))
+        enforceLowerBound<T>(mesh, ioo, args.options()["enforceLowerBound"]);
 }
 
 
@@ -91,17 +106,16 @@ void add<scalar>(const fvMesh& mesh, const IOobject& ioo, const string& valueSou
 int main(int argc, char *argv[])
 {
   argList::validArgs.append("field name");
-  argList::validArgs.append("scale factor");
 
+  argList::validOptions.insert("scale", "scale factor");
   argList::validOptions.insert("add", "add specified constant");
+  argList::validOptions.insert("enforceLowerBound", "lower bound value");
 
 # include "setRootCase.H"
 # include "createTime.H"
 # include "createMesh.H"
 
   word fieldName(IStringStream( UNIOF_ADDARG(args, 0) )());
-
-  scalar s = readScalar(IStringStream( UNIOF_ADDARG(args, 1) )());
 
   IOobject ioo
   (
@@ -115,27 +129,19 @@ int main(int argc, char *argv[])
 
   if (UNIOF_HEADEROK(ioo, volVectorField))
   {
-      scale<vector>(mesh, ioo, s);
-      if (UNIOF_OPTIONFOUND(args, "add"))
-          add<vector>(mesh, ioo, args.options()["add"]);
+      process<vector>(args, mesh, ioo );
   }
   else if (UNIOF_HEADEROK(ioo, volSymmTensorField))
   {
-      scale<symmTensor>(mesh, ioo, s);
-      if (UNIOF_OPTIONFOUND(args, "add"))
-          add<symmTensor>(mesh, ioo, args.options()["add"]);
+      process<symmTensor>(args, mesh, ioo );
   }
   else if (UNIOF_HEADEROK(ioo, volTensorField))
   {
-      scale<tensor>(mesh, ioo, s);
-      if (UNIOF_OPTIONFOUND(args, "add"))
-          add<tensor>(mesh, ioo, args.options()["add"]);
+      process<tensor>(args, mesh, ioo );
   }
   else if (UNIOF_HEADEROK(ioo, volScalarField))
   {
-      scale<scalar>(mesh, ioo, s);
-      if (UNIOF_OPTIONFOUND(args, "add"))
-          add<scalar>(mesh, ioo, args.options()["add"]);
+      process<scalar>(args, mesh, ioo );
   }
 
 

@@ -390,7 +390,9 @@ class ExecTimer
 : public boost::timer::auto_cpu_timer
 {
 public:
-    ExecTimer(const std::string& name);
+    ExecTimer(
+        const std::string& name,
+        int verbosityLevel = DeepDetail );
 
     ~ExecTimer();
 };

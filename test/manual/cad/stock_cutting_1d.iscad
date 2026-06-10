@@ -1,0 +1,9 @@
+e1:Line(O, 2000*EX);
+
+e2:Line(200*EX, 200*EX+1500*EY);
+
+q:Quad(100*(EX+EY), 750*EX, 850*EY);
+
+@post
+
+CuttingStock(5, 1800,1600,4000) << e1, e2, q;

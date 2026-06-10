@@ -609,6 +609,13 @@ msgstr ""
 msgid "Create stitched solid from all faces of the provided features."
 msgstr ""
 
+msgid ""
+"Imports a SailCut *.panel3d XML file and returns an OCC compound containing "
+"one face per sail panel. Each panel face is constructed from the four "
+"boundary curves (left/luff, right/leech, top/head, bottom/foot) stored in "
+"the file."
+msgstr ""
+
 msgid "reading STL geometry"
 msgstr ""
 

@@ -11,6 +11,8 @@ class thermodynamicModel
 {
 public:
   thermodynamicModel(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
+
+  static std::string category();
 };
 
 }

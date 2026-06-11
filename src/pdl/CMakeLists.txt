@@ -25,6 +25,7 @@ set(pdl_SOURCES
     spatialtransformationparameterparser.h spatialtransformationparameterparser.cpp
 
     labeledarraygenerator.h labeledarraygenerator.cpp
+    labeledarraykeyselectiongenerator.h labeledarraykeyselectiongenerator.cpp
     cadgeometrygenerator.h cadgeometrygenerator.cpp
     cadsketchgenerator.h cadsketchgenerator.cpp
     dateparameterparser.h dateparameterparser.cpp

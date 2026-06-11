@@ -155,6 +155,7 @@ add_library(toolkit_gui SHARED
        iqparameters/iqpropertylibraryselectionparameter.cpp iqparameters/iqpropertylibraryselectionparameter.h
        iqparameters/iqspatialtransformationparameter.cpp iqparameters/iqspatialtransformationparameter.h
        iqparameters/iqlabeledarrayparameter.h iqparameters/iqlabeledarrayparameter.cpp
+       iqparameters/iqlabeledarraykeyselectionparameter.h iqparameters/iqlabeledarraykeyselectionparameter.cpp
        iqparameters/iqlabeledarrayelementparameter.h iqparameters/iqlabeledarrayelementparameter.cpp
        iqparameters/iqdateparameter.h iqparameters/iqdateparameter.cpp
        iqparameters/iqdatetimeparameter.h iqparameters/iqdatetimeparameter.cpp

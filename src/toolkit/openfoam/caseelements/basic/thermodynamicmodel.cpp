@@ -11,5 +11,9 @@ thermodynamicModel::thermodynamicModel(
 {}
 
 
+std::string thermodynamicModel::category()
+{
+    return "Thermodynamics";
+}
 
 }

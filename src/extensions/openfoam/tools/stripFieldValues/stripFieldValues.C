@@ -95,7 +95,7 @@ T computeAverage(ITstream& its)
             token::compound& c = secondTok.transferCompoundToken(its);
             auto* lstPtr = dynamic_cast<token::Compound<List<T>>*>(&c);
             T result = pTraits<T>::zero;
-            if (lstPtr && !lstPtr->empty())
+            if (lstPtr && (lstPtr->size()>0))
             {
                 T sum = pTraits<T>::zero;
                 for (const T& v : *lstPtr)

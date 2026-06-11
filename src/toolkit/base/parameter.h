@@ -285,6 +285,7 @@ public:
 
     bool hasParentSet() const;
     ParameterSet& parentSet();
+    const ParameterSet& parentSet() const;
 
     bool isHidden() const;
     bool isExpert() const;

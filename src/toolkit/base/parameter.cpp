@@ -103,7 +103,10 @@ ParameterSet& Parameter::parentSet()
     return dynamic_cast<ParameterSet&>(parent());
 }
 
-
+const ParameterSet& Parameter::parentSet() const
+{
+    return dynamic_cast<const ParameterSet&>(parent());
+}
 
 bool Parameter::isHidden() const { return isHidden_; }
 bool Parameter::isExpert() const {return isExpert_; }

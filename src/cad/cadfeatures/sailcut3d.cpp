@@ -318,10 +318,15 @@ void SailCut3D::build()
         if (!boost::filesystem::exists(fp))
         {
             fp = sharedModelFilePath(filepath_.string());
-            if (!boost::filesystem::exists(fp))
-                throw insight::Exception(
-                    _("File not found: %s"), filepath_.string().c_str());
         }
+
+        if (!boost::filesystem::exists(fp))
+            throw insight::Exception(
+                _("File not found: %s"), filepath_.string().c_str());
+
+        if (boost::filesystem::is_directory(fp))
+            throw insight::Exception(
+                _("File is a directory: %s"), filepath_.string().c_str());
 
         // insight::XMLDocument handles file I/O and rapidxml parsing.
         // The panel3d root element is <CPanelGroup>, not <root>, so

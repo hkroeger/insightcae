@@ -37,7 +37,7 @@ void ParameterSetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) co
     {
         // convert static data into a ParameterSet
         os << "std::unique_ptr<ParameterSet> cloneParameterSet() const override\n"
-           << "{ auto p=makeDefault(); set(*p); return p; }\n";
+           << "{ auto p=makeDefault(); set(*p); return ParameterSet::finalize(std::move(p)); }\n";
 
         // clone function
         os << "std::unique_ptr<insight::ParametersBase> clone() const override\n"

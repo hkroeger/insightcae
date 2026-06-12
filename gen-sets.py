@@ -2,35 +2,72 @@
 
 #awk 'sub(/^PARAMETERSET>>> /,""){f=1} /<<<PARAMETERSET/{f=0} f' $*
 import sys, re, os, shutil, glob
-re_start=re.compile("^PARAMETERSET>>> *([^ ]+) *([^ ]+)$")
-re_end=re.compile("^<<<PARAMETERSET")
-re_include=re.compile("^ *#include *\\\"(.*)\\\" *$")
 
-filename=sys.argv[1]
-pdlexe=sys.argv[2]
-addlocs=sys.argv[3:] if len(sys.argv)>3 else []
-basename=os.path.splitext(os.path.basename(sys.argv[1]))[0]
-f=open(filename, "r")
-inside=False
-out=None
+# Supported syntax variants (all backward compatible):
+#
+#   PARAMETERSET>>>                          struct name defaults to "Parameters",
+#                                            enclosing class inferred from context
+#
+#   PARAMETERSET>>> StructName               struct name given explicitly,
+#                                            enclosing class inferred from context
+#
+#   PARAMETERSET>>> ClassName StructName     fully explicit (original syntax)
+#
+re_start   = re.compile(r"^PARAMETERSET>>>(?: +(\w+))?(?: +(\w+))? *$")
+re_end     = re.compile(r"^<<<PARAMETERSET")
+re_include = re.compile(r'^ *#include *"(.*)" *$')
 
-print("Scanning", filename, "for PDL definitions")
-generated=[]
-expanded_glob=set([])
+# Matches the opening of a class or struct definition (not a forward declaration,
+# not a friend declaration, not a template parameter).
+re_class = re.compile(r'^\s*(?:class|struct)\s+(\w+)')
+
+
+def find_enclosing_class(lines, filename):
+    """Scan C++ lines in reverse to find the innermost enclosing class/struct name."""
+    for line in reversed(lines):
+        s = line.strip()
+        if not s:
+            continue
+        # Skip friend declarations
+        if re.search(r'\bfriend\b', s):
+            continue
+        # Skip forward declarations and single-line definitions (end with ;)
+        if s.endswith(';'):
+            continue
+        # Skip template parameter lists
+        if re.search(r'\btemplate\b', s):
+            continue
+        m = re_class.match(s)
+        if m:
+            return m.group(1)
+    raise Exception(
+        filename + ": PARAMETERSET>>> without explicit class name, "
+        "but no enclosing class/struct found")
+
 
 def copy(l, out, expanded):
-  m=re.match(re_include, l)
-  if not m is None:
-    fn=m.group(1)
-    if fn in expanded:
-      raise Exception("Circular dependency detected: File "+fn+" has already been expanded!");
+    m = re_include.match(l)
+    if m is not None:
+        fn = m.group(1)
+        if fn in expanded:
+            raise Exception("Circular dependency detected: File " + fn + " has already been expanded!")
+        expanded.add(fn)
+        with open(fn, 'r') as sf:
+            for sl in sf:
+                copy(sl, out, expanded)
+        expanded.remove(fn)
     else:
-      expanded.add(fn)
-      sf=open(fn, 'r')
-      for sl in sf.readlines(): copy(sl, out, expanded)
-      expanded.remove(fn)
-  else:
-    out.write(l);
+        out.write(l)
+
+
+filename = sys.argv[1]
+pdlexe   = sys.argv[2]
+addlocs  = sys.argv[3:] if len(sys.argv) > 3 else []
+basename = os.path.splitext(os.path.basename(sys.argv[1]))[0]
+
+print("Scanning", filename, "for PDL definitions")
+generated    = []
+expanded_glob = set()
 
 # Read manifest from previous run to detect stale files
 manifest_file = basename + "_pdl.manifest"
@@ -40,35 +77,74 @@ try:
 except FileNotFoundError:
     previous_stems = set()
 
-for l in f.readlines():
-  #print l
+lines_seen = []   # C++ lines outside PDL blocks, used for class inference
+inside = False
+out    = None
 
-  if inside:
-    if not re.match(re_end, l) is None:
-      if not out is None: out.close()
-      inside=False
+with open(filename, "r") as f:
+    for l in f:
+        if inside:
+            if re_end.match(l):
+                if out is not None:
+                    out.close()
+                    out = None
+                inside = False
+            else:
+                copy(l, out, expanded_glob)
+        else:
+            m = re_start.search(l)
+            if m is not None:
+                tok1, tok2 = m.group(1), m.group(2)
+                if tok2 is not None:
+                    # Original two-token syntax: class and struct both explicit
+                    prefix     = tok1
+                    structname = tok2
+                elif tok1 is not None:
+                    # One-token syntax: struct name given, class inferred
+                    structname = tok1
+                    prefix     = find_enclosing_class(lines_seen, filename)
+                else:
+                    # No-token syntax: struct defaults to "Parameters", class inferred
+                    structname = "Parameters"
+                    prefix     = find_enclosing_class(lines_seen, filename)
+                outfname = basename + "__" + prefix + "__" + structname
+                print("Generating", outfname)
+                generated.append(outfname)
+                out    = open(outfname + ".pdl", "w")
+                inside = True
+            lines_seen.append(l)
 
-  if inside:
-    copy(l, out, expanded_glob)
 
-  if not inside:
-    m=re.search(re_start, l)
-    if not m is None:
-      prefix=m.group(1)
-      classname=m.group(2).rstrip()
-      outfname=basename+"__"+prefix+"__"+classname
-      print("Generating", outfname)
-      generated.append(outfname)
-      out=open(outfname+".pdl", "w")
-      inside=True
+for stem in generated:
+    if os.system('"%s" "%s"' % (pdlexe, stem + ".pdl")) != 0:
+        sys.exit(-1)
+    for file in glob.glob(stem + "__*.h"):
+        for al in addlocs:
+            shutil.copy(file, al)
 
 
-for f in generated:
-  if os.system("\"%s\" \"%s\""%(pdlexe, f+".pdl"))!=0:
-      sys.exit(-1)
-  for file in glob.glob(f+"__*.h"):
-      for al in addlocs:
-          shutil.copy(file, al)
+# Generate basename_pdl.h:
+#   - #include lines for all *_headers.h prerequisites (replaces per-class file-scope includes)
+#   - #define macros for computed class-body includes (e.g. #include MYFILE_PDL_MyClass)
+upper_base   = re.sub(r'[^A-Za-z0-9]', '_', basename).upper()
+pdl_hdr_name = basename + "_pdl.h"
+with open(pdl_hdr_name, "w") as ph:
+    ph.write("// Generated by gen-sets.py — do not edit\n")
+    ph.write("#pragma once\n")
+    if generated:
+        ph.write("\n// Prerequisite includes for all parameter sets defined in %s\n" % (basename + ".h"))
+        for stem in generated:
+            ph.write('#include "%s_headers.h"\n' % stem)
+        ph.write("\n// Computed-include macros for class-body use, e.g.:\n")
+        ph.write("//   #include %s_PDL_ClassName\n" % upper_base)
+        for stem in generated:
+            parts = stem.split("__")
+            if len(parts) == 3:
+                macro = upper_base + "_PDL_" + parts[1]
+                ph.write('#define %-48s "%s.h"\n' % (macro, stem))
+for al in addlocs:
+    shutil.copy(pdl_hdr_name, al)
+
 
 # Remove stale files from previous runs whose stems are no longer generated
 current_stems = set(generated)

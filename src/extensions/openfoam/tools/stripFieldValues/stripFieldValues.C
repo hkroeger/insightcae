@@ -46,6 +46,7 @@
 #include "tensor.H"
 #include "fileName.H"
 #include "wordList.H"
+#include "UIListStream.H"
 
 #include "uniof.h"
 
@@ -90,8 +91,13 @@ T computeAverage(ITstream& its)
         {
             // OF-v2112+: the entire list is stored as a single compound token
             // (token::Compound<List<T>>) rather than as individual value tokens.
-            // transferCompoundToken() marks the token as "moved" and returns a
-            // reference; token::compound has a virtual dtor so delete &c is safe.
+            // transferCompoundToken() marks secondTok as "moved" (COMPOUND type
+            // cleared) and returns a reference to the underlying compound object.
+            // The compound's refCount is still shared with the ITstream's copy of
+            // the token, so we must NOT delete &c directly — doing so bypasses the
+            // refCount mechanism and causes a double-free when the old dictionary
+            // entry is later deleted.  Instead, borrow the reference for reading
+            // only and let secondTok's destructor handle the refCount decrement.
             token::compound& c = secondTok.transferCompoundToken(its);
             auto* lstPtr = dynamic_cast<token::Compound<List<T>>*>(&c);
             T result = pTraits<T>::zero;
@@ -102,7 +108,6 @@ T computeAverage(ITstream& its)
                     sum += v;
                 result = sum / scalar(lstPtr->size());
             }
-            delete &c;   // compound is no longer owned by the token after transfer
             return result;
         }
         else if (secondTok.isWord())
@@ -136,31 +141,44 @@ T computeAverage(ITstream& its)
 /**
  * Replace (or add) the entry named `key` in `dict` with "uniform <avg>".
  *
- * The complete entry string "key   uniform <avg>;" is parsed through a
- * temporary dictionary so that OF's own tokeniser produces a properly-formed
- * primitiveEntry.  This is more robust than building a tokenList by hand,
- * because primitiveEntry(key, tokenList) is mapped to the template
- * primitiveEntry<T>(key, const T&) in newer OF versions and would write
- * the list in "N ( … )" format instead of the expected token sequence.
+ * Builds the token list directly rather than going through the
+ * primitiveEntry template constructor's OStringStream/IStringStream
+ * round-trip.  The round-trip reads "uniform" via ISstream::read(word&)
+ * which uses a static char buf[1024]; in certain call-stack states that
+ * buf can produce the truncated form "unifor".
+ *
+ * By constructing token(word("uniform", false)) directly and only using
+ * the round-trip for the value part, the "uniform" keyword is never read
+ * back through ISstream and cannot be truncated.
  */
 template<class T>
 void setUniformEntry(dictionary& dict, const word& key, const T& avg)
 {
-    OStringStream oss;
-    oss << key << "   uniform " << avg << ";\n";
-    IStringStream iss(oss.str());
+    // Serialize the value part only (not the "uniform" keyword) to tokens.
+    OStringStream valOs;
+    valOs << avg << token::END_STATEMENT;
+    IStringStream valIs(valOs.str());
 
-    // Parse into a temporary dictionary; the parser produces a correctly-
-    // formed primitiveEntry whose ITstream holds the "uniform <value>" tokens.
-    dictionary tmpDict(iss);
-
-    // Transfer the single entry to the target dictionary, replacing any
-    // existing entry with the same keyword.
-    for (const entry& e : tmpDict)
+    // Collect value tokens (scalar, or '(' x y z ')' for vectors, etc.).
+    tokenList valToks(10);
+    label nVal = 0;
+    token t;
+    while (!valIs.read(t).bad() && t.good() && !(t == token::END_STATEMENT))
     {
-        dict.add(e.clone().ptr(), true);
-        break;
+        valToks.newElmt(nVal++) = std::move(t);
     }
+    valToks.resize(nVal);
+
+    // Build final token list: explicit word("uniform") + value tokens.
+    // The word is constructed directly — no ISstream read involved.
+    tokenList toks(1 + nVal);
+    for (label i = 0; i < nVal; ++i)
+    {
+        toks[i + 1] = std::move(valToks[i]);
+    }
+    toks[0] = token(word("uniform", false));  // false = skip stripInvalid
+
+    dict.add(new primitiveEntry(key, std::move(toks)), true);
 }
 
 

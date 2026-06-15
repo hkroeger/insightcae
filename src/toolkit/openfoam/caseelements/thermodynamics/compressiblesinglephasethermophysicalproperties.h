@@ -13,7 +13,7 @@ namespace insight {
 
 
 class compressibleSinglePhaseThermophysicalProperties
-    : public thermodynamicModel
+    : public thermophysicalModel
 {
 
     static void modifyDefaults(ParameterSet& ps);
@@ -22,7 +22,7 @@ public:
 #include "compressiblesinglephasethermophysicalproperties__compressibleSinglePhaseThermophysicalProperties__Parameters.h"
 /*
 PARAMETERSET>>> compressibleSinglePhaseThermophysicalProperties Parameters
-inherits thermodynamicModel::Parameters
+inherits thermophysicalModel::Parameters
 
 addTo_makeDefault { modifyDefaults(p); }
 

@@ -61,6 +61,7 @@ Usage
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
+#include "meshToMesh.H"
 #include "uniof.h"
 
 #include <fstream>
@@ -247,6 +248,9 @@ int main(int argc, char *argv[])
     UNIOF_ADDOPT(argList, "expansionFactor", "-",  "polytropic expansion factor kappa >= 1: kappa=1 is isochoric, kappa>1 enhances cooling from vapour pressure drop (default: 1)");
     UNIOF_ADDOPT(argList, "mode",    "word", "initialization mode: 'flash' (default, compute flash quality) or 'saturated' (T=Tsat+Tmargin, alpha.gas=0)");
     UNIOF_ADDOPT(argList, "Tmargin", "K",   "temperature margin above T_sat in saturated mode (default: 5 K)");
+    UNIOF_ADDOPT(argList, "interpolationMethod", "word",
+        "meshToMesh method used when precursor and target grids differ: "
+        "cellVolumeWeight (default), correctedCellVolumeWeight, mapNearest, direct");
 
 #   include "setRootCase.H"
 #   include "createTime.H"       // runTime → target two-phase case
@@ -345,6 +349,10 @@ int main(int argc, char *argv[])
     if (UNIOF_OPTIONFOUND(args, "Tmargin"))
         Tmargin = readScalar(IStringStream(UNIOF_OPTION(args, "Tmargin"))());
 
+    word interpolationMethod("cellVolumeWeight");
+    if (UNIOF_OPTIONFOUND(args, "interpolationMethod"))
+        interpolationMethod = UNIOF_OPTION(args, "interpolationMethod");
+
     Info<< "Settings:" << nl
         << "  precursor case : " << precursorCase << nl
         << "  saturation CSV : " << satCurveFile  << nl
@@ -361,7 +369,8 @@ int main(int argc, char *argv[])
         << "  relaxation     : " << relaxation                       << nl
         << "  alphaGasMin    : " << alphaGasMin                      << nl
         << "  expansionFactor: " << expansionFactor                  << nl
-        << "  mode           : " << mode                             << nl;
+        << "  mode           : " << mode                             << nl
+        << "  interpMethod   : " << interpolationMethod              << nl;
     if (mode == "saturated")
         Info<< "  Tmargin        : " << Tmargin << " K" << nl;
     if (hfgFromCmdline)
@@ -410,14 +419,6 @@ int main(int argc, char *argv[])
         )
     );
 
-    if (precMesh.nCells() != mesh.nCells())
-        FatalErrorIn("flashInit")
-            << "Precursor mesh has " << precMesh.nCells() << " cells but "
-            << "target mesh has " << mesh.nCells() << " cells." << nl
-            << "The two meshes must be identical. "
-            << "Run OpenFOAM's mapFields first if the meshes differ."
-            << exit(FatalError);
-
     // ── read precursor fields ─────────────────────────────────────────────────
 
     Info<< "Reading precursor U from " << precTime.timeName() << nl << endl;
@@ -455,6 +456,84 @@ int main(int argc, char *argv[])
             << pPrec.dimensions() << nl
             << "Expected kinematic pressure [m^2/s^2] from simpleFoam. "
             << "Continuing, but results may be incorrect." << nl << endl;
+
+    // ── project precursor fields onto the target mesh ─────────────────────────
+    //  When the grids match, a direct copy is used (no interpolation overhead).
+    //  When they differ, meshToMesh automatically interpolates U and p.
+
+    volVectorField Utarget
+    (
+        IOobject
+        (
+            "U_prec_mapped",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedVector("zero", dimVelocity, vector::zero)
+    );
+
+    volScalarField ptarget
+    (
+        IOobject
+        (
+            "p_prec_mapped",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("zero", dimPressure/dimDensity, scalar(0))
+    );
+
+    if (precMesh.nCells() != mesh.nCells())
+    {
+        Info<< "Precursor mesh (" << precMesh.nCells() << " cells) differs "
+            << "from target mesh (" << mesh.nCells() << " cells)." << nl
+            << "Interpolating with method '"
+            << interpolationMethod << "'..." << nl << endl;
+
+        // Convert user string to version-independent enum.
+        // The enum-based constructor selects the correct AMI method internally
+        // for each OF version, avoiding runtime-selection-table mismatches
+        // (e.g. "directAMI" does not exist in v2112).
+        meshToMesh::interpolationMethod interpMethod =
+            meshToMesh::interpolationMethod::imCellVolumeWeight;
+
+        if      (interpolationMethod == "direct")
+            interpMethod = meshToMesh::interpolationMethod::imDirect;
+        else if (interpolationMethod == "mapNearest")
+            interpMethod = meshToMesh::interpolationMethod::imMapNearest;
+        else if (interpolationMethod == "cellVolumeWeight")
+            interpMethod = meshToMesh::interpolationMethod::imCellVolumeWeight;
+        else if (interpolationMethod == "correctedCellVolumeWeight")
+            interpMethod =
+                meshToMesh::interpolationMethod::imCorrectedCellVolumeWeight;
+        else
+            FatalErrorIn("flashInit")
+                << "Unknown interpolationMethod: " << interpolationMethod << nl
+                << "Valid: direct, mapNearest, cellVolumeWeight, "
+                   "correctedCellVolumeWeight"
+                << exit(FatalError);
+
+        meshToMesh interp(precMesh, mesh, interpMethod);
+        Utarget = interp.mapSrcToTgt(Uprec);
+        ptarget = interp.mapSrcToTgt(pPrec);
+    }
+    else
+    {
+        // Identical topology — direct assignment, no interpolation overhead
+        UNIOF_INTERNALFIELD_NONCONST(Utarget) = UNIOF_INTERNALFIELD(Uprec);
+        UNIOF_INTERNALFIELD_NONCONST(ptarget) = UNIOF_INTERNALFIELD(pPrec);
+        forAll(mesh.boundary(), pI)
+        {
+            UNIOF_BOUNDARY_NONCONST(Utarget)[pI] = Uprec.boundaryField()[pI];
+            UNIOF_BOUNDARY_NONCONST(ptarget)[pI] = pPrec.boundaryField()[pI];
+        }
+    }
 
     // ── gravity field ─────────────────────────────────────────────────────────
 
@@ -563,8 +642,8 @@ int main(int argc, char *argv[])
     scalar maxQuality = 0.0;
     scalar sumQuality = 0.0;
 
-    const scalarField& pPrecI  = UNIOF_INTERNALFIELD(pPrec);
-    const vectorField& UPrecI  = UNIOF_INTERNALFIELD(Uprec);
+    const scalarField& pPrecI  = UNIOF_INTERNALFIELD(ptarget);
+    const vectorField& UPrecI  = UNIOF_INTERNALFIELD(Utarget);
 
     scalarField& alphaLiqI = UNIOF_INTERNALFIELD_NONCONST(alphaLiquid);
     scalarField& alphaGasI  = UNIOF_INTERNALFIELD_NONCONST(alphaGas);
@@ -768,7 +847,7 @@ int main(int argc, char *argv[])
 
     forAll(mesh.boundary(), patchI)
     {
-        const fvPatchVectorField& Ubf = Uprec.boundaryField()[patchI];
+        const fvPatchVectorField& Ubf = Utarget.boundaryField()[patchI];
         auto & ULp = UNIOF_BOUNDARY_NONCONST(ULiquid)[patchI];
         if (typeid(ULp) == typeid(Ubf))
         {

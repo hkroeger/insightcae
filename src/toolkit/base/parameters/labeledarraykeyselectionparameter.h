@@ -29,6 +29,7 @@ class LabeledArrayKeySelectionParameter
 {
 protected:
     std::string arrayParameterPath_;
+    bool isBound_ = false;
     std::set<boost::signals2::scoped_connection> syncConnections_;
 
     void initializeHierarchy() override;
@@ -57,6 +58,8 @@ public:
         bool isExpert=false,
         bool isNecessary=false,
         int order=0 );
+
+    bool isBound() const;
 
     bool isDifferent(const Parameter& p) const override;
 

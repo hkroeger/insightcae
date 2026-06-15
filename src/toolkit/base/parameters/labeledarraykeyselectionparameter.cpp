@@ -19,43 +19,59 @@ void LabeledArrayKeySelectionParameter::initializeHierarchy()
 {
     syncConnections_.clear();
 
+    const bool wasBound = isBound_;
+    isBound_ = false;
+
     if (!arrayParameterPath_.empty() && hasParent())
     {
-        auto& arr = parentSet()
-            .get<LabeledArrayParameter>(arrayParameterPath_);
+        try
+        {
+            auto& arr = parentSet()
+                .get<LabeledArrayParameter>(arrayParameterPath_);
 
-        // Keep the stored value if it is still valid; otherwise clear it.
-        if (!value_.empty() && !arr.hasKey(value_))
-            value_.clear();
+            // Keep the stored value if it is still valid; otherwise clear it.
+            if (!value_.empty() && !arr.hasKey(value_))
+                value_.clear();
 
-        syncConnections_.insert(std::move(
-            arr.newItemAdded.connect(
-                [this](const std::string&, std::observer_ptr<Parameter>)
-                {
-                    triggerValueChanged();
-                })
-            ));
+            syncConnections_.insert(std::move(
+                arr.newItemAdded.connect(
+                    [this](const std::string&, std::observer_ptr<Parameter>)
+                    {
+                        triggerValueChanged();
+                    })
+                ));
 
-        syncConnections_.insert(std::move(
-            arr.itemRemoved.connect(
-                [this](const std::string& key)
-                {
-                    if (value_ == key)
-                        value_.clear();
-                    triggerValueChanged();
-                })
-            ));
+            syncConnections_.insert(std::move(
+                arr.itemRemoved.connect(
+                    [this](const std::string& key)
+                    {
+                        if (value_ == key)
+                            value_.clear();
+                        triggerValueChanged();
+                    })
+                ));
 
-        syncConnections_.insert(std::move(
-            arr.itemRelabeled.connect(
-                [this](const std::string& oldKey, const std::string& newKey)
-                {
-                    if (value_ == oldKey)
-                        value_ = newKey;
-                    triggerValueChanged();
-                })
-            ));
+            syncConnections_.insert(std::move(
+                arr.itemRelabeled.connect(
+                    [this](const std::string& oldKey, const std::string& newKey)
+                    {
+                        if (value_ == oldKey)
+                            value_ = newKey;
+                        triggerValueChanged();
+                    })
+                ));
+
+            isBound_ = true;
+        }
+        catch (const insight::ElementNotFoundException&)
+        {
+            // Referenced array not reachable from current position in the
+            // hierarchy — fall back to free-text mode.
+        }
     }
+
+    if (isBound_ != wasBound)
+        triggerValueChanged();
 
     Parameter::initializeHierarchy();
 }
@@ -119,7 +135,7 @@ const std::string& LabeledArrayKeySelectionParameter::arrayParameterPath() const
 std::vector<std::string>
 LabeledArrayKeySelectionParameter::selectionKeys() const
 {
-    if (!arrayParameterPath_.empty() && hasParent())
+    if (isBound_)
     {
         auto& arr = parentSet()
             .get<LabeledArrayParameter>(arrayParameterPath_);
@@ -130,16 +146,25 @@ LabeledArrayKeySelectionParameter::selectionKeys() const
 }
 
 
+bool LabeledArrayKeySelectionParameter::isBound() const
+{
+    return isBound_;
+}
+
+
 
 
 void LabeledArrayKeySelectionParameter::setSelection(const key_type& sel)
 {
-    insight::assertion(
-        contains(sel),
-        _("LabeledArrayKeySelectionParameter: key \"%s\" not present in"
-          " referenced array!\n Available keys: %s"),
-        sel.c_str(),
-        boost::join(selectionKeys(), " ").c_str() );
+    if (isBound_)
+    {
+        insight::assertion(
+            contains(sel),
+            _("LabeledArrayKeySelectionParameter: key \"%s\" not present in"
+              " referenced array!\n Available keys: %s"),
+            sel.c_str(),
+            boost::join(selectionKeys(), " ").c_str() );
+    }
 
     StringParameter::set(sel);
 }

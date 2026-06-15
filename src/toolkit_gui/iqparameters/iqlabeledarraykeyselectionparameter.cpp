@@ -44,21 +44,33 @@ QVBoxLayout* IQLabeledArrayKeySelectionParameter::populateEditControls(
     selBox->setIconSize(QSize(200, 150));
 
     // Helper to (re-)populate the combo box from the current key set.
+    // When bound: non-editable combo restricted to array keys.
+    // When unbound: editable combo acting as a free-text field.
     auto repopulate = [this, selBox]()
     {
         QSignalBlocker sb(selBox);
         selBox->clear();
-        for (const auto& k: this->parameter().selectionKeys())
+        const bool bound = this->parameter().isBound();
+        selBox->setEditable(!bound);
+        if (bound)
         {
-            auto qk = QString::fromStdString(k);
-            auto ip = this->parameter().iconPathForKey(k);
-            if (ip.empty())
-                selBox->addItem(qk);
-            else
-                selBox->addItem(QPixmap(QString::fromStdString(ip)), qk);
+            for (const auto& k: this->parameter().selectionKeys())
+            {
+                auto qk = QString::fromStdString(k);
+                auto ip = this->parameter().iconPathForKey(k);
+                if (ip.empty())
+                    selBox->addItem(qk);
+                else
+                    selBox->addItem(QPixmap(QString::fromStdString(ip)), qk);
+            }
+            auto idx = this->parameter().selectionIndex();
+            selBox->setCurrentIndex(idx >= 0 ? idx : 0);
         }
-        auto idx = this->parameter().selectionIndex();
-        selBox->setCurrentIndex(idx >= 0 ? idx : 0);
+        else
+        {
+            selBox->setCurrentText(
+                QString::fromStdString(this->parameter().selection()));
+        }
     };
 
     repopulate();
@@ -69,7 +81,10 @@ QVBoxLayout* IQLabeledArrayKeySelectionParameter::populateEditControls(
     QPushButton* apply = new QPushButton("&Apply", editControlsContainer);
     QObject::connect(apply, &QPushButton::pressed, [this, selBox]()
     {
-        this->parameterRef().setSelectionFromIndex(selBox->currentIndex());
+        if (this->parameter().isBound())
+            this->parameterRef().setSelectionFromIndex(selBox->currentIndex());
+        else
+            this->parameterRef().set(selBox->currentText().toStdString());
     });
     layout->addWidget(apply);
 

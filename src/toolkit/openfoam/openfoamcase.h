@@ -118,6 +118,7 @@ public:
     }
 
     bool isCompressible() const;
+    bool isCompressible(const std::string& phaseName) const;
 
     void modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem::path& location ) const;
     virtual std::shared_ptr<OFdicts> createDictionaries() const;

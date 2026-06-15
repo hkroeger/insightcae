@@ -83,27 +83,27 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
                 BC["type"]=OFDictData::data("buoyantPressure");
         }
 
-        // turbulence quantities, should be handled by turbulence model
-        else if (
-            ( (field.first=="k") || (field.first=="omega") || (field.first=="epsilon") ||
-              (field.first=="nut") || (field.first=="nuSgs") || (field.first=="nuTilda") ||
-              (field.first=="alphat") )
-            &&
-            (boost::fusion::get<0>(field.second)==scalarField)
-        )
-        {
-            OFcase().findUniqueElement<turbulenceModel>()
-                .addIntoFieldDictionary(
-                    field.first, field.second, BC, p().roughness_z0 );
-        }
-
         else
         {
             bool handled = false;
 
-            handled = handled || meshmotion->addIntoFieldDictionary(field.first, field.second, BC);
-            handled = handled || phasefractions->addIntoFieldDictionary ( field.first, field.second, BC );
-            handled = handled || heattransfer->addIntoFieldDictionary ( field.first, field.second, BC, dictionaries );
+            // turbulence quantities: try each turbulence model element in the case
+            // (supports multiple phases via phaseName parameter on each model)
+            for (auto* tm : OFcase().findElements<turbulenceModel>())
+            {
+                if (tm->addIntoFieldDictionary(field.first, field.second, BC, p().roughness_z0))
+                {
+                    handled = true;
+                    break;
+                }
+            }
+
+            if (!handled)
+            {
+                handled = handled || meshmotion->addIntoFieldDictionary(field.first, field.second, BC);
+                handled = handled || phasefractions->addIntoFieldDictionary ( field.first, field.second, BC );
+                handled = handled || heattransfer->addIntoFieldDictionary ( field.first, field.second, BC, dictionaries );
+            }
 
             if (!handled)
             {

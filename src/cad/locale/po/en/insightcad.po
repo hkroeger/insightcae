@@ -751,6 +751,10 @@ msgstr "Orientation Error!"
 msgid "Create stitched solid from all faces of the provided features."
 msgstr "Create stitched solid from all faces of the provided features."
 
+#, c-format
+msgid "File is a directory: %s"
+msgstr ""
+
 msgid ""
 "Imports a SailCut *.panel3d XML file and returns an OCC compound containing "
 "one face per sail panel. Each panel face is constructed from the four "

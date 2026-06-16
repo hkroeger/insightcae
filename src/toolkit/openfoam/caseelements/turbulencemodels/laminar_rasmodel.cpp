@@ -19,7 +19,7 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 
   if (OFversion()>=300)
    {
-    OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+    OFDictData::dict& turbProperties=dictionaries.lookupDict(turbPropertiesDictName());
     turbProperties["simulationType"]="laminar";
   }
   else{

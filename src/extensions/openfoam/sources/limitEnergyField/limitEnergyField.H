@@ -25,17 +25,27 @@ Class
     Foam::fv::limitEnergyField
 
 Description
-    Constrains the energy equation to enforce a minimum temperature.
+    Constrains the energy equation to enforce temperature bounds [Tmin, Tmax].
 
-    In cells where T < Tmin, the energy equation row is replaced with the
-    hard constraint he = he(p, Tmin), identical in mechanism to
-    fixedTemperatureConstraint but applying a lower bound rather than a
-    fixed value.  This fires inside every PIMPLE outer iteration and every
-    energy corrector, preventing negative temperatures from persisting across
-    corrector calls.
+    Two complementary mechanisms are applied:
+
+    1. constrain(fvMatrix<scalar>&): fires inside every energy equation
+       solve (before the linear solve).  Replaces matrix rows where T < Tmin
+       or T > Tmax with the Dirichlet constraint he = he(p, Tbound).
+       This bounds the *result* of the solve.
+
+    2. correct(volScalarField& he): fires after every energy solve and
+       correctThermo call.  Clips both he and T directly so that T is never
+       left at a stale negative (or extreme) value.  This is necessary because
+       correctThermo uses the stored T as the initial guess T0 for the next
+       Newton iteration; if T0 < 0 the solver crashes unconditionally, even
+       when the new he is perfectly bounded.
+
+    Using both hooks together prevents the stale-T0 crash that occurs when
+    limitTemperature (which only clips he) is used alone.
 
 Usage
-    Minimal example in system/fvOptions:
+    Example in system/fvOptions:
     \verbatim
     limitEnergyGas
     {
@@ -43,13 +53,15 @@ Usage
         active          yes;
         selectionMode   all;
 
-        phase           gas;    // omit for single-phase
-        Tmin            200;    // minimum temperature [K]
+        phase           gas;     // omit for single-phase
+        Tmin            200;     // minimum temperature [K]
+        Tmax            2000;    // maximum temperature [K] (optional)
     }
     \endverbatim
 
 See also
     Foam::fv::fixedTemperatureConstraint
+    Foam::fv::limitTemperature
 
 \*---------------------------------------------------------------------------*/
 
@@ -81,6 +93,9 @@ class limitEnergyField
 
         //- Minimum allowable temperature [K]
         scalar Tmin_;
+
+        //- Maximum allowable temperature [K]
+        scalar Tmax_;
 
 
     // Private Member Functions
@@ -119,8 +134,13 @@ public:
 
     // Member Functions
 
-        //- Constrain the energy equation: force he = he(p, Tmin) where T < Tmin
+        //- Constrain energy equation: force he = he(p, Tbound) where T is
+        //  out of [Tmin, Tmax].  Fires before the linear solve.
         virtual void constrain(fvMatrix<scalar>& eqn, const label fieldi);
+
+        //- Correct he AND T after the solve so T is never left stale/negative.
+        //  Prevents the T0 < 0 crash in the next correctThermo call.
+        virtual void correct(volScalarField& he);
 
         //- Read dictionary
         virtual bool read(const dictionary& dict);

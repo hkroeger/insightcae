@@ -10,10 +10,10 @@ addToOpenFOAMCaseElementFactoryTable(LRR_RASModel);
 
 void LRR_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 			FieldValue({1e-10}), volField ) );
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 				FieldValue({1e-10}), volField ) );
-  c.addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	FieldValue({10.0}), volField ) );
-  c.addField("R", 	FieldInfo(symmTensorField, OFDictData::dimension(0, 2, -2), 	FieldValue({1e-10,1e-10,1e-10,1e-10,1e-10,1e-10}), volField ) );
+  c.addField(fieldName("nut"),     FieldInfo(scalarField,      dimKinViscosity,                  FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("k"),       FieldInfo(scalarField,      dimKinEnergy,                     FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("epsilon"), FieldInfo(scalarField,      OFDictData::dimension(0, 2, -3),  FieldValue({10.0}),  volField ) );
+  c.addField(fieldName("R"),       FieldInfo(symmTensorField,  OFDictData::dimension(0, 2, -2),  FieldValue({1e-10,1e-10,1e-10,1e-10,1e-10,1e-10}), volField ) );
 }
 
 LRR_RASModel::LRR_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
@@ -36,24 +36,20 @@ void LRR_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-
-//   std::string pref="";
-//   if (OFcase().isCompressible()) pref="compressible::";
-
-    if (fieldname == "k")
+    if (fieldname == fieldName("k"))
     {
         BC["type"]=OFDictData::data("kqRWallFunction");
         BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
-    else if (fieldname == "epsilon")
+    else if (fieldname == fieldName("epsilon"))
     {
         BC["type"]=OFDictData::data("epsilonWallFunction");
 
         BC["value"]=OFDictData::toUniformField(10.);
         return true;
     }
-    else if (fieldname == "nut")
+    else if (fieldname == fieldName("nut"))
     {
         if (roughness_z0>0)
         {
@@ -70,7 +66,7 @@ bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const Fi
         }
         return true;
     }
-    else if (fieldname == "R")
+    else if (fieldname == fieldName("R"))
     {
         BC["type"]=OFDictData::data("kqRWallFunction");
         BC["value"]=OFDictData::toUniformField(arma::ones(6,1)*1e-10);

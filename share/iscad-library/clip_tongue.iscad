@@ -1,0 +1,30 @@
+w?=5;
+L?=5;
+t?=1;
+
+ht?=1;
+Lt?=2;
+
+tc?=1; # cutout border
+Hc?=20;
+
+t=
+Extrusion(
+ Tri(O, Lt*EX, ht*EY),
+ w*EZ, centered)
+;
+tt=
+Box(O, L*EX, -t*EY, w*EZ, centerz);
+
+tongue:
+t|tt;
+
+cutout=
+Box(
+ O-(tc)*EX,
+ (tc+L)*EX,
+ (w+2*tc)*EZ,
+ Hc*EY, center yz)
+;
+
+ 

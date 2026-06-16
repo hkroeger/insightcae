@@ -12,7 +12,7 @@ RASModel::RASModel(OpenFOAMCase& c, ParameterSetInput ip)
 
 void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+  OFDictData::dict& turbProperties=dictionaries.lookupDict(turbPropertiesDictName());
   if (OFversion()>=300)
     turbProperties["simulationType"]="RAS";
   else
@@ -23,7 +23,7 @@ OFDictData::dict& RASModel::modelPropsDict(OFdicts& dictionaries) const
 {
   if (OFversion()>=300)
   {
-      OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+      OFDictData::dict& turbProperties=dictionaries.lookupDict(turbPropertiesDictName());
       return turbProperties.subDict("RAS");
   }
   else

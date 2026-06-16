@@ -93,6 +93,7 @@ public:
     // Parameters& parametersRef();
 
     virtual bool isCompressible() const =0;
+    virtual bool isCompressible(const std::string& phaseName) const;
     virtual bool isLES() const;
     virtual bool isGAMGOk() const;
 

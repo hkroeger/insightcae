@@ -513,6 +513,17 @@ void list::insertNoDuplicate(const OFDictData::data& d)
 }
 
 
+void dict::merge_overwrite(const std::map<std::string, data> &tbi)
+{
+    for (const auto& [k, v] : tbi)
+        insert_or_assign(k, v);
+}
+
+void dict::operator+=(const std::map<std::string, data> &tbi)
+{
+    merge_overwrite(tbi);
+}
+
 dict& dict::subDict(const std::string& key, bool createIfNonexistent)
 {
   dict::iterator i=find(key);

@@ -84,6 +84,7 @@ add_library(toolkit SHARED
     base/parameters/propertylibraryselectionparameter.h base/parameters/propertylibraryselectionparameter.cpp
     base/parameters/spatialtransformationparameter.h base/parameters/spatialtransformationparameter.cpp
     base/parameters/labeledarrayparameter.h base/parameters/labeledarrayparameter.cpp
+    base/parameters/labeledarraykeyselectionparameter.h base/parameters/labeledarraykeyselectionparameter.cpp
 
     base/parameterset.cpp base/parameterset.h
 
@@ -352,6 +353,8 @@ add_library(toolkit SHARED
     base/actionprogress.h base/actionprogress.cpp
     base/elementpath.h base/elementpath.cpp
     openfoam/caseelements/dynamicmesh/solidbodymotionfunction.h openfoam/caseelements/dynamicmesh/solidbodymotionfunction.cpp
+    openfoam/caseelements/thermodynamics/thermalphasechangetwophasesystem.cpp openfoam/caseelements/thermodynamics/thermalphasechangetwophasesystem.h
+    openfoam/caseelements/numerics/reactingtwophaseeulerfoamnumerics.cpp openfoam/caseelements/numerics/reactingtwophaseeulerfoamnumerics.h
 
 
 )

@@ -31,5 +31,7 @@
 #include "base/parameters/doublerangeparameter.h"
 #include "base/parameters/matrixparameter.h"
 #include "base/parameters/selectionparameter.h"
+#include "base/parameters/labeledarrayparameter.h"
+#include "base/parameters/labeledarraykeyselectionparameter.h"
 
 #endif // PARAMETERS_H

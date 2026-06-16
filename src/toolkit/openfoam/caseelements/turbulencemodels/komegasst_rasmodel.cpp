@@ -11,17 +11,17 @@ addToOpenFOAMCaseElementFactoryTable(kOmegaSST_RASModel);
 
 void kOmegaSST_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
-  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	FieldValue({1.0}), volField ) );
-  if (c.isCompressible())
+  c.addField(fieldName("k"),     FieldInfo(scalarField, dimKinEnergy,                FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("omega"), FieldInfo(scalarField, OFDictData::dimension(0,0,-1), FieldValue({1.0}),  volField ) );
+  if (isCompressible())
   {
-    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("alphat"), FieldInfo(scalarField, dimDynViscosity, FieldValue({1e-10}), volField ) );
   }
 
-  if (c.isCompressible() && (c.OFversion()<300))
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
+  if (isCompressible() && (c.OFversion()<300))
+    c.addField(fieldName("mut"), FieldInfo(scalarField, dimDynViscosity, FieldValue({1e-10}), volField ) );
   else
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("nut"), FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
@@ -58,7 +58,7 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
   std::string turbpref="", pref="";
-  if (OFcase().isCompressible() )
+  if (isCompressible() )
     {
 
       if ( (OFversion()<164) || (OFversion()>170) )
@@ -69,13 +69,13 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
 
     }
 
-  if (fieldname == "k")
+  if (fieldname == fieldName("k"))
   {
     BC["type"]=OFDictData::data(turbpref+"kqRWallFunction");
     BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
-  else if (fieldname == "omega")
+  else if (fieldname == fieldName("omega"))
   {
     BC["type"]=OFDictData::data(turbpref+"omegaWallFunction");
     BC["Cmu"]=0.09;
@@ -86,7 +86,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     BC["value"]=OFDictData::toUniformField(1.);
     return true;
   }
-  else if (fieldname == "nut")
+  else if (fieldname == fieldName("nut"))
   {
     if (OFversion()>=164)
     {
@@ -112,13 +112,13 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     }
     return true;
   }
-  else if (fieldname == "mut")
+  else if (fieldname == fieldName("mut"))
   {
     BC["type"]=OFDictData::data("mutkWallFunction");
     BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
-  else if (fieldname == "alphat")
+  else if (fieldname == fieldName("alphat"))
   {
     BC["type"]=pref+"alphatWallFunction";
     BC["value"]=OFDictData::toUniformField(1e-10);

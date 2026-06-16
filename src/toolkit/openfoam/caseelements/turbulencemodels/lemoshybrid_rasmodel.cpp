@@ -10,9 +10,9 @@ addToOpenFOAMCaseElementFactoryTable(LEMOSHybrid_RASModel);
 
 void LEMOSHybrid_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("kSgs", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
-  c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
-  c.addField("UAvgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	FieldValue({0,0,0}), volField ) );
+  c.addField(fieldName("kSgs"),    FieldInfo(scalarField, dimKinEnergy,    FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("nuSgs"),   FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("UAvgHyb"),FieldInfo(vectorField,  dimVelocity,     FieldValue({0,0,0}), volField ) );
 }
 
 LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
@@ -68,13 +68,13 @@ bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, 
 {
   if (!kOmegaSST_RASModel::addIntoFieldDictionary(fieldname, fieldinfo, BC, roughness_z0))
   {
-    if (fieldname == "kSgs")
+    if (fieldname == fieldName("kSgs"))
     {
       BC["type"]="fixedValue";
       BC["value"]=OFDictData::toUniformField(0.);
       return true;
     }
-    else if (fieldname == "nuSgs")
+    else if (fieldname == fieldName("nuSgs"))
     {
       BC["type"]="zeroGradient";
       return true;

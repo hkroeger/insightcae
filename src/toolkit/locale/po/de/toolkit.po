@@ -36,6 +36,13 @@ msgid ""
 " Available values are: %s"
 msgstr ""
 
+#, c-format
+msgid ""
+"LabeledArrayKeySelectionParameter: key \"%s\" not present in referenced "
+"array!\n"
+" Available keys: %s"
+msgstr ""
+
 msgid "The problem occurred"
 msgstr "Das Problem ist aufgetreten"
 

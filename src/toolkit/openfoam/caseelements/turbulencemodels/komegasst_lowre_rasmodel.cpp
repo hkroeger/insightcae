@@ -30,13 +30,13 @@ bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldna
     if (roughness_z0>0.)
         throw insight::Exception("kOmegaSST_LowRe_RASModel: non-smooth walls are not supported!");
 
-    if (fieldname == "k")
+    if (fieldname == fieldName("k"))
   {
     BC["type"]=OFDictData::data("fixedValue");
     BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
-  else if ( fieldname == "omega")
+  else if (fieldname == fieldName("omega"))
   {
     BC["type"]=OFDictData::data("omegaWallFunction");
     BC["blended"]=true;

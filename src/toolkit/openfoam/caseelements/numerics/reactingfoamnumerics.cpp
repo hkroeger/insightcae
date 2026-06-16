@@ -84,8 +84,8 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   bool LES=p().forceLES;
   try
   {
-      auto& tm = this->OFcase().findUniqueElement<turbulenceModel>();
-      LES=LES || (tm.minAccuracyRequirement() >= turbulenceModel::AC_LES);
+      for (const auto* tm : this->OFcase().findElements<turbulenceModel>())
+          LES = LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
   }
   catch (...)
   {

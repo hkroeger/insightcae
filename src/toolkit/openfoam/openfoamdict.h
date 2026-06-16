@@ -106,7 +106,13 @@ struct list
 struct dict 
 : public std::map<std::string, data> 
 {
-  
+
+  using std::map<std::string, data>::map;
+
+  void merge_overwrite(const std::map<std::string, data>& tbi);
+
+  void operator+=(const std::map<std::string, data>& tbi);
+
   template<class T>
   T& lookup(const std::string& key)
   {

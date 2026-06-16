@@ -98,6 +98,14 @@ Parameter& ParameterSet::insertUninitialized(const std::string &name, std::uniqu
 
 
 
+std::unique_ptr<ParameterSet> ParameterSet::finalize(std::unique_ptr<ParameterSet>&& ps)
+{
+    ps->initializeHierarchy();
+    return std::move(ps);
+}
+
+
+
 std::unique_ptr<ParameterSet> ParameterSet::create()
 {
     std::unique_ptr<ParameterSet> p(new ParameterSet());

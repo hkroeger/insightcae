@@ -38,13 +38,13 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
     if (roughness_z0>0.)
         throw insight::Exception("kOmegaSST2_RASModel: non-smooth walls are not supported!");
 
-    if (fieldname == "k")
+    if (fieldname == fieldName("k"))
   {
     BC["type"]="kqRWallFunction";
     BC["value"]=OFDictData::toUniformField(1e-10);
     return true;
   }
-  else if (fieldname == "omega")
+  else if (fieldname == fieldName("omega"))
   {
     BC["type"]="hybridOmegaWallFunction2";
     BC["Cmu"]=0.09;
@@ -54,7 +54,7 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
     BC["value"]=OFDictData::toUniformField(1.);
     return true;
   }
-  else if (fieldname == "nut")
+  else if (fieldname == fieldName("nut"))
   {
     BC["type"]="nutHybridWallFunction2";
     BC["Cmu"]=0.09;

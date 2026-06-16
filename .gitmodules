@@ -1,3 +1,6 @@
 [submodule "CMake/vtkTargets/vtk-dicom"]
 	path = CMake/vtkTargets/vtk-dicom
 	url = https://github.com/hkroeger/vtk-dicom.git
+[submodule "doc"]
+	path = doc
+	url = ssh://gogs@rostock.silentdynamics.de:222/silentdynamics/insight-documentation.git

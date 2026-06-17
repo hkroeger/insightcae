@@ -16,6 +16,7 @@ add_subdirectory(extensions/python)
 add_subdirectory(extensions/paraview)
 add_subdirectory(extensions/taskjuggler)
 add_subdirectory(extensions/dakota)
+add_subdirectory(extensions/coolprop)
 
 IF (INSIGHT_BUILD_CODEASTER)
     add_subdirectory(extensions/code_aster)

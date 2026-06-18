@@ -48,7 +48,7 @@ if (INSIGHT_BUILD_COOLPROP AND NOT WIN32)
     target_link_libraries(libcoolprop INTERFACE ${COOLPROP_BUILD_LIBRARY}) #${COOLPROP_LIBRARY})
     set_property( TARGET libcoolprop PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${COOLPROP_INCLUDE_DIR})
 
-    add_definitions(-DNO_FMTLIB)
+    target_compile_definitions(libcoolprop INTERFACE NO_FMTLIB)
 
     add_executable(coolprop_test coolprop_test.cpp)
     target_link_libraries(coolprop_test libcoolprop)

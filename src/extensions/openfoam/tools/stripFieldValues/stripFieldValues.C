@@ -28,7 +28,10 @@
  * the mesh to be present or consistent with the field sizes.
  *
  * Usage:
- *   stripFieldValues <timeName>  [-case <caseDir>]
+ *   stripFieldValues <timeName>  [-case <caseDir>]  [-fields "field1 field2 ..."]
+ *
+ * If -fields is given, only the listed field files are processed; all other
+ * files in the time directory are left untouched.
  */
 
 #include "argList.H"
@@ -312,6 +315,12 @@ int main(int argc, char* argv[])
 {
     argList::noParallel();
     argList::validArgs.append("time");
+    argList::addOption
+    (
+        "fields",
+        "wordList",
+        "restrict processing to these field names (default: all fields)"
+    );
 
 #   include "setRootCase.H"
 #   include "createTime.H"
@@ -319,8 +328,17 @@ int main(int argc, char* argv[])
     const word     timeName(UNIOF_ADDARG(args, 0));
     const fileName timeDir = runTime.path() / timeName;
 
+    // Optional field filter (-fields "U p k ...")
+    wordList restrictFields;
+    if (args.optionFound("fields"))
+        args.optionLookup("fields")() >> restrictFields;
+    const bool filterFields = !restrictFields.empty();
+
     Info << "stripFieldValues: processing time directory " << timeDir
-         << nl << endl;
+         << nl;
+    if (filterFields)
+        Info << "  restricted to fields: " << restrictFields << nl;
+    Info << endl;
 
     if (!fs::exists(timeDir.c_str()) || !fs::is_directory(timeDir.c_str()))
     {
@@ -338,6 +356,12 @@ int main(int argc, char* argv[])
             continue;
 
         const word fieldName(dirEntry.path().filename().string());
+
+        if (filterFields && !restrictFields.found(fieldName))
+        {
+            ++nSkipped;
+            continue;
+        }
 
         try
         {

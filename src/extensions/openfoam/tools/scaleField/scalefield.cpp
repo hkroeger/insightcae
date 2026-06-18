@@ -90,6 +90,22 @@ void enforceLowerBound(const fvMesh& mesh, const IOobject& ioo, const string& va
 
 
 template<class T>
+void enforceUpperBound(const fvMesh& mesh, const IOobject& ioo, const string& valueSource)
+{
+    IStringStream is(valueSource);
+    T sm = pTraits<T>(is);
+
+    Info << "Reading field "<<ioo.name()<<"\n" << endl;
+    GeometricField<T, fvPatchField, volMesh> f(ioo, mesh);
+
+    f.min(dimensioned<T>("", f.dimensions(), sm));
+
+    Info << "Writing field "<<ioo.name()<<"\n" << endl;
+    f.write();
+}
+
+
+template<class T>
 void process(const Foam::argList& args, const fvMesh& mesh, const IOobject& ioo)
 {
     if (UNIOF_OPTIONFOUND(args, "scale"))
@@ -98,6 +114,8 @@ void process(const Foam::argList& args, const fvMesh& mesh, const IOobject& ioo)
         add<T>(mesh, ioo, args.options()["add"]);
     if (UNIOF_OPTIONFOUND(args, "enforceLowerBound"))
         enforceLowerBound<T>(mesh, ioo, args.options()["enforceLowerBound"]);
+    if (UNIOF_OPTIONFOUND(args, "enforceUpperBound"))
+        enforceUpperBound<T>(mesh, ioo, args.options()["enforceUpperBound"]);
 }
 
 
@@ -110,6 +128,7 @@ int main(int argc, char *argv[])
   argList::validOptions.insert("scale", "scale factor");
   argList::validOptions.insert("add", "add specified constant");
   argList::validOptions.insert("enforceLowerBound", "lower bound value");
+  argList::validOptions.insert("enforceUpperBound", "upper bound value");
 
 # include "setRootCase.H"
 # include "createTime.H"

@@ -53,10 +53,11 @@
 
 #include "uniof.h"
 
-#include <filesystem>
+#include "boost/filesystem.hpp"
+#include <boost/filesystem/operations.hpp>
 
 using namespace Foam;
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 
 // ─── helper templates ────────────────────────────────────────────────────────
@@ -352,7 +353,7 @@ int main(int argc, char* argv[])
 
     for (const auto& dirEntry : fs::directory_iterator(timeDir.c_str()))
     {
-        if (!dirEntry.is_regular_file())
+        if (!fs::is_regular_file(dirEntry))
             continue;
 
         const word fieldName(dirEntry.path().filename().string());

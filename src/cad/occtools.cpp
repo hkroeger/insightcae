@@ -33,6 +33,33 @@ namespace insight {
 namespace cad {
 
 
+bool isShapeEmpty(const TopoDS_Shape& shape)
+{
+
+    if (shape.IsNull())
+        return true;
+
+    // Leeres Compound?
+    if (shape.ShapeType() == TopAbs_COMPOUND)
+    {
+        TopoDS_Iterator it(shape);
+        if (!it.More())
+            return true;
+    }
+
+    bool feats=false;
+    // Enthält irgendeine Geometrie (Vertex, Edge, Face, ...)?
+    for (int shapeType = TopAbs_VERTEX; shapeType <= TopAbs_FACE; ++shapeType)
+    {
+        TopExp_Explorer exp(shape, static_cast<TopAbs_ShapeEnum>(shapeType));
+        if (exp.More())
+            feats=true;
+    }
+
+    return feats;
+}
+
+
 is_gp_Trsf::is_gp_Trsf()
 {}
 

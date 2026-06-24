@@ -27,6 +27,9 @@
 namespace insight {
 namespace cad {
 
+bool isShapeEmpty(const TopoDS_Shape& shape);
+
+
 arma::mat calcBndBox(TopoDS_Shape);
 
 class is_gp_Trsf

@@ -53,7 +53,9 @@ DerivedFeature::DerivedFeature(const DerivedFeature&o, TreeCloneMap& tcm)
 
 DerivedFeature::DerivedFeature(ConstFeaturePtr basefeat)
 : basefeat_(basefeat)
-{}
+{
+    visresolution_=basefeat->visResolution();
+}
 
 ConstFeaturePtr DerivedFeature::baseFeature() const
 {

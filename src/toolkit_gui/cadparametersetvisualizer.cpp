@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <exception>
 
 #include "cadparametersetvisualizer.h"
 #include "base/exception.h"
@@ -242,10 +243,11 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                         recreateVisualizationElements();
                         success_=true;
                     }
-                    catch (insight::Exception& ex)
+                    catch (std::exception& ex)
                     {
                         status_=Finished;
-                        Q_EMIT visualizationComputationError(ex);
+                        Q_EMIT visualizationComputationError(
+                            std::current_exception() );
                         return;
                     }
                     catch (...)
@@ -257,7 +259,9 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                         os
                             << *(errdesc) << "\n"
                             << errdesc->errorDetails_;
-                        Q_EMIT visualizationComputationError(os.str());
+                        Q_EMIT visualizationComputationError(
+                            std::make_exception_ptr(
+                                insight::Exception(os.str())));
                         return;
                     }
 
@@ -357,6 +361,17 @@ void MultiCADParameterSetVisualizer::launch(IQCADItemModel *model)
             this,
             [this,src](bool success)
             { onSubVisualizationCalculationFinished(src, success); }
+            );
+
+
+        connect(
+            vis,
+            &CADParameterSetModelVisualizer::visualizationComputationError,
+            this,
+            [this,src](std::exception_ptr ex)
+            {
+                visualizationComputationError(ex);
+            }
             );
 
         connect(vis, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable),

@@ -81,6 +81,7 @@ private:
 
     //IQCADItemModel cadmodel_;
     IQVTKParameterSetDisplay* display_;
+    QLabel* overlayText_;
 
     insight::MultiCADParameterSetVisualizer::SubVisualizerList multiVizSources_;
     QPointer<insight::MultiCADParameterSetVisualizer> viz_;
@@ -138,7 +139,8 @@ public:
 
     void run(ExecutionStep begin_with, bool skipMonitor=false);
 
-    void closeEvent(QCloseEvent *event);
+    void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *e) override;
     void readSettings();
 
 

@@ -5,6 +5,7 @@
 #include "cadfeatures/importsolidmodel.h"
 #include "cadtypes.h"
 #include <memory>
+#include <string>
 
 namespace insight {
 
@@ -31,9 +32,13 @@ typedef std::shared_ptr<CADErrorDescription> CADErrorDescriptionPtr;
 
 
 
+cad::FeaturePtr cg(ExceptionContext& ec);
+
 class CADException
     : public SpecializedException<CADErrorDescription>
 {
+
+    void addCG();
 
 public:
     template<class ...Args>
@@ -44,6 +49,7 @@ public:
               std::forward<Args>(addArgs)... )
     {
         description()->geometryInError_=geometryInError;
+        addCG();
     }
 
 
@@ -59,6 +65,7 @@ public:
             description()->contextGeometry_.insert(
                 {cg.first, std::const_pointer_cast<cad::Feature>(cg.second) } );
         }
+        addCG();
     }
 
     template<class ...Args>
@@ -73,6 +80,7 @@ public:
             description()->contextGeometry_.insert(
                 {cg.first, cad::Import::create(cg.second) } );
         }
+        addCG();
     }
 };
 
@@ -86,6 +94,29 @@ public:
 };
 
 
+
+class CADExceptionContext
+: public CurrentExceptionContext
+{
+public:
+    typedef std::map<std::string, cad::FeaturePtr> ContextGeometryMap;
+
+private:
+    std::string label_;
+    ContextGeometryMap contextGeometry_;
+
+public:
+    using CurrentExceptionContext::CurrentExceptionContext;
+
+
+    void setLabel(const std::string& lbl);
+    void operator+=(const std::pair<std::string, TopoDS_Shape>& cg);
+    void operator+=(const ContextGeometryMap::value_type& cg);
+    void operator+=(const ContextGeometryMap& cg);
+
+    const std::string label() const;
+    cad::FeaturePtr contextGeometry() const;
+};
 
 
 } // namespace insight

@@ -24,6 +24,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QHeaderView>
+#include <exception>
 
 #include "base/exception.h"
 #include "boost/algorithm/string/replace.hpp"
@@ -449,20 +450,27 @@ void ParameterEditorWidget::rebuildVisualization()
 
             connect(
                 viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
-                [this](const insight::Exception& ex)
+                [this](std::exception_ptr ex)
                 {
                     DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
 
-                    overlayText_->setTextFormat(Qt::MarkdownText);
-                    overlayText_->setText(QString::fromStdString(
-                        std::string(_("The visualization could not be generated."))
-                        +"\n\n"
-                        +_("Reason:")
-                        +"\n\n"
-                        +boost::replace_all_copy(ex.message(), "\n", "\n\n")+"\n\n"
-                        +boost::replace_all_copy(ex.context(), "\n", "\n\n")
-                        ));
-                    overlayText_->show();
+                    try {
+                        std::rethrow_exception(ex);
+                    }
+                    catch (...)
+                    {
+                        auto desc=insight::describeCurrentException();
+                        overlayText_->setTextFormat(Qt::MarkdownText);
+                        overlayText_->setText(QString::fromStdString(
+                            std::string(_("The visualization could not be generated."))
+                            +"\n\n"
+                            +_("Reason:")
+                            +"\n\n"
+                            +boost::replace_all_copy(std::string(*desc), "\n", "\n\n")+"\n\n"
+                            +boost::replace_all_copy(desc->context_, "\n", "\n\n")
+                            ));
+                        overlayText_->show();
+                    }
                 }
             );
 

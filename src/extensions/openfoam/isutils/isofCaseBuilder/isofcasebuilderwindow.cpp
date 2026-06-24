@@ -18,6 +18,7 @@
  *
  */
 
+#include <QObject>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -41,9 +42,11 @@
 #include "rapidxml/rapidxml_print.hpp"
 #endif
 
+#include "base/translations.h"
 #include "base/qt5_helper.h"
 #include "qtextensions.h"
-
+#include "cadexception.h"
+#include "iqcadexceptiondisplaydialog.h"
 
 
 using namespace insight;
@@ -117,6 +120,19 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 
   display_=new IQVTKParameterSetDisplay(this, cadview, ui->modeltree);
 
+
+  overlayText_ = new IQEphemeralLabel(display_->viewer());
+  overlayText_->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+  overlayText_->setAutoFillBackground(true);
+  QPalette semiTransparent(QColor(255,0,0,128));
+  semiTransparent.setBrush(QPalette::Text, Qt::white);
+  semiTransparent.setBrush(QPalette::WindowText, Qt::white);
+  overlayText_->setPalette(semiTransparent);
+  overlayText_->setMargin(10);
+  QFont f = font();
+  f.setPixelSize(QFontInfo(f).pixelSize()*1.5);
+  overlayText_->setFont(f);
+  overlayText_->hide();
 
   availableBCsModel_=new AvailableBCsModel(this);
   availableCaseElementsModel_=new AvailableCaseElementsModel(this);
@@ -534,6 +550,25 @@ void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
     settings.setValue("pack_config_file", pack_config_file_);
     QMainWindow::closeEvent(event);
 }
+
+
+void isofCaseBuilderWindow::resizeEvent(QResizeEvent*e)
+{
+    QMainWindow::resizeEvent(e);
+
+    if (display_)
+    {
+        auto w = display_->viewer()->centralWidget()->width();
+        auto h = display_->viewer()->centralWidget()->height();
+
+        int m = w / 10;
+        overlayText_->setGeometry(
+            m, m,
+            w - 2 * m,
+            h - 2 * m );
+    }
+}
+
 
 void isofCaseBuilderWindow::readSettings()
 {
@@ -1042,25 +1077,44 @@ void isofCaseBuilderWindow::rebuildVisualization()
         casepath(), consoleProgressDisplayer
         );
 
-    // connect(
-    //     viz_, &insight::CADParameterSetVisualizer::visualizationCalculationFinished, viz_,
-    //     [this](bool success)
-    //     { if (success) overlayText_->hide(); } );
+    connect(
+        viz_, &insight::CADParameterSetVisualizerGenerator::visualizationCalculationFinished, viz_,
+        [this](bool success)
+        { if (success) overlayText_->hide(); } );
 
-    // connect(
-    //     viz_, &insight::CADParameterSetVisualizer::visualizationComputationError, viz_,
-    //     [this](const insight::Exception& ex)
-    //     {
-    //         overlayText_->setTextFormat(Qt::MarkdownText);
-    //         overlayText_->setText(QString::fromStdString(
-    //             "The visualization could not be generated.\n\n"
-    //             "Reason:\n\n"
-    //             "**"+ex.description()+"**\n\n"+
-    //             boost::replace_all_copy(ex.context(), "\n", "\n\n")
-    //             ));
-    //         overlayText_->show();
-    //     }
-    //     );
+    connect(
+        viz_, &insight::CADParameterSetVisualizerGenerator::visualizationComputationError, viz_,
+        [this](std::exception_ptr ex)
+        {
+            DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
+
+            try {
+                std::rethrow_exception(ex);
+            }
+
+            catch (insight::CADException& cadex)
+            {
+                IQCADExceptionDisplayDialog dlg(this);
+                dlg.displayException(*cadex.description());
+                dlg.exec();
+            }
+            catch (...)
+            {
+                auto desc=insight::describeCurrentException();
+                overlayText_->setTextFormat(Qt::MarkdownText);
+                overlayText_->setText(QString::fromStdString(
+                    std::string(_("The visualization could not be generated."))
+                    +"\n\n"
+                    +_("Reason:")
+                    +"\n\n"
+                    +boost::replace_all_copy(std::string(*desc), "\n", "\n\n")+"\n\n"
+                    +boost::replace_all_copy(desc->context_, "\n", "\n\n")
+                    ));
+                overlayText_->show();
+            }
+
+        }
+        );
 
     viz_->launch(display_->model());
 }

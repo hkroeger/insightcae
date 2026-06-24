@@ -20,7 +20,7 @@ namespace insight {
 
 AnalysisThread::AnalysisThread(
     const std::string& analysisName,
-    const ParameterInput& input,
+    ParameterInput input,
     ProgressDisplayer *pd,
     std::function<void(void)> preAction,
     std::function<void(void)> postAction,

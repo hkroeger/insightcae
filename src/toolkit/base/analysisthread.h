@@ -66,7 +66,7 @@ public:
 
   AnalysisThread(
       const std::string& analysisName,
-      const ParameterInput& input,
+      ParameterInput input,
       ProgressDisplayer *pd
 #ifndef SWIG
       ,

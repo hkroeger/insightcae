@@ -18,7 +18,12 @@ namespace insight {
 // ======== AnalysisThread
 
 
-AnalysisThread::AnalysisThread(
+AnalysisThread::AnalysisThread()
+: analysis_(nullptr)
+{}
+
+
+void AnalysisThread::launch(
     const std::string& analysisName,
     ParameterInput input,
     ProgressDisplayer *pd,
@@ -27,8 +32,8 @@ AnalysisThread::AnalysisThread(
     ExceptionHandler exHdlr,
     InterruptHandler intHdlr
 )
-  : analysis_(nullptr),
-    Thread(
+{
+    insight::Thread::launch(
           [this,analysisName,input,pd,preAction,postAction]()
           {
               preAction();
@@ -69,21 +74,21 @@ AnalysisThread::AnalysisThread(
 
               postAction();
           },
-          exHdlr, intHdlr)
-{}
+        exHdlr, intHdlr);
+}
 
 
 
 
-AnalysisThread::AnalysisThread
+void AnalysisThread::launch
 (
     std::function<void(void)> action,
     ExceptionHandler exHdlr,
     InterruptHandler intHdlr
 )
-  : analysis_(nullptr),
-    Thread( action, exHdlr, intHdlr )
-{}
+{
+    insight::Thread::launch( action, exHdlr, intHdlr );
+}
 
 
 

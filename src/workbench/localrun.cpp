@@ -9,16 +9,7 @@
 
 
 LocalRun::LocalRun(AnalysisForm *af)
-  : insight::QAnalysisThread(
-          af->psmodel_->getAnalysisName(),
-#warning wait for visualization run to finish, if is running
-          bool(af->sid_) ?
-            insight::AnalysisThread::ParameterInput( af->sid_ )
-          : insight::AnalysisThread::ParameterInput(
-              insight::AnalysisThread::ParameterSetAndExePath{
-                &af->parameters(), af->localCaseDirectory() } ),
-          &af->progressDisplayer_ ),
-    WorkbenchAction(af)
+: WorkbenchAction(af)
 {
     // presumption: all signals have to be emitted from another thread!
     QObject::connect(this, &insight::QAnalysisThread::finished,
@@ -35,6 +26,16 @@ LocalRun::LocalRun(AnalysisForm *af)
 
   af_->progressDisplayer_.reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
+
+  QAnalysisThread::launch(
+      af->psmodel_->getAnalysisName(),
+#warning wait for visualization run to finish, if is running
+      bool(af->sid_) ?
+          insight::AnalysisThread::ParameterInput( af->sid_ )
+                     : insight::AnalysisThread::ParameterInput(
+                           insight::AnalysisThread::ParameterSetAndExePath{
+                                &af->parameters(), af->localCaseDirectory() } ),
+      &af->progressDisplayer_ );
 }
 
 

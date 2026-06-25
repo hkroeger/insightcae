@@ -26,22 +26,8 @@ private:
     std::exception_ptr exception_;
 
 public:
-    template<
-        class Function,
-        typename ExceptionHandler = std::function<void(std::exception_ptr)>,
-        typename InterruptHandler = std::function<void(void)>
-        >
-    Thread(
-        Function functionToExecute,
-        ExceptionHandler exHdlr = ExceptionHandler(),
-        InterruptHandler intHdlr = InterruptHandler()
-        )
-    {
-        launch(functionToExecute, exHdlr, intHdlr);
-    }
-
     Thread();
-    ~Thread();
+    virtual ~Thread();
 
     template<
         class Function,

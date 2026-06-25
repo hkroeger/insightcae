@@ -63,7 +63,7 @@ class CurrentExceptionContext
 public:
   CurrentExceptionContext(int verbosityLevel, std::string msgfmt, ...);
   CurrentExceptionContext(std::string msgfmt, ...);
-  ~CurrentExceptionContext();
+  virtual ~CurrentExceptionContext();
 
   std::string contextDescription() const;
 

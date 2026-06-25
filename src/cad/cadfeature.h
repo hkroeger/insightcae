@@ -331,6 +331,8 @@ public:
   
   virtual void setAbsoluteVisResolution( ScalarPtr r );
   virtual void setRelativeVisResolution( ScalarPtr r );
+  boost::optional<TesselationResolution> visResolution() const;
+
   virtual void setDensity(ScalarPtr rho);
   virtual double density() const;
   

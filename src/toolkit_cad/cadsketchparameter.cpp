@@ -391,8 +391,11 @@ const rapidxml::xml_node<>* CADSketchParameter::readFromNode
 
 CADSketchParameter::CADSketchParameter(
     const rapidxml::xml_node<> &node)
-    : CADGeometryParameterBase(node)
+    : CADGeometryParameterBase(node),
+      entityProperties_( insight::cad::noParametersDelegate ),
+      sketch_(createEmpty())
 {
+    connectSignalsToSketch(sketch_);
     setScript(node.value());
 }
 

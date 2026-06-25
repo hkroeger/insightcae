@@ -136,7 +136,7 @@ public:
 Q_SIGNALS:
     void visualizationCalculationFinished(bool success);
     void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
-    void visualizationComputationError(insight::Exception ex);
+    void visualizationComputationError(std::exception_ptr ex);
 };
 
 
@@ -270,7 +270,7 @@ public:
 Q_SIGNALS:
   void visualizationCalculationFinished(bool success);
   void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
-  void visualizationComputationError(const insight::Exception& ex);
+  void visualizationComputationError(std::exception_ptr ex);
 };
 
 

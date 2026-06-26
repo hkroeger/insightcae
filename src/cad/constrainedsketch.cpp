@@ -473,6 +473,11 @@ ConstrainedSketch::setExternalReference(
     auto i = geometry_.find(key);
     if (i==geometry_.end())
     {
+        if (propertiesParent_)
+        {
+            extRef->parametersRef().setParent(
+                propertiesParent_.get());
+        }
         int r=predictInsertionLocation(geometry_, key);
         beforeGeometryInsertion(key, r);
         geometry_.insert({ key, extRef });

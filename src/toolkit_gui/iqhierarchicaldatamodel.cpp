@@ -1,7 +1,11 @@
 #include "iqhierarchicaldatamodel.h"
+#include "base/exception.h"
 #include "base/hierarchicalelement.h"
+#include "cadsketchparameter.h"
 #include "iqhierarchicaldataelement.h"
 #include "qtextensions.h"
+
+#include "base/parameter.h"
 
 #include <QTimer>
 #include <QApplication>
@@ -387,15 +391,22 @@ searchVisibleParent(const insight::hierarchicalData::Element& p, int* row=nullpt
 QModelIndex IQHierarchicalDataModel::indexOfElement(
     const insight::hierarchicalData::Element &p, int col) const
 {
+    insight::CurrentExceptionContext ex(
+        insight::VerbosityLevel::DeepDetail, "finding index of element %s (type %s, col %d)",
+        p.path().c_str(), p.type().c_str(), col);
+
     auto *element = const_cast<insight::hierarchicalData::Element*>(&p);
 
     if (&p == data_.get())
         return QModelIndex();
 
+
     int row=-1;
-    insight::assertion(
-        searchVisibleParent(p, &row),
-        "no parent of hierarchical element found");
+    auto *visP=searchVisibleParent(p, &row);
+    if (!visP)
+    {
+        throw insight::Exception("no parent of hierarchical element found");
+    }
 
     return createIndex(
         row, col, element );

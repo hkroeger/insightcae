@@ -494,7 +494,8 @@ Feature::Feature(const Feature& o)
   density_(o.density_),
   areaWeight_(o.areaWeight_),
   featureSymbolName_(o.featureSymbolName_),
-  BOMDescription_(o.BOMDescription_)
+  BOMDescription_(o.BOMDescription_),
+    visresolution_(o.visresolution_)
 {
   setShape(o.shape_);
 }
@@ -502,7 +503,8 @@ Feature::Feature(const Feature& o)
 
 
 Feature::Feature(const Feature &o, TreeCloneMap &tcm)
-: BOMDescription_(o.BOMDescription_)
+: BOMDescription_(o.BOMDescription_),
+    visresolution_(o.visresolution_)
 {}
 
 
@@ -576,6 +578,11 @@ void Feature::setRelativeVisResolution( ScalarPtr r )
 {
     visresolution_=TesselationResolution{
         TesselationResolution::Relative, r};
+}
+
+boost::optional<TesselationResolution> Feature::visResolution() const
+{
+    return visresolution_;
 }
 
 
@@ -984,9 +991,13 @@ void Feature::createTriangulation(ResoArg deflection) const
     if (deflection||visresolution_)
     {
         if (deflection)
+        {
             performTriangulationBuilding(*deflection);
+        }
         else if (visresolution_)
+        {
             performTriangulationBuilding(*visresolution_);
+        }
     }
     else
     {
@@ -1628,9 +1639,11 @@ void Feature::saveAs
 
   else if ( (ext==".stl") || (ext==".stlb") )
   {
-    if (!refvalues_.count("isSTLGeometry"))
+    auto s=shape();
+
+    if (!refvalues_.count("isSTLGeometry") && !hasTriangulation())
     {
-        BRepMesh_IncrementalMesh Inc(shape(), 1e-2);
+        BRepMesh_IncrementalMesh Inc(s, 1e-2);
     }
 
     StlAPI_Writer stlwriter;
@@ -1641,7 +1654,7 @@ void Feature::saveAs
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
     stlwriter.SetCoefficient(5e-5);
 #endif
-    stlwriter.Write(shape(), filename.string().c_str());
+    stlwriter.Write(s, filename.string().c_str());
   }
   else if ( (ext==".dot") )
   {
@@ -1823,7 +1836,9 @@ const TopoDS_Shape& Feature::shape() const
   checkForBuildDuringAccess();
 
   if (visresolution_)
+  {
       performTriangulationBuilding(*visresolution_);
+  }
 
   return shape_;
 }
@@ -1840,6 +1855,8 @@ void Feature::performTriangulationBuilding(TesselationResolution res) const
     //       true, false, false, false
     //     );
     //     m.Perform(shape_);
+
+    BRepTools::Clean(shape_);
     BRepMesh_IncrementalMesh aMesher(
         shape_, res.value->value(),
         res.specification==TesselationResolution::Relative );
@@ -2470,8 +2487,6 @@ Handle_Poly_Triangulation Feature::triangulation(double tol) const
 #undef MAX3
     }
     // }
-
-    std::cout<<"maxsize="<<maxsize<<", defl="<<tol<<std::endl;
 
 
     for (TopExp_Explorer ex(shape(), TopAbs_FACE); ex.More(); ex.Next())

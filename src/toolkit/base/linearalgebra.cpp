@@ -1897,6 +1897,24 @@ arma::mat tensor3Ident()
 
 
 
+
+double computeMedian(double *p, std::size_t n)
+{
+    if (n == 0)
+        throw std::invalid_argument("empty range");
+
+    auto mid = p + n / 2;
+    std::nth_element(p, mid, p + n);
+
+    if (n % 2 == 1)
+        return *mid;
+
+    auto leftMax = std::max_element(p, mid);
+    return (*leftMax + *mid) / 2.0;
+}
+
+
+
 }
 
 namespace std

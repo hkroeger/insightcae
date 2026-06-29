@@ -187,6 +187,11 @@ bool OpenFOAMCase::isCompressible() const
   return findUniqueElement<FVNumerics>().isCompressible();
 }
 
+bool OpenFOAMCase::isCompressible(const std::string& phaseName) const
+{
+  return findUniqueElement<FVNumerics>().isCompressible(phaseName);
+}
+
 
 
 

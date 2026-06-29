@@ -680,13 +680,13 @@ boost::filesystem::path SharedPathList::findFirstWritableLocation(
 
 
 
-ExecTimer::ExecTimer(const std::string& name)
+ExecTimer::ExecTimer(const std::string& name, int verbosityLevel)
 : boost::timer::auto_cpu_timer(
-          insight::dbg(DeepDetail),
+          insight::dbg(verbosityLevel),
           boost::timer::default_places,
           name+": END %ws wall, %us usr + %ss sys = %ts CPU (%p%)\n")
 {
-    insight::dbg(DeepDetail) << ( name+": BEGIN\n" );
+    insight::dbg(verbosityLevel) << ( name+": BEGIN\n" );
 }
 
 

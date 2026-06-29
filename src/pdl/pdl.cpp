@@ -244,7 +244,7 @@ int main ( int argc, char *argv[] )
 
           if (!skipDefaultParamMember)
             f << "static std::unique_ptr<insight::ParameterSet> defaultParameters()\n"
-              << "{ return "<<name<<"::makeDefault(); }\n";
+              << "{ return insight::ParameterSet::finalize("<<name<<"::makeDefault()); }\n";
 
           if (createGetter)
           {

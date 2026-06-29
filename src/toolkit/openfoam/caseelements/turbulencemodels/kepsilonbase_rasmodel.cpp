@@ -6,16 +6,16 @@ namespace insight {
 
 void kEpsilonBase_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
-  c.addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	FieldValue({10.0}), volField ) );
-  if (c.isCompressible())
+  c.addField(fieldName("k"),       FieldInfo(scalarField, dimKinEnergy,                   FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("epsilon"), FieldInfo(scalarField, OFDictData::dimension(0, 2, -3), FieldValue({10.0}),  volField ) );
+  if (isCompressible())
   {
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
-    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("mut"),   FieldInfo(scalarField, dimDynViscosity, FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("alphat"),FieldInfo(scalarField, dimDynViscosity, FieldValue({1e-10}), volField ) );
   }
   else
   {
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("nut"),   FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
   }
 }
 
@@ -42,21 +42,21 @@ void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
     std::string pref="";
-    if (OFcase().isCompressible()) pref="compressible::";
+    if (isCompressible()) pref="compressible::";
 
-    if (fieldname == "k")
+    if (fieldname == fieldName("k"))
     {
         BC["type"]=OFDictData::data(pref+"kqRWallFunction");
         BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
-    else if (fieldname == "epsilon")
+    else if (fieldname == fieldName("epsilon"))
     {
         BC["type"]=OFDictData::data(pref+"epsilonWallFunction");
         BC["value"]=OFDictData::toUniformField(10.);
         return true;
     }
-    else if (fieldname == "nut")
+    else if (fieldname == fieldName("nut"))
     {
         if (roughness_z0>0)
         {
@@ -73,13 +73,13 @@ bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname,
         }
         return true;
     }
-    else if (fieldname == "mut")
+    else if (fieldname == fieldName("mut"))
     {
         BC["type"]=OFDictData::data("mutkWallFunction");
         BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
-    else if (fieldname == "alphat")
+    else if (fieldname == fieldName("alphat"))
     {
         BC["type"]=OFDictData::data(pref+"alphatWallFunction");
         BC["value"]=OFDictData::toUniformField(1e-10);

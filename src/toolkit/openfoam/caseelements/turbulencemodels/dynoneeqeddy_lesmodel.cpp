@@ -11,11 +11,11 @@ addToOpenFOAMCaseElementFactoryTable(dynOneEqEddy_LESModel);
 
 void dynOneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
+  c.addField(fieldName("k"), FieldInfo(scalarField, dimKinEnergy,    FieldValue({1e-10}), volField ) );
   if (c.OFversion()>=300)
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("nut"),   FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
   else
-    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("nuSgs"), FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
 }
 
 

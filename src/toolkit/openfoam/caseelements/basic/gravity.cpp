@@ -15,11 +15,11 @@ gravity::gravity( OpenFOAMCase& c, ParameterSetInput ip )
 
 void gravity::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& g=dictionaries.lookupDict("constant/g");
-  g["dimensions"]="[0 1 -2 0 0 0 0]";
-  OFDictData::list gv;
-  for (size_t i=0; i<3; i++) gv.push_back(p().g(i));
-  g["value"]=gv;
+    OFDictData::dict& g=dictionaries.lookupDict("constant/g");
+    g+={
+        { "dimensions", "[0 1 -2 0 0 0 0]" },
+        { "value", OFDictData::vector3(p().g) }
+    };
 }
 
 

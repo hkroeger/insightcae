@@ -215,29 +215,30 @@ CADSketchParameter::~CADSketchParameter()
 
 void CADSketchParameter::initializeHierarchy()
 {
-    for (auto& ref: references_)
-    {
-        try
-        {
-            auto &r =
-                const_cast<CADSketchParameter&>(*this)
-                    .parentSet()
-                    .get<CADGeometryParameterBase>(ref.second);
-
-            sketch_->setExternalReference(
-                cad::ExternalReference::create(r.geometry()),
-                ref.first
-                );
-        }
-        catch (const ElementNotFoundException&)
-        {}
-    }
-
     if (initialScript_)
     {
         setScript(*initialScript_);
         initialScript_.reset();
+
+        for (auto& ref: references_)
+        {
+            try
+            {
+                auto &r =
+                    const_cast<CADSketchParameter&>(*this)
+                        .parentSet()
+                        .get<CADGeometryParameterBase>(ref.second);
+
+                sketch_->setExternalReference(
+                    cad::ExternalReference::create(r.geometry()),
+                    ref.first
+                    );
+            }
+            catch (const ElementNotFoundException&)
+            {}
+        }
     }
+
 
     Parameter::initializeHierarchy();
 }
@@ -391,8 +392,11 @@ const rapidxml::xml_node<>* CADSketchParameter::readFromNode
 
 CADSketchParameter::CADSketchParameter(
     const rapidxml::xml_node<> &node)
-    : CADGeometryParameterBase(node)
+    : CADGeometryParameterBase(node),
+      entityProperties_( insight::cad::noParametersDelegate ),
+      sketch_(createEmpty())
 {
+    connectSignalsToSketch(sketch_);
     setScript(node.value());
 }
 

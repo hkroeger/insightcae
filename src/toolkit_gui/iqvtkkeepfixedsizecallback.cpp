@@ -55,7 +55,8 @@ vtkAlgorithmOutput *IQVTKKeepFixedSize::GetOutputPort()
 
 void IQVTKKeepFixedSize::Execute(vtkObject *caller, unsigned long eventId, void *callData)
 {
-   if (eventId == vtkCommand::EventIds::ModifiedEvent)
+   if (eventId == vtkCommand::EventIds::ModifiedEvent ||
+       eventId == vtkCommand::StartEvent)
    {
        insight::assertion(viewer_, "viewer must be set!");
 

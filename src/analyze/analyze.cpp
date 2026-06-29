@@ -464,7 +464,9 @@ int main(int argc, char *argv[])
 #endif
 
           // run analysis
-          AnalysisThread solver_thread(
+          AnalysisThread solver_thread;
+
+          solver_thread.launch(
               parameters->analysisTypeName(),
               AnalysisThread::ParameterSetAndExePath{parameters.get(), workdir},
               pd);

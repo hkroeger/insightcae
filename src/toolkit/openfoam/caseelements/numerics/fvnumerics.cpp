@@ -224,6 +224,11 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 
+bool FVNumerics::isCompressible(const std::string& /*phaseName*/) const
+{
+    return isCompressible();
+}
+
 bool FVNumerics::isLES() const
 {
   // check if LES required
@@ -231,8 +236,8 @@ bool FVNumerics::isLES() const
 
   try
   {
-      auto& tm = this->OFcase().findUniqueElement<turbulenceModel>();
-      LES=LES || (tm.minAccuracyRequirement() >= turbulenceModel::AC_LES);
+      for (const auto* tm : this->OFcase().findElements<turbulenceModel>())
+          LES = LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
   }
   catch (...)
   {

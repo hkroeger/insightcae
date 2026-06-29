@@ -329,6 +329,8 @@ add_library(insightcad SHARED
   cadfeatures/stitchedshell.h
   cadfeatures/stitchedsolid.cpp
   cadfeatures/stitchedsolid.h
+  cadfeatures/sailcut3d.cpp
+  cadfeatures/sailcut3d.h
   cadfeatures/stl.cpp
   cadfeatures/stl.h
   cadfeatures/stringer.cpp
@@ -408,6 +410,8 @@ add_library(insightcad SHARED
   cadpostprocactions/pointdistance.h
   cadpostprocactions/solidproperties.cpp
   cadpostprocactions/solidproperties.h
+  cadpostprocactions/cuttingstockoptimizer.cpp
+  cadpostprocactions/cuttingstockoptimizer.h
 
   docitems/diameter.cpp
   docitems/diameter.h

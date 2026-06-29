@@ -36,6 +36,7 @@ insight::cad::MultipliedScalar::MultipliedScalar(insight::cad::ScalarPtr p1, ins
 size_t insight::cad::MultipliedScalar::calcHash() const
 {
     ParameterListHash h;
+    h+=this->type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -60,6 +61,7 @@ insight::cad::DividedScalar::DividedScalar(insight::cad::ScalarPtr p1, insight::
 size_t insight::cad::DividedScalar::calcHash() const
 {
     ParameterListHash h;
+    h+=this->type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -85,6 +87,7 @@ insight::cad::AddedScalar::AddedScalar(insight::cad::ScalarPtr p1, insight::cad:
 size_t insight::cad::AddedScalar::calcHash() const
 {
     ParameterListHash h;
+    h+=this->type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -110,6 +113,7 @@ insight::cad::SubtractedScalar::SubtractedScalar(insight::cad::ScalarPtr p1, ins
 size_t insight::cad::SubtractedScalar::calcHash() const
 {
     ParameterListHash h;
+    h+=this->type();
     h+=*p1_;
     h+=*p2_;
     return h.getHash();
@@ -135,6 +139,7 @@ insight::cad::VectorComponent::VectorComponent(insight::cad::VectorPtr p1, int c
 size_t insight::cad::VectorComponent::calcHash() const
 {
     ParameterListHash h;
+    h+=this->type();
     h+=*p1_;
     h+=cmpt_;
     return h.getHash();
@@ -160,6 +165,7 @@ insight::cad::VectorMag::VectorMag(insight::cad::VectorPtr p1)
 size_t insight::cad::VectorMag::calcHash() const
 {
     ParameterListHash h;
+    h+=this->type();
     h+=*p1_;
     return h.getHash();
 }

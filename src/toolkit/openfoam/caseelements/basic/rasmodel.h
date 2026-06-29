@@ -3,11 +3,23 @@
 
 #include "openfoam/caseelements/turbulencemodel.h"
 
+#include "rasmodel__RASModel__Parameters_headers.h"
+
 namespace insight {
 
 class RASModel
 : public turbulenceModel
 {
+
+public:
+#include "rasmodel__RASModel__Parameters.h"
+/*
+PARAMETERSET>>> RASModel Parameters
+inherits turbulenceModel::Parameters
+
+createGetters
+<<<PARAMETERSET
+*/
 
 public:
   declareType("RASModel");

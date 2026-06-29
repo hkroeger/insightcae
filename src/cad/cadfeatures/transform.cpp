@@ -19,6 +19,7 @@
 
 #include "transform.h"
 #include "cadfeature.h"
+#include "cadparameters/scalarops.h"
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -250,6 +251,16 @@ void Transform::build()
 
 
     TopoDS_Shape s = BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape();
+    if (visresolution_)
+    {
+        if (visresolution_->specification==TesselationResolution::Absolute)
+        {
+            visresolution_->value=
+                std::make_shared<cad::MultipliedScalar>(
+                    visresolution_->value,
+                    cad::scalarconst(trsf_->ScaleFactor()));
+        }
+    }
     setShape(s);
 
     // Transform all ref points and ref vectors

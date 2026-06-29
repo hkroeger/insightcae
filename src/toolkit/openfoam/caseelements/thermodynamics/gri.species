@@ -84,7 +84,30 @@ H2O
 
 
 
-
+He
+{
+    specie
+    {
+        molWeight       4.0026;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           6000;
+        Tcommon         1000;
+        highCpCoeffs    ( 2.5 0 0 0 0 -745.375 0.928724 );
+        lowCpCoeffs     ( 2.5 0 0 0 0 -745.375 0.928724 );
+    }
+    transport
+    {
+        As              1.512e-06;
+        Ts              120;
+    }
+    elements
+    {
+        He              1;
+    }
+}
 
 
 CO

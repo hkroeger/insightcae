@@ -13,6 +13,24 @@ public:
   kEpsilon_RASModel(OpenFOAMCase& ofc, ParameterSetInput ip = Parameters() );
 };
 
+
+class continuousGasKEpsilon_RASModel
+    : public kEpsilonBase_RASModel
+{
+public:
+    declareType("continuousGasKEpsilon");
+    continuousGasKEpsilon_RASModel(OpenFOAMCase& ofc, ParameterSetInput ip = Parameters() );
+};
+
+
+class LaheyKEpsilon_RASModel
+    : public kEpsilonBase_RASModel
+{
+public:
+    declareType("LaheyKEpsilon");
+    LaheyKEpsilon_RASModel(OpenFOAMCase& ofc, ParameterSetInput ip = Parameters() );
+};
+
 } // namespace insight
 
 #endif // INSIGHT_KEPSILON_RASMODEL_H

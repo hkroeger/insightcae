@@ -20,7 +20,7 @@ class TOOLKIT_GUI_EXPORT QAnalysisThread
   Q_OBJECT
 
 public:
-  QAnalysisThread(
+  void launch(
       const std::string& analysisName,
       const ParameterInput& input,
       ProgressDisplayer *pd
@@ -33,7 +33,7 @@ public:
       );
 
 #ifndef SWIG
-  QAnalysisThread(
+  void launch(
       std::function<void(void)> action,
       std::function<void(std::exception_ptr)> exHdlr = [](std::exception_ptr)->void {}
       );

@@ -63,10 +63,11 @@ public:
   typedef std::function<void(std::exception_ptr)> ExceptionHandler;
   typedef std::function<void(void)> InterruptHandler;
 
+  AnalysisThread();
 
-  AnalysisThread(
+  void launch(
       const std::string& analysisName,
-      const ParameterInput& input,
+      ParameterInput input,
       ProgressDisplayer *pd
 #ifndef SWIG
       ,
@@ -77,15 +78,13 @@ public:
 #endif
       );
 
-
 #ifndef SWIG
-  AnalysisThread(
+  void launch(
       std::function<void(void)> action,
       ExceptionHandler exHdlr = ExceptionHandler(),
       InterruptHandler intHdlr = InterruptHandler()
       );
 #endif
-
 
   const boost::filesystem::path& executionPath() const;
   const Analysis* analysis() const;

@@ -3,11 +3,23 @@
 
 #include "openfoam/caseelements/turbulencemodel.h"
 
+#include "lesmodel__LESModel__Parameters_headers.h"
+
 namespace insight {
 
 class LESModel
 : public turbulenceModel
 {
+
+public:
+#include "lesmodel__LESModel__Parameters.h"
+/*
+PARAMETERSET>>> LESModel Parameters
+inherits turbulenceModel::Parameters
+
+createGetters
+<<<PARAMETERSET
+*/
 
 public:
   declareType("LESModel");

@@ -33,7 +33,7 @@ void compressibleSinglePhaseThermophysicalProperties::modifyDefaults(ParameterSe
 
 compressibleSinglePhaseThermophysicalProperties::compressibleSinglePhaseThermophysicalProperties(
     OpenFOAMCase& c, ParameterSetInput ip )
-    : thermodynamicModel(c, ip.forward<Parameters>())
+    : thermophysicalModel(c, ip.forward<Parameters>())
 {}
 
 
@@ -162,7 +162,7 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
 {
 
     OFDictData::dict& thermophysicalProperties =
-        dictionaries.lookupDict("constant/thermophysicalProperties");
+        dictionaries.lookupDict(thermophysicalPropertiesDictName());
 
     auto sd = speciesData();
 
@@ -245,15 +245,20 @@ void compressibleSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdict
     else
     {
 
-        OFDictData::dict thermoType;
-        thermoType["type"]=requiredThermoType();
-        thermoType["specie"]="specie";
-        thermoType["energy"]="sensibleEnthalpy";
-        thermoType["mixture"]="pureMixture";
-        thermoType["transport"]=sd->transportType();
-        thermoType["thermo"]=sd->thermoType();
-        thermoType["equationOfState"]=sd->equationOfStateType();
-        thermophysicalProperties["thermoType"]=thermoType;
+        thermophysicalProperties +=
+            {
+                { "thermoType",
+                    OFDictData::dict{
+                        { "type",       requiredThermoType() },
+                        { "specie",     "specie" },
+                        { "energy",     "sensibleEnthalpy" },
+                        { "mixture",    "pureMixture" },
+                        { "transport",  sd->transportType() },
+                        { "thermo",     sd->thermoType() },
+                        { "equationOfState", sd->equationOfStateType() }
+                    }
+                }
+            };
 
         OFDictData::dict mixdict;
         sd->insertSpecieEntries(mixdict);

@@ -99,6 +99,8 @@ protected:
 public:
   declareType ( "subset" );
 
+  static std::unique_ptr<ParameterSet> finalize(std::unique_ptr<ParameterSet>&& ps);
+
   static std::unique_ptr<ParameterSet> create();
 
   static std::unique_ptr<ParameterSet> create(

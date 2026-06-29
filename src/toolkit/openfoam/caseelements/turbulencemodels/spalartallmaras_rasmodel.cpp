@@ -10,15 +10,15 @@ addToOpenFOAMCaseElementFactoryTable(SpalartAllmaras_RASModel);
 
 void SpalartAllmaras_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("nuTilda", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
-  if (c.isCompressible())
+  c.addField(fieldName("nuTilda"), FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
+  if (isCompressible())
   {
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
-    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("mut"),   FieldInfo(scalarField, dimDynViscosity, FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("alphat"),FieldInfo(scalarField, dimDynViscosity, FieldValue({1e-10}), volField ) );
   }
   else
   {
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField(fieldName("nut"),   FieldInfo(scalarField, dimKinViscosity, FieldValue({1e-10}), volField ) );
   }
 }
 
@@ -48,13 +48,13 @@ bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldna
 //   std::string pref="";
 //   if (OFcase().isCompressible()) pref="compressible::";
 
-  if (fieldname == "nuTilda")
+  if (fieldname == fieldName("nuTilda"))
   {
     BC["type"]=OFDictData::data("fixedValue");
     BC["value"]=OFDictData::toUniformField(0.);
     return true;
   }
-  else if (fieldname == "nut")
+  else if (fieldname == fieldName("nut"))
   {
     if (OFversion()>=170)
     {

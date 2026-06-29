@@ -13,7 +13,7 @@ LESModel::LESModel(OpenFOAMCase& c, ParameterSetInput ip)
 
 void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-    OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+    OFDictData::dict& turbProperties=dictionaries.lookupDict(turbPropertiesDictName());
     if (OFversion()>=300)
       turbProperties["simulationType"]="LES";
     else
@@ -27,7 +27,7 @@ OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const
 {
   if (OFversion()>=300)
   {
-      OFDictData::dict& turbProperties=dictionaries.lookupDict("constant/turbulenceProperties");
+      OFDictData::dict& turbProperties=dictionaries.lookupDict(turbPropertiesDictName());
       OFDictData::dict& LESProperties = turbProperties.subDict("LES");
       LESProperties["turbulence"]=true;
       return LESProperties;
@@ -40,13 +40,13 @@ OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const
 
 bool LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-    if (fieldname == "k")
+    if (fieldname == fieldName("k"))
     {
         BC["type"]="fixedValue";
         BC["value"]=OFDictData::toUniformField(1e-10);
         return true;
     }
-    else if ( (fieldname == "nuSgs")||((OFversion()>=300)&&(fieldname == "nut")) )
+    else if ( (fieldname == fieldName("nuSgs"))||((OFversion()>=300)&&(fieldname == fieldName("nut"))) )
     {
         if (roughness_z0>0.)
         {

@@ -1,3 +1,4 @@
+#include "cadfeatures/importsolidmodel.h"
 #include "cadtypes.h"
 #include "cadexception.h"
 #include "featureset.h"
@@ -79,5 +80,65 @@ void CADErrorDescription::saveContextGeometry(const boost::filesystem::path &out
 }
 
 
+void CADException::addCG()
+{
+    if (auto cgf = cg(ExceptionContext::getCurrent()))
+    {
+        description()->contextGeometry_["context"]=cgf;
+    }
+}
+
+void CADExceptionContext::setLabel(const std::string& lbl)
+{
+    label_=lbl;
+}
+
+const std::string CADExceptionContext::label() const
+{
+    return label_;
+}
+
+void CADExceptionContext::operator+=(const std::pair<std::string, TopoDS_Shape>& cg)
+{
+    operator+=({cg.first, cad::Import::create(cg.second)});
+}
+
+cad::FeaturePtr CADExceptionContext::contextGeometry() const
+{
+    return cad::Compound::create(contextGeometry_);
+}
+
+void CADExceptionContext::operator+=(const ContextGeometryMap::value_type& cg)
+{
+    contextGeometry_[cg.first]=cg.second;
+}
+
+void CADExceptionContext::operator+=(const ContextGeometryMap& cg)
+{
+    for(auto &c: cg)
+    {
+        operator+=(c);
+    }
+}
+
+
+cad::FeaturePtr cg(ExceptionContext& ec)
+{
+    cad::CompoundFeatureMap cf;
+    for (const auto& i: boost::adaptors::index(ec))
+    {
+        if (auto *cec = dynamic_cast<CADExceptionContext*>(i.value()))
+        {
+            auto label=cec->label();
+            if (label.empty())
+                label=str(boost::format("context level %d")%i.index());
+            cf[label]=cec->contextGeometry();
+        }
+    }
+    return
+        cf.size() ?
+               cad::Compound::create(cf)
+                     : nullptr;
+}
 
 } // namespace insight

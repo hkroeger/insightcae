@@ -521,7 +521,7 @@ OFDictData::dict probes::functionObjectDict() const
 
 arma::mat readTensor(std::istream& is)
 {
-  CurrentExceptionContext ex("reading tensor from input stream");
+  CurrentExceptionContext ex(VerbosityLevel::Loops, "reading tensor from input stream");
 
   std::vector<double> data;
   string s;
@@ -1247,7 +1247,8 @@ void cleanFileContent(string& file)
 
 void readForcesLine(std::istream& f, int nc_expected, bool& skip, std::vector<double>& row)
 {
-  CurrentExceptionContext ex("reading a line from forces file", false);
+  CurrentExceptionContext ex(
+        VerbosityLevel::Loops, "reading a line from forces file", false);
 
   std::string line;
 
@@ -1346,11 +1347,15 @@ arma::mat forces::readForces
           {
             std::vector<double> r1, r2;
             {
-              CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
+              CurrentExceptionContext ex(
+                    insight::VerbosityLevel::Loops,
+                    str(format("reading line %d from files \"%s\"")%line_num%f_name.string()), false);
               readForcesLine ( f, ncexp, skip, r1 );
             }
             {
-              CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
+              CurrentExceptionContext ex(
+                    insight::VerbosityLevel::Loops,
+                    str(format("reading line %d from files \"%s\"")%line_num%f2_name.string()), false);
               readForcesLine ( f2, ncexp, skip, r2 );
             }
 
@@ -1371,7 +1376,9 @@ arma::mat forces::readForces
           }
         else
           {
-            CurrentExceptionContext ex(insight::VerbosityLevel::Loops, str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
+            CurrentExceptionContext ex(
+                  insight::VerbosityLevel::Loops,
+                  str(format("reading line %d from file \"%s\"")%line_num%f_name.string()), false);
             readForcesLine ( f, ncexp, skip, row );
             if ( row.size()==0 )
             {

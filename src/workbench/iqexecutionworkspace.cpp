@@ -286,4 +286,5 @@ void IQExecutionWorkspace::prepareDeletion()
                 remoteExecutionConfiguration_, &QObject::destroyed,
                 0, 0);
     }
+    localCaseDirectory_.reset(); // destroy before UI is torn down
 }

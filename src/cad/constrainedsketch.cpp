@@ -508,8 +508,9 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
     auto i=geometry_.find(geomEntityId);
     int r=std::distance(geometry_.begin(), i);
     beforeGeometryRemoval(geomEntityId, r);
+    ConstrainedSketchEntityPtr entity = std::move(i->second); // move out before erase
     geometry_.erase(i);
-    i->second.reset(); // delete last reference to really destruct object
+    entity.reset(); // delete last reference to really destruct object
     geometryRemoved(geomEntityId, r);
 }
 

@@ -150,6 +150,7 @@ public:
   fieldAveraging(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
+  std::set<std::string> requiredLibraries() const override;
 };
 
 
@@ -208,6 +209,7 @@ public:
 
 
     OFDictData::dict functionObjectDict() const override;
+    std::set<std::string> requiredLibraries() const override;
 };
 
 
@@ -249,6 +251,8 @@ createGetter
 public:
     declareType("volumeIntegrate");
     volumeIntegrate(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
+
+    std::set<std::string> requiredLibraries() const override;
 
     static arma::mat readVolumeIntegrals
     (
@@ -310,6 +314,7 @@ public:
     }
 
     OFDictData::dict functionObjectDict() const override;
+    std::set<std::string> requiredLibraries() const override;
 
     static arma::mat readSurfaceIntegrate
     (
@@ -352,6 +357,7 @@ public:
     fieldMinMax(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
     OFDictData::dict functionObjectDict() const override;
+    std::set<std::string> requiredLibraries() const override;
 
     static std::string category() {
         return "Postprocessing";
@@ -395,6 +401,7 @@ public:
   cuttingPlane(OpenFOAMCase& c, ParameterSetInput ip = Parameters() );
 
   OFDictData::dict functionObjectDict() const override;
+  std::set<std::string> requiredLibraries() const override;
 };
 
 
@@ -430,6 +437,7 @@ public:
     
 
   OFDictData::dict functionObjectDict() const override;
+  std::set<std::string> requiredLibraries() const override;
   virtual OFDictData::dict csysConfiguration() const;
 
   static boost::ptr_vector<arma::mat> readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName);

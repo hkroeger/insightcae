@@ -291,6 +291,13 @@ bool Element::hasPath( std::string path ) const
 
 insight::hierarchicalData::Element& Element::getByPath( std::string path )
 {
+    if (!path.empty() && path[0]=='/')
+    {
+        Element* root = this;
+        while (root->hasParent())
+            root = &root->parent();
+        return root->getByPath(path.substr(1));
+    }
 
     std::function<Element&(Element&, std::string)> getChild;
 

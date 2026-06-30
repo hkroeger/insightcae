@@ -67,7 +67,7 @@ void NumericalWindtunnel::modifyDefaults(insight::ParameterSet& p)
 }
 
 
-boost::mutex mtx;
+namespace { boost::mutex mtx; }
 
 
 

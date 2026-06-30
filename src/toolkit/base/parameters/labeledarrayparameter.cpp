@@ -25,82 +25,96 @@ void LabeledArrayParameter::initializeHierarchy()
 {
     syncConnections_.clear();
 
-    if (!keySourceParameterPath_.empty())
+    isBound_ = false;
+
+    if (!keySourceParameterPath_.empty() && hasParent())
     {
-        auto& op = parentSet()
-        .get<LabeledArrayParameter>(
-            keySourceParameterPath_);
-
-        // auto ukeys = [this]() {
-        //     std::set<std::string> r;
-        //     std::transform(
-        //         value_.begin(), value_.end(),
-        //         std::inserter(r, r.begin()),
-        //         [](const value_type::value_type& v){return v.first;} );
-        //     return r;
-        // };
-
-        // auto blocker = blockUpdateValueSignal();
-
+        try
         {
-            auto myKeys = keys();
-            auto validKeys = op.keys();
-            std::set<std::string>  tbr;
-            std::set_difference(
-                myKeys.begin(), myKeys.end(),
-                validKeys.begin(), validKeys.end(),
-                std::inserter(tbr, tbr.begin()) );
+            auto& op = parentSet()
+            .get<LabeledArrayParameter>(
+                keySourceParameterPath_);
 
-            for (auto& k: tbr)
+            // auto ukeys = [this]() {
+            //     std::set<std::string> r;
+            //     std::transform(
+            //         value_.begin(), value_.end(),
+            //         std::inserter(r, r.begin()),
+            //         [](const value_type::value_type& v){return v.first;} );
+            //     return r;
+            // };
+
+            // auto blocker = blockUpdateValueSignal();
+
             {
-                eraseValueImpl(k);
+                auto myKeys = keys();
+                auto validKeys = op.keys();
+                std::set<std::string>  tbr;
+                std::set_difference(
+                    myKeys.begin(), myKeys.end(),
+                    validKeys.begin(), validKeys.end(),
+                    std::inserter(tbr, tbr.begin()) );
+
+                for (auto& k: tbr)
+                {
+                    eraseValueImpl(k);
+                }
             }
+            {
+                auto myKeys = keys();
+                auto validKeys = op.keys();
+                std::set<std::string> tba;
+                std::set_difference(
+                    validKeys.begin(), validKeys.end(),
+                    myKeys.begin(), myKeys.end(),
+                    std::inserter(tba, tba.begin()) );
+
+                for (auto& k: tba)
+                {
+                    insertWithDefaultsImpl(k);
+                }
+            }
+
+            syncConnections_.insert(std::move(
+                op.newItemAdded.connect(
+                    [this](const std::string& label, std::observer_ptr<Parameter>)
+                    {
+                        DBG_SLOT(newItemAdded);
+
+                        getOrInsertDefaultValueImpl(label);
+                    })
+                ));
+            syncConnections_.insert(std::move(
+                op.itemRemoved.connect(
+                    [this](const std::string& label)
+                    {
+                        DBG_SLOT(itemRemoved);
+
+                        if (value_.count(label))
+                            eraseValueImpl(label);
+                    })
+                ));
+
+            syncConnections_.insert(std::move(
+                op.itemRelabeled.connect(
+                    [this](const std::string& label, const std::string& newLabel)
+                    {
+                        DBG_SLOT(itemRelabeled);
+
+                        if (value_.count(label))
+                            changeLabelImpl(label, newLabel);
+                    })
+                ));
+
+            isBound_ = true;
         }
+        catch (const insight::ElementNotFoundException&)
         {
-            auto myKeys = keys();
-            auto validKeys = op.keys();
-            std::set<std::string> tba;
-            std::set_difference(
-                validKeys.begin(), validKeys.end(),
-                myKeys.begin(), myKeys.end(),
-                std::inserter(tba, tba.begin()) );
-
-            for (auto& k: tba)
-            {
-                insertWithDefaultsImpl(k);
-            }
+            // Key source not reachable from current position in the
+            // hierarchy — remain in detached (unbound) mode until
+            // this parameter is plugged into a parent set where the
+            // path can be resolved.
         }
-
-        syncConnections_.insert(std::move(
-            op.newItemAdded.connect(
-                [this](const std::string& label, std::observer_ptr<Parameter>)
-                {
-                    DBG_SLOT(newItemAdded);
-
-                    getOrInsertDefaultValueImpl(label);
-                })
-            ));
-        syncConnections_.insert(std::move(
-            op.itemRemoved.connect(
-                [this](const std::string& label)
-                {
-                    DBG_SLOT(itemRemoved);
-
-                    if (value_.count(label))
-                        eraseValueImpl(label);
-                })
-            ));
-
-        syncConnections_.insert(std::move(
-            op.itemRelabeled.connect(
-                [this](const std::string& label, const std::string& newLabel)
-                {
-                    DBG_SLOT(itemRelabeled);
-
-                    if (value_.count(label))
-                        changeLabelImpl(label, newLabel);
-                })
-            ));
     }
 
     Parameter::initializeHierarchy();
@@ -190,7 +204,7 @@ void LabeledArrayParameter::unsetKeySourceParameterPath()
 
 bool LabeledArrayParameter::keysAreLocked() const
 {
-    return !keySourceParameterPath_.empty();
+    return !keySourceParameterPath_.empty() && isBound_;
 }
 
 std::set<std::string> LabeledArrayParameter::keys() const

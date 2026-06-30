@@ -459,8 +459,6 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
         outputFilterFunctionObject::functionObjectDict();
 
   fod["type"]="fieldAverage";
-  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
-  fod["functionObjectLibs"]=libl;
   fod["enabled"]=true;
   
   OFDictData::list fl;
@@ -474,13 +472,19 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
     fl.push_back(cod);
   }
   fod["fields"]=fl;
-  
+
   return fod;
 }
-  
-  
-  
-  
+
+
+std::set<std::string> fieldAveraging::requiredLibraries() const
+{
+  return { "libfieldFunctionObjects.so" };
+}
+
+
+
+
 defineType(probes);
 addToOpenFOAMCaseElementFactoryTable(probes);
 
@@ -501,9 +505,7 @@ OFDictData::dict probes::functionObjectDict() const
         outputFilterFunctionObject::functionObjectDict();
 
   fod["type"]="probes";
-  OFDictData::list libl; libl.push_back("\"libsampling.so\"");
-  fod["functionObjectLibs"]=libl;
-  
+
   OFDictData::list pl;
   for (const arma::mat& lo: p().probeLocations)
   {
@@ -516,6 +518,12 @@ OFDictData::dict probes::functionObjectDict() const
   fod["fields"]=fl;
   
   return fod;
+}
+
+
+std::set<std::string> probes::requiredLibraries() const
+{
+  return { "libsampling.so" };
 }
 
 
@@ -697,9 +705,6 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
 
   fod["type"]="volFieldValue";
 
-  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
-  fod["functionObjectLibs"]=libl;
-
   if ( const Parameters::domain_wholedomain_type* dt =
        boost::get<Parameters::domain_wholedomain_type>(&p().domain) )
     {
@@ -744,6 +749,12 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
   return fod;
 }
 
+
+std::set<std::string> volumeIntegrate::requiredLibraries() const
+{
+  return { "libfieldFunctionObjects.so" };
+}
+
 arma::mat volumeIntegrate::readVolumeIntegrals
 (
     const OpenFOAMCase& c,
@@ -774,8 +785,6 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
   OFDictData::dict fod=
     outputFilterFunctionObject::functionObjectDict();
 
-  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
-  fod["functionObjectLibs"]=libl;
   OFDictData::list fl; fl.resize(p().fields.size());
   copy(p().fields.begin(), p().fields.end(), fl.begin());
   fod["fields"]=fl;
@@ -849,6 +858,12 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
   }
 
   return fod;
+}
+
+
+std::set<std::string> surfaceIntegrate::requiredLibraries() const
+{
+  return { "libfieldFunctionObjects.so" };
 }
 
 arma::mat surfaceIntegrate::readSurfaceIntegrate
@@ -933,9 +948,6 @@ OFDictData::dict fieldMinMax::functionObjectDict() const
     outputFilterFunctionObject::functionObjectDict();
   fod["type"]="fieldMinMax";
 
-  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
-  fod["functionObjectLibs"]=libl;
-
   fod["writeFields"]=false;
 
 
@@ -944,6 +956,12 @@ OFDictData::dict fieldMinMax::functionObjectDict() const
   fod["fields"]=fl;
 
   return fod;
+}
+
+
+std::set<std::string> fieldMinMax::requiredLibraries() const
+{
+  return { "libfieldFunctionObjects.so" };
 }
 
 std::map<std::string,arma::mat> fieldMinMax::readOutput
@@ -978,8 +996,6 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
 
   fod["type"]="surfaces";
   OFDictData::list l;
-  l.assign<string>(list_of<string>("\"libsampling.so\""));
-  fod["functionObjectLibs"]=l;
   fod["interpolationScheme"]="cellPoint";
 
   fod["surfaceFormat"]="vtk";
@@ -1005,13 +1021,19 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
   sl.push_back(p().name);
   sl.push_back(pd);
   fod["surfaces"]=sl;
-  
+
   return fod;
 }
 
-   
-   
-   
+
+std::set<std::string> cuttingPlane::requiredLibraries() const
+{
+  return { "libsampling.so" };
+}
+
+
+
+
 defineType(twoPointCorrelation);
 addToOpenFOAMCaseElementFactoryTable(twoPointCorrelation);
 
@@ -1053,8 +1075,6 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
         outputFilterFunctionObject::functionObjectDict();
 
   fod["type"]="twoPointCorrelation";
-  OFDictData::list libl; libl.push_back("\"libLESFunctionObjects.so\"");
-  fod["functionObjectLibs"]=libl;
   fod["enabled"]=true;
   fod["outputControl"]=p().outputControl;
   fod["outputInterval"]=p().outputInterval;
@@ -1067,8 +1087,14 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
   fod["nph"]=p().nph;
 
   fod["csys"]=csysConfiguration();
-  
+
   return fod;
+}
+
+
+std::set<std::string> twoPointCorrelation::requiredLibraries() const
+{
+  return { "libLESFunctionObjects.so" };
 }
 
 boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations

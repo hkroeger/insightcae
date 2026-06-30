@@ -30,6 +30,7 @@ protected:
      * path to another parameter, to which the keys are synchronized
      */
     std::string keySourceParameterPath_;
+    bool isBound_ = false;
     std::set<boost::signals2::scoped_connection> syncConnections_;
 
     std::key_observer_map<Parameter, std::shared_ptr<boost::signals2::scoped_connection> >

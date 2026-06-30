@@ -255,6 +255,8 @@ public:
       boost::optional<boost::filesystem::path> fn =
         boost::optional<boost::filesystem::path>() );
 
+  bool checkForSaveIfModified();
+
 protected:
   void	closeEvent ( QCloseEvent * event ) override;
 
@@ -262,6 +264,7 @@ private Q_SLOTS:
   void onSaveParameters();
   void onSaveParametersAs();
   void onLoadParameters();
+  void onMergeParameters();
 
   void onRunAnalysis();
   void onKillAnalysis();

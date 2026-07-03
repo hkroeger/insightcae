@@ -15,7 +15,7 @@ bool Filter::matches(const Element &e) const
 
 bool Filter::matches(const std::string &path) const
 {
-    insight::dbg(DetailedBusiness)<<"check match "<<path<<std::endl;
+    insight::dbg(DeepDetail)<<"check match "<<path<<std::endl;
     return matchesConstant(path) || matchesRegex(path);
 }
 

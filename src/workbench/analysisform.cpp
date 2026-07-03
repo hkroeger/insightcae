@@ -519,7 +519,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 
     auto act_merge_=new QAction(_("&Merge other parameter set into current..."), this);
     menu_parameters->addAction( act_merge_ );
-    connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onLoadParameters );
+    connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onMergeParameters );
 
     auto act_param_show_=new QAction(_("Show in &XML format..."), this);
     menu_parameters->addAction( act_param_show_ );
@@ -711,28 +711,54 @@ void AnalysisForm::onLoadParameters()
 }
 
 
+bool AnalysisForm::checkForSaveIfModified()
+{
+    if (isModified())
+    {
+        auto answer = QMessageBox::question(
+            this, _("Parameters unsaved"),
+            _("The current parameter set is unsaved and will be overwritten.\n"
+              "Do you wish to save them before continue?"),
+            QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
 
+        if (answer == QMessageBox::Yes)
+        {
+            onSaveParameters();
+        }
+        else if (answer == QMessageBox::Cancel)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void AnalysisForm::onMergeParameters()
+{
+    if (!checkForSaveIfModified()) return;
+
+    if (auto fn = getFileName(
+            this, _("Open Parameters"),
+            GetFileMode::Open,
+            {{ "ist", _("Insight parameter sets (*.ist)") }} ) )
+    {
+        {
+            std::shared_ptr<IQHierarchicalDataModel::UndoRecordingBlocker> blocker;
+            if (auto *m = dynamic_cast<IQHierarchicalDataModel*>(peditor_->model()))
+            {
+                blocker=m->blockUndoRecording();
+            }
+            auto ps = parameters().cloneAs<insight::AnalysisParameterSet>();
+            ps->mergeIncompatibleParameterSet(fn);
+            psmodel_->resetParameterValues(*ps);
+        }
+    }
+}
 
 void AnalysisForm::loadParameters(
         boost::optional<boost::filesystem::path> fn)
 {
-  if (isModified())
-  {
-    auto answer = QMessageBox::question(
-        this, _("Parameters unsaved"),
-                _("The current parameter set is unsaved and will be overwritten.\n"
-          "Do you wish to save them before continue?"),
-                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-
-    if (answer == QMessageBox::Yes)
-    {
-      onSaveParameters();
-    }
-    else if (answer == QMessageBox::Cancel)
-    {
-      return;
-    }
-  }
+  if (!checkForSaveIfModified()) return;
 
   if (!fn)
   {

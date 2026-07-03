@@ -4,6 +4,8 @@
 #include "viewwidgetaction.h"
 #include "boost/signals2.hpp"
 #include <qnamespace.h>
+#include <QPoint>
+#include <QTimer>
 
 template<class T>
 std::ostream&
@@ -150,6 +152,24 @@ private:
 
     SelectionFilterFunction selectionFilter_;
 
+    QTimer previewUpdateTimer_;
+    QPoint pendingPreviewPoint_;
+    bool previewUpdatePending_;
+
+    void schedulePreviewUpdate(const QPoint& point)
+    {
+        if (previewUpdateTimer_.isActive())
+        {
+            pendingPreviewPoint_ = point;
+            previewUpdatePending_ = true;
+        }
+        else
+        {
+            updatePreview(point);
+            previewUpdateTimer_.start(1000/60); // max 60 Hz
+        }
+    }
+
 protected:
     std::map<SelectedEntity, HighlightingHandle, SelectedEntityCompare> highlights_;
 
@@ -160,8 +180,18 @@ public:
         Args&&... addArgs )
         : Base(std::forward<Args>(addArgs)...),
           multiSelectionContainerFactory_(mscf),
-          doPreviewSelection_(false)
-    {}
+          doPreviewSelection_(false),
+          previewUpdatePending_(false)
+    {
+        previewUpdateTimer_.setSingleShot(true);
+        QObject::connect(&previewUpdateTimer_, &QTimer::timeout, [this]() {
+            if (previewUpdatePending_)
+            {
+                previewUpdatePending_ = false;
+                updatePreview(pendingPreviewPoint_);
+            }
+        });
+    }
 
     void setSelectionFilter(SelectionFilterFunction sff)
     {
@@ -178,6 +208,8 @@ public:
         if (doPreviewSelection_ && !doPreviewSelection)
         {
             previewHighlight_=boost::blank();
+            previewUpdateTimer_.stop();
+            previewUpdatePending_=false;
         }
         doPreviewSelection_=doPreviewSelection;
     }
@@ -380,7 +412,7 @@ public:
                  && */doPreviewSelection_ )
             {
                 nextSelectionCandidates_.reset();
-                updatePreview(point);
+                schedulePreviewUpdate(point);
             }
         }
 
@@ -393,6 +425,8 @@ public:
     void onMouseLeavesViewer() override
     {
         previewHighlight_ = boost::blank();
+        previewUpdateTimer_.stop();
+        previewUpdatePending_ = false;
     }
 
 

@@ -49,15 +49,26 @@ void LabeledArrayParameter::initializeHierarchy()
             {
                 auto myKeys = keys();
                 auto validKeys = op.keys();
-                std::set<std::string>  tbr;
-                std::set_difference(
-                    myKeys.begin(), myKeys.end(),
-                    validKeys.begin(), validKeys.end(),
-                    std::inserter(tbr, tbr.begin()) );
-
-                for (auto& k: tbr)
+                // Only remove stale keys when the key-source is non-empty.
+                // If the key-source is empty, the parent hierarchy may not yet
+                // be fully assembled (e.g. during assignFrom when parameters are
+                // processed alphabetically and the key-source parameter comes
+                // after this one). Removing keys prematurely would destroy
+                // values that were correctly cloned/loaded into this array.
+                // The signal connections set up below will keep this array in
+                // sync once the key-source is populated.
+                if (!validKeys.empty())
                 {
-                    eraseValueImpl(k);
+                    std::set<std::string>  tbr;
+                    std::set_difference(
+                        myKeys.begin(), myKeys.end(),
+                        validKeys.begin(), validKeys.end(),
+                        std::inserter(tbr, tbr.begin()) );
+
+                    for (auto& k: tbr)
+                    {
+                        eraseValueImpl(k);
+                    }
                 }
             }
             {

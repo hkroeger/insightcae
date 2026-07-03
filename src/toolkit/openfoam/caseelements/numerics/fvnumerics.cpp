@@ -64,11 +64,13 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       p().writeControl == Parameters::writeControl_type::runTime
       ||
       p().writeControl == Parameters::writeControl_type::adjustableRunTime
-      ||
-      ( p().writeControl == Parameters::writeControl_type::timeStep && p().timeStep==1. )
       )
   {
     controlDict["writeInterval"]=std::min(p().writeInterval, p().endTime);
+  }
+  else if ( p().writeControl == Parameters::writeControl_type::timeStep )
+  {
+      controlDict["writeInterval"]=std::min<double>(p().writeInterval, p().endTime/p().deltaT);
   }
   else
   {

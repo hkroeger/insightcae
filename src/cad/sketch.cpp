@@ -264,6 +264,12 @@ void Sketch::build()
 
             ws = DXFReader(filename, ".*").Wires(tol_);
         }
+        else if (ext==".dxf")
+        {
+            ws = DXFReader(filename, "^"+layername+"$").Wires(tol_);
+        }
+        else
+            throw insight::UnhandledSelection("unrecognized file extension: "+ext);
 
 //        TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
 //        providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));

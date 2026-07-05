@@ -9,6 +9,12 @@ enable_language (C)
 enable_language (CXX)
 enable_language (Fortran OPTIONAL)
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  message(STATUS "enabling ccache launcher")
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
 
 if(WIN32)
  add_link_options(LINKER:--export-all-symbols) ## too big files with debug in WIN32

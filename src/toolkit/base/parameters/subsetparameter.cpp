@@ -1,10 +1,12 @@
 #include "subsetparameter.h"
+#include "base/exception.h"
 #include "base/parameters.h"
 #include "base/tools.h"
 #include "base/cppextensions.h"
 #include "base/translations.h"
 #include "base/rapidxml.h"
 #include <algorithm>
+#include "boost/range/algorithm.hpp"
 
 namespace insight
 {
@@ -402,10 +404,36 @@ ParameterSet::readFromNode(
 
   if (child)
   {
-    for( auto i=value_.begin(); i!= value_.end(); i++)
-    {
+
+      std::map<std::string, std::string> nodesTBR;
+      for (auto *e=child->first_node(); e; e=e->next_sibling())
+      {
+          std::string tn(e->name());
+          if ((tn!="viewerState")&&(tn!="analysis"))
+          {
+              if (auto *na=e->first_attribute("name"))
+                  nodesTBR[na->value()]=tn;
+          }
+      }
+
+      for( auto i=value_.begin(); i!= value_.end(); i++)
+      {
+          nodesTBR.erase(i->first);
           i->second->readFromNode(i->first, *child);
-    }
+      }
+
+      if (nodesTBR.size())
+      {
+          std::vector<std::string> items;
+          boost::transform(
+            nodesTBR, std::last_inserter(items),
+              [](auto i) {
+                  return i.first+"/"+i.second;
+              });
+          throw insight::Exception(
+              "there were parameters in the input which are unknown. These are: %s",
+              valueList_to_string(items, 10).c_str() );
+      }
   }
   else
   {

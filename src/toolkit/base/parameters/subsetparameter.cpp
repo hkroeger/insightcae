@@ -427,7 +427,8 @@ ParameterSet::ParameterSet(const rapidxml::xml_node<> &node)
 {
     for (auto* e=node.first_node(); e; e=e->next_sibling())
     {
-        if (std::string(e->name())!="analysis") // this is no element
+        std::string tn(e->name());
+        if ((tn!="analysis")&&(tn!="viewerState")) // this is no element
         {
             auto name=getMandatoryAttribute(*e, "name");
             insertUninitialized(name, Parameter::createFromNode(*e));

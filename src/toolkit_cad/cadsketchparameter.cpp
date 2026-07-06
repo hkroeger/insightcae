@@ -432,7 +432,7 @@ void CADSketchParameter::assignFrom(const Element& oe)
 
 void CADSketchParameter::copyMatching( const Element& rhs )
 {
-    CADGeometryParameterBase::copyMatching(rhs);
+    CADGeometryParameterBase::assignFrom(rhs);
 }
 
 void CADSketchParameter::extend( const Element& op )

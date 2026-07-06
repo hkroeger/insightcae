@@ -1,10 +1,17 @@
 #include <QObject>
 #include <QDebug>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QHeaderView>
+#include <QLabel>
 #include <QLayout>
 #include <QPushButton>
 #include <QMimeData>
 #include <QApplication>
 #include <QClipboard>
+#include <QTreeView>
+#include <QVBoxLayout>
+#include <sstream>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <iterator>
@@ -30,6 +37,7 @@
 #include "base/parameters/selectionparameter.h"
 
 #include "cadparametersetvisualizer.h"
+#include "qtextensions.h"
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
@@ -123,8 +131,19 @@ bool IQParameterSetModel::setData(const QModelIndex &index, const QVariant &valu
 
 void IQParameterSetModel::copy(const QModelIndexList &indexes) const
 {
-  QMimeData *mimeData = this->mimeData(indexes);
-  qApp->clipboard()->setMimeData(mimeData);
+    if (indexes.size() != 1)
+        return;
+
+    auto *elem = elementOfIndex(indexes.first().siblingAtColumn(0));
+    if (!elem)
+        return;
+
+    std::string xml;
+    elem->saveToString(xml);
+
+    auto *mimeData = new QMimeData();
+    mimeData->setData("application/xml", QByteArray::fromStdString(xml));
+    qApp->clipboard()->setMimeData(mimeData);
 }
 
 
@@ -132,21 +151,23 @@ void IQParameterSetModel::copy(const QModelIndexList &indexes) const
 
 void IQParameterSetModel::paste(const QModelIndexList &indexes)
 {
-    insight::assertion(indexes.size()==1, "only single paste op supported");
+    if (indexes.size() != 1)
+        return;
 
-    if (editingIsEnabled())
-    {
-      const QMimeData *mimeData = qApp->clipboard()->mimeData();
+    if (!editingIsEnabled())
+        return;
 
-      auto index=indexes.first();
+    const QMimeData *mimeData = qApp->clipboard()->mimeData();
+    if (!mimeData->hasFormat("application/xml"))
+        return;
 
-      if (canDropMimeData(mimeData, Qt::CopyAction,
-                          index.row(), 0, index.parent()))
-      {
-        dropMimeData(mimeData, Qt::CopyAction,
-                     index.row(), 0, index.parent());
-      }
-    }
+    auto *elem = elementOfIndex(indexes.first().siblingAtColumn(0));
+    if (!elem)
+        return;
+
+    std::string xml = mimeData->data("application/xml").toStdString();
+    std::istringstream is(xml);
+    elem->readFromStream(is);
 }
 
 
@@ -165,28 +186,106 @@ void IQParameterSetModel::contextMenu(
       QMenu ctxMenu;
       iqp->populateContextMenu(&ctxMenu, viewer);
 
-#warning reenable
-//      // copy/paste
-//      QAction *a;
+      // copy/paste
+      QAction *a;
 
-//      ctxMenu.addSeparator();
-//      a=new QAction("&Copy");
-//      connect(a, &QAction::triggered, a,
-//              [this,index]() { copy({index.siblingAtColumn(0)}); }
-//      );
-//      ctxMenu.addAction(a);
-//      a=new QAction("&Paste");
-//      if (qApp->clipboard()->mimeData()->formats().contains("application/xml"))
-//      {
-//       connect(a, &QAction::triggered, a,
-//                  [this,index]() { paste({index.siblingAtColumn(0)}); }
-//              );
-//      }
-//      else
-//      {
-//       a->setDisabled(true);
-//      }
-//      ctxMenu.addAction(a);
+      auto *psModel = const_cast<IQParameterSetModel*>(
+          qobject_cast<const IQParameterSetModel*>(index.model()));
+
+      ctxMenu.addSeparator();
+      a=new QAction("&Copy");
+      connect(a, &QAction::triggered, a,
+              [psModel,index]() { psModel->copy({index.siblingAtColumn(0)}); }
+      );
+      ctxMenu.addAction(a);
+      a=new QAction("&Paste");
+      if (qApp->clipboard()->mimeData()->formats().contains("application/xml"))
+      {
+       connect(a, &QAction::triggered, a,
+                  [psModel,index]() { psModel->paste({index.siblingAtColumn(0)}); }
+              );
+      }
+      else
+      {
+       a->setDisabled(true);
+      }
+      ctxMenu.addAction(a);
+
+      a=new QAction("&Import...");
+      connect(a, &QAction::triggered, a,
+          [psModel, index, pw]()
+          {
+              if (!psModel->editingIsEnabled())
+                  return;
+
+              // 1. File dialog: pick an IST input file
+              auto fn = getFileName(
+                  pw, "Import parameter from file",
+                  GetFileMode::Open,
+                  {{ "ist", "Insight parameter sets" }} );
+              if (!fn)
+                  return;
+
+              // 2. Load the IST file into a ParameterSet dynamically
+              insight::XMLDocument doc(fn.asFilesystemPath());
+              auto importedPS =
+                  insight::ParameterSet::create(*doc.rootNode);
+
+              // 3. Create a read-only model for the imported set
+              IQParameterSetModel importModel(
+                  std::move(importedPS),
+                  boost::none,
+                  nullptr );
+
+              // 4. Build a selection dialog reusing IQParameterSetModel + QTreeView
+              QDialog dlg(pw);
+              dlg.setWindowTitle("Select parameter to import");
+              auto *layout = new QVBoxLayout(&dlg);
+
+              auto *label = new QLabel(
+                  "Select the parameter whose value should be imported:", &dlg);
+              layout->addWidget(label);
+
+              auto *treeView = new QTreeView(&dlg);
+              treeView->setModel(&importModel);
+              treeView->setSelectionMode(QAbstractItemView::SingleSelection);
+              treeView->setAlternatingRowColors(true);
+              treeView->header()->setSectionResizeMode(
+                  QHeaderView::ResizeToContents);
+              treeView->expandAll();
+              layout->addWidget(treeView);
+
+              auto *buttons = new QDialogButtonBox(
+                  QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+              QObject::connect(
+                  buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+              QObject::connect(
+                  buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+              layout->addWidget(buttons);
+
+              if (dlg.exec() != QDialog::Accepted)
+                  return;
+
+              // 5. Transfer the selected parameter's data to the target
+              auto selIndex = treeView->currentIndex();
+              if (!selIndex.isValid())
+                  return;
+
+              auto *srcElem =
+                  IQParameterSetModel::elementOfIndex(
+                      selIndex.siblingAtColumn(0));
+              auto *dstElem =
+                  psModel->elementOfIndex(index.siblingAtColumn(0));
+              if (!srcElem || !dstElem)
+                  return;
+
+              std::string xml;
+              srcElem->saveToString(xml);
+              std::istringstream is(xml);
+              dstElem->readFromStream(is);
+          }
+      );
+      ctxMenu.addAction(a);
 
       ctxMenu.exec(pw->mapToGlobal(p));
     }

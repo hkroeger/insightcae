@@ -422,7 +422,6 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(
   insight::CurrentExceptionContext ex(insight::VerbosityLevel::Loops, "appending array "+name+" to node "+node.name());
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, outProps);
-  defaultValue_->appendToNode("default", doc, *child, outProps);
   for (int i=0; i<size(); i++)
   {
       if (!outProps.filter.matches(*value_[i]))
@@ -451,7 +450,7 @@ const rapidxml::xml_node<>* ArrayParameter::readFromNode(
             std::string name(e->first_attribute("name")->value());
             if (name=="default")
             {
-                defaultValue_->readFromNode( name, *child );
+                // default value is no longer stored; skip legacy nodes
             }
             else
             {

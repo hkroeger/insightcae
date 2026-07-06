@@ -86,6 +86,8 @@ public:
      */
     virtual std::unique_ptr<LayerProperties>
     createDefaultLayerProperties(const std::string& layerName) const;
+
+    virtual bool useDynamicParameterLoading() const { return false; }
 };
 
 

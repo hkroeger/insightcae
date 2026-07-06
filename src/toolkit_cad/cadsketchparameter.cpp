@@ -12,6 +12,27 @@
 
 
 
+namespace {
+
+class DynamicLoadingDelegate
+    : public insight::cad::ConstrainedSketchParametersDelegate
+{
+public:
+    void changeDefaultParameters(
+        insight::cad::ConstrainedSketchEntity& e) const override
+    {
+        e.setDynamicParameterLoading(true);
+    }
+
+    bool useDynamicParameterLoading() const override
+    {
+        return true;
+    }
+};
+
+} // anonymous namespace
+
+
 namespace insight {
 
 
@@ -393,11 +414,12 @@ const rapidxml::xml_node<>* CADSketchParameter::readFromNode
 CADSketchParameter::CADSketchParameter(
     const rapidxml::xml_node<> &node)
     : CADGeometryParameterBase(node),
-      entityProperties_( insight::cad::noParametersDelegate ),
+      entityProperties_( std::make_shared<DynamicLoadingDelegate>() ),
       sketch_(createEmpty())
 {
     connectSignalsToSketch(sketch_);
     setScript(node.value());
+    entityProperties_ = insight::cad::noParametersDelegate;
 }
 
 

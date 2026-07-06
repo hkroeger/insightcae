@@ -1196,9 +1196,17 @@ void ConstrainedSketch::parseLayerProperties(
         insight::XMLDocument doc(
             s->begin(), s->end() );
 
-        auto p=layerProperties(layerName).cloneLayerProperties();
-        p->readFromNode(std::string(), *doc.rootNode );
-        setLayerProperties(layerName, *p);
+        if (pd.useDynamicParameterLoading())
+        {
+            auto loadedPS = insight::ParameterSet::create(*doc.rootNode);
+            setLayerProperties(layerName, *loadedPS);
+        }
+        else
+        {
+            auto p=layerProperties(layerName).cloneLayerProperties();
+            p->readFromNode(std::string(), *doc.rootNode );
+            setLayerProperties(layerName, *p);
+        }
     }
 }
 

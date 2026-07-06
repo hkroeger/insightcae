@@ -194,7 +194,15 @@ void ConstrainedSketchEntity::parseParameterSet(
     if (!s.empty())
     {
         insight::XMLDocument doc(s.begin(), s.end());
-        parametersRef().readFromNode(std::string(), *doc.rootNode);
+        if (dynamicParameterLoading_)
+        {
+            auto loadedPS = insight::ParameterSet::create(*doc.rootNode);
+            parametersRef().assignFrom(*loadedPS);
+        }
+        else
+        {
+            parametersRef().readFromNode(std::string(), *doc.rootNode);
+        }
         parametersRef().resolveRelativePaths(inputFileParentPath );
     }
 }

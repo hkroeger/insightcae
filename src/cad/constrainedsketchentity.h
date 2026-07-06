@@ -47,6 +47,8 @@ private:
 
     std::string layerName_;
 
+    bool dynamicParameterLoading_ = false;
+
     std::map<std::shared_ptr<boost::signals2::scoped_connection>, const void*> connectedNotifiers_;
 
 public:
@@ -96,6 +98,8 @@ public:
     virtual void ensureRequiredParameters();
     virtual void changeDefaultParameters(
         const insight::ParameterSet& ps);
+
+    void setDynamicParameterLoading(bool v) { dynamicParameterLoading_ = v; }
 
     void parseParameterSet(
         const std::string& s,

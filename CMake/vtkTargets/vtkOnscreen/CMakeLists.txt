@@ -75,6 +75,8 @@ else(NOT WIN32)
            vtkGUISupportQt
            vtkRenderingLabel
            vtkRenderingOpenGL2
+           vtkRenderingVolume
+           vtkRenderingVolumeOpenGL2
            vtkRenderingAnnotation
             vtkInteractionWidgets
             vtkInteractionStyle

@@ -9,6 +9,7 @@ namespace insight {
 class MatplotlibRenderer
     : public ChartRenderer
 {
+    const ChartData* chartData_;
 
 public:
   MatplotlibRenderer(const ChartData* data);

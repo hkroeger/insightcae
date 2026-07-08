@@ -529,7 +529,7 @@ std::string ResultSet::childElementName(
     if (p_)
     {
         if (i==0)
-            return "InputParameters";
+            return inputParametersChildName;
         else
             return ResultElementCollection::childElementName(i-1, redir);
     }

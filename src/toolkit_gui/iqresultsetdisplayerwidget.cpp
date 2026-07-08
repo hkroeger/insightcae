@@ -126,6 +126,15 @@ void IQResultSetDisplayerWidget::loadResults(
     if (oldrm) delete oldrm;
 
     ui->lvFilteredResultSetToC->expandAll();
+
+    // Collapse Input Parameters nodes — they are rarely needed at a glance
+    collapseMatchingNodes(
+        ui->lvFilteredResultSetToC,
+        [](const QModelIndex& idx) {
+            return idx.data(Qt::DisplayRole).toString()
+                == QString::fromLatin1(insight::ResultSet::inputParametersChildName);
+        });
+
     ui->lvFilteredResultSetToC->resizeColumnToContents(0);
     ui->lvFilteredResultSetToC->resizeColumnToContents(1);
 

@@ -62,6 +62,8 @@ protected:
 public:
     declareType ( "ResultSet" );
 
+    static constexpr const char inputParametersChildName[] = "InputParameters";
+
     ResultSet
     (
         std::unique_ptr<ParameterSet> p = nullptr,

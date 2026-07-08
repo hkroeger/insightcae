@@ -7,6 +7,8 @@
 #include "base/boost_include.h"
 #include "base/latextools.h"
 
+#include <functional>
+
 #include <QObject>
 #include <QGridLayout>
 #include <QTextEdit>
@@ -16,6 +18,8 @@
 #include <QThread>
 #include <QMainWindow>
 #include <QCoreApplication>
+#include <QModelIndex>
+#include <QTreeView>
 
 #include "boost/signals2.hpp"
 
@@ -23,6 +27,16 @@
 
 
 QMainWindow* getMainWindow();
+
+/**
+ * @brief collapseMatchingNodes
+ * Traverse all nodes in the tree view breadth-first and collapse every node
+ * for which @p shouldCollapse returns true. Children of a collapsed node are
+ * not visited (and therefore stay collapsed too).
+ */
+TOOLKIT_GUI_EXPORT void collapseMatchingNodes(
+    QTreeView* view,
+    const std::function<bool(const QModelIndex&)>& shouldCollapse);
 
 /**
  * @brief runInGUIThread

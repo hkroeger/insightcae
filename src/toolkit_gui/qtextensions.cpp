@@ -5,11 +5,40 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <QApplication>
+#include <QAbstractItemModel>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string.hpp>
 #include <qnamespace.h>
+
+
+
+void collapseMatchingNodes(
+    QTreeView* view,
+    const std::function<bool(const QModelIndex&)>& shouldCollapse)
+{
+    auto* m = view->model();
+    if (!m) return;
+
+    QModelIndexList toVisit;
+    for (int i = 0; i < m->rowCount(); ++i)
+        toVisit.append(m->index(i, 0));
+
+    while (!toVisit.isEmpty())
+    {
+        auto idx = toVisit.takeFirst();
+        if (shouldCollapse(idx))
+        {
+            view->collapse(idx);
+        }
+        else
+        {
+            for (int i = 0; i < m->rowCount(idx); ++i)
+                toVisit.append(m->index(i, 0, idx));
+        }
+    }
+}
 
 
 

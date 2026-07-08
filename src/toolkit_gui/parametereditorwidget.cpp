@@ -37,6 +37,7 @@
 #include "qtextensions.h"
 
 #include "base/translations.h"
+#include "iqparameters/iqcadsketchparameter.h"
 
 
 using namespace std;
@@ -385,6 +386,17 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     }
 
     parameterTreeView_->expandToDepth(2);
+
+    // Collapse sketch parameter nodes — their entity children clutter the view
+    collapseMatchingNodes(
+        parameterTreeView_,
+        [](const QModelIndex& idx) {
+            auto* iqe = static_cast<IQHierarchicalDataElement*>(
+                idx.siblingAtColumn(IQHierarchicalDataModel::iqParamCol)
+                    .data().value<void*>());
+            return iqe && iqe->type() == IQCADSketchParameter::typeName_();
+        });
+
     parameterTreeView_->header()->setSectionResizeMode(
         QHeaderView::ResizeMode::ResizeToContents);
 }

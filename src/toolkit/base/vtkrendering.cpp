@@ -26,6 +26,9 @@
 #include "vtkDoubleArray.h"
 #include "vtkStringArray.h"
 #include "vtkDiscretizableColorTransferFunction.h"
+#include "vtkColorTransferFunction.h"
+#include "vtkVolume.h"
+#include "vtkVolumeCollection.h"
 #include "vtkTextProperty.h"
 #include "vtkLineSource.h"
 #include "vtkRendererCollection.h"
@@ -81,6 +84,7 @@
 void vtkRenderingOpenGL2_AutoInit_Construct();
 void vtkRenderingFreeType_AutoInit_Construct();
 void vtkInteractionStyle_AutoInit_Construct();
+void vtkRenderingVolumeOpenGL2_AutoInit_Construct();
 
 
 
@@ -1252,6 +1256,30 @@ vtkSmartPointer<vtkLookupTable> createColorMap(
 }
 
 
+vtkSmartPointer<vtkColorTransferFunction> createColorTransferFunction(
+        const MinMax& range,
+        const std::vector<double>& cb
+        )
+{
+    auto ctf = vtkSmartPointer<vtkColorTransferFunction>::New();
+
+    int n = cb.size() / 4;
+    double x0 = cb[0], x1 = cb[4*(n-1)];
+
+    for (int i = 0; i < n; ++i)
+    {
+        int j = 4*i;
+        double t = (cb[j] - x0) / (x1 - x0); // normalise position to [0,1]
+        ctf->AddRGBPoint(
+            range.first + t * (range.second - range.first),
+            cb[j+1], cb[j+2], cb[j+3]
+            );
+    }
+
+    return ctf;
+}
+
+
 
 MinMax calcRange(
     FieldSelection fsel,
@@ -1427,6 +1455,7 @@ VTKOffscreenScene::VTKOffscreenScene()
   vtkRenderingOpenGL2_AutoInit_Construct();
   vtkRenderingFreeType_AutoInit_Construct();
   vtkInteractionStyle_AutoInit_Construct();
+  vtkRenderingVolumeOpenGL2_AutoInit_Construct();
 
   renderer_ = vtkSmartPointer<vtkRenderer>::New();
   renderWindow_ = vtkSmartPointer<vtkRenderWindow>::New();
@@ -1683,6 +1712,13 @@ void VTKOffscreenScene::clearScene()
       renderer_->RemoveActor( act );
   }
 
+  auto vols = renderer_->GetVolumes();
+  vtkVolume *vol;
+  for( vols->InitTraversal(); (vol = vols->GetNextVolume())!=nullptr; )
+  {
+      renderer_->RemoveVolume( vol );
+  }
+
   auto acts2 = renderer_->GetActors2D();
   vtkActor2D *act2;
   for( acts2->InitTraversal(); (act2 = acts2->GetNextItem())!=nullptr; )
@@ -1693,10 +1729,6 @@ void VTKOffscreenScene::clearScene()
 //  renderer_->Clear();
 }
 
-void VTKOffscreenScene::removeActor(vtkActor *act)
-{
-  renderer_->RemoveActor(act);
-}
 
 void VTKOffscreenScene::removeActor2D(vtkActor2D *act)
 {

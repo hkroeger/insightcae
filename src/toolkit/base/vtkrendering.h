@@ -17,7 +17,9 @@
 
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
+#include "vtkColorTransferFunction.h"
 #include "vtkLookupTable.h"
+#include "vtkVolume.h"
 #include "vtkCamera.h"
 #include "vtkScalarBarActor.h"
 #include "vtkRenderWindow.h"
@@ -197,8 +199,6 @@ vtkSmartPointer<vtkLookupTable> createColorMap(
         bool logscale = false
         );
 
-
-
 typedef std::pair<double, double> MinMax;
 
 typedef enum { OnCell = 0, OnPoint = 1 } FieldSupport;
@@ -250,6 +250,17 @@ MinMax calcRange(
     const std::vector<vtkDataSet*> datasets,
     const std::vector<vtkAlgorithm*> algorithms
     );
+
+/**
+ * Build a vtkColorTransferFunction from a colormap data table (same format as
+ * colorMapData_SD / colorMapData_CoolToWarm etc.: groups of 4 doubles
+ * [position, R, G, B]).  The control-point positions are mapped linearly onto
+ * the data range [range.first, range.second].
+ */
+vtkSmartPointer<vtkColorTransferFunction> createColorTransferFunction(
+        const MinMax& range,
+        const std::vector<double>& cb = colorMapData_CoolToWarm
+        );
 
 
 class MultiBlockDataSetExtractor
@@ -400,7 +411,14 @@ public:
     return actor;
   }
 
-  vtkProp* addActor(vtkProp* actor)
+  template<class Actor>
+  Actor* addActor(vtkSmartPointer<Actor> actor)
+  {
+      return addActor<Actor>(actor.Get());
+  }
+
+  template<class Actor>
+  Actor* addActor(Actor* actor)
   {
       renderer_->AddActor(actor);
       return actor;
@@ -442,7 +460,24 @@ public:
 
   void clearScene();
 
-  void removeActor(vtkActor* act);
+  template<class Actor>
+  void removeActor(Actor* act)
+  {
+      renderer_->RemoveActor(act);
+  }
+
+  // Volumes must be removed via RemoveVolume, not RemoveActor, because
+  // vtkRenderer maintains a separate vtkVolumeCollection for them.
+  void removeVolume(vtkVolume* vol)
+  {
+      renderer_->RemoveVolume(vol);
+  }
+
+  void removeVolume(vtkSmartPointer<vtkVolume> vol)
+  {
+      renderer_->RemoveVolume(vol);
+  }
+
   void removeActor2D(vtkActor2D* act);
 
   void addSnapshotToResults(

@@ -32,6 +32,8 @@ if (NOT WIN32)
         GUISupportQt
         RenderingLabel
         RenderingOpenGL2
+        RenderingVolume
+        RenderingVolumeOpenGL2
         RenderingAnnotation
          InteractionWidgets
          InteractionStyle

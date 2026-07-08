@@ -38,6 +38,8 @@ else()
             ImagingCore
             RenderingLabel
             RenderingOpenGL2
+            RenderingVolume
+            RenderingVolumeOpenGL2
             RenderingAnnotation
              InteractionWidgets
              InteractionStyle

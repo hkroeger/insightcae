@@ -431,7 +431,7 @@ void LinkedDistanceConstraint::addParserRule(
                          qi::_2, qi::_3, qi::_b,
                          phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
                          qi::_5, qi::_4 ),
-                     phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, pd, *qi::_a),
+                     phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
                      phx::bind(&ConstrainedSketchEntity::parseParameterSet,
                                qi::_a, qi::_6, boost::filesystem::path(".")),
                      qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(

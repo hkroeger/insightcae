@@ -90,7 +90,7 @@ public:
     void assignFrom( const Element& rhs ) override;
 
 protected:
-    std::unique_ptr<Element> cloneUninitialized() const override;
+    std::unique_ptr<Element> doCloneUninitialized() const override;
 };
 
 

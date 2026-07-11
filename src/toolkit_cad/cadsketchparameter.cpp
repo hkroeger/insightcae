@@ -30,6 +30,7 @@ public:
     }
 };
 
+
 } // anonymous namespace
 
 
@@ -419,16 +420,15 @@ CADSketchParameter::CADSketchParameter(
 {
     connectSignalsToSketch(sketch_);
     setScript(node.value());
-    entityProperties_ = insight::cad::noParametersDelegate;
 }
 
 
 
-std::unique_ptr<hierarchicalData::Element> CADSketchParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> CADSketchParameter::doCloneUninitialized() const
 {
     return std::make_unique<CADSketchParameter>(
         script(),
-        entityProperties_,
+        entityProperties(),
         presentationDelegateKey_,
         references_,
         description().simpleLatex(),
@@ -454,7 +454,7 @@ void CADSketchParameter::assignFrom(const Element& oe)
 
 void CADSketchParameter::copyMatching( const Element& rhs )
 {
-    CADGeometryParameterBase::assignFrom(rhs);
+    CADSketchParameter::assignFrom(rhs);
 }
 
 void CADSketchParameter::extend( const Element& op )

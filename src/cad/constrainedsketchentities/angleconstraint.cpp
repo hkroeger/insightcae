@@ -379,7 +379,7 @@ void LinkedAngleConstraint::addParserRule(
                              VectorPtr, VectorPtr, VectorPtr, ScalarPtr,
                              const std::string&, const std::string&>,
                          qi::_2, qi::_3, qi::_4, qi::_b, qi::_6, qi::_5),
-                     phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, pd, *qi::_a),
+                     phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
                      phx::bind(&ConstrainedSketchEntity::parseParameterSet,
                                qi::_a, qi::_7, boost::filesystem::path(".")),
                      qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]

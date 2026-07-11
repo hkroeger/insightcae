@@ -827,7 +827,7 @@ LabeledArrayParameter::LabeledArrayParameter(const rapidxml::xml_node<> &node)
 
 
 
-std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::doCloneUninitialized() const
 {
     auto np=std::make_unique<LabeledArrayParameter>(
         *defaultValue_, 0,

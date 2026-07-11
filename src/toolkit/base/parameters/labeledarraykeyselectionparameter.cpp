@@ -244,7 +244,7 @@ LabeledArrayKeySelectionParameter::LabeledArrayKeySelectionParameter(
 
 
 std::unique_ptr<hierarchicalData::Element>
-LabeledArrayKeySelectionParameter::cloneUninitialized() const
+LabeledArrayKeySelectionParameter::doCloneUninitialized() const
 {
     return std::make_unique<LabeledArrayKeySelectionParameter>(
         arrayParameterPath_,

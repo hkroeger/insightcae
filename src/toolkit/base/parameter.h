@@ -261,6 +261,7 @@ private:
     SimpleLatex description_;
 
     bool isHidden_, isExpert_, isNecessary_;
+    bool dynamicParameterLoading_ = false;
 
 
     friend class ArrayParameter;
@@ -371,6 +372,12 @@ public:
 
     void assignFrom(const Element& o) override;
 
+    std::unique_ptr<insight::hierarchicalData::Element> cloneUninitialized() const override final;
+
+private:
+    virtual std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const = 0;
+
+public:
 
 #ifndef SWIG
     virtual std::unique_ptr<Parameter> intersection(const Parameter& other) const;

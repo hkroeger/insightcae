@@ -241,7 +241,7 @@ SelectionParameter::SelectionParameter(const rapidxml::xml_node<> & node)
     value_=0;
 }
 
-std::unique_ptr<hierarchicalData::Element> SelectionParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> SelectionParameter::doCloneUninitialized() const
 {
     auto p= std::make_unique<SelectionParameter>(
         value_, items_,

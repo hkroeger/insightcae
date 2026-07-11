@@ -108,7 +108,7 @@ public:
 
   std::unique_ptr<PathParameter> clonePathParameter() const;
 protected:
-  std::unique_ptr<Element> cloneUninitialized() const override;
+  std::unique_ptr<Element> doCloneUninitialized() const override;
 
 public:
   void assignFrom(const Element& e) override;
@@ -205,7 +205,7 @@ public:
     bool isEqual(const Element& op) const override;
 
 protected:
-    std::unique_ptr<Element> cloneUninitialized() const override;
+    std::unique_ptr<Element> doCloneUninitialized() const override;
 public:
     std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };

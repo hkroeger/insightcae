@@ -524,7 +524,7 @@ ArrayParameter::ArrayParameter(const rapidxml::xml_node<> &node)
 
 
 
-std::unique_ptr<hierarchicalData::Element> ArrayParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> ArrayParameter::doCloneUninitialized() const
 {
   auto np=std::make_unique<ArrayParameter>(
         *defaultValue_,

@@ -120,7 +120,7 @@ public:
 
 
 protected:
-    std::unique_ptr<Element> cloneUninitialized() const override
+    std::unique_ptr<Element> doCloneUninitialized() const override
     {
         auto p= std::make_unique<SimpleParameter<T, N> >(
             value_,
@@ -283,7 +283,7 @@ public:
     }
 
 protected:
-    std::unique_ptr<Element> cloneUninitialized() const override;
+    std::unique_ptr<Element> doCloneUninitialized() const override;
 };
 
 

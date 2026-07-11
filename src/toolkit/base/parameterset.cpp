@@ -169,7 +169,7 @@ void AnalysisParameterSet::assignFrom(const Element &rhs)
 }
 
 
-std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> AnalysisParameterSet::doCloneUninitialized() const
 {
     auto res = std::make_unique<AnalysisParameterSet>(analysisTypeName_);
     res->assignFrom(*this);

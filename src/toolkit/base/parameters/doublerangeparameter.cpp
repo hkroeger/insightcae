@@ -153,7 +153,7 @@ DoubleRangeParameter::DoubleRangeParameter(const rapidxml::xml_node<> &node)
 }
 
 
-std::unique_ptr<hierarchicalData::Element> DoubleRangeParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> DoubleRangeParameter::doCloneUninitialized() const
 {
   auto p = std::make_unique<DoubleRangeParameter>(
         values_,

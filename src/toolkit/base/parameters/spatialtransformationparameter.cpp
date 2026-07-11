@@ -213,7 +213,7 @@ SpatialTransformationParameter::SpatialTransformationParameter(
 
 
 std::unique_ptr<hierarchicalData::Element>
-SpatialTransformationParameter::cloneUninitialized() const
+SpatialTransformationParameter::doCloneUninitialized() const
 {
     auto p= std::make_unique<SpatialTransformationParameter>(
         operator()(), description().simpleLatex(),

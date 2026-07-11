@@ -197,7 +197,10 @@ void ConstrainedSketchEntity::parseParameterSet(
         if (dynamicParameterLoading_)
         {
             auto loadedPS = insight::ParameterSet::create(*doc.rootNode);
-            parametersRef().assignFrom(*loadedPS);
+            if (parametersRef().size() > 0)
+                parametersRef().copyMatching(*loadedPS);
+            else
+                parametersRef().assignFrom(*loadedPS);
         }
         else
         {

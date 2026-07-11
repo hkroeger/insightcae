@@ -69,7 +69,7 @@ public:
         const rapidxml::xml_node<>& node ) override;
 
 protected:
-    std::unique_ptr<Element> cloneUninitialized() const override;
+    std::unique_ptr<Element> doCloneUninitialized() const override;
 public:
     void assignFrom(const Element& p) override;
     bool isEqual(const Element& op) const override;

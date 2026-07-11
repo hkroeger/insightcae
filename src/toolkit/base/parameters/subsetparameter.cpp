@@ -424,15 +424,29 @@ ParameterSet::readFromNode(
 
       if (nodesTBR.size())
       {
-          std::vector<std::string> items;
-          boost::transform(
-            nodesTBR, std::last_inserter(items),
-              [](auto i) {
-                  return i.first+"/"+i.second;
-              });
-          throw insight::Exception(
-              "there were parameters in the input which are unknown. These are: %s",
-              valueList_to_string(items, 10).c_str() );
+          bool dynamicParameterLoading = dynamicParameterLoading_;
+          if (!dynamicParameterLoading)
+          {
+              const Element* p = hasParent() ? &parent() : nullptr;
+              while (p && !dynamicParameterLoading)
+              {
+                  if (auto *pp = dynamic_cast<const Parameter*>(p))
+                      dynamicParameterLoading = pp->dynamicParameterLoading_;
+                  p = p->hasParent() ? &p->parent() : nullptr;
+              }
+          }
+          if (!dynamicParameterLoading)
+          {
+              std::vector<std::string> items;
+              boost::transform(
+                nodesTBR, std::last_inserter(items),
+                  [](auto i) {
+                      return i.first+"/"+i.second;
+                  });
+              throw insight::Exception(
+                  "there were parameters in the input which are unknown. These are: %s",
+                  valueList_to_string(items, 10).c_str() );
+          }
       }
   }
   else
@@ -711,7 +725,7 @@ void ParameterSet::replace ( const std::string& key, std::unique_ptr<Parameter> 
 
 
 
-std::unique_ptr<hierarchicalData::Element> ParameterSet::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> ParameterSet::doCloneUninitialized() const
 {
     auto p =ParameterSet::create_uninitialized(
         entries(),

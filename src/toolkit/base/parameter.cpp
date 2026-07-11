@@ -69,7 +69,8 @@ Parameter::Parameter(const rapidxml::xml_node<> &node)
     description_(getOptionalAttributeOrDefault(node, "description", std::string())),
     isHidden_(getOptionalAttributeOrDefault<bool>(node, "isHidden", false)),
     isExpert_(getOptionalAttributeOrDefault<bool>(node, "isExpert", false)),
-    isNecessary_(getOptionalAttributeOrDefault<bool>(node, "isNecessary", false))
+    isNecessary_(getOptionalAttributeOrDefault<bool>(node, "isNecessary", false)),
+    dynamicParameterLoading_(true)
 {}
 
 
@@ -417,6 +418,16 @@ void Parameter::assignFrom(const Element &o)
   Element::assignFrom(o);
 }
 
+
+
+
+
+std::unique_ptr<insight::hierarchicalData::Element> Parameter::cloneUninitialized() const
+{
+    auto n = doCloneUninitialized();
+    dynamic_cast<Parameter&>(*n).dynamicParameterLoading_ = dynamicParameterLoading_;
+    return n;
+}
 
 
 

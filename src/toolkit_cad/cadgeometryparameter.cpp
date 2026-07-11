@@ -435,7 +435,7 @@ const rapidxml::xml_node<>* CADGeometryParameter::readFromNode(
 
 
 
-std::unique_ptr<hierarchicalData::Element> CADGeometryParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> CADGeometryParameter::doCloneUninitialized() const
 {
     auto p= std::make_unique<CADGeometryParameter>(
         value_,

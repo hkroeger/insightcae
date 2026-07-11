@@ -289,7 +289,7 @@ public:
   void replace ( const std::string& key, std::unique_ptr<Parameter> newp );
 
 protected:
-  std::unique_ptr<Element> cloneUninitialized() const override;
+  std::unique_ptr<Element> doCloneUninitialized() const override;
 
 public:
   void assignFrom( const Element& rhs ) override;

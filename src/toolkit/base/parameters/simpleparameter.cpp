@@ -52,7 +52,7 @@ VectorParameter::VectorParameter(const rapidxml::xml_node<> &node, bool skipValu
     vectorType_=VectorType(getMandatoryAttribute<int>(node, "vectorType"));
 }
 
-std::unique_ptr<hierarchicalData::Element> VectorParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> VectorParameter::doCloneUninitialized() const
 {
     auto p= std::make_unique<VectorParameter>(
         vectorType_, value_,

@@ -151,7 +151,7 @@ PropertyLibrarySelectionParameter::PropertyLibrarySelectionParameter(
 
 
 
-std::unique_ptr<hierarchicalData::Element> PropertyLibrarySelectionParameter::cloneUninitialized() const
+std::unique_ptr<hierarchicalData::Element> PropertyLibrarySelectionParameter::doCloneUninitialized() const
 {
     std::unique_ptr<Parameter> p;
     if (propertyLibrary_)

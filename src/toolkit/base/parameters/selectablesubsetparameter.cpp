@@ -469,7 +469,7 @@ SelectableSubsetParameter::SelectableSubsetParameter(
 
 
 std::unique_ptr<hierarchicalData::Element>
-SelectableSubsetParameter::cloneUninitialized() const
+SelectableSubsetParameter::doCloneUninitialized() const
 {
   auto np=
       std::make_unique<SelectableSubsetParameter>(

@@ -441,11 +441,11 @@ ParameterSet::readFromNode(
               boost::transform(
                 nodesTBR, std::last_inserter(items),
                   [](auto i) {
-                      return i.first+"/"+i.second;
+                      return i.first+" (type "+i.second+")";
                   });
               throw insight::Exception(
-                  "there were parameters in the input which are unknown. These are: %s",
-                  valueList_to_string(items, 10).c_str() );
+                  "there were parameters in the input in sub section\n%s\nwhich are unknown. These are:\n%s",
+                  path().c_str(), boost::join(items, "\n").c_str() );
           }
       }
   }

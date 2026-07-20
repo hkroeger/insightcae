@@ -242,7 +242,24 @@ inherits ExternalGeometryFile<Feature>::Parameters
 minLevel = int 0 "Minimum refinement level"
 maxLevel = int 4 "Maximum refinement level"
 nLayers = int 2 "Number of prism layers"
-zoneName = string "" "If this is not an empty string, the mesh inside the geometry will be kept and assigned to a cell zone with this name."
+
+zone = selectablesubset {{
+
+ none set { }
+
+ cellZone set {
+  zoneName = string "" "name of the cell zone"
+  selection = selection (inside outside) inside ""
+ }
+
+ faceZone set {
+  zoneName = string "" "name of the face zone"
+  faceType = selection (internal baffle boundary) internal ""
+ }
+
+}} none ""
+
+#zoneName = string "" "If this is not an empty string, the mesh inside the geometry will be kept and assigned to a cell zone with this name."
 
 regionRefinements = array [ set {
  regionname = string "" "Name of geometry region" *necessary

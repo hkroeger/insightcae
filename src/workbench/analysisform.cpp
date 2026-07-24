@@ -749,7 +749,13 @@ void AnalysisForm::onMergeParameters()
                 blocker=m->blockUndoRecording();
             }
             auto ps = parameters().cloneAs<insight::AnalysisParameterSet>();
-            ps->mergeIncompatibleParameterSet(fn);
+
+            //ps->mergeIncompatibleParameterSet(fn);
+            insight::XMLDocument doc(fn.asFilesystemPath());
+            auto importedPS =
+                insight::ParameterSet::create(*doc.rootNode);
+            ps->copyMatching(*importedPS);
+
             psmodel_->resetParameterValues(*ps);
         }
     }

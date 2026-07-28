@@ -486,41 +486,39 @@ void blockMeshDict_Sphere::create_bmd()
     // +X
     {
       auto bpts = P_8 (
-      op(theta2, 315*SI::deg), op(theta2, 45*SI::deg), op(theta1, 45*SI::deg), op(theta1, 315*SI::deg),
-      c + 0.5*Lc*(ex -ey -ez), c + 0.5*Lc*(ex +ey -ez), c + 0.5*Lc*(ex +ey +ez), c + 0.5*Lc*(ex -ey +ez)
+      c + 0.5*Lc*(ex -ey -ez), c + 0.5*Lc*(ex +ey -ez), c + 0.5*Lc*(ex +ey +ez), c + 0.5*Lc*(ex -ey +ez),
+      op(theta2, 315*SI::deg), op(theta2, 45*SI::deg), op(theta1, 45*SI::deg), op(theta1, 315*SI::deg)
       );
       Block& bl =this->addBlock
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p().mesh.grad_r },
-                      "", true
+                      { 1, 1, 1./p().mesh.grad_r }
                   )
                 );
-      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
-      this->addEdge ( new CircularEdge_Center ( bpts[1], bpts[2], c ) );
-      this->addEdge ( new CircularEdge_Center ( bpts[2], bpts[3], c ) );
-      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[3], c ) );
-      outer_->addFace(bl.face("0321"));
+      this->addEdge ( new CircularEdge_Center ( bpts[4], bpts[5], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[5], bpts[6], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[6], bpts[7], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[4], bpts[7], c ) );
+      outer_->addFace(bl.face(/*"0321"*/"4567"));
     }
 
     // -Y
     {
       auto bpts = P_8 (
-      op(theta2, 225*SI::deg), op(theta2, 315*SI::deg), op(theta1, 315*SI::deg), op(theta1, 225*SI::deg),
-      c + 0.5*Lc*(-ey -ex -ez), c + 0.5*Lc*(-ey +ex -ez), c + 0.5*Lc*(-ey +ex +ez), c + 0.5*Lc*(-ey -ex +ez)
+      c + 0.5*Lc*(-ey -ex -ez), c + 0.5*Lc*(-ey +ex -ez), c + 0.5*Lc*(-ey +ex +ez), c + 0.5*Lc*(-ey -ex +ez),
+      op(theta2, 225*SI::deg), op(theta2, 315*SI::deg), op(theta1, 315*SI::deg), op(theta1, 225*SI::deg)
       );
       Block& bl =this->addBlock
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p().mesh.grad_r },
-                      "", true
+                      { 1, 1, 1./p().mesh.grad_r }
                   )
                 );
-      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
-      this->addEdge ( new CircularEdge_Center ( bpts[2], bpts[3], c ) );
-      outer_->addFace(bl.face("0321"));
+      this->addEdge ( new CircularEdge_Center ( bpts[4], bpts[5], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[6], bpts[7], c ) );
+      outer_->addFace(bl.face(/*"0321"*/"4567"));
     }
 
     // +Y
@@ -533,8 +531,7 @@ void blockMeshDict_Sphere::create_bmd()
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p().mesh.grad_r }/*,
-                      "", true*/
+                      { 1, 1, 1./p().mesh.grad_r }
                   )
                 );
       this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
@@ -562,18 +559,17 @@ void blockMeshDict_Sphere::create_bmd()
     // +Z
     {
       auto bpts = P_8 (
-       op(theta1, 225*SI::deg), op(theta1, 315*SI::deg), op(theta1, 45*SI::deg), op(theta1, 135*SI::deg),
-       c + 0.5*Lc*(+ez -ex -ey), c + 0.5*Lc*(+ez +ex -ey), c + 0.5*Lc*(+ez +ex +ey), c + 0.5*Lc*(+ez -ex +ey)
+       c + 0.5*Lc*(+ez -ex -ey), c + 0.5*Lc*(+ez +ex -ey), c + 0.5*Lc*(+ez +ex +ey), c + 0.5*Lc*(+ez -ex +ey),
+       op(theta1, 225*SI::deg), op(theta1, 315*SI::deg), op(theta1, 45*SI::deg), op(theta1, 135*SI::deg)
       );
       Block& bl =this->addBlock
                 (
                     new Block ( bpts,
                       nu, nu, nr,
-                      { 1, 1, 1./p().mesh.grad_r },
-                                "", true
+                      { 1, 1, 1./p().mesh.grad_r }
                   )
                 );
-      outer_->addFace(bl.face("0321"));
+      outer_->addFace(bl.face(/*"0321"*/"4567"));
     }
 }
 

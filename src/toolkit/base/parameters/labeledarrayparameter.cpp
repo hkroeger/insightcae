@@ -900,12 +900,32 @@ void LabeledArrayParameter::copyMatching(const Element& oe)
     labelPattern_=op.labelPattern_;
     (*defaultValue_).copyMatching(*op.defaultValue_);
 
+    // remove entries not present in op
+    {
+        std::vector<std::string> keys;
+        boost::copy(value_ | boost::adaptors::map_keys, std::back_inserter(keys));
+        for (const auto& k: keys)
+        {
+            if (op.value_.count(k)==0)
+            {
+                itemRemoved(k);
+                value_.erase(k);
+            }
+        }
+    }
+
     for (const auto& ov: op.value_)
     {
         auto myv=value_.find(ov.first);
         if (myv!=value_.end())
         {
             myv->second->copyMatching( *ov.second );
+        }
+        else
+        {
+            insertValueImpl(
+                ov.first,
+                ov.second->cloneAsUninitialized<Parameter>() );
         }
     }
 

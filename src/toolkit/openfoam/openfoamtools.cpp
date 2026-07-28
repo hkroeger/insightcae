@@ -3337,7 +3337,7 @@ void HydrostaticPressureComputer::operator()(
         {
             expr = str(
                 boost::format("%g - %s*%g")
-                % toValue(p0Amb, si::pascal)
+                % toValue(p0Amb, si::pascals)
                 % gh
                 % toValue(l->rho, si::kilogram_per_cubic_meter)
             );
@@ -3346,7 +3346,7 @@ void HydrostaticPressureComputer::operator()(
         {
             expr = str(
                 boost::format("%g")
-                % toValue(p0Amb, si::pascal)
+                % toValue(p0Amb, si::pascals)
                 );
         }
     }
@@ -3361,7 +3361,7 @@ void HydrostaticPressureComputer::operator()(
         {
             expr = str(
                 boost::format("%g * exp(-%g/%g)")
-                % toValue(p0Amb, si::pascal)
+                % toValue(p0Amb, si::pascals)
                 % gh % RT
                 );
         }
@@ -3370,7 +3370,7 @@ void HydrostaticPressureComputer::operator()(
 
             expr = str(
                 boost::format("%g * (%s + %s) * exp(-%s/%s) / %s")
-                % toValue(p0Amb, si::pascal)
+                % toValue(p0Amb, si::pascals)
                 % gh % RT % gh % RT % RT
                 );
         }

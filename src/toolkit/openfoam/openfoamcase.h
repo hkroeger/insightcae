@@ -93,6 +93,12 @@ public:
             const std::string& regionName = std::string(),
             const std::string& time = "constant" ) const;
 
+    std::unique_ptr<OFDictData::dict>
+    parseBoundaryDict (
+        const boost::filesystem::path& location,
+        const std::string& regionName = std::string(),
+        const std::string& time = "constant" ) const;
+
     std::set<std::string> getUnhandledPatches ( OFDictData::dict& boundaryDict ) const;
 
     template<class BC>

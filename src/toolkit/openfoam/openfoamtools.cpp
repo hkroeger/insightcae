@@ -26,6 +26,7 @@
 #include "base/tools.h"
 #include "base/translations.h"
 
+#include "base/units.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamtools.h"
@@ -38,6 +39,7 @@
 #include "boost/iostreams/filter/gzip.hpp"
 
 #include <algorithm>
+#include <boost/filesystem/operations.hpp>
 #include <map>
 #include <cmath>
 #include <limits>
@@ -956,12 +958,40 @@ size_t patchIntegrate::n() const
   return t_.n_rows;
 }
 
-patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& location,
-                    const std::string& patchName)
+patchArea::patchArea(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location,
+    const std::string& patchName)
 {
-
+    std::shared_ptr<std::vector<boost::filesystem::path> > files;
+    if (!boost::filesystem::exists(location/"system"/"controlDict"))
+    {
+        // might be, there is only the mesh yet and no case config
+        OpenFOAMCase dummy(cm.ofe());
+        dummy.insert(std::make_unique<MeshingNumerics>(dummy));
+        // ensure there is a controlDict for patchArea later
+        files=std::make_shared<std::vector<boost::filesystem::path> >(
+            std::vector<boost::filesystem::path>
+            {
+             location/"system"/"controlDict",
+             location/"system"/"fvSolution",
+             location/"system"/"fvSchemes"
+            });
+        // dir needs to exist for file equivalent check to work
+        boost::filesystem::create_directories(location/"system");
+        dummy.createOnDisk(location, files);
+    }
   std::vector<std::string> output;
   cm.executeCommand ( location, "patchArea", {patchName}, &output );
+
+  //cleanup, if required
+  if (files)
+  {
+      for (auto f: *files)
+      {
+          boost::filesystem::remove(f);
+      }
+  }
 
   boost::regex
       re_total ( "^TOTAL A=(.+) normal=\\((.+) (.+) (.+)\\) ctr=\\((.+) (.+) (.+)\\)$" )
@@ -3256,8 +3286,161 @@ void BoundingBox::operator=(const arma::mat& bb)
     arma::mat::operator=(bb);
 }
 
+
+si::Pressure HydrostaticPressureComputer::calcp(si::Pressure p0, si::Acceleration g, const Liquid& l, si::Length z)
+{
+    return p0-l.rho*g*z;
+}
+
+si::Pressure HydrostaticPressureComputer::calcp(si::Pressure p0, si::Acceleration g, const Gas& gas, si::Length z)
+{
+    return p0*exp(-z*g/gas.R/si::tempDiffToZero(gas.T));
+}
+
+HydrostaticPressureComputer::HydrostaticPressureComputer(
+    const arma::mat &pSurf,
+    const arma::mat &eUp,
+    Fluid fluid,
+    si::Pressure p0Amb,
+    si::Acceleration g
+    )
+  : pSurf(pSurf),
+    eUp(eUp),
+    fluid(fluid),
+    p0Amb(p0Amb),
+    g(g)
+{}
+
+
+
+void HydrostaticPressureComputer::operator()(
+    const boost::filesystem::path &location,
+    const std::string& fieldName,
+    const std::vector<std::pair<std::string, std::string> > &targetEntriesPerPatch,
+    bool setInternalField ) const
+{
+    OpenFOAMCase cm(OFEs::getPreferred());
+
+    std::string expr;
+
+    std::string gh =
+        str(boost::format(
+             "(%g*(pos()-vector(%g,%g,%g))&vector(%g,%g,%g))")
+         % toValue(g, si::meters_per_second_squared)
+         % pSurf(0) % pSurf(1) % pSurf(2)
+         % eUp(0) % eUp(1) % eUp(2)
+         );
+
+    if (auto *l =boost::get<Liquid>(&fluid))
+    {
+        if (fieldName=="p")
+        {
+            expr = str(
+                boost::format("%g - %s*%g")
+                % toValue(p0Amb, si::pascal)
+                % gh
+                % toValue(l->rho, si::kilogram_per_cubic_meter)
+            );
+        }
+        else if (fieldName=="p_rgh")
+        {
+            expr = str(
+                boost::format("%g")
+                % toValue(p0Amb, si::pascal)
+                );
+        }
+    }
+    else if (auto *gas =boost::get<Gas>(&fluid))
+    {
+        std::string RT=str(boost::format("%g")
+                             % (toValue(gas->R, si::joule/si::kilogram/si::kelvin)
+                                * toValue(gas->T, si::degK) )
+                             );
+
+        if (fieldName=="p")
+        {
+            expr = str(
+                boost::format("%g * exp(-%g/%g)")
+                % toValue(p0Amb, si::pascal)
+                % gh % RT
+                );
+        }
+        else if (fieldName=="p_rgh")
+        {
+
+            expr = str(
+                boost::format("%g * (%s + %s) * exp(-%s/%s) / %s")
+                % toValue(p0Amb, si::pascal)
+                % gh % RT % gh % RT % RT
+                );
+        }
+    }
+
+    insight::assertion(
+        !expr.empty(), "internal error: empty expression");
+
+    if (setInternalField)
+    {
+        OFDictData::dictFile sefd;
+        sefd["defaultFieldValues"]=
+            OFDictData::list{str(boost::format("volScalarFieldValue "+fieldName+" %g")%p0Amb)};
+
+        OFDictData::dict p;
+        p["field"]=fieldName;
+        p["constants"]=OFDictData::dict();
+        p["variables"]=OFDictData::list();
+        p["expression"]="#{"+expr+"#}";
+        sefd["expressions"]=OFDictData::list{ fieldName, p };
+
+        sefd.write( location / "system" / "setExprFieldsDict" );
+
+        cm.executeCommand(location, "setExprFields", {});
+    }
+
+    if (targetEntriesPerPatch.size())
+    {
+        OFDictData::dict pat;
+        pat["field"]=fieldName;
+        pat["keepPatches"]=true;
+
+        auto addExpr = [&](const std::string& patch, const std::string& targetEntry)
+        {
+            OFDictData::dict exprDict;
+            exprDict["patch"]=patch;
+            exprDict["target"]=targetEntry;
+            exprDict["expression"]="#{ "+expr+" #}";
+            return exprDict;
+        };
+
+        OFDictData::dict boundaryDict;
+        cm.parseBoundaryDict(location, boundaryDict);
+
+        OFDictData::list exprs;
+        for (const auto& tepp: targetEntriesPerPatch)
+        {
+            boost::regex re(tepp.first);
+            for (const auto& p: boundaryDict)
+            {
+                if (boost::regex_match(p.first, re))
+                {
+                    exprs.push_back(addExpr(p.first, tepp.second));
+                }
+            }
+        }
+        pat["expressions"]=exprs;
+
+        OFDictData::dictFile sebfd;
+        sebfd["pattern"]=pat;
+
+        sebfd.write( location / "system" / "setExprBoundaryFieldsDict" );
+
+        cm.executeCommand(location, "setExprBoundaryFields", {});
+    }
+}
+
+
 void setHydrostaticPressure(
-    const OpenFOAMCase &cm,
+    const OpenFOAMCase &,
     const boost::filesystem::path &location,
     const arma::mat &pSurf,
     const arma::mat &eUp,
@@ -3266,6 +3449,8 @@ void setHydrostaticPressure(
     const std::string& fieldName,
     bool setInternalField )
 {
+    OpenFOAMCase cm(OFEs::getPreferred());
+
     std::string expr = str(
         boost::format("%g - (pos()-vector(%g,%g,%g))&vector(%g,%g,%g)*%g*9.81")
             % p0Amb

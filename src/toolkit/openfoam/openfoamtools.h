@@ -31,6 +31,7 @@
 #include "base/analysis.h"
 #include "base/resultset.h"
 #include "base/tools.h"
+#include "base/units.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/sampling.h"
 
@@ -639,6 +640,57 @@ public:
 
   void operator=(const arma::mat& bb);
 };
+
+
+
+
+class HydrostaticPressureComputer
+{
+public:
+    struct Gas
+    {
+        si::SpecificHeatCapacity R;
+        si::Temperature T;
+    };
+
+    struct Liquid
+    {
+        si::Density rho;
+    };
+
+    typedef boost::variant<Gas,Liquid> Fluid;
+
+    static si::Pressure calcp(
+        si::Pressure p0, si::Acceleration g,
+        const Liquid& l, si::Length z);
+
+    static si::Pressure calcp(
+        si::Pressure p0, si::Acceleration g,
+        const Gas& gas, si::Length z);
+
+private:
+    si::Acceleration g;
+    arma::mat pSurf;
+    arma::mat eUp;
+    Fluid fluid;
+    si::Pressure p0Amb;
+
+public:
+    HydrostaticPressureComputer(
+        const arma::mat &pSurf,
+        const arma::mat &eUp,
+        Fluid fluid,
+        si::Pressure p0Amb,
+        si::Acceleration g = 9.81*si::meters_per_second_squared
+        );
+
+    void operator()(
+        const boost::filesystem::path &location,
+        const std::string& fieldName,
+        const std::vector<std::pair<std::string, std::string> > &targetEntriesPerPatch,
+        bool setInternalField = true ) const;
+};
+
 
 
 

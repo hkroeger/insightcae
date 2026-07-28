@@ -25,7 +25,9 @@ public:
      */
     static std::string detectCurrentOFE(bool *currentOFEDefined=nullptr);
     static std::string currentOrPreferredOFE();
+    static std::string preferredOFE();
     static const OFEnvironment& getCurrent ( );
+    static const OFEnvironment& getPreferred();
     static const OFEnvironment& getCurrentOrPreferred();
 
     OFEs();

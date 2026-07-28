@@ -44,17 +44,26 @@ void VelocityInletBC::setField_p(OFDictData::dict& BC, OFdicts&, bool isPrgh) co
     }
     else
     {
-        if (isPrgh)
+        if (auto *fs=boost::get<Parameters::Parameters::behaviour_freestream_type>(
+                &p().behaviour))
         {
-            if ( OFversion() >=210 ) {
-                BC["type"]=OFDictData::data ( "fixedFluxPressure" );
-            } else {
-                BC["type"]=OFDictData::data ( "buoyantPressure" );
-            }
+            BC["type"]="freestreamPressure";
+            BC["freestreamValue"]=str(boost::format("uniform %g")%fs->pressure);
         }
         else
         {
-            BC["type"]=OFDictData::data("zeroGradient");
+            if (isPrgh)
+            {
+                if ( OFversion() >=210 ) {
+                    BC["type"]=OFDictData::data ( "fixedFluxPressure" );
+                } else {
+                    BC["type"]=OFDictData::data ( "buoyantPressure" );
+                }
+            }
+            else
+            {
+                BC["type"]=OFDictData::data("zeroGradient");
+            }
         }
     }
 }
@@ -67,7 +76,30 @@ void VelocityInletBC::setField_U(OFDictData::dict& BC, OFdicts& dictionaries) co
     if (boost::get<Parameters::VoFWave_enabled_type>(&p().VoFWave))
         BC["type"]=OFDictData::data ( "zeroGradient" );
     else
-        FieldData(p().velocity).setDirichletBC(BC, dictionaries);
+    {
+        if (auto *fs=boost::get<Parameters::Parameters::behaviour_freestream_type>(
+                &p().behaviour))
+        {
+            if (const auto *fd =
+                boost::get<FieldData::Parameters::fielddata_uniformSteady_type>(&p().velocity.fielddata) )
+            {
+                insight::assertion(fd->value.n_elem==3, "only 3-component vectors are allowed");
+
+                BC["type"]="freestreamVelocity";
+                BC["freestreamVelocity"]=str(boost::format(
+                    "uniform (%g %g %g)"
+                )%fd->value[0]%fd->value[1]%fd->value[2] );
+            }
+            else
+            {
+                throw insight::Exception("incompatible setting: for freestream boundaries, only uniform constant values are supported");
+            }
+        }
+        else
+        {
+            FieldData(p().velocity).setDirichletBC(BC, dictionaries);
+        }
+    }
 //   FieldData(ps_.get<SelectableSubsetParameter>("velocity")()).setDirichletBC(BC);
 }
 

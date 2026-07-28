@@ -158,7 +158,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                            boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(
                                &p().behaviour) )
                 {
-                    if (wt->pressure==Parameters::behaviour_removePRGHHydrostaticPressure_type::totalPressure)
+                    if (wt->pressureType==Parameters::behaviour_removePRGHHydrostaticPressure_type::totalPressure)
                     {
                         BC["type"]=OFDictData::data ( "prghTotalPressure" );
                         BC["p0"]=OFDictData::toUniformField( wt->pressure );

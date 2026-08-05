@@ -26,7 +26,9 @@
 
 #include <algorithm>
 #include <exception>
+#include <functional>
 #include <iterator>
+#include <mutex>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -312,6 +314,9 @@ class WarningDispatcher
   WarningDispatcher *superDispatcher_=nullptr;
   std::vector<insight::Exception> warnings_;
 
+  mutable std::mutex mutex_;
+  std::map<int, std::function<void(const insight::Exception&)>> issueCallbacks_;
+  int nextCallbackId_=0;
 
 public:
   WarningDispatcher();
@@ -320,6 +325,15 @@ public:
   void issue(const std::string& message);
   void issue(const insight::Exception& warning);
 
+  /**
+   * Register a callback that is invoked whenever a warning is issued on this dispatcher.
+   * May be called from any thread. Returns an ID that can be passed to removeIssueCallback().
+   */
+  int addIssueCallback(std::function<void(const insight::Exception&)> cb);
+  void removeIssueCallback(int id);
+
+  /** Clear the accumulated warning list (does not affect callbacks). */
+  void clear();
 
   const decltype(warnings_)& warnings() const;
   size_t nWarnings() const;

@@ -481,8 +481,34 @@ void WarningDispatcher::issue(const insight::Exception& warning)
   else
   {
     displayFramed("Warning follows", warning, '-', std::cerr);
+
+    std::lock_guard<std::mutex> lock(mutex_);
     warnings_.push_back(warning);
+    for (const auto& cb : issueCallbacks_)
+      cb.second(warning);
   }
+}
+
+
+int WarningDispatcher::addIssueCallback(
+    std::function<void(const insight::Exception&)> cb)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  int id = nextCallbackId_++;
+  issueCallbacks_[id] = std::move(cb);
+  return id;
+}
+
+void WarningDispatcher::removeIssueCallback(int id)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  issueCallbacks_.erase(id);
+}
+
+void WarningDispatcher::clear()
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  warnings_.clear();
 }
 
 void displayFramed(const std::string& title, const std::string& msg, char titleChar, ostream &os)

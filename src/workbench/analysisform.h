@@ -33,10 +33,14 @@
 #include <QMetaType>
 #include <QTreeWidget>
 #include <QPushButton>
+#include <QToolButton>
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPointer>
 #include <QTableView>
+#include <QDialog>
+#include <QListWidget>
+#include <QStringList>
 
 
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
@@ -123,6 +127,11 @@ protected:
   LogViewerWidget *log_;
 
   QProgressBar* progressbar_;
+  QToolButton* warningBtn_ = nullptr;
+  QStringList collectedWarnings_;
+  QPointer<QDialog> warningDialog_;
+  QListWidget* warningListWidget_ = nullptr;
+  int warningCallbackId_ = -1;
 
   IQGraphProgressDisplayer *graphProgress_;
   insight::IQActionProgressDisplayManager* actionProgress_;
@@ -281,6 +290,9 @@ private Q_SLOTS:
   void onStartPVRemote();
 
   void onCleanOFC();
+  void onShowWarningDialog();
+
+  void clearWarnings();
   void onWnow();
   void onWnowAndStop();
   void onShell();

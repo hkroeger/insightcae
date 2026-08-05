@@ -218,9 +218,11 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
             // need to launch visualization recomputation through signal,
             // because we want to be able to join multiple visualizers
             // into a single CADModel in another class
+            auto* mainThreadWD = &WarningDispatcher::getCurrent();
             rebuildThread_=std::make_unique<boost::thread>(
-                [&,model]()
+                [&,model,mainThreadWD]()
                 {
+                    WarningDispatcher::getCurrent().setSuperDispatcher(mainThreadWD);
                     status_=Running;
 
                     CurrentExceptionContext ex("computing visualization of scheduled parameter set");

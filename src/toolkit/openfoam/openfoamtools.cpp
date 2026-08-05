@@ -3518,6 +3518,25 @@ void setHydrostaticPressure(
     }
 }
 
+void initializeTurbulenceFields(
+    OpenFOAMCase &cm,
+    const boost::filesystem::path& dir )
+{
+    std::vector<std::string> opts;
+    for (auto fld: {"k", "epsilon", "omega"})
+    {
+        if (cm.hasField(fld))
+            opts.push_back(std::string("-")+fld);
+    }
+    if (opts.size())
+    {
+        opts.insert(opts.begin(), {"0.05", "0.1"});
+        cm.executeCommand(
+            dir,
+            "initializeTurbulenceFields", opts);
+    }
+}
+
 
 
 

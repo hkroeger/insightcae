@@ -46,6 +46,10 @@ namespace insight
 {
 
 
+void initializeTurbulenceFields(
+    OpenFOAMCase& cm,
+    const boost::filesystem::path& dir );
+
 void createCellZoneFromRegionSeedPoint(
     const OpenFOAMCase& cm,
     const boost::filesystem::path& dir,

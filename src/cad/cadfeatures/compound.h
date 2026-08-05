@@ -33,7 +33,7 @@ namespace cad
 typedef std::vector<FeaturePtr> CompoundFeatureList;
 typedef std::map<std::string, FeaturePtr>  CompoundFeatureMap;
 typedef std::vector<boost::fusion::vector<FeaturePtr, std::string> > CompoundFeatureMapData;
-
+typedef std::map<std::string, arma::mat> RefPointMap;
 
 
 
@@ -41,12 +41,16 @@ class Compound
     : public Feature
 {
 protected:
-    CompoundFeatureMap components_;
+    CompoundFeatureMap components_, explicitSubShapes_;
+    RefPointMap explicitRefPoints_;
 
     Compound(const Compound&o, TreeCloneMap& tcm);
     Compound();
     Compound ( const CompoundFeatureList& m1 );
     Compound ( const CompoundFeatureMap& m1 );
+    Compound ( const CompoundFeatureMap& m1,
+               const CompoundFeatureMap& subshapes,
+               const RefPointMap& explicitRefPoints = {} );
 
     size_t calcHash() const override;
     void build() override;

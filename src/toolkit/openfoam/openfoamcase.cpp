@@ -381,7 +381,13 @@ void OpenFOAMCase::createOnDisk
         ok_to_create=false;
         for (const boost::filesystem::path& fp: *restrictToFiles)
         {
-            if ( boost::filesystem::equivalent(dictpath, fp) ) ok_to_create=true;
+            if (
+                //boost::filesystem::equivalent(dictpath, fp)
+                fp==dictpath
+                )
+            {
+                ok_to_create=true;
+            }
         }
     }
     
@@ -739,6 +745,17 @@ void OpenFOAMCase::parseBoundaryDict(
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());
 }
 
+
+std::unique_ptr<OFDictData::dict>
+OpenFOAMCase::parseBoundaryDict(
+    const boost::filesystem::path& location,
+    const std::string& regionName,
+    const std::string& time ) const
+{
+    auto boundaryDict=std::make_unique<OFDictData::dict>();
+    parseBoundaryDict(location, *boundaryDict, regionName, time);
+    return boundaryDict;
+}
 
 
 

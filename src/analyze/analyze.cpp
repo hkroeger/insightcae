@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
             XMLDocument input(fn);
             parameters = std::make_unique<AnalysisParameterSet>();
             parameters->readFromRootNode(*input.rootNode);
-
+            parameters->resolveRelativePaths(inputFileParentPath);
 
             cout<< str(format(
                     _("Executing analysis of type '%s' in directory '%s'"))

@@ -192,6 +192,8 @@ namespace si {
 
  typedef quantity<velocity, double> Velocity;
 
+ typedef quantity<acceleration, double> Acceleration;
+
  typedef quantity<plane_angle, double> Angle;
 
  typedef quantity<pressure, double> Pressure;

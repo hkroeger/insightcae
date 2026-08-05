@@ -50,32 +50,17 @@ public:
     template<class T>
     T insert(T elem)
     {
-//      if (elem.isUnique())
-//      {
-//        bool conflict=false;
-//        std::string conflict_ce_name;
-
-//        for (const CaseElement& e: elements_)
-//        {
-//          if (elem.inConflict(e))
-//          {
-//            conflict=true;
-//            conflict_ce_name=e.name();
-//          }
-//        }
-
-//        if (conflict)
-//        {
-//          throw insight::Exception(
-//                "Could not insert CE "+elem.name()+":"
-//                " conflict with "+conflict_ce_name+"!"
-//                );
-//        }
-
-//      }
       elements_.push_back(elem);
       return static_cast<T>(&elements_.back());
     }
+
+#ifndef SWIG
+    template<class T>
+    T* insert(std::unique_ptr<T> elem)
+    {
+        return insert(elem.release());
+    }
+#endif
 
     template<class T>
     T* get(const std::string& name)

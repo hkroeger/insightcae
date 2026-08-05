@@ -170,9 +170,16 @@ listNodes(const rapidxml::xml_node<> &father)
         child;
         child = child->next_sibling() )
     {
-        std::string curName =
-            child->first_attribute("name")->value();
-        names.insert(curName+" ("+child->name()+")");
+        std::string curName;
+        if (auto *a=child->first_attribute("name"))
+        {
+            curName = std::string(a->value()) + " ("+child->name()+")";
+        }
+        else
+        {
+            curName=child->name();
+        }
+        names.insert(curName);
     }
     return names;
 }

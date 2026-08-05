@@ -219,21 +219,49 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   std::string fn="\""+fileName()+"\"";
   sHMDict.subDict("geometry")[fn]=geodict;
 
-  OFDictData::dict castdict;
-  OFDictData::list levels;
-  levels.push_back(p().minLevel);
-  levels.push_back(p().maxLevel);
-  castdict["level"]=levels;
-  if (p().zoneName!="")
+  OFDictData::dict refinementSurface;
+
+  refinementSurface["level"] =
+    OFDictData::list{
+        p().minLevel, p().maxLevel
+    };
+
+  if (auto *fz=boost::get<Parameters::zone_faceZone_type>(
+          &p().zone))
   {
-    castdict["faceZone"]=p().zoneName;
-    castdict["cellZone"]=p().zoneName;
-    castdict["cellZoneInside"]="inside";
+      refinementSurface["faceZone"]=fz->zoneName;
+      switch (fz->faceType)
+      {
+      case Parameters::zone_faceZone_type::internal:
+          refinementSurface["faceType"]="internal";
+          break;
+      case Parameters::zone_faceZone_type::baffle:
+          refinementSurface["faceType"]="baffle";
+          break;
+      case Parameters::zone_faceZone_type::boundary:
+          refinementSurface["faceType"]="boundary";
+          break;
+      }
   }
+  else if (auto *cz=boost::get<Parameters::zone_cellZone_type>(
+                 &p().zone))
+  {
+      refinementSurface["cellZone"]=cz->zoneName;
+      switch (cz->selection)
+      {
+      case Parameters::zone_cellZone_type::inside:
+          refinementSurface["cellZoneInside"]="inside";
+          break;
+      case Parameters::zone_cellZone_type::outside:
+          refinementSurface["cellZoneInside"]="outside";
+          break;
+      }
+  }
+
   if (p().regionRefinements.size()>0)
   {
     OFDictData::dict rrd;
-    for (const Parameters::regionRefinements_default_type& rr: p().regionRefinements)
+    for (const auto& rr: p().regionRefinements)
     {
       OFDictData::dict ld;
       OFDictData::list rrl;
@@ -242,9 +270,9 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
       ld["level"]=rrl;
       rrd[rr.regionname] = ld;
     }
-    castdict["regions"]=rrd;
+    refinementSurface["regions"]=rrd;
   }
-  sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[n]=castdict;
+  sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[n]=refinementSurface;
 
   OFDictData::dict layerdict;
   layerdict["nSurfaceLayers"]=p().nLayers;

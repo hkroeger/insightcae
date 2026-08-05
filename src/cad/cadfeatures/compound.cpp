@@ -24,6 +24,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
+#include "boost/range/algorithm.hpp"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -54,6 +55,11 @@ size_t Compound::calcHash() const
   {
     h+=comp.first;
     h+=*comp.second;
+  }
+  for (auto& comp: explicitSubShapes_)
+  {
+      h+="subshape_"+comp.first;
+      h+=*comp.second;
   }
   return h.getHash();
 }
@@ -94,6 +100,17 @@ Compound::Compound(const CompoundFeatureList& m1)
 
 Compound::Compound(const CompoundFeatureMap& m1)
 : components_(m1)
+{}
+
+
+
+Compound::Compound(
+    const CompoundFeatureMap &m1,
+    const CompoundFeatureMap &subshapes,
+    const RefPointMap& explicitRefPoints )
+  : components_(m1),
+    explicitSubShapes_(subshapes),
+    explicitRefPoints_(explicitRefPoints)
 {}
 
 
@@ -162,6 +179,17 @@ void Compound::build()
                     makeEdgeFeatureSet(p)
                 } );
       }
+
+      boost::copy(
+          explicitSubShapes_,
+          std::inserter(providedSubshapes_, providedSubshapes_.begin())
+          );
+
+      boost::copy(
+          explicitRefPoints_,
+          std::inserter(refpoints_, refpoints_.begin())
+          );
+
     }
     else
     {

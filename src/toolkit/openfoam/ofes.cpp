@@ -93,17 +93,26 @@ std::string OFEs::currentOrPreferredOFE()
 
     if (!currentDefined)
     {
-        ce="OFesi2112";
+        ce=preferredOFE();
     }
     return ce;
 }
 
 
+std::string OFEs::preferredOFE()
+{
+    return "OFesi2112";
+}
 
 
 const OFEnvironment& OFEs::getCurrent()
 {
   return get( detectCurrentOFE() );
+}
+
+const OFEnvironment& OFEs::getPreferred()
+{
+    return get( preferredOFE() );
 }
 
 const OFEnvironment& OFEs::getCurrentOrPreferred()

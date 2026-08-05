@@ -28,6 +28,16 @@ inherits BoundaryCondition::Parameters
 
 velocity = includedset "FieldData::Parameters" "Velocity specification"
 
+behaviour = selectablesubset {{
+
+ normal set {}
+
+ freestream set {
+   pressure = double 0 "freestream pressure value: the pressure at the outflow part of the boundary"
+ }
+
+}} normal "behaviour of the boundary"
+
 T = includedset "FieldData::Parameters" "Temperature at boundary"
    modifyDefaults {
     selectablesubset fielddata = uniformSteady;

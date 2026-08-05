@@ -279,6 +279,25 @@ arma::mat rotationMatrixToRollPitchYaw(
  */
 arma::mat rollPitchYawToRotationMatrix(const arma::mat& rollPitchYaw);
 
+
+
+
+struct Circle {
+    arma::mat M;   // Mittelpunkt
+    double r;      // Radius
+};
+
+
+/**
+ * @brief intersectCircles
+ * computes the intersection of two circles in the XY plane
+ * @param c1
+ * @param c2
+ * @return
+ */
+std::vector<arma::mat> intersectCircles(const Circle& c1, const Circle& c2);
+
+
 /**
  * Fits c_j in
  *  c_j*x_ij approx y_i

@@ -533,6 +533,69 @@ arma::mat rollPitchYawToRotationMatrix(
 }
 
 
+std::vector<arma::mat> intersectCircles(const Circle& c1, const Circle& c2)
+{
+    std::vector<arma::mat> result;
+
+    insight::assertion( fabs(c1.M[2])<SMALL, "only 2D coordinates are supported, Z coordinate of circle 1 is nonzero.");
+    insight::assertion( fabs(c2.M[2])<SMALL, "only 2D coordinates are supported, Z coordinate of circle 2 is nonzero.");
+
+    arma::mat delta=c2.M-c1.M;
+    double dx = delta[0];
+    double dy = delta[1];
+    double d = std::sqrt(dx * dx + dy * dy); // Abstand der Mittelpunkte
+
+    const double EPS = 1e-9;
+
+    // Fall: Kreise sind identisch -> unendlich viele Schnittpunkte
+    if (d < EPS && std::fabs(c1.r - c2.r) < EPS)
+    {
+        return {};
+    }
+
+    // Fall: Kreise sind zu weit voneinander entfernt (kein Schnitt)
+    if (d > c1.r + c2.r + EPS)
+    {
+        return {};
+    }
+
+    // Fall: ein Kreis liegt vollständig im anderen (kein Schnitt)
+    if (d < std::fabs(c1.r - c2.r) - EPS)
+    {
+        return {};
+    }
+
+    // Abstand vom Mittelpunkt c1 zur Schnittlinie (radikale Achse)
+    double a = (c1.r * c1.r - c2.r * c2.r + d * d) / (2.0 * d);
+
+    // Höhe des Schnittpunkts über der Verbindungslinie
+    double h2 = c1.r * c1.r - a * a;
+    double h = (h2 > 0) ? std::sqrt(h2) : 0.0;
+
+    // Punkt auf der Verbindungslinie zwischen den Mittelpunkten
+    double xm = c1.M[0] + a * dx / d;
+    double ym = c1.M[1] + a * dy / d;
+
+    // Fall: Kreise berühren sich in genau einem Punkt (Tangente)
+    if (std::fabs(d - (c1.r + c2.r)) < EPS || std::fabs(d - std::fabs(c1.r - c2.r)) < EPS)
+    {
+        result.push_back(vec3(xm, ym, 0));
+    }
+    else
+    {
+        // Zwei Schnittpunkte
+        double xs1 = xm + h * dy / d;
+        double ys1 = ym - h * dx / d;
+
+        double xs2 = xm - h * dy / d;
+        double ys2 = ym + h * dx / d;
+
+        result.push_back(vec3(xs1, ys1, 0));
+        result.push_back(vec3(xs2, ys2, 0));
+    }
+
+    return result;
+}
 
 
 arma::mat rotated(

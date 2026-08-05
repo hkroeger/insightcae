@@ -288,6 +288,17 @@ TopoDS_Edge makeSplineEdge(const std::vector<gp_Pnt>& pts)
 } // anonymous namespace
 
 
+const std::string
+    SailCut3D::TACK="tack",
+    SailCut3D::CLEW="clew",
+    SailCut3D::THROAT="throat",
+    SailCut3D::PEAK="peak",
+
+    SailCut3D::FOOT="foot",
+    SailCut3D::LUFF="luff",
+    SailCut3D::LEECH="leech",
+    SailCut3D::HEAD="head";
+
 SailCut3D::SailCut3D(const SailCut3D& o, TreeCloneMap& tcm)
     : Compound(o, tcm), filepath_(o.filepath_)
 {}
@@ -712,10 +723,10 @@ void SailCut3D::build()
                 throat = peak = cp[ci_throat];
             }
 
-            refpoints_["tack"]   = insight::vec3(tack);
-            refpoints_["clew"]   = insight::vec3(clew);
-            refpoints_["throat"] = insight::vec3(throat);
-            refpoints_["peak"]   = insight::vec3(peak);
+            refpoints_[TACK]   = insight::vec3(tack);
+            refpoints_[CLEW]   = insight::vec3(clew);
+            refpoints_[THROAT] = insight::vec3(throat);
+            refpoints_[PEAK]   = insight::vec3(peak);
 
             std::cout << "  tack   " << tack.X()   << " " << tack.Y()   << " " << tack.Z()   << "\n"
                       << "  clew   " << clew.X()   << " " << clew.Y()   << " " << clew.Z()   << "\n"
@@ -725,22 +736,22 @@ void SailCut3D::build()
             // Compute perimeter index ranges for each sail side.
             // cornerIdxs is in perimeter order; consecutive pairs bound a side.
             auto cornerName = [&](int ci) -> std::string {
-                if (ci == ci_tack)   return "tack";
-                if (ci == ci_clew)   return "clew";
-                if (ci == ci_throat) return "throat";
-                if (ci == ci_peak)   return "peak";
+                if (ci == ci_tack)   return TACK;
+                if (ci == ci_clew)   return CLEW;
+                if (ci == ci_throat) return THROAT;
+                if (ci == ci_peak)   return PEAK;
                 return "";
             };
             auto sideNameForPair = [](const std::string& a, const std::string& b) -> std::string {
                 auto both = [&](const std::string& x, const std::string& y){
                     return (a==x && b==y) || (a==y && b==x);
                 };
-                if (both("tack",   "clew"))    return "foot";
-                if (both("tack",   "throat"))  return "luff";
-                if (both("clew",   "peak"))    return "leech";
-                if (both("throat", "peak"))    return "head";
+                if (both(TACK,   CLEW))    return FOOT;
+                if (both(TACK,   THROAT))  return LUFF;
+                if (both(CLEW,   PEAK))    return LEECH;
+                if (both(THROAT, PEAK))    return HEAD;
                 // Triangular sail: throat==peak; clew→throat is leech.
-                if (both("clew",   "throat"))  return "leech";
+                if (both(CLEW,   THROAT))  return LEECH;
                 return "";
             };
             for (int k = 0; k < (int)nCorners; ++k)

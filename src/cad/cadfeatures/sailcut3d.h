@@ -40,6 +40,19 @@ namespace cad {
 class SailCut3D
     : public Compound
 {
+public:
+    static const std::string
+        TACK,
+        CLEW,
+        THROAT,
+        PEAK,
+
+        FOOT,
+        LUFF,
+        LEECH,
+        HEAD;
+
+private:
     boost::filesystem::path filepath_;
 
     SailCut3D(const SailCut3D& o, TreeCloneMap& tcm);

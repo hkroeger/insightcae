@@ -355,8 +355,6 @@ add_library(toolkit SHARED
     openfoam/caseelements/dynamicmesh/solidbodymotionfunction.h openfoam/caseelements/dynamicmesh/solidbodymotionfunction.cpp
     openfoam/caseelements/thermodynamics/thermalphasechangetwophasesystem.cpp openfoam/caseelements/thermodynamics/thermalphasechangetwophasesystem.h
     openfoam/caseelements/numerics/reactingtwophaseeulerfoamnumerics.cpp openfoam/caseelements/numerics/reactingtwophaseeulerfoamnumerics.h
-
-
 )
 
 target_link_libraries(toolkit PUBLIC

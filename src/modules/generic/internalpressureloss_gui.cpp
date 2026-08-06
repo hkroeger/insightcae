@@ -2,6 +2,7 @@
 #include "cadparameters.h"
 #include "cadparametersetvisualizer.h"
 #include "internalpressureloss.h"
+#include "internalpressurelosscharacteristics.h"
 
 #include "filetemplate.h"
 

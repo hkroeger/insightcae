@@ -9,7 +9,8 @@ namespace insight
 {
 
 
-InternalPressureLoss::supplementedInputData::supplementedInputData(
+
+InternalPressureLossBase::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &executionPath,
     ActionProgress &ap )
@@ -52,6 +53,17 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
     nx_=std::max(1, int(ceil(L_(0)/p().mesh.size)));
     ny_=std::max(1, int(ceil(L_(1)/p().mesh.size)));
     nz_=std::max(1, int(ceil(L_(2)/p().mesh.size)));
+
+}
+
+
+
+InternalPressureLoss::supplementedInputData::supplementedInputData(
+    ParameterSetInput ip,
+    const boost::filesystem::path &executionPath,
+    ActionProgress &ap )
+    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, ap )
+{
 
     pAmbient_=0.;
 

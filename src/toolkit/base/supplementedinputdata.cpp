@@ -24,7 +24,10 @@ supplementedInputDataBase::supplementedInputDataBase(
   : executionPath_(exePath)
 {
 #warning check, if can be avoided
-    parameters_ = &ip.parameterSet();
+    if (ip.hasParameterSet())
+    {
+        parameters_ = &ip.parameterSet();
+    }
 }
 
 supplementedInputDataBase::~supplementedInputDataBase()

@@ -179,7 +179,7 @@ public:
         ActionProgress& ap)
         : SupplementedInputDataBaseType(
               std::forward<AddArgs>(addArgs)...,
-              std::move(ip), exePath, ap)
+              ip.forward<Parameters>(), exePath, ap)
     {}
 
 

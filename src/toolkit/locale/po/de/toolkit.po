@@ -83,6 +83,10 @@ msgid "center of gravity of region %d"
 msgstr ""
 
 #, c-format
+msgid "invalid interval definition: begin (%g) must be before end (%g)!"
+msgstr ""
+
+#, c-format
 msgid "creating OpenFOAM dictionaries in memory for case \"%s\""
 msgstr ""
 
@@ -252,6 +256,15 @@ msgstr ""
 
 #, c-format
 msgid "no valid output file was found in time directory %s!"
+msgstr ""
+
+#, c-format
+msgid "invalid data: expected at least two columns (time + 1 data), got: %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"reading output files %s for function object %s (filtering out any of '%s')"
 msgstr ""
 
 #, c-format

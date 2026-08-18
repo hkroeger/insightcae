@@ -9,7 +9,7 @@ add_library(genericmodules SHARED
     internalpressureloss.cpp internalpressureloss.h
     internalpressureloss_supplementedinputdata.cpp
     numericalwindtunnel_supplementedinputdata.cpp
-    internalpressureloss_eval.cpp
+    internalpressurelossbase_eval.cpp
     internalpressurelossbase.h internalpressurelossbase.cpp
     internalpressurelosscharacteristics.h internalpressurelosscharacteristics.cpp
 )

@@ -39,6 +39,7 @@
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 
+
 namespace insight
 {
 
@@ -291,5 +292,11 @@ void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& 
 
 
 }
+
+namespace std {
+bool operator==(const insight::OFDictData::data& d, const std::string& s);
+bool operator==(const std::string& s, const insight::OFDictData::data& d);
+}
+
 
 #endif // INSIGHT_OPENFOAMDICT_H

@@ -210,7 +210,61 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
 
     }
     ++*ap;
+    {
+        ap->message("Mass flows...");
+        auto sec = std::make_unique<ResultSection>(
+            "Mass flows" );
 
+        for (auto&g: p().geometry)
+        {
+            auto patchName=g.first;
+            if (boost::get<Parameters::geometry_default_type::role_inlet_type>(
+                    &g.second.role)
+                ||
+                boost::get<Parameters::geometry_default_type::role_outlet_type>(
+                    &g.second.role) )
+            {
+
+                arma::mat dotm_vs_t_raw =
+                    surfaceIntegrate::readSurfaceIntegrate(
+                        cm, executionPath(), "integ_"+patchName );
+                arma::mat dotm_vs_t =
+                    movingAverage ( dotm_vs_t_raw, p().eval.averageFraction );
+
+                PlotCurve pc(
+                    dotm_vs_t.col(0), dotm_vs_t.col(1),
+                    "massflow_vs_iter", "w l t 'moving average'");
+                auto mima=pc.significantMinMax();
+
+                addPlot
+                    (
+                        *sec, executionPath(), "chartMassFlow_"+patchName,
+                        "Iteration", "$\\dot{m}$",
+                        {
+                            PlotCurve(
+                                dotm_vs_t_raw.col(0), dotm_vs_t_raw.col(1),
+                                "massflow_raw_vs_iter", "w l t 'raw value'"),
+                            pc
+                        },
+                        "Plot of mass flow on boundary "+patchName,
+                        str ( format ( "set yrange [%g:%g]" )
+                            % mima.first % mima.second )
+                        );
+
+                double finalValue=dotm_vs_t(dotm_vs_t.n_rows-1, 1);
+
+                sec->insert<ScalarResult>(
+                    "massFlow_"+patchName,
+                    finalValue, "mass flow through boundary "+patchName, "", "kg/s");
+                sec->insert<ScalarResult>(
+                    "massFlow_"+patchName+"_kgPerHr",
+                    finalValue*3600., "mass flow through boundary "+patchName, "", "kg/hr");
+
+            }
+        }
+        results->insert("massFlows", std::move(sec));
+        ++*ap;
+    }
 
 
     ap->message("Rendering images...");

@@ -33,6 +33,7 @@
 
 #include "boost/signals2.hpp"
 
+
 namespace boost { namespace filesystem {
 class path;
 size_t hash_value(const boost::filesystem::path&);
@@ -42,6 +43,8 @@ size_t hash_value(const boost::filesystem::path&);
 
 namespace std
 {
+
+
 
 template<typename T>
 std::vector<T>& append(std::vector<T>& dst, const std::vector<T>& src)

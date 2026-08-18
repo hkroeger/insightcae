@@ -1976,6 +1976,23 @@ double computeMedian(double *p, std::size_t n)
     return (*leftMax + *mid) / 2.0;
 }
 
+arma::mat appendZeroColsIfNeeded(
+    const arma::mat &m,
+    int minCols)
+{
+    if (m.n_cols<minCols)
+    {
+        return arma::join_rows(
+            m,
+            arma::zeros(
+                m.n_rows,
+                minCols-m.n_cols )
+        );
+    }
+    else
+        return m;
+}
+
 
 
 }

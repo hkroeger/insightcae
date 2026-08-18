@@ -126,6 +126,9 @@ arma::mat vec3FromComponents(const double* c);
 arma::mat vec3FromComponents(const float* c);
 arma::mat readVec3(std::istream& is);
 arma::mat normalized(const arma::mat& vec);
+arma::mat appendZeroColsIfNeeded(
+    const arma::mat& m,
+    int minCols );
 
 arma::mat tensor3(
   double xx, double xy, double xz,

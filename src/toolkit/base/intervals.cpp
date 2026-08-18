@@ -2,6 +2,7 @@
 #include "base/exception.h"
 #include "base/intervals.h"
 #include <boost/format.hpp>
+#include "base/translations.h"
 
 namespace insight {
 
@@ -37,9 +38,9 @@ Interval::Interval(double start, double end)
     : a_(start), b_(end)
 {
     insight::assertion(
-                b_>a_,
+                b_>=a_,
                 str(boost::format(
-                        "invalid interval definition: begin (%g) is after end(%g)!"
+                _("invalid interval definition: begin (%g) must be before end (%g)!")
                         ) % a_ % b_) );
     resetClip();
 }

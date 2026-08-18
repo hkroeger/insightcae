@@ -41,6 +41,31 @@
 using namespace std;
 using namespace boost;
 
+
+namespace std
+{
+
+
+bool operator==(
+    const insight::OFDictData::data& d,
+    const std::string& s )
+{
+    const std::string* s1=boost::get<std::string>(&d);
+    if (!s1) return false;
+    return (*s1==s);
+}
+
+bool operator==(
+    const std::string& s,
+    const insight::OFDictData::data& d )
+{
+    return d==s;
+}
+
+}
+
+
+
 namespace insight
 {
 

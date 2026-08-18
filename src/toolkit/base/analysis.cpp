@@ -147,9 +147,20 @@ path Analysis::executionPath() const
 ResultSetPtr Analysis::createResultSet() const
 {
     auto desc=Analysis::descriptions()(type());
+
+    std::unique_ptr<ParameterSet> ps{nullptr};
+
+    try
+    {
+        ps=parameters().cloneAs<ParameterSet>();
+    }
+    catch (...)
+    {}
+
     auto results=std::make_unique<ResultSet>(
-        parameters().cloneAs<ParameterSet>(),
+        std::move(ps),
         desc.name, "Result Report" );
+
     results->introduction() = desc.description;
     return results;
 }

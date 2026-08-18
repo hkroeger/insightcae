@@ -69,6 +69,17 @@ std::string FileResult::latexRepresentation (
   return f.str();
 }
 
+void FileResult::exportDataToFile (
+    const std::string& name,
+    const boost::filesystem::path& outputdirectory ) const
+{
+    boost::filesystem::path fname (
+        outputdirectory/
+        ( name+"_"+fileName().generic_string() ) );
+    copyTo(fname);
+}
+
+
 
 
 

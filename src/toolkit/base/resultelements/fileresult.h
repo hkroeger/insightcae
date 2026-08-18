@@ -42,6 +42,10 @@ public:
         int documentHierarchyLevel,
         const FileStorageInfo& fsi ) const override;
 
+    void exportDataToFile (
+        const std::string& name,
+        const boost::filesystem::path& outputdirectory ) const override;
+
 
     /**
      * append the contents of this element to the given xml node

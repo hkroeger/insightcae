@@ -246,6 +246,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   else if (auto *cz=boost::get<Parameters::zone_cellZone_type>(
                  &p().zone))
   {
+      refinementSurface["faceZone"]=cz->zoneName; // always required
       refinementSurface["cellZone"]=cz->zoneName;
       switch (cz->selection)
       {

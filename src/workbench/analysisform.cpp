@@ -59,6 +59,11 @@
 #include <QMdiSubWindow>
 #include <QHeaderView>
 #include <QListView>
+#include <QToolButton>
+#include <QDialog>
+#include <QListWidget>
+#include <QVBoxLayout>
+#include <QDialogButtonBox>
 
 #include "email.h"
 
@@ -365,6 +370,31 @@ AnalysisForm::AnalysisForm(
     connect(this, &AnalysisForm::statusMessage,
             sb, &QStatusBar::showMessage);
 
+    warningBtn_ = new QToolButton(this);
+    warningBtn_->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
+    warningBtn_->setToolTip(tr("Warnings occurred during computation - click to view"));
+    warningBtn_->hide();
+    sb->addWidget(warningBtn_);
+    connect(warningBtn_, &QToolButton::clicked,
+            this, &AnalysisForm::onShowWarningDialog);
+
+    warningCallbackId_ =
+        insight::WarningDispatcher::getCurrent().addIssueCallback(
+            [this](const insight::Exception& ex)
+            {
+                QString msg = QString::fromStdString(ex.message());
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, msg]()
+                    {
+                        collectedWarnings_.append(msg);
+                        warningBtn_->show();
+                        if (warningListWidget_)
+                            warningListWidget_->addItem(msg);
+                    },
+                    Qt::QueuedConnection);
+            });
+
 
     IQExecutionWorkspace::initializeToDefaults();
 
@@ -446,6 +476,8 @@ const insight::ParameterSet& AnalysisForm::parameters() const
 
 AnalysisForm::~AnalysisForm()
 {
+  if (warningCallbackId_ >= 0)
+    insight::WarningDispatcher::getCurrent().removeIssueCallback(warningCallbackId_);
   prepareDeletion();
   currentWorkbenchAction_.reset();
   delete ui;
@@ -847,7 +879,9 @@ void AnalysisForm::onShowParameterXML()
 void AnalysisForm::onUpdateSupplementedInputData(
     insight::supplementedInputDataBasePtr sid)
 {
-    DBG_SLOT(ParameterEditorWidget::updateSupplementedInputData);
+  DBG_SLOT(ParameterEditorWidget::updateSupplementedInputData);
+
+  clearWarnings();
 
   sid_=sid;
   supplementedInputDataModel_.reset( sid_->reportedSupplementQuantities() );

@@ -23,6 +23,10 @@
 
 #include <QMessageBox>
 #include <QProcess>
+#include <QDialog>
+#include <QListWidget>
+#include <QVBoxLayout>
+#include <QDialogButtonBox>
 
 #include "base/remotelocation.h"
 #include "base/remoteexecution.h"
@@ -113,6 +117,50 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 
 
 
+void AnalysisForm::clearWarnings()
+{
+    collectedWarnings_.clear();
+    insight::WarningDispatcher::getCurrent().clear();
+    warningBtn_->hide();
+    if (warningListWidget_)
+        warningListWidget_->clear();
+}
+
+
+void AnalysisForm::onShowWarningDialog()
+{
+    if (warningDialog_)
+    {
+        warningDialog_->raise();
+        warningDialog_->activateWindow();
+        return;
+    }
+
+    auto *dlg = new QDialog(this);
+    warningDialog_ = dlg;
+    dlg->setWindowTitle(tr("Computation Warnings"));
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->resize(600, 300);
+
+    auto *layout = new QVBoxLayout(dlg);
+    warningListWidget_ = new QListWidget(dlg);
+    warningListWidget_->setWordWrap(true);
+    for (const auto& w : collectedWarnings_)
+        warningListWidget_->addItem(w);
+    layout->addWidget(warningListWidget_);
+
+    auto *btnBox = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    connect(btnBox, &QDialogButtonBox::rejected, dlg, &QDialog::close);
+    layout->addWidget(btnBox);
+
+    connect(dlg, &QDialog::destroyed, this, [this]() {
+        warningListWidget_ = nullptr;
+    });
+
+    dlg->show();
+}
+
+
 void AnalysisForm::onRunAnalysis()
 {
   if (currentWorkbenchAction_)
@@ -120,6 +168,8 @@ void AnalysisForm::onRunAnalysis()
 
   if (!checkAnalysisExecutionPreconditions())
     return;
+
+  clearWarnings();
 
   if (remoteExecutionConfiguration())
   {

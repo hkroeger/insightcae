@@ -4,6 +4,10 @@
 #include "openfoam/openfoamcase.h"
 #include "base/intervals.h"
 
+#include <string>
+#include <vector>
+#include <map>
+
 
 namespace insight {
 
@@ -13,9 +17,12 @@ class TabularInterval
     : public Interval
 {
     arma::mat table_;
+    std::vector<std::string> colNames_;
 public:
-    TabularInterval(const arma::mat& tab);
+    TabularInterval(const arma::mat& tab,
+                    std::vector<std::string> colNames);
     arma::mat clippedTable() const;
+    const std::vector<std::string>& colNames() const;
 };
 
 
@@ -23,6 +30,14 @@ public:
 std::unique_ptr<std::pair<time_t,boost::filesystem::path> >
 newestOutputFile(
     const boost::filesystem::path& expectedFName
+    );
+
+std::map<std::string, arma::mat>
+readSingleTabularFile(
+    const boost::filesystem::path& ffp,
+    int groupByColumn,
+    const std::string& filterChars,
+    std::vector<std::string>* columnNames = nullptr
     );
 #endif
 

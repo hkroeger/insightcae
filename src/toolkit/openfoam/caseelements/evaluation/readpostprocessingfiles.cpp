@@ -56,10 +56,17 @@ newestOutputFile(const path &expectedFName)
 
 
 
-TabularInterval::TabularInterval(const arma::mat& tab)
+TabularInterval::TabularInterval(const arma::mat& tab,
+                                 std::vector<std::string> colNames)
     : Interval( tab(0,0), tab(tab.n_rows-1, 0) ),
-    table_(tab)
+      table_(tab),
+      colNames_(std::move(colNames))
 {}
+
+const std::vector<std::string>& TabularInterval::colNames() const
+{
+    return colNames_;
+}
 
 arma::mat TabularInterval::clippedTable() const
 {
@@ -75,32 +82,46 @@ arma::mat TabularInterval::clippedTable() const
 /**
  * @brief readSingleTabularFile
  * Reads a single whitespace-delimited text file and returns its rows grouped into named arma::mat matrices.
- * @param ffp
- * path to the file to read
- * @param groupByColumn
- * if >= 0, the column at that index is treated as a group key (a string label); rows are split into separate
-  matrices by this key, and the column is removed from the numeric data. If < 0, all rows go into a single group named "default".
- * @param filterChars
- * a string of characters to strip from each line before parsing (e.g. parentheses)
- * @return
+ *
+ * Column names are parsed from the last '#'-prefixed header line seen before each block of data.
+ * If the column layout changes mid-file (a new header line appears), each row is stored by name
+ * and remapped into the final (last-seen) column layout. Missing values become 0.0.
+ * If no header line is present, columns are named "column0", "column1", …
+ *
+ * @param ffp           path to the file to read
+ * @param groupByColumn if >= 0, the column at that index is treated as a group key (a string label);
+ *                      rows are split into separate matrices by this key, and the column is removed
+ *                      from the numeric data. If < 0, all rows go into a single group named "default".
+ * @param filterChars   a string of characters to strip from each DATA line before parsing (e.g. parentheses).
+ *                      NOT applied to header lines, so brackets etc. remain valid in column names.
+ * @param columnNames   optional: if non-null, receives the final column name list on return.
+ * @return              map of group name → matrix (rows = time steps, cols = final column layout)
  */
 std::map<std::string, arma::mat>
 readSingleTabularFile(
     const boost::filesystem::path& ffp,
     int groupByColumn,
-    const std::string& filterChars
+    const std::string& filterChars,
+    std::vector<std::string>* columnNames
     )
 {
+    // Each data row is stored as a map from column name to value so that
+    // mid-file column layout changes can be handled correctly.
+    using NamedRow = std::map<std::string, double>;
+
     struct GroupData
     {
-        int maxCols=-1;
-        std::vector<std::vector<double> > rows;
+        std::vector<NamedRow> rows;
     };
 
-    std::map<
-        std::string,
-        GroupData
-        > groups;
+    std::map<std::string, GroupData> groups;
+
+    // Active column names (updated whenever a new '#' header line is seen).
+    // filterChars is NOT applied here; brackets etc. are valid in column names.
+    std::vector<std::string> currentColNames;
+    std::vector<std::string> lastColNames;   // final layout = last header seen
+    bool anyHeaderSeen = false;
+    int  globalMaxCols = 0;                  // fallback when no header is present
 
 
     std::ifstream f( ffp.string() );
@@ -120,8 +141,39 @@ readSingleTabularFile(
 
         trim(line);
 
-        if ( !starts_with ( line, "#" ) )
+        if ( starts_with ( line, "#" ) )
         {
+            // --- Header line: parse column names ---
+            // Strip the leading '#' but do NOT apply filterChars.
+            std::string headerLine = line.substr(1);
+            replace_all(headerLine, "\t", " ");
+            string hl_org;
+            do {
+                hl_org = headerLine;
+                replace_all(headerLine, "  ", " ");
+            } while (hl_org != headerLine);
+            trim(headerLine);
+
+            if (!headerLine.empty())
+            {
+                std::vector<std::string> names;
+                split(names, headerLine, boost::is_any_of(" "));
+
+                // Remove the group-key slot so indices match the numeric data.
+                if (groupByColumn >= 0
+                    && groupByColumn < static_cast<int>(names.size()))
+                {
+                    names.erase(names.begin() + groupByColumn);
+                }
+
+                currentColNames = names;
+                lastColNames    = names;
+                anyHeaderSeen   = true;
+            }
+        }
+        else
+        {
+            // --- Data line ---
             for (auto c: filterChars)
                 erase_all(line, std::string(1, c));
             replace_all(line, "\t", " ");
@@ -161,29 +213,58 @@ readSingleTabularFile(
                     line.c_str() );
             }
 
-            auto& gd=groups[groupName];
-            gd.maxCols=std::max<int>(
-                gd.maxCols, fieldValues.size());
-            gd.rows.push_back(fieldValues);
+            globalMaxCols = std::max(globalMaxCols,
+                                     static_cast<int>(fieldValues.size()));
+
+            // Map each value to its column name (using the currently active header).
+            // Values beyond the header width are named "column<i>" as a fallback.
+            NamedRow namedRow;
+            for (size_t i = 0; i < fieldValues.size(); ++i)
+            {
+                std::string colName = (i < currentColNames.size())
+                    ? currentColNames[i]
+                    : "column" + std::to_string(i);
+                namedRow[colName] = fieldValues[i];
+            }
+
+            groups[groupName].rows.push_back(namedRow);
         }
     }
 
-    std::map<std::string, arma::mat> result;
-    // convert into arma::mat's
-    for (auto& [gn,gd]: groups)
+    // Determine the final column layout (last header seen, or auto-generated).
+    std::vector<std::string> finalColNames;
+    if (anyHeaderSeen)
     {
-        arma::mat m = arma::zeros(
-            gd.rows.size(), gd.maxCols);
+        finalColNames = lastColNames;
+    }
+    else
+    {
+        for (int i = 0; i < globalMaxCols; ++i)
+            finalColNames.push_back("column" + std::to_string(i));
+    }
 
-        for (long int i=0; i<gd.rows.size(); ++i)
+    if (columnNames)
+        *columnNames = finalColNames;
+
+    const auto nCols = static_cast<arma::uword>(finalColNames.size());
+
+    std::map<std::string, arma::mat> result;
+    // Convert into arma::mat's, remapping by column name into the final layout.
+    // Columns absent in a given row's segment stay 0.0.
+    for (auto& [gn, gd]: groups)
+    {
+        arma::mat m = arma::zeros(gd.rows.size(), nCols);
+
+        for (arma::uword i = 0; i < gd.rows.size(); ++i)
         {
-            m.row(i)=appendZeroColsIfNeeded(
-                arma::mat(
-                    gd.rows[i].data(),
-                    1, gd.rows[i].size() ),
-                gd.maxCols);
+            for (arma::uword j = 0; j < nCols; ++j)
+            {
+                auto it = gd.rows[i].find(finalColNames[j]);
+                if (it != gd.rows[i].end())
+                    m(i, j) = it->second;
+            }
         }
-        result[gn]=m;
+        result[gn] = m;
     }
     return result;
 }
@@ -268,13 +349,14 @@ readAndCombineGroupedTabularFiles
             }
             lastWriteTime=newest->first;
 
-            auto fileData = readSingleTabularFile(ffp, groupByColumn, filterChars);
+            std::vector<std::string> fileColNames;
+            auto fileData = readSingleTabularFile(ffp, groupByColumn, filterChars, &fileColNames);
             for (const auto& rg: fileData)
             {
                 intervals[rg.first].insert(
                     lastWriteTime,
                     std::make_shared<TabularInterval>(
-                        rg.second ) );
+                        rg.second, fileColNames ) );
             }
         }
     }
@@ -288,24 +370,48 @@ readAndCombineGroupedTabularFiles
 
     for (const auto& giv: intervals)
     {
-        auto& rows=rdata[giv.first];
+        // Determine the final column layout from the newest non-ignored interval.
+        // intervals() is sorted ascending by write-time key, so rbegin = newest.
+        std::vector<std::string> finalColNames;
+        for (auto it = giv.second.intervals().rbegin();
+             it != giv.second.intervals().rend(); ++it)
+        {
+            const auto& tiv = dynamic_cast<const TabularInterval&>(*it->second);
+            if (!tiv.toBeIgnored())
+            {
+                finalColNames = tiv.colNames();
+                break;
+            }
+        }
+
+        const auto nCols = static_cast<arma::uword>(finalColNames.size());
+        arma::mat& rows = rdata[giv.first];
+
         for (const auto& iv: giv.second.intervals())
         {
             const auto& tiv = dynamic_cast<const TabularInterval&>(*iv.second);
-            if (rows.n_rows==0)
+            if (tiv.toBeIgnored()) continue;
+            auto tc = tiv.clippedTable();
+            if (tc.n_rows == 0) continue;
+
+            // Remap tc columns into the final layout order by name.
+            arma::mat mapped = arma::zeros(tc.n_rows, nCols);
+            const auto& srcNames = tiv.colNames();
+            for (arma::uword j = 0; j < nCols; ++j)
             {
-                rows=tiv.clippedTable();
+                auto sit = std::find(srcNames.begin(), srcNames.end(), finalColNames[j]);
+                if (sit != srcNames.end())
+                {
+                    arma::uword srcCol = static_cast<arma::uword>(
+                        std::distance(srcNames.begin(), sit));
+                    mapped.col(j) = tc.col(srcCol);
+                }
+                // else: column absent in this file → stays 0.0
             }
-            else
-            {
-                auto tc=tiv.clippedTable();
-                int minCols = std::max<int>(
-                    rows.n_cols, tc.n_cols);
-                rows=arma::join_cols(
-                    appendZeroColsIfNeeded(rows, minCols),
-                    appendZeroColsIfNeeded(tc, minCols)
-                );
-            }
+
+            rows = (rows.n_rows == 0)
+                ? mapped
+                : arma::mat(arma::join_cols(rows, mapped));
         }
     }
 

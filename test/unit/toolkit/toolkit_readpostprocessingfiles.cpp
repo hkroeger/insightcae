@@ -307,31 +307,48 @@ static void test_crossFile_insertedColumn(const OpenFOAMCase& cm,
         cm, caseLocation, foName, "data.dat", "()", "");
 
     // Final layout (from newest file): Time p pTotal T  →  4 columns
-    // Combined rows: t=0.5 and t=0.9 from td0; t=1.5 and t=2.0 from td1
+    // td0 clipped at 1.0: [0.0,1.0) → rows t=0.0,0.5,0.9  (3 rows)
+    // td1 unclipped:      [1.0,∞)   → rows t=1.0,1.5,2.0,2.5  (4 rows)
+    // Combined: 7 rows
     insight::assertion(result.n_cols == 4,
         "cross-insert: expected 4 columns");
-    insight::assertion(result.n_rows == 4,
-        "cross-insert: expected 4 rows");
+    insight::assertion(result.n_rows == 7,
+        "cross-insert: expected 7 rows");
 
     // td0 rows: pTotal absent → 0.0; T must be in col 3
-    checkClose(result(0, 0), 0.5,   "cross-insert: row0 Time");
-    checkClose(result(0, 1), 20.0,  "cross-insert: row0 p");
+    checkClose(result(0, 0), 0.0,   "cross-insert: row0 Time");
+    checkClose(result(0, 1), 10.0,  "cross-insert: row0 p");
     checkClose(result(0, 2), 0.0,   "cross-insert: row0 pTotal (absent)");
-    checkClose(result(0, 3), 200.0, "cross-insert: row0 T");
+    checkClose(result(0, 3), 100.0, "cross-insert: row0 T");
 
-    checkClose(result(1, 1), 30.0,  "cross-insert: row1 p");
+    checkClose(result(1, 0), 0.5,   "cross-insert: row1 Time");
+    checkClose(result(1, 1), 20.0,  "cross-insert: row1 p");
     checkClose(result(1, 2), 0.0,   "cross-insert: row1 pTotal (absent)");
-    checkClose(result(1, 3), 300.0, "cross-insert: row1 T");
+    checkClose(result(1, 3), 200.0, "cross-insert: row1 T");
+
+    checkClose(result(2, 1), 30.0,  "cross-insert: row2 p");
+    checkClose(result(2, 2), 0.0,   "cross-insert: row2 pTotal (absent)");
+    checkClose(result(2, 3), 300.0, "cross-insert: row2 T");
 
     // td1 rows: all columns present
-    checkClose(result(2, 0), 1.5,   "cross-insert: row2 Time");
-    checkClose(result(2, 1), 60.0,  "cross-insert: row2 p");
-    checkClose(result(2, 2), 65.0,  "cross-insert: row2 pTotal");
-    checkClose(result(2, 3), 600.0, "cross-insert: row2 T");
+    checkClose(result(3, 0), 1.0,   "cross-insert: row3 Time");
+    checkClose(result(3, 1), 50.0,  "cross-insert: row3 p");
+    checkClose(result(3, 2), 55.0,  "cross-insert: row3 pTotal");
+    checkClose(result(3, 3), 500.0, "cross-insert: row3 T");
 
-    checkClose(result(3, 1), 70.0,  "cross-insert: row3 p");
-    checkClose(result(3, 2), 75.0,  "cross-insert: row3 pTotal");
-    checkClose(result(3, 3), 700.0, "cross-insert: row3 T");
+    checkClose(result(4, 0), 1.5,   "cross-insert: row4 Time");
+    checkClose(result(4, 1), 60.0,  "cross-insert: row4 p");
+    checkClose(result(4, 2), 65.0,  "cross-insert: row4 pTotal");
+    checkClose(result(4, 3), 600.0, "cross-insert: row4 T");
+
+    checkClose(result(5, 1), 70.0,  "cross-insert: row5 p");
+    checkClose(result(5, 2), 75.0,  "cross-insert: row5 pTotal");
+    checkClose(result(5, 3), 700.0, "cross-insert: row5 T");
+
+    checkClose(result(6, 0), 2.5,   "cross-insert: row6 Time");
+    checkClose(result(6, 1), 80.0,  "cross-insert: row6 p");
+    checkClose(result(6, 2), 85.0,  "cross-insert: row6 pTotal");
+    checkClose(result(6, 3), 800.0, "cross-insert: row6 T");
 
     std::cout << "PASS: test_crossFile_insertedColumn" << std::endl;
 }
@@ -368,20 +385,26 @@ static void test_crossFile_sameLayout(const OpenFOAMCase& cm,
     auto result = readAndCombineTabularFiles(
         cm, caseLocation, foName, "data.dat", "()", "");
 
-    // 3 columns, 4 rows (t=0.5, 0.9, 1.5, 2.0)
+    // 3 columns, 7 rows: td0 [0.0,1.0) → 0.0,0.5,0.9; td1 [1.0,∞) → 1.0,1.5,2.0,2.5
     insight::assertion(result.n_cols == 3,
         "cross-same: expected 3 columns");
-    insight::assertion(result.n_rows == 4,
-        "cross-same: expected 4 rows");
+    insight::assertion(result.n_rows == 7,
+        "cross-same: expected 7 rows");
 
-    checkClose(result(0, 1), 20.0,  "cross-same: row0 p");
-    checkClose(result(0, 2), 200.0, "cross-same: row0 T");
-    checkClose(result(1, 1), 30.0,  "cross-same: row1 p");
-    checkClose(result(1, 2), 300.0, "cross-same: row1 T");
-    checkClose(result(2, 1), 60.0,  "cross-same: row2 p");
-    checkClose(result(2, 2), 600.0, "cross-same: row2 T");
-    checkClose(result(3, 1), 70.0,  "cross-same: row3 p");
-    checkClose(result(3, 2), 700.0, "cross-same: row3 T");
+    checkClose(result(0, 1), 10.0,  "cross-same: row0 p");
+    checkClose(result(0, 2), 100.0, "cross-same: row0 T");
+    checkClose(result(1, 1), 20.0,  "cross-same: row1 p");
+    checkClose(result(1, 2), 200.0, "cross-same: row1 T");
+    checkClose(result(2, 1), 30.0,  "cross-same: row2 p");
+    checkClose(result(2, 2), 300.0, "cross-same: row2 T");
+    checkClose(result(3, 1), 50.0,  "cross-same: row3 p");
+    checkClose(result(3, 2), 500.0, "cross-same: row3 T");
+    checkClose(result(4, 1), 60.0,  "cross-same: row4 p");
+    checkClose(result(4, 2), 600.0, "cross-same: row4 T");
+    checkClose(result(5, 1), 70.0,  "cross-same: row5 p");
+    checkClose(result(5, 2), 700.0, "cross-same: row5 T");
+    checkClose(result(6, 1), 80.0,  "cross-same: row6 p");
+    checkClose(result(6, 2), 800.0, "cross-same: row6 T");
 
     std::cout << "PASS: test_crossFile_sameLayout" << std::endl;
 }

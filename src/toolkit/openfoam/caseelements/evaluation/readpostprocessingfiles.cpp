@@ -74,7 +74,7 @@ arma::mat TabularInterval::clippedTable() const
         str(format("clipping table %g < t <%g") % A() % clippedB())
         );
     insight::assertion( !toBeIgnored(), "no data!" );
-    return arma::mat( table_.rows( find(table_.col(0)>A() && table_.col(0)<clippedB()) ) );
+    return arma::mat( table_.rows( find(table_.col(0)>=A() && table_.col(0)<clippedB()) ) );
 }
 
 

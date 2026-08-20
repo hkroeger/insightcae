@@ -3,6 +3,7 @@
 #include "base/intervals.h"
 #include <boost/format.hpp>
 #include "base/translations.h"
+#include <limits>
 
 namespace insight {
 
@@ -64,7 +65,7 @@ void Interval::clipRightOf(double x)
 
 bool Interval::toBeIgnored() const
 {
-    return clipRightOf_<a_;
+    return clipRightOf_<=a_;
 }
 
 
@@ -80,7 +81,7 @@ bool Interval::isClipped() const
 
 void Interval::resetClip()
 {
-    clipRightOf_=b_;
+    clipRightOf_=std::numeric_limits<double>::infinity();
 }
 
 

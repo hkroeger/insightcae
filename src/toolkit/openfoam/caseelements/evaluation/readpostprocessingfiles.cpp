@@ -278,13 +278,14 @@ arma::mat readAndCombineTabularFiles
     const std::string& FOName,
     const std::string& fileNamePattern,
     const std::string& filterChars,
-    const std::string& regionName
+    const std::string& regionName,
+    std::vector<std::string>* columnNames
 )
 {
     return readAndCombineGroupedTabularFiles(
                cm, caseLocation,
                FOName, fileNamePattern,
-               -1, filterChars, regionName )
+               -1, filterChars, regionName, columnNames )
         .begin()->second;
 }
 
@@ -299,7 +300,8 @@ readAndCombineGroupedTabularFiles
     const std::string& fileNamePattern,
     int groupByColumn,
     const std::string& filterChars,
-    const std::string& regionName
+    const std::string& regionName,
+    std::vector<std::string>* columnNames
 )
 {
     CurrentExceptionContext ex(
@@ -368,6 +370,10 @@ readAndCombineGroupedTabularFiles
 
     std::map<std::string, arma::mat> rdata;
 
+    // All groups share the same column layout (same set of files).
+    // Capture it once for the optional output parameter.
+    std::vector<std::string> sharedFinalColNames;
+
     for (const auto& giv: intervals)
     {
         // Determine the final column layout from the newest non-ignored interval.
@@ -383,6 +389,8 @@ readAndCombineGroupedTabularFiles
                 break;
             }
         }
+        if (sharedFinalColNames.empty())
+            sharedFinalColNames = finalColNames;
 
         const auto nCols = static_cast<arma::uword>(finalColNames.size());
         arma::mat& rows = rdata[giv.first];
@@ -414,6 +422,9 @@ readAndCombineGroupedTabularFiles
                 : arma::mat(arma::join_cols(rows, mapped));
         }
     }
+
+    if (columnNames)
+        *columnNames = sharedFinalColNames;
 
     //  for (const auto& rg: rows)
     //  {

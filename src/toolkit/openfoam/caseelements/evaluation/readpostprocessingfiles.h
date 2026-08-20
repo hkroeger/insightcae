@@ -51,7 +51,8 @@ readAndCombineGroupedTabularFiles
     const std::string& fileName,
     int groupByColumn,
     const std::string& filterChars="()",
-    const std::string& regionName = std::string()
+    const std::string& regionName = std::string(),
+    std::vector<std::string>* columnNames = nullptr
 );
 
 
@@ -64,7 +65,8 @@ readAndCombineTabularFiles
     const std::string& FOName,
     const std::string& fileName,
     const std::string& filterChars="()",
-    const std::string& regionName = std::string()
+    const std::string& regionName = std::string(),
+    std::vector<std::string>* columnNames = nullptr
 );
 
 } // namespace insight

@@ -298,7 +298,8 @@ public:
         const OpenFOAMCase& c,
         const boost::filesystem::path& location,
         const std::string& foName,
-        const std::string& regionName = ""
+        const std::string& regionName = "",
+        std::vector<std::string> *colNames = nullptr
     );
 };
 

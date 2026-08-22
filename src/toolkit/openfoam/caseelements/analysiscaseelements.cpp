@@ -573,7 +573,8 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
     const OpenFOAMCase& cm,
     const boost::filesystem::path& location,
     const std::string& foName,
-    const std::string& regionName
+    const std::string& regionName,
+    std::vector<std::string> *colNames
 )
 {
 
@@ -582,7 +583,8 @@ arma::mat surfaceIntegrate::readSurfaceIntegrate
           cm, location,
           foName,
           (cm.OFversion()<170 ? "faceSource.dat" : "surfaceFieldValue.dat"),
-          "()", regionName
+          "()", regionName,
+          colNames
       );
 //  arma::mat result(0,2);
 

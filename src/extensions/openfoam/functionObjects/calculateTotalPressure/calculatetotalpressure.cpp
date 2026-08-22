@@ -89,7 +89,8 @@ bool calculateTotalPressure::perform()
     tmp<volScalarField> pFactor;
     if (p.dimensions() == dimPressure)
     {
-        pFactor=volScalarField(
+        pFactor=tmp<volScalarField>(
+          new volScalarField(
             IOobject(
                 "pfac",
                 mesh_.time().timeName(),
@@ -97,7 +98,7 @@ bool calculateTotalPressure::perform()
                 ),
             mesh_,
             dimensionedScalar("", dimless, 1.)
-            );
+        ));
     }
     else
     {

@@ -293,10 +293,11 @@ void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& 
 
 }
 
+#ifndef SWIG
 namespace std {
 bool operator==(const insight::OFDictData::data& d, const std::string& s);
 bool operator==(const std::string& s, const insight::OFDictData::data& d);
 }
-
+#endif
 
 #endif // INSIGHT_OPENFOAMDICT_H

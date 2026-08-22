@@ -211,6 +211,8 @@ void Geometry::writeTo(cad::FeaturePtr f, const boost::filesystem::path &fn) con
 void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
 
+    bool skipLayers=false;
+
     auto n=this->cleanName();
 
   OFDictData::dict geodict;
@@ -234,6 +236,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
       {
       case Parameters::zone_faceZone_type::internal:
           refinementSurface["faceType"]="internal";
+          skipLayers=true;
           break;
       case Parameters::zone_faceZone_type::baffle:
           refinementSurface["faceType"]="baffle";
@@ -247,6 +250,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
                  &p().zone))
   {
       refinementSurface["faceZone"]=cz->zoneName; // always required
+      skipLayers=true; // default is faceType=internal
       refinementSurface["cellZone"]=cz->zoneName;
       switch (cz->selection)
       {
@@ -275,16 +279,19 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   }
   sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[n]=refinementSurface;
 
-  OFDictData::dict layerdict;
-  layerdict["nSurfaceLayers"]=p().nLayers;
-  sHMDict.subDict("addLayersControls").subDict("layers")["\""+n+".*\""]=layerdict;
-  for (const Parameters::regionRefinements_default_type& rr: p().regionRefinements)
+  if (!skipLayers)
   {
-   OFDictData::dict layerdict;
-   layerdict["nSurfaceLayers"]=0;
-   sHMDict.subDict("addLayersControls").subDict("layers")[n+"_"+rr.regionname]=layerdict;
+      auto &layers=sHMDict.subDict("addLayersControls").subDict("layers");
+      OFDictData::dict layerdict;
+      layerdict["nSurfaceLayers"]=p().nLayers;
+      layers["\""+n+".*\""]=layerdict;
+      for (const Parameters::regionRefinements_default_type& rr: p().regionRefinements)
+      {
+       OFDictData::dict layerdict;
+       layerdict["nSurfaceLayers"]=0;
+       layers[n+"_"+rr.regionname]=layerdict;
+      }
   }
-
 }
 
 void Geometry::modifyFiles(

@@ -14,7 +14,8 @@ InternalPressureLossBase::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &executionPath,
     ActionProgress &ap )
-    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, ap )
+    : supplementedInputDataDerived<Parameters>(
+          ip.forward<Parameters>(), executionPath, ap )
 {
     stldir_=snappyHexMeshFeats::geometryDir(OFEs::get(p().run.OFEname), executionPath);
     fn_inlet_="inlet";
@@ -62,7 +63,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
     ParameterSetInput ip,
     const boost::filesystem::path &executionPath,
     ActionProgress &ap )
-    : supplementedInputDataDerived<Parameters>( ip.forward<Parameters>(), executionPath, ap )
+    : supplementedInputDataDerived( ip.forward<Parameters>(), executionPath, ap )
 {
 
     pAmbient_=0.;

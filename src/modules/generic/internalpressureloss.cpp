@@ -292,6 +292,23 @@ InternalPressureLoss::totalPressureCalculationParameters() const
     return ctp;
 }
 
+InternalPressureLossBase::SolverProperties InternalPressureLoss::solverProperties() const
+{
+    OpenFOAMCase cm(OFEs::get(p().OpenFOAMAnalysis::Parameters::run.OFEname));
+    auto num = numericsCaseElement(cm);
+
+    if (!num->isCompressible())
+    {
+        return {SolverProperties::Volume, p().fluid.rho,
+                SolverProperties::Kinematic, 1./p().fluid.rho};
+    }
+    else
+    {
+        return {SolverProperties::Mass, 1.,
+                SolverProperties::NonKinematic, 1.};
+    }
+}
+
 double InternalPressureLoss::ambientPressure() const
 {
     return sp().pAmbient_;

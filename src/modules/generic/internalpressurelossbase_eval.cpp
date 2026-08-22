@@ -20,6 +20,7 @@
 #include "vtkPolyDataNormals.h"
 #include "vtkArrayCalculator.h"
 #include <memory>
+#include <string>
 
 namespace insight
 {
@@ -153,11 +154,22 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
             {
                 auto sec = std::make_unique<ResultSection>("Total pressure on boundary "+g.first);
 
-                arma::mat ptot_vs_t_raw = surfaceIntegrate::readSurfaceIntegrate(cm, executionPath(), g.first+"_pressure");
+                std::vector<std::string> colNames;
+                arma::mat ptot_vs_t_raw =
+                    surfaceIntegrate::readSurfaceIntegrate(
+                        cm, executionPath(), g.first+"_pressure", "", &colNames );
+
+                auto it = std::find(colNames.begin(), colNames.end(), "areaAverage(pTotal)");
+                insight::assertion(
+                    it!=colNames.end(),
+                    "area average of pTotal for boundary %s not found in postprocessing data",
+                    g.first.c_str());
+                int i=std::distance(colNames.begin(), it);
+
                 arma::mat ptot_vs_t = movingAverage ( ptot_vs_t_raw, p().eval.averageFraction );
 
                 PlotCurve pc(
-                    ptot_vs_t.col(0), ptot_vs_t.col(1),
+                    ptot_vs_t.col(0), ptot_vs_t.col(i),
                     "ptotmean_vs_iter", "w l t 'moving average'");
                 auto mima=pc.significantMinMax();
 
@@ -167,7 +179,7 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
                         "Iteration", "$p_{total}=p+\\frac 1 2 \\rho |\\vec u|^2$",
                         {
                             PlotCurve(
-                                ptot_vs_t_raw.col(0), ptot_vs_t_raw.col(1),
+                                ptot_vs_t_raw.col(0), ptot_vs_t_raw.col(i),
                                 "ptot_raw_vs_iter", "w l t 'raw value'"),
                             pc
                         },
@@ -210,6 +222,11 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
 
     }
     ++*ap;
+
+
+    /*
+     * evaluate mass flows through in/outlets
+     */
     {
         ap->message("Mass flows...");
         auto sec = std::make_unique<ResultSection>(
@@ -228,6 +245,10 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
                 arma::mat dotm_vs_t_raw =
                     surfaceIntegrate::readSurfaceIntegrate(
                         cm, executionPath(), "integ_"+patchName );
+
+                dotm_vs_t_raw.col(1)=
+                    dotm_vs_t_raw.col(1)*solverProperties().phiFactor;
+
                 arma::mat dotm_vs_t =
                     movingAverage ( dotm_vs_t_raw, p().eval.averageFraction );
 
@@ -243,7 +264,7 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
                         {
                             PlotCurve(
                                 dotm_vs_t_raw.col(0), dotm_vs_t_raw.col(1),
-                                "massflow_raw_vs_iter", "w l t 'raw value'"),
+                                "massflow_raw_vs_iter", "t 'raw value' w l" + std::string(dotm_vs_t_raw.n_rows==1?"p":"") ),
                             pc
                         },
                         "Plot of mass flow on boundary "+patchName,
@@ -799,6 +820,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(
         results->insert("temperature_outlet", std::move(sec_To));
     }
 
+    return results;
 }
 
 

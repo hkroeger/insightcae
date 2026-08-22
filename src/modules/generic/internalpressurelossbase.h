@@ -142,7 +142,7 @@ eval = set {
         std::string fn_inlet_, fn_outlet_;
     };
 
-    addParameterMembers_SupplementedInputData(InternalPressureLossBase::Parameters);
+    addParameterMembers_SupplementedInputData(Parameters);
 
 
 public:
@@ -165,6 +165,24 @@ public:
         insight::OpenFOAMCase& cm, const std::string& patchName,
         const Parameters::geometry_default_type::role_inlet_type* in,
         const OFDictData::dict& boundaryDict) const;
+
+    struct SolverProperties
+    {
+        enum Phi { Mass, Volume } phi;
+        /**
+         * @brief phiFactor
+         * factor to convert phi to mass phi. 1 for phi==Mass, constRho for phi==Volume
+         */
+        double phiFactor;
+        enum Pressure { Kinematic, NonKinematic } pressure;
+        /**
+         * @brief phiFactor
+         * factor to convert p to non-kinematic pressure. 1 for pressure==NonKinematic, 1./constRho for pressure==Kinematic
+         */
+        double pressureFactor;
+    };
+
+    virtual SolverProperties solverProperties() const  =0;
 
     virtual std::unique_ptr<calculateTotalPressure::Parameters>
     totalPressureCalculationParameters() const;

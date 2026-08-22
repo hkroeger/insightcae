@@ -99,7 +99,9 @@ fluid=set
 
 
   struct supplementedInputData
-      : public supplementedInputDataDerived<Parameters>
+      : public supplementedInputDataDerived<
+            Parameters,
+            InternalPressureLossBase::supplementedInputData>
   {
   public:
     supplementedInputData(
@@ -127,6 +129,8 @@ public:
 
     std::unique_ptr<calculateTotalPressure::Parameters>
     totalPressureCalculationParameters() const override;
+
+    SolverProperties solverProperties() const override;
 
     double ambientPressure() const override;
     std::unique_ptr<porousZoneOption::Parameters>

@@ -469,6 +469,23 @@ private:
 
 arma::mat sortedByCol(const arma::mat&m, int c);
 
+
+
+/**
+   * @brief indices_and_interpolationWeights
+   * calculate interpolation indices and weights for linear interpolation.
+   * for x beyond bounds, min or max element is returned
+   * @param xs
+   * array of x values
+   * @param x
+   * x value at which to interpolate
+   * @return
+   * array of y indices and corresponding interpolation weights
+   */
+std::vector< std::pair<int,double> >
+indices_and_interpolationWeights( arma::mat xs, double x );
+
+
 /**
  * interpolates in a 2D-matrix using GSL spline routines.
  * The first column is assumed to contain the x-values.
@@ -513,6 +530,7 @@ public:
    * returns a single y-value from column col
    */
   double y(double x, int col=0, OutOfBounds* outOfBounds=NULL) const;
+
 
   double maxY(int col=0) const;
 

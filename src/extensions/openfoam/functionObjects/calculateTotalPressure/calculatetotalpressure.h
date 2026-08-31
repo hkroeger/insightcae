@@ -18,9 +18,15 @@ private:
 
     std::unique_ptr<volScalarField> rhoInf_;
 
-    const volScalarField *rho_;
-    const volScalarField *p_;
-    const volVectorField *U_;
+    // const volScalarField *rho_;
+    // const volScalarField *p_;
+    // const volVectorField *U_;
+    word rhoName_, pName_, UName_;
+    scalar rhoInfValue_;
+
+    const volScalarField& p() const;
+    const volVectorField& U() const;
+    tmp<volScalarField> rho() const;
 
     dimensionedScalar pAmbient_;
     volScalarField pTotal_;

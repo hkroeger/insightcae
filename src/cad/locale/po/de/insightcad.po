@@ -583,6 +583,15 @@ msgstr ""
 msgid "Creates a spline curve through all given points p0 to pn."
 msgstr ""
 
+msgid ""
+"Creates a spline starting at p0 and ending at p1. Both endpoints are "
+"projected onto orgCurve; the curve follows orgCurve between those "
+"projections, with smooth transition wings blending from the new endpoints to "
+"their respective projection points on the original curve. Optionally, "
+"tangent vectors tan0 and tan1 can be supplied with the 'der' keyword to "
+"enforce departure/arrival directions at the new endpoints."
+msgstr ""
+
 msgid "SplineSurface: not enough rows of point specified!"
 msgstr ""
 

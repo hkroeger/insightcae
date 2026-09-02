@@ -70,9 +70,11 @@ class RapproximatedCurve
 {
     VectorPtr p0_, p1_;
     FeaturePtr orgCurve_;
+    VectorPtr tan0_, tan1_;
 
     RapproximatedCurve(const RapproximatedCurve&o, TreeCloneMap& tcm);
-    RapproximatedCurve ( VectorPtr p0, VectorPtr p1, FeaturePtr orgCurve);
+    RapproximatedCurve ( VectorPtr p0, VectorPtr p1, FeaturePtr orgCurve,
+                         VectorPtr tan0 = VectorPtr(), VectorPtr tan1 = VectorPtr() );
 
     size_t calcHash() const override;
     void build() override;
@@ -80,7 +82,7 @@ class RapproximatedCurve
 public:
     declareType ( "RapproximatedCurve" );
 #ifndef SWIG
-    DEPENDS((p0_,p1_, orgCurve_));
+    DEPENDS((p0_,p1_, orgCurve_, tan0_, tan1_));
 #endif
     CREATE_FUNCTION(RapproximatedCurve);
     CLONEABLE(RapproximatedCurve);

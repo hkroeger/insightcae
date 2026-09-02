@@ -1695,6 +1695,39 @@ double Interpolator::y(double x, int col, OutOfBounds* outOfBounds) const
   return v;
 }
 
+std::vector<std::pair<int, double> >
+indices_and_interpolationWeights(const arma::mat xs, double x)
+{
+    if (xs.n_rows<1)
+    {
+        throw insight::Exception("cannot interpolate in empty array");
+    }
+    if (x<=xs(0))
+    {
+        return {{0, 1.}};
+    }
+    if (x>=xs(xs.n_rows-1))
+    {
+        return {{xs.n_rows-1, 1.}};
+    }
+
+    long int i=0;
+    for (; i<xs.size()-1; ++i)
+    {
+        if ( (xs(i)<x) && (xs(i+1)>=x) )
+            break;
+    }
+
+    insight::assertion(
+        i<xs.n_rows-1,
+        "unexpected index search result: should not return last index" );
+
+    double xm=xs(i);
+    double xp=xs(i+1);
+    return { {i, (xp-x)/(xp-xm) }, {i+1, (x-xm)/(xp-xm) } };
+
+}
+
 double Interpolator::maxY(int col) const
 {
     return xy_.col(col+1).max();

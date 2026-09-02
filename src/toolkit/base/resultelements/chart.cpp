@@ -1,9 +1,11 @@
 #include "chart.h"
 #include "base/hierarchicalelement.h"
 #include "base/resultelements/chartrenderer.h"
+#include "base/resultelements/scalarresult.h"
 
 #include "base/tools.h"
 #include "base/rapidxml.h"
+#include <boost/lexical_cast.hpp>
 #include <memory>
 #include <sstream>
 
@@ -461,6 +463,70 @@ bool PlotCurveStyle::operator==(const PlotCurveStyle &o) const
     if (title_!=o.title_) return false;
     if (ax_y_!=o.ax_y_) return false;
     return true;
+}
+
+
+
+void addChartAndFinalValues(
+    ResultElementCollection &results,
+    const std::string &resultelementname,
+    const std::string &xlabel,
+    const std::string &ylabel,
+    const arma::mat& xy,
+    const std::vector<PlotCurveProps> &columns,
+    double avgFraction,
+    const std::string &shortDescription
+)
+{
+    arma::mat xyavg=insight::movingAverage(xy, avgFraction);
+
+    PlotCurveList plc;
+    for (auto& curve: columns)
+    {
+
+        auto getY = [&](const arma::mat& xy) {
+            auto& cols=curve.colsToAdd;
+
+            insight::assertion(
+                cols.size()>0, "at least a single column has to be selected");
+            arma::mat y = xy.col(cols[0]);
+            for (size_t i=1; i<cols.size(); ++i)
+            {
+                double m=1.;
+                if (curve.colMultipliers.size()>=i)
+                    m=curve.colMultipliers[i];
+
+                y += m*xy.col(cols[i]);
+            }
+            return y;
+        };
+
+        auto finalValue = [&](const arma::mat& values) {
+            return values(values.n_rows-1);
+        };
+
+        results.insert<ScalarResult>(
+            curve.shortLabel, finalValue(getY(xyavg)),
+            curve.finalValueDescription, "", curve.unit);
+
+        plc.push_back(PlotCurve(
+            xy.col(0), getY(xy), curve.shortLabel,
+            "w l lc "+boost::lexical_cast<std::string>(curve.lineColor)
+                +" dt 2 lw 1 "
+                "t '"+curve.legendLabel+"'") );
+
+        plc.push_back(PlotCurve(
+            xyavg.col(0), getY(xyavg), curve.shortLabel+"Avg",
+            "w l lc "+boost::lexical_cast<std::string>(curve.lineColor)
+                +" dt 1 lw 2 "
+                  "t '"+curve.legendLabel+" (mov. avg.)'") );
+    }
+
+    results.insert<Chart> (
+            resultelementname,
+            xlabel, ylabel, plc,
+            shortDescription, ""
+            );
 }
 
 

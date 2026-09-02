@@ -1458,15 +1458,25 @@ OperatingSystem currentOperatingSystem =
 
 int realNp(int userInputNp)
 {
+    auto maxNp = boost::thread::physical_concurrency();
     if (userInputNp>0)
     {
+        if (!getenv("INSIGHT_OVERSUBSCRIBE"))
+        {
+            insight::assertion(
+                userInputNp<=maxNp,
+                "too many CPU cores requested (%d requested, %d available)."
+                " If you insist on oversubscription, set environment variable INSIGHT_OVERSUBSCRIBE non-zero."
+                );
+        }
         return userInputNp;
     }
     else
     {
+        // negative userInputNp: means leave this number of cores unallocated
         return std::max<int>(
             1,
-            boost::thread::physical_concurrency()+userInputNp
+            maxNp+userInputNp
             );
     }
 }
@@ -1483,6 +1493,31 @@ path sanitizeStringForFileName(const std::string &s)
     }
     boost::replace_all(result, "__", "_");
     return result;
+}
+
+
+
+
+
+ResultantForce::ResultantForce(
+    const arma::mat &F_c,
+    const arma::mat &M_c )
+    : F(F_c)
+{
+    arma::mat MR{
+        {  0.,       F_c(2),   -F_c(1)  },
+        { -F_c(2),   0.,        F_c(0)  },
+        {  F_c(1),  -F_c(0),    0.      }
+    };
+    r = arma::pinv(MR) * M_c;
+    Mr = M_c - arma::cross(r, F_c);
+
+    std::cout
+        <<"F_c:\n"<<F_c
+        <<"M_c:\n"<<M_c
+        <<"MR:\n"<<MR
+        <<"r:\n"<<r
+        <<"Mr:\n"<<Mr;
 }
 
 

@@ -202,6 +202,29 @@ insight::ResultElement& addPlot
 );
 
 
+struct PlotCurveProps
+{
+    std::vector<int> colsToAdd;
+    std::string shortLabel;
+    std::string legendLabel;
+    std::string unit;
+    int lineColor;
+    std::string finalValueDescription;
+    std::vector<double> colMultipliers;
+};
+
+void addChartAndFinalValues(
+    ResultElementCollection& results,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const arma::mat& xy,
+    const std::vector<PlotCurveProps>& columns,
+    double avgFraction,
+    const std::string& shortDescription
+);
+
+
 } // namespace insight
 
 

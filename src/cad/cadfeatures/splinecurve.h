@@ -63,6 +63,43 @@ public:
     
 };
 
+
+
+class RapproximatedCurve
+    : public SingleEdgeFeature
+{
+    VectorPtr p0_, p1_;
+    FeaturePtr orgCurve_;
+
+    RapproximatedCurve(const RapproximatedCurve&o, TreeCloneMap& tcm);
+    RapproximatedCurve ( VectorPtr p0, VectorPtr p1, FeaturePtr orgCurve);
+
+    size_t calcHash() const override;
+    void build() override;
+
+public:
+    declareType ( "RapproximatedCurve" );
+#ifndef SWIG
+    DEPENDS((p0_,p1_, orgCurve_));
+#endif
+    CREATE_FUNCTION(RapproximatedCurve);
+    CLONEABLE(RapproximatedCurve);
+
+    static void insertrule ( parser::ISCADParser& ruleset );
+    static FeatureCmdInfoList ruleDocumentation();
+
+    VectorPtr start() const override;
+    VectorPtr end() const override;
+
+    bool isSingleEdge() const override
+    {
+        return true;
+    };
+
+};
+
+
+
 }
 }
 

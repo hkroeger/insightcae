@@ -1,0 +1,34 @@
+A?=35; # Leiterquerschnitt mm^2
+d2?=TableLookup(CableLugDIN46235, A, A, d2);
+b?=TableLookup(CableLugDIN46235, A, A, b);
+L?=TableLookup(CableLugDIN46235, A, A, L);
+c1?=TableLookup(CableLugDIN46235, A, A, c1);
+c2?=TableLookup(CableLugDIN46235, A, A, c2);
+d1?=TableLookup(CableLugDIN46235, A, A, d1);
+d4?=TableLookup(CableLugDIN46235, A, A, d4);
+a?=TableLookup(CableLugDIN46235, A, A, a);
+t?=d4-d1; # doppelt
+
+
+presshuelse=
+Cylinder( O, a*EX, d4, d1);
+
+p_wireend=a*EX;
+p_wirestripend=O;
+
+p_flat=(L-c1-c2)*EX -0.5*d1*EZ;
+schuh=
+Box( p_flat, 
+ (c1+c2)*EX, b*EY, -t*EZ, centery);
+
+transition=
+Sweep( 
+Circle(a*EX, EX, d4),
+Quad(p_flat, b*EY, -t*EZ, centerx)
+ );
+
+p_scr=p_flat+c2*EX;
+
+body:
+(presshuelse|transition|schuh)
+-Cylinder(p_scr, ax -t*EZ, d2);

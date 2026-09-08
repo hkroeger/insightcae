@@ -483,20 +483,22 @@ void addChartAndFinalValues(
     PlotCurveList plc;
     for (auto& curve: columns)
     {
+        auto mf = [&](int i) {
+            double m=1.;
+            if ((curve.colMultipliers.size()-1)>=i)
+                m=curve.colMultipliers.at(i);
+            return m;
+        };
 
         auto getY = [&](const arma::mat& xy) {
             auto& cols=curve.colsToAdd;
 
             insight::assertion(
                 cols.size()>0, "at least a single column has to be selected");
-            arma::mat y = xy.col(cols[0]);
-            for (size_t i=1; i<cols.size(); ++i)
+            arma::mat y = arma::zeros(xy.n_rows);
+            for (size_t i=0; i<cols.size(); ++i)
             {
-                double m=1.;
-                if (curve.colMultipliers.size()>=i)
-                    m=curve.colMultipliers[i];
-
-                y += m*xy.col(cols[i]);
+                y += mf(i) * xy.col(cols[i]);
             }
             return y;
         };

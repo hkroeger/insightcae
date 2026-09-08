@@ -130,7 +130,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
         });
       connect(a, &QAction::hovered,
               [=]() {
-        gp_Pnt p=to_Pnt(i.second);
+        gp_Pnt p=insight::cad::to_Pnt(i.second);
         Handle_AIS_Point ip(new AIS_Point(
            Handle_Geom_Point(new Geom_CartesianPoint(p) )
                                              ));

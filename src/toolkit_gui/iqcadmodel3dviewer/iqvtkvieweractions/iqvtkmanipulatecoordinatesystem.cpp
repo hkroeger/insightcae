@@ -246,8 +246,8 @@ void IQVTKManipulateCoordinateSystem::ManipPlane::update(const QPoint& newp)
         auto p1 =
             parent->viewer().pointInPlane3D(
                 gp_Ax3(
-                    to_Pnt(parent->cs_.origin),
-                    to_Vec(n)
+                    insight::cad::to_Pnt(parent->cs_.origin),
+                    insight::cad::to_Vec(n)
                     ),
                 newp
                 );
@@ -293,8 +293,8 @@ arma::mat IQVTKManipulateCoordinateSystem::ManipAlong::closestPt(const QPoint &n
 
     auto p1 = parent->viewer().pointInPlane3D(
             gp_Ax3( // plane orthogonal to view direction and through CS origin
-                to_Pnt(parent->cs_.origin),
-                to_Vec(d1)
+                insight::cad::to_Pnt(parent->cs_.origin),
+                insight::cad::to_Vec(d1)
                 ),
             newp
         );
@@ -351,8 +351,8 @@ void IQVTKManipulateCoordinateSystem::ManipP0::update(const QPoint& newp)
 
     // goes through origin and ex
     gp_Ax3 viewPlane(
-        to_Pnt(parent->cs_.origin),
-        to_Vec(n)
+        insight::cad::to_Pnt(parent->cs_.origin),
+        insight::cad::to_Vec(n)
         );
 
     auto np0 = insight::normalized(

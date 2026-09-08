@@ -68,7 +68,7 @@ void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 
 Handle_AIS_InteractiveObject QVectorVariableItem::createAIS(AIS_InteractiveContext& context)
 {
-  gp_Pnt p=to_Pnt(value_);
+  gp_Pnt p=insight::cad::to_Pnt(value_);
 
   return insight::cad::buildMultipleConnectedInteractive(context,
   {

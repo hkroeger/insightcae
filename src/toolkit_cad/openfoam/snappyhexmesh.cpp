@@ -79,8 +79,8 @@ cad::FeaturePtr surfaceFeatureExtract
                 bb.Add(
                         result,
                         BRepBuilderAPI_MakeEdge(
-                            to_Pnt(p1),
-                            to_Pnt(p2) ).Edge()
+                            cad::to_Pnt(p1),
+                            cad::to_Pnt(p2) ).Edge()
                         );
             }
         }

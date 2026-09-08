@@ -154,6 +154,8 @@ void Pipe::build()
     
     p.Build();
     
+    auto spinefeat=Import::create(spinew);
+    providedSubshapes_["spine"]=spinefeat;
     providedSubshapes_["frontFace"]=Import::create(p.FirstShape());
     providedSubshapes_["backFace"]=Import::create(p.LastShape());
     

@@ -351,7 +351,10 @@ arma::cube probes::readProbes
         
     for (const Instant::value_type& sample: instant.second)
     {
-        for (int k=0; k<ncmpt; k++) data(i, j+1, k)=sample(k);
+        for (int k=0; k<ncmpt; k++)
+        {
+            data(i, j+1, k)=sample(k);
+        }
         j+=1;
     }
     i+=1;

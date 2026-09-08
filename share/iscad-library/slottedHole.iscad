@@ -1,0 +1,20 @@
+p?=O;
+h?=8*EZ;
+d?=6;
+L?=10*EX;
+
+hh=mag(h);
+eh=normalized(h);
+LL=mag(L);
+el=normalized(L);
+eq=normalized(el^eh);
+
+hole:
+Cylinder(
+ p-0.5*(LL-d)*el, ax h, d)
+|Cylinder(
+ p+0.5*(LL-d)*el, ax h, d)
+|Box(
+ p -0.5*(LL-d)*el -0.5*d*eq, 
+ h, eq*d, (LL-d)*el)
+;

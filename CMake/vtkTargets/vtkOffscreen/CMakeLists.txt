@@ -24,6 +24,7 @@ else()
             FiltersFlowPaths
             FiltersVerdict
             FiltersParallel
+            FiltersProgrammable
             CommonColor
             CommonCore
             CommonDataModel

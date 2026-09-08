@@ -330,6 +330,8 @@ insight::hierarchicalData::Element& Element::getByPath( std::string path )
         {
             return getChild(cp.childElementRef(i), path);
         }
+
+
     };
 
     return getChild(*this, path);

@@ -107,10 +107,12 @@ Compound::Compound(const CompoundFeatureMap& m1)
 Compound::Compound(
     const CompoundFeatureMap &m1,
     const CompoundFeatureMap &subshapes,
-    const RefPointMap& explicitRefPoints )
+    const RefPointMap& explicitRefPoints,
+    const RefVectorMap& explicitRefVectors )
   : components_(m1),
     explicitSubShapes_(subshapes),
-    explicitRefPoints_(explicitRefPoints)
+    explicitRefPoints_(explicitRefPoints),
+    explicitRefVectors_(explicitRefVectors)
 {}
 
 

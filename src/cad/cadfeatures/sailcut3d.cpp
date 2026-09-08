@@ -46,7 +46,7 @@
 #include "gp_Pnt.hxx"
 #include "gp_Vec.hxx"
 #include "Precision.hxx"
-
+#include "occtools.h"
 
 #include "cadfeatures/fillingface.h"
 #include "cadfeatures/wire.h"
@@ -291,13 +291,15 @@ TopoDS_Edge makeSplineEdge(const std::vector<gp_Pnt>& pts)
 const std::string
     SailCut3D::TACK="tack",
     SailCut3D::CLEW="clew",
-    SailCut3D::THROAT="throat",
+    SailCut3D::HEAD="head",
     SailCut3D::PEAK="peak",
 
     SailCut3D::FOOT="foot",
     SailCut3D::LUFF="luff",
     SailCut3D::LEECH="leech",
-    SailCut3D::HEAD="head";
+    SailCut3D::GAFF="gaff",
+
+    SailCut3D::CLEWTANGENT="etClew";
 
 SailCut3D::SailCut3D(const SailCut3D& o, TreeCloneMap& tcm)
     : Compound(o, tcm), filepath_(o.filepath_)
@@ -664,7 +666,7 @@ void SailCut3D::build()
 
         // Step 3: find sail corner points on the closed perimeter.
         // Use a 15° threshold — low enough to catch gentle gaff angles at the
-        // throat, well above the < 5° kinks at smooth panel-to-panel junctions.
+        // head, well above the < 5° kinks at smooth panel-to-panel junctions.
         constexpr double sailCornerAngle = M_PI / 12.0; // 15°
         const auto cornerIdxs =
             findCornersOnClosedPolyline(perimeter, sailCornerAngle);
@@ -684,7 +686,7 @@ void SailCut3D::build()
             for (size_t ci : cornerIdxs)
                 cp.push_back(perimeter[ci]);
 
-            // Step 4: assign tack / clew / throat / peak purely by coordinate.
+            // Step 4: assign tack / clew / head / peak purely by coordinate.
             //
             // In SailCut's coordinate system Y is the vertical (height) axis and
             // X runs roughly from luff (mast / forestay, lower X) to leech (higher X).
@@ -692,8 +694,8 @@ void SailCut3D::build()
             // - The 2 corners with the lowest Y are the foot corners.
             //   Among those, lower X → tack, higher X → clew.
             // - The remaining corner(s) are the head.
-            //   For a 4-corner sail: lower X → throat, higher X → peak.
-            //   For a triangular sail: single head corner → throat = peak.
+            //   For a 4-corner sail: lower X → head, higher X → peak.
+            //   For a triangular sail: single head corner → head = peak.
 
             std::vector<int> byY(nCorners);
             std::iota(byY.begin(), byY.end(), 0);
@@ -707,30 +709,30 @@ void SailCut3D::build()
             gp_Pnt tack = cp[ci_tack];
             gp_Pnt clew = cp[ci_clew];
 
-            int ci_throat, ci_peak;
-            gp_Pnt throat, peak;
+            int ci_head, ci_peak;
+            gp_Pnt head, peak;
             if (nCorners == 4)
             {
                 int hi0 = byY[2], hi1 = byY[3];
-                ci_throat = (cp[hi0].X() <= cp[hi1].X()) ? hi0 : hi1;
+                ci_head = (cp[hi0].X() <= cp[hi1].X()) ? hi0 : hi1;
                 ci_peak   = (cp[hi0].X() <= cp[hi1].X()) ? hi1 : hi0;
-                throat = cp[ci_throat];
+                head = cp[ci_head];
                 peak   = cp[ci_peak];
             }
             else // triangular sail: single head corner
             {
-                ci_throat = ci_peak = byY[2];
-                throat = peak = cp[ci_throat];
+                ci_head = ci_peak = byY[2];
+                head = peak = cp[ci_head];
             }
 
             refpoints_[TACK]   = insight::vec3(tack);
             refpoints_[CLEW]   = insight::vec3(clew);
-            refpoints_[THROAT] = insight::vec3(throat);
+            refpoints_[HEAD] = insight::vec3(head);
             refpoints_[PEAK]   = insight::vec3(peak);
 
             std::cout << "  tack   " << tack.X()   << " " << tack.Y()   << " " << tack.Z()   << "\n"
                       << "  clew   " << clew.X()   << " " << clew.Y()   << " " << clew.Z()   << "\n"
-                      << "  throat " << throat.X() << " " << throat.Y() << " " << throat.Z() << "\n"
+                      << "  head " << head.X() << " " << head.Y() << " " << head.Z() << "\n"
                       << "  peak   " << peak.X()   << " " << peak.Y()   << " " << peak.Z()   << "\n";
 
             // Compute perimeter index ranges for each sail side.
@@ -738,7 +740,7 @@ void SailCut3D::build()
             auto cornerName = [&](int ci) -> std::string {
                 if (ci == ci_tack)   return TACK;
                 if (ci == ci_clew)   return CLEW;
-                if (ci == ci_throat) return THROAT;
+                if (ci == ci_head)   return HEAD;
                 if (ci == ci_peak)   return PEAK;
                 return "";
             };
@@ -747,11 +749,11 @@ void SailCut3D::build()
                     return (a==x && b==y) || (a==y && b==x);
                 };
                 if (both(TACK,   CLEW))    return FOOT;
-                if (both(TACK,   THROAT))  return LUFF;
+                if (both(TACK,   HEAD))  return LUFF;
                 if (both(CLEW,   PEAK))    return LEECH;
-                if (both(THROAT, PEAK))    return HEAD;
-                // Triangular sail: throat==peak; clew→throat is leech.
-                if (both(CLEW,   THROAT))  return LEECH;
+                if (both(HEAD, PEAK))    return GAFF;
+                // Triangular sail: head==peak; clew→head is leech.
+                if (both(CLEW,   HEAD))  return LEECH;
                 return "";
             };
             for (int k = 0; k < (int)nCorners; ++k)
@@ -850,6 +852,37 @@ void SailCut3D::build()
                               << "\" — " << ids.size() << " edges\n";
                     providedSubshapes_[name]=cad::Wire::create(efs);
                 }
+            }
+
+            // ── Tangent vectors of the leech and foot edges at the clew ──
+            if (refpoints_.count(CLEW))
+            {
+                const gp_Pnt clewPt = to_Pnt(refpoints_.at(CLEW));
+                for (const std::string& sideName : {FOOT, LEECH})
+                {
+                    auto it = sideEdgeIds.find(sideName);
+                    if (it == sideEdgeIds.end())
+                        continue;
+
+                    for (FeatureID eid : it->second)
+                    {
+                        const TopoDS_Edge& e = idx_->edgeByTag(eid);
+                        const gp_Pnt p1 = BRep_Tool::Pnt(TopExp::FirstVertex(e));
+                        const gp_Pnt p2 = BRep_Tool::Pnt(TopExp::LastVertex(e));
+                        if (p1.Distance(clewPt) < matchTol ||
+                            p2.Distance(clewPt) < matchTol)
+                        {
+                            refvectors_[sideName + "TangentAtClew"] =
+                                edgeTangent(e, refpoints_.at(CLEW));
+                            break;
+                        }
+                    }
+                }
+                refvectors_[CLEWTANGENT]=0.5*(
+                                               refvectors_.at(FOOT+ "TangentAtClew")
+                                               +
+                                                  (-refvectors_.at(LEECH+ "TangentAtClew"))
+                                               );
             }
         }
 

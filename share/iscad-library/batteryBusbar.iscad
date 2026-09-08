@@ -1,0 +1,32 @@
+
+vert?=EZ;
+
+p1?=O;
+p2?=p1+64.8*EY;
+delta=mag(p2-p1);
+el=(p2-p1)/delta;
+
+
+pitch=TableLookup(batteryBusbar, pitch, delta, pitch, nearest);
+t=TableLookup(batteryBusbar, pitch, pitch, t);
+W=TableLookup(batteryBusbar, pitch, pitch, W);
+L=TableLookup(batteryBusbar, pitch, pitch, L);
+D=TableLookup(batteryBusbar, pitch, pitch, D);
+d=TableLookup(batteryBusbar, pitch, pitch, R);
+
+
+xsec=Quad(O, W*EX, t*EY, center x);
+
+pmid=0.5*(p1+p2);
+bar:
+Bar(
+pmid-0.5*L*el, 
+pmid+0.5*L*el, 
+xsec, vert)
+-loadmodel(slottedHole, p=pmid-0.5*pitch*el, h=vert*t, d=d, L=D*el)
+-loadmodel(slottedHole, p=pmid+0.5*pitch*el, h=vert*t, d=d, L=D*el)
+;
+
+
+p1_2=p1+t*vert;
+p2_2=p2+t*vert;

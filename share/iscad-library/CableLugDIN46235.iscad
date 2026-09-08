@@ -28,6 +28,7 @@ Quad(p_flat, b*EY, -t*EZ, centerx)
  );
 
 p_scr=p_flat+c2*EX;
+p_mount=p_scr-t*EZ;
 
 body:
 (presshuelse|transition|schuh)

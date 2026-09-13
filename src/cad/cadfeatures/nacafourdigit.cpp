@@ -273,7 +273,7 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
     "Naca4",	
     std::make_shared<parser::ISCADParser::ModelstepRule>(
     '('  >
-    (  ruleset.r_string > ','
+    ((  ruleset.r_string > ','
              > ruleset.r_vectorExpression > ','
              > ruleset.r_vectorExpression > ','
              > ruleset.r_vectorExpression
@@ -301,7 +301,7 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
                                               VectorPtr, VectorPtr, VectorPtr,
                                               ScalarPtr, ScalarPtr>,
                        qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_7) ]
-    )
+                   ))
   );
 }
 

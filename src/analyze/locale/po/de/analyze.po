@@ -31,6 +31,9 @@ msgstr ""
 msgid "print version and exit"
 msgstr "Version anzeigen und beenden"
 
+msgid "run analysis of given type with default parameters"
+msgstr ""
+
 msgid "execution directory"
 msgstr "Arbeitsverzeichnis"
 
@@ -63,6 +66,9 @@ msgstr "Ganzzahlvariable zuweisen"
 
 msgid "set size of array"
 msgstr "Größe einer Liste ändern"
+
+msgid "add item to labelled array"
+msgstr ""
 
 msgid ""
 "additional input file to merge into analysis parameters before variable "
@@ -148,6 +154,10 @@ msgstr ""
 #, c-format
 msgid "Resizing array '%s' to %d"
 msgstr "Verändere die Größe des Arrays '%s' auf %d"
+
+#, fuzzy, c-format
+msgid "Inserting element '%s' into %s"
+msgstr "Setze den Auswahlparameter '%s' = \"%s\""
 
 #, c-format
 msgid "Setting boolean '%s' = %d"

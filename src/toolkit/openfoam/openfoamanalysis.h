@@ -77,7 +77,7 @@ inherits Base::Parameters
 run = set 
 {	
  machine 	= 	string 	"" 	"Machine or queue, where the external commands are executed on. Defaults to 'localhost', if left empty." *hidden
- OFEname 	= 	string 	"OFesi1806" "Identifier of the OpenFOAM installation, that shall be used"
+ OFEname 	= 	string 	"OFesi2112" "Identifier of the OpenFOAM installation, that shall be used"
  np 		= 	int 	0 	"Number of processors for parallel run (1 means serial execution, <1 means that all available processors are used)" *necessary
  mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done" *hidden

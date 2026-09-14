@@ -3,7 +3,7 @@
 
 #include "openfoam/caseelements/openfoamcaseelement.h"
 
-#include "gravity__gravity__Parameters_headers.h"
+#include "gravity_pdl.h"
 
 namespace insight {
 
@@ -12,9 +12,9 @@ class gravity
 {
 
 public:
-#include "gravity__gravity__Parameters.h"
+#include GRAVITY_PDL_gravity
 /*
-PARAMETERSET>>> gravity Parameters
+PARAMETERSET>>>
 inherits OpenFOAMCaseElement::Parameters
 
 description

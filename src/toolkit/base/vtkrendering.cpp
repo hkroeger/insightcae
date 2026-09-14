@@ -1889,6 +1889,7 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(
   if (readZones)
   {
       ofcase_->ReadZonesOn();
+      ofcase_->CopyDataToCellZonesOn();
   }
   else
   {

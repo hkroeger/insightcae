@@ -3,8 +3,7 @@
 
 import os, sys, subprocess, pprint, re, tempfile, glob, shutil
 from optparse import OptionParser
-import Insight.vtkPyOffscreen
-from Insight.toolkit import *
+from Insight.toolkitOffscreen import *
 
 parser = OptionParser()
 parser.disable_interspersed_args()

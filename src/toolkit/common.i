@@ -1,3 +1,30 @@
+%pythonbegin %{
+def _insight_require_vtk_loaded():
+    try:
+        with open('/proc/self/maps') as f:
+            maps = f.read()
+    except OSError:
+        return  # not on Linux / can't check - fall through to normal import
+    import re
+    if not re.search(r'libvtkCommon.*\.so', maps):
+        import sys
+        vtk_lines = [l for l in maps.splitlines() if 'vtk' in l.lower()]
+        sys.stderr.write(
+            "DEBUG _insight_require_vtk_loaded: no libvtkCommon*.so match. "
+            "vtk-related /proc/self/maps lines (%d found):\n%s\n"
+            % (len(vtk_lines), "\n".join(vtk_lines[:20]))
+        )
+        sys.stderr.flush()
+        raise ImportError(
+            "This module requires a VTK support module to be imported first. "
+            "Before importing Insight.toolkit or Insight.cad, import one of:\n"
+            "    import Insight.toolkitOffscreen   # headless / batch use\n"
+            "    import Insight.toolkitOnscreen    # GUI use\n"
+        )
+_insight_require_vtk_loaded()
+del _insight_require_vtk_loaded
+%}
+
 %include <stl.i>
 %include <std_auto_ptr.i>
 %include <std_unique_ptr.i>
@@ -305,7 +332,6 @@
 %naturalvar;
 
 %typecheck(SWIG_TYPECHECK_STRING) boost::filesystem::path, const boost::filesystem::path& {
-    //$1 = PyString_Check($input) ? 1 : 0;
     $1 = PyUnicode_Check($input) ? 1 : 0;
 }
 
@@ -315,7 +341,7 @@
 }
 
 %typemap(out) const boost::filesystem::path& {
-    $result = PyString_FromString($1->string().c_str());
+    $result = PyUnicode_FromString($1->string().c_str());
 }
 
 
@@ -346,11 +372,11 @@
 }
 
 %typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) GeomAbs_CurveType {
-    $1 = PyString_Check($input) ? 1 : 0;
+    $1 = PyUnicode_Check($input) ? 1 : 0;
 }
 
 %typemap(in) GeomAbs_CurveType {
-    std::string name=PyString_AsString($input);
+    std::string name=PyUnicode_AsUTF8($input);
     GeomAbs_CurveType ct;
     
     if (name=="Line") ct=GeomAbs_Line;
@@ -367,11 +393,11 @@
 }
 
 %typemap(typecheck, precedence=SWIG_TYPECHECK_INTEGER) GeomAbs_SurfaceType {
-    $1 = PyString_Check($input) ? 1 : 0;
+    $1 = PyUnicode_Check($input) ? 1 : 0;
 }
 
 %typemap(in) GeomAbs_SurfaceType {
-    std::string name=PyString_AsString($input);
+    std::string name=PyUnicode_AsUTF8($input);
     GeomAbs_SurfaceType ct;
     
     if (name=="Plane") ct=GeomAbs_Plane;

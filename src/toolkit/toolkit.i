@@ -200,6 +200,7 @@ using namespace insight::createPatchOps;
 %include "base/factory.h"
 %include "base/hierarchicalelement.h"
 %include "base/parameter.h"
+%include "base/parameters/subsetparameter.h"
 %include "base/parameterset.h"
 
 %include "base/parametersetinput.h"
@@ -227,6 +228,9 @@ using namespace insight::createPatchOps;
 %include "base/parameters/matrixparameter.h"
 %include "base/parameters/pathparameter.h"
 %include "base/parameters/arrayparameter.h"
+%include "base/parameters/selectablesubsetparameter.h"
+%include "base/parameters/labeledarrayparameter.h"
+%include "base/parameters/labeledarraykeyselectionparameter.h"
 %include "base/parameterset.h"
 %include "base/analysis.h"
 %include "base/parameterstudy.h"

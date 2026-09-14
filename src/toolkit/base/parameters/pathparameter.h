@@ -108,11 +108,11 @@ public:
 
   std::unique_ptr<PathParameter> clonePathParameter() const;
 protected:
-  std::unique_ptr<Element> doCloneUninitialized() const override;
+  std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 
 public:
   void assignFrom(const Element& e) override;
-  bool isEqual(const Element& op) const override;
+  bool isEqual(const insight::hierarchicalData::Element& op) const override;
 
   int nChildren() const override;
 
@@ -202,10 +202,10 @@ public:
         const std::string& name,
         const rapidxml::xml_node<>& node) override;
 
-    bool isEqual(const Element& op) const override;
+    bool isEqual(const insight::hierarchicalData::Element& op) const override;
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 public:
     std::unique_ptr<DirectoryParameter> cloneDirectoryParameter() const;
 };

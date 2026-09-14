@@ -81,7 +81,7 @@ public:
     ) override;
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 
 public:
     void assignFrom(const Element& p) override;

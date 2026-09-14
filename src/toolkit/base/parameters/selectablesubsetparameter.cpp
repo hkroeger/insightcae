@@ -248,6 +248,13 @@ void SelectableSubsetParameter::addItem(
     pins->initializeHierarchy();
 }
 
+void SelectableSubsetParameter::addItem(
+    key_type key,
+    const ParameterSet& ps )
+{
+    addItem(key, ps.cloneAs<ParameterSet>());
+}
+
 void SelectableSubsetParameter::removeItem(key_type key)
 {
     if (selection_==key)

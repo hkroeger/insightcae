@@ -252,6 +252,13 @@ Parameter& ParameterSet::insert(const std::string &name, std::unique_ptr<Paramet
 
 
 
+Parameter& ParameterSet::insert(const std::string &name, const Parameter& p)
+{
+  return insert(name, p.cloneAs<Parameter>());
+}
+
+
+
 void ParameterSet::remove(const std::string &name)
 {
     auto ie = value_.find(name);

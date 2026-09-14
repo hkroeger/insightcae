@@ -30,9 +30,17 @@
 
 namespace insight {
 
+#define declareTemplateType() \
+static const char* typeName_(); \
+    virtual const std::string& type() const { return typeName; } \
+    static const std::string typeName
+
+#define defineTemplateInstanceType(T, typenameStr) \
+ template<> const char* T::typeName_() { return typenameStr; } \
+ template<> const std::string T::typeName( T::typeName_() )
 
 
-template<class T, char const* N>
+template<class T>
 class SimpleParameter
     : public Parameter
 {
@@ -44,22 +52,17 @@ protected:
     T value_;
 
 public:
-    declareType ( N );
+    declareTemplateType();
 
-    SimpleParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
-        : Parameter ( description, isHidden, isExpert, isNecessary, order )
-    {}
+    SimpleParameter ( const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
 
-    SimpleParameter ( const T& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 )
-        : Parameter ( description, isHidden, isExpert, isNecessary, order ),
-          value_ ( value )
-    {}
+    SimpleParameter ( const T& value, const std::string& description,  bool isHidden=false, bool isExpert=false, bool isNecessary=false, int order=0 );
 
 
     bool isDifferent(const Parameter& p) const override
     {
-      if (const auto *sp = dynamic_cast<const SimpleParameter<T,N>*>(&p))
+      if (const auto *sp = dynamic_cast<const SimpleParameter<T>*>(&p))
       {
         return (value_!=(*sp)());
       }
@@ -120,9 +123,9 @@ public:
 
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override
     {
-        auto p= std::make_unique<SimpleParameter<T, N> >(
+        auto p= std::make_unique<SimpleParameter<T> >(
             value_,
             description().simpleLatex(),
             isHidden(), isExpert(), isNecessary(), order() );
@@ -195,7 +198,7 @@ public:
         Parameter::assignFrom(op);
     }
 
-    bool isEqual(const Element &op) const override
+    bool isEqual(const insight::hierarchicalData::Element &op) const override
     {
         if (auto *oa = dynamic_cast<const SimpleParameter*>(&op))
         {
@@ -234,12 +237,65 @@ public:
 
 
 
+template<class T>
+SimpleParameter<T>::SimpleParameter (
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+    : Parameter ( description, isHidden, isExpert, isNecessary, order )
+{}
 
-extern char VectorBaseName[];
-extern char VectorName[];
+template<class T>
+SimpleParameter<T>::SimpleParameter (
+    const T& value,
+    const std::string& description,
+    bool isHidden, bool isExpert, bool isNecessary, int order )
+    : Parameter ( description, isHidden, isExpert, isNecessary, order ),
+    value_ ( value )
+{}
+
+typedef SimpleParameter<double> DoubleParameter;
+typedef SimpleParameter<int> IntParameter;
+typedef SimpleParameter<bool> BoolParameter;
+typedef SimpleParameter<std::string> StringParameter;
+typedef SimpleParameter<boost::gregorian::date> DateParameter;
+typedef SimpleParameter<boost::posix_time::ptime> DateTimeParameter;
+
+
+
+template<>
+bool BoolParameter::isBooleanData() const;
+
+template<>
+bool BoolParameter::canSetFromBoolean() const;
+
+template<>
+bool BoolParameter::getAsBoolean() const;
+
+template<>
+void BoolParameter::setBoolean(bool b);
+
+}
+
+
+#ifdef SWIG
+%template(DoubleParameter) insight::SimpleParameter<double>;
+%template(IntParameter) insight::SimpleParameter<int>;
+%template(BoolParameter) insight::SimpleParameter<bool>;
+%template(StringParameter) insight::SimpleParameter<std::string>;
+%template(DateParameter) insight::SimpleParameter<boost::gregorian::date>;
+%template(DateTimeParameter) insight::SimpleParameter<boost::posix_time::ptime>;
+%template(VectorParameterBase) insight::SimpleParameter<arma::mat>;
+#endif
+
+
+
+
+namespace insight
+{
+
 
 class VectorParameter
-    : public SimpleParameter<arma::mat, VectorBaseName >
+    : public SimpleParameter<arma::mat>
 {
 public:
     enum VectorType {
@@ -250,7 +306,7 @@ private:
     VectorType vectorType_;
 
 public:
-    declareType ( VectorName );
+    declareType ( "vector" );
 
     VectorParameter (
         const std::string& description,
@@ -283,53 +339,9 @@ public:
     }
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 };
 
-
-
-
-extern char DoubleName[];
-extern char IntName[];
-extern char BoolName[];
-extern char StringName[];
-extern char DateName[];
-extern char DateTimeName[];
-
-
-
-
-typedef SimpleParameter<double, DoubleName> DoubleParameter;
-typedef SimpleParameter<int, IntName> IntParameter;
-typedef SimpleParameter<bool, BoolName> BoolParameter;
-// typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
-typedef SimpleParameter<std::string, StringName> StringParameter;
-typedef SimpleParameter<boost::gregorian::date, DateName> DateParameter;
-typedef SimpleParameter<boost::posix_time::ptime, DateTimeName> DateTimeParameter;
-
-
-template<>
-bool BoolParameter::isBooleanData() const;
-
-template<>
-bool BoolParameter::canSetFromBoolean() const;
-
-template<>
-bool BoolParameter::getAsBoolean() const;
-
-template<>
-void BoolParameter::setBoolean(bool b);
-
-
-#ifdef SWIG
-%template(DoubleParameter) SimpleParameter<double, DoubleName>;
-%template(IntParameter) SimpleParameter<int, IntName>;
-%template(BoolParameter) SimpleParameter<bool, BoolName>;
-//%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
-%template(StringParameter) SimpleParameter<std::string, StringName>;
-%template(DateParameter) SimpleParameter<boost::gregorian::date, DateName>;
-%template(DateTimeParameter) SimpleParameter<boost::posix_time::ptime, DateTimeName>;
-#endif
 
 
 }

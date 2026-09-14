@@ -571,7 +571,7 @@ ENDIF()
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   if (NOT WIN32)
     foreach(_variant Offscreen Onscreen)
-        set(TARGETNAME vtkPy${_variant})
+        set(TARGETNAME toolkit${_variant})
         set(PYTARGET ${TARGETNAME}_python)
         set(IFFILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.i)
         set_property(SOURCE ${IFFILE} PROPERTY CPLUSPLUS ON)
@@ -585,6 +585,9 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
 %pythonbegin %{
 import os,sys
 sys.setdlopenflags(os.RTLD_LAZY | os.RTLD_GLOBAL)
+%}
+%pythoncode %{
+from Insight.toolkit import *
 %}
 ")
 

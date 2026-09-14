@@ -69,10 +69,10 @@ public:
         const rapidxml::xml_node<>& node ) override;
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 public:
     void assignFrom(const Element& p) override;
-    bool isEqual(const Element& op) const override;
+    bool isEqual(const insight::hierarchicalData::Element& op) const override;
 
     int nChildren() const override;
 };

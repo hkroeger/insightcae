@@ -67,6 +67,40 @@ int main()
             rp==boost::filesystem::current_path()/ps->getPath("relFile"),
             "unexpected path");
 
+
+        // --- test ParameterSet::insert(name, const Parameter&) (clone-based overload) ---
+        {
+            DoubleParameter dp(2.71828, "a double parameter to be cloned");
+            auto& insertedDouble = ps->insert("clonedDouble", dp);
+            std::cout<<"cloned double value="<<insertedDouble.plainTextRepresentation(0)<<std::endl;
+
+            auto& viaGet = ps->get<DoubleParameter>("clonedDouble");
+            insight::assertion(
+                viaGet()==2.71828,
+                "cloned double parameter has unexpected value");
+
+            auto nested = ParameterSet::create("a nested parameter set");
+            nested->insert("innerDouble", DoubleParameter(1.41421, "inner double"));
+            auto& insertedSubset = ps->insert("clonedSubset", *nested);
+            std::cout
+                <<"cloned subset content:\n"
+                <<dynamic_cast<const ParameterSet&>(insertedSubset)
+                <<std::endl;
+
+            auto& viaGetSubset = ps->get<ParameterSet>("clonedSubset");
+            insight::assertion(
+                viaGetSubset.get<DoubleParameter>("innerDouble")()==1.41421,
+                "cloned nested parameter set lost/corrupted its inner double parameter");
+
+            // mutate the original after cloning to make sure the clone is truly independent
+            nested->get<DoubleParameter>("innerDouble").set(9.99);
+            insight::assertion(
+                viaGetSubset.get<DoubleParameter>("innerDouble")()==1.41421,
+                "cloned nested parameter set was NOT independent of the original (aliasing/shallow-clone bug)");
+
+            std::cout<<"ParameterSet::insert(name, const Parameter&) overload test passed"<<std::endl;
+        }
+
         return 0;
     }
     catch (std::exception& e)

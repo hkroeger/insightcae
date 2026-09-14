@@ -19,8 +19,11 @@ if (INSIGHT_BUILD_CAD)
     toolkit_gui genericmodules test_pdl_header
     Qt5::Test
     )
+    add_dependencies(IQParameterSetModel testexe_pdl)
     linkToolkitVtk(IQParameterSetModel Offscreen)
-    add_test(NAME gui_IQParameterSetModel COMMAND IQParameterSetModel)
+    add_test(NAME gui_IQParameterSetModel COMMAND IQParameterSetModel nogui)
+    set_tests_properties(gui_IQParameterSetModel PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
     add_executable(ParameterEditorWidget ParameterEditorWidget.cpp)
     target_link_libraries(ParameterEditorWidget

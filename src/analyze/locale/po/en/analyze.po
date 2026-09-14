@@ -31,6 +31,9 @@ msgstr "skip inclusion of input parameters into report"
 msgid "print version and exit"
 msgstr "print version and exit"
 
+msgid "run analysis of given type with default parameters"
+msgstr ""
+
 msgid "execution directory"
 msgstr "execution directory"
 
@@ -62,6 +65,9 @@ msgstr "int variable assignment"
 
 msgid "set size of array"
 msgstr "set size of array"
+
+msgid "add item to labelled array"
+msgstr ""
 
 msgid ""
 "additional input file to merge into analysis parameters before variable "
@@ -154,6 +160,10 @@ msgstr ""
 #, c-format
 msgid "Resizing array '%s' to %d"
 msgstr "Resizing array '%s' to %d"
+
+#, fuzzy, c-format
+msgid "Inserting element '%s' into %s"
+msgstr "Setting selection '%s' = \"%s\""
 
 #, c-format
 msgid "Setting boolean '%s' = %d"

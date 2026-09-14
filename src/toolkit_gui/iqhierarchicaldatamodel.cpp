@@ -6,11 +6,13 @@
 #include "qtextensions.h"
 
 #include "base/parameter.h"
+#include "base/parameters/selectionparameter.h"
 
 #include <QTimer>
 #include <QApplication>
 #include <QStyle>
 #include <QStatusBar>
+#include <QIcon>
 
 
 ParameterErrorState::ParameterErrorState(
@@ -671,6 +673,18 @@ QVariant IQHierarchicalDataModel::data(const QModelIndex &index, int role) const
             }
             break;
 
+        case Qt::DecorationRole:
+            if (index.column()==valueCol)
+            {
+                if (auto *sp = dynamic_cast<const insight::SelectionParameterInterface*>(p) )
+                {
+                    auto ip = sp->iconPathForKey(sp->selection());
+                    if (!ip.empty())
+                        return QIcon(QString::fromStdString(ip));
+                }
+            }
+            break;
+
         case Qt::BackgroundRole:
             return iqp->backgroundColor();
             break;
@@ -799,6 +813,12 @@ bool IQHierarchicalDataModel::isBulkUpdateInProgress() const
 
 void IQHierarchicalDataModel::notifyElementChange(const insight::hierarchicalData::Element& p)
 {
+    // Elements not yet inserted into the hierarchy (between newItemAdded and
+    // setParent in insertValueImpl) have no parent pointer. There is no view
+    // row for them yet; childInsertionDone will refresh the view correctly.
+    if (&p != data_.get() && !p.hasParent())
+        return;
+
     auto idx=indexOfElement(p, 0);
     if (idx.isValid())
     {

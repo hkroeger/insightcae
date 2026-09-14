@@ -55,7 +55,19 @@ void IQSelectionDelegate::setEditorData(
             .data().value<void*>() );
     auto &iqssp=dynamic_cast<IQSelectionParameterInterface&>(*iqp);
 
-    cb->addItems(iqssp.selectionKeys());
+    cb->setIconSize(QSize(48,48));
+    for (auto& k: iqssp.selectionKeys())
+    {
+        auto ip=iqssp.selectionParameter().iconPathForKey(k.toStdString());
+        if (ip.empty())
+        {
+            cb->addItem(k);
+        }
+        else
+        {
+            cb->addItem(QIcon(QString::fromStdString(ip)), k);
+        }
+    }
     cb->setCurrentIndex(iqssp.selectionParameter().selectionIndex());
 }
 

@@ -377,6 +377,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     }
 
     parameterTreeView_->setModel(model_);
+    parameterTreeView_->setIconSize(QSize(32,32));
     parameterTreeView_->setItemDelegate(
         new IQHierarchicalDataGridViewSelectorDelegate);
 

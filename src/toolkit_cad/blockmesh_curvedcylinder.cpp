@@ -46,11 +46,11 @@ blockMeshDict_CurvedCylinder::blockMeshDict_CurvedCylinder ( OpenFOAMCase& c, Pa
 
 CoordinateSystem blockMeshDict_CurvedCylinder::calc_end_CS() const
 {
-  gp_Pnt P0=to_Pnt(p().geometry.p0), P1=to_Pnt(p().geometry.p1);
+  gp_Pnt P0=cad::to_Pnt(p().geometry.p0), P1=cad::to_Pnt(p().geometry.p1);
   Handle_Geom_TrimmedCurve spine = GC_MakeArcOfCircle
       (
         P0,
-        to_Vec(p().geometry.ex/arma::norm(p().geometry.ex,2)),
+        cad::to_Vec(p().geometry.ex/arma::norm(p().geometry.ex,2)),
         P1
        ).Value();
 
@@ -175,7 +175,7 @@ void blockMeshDict_CurvedCylinder::create_bmd()
         {
           arma::mat ps=p0+r10*yc0;
           arma::mat pe=ec.origin+r11*yc1;
-          Handle_Geom_TrimmedCurve crv = GC_MakeArcOfCircle( to_Pnt(ps), to_Vec(ex0), to_Pnt(pe) ).Value();
+          Handle_Geom_TrimmedCurve crv = GC_MakeArcOfCircle( cad::to_Pnt(ps), cad::to_Vec(ex0), cad::to_Pnt(pe) ).Value();
           this->addEdge ( new ArcEdge (
                             ps,
                             pe,
@@ -186,7 +186,7 @@ void blockMeshDict_CurvedCylinder::create_bmd()
         {
           arma::mat ps=p0+r10*yo0;
           arma::mat pe=ec.origin+r11*yo1;
-          Handle_Geom_TrimmedCurve crv = GC_MakeArcOfCircle( to_Pnt(ps), to_Vec(ex0), to_Pnt(pe) ).Value();
+          Handle_Geom_TrimmedCurve crv = GC_MakeArcOfCircle( cad::to_Pnt(ps), cad::to_Vec(ex0), cad::to_Pnt(pe) ).Value();
           this->addEdge ( new ArcEdge (
                             ps,
                             pe,

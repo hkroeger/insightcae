@@ -273,9 +273,10 @@ class MultiBlockDataSetExtractor
 //  boost::property_tree::basic_ptree<std::string,Node> tree_;
   std::map<vtkDataObject*,int> flatIndices_;
 
-
+  void generateIndexMap();
 
 public:
+  MultiBlockDataSetExtractor(vtkAlgorithmOutput* mbds);
   MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbds);
 
   std::set<int> flatIndices(const std::vector<std::string>& groupNamePatterns) const;
@@ -500,9 +501,36 @@ public:
 
 
 
+/**
+ * @brief extractBlocks
+ * extracts blocks by index and returns multiblock algo
+ * @param input
+ * @param blockIdxs
+ * @return
+ */
+vtkSmartPointer<vtkMultiBlockDataSetAlgorithm>
+extractBlocks(vtkAlgorithmOutput *input, const std::set<int>& blockIdxs);
+
+/**
+ * @brief extractBlocks
+ * extracts blocks by hierarchy and regex name pattern
+ * @param input
+ * @param groupNamePatterns
+ * @return
+ * extracted blocks, merged into single unstructured grid
+ */
+vtkSmartPointer<vtkUnstructuredGridAlgorithm>
+extractBlocks(vtkAlgorithmOutput *input, const std::vector<std::string>& groupNamePatterns);
 
 
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMPatches(
+    vtkAlgorithmOutput *input, const std::string& namePattern);
 
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMPatch(
+    vtkAlgorithmOutput *input, const std::string& exactName);
+
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMInternalMesh(
+    vtkAlgorithmOutput *input);
 
 
 class OpenFOAMCaseScene
@@ -569,6 +597,23 @@ void forEachUnconnectedPart(
     ResultSection *section,
     vtkAlgorithm* in,
     std::function<void(vtkAlgorithm*, ResultSection*, int )> displayRegion);
+
+/**
+ * @brief arrowGlyphs
+ * @param locations
+ * one 3D point per row
+ * @param vectors
+ * one vector per row
+ * @param scaleFactor
+ * the scale factor
+ * @return
+ */
+vtkSmartPointer<vtkAlgorithm>
+arrowGlyphs(
+    const std::vector<arma::mat>& locations,
+    const std::vector<arma::mat>& vectors,
+    double maxArrowLen
+);
 
 }
 

@@ -33,6 +33,8 @@
 #include "vtkSmartPointer.h"
 #include "vtkPolyData.h"
 #include "vtkPointSetAlgorithm.h"
+#include <vtkProgrammableFilter.h>
+
 
 class vtkPolyData;
 class vtkUnstructuredGrid;
@@ -43,7 +45,24 @@ namespace insight {
 
 arma::mat vec3(vtkPointSet* pts, int i);
 arma::mat vec3(vtkPoints* pts, int i);
-  
+
+
+enum SurfaceVectorMode {
+    ParallelToSurface,      // tangential: v - (v·n)n
+    PerpendicularToSurface  // normal:     (v·n)n
+};
+
+struct SurfaceVectorsContext {
+    vtkProgrammableFilter* filter;
+    std::string            vectorArrayName;
+    SurfaceVectorMode      mode;
+};
+
+vtkSmartPointer<vtkProgrammableFilter> MakeSurfaceVectorsFilter(
+    vtkPolyData*      input,
+    const std::string& vectorArray,
+    SurfaceVectorMode  mode);
+
 namespace vtk {
   
 typedef std::vector<arma::mat> PointList;

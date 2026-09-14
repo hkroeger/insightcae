@@ -58,7 +58,7 @@ TopoDS_Edge blockMeshVisualization::addEdge(
                 Handle_TColgp_HArray1OfPnt pts_col = new TColgp_HArray1OfPnt( 1, pts.size() );
                 for ( int j=0; j<pts.size(); j++ )
                 {
-                    pts_col->SetValue ( j+1, to_Pnt ( tf(pts[j]) ) );
+                    pts_col->SetValue ( j+1, cad::to_Pnt ( tf(pts[j]) ) );
                 }
                 GeomAPI_Interpolate splbuilder ( pts_col, false, 1e-6 );
                 splbuilder.Perform();
@@ -69,14 +69,14 @@ TopoDS_Edge blockMeshVisualization::addEdge(
             else if (auto* ae = dynamic_cast<const bmd::ArcEdge*>(e))
             {
                 auto crv = GC_MakeArcOfCircle(
-                    to_Pnt(tf(p0)), to_Pnt(tf(ae->midpoint())), to_Pnt(tf(p1)) ).Value();
+                    cad::to_Pnt(tf(p0)), cad::to_Pnt(tf(ae->midpoint())), cad::to_Pnt(tf(p1)) ).Value();
                 edg=BRepBuilderAPI_MakeEdge(crv).Edge();
             }
         }
         if (edg.IsNull())
         {
             if (arma::norm(p0-p1,2)>insight::SMALL)
-                edg=BRepBuilderAPI_MakeEdge(to_Pnt(tf(p0)), to_Pnt(tf(p1))).Edge();
+                edg=BRepBuilderAPI_MakeEdge(cad::to_Pnt(tf(p0)), cad::to_Pnt(tf(p1))).Edge();
         }
 
         return edg;

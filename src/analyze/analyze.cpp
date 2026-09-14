@@ -31,6 +31,7 @@
 #include "base/streamtoprogressdisplayer.h"
 #include "base/toolkitversion.h"
 #include "base/parameters.h"
+#include "base/parameters/labeledarrayparameter.h"
 #include "base/cppextensions.h"
 #include "base/translations.h"
 
@@ -81,6 +82,7 @@ int main(int argc, char *argv[])
       ("skiplatex,x", _("skip execution of pdflatex"))
       ("report-skip-input-parameters", _("skip inclusion of input parameters into report"))
       ("version,r", _("print version and exit"))
+      ("new,n", po::value<std::string>(), _("run analysis of given type with default parameters"))
       ("workdir,w", po::value<std::string>(), _("execution directory"))
       ("savecfg,c", po::value<std::string>(), _("save final configuration (including command line overrides) to this file"))
       ("bool,b", po::value<StringList>(), _("boolean variable assignment"))
@@ -91,6 +93,7 @@ int main(int argc, char *argv[])
       ("vector,v", po::value<StringList>(), _("vector variable assignment"))
       ("int,i", po::value<StringList>(), _("int variable assignment"))
       ("set-array-size", po::value<StringList>(), _("set size of array"))
+      ("add-to-labeledarray", po::value<StringList>(), _("add item to labelled array"))
       ("merge,m", po::value<StringList>(), _("additional input file to merge into analysis parameters before variable assignments"))
       ("libs", po::value< StringList >(), _("Additional libraries with analysis modules to load"))
       ("input-file,f", po::value< std::string >(),_("Specifies input file."))
@@ -232,52 +235,47 @@ int main(int argc, char *argv[])
         
         boost::filesystem::path fn;
 
+        std::unique_ptr<AnalysisParameterSet> parameters;
+
         if (!vm.count("input-file"))
         {
-// #ifdef HAVE_WT
-//           if (server)
-//           {
-//             cout<<_("Running in server mode without explicitly specified input file: "
-//                           "waiting for input transmission")<<endl;
-//             if (!server->waitForInputFile(contents))
-//             {
-//                 throw insight::Exception(_("Received interruption!"));
-//             }
-//           }
-//           else
-// #endif
-          // {
-            cerr<<_("input file has to be specified!")<<endl;
-            exit(-1);
-          // }
+            if (vm.count("new"))
+            {
+                parameters = std::make_unique<AnalysisParameterSet>(
+                    vm["new"].as<std::string>() );
+                parameters->resolveRelativePaths(workdir);
+            }
+            else
+            {
+                cerr<<_("input file has to be specified!")<<endl;
+                exit(-1);
+            }
         }
         else
         {
-          if (vm.count("input-file")>1)
-          {
-            cerr<<_("only one single input file has to be specified!")<<endl;
-            exit(-1);
-          }
+            if (vm.count("input-file")>1)
+            {
+                cerr<<_("only one single input file has to be specified!")<<endl;
+                exit(-1);
+            }
 
-          fn = vm["input-file"].as<std::string>();
-          inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
-          filestem = fn.stem().string();
-        }
+            fn = vm["input-file"].as<std::string>();
+            inputFileParentPath = boost::filesystem::absolute(fn).parent_path();
+            filestem = fn.stem().string();
 
-        std::unique_ptr<AnalysisParameterSet> parameters;
+            {
+                insight::CurrentExceptionContext ex(_("reading input parameter file"));
 
-        {
-            insight::CurrentExceptionContext ex(_("reading input parameter file"));
+                XMLDocument input(fn);
+                parameters = std::make_unique<AnalysisParameterSet>();
+                parameters->readFromRootNode(*input.rootNode);
+                parameters->resolveRelativePaths(inputFileParentPath);
 
-            XMLDocument input(fn);
-            parameters = std::make_unique<AnalysisParameterSet>();
-            parameters->readFromRootNode(*input.rootNode);
-            parameters->resolveRelativePaths(inputFileParentPath);
-
-            cout<< str(format(
-                    _("Executing analysis of type '%s' in directory '%s'"))
-                        % parameters->analysisTypeName() % workdir.string()
-                ) << endl;
+                cout<< str(format(
+                        _("Executing analysis of type '%s' in directory '%s'"))
+                            % parameters->analysisTypeName() % workdir.string()
+                    ) << endl;
+            }
         }
 
         if (vm.count("merge"))
@@ -328,6 +326,21 @@ int main(int argc, char *argv[])
             }
         }
 
+        if (vm.count("add-to-labeledarray"))
+        {
+            StringList addlbls=vm["add-to-labeledarray"].as<StringList>();
+            for (const string& s: addlbls)
+            {
+                std::vector<std::string> pair;
+                boost::split(pair, s, boost::is_any_of(":"));
+                auto lbl = pair[1];
+                cout << boost::str(boost::format(
+                                       _("Inserting element '%s' into %s")
+                                       ) % lbl % pair[0]  )<<endl;
+                auto& ap = parameters->get<LabeledArrayParameter>(pair[0]);
+                ap.insertWithDefaults(lbl);
+            }
+        }
         if (vm.count("bool"))
         {
             StringList sets=vm["bool"].as<StringList>();

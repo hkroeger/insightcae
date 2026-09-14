@@ -56,7 +56,7 @@ int main(int, char*[])
             t->TransformPoint(p.memptr(), pdash_t.memptr());
 
             auto t2 = cad::is_gp_Trsf(insight::SpatialTransformation(t));
-            arma::mat pdash_t2 = Vector(to_Pnt(p).Transformed(t2));
+            arma::mat pdash_t2 = Vector(cad::to_Pnt(p).Transformed(t2));
             std::cout<<pdash_t.t()<<" <=> "<<pdash_t2.t()<<std::endl;
             insight::assertion(
                         arma::norm(pdash_t-pdash_t2)<SMALL,

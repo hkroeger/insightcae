@@ -40,23 +40,38 @@ bool calculateTotalPressure::read(const dictionary &dict)
 {
     pAmbient_=dict.lookupOrDefault<dimensionedScalar>(
         "pAmbient", dimensionedScalar("pAmbientDefl", dimPressure, 0.));
-    p_ = &mesh_.lookupObject<volScalarField>(
-        dict.lookupOrDefault<word>("pName", "p") );
-    if (p_==nullptr)
-        FatalErrorIn("calculateTotalPressure::read")
-            <<"no field p"<<abort(FatalError);
 
-    U_ = &mesh_.lookupObject<volVectorField>(
-        dict.lookupOrDefault<word>("UName", "U") );
-    if (U_==nullptr)
+    pName_ = dict.lookupOrDefault<word>("pName", "p");
+    UName_ = dict.lookupOrDefault<word>("UName", "U");
+    rhoName_ = dict.lookupOrDefault<word>("rhoName", "rho");
+    rhoInfValue_ = dict.lookupOrDefault<scalar>("rhoInf", 0.);
+
+    return true;
+}
+
+
+const volScalarField& calculateTotalPressure::p() const
+{
+    if (!mesh_.foundObject<volScalarField>( pName_ ))
+        FatalErrorIn("calculateTotalPressure::read")
+            <<"no field "<<pName_<<abort(FatalError);
+    return mesh_.lookupObject<volScalarField>( pName_ );
+}
+
+const volVectorField& calculateTotalPressure::U() const
+{
+    if (!mesh_.foundObject<volVectorField>( UName_ ))
         FatalErrorIn("calculateTotalPressure::read")
             <<"no field U"<<abort(FatalError);
+    return mesh_.lookupObject<volVectorField>( UName_ );
+}
 
-    auto rhoName=dict.lookupOrDefault<word>("rhoName", "rho");
-    if (rhoName=="rhoInf")
+tmp<volScalarField> calculateTotalPressure::rho() const
+{
+    if (rhoName_=="rhoInf")
     {
-        scalar rhoInf=readScalar(dict.lookup("rhoInf"));
-        rhoInf_.reset(
+
+        return tmp<volScalarField>(
             new volScalarField
             (
                 IOobject
@@ -66,28 +81,24 @@ bool calculateTotalPressure::read(const dictionary &dict)
                     mesh_
                     ),
                 mesh_,
-                dimensionedScalar("rho", dimDensity, rhoInf)
+                dimensionedScalar("rho", dimDensity, rhoInfValue_)
                 ));
-        rho_=rhoInf_.get();
     }
     else
     {
-        rho_ = &mesh_.lookupObject<volScalarField>(rhoName);
-        if (rho_==nullptr)
+        if (!mesh_.foundObject<volScalarField>(rhoName_))
             FatalErrorIn("calculateTotalPressure::read")
-                    <<"no field rho with name "<<rhoName<<abort(FatalError);
+                <<"no field rho with name "<<rhoName_<<abort(FatalError);
+        return mesh_.lookupObject<volScalarField>(rhoName_);
     }
-    return true;
 }
 
 
 
 bool calculateTotalPressure::perform()
 {
-    auto &p=*p_; auto& U=*U_; auto& rho=*rho_;
-
     tmp<volScalarField> pFactor;
-    if (p.dimensions() == dimPressure)
+    if (p().dimensions() == dimPressure)
     {
         pFactor=tmp<volScalarField>(
           new volScalarField(
@@ -102,12 +113,12 @@ bool calculateTotalPressure::perform()
     }
     else
     {
-        pFactor=1.0*rho;
+        pFactor=rho();
     }
 
     pTotal_ = pAmbient_
-              + p * pFactor
-              + 0.5*rho*sqr( mag(U) );
+              + p() * pFactor
+              + 0.5*rho()*sqr( mag(U()) );
 
     return true;
 }

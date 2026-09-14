@@ -44,13 +44,15 @@ public:
     static const std::string
         TACK,
         CLEW,
-        THROAT,
+        HEAD,
         PEAK,
 
         FOOT,
         LUFF,
         LEECH,
-        HEAD;
+        GAFF,
+
+        CLEWTANGENT;
 
 private:
     boost::filesystem::path filepath_;

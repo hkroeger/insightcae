@@ -17,6 +17,7 @@ if (NOT WIN32)
         FiltersFlowPaths
         FiltersVerdict
         FiltersParallel
+        FiltersProgrammable
         CommonColor
         CommonCore
         CommonDataModel
@@ -60,6 +61,7 @@ else(NOT WIN32)
            vtkFiltersFlowPaths
            vtkFiltersVerdict
            vtkFiltersParallel
+           vtkFiltersProgrammable
            vtkCommonColor
            vtkCommonCore
            vtkCommonDataModel

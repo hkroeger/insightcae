@@ -615,20 +615,22 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
 
     {
       auto sp1=createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
-                                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } );
+                                    [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL0)); } );
       this->addEdge ( sp1 );
 
       if (!no_top_edg)
         this->addEdge ( createEdgeAlongCurve(spine_rvs, block.rvs_u0, block.rvs_u1,
-                                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ) );
+                                      [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL1)); } ) );
 
       auto sp2=createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
-                                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } );
+                                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL0)); } );
       this->addEdge ( sp2 );
 
       if (!no_top_edg)
         this->addEdge ( createEdgeAlongCurve(spine_rvs, block.fwd_u0, block.fwd_u1,
-                                             [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ) );
+                                             [&](const gp_Pnt& p)
+                                             { return p.Transformed(rot_fwd).Translated(
+                                                cad::to_Vec(vL1)); } ) );
 
       auto sp3=new SplineEdge(middleCurve(sp1->allPoints(), sp2->allPoints(), vL0));
       this->addEdge ( sp3 );
@@ -656,9 +658,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
       ;
 
     this->addEdge ( createEdgeAlongCurve(spine_rvs, g_begin.fwd_u0, (g_begin.fwd_u0+g_begin.fwd_u1)*0.5,
-                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.fwd_u0+g_begin.fwd_u1)*0.5, g_begin.fwd_u1,
-                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0,
                                              vec3(pa.Transformed(rot_fwd_ctr))+vL0,
                                              vec3(center0)+vL0 ) );
@@ -669,9 +671,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     if (!no_top_edg)
     {
       this->addEdge ( createEdgeAlongCurve(spine_rvs, g_begin.fwd_u0, (g_begin.fwd_u0+g_begin.fwd_u1)*0.5,
-                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.fwd_u0+g_begin.fwd_u1)*0.5, g_begin.fwd_u1,
-                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1,
                                                vec3(pa.Transformed(rot_fwd_ctr))+vL1,
                                                vec3(center0)+vL1 ) );
@@ -768,9 +770,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
       ;
 
     this->addEdge ( createEdgeAlongCurve(spine_rvs, g_begin.rvs_u0, (g_begin.rvs_u0+g_begin.rvs_u1)*0.5,
-                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.rvs_u0+g_begin.rvs_u1)*0.5, g_begin.rvs_u1,
-                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL0,
                                              vec3(pa.Transformed(rot_fwd_ctr))+vL0,
                                              vec3(center0)+vL0 ) );
@@ -781,9 +783,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     if (!no_top_edg)
     {
       this->addEdge ( createEdgeAlongCurve(spine_rvs, g_begin.rvs_u0, (g_begin.rvs_u0+g_begin.rvs_u1)*0.5,
-                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_begin.rvs_u0+g_begin.rvs_u1)*0.5, g_begin.rvs_u1,
-                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( new CircularEdge_Center( vec3(pa.Transformed(rot_fwd))+vL1,
                                                vec3(pa.Transformed(rot_fwd_ctr))+vL1,
                                                vec3(center0)+vL1 ) );
@@ -990,9 +992,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
       ;
 
     this->addEdge ( createEdgeAlongCurve(spine_rvs, g_end.rvs_u0, (g_end.rvs_u0+g_end.rvs_u1)*0.5,
-                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_end.rvs_u0+g_end.rvs_u1)*0.5, g_end.rvs_u1,
-                    [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL0,
                                              vec3(pb.Transformed(rot_fwd_ctr))+vL0,
                                              vec3(center0)+vL0 ) );
@@ -1003,9 +1005,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     if (!no_top_edg)
     {
       this->addEdge ( createEdgeAlongCurve(spine_rvs, g_end.rvs_u0, (g_end.rvs_u0+g_end.rvs_u1)*0.5,
-                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_end.rvs_u0+g_end.rvs_u1)*0.5, g_end.rvs_u1,
-                      [&](const gp_Pnt& p) { return p.Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( new CircularEdge_Center(
                         vec3(pb.Transformed(rot_fwd))+vL1,
                         vec3(pb.Transformed(rot_fwd_ctr))+vL1,
@@ -1094,9 +1096,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
       ;
 
     this->addEdge ( createEdgeAlongCurve(spine_rvs, g_end.fwd_u0, (g_end.fwd_u0+g_end.fwd_u1)*0.5,
-                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_end.fwd_u0+g_end.fwd_u1)*0.5, g_end.fwd_u1,
-                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL0)); } ));
+                    [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL0)); } ));
     this->addEdge ( new CircularEdge_Center( vec3(pb.Transformed(rot_fwd))+vL0,
                                              vec3(pb.Transformed(rot_fwd_ctr))+vL0,
                                              vec3(center0)+vL0 ) );
@@ -1107,9 +1109,9 @@ void blockMeshDict_CylWedgeOrtho::insertBlocks
     if (!no_top_edg)
     {
       this->addEdge ( createEdgeAlongCurve(spine_rvs, g_end.fwd_u0, (g_end.fwd_u0+g_end.fwd_u1)*0.5,
-                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( createEdgeAlongCurve(spine_rvs, (g_end.fwd_u0+g_end.fwd_u1)*0.5, g_end.fwd_u1,
-                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(to_Vec(vL1)); } ));
+                      [&](const gp_Pnt& p) { return p.Transformed(rot_fwd).Translated(cad::to_Vec(vL1)); } ));
       this->addEdge ( new CircularEdge_Center(
                         vec3(pb.Transformed(rot_fwd))+vL1,
                         vec3(pb.Transformed(rot_fwd_ctr))+vL1,
@@ -1330,8 +1332,8 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
             BRep_Tool::Pnt(TopExp::LastVertex(e)).XYZ()
           )
          );
-    gp_XYZ R_midp = midp.XYZ() - to_Pnt(p().geometry.p0).XYZ();
-    gp_XYZ ez = to_Vec(p().geometry.ex).XYZ();
+    gp_XYZ R_midp = midp.XYZ() - cad::to_Pnt(p().geometry.p0).XYZ();
+    gp_XYZ ez = cad::to_Vec(p().geometry.ex).XYZ();
     double rmid = ( R_midp - ez.Dot(R_midp)*ez ).Modulus();
     double Lu = rmid * p().geometry.wedge_angle*SI::deg;
 
@@ -1441,7 +1443,7 @@ void blockMeshDict_CylWedgeOrtho::create_bmd()
       insertBlocks(
             spine, t0, t1,
             p().geometry.wedge_angle*SI::deg,
-            to_Vec(p().geometry.ex), to_Pnt(p().geometry.p0),
+            cad::to_Vec(p().geometry.ex), cad::to_Pnt(p().geometry.p0),
             *i0, *i,
             pc,
             p().geometry.inner_interface,

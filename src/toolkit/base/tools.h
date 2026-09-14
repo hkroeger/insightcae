@@ -770,6 +770,39 @@ public:
 
 int realNp(int userInputNp);
 
+struct ResultantForce
+{
+    /**
+     * @brief F
+     * the resultant force
+     */
+    arma::mat F;
+
+    /**
+     * @brief r
+     * the vector from original center c to the
+     * resultant force attack point
+     */
+    arma::mat r;
+
+    /**
+     * @brief Mr
+     * the residual moment around the resultant force attack point
+     */
+    arma::mat Mr;
+
+    /**
+     * @brief ResultantForce
+     * @param F_c
+     * the sum of forces
+     * @param M_c
+     * the moments around some center c
+     */
+    ResultantForce(
+        const arma::mat& F_c,
+        const arma::mat& M_c );
+};
+
 }
 
 #endif // TOOLS_H

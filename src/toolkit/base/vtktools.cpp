@@ -28,6 +28,8 @@
 #include "vtkPointData.h"
 #include "vtkCellData.h"
 #include "vtkPolyData.h"
+#include "vtkFloatArray.h"
+#include "vtkPolyDataNormals.h"
 
 #include "vtkDelaunay2D.h"
 #include "vtkLinearExtrusionFilter.h"
@@ -599,6 +601,103 @@ arma::mat vec3(vtkPoints *pts, int i)
 arma::mat vec3(vtkPointSet *pts, int i)
 {
     return vec3FromComponents(pts->GetPoint(i));
+}
+
+void ExecuteSurfaceVectors(void *arg)
+{
+    auto* ctx = static_cast<SurfaceVectorsContext*>(arg);
+
+    auto* input  = vtkPolyData::SafeDownCast(ctx->filter->GetInput());
+    auto* output = vtkPolyData::SafeDownCast(ctx->filter->GetOutput());
+
+    // Pass geometry through
+    output->CopyStructure(input);
+    output->GetPointData()->PassData(input->GetPointData());
+    output->GetCellData()->PassData(input->GetCellData());
+
+    // Ensure point normals are available
+    vtkSmartPointer<vtkPolyData> withNormals;
+    if (!input->GetPointData()->GetNormals())
+    {
+        auto normalFilter = vtkSmartPointer<vtkPolyDataNormals>::New();
+        normalFilter->SetInputData(input);
+        normalFilter->ComputePointNormalsOn();
+        normalFilter->ComputeCellNormalsOff();
+        normalFilter->SplittingOff(); // preserve topology
+        normalFilter->Update();
+        withNormals = normalFilter->GetOutput();
+    }
+    else
+    {
+        withNormals = input;
+    }
+
+    vtkDataArray* normals = withNormals->GetPointData()->GetNormals();
+    vtkDataArray* vectors = input->GetPointData()->GetArray(ctx->vectorArrayName.c_str());
+
+    if (!vectors)
+    {
+        vtkGenericWarningMacro(<< "Array '" << ctx->vectorArrayName << "' not found.");
+        return;
+    }
+
+    vtkIdType nPts = input->GetNumberOfPoints();
+
+    auto projected = vtkSmartPointer<vtkFloatArray>::New();
+    projected->SetName(vectors->GetName());
+    projected->SetNumberOfComponents(3);
+    projected->SetNumberOfTuples(nPts);
+
+    for (vtkIdType i = 0; i < nPts; ++i)
+    {
+        double v[3], n[3];
+        vectors->GetTuple(i, v);
+        normals->GetTuple(i, n);
+
+        // dot product
+        double vDotN = v[0]*n[0] + v[1]*n[1] + v[2]*n[2];
+
+        double result[3];
+        switch (ctx->mode)
+        {
+        case SurfaceVectorMode::ParallelToSurface:
+            // remove normal component: v - (v·n)n
+            result[0] = v[0] - vDotN * n[0];
+            result[1] = v[1] - vDotN * n[1];
+            result[2] = v[2] - vDotN * n[2];
+            break;
+
+        case SurfaceVectorMode::PerpendicularToSurface:
+            // keep only normal component: (v·n)n
+            result[0] = vDotN * n[0];
+            result[1] = vDotN * n[1];
+            result[2] = vDotN * n[2];
+            break;
+        }
+
+        projected->SetTuple(i, result);
+    }
+
+    // Replace the array in the output
+    output->GetPointData()->RemoveArray(vectors->GetName());
+    output->GetPointData()->AddArray(projected);
+    output->GetPointData()->SetActiveVectors(projected->GetName());
+}
+
+vtkSmartPointer<vtkProgrammableFilter> MakeSurfaceVectorsFilter(
+    vtkPolyData*      input,
+    const std::string& vectorArray,
+    SurfaceVectorMode  mode)
+{
+    auto filter = vtkSmartPointer<vtkProgrammableFilter>::New();
+    filter->SetInputData(input);
+
+    // Context must outlive the filter's Update() call.
+    // Manage lifetime appropriately (e.g. member variable or shared_ptr).
+    auto* ctx = new SurfaceVectorsContext{ filter.Get(), vectorArray, mode };
+    filter->SetExecuteMethod(ExecuteSurfaceVectors, ctx);
+
+    return filter;
 }
 
 }

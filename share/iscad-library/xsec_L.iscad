@@ -1,0 +1,12 @@
+# L-Profil
+t?=1.5;
+H?=250;
+W?=50;
+
+xsec:
+Polyline(
+ W*EX,
+ O,
+ H*EY
+)
+;

@@ -36,6 +36,8 @@
 #include "vtkDataObjectTreeIterator.h"
 #include "vtkCleanPolyData.h"
 #include "vtkLogLookupTable.h"
+#include "vtkFloatArray.h"
+#include "vtkGlyph3D.h"
 // #include "vtkLogger.h"
 
 #include "vtkPointData.h"
@@ -1404,33 +1406,48 @@ MultiBlockDataSetExtractor::findObjectsBelowNode(
 }
 
 
+void MultiBlockDataSetExtractor::generateIndexMap()
+{
+    CurrentExceptionContext ex("generating flat index list of vtkMultiBlockDataSet");
+
+    insight::assertion(mbds_!=nullptr, "a non-null pointer to the MultiBlockDataSet is expected!");
+
+    // traverse over all leafs to get flat index
+    // GetCurrentFlatIndex() only return the right value,
+    // if the loop is over the entire structure
+    auto iter = mbds_->NewTreeIterator();
+    iter->VisitOnlyLeavesOff();
+    iter->SkipEmptyNodesOff();
+
+    for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+    {
+        auto o=iter->GetCurrentDataObject();
+        auto j=iter->GetCurrentFlatIndex();
+        flatIndices_[o]=j;
+    }
+}
+
+
+MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkAlgorithmOutput *port)
+{
+    port->GetProducer()->Update();
+    mbds_=vtkMultiBlockDataSet::SafeDownCast(
+        port->GetProducer()->GetOutputDataObject(
+            port->GetIndex() ) );
+    generateIndexMap();
+}
 
 MultiBlockDataSetExtractor::MultiBlockDataSetExtractor(vtkMultiBlockDataSet* mbds)
   : mbds_(mbds)
 {
-  CurrentExceptionContext ex("generating flat index list of vtkMultiBlockDataSet");
-
-  insight::assertion(mbds_!=nullptr, "a non-null pointer to the MultiBlockDataSet is expected!");
-
-  // traverse over all leafs to get flat index
-  // GetCurrentFlatIndex() only return the right value,
-  // if the loop is over the entire structure
-  auto iter = mbds_->NewTreeIterator();
-  iter->VisitOnlyLeavesOff();
-  iter->SkipEmptyNodesOff();
-
-  for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
-  {
-    auto o=iter->GetCurrentDataObject();
-    auto j=iter->GetCurrentFlatIndex();
-    flatIndices_[o]=j;
-  }
+    generateIndexMap();
 }
 
 
 
 
-std::set<int> MultiBlockDataSetExtractor::flatIndices(const std::vector<std::string>& groupNamePatterns) const
+std::set<int> MultiBlockDataSetExtractor::flatIndices(
+    const std::vector<std::string>& groupNamePatterns ) const
 {
   insight::CurrentExceptionContext ex("determining block indices for pattern ["+boost::join(groupNamePatterns, ", ")+"]");
 
@@ -1946,13 +1963,13 @@ void OpenFOAMCaseScene::setTimeIndex(vtkIdType timeId)
 
 vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMCaseScene::internalMeshFilter() const
 {
-  auto internal = extractBlocks(
-      MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(
-          {"internalMesh"} ));
+  // auto internal = extractBlocks(
+  //     MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(
+  //         {"internalMesh"} ));
 
-  auto af = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
-  af->AddInputConnection(internal->GetOutputPort());
-  return af;
+  // auto af = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
+  // af->AddInputConnection(internal->GetOutputPort());
+  return OpenFOAMInternalMesh( ofcase_->GetOutputPort() );
 }
 
 
@@ -2008,13 +2025,15 @@ vtkPolyData* OpenFOAMCaseScene::patch(const std::string& name) const
 vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMCaseScene::patchesFilter(
     const std::string& namePattern) const
 {
-  auto patches = extractBlock(
-      MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(
-          { "Patches", namePattern } ));
+    return OpenFOAMPatches(ofcase_->GetOutputPort(), namePattern);
 
-  auto pf = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
-  pf->AddInputConnection(patches->GetOutputPort());
-  return pf;
+  // auto patches = extractBlock(
+  //     MultiBlockDataSetExtractor(ofcase_->GetOutput()).flatIndices(
+  //         { "Patches", namePattern } ));
+
+  // auto pf = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
+  // pf->AddInputConnection(patches->GetOutputPort());
+  // return pf;
 }
 
 
@@ -2030,7 +2049,8 @@ vtkSmartPointer<vtkOpenFOAMReader> OpenFOAMCaseScene::ofcase() const
   return ofcase_;
 }
 
-vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::string& name) const
+vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(
+    const std::string& name) const
 {
   std::set<int> blkIdx;
   if (patches_.find(name)!=patches_.end())
@@ -2058,19 +2078,20 @@ vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(
   return extractBlock(std::set<int>({blockIdx}));
 }
 
-vtkSmartPointer<vtkMultiBlockDataSetAlgorithm> OpenFOAMCaseScene::extractBlocks(const std::set<int>& blockIdxs) const
+vtkSmartPointer<vtkMultiBlockDataSetAlgorithm> OpenFOAMCaseScene::extractBlocks(
+    const std::set<int>& blockIdxs) const
 {
-  insight::assertion(
-      blockIdxs.size()>0,
-      "no block indices to extract were provided!" );
+  // insight::assertion(
+  //     blockIdxs.size()>0,
+  //     "no block indices to extract were provided!" );
 
-  auto eb = vtkSmartPointer<vtkExtractBlock>::New();
-  eb->SetInputConnection(ofcase_->GetOutputPort());
-  for (int i: blockIdxs)
-  {
-    eb->AddIndex( i );
-  }
-  return eb;
+  // auto eb = vtkSmartPointer<vtkExtractBlock>::New();
+  // eb->SetInputConnection(ofcase_->GetOutputPort());
+  // for (int i: blockIdxs)
+  // {
+  //   eb->AddIndex( i );
+  // }
+  return ::insight::extractBlocks(ofcase_->GetOutputPort(), blockIdxs);
 }
 
 vtkSmartPointer<vtkCompositeDataGeometryFilter> OpenFOAMCaseScene::extractBlock(const std::set<int>& blockIdxs) const
@@ -2317,9 +2338,125 @@ arma::mat average(vtkDataArray *arr)
     return avg;
 }
 
+vtkSmartPointer<vtkAlgorithm>
+arrowGlyphs(
+    const std::vector<arma::mat> &locations,
+    const std::vector<arma::mat> &vecs,
+    double maxArrowLen )
+{
+    insight::assertion(
+        locations.size()==vecs.size(),
+        "one location per vector is expected (got %d locations and %d vectors)",
+        locations.size(), vecs.size());
+
+    double maxF=0.;
+
+    auto points  = vtkSmartPointer<vtkPoints>::New();
+    auto vectors = vtkSmartPointer<vtkFloatArray>::New();
+    auto magnitudes = vtkSmartPointer<vtkFloatArray>::New();
+
+    vectors->SetNumberOfComponents(3);
+    vectors->SetName("Vectors");
+
+    magnitudes->SetNumberOfComponents(1);
+    magnitudes->SetName("Magnitude");
+
+    for (long int i=0; i<locations.size(); ++i)
+    {
+        points->InsertNextPoint(locations.at(i).memptr());
+        vectors->InsertNextTuple(vecs.at(i).memptr());
+        double magF=arma::norm(vecs.at(i),2);
+        maxF=std::max<double>(maxF, magF);
+        magnitudes->InsertNextValue(magF);
+    }
+
+
+    // 2. PolyData aufbauen
+    auto polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points);
+    polyData->GetPointData()->SetVectors(vectors);
+    polyData->GetPointData()->SetScalars(magnitudes); // für Farbgebung
+
+    // 3. Pfeilform
+    auto arrowSource = vtkSmartPointer<vtkArrowSource>::New();
+    arrowSource->SetShaftRadius(0.03);
+    arrowSource->SetTipRadius(0.10);
+    arrowSource->SetTipLength(0.30);
+    arrowSource->SetShaftResolution(12);
+    arrowSource->SetTipResolution(12);
+    // arrowSource->SetInvert(
+    //     vfd.direction==VolFluxData::In ? false : true
+    //     );
+    arrowSource->Update();
+
+
+    // 4. GlyphFilter — skaliert nach Vektorbetrag
+    auto glyphFilter = vtkSmartPointer<vtkGlyph3D>::New();
+    glyphFilter->SetInputData(polyData);
+    glyphFilter->SetSourceConnection(arrowSource->GetOutputPort());
+
+    glyphFilter->SetVectorModeToUseVector();      // Orientierung nach Vektor
+    glyphFilter->SetScaleModeToScaleByVector();   // Länge ~ Vektorbetrag
+    glyphFilter->SetColorModeToColorByScalar();   // Farbe nach Magnitude
+
+    glyphFilter->SetScaleFactor(maxArrowLen/maxF);             // globaler Skalierungsfaktor
+    glyphFilter->OrientOn();
+    glyphFilter->Update();
+
+    return glyphFilter;
+}
 
 
 
+
+
+vtkSmartPointer<vtkMultiBlockDataSetAlgorithm>
+extractBlocks(vtkAlgorithmOutput *input, const std::set<int>& blockIdxs)
+{
+    insight::assertion(
+        blockIdxs.size()>0,
+        "no block indices to extract were provided!" );
+
+    auto eb = vtkSmartPointer<vtkExtractBlock>::New();
+    eb->SetInputConnection(input);
+    for (int i: blockIdxs)
+    {
+        eb->AddIndex( i );
+    }
+    return eb;
+}
+
+vtkSmartPointer<vtkUnstructuredGridAlgorithm>
+extractBlocks(vtkAlgorithmOutput *input, const std::vector<std::string>& groupNamePatterns)
+{
+    auto patches = extractBlocks(
+        input,
+        MultiBlockDataSetExtractor(input).flatIndices(
+            groupNamePatterns ));
+
+    auto pf = vtkSmartPointer<vtkCompositeDataToUnstructuredGridFilter>::New();
+    pf->AddInputConnection(patches->GetOutputPort());
+    return pf;
+}
+
+
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMPatches(
+    vtkAlgorithmOutput *input, const std::string& namePattern)
+{
+    return extractBlocks(input, { "Patches", namePattern } );
+}
+
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMPatch(
+    vtkAlgorithmOutput *input, const std::string& exactName)
+{
+    return OpenFOAMPatches(input, "^"+exactName+"$");
+}
+
+vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMInternalMesh(
+    vtkAlgorithmOutput *input )
+{
+    return extractBlocks(input, {"internalMesh"} );
+}
 
 
 

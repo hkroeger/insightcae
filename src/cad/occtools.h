@@ -29,6 +29,21 @@ namespace cad {
 
 bool isShapeEmpty(const TopoDS_Shape& shape);
 
+inline gp_Pnt to_Pnt(const arma::mat& xyz)
+{
+    return gp_Pnt(xyz(0), xyz(1), xyz(2));
+}
+
+inline gp_Vec to_Vec(const arma::mat& xyz)
+{
+    return gp_Vec(xyz(0), xyz(1), xyz(2));
+}
+
+inline gp_Dir to_Dir(const arma::mat& xyz)
+{
+    return gp_Dir(xyz(0), xyz(1), xyz(2));
+}
+
 
 arma::mat calcBndBox(TopoDS_Shape);
 
@@ -65,6 +80,42 @@ public:
 
 std::vector<arma::mat> orderedCornerPoints(const TopoDS_Shape& f);
 TopoDS_Face asSingleFace(const TopoDS_Shape& shape);
+
+double edgeLength(const TopoDS_Edge& e);
+
+std::vector<gp_Pnt> resampleEdgeUniform(const TopoDS_Edge& edge, double approxSegmentLength, double* actualSegmentLength=NULL, int minSegments=1);
+std::vector<gp_Pnt> resampleEdgeUniform(const TopoDS_Edge& edge, int nSegments);
+std::vector<double> resampleEdge (const TopoDS_Edge& edge, const std::vector<double> lIn, int c0Res=-1);
+
+gp_Pnt2d faceUV(const TopoDS_Face& f, const TopoDS_Vertex& v);
+gp_Pnt2d faceUV(const TopoDS_Face& f, const gp_Pnt& p);
+gp_Pnt2d faceUV(const Handle_Geom_Surface& f, const gp_Pnt& p);
+std::vector<gp_XY> faceUV
+    (
+        const TopoDS_Face& f,
+        std::vector<gp_Pnt>::const_iterator begin,
+        std::vector<gp_Pnt>::const_iterator end
+        );
+
+gp_Vec faceNormal(const TopoDS_Face& f, const gp_Pnt& v);
+gp_Vec faceNormal(const TopoDS_Face& f, const TopoDS_Vertex& v);
+gp_Vec faceNormal(const TopoDS_Face& f, const gp_Pnt2d& p2);
+
+gp_Pnt edgeAt(const TopoDS_Edge& edge, double t);
+gp_Pnt faceAt(const TopoDS_Face& face, gp_Pnt2d p2d);
+std::vector<gp_Pnt> faceAt
+    (
+        const TopoDS_Face& face,
+        std::vector<gp_XY>::const_iterator begin,
+        std::vector<gp_XY>::const_iterator end
+        );
+gp_Pnt faceAt(const TopoDS_Face& face, double u, double v );
+
+Bnd_Box getBoundingBox(const TopoDS_Shape& shape, double deflection=-1);
+Bnd_Box getBoundingBox(const TopoDS_Shape& shape, gp_Pnt& bbMin, gp_Pnt& bbMax, double deflection=-1 );
+
+
+arma::mat edgeTangent(TopoDS_Shape edge, const arma::mat& pt);
 
 template<class Trsf>
 void
@@ -109,6 +160,9 @@ transformTriangulation(
         }
     }
 }
+
+
+
 
 }
 }

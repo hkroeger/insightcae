@@ -153,6 +153,13 @@ int main(int argc, char *argv[])
     if (vm.count("workdir"))
     {
         workdir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
+        if (!boost::filesystem::exists(workdir))
+        {
+            std::cerr << std::endl
+                      << _("Error: work directory does not exist: ")<<workdir
+                <<std::endl<<std::endl;
+            exit(-1);
+        }
         boost::filesystem::current_path(workdir); // make it the current directory
     }
 

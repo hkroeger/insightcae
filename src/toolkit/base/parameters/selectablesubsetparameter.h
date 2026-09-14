@@ -114,16 +114,32 @@ public:
    */
   void addItem(key_type key, std::unique_ptr<ParameterSet>&& ps );
 
+  /**
+   * @brief addItem
+   * clone-based overload, usable from Python (SWIG's %unique_ptr(insight::ParameterSet)
+   * typemap only matches a by-value std::unique_ptr<ParameterSet> parameter, not the
+   * unique_ptr<ParameterSet>&& overload above)
+   * @param key
+   * @param ps
+   */
+  void addItem(key_type key, const ParameterSet& ps);
+
   void removeItem(key_type key);
 
   inline ParameterSet& operator() ()
   {
-    return * ( value_.find ( selection_ )->second );
+    auto it = value_.find ( selection_ );
+    if (it == value_.end())
+      throw insight::Exception("SelectableSubsetParameter: no valid selection (key '"+selection_+"' not found)");
+    return *(it->second);
   }
 
   inline const ParameterSet& operator() () const
   {
-    return * ( value_.find ( selection_ )->second );
+    auto it = value_.find ( selection_ );
+    if (it == value_.end())
+      throw insight::Exception("SelectableSubsetParameter: no valid selection (key '"+selection_+"' not found)");
+    return *(it->second);
   }
 
   void setParametersForSelection(const key_type& key, const ParameterSet& ps);
@@ -157,13 +173,13 @@ public:
       const rapidxml::xml_node<>& node ) override;
 
 protected:
-  std::unique_ptr<Element> doCloneUninitialized() const override;
+  std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 
 public:
   void assignFrom(const Element& p) override;
   void copyMatching(const Element& p) override;
   void extend( const Element& op ) override;
-  bool isEqual(const Element& op) const override;
+  bool isEqual(const insight::hierarchicalData::Element& op) const override;
 
 #ifndef SWIG
   std::unique_ptr<Parameter> intersection(const Parameter &other) const override;

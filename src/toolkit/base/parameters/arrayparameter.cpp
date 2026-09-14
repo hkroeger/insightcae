@@ -132,6 +132,7 @@ void ArrayParameter::appendValueImpl (
     int i=value_.size();
   beforeChildInsertion(i, i);
 
+  np->setParent(this);
   value_.push_back ( std::move(np) );
   auto& ins=value_.back();
 
@@ -141,9 +142,9 @@ void ArrayParameter::appendValueImpl (
   childValueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
           ins->childValueChanged.connect( childValueChanged )));
-  newItemAdded(ins.get());
-  ins->setParent(this);
   if (initializeHierarchy) ins->initializeHierarchy();
+
+  newItemAdded(ins.get());
 
   childInsertionDone(i, i);
 
@@ -158,6 +159,8 @@ void ArrayParameter::insertValueImpl (
       i>=0 && i<size(),
       "%d out of range (0...%d)", i, size()-1);
 
+  np->setParent(this);
+
   beforeChildInsertion(i, i);
 
   auto ins = value_.insert( value_.begin()+i, std::move(np) );
@@ -168,9 +171,9 @@ void ArrayParameter::insertValueImpl (
   childValueChangedConnections_.insert(ins->get(),
       std::make_shared<boost::signals2::scoped_connection>(
        (*ins)->childValueChanged.connect( childValueChanged )));
-  newItemAdded(ins->get());
-  (*ins)->setParent(this);
   if (initializeHierarchy) (*ins)->initializeHierarchy();
+
+  newItemAdded(ins->get());
 
   childInsertionDone(i, i);
 
@@ -187,15 +190,16 @@ void ArrayParameter::appendEmptyImpl(bool initializeHierarchy)
   // if (init) initialize();
 
   auto& ins=value_.back();
+  ins->setParent(this);
+
   valueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
         ins->valueChanged.connect( childValueChanged )));
   childValueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
         ins->childValueChanged.connect( childValueChanged )));
-  newItemAdded(ins.get());
-  ins->setParent(this);
   if (initializeHierarchy) ins->initializeHierarchy();
+  newItemAdded(ins.get());
 
   childInsertionDone(i, i);
 

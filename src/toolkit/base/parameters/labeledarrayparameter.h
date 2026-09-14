@@ -150,7 +150,7 @@ public:
 #endif
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 
 
 
@@ -159,7 +159,7 @@ public:
     void assignFrom( const Element& rhs ) override;
     void copyMatching( const Element& rhs ) override;
     void extend( const Element& op ) override;
-    bool isEqual(const Element& op) const override;
+    bool isEqual(const insight::hierarchicalData::Element& op) const override;
 };
 
 } // namespace insight

@@ -348,6 +348,8 @@ void LabeledArrayParameter::insertValueImpl(
 
     auto i = predictInsertionLocation(v, label);
 
+    np->setParent(this);
+
     beforeChildInsertion(i, i);
 
     //should overwrite
@@ -359,10 +361,12 @@ void LabeledArrayParameter::insertValueImpl(
     childValueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(
             ins.first->second->childValueChanged.connect( childValueChanged )));
+
+    if (initializeHierarchy)
+        ins.first->second->initializeHierarchy();
+
     newItemAdded(ins.first->first, ins.first->second);
 
-    ins.first->second->setParent(this);
-    if (initializeHierarchy) ins.first->second->initializeHierarchy();
 
     childInsertionDone(i, i);
 

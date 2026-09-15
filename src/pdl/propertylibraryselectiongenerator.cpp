@@ -29,18 +29,11 @@ PropertyLibrarySelectionGenerator
 
 
 
-bool PropertyLibrarySelectionGenerator::isPrimitiveType() const
-{
-    return true;
-}
-
-
-
-
 void PropertyLibrarySelectionGenerator::cppAddRequiredInclude(
     std::set<std::string> &headers ) const
 {
   headers.insert("\"base/parameters/propertylibraryselectionparameter.h\"");
+  headers.insert("\"base/cppextensions.h\"");
 }
 
 
@@ -57,7 +50,8 @@ PropertyLibrarySelectionGenerator::cppInsightType() const
 
 std::string PropertyLibrarySelectionGenerator::cppStaticType() const
 {
-  return std::string("const")+(isTemplate?" typename ":" ")+libraryName+"::value_type *";
+  // type of the "parameters" field inside the generated struct (see writeCppTypeDecl)
+  return "std::shared_ptr<insight::ParameterSet>";
 }
 
 
@@ -66,10 +60,38 @@ std::string PropertyLibrarySelectionGenerator::cppStaticType() const
 std::string
 PropertyLibrarySelectionGenerator::cppDefaultValueExpression() const
 {
-  return "&"+libraryName+"::library().lookup("+
-         (defaultSelection!="NODEFAULT"?
-            "\""+defaultSelection+"\""
-            :libraryName+"::library().entryList().front()");
+  std::string sel =
+      (defaultSelection!="NODEFAULT")
+        ? ("\""+defaultSelection+"\"")
+        : (libraryName+"::library().entryList().front()");
+
+  return
+      "{ "+sel+", "
+      "&"+libraryName+"::library().lookup("+sel+"), "
+      +libraryName+"::library().defaultParameters("+sel+") }";
+}
+
+
+
+
+void PropertyLibrarySelectionGenerator::writeCppTypeDecl(
+    std::ostream& os ) const
+{
+  std::string valueType = std::string(isTemplate?"typename ":"")+libraryName+"::value_type";
+  std::string instanceType = std::string(isTemplate?"typename ":"")+libraryName+"::instance_type";
+
+  os
+      << "struct " << cppTypeName() << "\n"
+      << "{\n"
+      <<   "std::string selection;\n"
+      <<   "const " << valueType << "* value;\n"
+      <<   cppStaticType() << " parameters;\n"
+      <<   "operator const " << valueType << "*() const { return value; }\n"
+      <<   "std::shared_ptr<" << instanceType << "> createInstance() const\n"
+      <<   "{\n"
+      <<   "return " << libraryName << "::library().createInstance(selection, *parameters);\n"
+      <<   "}\n"
+      << "};\n";
 }
 
 
@@ -102,7 +124,10 @@ void PropertyLibrarySelectionGenerator::cppWriteSetStatement(
     const std::string& varname,
     const std::string& staticname ) const
 {
-  os<<varname<<".setSelection( "<<libraryName<<"::library().labelOf( *"<< staticname <<" ) );"<<endl;
+  os<<"{\n"
+    <<varname<<".setSelection( "<<staticname<<".selection );\n"
+    <<varname<<".instanceParameters().assignFrom( *"<<staticname<<".parameters );\n"
+    <<"}\n";
 }
 
 
@@ -113,6 +138,8 @@ void PropertyLibrarySelectionGenerator::cppWriteGetStatement(
     const std::string& varname,
     const std::string& staticname ) const
 {
-  os<<staticname<<" = &"<<libraryName<<"::library().lookup( "<<varname<<".selection() );\n"
+  os<<staticname<<".selection = "<<varname<<".selection();\n"
+       <<staticname<<".value = &"<<libraryName<<"::library().lookup( "<<varname<<".selection() );\n"
+       <<staticname<<".parameters = std::dynamic_unique_ptr_cast<insight::ParameterSet>( "<<varname<<".instanceParameters().clone() );\n"
        <<staticname<< ".setPath( "<<varname<<" .path());\n" ;
 }

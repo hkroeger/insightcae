@@ -268,6 +268,7 @@ private:
     friend class ParameterSet;
     friend class SelectableSubsetParameter;
     friend class LabeledArrayParameter;
+    friend class PropertyLibrarySelectionParameter;
     friend class cad::ConstrainedSketch;
 
 

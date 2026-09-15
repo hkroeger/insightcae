@@ -13,14 +13,14 @@ struct PropertyLibrarySelectionGenerator
 
     PropertyLibrarySelectionGenerator(bool isTemplate, const std::string& libname, const std::string& sel, const std::string& d);
 
-    bool isPrimitiveType() const override;
-
     void cppAddRequiredInclude(std::set<std::string>& headers) const override;
 
     std::string cppInsightType() const override;
     std::string cppStaticType() const override;
     std::string cppDefaultValueExpression() const override;
 
+    void writeCppTypeDecl(
+        std::ostream& os ) const override;
 
     void cppWriteCreateStatement(
         std::ostream& os,

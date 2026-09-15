@@ -452,7 +452,8 @@ std::string Element::name(bool redirectArrayElementsToDefault) const
 {
     if (hasParent())
     {
-        return parent().childElementName(this, redirectArrayElementsToDefault);
+        auto& p = parent(); // for access during debug
+        return p.childElementName(this, redirectArrayElementsToDefault);
     }
     else
         return std::string();

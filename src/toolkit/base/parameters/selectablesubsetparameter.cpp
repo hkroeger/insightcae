@@ -163,7 +163,8 @@ void SelectableSubsetParameter::setSelection(const key_type &nk)
 
 
 
-const SelectableSubsetParameter::key_type &SelectableSubsetParameter::selection() const
+const SelectableSubsetParameter::key_type &
+SelectableSubsetParameter::selection() const
 {
     // insight::assertion(
     //     !selection_.empty(),
@@ -640,6 +641,16 @@ SelectableSubsetParameter::intersection(
 
 
 
+// The child-index space exposed by this class is the concatenation of two ranges:
+//  [0, nChildren())                       -> the live parameters of the *currently selected*
+//                                             alternative (delegated straight through to
+//                                             operator()(), i.e. value_.at(selection_)).
+//  [nChildren(), nChildren()+value_.size()) -> one synthetic pseudo-child per *alternative*
+//                                             in value_ (all of them, selected or not), named
+//                                             "<key>", giving read-only tree access to the
+//                                             stored values of branches that aren't active.
+// childElementName/Ref/childElement(int) below all follow this same two-way split.
+
 int SelectableSubsetParameter::nChildren() const
 {
     if (selection_.empty()) // intermediate state for GUI during selection switch
@@ -666,6 +677,7 @@ SelectableSubsetParameter::childElementName(
 {
     if (i>=nChildren() && i<(nChildren()+value_.size()))
     {
+        // index falls in the "all alternatives" range: name the j-th alternative itself
         int j=i-nChildren();
         auto ii=value_.begin();
         std::advance(ii, j);
@@ -680,11 +692,16 @@ SelectableSubsetParameter::childElementName(
     bool redirectArrayElementsToDefault
     ) const
 {
+    // reverse (pointer-based) lookup: if childParam IS one of the alternative
+    // ParameterSets itself, report it as unnamed ("") rather than "<key>" -
+    // unlike the index-based overload above, this path has no notion of its
+    // own index/position to derive a bracketed name from.
     for (auto &seld: value_)
     {
         if (childParam==seld.second.get())
             return std::string();
     }
+    // otherwise assume childParam belongs to the currently selected alternative
     return
         operator()().childElementName(
             childParam,
@@ -697,6 +714,7 @@ SelectableSubsetParameter::childElementRef ( int i )
 {
     if (i>=nChildren() && i<(nChildren()+value_.size()))
     {
+        // "all alternatives" range: return the j-th alternative's ParameterSet itself
         int j=i-nChildren();
         auto ii=value_.begin();
         std::advance(ii, j);
@@ -711,6 +729,7 @@ SelectableSubsetParameter::childElement( int i ) const
 {
     if (i>=nChildren() && i<(nChildren()+value_.size()))
     {
+        // "all alternatives" range: return the j-th alternative's ParameterSet itself
         int j=i-nChildren();
         auto ii=value_.begin();
         std::advance(ii, j);

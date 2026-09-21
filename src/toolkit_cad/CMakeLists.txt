@@ -15,6 +15,7 @@ add_library(toolkit_cad SHARED
     blockmesh_cylwedge.cpp blockmesh_cylwedge.h
 
     openfoam/snappyhexmesh.h openfoam/snappyhexmesh.cpp
+    iscadparametricgeometrygenerator.h iscadparametricgeometrygenerator.cpp
 )
 target_add_PDL(toolkit_cad)
 

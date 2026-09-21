@@ -275,51 +275,6 @@ void IQEphemeralLabel::mousePressEvent(QMouseEvent *event)
 }
 
 
-IQPixmapLabel::IQPixmapLabel(const QPixmap& pm, QWidget *parent) :
-    QLabel(parent),
-    pixmap_(pm)
-{
-    this->setMinimumSize(1,1);
-    setScaledContents(false);
-    QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
-    qsp.setHeightForWidth(true);
-    setSizePolicy(qsp);
-    QLabel::setPixmap(scaledPixmap());
-}
-
-
-int IQPixmapLabel::heightForWidth( int width ) const
-{
-    return pixmap_.isNull() ?
-               this->height()
-            : double(pixmap_.height()*width)/double(pixmap_.width());
-}
-
-QSize IQPixmapLabel::sizeHint() const
-{
-    int w = this->width();
-    return QSize( w, heightForWidth(w) );
-}
-
-QPixmap IQPixmapLabel::scaledPixmap() const
-{
-    return pixmap_.scaledToWidth(
-        this->size().width(),
-        Qt::SmoothTransformation);
-}
-
-const QPixmap &IQPixmapLabel::originalPixmap() const
-{
-    return pixmap_;
-}
-
-void IQPixmapLabel::resizeEvent(QResizeEvent * e)
-{
-    if(!pixmap_.isNull())
-        QLabel::setPixmap(scaledPixmap());
-}
-
-
 void IQSimpleLatexView::updateContent()
 {
     auto w = viewport()->width();

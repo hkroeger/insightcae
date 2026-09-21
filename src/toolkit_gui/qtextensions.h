@@ -153,27 +153,6 @@ public:
 
 
 
-class TOOLKIT_GUI_EXPORT IQPixmapLabel
-    : public QLabel
-{
-    Q_OBJECT
-
-    QPixmap pixmap_;
-
-public:
-    IQPixmapLabel(const QPixmap &pm, QWidget *parent = nullptr);
-
-    int heightForWidth(int width) const override;
-    QSize sizeHint() const override;
-    QPixmap scaledPixmap() const;
-    const QPixmap& originalPixmap() const;
-
-public Q_SLOTS:
-    void resizeEvent(QResizeEvent *) override;
-
-};
-
-
 class TOOLKIT_GUI_EXPORT IQSimpleLatexView
     : public QTextEdit
 {

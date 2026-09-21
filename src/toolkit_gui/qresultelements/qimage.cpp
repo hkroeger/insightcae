@@ -4,8 +4,6 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QVBoxLayout>
-#include <QLabel>
-#include <QScrollArea>
 #include <QFile>
 #include <QDebug>
 
@@ -68,10 +66,10 @@ void QImage::createFullDisplay(QVBoxLayout *layout)
 {
   IQResultElement::createFullDisplay(layout);
 
-  auto id=new IQPixmapLabel(*pm_);
-  id->setFrameStyle(QFrame::NoFrame);
+  id_=new IQZoomableImageView;
+  id_->setPixmap(*pm_);
 
-  layout->addWidget(id);
+  layout->addWidget(id_);
 }
 
 

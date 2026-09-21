@@ -255,6 +255,7 @@ add_library(toolkit_gui SHARED
        iqchartinteractivelegend.h iqchartinteractivelegend.cpp
        iqlineseriesdata.h iqlineseriesdata.cpp
        iqinplaceeditorwidget.h iqinplaceeditorwidget.cpp
+       iqzoomableimageview.h iqzoomableimageview.cpp
        iqbackgroundtask.h iqbackgroundtask.cpp
        iqparametersetmodel_dragdrop.cpp
 )

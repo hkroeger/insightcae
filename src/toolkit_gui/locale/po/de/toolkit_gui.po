@@ -129,3 +129,12 @@ msgstr "bis:"
 #, c-format
 msgid "Failed to open file %s for writing"
 msgstr "Konnte Datei %s nicht zum Schreiben öffnen"
+
+msgid "Zoom in"
+msgstr ""
+
+msgid "Zoom out"
+msgstr ""
+
+msgid "Reset zoom (fit whole image into view)"
+msgstr ""

@@ -1,6 +1,9 @@
 <RCC>
     <qresource prefix="/icons">
         <file>icon_fit_all.svg</file>
+        <file>icon_zoom_in.svg</file>
+        <file>icon_zoom_out.svg</file>
+        <file>icon_zoom_reset.svg</file>
         <file>icon_plusx.svg</file>
         <file>icon_plusz.svg</file>
         <file>icon_plusy.svg</file>

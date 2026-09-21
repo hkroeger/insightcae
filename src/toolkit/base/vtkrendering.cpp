@@ -1575,6 +1575,77 @@ vtkSmartPointer<vtkScalarBarActor> VTKOffscreenScene::addColorBar(
   return cb;
 }
 
+
+void VTKOffscreenScene::setupInset(
+    double vxmin, double vymin, double vxmax, double vymax,
+    const arma::mat& background
+    )
+{
+  if (!insetRenderer_)
+  {
+    insetRenderer_ = vtkSmartPointer<vtkRenderer>::New();
+    insetRenderer_->GetActiveCamera()->ParallelProjectionOn();
+
+    auto light_kit = vtkSmartPointer<vtkLightKit>::New();
+    light_kit->SetKeyLightIntensity(1.0);
+    light_kit->AddLightsToRenderer(insetRenderer_);
+  }
+
+  insetRenderer_->SetViewport(vxmin, vymin, vxmax, vymax);
+  insetRenderer_->SetBackground(background(0), background(1), background(2));
+}
+
+void VTKOffscreenScene::showInset()
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before showInset()" );
+  if (!insetActive_)
+  {
+    renderWindow_->AddRenderer(insetRenderer_);
+    insetActive_ = true;
+  }
+}
+
+void VTKOffscreenScene::hideInset()
+{
+  if (insetActive_)
+  {
+    renderWindow_->RemoveRenderer(insetRenderer_);
+    insetActive_ = false;
+  }
+}
+
+bool VTKOffscreenScene::insetActive() const
+{
+  return insetActive_;
+}
+
+void VTKOffscreenScene::resetInsetClippingRange()
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before resetInsetClippingRange()" );
+  insetRenderer_->ResetCameraClippingRange();
+}
+
+vtkCamera* VTKOffscreenScene::insetCamera()
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before insetCamera()" );
+  return insetRenderer_->GetActiveCamera();
+}
+
+void VTKOffscreenScene::removeInsetActor(vtkActor* act)
+{
+  if (insetRenderer_)
+  {
+    insetRenderer_->RemoveActor(act);
+  }
+}
+
+
 void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file) const
 {
   auto x3d=vtkSmartPointer<vtkX3DExporter>::New();
@@ -1671,22 +1742,71 @@ void VTKOffscreenScene::setParallelScale(
     > scaleOrSize
     )
 {
+  setParallelScale(renderer_.Get(), scaleOrSize);
+}
+
+void VTKOffscreenScene::setParallelScale(
+    vtkRenderer* ren,
+    boost::variant<
+      double, // scale
+      std::pair<double,double> // Lh, Lv
+    > scaleOrSize
+    )
+{
   if (const auto* sz = boost::get<std::pair<double,double> >(&scaleOrSize))
   {
       double w = sz->first;
       double h = sz->second;
-      double W = renderWindow_->GetSize()[0];
-      double H = renderWindow_->GetSize()[1];
+      // vtkViewport::GetSize() returns the renderer's own pixel size, i.e. the
+      // window size scaled by the renderer's normalized viewport fraction -
+      // correct both for a full-window renderer and for a sub-viewport (inset).
+      int* size = ren->GetSize();
+      double W = size[0];
+      double H = size[1];
       double HbyW=H/W;
       double scale=0.5*std::max(w*HbyW, h);
       //print W, H, w, h, scale
       cout<<"setParallelScale: W, H, w, h, scale = "<<W<<", "<<H<<", "<<w<<", "<<h<<", "<<scale<<endl;
-      activeCamera()->SetParallelScale(scale);
+      ren->GetActiveCamera()->SetParallelScale(scale);
   }
   else if (const auto* sc = boost::get<double>(&scaleOrSize))
   {
-      activeCamera()->SetParallelScale(*sc);
+      ren->GetActiveCamera()->SetParallelScale(*sc);
   }
+}
+
+void VTKOffscreenScene::fitRenderer(vtkRenderer* ren, const double bnds[6], double mult)
+{
+  arma::mat L=vec3(bnds[1]-bnds[0], bnds[3]-bnds[2], bnds[5]-bnds[4]);
+  arma::mat ctr=vec3(
+      0.5*(bnds[1]+bnds[0]),
+      0.5*(bnds[3]+bnds[2]),
+      0.5*(bnds[5]+bnds[4])
+      );
+
+  vtkCamera* cam = ren->GetActiveCamera();
+
+  arma::mat p, fp, ey;
+  p=fp=ey=vec3(0,0,0);
+  cam->GetPosition(p.memptr());
+  cam->GetFocalPoint(fp.memptr());
+  cam->GetViewUp(ey.memptr());
+  arma::mat n=p-fp; n/=norm(n,2);
+  ey/=norm(ey,2);
+  arma::mat ex=-arma::cross(n,ey); ex/=norm(ex,2);
+  ey = arma::cross(n, ex);
+
+  arma::mat diff=ctr-p; diff-=dot(diff,n)*n;
+  arma::mat np=p+diff, nfp=fp+diff;
+  cam->SetPosition( np.memptr() );
+  cam->SetFocalPoint( nfp.memptr() );
+
+  double w= fabs(arma::dot(vec3(L[0],0,0), ex))+fabs(arma::dot(vec3(0,L[1],0), ex))+fabs(arma::dot(vec3(0,0,L[2]), ex));
+  double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
+
+  setParallelScale(ren, std::pair<double,double>(mult*w, mult*h));
+
+  ren->ResetCameraClippingRange();
 }
 
 void VTKOffscreenScene::fitAll(double mult)
@@ -1708,34 +1828,42 @@ void VTKOffscreenScene::fitAll(double mult)
     }
   }
 
-  arma::mat L=vec3(bnds[1]-bnds[0], bnds[3]-bnds[2], bnds[5]-bnds[4]);
-  arma::mat ctr=vec3(
-      0.5*(bnds[1]+bnds[0]),
-      0.5*(bnds[3]+bnds[2]),
-      0.5*(bnds[5]+bnds[4])
-      );
+  fitRenderer(renderer_.Get(), bnds, mult);
+}
 
-  arma::mat p, fp, ey;
-  p=fp=ey=vec3(0,0,0);
-  activeCamera()->GetPosition(p.memptr());
-  activeCamera()->GetFocalPoint(fp.memptr());
-  activeCamera()->GetViewUp(ey.memptr());
-  arma::mat n=p-fp; n/=norm(n,2);
-  ey/=norm(ey,2);
-  arma::mat ex=-arma::cross(n,ey); ex/=norm(ex,2);
-  ey = arma::cross(n, ex);
+void VTKOffscreenScene::fitInset(double mult)
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before fitInset()" );
 
-  arma::mat diff=ctr-p; diff-=dot(diff,n)*n;
-  arma::mat np=p+diff, nfp=fp+diff;
-  activeCamera()->SetPosition( np.memptr() );
-  activeCamera()->SetFocalPoint( nfp.memptr() );
+  double bnds[6] = {DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX};
 
-  double w= fabs(arma::dot(vec3(L[0],0,0), ex))+fabs(arma::dot(vec3(0,L[1],0), ex))+fabs(arma::dot(vec3(0,0,L[2]), ex));
-  double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
+  renderWindow_->Render();
 
-  setParallelScale(std::pair<double,double>(mult*w, mult*h));
+  auto aa = insetRenderer_->GetActors();
+  aa->InitTraversal();
+  for (vtkActor*a = aa->GetNextItem(); a!=0; a = aa->GetNextItem())
+  {
+    double abnds[6]={0};
+    a->GetBounds(abnds);
+    for (int i=0;i<3;i++)
+    {
+      bnds[2*i]=std::min(bnds[2*i], abnds[2*i]);
+      bnds[2*i+1]=std::max(bnds[2*i+1], abnds[2*i+1]);
+    }
+  }
 
-  renderer_->ResetCameraClippingRange();
+  fitRenderer(insetRenderer_.Get(), bnds, mult);
+}
+
+void VTKOffscreenScene::fitInset(const double bnds[6], double mult)
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before fitInset()" );
+
+  fitRenderer(insetRenderer_.Get(), bnds, mult);
 }
 
 void VTKOffscreenScene::clearScene()

@@ -425,7 +425,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
       auto sl_cm=createColorMap();
       FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
-      scene.addAlgo<vtkDataSetMapper>(slice1, sl_fc);
+      scene.add(slice1->GetOutputPort(), sl_fc);
       scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
 
 //      auto normals = vtkSmartPointer<vtkPolyDataNormals>::New();
@@ -453,7 +453,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
       st->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "U");
       st->SetMaximumPropagation( 100 );
       st->Update();
-      scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.1,0.1,0.1));
+      scene.add<vtkPolyDataMapper>(st->GetOutput(), vec3(0.1,0.1,0.1));
 
       auto camera = scene.activeCamera();
       camera->ParallelProjectionOn();

@@ -35,6 +35,9 @@
 #include "vtkUnstructuredGrid.h"
 #include "vtkMultiBlockDataSet.h"
 #include "vtkCompositeDataGeometryFilter.h"
+#include "vtkDataSetMapper.h"
+#include "vtkAlgorithmOutput.h"
+#include "vtkStreamTracer.h"
 
 #include "boost/property_tree/ptree.hpp"
 
@@ -190,7 +193,8 @@ extern const std::vector<double>
     colorMapData_NICEdge,
     colorMapData_BlueGreenOrange,
     colorMapData_CoolToWarm,
-    colorMapData_BlackBodyRadiation;
+    colorMapData_BlackBodyRadiation,
+    colorMapData_Rainbow;
 
 
 vtkSmartPointer<vtkLookupTable> createColorMap(
@@ -311,24 +315,24 @@ public:
   VTKOffscreenScene();
   ~VTKOffscreenScene();
 
-  template<class Mapper, class Input>
-  vtkActor* addAlgo(
-      Input input,
+  template<class Mapper=vtkDataSetMapper>
+  vtkActor* add(
+      vtkAlgorithmOutput *inputPort,
       ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
       DatasetRepresentation repr = Surface
       )
   {
-//    input->Update();
-//    return addData<Mapper>(input->GetOutput(), colorspec, repr);
-      auto mapper = vtkSmartPointer<Mapper>::New();
-      mapper->SetInputConnection(input->GetOutputPort());
+      inputPort->GetProducer()->Update();
 
-      return addProperties<Mapper>(mapper, colorspec, /*input,*/ repr);
+      auto mapper = vtkSmartPointer<Mapper>::New();
+      mapper->SetInputConnection(inputPort);
+
+      return addProperties<Mapper>(mapper, colorspec, repr);
   }
 
-  template<class Mapper, class Input>
-  vtkActor* addData(
-      Input input,
+  template<class Mapper=vtkDataSetMapper, class InputData>
+  vtkActor* add(
+      InputData input,
       ColorSpecification colorspec = ColorSpecification(insight::vec3(0,0,0)),
       DatasetRepresentation repr = Surface
       )
@@ -336,7 +340,7 @@ public:
     auto mapper = vtkSmartPointer<Mapper>::New();
     mapper->SetInputData(input);
 
-    return addProperties<Mapper>(mapper, colorspec, /*input,*/ repr);
+    return addProperties<Mapper>(mapper, colorspec, repr);
   }
 
   void addActor2D(vtkSmartPointer<vtkActor2D> actor);
@@ -427,7 +431,7 @@ public:
 
   vtkSmartPointer<vtkScalarBarActor> addColorBar(
       const std::string& title,
-      vtkSmartPointer<vtkLookupTable> lut,
+      vtkScalarsToColors* lut,
       double x=0.9, double y=0.1,
       bool horiz=false,
       double w=0.09, double len=0.8,
@@ -613,6 +617,80 @@ arrowGlyphs(
     const std::vector<arma::mat>& locations,
     const std::vector<arma::mat>& vectors,
     double maxArrowLen
+);
+
+std::pair<arma::mat,vtkIdType>
+dataSetSize(
+    vtkAlgorithmOutput* inputPort);
+
+arma::mat
+dataSetCenter(
+    vtkAlgorithmOutput* inputPort);
+
+
+std::pair<
+ vtkSmartPointer<vtkVolume>,
+ vtkSmartPointer<vtkColorTransferFunction>
+>
+volumeRender(
+    vtkAlgorithmOutput *input,
+    FieldSelection Tfield
+    );
+
+/**
+ * @brief volumeRender_fast
+ * Faster alternative to volumeRender(): resamples the input onto a fixed-
+ * resolution regular grid and ray-casts that instead of tetrahedralizing the
+ * whole mesh. Much cheaper on large meshes; tuned to produce opacity levels
+ * matching volumeRender()'s output (see implementation for the derivation).
+ */
+std::pair<
+ vtkSmartPointer<vtkVolume>,
+ vtkSmartPointer<vtkColorTransferFunction>
+>
+volumeRender_fast(
+    vtkAlgorithmOutput *input,
+    FieldSelection Tfield
+    );
+
+struct TerminationCriterion
+{
+    std::string terminationFieldName;
+    double terminationLowerThreshold;
+};
+
+struct TerminationContext {
+    vtkDataSet*   dataset;
+    vtkDataArray* scalars;      // the array name
+    double        threshold;    // 1e-3
+    std::vector<double> weights; // scratch, sized to max cell size
+};
+
+class StreamTracerHandle
+{
+    /**
+     * @brief tc_
+     * needs to stay alive as long as the vtkStreamTracer
+     */
+    std::shared_ptr<TerminationContext> tc_;
+    vtkSmartPointer<vtkStreamTracer> str_;
+public:
+    StreamTracerHandle(
+        std::shared_ptr<TerminationContext> tc_,
+        vtkSmartPointer<vtkStreamTracer>);
+
+    vtkStreamTracer* operator()();
+    operator vtkStreamTracer* ();
+};
+
+StreamTracerHandle
+streamTracer(
+    vtkAlgorithmOutput* domain,
+    vtkAlgorithmOutput* seeds,
+    std::string velocityFieldName,
+    int direction = vtkStreamTracer::BOTH,
+    double maxLength = DBL_MAX,
+    boost::optional<TerminationCriterion> = {}
 );
 
 }

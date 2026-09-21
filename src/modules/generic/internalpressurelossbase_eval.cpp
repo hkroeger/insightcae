@@ -371,11 +371,11 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
                 vtkDataObject::FIELD_ASSOCIATION_POINTS,
                 "U");
 
-            scene.addAlgo<vtkDataSetMapper>(st, U_fc);
+            scene.add(st->GetOutputPort(), U_fc);
         }
 
         // display walls, transparent, gray color
-        auto pa = scene.addAlgo<vtkDataSetMapper>(rs.patches, vec3(0.7, 0.7, 0.7));
+        auto pa = scene.add(rs.patches->GetOutputPort(), vec3(0.7, 0.7, 0.7));
         pa->GetProperty()->SetOpacity(0.1);
 
         auto sec_sl = std::make_unique<ResultSection>("Streamlines");
@@ -402,7 +402,7 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
 
         scene.clearScene();
 
-        scene.addAlgo<vtkDataSetMapper>(rs.patches, p_fc);
+        scene.add(rs.patches->GetOutputPort(), p_fc);
         scene.addColorBar(
             numerics.isCompressible() ? "Pressure\n[Pa]" : "Pressure\n[m^2/s^2]",
             p_fc.lookupTable());
@@ -466,9 +466,9 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
 
             scene.clearScene();
 
-            scene.addAlgo<vtkDataSetMapper>(cutplane1, U_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane2, U_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane3, U_fc);
+            scene.add(cutplane1->GetOutputPort(), U_fc);
+            scene.add(cutplane2->GetOutputPort(), U_fc);
+            scene.add(cutplane3->GetOutputPort(), U_fc);
             scene.addColorBar("Velocity\n[m/s]", U_fc.lookupTable());
 
 
@@ -494,9 +494,9 @@ ResultSetPtr InternalPressureLossBase::evaluateResults(OpenFOAMCase& cm, Progres
 
             scene.clearScene();
 
-            scene.addAlgo<vtkDataSetMapper>(cutplane1, p_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane2, p_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane3, p_fc);
+            scene.add(cutplane1->GetOutputPort(), p_fc);
+            scene.add(cutplane2->GetOutputPort(), p_fc);
+            scene.add(cutplane3->GetOutputPort(), p_fc);
             scene.addColorBar("Pressure\n[m^2/s^2]", p_fc.lookupTable());
 
             auto sec_pc = std::make_unique<ResultSection>("Pressure in cut planes");
@@ -599,9 +599,9 @@ ResultSetPtr InternalPressureLoss::evaluateResults(
 
             scene.clearScene();
 
-            scene.addAlgo<vtkDataSetMapper>(cutplane1, T_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane2, T_fc);
-            scene.addAlgo<vtkDataSetMapper>(cutplane3, T_fc);
+            scene.add(cutplane1->GetOutputPort(), T_fc);
+            scene.add(cutplane2->GetOutputPort(), T_fc);
+            scene.add(cutplane3->GetOutputPort(), T_fc);
             scene.addColorBar("Temperature\n[K]", T_fc.lookupTable());
 
 
@@ -661,11 +661,11 @@ ResultSetPtr InternalPressureLoss::evaluateResults(
                 "U");
 
             // display streamlines
-            scene.addAlgo<vtkDataSetMapper>(st, T_fc);
+            scene.add(st->GetOutputPort(), T_fc);
         }
 
         // display walls, transparent, gray color
-        auto pa = scene.addAlgo<vtkDataSetMapper>(rs.patches, vec3(0.7, 0.7, 0.7));
+        auto pa = scene.add(rs.patches->GetOutputPort(), vec3(0.7, 0.7, 0.7));
         pa->GetProperty()->SetOpacity(0.1);
 
         auto sec_slt = std::make_unique<ResultSection>("Streamlines with Temperature");
@@ -704,7 +704,7 @@ ResultSetPtr InternalPressureLoss::evaluateResults(
             [&](vtkAlgorithm* region, ResultSection* sec, int i )
             {
 
-                scene.addAlgo<vtkDataSetMapper>(region, T_fc);
+                scene.add(region->GetOutputPort(), T_fc);
                 scene.addColorBar("Temperature\n[K]", T_fc.lookupTable());
 
                 for (const auto& lv: rs.views)
@@ -751,10 +751,10 @@ ResultSetPtr InternalPressureLoss::evaluateResults(
                         "U");
 
                     // display walls, transparent, gray color
-                    auto pa = scene.addAlgo<vtkDataSetMapper>(rs.patches, vec3(0.7, 0.7, 0.7));
+                    auto pa = scene.add(rs.patches->GetOutputPort(), vec3(0.7, 0.7, 0.7));
                     pa->GetProperty()->SetOpacity(0.1);
 
-                    scene.addAlgo<vtkDataSetMapper>(st, T_fc);
+                    scene.add(st->GetOutputPort(), T_fc);
 
                     scene.addColorBar("Temperature\n[K]", T_fc.lookupTable());
 

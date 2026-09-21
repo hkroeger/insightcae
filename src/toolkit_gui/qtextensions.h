@@ -39,6 +39,14 @@ TOOLKIT_GUI_EXPORT void collapseMatchingNodes(
     const std::function<bool(const QModelIndex&)>& shouldCollapse);
 
 /**
+ * @brief availableContentHeight
+ * Reasonable height budget for a content widget so it doesn't outgrow the
+ * space its parent widget currently has (falls back to a fraction of the
+ * top-level window if not yet parented).
+ */
+TOOLKIT_GUI_EXPORT int availableContentHeight(const QWidget* w);
+
+/**
  * @brief runInGUIThread
  * Execute a callable on the GUI thread and return its result to the caller.
  * Safe to call from any thread, including the GUI thread itself.

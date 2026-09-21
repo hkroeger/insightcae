@@ -1,4 +1,5 @@
 #include "qattributeresulttable.h"
+#include "qtextensions.h"
 
 #include <QVBoxLayout>
 #include <QTableWidget>
@@ -61,8 +62,9 @@ public:
      : QTableWidget(tab->names().size(), 2),
        tab_(tab)
     {
-        // setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        // setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     }
 
     void resizeEvent(QResizeEvent *e)
@@ -80,6 +82,7 @@ void QAttributeResultTable::createFullDisplay(QVBoxLayout* layout)
 
   tw_ = new QAttributeTableView(&res);
   layout->addWidget(tw_);
+  tw_->setMaximumHeight(availableContentHeight(tw_));
 }
 
 

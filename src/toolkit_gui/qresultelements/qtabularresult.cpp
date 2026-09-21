@@ -1,4 +1,5 @@
 #include "qtabularresult.h"
+#include "qtextensions.h"
 
 #include <QLabel>
 #include <QVBoxLayout>
@@ -38,8 +39,9 @@ void QTabularResult::createFullDisplay(QVBoxLayout* layout)
     headers << QString::fromStdString(h.toPlainText());
   }
   tw->setHorizontalHeaderLabels( headers );
-  tw->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  tw->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  tw->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  tw->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  tw->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   for (size_t i=0; i<res.rows().size(); i++)
   {
@@ -53,6 +55,7 @@ void QTabularResult::createFullDisplay(QVBoxLayout* layout)
   tw->resizeColumnsToContents();
 
   layout->addWidget(tw);
+  tw->setMaximumHeight(availableContentHeight(tw));
 }
 
 } // namespace insight

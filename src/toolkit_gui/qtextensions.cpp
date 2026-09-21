@@ -42,6 +42,17 @@ void collapseMatchingNodes(
 
 
 
+int availableContentHeight(const QWidget* w)
+{
+    if (auto *p = w->parentWidget())
+        return qMax(200, int(p->height()*0.9));
+    if (auto *win = w->window())
+        return qMax(200, int(win->height()*0.6));
+    return 600;
+}
+
+
+
 QMainWindow *getMainWindow()
 {
     auto* mainWin = qobject_cast<QMainWindow*>(

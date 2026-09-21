@@ -1,5 +1,6 @@
 #include "iqzoomableimageview.h"
 #include "base/translations.h"
+#include "qtextensions.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -8,8 +9,6 @@
 #include <QGraphicsPixmapItem>
 #include <QWheelEvent>
 #include <QResizeEvent>
-#include <QGuiApplication>
-#include <QScreen>
 
 
 
@@ -184,23 +183,24 @@ const QPixmap &IQZoomableImageView::originalPixmap() const
 
 int IQZoomableImageView::maxImageAreaHeight() const
 {
-    int avail = 800;
-    if (auto *screen = QGuiApplication::primaryScreen())
-        avail = screen->availableGeometry().height();
-    return qMax(200, int(avail*0.6));
+    return availableContentHeight(this);
 }
 
 int IQZoomableImageView::heightForWidth(int width) const
 {
+    Q_UNUSED(width);
+
     int toolbarH = zoomInButton_->sizeHint().height();
     int spacing = layout() ? layout()->spacing() : 0;
 
     if (pixmap_.isNull())
         return toolbarH;
 
-    int aspectH = double(pixmap_.height())*width/double(pixmap_.width());
-    int imgH = qBound(1, aspectH, maxImageAreaHeight());
-    return toolbarH + spacing + imgH;
+    // Always claim the available vertical space (up to the cap): the
+    // internal QGraphicsView letterboxes the pixmap to preserve its own
+    // aspect ratio regardless of the box's shape, so the box itself should
+    // simply track the space the surrounding window/scroll area offers.
+    return toolbarH + spacing + maxImageAreaHeight();
 }
 
 QSize IQZoomableImageView::sizeHint() const

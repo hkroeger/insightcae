@@ -164,26 +164,13 @@
        </layout>
       </widget>
      </widget>
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
+     <widget class="QWidget" name="wiResultElementContent">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustToContents</enum>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="wiResultElementContent">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>68</width>
-         <height>967</height>
-        </rect>
-       </property>
-      </widget>
      </widget>
     </widget>
    </item>

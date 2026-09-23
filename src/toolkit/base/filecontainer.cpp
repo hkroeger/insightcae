@@ -542,14 +542,14 @@ void FileContainer::copyTo(
             "writing file content into %s (create parent path %d)"
         ) % filePath.string() % createParentPath ) );
 
-    if (!exists(filePath.parent_path()) )
+    if (filePath.has_parent_path() && !exists(filePath.parent_path()) )
     {
       if (createParentPath)
       {
         boost::filesystem::create_directories( filePath.parent_path() );
       }
     }
-    if (!exists(filePath.parent_path()) )
+    if (filePath.has_parent_path() && !exists(filePath.parent_path()) )
     {
         throw insight::Exception(
             "parent path %s for unpacking of file %s does not exist!",

@@ -1,5 +1,6 @@
 #include "pathparameter.h"
 
+#include <boost/algorithm/string/replace.hpp>
 #include <streambuf>
 #include <ostream>
 #include <memory>
@@ -76,7 +77,10 @@ std::string PathParameter::latexRepresentation(
     int,
     const FileStorageInfo& ) const
 {
-    return SimpleLatex( filePath().string() ).toLaTeX();
+    // use generic_path to avoid feeding windows backslashes into simple latex parser
+    return SimpleLatex(
+               boost::replace_all_copy(filePath().string(),  "\\", "/")
+               ).toLaTeX();
 }
 
 
@@ -84,7 +88,10 @@ std::string PathParameter::latexRepresentation(
 
 std::string PathParameter::plainTextRepresentation(int /*indent*/) const
 {
-  return SimpleLatex( filePath().generic_string() ).toPlainText();
+    // use generic_path to avoid feeding windows backslashes into simple latex parser
+  return SimpleLatex(
+               boost::replace_all_copy(filePath().generic_string(), "\\", "/")
+               ).toPlainText();
 }
 
 
@@ -350,7 +357,7 @@ std::string DirectoryParameter::latexRepresentation(
     return std::string()
       + "{\\ttfamily "
       + SimpleLatex(
-            filePath().string()
+            filePath().generic_path().string()
         ).toLaTeX()
       + "}";
 }

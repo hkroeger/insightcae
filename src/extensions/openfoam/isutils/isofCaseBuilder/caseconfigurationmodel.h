@@ -61,7 +61,7 @@ public:
   template<class T>
   bool containsCE(const QString& OFEname) const
   {
-    insight::OpenFOAMCase ofc(insight::OFEs::get(OFEname.toStdString()));
+    insight::OpenFOAMCase ofc(OFEname.toStdString());
     for ( int i=0; i < caseElements_.count(); i++ )
       {
         auto* cur =

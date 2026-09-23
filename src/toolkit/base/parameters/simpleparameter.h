@@ -274,6 +274,7 @@ bool BoolParameter::getAsBoolean() const;
 template<>
 void BoolParameter::setBoolean(bool b);
 
+
 }
 
 

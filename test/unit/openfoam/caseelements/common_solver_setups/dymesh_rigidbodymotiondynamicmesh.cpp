@@ -27,7 +27,7 @@ int main(int argc, char*argv[])
 
         void createMesh()
         {
-          OpenFOAMCase meshCase(ofe());
+          auto meshCase=createEmptyCompatibleCase();
 
           meshCase.insert(new MeshingNumerics(meshCase));
 

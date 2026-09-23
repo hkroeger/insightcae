@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
+        OpenFOAMCase cm;
         insight::OpenFOAMCaseDirs cf(cm, location);
 
         bool pack=vm.count("pack");

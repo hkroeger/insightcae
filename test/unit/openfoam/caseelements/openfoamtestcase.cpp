@@ -6,7 +6,7 @@
 
 
 OpenFOAMTestCase::OpenFOAMTestCase(const string &OFEname, CaseFeatures exclFeats)
-  : OpenFOAMCase(OFEs::get(OFEname)),
+  : OpenFOAMCase(OFEname),
     dir_(false),
     exclFeats_(exclFeats)
 {}

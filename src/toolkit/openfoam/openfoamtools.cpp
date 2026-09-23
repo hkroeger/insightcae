@@ -967,7 +967,7 @@ patchArea::patchArea(
     if (!boost::filesystem::exists(location/"system"/"controlDict"))
     {
         // might be, there is only the mesh yet and no case config
-        OpenFOAMCase dummy(cm.ofe());
+        auto dummy=cm.createEmptyCompatibleCase();
         dummy.insert(std::make_unique<MeshingNumerics>(dummy));
         // ensure there is a controlDict for patchArea later
         files=std::make_shared<std::vector<boost::filesystem::path> >(
@@ -2145,7 +2145,7 @@ HomogeneousAveragedProfile::HomogeneousAveragedProfile(
 
 ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*displayer*/)
 {
-  OpenFOAMCase cm(OFEs::get(p().OFEname));
+  OpenFOAMCase cm(p().OFEname);
   
   arma::mat xs;
   
@@ -3319,7 +3319,7 @@ void HydrostaticPressureComputer::operator()(
     const std::vector<std::pair<std::string, std::string> > &targetEntriesPerPatch,
     bool setInternalField ) const
 {
-    OpenFOAMCase cm(OFEs::getPreferred());
+    OpenFOAMCase cm;
 
     std::string expr;
 
@@ -3449,7 +3449,7 @@ void setHydrostaticPressure(
     const std::string& fieldName,
     bool setInternalField )
 {
-    OpenFOAMCase cm(OFEs::getPreferred());
+    OpenFOAMCase cm;
 
     std::string expr = str(
         boost::format("%g - (pos()-vector(%g,%g,%g))&vector(%g,%g,%g)*%g*9.81")

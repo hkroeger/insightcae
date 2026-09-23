@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
+        OpenFOAMCase cm;
 
         OpenFOAMBoundaryDict bd(cm, location, string(), time);
 

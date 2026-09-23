@@ -49,7 +49,8 @@ public:
     } MapMethod;
 
 protected:
-    OFEnvironment env_;
+    mutable boost::variant<std::string,OFEnvironment> env_;
+
     FieldList fields_;
     bool fieldListCompleted_;
     MapMethod requiredMapMethod_;
@@ -59,8 +60,11 @@ protected:
     
     void createFieldListIfRequired() const;
 
+    const OFEnvironment& env() const;
+
 public:
-    OpenFOAMCase ( const OFEnvironment& env = OFEs::getCurrentOrPreferred() );
+    OpenFOAMCase ( const std::string& OFELabel = OFEs::currentOrPreferredOFE() );
+    OpenFOAMCase ( const OFEnvironment& env );
     OpenFOAMCase ( const OpenFOAMCase& other );
     virtual ~OpenFOAMCase();
 
@@ -113,15 +117,17 @@ public:
     }
 
     void addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps );
-    
+
     inline const OFEnvironment& ofe() const
     {
-        return env_;
+        return env();
     }
     inline int OFversion() const
     {
-        return env_.version();
+        return env().version();
     }
+
+    OpenFOAMCase createEmptyCompatibleCase() const;
 
     bool isCompressible() const;
     bool isCompressible(const std::string& phaseName) const;

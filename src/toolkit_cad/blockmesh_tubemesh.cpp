@@ -103,7 +103,7 @@ void blockMeshDict_TubeMesh::create_bmd()
             if (is_start) cp.mesh.basePatchName = p().mesh.basePatchName;
             if (is_end) cp.mesh.topPatchName = p().mesh.topPatchName;
 
-            OpenFOAMCase dummy(OFcase().ofe());
+            auto dummy=OFcase().createEmptyCompatibleCase();
             blockMeshDict_Cylinder c(dummy, cp);
             c.create_bmd();
             copy(c);
@@ -138,7 +138,7 @@ void blockMeshDict_TubeMesh::create_bmd()
             if (is_start) ccp.mesh.basePatchName = p().mesh.basePatchName;
             if (is_end) ccp.mesh.topPatchName = p().mesh.topPatchName;
 
-            OpenFOAMCase dummy(OFcase().ofe());
+            auto dummy=OFcase().createEmptyCompatibleCase();
             blockMeshDict_CurvedCylinder cc(dummy, ccp);
             last_er=cc.calc_end_CS().ez;
             cc.create_bmd();

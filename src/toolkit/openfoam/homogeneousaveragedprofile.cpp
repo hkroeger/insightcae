@@ -72,7 +72,7 @@ HomogeneousAveragedProfile::HomogeneousAveragedProfile(
 
 ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*displayer*/)
 {
-  OpenFOAMCase cm(OFEs::get(p().OFEname));
+  OpenFOAMCase cm(p().OFEname);
   
   arma::mat xs;
   

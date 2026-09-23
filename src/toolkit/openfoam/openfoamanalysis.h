@@ -255,7 +255,7 @@ public:
             // run "createTurbulenceFields" on source case, if not
             try
             {
-                OpenFOAMCase oc(cm.ofe());
+                auto oc=cm.createEmptyCompatibleCase();
                 std::string omodel=readTurbulenceModelName(oc, mapFromPath);
                 if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
                 {

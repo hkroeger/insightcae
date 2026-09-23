@@ -13,7 +13,7 @@ addToOpenFOAMCaseElementFactoryTable(PassiveScalar);
 
 PassiveScalar::PassiveScalar( OpenFOAMCase& c, ParameterSetInput ip )
 : OpenFOAMCaseElement(c, ip.forward<Parameters>()),
-  OpenFOAMCase(c.ofe())
+    OpenFOAMCase(c.createEmptyCompatibleCase())
 {
 }
 

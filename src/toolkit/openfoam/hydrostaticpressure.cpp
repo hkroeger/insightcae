@@ -90,7 +90,7 @@ void HydrostaticPressureComputer::operator()(
     const std::vector<std::pair<std::string, std::string> > &targetEntriesPerPatch,
     bool setInternalField ) const
 {
-    OpenFOAMCase cm(OFEs::getPreferred());
+    OpenFOAMCase cm;
 
     std::string expr;
 
@@ -219,7 +219,7 @@ void setHydrostaticPressure(
     const std::string& fieldName,
     bool setInternalField )
 {
-    OpenFOAMCase cm(OFEs::getPreferred());
+    OpenFOAMCase cm;
 
     std::string expr = str(
         boost::format("%g - (pos()-vector(%g,%g,%g))&vector(%g,%g,%g)*%g*9.81")

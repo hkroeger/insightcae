@@ -204,7 +204,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
   bc_pe_layout_ = new QHBoxLayout(ui->bc_parameter_editor);
 
   // populate list of available OF versions
-  for (insight::OFEs::value_type ofe: insight::OFEs::list)
+  for (auto &ofe: insight::OFEs::list())
   {
     ui->OFversion->addItem(ofe.first.c_str());
   }
@@ -1027,7 +1027,7 @@ void isofCaseBuilderWindow::recreateOFCase(const QString& ofename)
 {
   std::string ofen = ofename.toStdString();
 //   std::cout<<ofen<<std::endl;
-  ofc_.reset(new OpenFOAMCase(OFEs::get(ofen)));
+  ofc_.reset(new OpenFOAMCase(ofen));
 }
 
 

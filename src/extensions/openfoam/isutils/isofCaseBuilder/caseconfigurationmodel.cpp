@@ -154,7 +154,7 @@ void CaseConfigurationModel::removeElement(const QModelIndex& index)
 QString CaseConfigurationModel::applicationName(const QString& OFEname) const
 {
   insight::OpenFOAMCase ofc(
-        insight::OFEs::get(OFEname.toStdString()) );
+        OFEname.toStdString() );
 
   for ( int i=0; i < caseElements_.count(); i++ )
     {

@@ -278,7 +278,7 @@ InternalPressureLossBase::createInletBC(
 {
     // grid needs to be present
     patchArea inletprops(
-        OpenFOAMCase(OFEs::get(p().run.OFEname)),
+        OpenFOAMCase(p().run.OFEname),
         executionPath(), patchName);
     double D=sqrt(inletprops.A_*4./M_PI);
     double turbI=0.1;

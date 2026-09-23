@@ -32,6 +32,7 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <memory>
 #include "boost/format.hpp"
 
 using namespace std;
@@ -55,10 +56,12 @@ int main(int argc, char *argv[])
     desc.add_options()
         ("help,h", _("produce help message"))
         ("version,r", _("print version and exit"))
+        ("no-template", _("read input file without template"))
         ("print-bool,b", po::value<StringList>(), _("boolean variable assignment"))
         ("print-selection,l", po::value<StringList>(), _("selection variable assignment"))
         ("print-string,s", po::value<StringList>(), _("string variable assignment"))
         ("print-path,p", po::value<StringList>(), _("path variable assignment"))
+        ("extract-packed-file,x", po::value<StringList>(), _("extract packed file"))
         ("print-double,d", po::value<StringList>(), _("double variable assignment"))
         ("print-vector,v", po::value<StringList>(), _("vector variable assignment"))
         ("print-int,i", po::value<StringList>(), _("int variable assignment"))
@@ -126,37 +129,48 @@ int main(int argc, char *argv[])
         auto filestem = fn.stem().string();
 
 
-        auto parameters = std::make_unique<AnalysisParameterSet>();
-        parameters->readFromFile(fn);
+        std::unique_ptr<ParameterSet> parameters;
 
-
-        if (vm.count("merge"))
+        if (vm.count("no-template"))
         {
-            StringList ists=vm["merge"].as<StringList>();
-            for (const string& ist: ists)
-            {
-                std::vector<std::string> cargs;
-                boost::split(cargs, ist, boost::is_any_of(":"));
-                if (cargs.size()>0)
-                {
-                    insight::assertion(
-                        cargs.size()==1 || cargs.size()==3,
-                        _("merge command needs either one or three arguments!\nGot: %s"),
-                        ist.c_str() );
+            XMLDocument doc(fn);
+            parameters=ParameterSet::create(*doc.rootNode);
+        }
+        else
+        {
+            auto ps = std::make_unique<AnalysisParameterSet>();
+            ps->readFromFile(fn);
 
-                    boost::optional<AnalysisParameterSet::ParameterPath_SubNodePath> subset;
-                    if (cargs.size()==3)
-                    {
-                        subset=AnalysisParameterSet::ParameterPath_SubNodePath
-                            {cargs[1], cargs[2]};
-                    }
-                    parameters->mergeIncompatibleParameterSet(cargs[0], subset);
-                }
-                else
+            if (vm.count("merge"))
+            {
+                StringList ists=vm["merge"].as<StringList>();
+                for (const string& ist: ists)
                 {
-                    throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"), ist.c_str());
+                    std::vector<std::string> cargs;
+                    boost::split(cargs, ist, boost::is_any_of(":"));
+                    if (cargs.size()>0)
+                    {
+                        insight::assertion(
+                            cargs.size()==1 || cargs.size()==3,
+                            _("merge command needs either one or three arguments!\nGot: %s"),
+                            ist.c_str() );
+
+                        boost::optional<AnalysisParameterSet::ParameterPath_SubNodePath> subset;
+                        if (cargs.size()==3)
+                        {
+                            subset=AnalysisParameterSet::ParameterPath_SubNodePath
+                                {cargs[1], cargs[2]};
+                        }
+                        ps->mergeIncompatibleParameterSet(cargs[0], subset);
+                    }
+                    else
+                    {
+                        throw insight::Exception(_("merge command needs either one or three arguments!\nGot: %s"), ist.c_str());
+                    }
                 }
             }
+
+            parameters=std::move(ps);
         }
 
 
@@ -227,6 +241,25 @@ int main(int argc, char *argv[])
             for (const string& s: sets)
             {
                 std::cout<<parameters->getInt(s)<<std::endl;
+            }
+        }
+
+        if (vm.count("extract-packed-file"))
+        {
+            StringList fp=vm["extract-packed-file"].as<StringList>();
+            for (const string& s: fp)
+            {
+                auto& pp = parameters->get<PathParameter>(s);
+                if (pp.isPacked())
+                {
+                    auto fn=pp.fileName();
+                    std::cout<<"extracting "<<s<<" to "<<fn<<std::endl;
+                    pp.copyTo(fn);
+                }
+                else
+                {
+                    std::cout<<"parameter "<<s<<" contains no packed data. Skipping."<<std::endl;
+                }
             }
         }
 

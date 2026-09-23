@@ -41,7 +41,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
 
     insight::XMLDocument doc(cfgfile);
     
-    OpenFOAMCase cm(OFEs::getCurrentOrPreferred());
+    OpenFOAMCase cm;
     
     ResultSetPtr results(new ResultSet(nullptr, "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
     hierarchicalData::Ordering o;

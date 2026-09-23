@@ -26,6 +26,7 @@
 #include "base/parameter.h"
 #include "base/units.h"
 #include "base/rapidxml.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

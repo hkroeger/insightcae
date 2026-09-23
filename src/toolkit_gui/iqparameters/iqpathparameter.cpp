@@ -82,12 +82,22 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   connect(lineEdit, &QLineEdit::textChanged, [=]()
   {
+    boost::filesystem::path enteredPath(lineEdit->text().toStdString());
+    boost::filesystem::path evaluated;
+    if (auto base = parameter().baseDirectory())
+    {
+      evaluated = enteredPath.is_absolute()
+          ? enteredPath
+          : (*base / enteredPath);
+    }
+    else
+    {
+      evaluated = boost::filesystem::absolute(enteredPath);
+    }
     lineEdit->setToolTip
     (
       QString("(Evaluates to \"%1\"")
-              .arg(QString::fromStdString(
-                boost::filesystem::absolute(
-                      lineEdit->text().toStdString()).string() ))
+              .arg(QString::fromStdString(evaluated.string()))
     );
   }
   );
@@ -95,7 +105,11 @@ QVBoxLayout* IQPathParameter::populateEditControls(
 
   connect(dlgBtn_, &QPushButton::clicked, [=]()
   {
-    QString fn = showSelectPathDialog(editControlsContainer, lineEdit->text());
+    boost::filesystem::path startAbs = parameter().expandedFilePath(true);
+    QString startPath = startAbs.empty()
+        ? lineEdit->text()
+        : QString::fromStdString(startAbs.string());
+    QString fn = showSelectPathDialog(editControlsContainer, startPath);
     if (!fn.isEmpty())
     {
         parameterRef().setFilePath(fn.toStdString());

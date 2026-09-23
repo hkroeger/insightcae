@@ -20,6 +20,7 @@
 
 #include "openfoam/blockmesh.h"
 #include "base/vtktools.h"
+#include "base/vtklegacymodel.h"
 #include "openfoam/ofdicts.h"
 #include "openfoam/ofes.h"
 

@@ -4,6 +4,7 @@
 #include "base/rapidxml.h"
 
 #include "subsetparameter.h"
+#include "base/warningdispatcher.h"
 
 namespace insight
 {

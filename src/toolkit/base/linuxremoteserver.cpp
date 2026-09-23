@@ -3,6 +3,7 @@
 #include "boost/regex/v4/regex_fwd.hpp"
 #include "base/cppextensions.h"
 #include <cstdio>
+#include "base/warningdispatcher.h"
 
 
 using namespace std;

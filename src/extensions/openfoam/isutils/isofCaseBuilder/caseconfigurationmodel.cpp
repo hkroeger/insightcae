@@ -216,6 +216,10 @@ void CaseConfigurationModel::appendConfigurationToNode(
           appendAttribute(doc, *elemnode, "type", elem->type_name());
           rootnode->append_node ( elemnode );
 
+          // rebase relative PathParameters onto the directory the file is
+          // now being saved to, mirroring readFromNode's resolveRelativePaths call
+          elem->parameterSetModel()->resolveRelativePaths(fileParentPath);
+
           if (pack)
           {
             elem->parameterSetModel()->pack();

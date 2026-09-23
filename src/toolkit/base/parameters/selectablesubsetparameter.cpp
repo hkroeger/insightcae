@@ -2,6 +2,7 @@
 
 #include "base/cppextensions.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/rapidxml.h"
 #include "boost/range/adaptor/indexed.hpp"
 

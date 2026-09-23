@@ -1,5 +1,6 @@
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/boost_include.h"
 #include "boost/format.hpp"
 

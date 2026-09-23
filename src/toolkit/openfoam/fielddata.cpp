@@ -2,8 +2,10 @@
 #include "openfoam/fielddata.h"
 #include "base/cppextensions.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcase.h"
+#include "base/resultelements/chart.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
@@ -16,6 +18,7 @@
 #include "vtkCompositeDataSet.h"
 #include "vtkPointData.h"
 #include "base/vtktools.h"
+#include "base/vtkgridconversion.h"
 #include <string>
 
 

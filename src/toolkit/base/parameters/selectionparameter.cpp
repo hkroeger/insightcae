@@ -1,6 +1,7 @@
 #include "selectionparameter.h"
 
 #include "boost/range/adaptors.hpp"
+#include "base/warningdispatcher.h"
 
 
 

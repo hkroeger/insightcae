@@ -1,5 +1,6 @@
 #include "subsetparameter.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/parameters.h"
 #include "base/tools.h"
 #include "base/cppextensions.h"

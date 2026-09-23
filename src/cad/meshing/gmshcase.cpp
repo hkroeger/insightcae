@@ -2,6 +2,7 @@
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/tools.h"
 #include "base/translations.h"
 #include "boost/process.hpp"

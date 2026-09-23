@@ -2,6 +2,7 @@
 #define INPUTRECEIVER_H
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "boost/signals2.hpp"
 
 #include <set>

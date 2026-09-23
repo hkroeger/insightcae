@@ -7,6 +7,7 @@
 #include "openfoam/caseelements/turbulencemodel.h"
 #include "openfoam/caseelements/boundaryconditions/overlapggibc.h"
 #include "openfoam/caseelements/boundaryconditions/mixingplaneggibc.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

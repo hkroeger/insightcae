@@ -3,6 +3,8 @@
 
 #include "cadparametersetvisualizer.h"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
+#include "base/warningdispatcher.h"
 #include "boost/thread/exceptions.hpp"
 #include "boost/thread.hpp"
 #include "qmodeltree.h"

@@ -10,6 +10,7 @@
 
 #include "base/tools.h"
 #include "base/rapidxml.h"
+#include "base/warningdispatcher.h"
 
 namespace insight
 {

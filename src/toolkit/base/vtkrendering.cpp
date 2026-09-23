@@ -90,6 +90,10 @@
 #include "base/resultelementcollection.h"
 #include "base/resultelements/attributeresulttable.h"
 #include "base/resultelements/image.h"
+#include "base/resultelements/resultsection.h"
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/vectorresult.h"
+#include "base/resultelements/tabularresult.h"
 #include "base/filecontainer.h"
 
 void vtkRenderingOpenGL2_AutoInit_Construct();

@@ -4,6 +4,7 @@
 #include "base/translations.h"
 
 #include "boost/iterator_adaptors.hpp"
+#include "base/warningdispatcher.h"
 
 using namespace std;
 using namespace boost;

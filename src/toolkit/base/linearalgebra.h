@@ -65,6 +65,9 @@ extern const double VSMALL;
 extern const double SMALL;
 extern const double LSMALL;
 
+std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
+std::string vector_to_string(const arma::mat& vals, bool addMag=true);
+
 inline double pos(double x)
 {
     if (x>=0)

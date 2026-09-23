@@ -37,6 +37,10 @@
 #include "openfoam/caseelements/basic/pressuregradientsource.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
 
+#include "openfoam/sampling.h"
+
+#include "base/resultelements/image.h"
+
 #include "refdata.h"
 
 #include "gnuplot-iostream.h"

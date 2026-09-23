@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/shelltools.h"
 #include "base/analysis.h"
 #include <boost/filesystem.hpp>

@@ -4,6 +4,7 @@
 #include "base/tools.h"
 #include "base/filecontainer.h"
 #include "base/zipfile.h"
+#include "boost/process.hpp"
 #include <algorithm>
 
 namespace insight {

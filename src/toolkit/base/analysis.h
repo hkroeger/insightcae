@@ -29,7 +29,7 @@
 #include "base/factory.h"
 #include "base/resultset.h"
 #include "base/analysisstepcontrol.h"
-#include "base/tools.h"
+#include "base/operatingsystem.h"
 #include "boost/chrono/duration.hpp"
 #include "boost/range/algorithm/transform.hpp"
 

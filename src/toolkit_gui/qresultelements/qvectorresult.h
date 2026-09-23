@@ -22,7 +22,7 @@
 #define INSIGHT_QVECTORRESULT_H
 
 #include "toolkit_gui_export.h"
-
+#include "base/resultelements/vectorresult.h"
 
 #include "iqresultsetmodel.h"
 

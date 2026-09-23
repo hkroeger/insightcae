@@ -27,6 +27,7 @@
 
 #include "isofcasebuilderwindow.h"
 #include "insertedcaseelement.h"
+#include "base/warningdispatcher.h"
 
 #ifndef Q_MOC_RUN
 #include "base/remoteexecution.h"

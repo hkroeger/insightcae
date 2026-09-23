@@ -32,6 +32,7 @@
 #include "cadpostprocactions.h"
 
 #include "base/analysis.h"
+#include "base/tools.h"
 #include "parser.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"

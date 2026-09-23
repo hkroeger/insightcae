@@ -27,6 +27,7 @@
 #include "cadparameters/constantscalar.h"
 
 #include "base/boost_include.h"
+#include "base/warningdispatcher.h"
 #include <boost/spirit/include/qi.hpp>
 #include "GeomAPI_Interpolate.hxx"
 #include "TColgp_HArray1OfPnt.hxx"

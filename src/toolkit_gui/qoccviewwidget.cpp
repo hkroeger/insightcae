@@ -51,6 +51,7 @@
 #include <iostream>
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "occtwindow.h"
 #include "occtools.h"
 #include "occguitools.h"

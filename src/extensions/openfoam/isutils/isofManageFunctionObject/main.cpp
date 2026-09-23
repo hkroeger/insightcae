@@ -22,6 +22,8 @@
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
+#include "base/warningdispatcher.h"
 #include "base/linearalgebra.h"
 #include "openfoam/ofes.h"
 #include "openfoam/caseelements/analysiscaseelements.h"

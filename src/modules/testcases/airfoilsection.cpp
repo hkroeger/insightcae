@@ -38,6 +38,9 @@
 
 #include "openfoam/snappyhexmesh.h"
 
+#include "base/resultelements/image.h"
+#include "base/resultelements/attributeresulttable.h"
+
 #include "base/vtkrendering.h"
 #include "vtkCutter.h"
 #include "vtkPlane.h"

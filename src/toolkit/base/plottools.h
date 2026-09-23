@@ -23,6 +23,7 @@
 #define INSIGHT_PLOTTOOLS_H
 
 #include "base/resultset.h"
+#include "base/resultelements/tabularresult.h"
 #include "base/linearalgebra.h"
 #include "boost/foreach.hpp"
 

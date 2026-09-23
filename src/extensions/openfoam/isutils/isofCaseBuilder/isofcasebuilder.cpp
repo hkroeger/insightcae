@@ -28,6 +28,7 @@
 #ifndef Q_MOC_RUN
 #include "base/boost_include.h"
 #include "cadexception.h"
+#include "base/exceptionhandling.h"
 #include "base/linearalgebra.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>

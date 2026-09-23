@@ -49,6 +49,9 @@ PKG_CHECK_MODULES(minizip REQUIRED IMPORTED_TARGET minizip)
 
 add_library(toolkit SHARED
     base/cppextensions.h base/cppextensions.cpp
+    base/observer_ptr.h base/observer_ptr.cpp
+    base/stl_container_extensions.h
+    base/objectwithboostsignalconnections.h base/objectwithboostsignalconnections.cpp
     base/translations.h base/translations.cpp
 
     base/global.cpp
@@ -89,21 +92,50 @@ add_library(toolkit SHARED
     base/parameterset.cpp base/parameterset.h
 
     base/exception.cpp base/exception.h
+    base/warningdispatcher.cpp base/warningdispatcher.h
+    base/exceptionhandling.cpp base/exceptionhandling.h
     base/externalprocess.cpp base/externalprocess.h
     base/filewatcher.cpp base/filewatcher.h
     base/tools.cpp base/tools.h
+    base/operatingsystem.cpp base/operatingsystem.h
+    base/base64.cpp base/base64.h
+    base/destructionguard.h
+    base/filesystemtools.cpp base/filesystemtools.h
+    base/temporaryfile.cpp base/temporaryfile.h
+    base/remotecommand.cpp base/remotecommand.h
+    base/sharedpathlist.cpp base/sharedpathlist.h
+    base/exectimer.cpp base/exectimer.h
+    base/stringconv.cpp base/stringconv.h
+    base/boundingbox.cpp base/boundingbox.h
+    base/vtkgeometrytools.cpp base/vtkgeometrytools.h
+    base/fileio.cpp base/fileio.h
+    base/templatefile.cpp base/templatefile.h
+    base/meminfo.cpp base/meminfo.h
+    base/rsyncoutputanalyzer.cpp base/rsyncoutputanalyzer.h
+    base/predictinsertionlocation.h
+    base/variablenames.h
+    base/ondemand.h
+    base/realnp.cpp base/realnp.h
+    base/resultantforce.cpp base/resultantforce.h
     base/shelltools.h base/shelltools.cpp
     base/latextools.cpp base/latextools.h
     base/linearalgebra.cpp base/linearalgebra.h
     base/resultelement.cpp base/resultelement.h
     base/resultelementcollection.cpp base/resultelementcollection.h
     base/resultset.cpp base/resultset.h
+    base/resultelements.h
     base/resultreporttemplates.h base/resultreporttemplates.cpp
     base/softwareenvironment.cpp base/softwareenvironment.h
     base/stltools.cpp base/stltools.h
     base/analysisstepcontrol.cpp base/analysisstepcontrol.h
     base/plottools.cpp base/plottools.h
     base/vtktools.cpp base/vtktools.h
+    base/vtkcoords.cpp base/vtkcoords.h
+    base/surfacevectorsfilter.cpp base/surfacevectorsfilter.h
+    base/vtklegacymodel.cpp base/vtklegacymodel.h
+    base/vtknormals.cpp base/vtknormals.h
+    base/vtkgridconversion.cpp base/vtkgridconversion.h
+    base/vtkobjectsize.cpp base/vtkobjectsize.h
     base/caseelement.cpp base/caseelement.h
     base/case.cpp base/case.h
     base/units.cpp base/units.h
@@ -164,6 +196,17 @@ add_library(toolkit SHARED
     openfoam/openfoamdict.cpp openfoam/openfoamdict.h
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
     openfoam/openfoamtools.cpp openfoam/openfoamtools.h
+    openfoam/oftimedirectories.cpp openfoam/oftimedirectories.h
+    openfoam/ofmeshcopy.cpp openfoam/ofmeshcopy.h
+    openfoam/ofmeshquality.cpp openfoam/ofmeshquality.h
+    openfoam/ofcsvreaders.cpp openfoam/ofcsvreaders.h
+    openfoam/ofdictreaders.cpp openfoam/ofdictreaders.h
+    openfoam/ofpatchutils.cpp openfoam/ofpatchutils.h
+    openfoam/ofparalleltools.cpp openfoam/ofparalleltools.h
+    openfoam/emesh.cpp openfoam/emesh.h
+    openfoam/hydrostaticpressure.cpp openfoam/hydrostaticpressure.h
+    openfoam/ofmiscutils.cpp openfoam/ofmiscutils.h
+    openfoam/homogeneousaveragedprofile.cpp openfoam/homogeneousaveragedprofile.h
     openfoam/sampling.h openfoam/sampling.cpp
     openfoam/blockmesh/arcedge.cpp openfoam/blockmesh/arcedge.h
     openfoam/blockmesh/block2d.cpp openfoam/blockmesh/block2d.h

@@ -1,4 +1,5 @@
 #include "postprocactionvisualizer.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 namespace cad {

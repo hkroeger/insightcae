@@ -37,6 +37,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "boost/format.hpp"
+#include "base/exceptionhandling.h"
 
 using namespace std;
 using namespace insight;

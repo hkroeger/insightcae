@@ -38,8 +38,8 @@ public:
     virtual ~SelectionParameterInterface();
 
     virtual std::vector<std::string> selectionKeys() const =0;
-    virtual void setSelection(const key_type& nk) =0;
-    virtual const key_type& selection() const =0;
+    virtual void setSelection(const SelectionParameterInterface::key_type& nk) =0;
+    virtual const SelectionParameterInterface::key_type& selection() const =0;
 
     virtual bool contains(const std::string &value) const;
     virtual int indexOfSelection(const std::string& key) const;

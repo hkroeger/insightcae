@@ -1,6 +1,7 @@
 #include "labeledarraykeyselectionparameter.h"
 #include "base/parameters/labeledarrayparameter.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/rapidxml.h"
 #include "base/translations.h"
 

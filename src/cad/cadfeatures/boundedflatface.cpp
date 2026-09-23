@@ -26,6 +26,7 @@
 
 
 #include "BRepOffsetAPI_MakeFilling.hxx"
+#include "base/warningdispatcher.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

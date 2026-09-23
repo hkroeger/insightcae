@@ -21,6 +21,8 @@
 #include <boost/concept_check.hpp>
 
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
+#include "base/warningdispatcher.h"
 #include "base/parameters/subsetparameter.h"
 #include "base/tools.h"
 #include "base/linearalgebra.h"

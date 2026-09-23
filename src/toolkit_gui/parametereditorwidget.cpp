@@ -27,6 +27,7 @@
 #include <exception>
 
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "boost/algorithm/string/replace.hpp"
 #include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"

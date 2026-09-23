@@ -5,6 +5,8 @@
 #include "openfoam/caseelements/numerics/steadycompressiblenumerics.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
 
+#include "base/resultelements/image.h"
+
 
 #include "base/vtkrendering.h"
 #include "vtkPointSource.h"

@@ -20,6 +20,7 @@
 
 #include "base/boost_include.h"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "openfoam/paraview.h"
 
 #include <boost/program_options/options_description.hpp>

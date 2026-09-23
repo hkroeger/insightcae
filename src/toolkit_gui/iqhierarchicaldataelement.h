@@ -2,6 +2,7 @@
 #define IQHIERARCHICALDATAELEMENT_H
 
 #include "base/hierarchicalelement.h"
+#include "base/objectwithboostsignalconnections.h"
 #include "iqhierarchicaldatamodel.h"
 
 

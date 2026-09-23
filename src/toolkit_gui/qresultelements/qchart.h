@@ -22,7 +22,7 @@
 #define INSIGHT_QCHART_H
 
 #include "toolkit_gui_export.h"
-
+#include "base/resultelements/chart.h"
 
 #include "qimage.h"
 

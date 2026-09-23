@@ -21,6 +21,8 @@
 #include "openfoam/caseelements/analysiscaseelements.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
+#include "base/resultelements/chart.h"
+#include "base/resultelements/comment.h"
 
 #include <utility>
 #include "boost/assign.hpp"

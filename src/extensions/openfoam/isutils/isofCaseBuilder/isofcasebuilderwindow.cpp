@@ -46,6 +46,7 @@
 #include "base/qt5_helper.h"
 #include "qtextensions.h"
 #include "cadexception.h"
+#include "base/exceptionhandling.h"
 #include "iqcadexceptiondisplaydialog.h"
 
 

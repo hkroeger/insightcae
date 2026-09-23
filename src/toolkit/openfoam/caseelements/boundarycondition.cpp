@@ -22,6 +22,7 @@
 #include "openfoam/ofdicts.h"
 #include "openfoam/openfoamdict.h"
 #include "openfoam/openfoamcase.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

@@ -23,6 +23,7 @@
 #include "blockmesh_templates.h"
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/units.h"
 #include "openfoam/blockmesh/gradinganalyzer.h"
 

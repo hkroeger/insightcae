@@ -35,6 +35,7 @@
 
 #include "insightcaeapplication.h"
 #include "of_clean_case.h"
+#include "base/exceptionhandling.h"
 
 using namespace std;
 using namespace insight;

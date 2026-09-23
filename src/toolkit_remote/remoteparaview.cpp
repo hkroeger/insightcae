@@ -1,6 +1,7 @@
 #include "remoteparaview.h"
 
 #include "base/cppextensions.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

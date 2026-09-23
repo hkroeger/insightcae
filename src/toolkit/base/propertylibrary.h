@@ -9,6 +9,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/tools.h"
 #include "base/rapidxml.h"
 

@@ -12,6 +12,7 @@
 #include "vtkUnstructuredGrid.h"
 
 #include "vtkconversion.h"
+#include "base/vtkgridconversion.h"
 
 namespace Foam {
 

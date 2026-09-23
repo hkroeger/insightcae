@@ -10,6 +10,7 @@
 #include <boost/range/adaptor/reversed.hpp>
 
 #include "rapidxml/rapidxml_print.hpp"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

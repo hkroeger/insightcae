@@ -1,0 +1,58 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
+
+#include "realnp.h"
+#include "base/exception.h"
+
+#include <cstdlib>
+#include <algorithm>
+
+#include "boost/thread.hpp"
+
+namespace insight
+{
+
+int realNp(int userInputNp)
+{
+    auto maxNp = boost::thread::physical_concurrency();
+    if (userInputNp>0)
+    {
+        if (!getenv("INSIGHT_OVERSUBSCRIBE"))
+        {
+            insight::assertion(
+                userInputNp<=maxNp,
+                "too many CPU cores requested (%d requested, %d available)."
+                " If you insist on oversubscription, set environment variable INSIGHT_OVERSUBSCRIBE non-zero."
+                );
+        }
+        return userInputNp;
+    }
+    else
+    {
+        // negative userInputNp: means leave this number of cores unallocated
+        return std::max<int>(
+            1,
+            maxNp+userInputNp
+            );
+    }
+}
+
+}

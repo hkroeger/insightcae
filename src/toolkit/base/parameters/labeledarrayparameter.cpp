@@ -1,6 +1,7 @@
 #include "labeledarrayparameter.h"
 #include "base/cppextensions.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
 #include "base/translations.h"

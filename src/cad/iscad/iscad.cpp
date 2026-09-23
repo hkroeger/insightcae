@@ -25,6 +25,7 @@
 
 #include "base/boost_include.h"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "base/toolkitversion.h"
 #include "base/translations.h"
 #include "insightcaeapplication.h"

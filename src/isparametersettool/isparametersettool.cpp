@@ -27,6 +27,7 @@
 #include "base/tools.h"
 #include "base/analysis.h"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>

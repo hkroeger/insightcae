@@ -5,6 +5,7 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include "base/warningdispatcher.h"
 
 
 

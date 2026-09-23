@@ -22,7 +22,7 @@
 #define QCOMMENT_H
 
 #include "toolkit_gui_export.h"
-
+#include "base/resultelements/comment.h"
 
 #include "iqresultsetmodel.h"
 #include "qtextensions.h"

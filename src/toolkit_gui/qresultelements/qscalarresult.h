@@ -22,7 +22,7 @@
 #define INSIGHT_QSCALARRESULT_H
 
 #include "toolkit_gui_export.h"
-
+#include "base/resultelements/scalarresult.h"
 
 #include "iqresultsetmodel.h"
 

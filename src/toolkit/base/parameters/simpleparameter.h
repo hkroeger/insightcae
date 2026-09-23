@@ -27,6 +27,7 @@
 #include "boost/date_time/gregorian/gregorian.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

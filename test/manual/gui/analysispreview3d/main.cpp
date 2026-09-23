@@ -13,6 +13,7 @@
 #include "qinsighterror.h"
 
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "base/linearalgebra.h"
 
 #include <qthread.h>

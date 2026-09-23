@@ -23,6 +23,11 @@
 #include "base/boost_include.h"
 #include <string>
 
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/tabularresult.h"
+#include "base/resultelements/resultsection.h"
+#include "base/resultelements/chart.h"
+
 using namespace boost;
 using namespace std;
 

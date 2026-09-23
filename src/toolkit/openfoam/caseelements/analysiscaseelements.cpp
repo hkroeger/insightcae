@@ -22,6 +22,8 @@
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
+#include "base/resultelements/chart.h"
+#include "base/resultelements/scalarresult.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
@@ -31,6 +33,7 @@
 #include <boost/algorithm/string.hpp>
 #include "base/translations.h"
 #include <iterator>
+#include "base/warningdispatcher.h"
 
 using namespace std;
 using namespace boost;

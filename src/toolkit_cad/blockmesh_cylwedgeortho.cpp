@@ -24,6 +24,7 @@
 
 #include "base/units.h"
 #include "base/tools.h"
+#include "base/linearalgebra.h"
 
 #include "occinclude.h"
 #include "geotest.h"

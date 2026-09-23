@@ -4,6 +4,7 @@
 #include <functional>
 #include "base/progressdisplayer.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 
 #include <boost/thread.hpp>
 

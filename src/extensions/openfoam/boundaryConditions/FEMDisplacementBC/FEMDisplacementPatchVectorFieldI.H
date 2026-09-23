@@ -34,6 +34,7 @@
 #include "faCFD.H"
 
 #include "base/vtktools.h"
+#include "base/vtklegacymodel.h"
 
 #include "boost/foreach.hpp"
 #include "boost/assign.hpp"

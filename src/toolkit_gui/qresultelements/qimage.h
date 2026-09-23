@@ -24,6 +24,7 @@
 #include "toolkit_gui_export.h"
 #include "iqresultsetmodel.h"
 #include "iqzoomableimageview.h"
+#include "base/resultelements/image.h"
 
 #include <QPixmap>
 

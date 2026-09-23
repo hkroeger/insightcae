@@ -1,6 +1,7 @@
 
 #include "base/cppextensions.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/spatialtransformation.h"
 #include "numericalwindtunnel.h"
 #include "openfoam/caseelements/analysiscaseelements.h"

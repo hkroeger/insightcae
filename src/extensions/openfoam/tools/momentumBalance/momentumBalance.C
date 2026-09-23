@@ -30,6 +30,7 @@
 #include "uniof_tools.h"
 
 #include "base/vtktools.h"
+#include "base/vtklegacymodel.h"
 
 using namespace Foam;
 

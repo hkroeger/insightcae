@@ -25,6 +25,9 @@ msgstr "produce help message"
 msgid "print version and exit"
 msgstr "print version and exit"
 
+msgid "read input file without template"
+msgstr ""
+
 msgid "boolean variable assignment"
 msgstr "boolean variable assignment"
 
@@ -36,6 +39,9 @@ msgstr "string variable assignment"
 
 msgid "path variable assignment"
 msgstr "path variable assignment"
+
+msgid "extract packed file"
+msgstr ""
 
 msgid "double variable assignment"
 msgstr "double variable assignment"

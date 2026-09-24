@@ -11,6 +11,15 @@
 #include <QPushButton>
 #include <QInputDialog>
 #include <QFileDialog>
+#include <QProcess>
+#include <QMessageBox>
+#include <QDesktopServices>
+#include <QUrl>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/trim.hpp>
+
+#include "base/externalprograms.h"
 
 
 defineType(IQCADGeometryParameter);
@@ -79,9 +88,14 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
           )
       );
   layout2->addWidget(lineEdit);
+  layout->addLayout(layout2);
 
   auto *dlgBtn_=new QPushButton("...", editControlsContainer);
   layout3->addWidget(dlgBtn_);
+  auto *openBtn_=new QPushButton("Open", editControlsContainer);
+  layout3->addWidget(openBtn_);
+  auto *saveBtn=new QPushButton("Save...", editControlsContainer);
+  layout3->addWidget(saveBtn);
   layout->addLayout(layout3);
 
   QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
@@ -98,6 +112,7 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
   };
 
   // connect(leFeatureLabel, &QLineEdit::returnPressed, applyFunction);
+  connect(lineEdit, &QLineEdit::returnPressed, applyFunction);
   connect(apply, &QPushButton::pressed, applyFunction);
 
 
@@ -156,60 +171,75 @@ QVBoxLayout* IQCADGeometryParameter::populateEditControls(
   );
 
 
-//  connect(openBtn_, &QPushButton::clicked, [=]()
-//  {
-//    //if ( !QDesktopServices::openUrl(QUrl("file://"+le_->text())) )
-//    boost::filesystem::path fp( lineEdit->text().toStdString() );
-//    std::string ext=fp.extension().string();
-//    boost::algorithm::to_lower(ext);
+  connect(openBtn_, &QPushButton::clicked, openBtn_, [=]()
+  {
+    auto afp = parameter().accessibleFilePath();
+    if (!afp)
+    {
+      QMessageBox::critical(editControlsContainer, "Could not open file", "The geometry is not stored in a file!");
+      return;
+    }
+    QString fn = QString::fromStdString(afp->string());
 
-//    QString program;
-//    if ( (ext==".stl")||(ext==".stlb") )
-//    {
-//      program=QString::fromStdString( insight::ExternalPrograms::path("paraview").string() );
-//    }
-//    else if ( (ext==".stp")||(ext==".step")||(ext==".igs")||(ext==".iges")||(ext==".iscad")||(ext==".brep") )
-//    {
-//      program=QString::fromStdString( insight::ExternalPrograms::path("iscad").string() );
-//    }
+    std::string ext=afp->extension().string();
+    boost::algorithm::to_lower(ext);
 
-//    if (!program.isEmpty())
-//    {
-//      QProcess *sp = new QProcess(model);
-//      sp->start(program, QStringList() << lineEdit->text() );
+    QString program;
+    if ( (ext==".stl")||(ext==".stlb") )
+    {
+      program=QString::fromStdString( insight::ExternalPrograms::path("paraview").string() );
+    }
+    else if ( (ext==".stp")||(ext==".step")||(ext==".igs")||(ext==".iges")||(ext==".iscad")||(ext==".brep") )
+    {
+      program=QString::fromStdString( insight::ExternalPrograms::path("iscad").string() );
+    }
 
-//      if (!sp->waitForStarted())
-//      {
-//        QMessageBox::critical(editControlsContainer, "Could not open file", "Could not launch program: "+program);
-//      }
-//    }
-//    else
-//    {
-//      if (!QDesktopServices::openUrl(QUrl("file://"+lineEdit->text())))
-//      {
-//        QMessageBox::critical(editControlsContainer, "Could not open file", "Could not open the file using QDesktopServices!");
-//      }
-//    }
-//  }
-//  );
+    if (!program.isEmpty())
+    {
+      QProcess *sp = new QProcess(model());
+      sp->start(program, QStringList() << fn );
+
+      if (!sp->waitForStarted())
+      {
+        QMessageBox::critical(editControlsContainer, "Could not open file", "Could not launch program: "+program);
+      }
+    }
+    else
+    {
+      if (!QDesktopServices::openUrl(QUrl::fromLocalFile(fn)))
+      {
+        QMessageBox::critical(editControlsContainer, "Could not open file", "Could not open the file using QDesktopServices!");
+      }
+    }
+  }
+  );
 
 
-//  connect(saveBtn, &QPushButton::clicked, [=]()
-//  {
-//    const auto&p = dynamic_cast<const insight::PathParameter&>(parameter());
-//    boost::filesystem::path orgfn( p.originalFilePath() );
-//    QString fn = QFileDialog::getSaveFileName(
-//          editControlsContainer,
-//          "Please select export path",
-//          QString(),
-//          QString::fromStdString("(*."+orgfn.extension().string()+")")
-//          );
-//    if (!fn.isEmpty())
-//    {
-//      p.copyTo( fn.toStdString() );
-//    }
-//  }
-//  );
+  connect(saveBtn, &QPushButton::clicked, saveBtn, [=]()
+  {
+    auto afp = parameter().accessibleFilePath();
+    if (!afp)
+    {
+      QMessageBox::critical(editControlsContainer, "Could not save file", "The geometry is not stored in a file!");
+      return;
+    }
+
+    if (auto fn = getFileName(
+          editControlsContainer,
+          "Please select export path",
+          GetFileMode::Save,
+          {
+            { boost::trim_left_copy_if(afp->extension().string(), boost::is_any_of(".")),
+              "File" }
+          }
+          ) )
+    {
+      boost::filesystem::copy_file(
+          *afp, fn.asString(),
+          boost::filesystem::copy_option::overwrite_if_exists );
+    }
+  }
+  );
 
 
   return layout;

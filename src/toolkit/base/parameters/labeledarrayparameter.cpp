@@ -265,6 +265,13 @@ const Parameter& LabeledArrayParameter::defaultValue() const
 }
 
 
+void LabeledArrayParameter::resolveRelativePaths(const boost::filesystem::path& baseDirectory)
+{
+    baseDirectory_=baseDirectory;
+    Parameter::resolveRelativePaths(baseDirectory);
+}
+
+
 
 
 
@@ -369,6 +376,8 @@ void LabeledArrayParameter::insertValueImpl(
 
     if (initializeHierarchy)
         ins.first->second->initializeHierarchy();
+    if (initializeHierarchy && baseDirectory_)
+        ins.first->second->resolveRelativePaths(*baseDirectory_);
 
     newItemAdded(ins.first->first, ins.first->second);
 
@@ -855,6 +864,9 @@ std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::doCloneUniniti
 
     np->setKeySourceParameterPathImpl(keySourceParameterPath_, false);
 
+    if (baseDirectory_)
+        np->resolveRelativePaths(*baseDirectory_);
+
     return np;
 }
 
@@ -867,6 +879,7 @@ void LabeledArrayParameter::assignFrom(const Element& oe)
 
     labelPattern_=op.labelPattern_;
     (*defaultValue_).assignFrom(*op.defaultValue_);
+    baseDirectory_=op.baseDirectory_;
 
     // remove entries not present in op
     {
@@ -908,6 +921,7 @@ void LabeledArrayParameter::copyMatching(const Element& oe)
 
     labelPattern_=op.labelPattern_;
     (*defaultValue_).copyMatching(*op.defaultValue_);
+    baseDirectory_=op.baseDirectory_;
 
     // remove entries not present in op
     {

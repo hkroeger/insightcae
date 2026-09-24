@@ -44,6 +44,7 @@ protected:
     std::unique_ptr<Parameter> defaultValue_;
     int defaultSize_;
     value_type value_;
+    boost::optional<boost::filesystem::path> baseDirectory_;
 
     std::key_observer_map<Parameter, std::shared_ptr<boost::signals2::scoped_connection> >
         valueChangedConnections_,
@@ -118,6 +119,7 @@ public:
         const FileStorageInfo& fsi ) const override;
     std::string plainTextRepresentation(int indent=0) const override;
 
+    void resolveRelativePaths(const boost::filesystem::path& baseDirectory) override;
     bool isPacked() const override;
     void pack() override;
     void unpack(const boost::filesystem::path& basePath) override;

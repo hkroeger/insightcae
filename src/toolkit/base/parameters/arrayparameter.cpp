@@ -76,6 +76,13 @@ const Parameter& ArrayParameter::defaultValue() const
 }
 
 
+void ArrayParameter::resolveRelativePaths(const boost::filesystem::path& baseDirectory)
+{
+    baseDirectory_=baseDirectory;
+    Parameter::resolveRelativePaths(baseDirectory);
+}
+
+
 int ArrayParameter::defaultSize() const
 {
   return defaultSize_;
@@ -144,6 +151,7 @@ void ArrayParameter::appendValueImpl (
       std::make_shared<boost::signals2::scoped_connection>(
           ins->childValueChanged.connect( childValueChanged )));
   if (initializeHierarchy) ins->initializeHierarchy();
+  if (initializeHierarchy && baseDirectory_) ins->resolveRelativePaths(*baseDirectory_);
 
   newItemAdded(ins.get());
 
@@ -173,6 +181,7 @@ void ArrayParameter::insertValueImpl (
       std::make_shared<boost::signals2::scoped_connection>(
        (*ins)->childValueChanged.connect( childValueChanged )));
   if (initializeHierarchy) (*ins)->initializeHierarchy();
+  if (initializeHierarchy && baseDirectory_) (*ins)->resolveRelativePaths(*baseDirectory_);
 
   newItemAdded(ins->get());
 
@@ -200,6 +209,7 @@ void ArrayParameter::appendEmptyImpl(bool initializeHierarchy)
       std::make_shared<boost::signals2::scoped_connection>(
         ins->childValueChanged.connect( childValueChanged )));
   if (initializeHierarchy) ins->initializeHierarchy();
+  if (initializeHierarchy && baseDirectory_) ins->resolveRelativePaths(*baseDirectory_);
   newItemAdded(ins.get());
 
   childInsertionDone(i, i);
@@ -544,6 +554,9 @@ std::unique_ptr<hierarchicalData::Element> ArrayParameter::doCloneUninitialized(
           false );
   }
 
+  if (baseDirectory_)
+      np->resolveRelativePaths(*baseDirectory_);
+
   return np;
 }
 
@@ -556,6 +569,7 @@ void ArrayParameter::assignFrom( const Element& rhs )
 
   (*defaultValue_).assignFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
+  baseDirectory_ = op.baseDirectory_;
 
   resize(op.size());
 
@@ -574,6 +588,7 @@ void ArrayParameter::copyMatching( const Element& rhs )
 
     (*defaultValue_).copyMatching(*op.defaultValue_);
     defaultSize_ = op.defaultSize_;
+    baseDirectory_ = op.baseDirectory_;
 
     resize(op.size());
 

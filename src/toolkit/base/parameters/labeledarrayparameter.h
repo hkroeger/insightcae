@@ -22,6 +22,7 @@ public:
 protected:
     std::unique_ptr<Parameter> defaultValue_;
     value_type value_;
+    boost::optional<boost::filesystem::path> baseDirectory_;
 
     std::string labelPattern_;
 
@@ -125,6 +126,7 @@ public:
         const FileStorageInfo& fsi ) const override;
     std::string plainTextRepresentation(int indent) const override;
 
+    void resolveRelativePaths(const boost::filesystem::path& baseDirectory) override;
     bool isPacked() const override;
     void pack() override;
     void unpack(const boost::filesystem::path& basePath) override;

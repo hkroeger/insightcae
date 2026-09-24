@@ -2,6 +2,7 @@
 #include <string>
 
 #include "base/tools.h"
+#include "base/casedirectory.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamanalysis.h"
 

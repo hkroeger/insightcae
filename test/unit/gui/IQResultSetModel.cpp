@@ -8,6 +8,19 @@
 #include "smiley_image.h"
 #include "test_pdl.h"
 
+
+#include "base/resultelements/numericalresult.h"
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/vectorresult.h"
+#include "base/resultelements/tabularresult.h"
+#include "base/resultelements/resultsection.h"
+#include "base/resultelements/polarchart.h"
+#include "base/resultelements/image.h"
+#include "base/resultelements/contourchart.h"
+#include "base/resultelements/comment.h"
+#include "base/resultelements/chart.h"
+#include "base/resultelements/attributeresulttable.h"
+
 using namespace insight;
 
 int main(int argc, char*argv[])

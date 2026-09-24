@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/shelltools.h"
 #include "base/analysis.h"
 #include <boost/filesystem.hpp>
@@ -507,8 +508,7 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
     xml_node<> *OFEnode = doc.rootNode->first_node ( "OFE" );
     if ( OFEnode )
       {
-        std::string name = OFEnode->first_attribute ( "name" )->value();
-        env_=insight::OFEs::get(name.c_str());
+        env_ = OFEnode->first_attribute ( "name" )->value();
       }
   }
 
@@ -654,16 +654,48 @@ void OpenFOAMCase::createFieldListIfRequired() const
 
 
 
+const OFEnvironment &OpenFOAMCase::env() const
+{
+    if (!boost::get<OFEnvironment>(&env_))
+    {
+        auto OFELabel=boost::get<std::string>(env_);
+        env_ = OFEnvironment(OFEs::get(OFELabel));
+    }
+    return boost::get<OFEnvironment>(env_);
+}
 
-OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
+
+OpenFOAMCase OpenFOAMCase::createEmptyCompatibleCase() const
+{
+    if (auto *e=boost::get<OFEnvironment>(&env_))
+    {
+        return OpenFOAMCase(*e);
+    }
+    else
+    {
+        // by label, deferred init
+        return OpenFOAMCase(
+            boost::get<std::string>(env_));
+    }
+}
+
+
+
+OpenFOAMCase::OpenFOAMCase(const std::string& OFELabel)
 : Case(),
-  env_(env),
+  env_(OFELabel),
   fieldListCompleted_(false),
   requiredMapMethod_(directMapMethod)
 {
 }
 
-
+OpenFOAMCase::OpenFOAMCase ( const OFEnvironment& env )
+: Case(),
+  env_(OFEnvironment(env)),
+  fieldListCompleted_(false),
+  requiredMapMethod_(directMapMethod)
+{
+}
 
 
 OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
@@ -770,7 +802,7 @@ const
   std::string shellcmd="";
   
   shellcmd += 
-    "source "+env_.bashrc().string()+";"
+    "source "+env().bashrc().string()+";"
     "cd \""+boost::filesystem::absolute(location).string()+"\";"
     + cmd;
   for (std::string& arg: argv)
@@ -821,7 +853,7 @@ void OpenFOAMCase::executeCommand
     argv.push_back("-parallel");
   }
   
-  env_.executeCommand( cmdString(location, execmd, argv), { }, output, ovr_machine );
+  env().executeCommand( cmdString(location, execmd, argv), { }, output, ovr_machine );
 }
 
 
@@ -847,7 +879,7 @@ void OpenFOAMCase::runSolver
 
 
 
-  auto job = env_.forkCommand( cmdString(location, execmd, argv) );
+  auto job = env().forkCommand( cmdString(location, execmd, argv) );
 
   std::vector<std::string> errout;
 
@@ -925,7 +957,7 @@ JobPtr OpenFOAMCase::forkCommand
     std::string *ovr_machine
 ) const
 {
-    return env_.forkCommand ( cmdString ( location, cmd, argv ), { }, ovr_machine );
+    return env().forkCommand ( cmdString ( location, cmd, argv ), { }, ovr_machine );
 }
 
 
@@ -954,6 +986,7 @@ void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dic
         insert ( BoundaryCondition::lookup ( bc_type, *this, *i, boundaryDict, ps ) );
     }
 }
+
 
 
 

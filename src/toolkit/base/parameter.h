@@ -268,6 +268,7 @@ private:
     friend class ParameterSet;
     friend class SelectableSubsetParameter;
     friend class LabeledArrayParameter;
+    friend class PropertyLibrarySelectionParameter;
     friend class cad::ConstrainedSketch;
 
 
@@ -308,10 +309,15 @@ public:
 
     /**
      * @brief resolveRelativePaths
-     * if paths are stored and they are relative,
-     * convert them into absolute ones using this
-     * base directory.
+     * Rebases any stored path onto a new base directory: the path is kept
+     * relative (relative to baseDirectory), not converted to absolute, so
+     * that the owning ParameterSet's on-disk representation remains
+     * relocatable. Must be called once whenever the ParameterSet's storage
+     * location changes (on load, on save-as/relocate, when cloning into a
+     * different working directory, or when merging in a parameter set
+     * loaded from a different file/directory).
      * @param baseDirectory
+     * the directory the stored path(s) should now be expressed relative to.
      */
     virtual void resolveRelativePaths(
         const boost::filesystem::path &baseDirectory);

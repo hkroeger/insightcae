@@ -9,15 +9,18 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/tools.h"
 #include "base/rapidxml.h"
 
 #include "rapidxml/rapidxml.hpp"
 
+#include "base/parameterset.h"
+#include "base/parametersetinput.h"
+
+
 namespace insight
 {
-
-
 
 
 class PropertyLibraryBase
@@ -30,21 +33,22 @@ public:
 
     virtual std::vector<std::string> entryList() const =0;
 
-    virtual std::string icon(const std::string&) const
-    {
-        return std::string();
-    }
+    virtual std::string icon(const std::string&) const;
+
+    virtual std::unique_ptr<insight::ParameterSet>
+    defaultParameters(const std::string& label) const;
 };
 
 
 
-template<class PropertyLibraryEntry>
+template<class PropertyLibraryEntry, class PropertyLibraryInstance = PropertyLibraryEntry >
 class MapPropertyLibrary
     : public PropertyLibraryBase,
       public std::map<std::string, std::shared_ptr<PropertyLibraryEntry> >
 {
 public:
     typedef PropertyLibraryEntry value_type;
+    typedef PropertyLibraryInstance instance_type;
 
 public:
     MapPropertyLibrary(const std::string& libraryName = "")
@@ -74,6 +78,26 @@ public:
         return *i->second;
     }
 
+    /**
+     * @brief createInstance
+     * Default (non-parameterized) manufacturing: since instance_type defaults to
+     * value_type, simply hand back the library-owned entry itself, ignoring the
+     * supplied parameters. PropertyLibraryWithParameters overrides this for libraries
+     * whose entries are actual generators that need to be manufactured from a
+     * ParameterSet.
+     */
+    std::shared_ptr<instance_type> createInstance(const std::string& label, const insight::ParameterSet&) const
+    {
+        auto i = this->find(label);
+        if (i == this->end())
+        {
+            throw insight::Exception(
+                "There is no entry "+label+" in the property library!\n"
+                                               "Known entries: "+boost::join(entryList(), " ") );
+        }
+        return i->second;
+    }
+
     std::string labelOf(const PropertyLibraryEntry& entry) const
     {
         std::string label;
@@ -94,22 +118,24 @@ public:
 
 
 
-template<class PropertyLibraryEntry, const boost::filesystem::path* subDir = nullptr>
+template<
+    class PropertyLibraryEntry,
+    const boost::filesystem::path* subDir = nullptr,
+    class PropertyLibraryInstance = PropertyLibraryEntry>
 class PropertyLibrary
-    : public MapPropertyLibrary<PropertyLibraryEntry>
+    : public MapPropertyLibrary<PropertyLibraryEntry, PropertyLibraryInstance>
 {
-public:
-    typedef PropertyLibraryEntry value_type;
 
 public:
     PropertyLibrary(const std::string& libraryName = "")
-        : MapPropertyLibrary<PropertyLibraryEntry>(libraryName)
+        : MapPropertyLibrary<PropertyLibraryEntry, PropertyLibraryInstance>(libraryName)
     {
         CurrentExceptionContext ex("reading property library %s", this->libraryName_.c_str());
 
         if (this->libraryName_.empty())
         {
-            this->libraryName_ = value_type::typeName;
+            this->libraryName_ =
+                MapPropertyLibrary<PropertyLibraryEntry, PropertyLibraryInstance>::value_type::typeName;
             insight::assertion(
                         !this->libraryName_.empty(),
                         "the property library entry must not have empty type names!" );
@@ -166,7 +192,11 @@ public:
                                         + " with that from "+fp.string() );
                         }
 
-                        this->insert(std::make_pair(label, std::make_shared<value_type>(*e)));
+                        this->insert(std::make_pair(
+                            label,
+                            std::make_shared<
+                                typename MapPropertyLibrary<PropertyLibraryEntry, PropertyLibraryInstance>
+                                    ::value_type>( *e )));
 
                         anythingRead=true;
                     }
@@ -201,9 +231,9 @@ public:
 
 
 
-template<class PropertyLibraryEntry, const boost::filesystem::path* subDir = nullptr>
+template<class BaseClass>
 class PropertyLibraryWithIcons
-    : public PropertyLibrary<PropertyLibraryEntry, subDir>
+ : public BaseClass
 {
 public:
     std::string icon(const std::string& label) const override
@@ -218,6 +248,50 @@ public:
     }
 };
 
+
+
+
+template<class BaseClass>
+class PropertyLibraryWithParameters
+    : public BaseClass
+{
+
+public:
+
+    typedef typename BaseClass::instance_type instance_type;
+
+    // keep the plain catalog-entry lookup(label) visible: used by defaultParameters() and
+    // createInstance() below, which fetch the entry (value_type, the "generator") in order
+    // to ask it for its default parameters or to manufacture an actual instance from them.
+    using BaseClass::lookup;
+
+    std::unique_ptr<insight::ParameterSet>
+    defaultParameters(const std::string& label) const override
+    {
+        return BaseClass::lookup(label).defaultParameters();
+    }
+
+    /**
+     * @brief createInstance
+     * Manufacture the actual instance for the given library entry, using the
+     * consumer-supplied parameters (typically obtained from
+     * PropertyLibrarySelectionParameter::instanceParameters(), seeded from
+     * defaultParameters() above and possibly edited by the consumer).
+     * Delegates to the entry class's own createInstance(const ParameterSet&), which
+     * every entry used with PropertyLibraryWithParameters must implement.
+     */
+    std::shared_ptr<instance_type>
+    createInstance(const std::string& label, const insight::ParameterSet& parameters) const
+    {
+        return BaseClass::lookup(label).createInstance(parameters);
+    }
+
+    static const PropertyLibraryWithParameters& library()
+    {
+        static PropertyLibraryWithParameters theLibrary;
+        return theLibrary;
+    }
+};
 
 
 

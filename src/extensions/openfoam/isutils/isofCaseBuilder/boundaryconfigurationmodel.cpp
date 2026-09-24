@@ -295,6 +295,10 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
   xml_node<> *unassignedBCnode =
         doc.allocate_node ( node_element, "UnassignedPatches" );
 
+  // rebase relative PathParameters onto the directory the file is now
+  // being saved to, mirroring readFromNode's resolveRelativePaths call
+  defaultPatch_->parameterSetModel()->resolveRelativePaths(fileParentPath);
+
   if (pack)
   {
     defaultPatch_->parameterSetModel()->pack();
@@ -311,6 +315,7 @@ void BoundaryConfigurationModel::appendConfigurationToNode(
   {
       xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
       auto *p = patches_[i];
+      p->parameterSetModel()->resolveRelativePaths(fileParentPath);
       if (pack)
       {
         p->parameterSetModel()->pack();

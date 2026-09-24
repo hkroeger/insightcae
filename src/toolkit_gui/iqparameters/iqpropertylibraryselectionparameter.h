@@ -28,8 +28,20 @@
 
 #include "base/parameters/propertylibraryselectionparameter.h"
 
-typedef
-    IQSelectionParameterBase<insight::PropertyLibrarySelectionParameter>
-    IQPropertyLibrarySelectionParameter;
+class TOOLKIT_GUI_EXPORT IQPropertyLibrarySelectionParameter
+    : public IQSelectionParameterBase<insight::PropertyLibrarySelectionParameter>
+{
+public:
+  declareType(insight::PropertyLibrarySelectionParameter::typeName_());
+
+  IQPropertyLibrarySelectionParameter
+  (
+      QObject* parent,
+      IQHierarchicalDataModel* hdmodel,
+      insight::hierarchicalData::Element* element
+  );
+
+  QVariant value() const override;
+};
 
 #endif // IQPROPERTYLIBRARYSELECTIONPARAMETER_H

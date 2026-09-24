@@ -4,6 +4,7 @@
 #include "base/rapidxml.h"
 
 #include "subsetparameter.h"
+#include "base/warningdispatcher.h"
 
 namespace insight
 {
@@ -75,6 +76,13 @@ const Parameter& ArrayParameter::defaultValue() const
 }
 
 
+void ArrayParameter::resolveRelativePaths(const boost::filesystem::path& baseDirectory)
+{
+    baseDirectory_=baseDirectory;
+    Parameter::resolveRelativePaths(baseDirectory);
+}
+
+
 int ArrayParameter::defaultSize() const
 {
   return defaultSize_;
@@ -132,6 +140,7 @@ void ArrayParameter::appendValueImpl (
     int i=value_.size();
   beforeChildInsertion(i, i);
 
+  np->setParent(this);
   value_.push_back ( std::move(np) );
   auto& ins=value_.back();
 
@@ -141,9 +150,10 @@ void ArrayParameter::appendValueImpl (
   childValueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
           ins->childValueChanged.connect( childValueChanged )));
-  newItemAdded(ins.get());
-  ins->setParent(this);
   if (initializeHierarchy) ins->initializeHierarchy();
+  if (initializeHierarchy && baseDirectory_) ins->resolveRelativePaths(*baseDirectory_);
+
+  newItemAdded(ins.get());
 
   childInsertionDone(i, i);
 
@@ -158,6 +168,8 @@ void ArrayParameter::insertValueImpl (
       i>=0 && i<size(),
       "%d out of range (0...%d)", i, size()-1);
 
+  np->setParent(this);
+
   beforeChildInsertion(i, i);
 
   auto ins = value_.insert( value_.begin()+i, std::move(np) );
@@ -168,9 +180,10 @@ void ArrayParameter::insertValueImpl (
   childValueChangedConnections_.insert(ins->get(),
       std::make_shared<boost::signals2::scoped_connection>(
        (*ins)->childValueChanged.connect( childValueChanged )));
-  newItemAdded(ins->get());
-  (*ins)->setParent(this);
   if (initializeHierarchy) (*ins)->initializeHierarchy();
+  if (initializeHierarchy && baseDirectory_) (*ins)->resolveRelativePaths(*baseDirectory_);
+
+  newItemAdded(ins->get());
 
   childInsertionDone(i, i);
 
@@ -187,15 +200,17 @@ void ArrayParameter::appendEmptyImpl(bool initializeHierarchy)
   // if (init) initialize();
 
   auto& ins=value_.back();
+  ins->setParent(this);
+
   valueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
         ins->valueChanged.connect( childValueChanged )));
   childValueChangedConnections_.insert(ins.get(),
       std::make_shared<boost::signals2::scoped_connection>(
         ins->childValueChanged.connect( childValueChanged )));
-  newItemAdded(ins.get());
-  ins->setParent(this);
   if (initializeHierarchy) ins->initializeHierarchy();
+  if (initializeHierarchy && baseDirectory_) ins->resolveRelativePaths(*baseDirectory_);
+  newItemAdded(ins.get());
 
   childInsertionDone(i, i);
 
@@ -539,6 +554,9 @@ std::unique_ptr<hierarchicalData::Element> ArrayParameter::doCloneUninitialized(
           false );
   }
 
+  if (baseDirectory_)
+      np->resolveRelativePaths(*baseDirectory_);
+
   return np;
 }
 
@@ -551,6 +569,7 @@ void ArrayParameter::assignFrom( const Element& rhs )
 
   (*defaultValue_).assignFrom(*op.defaultValue_);
   defaultSize_ = op.defaultSize_;
+  baseDirectory_ = op.baseDirectory_;
 
   resize(op.size());
 
@@ -569,6 +588,7 @@ void ArrayParameter::copyMatching( const Element& rhs )
 
     (*defaultValue_).copyMatching(*op.defaultValue_);
     defaultSize_ = op.defaultSize_;
+    baseDirectory_ = op.baseDirectory_;
 
     resize(op.size());
 

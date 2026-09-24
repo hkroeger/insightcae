@@ -35,6 +35,7 @@
 #include "vtkSTLReader.h"
 #include "vtkSelectEnclosedPoints.h"
 #include "vtkPointData.h"
+#include "base/exceptionhandling.h"
 
 
 using namespace insight;

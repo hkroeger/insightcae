@@ -28,6 +28,7 @@
 #include "base/insightthread.h"
 #include "base/supplementedinputdata.h"
 #include "boost/filesystem/path.hpp"
+#include "base/warningdispatcher.h"
 
 
 

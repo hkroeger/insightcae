@@ -49,9 +49,6 @@ msgstr "Das Problem ist aufgetreten"
 msgid "while"
 msgstr "während"
 
-msgid "Further details:"
-msgstr ""
-
 #, c-format
 msgid "Execution of external application \"%s\" failed with return code %d!"
 msgstr ""
@@ -60,6 +57,9 @@ msgid "Error output was:"
 msgstr ""
 
 msgid "There was no error output."
+msgstr ""
+
+msgid "Further details:"
 msgstr ""
 
 #, c-format

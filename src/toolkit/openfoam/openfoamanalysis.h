@@ -38,6 +38,8 @@
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "base/progressdisplayer/convergenceanalysisdisplayer.h"
 #include "base/progressdisplayer/prefixedprogressdisplayer.h"
+#include "base/resultelements/resultsection.h"
+#include "base/resultelements/scalarresult.h"
 
 #include "openfoam/caseelements/basic/rasmodel.h"
 
@@ -52,6 +54,7 @@
 
 
 #include <libintl.h>
+#include "base/warningdispatcher.h"
 #pragma push_macro("_")
 #undef _
 #define _(String) dgettext("toolkit", String)
@@ -252,7 +255,7 @@ public:
             // run "createTurbulenceFields" on source case, if not
             try
             {
-                OpenFOAMCase oc(cm.ofe());
+                auto oc=cm.createEmptyCompatibleCase();
                 std::string omodel=readTurbulenceModelName(oc, mapFromPath);
                 if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
                 {

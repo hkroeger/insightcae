@@ -26,6 +26,7 @@
 #include "base/parameter.h"
 #include "base/units.h"
 #include "base/rapidxml.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 
@@ -125,7 +126,7 @@ public:
 
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override
     {
         using namespace boost::units;
         auto p = std::make_unique<SimpleDimensionedParameter<T, Unit, N> >
@@ -201,7 +202,7 @@ public:
         Parameter::assignFrom(op);
     }
 
-    bool isEqual(const Element& op) const  override
+    bool isEqual(const insight::hierarchicalData::Element& op) const  override
     {
         if (auto *oa = dynamic_cast<const SimpleDimensionedParameter*>(&op))
         {

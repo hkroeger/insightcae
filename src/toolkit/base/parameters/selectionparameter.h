@@ -38,8 +38,8 @@ public:
     virtual ~SelectionParameterInterface();
 
     virtual std::vector<std::string> selectionKeys() const =0;
-    virtual void setSelection(const key_type& nk) =0;
-    virtual const key_type& selection() const =0;
+    virtual void setSelection(const SelectionParameterInterface::key_type& nk) =0;
+    virtual const SelectionParameterInterface::key_type& selection() const =0;
 
     virtual bool contains(const std::string &value) const;
     virtual int indexOfSelection(const std::string& key) const;
@@ -107,7 +107,7 @@ public:
         const rapidxml::xml_node<>& node ) override;
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 public:
     void assignFrom(const Element& p) override;
 

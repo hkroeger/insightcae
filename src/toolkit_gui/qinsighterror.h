@@ -6,6 +6,8 @@
 #include "cadfeature.h"
 #include "datum.h"
 
+class QWidget;
+
 TOOLKIT_GUI_EXPORT void displayCurrentException(QWidget* parentWidget = nullptr);
 
 #endif // QINSIGHTERROR_H

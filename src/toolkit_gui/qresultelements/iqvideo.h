@@ -1,7 +1,7 @@
 #ifndef IQVIDEO_H
 #define IQVIDEO_H
 
-#include "base/tools.h"
+#include "base/resultelements/video.h"
 #include "toolkit_gui_export.h"
 
 

@@ -157,6 +157,7 @@ public:
 
   bool isDifferent(const Parameter& p) const override;
 
+#ifndef SWIG
   /**
    * @brief insert
    * the normal insert function
@@ -165,6 +166,17 @@ public:
    * @return
    */
   Parameter& insert(const std::string &name, std::unique_ptr<Parameter>&& p);
+#endif
+
+  /**
+   * @brief insert
+   * clone-based overload, usable from Python (unlike the unique_ptr overload above,
+   * which SWIG cannot wrap without an ownership-transferring typemap)
+   * @param name
+   * @param p
+   * @return
+   */
+  Parameter& insert(const std::string &name, const Parameter& p);
 
   template<class RT, class ...Args>
   RT& insert(
@@ -286,16 +298,18 @@ public:
 
   const ParameterSet& operator[] ( const std::string& name ) const;
 
+#ifndef SWIG
   void replace ( const std::string& key, std::unique_ptr<Parameter> newp );
+#endif
 
 protected:
-  std::unique_ptr<Element> doCloneUninitialized() const override;
+  std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 
 public:
   void assignFrom( const Element& rhs ) override;
   void copyMatching( const Element& o ) override;
   void extend ( const Element& op ) override;
-  bool isEqual(const Element& op) const override;
+  bool isEqual(const insight::hierarchicalData::Element& op) const override;
 
   void clear();
 

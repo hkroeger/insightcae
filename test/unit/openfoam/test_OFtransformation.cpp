@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         auto translate = vec3(1., 18., 27.);
         auto rollPitchYaw = vec3(79., 37., 11.);//deg
 
-        OpenFOAMCase ofc(OFEs::get(argv[1]));
+        OpenFOAMCase ofc(argv[1]);
 
         ofc.executeCommand(
            d, "surfaceTransformPoints",

@@ -1,6 +1,7 @@
 #include "cadfeatures/importsolidmodel.h"
 #include "cadtypes.h"
 #include "cadexception.h"
+#include "base/exceptionhandling.h"
 #include "featureset.h"
 #include "datum.h"
 #include "cadfeatures/compound.h"

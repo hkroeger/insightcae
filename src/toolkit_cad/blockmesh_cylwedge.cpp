@@ -40,6 +40,7 @@
 #include "BRepBuilderAPI_NurbsConvert.hxx"
 
 #include "base/progressdisplayer/textprogressdisplayer.h"
+#include "base/warningdispatcher.h"
 
 
 using namespace std;

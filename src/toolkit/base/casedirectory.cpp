@@ -5,6 +5,7 @@
 
 #include "base/tools.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 
 
 

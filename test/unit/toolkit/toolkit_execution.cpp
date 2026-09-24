@@ -21,7 +21,7 @@ int main(int /*argc*/, char*/*argv*/[])
 
     {
       std::vector<std::string> output;
-      OpenFOAMCase ofc(OFEs::getCurrentOrPreferred());
+      OpenFOAMCase ofc;
       ofc.executeCommand(".", "which", {"simpleFoam"}, &output);
       if (output.size()!=1)
         throw std::runtime_error("\"which simpleFoam\" returned no output!");
@@ -29,7 +29,7 @@ int main(int /*argc*/, char*/*argv*/[])
 
     {
       std::vector<std::string> output;
-      OpenFOAMCase ofc(OFEs::getCurrentOrPreferred());
+      OpenFOAMCase ofc;
       bool failed=false;
       try
       {

@@ -37,6 +37,8 @@
 #include "insightcaeapplication.h"
 #include "mainwindow.h"
 #include "remotedirselector.h"
+#include "base/exceptionhandling.h"
+#include "base/warningdispatcher.h"
 
 using namespace std;
 using namespace insight;

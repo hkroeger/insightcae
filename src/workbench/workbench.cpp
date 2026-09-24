@@ -36,6 +36,7 @@
 #include "base/tools.h"
 #include "base/analysis.h"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "base/linearalgebra.h"
 #include "base/translations.h"
 

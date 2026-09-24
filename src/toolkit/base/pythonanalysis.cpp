@@ -72,6 +72,7 @@ std::unique_ptr<ParameterSet> PythonAnalysis::defaultParameters(
         );
         object o =  extract<object>(main_namespace["ps"]);
         ParameterSet *psp;
+        object toolkit = import("Insight.toolkit"); // ensures SWIG runtime module for insight::ParameterSet is registered before SWIG_TypeQuery is used below
         static swig_type_info *descr = nullptr;
         if (!descr)
         {
@@ -79,9 +80,9 @@ std::unique_ptr<ParameterSet> PythonAnalysis::defaultParameters(
             std::cerr<<descr<<std::endl;
             assert(descr);
         }
-        if ((SWIG_ConvertPtr(o.ptr(), (void **) &psp, descr, 0) == -1))
+        if ((SWIG_ConvertPtr(o.ptr(), (void **) &psp, descr, SWIG_POINTER_DISOWN) == -1))
         {
-            abort();
+            throw insight::Exception("Could not convert default parameters return value!");
         }
         return std::unique_ptr<ParameterSet>(psp);
     }
@@ -137,15 +138,16 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer& )
     
     try
     {
-        
-        static swig_type_info *descr = nullptr;
-        if (!descr) {
-            descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
-            assert(descr);
+        object toolkit = import("Insight.toolkit"); // ensures SWIG runtime module for insight::ParameterSet etc. is registered before SWIG_TypeQuery is used below
+
+        static swig_type_info *ps_descr = nullptr;
+        if (!ps_descr) {
+            ps_descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
+            assert(ps_descr);
         }
-        
+
         PyObject *paramobj;
-        if (!(paramobj = SWIG_NewPointerObj(SWIG_as_voidptr(&parameters()), descr, 0 )))
+        if (!(paramobj = SWIG_NewPointerObj(SWIG_as_voidptr(&parameters()), ps_descr, 0 )))
         {
             throw insight::Exception("Could not create python parameter object!");
         }
@@ -169,12 +171,12 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer& )
         
         object o =  extract<object>(main_namespace["result"]);
         ResultSetPtr *res;
-        descr=nullptr;
-        if (!descr) {
-            descr = SWIG_TypeQuery("insight::ResultSetPtr *");    /* Get the type descriptor structure for Foo */
-            assert(descr);
+        static swig_type_info *rs_descr = nullptr;
+        if (!rs_descr) {
+            rs_descr = SWIG_TypeQuery("insight::ResultSetPtr *");    /* Get the type descriptor structure for Foo */
+            assert(rs_descr);
         }
-        if ((SWIG_ConvertPtr(o.ptr(), (void **) &res, descr, 0) == -1)) {
+        if ((SWIG_ConvertPtr(o.ptr(), (void **) &res, rs_descr, SWIG_POINTER_DISOWN) == -1)) {
             throw insight::Exception("Could not convert return value!");
         }
         return std::move(*res);

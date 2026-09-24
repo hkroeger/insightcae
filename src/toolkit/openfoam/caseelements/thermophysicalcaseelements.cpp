@@ -21,6 +21,7 @@
 #include "thermophysicalcaseelements.h"
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/tools.h"
 #include "boost/variant/detail/apply_visitor_binary.hpp"
 #include "boost/variant/static_visitor.hpp"

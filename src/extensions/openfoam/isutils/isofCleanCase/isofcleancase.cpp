@@ -35,6 +35,7 @@
 
 #include "insightcaeapplication.h"
 #include "of_clean_case.h"
+#include "base/exceptionhandling.h"
 
 using namespace std;
 using namespace insight;
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
 
     try
     {
-        OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
+        OpenFOAMCase cm;
         insight::OpenFOAMCaseDirs cf(cm, location);
 
         bool pack=vm.count("pack");

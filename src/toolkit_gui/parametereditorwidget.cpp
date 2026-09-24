@@ -27,6 +27,7 @@
 #include <exception>
 
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "boost/algorithm/string/replace.hpp"
 #include "cadparametersetvisualizer.h"
 #include "parametereditorwidget.h"
@@ -377,6 +378,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
     }
 
     parameterTreeView_->setModel(model_);
+    parameterTreeView_->setIconSize(QSize(32,32));
     parameterTreeView_->setItemDelegate(
         new IQHierarchicalDataGridViewSelectorDelegate);
 

@@ -3,8 +3,6 @@
 namespace insight
 {
 
-char VectorBaseName[] = "vectorBase";
-char VectorName[] = "vector";
 
 
 VectorParameter::VectorParameter (
@@ -62,28 +60,36 @@ std::unique_ptr<hierarchicalData::Element> VectorParameter::doCloneUninitialized
 }
 
 
-char DoubleName[] = "double";
-char IntName[] = "int";
-char BoolName[] = "bool";
-char StringName[] = "string";
-char DateName[] = "date";
-char DateTimeName[] = "datetime";
+// char DoubleName[] = "double";
+// char IntName[] = "int";
+// char BoolName[] = "bool";
+// char StringName[] = "string";
+// char DateName[] = "date";
+// char DateTimeName[] = "datetime";
+
+
+// char VectorBaseName[] = "vectorBase";
+// char VectorName[] = "vector";
+
+defineTemplateInstanceType(DoubleParameter, "double");
+defineTemplateInstanceType(IntParameter, "int");
+defineTemplateInstanceType(BoolParameter, "bool");
+defineTemplateInstanceType(SimpleParameter<arma::mat>, "vectorBase");
+defineTemplateInstanceType(StringParameter, "string");
+defineTemplateInstanceType(DateParameter, "date");
+defineTemplateInstanceType(DateTimeParameter, "datetime");
 
 
 
+// template<> defineType(DoubleParameter);
+// template<> defineType(IntParameter);
+// template<> defineType(BoolParameter);
+// typedef  SimpleParameter<arma::mat, VectorBaseName> VectorParameterBase;
+// template<> defineType(VectorParameterBase);
+// template<> defineType(StringParameter);
+// template<> defineType(DateParameter);
+// template<> defineType(DateTimeParameter);
 
-
-
-template<> defineType(DoubleParameter);
-template<> defineType(IntParameter);
-template<> defineType(BoolParameter);
-typedef  SimpleParameter<arma::mat, VectorBaseName> VectorParameterBase;
-template<> defineType(VectorParameterBase);
-template<> defineType(StringParameter);
-template<> defineType(DateParameter);
-template<> defineType(DateTimeParameter);
-//typedef SimpleParameter<boost::filesystem::path, PathName> PathParameterBase;
-//template<> defineType(PathParameterBase);
 
 defineType(VectorParameter);
 

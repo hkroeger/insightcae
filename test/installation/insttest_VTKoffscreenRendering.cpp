@@ -23,7 +23,7 @@ int main()
   scene.setParallelScale(std::pair<double,double>(5, 5));
 
   box->Update();
-  scene.addData<vtkPolyDataMapper>(box->GetOutput(), vec3(0.1,0.1,0.1));
+  scene.add<vtkPolyDataMapper>(box->GetOutput(), vec3(0.1,0.1,0.1));
 
 
   scene.setParallelScale(1);

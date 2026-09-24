@@ -2,9 +2,16 @@
 
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkAppendPolyData.h>
 #include <vtkTransform.h>
+#include "vtkDataSetTriangleFilter.h"
+#include "vtkProjectedTetrahedraMapper.h"
+#include "vtkResampleToImage.h"
+#include "vtkGPUVolumeRayCastMapper.h"
+#include "vtkPiecewiseFunction.h"
+#include "vtkVolumeProperty.h"
 
 #include "boost/concept_check.hpp"
 #include "boost/range/adaptor/indexed.hpp"
@@ -59,6 +66,8 @@
 
 #include "vtkAppendFilter.h"
 #include "vtkCompositeDataSet.h"
+#include "vtkCompositeDataIterator.h"
+#include "vtkBoundingBox.h"
 #include "vtkFieldData.h"
 #include "vtkObjectFactory.h"
 #include "vtkUnstructuredGrid.h"
@@ -81,6 +90,10 @@
 #include "base/resultelementcollection.h"
 #include "base/resultelements/attributeresulttable.h"
 #include "base/resultelements/image.h"
+#include "base/resultelements/resultsection.h"
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/vectorresult.h"
+#include "base/resultelements/tabularresult.h"
 #include "base/filecontainer.h"
 
 void vtkRenderingOpenGL2_AutoInit_Construct();
@@ -1208,6 +1221,15 @@ const std::vector<double> colorMapData_BlackBodyRadiation = {
     1
 };
 
+const std::vector<double> colorMapData_Rainbow = {
+    0, 0, 0, 1,
+    0.25, 0, 1, 1,
+    0.5, 0, 1, 0,
+    0.75, 1, 1, 0,
+    1, 1, 0, 0
+};
+
+
 vtkSmartPointer<vtkLookupTable> createColorMap(
         const std::vector<double>& cb,
         int nc,
@@ -1516,7 +1538,7 @@ void VTKOffscreenScene::addActor2D(vtkSmartPointer<vtkActor2D> actor)
 
 vtkSmartPointer<vtkScalarBarActor> VTKOffscreenScene::addColorBar(
       const std::string& title,
-      vtkSmartPointer<vtkLookupTable> lut,
+      vtkScalarsToColors* lut,
       double x, double y,
       bool horiz,
       double w, double len,
@@ -1556,6 +1578,77 @@ vtkSmartPointer<vtkScalarBarActor> VTKOffscreenScene::addColorBar(
 
   return cb;
 }
+
+
+void VTKOffscreenScene::setupInset(
+    double vxmin, double vymin, double vxmax, double vymax,
+    const arma::mat& background
+    )
+{
+  if (!insetRenderer_)
+  {
+    insetRenderer_ = vtkSmartPointer<vtkRenderer>::New();
+    insetRenderer_->GetActiveCamera()->ParallelProjectionOn();
+
+    auto light_kit = vtkSmartPointer<vtkLightKit>::New();
+    light_kit->SetKeyLightIntensity(1.0);
+    light_kit->AddLightsToRenderer(insetRenderer_);
+  }
+
+  insetRenderer_->SetViewport(vxmin, vymin, vxmax, vymax);
+  insetRenderer_->SetBackground(background(0), background(1), background(2));
+}
+
+void VTKOffscreenScene::showInset()
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before showInset()" );
+  if (!insetActive_)
+  {
+    renderWindow_->AddRenderer(insetRenderer_);
+    insetActive_ = true;
+  }
+}
+
+void VTKOffscreenScene::hideInset()
+{
+  if (insetActive_)
+  {
+    renderWindow_->RemoveRenderer(insetRenderer_);
+    insetActive_ = false;
+  }
+}
+
+bool VTKOffscreenScene::insetActive() const
+{
+  return insetActive_;
+}
+
+void VTKOffscreenScene::resetInsetClippingRange()
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before resetInsetClippingRange()" );
+  insetRenderer_->ResetCameraClippingRange();
+}
+
+vtkCamera* VTKOffscreenScene::insetCamera()
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before insetCamera()" );
+  return insetRenderer_->GetActiveCamera();
+}
+
+void VTKOffscreenScene::removeInsetActor(vtkActor* act)
+{
+  if (insetRenderer_)
+  {
+    insetRenderer_->RemoveActor(act);
+  }
+}
+
 
 void VTKOffscreenScene::exportX3D(const boost::filesystem::path& file) const
 {
@@ -1653,22 +1746,71 @@ void VTKOffscreenScene::setParallelScale(
     > scaleOrSize
     )
 {
+  setParallelScale(renderer_.Get(), scaleOrSize);
+}
+
+void VTKOffscreenScene::setParallelScale(
+    vtkRenderer* ren,
+    boost::variant<
+      double, // scale
+      std::pair<double,double> // Lh, Lv
+    > scaleOrSize
+    )
+{
   if (const auto* sz = boost::get<std::pair<double,double> >(&scaleOrSize))
   {
       double w = sz->first;
       double h = sz->second;
-      double W = renderWindow_->GetSize()[0];
-      double H = renderWindow_->GetSize()[1];
+      // vtkViewport::GetSize() returns the renderer's own pixel size, i.e. the
+      // window size scaled by the renderer's normalized viewport fraction -
+      // correct both for a full-window renderer and for a sub-viewport (inset).
+      int* size = ren->GetSize();
+      double W = size[0];
+      double H = size[1];
       double HbyW=H/W;
       double scale=0.5*std::max(w*HbyW, h);
       //print W, H, w, h, scale
       cout<<"setParallelScale: W, H, w, h, scale = "<<W<<", "<<H<<", "<<w<<", "<<h<<", "<<scale<<endl;
-      activeCamera()->SetParallelScale(scale);
+      ren->GetActiveCamera()->SetParallelScale(scale);
   }
   else if (const auto* sc = boost::get<double>(&scaleOrSize))
   {
-      activeCamera()->SetParallelScale(*sc);
+      ren->GetActiveCamera()->SetParallelScale(*sc);
   }
+}
+
+void VTKOffscreenScene::fitRenderer(vtkRenderer* ren, const double bnds[6], double mult)
+{
+  arma::mat L=vec3(bnds[1]-bnds[0], bnds[3]-bnds[2], bnds[5]-bnds[4]);
+  arma::mat ctr=vec3(
+      0.5*(bnds[1]+bnds[0]),
+      0.5*(bnds[3]+bnds[2]),
+      0.5*(bnds[5]+bnds[4])
+      );
+
+  vtkCamera* cam = ren->GetActiveCamera();
+
+  arma::mat p, fp, ey;
+  p=fp=ey=vec3(0,0,0);
+  cam->GetPosition(p.memptr());
+  cam->GetFocalPoint(fp.memptr());
+  cam->GetViewUp(ey.memptr());
+  arma::mat n=p-fp; n/=norm(n,2);
+  ey/=norm(ey,2);
+  arma::mat ex=-arma::cross(n,ey); ex/=norm(ex,2);
+  ey = arma::cross(n, ex);
+
+  arma::mat diff=ctr-p; diff-=dot(diff,n)*n;
+  arma::mat np=p+diff, nfp=fp+diff;
+  cam->SetPosition( np.memptr() );
+  cam->SetFocalPoint( nfp.memptr() );
+
+  double w= fabs(arma::dot(vec3(L[0],0,0), ex))+fabs(arma::dot(vec3(0,L[1],0), ex))+fabs(arma::dot(vec3(0,0,L[2]), ex));
+  double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
+
+  setParallelScale(ren, std::pair<double,double>(mult*w, mult*h));
+
+  ren->ResetCameraClippingRange();
 }
 
 void VTKOffscreenScene::fitAll(double mult)
@@ -1690,34 +1832,42 @@ void VTKOffscreenScene::fitAll(double mult)
     }
   }
 
-  arma::mat L=vec3(bnds[1]-bnds[0], bnds[3]-bnds[2], bnds[5]-bnds[4]);
-  arma::mat ctr=vec3(
-      0.5*(bnds[1]+bnds[0]),
-      0.5*(bnds[3]+bnds[2]),
-      0.5*(bnds[5]+bnds[4])
-      );
+  fitRenderer(renderer_.Get(), bnds, mult);
+}
 
-  arma::mat p, fp, ey;
-  p=fp=ey=vec3(0,0,0);
-  activeCamera()->GetPosition(p.memptr());
-  activeCamera()->GetFocalPoint(fp.memptr());
-  activeCamera()->GetViewUp(ey.memptr());
-  arma::mat n=p-fp; n/=norm(n,2);
-  ey/=norm(ey,2);
-  arma::mat ex=-arma::cross(n,ey); ex/=norm(ex,2);
-  ey = arma::cross(n, ex);
+void VTKOffscreenScene::fitInset(double mult)
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before fitInset()" );
 
-  arma::mat diff=ctr-p; diff-=dot(diff,n)*n;
-  arma::mat np=p+diff, nfp=fp+diff;
-  activeCamera()->SetPosition( np.memptr() );
-  activeCamera()->SetFocalPoint( nfp.memptr() );
+  double bnds[6] = {DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX, DBL_MAX, -DBL_MAX};
 
-  double w= fabs(arma::dot(vec3(L[0],0,0), ex))+fabs(arma::dot(vec3(0,L[1],0), ex))+fabs(arma::dot(vec3(0,0,L[2]), ex));
-  double h= fabs(arma::dot(vec3(L[0],0,0), ey))+fabs(arma::dot(vec3(0,L[1],0), ey))+fabs(arma::dot(vec3(0,0,L[2]), ey));
+  renderWindow_->Render();
 
-  setParallelScale(std::pair<double,double>(mult*w, mult*h));
+  auto aa = insetRenderer_->GetActors();
+  aa->InitTraversal();
+  for (vtkActor*a = aa->GetNextItem(); a!=0; a = aa->GetNextItem())
+  {
+    double abnds[6]={0};
+    a->GetBounds(abnds);
+    for (int i=0;i<3;i++)
+    {
+      bnds[2*i]=std::min(bnds[2*i], abnds[2*i]);
+      bnds[2*i+1]=std::max(bnds[2*i+1], abnds[2*i+1]);
+    }
+  }
 
-  renderer_->ResetCameraClippingRange();
+  fitRenderer(insetRenderer_.Get(), bnds, mult);
+}
+
+void VTKOffscreenScene::fitInset(const double bnds[6], double mult)
+{
+  insight::assertion(
+      insetRenderer_!=nullptr,
+      "setupInset() must be called before fitInset()" );
+
+  fitRenderer(insetRenderer_.Get(), bnds, mult);
 }
 
 void VTKOffscreenScene::clearScene()
@@ -1889,6 +2039,7 @@ OpenFOAMCaseScene::OpenFOAMCaseScene(
   if (readZones)
   {
       ofcase_->ReadZonesOn();
+      ofcase_->CopyDataToCellZonesOn();
   }
   else
   {
@@ -2237,7 +2388,7 @@ void forEachUnconnectedPart(
 
         FieldSelection ri_field("RegionId", FieldSupport::OnCell, -1);
         FieldColor ri_fc(ri_field, createColorMap(), calcRange(ri_field, {}, {cf}));
-        scene.addAlgo<vtkDataSetMapper>(in, ri_fc);
+        scene.add(in->GetOutputPort(), ri_fc);
         scene.addActor(lblActor);
 
         scene.fitAll();
@@ -2458,6 +2609,337 @@ vtkSmartPointer<vtkUnstructuredGridAlgorithm> OpenFOAMInternalMesh(
     return extractBlocks(input, {"internalMesh"} );
 }
 
+
+
+
+std::pair<arma::mat,vtkIdType> dataSetSize(
+    vtkAlgorithmOutput* inputPort)
+{
+    auto producer = inputPort->GetProducer();
+    producer->Update();
+
+    double bounds[6];
+    vtkIdType numCells = 0;
+    vtkDataObject* inputDataObj = producer->GetOutputDataObject(inputPort->GetIndex());
+    if (auto* ds = vtkDataSet::SafeDownCast(inputDataObj))
+    {
+        ds->GetBounds(bounds);
+        numCells = ds->GetNumberOfCells();
+    }
+    else if (auto* cds = vtkCompositeDataSet::SafeDownCast(inputDataObj))
+    {
+        vtkBoundingBox bb;
+        auto iter = vtkSmartPointer<vtkCompositeDataIterator>::Take(cds->NewIterator());
+        for (iter->InitTraversal(); !iter->IsDoneWithTraversal(); iter->GoToNextItem())
+        {
+            if (auto* leaf = vtkDataSet::SafeDownCast(cds->GetDataSet(iter)))
+            {
+                double b[6];
+                leaf->GetBounds(b);
+                bb.AddBounds(b);
+                numCells += leaf->GetNumberOfCells();
+            }
+        }
+        bb.GetBounds(bounds);
+    }
+    else
+    {
+        throw insight::Exception("volumeRender: input does not provide a vtkDataSet");
+    }
+
+    return {
+        arma::mat({
+            {bounds[0], bounds[1]},
+            {bounds[2], bounds[3]},
+            {bounds[4], bounds[5]},
+        }),
+        numCells
+    };
+}
+
+arma::mat
+dataSetCenter(
+    vtkAlgorithmOutput* inputPort)
+{
+    auto [bb,nc]=dataSetSize(inputPort);
+    return 0.5*(bb.col(0)+bb.col(1));
+}
+
+
+std::pair<
+    vtkSmartPointer<vtkVolume>,
+    vtkSmartPointer<vtkColorTransferFunction>
+    >
+volumeRender(
+    vtkAlgorithmOutput *inputPort,
+    FieldSelection field )
+{
+    // Tetrahedralize the interior (fluid) unstructured grid and volume-render
+    // it with vtkProjectedTetrahedraMapper. This mirrors ParaView's own
+    // default "Volume" representation pipeline for unstructured/OpenFOAM data
+    // (PV's "Select Mapper" property defaults to "Projected tetra", which
+    // internally does the same tetrahedralize-then-project-tetrahedra steps -
+    // see vtkVolumeRepresentationPreprocessor + vtkProjectedTetrahedraMapper in
+    // the ParaView sources). Unlike a resample-to-image + ray-cast approach,
+    // this mapper composites opacity directly against the *real* geometric ray
+    // path length through each tetrahedron, so the result does not depend on
+    // an artificial fixed sampling resolution - it looks consistent regardless
+    // of domain size or mesh resolution, matching what ParaView shows by
+    // default.
+    auto tetrahedralized = vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    tetrahedralized->SetInputConnection(inputPort);
+    tetrahedralized->TetrahedraOnlyOn();
+    tetrahedralized->Update();
+
+    auto producer = inputPort->GetProducer();
+    producer->Update();
+
+    // determine T range from the original unstructured mesh
+    auto Trange = calcRange(field, {}, {producer});
+    Trange.first = 0.1*Trange.second + 0.9*Trange.first;
+
+    auto colorTF = createColorTransferFunction(Trange, colorMapData_Rainbow);
+
+    // Estimate the average cell size of the *original* (pre-tetrahedralization)
+    // CFD mesh as bounding-box diagonal / cbrt(numCells). This matches
+    // ParaView's own ScalarOpacityUnitDistance default (vtkSMBoundsDomain's
+    // APPROXIMATE_CELL_LENGTH mode, computed from the representation's
+    // original Input) and keeps vtkProjectedTetrahedraMapper's per-fragment
+    // opacity correction ( 1-exp(-alpha*realTetThickness/unitDist) ) physically
+    // meaningful.
+    //
+    // inputPort's producer is only known generically as vtkAlgorithm here (it
+    // may be any kind of pipeline stage), which has no covariant GetOutput() -
+    // fetch the data object via GetOutputDataObject(port index) instead, and
+    // handle both the plain vtkDataSet and (multi-block) composite cases, same
+    // as calcRange() does above.
+
+    auto [bb,numCells] = dataSetSize(inputPort);
+
+    arma::mat diag=bb.col(1)-bb.col(0);
+    double dx = diag(0), dy = diag(1), dz = diag(2);
+    double diameter = std::sqrt(dx*dx + dy*dy + dz*dz);
+    double unitDist = numCells>0 ? diameter/std::cbrt(double(numCells)) : 1.0;
+
+    const double peakOpacity = 0.7;
+
+    auto opacityTF = vtkSmartPointer<vtkPiecewiseFunction>::New();
+    opacityTF->AddPoint(Trange.first, 0.);
+    opacityTF->AddPoint(Trange.second, peakOpacity);
+
+    auto volProp = vtkSmartPointer<vtkVolumeProperty>::New();
+    volProp->SetColor(colorTF);
+    volProp->SetScalarOpacityUnitDistance(unitDist);
+    volProp->SetScalarOpacity(opacityTF);
+    volProp->SetInterpolationTypeToLinear();
+
+    volProp->ShadeOff();
+
+    auto mapper = vtkSmartPointer<vtkProjectedTetrahedraMapper>::New();
+    mapper->SetInputConnection(tetrahedralized->GetOutputPort());
+    mapper->SetScalarModeToUsePointFieldData();
+    mapper->SelectScalarArray(field.fieldName().c_str());
+
+    auto volume = vtkSmartPointer<vtkVolume>::New();
+    volume->SetMapper(mapper);
+    volume->SetProperty(volProp);
+
+    return { volume, colorTF };
+}
+
+
+std::pair<
+    vtkSmartPointer<vtkVolume>,
+    vtkSmartPointer<vtkColorTransferFunction>
+    >
+volumeRender_fast(
+    vtkAlgorithmOutput *inputPort,
+    FieldSelection field )
+{
+    // Fast alternative to volumeRender(): resample onto a fixed-resolution
+    // regular grid and ray-cast that instead of tetrahedralizing the whole
+    // mesh. Much cheaper on large meshes, but resample resolution must be kept
+    // fully decoupled from opacity correctness (see below), otherwise this
+    // reintroduces the earlier resolution-dependent-opacity bug.
+    const int volumeRenderingResolution = 128;
+    auto resample = vtkSmartPointer<vtkResampleToImage>::New();
+    resample->SetInputConnection(inputPort);
+    resample->SetUseInputBounds(true);
+    resample->SetSamplingDimensions(
+        volumeRenderingResolution, volumeRenderingResolution, volumeRenderingResolution);
+    resample->Update();
+
+    auto producer = inputPort->GetProducer();
+    producer->Update();
+
+    // determine T range from the original unstructured mesh
+    auto Trange = calcRange(field, {}, {producer});
+    Trange.first = 0.1*Trange.second + 0.9*Trange.first;
+
+    auto colorTF = createColorTransferFunction(Trange, colorMapData_Rainbow);
+
+    // Same physically-meaningful unit distance as volumeRender() - computed
+    // from the ORIGINAL mesh (never from the resample grid), so opacity stays
+    // resolution-independent regardless of volumeRenderingResolution.
+    auto [bb, numCells] = dataSetSize(inputPort);
+    arma::mat diag = bb.col(1)-bb.col(0);
+    double dx = diag(0), dy = diag(1), dz = diag(2);
+    double diameter = std::sqrt(dx*dx + dy*dy + dz*dz);
+    double unitDist = numCells>0 ? diameter/std::cbrt(double(numCells)) : 1.0;
+
+    // volumeRender()'s vtkProjectedTetrahedraMapper composites opacity as
+    // Beer-Lambert: opacity = 1-exp(-alpha*t/unitDist), t = real ray path
+    // length. vtkGPUVolumeRayCastMapper composites discretely per sample step
+    // instead: opacity = 1-(1-a)^(sampleDist/unitDist). With sampleDist pinned
+    // to unitDist below, one step's opacity is just "a"; after N such steps,
+    // accumulated opacity is 1-(1-a)^N. Choosing a = 1-exp(-alpha) makes this
+    // EXACTLY equal to the tetra mapper's result for any N, since then
+    // (1-a)^N = exp(-alpha*N) - not just a visual approximation, but the same
+    // accumulated opacity at every multiple of unitDist along a ray.
+    const double alphaTetra = 0.7; // keep in sync with volumeRender()'s peakOpacity
+    const double peakOpacity = 1.0 - std::exp(-alphaTetra);
+
+    auto opacityTF = vtkSmartPointer<vtkPiecewiseFunction>::New();
+    opacityTF->AddPoint(Trange.first, 0.);
+    opacityTF->AddPoint(Trange.second, peakOpacity);
+
+    auto volProp = vtkSmartPointer<vtkVolumeProperty>::New();
+    volProp->SetColor(colorTF);
+    volProp->SetScalarOpacityUnitDistance(unitDist);
+    volProp->SetScalarOpacity(opacityTF);
+    volProp->SetInterpolationTypeToLinear();
+
+    volProp->ShadeOff();
+
+    // vtkSmartVolumeMapper cannot be used here: it hardwires
+    // LockSampleDistanceToInputSpacingOn() on its internal ray-cast mappers in
+    // its constructor, with no public way to turn that back off, so
+    // SampleDistance always gets recomputed from the resample grid's own
+    // spacing regardless of what's set on it - reintroducing the very
+    // resolution-dependence this function is meant to avoid. Use
+    // vtkGPUVolumeRayCastMapper directly instead, which exposes the needed
+    // setters and does not re-lock them per frame.
+    auto mapper = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
+    mapper->SetInputConnection(resample->GetOutputPort());
+    mapper->AutoAdjustSampleDistancesOff();
+    mapper->LockSampleDistanceToInputSpacingOff();
+    mapper->SetSampleDistance(unitDist);
+    mapper->SetScalarModeToUsePointFieldData();
+    mapper->SelectScalarArray(field.fieldName().c_str());
+
+    auto volume = vtkSmartPointer<vtkVolume>::New();
+    volume->SetMapper(mapper);
+    volume->SetProperty(volProp);
+
+    return { volume, colorTF };
+}
+
+
+
+
+
+bool scalarBelow(void* clientData, vtkPoints* pts,
+                 vtkDataArray* /*velocity*/, int /*dir*/)
+{
+    auto* ctx = static_cast<TerminationContext*>(clientData);
+    const vtkIdType n = pts->GetNumberOfPoints();
+    if (n == 0) return false;
+
+    double x[3];
+    pts->GetPoint(n - 1, x);           // current (last) streamline point
+
+    int subId = 0; double pcoords[3];
+    vtkIdType cellId = ctx->dataset->FindCell(
+        x, nullptr, -1, 1e-6, subId, pcoords, ctx->weights.data());
+    if (cellId < 0) return false;      // outside domain → let the tracer handle it
+
+    vtkCell* cell   = ctx->dataset->GetCell(cellId);
+    vtkIdList* ids  = cell->GetPointIds();
+    double s = 0.0;
+    for (vtkIdType i = 0; i < ids->GetNumberOfIds(); ++i)
+        s += ctx->weights[i] * ctx->scalars->GetTuple1(ids->GetId(i));  // FindCell's weights ARE the interp weights
+
+    if (s < ctx->threshold)
+        return true;    // true ⇒ terminate this streamline
+    else
+        return false;
+}
+
+
+StreamTracerHandle
+streamTracer(
+    vtkAlgorithmOutput* inputPort,
+    vtkAlgorithmOutput* seeds,
+    std::string velocityFieldName,
+    int direction,
+    double maxLength,
+    boost::optional<TerminationCriterion> tc
+    )
+{
+
+    auto tr = vtkSmartPointer<vtkStreamTracer>::New();
+    tr->SetInputConnection(inputPort);
+    tr->SetSourceConnection(seeds);
+    tr->SetIntegrationDirection(direction);
+    tr->SetMaximumPropagation(maxLength);
+
+
+    std::shared_ptr<TerminationContext> ctx;
+    if (tc)
+    {
+        auto input=inputPort->GetProducer();
+        input->Update();
+
+        vtkDataSet* inputDS =
+            vtkDataSet::SafeDownCast(input->GetOutputDataObject(0));
+        if (!inputDS)
+        {
+            throw insight::Exception("Expected a vtkDataSet from 'internal'.");
+        }
+
+        vtkDataArray* array = inputDS->GetPointData()->GetArray(
+            tc->terminationFieldName.c_str());
+
+        if (!array)
+        {
+            throw insight::Exception(
+                "Point-data array %s not found on input.",
+                tc->terminationFieldName.c_str() );
+        }
+
+        ctx=std::make_shared<TerminationContext>();
+        ctx->dataset   = inputDS;
+        ctx->scalars   = array;
+        ctx->threshold = tc->terminationLowerThreshold;
+        ctx->weights.resize(inputDS->GetMaxCellSize());
+
+
+        tr->AddCustomTerminationCallback(scalarBelow, ctx.get(), /*SCALAR_BELOW_THRESHOLD*/99);
+    }
+
+    tr->SetInputArrayToProcess(
+        0, 0, 0,
+        vtkDataObject::FIELD_ASSOCIATION_POINTS,
+        velocityFieldName.c_str() );
+
+    return StreamTracerHandle(ctx,tr);
+}
+
+StreamTracerHandle::StreamTracerHandle(
+    std::shared_ptr<TerminationContext> tc,
+    vtkSmartPointer<vtkStreamTracer> str)
+    : tc_(tc), str_(str)
+{}
+
+vtkStreamTracer* StreamTracerHandle::operator()()
+{
+    return str_;
+}
+
+StreamTracerHandle::operator vtkStreamTracer *()
+{
+    return str_;
+}
 
 
 }

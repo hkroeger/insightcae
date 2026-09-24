@@ -1,6 +1,7 @@
 #include "analysisparameterpropositions.h"
 
 #include "base/analysis.h"
+#include "base/tools.h"
 #include "base/rapidxml.h"
 
 #include <dlfcn.h>
@@ -13,6 +14,7 @@
 
 #include "base/pythoninterface.h"
 #include "swigpyrun.h"
+#include "base/warningdispatcher.h"
 #define SWIG_as_voidptr(a) const_cast< void * >(static_cast< const void * >(a))
 
 namespace insight

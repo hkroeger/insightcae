@@ -24,7 +24,9 @@
 #include "base/linearalgebra.h"
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 
+#include "openfoam/openfoamcase.h"
 #include "openfoam/snappyhexmeshoutputanalyzer.h"
 
 #include "cadfeatures/importsolidmodel.h"

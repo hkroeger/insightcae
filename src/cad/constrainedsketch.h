@@ -3,6 +3,7 @@
 
 
 #include "base/cppextensions.h"
+#include "boost/signals2.hpp"
 #include "constrainedsketchentity.h"
 #include "sketch.h"
 #include "base/exception.h"

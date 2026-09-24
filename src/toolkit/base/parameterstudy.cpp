@@ -22,6 +22,7 @@
 
 #include "base/cppextensions.h"
 #include "base/resultset.h"
+#include "base/resultelements/tabularresult.h"
 #include "boost/filesystem/operations.hpp"
 #include "parameterstudy.h"
 #include "base/plottools.h"
@@ -32,6 +33,7 @@
 #include "boost/thread.hpp"
 #include "boost/assign/ptr_map_inserter.hpp"
 #include <iterator>
+#include "base/warningdispatcher.h"
 
 
 

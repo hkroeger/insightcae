@@ -70,3 +70,4 @@ add_dependencies(toolkit_factory toolkit_factory_lib_ext) # don't actually link
 add_test(NAME unit_toolkit_factory COMMAND toolkit_factory ${ARGN})
 
 add_subdirectory(analysis_parameterstudy)
+add_subdirectory(python_analysis)

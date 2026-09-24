@@ -1,6 +1,7 @@
 #include "base/analysislibrary.h"
 
 #include "base/analysis.h"
+#include "base/tools.h"
 #include "base/cppextensions.h"
 #include "base/exception.h"
 

@@ -1,4 +1,5 @@
 #include "base/resultset.h"
+#include "base/resultelements.h"
 
 #include <iostream>
 #include <memory>

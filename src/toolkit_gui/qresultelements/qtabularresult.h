@@ -22,7 +22,7 @@
 #define INSIGHT_QTABULARRESULT_H
 
 #include "toolkit_gui_export.h"
-
+#include "base/resultelements/tabularresult.h"
 
 #include "iqresultsetmodel.h"
 

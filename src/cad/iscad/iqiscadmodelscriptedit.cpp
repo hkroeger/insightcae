@@ -169,6 +169,13 @@ bool IQISCADModelScriptEdit::saveModel()
 
 
 
+// TODO: this persists the raw editor text verbatim and never rebases any
+// relative PathParameters embedded in sketch entities onto the new
+// directory (see insight::Parameter::resolveRelativePaths). Harmless today
+// since no shipped ConstrainedSketchEntity has a file-backed parameter, but
+// must be revisited (regenerate the script via generateScriptCommand()
+// after calling resolveRelativePaths() on the affected parameter sets)
+// before adding one.
 bool IQISCADModelScriptEdit::saveModelAs()
 {
     if (auto fn = getFileName(

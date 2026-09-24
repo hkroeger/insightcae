@@ -26,6 +26,7 @@
 #include "boost/tuple/tuple.hpp"
 #include "boost/format.hpp"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/units.h"
 #include "base/cppextensions.h"
 
@@ -78,7 +79,46 @@ namespace insight
 const double VSMALL=1e-300;
 const double SMALL=1e-10;
 const double LSMALL=1e-6;
-  
+
+std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
+{
+  std::ostringstream os;
+  os <<"(";
+
+  arma::uword nr=vals.n_rows;
+  if (nr>0)
+  {
+    size_t n1=std::min(nr, maxlen-2);
+
+    for (size_t i=0; i<n1; i++)
+      os<<" "<<vals.row(i);
+
+    if (n1<vals.size())
+      {
+        os << " .... "<<vals.row(nr-1);
+      }
+  }
+
+  os<<" )";
+  return os.str();
+}
+
+std::string vector_to_string(const arma::mat &vals, bool addMag)
+{
+  std::ostringstream os;
+  os <<"(";
+  for (arma::uword i=0; i<vals.n_elem; i++)
+  {
+    os<<" "<<vals(i);
+  }
+  os<<" )";
+  if (addMag)
+  {
+    os<<" |"<<arma::norm(vals,2)<<"|";
+  }
+  return os.str();
+}
+
 void insight_gsl_error_handler
 (
  const char* reason,

@@ -3,6 +3,7 @@
 
 #include "toolkit_gui_export.h"
 
+#include "base/resultelements/resultsection.h"
 
 #include "iqresultsetmodel.h"
 #include "qtextensions.h"

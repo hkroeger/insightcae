@@ -22,6 +22,7 @@
 #include "cadparametersetvisualizer.h"
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include "base/warningdispatcher.h"
 #ifdef HAVE_WT
 #include "remoterun.h"
 #endif
@@ -786,6 +787,7 @@ void AnalysisForm::onMergeParameters()
             insight::XMLDocument doc(fn.asFilesystemPath());
             auto importedPS =
                 insight::ParameterSet::create(*doc.rootNode);
+            importedPS->resolveRelativePaths(fn.asFilesystemPath().parent_path());
             ps->copyMatching(*importedPS);
 
             psmodel_->resetParameterValues(*ps);

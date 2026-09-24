@@ -114,6 +114,10 @@ msgstr "Optionen"
 msgid "Could not parse command line"
 msgstr "Konnte die Kommandzeile nicht auswerten"
 
+#, fuzzy
+msgid "Error: work directory does not exist: "
+msgstr "Fehler: die Bibliothek existiert nicht: "
+
 #, c-format
 msgid "There have been %d warnings."
 msgstr "Es gab %d Warnungen"

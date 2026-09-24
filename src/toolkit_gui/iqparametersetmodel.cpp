@@ -440,7 +440,10 @@ void IQParameterSetModel::insertArrayElement(const QModelIndex &index, const ins
 
 
   beginInsertRows(index, iIns, iIns);
-  iap->insertValue( iIns, elem.cloneAs<insight::Parameter>() );
+  if (iIns == iap->size())
+      iap->appendValue( elem.cloneAs<insight::Parameter>() );
+  else
+      iap->insertValue( iIns, elem.cloneAs<insight::Parameter>() );
   // auto iqnp=decorateArrayElement(iqap, iIns, iap->elementRef(iIns)/*, 0*/);
   // iqp->append(iqnp);
   endInsertRows();

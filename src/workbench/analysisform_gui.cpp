@@ -36,6 +36,7 @@
 
 #include "remotedirselector.h"
 #include "of_clean_case.h"
+#include "base/warningdispatcher.h"
 
 namespace fs = boost::filesystem;
 

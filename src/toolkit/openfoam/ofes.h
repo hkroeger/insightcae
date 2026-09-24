@@ -12,10 +12,13 @@ namespace insight {
 
 
 class OFEs
-    : public boost::ptr_map<std::string, OFEnvironment>
+    : public std::map<std::string, std::unique_ptr<OFEnvironment> >
 {
+    OFEs();
+    ~OFEs();
+
 public:
-    static OFEs list;
+    static OFEs& list();
 
     static std::vector<std::string> all();
     static const OFEnvironment& get ( const std::string& name );
@@ -30,8 +33,6 @@ public:
     static const OFEnvironment& getPreferred();
     static const OFEnvironment& getCurrentOrPreferred();
 
-    OFEs();
-    ~OFEs();
 };
 
 

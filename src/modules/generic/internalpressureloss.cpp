@@ -277,7 +277,7 @@ InternalPressureLoss::totalPressureCalculationParameters() const
     auto ctp=InternalPressureLossBase
         ::totalPressureCalculationParameters();
 
-    OpenFOAMCase cm(OFEs::get(p().OpenFOAMAnalysis::Parameters::run.OFEname));
+    OpenFOAMCase cm(p().OpenFOAMAnalysis::Parameters::run.OFEname);
     auto num = numericsCaseElement(cm);
 
     if (num->isCompressible())
@@ -294,7 +294,7 @@ InternalPressureLoss::totalPressureCalculationParameters() const
 
 InternalPressureLossBase::SolverProperties InternalPressureLoss::solverProperties() const
 {
-    OpenFOAMCase cm(OFEs::get(p().OpenFOAMAnalysis::Parameters::run.OFEname));
+    OpenFOAMCase cm(p().OpenFOAMAnalysis::Parameters::run.OFEname);
     auto num = numericsCaseElement(cm);
 
     if (!num->isCompressible())

@@ -42,6 +42,17 @@ void collapseMatchingNodes(
 
 
 
+int availableContentHeight(const QWidget* w)
+{
+    if (auto *p = w->parentWidget())
+        return qMax(200, int(p->height()*0.9));
+    if (auto *win = w->window())
+        return qMax(200, int(win->height()*0.6));
+    return 600;
+}
+
+
+
 QMainWindow *getMainWindow()
 {
     auto* mainWin = qobject_cast<QMainWindow*>(
@@ -272,51 +283,6 @@ void IQEphemeralLabel::mousePressEvent(QMouseEvent *event)
 {
     QLabel::mousePressEvent(event);
     hide();
-}
-
-
-IQPixmapLabel::IQPixmapLabel(const QPixmap& pm, QWidget *parent) :
-    QLabel(parent),
-    pixmap_(pm)
-{
-    this->setMinimumSize(1,1);
-    setScaledContents(false);
-    QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
-    qsp.setHeightForWidth(true);
-    setSizePolicy(qsp);
-    QLabel::setPixmap(scaledPixmap());
-}
-
-
-int IQPixmapLabel::heightForWidth( int width ) const
-{
-    return pixmap_.isNull() ?
-               this->height()
-            : double(pixmap_.height()*width)/double(pixmap_.width());
-}
-
-QSize IQPixmapLabel::sizeHint() const
-{
-    int w = this->width();
-    return QSize( w, heightForWidth(w) );
-}
-
-QPixmap IQPixmapLabel::scaledPixmap() const
-{
-    return pixmap_.scaledToWidth(
-        this->size().width(),
-        Qt::SmoothTransformation);
-}
-
-const QPixmap &IQPixmapLabel::originalPixmap() const
-{
-    return pixmap_;
-}
-
-void IQPixmapLabel::resizeEvent(QResizeEvent * e)
-{
-    if(!pixmap_.isNull())
-        QLabel::setPixmap(scaledPixmap());
 }
 
 

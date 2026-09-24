@@ -33,14 +33,14 @@ int main(int argc, char*argv[])
                     bmd::blockMeshDict_Cylinder::Parameters::mesh_type::resolution_cubical_type{5};
 
 
-            OpenFOAMCase mc1(ofe());
+            auto mc1=createEmptyCompatibleCase();
             mc1.insert(new MeshingNumerics(mc1));
             mc1.insert(new bmd::blockMeshDict_Cylinder(mc1, mp1));
 
             mc1.createOnDisk(dir_);
             mc1.executeCommand(dir_, "blockMesh");
 
-            OpenFOAMCase mc2(ofe());
+            auto mc2=createEmptyCompatibleCase();
             mc2.insert(new MeshingNumerics(mc2));
             mc2.insert(new bmd::blockMeshDict_Cylinder(mc2, mp2));
 

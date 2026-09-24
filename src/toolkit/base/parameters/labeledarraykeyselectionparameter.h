@@ -68,8 +68,8 @@ public:
 
     // --- SelectionParameterInterface ---
     std::vector<std::string> selectionKeys() const override;
-    void setSelection(const key_type& sel) override;
-    const key_type& selection() const override;
+    void setSelection(const SelectionParameterInterface::key_type& sel) override;
+    const SelectionParameterInterface::key_type& selection() const override;
 
     // --- XML ---
     rapidxml::xml_node<>* appendToNode (
@@ -83,7 +83,7 @@ public:
         const rapidxml::xml_node<>& node ) override;
 
 protected:
-    std::unique_ptr<Element> doCloneUninitialized() const override;
+    std::unique_ptr<insight::hierarchicalData::Element> doCloneUninitialized() const override;
 
 public:
     void assignFrom(const Element& p) override;

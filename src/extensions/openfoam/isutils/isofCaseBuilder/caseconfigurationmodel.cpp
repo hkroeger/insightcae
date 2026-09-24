@@ -154,7 +154,7 @@ void CaseConfigurationModel::removeElement(const QModelIndex& index)
 QString CaseConfigurationModel::applicationName(const QString& OFEname) const
 {
   insight::OpenFOAMCase ofc(
-        insight::OFEs::get(OFEname.toStdString()) );
+        OFEname.toStdString() );
 
   for ( int i=0; i < caseElements_.count(); i++ )
     {
@@ -215,6 +215,10 @@ void CaseConfigurationModel::appendConfigurationToNode(
           xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
           appendAttribute(doc, *elemnode, "type", elem->type_name());
           rootnode->append_node ( elemnode );
+
+          // rebase relative PathParameters onto the directory the file is
+          // now being saved to, mirroring readFromNode's resolveRelativePaths call
+          elem->parameterSetModel()->resolveRelativePaths(fileParentPath);
 
           if (pack)
           {

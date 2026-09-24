@@ -37,7 +37,11 @@
 #include "openfoam/caseelements/basic/rasmodel.h"
 #include "openfoam/caseelements/basic/singlephasetransportmodel.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
+#include "openfoam/sampling.h"
 
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/tabularresult.h"
+#include "base/resultelements/image.h"
 
 #ifdef HAS_REFDATA
 #include "refdata.h"

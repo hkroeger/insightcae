@@ -1,11 +1,12 @@
 #ifndef DEPENDENCYREPLACEMENT_H
 #define DEPENDENCYREPLACEMENT_H
 
+#include <map>
+
 #include "base/boost_include.h"
 #include "base/exception.h"
 
 #include "boost/spirit/include/qi.hpp"
-
 
 
 

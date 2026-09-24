@@ -186,8 +186,11 @@ void CADGeometryParameter::resolveRelativePaths(const boost::filesystem::path& b
     baseDirectory_=baseDirectory;
     if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
     {
-        auto& fc=**fcp;
-        fc.resolveRelativePath(baseDirectory);
+        if (*fcp)
+        {
+            auto& fc=**fcp;
+            fc.resolveRelativePath(baseDirectory);
+        }
     }
 }
 
@@ -301,8 +304,14 @@ void CADGeometryParameter::setGeometryFile(const boost::filesystem::path& fn)
     auto val=fn;
     if (!fn.empty() && baseDirectory_)
     {
+        // interpret a relative "fn" as relative to baseDirectory_,
+        // not to the process's current working directory
+        // (which is what make_relative uses internally via
+        // boost::filesystem::absolute)
+        boost::filesystem::path absFn =
+            fn.is_absolute() ? fn : (*baseDirectory_ / fn);
         val=boost::filesystem::make_relative(
-            *baseDirectory_, fn);
+            *baseDirectory_, absFn);
     }
     value_=std::make_shared<FileContainer>(val, baseDirectory_);
 

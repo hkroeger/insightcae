@@ -25,6 +25,7 @@
 #include <boost/asio.hpp>
 #include <boost/process/async.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include "base/warningdispatcher.h"
 
 using namespace std;
 namespace fs=boost::filesystem;

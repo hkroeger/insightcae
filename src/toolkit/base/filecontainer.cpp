@@ -341,8 +341,14 @@ void FileContainer::setFilePath(const boost::filesystem::path &fn)
     auto val=fn;
     if (!fn.empty() && baseDirectory_)
     {
+        // interpret a relative "fn" as relative to baseDirectory_,
+        // not to the process's current working directory
+        // (which is what make_relative uses internally via
+        // boost::filesystem::absolute)
+        boost::filesystem::path absFn =
+            fn.is_absolute() ? fn : (*baseDirectory_ / fn);
         val=boost::filesystem::make_relative(
-            *baseDirectory_, fn);
+            *baseDirectory_, absFn);
     }
     filePath_=val;
 }
@@ -542,14 +548,14 @@ void FileContainer::copyTo(
             "writing file content into %s (create parent path %d)"
         ) % filePath.string() % createParentPath ) );
 
-    if (!exists(filePath.parent_path()) )
+    if (filePath.has_parent_path() && !exists(filePath.parent_path()) )
     {
       if (createParentPath)
       {
         boost::filesystem::create_directories( filePath.parent_path() );
       }
     }
-    if (!exists(filePath.parent_path()) )
+    if (filePath.has_parent_path() && !exists(filePath.parent_path()) )
     {
         throw insight::Exception(
             "parent path %s for unpacking of file %s does not exist!",
@@ -662,7 +668,7 @@ void FileContainer::appendToNode
   {
       if (!fn.is_relative() && path_contains_file(*baseDirectory_, filePath_))
       {
-          fn=make_relative(filePath_, *baseDirectory_);
+          fn=make_relative(*baseDirectory_, filePath_);
       }
   }
 

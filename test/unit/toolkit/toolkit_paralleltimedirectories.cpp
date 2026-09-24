@@ -22,7 +22,7 @@ int main(int argc, char*argv[])
             "sample case directory "+caseDir.string()+" not found!" );
 
         ParallelTimeDirectories ptd(
-            OpenFOAMCase(OFEs::getCurrentOrPreferred()),
+            OpenFOAMCase(),
             caseDir);
 
         insight::assertion(

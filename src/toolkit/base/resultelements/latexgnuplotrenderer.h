@@ -14,6 +14,7 @@
 #include "gnuplot-iostream.h"
 
 #include "boost/filesystem.hpp"
+#include "boost/process.hpp"
 
 namespace insight
 {

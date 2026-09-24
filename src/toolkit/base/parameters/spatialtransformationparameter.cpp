@@ -1,6 +1,7 @@
 #include "spatialtransformationparameter.h"
 #include "base/rapidxml.h"
 #include "base/spatialtransformation.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

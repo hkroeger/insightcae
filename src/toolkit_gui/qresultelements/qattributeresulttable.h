@@ -23,6 +23,7 @@
 
 #include "toolkit_gui_export.h"
 
+#include "base/resultelements/attributeresulttable.h"
 #include "iqresultsetmodel.h"
 
 class QTableWidget;

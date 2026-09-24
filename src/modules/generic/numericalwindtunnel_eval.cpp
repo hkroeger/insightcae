@@ -1,6 +1,7 @@
 
 #include "base/cppextensions.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/spatialtransformation.h"
 #include "numericalwindtunnel.h"
 #include "openfoam/caseelements/analysiscaseelements.h"
@@ -166,7 +167,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         auto sl_cm=createColorMap();
         FieldColor sl_fc(sl_field, sl_cm, sl_range);
 
-        scene.addData<vtkDataSetMapper>(patches, sl_fc);
+        scene.add(patches, sl_fc);
         scene.addColorBar("Pressure\n[m^2/s^2]", sl_cm);
 
         auto camera = scene.activeCamera();
@@ -200,7 +201,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
                 "U");
 
             st->Update();
-            scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+            scene.add<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
         }
       ++*ap;
 
@@ -221,7 +222,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
                 "U");
 
             st->Update();
-            scene.addData<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
+            scene.add<vtkPolyDataMapper>(st->GetOutput(), vec3(0.5,0.5,0.5));
         }
         ++*ap;
 

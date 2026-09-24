@@ -25,21 +25,18 @@
 #include "toolkit_export.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstring>
 #include <exception>
-#include <functional>
 #include <iterator>
-#include <mutex>
+#include <sstream>
 #include <string>
 #include <iostream>
 #include <vector>
-#include <map>
-#include <armadillo>
 #include <memory>
 
 
 #include "stdarg.h"
-
-class QWidget;
 
 
 namespace insight {
@@ -290,10 +287,6 @@ std::string containerKeyList_to_string(const Container& vals, size_t maxlen)
     return valueList_to_string(keys, maxlen);
 }
 
-std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
-std::string vector_to_string(const arma::mat& vals, bool addMag=true);
-
-
 
 
 class ExceptionContext
@@ -308,80 +301,6 @@ public:
 
 
 
-class WarningDispatcher
-{
-
-  WarningDispatcher *superDispatcher_=nullptr;
-  std::vector<insight::Exception> warnings_;
-
-  mutable std::mutex mutex_;
-  std::map<int, std::function<void(const insight::Exception&)>> issueCallbacks_;
-  int nextCallbackId_=0;
-
-public:
-  WarningDispatcher();
-  void setSuperDispatcher(WarningDispatcher* superDispatcher);
-
-  void issue(const std::string& message);
-  void issue(const insight::Exception& warning);
-
-  /**
-   * Register a callback that is invoked whenever a warning is issued on this dispatcher.
-   * May be called from any thread. Returns an ID that can be passed to removeIssueCallback().
-   */
-  int addIssueCallback(std::function<void(const insight::Exception&)> cb);
-  void removeIssueCallback(int id);
-
-  /** Clear the accumulated warning list (does not affect callbacks). */
-  void clear();
-
-  const decltype(warnings_)& warnings() const;
-  size_t nWarnings() const;
-
-  static WarningDispatcher& getCurrent();
-
-};
-
-
-void displayFramed(const std::string& title, const std::string& msg, char titleChar = '=', std::ostream &os = std::cerr);
-
-
-void Warning(std::string msgfmt, ...);
-void Warning(const std::exception& ex);
-
-
-class UnhandledExceptionHandling
-{
-public:
-  static void handler();
-
-  UnhandledExceptionHandling();
-};
-
-
-
-
-
-
-class ExceptionHandler
-{
-public:
-    ExceptionHandler(int priority);
-    virtual ~ExceptionHandler();
-
-    std::string title() const;
-
-    virtual ErrorDescriptionPtr describeProblem() const;
-
-    static std::multimap<int, ExceptionHandler*>& exceptionHandlers();
-};
-
-
-
-
-ErrorDescriptionPtr describeCurrentException();
-
-void printCurrentException(std::ostream& os = std::cerr);
 
 
 }

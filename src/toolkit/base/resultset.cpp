@@ -27,6 +27,7 @@
 #include "base/tools.h"
 #include "base/case.h"
 #include "base/analysis.h"
+#include "base/casedirectory.h"
 #include "base/parameters/subsetparameter.h"
 
 #include <fstream>

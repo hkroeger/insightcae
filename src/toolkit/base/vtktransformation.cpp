@@ -1,6 +1,7 @@
 
 #include "vtktransformation.h"
 #include "base/exception.h"
+#include "base/linearalgebra.h"
 
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>

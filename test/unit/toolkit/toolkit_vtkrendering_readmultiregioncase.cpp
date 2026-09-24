@@ -51,7 +51,7 @@ int main(int argc, char*argv[])
             auto ws_range = calcRange(ws, {}, {exb});
 
             FieldColor ws_color(ws, createColorMap(), ws_range);
-            scene.addAlgo<vtkDataSetMapper>(exb, ws_color);
+            scene.add(exb->GetOutputPort(), ws_color);
             scene.addColorBar(ws.fieldName(), ws_color.lookupTable(), 0.1, 0.1, true);
 
             scene.fitAll();
@@ -68,7 +68,7 @@ int main(int argc, char*argv[])
 
             FieldColor ws_color(ws, createColorMap(colorMapData_SD, 32, true),
                                 insight::MinMax{1e-6, ws_range.second});
-            scene.addAlgo<vtkDataSetMapper>(exb, ws_color);
+            scene.add(exb->GetOutputPort(), ws_color);
             scene.addColorBar(ws.fieldName(), ws_color.lookupTable(), 0.1, 0.1, true);
 
             std::string name="velocity", fname=name+".png";

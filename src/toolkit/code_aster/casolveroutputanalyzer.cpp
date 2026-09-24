@@ -1,6 +1,7 @@
 #include "casolveroutputanalyzer.h"
 
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 
 
 using namespace std;

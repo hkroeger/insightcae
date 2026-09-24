@@ -21,6 +21,8 @@
 #include "base/softwareenvironment.h"
 #include "base/factory.h"
 
+#include "base/resultelements/comment.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;

@@ -11,6 +11,7 @@
 #include <boost/chrono.hpp>
 #include <boost/thread/thread.hpp>
 #include "boost/process.hpp"
+#include "base/warningdispatcher.h"
 
 using namespace std;
 using namespace boost;

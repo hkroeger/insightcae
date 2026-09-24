@@ -23,13 +23,10 @@
 
 #include "toolkit_gui_export.h"
 #include "iqresultsetmodel.h"
-#include "qtextensions.h"
+#include "iqzoomableimageview.h"
+#include "base/resultelements/image.h"
 
 #include <QPixmap>
-
-
-class QLabel;
-class QScrollArea;
 
 
 
@@ -42,7 +39,7 @@ class TOOLKIT_GUI_EXPORT QImage
   Q_OBJECT
 
   std::unique_ptr<QPixmap> pm_;
-  IQPixmapLabel *id_;
+  IQZoomableImageView *id_;
 
 protected:
   void setImage(std::unique_ptr<QPixmap> pm);

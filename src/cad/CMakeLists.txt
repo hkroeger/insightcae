@@ -76,7 +76,14 @@ add_library(insightcad SHARED
   meshing/sheetextrusiongmshcase.h meshing/sheetextrusiongmshcase.cpp
   featurefilter.cpp
   featureset.h featureset.cpp
-  occtools.cpp
+  occtools.h occtools.cpp
+  occconvert.h
+  occbndbox.h occbndbox.cpp
+  occtransform.h occtransform.cpp
+  occshapeutils.h occshapeutils.cpp
+  occedgetools.h occedgetools.cpp
+  occfacetools.h occfacetools.cpp
+  occtriangulation.h
   caddocitem.cpp
   cadtypes.cpp
   subshapenumbering.cpp subshapenumbering.h

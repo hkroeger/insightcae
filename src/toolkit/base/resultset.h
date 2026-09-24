@@ -22,25 +22,7 @@
 #ifndef INSIGHT_RESULTSET_H
 #define INSIGHT_RESULTSET_H
 
-#include "base/hierarchicalelement.h"
-#include "base/units.h"
-#include "base/parameterset.h"
-
-
 #include "base/resultelementcollection.h"
-#include "base/resultelements/resultsection.h"
-
-#include "base/resultelements/comment.h"
-#include "base/resultelements/numericalresult.h"
-#include "base/resultelements/scalarresult.h"
-#include "base/resultelements/vectorresult.h"
-#include "base/resultelements/image.h"
-#include "base/resultelements/video.h"
-#include "base/resultelements/attributeresulttable.h"
-#include "base/resultelements/tabularresult.h"
-#include "base/resultelements/chart.h"
-#include "base/resultelements/polarchart.h"
-#include "base/resultelements/contourchart.h"
 #include "boost/filesystem/path.hpp"
 
 namespace insight 

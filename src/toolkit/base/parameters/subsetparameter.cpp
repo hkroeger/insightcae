@@ -1,5 +1,6 @@
 #include "subsetparameter.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/parameters.h"
 #include "base/tools.h"
 #include "base/cppextensions.h"
@@ -248,6 +249,13 @@ Parameter& ParameterSet::insert(const std::string &name, std::unique_ptr<Paramet
   triggerValueChanged();
 
   return ins;
+}
+
+
+
+Parameter& ParameterSet::insert(const std::string &name, const Parameter& p)
+{
+  return insert(name, p.cloneAs<Parameter>());
 }
 
 

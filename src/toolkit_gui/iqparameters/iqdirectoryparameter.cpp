@@ -53,10 +53,14 @@ QVBoxLayout* IQDirectoryParameter::populateEditControls(
 
   connect(dlgBtn_, &QPushButton::clicked, [=]()
   {
+    boost::filesystem::path startAbs = parameter().expandedFilePath(true);
+    QString startPath = startAbs.empty()
+        ? lineEdit->text()
+        : QString::fromStdString(startAbs.string());
     QString fn = QFileDialog::getExistingDirectory(
           editControlsContainer,
           "Select directory",
-          lineEdit->text());
+          startPath);
     if (!fn.isEmpty())
     {
       lineEdit->setText(fn);

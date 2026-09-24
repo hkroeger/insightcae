@@ -24,6 +24,10 @@ int OFEnvironment::version() const
 
 const boost::filesystem::path& OFEnvironment::bashrc() const
 {
+    insight::assertion(
+        !bashrc_.empty(),
+        "requested OpenFOAM environment is not installed"
+        );
   return bashrc_;
 }
 

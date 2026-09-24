@@ -1,6 +1,7 @@
 #include "labeledarrayparameter.h"
 #include "base/cppextensions.h"
 #include "base/exception.h"
+#include "base/warningdispatcher.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
 #include "base/translations.h"
@@ -31,93 +32,97 @@ void LabeledArrayParameter::initializeHierarchy()
     {
         try
         {
-            auto& op = parentSet()
-            .get<LabeledArrayParameter>(
-                keySourceParameterPath_);
-
-            // auto ukeys = [this]() {
-            //     std::set<std::string> r;
-            //     std::transform(
-            //         value_.begin(), value_.end(),
-            //         std::inserter(r, r.begin()),
-            //         [](const value_type::value_type& v){return v.first;} );
-            //     return r;
-            // };
-
-            // auto blocker = blockUpdateValueSignal();
-
+            auto& ps=parentSet();
+            if (ps.hasPath(keySourceParameterPath_))
             {
-                auto myKeys = keys();
-                auto validKeys = op.keys();
-                // Only remove stale keys when the key-source is non-empty.
-                // If the key-source is empty, the parent hierarchy may not yet
-                // be fully assembled (e.g. during assignFrom when parameters are
-                // processed alphabetically and the key-source parameter comes
-                // after this one). Removing keys prematurely would destroy
-                // values that were correctly cloned/loaded into this array.
-                // The signal connections set up below will keep this array in
-                // sync once the key-source is populated.
-                if (!validKeys.empty())
-                {
-                    std::set<std::string>  tbr;
-                    std::set_difference(
-                        myKeys.begin(), myKeys.end(),
-                        validKeys.begin(), validKeys.end(),
-                        std::inserter(tbr, tbr.begin()) );
+                auto& op = ps
+                .get<LabeledArrayParameter>(
+                    keySourceParameterPath_);
 
-                    for (auto& k: tbr)
+                // auto ukeys = [this]() {
+                //     std::set<std::string> r;
+                //     std::transform(
+                //         value_.begin(), value_.end(),
+                //         std::inserter(r, r.begin()),
+                //         [](const value_type::value_type& v){return v.first;} );
+                //     return r;
+                // };
+
+                // auto blocker = blockUpdateValueSignal();
+
+                {
+                    auto myKeys = keys();
+                    auto validKeys = op.keys();
+                    // Only remove stale keys when the key-source is non-empty.
+                    // If the key-source is empty, the parent hierarchy may not yet
+                    // be fully assembled (e.g. during assignFrom when parameters are
+                    // processed alphabetically and the key-source parameter comes
+                    // after this one). Removing keys prematurely would destroy
+                    // values that were correctly cloned/loaded into this array.
+                    // The signal connections set up below will keep this array in
+                    // sync once the key-source is populated.
+                    if (!validKeys.empty())
                     {
-                        eraseValueImpl(k);
+                        std::set<std::string>  tbr;
+                        std::set_difference(
+                            myKeys.begin(), myKeys.end(),
+                            validKeys.begin(), validKeys.end(),
+                            std::inserter(tbr, tbr.begin()) );
+
+                        for (auto& k: tbr)
+                        {
+                            eraseValueImpl(k);
+                        }
                     }
                 }
-            }
-            {
-                auto myKeys = keys();
-                auto validKeys = op.keys();
-                std::set<std::string> tba;
-                std::set_difference(
-                    validKeys.begin(), validKeys.end(),
-                    myKeys.begin(), myKeys.end(),
-                    std::inserter(tba, tba.begin()) );
-
-                for (auto& k: tba)
                 {
-                    insertWithDefaultsImpl(k);
+                    auto myKeys = keys();
+                    auto validKeys = op.keys();
+                    std::set<std::string> tba;
+                    std::set_difference(
+                        validKeys.begin(), validKeys.end(),
+                        myKeys.begin(), myKeys.end(),
+                        std::inserter(tba, tba.begin()) );
+
+                    for (auto& k: tba)
+                    {
+                        insertWithDefaultsImpl(k);
+                    }
                 }
+
+                syncConnections_.insert(std::move(
+                    op.newItemAdded.connect(
+                        [this](const std::string& label, std::observer_ptr<Parameter>)
+                        {
+                            DBG_SLOT(newItemAdded);
+
+                            getOrInsertDefaultValueImpl(label);
+                        })
+                    ));
+                syncConnections_.insert(std::move(
+                    op.itemRemoved.connect(
+                        [this](const std::string& label)
+                        {
+                            DBG_SLOT(itemRemoved);
+
+                            if (value_.count(label))
+                                eraseValueImpl(label);
+                        })
+                    ));
+
+                syncConnections_.insert(std::move(
+                    op.itemRelabeled.connect(
+                        [this](const std::string& label, const std::string& newLabel)
+                        {
+                            DBG_SLOT(itemRelabeled);
+
+                            if (value_.count(label))
+                                changeLabelImpl(label, newLabel);
+                        })
+                    ));
+
+                isBound_ = true;
             }
-
-            syncConnections_.insert(std::move(
-                op.newItemAdded.connect(
-                    [this](const std::string& label, std::observer_ptr<Parameter>)
-                    {
-                        DBG_SLOT(newItemAdded);
-
-                        getOrInsertDefaultValueImpl(label);
-                    })
-                ));
-            syncConnections_.insert(std::move(
-                op.itemRemoved.connect(
-                    [this](const std::string& label)
-                    {
-                        DBG_SLOT(itemRemoved);
-
-                        if (value_.count(label))
-                            eraseValueImpl(label);
-                    })
-                ));
-
-            syncConnections_.insert(std::move(
-                op.itemRelabeled.connect(
-                    [this](const std::string& label, const std::string& newLabel)
-                    {
-                        DBG_SLOT(itemRelabeled);
-
-                        if (value_.count(label))
-                            changeLabelImpl(label, newLabel);
-                    })
-                ));
-
-            isBound_ = true;
         }
         catch (const insight::ElementNotFoundException&)
         {
@@ -260,6 +265,13 @@ const Parameter& LabeledArrayParameter::defaultValue() const
 }
 
 
+void LabeledArrayParameter::resolveRelativePaths(const boost::filesystem::path& baseDirectory)
+{
+    baseDirectory_=baseDirectory;
+    Parameter::resolveRelativePaths(baseDirectory);
+}
+
+
 
 
 
@@ -348,6 +360,8 @@ void LabeledArrayParameter::insertValueImpl(
 
     auto i = predictInsertionLocation(v, label);
 
+    np->setParent(this);
+
     beforeChildInsertion(i, i);
 
     //should overwrite
@@ -359,10 +373,14 @@ void LabeledArrayParameter::insertValueImpl(
     childValueChangedConnections_.insert(ins.first->second.get(),
         std::make_shared<boost::signals2::scoped_connection>(
             ins.first->second->childValueChanged.connect( childValueChanged )));
+
+    if (initializeHierarchy)
+        ins.first->second->initializeHierarchy();
+    if (initializeHierarchy && baseDirectory_)
+        ins.first->second->resolveRelativePaths(*baseDirectory_);
+
     newItemAdded(ins.first->first, ins.first->second);
 
-    ins.first->second->setParent(this);
-    if (initializeHierarchy) ins.first->second->initializeHierarchy();
 
     childInsertionDone(i, i);
 
@@ -846,6 +864,9 @@ std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::doCloneUniniti
 
     np->setKeySourceParameterPathImpl(keySourceParameterPath_, false);
 
+    if (baseDirectory_)
+        np->resolveRelativePaths(*baseDirectory_);
+
     return np;
 }
 
@@ -858,6 +879,7 @@ void LabeledArrayParameter::assignFrom(const Element& oe)
 
     labelPattern_=op.labelPattern_;
     (*defaultValue_).assignFrom(*op.defaultValue_);
+    baseDirectory_=op.baseDirectory_;
 
     // remove entries not present in op
     {
@@ -899,6 +921,7 @@ void LabeledArrayParameter::copyMatching(const Element& oe)
 
     labelPattern_=op.labelPattern_;
     (*defaultValue_).copyMatching(*op.defaultValue_);
+    baseDirectory_=op.baseDirectory_;
 
     // remove entries not present in op
     {

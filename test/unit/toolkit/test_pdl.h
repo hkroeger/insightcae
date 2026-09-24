@@ -61,8 +61,87 @@ PARAMETERSET>>> SubPS Parameters
 
 W = dimensionedScalar Length millimeters 1.0 "One millimeter"
 
+subInt    = int    1       "int in includedset"
+subBool   = bool   false   "bool in includedset"
+subString = string "sub"   "string in includedset"
+subDate   = date   2024-01-15       "date in includedset"
+subDt     = datetime 2024-01-15 09:00  "datetime in includedset"
+subVec    = vector (1.0 0.0 0.0)    "vector in includedset"
+subMat    = matrix [[1.0, 0.0], [0.0, 1.0]] "matrix in includedset"
+subSel    = selection (subSelA subSelB subSelC) subSelA "selection in includedset"
+subDr     = doubleRange (1.0 2.0 3.0) "doubleRange in includedset"
+subPath   = path ""  "path in includedset"
+subDir    = directory "" "directory in includedset"
+subTrsf   = spatialTransformation (0 0 0) (0 0 0) 1 "spatialTransformation in includedset"
+
+subss = selectablesubset {{
+
+    subssChoiceX set {
+        subssxDbl  = double 1.0         "double in selectablesubset in includedset"
+        subssxInt  = int    1           "int in selectablesubset in includedset"
+        subssxBool = bool   true        "bool in selectablesubset in includedset"
+        subssxStr  = string "x"         "string in selectablesubset in includedset"
+        subssxDate = date   2024-03-01  "date in selectablesubset in includedset"
+        subssxVec  = vector (1.0 0.0 0.0) "vector in selectablesubset in includedset"
+        subssxMat  = matrix [[1.0, 0.0], [0.0, 1.0]] "matrix in selectablesubset in includedset"
+        subssxSel  = selection (subssxP subssxQ) subssxP "selection in selectablesubset in includedset"
+        subssxDr   = doubleRange (1.0 2.0) "doubleRange in selectablesubset in includedset"
+        subssxPath = path ""    "path in selectablesubset in includedset"
+        subssxDir  = directory "" "directory in selectablesubset in includedset"
+        subssxTrsf = spatialTransformation (1 0 0) (0 0 0) 1 "trsf in selectablesubset in includedset"
+    }
+
+    subssChoiceY set {
+        subssyDbl = double 2.0 "double in alternative B in includedset"
+    }
+
+}} subssChoiceX "selectablesubset in includedset"
+
+subArr = array [ set {
+    subArrDbl  = double 1.0         "double in array-element-set in includedset"
+    subArrInt  = int    1           "int in array-element-set in includedset"
+    subArrBool = bool   false       "bool in array-element-set in includedset"
+    subArrStr  = string "a"         "string in array-element-set in includedset"
+    subArrDate = date   2024-04-01  "date in array-element-set in includedset"
+    subArrVec  = vector (0.0 1.0 0.0) "vector in array-element-set in includedset"
+    subArrMat  = matrix [[2.0, 0.0], [0.0, 2.0]] "matrix in array-element-set in includedset"
+    subArrSel  = selection (subArrR subArrS subArrT) subArrR "selection in array-element-set in includedset"
+    subArrDr   = doubleRange (4.0 5.0 6.0) "doubleRange in array-element-set in includedset"
+    subArrPath = path ""   "path in array-element-set in includedset"
+    subArrDir  = directory "" "directory in array-element-set in includedset"
+    subArrTrsf = spatialTransformation (0 1 0) (0 0 0) 1 "trsf in array-element-set in includedset"
+} ] *2 "array with comprehensive set elements in includedset"
+
+subLabArr = labeledarray "subla_%d" [ set {
+    subLaDbl  = double 1.0         "double in labeledarray-element-set in includedset"
+    subLaInt  = int    1           "int in labeledarray-element-set in includedset"
+    subLaBool = bool   false       "bool in labeledarray-element-set in includedset"
+    subLaStr  = string "la"        "string in labeledarray-element-set in includedset"
+    subLaDate = date   2024-05-01  "date in labeledarray-element-set in includedset"
+    subLaVec  = vector (0.0 0.0 1.0) "vector in labeledarray-element-set in includedset"
+    subLaMat  = matrix [[3.0, 0.0], [0.0, 3.0]] "matrix in labeledarray-element-set in includedset"
+    subLaSel  = selection (subLaM subLaN subLaO) subLaM "selection in labeledarray-element-set in includedset"
+    subLaDr   = doubleRange (7.0 8.0 9.0) "doubleRange in labeledarray-element-set in includedset"
+    subLaPath = path ""   "path in labeledarray-element-set in includedset"
+    subLaDir  = directory "" "directory in labeledarray-element-set in includedset"
+    subLaTrsf = spatialTransformation (0 0 1) (0 0 0) 1 "trsf in labeledarray-element-set in includedset"
+} ] *1 "labeledarray with comprehensive set elements in includedset"
+
 subsub = set {
- sarr = array [ double 1. "" ] *2 ""
+ sarr        = array [ double 1. "" ] *2 ""
+ subsubDbl   = double  2.0         "double in set in includedset"
+ subsubInt   = int     2           "int in set in includedset"
+ subsubBool  = bool    true        "bool in set in includedset"
+ subsubStr   = string  "ss"        "string in set in includedset"
+ subsubDate  = date    2024-02-15  "date in set in includedset"
+ subsubDt    = datetime 2024-02-15 07:00 "datetime in set in includedset"
+ subsubVec   = vector  (0.0 1.0 0.0) "vector in set in includedset"
+ subsubMat   = matrix  [[2.0, 0.0], [0.0, 2.0]] "matrix in set in includedset"
+ subsubSel   = selection (subsubAA subsubBB subsubCC) subsubAA "selection in set in includedset"
+ subsubDr    = doubleRange (4.0 5.0 6.0) "doubleRange in set in includedset"
+ subsubPath  = path ""   "path in set in includedset"
+ subsubDir   = directory "" "directory in set in includedset"
+ subsubTrsf  = spatialTransformation (0 0 0) (0 0 0) 1 "trsf in set in includedset"
 } ""
 
 <<<PARAMETERSET
@@ -241,6 +320,95 @@ operation = set {
   DICOMdata = directory "" "Directory with raw data from scan." *necessary
 
 }
+
+myBool      = bool   true              "A boolean parameter"
+myString    = string "hello world"     "A string parameter"
+myDate      = date   2024-01-15        "A date parameter"
+myDateTime  = datetime 2024-01-15 10:30 "A datetime parameter"
+myVec       = vector (1.0 2.0 3.0)    "A non-spatial vector parameter"
+myDirection = vector direction (0.0 0.0 1.0) "A direction vector parameter"
+myPoint     = vector point (1.0 0.0 0.0)     "A point parameter"
+
+allTypes = set {
+
+    atsDbl   = double  1.0          "double inside set"
+    atsInt   = int     5            "int inside set"
+    atsBool  = bool    true         "bool inside set"
+    atsStr   = string  "text"       "string inside set"
+    atsDate  = date    2024-06-01   "date inside set"
+    atsDt    = datetime 2024-06-01 12:00 "datetime inside set"
+    atsVec   = vector  (0.0 1.0 0.0) "vector inside set"
+    atsMat   = matrix  [[1.0, 0.0], [0.0, 1.0]] "matrix inside set"
+    atsDimSc = dimensionedScalar Length meters 2.0 "dimensioned scalar inside set"
+    atsSel   = selection (atsCat atsDog atsBird) atsCat "selection inside set"
+    atsDr    = doubleRange (10.0 20.0 30.0) "doubleRange inside set"
+    atsPath  = path   ""  "path inside set"
+    atsDir   = directory "" "directory inside set"
+    atsTrsf  = spatialTransformation (0 0 0) (0 0 0) 1 "spatialTransformation inside set"
+
+    atsSS = selectablesubset {{
+
+        atssChoiceA set {
+            atssaDbl  = double  1.0         "double in selectablesubset in set"
+            atssaInt  = int     1           "int in selectablesubset in set"
+            atssaBool = bool    true        "bool in selectablesubset in set"
+            atssaStr  = string  "hello"     "string in selectablesubset in set"
+            atssaDate = date    2024-03-01  "date in selectablesubset in set"
+            atssaDt   = datetime 2024-03-01 08:00 "datetime in selectablesubset in set"
+            atssaVec  = vector  (1.0 0.0 0.0) "vector in selectablesubset in set"
+            atssaMat  = matrix  [[1.0, 0.0], [0.0, 1.0]] "matrix in selectablesubset in set"
+            atssaSel  = selection (atssaUp atssaDown) atssaUp "selection in selectablesubset in set"
+            atssaDr   = doubleRange (1.0 2.0) "doubleRange in selectablesubset in set"
+            atssaPath = path ""  "path in selectablesubset in set"
+            atssaDir  = directory "" "directory in selectablesubset in set"
+            atssaTrsf = spatialTransformation (1 0 0) (0 0 0) 1 "trsf in selectablesubset in set"
+            atssaArr  = array [ double 1.0 "" ] *2 "array in selectablesubset in set"
+            atssaLabArr = labeledarray "atssala_%d" [ set {
+                atssalaA = double 1.0 ""
+                atssalaB = int    1   ""
+            } ] *1 "labeledarray in selectablesubset in set"
+        }
+
+        atssChoiceB set {
+            atssbDbl = double 2.0 "double in alternative B in set"
+        }
+
+    }} atssChoiceA "selectablesubset inside set"
+
+    atsArr = array [ set {
+        atsarrDbl  = double  1.0        "double in array-element-set in set"
+        atsarrInt  = int     1          "int in array-element-set in set"
+        atsarrBool = bool    false      "bool in array-element-set in set"
+        atsarrStr  = string  "elem"     "string in array-element-set in set"
+        atsarrDate = date    2024-07-01 "date in array-element-set in set"
+        atsarrDt   = datetime 2024-07-01 06:00 "datetime in array-element-set in set"
+        atsarrVec  = vector  (0.0 0.0 1.0) "vector in array-element-set in set"
+        atsarrMat  = matrix  [[2.0, 0.0], [0.0, 2.0]] "matrix in array-element-set in set"
+        atsarrSel  = selection (atsarrP atsarrQ atsarrR) atsarrP "selection in array-element-set in set"
+        atsarrDr   = doubleRange (5.0 10.0) "doubleRange in array-element-set in set"
+        atsarrPath = path ""  "path in array-element-set in set"
+        atsarrDir  = directory "" "directory in array-element-set in set"
+        atsarrTrsf = spatialTransformation (0 1 0) (0 0 0) 1 "trsf in array-element-set in set"
+    } ] *2 "array with comprehensive set elements in set"
+
+    atsLabArr = labeledarray "atsla_%d" [ set {
+        atslaDbl  = double  1.0        "double in labeledarray-element-set in set"
+        atslaInt  = int     1          "int in labeledarray-element-set in set"
+        atslaBool = bool    false      "bool in labeledarray-element-set in set"
+        atslaStr  = string  "la"       "string in labeledarray-element-set in set"
+        atslaDate = date    2024-08-01 "date in labeledarray-element-set in set"
+        atslaDt   = datetime 2024-08-01 07:00 "datetime in labeledarray-element-set in set"
+        atslaVec  = vector  (1.0 1.0 0.0) "vector in labeledarray-element-set in set"
+        atslaMat  = matrix  [[3.0, 0.0], [0.0, 3.0]] "matrix in labeledarray-element-set in set"
+        atslaSel  = selection (atslaU atslaV atslaW) atslaU "selection in labeledarray-element-set in set"
+        atslaDr   = doubleRange (100.0 200.0) "doubleRange in labeledarray-element-set in set"
+        atslaPath = path ""  "path in labeledarray-element-set in set"
+        atslaDir  = directory "" "directory in labeledarray-element-set in set"
+        atslaTrsf = spatialTransformation (0 0 1) (0 0 0) 1 "trsf in labeledarray-element-set in set"
+    } ] *1 "labeledarray with comprehensive set elements in set"
+
+} "set containing all parameter types"
+
 <<<PARAMETERSET
 */
 

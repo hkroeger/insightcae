@@ -5,13 +5,18 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include "base/warningdispatcher.h"
 
 namespace insight {
 
 
 
 
-OFEs OFEs::list;
+OFEs& OFEs::list()
+{
+    static OFEs theOFEList;
+    return theOFEList;
+}
 
 
 
@@ -19,7 +24,7 @@ OFEs OFEs::list;
 std::vector<std::string> OFEs::all()
 {
     std::vector<std::string> entries;
-    for (value_type vr: OFEs::list)
+    for (auto& vr: list())
     {
 //         std::cout<<vr.first<<std::endl;
         entries.push_back(vr.first);
@@ -32,15 +37,15 @@ std::vector<std::string> OFEs::all()
 
 const OFEnvironment& OFEs::get(const std::string& name)
 {
-  const_iterator it=list.find(name);
-  if (it==list.end())
-    throw insight::Exception
-    (
-      "OFEs::get(): Requested OpenFOAM environment "+name+" is undefined.\n"
-      "(Check environment variable INSIGHT_OFES)"
-    );
+    auto it=list().find(name);
+    if (it==list().end())
+        throw insight::Exception
+            (
+                "OFEs::get(): Requested OpenFOAM environment "+name+" is undefined.\n"
+                    "(Check environment variable INSIGHT_OFES)"
+                );
 
-  return *(it->second);
+    return *(it->second);
 }
 
 
@@ -71,7 +76,7 @@ std::string OFEs::detectCurrentOFE(bool *currentOFEDefined)
       }
   }
 
-  for (OFEs::value_type ofe: list)
+  for (auto &ofe: list())
   {
     if (ofe.first==envvar)
     {
@@ -79,7 +84,10 @@ std::string OFEs::detectCurrentOFE(bool *currentOFEDefined)
     }
   }
 
-  throw insight::Exception("Environment \""+std::string(envvar)+"\" is unknown, i.e. not contained in INSIGHT_OFES. Please check validity of installation.");
+  throw insight::Exception(
+      "Environment \"%s\" is unknown, i.e. not contained in INSIGHT_OFES. "
+      "Please check validity of installation.",
+      envvar );
 }
 
 
@@ -125,6 +133,15 @@ const OFEnvironment& OFEs::getCurrentOrPreferred()
 
 OFEs::OFEs()
 {
+
+    // Insert some dummy entries with version information only to enable
+    // proper function of some visualization code, where blockMesh
+    // case elements are created
+    // these entries are intended to be overwritten further below
+    (*this)["OFesi1806"].reset(new OFEnvironment(060000, boost::filesystem::path()));
+    (*this)["OFesi2112"].reset(new OFEnvironment(060505, boost::filesystem::path()));
+#warning a better solution consistent with CMake detection macros is needed
+
   using namespace rapidxml;
   using namespace std;
   using namespace boost::filesystem;
@@ -153,11 +170,15 @@ OFEs::OFEs()
 
               for (xml_node<> *e = rootnode->first_node("ofe"); e; e = e->next_sibling("ofe"))
               {
-               std::string label(e->first_attribute("label")->value());
-               std::string bashrc(e->first_attribute("bashrc")->value());
-               std::string version(e->first_attribute("version")->value());
+                  std::string label(e->first_attribute("label")->value());
+                  std::string bashrc(e->first_attribute("bashrc")->value());
+                  std::string version(e->first_attribute("version")->value());
 
-               (*this).insert(label, new OFEnvironment(boost::lexical_cast<int>(version), bashrc)); 
+                  (*this)[label].reset(
+                      new OFEnvironment(
+                          boost::lexical_cast<int>(version),
+                          bashrc )
+                      );
               }
           }
           catch (const std::exception& e)
@@ -185,7 +206,11 @@ OFEs::OFEs()
      {
          try
          {
-             (*this).insert(strs[0], new OFEnvironment(boost::lexical_cast<int>(strs[2]), strs[1]));
+             (*this)[strs[0]].reset(
+                 new OFEnvironment(
+                     boost::lexical_cast<int>(strs[2]),
+                     strs[1])
+                 );
          }
          catch (...)
          {

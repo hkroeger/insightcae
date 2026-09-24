@@ -1,11 +1,13 @@
 #include "externalprograms.h"
 
 #include "base/tools.h"
+#include "boost/process.hpp"
 
 #include "base/rapidxml.h"
 #include "rapidxml/rapidxml_print.hpp"
 #include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include "base/warningdispatcher.h"
 
 namespace insight {
 

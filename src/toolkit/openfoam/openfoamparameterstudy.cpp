@@ -23,6 +23,7 @@
 #include "base/cppextensions.h"
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
     

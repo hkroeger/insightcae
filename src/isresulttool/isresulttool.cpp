@@ -22,9 +22,11 @@
 
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
+#include "base/tools.h"
 #include "base/analysislibrary.h"
 #include "base/resultset.h"
 #include "base/resultelements/chart.h"
+#include "base/resultelements/scalarresult.h"
 #include "base/table.h"
 #include "insightcaeapplication.h"
 
@@ -45,6 +47,7 @@
 #include "resultviewwindow.h"
 
 #include <QtCharts>
+#include "base/exceptionhandling.h"
 
 using namespace std;
 using namespace insight;

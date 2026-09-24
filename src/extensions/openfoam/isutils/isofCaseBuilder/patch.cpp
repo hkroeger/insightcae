@@ -102,6 +102,10 @@ bool Patch::insertElement(insight::OpenFOAMCase& c, insight::OFDictData::dict& b
 }
 
 
+// note: inputfilepath is intentionally unused here - rebasing relative
+// PathParameters onto the new save location is now done by the caller
+// (BoundaryConfigurationModel::appendConfigurationToNode) via
+// parameterSetModel()->resolveRelativePaths() before this is invoked.
 void Patch::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath )
 {
     node.append_attribute ( doc.allocate_attribute ( "patchName", patch_name_.c_str() ) );

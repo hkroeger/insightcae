@@ -42,6 +42,11 @@
 #include "openfoam/caseelements/boundaryconditions/wallbc.h"
 #include "openfoam/caseelements/basic/pressuregradientsource.h"
 #include "openfoam/caseelements/basic/rasmodel.h"
+#include "base/warningdispatcher.h"
+
+#include "openfoam/sampling.h"
+#include "base/resultelements/image.h"
+#include "base/resultelements/attributeresulttable.h"
 
 using namespace arma;
 using namespace std;

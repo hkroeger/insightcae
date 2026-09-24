@@ -32,7 +32,7 @@ class PythonAnalysis
 : public Analysis
 {
 
-  const boost::filesystem::path& scriptfile_;
+  boost::filesystem::path scriptfile_;
     
 public:
     

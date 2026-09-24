@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include "Standard_Failure.hxx"
 #include "base/exception.h"
+#include "base/exceptionhandling.h"
 #include "base/translations.h"
 #include "cadexception.h"
 

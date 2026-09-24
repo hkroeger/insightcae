@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 
         if (vm.count("no-template"))
         {
-            XMLDocument doc(fn);
+            insight::XMLDocument doc(fn);
             parameters=ParameterSet::create(*doc.rootNode);
         }
         else

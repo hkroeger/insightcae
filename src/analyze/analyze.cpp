@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
             {
                 insight::CurrentExceptionContext ex(_("reading input parameter file"));
 
-                XMLDocument input(fn);
+                insight::XMLDocument input(fn);
                 parameters = std::make_unique<AnalysisParameterSet>();
                 parameters->readFromRootNode(*input.rootNode);
                 parameters->resolveRelativePaths(inputFileParentPath);

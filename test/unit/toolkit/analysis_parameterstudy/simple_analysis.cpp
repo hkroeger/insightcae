@@ -19,7 +19,8 @@
  */
 
 #include "simple_analysis.h"
-
+#include "base/resultelements/scalarresult.h"
+#include "base/resultelements/chart.h"
 
 namespace insight
 {

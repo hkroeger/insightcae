@@ -1,4 +1,5 @@
 
+#include "boost/noncopyable.hpp"
 #include "base/cppextensions.h"
 #include "base/exception.h"
 

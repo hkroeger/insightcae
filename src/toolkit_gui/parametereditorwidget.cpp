@@ -30,6 +30,7 @@
 #include "base/exceptionhandling.h"
 #include "boost/algorithm/string/replace.hpp"
 #include "cadparametersetvisualizer.h"
+#include "iqparametersetvisualizationscheduler.h"
 #include "parametereditorwidget.h"
 
 #include "iqvtkcadmodel3dviewer.h"
@@ -147,7 +148,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                     //         });
 
 
-                    if (viz_ && viewer_)
+                    if (vizScheduler_ && viewer_)
                     {
                         if (createGUIActions_)
                         {
@@ -341,6 +342,13 @@ ParameterEditorWidget::ParameterEditorWidget
 }
 
 
+ParameterEditorWidget::~ParameterEditorWidget()
+{
+    // stop visualization computation, before the display (and its CAD model) is destroyed
+    delete vizScheduler_;
+}
+
+
 
 bool ParameterEditorWidget::hasVisualizer() const
 {
@@ -423,50 +431,42 @@ void ParameterEditorWidget::rebuildVisualization()
 {
     if (hasVisualizer())
     {
-        if (viz_ && !viz_->isFinished())
+        if (!vizScheduler_)
         {
-            insight::CurrentExceptionContext ex("cancelling running visualizer");
-            viz_->stopVisualizationComputation();
-        }
+            insight::CurrentExceptionContext ex("creating visualization scheduler");
 
-        if (viz_)
-        {
-            insight::CurrentExceptionContext ex("removing old visualizer");
-            viz_->deleteLater();
-        }
-
-
-        {
-            insight::CurrentExceptionContext ex("creating new visualizer");
-
-            viz_ = createVisualizer_(
-                    this,
-                    dynamic_cast<IQParameterSetModel*>(model_)
-                );
-        }
-
-        if (viz_ && !viz_->isFinished())
-        {
-            insight::CurrentExceptionContext ex("connecting new visualizer");
+            vizScheduler_ = new insight::IQParameterSetVisualizationScheduler(
+                [this](QObject* parent) -> insight::CADParameterSetVisualizerGenerator*
+                {
+                    insight::CurrentExceptionContext ex("creating new visualizer");
+                    return createVisualizer_(
+                        parent,
+                        dynamic_cast<IQParameterSetModel*>(model_) );
+                },
+                display_ ? display_->model() : nullptr,
+                100,
+                this );
 
             connect(
-                viz_, &insight::CADParameterSetModelVisualizer::updateSupplementedInputData,
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::updateSupplementedInputData,
                 this, &ParameterEditorWidget::updateSupplementedInputData
                 );
             connect(
-                viz_, &insight::CADParameterSetModelVisualizer::visualizationCalculationFinished, viz_,
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::visualizationCalculationFinished, this,
                 [this](bool success)
                 {
                     DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationCalculationFinished);
 
-                    if (success) overlayText_->hide();
+                    if (success && overlayText_) overlayText_->hide();
                 } );
 
             connect(
-                viz_, &insight::CADParameterSetModelVisualizer::visualizationComputationError, viz_,
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::visualizationComputationError, this,
                 [this](std::exception_ptr ex)
                 {
                     DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
+
+                    if (!overlayText_) return;
 
                     try {
                         std::rethrow_exception(ex);
@@ -487,13 +487,44 @@ void ParameterEditorWidget::rebuildVisualization()
                     }
                 }
             );
-
-            insight::dbg(insight::DetailedBusiness) << "launching visualized" << std::endl;
-
-            viz_->launch(display_->model());
         }
+
+        insight::dbg(insight::DetailedBusiness) << "scheduling visualization update" << std::endl;
+
+        vizScheduler_->requestUpdate();
     }
 }
+
+
+
+insight::supplementedInputDataBasePtr
+ParameterEditorWidget::upToDateSupplementedInputData() const
+{
+    if (vizScheduler_)
+        return vizScheduler_->upToDateSupplementedInputData();
+    return nullptr;
+}
+
+
+
+
+void ParameterEditorWidget::whenVisualizationIdle(std::function<void()> f)
+{
+    if (vizScheduler_)
+        vizScheduler_->whenIdle(f);
+    else
+        f();
+}
+
+
+
+
+void ParameterEditorWidget::cancelWaitForVisualization()
+{
+    if (vizScheduler_)
+        vizScheduler_->cancelWhenIdle();
+}
+
 
 
 

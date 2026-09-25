@@ -14,6 +14,7 @@
 #include <QDockWidget>
 
 #include <QSortFilterProxyModel>
+#include <algorithm>
 #include <qnamespace.h>
 
 
@@ -130,15 +131,15 @@ CADEntityMultiSelection::~CADEntityMultiSelection()
 
 
 
-void CADEntityMultiSelection::rebuildEditor()
+bool CADEntityMultiSelection::computeEntries(
+    std::vector<TopLevelEntry>& entries,
+    std::map<std::string, std::set<std::string> >& copyMapping ) const
 {
-    currentEntries_.clear();
-    copyMapping_.clear();
-    if (copyConnection_) { disconnect(copyConnection_); copyConnection_ = {}; }
-    copyingInProgress_ = false;
+    entries.clear();
+    copyMapping.clear();
 
     auto apsm = viewer_.cadmodel()->associatedParameterSetModel();
-    if (!apsm || empty()) { removeParameterEditor(); return; }
+    if (!apsm || empty()) return false;
 
     auto psm = parameterSetModel(apsm);
 
@@ -146,26 +147,26 @@ void CADEntityMultiSelection::rebuildEditor()
     for (auto& e : *this)
     {
         auto featPtr = boost::get<insight::cad::FeaturePtr>(&e);
-        if (!featPtr) { removeParameterEditor(); return; }
+        if (!featPtr) return false;
 
-        auto entries = getTopLevelEntries(getParamListForFeature(*featPtr), apsm);
+        auto featEntries = getTopLevelEntries(getParamListForFeature(*featPtr), apsm);
 
         if (first)
         {
-            currentEntries_ = entries;
+            entries = featEntries;
             first = false;
         }
         else
         {
             // Build (label -> indices) map for this entity's entries
             std::map<std::string, std::vector<int>> labelToIdx;
-            for (int i = 0; i < static_cast<int>(entries.size()); ++i)
-                labelToIdx[entries[i].label].push_back(i);
+            for (int i = 0; i < static_cast<int>(featEntries.size()); ++i)
+                labelToIdx[featEntries[i].label].push_back(i);
 
             std::map<std::string, int> labelUsed;
             std::vector<TopLevelEntry> newEntries;
 
-            for (auto& ce : currentEntries_)
+            for (auto& ce : entries)
             {
                 auto it = labelToIdx.find(ce.label);
                 if (it == labelToIdx.end()) continue;
@@ -176,22 +177,40 @@ void CADEntityMultiSelection::rebuildEditor()
                 // Also require the same parameter type
                 try {
                     if (psm->parameterRef(ce.absPath).type() !=
-                        psm->parameterRef(entries[it->second[usedIdx]].absPath).type())
+                        psm->parameterRef(featEntries[it->second[usedIdx]].absPath).type())
                     { ++usedIdx; continue; }
                 } catch (...) { continue; }
 
-                auto tba=entries[it->second[usedIdx++]].absPath;
+                auto tba=featEntries[it->second[usedIdx++]].absPath;
                 if (tba!=ce.absPath)
                 {
-                    copyMapping_[ce.absPath].insert(tba);
+                    copyMapping[ce.absPath].insert(tba);
                 }
                 newEntries.push_back(ce);
             }
-            currentEntries_ = newEntries;
+            entries = newEntries;
         }
     }
 
-    if (currentEntries_.empty()) { removeParameterEditor(); return; }
+    return !entries.empty();
+}
+
+
+
+
+void CADEntityMultiSelection::rebuildEditor()
+{
+    if (copyConnection_) { disconnect(copyConnection_); copyConnection_ = {}; }
+    copyingInProgress_ = false;
+
+    if (!computeEntries(currentEntries_, copyMapping_))
+    {
+        removeParameterEditor();
+        return;
+    }
+
+    auto apsm = viewer_.cadmodel()->associatedParameterSetModel();
+    auto psm = parameterSetModel(apsm);
 
     std::vector<std::string> filterPaths;
     for (auto& e : currentEntries_)
@@ -202,6 +221,10 @@ void CADEntityMultiSelection::rebuildEditor()
     auto* spm = new IQFilteredParameterSetModel(filterPaths, editorWidget_);
     spm->setSourceModel(apsm);
     editorWidget_->setModel(spm);
+
+    // the previous filtered model is not displayed any more
+    if (filteredModel_) filteredModel_->deleteLater();
+    filteredModel_ = spm;
 
     if (!copyMapping_.empty())
     {
@@ -247,6 +270,61 @@ void CADEntityMultiSelection::rebuildEditor()
                     break;
                 }
             });
+    }
+}
+
+
+
+
+void CADEntityMultiSelection::refreshEditorIfNeeded()
+{
+    refreshPending_ = false;
+
+    std::vector<TopLevelEntry> entries;
+    std::map<std::string, std::set<std::string> > copyMapping;
+    bool ok = computeEntries(entries, copyMapping);
+
+    auto samePaths = [](const std::vector<TopLevelEntry>& a,
+                        const std::vector<TopLevelEntry>& b)
+    {
+        return std::equal(
+            a.begin(), a.end(), b.begin(), b.end(),
+            [](const TopLevelEntry& x, const TopLevelEntry& y)
+            { return x.absPath==y.absPath; } );
+    };
+
+    if ( ok && editorWidget_
+         && samePaths(entries, currentEntries_)
+         && copyMapping==copyMapping_ )
+    {
+        return; // nothing changed, keep the editor as it is
+    }
+
+    rebuildEditor();
+}
+
+
+
+
+void CADEntityMultiSelection::replace(
+    IQCADModel3DViewer::CADEntity oldEntity,
+    IQCADModel3DViewer::CADEntity newEntity )
+{
+    if (count(oldEntity) < 1) return;
+
+    // exchange silently: the entity represents the same model item
+    std::set<IQCADModel3DViewer::CADEntity>::erase(oldEntity);
+    std::set<IQCADModel3DViewer::CADEntity>::insert(newEntity);
+
+    // the associated parameter paths of the new entity are updated
+    // in the model only after the entity exchange has been signalled:
+    // check the editor later
+    if (!refreshPending_)
+    {
+        refreshPending_ = true;
+        QMetaObject::invokeMethod(
+            this, &CADEntityMultiSelection::refreshEditorIfNeeded,
+            Qt::QueuedConnection );
     }
 }
 

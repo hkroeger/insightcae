@@ -157,6 +157,13 @@ protected:
   QScopedPointer<WorkbenchAction> currentWorkbenchAction_;
 
   /**
+   * @brief waitingForInputPreprocessing_
+   * a local run was requested but waits for the visualizer
+   * to finish computing the supplemented input data of the current parameters
+   */
+  bool waitingForInputPreprocessing_ = false;
+
+  /**
    * @brief autosaveMaxWaitInterval
    * maximum time between first modification trigger and autosave
    */

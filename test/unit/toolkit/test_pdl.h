@@ -35,12 +35,12 @@
 namespace insight {
 
 
-const boost::filesystem::path libSubDir = "brake";
+const boost::filesystem::path libSubDir = "tests";
 
 class BrakePad
 {
 public:
-    declareType("brakePad");
+    declareType("test");
 
     BrakePad(rapidxml::xml_node<>& padNode)
     {}

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit_gui \n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2024-03-11 11:31+0100\n"
+"PO-Revision-Date: 2026-09-25 12:50+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -22,7 +22,6 @@ msgstr "Datei speichern"
 msgid "Open file"
 msgstr "Datei öffnen"
 
-#, fuzzy
 msgid "Bleeching of background images"
 msgstr "Aufhellung der Hintergrundbilder"
 
@@ -57,7 +56,7 @@ msgstr "%s wiederherstellen"
 
 #, c-format
 msgid "could not create reader for file \"%s\""
-msgstr "konnte die Datei %1 nicht erzeugen"
+msgstr "konnte keinen Reader für die Datei \"%s\" erzeugen"
 
 #, c-format
 msgid "image file \"%s\" does not exist"
@@ -112,7 +111,7 @@ msgid "Could not create file %1"
 msgstr "Konnte die Datei %1 nicht erzeugen"
 
 msgid "Select Remote Directory"
-msgstr ""
+msgstr "Entferntes Verzeichnis auswählen"
 
 msgid "Clear"
 msgstr "Leeren"
@@ -131,10 +130,10 @@ msgid "Failed to open file %s for writing"
 msgstr "Konnte Datei %s nicht zum Schreiben öffnen"
 
 msgid "Zoom in"
-msgstr ""
+msgstr "Vergrößern"
 
 msgid "Zoom out"
-msgstr ""
+msgstr "Verkleinern"
 
 msgid "Reset zoom (fit whole image into view)"
-msgstr ""
+msgstr "Zoom zurücksetzen (ganzes Bild einpassen)"

@@ -270,7 +270,7 @@ IQVTKCADModel3DViewer::highlightActors(std::set<vtkProp *> actor, QColor hicol)
 
 
 
-void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
+void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx, bool keepSelection)
 {
     if (pidx.isValid())
     {
@@ -278,9 +278,12 @@ void IQVTKCADModel3DViewer::remove(const QPersistentModelIndex& pidx)
         if (i!=displayedData_.end())
         {
             // remove from selection, if is selected
-            if (auto sel = runningAction<IQVTKSelectCADEntity>())
+            if (!keepSelection)
             {
-                sel->externallyUnselect(i->second.ce_);
+                if (auto sel = runningAction<IQVTKSelectCADEntity>())
+                {
+                    sel->externallyUnselect(i->second.ce_);
+                }
             }
             // remove from scene
             for (const auto& actor: i->second.actors_)
@@ -719,8 +722,27 @@ void IQVTKCADModel3DViewer::onDataChanged(
                 if (colInRange(IQCADItemModel::entityCol))
                 {
                     // exchange feature
-                    remove( pidx );
+                    // if the entity was selected, transfer the selection
+                    // to the new entity (keeps the parameter editor open)
+                    auto sel = runningAction<IQVTKSelectCADEntity>();
+                    boost::optional<CADEntity> selectedOldEntity;
+                    auto i = displayedData_.find(pidx);
+                    if (sel && i!=displayedData_.end() && sel->isSelected(i->second.ce_))
+                    {
+                        selectedOldEntity = i->second.ce_;
+                    }
+
+                    remove( pidx, bool(selectedOldEntity) );
                     addChild(idx);
+
+                    if (selectedOldEntity)
+                    {
+                        auto ni = displayedData_.find(pidx);
+                        if (ni!=displayedData_.end())
+                            sel->externallyReplace(*selectedOldEntity, ni->second.ce_);
+                        else
+                            sel->externallyUnselect(*selectedOldEntity);
+                    }
                 }
                 if ( oneColInRange(IQCADItemModel::datasetFieldNameCol,
                                   IQCADItemModel::datasetRepresentationCol) )
@@ -1188,6 +1210,13 @@ void IQVTKCADModel3DViewer::resetNavigationManager(
     QWidgetToInputReceiverAdapter<
         IQVTKCADModel3DViewer, IQCADModel3DViewer>
         ::resetNavigationManager(std::move(nm));
+}
+
+
+bool IQVTKCADModel3DViewer::isInViewArea(const QPoint& p) const
+{
+    // only the VTK widget is the view area, not the dock widgets, tool bars etc.
+    return centralWidget() && centralWidget()->geometry().contains(p);
 }
 
 

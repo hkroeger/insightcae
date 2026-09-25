@@ -9,8 +9,8 @@
 #include <QObject>
 #include <QThread>
 #include <QIcon>
-#include <QColor>
 #include <QTimer>
+#include <QColor>
 
 #include "base/analysis.h"
 #include "base/supplementedinputdata.h"
@@ -101,11 +101,44 @@ public:
         ProgressDisplayer& progress
         );
 
+    /**
+     * @brief launch
+     * starts the visualization computation immediately.
+     * Must be called from the GUI thread and only once per object.
+     * @param model
+     * the model, into which the visualization entities are inserted.
+     * If null, the caller has to connect to the created* signals.
+     */
     virtual void launch(IQCADItemModel *model) =0;
 
-    // stop
+    /**
+     * @brief stopVisualizationComputation
+     * request cancellation of a running computation and return immediately.
+     * All output of the cancelled computation is discarded.
+     * computationThreadEnded() is emitted, once the background thread has actually ended.
+     */
     virtual void stopVisualizationComputation() =0;
+
+    /**
+     * @brief stopAndWait
+     * cancel and block until the background thread has ended.
+     * Intended for use in destructors of owning objects.
+     */
+    virtual void stopAndWait() =0;
+
+    /**
+     * @brief isComputationRunning
+     * true between launch and the end of the background thread
+     */
+    virtual bool isComputationRunning() const =0;
+
     virtual bool isFinished() const =0;
+
+    /**
+     * @brief cancelAndDeleteLater
+     * cancel without blocking and delete this object, once the background thread has ended
+     */
+    void cancelAndDeleteLater();
 
     virtual void addPoint(
         const std::string& name,
@@ -137,6 +170,13 @@ Q_SIGNALS:
     void visualizationCalculationFinished(bool success);
     void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
     void visualizationComputationError(std::exception_ptr ex);
+
+    /**
+     * @brief computationThreadEnded
+     * emitted in any case (success, error, cancellation),
+     * when the background computation has ended
+     */
+    void computationThreadEnded();
 };
 
 
@@ -151,7 +191,7 @@ class TOOLKIT_GUI_EXPORT CADParameterSetModelVisualizer
 public:
   declareType("CADParameterSetModelVisualizer");
 
-    enum Status { BeforeLaunch, Running, Finished };
+    enum Status { BeforeLaunch, Running, Finished, Cancelled };
 
 
   typedef
@@ -222,14 +262,31 @@ protected:
   std::unique_ptr<boost::thread> rebuildThread_;
   IQParameterSetModel *psmodel_;
 
-  QTimer timerToUpdate_;
+  /**
+   * @brief paramSnapshot_
+   * copy of the parameter set, taken in the GUI thread at launch.
+   * The background thread reads only from this copy,
+   * never from the (concurrently edited) parameter set model.
+   */
+  std::shared_ptr<ParameterSet> paramSnapshot_;
+
+  /**
+   * @brief rb_
+   * lives in the GUI thread. Receives the created entities through queued connections.
+   * Is deleted on cancellation, which also drops all pending (stale) entities.
+   */
+  std::unique_ptr<IQISCADModelRebuilder> rb_;
 
   std::shared_ptr<supplementedInputDataBase> sid_;
 
   mutable boost::atomic<Status> status_;
   mutable boost::atomic<bool> success_;
+  boost::atomic<bool> cancelled_;
+  boost::atomic<bool> threadActive_;
 
   virtual const ParameterSet& parameters() const;
+
+  void onComputationThreadEnded();
 
 public:
 
@@ -247,16 +304,19 @@ public:
   void launch(IQCADItemModel *model) override;
 
   /**
-   * triggers stopping of rebuild thread,
-   * return immediately
+   * Owners should have stopped the computation before (cancelAndDeleteLater or stopAndWait).
+   * If the thread is still running here, it is joined as a last resort.
    */
   ~CADParameterSetModelVisualizer();
 
   // access state and results
   bool isFinished() const override;
+  bool isComputationRunning() const override;
+  bool isCancelled() const;
 
   // stop
   void stopVisualizationComputation() override;
+  void stopAndWait() override;
 
   IQParameterSetModel* parameterSetModel() const;
 
@@ -265,12 +325,6 @@ public:
   virtual std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() = 0;
 
   virtual void recreateVisualizationElements();
-
-
-Q_SIGNALS:
-  void visualizationCalculationFinished(bool success);
-  void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
-  void visualizationComputationError(std::exception_ptr ex);
 };
 
 
@@ -375,6 +429,8 @@ private:
       finishedVisualizers_;
 
   std::unique_ptr<IQISCADModelRebuilder> rb_;
+  QList<CADParameterSetModelVisualizer*> subVisualizers_;
+  bool launched_, cancelled_, threadsEnded_;
 
   void allFinished(bool success);
 
@@ -385,12 +441,17 @@ public:
       const boost::filesystem::path& workDir,
       ProgressDisplayer& progress );
 
+  ~MultiCADParameterSetVisualizer();
+
   void launch(IQCADItemModel *model) override;
   bool isFinished() const override;
+  bool isComputationRunning() const override;
   void stopVisualizationComputation() override;
+  void stopAndWait() override;
 
 public Q_SLOTS:
   void onSubVisualizationCalculationFinished(QObject* source, bool success);
+  void onSubComputationThreadEnded();
 
 };
 

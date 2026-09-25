@@ -37,6 +37,14 @@ public:
 
 protected:
 
+    /**
+     * @brief isInViewArea
+     * check, if an event at position p (widget coordinates) is meant for the view.
+     * Unhandled events of child widgets (e.g. dock widgets) propagate to this widget
+     * and should not be interpreted as view navigation.
+     */
+    virtual bool isInViewArea(const QPoint& /*p*/) const { return true; }
+
     template<class Function, typename... Args>
     void call(Function f, Args&&... args)
     {
@@ -175,6 +183,12 @@ protected:
     void wheelEvent(QWheelEvent* e) override
     {
         insight::dbg(insight::GUIEvents)<<"wheel"<<std::endl;
+
+        if (!isInViewArea(e->position().toPoint()))
+        {
+            e->accept(); // stop propagation, don't navigate
+            return;
+        }
 
         Widget::wheelEvent(e);
 

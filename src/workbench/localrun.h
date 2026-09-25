@@ -7,6 +7,7 @@
 #include "base/resultset.h"
 #include "base/progressdisplayer.h"
 #include "base/boost_include.h"
+#include "base/supplementedinputdata.h"
 
 #include "qanalysisthread.h"
 
@@ -21,7 +22,12 @@ class LocalRun
   Q_OBJECT
 
 public:
-  LocalRun(AnalysisForm *af);
+  /**
+   * @param sid
+   * supplemented input data, computed from the current parameters
+   * (e.g. by the visualizer). If null, it is computed in the analysis thread.
+   */
+  LocalRun(AnalysisForm *af, insight::supplementedInputDataBasePtr sid);
   ~LocalRun();
 
   std::unique_ptr<insight::ResultSet> moveResults() override;

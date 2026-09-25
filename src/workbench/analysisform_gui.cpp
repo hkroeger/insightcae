@@ -164,6 +164,9 @@ void AnalysisForm::onShowWarningDialog()
 
 void AnalysisForm::onRunAnalysis()
 {
+  if (waitingForInputPreprocessing_)
+    return; // run will start, once preprocessing has finished
+
   if (currentWorkbenchAction_)
     throw insight::Exception(_("Internal error: there is an action running currently!"));
 
@@ -187,6 +190,15 @@ void AnalysisForm::onRunAnalysis()
 
 void AnalysisForm::onKillAnalysis()
 {
+  if (waitingForInputPreprocessing_)
+  {
+    // run not yet started: just don't start it
+    peditor_->cancelWaitForVisualization();
+    waitingForInputPreprocessing_=false;
+    Q_EMIT statusMessage(_("Analysis start cancelled"), 5000);
+    return;
+  }
+
   if (!currentWorkbenchAction_)
     throw insight::Exception(_("Internal error: there is no action running currently!"));
 

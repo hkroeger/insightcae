@@ -185,6 +185,7 @@ add_library(toolkit_gui SHARED
        of_clean_case.cpp of_clean_case.h
        snappyhexmesh_gui.cpp snappyhexmesh_gui.h
        cadparametersetvisualizer.cpp cadparametersetvisualizer.h
+       iqparametersetvisualizationscheduler.cpp iqparametersetvisualizationscheduler.h
        logviewerwidget.cpp logviewerwidget.h
        iqgraphprogressdisplayer.cpp iqgraphprogressdisplayer.h
        progressrelay.cpp progressrelay.h

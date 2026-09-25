@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: toolkit \n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2024-11-04 14:35+0100\n"
+"PO-Revision-Date: 2026-09-25 12:50+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -17,11 +17,13 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "Error: input file does not exist"
-msgstr ""
+msgstr "Fehler: Eingabedatei existiert nicht"
 
 #, c-format
 msgid "relative path given (%s) but no parent parameter container set!"
 msgstr ""
+"relativer Pfad angegeben (%s), aber kein übergeordneter Parametercontainer "
+"gesetzt!"
 
 #, c-format
 msgid ""
@@ -35,6 +37,8 @@ msgid ""
 "property library does not contain selection \"%s\"!\n"
 " Available values are: %s"
 msgstr ""
+"Eigenschaftsbibliothek enthält die Auswahl \"%s\" nicht!\n"
+" Verfügbare Werte sind: %s"
 
 #, c-format
 msgid ""
@@ -42,6 +46,9 @@ msgid ""
 "array!\n"
 " Available keys: %s"
 msgstr ""
+"LabeledArrayKeySelectionParameter: Schlüssel \"%s\" ist im referenzierten "
+"Array nicht vorhanden!\n"
+" Verfügbare Schlüssel: %s"
 
 msgid "The problem occurred"
 msgstr "Das Problem ist aufgetreten"
@@ -52,114 +59,127 @@ msgstr "während"
 #, c-format
 msgid "Execution of external application \"%s\" failed with return code %d!"
 msgstr ""
+"Ausführung der externen Anwendung \"%s\" ist mit Rückgabewert %d "
+"fehlgeschlagen!"
 
 msgid "Error output was:"
-msgstr ""
+msgstr "Die Fehlerausgabe war:"
 
 msgid "There was no error output."
-msgstr ""
+msgstr "Es gab keine Fehlerausgabe."
 
 msgid "Further details:"
-msgstr ""
+msgstr "Weitere Details:"
 
 #, c-format
 msgid "launch external command \"%s\" with arguments {%s}"
-msgstr ""
+msgstr "starte externen Befehl \"%s\" mit Argumenten {%s}"
 
 #, c-format
 msgid "Error in GSL subroutine: %s (errno %d)"
-msgstr ""
+msgstr "Fehler in GSL-Unterroutine: %s (errno %d)"
 
 #, c-format
 msgid "the argument is not a rotation matrix, residual=%e"
-msgstr ""
+msgstr "das Argument ist keine Rotationsmatrix, Residuum=%e"
 
 #, c-format
 msgid "no lower bound found for t=%g!"
-msgstr ""
+msgstr "keine untere Schranke für t=%g gefunden!"
 
 #, c-format
 msgid "center of gravity of region %d"
-msgstr ""
+msgstr "Schwerpunkt von Bereich %d"
 
 #, c-format
 msgid "invalid interval definition: begin (%g) must be before end (%g)!"
 msgstr ""
+"ungültige Intervalldefinition: Anfang (%g) muss vor dem Ende (%g) liegen!"
 
 #, c-format
 msgid "creating OpenFOAM dictionaries in memory for case \"%s\""
-msgstr ""
+msgstr "erzeuge OpenFOAM-Dictionaries im Speicher für Case \"%s\""
 
 #, c-format
 msgid "writing OpenFOAM dictionaries to case \"%s\""
-msgstr ""
+msgstr "schreibe OpenFOAM-Dictionaries in Case \"%s\""
 
 #, c-format
 msgid "applying custom options to OpenFOAM case configuration for case \"%s\""
 msgstr ""
+"wende benutzerdefinierte Optionen auf die OpenFOAM-Konfiguration von Case "
+"\"%s\" an"
 
 #, c-format
 msgid "mapping existing CFD solution from case \"%s\" to case \"%s\""
-msgstr ""
+msgstr "übertrage vorhandene CFD-Lösung von Case \"%s\" auf Case \"%s\""
 
 #, c-format
 msgid "creating OpenFOAM case in directory \"%s\""
-msgstr ""
+msgstr "erzeuge OpenFOAM-Case im Verzeichnis \"%s\""
 
 msgid "Computing derived input quantities"
-msgstr ""
+msgstr "Berechne abgeleitete Eingabegrößen"
 
 msgid ""
 "Parameter \"run/evaluateonly\" is set.\n"
 "SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!"
 msgstr ""
+"Parameter \"run/evaluateonly\" ist gesetzt.\n"
+"SOLVERLAUF WIRD ÜBERSPRUNGEN, FAHRE MIT AUSWERTUNG FORT!"
 
 #, c-format
 msgid "Linking the mesh to OpenFOAM case in directory %s."
-msgstr ""
+msgstr "Verknüpfe das Netz mit dem OpenFOAM-Case im Verzeichnis %s."
 
 msgid "Creating the mesh."
-msgstr ""
+msgstr "Erzeuge das Netz."
 
 #, c-format
 msgid "case in \"%s\": mesh is already there, skipping mesh creation."
 msgstr ""
+"Case in \"%s\": Netz ist bereits vorhanden, Netzerzeugung wird übersprungen."
 
 msgid "Creating the case setup."
-msgstr ""
+msgstr "Erzeuge das Case-Setup."
 
 msgid "Creating the dictionaries."
-msgstr ""
+msgstr "Erzeuge die Dictionaries."
 
 msgid "Applying custom modifications to dictionaries."
-msgstr ""
+msgstr "Wende benutzerdefinierte Änderungen auf die Dictionaries an."
 
 msgid "Applying custom modifications mesh."
-msgstr ""
+msgstr "Wende benutzerdefinierte Änderungen auf das Netz an."
 
 msgid "Writing dictionaries to disk."
-msgstr ""
+msgstr "Schreibe Dictionaries auf die Festplatte."
 
 msgid "Applying custom preprocessing steps to OpenFOAM case."
 msgstr ""
+"Wende benutzerdefinierte Vorverarbeitungsschritte auf den OpenFOAM-Case an."
 
 #, c-format
 msgid ""
 "case in \"%s\": skipping case recreation because there are already output "
 "time directories present."
 msgstr ""
+"Case in \"%s\": Neuerzeugung des Case wird übersprungen, da bereits "
+"Ausgabe-Zeitverzeichnisse vorhanden sind."
 
 #, c-format
 msgid "initializing solver run for case \"%s\""
-msgstr ""
+msgstr "initialisiere Solverlauf für Case \"%s\""
 
 msgid "Executing decomposePar"
-msgstr ""
+msgstr "Führe decomposePar aus"
 
 #, c-format
 msgid ""
 "case in \"%s\": solution was mapped from other case, skipping potentialFoam."
 msgstr ""
+"Case in \"%s\": Lösung wurde von einem anderen Case übertragen, "
+"potentialFoam wird übersprungen."
 
 msgid ""
 "A potentialFoam initialization was configured although a solution was mapped "
@@ -167,109 +187,122 @@ msgid ""
 "The potentialFoam run was skipped in order not to destroy the mapped "
 "solution!"
 msgstr ""
+"Eine Initialisierung mit potentialFoam wurde konfiguriert, obwohl eine "
+"Lösung von einem anderen Case übertragen wurde.\n"
+"Der potentialFoam-Lauf wurde übersprungen, um die übertragene Lösung nicht "
+"zu zerstören!"
 
 msgid "Executing potentialFoam"
-msgstr ""
+msgstr "Führe potentialFoam aus"
 
 #, c-format
 msgid ""
 "case in \"%s\": output timestep are already there, skipping initialization."
 msgstr ""
+"Case in \"%s\": Ausgabe-Zeitschritte sind bereits vorhanden, Initialisierung "
+"wird übersprungen."
 
 msgid "running solver"
-msgstr ""
+msgstr "Solver läuft"
 
 #, c-format
 msgid "Executing application %s until end time %g."
-msgstr ""
+msgstr "Führe Anwendung %s bis zur Endzeit %g aus."
 
 #, c-format
 msgid "finalizing solver run for case \"%s\""
-msgstr ""
+msgstr "schließe Solverlauf für Case \"%s\" ab"
 
 msgid "Running reconstructPar for latest time step"
-msgstr ""
+msgstr "Führe reconstructPar für den letzten Zeitschritt aus"
 
 msgid "No reconstruct needed"
-msgstr ""
+msgstr "Keine Rekonstruktion erforderlich"
 
 msgid ""
 "A parallel run is configured, but not processor directory is present!\n"
 "Proceeding anyway."
 msgstr ""
+"Ein paralleler Lauf ist konfiguriert, aber es ist kein processor-Verzeichnis "
+"vorhanden!\n"
+"Fahre trotzdem fort."
 
 #, c-format
 msgid "evaluating the results for case \"%s\""
-msgstr ""
+msgstr "werte die Ergebnisse für Case \"%s\" aus"
 
 msgid "running OpenFOAM analysis"
-msgstr ""
+msgstr "führe OpenFOAM-Analyse aus"
 
 msgid "Preparing case creation"
-msgstr ""
+msgstr "Bereite Case-Erzeugung vor"
 
 msgid "Creating case on disk"
-msgstr ""
+msgstr "Erzeuge Case auf der Festplatte"
 
 msgid "Initializing solver run"
-msgstr ""
+msgstr "Initialisiere Solverlauf"
 
 msgid "Running solver"
-msgstr ""
+msgstr "Solver läuft"
 
 msgid "Finalizing solver run"
-msgstr ""
+msgstr "Schließe Solverlauf ab"
 
 msgid "Evaluating results"
-msgstr ""
+msgstr "Werte Ergebnisse aus"
 
 msgid "inserting turbulence model configuration into OpenFOAM case"
-msgstr ""
+msgstr "füge Konfiguration des Turbulenzmodells in den OpenFOAM-Case ein"
 
 #, c-format
 msgid "Unrecognized RASModel selection: %s"
-msgstr ""
+msgstr "Unbekannte Auswahl für RASModel: %s"
 
 #, c-format
 msgid "No time directories present in case %s"
-msgstr ""
+msgstr "Keine Zeitverzeichnisse im Case %s vorhanden"
 
 #, c-format
 msgid "Surface refinement #%s: %s cells"
-msgstr ""
+msgstr "Oberflächenverfeinerung #%s: %s Zellen"
 
 #, c-format
 msgid "Shell refinement #%s: %s cells"
-msgstr ""
+msgstr "Volumenverfeinerung #%s: %s Zellen"
 
 #, c-format
 msgid "Removed unreachable cells, now %s remain"
-msgstr ""
+msgstr "Unerreichbare Zellen entfernt, %s verbleiben"
 
 #, c-format
 msgid "Morph iteration %s"
-msgstr ""
+msgstr "Morph-Iteration %s"
 
 #, c-format
 msgid "Layer iter #%d: %d illegal faces, extruded %s faces out of %d (%0.2g%%)"
 msgstr ""
+"Layer-Iteration #%d: %d ungültige Flächen, %s von %d Flächen extrudiert "
+"(%0.2g%%)"
 
 #, c-format
 msgid "no valid output file was found in time directory %s!"
-msgstr ""
+msgstr "keine gültige Ausgabedatei im Zeitverzeichnis %s gefunden!"
 
 #, c-format
 msgid "invalid data: expected at least two columns (time + 1 data), got: %s"
 msgstr ""
+"ungültige Daten: mindestens zwei Spalten erwartet (Zeit + 1 Datenspalte), "
+"erhalten: %s"
 
 #, c-format
 msgid ""
 "reading output files %s for function object %s (filtering out any of '%s')"
-msgstr ""
+msgstr "lese Ausgabedateien %s für Function Object %s (filtere '%s' heraus)"
 
 #, c-format
 msgid "data path %s of function object %s does not exist!"
-msgstr ""
+msgstr "Datenpfad %s von Function Object %s existiert nicht!"
 
 #, c-format
 msgid ""
@@ -277,3 +310,6 @@ msgid ""
 "directory %s was created before the output file of the previous time "
 "directory."
 msgstr ""
+"Mögliche Inkonsistenz in den Solver-Ausgabedaten erkannt! Datei %s aus "
+"Zeitverzeichnis %s wurde vor der Ausgabedatei des vorherigen "
+"Zeitverzeichnisses erzeugt."

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: analyze \n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2024-11-04 14:35+0100\n"
+"PO-Revision-Date: 2026-09-25 12:50+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -26,13 +26,13 @@ msgid "skip execution of pdflatex"
 msgstr "die Ausführung von pdflatex auslassen"
 
 msgid "skip inclusion of input parameters into report"
-msgstr ""
+msgstr "Eingabeparameter nicht in den Bericht aufnehmen"
 
 msgid "print version and exit"
 msgstr "Version anzeigen und beenden"
 
 msgid "run analysis of given type with default parameters"
-msgstr ""
+msgstr "Analyse des angegebenen Typs mit Standardparametern ausführen"
 
 msgid "execution directory"
 msgstr "Arbeitsverzeichnis"
@@ -68,7 +68,7 @@ msgid "set size of array"
 msgstr "Größe einer Liste ändern"
 
 msgid "add item to labelled array"
-msgstr ""
+msgstr "Element zu einem beschrifteten Array hinzufügen"
 
 msgid ""
 "additional input file to merge into analysis parameters before variable "
@@ -95,6 +95,9 @@ msgid ""
 "has finished. Once the result set is fetched via the REST API, the "
 "application exits."
 msgstr ""
+"Mit REST-API-Server starten. Die Anwendung läuft nach Abschluss der Analyse "
+"weiter. Sobald der Ergebnissatz über die REST-API abgerufen wurde, wird die "
+"Anwendung beendet."
 
 msgid "Server address"
 msgstr "Adresse des Servers"
@@ -103,7 +106,7 @@ msgid "Server port"
 msgstr "Port auf dem Server"
 
 msgid "Broadcast listen port"
-msgstr ""
+msgstr "Port für Broadcast-Empfang"
 
 msgid "Usage:"
 msgstr "Benutzung:"
@@ -112,11 +115,10 @@ msgid "options"
 msgstr "Optionen"
 
 msgid "Could not parse command line"
-msgstr "Konnte die Kommandzeile nicht auswerten"
+msgstr "Konnte die Kommandozeile nicht auswerten"
 
-#, fuzzy
 msgid "Error: work directory does not exist: "
-msgstr "Fehler: die Bibliothek existiert nicht: "
+msgstr "Fehler: das Arbeitsverzeichnis existiert nicht: "
 
 #, c-format
 msgid "There have been %d warnings."
@@ -143,9 +145,9 @@ msgstr "nur eine einzige Eingabedatei darf angegeben werden!"
 msgid "reading input parameter file"
 msgstr "lese die Parameter-Eingabedatei"
 
-#, fuzzy, c-format
+#, c-format
 msgid "Executing analysis of type '%s' in directory '%s'"
-msgstr "Führe Analyse aus im Verzeichnis"
+msgstr "Führe Analyse vom Typ '%s' im Verzeichnis '%s' aus"
 
 #, c-format
 msgid ""
@@ -159,9 +161,9 @@ msgstr ""
 msgid "Resizing array '%s' to %d"
 msgstr "Verändere die Größe des Arrays '%s' auf %d"
 
-#, fuzzy, c-format
+#, c-format
 msgid "Inserting element '%s' into %s"
-msgstr "Setze den Auswahlparameter '%s' = \"%s\""
+msgstr "Füge Element '%s' in %s ein"
 
 #, c-format
 msgid "Setting boolean '%s' = %d"

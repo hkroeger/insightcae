@@ -8,7 +8,7 @@
 
 
 
-LocalRun::LocalRun(AnalysisForm *af)
+LocalRun::LocalRun(AnalysisForm *af, insight::supplementedInputDataBasePtr sid)
 : WorkbenchAction(af)
 {
     // presumption: all signals have to be emitted from another thread!
@@ -27,11 +27,21 @@ LocalRun::LocalRun(AnalysisForm *af)
   af_->progressDisplayer_.reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
+  if (sid && sid->executionPath()!=af->localCaseDirectory())
+  {
+      // e.g. execution directory changed after visualization
+      insight::dbg()
+          << "supplemented input data was computed for execution path "
+          << sid->executionPath()
+          << " instead of " << af->localCaseDirectory()
+          << ", recomputing" << std::endl;
+      sid.reset();
+  }
+
   QAnalysisThread::launch(
       af->psmodel_->getAnalysisName(),
-#warning wait for visualization run to finish, if is running
-      bool(af->sid_) ?
-          insight::AnalysisThread::ParameterInput( af->sid_ )
+      bool(sid) ?
+          insight::AnalysisThread::ParameterInput( sid )
                      : insight::AnalysisThread::ParameterInput(
                            insight::AnalysisThread::ParameterSetAndExePath{
                                 &af->parameters(), af->localCaseDirectory() } ),

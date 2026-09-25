@@ -58,11 +58,29 @@ CADParameterSetVisualizerGenerator::CADParameterSetVisualizerGenerator(
     workDir_(workDir), progress_(progress)
 {}
 
+
+void CADParameterSetVisualizerGenerator::cancelAndDeleteLater()
+{
+    stopVisualizationComputation();
+
+    // connect before checking: the thread might end in between.
+    // Calling deleteLater more than once is safe.
+    connect(this, &CADParameterSetVisualizerGenerator::computationThreadEnded,
+            this, &QObject::deleteLater );
+
+    if (!isComputationRunning())
+    {
+        deleteLater();
+    }
+}
+
 void CADParameterSetVisualizerGenerator::addPoint(
     const std::string& name,
     const arma::mat& p,
     bool initialVisibility)
 {
+    // cancellation point: visualizers call this frequently from the background thread
+    boost::this_thread::interruption_point();
     CurrentExceptionContext ec(GUIEvents, "adding visualizer point "+name);
     Q_EMIT createdVariable(
         QString::fromStdString(name),
@@ -77,6 +95,8 @@ void CADParameterSetVisualizerGenerator::addDatum(
     insight::cad::DatumPtr dat,
     bool initialVisibility )
 {
+  // cancellation point: visualizers call this frequently from the background thread
+  boost::this_thread::interruption_point();
   CurrentExceptionContext ec(GUIEvents, "adding visualizer datum "+name);
   Q_EMIT createdDatum(QString::fromStdString(name), dat, initialVisibility);
 }
@@ -89,6 +109,8 @@ void CADParameterSetVisualizerGenerator::addFeature(
     insight::cad::FeaturePtr feat,
     const insight::cad::FeatureVisualizationStyle& fvs )
 {
+  // cancellation point: visualizers call this frequently from the background thread
+  boost::this_thread::interruption_point();
   CurrentExceptionContext ec(GUIEvents, "adding visualizer feature "+name);
   if (!feat->hasTriangulation()) // tesselate here, if needed. Will happen in GUI thread otherwise
   {
@@ -106,6 +128,8 @@ void CADParameterSetVisualizerGenerator::addDataset(
     const std::string &name,
     vtkSmartPointer<vtkDataObject> ds )
 {
+  // cancellation point: visualizers call this frequently from the background thread
+  boost::this_thread::interruption_point();
   CurrentExceptionContext ec(GUIEvents, "adding visualizer dataset "+name);
   Q_EMIT createdDataset( QString::fromStdString(name), ds, true );
 }
@@ -118,6 +142,8 @@ void CADParameterSetVisualizerGenerator::addEvaluation(
     insight::cad::PostprocActionPtr ppa,
     bool visible )
 {
+  // cancellation point: visualizers call this frequently from the background thread
+  boost::this_thread::interruption_point();
   CurrentExceptionContext ec(GUIEvents, "adding visualizer evaluation "+name);
   Q_EMIT createdEvaluation( QString::fromStdString(name), ppa, visible );
 }
@@ -181,8 +207,13 @@ CADParameterSetModelVisualizer::CADParameterSetModelVisualizer(
     ProgressDisplayer& progress )
     : CADParameterSetVisualizerGenerator(parent, workDir, progress),
     psmodel_(psm),
-    status_(BeforeLaunch), success_(false)
-{}
+    status_(BeforeLaunch), success_(false),
+    cancelled_(false), threadActive_(false)
+{
+    // queued, since emitted from the background thread
+    connect(this, &CADParameterSetVisualizerGenerator::computationThreadEnded,
+            this, &CADParameterSetModelVisualizer::onComputationThreadEnded );
+}
 
 
 
@@ -199,82 +230,144 @@ void CADParameterSetModelVisualizer::recreateVisualizationElements()
 
 const ParameterSet &CADParameterSetModelVisualizer::parameters() const
 {
+    if (paramSnapshot_)
+        return *paramSnapshot_;
+
+    // before launch (GUI thread only)
     return psmodel_->getParameterSet();
 }
 
 
 
 
+void CADParameterSetModelVisualizer::onComputationThreadEnded()
+{
+    // executed in GUI thread, after all entities emitted by the thread have been
+    // delivered to the rebuilder (queued events are processed in order)
+    if (rebuildThread_)
+    {
+        rebuildThread_->join(); // thread is about to return
+        rebuildThread_.reset();
+    }
 
+    if (rb_)
+    {
+        if (cancelled_) rb_->abandon();
+        rb_.reset(); // removes symbols, which were not recreated
+    }
+}
 
 
 
 
 void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
 {
-    timerToUpdate_.setInterval(100);
-    timerToUpdate_.setSingleShot(true);
+    CurrentExceptionContext ex("launching visualization computation");
 
-    timerToUpdate_.callOnTimeout(
-        [this,model]{
-            // need to launch visualization recomputation through signal,
-            // because we want to be able to join multiple visualizers
-            // into a single CADModel in another class
-            auto* mainThreadWD = &WarningDispatcher::getCurrent();
-            rebuildThread_=std::make_unique<boost::thread>(
-                [&,model,mainThreadWD]()
+    if (cancelled_)
+    {
+        // cancelled before launch: no thread involved,
+        // but report asynchronously like with thread
+        QMetaObject::invokeMethod(
+            this,
+            [this]() { Q_EMIT computationThreadEnded(); },
+            Qt::QueuedConnection );
+        return;
+    }
+
+    insight::assertion(
+        status_==BeforeLaunch && !rebuildThread_,
+        "internal error: a visualizer can only be launched once" );
+
+    // copy the parameters in the GUI thread.
+    // The thread must never access the parameter set model, which may be modified concurrently.
+    paramSnapshot_ = std::shared_ptr<ParameterSet>(
+        psmodel_->getParameterSet().cloneAs<ParameterSet>() );
+
+    if (model)
+    {
+        // created in GUI thread: the created* signals get queued into the GUI thread
+        rb_=std::make_unique<IQISCADModelRebuilder>(
+            model, QList<IQISCADModelGenerator*>{this});
+    }
+    // else connections to model will set up by caller
+
+    status_=Running;
+    threadActive_=true;
+
+    auto* mainThreadWD = &WarningDispatcher::getCurrent();
+    rebuildThread_=std::make_unique<boost::thread>(
+        [this,mainThreadWD]()
+        {
+            WarningDispatcher::getCurrent().setSuperDispatcher(mainThreadWD);
+
+            CurrentExceptionContext ex("computing visualization of scheduled parameter set");
+            try
+            {
+                CurrentExceptionContext ex("recreate visualization elements");
+
+                if (auto sid=computeSupplementedInput())
                 {
-                    WarningDispatcher::getCurrent().setSuperDispatcher(mainThreadWD);
-                    status_=Running;
+                    // the supplemented input data refers to the parameter snapshot
+                    // by raw pointer: keep the snapshot alive as long as the sid
+                    auto snap=paramSnapshot_;
+                    sid_=supplementedInputDataBasePtr(
+                        sid.get(), [sid,snap](supplementedInputDataBase*) {} );
 
-                    CurrentExceptionContext ex("computing visualization of scheduled parameter set");
-                    try
+                    boost::this_thread::interruption_point();
+                    if (!cancelled_)
+                        Q_EMIT updateSupplementedInputData( sid_ );
+                }
+
+                boost::this_thread::interruption_point();
+                recreateVisualizationElements();
+                boost::this_thread::interruption_point();
+
+                success_=true;
+                status_=Finished;
+                if (!cancelled_)
+                    Q_EMIT visualizationCalculationFinished(success_);
+            }
+            catch (const boost::thread_interrupted&)
+            {
+                status_=Cancelled;
+            }
+            catch (...)
+            {
+                if (cancelled_)
+                {
+                    // errors of discarded computations are of no interest
+                    // (might also be a translated thread_interrupted)
+                    status_=Cancelled;
+                }
+                else
+                {
+                    status_=Finished;
+
+                    std::exception_ptr exptr;
+                    try { throw; }
+                    catch (std::exception&)
                     {
-                        CurrentExceptionContext ex("recreate visualization elements");
-
-                        std::unique_ptr<IQISCADModelRebuilder> rb;
-                        if (model)
-                        {
-                            rb=std::make_unique<IQISCADModelRebuilder>(
-                                model, QList<IQISCADModelGenerator*>{this});
-                        }
-                        // else connections to model will set up by caller
-
-                        if ((sid_=computeSupplementedInput()))
-                        {
-                            Q_EMIT updateSupplementedInputData( sid_ );
-                        }
-                        recreateVisualizationElements();
-                        success_=true;
-                    }
-                    catch (std::exception& ex)
-                    {
-                        status_=Finished;
-                        Q_EMIT visualizationComputationError(
-                            std::current_exception() );
-                        return;
+                        exptr=std::current_exception();
                     }
                     catch (...)
                     {
-                        status_=Finished;
                         auto errdesc = insight::describeCurrentException();
 
                         std::ostringstream os;
                         os
                             << *(errdesc) << "\n"
                             << errdesc->errorDetails_;
-                        Q_EMIT visualizationComputationError(
-                            std::make_exception_ptr(
-                                insight::Exception(os.str())));
-                        return;
+                        exptr=std::make_exception_ptr(
+                            insight::Exception(os.str()));
                     }
+                    Q_EMIT visualizationComputationError(exptr);
+                }
+            }
 
-                    status_=Finished;
-                    Q_EMIT visualizationCalculationFinished(success_);
-                });
+            threadActive_=false;
+            Q_EMIT computationThreadEnded();
         });
-
-    timerToUpdate_.start();
 }
 
 
@@ -282,7 +375,17 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
 
 CADParameterSetModelVisualizer::~CADParameterSetModelVisualizer()
 {
-    stopVisualizationComputation();
+    if (threadActive_)
+    {
+        // derived class is already destroyed at this point but the thread
+        // might still execute its virtual functions. Owners have to stop
+        // the computation before deletion.
+        std::cerr
+            << "Warning: visualizer deleted while background computation was still running. "
+               "Owner should call cancelAndDeleteLater() or stopAndWait() before deletion."
+            << std::endl;
+    }
+    stopAndWait();
 }
 
 
@@ -292,25 +395,51 @@ bool CADParameterSetModelVisualizer::isFinished() const
 }
 
 
+bool CADParameterSetModelVisualizer::isComputationRunning() const
+{
+    return threadActive_;
+}
+
+
+bool CADParameterSetModelVisualizer::isCancelled() const
+{
+    return cancelled_;
+}
+
+
 
 void CADParameterSetModelVisualizer::stopVisualizationComputation()
 {
-    timerToUpdate_.stop();
+    cancelled_=true;
+
+    if (status_==BeforeLaunch)
+        status_=Cancelled;
 
     if (rebuildThread_)
     {
         rebuildThread_->interrupt();
-
-        dbg(DeepDetail)<<"waiting for visualizer thread to finish..."<<std::endl;
-
-        rebuildThread_->join();
-
-        rebuildThread_.reset();
     }
 
-    insight::assertion(
-        rebuildThread_==nullptr,
-        "internal error: visualization computation could not be cancelled!");
+    if (rb_)
+    {
+        // discard all entities of this computation,
+        // including those, which are already queued
+        rb_->abandon();
+        rb_.reset();
+    }
+}
+
+
+void CADParameterSetModelVisualizer::stopAndWait()
+{
+    stopVisualizationComputation();
+
+    if (rebuildThread_)
+    {
+        dbg(DeepDetail)<<"waiting for visualizer thread to finish..."<<std::endl;
+        rebuildThread_->join();
+        rebuildThread_.reset();
+    }
 }
 
 
@@ -340,103 +469,170 @@ MultiCADParameterSetVisualizer::MultiCADParameterSetVisualizer(
     const boost::filesystem::path& workDir,
     ProgressDisplayer& progress )
  : CADParameterSetVisualizerGenerator(parent, workDir, progress),
-    visualizers_(visualizers)
+    visualizers_(visualizers),
+    launched_(false), cancelled_(false), threadsEnded_(false)
 {}
+
+
+MultiCADParameterSetVisualizer::~MultiCADParameterSetVisualizer()
+{
+    // sub visualizers are children and still intact here
+    stopAndWait();
+}
 
 
 void MultiCADParameterSetVisualizer::launch(IQCADItemModel *model)
 {
+    insight::assertion(
+        !launched_,
+        "internal error: a visualizer can only be launched once" );
+    launched_=true;
+
+    finishedVisualizers_.clear();
+
     QList<IQISCADModelGenerator*> gens;
 
-    for (auto& v: visualizers_)
+    if (!cancelled_)
     {
-        auto src=v.first;
+        for (auto& v: visualizers_)
+        {
+            auto src=v.first;
 
-        auto vis = v.second.vizLookup(
+            auto vis = v.second.vizLookup(
+                this,
+                v.second.parameterSource,
+                workDir_, progress_ );
+
+            gens.append(vis);
+            subVisualizers_.append(vis);
+
+            connect(
+                vis,
+                &CADParameterSetModelVisualizer::visualizationCalculationFinished,
+                this,
+                [this,src](bool success)
+                { onSubVisualizationCalculationFinished(src, success); }
+                );
+
+
+            connect(
+                vis,
+                &CADParameterSetModelVisualizer::visualizationComputationError,
+                this,
+                [this,src](std::exception_ptr ex)
+                {
+                    if (!cancelled_)
+                    {
+                        Q_EMIT visualizationComputationError(ex);
+                        onSubVisualizationCalculationFinished(src, false);
+                    }
+                }
+                );
+
+            connect(
+                vis,
+                &CADParameterSetModelVisualizer::computationThreadEnded,
+                this,
+                &MultiCADParameterSetVisualizer::onSubComputationThreadEnded );
+
+            connect(vis, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable),
+                    this, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable) );
+            connect(vis, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(&IQISCADModelGenerator::createdVariable),
+                    this, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(&IQISCADModelGenerator::createdVariable) );
+            connect(vis, &IQISCADModelGenerator::createdFeature,
+                    this, &IQISCADModelGenerator::createdFeature);
+            connect(vis, &IQISCADModelGenerator::createdDatum,
+                    this, &IQISCADModelGenerator::createdDatum);
+            connect(vis, &IQISCADModelGenerator::createdEvaluation,
+                    this, &IQISCADModelGenerator::createdEvaluation );
+            connect(vis, &IQISCADModelGenerator::createdDataset,
+                    this, &IQISCADModelGenerator::createdDataset );
+
+        }
+
+        if (model)
+        {
+            // receives the entities, which are forwarded by this object in the GUI thread
+            rb_=std::make_unique<IQISCADModelRebuilder>(
+                model, QList<IQISCADModelGenerator*>{this} );
+        }
+
+        for (auto* vis: subVisualizers_)
+        {
+            vis->launch(nullptr);
+        }
+    }
+
+    if (subVisualizers_.size()==0)
+    {
+        if (!cancelled_)
+            allFinished(true);
+
+        // no thread involved: report asynchronously, like with threads
+        QMetaObject::invokeMethod(
             this,
-            v.second.parameterSource,
-            workDir_, progress_ );
-
-        gens.append(vis);
-
-        connect(
-            vis,
-            &CADParameterSetModelVisualizer::visualizationCalculationFinished,
-            this,
-            [this,src](bool success)
-            { onSubVisualizationCalculationFinished(src, success); }
-            );
-
-
-        connect(
-            vis,
-            &CADParameterSetModelVisualizer::visualizationComputationError,
-            this,
-            [this,src](std::exception_ptr ex)
+            [this]()
             {
-                visualizationComputationError(ex);
-            }
-            );
-
-        connect(vis, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable),
-                this, QOverload<const QString&,insight::cad::ScalarPtr>::of(&IQISCADModelGenerator::createdVariable) );
-        connect(vis, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(&IQISCADModelGenerator::createdVariable),
-                this, QOverload<const QString&,insight::cad::VectorPtr,insight::cad::VectorVariableType,bool>::of(&IQISCADModelGenerator::createdVariable) );
-        connect(vis, &IQISCADModelGenerator::createdFeature,
-                this, &IQISCADModelGenerator::createdFeature);
-        connect(vis, &IQISCADModelGenerator::createdDatum,
-                this, &IQISCADModelGenerator::createdDatum);
-        connect(vis, &IQISCADModelGenerator::createdEvaluation,
-                this, &IQISCADModelGenerator::createdEvaluation );
-
+                threadsEnded_=true;
+                Q_EMIT computationThreadEnded();
+            },
+            Qt::QueuedConnection );
     }
-
-    rb_=std::make_unique<IQISCADModelRebuilder>(model, gens);
-
-    for (auto& vis: gens)
-    {
-        dynamic_cast<CADParameterSetModelVisualizer*>(vis)
-            ->launch(nullptr);
-    }
-
-    if (gens.size()==0)
-    {
-        allFinished(true);
-    }
-
 }
 
 
 bool MultiCADParameterSetVisualizer::isFinished() const
 {
-    if (finishedVisualizers_.size()==visualizers_.size())
-    {
-        bool allFinished=true;
-        for (auto& fv: finishedVisualizers_)
-        {
-            allFinished=allFinished && fv.second.first->isFinished();
-        }
-        return allFinished;
-    }
-    else
+    if (!launched_ || cancelled_)
         return false;
+
+    for (auto* vis: subVisualizers_)
+    {
+        if (!vis->isFinished())
+            return false;
+    }
+    return true;
+}
+
+
+bool MultiCADParameterSetVisualizer::isComputationRunning() const
+{
+    return launched_ && !threadsEnded_;
 }
 
 
 void MultiCADParameterSetVisualizer::stopVisualizationComputation()
 {
-    for (auto c: children())
+    cancelled_=true;
+
+    for (auto* vis: subVisualizers_)
     {
-        if (auto *sc = dynamic_cast<CADParameterSetModelVisualizer*>(c))
-        {
-            sc->stopVisualizationComputation();
-        }
+        vis->stopVisualizationComputation();
+    }
+
+    if (rb_)
+    {
+        rb_->abandon();
+        rb_.reset();
+    }
+}
+
+
+void MultiCADParameterSetVisualizer::stopAndWait()
+{
+    stopVisualizationComputation();
+
+    for (auto* vis: subVisualizers_)
+    {
+        vis->stopAndWait();
     }
 }
 
 
 void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished(QObject* source, bool s)
 {
+  if (cancelled_) return;
+
   finishedVisualizers_.insert({
         source,
         { dynamic_cast<CADParameterSetModelVisualizer*>(sender()), s} });
@@ -448,6 +644,21 @@ void MultiCADParameterSetVisualizer::onSubVisualizationCalculationFinished(QObje
           alls=alls&&fv.second.second;
       allFinished(alls);
   }
+}
+
+
+void MultiCADParameterSetVisualizer::onSubComputationThreadEnded()
+{
+    if (threadsEnded_) return;
+
+    for (auto* vis: subVisualizers_)
+    {
+        if (vis->isComputationRunning())
+            return;
+    }
+
+    threadsEnded_=true;
+    Q_EMIT computationThreadEnded();
 }
 
 // Need explicit template instantiation. Otherwise unexpected behaviour:

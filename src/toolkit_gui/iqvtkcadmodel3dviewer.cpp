@@ -1191,6 +1191,13 @@ void IQVTKCADModel3DViewer::resetNavigationManager(
 }
 
 
+bool IQVTKCADModel3DViewer::isInViewArea(const QPoint& p) const
+{
+    // only the VTK widget is the view area, not the dock widgets, tool bars etc.
+    return centralWidget() && centralWidget()->geometry().contains(p);
+}
+
+
 IQVTKCADModel3DViewer::IQVTKCADModel3DViewer(
         QWidget* parent )
     : QWidgetToInputReceiverAdapter<

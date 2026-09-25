@@ -374,6 +374,9 @@ public:
     void resetNavigationManager(
         typename NavigationManager<IQVTKCADModel3DViewer>::Ptr&& nm) override;
 
+protected:
+    bool isInViewArea(const QPoint& p) const override;
+
 public:
     IQVTKCADModel3DViewer(QWidget* parent=nullptr);
     ~IQVTKCADModel3DViewer();

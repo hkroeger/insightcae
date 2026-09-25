@@ -1,5 +1,9 @@
 #include "iqfilteredparametersetmodel.h"
 
+#include "base/elementpath.h"
+
+#include <algorithm>
+
 
 
 
@@ -69,26 +73,13 @@ void IQFilteredParameterSetModel::searchRootSourceIndices(
 
 
 
-void IQFilteredParameterSetModel::storeAllChildSourceIndices(QAbstractItemModel *sourceModel, const QModelIndex &sourceIndex)
+bool IQFilteredParameterSetModel::isBelowRootParameter(const QModelIndex &sourceIndex_, int* topRow) const
 {
-    if (!mappedIndices_.contains(sourceIndex))
-        mappedIndices_.append(sourceIndex);
-
-    for (int r=0; r<sourceModel->rowCount(sourceIndex); ++r)
-    {
-        storeAllChildSourceIndices(
-            sourceModel,
-            sourceModel->index(r, 0, sourceIndex) );
-    }
-}
-
-
-
-
-bool IQFilteredParameterSetModel::isBelowRootParameter(const QModelIndex &sourceIndex, int* topRow) const
-{
-    if (!sourceIndex.isValid())
+    if (!sourceIndex_.isValid())
         return false;
+
+    // root indices are stored for the label column
+    auto sourceIndex = sourceIndex_.siblingAtColumn(0);
 
     if (rootSourceIndices.contains(sourceIndex))
     {
@@ -118,6 +109,176 @@ bool IQFilteredParameterSetModel::isBelowRootParameter(const QModelIndex &source
 
 
 
+const QPersistentModelIndex*
+IQFilteredParameterSetModel::storedSourceParent(const QModelIndex &sourceParent) const
+{
+    if (!sourceParent.isValid())
+        return nullptr;
+
+    auto sp = sourceParent.siblingAtColumn(0);
+
+    auto i = std::find(sourceParents_.begin(), sourceParents_.end(), sp);
+    if (i!=sourceParents_.end())
+        return &(*i);
+
+    sourceParents_.push_back(QPersistentModelIndex(sp));
+    return &sourceParents_.back();
+}
+
+
+
+
+bool IQFilteredParameterSetModel::affectsRootParameters(const QModelIndex &sourceParent) const
+{
+    insight::ElementPath parentPath;
+    if (sourceParent.isValid())
+    {
+        parentPath = insight::ElementPath(
+            sourceModel()->data(
+                sourceParent.siblingAtColumn(IQParameterSetModel::stringPathCol) )
+                .toString().toStdString() );
+    }
+
+    for (auto& sp: sourceRootParameterPaths_)
+    {
+        insight::ElementPath sourceParam(sp);
+        bool wildcard=false;
+        if (!sourceParam.empty() && sourceParam.back()=="*")
+        {
+            wildcard=true;
+            sourceParam.pop_back();
+        }
+
+        // the children of sourceParent contain a root parameter or one of its ancestors
+        if ( ( sourceParam.size()>parentPath.size()
+               || (wildcard && sourceParam.size()==parentPath.size()) )
+             && sourceParam.isBelow(parentPath) )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
+
+void IQFilteredParameterSetModel::beginReset()
+{
+    beginResetModel();
+    pendingChange_=PendingChange::Reset;
+}
+
+
+
+
+void IQFilteredParameterSetModel::endReset()
+{
+    rootSourceIndices.clear();
+    sourceParents_.clear();
+    searchRootSourceIndices(sourceModel(), QModelIndex());
+    endResetModel();
+    pendingChange_=PendingChange::None;
+}
+
+
+
+
+void IQFilteredParameterSetModel::connectToSourceModel(QAbstractItemModel *sourceModel)
+{
+    connect(sourceModel, &QAbstractItemModel::dataChanged, this,
+            [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+            {
+                if (pendingChange_==PendingChange::Reset)
+                    return;
+
+                if (isBelowRootParameter(topLeft)&&isBelowRootParameter(bottomRight))
+                    Q_EMIT dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight), roles);
+            }
+            );
+
+    auto finishChange = [this]()
+    {
+        switch (pendingChange_)
+        {
+        case PendingChange::Insert: endInsertRows(); break;
+        case PendingChange::Remove: endRemoveRows(); break;
+        case PendingChange::Move: endMoveRows(); break;
+        case PendingChange::Reset: endReset(); break;
+        case PendingChange::None: break;
+        }
+        pendingChange_=PendingChange::None;
+    };
+
+    connect(sourceModel, &QAbstractItemModel::rowsAboutToBeInserted, this,
+            [this](const QModelIndex &parent, int first, int last)
+            {
+                if (isBelowRootParameter(parent))
+                {
+                    beginInsertRows(mapFromSource(parent), first, last);
+                    pendingChange_=PendingChange::Insert;
+                }
+                else if (affectsRootParameters(parent))
+                {
+                    beginReset();
+                }
+            }
+            );
+    connect(sourceModel, &QAbstractItemModel::rowsInserted, this, finishChange);
+
+    connect(sourceModel, &QAbstractItemModel::rowsAboutToBeRemoved, this,
+            [this](const QModelIndex &parent, int first, int last)
+            {
+                if (isBelowRootParameter(parent))
+                {
+                    beginRemoveRows(mapFromSource(parent), first, last);
+                    pendingChange_=PendingChange::Remove;
+                }
+                else if (affectsRootParameters(parent))
+                {
+                    beginReset();
+                }
+            }
+            );
+    connect(sourceModel, &QAbstractItemModel::rowsRemoved, this, finishChange);
+
+    connect(sourceModel, &QAbstractItemModel::rowsAboutToBeMoved, this,
+            [this](const QModelIndex &sourceParent, int sourceFirst, int sourceLast,
+                   const QModelIndex &destinationParent, int destinationRow)
+            {
+                bool srcMapped=isBelowRootParameter(sourceParent);
+                bool dstMapped=isBelowRootParameter(destinationParent);
+
+                if (srcMapped && dstMapped
+                    && beginMoveRows(
+                        mapFromSource(sourceParent), sourceFirst, sourceLast,
+                        mapFromSource(destinationParent), destinationRow ) )
+                {
+                    pendingChange_=PendingChange::Move;
+                }
+                else if ( srcMapped || dstMapped
+                         || affectsRootParameters(sourceParent)
+                         || affectsRootParameters(destinationParent) )
+                {
+                    beginReset();
+                }
+            }
+            );
+    connect(sourceModel, &QAbstractItemModel::rowsMoved, this, finishChange);
+
+    connect(sourceModel, &QAbstractItemModel::modelAboutToBeReset, this,
+            [this]() { beginReset(); } );
+    connect(sourceModel, &QAbstractItemModel::modelReset, this, finishChange);
+
+    connect(sourceModel, &QAbstractItemModel::layoutAboutToBeChanged, this,
+            [this]() { beginReset(); } );
+    connect(sourceModel, &QAbstractItemModel::layoutChanged, this, finishChange);
+}
+
+
+
+
 IQFilteredParameterSetModel::IQFilteredParameterSetModel(
     const std::vector<std::string>& sourceParameterPaths,
     QObject *parent )
@@ -130,20 +291,26 @@ IQFilteredParameterSetModel::IQFilteredParameterSetModel(
 
 void IQFilteredParameterSetModel::setSourceModel(QAbstractItemModel *sourceModel)
 {
-    searchRootSourceIndices(sourceModel, QModelIndex());
-    for (auto& pi: qAsConst(rootSourceIndices))
-    {
-        storeAllChildSourceIndices(sourceModel, pi);
-    }
+    beginResetModel();
+
+    // drop connections to previous source model
+    // (before the base class reconnects its own)
+    if (this->sourceModel())
+        disconnect(this->sourceModel(), nullptr, this, nullptr);
+
+    rootSourceIndices.clear();
+    sourceParents_.clear();
+    pendingChange_=PendingChange::None;
+
     QAbstractProxyModel::setSourceModel(sourceModel);
-    connect(sourceModel, &QAbstractItemModel::dataChanged, this,
-            [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
-            {
-                if (isBelowRootParameter(topLeft)&&isBelowRootParameter(bottomRight))
-                    Q_EMIT dataChanged(mapFromSource(topLeft), mapFromSource(bottomRight), roles);
-            }
-            );
-#warning needs disconnect somewhere
+
+    if (sourceModel)
+    {
+        searchRootSourceIndices(sourceModel, QModelIndex());
+        connectToSourceModel(sourceModel);
+    }
+
+    endResetModel();
 }
 
 
@@ -188,7 +355,7 @@ QModelIndex IQFilteredParameterSetModel::mapToSource(const QModelIndex &proxyInd
     }
     else
     {
-        auto& sppi = *reinterpret_cast<QPersistentModelIndex*>(
+        auto& sppi = *static_cast<const QPersistentModelIndex*>(
             proxyIndex.internalPointer() );
         return sourceModel()->index(proxyIndex.row(), proxyIndex.column(), sppi);
     }
@@ -200,8 +367,10 @@ QModelIndex IQFilteredParameterSetModel::mapToSource(const QModelIndex &proxyInd
 
 int IQFilteredParameterSetModel::columnCount(const QModelIndex &parent) const
 {
-    auto nc = sourceModel()->columnCount(mapToSource(parent));
-    return nc;
+    if (!sourceModel())
+        return 0;
+
+    return sourceModel()->columnCount(mapToSource(parent));
 }
 
 
@@ -215,11 +384,8 @@ int IQFilteredParameterSetModel::rowCount(const QModelIndex &parent) const
     }
     else
     {
-        auto r= sourceModel()->rowCount(mapToSource(parent));
-        return r;
+        return sourceModel()->rowCount(mapToSource(parent));
     }
-
-    return 0;
 }
 
 
@@ -227,38 +393,24 @@ int IQFilteredParameterSetModel::rowCount(const QModelIndex &parent) const
 
 QModelIndex IQFilteredParameterSetModel::index(int row, int column, const QModelIndex &parent) const
 {
+    // don't use hasIndex(): the hidden columns (stringPathCol, iqParamCol)
+    // are beyond columnCount() but need to be accessible
+    if (row<0 || column<0 || row>=rowCount(parent))
+        return QModelIndex();
+
     if (!parent.isValid())
     {
         // top rows
-        if (row>=0 && row<rootSourceIndices.size())
-        {
-            return createIndex(
-                row, column, nullptr
-                );
-        }
+        return createIndex(row, column, nullptr);
     }
     else
     {
-        auto pp=parent.parent();
-        if (!pp.isValid())
+        // below top rows: store the source parent
+        if (auto *sp = storedSourceParent(mapToSource(parent)))
         {
-            // one below top rows
-            auto mi=mappedIndices_.indexOf(rootSourceIndices[parent.row()]);
             return createIndex(
                 row, column,
-                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
-                );
-        }
-        else
-        {
-            auto si=mapToSource(parent);
-            auto mi=mappedIndices_.indexOf(si);
-            // more than one level below top rows
-            return createIndex(
-                row, column,
-                //parent.internalPointer()
-                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
-                );
+                const_cast<void*>(static_cast<const void*>(sp)) );
         }
     }
 
@@ -270,38 +422,14 @@ QModelIndex IQFilteredParameterSetModel::index(int row, int column, const QModel
 
 QModelIndex IQFilteredParameterSetModel::parent(const QModelIndex &index) const
 {
-    if (!index.isValid())
+    if (!index.isValid() || !index.internalPointer())
     {
-        // top node
+        // top level
         return QModelIndex();
     }
 
-    if (index.internalPointer())
-    {
-        // some index below top level
-        auto& sppi = *reinterpret_cast<QPersistentModelIndex*>(
-            index.internalPointer() );
+    auto& sppi = *static_cast<const QPersistentModelIndex*>(
+        index.internalPointer() );
 
-        auto mi1=rootSourceIndices.indexOf(sppi);
-        if (mi1>=0)
-        {
-            // top level row
-            return createIndex(
-                mi1, 0,
-                nullptr
-                );
-        }
-        else
-        {
-            // below top level row
-            auto mi=mappedIndices_.indexOf(sppi.parent());
-            return createIndex(
-                sppi.row(), 0,
-                const_cast<void*>(reinterpret_cast<const void*>(&mappedIndices_[mi]))
-                );
-        }
-    }
-
-    return QModelIndex();
+    return mapFromSource(sppi);
 }
-

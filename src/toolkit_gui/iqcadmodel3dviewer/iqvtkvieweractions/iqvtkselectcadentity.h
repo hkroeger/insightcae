@@ -10,6 +10,7 @@
 #include "parametereditorwidget.h"
 
 #include <QDockWidget>
+#include <QPointer>
 #include <QToolBox>
 
 #include <map>
@@ -26,6 +27,8 @@ class CADEntityMultiSelection
 
     QWidget *editorContainerWidget_;
     ParameterEditorWidget* editorWidget_;
+    // filtered model currently displayed in editorWidget_
+    QPointer<QAbstractItemModel> filteredModel_;
 
     // Current entity1 top-level entries that are common to all selected entities
     std::vector<TopLevelEntry> currentEntries_;

@@ -203,6 +203,10 @@ void CADEntityMultiSelection::rebuildEditor()
     spm->setSourceModel(apsm);
     editorWidget_->setModel(spm);
 
+    // the previous filtered model is not displayed any more
+    if (filteredModel_) filteredModel_->deleteLater();
+    filteredModel_ = spm;
+
     if (!copyMapping_.empty())
     {
         copyConnection_ = connect(

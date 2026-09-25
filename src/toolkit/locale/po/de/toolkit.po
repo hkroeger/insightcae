@@ -164,8 +164,8 @@ msgid ""
 "case in \"%s\": skipping case recreation because there are already output "
 "time directories present."
 msgstr ""
-"Case in \"%s\": Neuerzeugung des Case wird übersprungen, da bereits "
-"Ausgabe-Zeitverzeichnisse vorhanden sind."
+"Case in \"%s\": Neuerzeugung des Case wird übersprungen, da bereits Ausgabe-"
+"Zeitverzeichnisse vorhanden sind."
 
 #, c-format
 msgid "initializing solver run for case \"%s\""

@@ -176,49 +176,35 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                 actor->GetProperty()->SetOpacity(0.7);
                 actor->GetProperty()->SetColor(0.7, 0.3, 0.3);
 
-//                if (vtkActor* actor = v->getActor(geom))
                 const auto& p =
                         dynamic_cast<const insight::SpatialTransformationParameter&>(
                             parameter() );
                 {
-                    auto initialCS =
-                        ( parameter()() * cd->referenceCS.localToGlobal() )
-                                         .localCoordinateSystem();
+                    // world = placement * transformation * reference
+                    auto placement = cd->placement;
+                    auto ref = cd->referenceCS.localToGlobal();
+                    auto M = placement * parameter()() * ref;
+
+                    // the CS carries only the rigid part, keep the scale
+                    double scale = M.scale();
+                    auto initialCS = M.localCoordinateSystem();
 
                     auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
                         *v->topmostActionHost(), initialCS );
 
                     connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
-                            [this,cd](const insight::CoordinateSystem& newCS)
+                            [this,placement,ref,scale](const insight::CoordinateSystem& newCS)
                             {
-                                auto stc=newCS.localToGlobal();
-
-                                auto newTr = stc * cd->referenceCS.localToGlobal().inverted();
+                                auto newTr =
+                                    placement.inverted()
+                                    * newCS.localToGlobal()
+                                    * insight::SpatialTransformation(scale)
+                                    * ref.inverted();
 
                                 parameterRef().set( newTr );
                             }
                             );
                     v->topmostActionHost()->launchAction(std::move(mani));
-
-                    /*
-
-                  auto curMod =
-                        new IQCADTransformationCommand(
-                              actor, v->interactor(),
-                              tini, true, true, false );
-
-                  connect( translateLE, &QObject::destroyed,
-                           curMod, &QObject::deleteLater );
-
-                  connect( apply, &QPushButton::pressed,
-                           curMod, &QObject::deleteLater );
-
-                  connect( curMod, &IQCADTransformationCommand::dataChanged, this,
-                           [this,curMod,setValuesToControls]()
-                           {
-                             setValuesToControls(curMod->getSpatialTransformation());
-                           } );
-*/
                 }
             }
           }

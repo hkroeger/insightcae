@@ -252,6 +252,12 @@ public:
     void invert();
     SpatialTransformation inverted() const;
 
+    /**
+     * @brief localCoordinateSystem
+     * the coordinate system, into which the global CS is moved by this transformation.
+     * Only the rigid part is represented, the scale factor is dropped, i.e.
+     * T == T.localCoordinateSystem().localToGlobal() * SpatialTransformation(T.scale())
+     */
     CoordinateSystem localCoordinateSystem() const;
 };
 

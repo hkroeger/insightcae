@@ -307,8 +307,9 @@ SpatialTransformation operator*(
 
 CoordinateSystem SpatialTransformation::localCoordinateSystem() const
 {
+    // origin is the image of the local origin: T(0) = s*R*t
     return CoordinateSystem(
-        translate(),
+        trsfPt(vec3Zero()),
         rotationMatrix().col(0),
         rotationMatrix().col(2)
         );
@@ -380,7 +381,6 @@ CoordinateSystem::CoordinateSystem(
 void CoordinateSystem::rotate(double angle, const arma::mat& axis)
 {
     arma::mat rot=rotMatrix(angle, axis);
-    std::cout<<"rot="<<rot<<std::endl;
     ex=rot*ex;
     ey=rot*ey;
     ez=rot*ez;

@@ -41,7 +41,14 @@ class CADEntityMultiSelection
 
     void showParameterEditor();
     void removeParameterEditor();
+    // re-evaluation of the editor content is scheduled
+    bool refreshPending_ = false;
+
     void rebuildEditor();
+    void refreshEditorIfNeeded();
+    bool computeEntries(
+        std::vector<TopLevelEntry>& entries,
+        std::map<std::string, std::set<std::string> >& copyMapping ) const;
 
     std::vector<std::string> getParamListForFeature(const insight::cad::FeaturePtr& feat) const;
     std::vector<TopLevelEntry> getTopLevelEntries(const std::vector<std::string>& assocParamPaths,
@@ -55,6 +62,8 @@ public:
     void insertMany(const std::vector<IQCADModel3DViewer::CADEntity>& entities);
     void erase(IQCADModel3DViewer::CADEntity entity);
     void eraseMany(const std::vector<IQCADModel3DViewer::CADEntity>& entities);
+    void replace(IQCADModel3DViewer::CADEntity oldEntity,
+                 IQCADModel3DViewer::CADEntity newEntity);
 
 Q_SIGNALS:
     void entityInserted(IQCADModel3DViewer::CADEntity entity);

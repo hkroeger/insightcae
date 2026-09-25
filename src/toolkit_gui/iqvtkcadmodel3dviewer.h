@@ -311,7 +311,7 @@ private:
     friend class IQVTKCADModel3DViewerPlanePointBasedAction;
 
 
-    void remove(const QPersistentModelIndex& pidx);
+    void remove(const QPersistentModelIndex& pidx, bool keepSelection=false);
 
     std::vector<vtkSmartPointer<vtkProp> > createActor(CADEntity entity) const;
 

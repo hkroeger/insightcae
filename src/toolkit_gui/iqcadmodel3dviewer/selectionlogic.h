@@ -515,6 +515,29 @@ public:
         }
     }
 
+    bool isSelected(SelectedEntity entity) const
+    {
+        return bool(currentSelection_)
+               && (currentSelection_->count(entity)>0);
+    }
+
+    /**
+     * @brief externallyReplace
+     * exchange a selected entity by another one (e.g. after the
+     * displayed object was recreated), keeping the selection state.
+     * No entitySelected signal is emitted.
+     */
+    void externallyReplace(SelectedEntity oldEntity, SelectedEntity newEntity)
+    {
+        if (!isSelected(oldEntity)) return;
+
+        highlights_.erase(oldEntity);
+        callReplace_(*currentSelection_, oldEntity, newEntity, 0);
+
+        if (highlights_.count(newEntity)<1)
+            highlights_[newEntity]=highlightEntity(newEntity, selectionColor);
+    }
+
     template<class Container>
     void setSelectionTo(const Container& selectedEntities)
     {
@@ -600,6 +623,15 @@ private:
     template<class C, class E>
     void callEraseMany_(C& c, const std::vector<E>& v, ...)
     { for (const auto& e : v) c.erase(e); }
+
+    template<class C, class E>
+    auto callReplace_(C& c, const E& o, const E& n, int)
+        -> decltype(c.replace(o, n), void())
+    { c.replace(o, n); }
+
+    template<class C, class E>
+    void callReplace_(C& c, const E& o, const E& n, ...)
+    { c.erase(o); c.insert(n); }
 
 };
 

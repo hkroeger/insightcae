@@ -7,76 +7,80 @@ msgid ""
 msgstr ""
 "Project-Id-Version: isParameterSetTool \n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2024-11-19 12:06+0100\n"
+"PO-Revision-Date: 2026-09-25 12:50+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ASCII\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "Allowed options"
-msgstr ""
+msgstr "Zulässige Optionen"
 
 msgid "produce help message"
-msgstr ""
+msgstr "Hilfe anzeigen"
 
 msgid "print version and exit"
-msgstr ""
+msgstr "Version anzeigen und beenden"
 
 msgid "read input file without template"
-msgstr ""
+msgstr "Eingabedatei ohne Vorlage einlesen"
 
 msgid "boolean variable assignment"
-msgstr ""
+msgstr "Zuweisung einer booleschen Variable"
 
 msgid "selection variable assignment"
-msgstr ""
+msgstr "Zuweisung einer Auswahlvariable"
 
 msgid "string variable assignment"
-msgstr ""
+msgstr "Zuweisung einer Zeichenkettenvariable"
 
 msgid "path variable assignment"
-msgstr ""
+msgstr "Zuweisung einer Pfadvariable"
 
 msgid "extract packed file"
-msgstr ""
+msgstr "gepackte Datei extrahieren"
 
 msgid "double variable assignment"
-msgstr ""
+msgstr "Zuweisung einer Gleitkommavariable"
 
 msgid "vector variable assignment"
-msgstr ""
+msgstr "Zuweisung einer Vektorvariable"
 
 msgid "int variable assignment"
-msgstr ""
+msgstr "Zuweisung einer Ganzzahlvariable"
 
 msgid ""
 "additional input file to merge into analysis parameters before variable "
 "assignments"
 msgstr ""
+"zusätzliche Eingabedatei, die vor den Variablenzuweisungen in die "
+"Analyseparameter eingefügt wird"
 
 msgid "Additional libraries with analysis modules to load"
-msgstr ""
+msgstr "Weitere Bibliotheken mit Analysen, die geladen werden sollen"
 
 msgid "Specifies input file."
-msgstr ""
+msgstr "Eingabedatei angeben"
 
 msgid "Usage:"
-msgstr ""
+msgstr "Benutzung:"
 
 msgid "options"
-msgstr ""
+msgstr "Optionen"
 
 msgid "Could not parse command line"
-msgstr ""
+msgstr "Konnte die Kommandozeile nicht auswerten"
 
 msgid "an input file has to be specified!"
-msgstr ""
+msgstr "Es muss eine Eingabedatei angegeben werden!"
 
 #, c-format
 msgid ""
 "merge command needs either one or three arguments!\n"
 "Got: %s"
 msgstr ""
+"Der merge-Befehl benötigt entweder ein oder drei Argumente!\n"
+"Erhalten: %s"

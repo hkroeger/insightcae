@@ -176,7 +176,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                 actor->GetProperty()->SetOpacity(0.7);
                 actor->GetProperty()->SetColor(0.7, 0.3, 0.3);
 
-//                if (vtkActor* actor = v->getActor(geom))
                 const auto& p =
                         dynamic_cast<const insight::SpatialTransformationParameter&>(
                             parameter() );
@@ -206,26 +205,6 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                             }
                             );
                     v->topmostActionHost()->launchAction(std::move(mani));
-
-                    /*
-
-                  auto curMod =
-                        new IQCADTransformationCommand(
-                              actor, v->interactor(),
-                              tini, true, true, false );
-
-                  connect( translateLE, &QObject::destroyed,
-                           curMod, &QObject::deleteLater );
-
-                  connect( apply, &QPushButton::pressed,
-                           curMod, &QObject::deleteLater );
-
-                  connect( curMod, &IQCADTransformationCommand::dataChanged, this,
-                           [this,curMod,setValuesToControls]()
-                           {
-                             setValuesToControls(curMod->getSpatialTransformation());
-                           } );
-*/
                 }
             }
           }

@@ -101,10 +101,6 @@ void IQVTKManipulateCoordinateSystem::start()
 
     // display actors
     auto unitsphere = vtkSmartPointer<vtkSphereSource>::New();
-    auto sph = vtkSmartPointer<vtkGlyph3D>::New();
-    sph->SetInputConnection(ctr_->GetOutputPort());
-    sph->SetSourceConnection(unitsphere->GetOutputPort());
-    sph->SetScaleFactor(1);
 
 
     auto arrow = [&]( vtkSmartPointer<vtkTransformFilter> & arr,
@@ -161,7 +157,7 @@ void IQVTKManipulateCoordinateSystem::start()
 
     auto fixedCtr = vtkSmartPointer<vtkGlyph3D>::New();
     fixedCtr->SetInputConnection(cdist->GetOutputPort());
-    fixedCtr->SetSourceConnection(sph->GetOutputPort());
+    fixedCtr->SetSourceConnection(unitsphere->GetOutputPort());
     fixedCtr->SetScaleModeToScaleByScalar();
     fixedCtr->SetInputArrayToProcess(
         0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_POINTS, "DistanceToCamera");
@@ -355,12 +351,11 @@ void IQVTKManipulateCoordinateSystem::ManipP0::update(const QPoint& newp)
         insight::cad::to_Vec(n)
         );
 
-    auto np0 = insight::normalized(
+    auto np0 =
         parent->viewer().pointInPlane3D(
             viewPlane,
             newp
-            )
-        );
+            );
 
     parent->cs_=insight::CoordinateSystem(
         np0, parent->cs_.ex, parent->cs_.ez);

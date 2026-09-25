@@ -198,6 +198,62 @@ int main(int /*argc*/, char*/*argv*/[])
                         "error in back conversion from SpatialTransform to vtk");
         }
 
+        {
+            auto trsfEqual = [](const SpatialTransformation& a, const SpatialTransformation& b)
+            {
+                for (const auto& p: { vec3(0,0,0), vec3(1,0,0), vec3(0,1,0), vec3(0,0,1), vec3(3,-2,7) })
+                    if (arma::norm(a(p)-b(p),2)>1e-8) return false;
+                return true;
+            };
+
+            SpatialTransformation T(vec3(1,2,3), vec3(10,20,30), 1.5);
+
+            // local CS origin is the image of the origin
+            auto cs = T.localCoordinateSystem();
+            insight::assertion(
+                arma::norm(cs.origin - T(vec3Zero()), 2) < SMALL,
+                "localCoordinateSystem: origin is not the image of the origin" );
+            insight::assertion(
+                arma::norm(cs.ex - T.trsfVec(vec3(1,0,0))/T.scale(), 2) < SMALL,
+                "localCoordinateSystem: wrong x axis" );
+            insight::assertion(
+                trsfEqual(T, cs.localToGlobal()*SpatialTransformation(T.scale())),
+                "localCoordinateSystem: rigid part plus scale does not reproduce transformation" );
+
+            // CS round trip
+            CoordinateSystem cs2(vec3(4,5,6), normalized(vec3(1,1,0)), vec3(0,0,1));
+            auto cs3 = cs2.localToGlobal().localCoordinateSystem();
+            insight::assertion(
+                arma::norm(cs2.origin-cs3.origin,2)<SMALL
+                && arma::norm(cs2.ex-cs3.ex,2)<SMALL
+                && arma::norm(cs2.ez-cs3.ez,2)<SMALL,
+                "CS round trip via localToGlobal failed" );
+
+            // round trip, as done by the coordinate system manipulator
+            SpatialTransformation P(vec3(10,0,0), vec3(0,0,45));
+            auto Rf = CoordinateSystem(vec3(0.5,0,0), vec3(0,1,0), vec3(0,0,1)).localToGlobal();
+            auto M = P * T * Rf;
+            double s = M.scale();
+            auto initialCS = M.localCoordinateSystem();
+
+            auto newT = [&](const CoordinateSystem& newCS)
+            {
+                return P.inverted() * newCS.localToGlobal()
+                       * SpatialTransformation(s) * Rf.inverted();
+            };
+
+            insight::assertion(
+                trsfEqual(newT(initialCS), T),
+                "manipulator round trip without modification changes the transformation" );
+
+            // rotate about the manipulator's own z axis: pivot has to stay fixed
+            auto rotCS = initialCS;
+            rotCS.rotate(0.3, rotCS.ez);
+            insight::assertion(
+                arma::norm( (P*newT(rotCS)*Rf)(vec3Zero()) - initialCS.origin, 2) < 1e-8,
+                "manipulator rotation moves the pivot" );
+        }
+
    }
   catch (const std::exception& e)
   {

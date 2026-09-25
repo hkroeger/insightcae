@@ -49,7 +49,11 @@ struct Data<SpatialTransformationParameter>
     INSIGHT_DATA_MEMBERS_AND_CTOR(
         Data,
         ((insight::cad::FeaturePtr, geometry))
+        // CS of the geometry, before the transformation is applied
         ((insight::CoordinateSystem, referenceCS))
+        // applied after the transformation, i.e.
+        // world = placement * transformation * referenceCS.localToGlobal()
+        ((insight::SpatialTransformation, placement))
         )
 };
 

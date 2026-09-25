@@ -181,19 +181,26 @@ QVBoxLayout* IQSpatialTransformationParameter::populateEditControls(
                         dynamic_cast<const insight::SpatialTransformationParameter&>(
                             parameter() );
                 {
-                    auto initialCS =
-                        ( parameter()() * cd->referenceCS.localToGlobal() )
-                                         .localCoordinateSystem();
+                    // world = placement * transformation * reference
+                    auto placement = cd->placement;
+                    auto ref = cd->referenceCS.localToGlobal();
+                    auto M = placement * parameter()() * ref;
+
+                    // the CS carries only the rigid part, keep the scale
+                    double scale = M.scale();
+                    auto initialCS = M.localCoordinateSystem();
 
                     auto mani = make_viewWidgetAction<IQVTKManipulateCoordinateSystem>(
                         *v->topmostActionHost(), initialCS );
 
                     connect(mani.get(), &IQVTKManipulateCoordinateSystem::coordinateSystemSelected,
-                            [this,cd](const insight::CoordinateSystem& newCS)
+                            [this,placement,ref,scale](const insight::CoordinateSystem& newCS)
                             {
-                                auto stc=newCS.localToGlobal();
-
-                                auto newTr = stc * cd->referenceCS.localToGlobal().inverted();
+                                auto newTr =
+                                    placement.inverted()
+                                    * newCS.localToGlobal()
+                                    * insight::SpatialTransformation(scale)
+                                    * ref.inverted();
 
                                 parameterRef().set( newTr );
                             }

@@ -36,6 +36,7 @@
 #include "iqcaditemmodel.h"
 #include "iqvtkparametersetdisplay.h"
 #include "parametereditorwidget.h"
+#include "iqparametersetvisualizationscheduler.h"
 #include "insertedcaseelement.h"
 #include "patch.h"
 
@@ -84,7 +85,7 @@ private:
     QLabel* overlayText_;
 
     insight::MultiCADParameterSetVisualizer::SubVisualizerList multiVizSources_;
-    QPointer<insight::MultiCADParameterSetVisualizer> viz_;
+    QPointer<insight::IQParameterSetVisualizationScheduler> vizScheduler_;
 
     AvailableBCsModel* availableBCsModel_;
     AvailableCaseElementsModel* availableCaseElementsModel_;

@@ -25,6 +25,19 @@ if (INSIGHT_BUILD_CAD)
     set_tests_properties(gui_IQParameterSetModel PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+    add_executable(CADParameterSetVisualizerScheduling CADParameterSetVisualizerScheduling.cpp)
+    set_target_properties(CADParameterSetVisualizerScheduling PROPERTIES AUTOMOC ON)
+    target_link_libraries(CADParameterSetVisualizerScheduling
+    toolkit_gui genericmodules test_pdl_header
+    Qt5::Test
+    )
+    add_dependencies(CADParameterSetVisualizerScheduling testexe_pdl)
+    linkToolkitVtk(CADParameterSetVisualizerScheduling Offscreen)
+    add_test(NAME gui_CADParameterSetVisualizerScheduling COMMAND CADParameterSetVisualizerScheduling)
+    set_tests_properties(gui_CADParameterSetVisualizerScheduling PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        TIMEOUT 600)
+
     add_executable(ParameterEditorWidget ParameterEditorWidget.cpp)
     target_link_libraries(ParameterEditorWidget
     toolkit_gui genericmodules test_pdl_header

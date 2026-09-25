@@ -481,6 +481,9 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 
 isofCaseBuilderWindow::~isofCaseBuilderWindow()
 {
+    // stop visualization computation, before anything else is destroyed
+    delete vizScheduler_;
+
     // explicitly delete first
     delete caseElementParameterEditor_;
     delete patchParameterEditor_;
@@ -1064,58 +1067,62 @@ void isofCaseBuilderWindow::rebuildVisualization()
     // execute also, if number if visualizers is zero:
     // model will be cleared this way, after the last item is removed
 
-    if (viz_ && !viz_->isFinished())
-    {
-        viz_->stopVisualizationComputation();
-        viz_->deleteLater();
-    }
-
     expandOrCollapseCADIfNeeded();
 
-    viz_ = new insight::MultiCADParameterSetVisualizer(
-        this,
-        multiVizSources_,
-        casepath(), consoleProgressDisplayer
-        );
-
-    connect(
-        viz_, &insight::CADParameterSetVisualizerGenerator::visualizationCalculationFinished, viz_,
-        [this](bool success)
-        { if (success) overlayText_->hide(); } );
-
-    connect(
-        viz_, &insight::CADParameterSetVisualizerGenerator::visualizationComputationError, viz_,
-        [this](std::exception_ptr ex)
-        {
-            DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
-
-            try {
-                std::rethrow_exception(ex);
-            }
-
-            catch (insight::CADException& cadex)
+    if (!vizScheduler_)
+    {
+        vizScheduler_ = new insight::IQParameterSetVisualizationScheduler(
+            [this](QObject* parent) -> insight::CADParameterSetVisualizerGenerator*
             {
-                IQCADExceptionDisplayDialog dlg(this);
-                dlg.displayException(*cadex.description());
-                dlg.exec();
-            }
-            catch (...)
+                return new insight::MultiCADParameterSetVisualizer(
+                    parent,
+                    multiVizSources_,
+                    casepath(), consoleProgressDisplayer
+                    );
+            },
+            display_->model(),
+            100,
+            this );
+
+        connect(
+            vizScheduler_, &insight::IQParameterSetVisualizationScheduler::visualizationCalculationFinished, this,
+            [this](bool success)
+            { if (success) overlayText_->hide(); } );
+
+        connect(
+            vizScheduler_, &insight::IQParameterSetVisualizationScheduler::visualizationComputationError, this,
+            [this](std::exception_ptr ex)
             {
-                auto desc=insight::describeCurrentException();
-                overlayText_->setTextFormat(Qt::MarkdownText);
-                overlayText_->setText(QString::fromStdString(
-                    std::string(_("The visualization could not be generated."))
-                    +"\n\n"
-                    +_("Reason:")
-                    +"\n\n"
-                    +boost::replace_all_copy(std::string(*desc), "\n", "\n\n")+"\n\n"
-                    +boost::replace_all_copy(desc->context_, "\n", "\n\n")
-                    ));
-                overlayText_->show();
+                DBG_SLOT(insight::CADParameterSetModelVisualizer::visualizationComputationError);
+
+                try {
+                    std::rethrow_exception(ex);
+                }
+
+                catch (insight::CADException& cadex)
+                {
+                    IQCADExceptionDisplayDialog dlg(this);
+                    dlg.displayException(*cadex.description());
+                    dlg.exec();
+                }
+                catch (...)
+                {
+                    auto desc=insight::describeCurrentException();
+                    overlayText_->setTextFormat(Qt::MarkdownText);
+                    overlayText_->setText(QString::fromStdString(
+                        std::string(_("The visualization could not be generated."))
+                        +"\n\n"
+                        +_("Reason:")
+                        +"\n\n"
+                        +boost::replace_all_copy(std::string(*desc), "\n", "\n\n")+"\n\n"
+                        +boost::replace_all_copy(desc->context_, "\n", "\n\n")
+                        ));
+                    overlayText_->show();
+                }
+
             }
+            );
+    }
 
-        }
-        );
-
-    viz_->launch(display_->model());
+    vizScheduler_->requestUpdate();
 }

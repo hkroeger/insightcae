@@ -126,7 +126,20 @@ void AnalysisForm::startLocalRun()
 
 //  Q_EMIT apply(); // apply all changes into parameter set
 
-  currentWorkbenchAction_.reset(new LocalRun(this));
+  // the supplemented input data of the visualizer is reused, if it is up to date.
+  // Wait for a pending or running visualization to finish.
+  waitingForInputPreprocessing_=true;
+  Q_EMIT statusMessage(_("Waiting for input data preprocessing (3D preview) to finish..."));
+
+  peditor_->whenVisualizationIdle(
+      [this]()
+      {
+          waitingForInputPreprocessing_=false;
+          Q_EMIT statusMessage(QString());
+
+          currentWorkbenchAction_.reset(
+              new LocalRun(this, peditor_->upToDateSupplementedInputData()) );
+      } );
 }
 
 

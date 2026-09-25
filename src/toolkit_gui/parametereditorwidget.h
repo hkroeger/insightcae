@@ -53,6 +53,7 @@ class IQVTKParameterSetDisplay;
 
 namespace insight {
 class CADParameterSetModelVisualizer;
+class IQParameterSetVisualizationScheduler;
 
 
 typedef
@@ -85,15 +86,16 @@ protected:
     ParameterSetDisplay* display_;
     IQCADModel3DViewer* viewer_;
 
-    QLabel* overlayText_;
+    QLabel* overlayText_ = nullptr;
 
     insight::ParameterSet_ValidatorPtr vali_;
 
     /**
-     * @brief viz_
-     * the visualizer object
+     * @brief vizScheduler_
+     * manages the (re-)computation of the visualization.
+     * Created on first rebuild request.
      */
-    QPointer<insight::CADParameterSetModelVisualizer> viz_;
+    QPointer<insight::IQParameterSetVisualizationScheduler> vizScheduler_;
 
     insight::PECADParameterSetVisualizerBuilder createVisualizer_;
     insight::CADParameterSetModelVisualizer::CreateGUIActionsFunctions::Function createGUIActions_;
@@ -124,6 +126,8 @@ public:
         QWidget* contentEditorFrame,
         IQCADModel3DViewer* viewer
     );
+
+    ~ParameterEditorWidget();
 
     /**
      * @brief ParameterEditorWidget
@@ -166,7 +170,28 @@ public:
     { return display_; }
 
     void rebuildVisualization();
-    
+
+    /**
+     * @brief upToDateSupplementedInputData
+     * @return
+     * supplemented input data computed by the visualizer from the current parameters.
+     * Null, if the visualization is pending/running, failed or there is no visualizer.
+     */
+    insight::supplementedInputDataBasePtr upToDateSupplementedInputData() const;
+
+    /**
+     * @brief whenVisualizationIdle
+     * call f, once the visualization of the current parameters has completed
+     * (immediately, if there is nothing pending or no visualizer)
+     */
+    void whenVisualizationIdle(std::function<void()> f);
+
+    /**
+     * @brief cancelWaitForVisualization
+     * drop the callback registered with whenVisualizationIdle
+     */
+    void cancelWaitForVisualization();
+
 public Q_SLOTS:
     void onParameterSetChanged();
 

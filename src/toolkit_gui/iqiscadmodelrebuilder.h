@@ -53,6 +53,13 @@ class TOOLKIT_GUI_EXPORT IQISCADModelRebuilder
      */
     SymbolsSnapshot symbolsSnapshot_;
 
+    /**
+     * @brief abandoned_
+     * if set, the destructor leaves the model as it is
+     * (i.e. does not remove symbols, which have not been recreated)
+     */
+    bool abandoned_;
+
     void storeSymbolSnapshot();
     void connectGenerator(IQISCADModelGenerator* gen);
     void removeNonRecreatedSymbols();
@@ -60,6 +67,13 @@ class TOOLKIT_GUI_EXPORT IQISCADModelRebuilder
 public:
     IQISCADModelRebuilder(IQCADItemModel *model, QList<IQISCADModelGenerator*> gen, QObject *parent=nullptr);
     ~IQISCADModelRebuilder();
+
+    /**
+     * @brief abandon
+     * the rebuild is discarded (e.g. because it was cancelled).
+     * Symbols which were not recreated will not be removed from the model on destruction.
+     */
+    void abandon();
 
 public Q_SLOTS:
     void onAddScalar(

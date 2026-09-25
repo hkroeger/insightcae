@@ -259,6 +259,9 @@ msgstr ""
 msgid "Internal error: there is an action running currently!"
 msgstr "Internal error: there is an action running currently!"
 
+msgid "Analysis start cancelled"
+msgstr ""
+
 msgid "Internal error: there is no action running currently!"
 msgstr "Internal error: there is no action running currently!"
 
@@ -320,6 +323,9 @@ msgid ""
 msgstr ""
 "The subsequent step is likely to fail.<br>Are you sure, that you want to "
 "continue?"
+
+msgid "Waiting for input data preprocessing (3D preview) to finish..."
+msgstr ""
 
 msgid "Not possible"
 msgstr "Not possible"

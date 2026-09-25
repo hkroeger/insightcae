@@ -7,6 +7,7 @@
 #include "base/parameters/spatialtransformationparameter.h"
 #include "base/parameters/simpleparameter.h"
 #include <string>
+#include <mutex>
 
 namespace insight {
 
@@ -70,6 +71,10 @@ class ParameterSetGUIContext
     // use path as key because context might be added before the actual parameter
     std::map<std::string, std::unique_ptr<ParameterGUIContext::DataBase> > contextData_;
 
+    // context data is added by visualizers from their background thread
+    // and read from the GUI thread
+    mutable std::mutex contextDataMutex_;
+
 protected:
     virtual ParameterSet& theParameterSet() =0;
 
@@ -78,12 +83,14 @@ public:
     template<class ParameterClass, typename... Args>
     void addData(const std::string& ppath, Args... args)
     {
+        std::lock_guard<std::mutex> lock(contextDataMutex_);
         contextData_[ppath]=std::make_unique<ParameterGUIContext::Data<ParameterClass> >(args...);
     }
 
     template<class ParameterClass, typename... Args>
     void addData(const ParameterClass* p, Args... args)
     {
+        std::lock_guard<std::mutex> lock(contextDataMutex_);
         contextData_[p->path()]=std::make_unique<ParameterGUIContext::Data<ParameterClass> >(args...);
     }
 
@@ -98,6 +105,7 @@ public:
     boost::optional<ParameterGUIContext::Data<ParameterClass> >
     getData(const std::string& ppath)
     {
+        std::lock_guard<std::mutex> lock(contextDataMutex_);
         auto i=contextData_.find(ppath);
         if (i!=contextData_.end())
             return dynamic_cast<ParameterGUIContext::Data<ParameterClass>&>(

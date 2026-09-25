@@ -16,7 +16,8 @@ IQISCADModelRebuilder::IQISCADModelRebuilder(
         QObject* parent )
     : QObject(parent),
       model_(model),
-      generators_(gens)
+      generators_(gens),
+      abandoned_(false)
 {
     insight::assertion(
         bool(model_),
@@ -33,8 +34,17 @@ IQISCADModelRebuilder::IQISCADModelRebuilder(
 
 IQISCADModelRebuilder::~IQISCADModelRebuilder()
 {
-    removeNonRecreatedSymbols();
-    insight::cad::cache.printSummary(std::cout);
+    if (!abandoned_)
+    {
+        removeNonRecreatedSymbols();
+        insight::cad::cache.printSummary(std::cout);
+    }
+}
+
+
+void IQISCADModelRebuilder::abandon()
+{
+    abandoned_=true;
 }
 
 

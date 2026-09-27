@@ -20,6 +20,7 @@
 
 #include "cadtypes.h"
 #include <memory>
+#include <cstring>
 #ifdef INSIGHT_CAD_DEBUG
 #define BOOST_SPIRIT_DEBUG
 #endif
@@ -34,6 +35,9 @@
 #include "base/analysis.h"
 #include "base/tools.h"
 #include "parser.h"
+#include "base/translations.h"
+#include "parser_tools.h"
+#include "parser_errors.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -79,7 +83,7 @@ namespace cad {
 
 sharedModelLocations::sharedModelLocations()
 {
-  CurrentExceptionContext ec("building list of shared model locations");
+  CurrentExceptionContext ec(_("building list of shared model locations"));
 
   const char* e=getenv("ISCAD_MODEL_PATH");
   if (e)
@@ -114,7 +118,7 @@ boost::filesystem::path sharedModelFilePath(const std::string& name)
         }
     }
 
-    throw insight::Exception("Shared model file "+name+" not found.");
+    throw insight::Exception(_("Shared model file %s not found."), name.c_str());
     return boost::filesystem::path();
 }
 
@@ -133,9 +137,10 @@ using namespace insight::cad;
 
 ostream &operator<<(ostream &os, const SyntaxElementLocation &sel)
 {
-    os << sel.second.first << " until " << sel.second.second;
+    // TRANSLATORS: character range of a syntax element, e.g. "12 until 20"
+    os << str(format(_("%d until %d")) % sel.second.first % sel.second.second);
     if (!sel.first.empty())
-        os << " in file \""<<sel.first<<"\"";
+        os << " " << str(format(_("in file \"%s\"")) % sel.first.string());
     return os;
 }
 
@@ -240,6 +245,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         ( r_string > (('%' > r_scalarExpression % '%')
                       | qi::attr(std::vector<ScalarPtr>())) )
         [ qi::_val = insight::cad::parser::make_shared_<DescriptionWithParameters>()(qi::_1, qi::_2) ] ;
+    r_descriptionWithParameters.name(_("description"));
 
 
     r_BOMDescriptionData =
@@ -247,9 +253,10 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
          ( ( '(' > r_descriptionWithParameters > ')' ) | qi::attr(DescriptionWithParametersPtr()) ) )
         [ qi::_val = insight::cad::parser::make_shared_<BOMDescriptionData>()(qi::_1, qi::_2) ]
         ;
+    r_BOMDescriptionData.name(_("BOM description"));
 
     r_model =
-        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) )
+        ( (kw("cost") >> iscad_double >> ';' ) | qi::attr(0.0) )
             [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
         >>
         *(
@@ -263,37 +270,44 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
               [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
 
         )
-        >> -( lit("@doc") > *r_doc )
-        >> -( lit("@post") > *r_postproc )
+        >> -( lit("@doc") [ phx::ref(section_) = DocSection ] > *r_doc )
+        >> -( lit("@post") [ phx::ref(section_) = PostSection ] > *r_postproc )
         ;
-    r_model.name("model description");
+    r_model.name(_("model description"));
 
 
     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-    r_identifier.name("identifier");
+    r_identifier.name(_("identifier"));
 
     r_path = as_string[
                  lexeme [ "\"" > *~char_("\"") > "\"" ]
              ];
-    r_path.name("path");
+    r_path.name(_("path"));
 
     r_string = as_string[
                    lexeme [ "\'" > *~char_("\'") > "\'" ]
                ];
-    r_string.name("string");
+    r_string.name(_("string"));
 
 
     /*! \page iscad_assignments ISCAD Assignments
      *
      */
     r_assignment =
+        // function names cannot be used as symbol names, since the
+        // function would be picked up instead in expressions
+        !lexeme[
+            ( omit[modelstepFunctionRules] | omit[scalarFunctionRules]
+            | omit[vectorFunctionRules] | omit[postProcFunctionRules] )
+            >> !(alnum | '_') ]
+        >>
         //                 1              2                         3                            4                     5
         ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
         [ qi::_a=qi::_2, qi::_b=phx::construct<SyntaxElementPos>(qi::_1, qi::_3) ]
         >> (
          ( ':' >
           //              1                2
-          (r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+          (r_solidmodel_expression > ( r_string | qi::attr(std::string()) ) > ';' )
              [ ( phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, true, qi::_2),
                phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                          phx::construct<SyntaxElementLocation>(
@@ -368,6 +382,38 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
             | ( r_vectorExpression >> ';' )
                [ phx::bind(&Model::addPointIfNotPresent, model_, qi::_a, qi::_1) ]
 
+            | ( r_vertexFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addVertexFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_edgeFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addEdgeFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_faceFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addFaceFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_solidFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addSolidFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
             | ( r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
                [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_a, qi::_1, false, qi::_2),
                   phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
@@ -388,18 +434,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         // ( r_identifier >> lit("?!=")  >> r_vectorExpression >> ';')
         // [ phx::bind(&Model::addDirectionIfNotPresent, model_, qi::_1, qi::_2) ]
 
-    r_assignment.name("assignment");
-
-    // on_error<qi::fail>
-    //     (
-    //         r_assignment, std::cout
-    //             << val("Error! Expecting ")
-    //             << qi::_4                               // what failed?
-    //             << val(" here: \"")
-    //             << construct<std::string>(qi::_3, qi::_2)   // iterators to error-pos, end
-    //             << val("\"")
-    //             << std::endl
-    //         );
+    r_assignment.name(_("assignment"));
 
     createDocExpressions();
     createSelectionExpressions();
@@ -409,33 +444,59 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
     createFeatureExpressions();
     createPostProcExpressions();
 
+    // name the argument rules of all commands (for error messages)
+    // and remember the command names
+    auto registerCommands = [this](const auto& table, CommandKind kind)
+    {
+        table.for_each(
+            [this, kind](const std::string& name, const auto& rule)
+            {
+                rule->name(_("argument list"));
+                commandKinds_[name]=kind;
+            });
+    };
+    registerCommands(modelstepFunctionRules, FeatureCommand);
+    registerCommands(scalarFunctionRules, ScalarFunction);
+    registerCommands(vectorFunctionRules, VectorFunction);
+    registerCommands(postProcFunctionRules, PostprocCommand);
+
     // BOOST_SPIRIT_DEBUG_RULE(r_assignment);
 }
 
 
 
-bool parseISCADModel(
-    std::string::iterator first,
-    std::string::iterator last,
-    Model* model,
-    const boost::filesystem::path& filenameinfo )
+
+std::string ISCADParser::commandKindDescription(CommandKind kind)
 {
-  ISCADParser parser(model, filenameinfo);
-  skip_grammar skip;
-  
-  std::cout<<"Parsing started."<<std::endl;
-  parser.current_pos.setStartPos(first);
-  bool r = qi::phrase_parse(
-      first,
-      last,
-      parser,
-      skip
-  );
-  std::cout<<"Parsing finished."<<std::endl;
-  
-  if (first != last) return false;
-  return r;
+    switch (kind)
+    {
+        case FeatureCommand: return _("feature command");
+        case ScalarFunction: return _("scalar function");
+        case VectorFunction: return _("vector function");
+        case PostprocCommand: return _("postprocessing command");
+    }
+    return std::string();
 }
+
+
+
+
+void ISCADParser::pushCommand(std::size_t nameBegin, std::size_t nameEnd)
+{
+    commandStack_.push_back(SyntaxElementPos(nameBegin, nameEnd));
+}
+
+
+
+
+void ISCADParser::popCommand()
+{
+    if (!commandStack_.empty())
+        commandStack_.pop_back();
+}
+
+
+
 
 
 
@@ -452,24 +513,355 @@ bool parseISCADModelFile(
 {
     if (!boost::filesystem::exists(fn))
     {
-        throw insight::Exception("The iscad script file \""+fn.string()+"\" does not exist!");
+        throw insight::Exception(_("The iscad script file \"%s\" does not exist!"), fn.string().c_str());
         return false;
     }
     
     std::ifstream f(fn.string());
     insight::assertion(
                 f.good(),
-                "stream not good!");
+                _("could not read iscad script file \"%s\""), fn.string().c_str() );
     return parseISCADModelStream(f, m, failloc, sd, fn);
 }
 
 
 iscadParserException::iscadParserException(const std::string& reason, int from_pos, int to_pos)
-: Exception(reason, false),
+: Exception("%s", reason.c_str()),
   from_pos_(from_pos),
-  to_pos_(to_pos)
+  to_pos_(to_pos),
+  diagnostic_(reason)
 {
 }
+
+
+
+
+iscadParserException::iscadParserException(
+    const std::string& diagnostic,
+    const std::vector<std::string>& notes,
+    const std::string& script,
+    const boost::filesystem::path& file,
+    int from_pos, int to_pos )
+: Exception("%s", formatDiagnostic(file, script, from_pos, to_pos, diagnostic, notes).c_str()),
+  from_pos_(from_pos),
+  to_pos_(to_pos),
+  file_(file),
+  diagnostic_(diagnostic)
+{
+    std::copy_if(
+        notes.begin(), notes.end(), std::back_inserter(notes_),
+        [](const std::string& n) { return !n.empty(); } );
+
+    if (from_pos>=0 && std::size_t(from_pos)<=script.size())
+    {
+        auto loc=locateInSource(script, from_pos);
+        line_=loc.line;
+        column_=loc.column;
+    }
+}
+
+
+
+
+std::string iscadParserException::summary() const
+{
+    std::ostringstream os;
+    if (line_>0)
+        os << str(format(_("line %d, column %d")) % line_ % column_) << ": ";
+    os << diagnostic_;
+    for (const auto& n: notes_)
+        os << " " << n;
+    return os.str();
+}
+
+
+
+
+namespace
+{
+
+
+std::string commandName(const std::string& script, const SyntaxElementPos& p)
+{
+    return script.substr(p.first, p.second-p.first);
+}
+
+
+std::string featureCommandUsage(const std::string& cmd)
+{
+    if (Feature::ruleDocumentationFunctions_)
+    {
+        for (const auto& rd: *Feature::ruleDocumentationFunctions_)
+        {
+            for (const auto& info: rd.second())
+            {
+                if (info.command_==cmd)
+                {
+                    std::string sig=info.signature_;
+                    boost::replace_all(sig, "\n", " ");
+                    boost::trim(sig);
+                    return str(format(_("Usage: %s")) % (info.command_+sig));
+                }
+            }
+        }
+    }
+    return std::string();
+}
+
+
+std::set<std::string> knownNames(const ISCADParser& parser)
+{
+    auto names = parser.model_->symbolNames();
+    for (const auto& c: parser.commandKinds_)
+    {
+        // postprocessing commands are only valid in the @post section
+        if ( (c.second==ISCADParser::PostprocCommand)
+             == (parser.section_==ISCADParser::PostSection) )
+            names.insert(c.first);
+    }
+    return names;
+}
+
+
+bool isLiteral(const std::string& expectedItem)
+{
+    return expectedItem.size()>=2 && expectedItem.front()=='\'';
+}
+
+
+/**
+ * error location and description of a missing terminator:
+ * report it at the end of the preceding token, if that is on a previous line
+ */
+std::size_t endOfPrecedingToken(const std::string& script, std::size_t pos)
+{
+    std::size_t p=pos;
+    while (p>0 && std::isspace(static_cast<unsigned char>(script[p-1])))
+        --p;
+    if (script.substr(p, pos-p).find('\n')!=std::string::npos)
+        return p;
+    return pos;
+}
+
+
+iscadParserException expectationError(
+    const ISCADParser& parser,
+    const std::string& script,
+    const boost::filesystem::path& file,
+    std::size_t failPos,
+    const boost::spirit::info& what )
+{
+    auto expected = expectedAlternatives(what);
+    std::size_t pos = skipWhitespaceAndComments(script, failPos);
+    std::size_t reportPos = pos;
+
+    std::vector<std::string> notes;
+    std::string diag;
+
+    bool onlyLiterals = std::all_of(expected.begin(), expected.end(), isLiteral);
+
+    auto id = identifierAt(script, pos);
+    std::vector<std::string> kinds;
+    if (!id.empty() && !parser.commandKinds_.count(id))
+        kinds = parser.model_->symbolKinds(id);
+
+    if (!id.empty() && !parser.commandKinds_.count(id)
+        && kinds.empty() && !onlyLiterals)
+    {
+        diag = str(format(_("undefined symbol '%s'")) % id);
+        notes.push_back(didYouMean(similarNames(id, knownNames(parser))));
+        notes.push_back(str(format(_("Expected here: %s.")) % describeAlternatives(expected)));
+    }
+    else
+    {
+        std::string found = describeToken(script, pos);
+        if (!id.empty())
+        {
+            auto ck = parser.commandKinds_.find(id);
+            if (ck!=parser.commandKinds_.end())
+                found += " ("+ISCADParser::commandKindDescription(ck->second)+")";
+            else if (!kinds.empty())
+                found += " ("+str(format(_("defined as %s")) % boost::join(kinds, ", "))+")";
+            else
+            {
+                // maybe a misspelled keyword
+                std::set<std::string> keywords;
+                for (const auto& e: expected)
+                    if (isLiteral(e))
+                        keywords.insert(e.substr(1, e.size()-2));
+                notes.push_back(didYouMean(similarNames(id, keywords)));
+            }
+        }
+
+        // TRANSLATORS: first %s: list of alternatives, second %s: the token found in the script
+        diag = str(format(_("expected %s but found %s")) % describeAlternatives(expected) % found);
+
+        if (onlyLiterals)
+            reportPos = endOfPrecedingToken(script, pos);
+    }
+
+    if (!parser.commandStack_.empty())
+    {
+        auto cmd = commandName(script, parser.commandStack_.back());
+        // TRANSLATORS: first %s: command name, second %s: error message
+        diag = str(format(_("in %s(...): %s")) % cmd % diag);
+        notes.push_back(featureCommandUsage(cmd));
+    }
+
+    notes.push_back(missingSemicolonHint(script, pos));
+
+    std::size_t len = std::max<std::size_t>(1, tokenLength(script, reportPos));
+    return iscadParserException(
+        diag, notes, script, file,
+        int(reportPos), int(std::min(reportPos+len, script.size())) );
+}
+
+
+std::string statementForms()
+{
+    return _("Statements have the form 'name = expression;', 'name: feature expression;'"
+             " or 'feature -> property = value;'.");
+}
+
+
+iscadParserException incompleteParseError(
+    const ISCADParser& parser,
+    const std::string& script,
+    const boost::filesystem::path& file,
+    std::size_t failPos )
+{
+    std::size_t pos = skipWhitespaceAndComments(script, failPos);
+    std::vector<std::string> notes;
+    std::string diag;
+
+    auto id = identifierAt(script, pos);
+
+    if (pos>=script.size())
+    {
+        diag = _("unexpected end of input");
+    }
+    else if (script[pos]=='@')
+    {
+        std::string word = "@"+identifierAt(script, pos+1);
+        std::set<std::string> sections = { "@description", "@doc", "@post" };
+        if (!sections.count(word))
+        {
+            diag = str(format(_("unknown keyword '%s'")) % word);
+            notes.push_back(didYouMean(similarNames(word, sections)));
+            notes.push_back(_("Valid keywords are '@description', '@doc' and '@post'."));
+        }
+        else
+        {
+            diag = str(format(_("'%s' is not allowed here")) % word);
+            notes.push_back(
+                _("A script consists of assignments (and '@description'),"
+                  " optionally followed by an '@doc' section and then an '@post' section.") );
+        }
+    }
+    else if (!id.empty())
+    {
+        std::size_t next = skipWhitespaceAndComments(script, pos+id.size());
+        auto followedBy = [&](const char* s)
+        {
+            return script.compare(next, std::strlen(s), s)==0;
+        };
+        bool assignment = followedBy(":") || followedBy("=") || followedBy("?=");
+        auto ck = parser.commandKinds_.find(id);
+        auto kinds = parser.model_->symbolKinds(id);
+
+        if (parser.section_==ISCADParser::PostSection)
+        {
+            diag = str(format(_("unknown postprocessing command '%s'")) % id);
+            std::set<std::string> ppcmds;
+            for (const auto& c: parser.commandKinds_)
+                if (c.second==ISCADParser::PostprocCommand)
+                    ppcmds.insert(c.first);
+            notes.push_back(didYouMean(similarNames(id, ppcmds)));
+        }
+        else if (parser.section_==ISCADParser::DocSection)
+        {
+            diag = str(format(_("cannot parse documentation statement starting with '%s'")) % id);
+        }
+        else if (ck!=parser.commandKinds_.end() && assignment)
+        {
+            // TRANSLATORS: first %s: symbol name, second %s: kind of command, e.g. "feature command"
+            diag = str(format(_("'%s' cannot be used as a symbol name (%s of the same name exists)"))
+                       % id % ISCADParser::commandKindDescription(ck->second) );
+            notes.push_back(_("Please choose a different name."));
+        }
+        else if (followedBy("->"))
+        {
+            if (kinds.empty())
+            {
+                diag = str(format(_("undefined feature '%s'")) % id);
+                notes.push_back(didYouMean(similarNames(id, parser.model_->symbolNames())));
+            }
+            else
+            {
+                // TRANSLATORS: first %s: symbol name, second %s: list of symbol kinds, e.g. "scalar"
+                diag = str(format(_("properties can only be assigned to features, but '%s' is defined as %s"))
+                           % id % boost::join(kinds, ", "));
+            }
+        }
+        else if (assignment)
+        {
+            diag = str(format(_("cannot parse assignment to '%s'")) % id);
+        }
+        else
+        {
+            // TRANSLATORS: first %s: symbol name, second %s: the token found in the script
+            diag = str(format(_("expected ':', '=', '?=' or '->' after '%s' but found %s"))
+                       % id % describeToken(script, next));
+            notes.push_back(statementForms());
+        }
+    }
+    else
+    {
+        diag = str(format(_("unexpected %s at the beginning of a statement"))
+                   % describeToken(script, pos));
+        notes.push_back(statementForms());
+    }
+
+    std::size_t len = std::max<std::size_t>(1, tokenLength(script, pos));
+    return iscadParserException(
+        diag, notes, script, file,
+        int(pos), int(std::min(pos+len, script.size())) );
+}
+
+
+/**
+ * error which was raised inside a semantic action:
+ * locate it at the innermost command
+ */
+iscadParserException semanticError(
+    const ISCADParser& parser,
+    const std::string& script,
+    const boost::filesystem::path& file,
+    const std::string& message )
+{
+    int from=-1, to=-1;
+    std::string diag=message;
+    if (!parser.commandStack_.empty())
+    {
+        const auto& c = parser.commandStack_.back();
+        from=int(c.first);
+        to=int(c.second);
+        diag = str(format(_("in %s(...): %s")) % commandName(script, c) % message);
+    }
+    return iscadParserException(diag, {}, script, file, from, to);
+}
+
+
+[[noreturn]] void throwParserError(const iscadParserException& e, int* failloc)
+{
+    if (failloc) *failloc=e.from_pos();
+    throw e;
+}
+
+
+} // anonymous namespace
+
+
 
 
 bool parseISCADModel
@@ -489,16 +881,14 @@ bool parseISCADModel
 
     orgbegin=first;
 
+    ISCADParser parser ( m, filenameinfo );
+    if ( sd ) *sd = parser.syntax_element_locations;
+
     bool r = false;
     try
     {
-
-        ISCADParser parser ( m, filenameinfo );
-        if ( sd ) *sd = parser.syntax_element_locations;
-
         skip_grammar skip;
 
-        //   std::cout<<"Parsing started."<<std::endl;
         parser.current_pos.setStartPos ( first );
         r = qi::phrase_parse (
             first,
@@ -506,21 +896,36 @@ bool parseISCADModel
             parser,
             skip
             );
-        //   std::cout<<"Parsing finished."<<std::endl;
-
-        if ( first != last ) // fail if we did not get a full match
-        {
-            if ( failloc ) *failloc=int ( first-orgbegin );
-            return false;
-        }
     }
     catch ( const qi::expectation_failure<std::string::iterator>& e )
     {
-        std::ostringstream os;
-        os << e.what_;
-        throw iscadParserException(os.str(), int(e.first-orgbegin), int(e.last-orgbegin));
+        throwParserError(
+            expectationError(parser, raw_contents, filenameinfo, e.first-orgbegin, e.what_),
+            failloc );
     }
-    return r;
+    catch ( const iscadParserException& e )
+    {
+        if (e.file()==filenameinfo)
+        {
+            if (failloc) *failloc=e.from_pos();
+            throw;
+        }
+        // error in another (included) script
+        throwParserError( semanticError(parser, raw_contents, filenameinfo, e.message()), failloc );
+    }
+    catch ( const insight::Exception& e )
+    {
+        throwParserError( semanticError(parser, raw_contents, filenameinfo, e.message()), failloc );
+    }
+
+    if ( !r || first != last ) // fail if we did not get a full match
+    {
+        throwParserError(
+            incompleteParseError(parser, raw_contents, filenameinfo, first-orgbegin),
+            failloc );
+    }
+
+    return true;
 }
 
 

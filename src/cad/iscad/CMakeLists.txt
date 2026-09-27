@@ -10,7 +10,6 @@ add_executable(iscad
     iqiscadmodelwindow.h iqiscadmodelwindow.cpp
     iqiscadmodelscriptedit.cpp iqiscadmodelscriptedit.h
     iqiscadsyntaxhighlighter.cpp iqiscadsyntaxhighlighter.h
-    iqiscadbackgroundthread.cpp iqiscadbackgroundthread.h
 
     modelcomponentselectordlg.cpp modelcomponentselectordlg.h
     insertfeaturedlg.cpp insertfeaturedlg.h

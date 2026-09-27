@@ -18,6 +18,7 @@
  */
 
 #include "cutaway.h"
+#include "parser_tools.h"
 #include "cadparameters/constantvector.h"
 #include "cadfeatures/extrusion.h"
 #include "quad.h"
@@ -202,7 +203,7 @@ void Cutaway::insertrule(parser::ISCADParser& ruleset)
         > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ] > ','
         > (
      ( ruleset.r_datumExpression // datum can be a vector => try datum first
-      > ( (',' > qi::lit("inverted") > qi::attr(true) ) | (qi::attr(false)) )
+      > ( (',' > parser::kw("inverted") > qi::attr(true) ) | (qi::attr(false)) )
       > ')' )
          [ qi::_val = phx::bind(
               &Cutaway::create<FeaturePtr, ConstDatumPtr, bool>,

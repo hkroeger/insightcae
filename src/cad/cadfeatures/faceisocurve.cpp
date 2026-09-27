@@ -1,4 +1,5 @@
 #include "faceisocurve.h"
+#include "parser_tools.h"
 #include "cadfeature.h"
 #include "datum.h"
 
@@ -109,7 +110,7 @@ void FaceIsoCurve::insertrule(parser::ISCADParser& ruleset)
     std::make_shared<parser::ISCADParser::ModelstepRule>(
 
     ( '(' > ruleset.r_faceFeaturesExpression > ','
-          > ( ( qi::lit("u")>qi::attr(UV::U) ) | ( qi::lit("v")>qi::attr(UV::V) ) )  > ','
+          > ( ( parser::kw("u")>qi::attr(UV::U) ) | ( parser::kw("v")>qi::attr(UV::V) ) )  > ','
           > ruleset.r_scalarExpression > ')' )
         [ qi::_val = phx::bind(
                       &FaceIsoCurve::create<FeatureSetPtr, UV, ScalarPtr>,

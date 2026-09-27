@@ -1,6 +1,7 @@
 #include "iscadmetatyperegistrator.h"
 #include "cadfeature.h"
 #include "datum.h"
+#include "iqiscadscriptmodelgenerator.h"
 
 ISCADMetaTypeRegistrator::ISCADMetaTypeRegistrator()
 {
@@ -15,6 +16,7 @@ ISCADMetaTypeRegistrator::ISCADMetaTypeRegistrator()
   qRegisterMetaType<QVector<int> >("QVector<int>");
   qRegisterMetaType<AIS_DisplayMode>("AIS_DisplayMode");
   qRegisterMetaType<Optional_FeatureVisualizationStyle>("boost::variant<boost::blank,insight::cad::FeatureVisualizationStyle>");
+  qRegisterMetaType<ISCADParseResultPtr>("ISCADParseResultPtr");
 }
 
 ISCADMetaTypeRegistrator iscadmetatyperegistrator;

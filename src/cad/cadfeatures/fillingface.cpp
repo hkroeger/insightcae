@@ -18,6 +18,7 @@
  */
 
 #include "fillingface.h"
+#include "parser_tools.h"
 #include "base/exception.h"
 #include "cadfeature.h"
 #include "datum.h"
@@ -235,7 +236,7 @@ void FillingFace::insertrule ( parser::ISCADParser& ruleset )
              > (ruleset.r_edgeFeaturesExpression|ruleset.r_solidmodel_expression) // FS first, because might start with solidmodel expr
              > ','
              > (ruleset.r_edgeFeaturesExpression|ruleset.r_solidmodel_expression)
-             > ( ( ',' > qi::lit("inverted") > qi::attr(true) | qi::attr(false) ) )
+             > ( ( ',' > parser::kw("inverted") > qi::attr(true) | qi::attr(false) ) )
              > ')' )
             [ qi::_val = phx::bind(
                     &FillingFace::create<EdgeInput, EdgeInput, bool>,

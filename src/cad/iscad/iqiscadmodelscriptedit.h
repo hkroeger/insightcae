@@ -23,7 +23,7 @@
 #include <QTextEdit>
 
 #include "base/boost_include.h"
-#include "iqiscadbackgroundthread.h"
+#include "iqiscadscriptjobscheduler.h"
 
 
 #ifndef Q_MOC_RUN
@@ -50,15 +50,17 @@ protected:
     boost::filesystem::path filename_;
     IQISCADSyntaxHighlighter* highlighter_;
 
-    QTimer *bgparseTimer_;
     const int bgparseInterval=1000;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     bool unsaved_;
-    bool doBgParsing_;
 
     IQCADItemModel* cur_model_;
     
-    IQISCADBackgroundThread bgparsethread_;
+    /**
+     * @brief scheduler_
+     * runs background parsing and model rebuilds
+     */
+    IQISCADScriptJobScheduler* scheduler_;
     
     bool skipPostprocActions_;
 
@@ -67,10 +69,23 @@ protected:
     int fontSize_;
     bool hasBeenRebuilt_;
 
+    /**
+     * @brief inSelectionChanged_
+     * guard against recursive execution of onEditorSelectionChanged
+     */
+    bool inSelectionChanged_;
+
     void setFontSize(int fontSize);
     
 protected:
     void clearDerivedData();
+
+    /**
+     * write the editor contents to the given file.
+     * Displays an error message, if this fails.
+     * @return true on success
+     */
+    bool writeScriptTo(const boost::filesystem::path& fn);
 
     inline void setFilename(const boost::filesystem::path& fn)
     {
@@ -116,19 +131,9 @@ public slots:
     void toggleBgParsing(int state);
 
     /**
-     * trigger countdown timer for background parsing
+     * a script was parsed (in background or during rebuild)
      */
-    void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
-    
-    /**
-     * execute background parsing
-     */
-    void doBgParse();
-
-    /**
-     * BG parsing thread has finished
-     */
-    void onBgParseFinished();
+    void onScriptParsed(ISCADParseResultPtr parseResult, IQISCADScriptModelGenerator::Task task);
 
     /**
      * execute sketch editor for selected insight::cad::Sketch
@@ -208,7 +213,7 @@ public Q_SLOTS:
     void setUnsavedState(int i1=0, int i2=1, int i3=1);
     void unsetUnsavedState();
 
-    void onScriptError(long failpos, QString errorMsg, int range=1);
+    void onScriptError(long failpos, QString errorMsg, int range, IQISCADScriptModelGenerator::Task task);
 
     void onCancelRebuild();
 

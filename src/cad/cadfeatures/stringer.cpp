@@ -1,4 +1,5 @@
 #include "stringer.h"
+#include "parser_tools.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include <memory>
@@ -163,8 +164,8 @@ void Stringer::insertrule(parser::ISCADParser& ruleset)
                     > ruleset.r_scalarExpression > ',' // 3
                     > ruleset.r_scalarExpression > ',' // 4
                     > ruleset.r_scalarExpression // 5
-             > ( ( ',' >> qi::lit("ext0") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
-             > ( ( ',' >> qi::lit("ext1") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
+             > ( ( ',' >> parser::kw("ext0") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 6
+             > ( ( ',' >> parser::kw("ext1") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0)) ) // 7
                     > ')' )
                   [ qi::_val = phx::bind(
                        &Stringer::create<FeaturePtr, VectorPtr, ScalarPtr,

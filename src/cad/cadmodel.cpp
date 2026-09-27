@@ -19,11 +19,13 @@
 
 #include "base/exception.h"
 #include "base/tools.h"
+#include "base/warningdispatcher.h"
 #include "cadmodel.h"
 #include "cadparameters.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "parser.h"
+#include "base/translations.h"
 
 #include "base/boost_include.h"
 #include <boost/fusion/include/std_pair.hpp>
@@ -268,20 +270,81 @@ void Model::build()
         int failloc=-1;
         if (!parseISCADModelFile(modelfile_, this, &failloc, &syn_elem_dir_))
         {
-            throw insight::Exception
-            (
-                "Failed to parse model "
-                +modelfile_.string()+
-                str(format(". Stopped at %d.")%failloc)
-            );
+            throw insight::Exception(
+                _("Failed to parse model %s. Stopped at %d."),
+                modelfile_.string().c_str(), failloc );
         }
     }
     setValid();
 }
 
 
+template<class F>
+void Model::forEachSymbolTable(F&& f) const
+{
+  f(scalars_, _("scalar"));
+  f(points_, _("point"));
+  f(directions_, _("direction"));
+  f(datums_, _("datum"));
+  f(modelsteps_, _("feature"));
+  f(vertexFeatures_, _("vertex set"));
+  f(edgeFeatures_, _("edge set"));
+  f(faceFeatures_, _("face set"));
+  f(solidFeatures_, _("solid set"));
+}
+
+
+template<class Table>
+void Model::warnIfDefinedElsewhere(const std::string& name, const Table& table) const
+{
+  std::vector<std::string> kinds;
+  forEachSymbolTable(
+      [&](const auto& other, const char* kind)
+      {
+        if ( (static_cast<const void*>(&other)!=static_cast<const void*>(&table))
+             && other.count(name) )
+          kinds.push_back(kind);
+      });
+
+  if (kinds.size())
+  {
+    insight::Warning(
+          _("Symbol \"%s\" is already defined as %s. "
+            "Which definition is used in an expression depends on the context."),
+          name.c_str(), boost::join(kinds, ", ").c_str() );
+  }
+}
+
+
+std::vector<std::string> Model::symbolKinds(const std::string& name) const
+{
+  std::vector<std::string> kinds;
+  forEachSymbolTable(
+      [&](const auto& table, const char* kind)
+      {
+        if (table.count(name))
+          kinds.push_back(kind);
+      });
+  return kinds;
+}
+
+
+std::set<std::string> Model::symbolNames() const
+{
+  std::set<std::string> names;
+  forEachSymbolTable(
+      [&](const auto& table, const char*)
+      {
+        for (const auto& e: table)
+          names.insert(e.first);
+      });
+  return names;
+}
+
+
 void Model::addScalar(const std::string& name, ScalarPtr value)
 {
+  warnIfDefinedElsewhere(name, scalars_);
   // if (scalars_.find(name)) scalars_.remove(name);
   // scalars_.add(name, value);
   scalars_[name]=value;
@@ -295,6 +358,7 @@ void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
 
 void Model::addPoint(const std::string& name, VectorPtr value)
 {
+  warnIfDefinedElsewhere(name, points_);
   points_[name]=value;
 }
 
@@ -306,6 +370,7 @@ void Model::addPointIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDirection(const std::string& name, VectorPtr value)
 {
+  warnIfDefinedElsewhere(name, directions_);
   directions_[name]=value;
 }
 
@@ -317,6 +382,7 @@ void Model::addDirectionIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDatum(const std::string& name, DatumPtr value)
 {
+  warnIfDefinedElsewhere(name, datums_);
   datums_[name]=value;
 }
 
@@ -335,6 +401,7 @@ void Model::addModelstep(
     bool isComponent,
     const std::string& /*featureDescription*/)
 {
+  warnIfDefinedElsewhere(name, modelsteps_);
   value->setFeatureSymbolName(name);
 
   if (components_.find(name)!=components_.end())
@@ -405,22 +472,50 @@ void Model::removeModelstep(const std::string& name)
 
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 {
+  warnIfDefinedElsewhere(name, vertexFeatures_);
   vertexFeatures_[name]=value;
 }
 
 void Model::addEdgeFeature(const std::string& name, FeatureSetPtr value)
 {
+  warnIfDefinedElsewhere(name, edgeFeatures_);
   edgeFeatures_[name]=value;
 }
 
 void Model::addFaceFeature(const std::string& name, FeatureSetPtr value)
 {
+  warnIfDefinedElsewhere(name, faceFeatures_);
   faceFeatures_[name]=value;
 }
 
 void Model::addSolidFeature(const std::string& name, FeatureSetPtr value)
 {
+  warnIfDefinedElsewhere(name, solidFeatures_);
   solidFeatures_[name]=value;
+}
+
+void Model::addVertexFeatureIfNotPresent(const std::string& name, FeatureSetPtr value)
+{
+  if (!vertexFeatures_.count(name))
+    addVertexFeature(name, value);
+}
+
+void Model::addEdgeFeatureIfNotPresent(const std::string& name, FeatureSetPtr value)
+{
+  if (!edgeFeatures_.count(name))
+    addEdgeFeature(name, value);
+}
+
+void Model::addFaceFeatureIfNotPresent(const std::string& name, FeatureSetPtr value)
+{
+  if (!faceFeatures_.count(name))
+    addFaceFeature(name, value);
+}
+
+void Model::addSolidFeatureIfNotPresent(const std::string& name, FeatureSetPtr value)
+{
+  if (!solidFeatures_.count(name))
+    addSolidFeature(name, value);
 }
 
 void Model::addModel(const std::string& name, ModelPtr value)

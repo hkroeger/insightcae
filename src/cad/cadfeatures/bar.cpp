@@ -18,6 +18,7 @@
  */
 
 #include "bar.h"
+#include "parser_tools.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "cadexception.h"
@@ -505,13 +506,13 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
 
     auto *r_endpt = new EndPtRule(
             *(
-                ( qi::lit("ext") > ruleset.r_scalarExpression
+                ( parser::kw("ext") > ruleset.r_scalarExpression
                    [ phx::bind(&EndPointMod::ext, qi::_val) = qi::_1 ])
                 |
-                ( qi::lit("vmiter") > ruleset.r_scalarExpression
+                ( parser::kw("vmiter") > ruleset.r_scalarExpression
                   [ phx::bind(&EndPointMod::miterAngleVert, qi::_val) = qi::_1 ] )
                 |
-                ( qi::lit("hmiter") > ruleset.r_scalarExpression
+                ( parser::kw("hmiter") > ruleset.r_scalarExpression
                   [ phx::bind(&EndPointMod::miterAngleHorz, qi::_val) = qi::_1 ] )
             )
     );
@@ -526,14 +527,14 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                     ( '(' > (
                       (
                         ruleset.r_vectorExpression // 1
-                          > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                          > qi::hold[ (  (( parser::kw("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  parser::kw("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  parser::kw("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
                           > ','
                           > ruleset.r_vectorExpression // 3
-                          > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                          > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                          > qi::hold[ (  (( parser::kw("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  parser::kw("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                          > ((  parser::kw("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
                           > ','
                           > ruleset.r_solidmodel_expression > ',' // 5
                           > ruleset.r_vectorExpression // 6
@@ -555,8 +556,8 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                     |
                     (
                             ruleset.r_solidmodel_expression > ','// 1
-                         > ( ( qi::lit("start") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
-                         > ( ( qi::lit("end") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
+                         > ( ( parser::kw("start") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
+                         > ( ( parser::kw("end") > *r_endpt > ',' ) | qi::attr(EndPointMod()) )
                          > ruleset.r_solidmodel_expression > ',' // 4
                          > ruleset.r_vectorExpression // 5
                        > ( ( ',' > ruleset.r_vectorExpression) | qi::attr(VectorPtr()) ) //6
@@ -578,14 +579,14 @@ void Bar::insertrule(parser::ISCADParser& ruleset)
                 ( '(' >
                      (
                          ruleset.r_vectorExpression // 1
-                         > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                         > qi::hold[ (  (( parser::kw("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  parser::kw("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  parser::kw("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
                          > ','
                          > ruleset.r_vectorExpression // 3
-                         > qi::hold[ (  (( qi::lit("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      > ((  qi::lit("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
-                                      > ((  qi::lit("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
+                         > qi::hold[ (  (( parser::kw("ext") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  parser::kw("vmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))
+                                      > ((  parser::kw("hmiter") > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
                          > ','
                          > ruleset.r_solidmodel_expression >> ',' // 5
                          > ruleset.r_scalarExpression >> ',' // 6

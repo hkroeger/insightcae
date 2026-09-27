@@ -32,6 +32,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -70,28 +71,28 @@ void ISCADParser::createDatumExpressions()
         addAdditionalRule( map_lookup_parser(model_->datums()) )
                 [ qi::_val = qi::_1 ]
         |
-        ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
+        ( kw("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2)) ]
         |
-        ( lit("SPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
+        ( kw("SPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2, qi::_3)) ]
         |
-        ( lit("TPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
+        ( kw("TPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2, qi::_3, true)) ]
         |
-        ( lit("RefPt") >> '(' >> r_vectorExpression >> ')' )
+        ( kw("RefPt") >> '(' >> r_vectorExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<ExplicitDatumPoint>(qi::_1)) ]
         |
-        ( lit("RefAxis") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
+        ( kw("RefAxis") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<ExplicitDatumAxis>(qi::_1, qi::_2)) ]
         |
-        ( lit("xsec_axpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' )
+        ( kw("xsec_axpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<XsecAxisPlane>(qi::_1, qi::_2)) ]
         |
-        ( lit("xsec_plpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' )
+        ( kw("xsec_plpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)) ]
         |
-        ( lit("xsec_ppp") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ',' >> r_datumExpression >> ')' )
+        ( kw("xsec_ppp") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ',' >> r_datumExpression >> ')' )
         [ _val = construct<DatumPtr>(new_<XsecAxisPlane>(
                                          construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)),
                                          qi::_3)) ]
@@ -102,7 +103,7 @@ void ISCADParser::createDatumExpressions()
       )
       >> -( lit("<<") >> r_vectorExpression ) [ _val = construct<DatumPtr>(new_<TransformedDatum>(_val, qi::_1)) ];
 
-    r_datumExpression.name("datum expression");
+    r_datumExpression.name(_("datum expression"));
 }
 
 

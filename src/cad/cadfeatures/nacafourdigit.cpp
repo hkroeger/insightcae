@@ -18,6 +18,7 @@
  */
 
 #include "nacafourdigit.h"
+#include "parser_tools.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/translations.h"
@@ -278,7 +279,7 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
              > ruleset.r_vectorExpression > ','
              > ruleset.r_vectorExpression
                    > ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-                   > ( (',' >> qi::lit("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+                   > ( (',' >> parser::kw("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
            > ')' )
     [ qi::_val = phx::bind(
                        &NacaFourDigit::create<const std::string&,
@@ -294,7 +295,7 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset)
                > ruleset.r_vectorExpression > ','
                > ruleset.r_vectorExpression
              > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-             > ( (',' > qi::lit("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' > parser::kw("clipte") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
              > ')' )
       [ qi::_val = phx::bind(
                        &NacaFourDigit::create<ScalarPtr, ScalarPtr, ScalarPtr,

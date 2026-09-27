@@ -251,6 +251,19 @@ msgstr ""
 "The editor content is not saved.\n"
 "Save now?\n"
 
+msgid "Background model parsing in progress..."
+msgstr "Background model parsing in progress..."
+
+msgid ""
+"Waiting for background parsing to finish, rebuild will start afterwards..."
+msgstr ""
+
+msgid "Save failed"
+msgstr ""
+
+msgid "The model could not be written to file %1!"
+msgstr ""
+
 msgid "Select location"
 msgstr "Select location"
 
@@ -260,8 +273,8 @@ msgstr "File error"
 msgid "The file %1 does not exists!"
 msgstr "The file %1 does not exists!"
 
-msgid "Background model parsing in progress..."
-msgstr "Background model parsing in progress..."
+msgid "Could not display the selected entity: %1"
+msgstr ""
 
 msgid "Please select file"
 msgstr "Please select file"
@@ -275,9 +288,6 @@ msgstr "IGES model"
 msgid "BREP model"
 msgstr "BREP model"
 
-msgid "Background model parsing in progress, rebuild is currently disabled!"
-msgstr "Background model parsing in progress, rebuild is currently disabled!"
-
 msgid "Edit Sketch..."
 msgstr "Edit Sketch..."
 
@@ -290,12 +300,19 @@ msgstr "Script error"
 msgid "Script Error"
 msgstr "Script Error"
 
+msgid "Model rebuild cancelled"
+msgstr ""
+
 msgid "Model"
 msgstr "Model"
 
 #, fuzzy
 msgid "Select output file name"
 msgstr "Select file"
+
+#~ msgid "Background model parsing in progress, rebuild is currently disabled!"
+#~ msgstr ""
+#~ "Background model parsing in progress, rebuild is currently disabled!"
 
 #~ msgid "ISCAD Model Files (*.iscad)"
 #~ msgstr "ISCAD Model Files (*.iscad)"

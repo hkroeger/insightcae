@@ -20,6 +20,7 @@
 
 
 #include "line.h"
+#include "parser_tools.h"
 #include "base/exception.h"
 #include "boost/phoenix/core/reference.hpp"
 #include "datum.h"
@@ -140,7 +141,7 @@ void Line::addParserRule(
              > qi::int_ > ','
              > ruleset.r_point > ','
              > ruleset.r_point
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > (( ',' >> parser::kw("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters > ')'
             )
             [   qi::_a = phx::bind(
@@ -283,7 +284,7 @@ void Line::insertrule(parser::ISCADParser& ruleset)
       ruleset.r_vectorExpression
               [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, false) ]
       |
-      ( (qi::lit("dir")|qi::lit("direction")) > ruleset.r_vectorExpression )
+      ( (parser::kw("dir")|parser::kw("direction")) > ruleset.r_vectorExpression )
               [ qi::_val = phx::bind(&Line::create<VectorPtr, VectorPtr, bool>, qi::_a, qi::_1, true) ]
        ) > ')'
   );

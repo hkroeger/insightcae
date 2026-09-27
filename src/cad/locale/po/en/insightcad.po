@@ -19,6 +19,311 @@ msgstr ""
 msgid "An error has occurred during CAD geometry processing."
 msgstr ""
 
+msgid "building list of shared model locations"
+msgstr ""
+
+#, c-format
+msgid "Shared model file %s not found."
+msgstr ""
+
+#. TRANSLATORS: character range of a syntax element, e.g. "12 until 20"
+#, c-format
+msgid "%d until %d"
+msgstr ""
+
+#, c-format
+msgid "in file \"%s\""
+msgstr ""
+
+msgid "description"
+msgstr ""
+
+msgid "BOM description"
+msgstr ""
+
+msgid "model description"
+msgstr ""
+
+msgid "identifier"
+msgstr ""
+
+msgid "path"
+msgstr ""
+
+msgid "string"
+msgstr ""
+
+msgid "assignment"
+msgstr ""
+
+msgid "argument list"
+msgstr ""
+
+msgid "feature command"
+msgstr ""
+
+msgid "scalar function"
+msgstr ""
+
+msgid "vector function"
+msgstr ""
+
+msgid "postprocessing command"
+msgstr ""
+
+#, c-format
+msgid "The iscad script file \"%s\" does not exist!"
+msgstr ""
+
+#, c-format
+msgid "could not read iscad script file \"%s\""
+msgstr ""
+
+#, c-format
+msgid "line %d, column %d"
+msgstr ""
+
+#, c-format
+msgid "Usage: %s"
+msgstr ""
+
+#, c-format
+msgid "undefined symbol '%s'"
+msgstr ""
+
+#, c-format
+msgid "Expected here: %s."
+msgstr ""
+
+#, c-format
+msgid "defined as %s"
+msgstr ""
+
+#. TRANSLATORS: first %s: list of alternatives, second %s: the token found in the script
+#, c-format
+msgid "expected %s but found %s"
+msgstr ""
+
+#. TRANSLATORS: first %s: command name, second %s: error message
+#, c-format
+msgid "in %s(...): %s"
+msgstr ""
+
+msgid ""
+"Statements have the form 'name = expression;', 'name: feature expression;' "
+"or 'feature -> property = value;'."
+msgstr ""
+
+msgid "unexpected end of input"
+msgstr ""
+
+#, c-format
+msgid "unknown keyword '%s'"
+msgstr ""
+
+msgid "Valid keywords are '@description', '@doc' and '@post'."
+msgstr ""
+
+#, c-format
+msgid "'%s' is not allowed here"
+msgstr ""
+
+msgid ""
+"A script consists of assignments (and '@description'), optionally followed "
+"by an '@doc' section and then an '@post' section."
+msgstr ""
+
+#, c-format
+msgid "unknown postprocessing command '%s'"
+msgstr ""
+
+#, c-format
+msgid "cannot parse documentation statement starting with '%s'"
+msgstr ""
+
+#. TRANSLATORS: first %s: symbol name, second %s: kind of command, e.g. "feature command"
+#, c-format
+msgid "'%s' cannot be used as a symbol name (%s of the same name exists)"
+msgstr ""
+
+msgid "Please choose a different name."
+msgstr ""
+
+#, c-format
+msgid "undefined feature '%s'"
+msgstr ""
+
+#. TRANSLATORS: first %s: symbol name, second %s: list of symbol kinds, e.g. "scalar"
+#, c-format
+msgid "properties can only be assigned to features, but '%s' is defined as %s"
+msgstr ""
+
+#, c-format
+msgid "cannot parse assignment to '%s'"
+msgstr ""
+
+#. TRANSLATORS: first %s: symbol name, second %s: the token found in the script
+#, c-format
+msgid "expected ':', '=', '?=' or '->' after '%s' but found %s"
+msgstr ""
+
+#, c-format
+msgid "unexpected %s at the beginning of a statement"
+msgstr ""
+
+msgid "feature set filter arguments"
+msgstr ""
+
+msgid "vertex selection expression"
+msgstr ""
+
+msgid "edge selection expression"
+msgstr ""
+
+msgid "face selection expression"
+msgstr ""
+
+msgid "solid selection expression"
+msgstr ""
+
+msgid "datum expression"
+msgstr ""
+
+msgid "feature function"
+msgstr ""
+
+msgid "feature expression"
+msgstr ""
+
+msgid "feature term"
+msgstr ""
+
+msgid "feature symbol"
+msgstr ""
+
+msgid "in-situ submodel"
+msgstr ""
+
+msgid "feature primary"
+msgstr ""
+
+msgid "feature property assignment"
+msgstr ""
+
+msgid "view definition"
+msgstr ""
+
+msgid "postprocessing statement"
+msgstr ""
+
+msgid "documentation statement"
+msgstr ""
+
+msgid "scalar expression"
+msgstr ""
+
+msgid "scalar term"
+msgstr ""
+
+msgid "scalar primary"
+msgstr ""
+
+msgid "vector expression"
+msgstr ""
+
+msgid "vector term"
+msgstr ""
+
+msgid "vector primary"
+msgstr ""
+
+#. TRANSLATORS: conjunction for the last item of a list of alternatives, e.g. "',', ')' or number"
+msgid "or"
+msgstr ""
+
+msgid "letter"
+msgstr ""
+
+msgid "letter or digit"
+msgstr ""
+
+msgid "digit"
+msgstr ""
+
+msgid "number"
+msgstr ""
+
+msgid "integer"
+msgstr ""
+
+msgid "character"
+msgstr ""
+
+msgid "end of line"
+msgstr ""
+
+msgid "end of input"
+msgstr ""
+
+msgid "keyword"
+msgstr ""
+
+#, c-format
+msgid "string %s"
+msgstr ""
+
+msgid "something else"
+msgstr ""
+
+#. TRANSLATORS: %s is a list of names, e.g. "'a', 'b' or 'c'"
+#, c-format
+msgid "Did you mean %s?"
+msgstr ""
+
+#, c-format
+msgid "Maybe the ';' at the end of line %d is missing?"
+msgstr ""
+
+msgid "error"
+msgstr ""
+
+#, c-format
+msgid "Failed to parse model %s. Stopped at %d."
+msgstr ""
+
+msgid "scalar"
+msgstr ""
+
+msgid "point"
+msgstr ""
+
+msgid "direction"
+msgstr ""
+
+msgid "datum"
+msgstr ""
+
+msgid "feature"
+msgstr ""
+
+msgid "vertex set"
+msgstr ""
+
+msgid "edge set"
+msgstr ""
+
+msgid "face set"
+msgstr ""
+
+msgid "solid set"
+msgstr ""
+
+#, c-format
+msgid ""
+"Symbol \"%s\" is already defined as %s. Which definition is used in an "
+"expression depends on the context."
+msgstr ""
+
 #, c-format
 msgid "searching %s with name %s"
 msgstr ""

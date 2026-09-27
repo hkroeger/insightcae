@@ -1,4 +1,5 @@
 #include "forloop.h"
+#include "parser_tools.h"
 #include "base/exception.h"
 #include "boost/phoenix/stl/algorithm/transformation.hpp"
 #include <boost/phoenix/stl/algorithm/iteration.hpp>
@@ -147,7 +148,7 @@ void ForLoop::insertrule ( parser::ISCADParser& ruleset )
                 > ruleset.r_scalarExpression [ qi::_b = qi::_1 ] > ','
 
                 > ( ruleset.r_scalarExpression > ','
-                > ( (qi::lit("inc") > ruleset.r_scalarExpression > ',')
+                > ( (parser::kw("inc") > ruleset.r_scalarExpression > ',')
                     | qi::attr(cad::scalarconst(1.)) )
                 > (
                     ruleset.r_submodel ( phx::bind(&loopvar, qi::_a, qi::_b) )

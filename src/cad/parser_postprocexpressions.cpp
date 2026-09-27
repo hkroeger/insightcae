@@ -34,6 +34,8 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
+#include "parser_tools.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -83,10 +85,10 @@ void ISCADParser::createPostProcExpressions()
         (r_identifier >> '('
          >> r_vectorExpression >> ','
          >> r_vectorExpression
-         >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
-         >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
-         >> ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
-         >> ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> kw("up") >> r_vectorExpression ) | attr(VectorPtr()) )
+         >> ( ( ',' >> kw("section") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> kw("poly") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> kw("skiphl") >> qi::attr(true) ) | attr(false) )
          >> ( ( ',' >> lit("add")
                >> (( 'l' >> qi::attr(true) )|qi::attr(false))
                >> (( 'r' >> qi::attr(true) )|qi::attr(false))
@@ -99,16 +101,19 @@ void ISCADParser::createPostProcExpressions()
          >> ')'
         )
         ;
-    r_viewDef.name("view definition");
+    r_viewDef.name(_("view definition"));
 
     r_postproc =
-
-        omit [ postProcFunctionRules [ qi::_a = qi::_1 ] ]
+        ( current_pos.current_pos
+         >> omit [ lexeme[ postProcFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
+         >> current_pos.current_pos )
+            [ phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
         > qi::lazy(*qi::_a)
-            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1) ];
+            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1),
+              phx::bind(&ISCADParser::popCommand, this) ];
 
 
-    r_postproc.name("postprocessing statement");
+    r_postproc.name(_("postprocessing statement"));
 
 }
 

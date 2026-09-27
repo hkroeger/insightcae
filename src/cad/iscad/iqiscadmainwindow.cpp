@@ -194,13 +194,13 @@ void IQISCADMainWindow::loadModel()
 
 void IQISCADMainWindow::activateModel(int tabindex)
 {
-    if ( (tabindex>=0) && (tabindex!=lastTabIndex_) )
+    // don't track by index: indices change, when tabs are closed
+    auto* me = qobject_cast<IQISCADModelWindow*>(modelTabs_->widget(tabindex));
+    if (me!=activeModel_)
     {
-        IQISCADModelWindow* lme=NULL;
-        if (lastTabIndex_>=0) lme=static_cast<IQISCADModelWindow*>(modelTabs_->widget(lastTabIndex_));
-
-        connectMenuToModel(static_cast<IQISCADModelWindow*>(modelTabs_->widget(tabindex)), lme);
-        lastTabIndex_=tabindex;
+        // without model, all actions are just disconnected
+        connectMenuToModel(me, activeModel_);
+        activeModel_=me;
     }
 }
 
@@ -221,13 +221,20 @@ void IQISCADMainWindow::onUpdateTabTitle(IQISCADModelWindow* model, const boost:
 
 void IQISCADMainWindow::onCloseModel(int tabindex)
 {
-    auto model = static_cast<IQISCADModelScriptEdit*>(modelTabs_->widget(tabindex));
-    if (model)
+    auto* model = qobject_cast<IQISCADModelWindow*>(modelTabs_->widget(tabindex));
+    if (model && model->requestClose())
     {
-        QCloseEvent ev;
-        model->closeEvent(&ev);
-        if (ev.isAccepted())
-            modelTabs_->removeTab(tabindex);
+        if (model==activeModel_)
+        {
+            // the actions must not remain connected to the closed model
+            connectMenuToModel(nullptr, model);
+            activeModel_=nullptr;
+        }
+
+        modelTabs_->removeTab(tabindex);
+        model->deleteLater();
+
+        activateModel(modelTabs_->currentIndex());
     }
 }
 
@@ -255,8 +262,7 @@ void IQISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile
 
 
 IQISCADMainWindow::IQISCADMainWindow(QWidget* parent, bool nolog)
-: QMainWindow(parent),
-  lastTabIndex_(-1)
+: QMainWindow(parent)
 {
     
     setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
@@ -498,21 +504,23 @@ IQISCADMainWindow::~IQISCADMainWindow()
 
 void IQISCADMainWindow::closeEvent(QCloseEvent *event)
 {
-    QMainWindow::closeEvent(event);
-    
     for (int i=0; i<modelTabs_->count(); i++)
     {
-        auto model = static_cast<IQISCADModelScriptEdit*>( modelTabs_->widget(i) );
-        if (model) model->closeEvent(event);
+        auto* model = qobject_cast<IQISCADModelWindow*>( modelTabs_->widget(i) );
+        if (model && !model->requestClose())
+        {
+            // user cancelled or saving failed
+            event->ignore();
+            return;
+        }
     }
-    
-    
-    if (event->isAccepted())
-    {
-        QSettings settings("silentdynamics", "iscad");
-        settings.setValue("geometry", saveGeometry());
-        settings.setValue("windowState", saveState());
-    }
+
+    QMainWindow::closeEvent(event);
+    event->accept();
+
+    QSettings settings("silentdynamics", "iscad");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
 }
 
 

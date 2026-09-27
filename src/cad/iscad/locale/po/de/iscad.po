@@ -249,6 +249,19 @@ msgstr ""
 "Der Inhalt des Editors ist nicht gespeichert.\n"
 "Jetzt speichern?\n"
 
+msgid "Background model parsing in progress..."
+msgstr "Hintergrundparser ist aktiv..."
+
+msgid ""
+"Waiting for background parsing to finish, rebuild will start afterwards..."
+msgstr ""
+
+msgid "Save failed"
+msgstr ""
+
+msgid "The model could not be written to file %1!"
+msgstr ""
+
 msgid "Select location"
 msgstr "Ort auswählen"
 
@@ -258,8 +271,8 @@ msgstr "Dateifehler"
 msgid "The file %1 does not exists!"
 msgstr "Die Datei %1 existiert nicht!"
 
-msgid "Background model parsing in progress..."
-msgstr "Hintergrundparser ist aktiv..."
+msgid "Could not display the selected entity: %1"
+msgstr ""
 
 msgid "Please select file"
 msgstr "Bitte Datei auswählen"
@@ -273,9 +286,6 @@ msgstr "IGES-Modell"
 msgid "BREP model"
 msgstr "BREP-Modell"
 
-msgid "Background model parsing in progress, rebuild is currently disabled!"
-msgstr "Hintergrundparser ist aktiv, Neu Erzeugen ist im Moment nicht möglich!"
-
 msgid "Edit Sketch..."
 msgstr "Skizze editieren..."
 
@@ -288,8 +298,15 @@ msgstr "Skriptfehler"
 msgid "Script Error"
 msgstr "Skriptfehler"
 
+msgid "Model rebuild cancelled"
+msgstr ""
+
 msgid "Model"
 msgstr "Modell"
 
 msgid "Select output file name"
 msgstr "Namen der Ausgabedatei auswählen"
+
+#~ msgid "Background model parsing in progress, rebuild is currently disabled!"
+#~ msgstr ""
+#~ "Hintergrundparser ist aktiv, Neu Erzeugen ist im Moment nicht möglich!"

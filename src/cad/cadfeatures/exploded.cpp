@@ -18,6 +18,7 @@
  */
 
 #include "cadfeature.h"
+#include "parser_tools.h"
 #include "exploded.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -215,8 +216,8 @@ void Exploded::insertrule(parser::ISCADParser& ruleset)
             > (
              (
              ( (  ruleset.r_solidmodel_expression
-                > ( (qi::lit("axial")>qi::attr(ExplosionDirection_Axial))
-			        | (qi::lit("radial")>qi::attr(ExplosionDirection_Radial)) 
+                > ( (parser::kw("axial")>qi::attr(ExplosionDirection_Axial))
+			        | (parser::kw("radial")>qi::attr(ExplosionDirection_Radial)) 
                     | qi::attr(ExplosionDirection_Axial) )
                 > (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0)))
                 > (ruleset.r_scalarExpression|qi::attr(scalarconst(1.)))
@@ -226,7 +227,7 @@ void Exploded::insertrule(parser::ISCADParser& ruleset)
                              &Exploded::create<DatumPtr, const ExplosionComponentList&>,
                              qi::_2, qi::_1) ]
                |
-               ( qi::lit("assembly")
+               ( parser::kw("assembly")
                   > ruleset.r_solidmodel_expression > ','
                   > ruleset.r_datumExpression > ')' )
                       [ qi::_val = phx::bind(

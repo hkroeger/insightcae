@@ -60,6 +60,12 @@ protected:
 public:
   static void cancelRebuild(std::thread::id thread_id = std::this_thread::get_id());
 
+  /**
+   * remove a pending cancellation request for the given thread
+   * (e.g. when a thread ends, before it has reached a cancellation point)
+   */
+  static void clearCancelRequest(std::thread::id thread_id = std::this_thread::get_id());
+
   ASTBase();
   ASTBase(const ASTBase& o);
   virtual ~ASTBase();

@@ -18,6 +18,7 @@
  */
 
 #include "splinecurve.h"
+#include "parser_tools.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/boost_include.h"
@@ -120,7 +121,7 @@ void SplineCurve::insertrule(parser::ISCADParser& ruleset)
 
     ( '(' 
         > ruleset.r_vectorExpression % ','
-        > ( (',' > qi::lit("der") > ruleset.r_vectorExpression > ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) )
+        > ( (',' > parser::kw("der") > ruleset.r_vectorExpression > ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) )
         > ')' )
     [ qi::_val = phx::bind(
                          &SplineCurve::create<const std::vector<VectorPtr>&, VectorPtr, VectorPtr>,
@@ -364,7 +365,7 @@ void RapproximatedCurve::insertrule(parser::ISCADParser& ruleset)
         ( '(' > ruleset.r_vectorExpression
           > ',' > ruleset.r_vectorExpression
           > ',' > ruleset.r_solidmodel_expression
-          > ( ( ',' > qi::lit("der") > ruleset.r_vectorExpression > ruleset.r_vectorExpression )
+          > ( ( ',' > parser::kw("der") > ruleset.r_vectorExpression > ruleset.r_vectorExpression )
             | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) )
           > ')' )
         [ qi::_val = phx::bind(

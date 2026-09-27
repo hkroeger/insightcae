@@ -48,6 +48,7 @@
 #include <QMessageBox>
 
 #include "base/tools.h"
+#include "base/exceptionhandling.h"
 //#include "base/qt5_helper.h"
 #include "base/translations.h"
 
@@ -67,11 +68,10 @@
 IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing)
 : QTextEdit(parent),
   unsaved_(false),
-  doBgParsing_(dobgparsing),
-  bgparsethread_(),
-  skipPostprocActions_(true),
   cur_model_(nullptr),
-  hasBeenRebuilt_(false)
+  skipPostprocActions_(true),
+  hasBeenRebuilt_(false),
+  inSelectionChanged_(false)
 {
 
     QFont defaultFont("Courier New");
@@ -113,15 +113,39 @@ IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing
 
     highlighter_=new IQISCADSyntaxHighlighter(document());
 
-    connect(&bgparsethread_, &IQISCADBackgroundThread::finished,
-            this, &IQISCADModelScriptEdit::onBgParseFinished);
-    connect(&bgparsethread_, &IQISCADBackgroundThread::statusMessage,
+    scheduler_ = new IQISCADScriptJobScheduler(
+        [this]() { return toPlainText().toStdString(); },
+        nullptr,
+        bgparseInterval,
+        this );
+    scheduler_->setBackgroundParsingEnabled(dobgparsing);
+
+    connect(scheduler_, &IQISCADScriptJobScheduler::jobStarted,
+            this, [this](IQISCADScriptModelGenerator::Task task, bool)
+            {
+                if (task==IQISCADScriptModelGenerator::Parse)
+                    Q_EMIT displayStatusMessage(_("Background model parsing in progress..."));
+            });
+    connect(scheduler_, &IQISCADScriptJobScheduler::waitingForBackgroundParse,
+            this, [this]()
+            {
+                Q_EMIT displayStatusMessage(
+                    _("Waiting for background parsing to finish, rebuild will start afterwards..."));
+            });
+    connect(scheduler_, &IQISCADScriptJobScheduler::parsed,
+            this, &IQISCADModelScriptEdit::onScriptParsed);
+    connect(scheduler_, &IQISCADScriptJobScheduler::statusMessage,
             this, &IQISCADModelScriptEdit::displayStatusMessage);
-    connect(&bgparsethread_, &IQISCADBackgroundThread::statusProgress,
+    connect(scheduler_, &IQISCADScriptJobScheduler::statusProgress,
             this, &IQISCADModelScriptEdit::statusProgress);
-    connect(&bgparsethread_, &IQISCADBackgroundThread::scriptError,
+    connect(scheduler_, &IQISCADScriptJobScheduler::jobEnded,
+            this, [this](IQISCADScriptModelGenerator::Task)
+            {
+                Q_EMIT statusProgress(1, 1);
+            });
+    connect(scheduler_, &IQISCADScriptJobScheduler::scriptError,
             this, &IQISCADModelScriptEdit::onScriptError);
-    connect(&bgparsethread_, &IQISCADBackgroundThread::modelRebuilt,
+    connect(scheduler_, &IQISCADScriptJobScheduler::modelRebuilt,
             this, [this]() {
             if (!hasBeenRebuilt_)
             {
@@ -130,12 +154,9 @@ IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing
             }
     });
 
-    bgparseTimer_=new QTimer(this);
-    connect(bgparseTimer_, &QTimer::timeout, this, &IQISCADModelScriptEdit::doBgParse);
-    restartBgParseTimer();
-
+    // cancel running background parse and restart after a while
     connect(document(), &QTextDocument::contentsChange,
-            this, &IQISCADModelScriptEdit::restartBgParseTimer);
+            scheduler_, &IQISCADScriptJobScheduler::requestUpdate);
     connect(document(), &QTextDocument::contentsChange,
             this, &IQISCADModelScriptEdit::setUnsavedState);
 
@@ -144,26 +165,47 @@ IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing
 
 IQISCADModelScriptEdit::~IQISCADModelScriptEdit()
 {
-    bgparsethread_.quit();
-    bgparsethread_.wait();
+    // stop all jobs, before the editor contents vanish
+    delete scheduler_;
 }
+
+
+
+bool IQISCADModelScriptEdit::writeScriptTo(const boost::filesystem::path& fn)
+{
+    std::ofstream out(fn.c_str());
+    out << toPlainText().toStdString();
+    out.close();
+
+    if (!out.good())
+    {
+        QMessageBox::critical(
+            this, _("Save failed"),
+            QString(_("The model could not be written to file %1!"))
+                .arg(QString::fromStdString(fn.string()))
+            );
+        return false;
+    }
+    return true;
+}
+
 
 
 
 bool IQISCADModelScriptEdit::saveModel()
 {
-    if (filename_!="")
-    {
-        std::ofstream out(filename_.c_str());
-        out << toPlainText().toStdString();
-        out.close();
-        unsetUnsavedState();
-        return true;
-    }
-    else
+    if (filename_.empty())
     {
         return false;
     }
+
+    if (!writeScriptTo(filename_))
+    {
+        return false;
+    }
+
+    unsetUnsavedState();
+    return true;
 }
 
 
@@ -183,8 +225,14 @@ bool IQISCADModelScriptEdit::saveModelAs()
         GetFileMode::Save,
         {{ "iscad", _("ISCAD Model Files") }} ) )
     {
+        // keep the previous file name, if the new file cannot be written
+        if (!writeScriptTo(fn))
+        {
+            return false;
+        }
+
         setFilename(fn);
-        saveModel();
+        unsetUnsavedState();
         return true;
     }
     else
@@ -216,6 +264,9 @@ void IQISCADModelScriptEdit::setFontSize(int fontSize)
 
 void IQISCADModelScriptEdit::clearDerivedData()
 {
+  // output of running jobs belongs to the old script
+  scheduler_->stop();
+  scheduler_->discardParseResult();
   clear();
   emit clearData();
 }
@@ -263,11 +314,16 @@ void IQISCADModelScriptEdit::setScript(const std::string& contents)
 
 void IQISCADModelScriptEdit::onEditorSelectionChanged()
 {
-    disconnect
-    (
-      this, &IQISCADModelScriptEdit::selectionChanged,
-      this, &IQISCADModelScriptEdit::onEditorSelectionChanged
-    );
+    if (inSelectionChanged_)
+        return;
+
+    // reset also in case of exceptions
+    struct Guard
+    {
+        bool& flag;
+        Guard(bool& f) : flag(f) { flag=true; }
+        ~Guard() { flag=false; }
+    } guard(inSelectionChanged_);
 
     QString word=textCursor().selectedText();
     if ( !( word.contains('|') || word.contains('*') ) )
@@ -280,20 +336,39 @@ void IQISCADModelScriptEdit::onEditorSelectionChanged()
     {
         bool somethingFocussed=false;
       auto sde=syn_elem_dir_->findElement( textCursor().position() );
+
+      // the entity is built on demand for display. Build errors must not
+      // propagate: cursor movement should not raise dialogs
+      auto tryFocus = [&](std::function<insight::cad::FeaturePtr()> getFeature)
+      {
+          try
+          {
+              Q_EMIT focus(getFeature());
+              somethingFocussed=true;
+          }
+          catch (...)
+          {
+              auto desc = insight::describeCurrentException();
+              Q_EMIT displayStatusMessage(
+                  QString(_("Could not display the selected entity: %1"))
+                      .arg(QString::fromStdString(std::string(*desc))) );
+          }
+      };
+
       if (auto fp=boost::get<insight::cad::FeaturePtr>(&sde))
       {
           if (*fp)
           {
-            Q_EMIT focus(*fp);
-              somethingFocussed=true;
+            auto f=*fp;
+            tryFocus([f]() { return f; });
           }
       }
       else if (auto fsp=boost::get<insight::cad::FeatureSetPtr>(&sde))
       {
           if (*fsp)
           {
-            Q_EMIT focus(insight::cad::Import::create(*fsp));
-              somethingFocussed=true;
+            auto fs=*fsp;
+            tryFocus([fs]() { return insight::cad::Import::create(fs); });
           }
       }
 
@@ -302,12 +377,6 @@ void IQISCADModelScriptEdit::onEditorSelectionChanged()
         Q_EMIT unfocus();
       }
     }
-
-    connect
-    (
-      this, &IQISCADModelScriptEdit::selectionChanged,
-      this, &IQISCADModelScriptEdit::onEditorSelectionChanged
-    );
 }
 
 
@@ -335,39 +404,16 @@ void IQISCADModelScriptEdit::jumpTo(const QString& name)
 
 
 
-void IQISCADModelScriptEdit::restartBgParseTimer(int,int,int)
+void IQISCADModelScriptEdit::onScriptParsed(
+    ISCADParseResultPtr parseResult,
+    IQISCADScriptModelGenerator::Task )
 {
-    bgparseTimer_->setSingleShot(true);
-    bgparseTimer_->start(bgparseInterval);
-}
-
-
-
-void IQISCADModelScriptEdit::doBgParse()
-{
-    if (doBgParsing_)
+    if (parseResult->syntaxElements)
     {
-        if (!bgparsethread_.isRunning())
-        {
-            emit displayStatusMessage(_("Background model parsing in progress..."));
-            bgparsethread_.launch(
-                        toPlainText().toStdString(),
-                        IQISCADScriptModelGenerator::Parse
-                        );
-        }
-    }
-}
-
-void IQISCADModelScriptEdit::onBgParseFinished()
-{
-    if (bgparsethread_.syn_elem_dir_)
-    {
-//        cur_model_ = bgparsethread_.model_;
-        syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
+        syn_elem_dir_ = parseResult->syntaxElements;
 
         emit modelUpdated();
     }
-    emit statusProgress(1, 1);
 }
 
 
@@ -473,7 +519,7 @@ void IQISCADModelScriptEdit::setModel(IQCADItemModel* model)
             this, &IQISCADModelScriptEdit::jumpTo);
     connect(cur_model_, &IQCADItemModel::insertParserStatementAtCursor,
             this, &IQISCADModelScriptEdit::insertTextAtCursor);
-    bgparsethread_.setModel(model);
+    scheduler_->setModel(model);
 }
 
 
@@ -504,11 +550,11 @@ void IQISCADModelScriptEdit::toggleBgParsing(int state)
 {
     if (state==Qt::Checked)
     {
-        doBgParsing_=true;
+        scheduler_->setBackgroundParsingEnabled(true);
     }
     else if (state==Qt::Unchecked)
     {
-        doBgParsing_=false;
+        scheduler_->setBackgroundParsingEnabled(false);
     }
 }
 
@@ -613,28 +659,23 @@ void IQISCADModelScriptEdit::onDecreaseFontSize()
 
 void IQISCADModelScriptEdit::rebuildModel(bool upToCursor)
 {
-    if (!bgparsethread_.isRunning())
+    auto task =
+        skipPostprocActions_ ?
+            IQISCADScriptModelGenerator::Rebuild :
+            IQISCADScriptModelGenerator::Post;
+
+    if (upToCursor)
     {
         std::string script_content = toPlainText().toStdString();
-        if (upToCursor)
-        {
-            QTextCursor c = textCursor();
-            script_content = script_content.substr(0, c.position());
-        }
+        QTextCursor c = textCursor();
+        script_content = script_content.substr(0, c.position());
 
-        bgparsethread_.launch
-            (
-              script_content,
-              skipPostprocActions_ ?
-                        IQISCADScriptModelGenerator::Rebuild :
-                        IQISCADScriptModelGenerator::Post
-            );
-
+        scheduler_->rebuildScript(script_content, task);
     }
     else
     {
-        emit displayStatusMessage(
-            _("Background model parsing in progress, rebuild is currently disabled!"));
+        // reuses the result of the background parser, if possible
+        scheduler_->rebuild(task);
     }
 }
 
@@ -647,6 +688,10 @@ void IQISCADModelScriptEdit::rebuildModelUpToCursor()
 void IQISCADModelScriptEdit::clearCache()
 {
     insight::cad::cache.clear();
+
+    // the entities of the last parse result might be built already
+    scheduler_->discardParseResult();
+    scheduler_->requestUpdate();
 }
 
 
@@ -739,7 +784,9 @@ void IQISCADModelScriptEdit::unsetUnsavedState()
 }
 
 
-void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int range)
+void IQISCADModelScriptEdit::onScriptError(
+    long failpos, QString errorMsg, int range,
+    IQISCADScriptModelGenerator::Task task )
 {
   if (failpos>=0)
     {
@@ -754,8 +801,7 @@ void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int r
       insight::dbg()<<"no error location info"<<std::endl;
     }
 
-  if (bgparsethread_.finalTask()
-          < IQISCADScriptModelGenerator::Rebuild)
+  if (task < IQISCADScriptModelGenerator::Rebuild)
     {
       emit displayStatusMessage(QString(_("Script error"))+": "+errorMsg);
     }
@@ -774,9 +820,11 @@ void IQISCADModelScriptEdit::onScriptError(long failpos, QString errorMsg, int r
 
 void IQISCADModelScriptEdit::onCancelRebuild()
 {
-  if (bgparsethread_.isRunning())
+  if (!scheduler_->isIdle())
     {
-      bgparsethread_.cancelRebuild();
+      scheduler_->stop();
+      emit displayStatusMessage(_("Model rebuild cancelled"));
+      emit statusProgress(1, 1);
     }
 }
 

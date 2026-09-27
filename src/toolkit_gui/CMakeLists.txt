@@ -34,6 +34,8 @@ add_library(toolkit_gui SHARED
     iqiscadmodelgenerator.h iqiscadmodelgenerator.cpp
     iqiscadmodelrebuilder.h iqiscadmodelrebuilder.cpp
     iqiscadscriptmodelgenerator.h iqiscadscriptmodelgenerator.cpp
+    iqiscadscriptjob.h iqiscadscriptjob.cpp
+    iqiscadscriptjobscheduler.h iqiscadscriptjobscheduler.cpp
 
     iqcaditemmodel.h
     iqcaditemmodel.cpp
@@ -185,6 +187,7 @@ add_library(toolkit_gui SHARED
        of_clean_case.cpp of_clean_case.h
        snappyhexmesh_gui.cpp snappyhexmesh_gui.h
        cadparametersetvisualizer.cpp cadparametersetvisualizer.h
+       iqdebouncedjobscheduler.cpp iqdebouncedjobscheduler.h
        iqparametersetvisualizationscheduler.cpp iqparametersetvisualizationscheduler.h
        logviewerwidget.cpp logviewerwidget.h
        iqgraphprogressdisplayer.cpp iqgraphprogressdisplayer.h

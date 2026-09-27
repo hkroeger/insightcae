@@ -31,6 +31,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -62,16 +63,20 @@ using namespace insight::cad;
 
 void ISCADParser::createFeatureExpressions()
 {
+    // the command name must not be the prefix of a longer identifier
+    // (e.g. "Box" in "Box1"), since the expectation afterwards would throw
     r_modelstepFunction =
         ( current_pos.current_pos
-         >> omit[ modelstepFunctionRules [ qi::_a = qi::_1 ] ]
+         >> omit[ lexeme[ modelstepFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
          >> current_pos.current_pos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
-              phx::at_c<1>(qi::_val) = qi::_2 ]
+              phx::at_c<1>(qi::_val) = qi::_2,
+              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
          > qi::lazy(*qi::_a)
-            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+            [ phx::at_c<2>(qi::_val) = qi::_1,
+              phx::bind(&ISCADParser::popCommand, this) ]
         ;
-    r_modelstepFunction.name("feature function");
+    r_modelstepFunction.name(_("feature function"));
 
 
     r_solidmodel_expression =
@@ -80,8 +85,13 @@ void ISCADParser::createFeatureExpressions()
         *( '-' >> r_solidmodel_term
               [ _val = phx::bind(&BooleanSubtract::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ] )
         ;
-    r_solidmodel_expression.name("feature expression");
+    r_solidmodel_expression.name(_("feature expression"));
 
+    // Subfeature access, translation ("<<") and scaling ("*") apply only to
+    // the first primary of a term: "a << v | b" means "(a << v) | b", while
+    // "a | b << v" is not accepted. The translation vector is a complete
+    // vector expression, i.e. "a << v in b | c" uses the coordinate system of
+    // "b | c". Use parentheses to change the grouping.
     r_solidmodel_term =
         r_solidmodel_primary [_val=qi::_1 ]
         >>
@@ -117,7 +127,8 @@ void ISCADParser::createFeatureExpressions()
                         qi::_val, qi::_1) ] )
             |
             ('&' >> (
-                 r_solidmodel_primary
+                 // a primary followed by "%" is the start of a provided datum
+                 ( r_solidmodel_primary >> !lit('%') )
                     [ _val = phx::bind(
                         &BooleanIntersection::create<FeaturePtr, FeaturePtr>,
                             qi::_val, qi::_1) ]
@@ -130,7 +141,7 @@ void ISCADParser::createFeatureExpressions()
             )
         )
         ;
-    r_solidmodel_term.name("feature term");
+    r_solidmodel_term.name(_("feature term"));
 
 
     r_modelstepSymbol =
@@ -138,7 +149,7 @@ void ISCADParser::createFeatureExpressions()
         addAdditionalRule( map_lookup_parser(model_->modelsteps()) )
         >> current_pos.current_pos
         ;
-    r_modelstepSymbol.name("feature symbol");
+    r_modelstepSymbol.name(_("feature symbol"));
 
     r_submodel =
         '{'
@@ -151,7 +162,7 @@ void ISCADParser::createFeatureExpressions()
                 &cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
                     phx::bind(&SubmodelRule::submodel_, qi::_a), qi::_r1) ]
         >> '}';
-    r_submodel.name("in-situ submodel");
+    r_submodel.name(_("in-situ submodel"));
 
     r_solidmodel_primary =
         ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) )
@@ -190,7 +201,7 @@ void ISCADParser::createFeatureExpressions()
         |
         r_submodel(phx::val(ModelVariableTable())) [ _val = qi::_1]
         ;
-    r_solidmodel_primary.name("feature primary");
+    r_solidmodel_primary.name(_("feature primary"));
 
 
 
@@ -198,24 +209,24 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_propertyAssignment =
         //map_lookup_parser(model_->modelsteps()) [ _a = qi::_1 ]
         r_modelstepSymbol [ _a = phx::at_c<1>(qi::_1) ]
-        >> lit("->") >>
+        >> lit("->") >
         (
-            ( lit("density") >> '=' >> r_scalarExpression )
+            ( kw("density") > '=' > r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
             |
-            ( lit("areaWeight") >> '=' >> r_scalarExpression )
+            ( kw("areaWeight") > '=' > r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
             |
-            ( lit("visresolution") >> '=' >> r_scalarExpression )
+            ( kw("visresolution") > '=' > r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setAbsoluteVisResolution, *_a, qi::_1) ) ]
             |
-            ( lit("BOMDescription") >> '=' >> r_BOMDescriptionData )
+            ( kw("BOMDescription") > '=' > r_BOMDescriptionData )
                 [ lazy( phx::bind(&Feature::setBOMDescription,
                     *_a, *qi::_1) ) ]
         )
-        >> ';'
+        > ';'
         ;
-    r_solidmodel_propertyAssignment.name("feature property assignment");
+    r_solidmodel_propertyAssignment.name(_("feature property assignment"));
     
     for (const auto& apr : *Feature::insertruleFunctions_)
     {

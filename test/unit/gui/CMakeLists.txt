@@ -38,6 +38,18 @@ if (INSIGHT_BUILD_CAD)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 600)
 
+    add_executable(ISCADScriptJobScheduling ISCADScriptJobScheduling.cpp)
+    set_target_properties(ISCADScriptJobScheduling PROPERTIES AUTOMOC ON)
+    target_link_libraries(ISCADScriptJobScheduling
+    toolkit_gui
+    Qt5::Test
+    )
+    linkToolkitVtk(ISCADScriptJobScheduling Offscreen)
+    add_test(NAME gui_ISCADScriptJobScheduling COMMAND ISCADScriptJobScheduling)
+    set_tests_properties(gui_ISCADScriptJobScheduling PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        TIMEOUT 600)
+
     add_executable(ParameterEditorWidget ParameterEditorWidget.cpp)
     target_link_libraries(ParameterEditorWidget
     toolkit_gui genericmodules test_pdl_header

@@ -44,6 +44,14 @@ public Q_SLOTS:
     void onInsertNotebookText(const QString& text);
     void viewerSettings();
 
+    /**
+     * @brief requestClose
+     * ask the user to save unsaved changes
+     * @return
+     * true, if the model may be closed
+     */
+    bool requestClose();
+
 protected:
     virtual void closeEvent(QCloseEvent *event);
 

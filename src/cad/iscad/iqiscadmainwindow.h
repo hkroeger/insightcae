@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_ISCADMAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPointer>
 
 
 namespace boost { namespace filesystem { class path; } }
@@ -47,7 +48,11 @@ protected:
     QTreeView* fileTree_;
     QFileSystemModel* fileModel_;
     
-    int lastTabIndex_;
+    /**
+     * @brief activeModel_
+     * the model, to which the menu actions are currently connected
+     */
+    QPointer<IQISCADModelWindow> activeModel_;
     QTabWidget* modelTabs_;
 
     enum ActionNames {

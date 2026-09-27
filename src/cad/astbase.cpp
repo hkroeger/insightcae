@@ -35,6 +35,12 @@ void ASTBase::cancelRebuild(std::thread::id thread_id)
   cancel_requests_.insert(thread_id);
 }
 
+void ASTBase::clearCancelRequest(std::thread::id thread_id)
+{
+  std::lock_guard<std::mutex> l(cancel_mtx_);
+  cancel_requests_.erase(thread_id);
+}
+
   
 ASTBase::ASTBase()
 : valid_(false),

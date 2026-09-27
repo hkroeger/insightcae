@@ -239,6 +239,14 @@ void IQISCADModelWindow::onUpdateTitle(const boost::filesystem::path& filepath, 
 }
 
 
+bool IQISCADModelWindow::requestClose()
+{
+    QCloseEvent ev;
+    closeEvent(&ev);
+    return ev.isAccepted();
+}
+
+
 void IQISCADModelWindow::closeEvent(QCloseEvent *event)
 {
     QMessageBox::StandardButton resBtn = QMessageBox::Yes;

@@ -103,10 +103,13 @@ void ISCADParser::createPostProcExpressions()
     r_viewDef.name("view definition");
 
     r_postproc =
-
-        omit [ lexeme[ postProcFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
+        ( current_pos.current_pos
+         >> omit [ lexeme[ postProcFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
+         >> current_pos.current_pos )
+            [ phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
         > qi::lazy(*qi::_a)
-            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1) ];
+            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1),
+              phx::bind(&ISCADParser::popCommand, this) ];
 
 
     r_postproc.name("postprocessing statement");

@@ -69,9 +69,11 @@ void ISCADParser::createFeatureExpressions()
          >> omit[ lexeme[ modelstepFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
          >> current_pos.current_pos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
-              phx::at_c<1>(qi::_val) = qi::_2 ]
+              phx::at_c<1>(qi::_val) = qi::_2,
+              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
          > qi::lazy(*qi::_a)
-            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+            [ phx::at_c<2>(qi::_val) = qi::_1,
+              phx::bind(&ISCADParser::popCommand, this) ]
         ;
     r_modelstepFunction.name("feature function");
 
@@ -206,22 +208,22 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_propertyAssignment =
         //map_lookup_parser(model_->modelsteps()) [ _a = qi::_1 ]
         r_modelstepSymbol [ _a = phx::at_c<1>(qi::_1) ]
-        >> lit("->") >>
+        >> lit("->") >
         (
-            ( kw("density") >> '=' >> r_scalarExpression )
+            ( kw("density") > '=' > r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
             |
-            ( kw("areaWeight") >> '=' >> r_scalarExpression )
+            ( kw("areaWeight") > '=' > r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
             |
-            ( kw("visresolution") >> '=' >> r_scalarExpression )
+            ( kw("visresolution") > '=' > r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setAbsoluteVisResolution, *_a, qi::_1) ) ]
             |
-            ( kw("BOMDescription") >> '=' >> r_BOMDescriptionData )
+            ( kw("BOMDescription") > '=' > r_BOMDescriptionData )
                 [ lazy( phx::bind(&Feature::setBOMDescription,
                     *_a, *qi::_1) ) ]
         )
-        >> ';'
+        > ';'
         ;
     r_solidmodel_propertyAssignment.name("feature property assignment");
     

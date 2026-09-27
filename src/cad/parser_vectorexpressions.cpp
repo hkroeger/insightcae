@@ -68,9 +68,11 @@ void ISCADParser::createVectorExpressions()
          >> omit[ lexeme[ vectorFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
          >> current_pos.current_pos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
-              phx::at_c<1>(qi::_val) = qi::_2 ]
+              phx::at_c<1>(qi::_val) = qi::_2,
+              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
          > qi::lazy(*qi::_a)
-            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+            [ phx::at_c<2>(qi::_val) = qi::_1,
+              phx::bind(&ISCADParser::popCommand, this) ]
         ;
     r_vectorFunction.name("vector function");
 

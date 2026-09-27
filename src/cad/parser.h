@@ -142,15 +142,53 @@ using make_shared_ = boost::phoenix::function<make_shared_f<T> >;
 
 
 
+/**
+ * error in an ISCAD script.
+ * message() returns a compiler-style formatted message
+ * including location and source excerpt.
+ */
 class iscadParserException
 : public Exception
 {
     int from_pos_, to_pos_;
+    int line_=0, column_=0;
+    boost::filesystem::path file_;
+    std::string diagnostic_;
+    std::vector<std::string> notes_;
+
 public:
    iscadParserException(const std::string& reason, int from_pos, int to_pos);
-   
+
+   /**
+    * @param diagnostic the error description without location
+    * @param notes additional hints, usage information etc.
+    * @param script the parsed script text (for location and excerpt)
+    * @param from_pos,to_pos character range of the error, -1 if unknown
+    */
+   iscadParserException(
+       const std::string& diagnostic,
+       const std::vector<std::string>& notes,
+       const std::string& script,
+       const boost::filesystem::path& file,
+       int from_pos, int to_pos );
+
    inline int from_pos() const { return from_pos_; }
    inline int to_pos() const { return to_pos_; }
+
+   /**
+    * 1-based line and column, 0 if unknown
+    */
+   inline int line() const { return line_; }
+   inline int column() const { return column_; }
+
+   inline const boost::filesystem::path& file() const { return file_; }
+   inline const std::string& diagnostic() const { return diagnostic_; }
+   inline const std::vector<std::string>& notes() const { return notes_; }
+
+   /**
+    * single line summary without source excerpt
+    */
+   std::string summary() const;
 };
 
 
@@ -248,6 +286,26 @@ struct ISCADParser
              std::shared_ptr<ModelFeature>(ModelVariableTable),
              skip_grammar, qi::locals<SubmodelRulePtr> >
         r_submodel;
+
+
+    // state for error reporting
+
+    /**
+     * character ranges of the names of all commands/functions,
+     * whose arguments are currently being parsed (innermost last).
+     * Remains intact, if an expectation failure is thrown.
+     */
+    std::vector<SyntaxElementPos> commandStack_;
+    void pushCommand(std::size_t nameBegin, std::size_t nameEnd);
+    void popCommand();
+
+    enum Section { ModelSection, DocSection, PostSection };
+    Section section_ = ModelSection;
+
+    /**
+     * all command and function names with a description of their kind
+     */
+    std::map<std::string, std::string> commandKinds_;
 
 
     ISCADParser(Model* model, const boost::filesystem::path& filenameinfo="");

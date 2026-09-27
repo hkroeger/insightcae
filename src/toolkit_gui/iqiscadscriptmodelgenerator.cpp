@@ -20,7 +20,6 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
 
     try
     {
-      std::string reason="Failed: Syntax error";
 
       try
       {
@@ -34,11 +33,11 @@ IQISCADScriptModelGenerator::generate(const std::string& script, Task finalTask)
       }
       catch (const insight::cad::parser::iscadParserException& e)
       {
-          reason="Expected: "+e.message();
           failloc=e.from_pos();
           Q_EMIT scriptError(
               finalTask >= Rebuild ? failloc : -1,
-              QString::fromStdString(reason), 1);
+              QString::fromStdString(e.summary()),
+              std::max(1, e.to_pos()-e.from_pos()) );
       }
 
       if (success)

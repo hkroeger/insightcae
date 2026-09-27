@@ -281,25 +281,32 @@ void Model::build()
 }
 
 
+template<class F>
+void Model::forEachSymbolTable(F&& f) const
+{
+  f(scalars_, "scalar");
+  f(points_, "point");
+  f(directions_, "direction");
+  f(datums_, "datum");
+  f(modelsteps_, "feature");
+  f(vertexFeatures_, "vertex set");
+  f(edgeFeatures_, "edge set");
+  f(faceFeatures_, "face set");
+  f(solidFeatures_, "solid set");
+}
+
+
 template<class Table>
 void Model::warnIfDefinedElsewhere(const std::string& name, const Table& table) const
 {
   std::vector<std::string> kinds;
-  auto check = [&](const auto& other, const char* kind)
-  {
-    if ( (static_cast<const void*>(&other)!=static_cast<const void*>(&table))
-         && other.count(name) )
-      kinds.push_back(kind);
-  };
-  check(scalars_, "scalar");
-  check(points_, "point");
-  check(directions_, "direction");
-  check(datums_, "datum");
-  check(modelsteps_, "feature");
-  check(vertexFeatures_, "vertex set");
-  check(edgeFeatures_, "edge set");
-  check(faceFeatures_, "face set");
-  check(solidFeatures_, "solid set");
+  forEachSymbolTable(
+      [&](const auto& other, const char* kind)
+      {
+        if ( (static_cast<const void*>(&other)!=static_cast<const void*>(&table))
+             && other.count(name) )
+          kinds.push_back(kind);
+      });
 
   if (kinds.size())
   {
@@ -308,6 +315,32 @@ void Model::warnIfDefinedElsewhere(const std::string& name, const Table& table) 
           "Which definition is used in an expression depends on the context.",
           name.c_str(), boost::join(kinds, ", ").c_str() );
   }
+}
+
+
+std::vector<std::string> Model::symbolKinds(const std::string& name) const
+{
+  std::vector<std::string> kinds;
+  forEachSymbolTable(
+      [&](const auto& table, const char* kind)
+      {
+        if (table.count(name))
+          kinds.push_back(kind);
+      });
+  return kinds;
+}
+
+
+std::set<std::string> Model::symbolNames() const
+{
+  std::set<std::string> names;
+  forEachSymbolTable(
+      [&](const auto& table, const char*)
+      {
+        for (const auto& e: table)
+          names.insert(e.first);
+      });
+  return names;
 }
 
 

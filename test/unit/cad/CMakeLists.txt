@@ -19,6 +19,7 @@ if (INSIGHT_BUILD_CAD)
 
     add_cad_test(cad_parser)
     add_cad_test(cad_parser_ambiguities)
+    add_cad_test(cad_parser_errors)
     add_cad_test(OCCtransformToOF)
     add_cad_test(gmshLSDynaExport)
     add_cad_test(sketchsolver)

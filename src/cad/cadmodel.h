@@ -121,6 +121,12 @@ protected:
     template<class Table>
     void warnIfDefinedElsewhere(const std::string& name, const Table& table) const;
 
+    /**
+     * calls f(table, kindDescription) for each symbol table
+     */
+    template<class F>
+    void forEachSymbolTable(F&& f) const;
+
     size_t calcHash() const override;
     void build() override;
 
@@ -153,6 +159,19 @@ public:
     const DatasetTable& 	datasets() const;
 
     ModelVariableTable allVariables() const;
+
+    /**
+     * @brief symbolKinds
+     * @return the kinds of all symbols named "name",
+     * e.g. "scalar" or "feature". Empty, if undefined.
+     */
+    std::vector<std::string> symbolKinds(const std::string& name) const;
+
+    /**
+     * @brief symbolNames
+     * @return the names of all defined symbols
+     */
+    std::set<std::string> symbolNames() const;
 
 
     /**

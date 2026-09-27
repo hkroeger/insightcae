@@ -44,6 +44,7 @@ add_library(insightcad SHARED
   parser_docexpressions.cpp
   parser_scalarexpressions.cpp
   parser_vectorexpressions.cpp
+  parser_errors.cpp
   datum.cpp
 
   sketch.h sketch.cpp
@@ -425,6 +426,7 @@ add_library(insightcad SHARED
 
   ${insightcad_ADDITIONAL_SOURCES}
   parser_tools.h
+  parser_errors.h
   featurefilter_vertex.cpp
   featurefilter_edge.cpp
   featurefilter_face.cpp

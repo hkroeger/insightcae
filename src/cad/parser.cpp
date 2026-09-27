@@ -35,6 +35,7 @@
 #include "base/analysis.h"
 #include "base/tools.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "parser_tools.h"
 #include "parser_errors.h"
 #include "boost/locale.hpp"
@@ -82,7 +83,7 @@ namespace cad {
 
 sharedModelLocations::sharedModelLocations()
 {
-  CurrentExceptionContext ec("building list of shared model locations");
+  CurrentExceptionContext ec(_("building list of shared model locations"));
 
   const char* e=getenv("ISCAD_MODEL_PATH");
   if (e)
@@ -117,7 +118,7 @@ boost::filesystem::path sharedModelFilePath(const std::string& name)
         }
     }
 
-    throw insight::Exception("Shared model file "+name+" not found.");
+    throw insight::Exception(_("Shared model file %s not found."), name.c_str());
     return boost::filesystem::path();
 }
 
@@ -136,9 +137,10 @@ using namespace insight::cad;
 
 ostream &operator<<(ostream &os, const SyntaxElementLocation &sel)
 {
-    os << sel.second.first << " until " << sel.second.second;
+    // TRANSLATORS: character range of a syntax element, e.g. "12 until 20"
+    os << str(format(_("%d until %d")) % sel.second.first % sel.second.second);
     if (!sel.first.empty())
-        os << " in file \""<<sel.first<<"\"";
+        os << " " << str(format(_("in file \"%s\"")) % sel.first.string());
     return os;
 }
 
@@ -243,7 +245,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         ( r_string > (('%' > r_scalarExpression % '%')
                       | qi::attr(std::vector<ScalarPtr>())) )
         [ qi::_val = insight::cad::parser::make_shared_<DescriptionWithParameters>()(qi::_1, qi::_2) ] ;
-    r_descriptionWithParameters.name("description");
+    r_descriptionWithParameters.name(_("description"));
 
 
     r_BOMDescriptionData =
@@ -251,7 +253,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
          ( ( '(' > r_descriptionWithParameters > ')' ) | qi::attr(DescriptionWithParametersPtr()) ) )
         [ qi::_val = insight::cad::parser::make_shared_<BOMDescriptionData>()(qi::_1, qi::_2) ]
         ;
-    r_BOMDescriptionData.name("BOM description");
+    r_BOMDescriptionData.name(_("BOM description"));
 
     r_model =
         ( (kw("cost") >> iscad_double >> ';' ) | qi::attr(0.0) )
@@ -271,21 +273,21 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         >> -( lit("@doc") [ phx::ref(section_) = DocSection ] > *r_doc )
         >> -( lit("@post") [ phx::ref(section_) = PostSection ] > *r_postproc )
         ;
-    r_model.name("model description");
+    r_model.name(_("model description"));
 
 
     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-    r_identifier.name("identifier");
+    r_identifier.name(_("identifier"));
 
     r_path = as_string[
                  lexeme [ "\"" > *~char_("\"") > "\"" ]
              ];
-    r_path.name("path");
+    r_path.name(_("path"));
 
     r_string = as_string[
                    lexeme [ "\'" > *~char_("\'") > "\'" ]
                ];
-    r_string.name("string");
+    r_string.name(_("string"));
 
 
     /*! \page iscad_assignments ISCAD Assignments
@@ -432,7 +434,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         // ( r_identifier >> lit("?!=")  >> r_vectorExpression >> ';')
         // [ phx::bind(&Model::addDirectionIfNotPresent, model_, qi::_1, qi::_2) ]
 
-    r_assignment.name("assignment");
+    r_assignment.name(_("assignment"));
 
     createDocExpressions();
     createSelectionExpressions();
@@ -444,21 +446,36 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 
     // name the argument rules of all commands (for error messages)
     // and remember the command names
-    auto registerCommands = [this](const auto& table, const std::string& kind)
+    auto registerCommands = [this](const auto& table, CommandKind kind)
     {
         table.for_each(
-            [this, &kind](const std::string& name, const auto& rule)
+            [this, kind](const std::string& name, const auto& rule)
             {
-                rule->name("argument list");
+                rule->name(_("argument list"));
                 commandKinds_[name]=kind;
             });
     };
-    registerCommands(modelstepFunctionRules, "feature command");
-    registerCommands(scalarFunctionRules, "scalar function");
-    registerCommands(vectorFunctionRules, "vector function");
-    registerCommands(postProcFunctionRules, "postprocessing command");
+    registerCommands(modelstepFunctionRules, FeatureCommand);
+    registerCommands(scalarFunctionRules, ScalarFunction);
+    registerCommands(vectorFunctionRules, VectorFunction);
+    registerCommands(postProcFunctionRules, PostprocCommand);
 
     // BOOST_SPIRIT_DEBUG_RULE(r_assignment);
+}
+
+
+
+
+std::string ISCADParser::commandKindDescription(CommandKind kind)
+{
+    switch (kind)
+    {
+        case FeatureCommand: return _("feature command");
+        case ScalarFunction: return _("scalar function");
+        case VectorFunction: return _("vector function");
+        case PostprocCommand: return _("postprocessing command");
+    }
+    return std::string();
 }
 
 
@@ -496,20 +513,20 @@ bool parseISCADModelFile(
 {
     if (!boost::filesystem::exists(fn))
     {
-        throw insight::Exception("The iscad script file \""+fn.string()+"\" does not exist!");
+        throw insight::Exception(_("The iscad script file \"%s\" does not exist!"), fn.string().c_str());
         return false;
     }
     
     std::ifstream f(fn.string());
     insight::assertion(
                 f.good(),
-                "stream not good!");
+                _("could not read iscad script file \"%s\""), fn.string().c_str() );
     return parseISCADModelStream(f, m, failloc, sd, fn);
 }
 
 
 iscadParserException::iscadParserException(const std::string& reason, int from_pos, int to_pos)
-: Exception(reason, false),
+: Exception("%s", reason.c_str()),
   from_pos_(from_pos),
   to_pos_(to_pos),
   diagnostic_(reason)
@@ -525,7 +542,7 @@ iscadParserException::iscadParserException(
     const std::string& script,
     const boost::filesystem::path& file,
     int from_pos, int to_pos )
-: Exception(formatDiagnostic(file, script, from_pos, to_pos, diagnostic, notes), false),
+: Exception("%s", formatDiagnostic(file, script, from_pos, to_pos, diagnostic, notes).c_str()),
   from_pos_(from_pos),
   to_pos_(to_pos),
   file_(file),
@@ -550,7 +567,7 @@ std::string iscadParserException::summary() const
 {
     std::ostringstream os;
     if (line_>0)
-        os << "line " << line_ << ", column " << column_ << ": ";
+        os << str(format(_("line %d, column %d")) % line_ % column_) << ": ";
     os << diagnostic_;
     for (const auto& n: notes_)
         os << " " << n;
@@ -583,7 +600,7 @@ std::string featureCommandUsage(const std::string& cmd)
                     std::string sig=info.signature_;
                     boost::replace_all(sig, "\n", " ");
                     boost::trim(sig);
-                    return "Usage: "+info.command_+sig;
+                    return str(format(_("Usage: %s")) % (info.command_+sig));
                 }
             }
         }
@@ -598,7 +615,7 @@ std::set<std::string> knownNames(const ISCADParser& parser)
     for (const auto& c: parser.commandKinds_)
     {
         // postprocessing commands are only valid in the @post section
-        if ( (c.second=="postprocessing command")
+        if ( (c.second==ISCADParser::PostprocCommand)
              == (parser.section_==ISCADParser::PostSection) )
             names.insert(c.first);
     }
@@ -651,9 +668,9 @@ iscadParserException expectationError(
     if (!id.empty() && !parser.commandKinds_.count(id)
         && kinds.empty() && !onlyLiterals)
     {
-        diag = "undefined symbol '"+id+"'";
+        diag = str(format(_("undefined symbol '%s'")) % id);
         notes.push_back(didYouMean(similarNames(id, knownNames(parser))));
-        notes.push_back("Expected here: "+describeAlternatives(expected)+".");
+        notes.push_back(str(format(_("Expected here: %s.")) % describeAlternatives(expected)));
     }
     else
     {
@@ -662,9 +679,9 @@ iscadParserException expectationError(
         {
             auto ck = parser.commandKinds_.find(id);
             if (ck!=parser.commandKinds_.end())
-                found += " (a "+ck->second+")";
+                found += " ("+ISCADParser::commandKindDescription(ck->second)+")";
             else if (!kinds.empty())
-                found += " (defined as "+boost::join(kinds, " and ")+")";
+                found += " ("+str(format(_("defined as %s")) % boost::join(kinds, ", "))+")";
             else
             {
                 // maybe a misspelled keyword
@@ -676,7 +693,8 @@ iscadParserException expectationError(
             }
         }
 
-        diag = "expected "+describeAlternatives(expected)+" but found "+found;
+        // TRANSLATORS: first %s: list of alternatives, second %s: the token found in the script
+        diag = str(format(_("expected %s but found %s")) % describeAlternatives(expected) % found);
 
         if (onlyLiterals)
             reportPos = endOfPrecedingToken(script, pos);
@@ -685,7 +703,8 @@ iscadParserException expectationError(
     if (!parser.commandStack_.empty())
     {
         auto cmd = commandName(script, parser.commandStack_.back());
-        diag = "in "+cmd+"(...): "+diag;
+        // TRANSLATORS: first %s: command name, second %s: error message
+        diag = str(format(_("in %s(...): %s")) % cmd % diag);
         notes.push_back(featureCommandUsage(cmd));
     }
 
@@ -698,9 +717,11 @@ iscadParserException expectationError(
 }
 
 
-const char* statementForms =
-    "Statements have the form 'name = expression;', 'name: feature expression;'"
-    " or 'feature -> property = value;'.";
+std::string statementForms()
+{
+    return _("Statements have the form 'name = expression;', 'name: feature expression;'"
+             " or 'feature -> property = value;'.");
+}
 
 
 iscadParserException incompleteParseError(
@@ -717,7 +738,7 @@ iscadParserException incompleteParseError(
 
     if (pos>=script.size())
     {
-        diag = "unexpected end of input";
+        diag = _("unexpected end of input");
     }
     else if (script[pos]=='@')
     {
@@ -725,16 +746,16 @@ iscadParserException incompleteParseError(
         std::set<std::string> sections = { "@description", "@doc", "@post" };
         if (!sections.count(word))
         {
-            diag = "unknown keyword '"+word+"'";
+            diag = str(format(_("unknown keyword '%s'")) % word);
             notes.push_back(didYouMean(similarNames(word, sections)));
-            notes.push_back("Valid keywords are '@description', '@doc' and '@post'.");
+            notes.push_back(_("Valid keywords are '@description', '@doc' and '@post'."));
         }
         else
         {
-            diag = "'"+word+"' is not allowed here";
+            diag = str(format(_("'%s' is not allowed here")) % word);
             notes.push_back(
-                "A script consists of assignments (and '@description'),"
-                " optionally followed by an '@doc' section and then an '@post' section." );
+                _("A script consists of assignments (and '@description'),"
+                  " optionally followed by an '@doc' section and then an '@post' section.") );
         }
     }
     else if (!id.empty())
@@ -750,51 +771,55 @@ iscadParserException incompleteParseError(
 
         if (parser.section_==ISCADParser::PostSection)
         {
-            diag = "unknown postprocessing command '"+id+"'";
+            diag = str(format(_("unknown postprocessing command '%s'")) % id);
             std::set<std::string> ppcmds;
             for (const auto& c: parser.commandKinds_)
-                if (c.second=="postprocessing command")
+                if (c.second==ISCADParser::PostprocCommand)
                     ppcmds.insert(c.first);
             notes.push_back(didYouMean(similarNames(id, ppcmds)));
         }
         else if (parser.section_==ISCADParser::DocSection)
         {
-            diag = "cannot parse documentation statement starting with '"+id+"'";
+            diag = str(format(_("cannot parse documentation statement starting with '%s'")) % id);
         }
         else if (ck!=parser.commandKinds_.end() && assignment)
         {
-            diag = "'"+id+"' is the name of a "+ck->second
-                   +" and cannot be used as a symbol name";
-            notes.push_back("Please choose a different name.");
+            // TRANSLATORS: first %s: symbol name, second %s: kind of command, e.g. "feature command"
+            diag = str(format(_("'%s' cannot be used as a symbol name (%s of the same name exists)"))
+                       % id % ISCADParser::commandKindDescription(ck->second) );
+            notes.push_back(_("Please choose a different name."));
         }
         else if (followedBy("->"))
         {
             if (kinds.empty())
             {
-                diag = "undefined feature '"+id+"'";
+                diag = str(format(_("undefined feature '%s'")) % id);
                 notes.push_back(didYouMean(similarNames(id, parser.model_->symbolNames())));
             }
             else
             {
-                diag = "properties can only be assigned to features, but '"+id
-                       +"' is defined as "+boost::join(kinds, " and ");
+                // TRANSLATORS: first %s: symbol name, second %s: list of symbol kinds, e.g. "scalar"
+                diag = str(format(_("properties can only be assigned to features, but '%s' is defined as %s"))
+                           % id % boost::join(kinds, ", "));
             }
         }
         else if (assignment)
         {
-            diag = "cannot parse assignment to '"+id+"'";
+            diag = str(format(_("cannot parse assignment to '%s'")) % id);
         }
         else
         {
-            diag = "expected ':', '=', '?=' or '->' after '"+id+"' but found "
-                   + describeToken(script, next);
-            notes.push_back(statementForms);
+            // TRANSLATORS: first %s: symbol name, second %s: the token found in the script
+            diag = str(format(_("expected ':', '=', '?=' or '->' after '%s' but found %s"))
+                       % id % describeToken(script, next));
+            notes.push_back(statementForms());
         }
     }
     else
     {
-        diag = "unexpected "+describeToken(script, pos)+" at the beginning of a statement";
-        notes.push_back(statementForms);
+        diag = str(format(_("unexpected %s at the beginning of a statement"))
+                   % describeToken(script, pos));
+        notes.push_back(statementForms());
     }
 
     std::size_t len = std::max<std::size_t>(1, tokenLength(script, pos));
@@ -821,7 +846,7 @@ iscadParserException semanticError(
         const auto& c = parser.commandStack_.back();
         from=int(c.first);
         to=int(c.second);
-        diag = "in "+commandName(script, c)+"(...): "+message;
+        diag = str(format(_("in %s(...): %s")) % commandName(script, c) % message);
     }
     return iscadParserException(diag, {}, script, file, from, to);
 }

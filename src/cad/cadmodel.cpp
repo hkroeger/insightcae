@@ -25,6 +25,7 @@
 #include "cadfeature.h"
 #include "datum.h"
 #include "parser.h"
+#include "base/translations.h"
 
 #include "base/boost_include.h"
 #include <boost/fusion/include/std_pair.hpp>
@@ -269,12 +270,9 @@ void Model::build()
         int failloc=-1;
         if (!parseISCADModelFile(modelfile_, this, &failloc, &syn_elem_dir_))
         {
-            throw insight::Exception
-            (
-                "Failed to parse model "
-                +modelfile_.string()+
-                str(format(". Stopped at %d.")%failloc)
-            );
+            throw insight::Exception(
+                _("Failed to parse model %s. Stopped at %d."),
+                modelfile_.string().c_str(), failloc );
         }
     }
     setValid();
@@ -284,15 +282,15 @@ void Model::build()
 template<class F>
 void Model::forEachSymbolTable(F&& f) const
 {
-  f(scalars_, "scalar");
-  f(points_, "point");
-  f(directions_, "direction");
-  f(datums_, "datum");
-  f(modelsteps_, "feature");
-  f(vertexFeatures_, "vertex set");
-  f(edgeFeatures_, "edge set");
-  f(faceFeatures_, "face set");
-  f(solidFeatures_, "solid set");
+  f(scalars_, _("scalar"));
+  f(points_, _("point"));
+  f(directions_, _("direction"));
+  f(datums_, _("datum"));
+  f(modelsteps_, _("feature"));
+  f(vertexFeatures_, _("vertex set"));
+  f(edgeFeatures_, _("edge set"));
+  f(faceFeatures_, _("face set"));
+  f(solidFeatures_, _("solid set"));
 }
 
 
@@ -311,8 +309,8 @@ void Model::warnIfDefinedElsewhere(const std::string& name, const Table& table) 
   if (kinds.size())
   {
     insight::Warning(
-          "Symbol \"%s\" is already defined as %s. "
-          "Which definition is used in an expression depends on the context.",
+          _("Symbol \"%s\" is already defined as %s. "
+            "Which definition is used in an expression depends on the context."),
           name.c_str(), boost::join(kinds, ", ").c_str() );
   }
 }

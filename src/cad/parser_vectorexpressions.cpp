@@ -31,6 +31,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -74,7 +75,7 @@ void ISCADParser::createVectorExpressions()
             [ phx::at_c<2>(qi::_val) = qi::_1,
               phx::bind(&ISCADParser::popCommand, this) ]
         ;
-    r_vectorFunction.name("vector function");
+    r_vectorFunction.name(_("vector function"));
 
 #define ADD_VECTOR_FUNCTION(NAME, RULE, ACT) \
     vectorFunctionRules.add( \
@@ -243,7 +244,7 @@ void ISCADParser::createVectorExpressions()
         >> -( kw("in") > r_solidmodel_expression )
              [ _val = phx::construct<VectorPtr>(phx::new_<PointInFeatureCS>(qi::_1, qi::_val)) ]
         ;
-    r_vectorExpression.name("vector expression");
+    r_vectorExpression.name(_("vector expression"));
 
     // A scalar prefix is tried first: a scalar term like "p.x" or "p&q"
     // starts with a vector primary, which would otherwise be committed to.
@@ -278,7 +279,7 @@ void ISCADParser::createVectorExpressions()
                 )
             )
         ;
-    r_vector_term.name("vector term");
+    r_vector_term.name(_("vector term"));
 
     r_vector_primary =
           ( '(' >> r_vectorExpression >> ')' )
@@ -312,7 +313,7 @@ void ISCADParser::createVectorExpressions()
         | ( r_solidmodel_expression >> '!' >> r_identifier )
           [ _val = phx::construct<VectorPtr>(phx::new_<VectorFeatureProp>(qi::_1, qi::_2)) ]
         ;
-    r_vector_primary.name("vector primary");
+    r_vector_primary.name(_("vector primary"));
     
 }
 

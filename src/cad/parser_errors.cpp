@@ -19,6 +19,7 @@
  */
 
 #include "parser_errors.h"
+#include "base/translations.h"
 
 #include <algorithm>
 #include <cctype>
@@ -26,6 +27,7 @@
 #include <sstream>
 
 #include "boost/algorithm/string.hpp"
+#include "boost/format.hpp"
 #include "boost/variant/get.hpp"
 
 namespace insight {
@@ -66,7 +68,10 @@ std::string joinAlternatives(const std::vector<std::string>& items)
     for (std::size_t i=0; i<items.size(); ++i)
     {
         if (i>0)
-            os << ( i+1==items.size() ? " or " : ", " );
+        {
+            // TRANSLATORS: conjunction for the last item of a list of alternatives, e.g. "',', ')' or number"
+            os << ( i+1==items.size() ? std::string(" ")+_("or")+" " : std::string(", ") );
+        }
         os << items[i];
     }
     return os.str();
@@ -98,19 +103,20 @@ void collectExpected(
         return;
     }
 
-    static const std::map<std::string, std::string> primitives = {
-        {"alpha", "letter"},
-        {"alnum", "letter or digit"},
-        {"digit", "digit"},
-        {"real", "number"},
-        {"int", "integer"},
-        {"uint", "integer"},
-        {"char", "character"},
-        {"char-set", "character"},
-        {"char-range", "character"},
-        {"eol", "end of line"},
-        {"eoi", "end of input"},
-        {"symbols", "keyword"}
+    // not static: translations shall follow the current locale
+    const std::map<std::string, std::string> primitives = {
+        {"alpha", _("letter")},
+        {"alnum", _("letter or digit")},
+        {"digit", _("digit")},
+        {"real", _("number")},
+        {"int", _("integer")},
+        {"uint", _("integer")},
+        {"char", _("character")},
+        {"char-set", _("character")},
+        {"char-range", _("character")},
+        {"eol", _("end of line")},
+        {"eoi", _("end of input")},
+        {"symbols", _("keyword")}
     };
     auto p = primitives.find(tag);
     if (p!=primitives.end())
@@ -296,14 +302,14 @@ std::string identifierAt(const std::string& text, std::size_t offset)
 std::string describeToken(const std::string& text, std::size_t offset)
 {
     if (offset>=text.size())
-        return "end of input";
+        return _("end of input");
 
     std::string tok=text.substr(offset, tokenLength(text, offset));
     if (tok.size()>30)
         tok=tok.substr(0, 27)+"...";
 
     if (tok[0]=='\'' || tok[0]=='"')
-        return "string "+tok;
+        return str(boost::format(_("string %s")) % tok);
     return "'"+tok+"'";
 }
 
@@ -331,7 +337,7 @@ std::vector<std::string> expectedAlternatives(const boost::spirit::info& what)
 std::string describeAlternatives(std::vector<std::string> alternatives)
 {
     if (alternatives.empty())
-        return "something else";
+        return _("something else");
 
     const std::size_t maxItems=8;
     if (alternatives.size()>maxItems)
@@ -392,7 +398,8 @@ std::string didYouMean(const std::vector<std::string>& suggestions)
     std::vector<std::string> quoted;
     for (const auto& s: suggestions)
         quoted.push_back("'"+s+"'");
-    return "Did you mean "+joinAlternatives(quoted)+"?";
+    // TRANSLATORS: %s is a list of names, e.g. "'a', 'b' or 'c'"
+    return str(boost::format(_("Did you mean %s?")) % joinAlternatives(quoted));
 }
 
 
@@ -419,9 +426,8 @@ std::string missingSemicolonHint(const std::string& text, std::size_t offset)
          || text.compare(after, 2, "?=")==0
          || text.compare(after, 2, "->")==0 )
     {
-        return "Maybe the ';' at the end of line "
-               + std::to_string(locateInSource(text, eol).line)
-               + " is missing?";
+        return str(boost::format(_("Maybe the ';' at the end of line %d is missing?"))
+                   % locateInSource(text, eol).line);
     }
 
     return std::string();
@@ -452,7 +458,7 @@ std::string formatDiagnostic(
     {
         os << file.string() << ": ";
     }
-    os << "error: " << message;
+    os << _("error") << ": " << message;
 
     if (haveLocation)
     {

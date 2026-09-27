@@ -31,6 +31,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -75,7 +76,7 @@ void ISCADParser::createFeatureExpressions()
             [ phx::at_c<2>(qi::_val) = qi::_1,
               phx::bind(&ISCADParser::popCommand, this) ]
         ;
-    r_modelstepFunction.name("feature function");
+    r_modelstepFunction.name(_("feature function"));
 
 
     r_solidmodel_expression =
@@ -84,7 +85,7 @@ void ISCADParser::createFeatureExpressions()
         *( '-' >> r_solidmodel_term
               [ _val = phx::bind(&BooleanSubtract::create<FeaturePtr, FeaturePtr>, qi::_val, qi::_1) ] )
         ;
-    r_solidmodel_expression.name("feature expression");
+    r_solidmodel_expression.name(_("feature expression"));
 
     // Subfeature access, translation ("<<") and scaling ("*") apply only to
     // the first primary of a term: "a << v | b" means "(a << v) | b", while
@@ -140,7 +141,7 @@ void ISCADParser::createFeatureExpressions()
             )
         )
         ;
-    r_solidmodel_term.name("feature term");
+    r_solidmodel_term.name(_("feature term"));
 
 
     r_modelstepSymbol =
@@ -148,7 +149,7 @@ void ISCADParser::createFeatureExpressions()
         addAdditionalRule( map_lookup_parser(model_->modelsteps()) )
         >> current_pos.current_pos
         ;
-    r_modelstepSymbol.name("feature symbol");
+    r_modelstepSymbol.name(_("feature symbol"));
 
     r_submodel =
         '{'
@@ -161,7 +162,7 @@ void ISCADParser::createFeatureExpressions()
                 &cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
                     phx::bind(&SubmodelRule::submodel_, qi::_a), qi::_r1) ]
         >> '}';
-    r_submodel.name("in-situ submodel");
+    r_submodel.name(_("in-situ submodel"));
 
     r_solidmodel_primary =
         ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) )
@@ -200,7 +201,7 @@ void ISCADParser::createFeatureExpressions()
         |
         r_submodel(phx::val(ModelVariableTable())) [ _val = qi::_1]
         ;
-    r_solidmodel_primary.name("feature primary");
+    r_solidmodel_primary.name(_("feature primary"));
 
 
 
@@ -225,7 +226,7 @@ void ISCADParser::createFeatureExpressions()
         )
         > ';'
         ;
-    r_solidmodel_propertyAssignment.name("feature property assignment");
+    r_solidmodel_propertyAssignment.name(_("feature property assignment"));
     
     for (const auto& apr : *Feature::insertruleFunctions_)
     {

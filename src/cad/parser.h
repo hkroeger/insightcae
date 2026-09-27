@@ -302,10 +302,17 @@ struct ISCADParser
     enum Section { ModelSection, DocSection, PostSection };
     Section section_ = ModelSection;
 
+    enum CommandKind { FeatureCommand, ScalarFunction, VectorFunction, PostprocCommand };
+
     /**
-     * all command and function names with a description of their kind
+     * translated description of a command kind, e.g. "feature command"
      */
-    std::map<std::string, std::string> commandKinds_;
+    static std::string commandKindDescription(CommandKind kind);
+
+    /**
+     * all command and function names with their kind
+     */
+    std::map<std::string, CommandKind> commandKinds_;
 
 
     ISCADParser(Model* model, const boost::filesystem::path& filenameinfo="");

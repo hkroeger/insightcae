@@ -33,6 +33,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -76,7 +77,7 @@ void ISCADParser::createScalarExpressions()
             [ phx::at_c<2>(qi::_val) = qi::_1,
               phx::bind(&ISCADParser::popCommand, this) ]
         ;
-    r_scalarFunction.name("scalar function");
+    r_scalarFunction.name(_("scalar function"));
 
 
 
@@ -227,7 +228,7 @@ void ISCADParser::createScalarExpressions()
                 [ _val = phx::construct<ScalarPtr>(phx::new_<SubtractedScalar>(qi::_val, qi::_1)) ]
             )
         ;
-    r_scalarExpression.name("scalar expression");
+    r_scalarExpression.name(_("scalar expression"));
 
     r_scalar_term =
         r_scalar_primary [ _val = qi::_1 ]
@@ -238,7 +239,7 @@ void ISCADParser::createScalarExpressions()
             [ _val = phx::construct<ScalarPtr>(phx::new_<DividedScalar>(qi::_val, qi::_1)) ]
         )
         ;
-    r_scalar_term.name("scalar term");
+    r_scalar_term.name(_("scalar term"));
 
 
     r_scalar_primary =
@@ -278,7 +279,7 @@ void ISCADParser::createScalarExpressions()
          [ _val = phx::construct<ScalarPtr>(phx::new_<ScalarFeatureProp>(qi::_1, qi::_2)) ]
 
         ;
-    r_scalar_primary.name("scalar primary");
+    r_scalar_primary.name(_("scalar primary"));
 
 }
     

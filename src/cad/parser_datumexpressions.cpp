@@ -32,6 +32,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -102,7 +103,7 @@ void ISCADParser::createDatumExpressions()
       )
       >> -( lit("<<") >> r_vectorExpression ) [ _val = construct<DatumPtr>(new_<TransformedDatum>(_val, qi::_1)) ];
 
-    r_datumExpression.name("datum expression");
+    r_datumExpression.name(_("datum expression"));
 }
 
 

@@ -39,7 +39,7 @@ int main(int, char*[])
 
         // command name used as symbol
         { "Cylinder: Cylinder(O, ax EX, 1);\n",
-          1, 1, { "'Cylinder' is the name of a feature command" } },
+          1, 1, { "'Cylinder' cannot be used as a symbol name (feature command of the same name exists)" } },
 
         // missing semicolon in feature assignment:
         // reported at the end of the line
@@ -74,6 +74,10 @@ int main(int, char*[])
         { "c1: Cylinder(O, ax EX, 1);\n"
           "c1->dens=1;\n",
           2, 5, { "'density'" } },
+
+        // '%' in the source excerpt must not be interpreted as format directive
+        { "a = 1 %s;\n",
+          1, 5, { "a = 1 %s;" } },
 
         // error in nested command
         { "c1: Cylinder(O, ax EX, volume(Box(O, EX, EY EZ)));\n",

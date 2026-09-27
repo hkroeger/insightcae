@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: insightcad \n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2026-09-25 12:50+0200\n"
+"PO-Revision-Date: 2026-09-27 21:30+0200\n"
 "Last-Translator: Hannes Krger <EMAIL@ADDRESS>\n"
 "Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
 "Language: de\n"
@@ -18,6 +18,311 @@ msgstr ""
 
 msgid "An error has occurred during CAD geometry processing."
 msgstr "Bei der Verarbeitung der CAD-Geometrie ist ein Fehler aufgetreten."
+
+msgid "building list of shared model locations"
+msgstr "erstelle Liste der Speicherorte gemeinsam genutzter Modelle"
+
+#, c-format
+msgid "Shared model file %s not found."
+msgstr "Gemeinsam genutzte Modelldatei %s nicht gefunden."
+
+#. TRANSLATORS: character range of a syntax element, e.g. "12 until 20"
+#, c-format
+msgid "%d until %d"
+msgstr "%d bis %d"
+
+#, c-format
+msgid "in file \"%s\""
+msgstr "in Datei \"%s\""
+
+msgid "description"
+msgstr "Beschreibung"
+
+msgid "BOM description"
+msgstr "Stücklistenbeschreibung"
+
+msgid "model description"
+msgstr "Modellbeschreibung"
+
+msgid "identifier"
+msgstr "Bezeichner"
+
+msgid "path"
+msgstr "Pfad"
+
+msgid "string"
+msgstr "Zeichenkette"
+
+msgid "assignment"
+msgstr "Zuweisung"
+
+msgid "argument list"
+msgstr "Argumentliste"
+
+msgid "feature command"
+msgstr "Feature-Befehl"
+
+msgid "scalar function"
+msgstr "Skalarfunktion"
+
+msgid "vector function"
+msgstr "Vektorfunktion"
+
+msgid "postprocessing command"
+msgstr "Nachbearbeitungsbefehl"
+
+#, c-format
+msgid "The iscad script file \"%s\" does not exist!"
+msgstr "Die iscad-Skriptdatei \"%s\" existiert nicht!"
+
+#, c-format
+msgid "could not read iscad script file \"%s\""
+msgstr "iscad-Skriptdatei \"%s\" konnte nicht gelesen werden"
+
+#, c-format
+msgid "line %d, column %d"
+msgstr "Zeile %d, Spalte %d"
+
+#, c-format
+msgid "Usage: %s"
+msgstr "Verwendung: %s"
+
+#, c-format
+msgid "undefined symbol '%s'"
+msgstr "undefiniertes Symbol '%s'"
+
+#, c-format
+msgid "Expected here: %s."
+msgstr "Hier erwartet: %s."
+
+#, c-format
+msgid "defined as %s"
+msgstr "definiert als %s"
+
+#. TRANSLATORS: first %s: list of alternatives, second %s: the token found in the script
+#, c-format
+msgid "expected %s but found %s"
+msgstr "%s erwartet, aber %s gefunden"
+
+#. TRANSLATORS: first %s: command name, second %s: error message
+#, c-format
+msgid "in %s(...): %s"
+msgstr "in %s(...): %s"
+
+msgid ""
+"Statements have the form 'name = expression;', 'name: feature expression;' "
+"or 'feature -> property = value;'."
+msgstr "Anweisungen haben die Form 'Name = Ausdruck;', 'Name: Feature-Ausdruck;' oder 'Feature -> Eigenschaft = Wert;'."
+
+msgid "unexpected end of input"
+msgstr "unerwartetes Ende der Eingabe"
+
+#, c-format
+msgid "unknown keyword '%s'"
+msgstr "unbekanntes Schlüsselwort '%s'"
+
+msgid "Valid keywords are '@description', '@doc' and '@post'."
+msgstr "Gültige Schlüsselwörter sind '@description', '@doc' und '@post'."
+
+#, c-format
+msgid "'%s' is not allowed here"
+msgstr "'%s' ist hier nicht erlaubt"
+
+msgid ""
+"A script consists of assignments (and '@description'), optionally followed "
+"by an '@doc' section and then an '@post' section."
+msgstr "Ein Skript besteht aus Zuweisungen (und '@description'), optional gefolgt von einem '@doc'-Abschnitt und danach einem '@post'-Abschnitt."
+
+#, c-format
+msgid "unknown postprocessing command '%s'"
+msgstr "unbekannter Nachbearbeitungsbefehl '%s'"
+
+#, c-format
+msgid "cannot parse documentation statement starting with '%s'"
+msgstr "Dokumentationsanweisung, die mit '%s' beginnt, kann nicht interpretiert werden"
+
+#. TRANSLATORS: first %s: symbol name, second %s: kind of command, e.g. "feature command"
+#, c-format
+msgid "'%s' cannot be used as a symbol name (%s of the same name exists)"
+msgstr "'%s' kann nicht als Symbolname verwendet werden (Name bereits vergeben: %s)"
+
+msgid "Please choose a different name."
+msgstr "Bitte einen anderen Namen wählen."
+
+#, c-format
+msgid "undefined feature '%s'"
+msgstr "undefiniertes Feature '%s'"
+
+#. TRANSLATORS: first %s: symbol name, second %s: list of symbol kinds, e.g. "scalar"
+#, c-format
+msgid "properties can only be assigned to features, but '%s' is defined as %s"
+msgstr "Eigenschaften können nur Features zugewiesen werden, aber '%s' ist als %s definiert"
+
+#, c-format
+msgid "cannot parse assignment to '%s'"
+msgstr "Zuweisung an '%s' kann nicht interpretiert werden"
+
+#. TRANSLATORS: first %s: symbol name, second %s: the token found in the script
+#, c-format
+msgid "expected ':', '=', '?=' or '->' after '%s' but found %s"
+msgstr "nach '%s' wurde ':', '=', '?=' oder '->' erwartet, aber %s gefunden"
+
+#, c-format
+msgid "unexpected %s at the beginning of a statement"
+msgstr "unerwartet am Anfang einer Anweisung: %s"
+
+msgid "feature set filter arguments"
+msgstr "Argumente des Feature-Auswahlfilters"
+
+msgid "vertex selection expression"
+msgstr "Eckpunkt-Auswahlausdruck"
+
+msgid "edge selection expression"
+msgstr "Kanten-Auswahlausdruck"
+
+msgid "face selection expression"
+msgstr "Flächen-Auswahlausdruck"
+
+msgid "solid selection expression"
+msgstr "Volumenkörper-Auswahlausdruck"
+
+msgid "datum expression"
+msgstr "Datum-Ausdruck"
+
+msgid "feature function"
+msgstr "Feature-Funktion"
+
+msgid "feature expression"
+msgstr "Feature-Ausdruck"
+
+msgid "feature term"
+msgstr "Feature-Term"
+
+msgid "feature symbol"
+msgstr "Feature-Symbol"
+
+msgid "in-situ submodel"
+msgstr "eingebettetes Untermodell"
+
+msgid "feature primary"
+msgstr "Feature-Grundausdruck"
+
+msgid "feature property assignment"
+msgstr "Zuweisung einer Feature-Eigenschaft"
+
+msgid "view definition"
+msgstr "Ansichtsdefinition"
+
+msgid "postprocessing statement"
+msgstr "Nachbearbeitungsanweisung"
+
+msgid "documentation statement"
+msgstr "Dokumentationsanweisung"
+
+msgid "scalar expression"
+msgstr "Skalarausdruck"
+
+msgid "scalar term"
+msgstr "Skalarterm"
+
+msgid "scalar primary"
+msgstr "Skalar-Grundausdruck"
+
+msgid "vector expression"
+msgstr "Vektorausdruck"
+
+msgid "vector term"
+msgstr "Vektorterm"
+
+msgid "vector primary"
+msgstr "Vektor-Grundausdruck"
+
+#. TRANSLATORS: conjunction for the last item of a list of alternatives, e.g. "',', ')' or number"
+msgid "or"
+msgstr "oder"
+
+msgid "letter"
+msgstr "Buchstabe"
+
+msgid "letter or digit"
+msgstr "Buchstabe oder Ziffer"
+
+msgid "digit"
+msgstr "Ziffer"
+
+msgid "number"
+msgstr "Zahl"
+
+msgid "integer"
+msgstr "Ganzzahl"
+
+msgid "character"
+msgstr "Zeichen"
+
+msgid "end of line"
+msgstr "Zeilenende"
+
+msgid "end of input"
+msgstr "Ende der Eingabe"
+
+msgid "keyword"
+msgstr "Schlüsselwort"
+
+#, c-format
+msgid "string %s"
+msgstr "Zeichenkette %s"
+
+msgid "something else"
+msgstr "etwas anderes"
+
+#. TRANSLATORS: %s is a list of names, e.g. "'a', 'b' or 'c'"
+#, c-format
+msgid "Did you mean %s?"
+msgstr "Meinten Sie %s?"
+
+#, c-format
+msgid "Maybe the ';' at the end of line %d is missing?"
+msgstr "Fehlt eventuell das ';' am Ende von Zeile %d?"
+
+msgid "error"
+msgstr "Fehler"
+
+#, c-format
+msgid "Failed to parse model %s. Stopped at %d."
+msgstr "Modell %s konnte nicht eingelesen werden. Abbruch bei %d."
+
+msgid "scalar"
+msgstr "Skalar"
+
+msgid "point"
+msgstr "Punkt"
+
+msgid "direction"
+msgstr "Richtung"
+
+msgid "datum"
+msgstr "Datum"
+
+msgid "feature"
+msgstr "Feature"
+
+msgid "vertex set"
+msgstr "Eckpunkt-Auswahl"
+
+msgid "edge set"
+msgstr "Kanten-Auswahl"
+
+msgid "face set"
+msgstr "Flächen-Auswahl"
+
+msgid "solid set"
+msgstr "Volumenkörper-Auswahl"
+
+#, c-format
+msgid ""
+"Symbol \"%s\" is already defined as %s. Which definition is used in an "
+"expression depends on the context."
+msgstr "Symbol \"%s\" ist bereits als %s definiert. Welche Definition in einem Ausdruck verwendet wird, hängt vom Kontext ab."
 
 #, c-format
 msgid "searching %s with name %s"

@@ -34,6 +34,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "parser_tools.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
@@ -100,7 +101,7 @@ void ISCADParser::createPostProcExpressions()
          >> ')'
         )
         ;
-    r_viewDef.name("view definition");
+    r_viewDef.name(_("view definition"));
 
     r_postproc =
         ( current_pos.current_pos
@@ -112,7 +113,7 @@ void ISCADParser::createPostProcExpressions()
               phx::bind(&ISCADParser::popCommand, this) ];
 
 
-    r_postproc.name("postprocessing statement");
+    r_postproc.name(_("postprocessing statement"));
 
 }
 

@@ -32,6 +32,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "base/translations.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -79,7 +80,7 @@ void ISCADParser::createSelectionExpressions()
              | ( r_scalarExpression >> &(lit(',')|')') )
            )
          ) ) );
-    r_featureSetFilterArgs.name("feature set filter arguments");
+    r_featureSetFilterArgs.name(_("feature set filter arguments"));
 
     r_vertexFeaturesExpression =
         (
@@ -187,7 +188,7 @@ void ISCADParser::createSelectionExpressions()
                         phx::ref(qi::_val)
                         ) ]
         ;
-    r_vertexFeaturesExpression.name("vertex selection expression");
+    r_vertexFeaturesExpression.name(_("vertex selection expression"));
 
 
 
@@ -298,7 +299,7 @@ void ISCADParser::createSelectionExpressions()
                      phx::ref(qi::_val)
                      ) ]
         ;
-    r_edgeFeaturesExpression.name("edge selection expression");
+    r_edgeFeaturesExpression.name(_("edge selection expression"));
 
 
 
@@ -422,7 +423,7 @@ void ISCADParser::createSelectionExpressions()
                      phx::ref(qi::_val)
                      ) ]
         ;
-    r_faceFeaturesExpression.name("face selection expression");
+    r_faceFeaturesExpression.name(_("face selection expression"));
 
 
 
@@ -515,7 +516,7 @@ void ISCADParser::createSelectionExpressions()
                       phx::ref(qi::_val)
                       ) ]
         ;
-    r_solidFeaturesExpression.name("solid selection expression");
+    r_solidFeaturesExpression.name(_("solid selection expression"));
 
 
 }

@@ -18,6 +18,7 @@
  */
 
 #include "circularpattern.h"
+#include "parser_tools.h"
 #include "transform.h"
 #include "cadfeature.h"
 #include "datum.h"
@@ -241,8 +242,8 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset)
           ruleset.r_vectorExpression > ','
         > ruleset.r_vectorExpression > ','
         > ruleset.r_scalarExpression
-                         > ( ( ',' >> qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
-                         > ( ( ',' >> qi::lit("not") > ruleset.r_string ) | qi::attr(std::string()) )
+                         > ( ( ',' >> parser::kw("centered") > qi::attr(true) ) | qi::attr(false) )
+                         > ( ( ',' >> parser::kw("not") > ruleset.r_string ) | qi::attr(std::string()) )
         > ')'
       ) [ qi::_val = phx::bind(
                           &CircularPattern::create<FeaturePtr, VectorPtr, VectorPtr, ScalarPtr, bool, const std::string&>,

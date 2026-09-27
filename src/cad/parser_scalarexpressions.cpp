@@ -63,9 +63,11 @@ using namespace insight::cad;
 
 void ISCADParser::createScalarExpressions()
 {
+    // the function name must not be the prefix of a longer identifier
+    // (e.g. "pos" in "position"), since the expectation afterwards would throw
     r_scalarFunction =
         ( current_pos.current_pos
-         >> omit[ scalarFunctionRules [ qi::_a = qi::_1 ] ]
+         >> omit[ lexeme[ scalarFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
          >> current_pos.current_pos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
               phx::at_c<1>(qi::_val) = qi::_2 ]
@@ -205,42 +207,40 @@ void ISCADParser::createScalarExpressions()
            > r_identifier > ','
            > r_scalarExpression > ','
            > r_identifier
-           > ( ( ',' > lit("nearest") > qi::attr(true) ) | qi::attr(false) )
+           > ( ( ',' > kw("nearest") > qi::attr(true) ) | qi::attr(false) )
            > ')' ),
         [ _val = phx::construct<ScalarPtr>(phx::new_<LookupTableScalar>(
              qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ] );
 
 #undef ADD_SCALAR_FUNCTION
 
+    // no expectation after "+"/"-": a scalar expression may be followed
+    // by a feature subtraction, e.g. "A*2 - B"
     r_scalarExpression =
         r_scalar_term [ _val = qi::_1]
         >> *(
-              ( '+' > r_scalar_term )
+              ( '+' >> r_scalar_term )
                 [ _val = phx::construct<ScalarPtr>(phx::new_<AddedScalar>(qi::_val, qi::_1)) ]
-            | ( '-' > r_scalar_term )
+            | ( '-' >> r_scalar_term )
                 [ _val = phx::construct<ScalarPtr>(phx::new_<SubtractedScalar>(qi::_val, qi::_1)) ]
             )
         ;
     r_scalarExpression.name("scalar expression");
 
     r_scalar_term =
-        (
-            r_scalar_primary [ _val = qi::_1 ]
-            >> *(
-               ( '*' >> r_scalar_primary )
-                [ _val = phx::construct<ScalarPtr>(phx::new_<MultipliedScalar>(qi::_val, qi::_1)) ]
-             | ( '/' >> r_scalar_primary )
-                [ _val = phx::construct<ScalarPtr>(phx::new_<DividedScalar>(qi::_val, qi::_1)) ]
-            )
+        r_scalar_primary [ _val = qi::_1 ]
+        >> *(
+           ( '*' >> r_scalar_primary )
+            [ _val = phx::construct<ScalarPtr>(phx::new_<MultipliedScalar>(qi::_val, qi::_1)) ]
+         | ( '/' >> r_scalar_primary )
+            [ _val = phx::construct<ScalarPtr>(phx::new_<DividedScalar>(qi::_val, qi::_1)) ]
         )
-        | ( r_vector_primary >> '&' >> r_vector_primary )
-         [ _val = phx::construct<ScalarPtr>(phx::new_<DotMultipliedVector>(qi::_1, qi::_2)) ]
         ;
     r_scalar_term.name("scalar term");
 
 
     r_scalar_primary =
-        double_
+        iscad_double
          [ _val = phx::construct<ScalarPtr>(phx::new_<ConstantScalar>(qi::_1)) ]
 
         | ('(' >> r_scalarExpression >> ')')
@@ -259,14 +259,18 @@ void ISCADParser::createScalarExpressions()
         | r_scalarFunction
          [ _val = phx::at_c<2>(qi::_1) ]
 
-        | ( r_vector_primary >> '.' >> 'x' )
-         [ _val = phx::construct<ScalarPtr>(phx::new_<VectorComponent>(qi::_1, 0)) ]
-
-        | ( r_vector_primary >> '.' >> 'y' )
-         [ _val = phx::construct<ScalarPtr>(phx::new_<VectorComponent>(qi::_1, 1)) ]
-
-        | ( r_vector_primary >> '.' >> 'z' )
-         [ _val = phx::construct<ScalarPtr>(phx::new_<VectorComponent>(qi::_1, 2)) ]
+        // dot product and vector components share the vector primary,
+        // so that it is parsed only once
+        | ( r_vector_primary [ qi::_a = qi::_1 ]
+            >> (
+                 ( '&' >> r_vector_primary )
+                   [ _val = phx::construct<ScalarPtr>(phx::new_<DotMultipliedVector>(qi::_a, qi::_1)) ]
+               | ( '.' >> ( ( kw("x") >> qi::attr(0) )
+                          | ( kw("y") >> qi::attr(1) )
+                          | ( kw("z") >> qi::attr(2) ) ) )
+                   [ _val = phx::construct<ScalarPtr>(phx::new_<VectorComponent>(qi::_a, qi::_1)) ]
+               )
+           )
 
         | ( r_solidmodel_expression >> '$' >> r_identifier )
          [ _val = phx::construct<ScalarPtr>(phx::new_<ScalarFeatureProp>(qi::_1, qi::_2)) ]

@@ -18,6 +18,7 @@
  */
 
 #include "export.h"
+#include "parser_tools.h"
 #include "cadfeature.h"
 #include "datum.h"
 
@@ -213,7 +214,7 @@ void ExportSTL::insertrule(parser::ISCADParser& rs)
                 ( '('
                  > rs.r_path
                  > ( (',' > rs.r_scalarExpression)|qi::attr(ScalarPtr()) )
-                 > ( (',' > qi::lit("ascii") > qi::attr(false) )|qi::attr(true) )
+                 > ( (',' > parser::kw("ascii") > qi::attr(false) )|qi::attr(true) )
                  > ')' > qi::lit("<<") > rs.r_solidmodel_expression > ';' )
                     [ qi::_val = phx::bind(
                         &ExportSTL::create<FeaturePtr, const boost::filesystem::path&, ScalarPtr, bool>,

@@ -32,6 +32,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "parser_tools.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -64,11 +65,11 @@ void ISCADParser::createDocExpressions()
 {
 
     r_doc =
-        ( lit("diameter") >'('> r_string >','> r_identifier >','> 
+        ( kw("diameter") >'('> r_string >','> r_identifier >','> 
 			    r_vectorExpression >','> r_vectorExpression >','>
-			   (lit("inside")|lit("outside")) >')'>';' )
+			   (kw("inside")|kw("outside")) >')'>';' )
 	|
-        ( lit("length") >'('> r_string >','> r_identifier >','> r_vectorExpression >','> r_vectorExpression >')'>';' )
+        ( kw("length") >'('> r_string >','> r_identifier >','> r_vectorExpression >','> r_vectorExpression >')'>';' )
         ;
     r_doc.name("documentation statement");
 

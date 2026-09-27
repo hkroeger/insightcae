@@ -165,7 +165,6 @@ struct ISCADParser
     CurrentPos<std::string::iterator> current_pos;
     boost::filesystem::path filenameinfo_;
     SyntaxElementDirectoryPtr syntax_element_locations;
-    boost::spirit::qi::symbols<char> selectionkeywords;
 
     typedef qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> ModelstepRule;
     typedef std::shared_ptr<ModelstepRule> ModelstepRulePtr;
@@ -209,8 +208,11 @@ struct ISCADParser
     qi::rule<std::string::iterator, BOMDescriptionDataPtr(), skip_grammar >
         r_BOMDescriptionData;
 
+    qi::rule<std::string::iterator, ScalarPtr(), skip_grammar, qi::locals<VectorPtr> >
+        r_scalar_primary;
+
     qi::rule<std::string::iterator, ScalarPtr(), skip_grammar>
-        r_scalar_primary, r_scalar_term, r_scalarExpression;
+        r_scalar_term, r_scalarExpression;
 
     qi::rule<std::string::iterator, VectorPtr(), qi::locals<FeaturePtr>, skip_grammar >
         r_vector_primary, r_vector_term, r_vectorExpression;

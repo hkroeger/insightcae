@@ -18,6 +18,7 @@
  */
 
 #include "BRepAdaptor_HCompCurve.hxx"
+#include "parser_tools.h"
 #include "Approx_Curve3d.hxx"
 #include "pipe.h"
 #include "cadfeature.h"
@@ -177,9 +178,9 @@ void Pipe::insertrule(parser::ISCADParser& ruleset)
 
                     ( '(' > ruleset.r_solidmodel_expression > ','
                       > ruleset.r_solidmodel_expression
-             > ( ( ',' >> qi::lit("fixedbinormal") > ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
-             > ( ( ',' >> qi::lit("orient") > qi::attr(true) ) | qi::attr(false) )
-             > ( ( ',' >> qi::lit("reapprox") > qi::attr(true) ) | qi::attr(false) )
+             > ( ( ',' >> parser::kw("fixedbinormal") > ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) )
+             > ( ( ',' >> parser::kw("orient") > qi::attr(true) ) | qi::attr(false) )
+             > ( ( ',' >> parser::kw("reapprox") > qi::attr(true) ) | qi::attr(false) )
                       > ')' )
                     [ qi::_val = phx::bind(
                          &Pipe::create<FeaturePtr, FeaturePtr, VectorPtr, bool, bool>,

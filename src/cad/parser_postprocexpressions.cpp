@@ -34,6 +34,7 @@
 
 #include "base/analysis.h"
 #include "parser.h"
+#include "parser_tools.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -83,10 +84,10 @@ void ISCADParser::createPostProcExpressions()
         (r_identifier >> '('
          >> r_vectorExpression >> ','
          >> r_vectorExpression
-         >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
-         >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
-         >> ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
-         >> ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> kw("up") >> r_vectorExpression ) | attr(VectorPtr()) )
+         >> ( ( ',' >> kw("section") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> kw("poly") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> kw("skiphl") >> qi::attr(true) ) | attr(false) )
          >> ( ( ',' >> lit("add")
                >> (( 'l' >> qi::attr(true) )|qi::attr(false))
                >> (( 'r' >> qi::attr(true) )|qi::attr(false))
@@ -103,7 +104,7 @@ void ISCADParser::createPostProcExpressions()
 
     r_postproc =
 
-        omit [ postProcFunctionRules [ qi::_a = qi::_1 ] ]
+        omit [ lexeme[ postProcFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
         > qi::lazy(*qi::_a)
             [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1) ];
 

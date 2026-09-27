@@ -18,6 +18,7 @@
  */
 
 #include "mesh.h"
+#include "parser_tools.h"
 
 #include "boost/algorithm/string/predicate.hpp"
 #include "boost/none.hpp"
@@ -352,22 +353,22 @@ void Mesh::insertrule(parser::ISCADParser& ruleset)
             std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
                 ( '(' > ruleset.r_path > ')' > qi::lit("<<")
                   > ruleset.r_solidmodel_expression
-                  > qi::hold[ qi::lit("L") > '=' > '(' > ruleset.r_scalarExpression > ruleset.r_scalarExpression > ')' ] // Lmax, Lmin
-                  > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
+                  > qi::hold[ parser::kw("L") > '=' > '(' > ruleset.r_scalarExpression > ruleset.r_scalarExpression > ')' ] // Lmax, Lmin
+                  > ( ( parser::kw("linear") > qi::attr(false) ) | qi::attr(true) )
                   > qi::hold[
-                    ( ( qi::lit("vertexGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vertexFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) ) ) > ')' ) | qi::attr(GroupsDesc()) )
-                  > ( ( qi::lit("edgeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_edgeFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
-                  > ( ( qi::lit("faceGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_faceFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
-                  > ( ( qi::lit("volumeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                    ( ( parser::kw("vertexGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vertexFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) ) ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( parser::kw("edgeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_edgeFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( parser::kw("faceGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_faceFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
+                  > ( ( parser::kw("volumeGroups") > '(' > *( ( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidFeaturesExpression > -( '@' > ruleset.r_scalarExpression ) )  ) > ')' ) | qi::attr(GroupsDesc()) )
                     ]
-                  > ( ( qi::lit("vertices") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vectorExpression ) > ')'  )| qi::attr(NamedVertices()) )
-                  > ( ( qi::lit("meshSizes") > '(' > *( ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression ) >> ')' ) | qi::attr(std::vector<MeshSizeBall>()) )
+                  > ( ( parser::kw("vertices") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_vectorExpression ) > ')'  )| qi::attr(NamedVertices()) )
+                  > ( ( parser::kw("meshSizes") > '(' > *( ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression ) >> ')' ) | qi::attr(std::vector<MeshSizeBall>()) )
                   > qi::hold[
-                    ( ( qi::lit("screwHeads") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewHeads()) )
-                  > ( ( qi::lit("screwBases") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewBases()) )
-                  > ( ( qi::lit("screws")     > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( qi::lit("sub") > ruleset.r_identifier) ) > ')'  )| qi::attr(ScrewBodies()) )
+                    ( ( parser::kw("screwHeads") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( parser::kw("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewHeads()) )
+                  > ( ( parser::kw("screwBases") > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( parser::kw("sub") > ruleset.r_identifier ) > -( '@' > ruleset.r_scalarExpression ) ) > ')'  )| qi::attr(ScrewBases()) )
+                  > ( ( parser::kw("screws")     > '(' > *( (ruleset.r_identifier|ruleset.r_string) > '=' > ruleset.r_solidmodel_expression > -( parser::kw("sub") > ruleset.r_identifier) ) > ')'  )| qi::attr(ScrewBodies()) )
                     ]
-                  > ( ( qi::lit("keepTmpDir") > qi::attr(true) ) | qi::attr(false) )
+                  > ( ( parser::kw("keepTmpDir") > qi::attr(true) ) | qi::attr(false) )
                   > ';' )
                 [ qi::_val = phx::bind(
                     &Mesh::create<const boost::filesystem::path&,FeaturePtr,
@@ -466,18 +467,18 @@ void ExtrudedMesh::insertrule(parser::ISCADParser& rs)
             std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
                 ( '(' > rs.r_path > ')' > qi::lit("<<")
                  > rs.r_solidmodel_expression //>> lit("as") >> r_identifier
-                 > qi::hold[ ( qi::lit("L") > '=' > '(' > rs.r_scalarExpression > rs.r_scalarExpression > ')'  // Lmax, Lmin
-                             >  qi::lit("h") > '=' > rs.r_scalarExpression > qi::lit("nLayers") > '=' > rs.r_scalarExpression ) ]  // h nLayer
-                 > ( ( qi::lit("linear") > qi::attr(false) ) | qi::attr(true) )
+                 > qi::hold[ ( parser::kw("L") > '=' > '(' > rs.r_scalarExpression > rs.r_scalarExpression > ')'  // Lmax, Lmin
+                             >  parser::kw("h") > '=' > rs.r_scalarExpression > parser::kw("nLayers") > '=' > rs.r_scalarExpression ) ]  // h nLayer
+                 > ( ( parser::kw("linear") > qi::attr(false) ) | qi::attr(true) )
                  > qi::hold[
-                     ( qi::lit("vertexGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_vertexFeaturesExpression > -( '@' > rs.r_scalarExpression ) ) ) > ')' | qi::attr(GroupsDesc()) )
-                     > ( qi::lit("edgeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_edgeFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
-                     > ( qi::lit("baseFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
-                     > ( qi::lit("topFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
-                     > ( qi::lit("volumeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_solidFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     ( parser::kw("vertexGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_vertexFeaturesExpression > -( '@' > rs.r_scalarExpression ) ) ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( parser::kw("edgeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_edgeFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( parser::kw("baseFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( parser::kw("topFaceGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_faceFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
+                     > ( parser::kw("volumeGroups") > '(' > *( ( (rs.r_identifier|rs.r_string) > '=' > rs.r_solidFeaturesExpression > -( '@' > rs.r_scalarExpression ) )  ) > ')' | qi::attr(GroupsDesc()) )
                     ]
-                 > ( qi::lit("vertices") > '(' > *( (rs.r_identifier|rs.r_string) > '=' > rs.r_vectorExpression ) > ')' | qi::attr(NamedVertices()) )
-                 > ( (qi::lit("keepTmpDir") > qi::attr(true)) | qi::attr(false) )
+                 > ( parser::kw("vertices") > '(' > *( (rs.r_identifier|rs.r_string) > '=' > rs.r_vectorExpression ) > ')' | qi::attr(NamedVertices()) )
+                 > ( (parser::kw("keepTmpDir") > qi::attr(true)) | qi::attr(false) )
                  > ';' )
                     [ qi::_val = phx::bind(
                          &ExtrudedMesh::create<
@@ -669,16 +670,16 @@ void SnappyHexMesh::insertrule(parser::ISCADParser& rs)
 
                 ( '(' > rs.r_path > ',' > rs.r_identifier > ')' > qi::lit("<<")
 
-                 > qi::lit("PiM") > '=' > rs.r_vectorExpression
-                 > qi::lit("dx") > '=' > rs.r_scalarExpression
+                 > parser::kw("PiM") > '=' > rs.r_vectorExpression
+                 > parser::kw("dx") > '=' > rs.r_scalarExpression
 
-                 > *( rs.r_solidmodel_expression > qi::lit("as") > rs.r_identifier
-                     > ( ( qi::lit("resolution") > '=' > rs.r_scalarExpression ) | qi::attr(ScalarPtr()) )
-                     > -( '@' > rs.r_scalarExpression > qi::lit("to") > rs.r_scalarExpression )
+                 > *( rs.r_solidmodel_expression > parser::kw("as") > rs.r_identifier
+                     > ( ( parser::kw("resolution") > '=' > rs.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+                     > -( '@' > rs.r_scalarExpression > parser::kw("to") > rs.r_scalarExpression )
                      > -( qi::lit(">>") > rs.r_scalarExpression )
                      )
 
-                 > -( qi::lit("edgeRefinements") > '(' > *( rs.r_identifier > '=' > rs.r_edgeFeaturesExpression > '@' > rs.r_scalarExpression ) > ')' )
+                 > -( parser::kw("edgeRefinements") > '(' > *( rs.r_identifier > '=' > rs.r_edgeFeaturesExpression > '@' > rs.r_scalarExpression ) > ')' )
 
                  > ';' )
                     [ qi::_val = phx::bind(

@@ -63,14 +63,23 @@ using namespace insight::cad;
 void ISCADParser::createSelectionExpressions()
 {
 
-    for (auto& kw: {
-            "vertices", "vertex", "allvertices", "vid",
-            "edges", "edge", "eid", "alledges",
-            "faces", "face", "fid", "allfaces",
-            "solids", "solid","allsolids","sid" })
-    {
-        selectionkeywords.add(kw);
-    }
+    // optional arguments of a feature set filter expression: ", arg1, arg2, ..."
+    // Each argument is accepted only, if it is followed by "," or ")".
+    // Otherwise e.g. the scalar "p.x" would be committed to the vector "p"
+    // and the expectation of ")" would throw.
+    auto& r_featureSetFilterArgs = addAdditionalRule(
+        new qi::rule<std::string::iterator, FeatureSetParserArgList(), skip_grammar>(
+        *( ',' >
+           (
+               ( r_solidFeaturesExpression >> &(lit(',')|')') )
+             | ( r_faceFeaturesExpression >> &(lit(',')|')') )
+             | ( r_edgeFeaturesExpression >> &(lit(',')|')') )
+             | ( r_vertexFeaturesExpression >> &(lit(',')|')') )
+             | ( r_vectorExpression >> &(lit(',')|')') )
+             | ( r_scalarExpression >> &(lit(',')|')') )
+           )
+         ) ) );
+    r_featureSetFilterArgs.name("feature set filter arguments");
 
     r_vertexFeaturesExpression =
         (
@@ -78,9 +87,9 @@ void ISCADParser::createSelectionExpressions()
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [qi::_a=qi::_1, qi::_b=qi::_2 ]
             >> (
-               ( (lit("vertices")|lit("vertex"))
+               ( (kw("vertices")|kw("vertex"))
                  > (
-                  ( lit("at") > r_vectorExpression > current_pos.current_pos
+                  ( kw("at") > r_vectorExpression > current_pos.current_pos
                   ) [ _val = phx::bind(
                         &DeferredFeatureSet::create
                             <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>                                                                      ,
@@ -98,9 +107,7 @@ void ISCADParser::createSelectionExpressions()
                   |
                   ( '('
                    > r_string
-                   > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                |r_vectorExpression|r_scalarExpression) )
+                   > r_featureSetFilterArgs
                    > ')' > current_pos.current_pos
                   ) [ _val = phx::bind(
                         &DeferredFeatureSet::create
@@ -130,7 +137,7 @@ void ISCADParser::createSelectionExpressions()
                 )
                )
                |
-               ( lit("allvertices") > current_pos.current_pos
+               ( kw("allvertices") > current_pos.current_pos
                ) [ _val = phx::bind(
                         &DeferredFeatureSet::create
                             <ConstFeaturePtr,EntityType>,
@@ -144,7 +151,7 @@ void ISCADParser::createSelectionExpressions()
                                phx::ref(qi::_val)
                                ) ]
                |
-               ( lit("vid") > '=' > '(' > ( qi::int_ % ',' ) > ')' > current_pos.current_pos
+               ( kw("vid") > '=' > '(' > ( qi::int_ % ',' ) > ')' > current_pos.current_pos
                ) [ _val = phx::construct<FeatureSetPtr>(
                         phx::new_<FeatureSet>(
                             qi::_a, insight::cad::Vertex, qi::_1 )),
@@ -162,12 +169,10 @@ void ISCADParser::createSelectionExpressions()
         >>
         *(
             ( current_pos.current_pos >> '?' )
-            > (lit("vertices")|lit("vertex"))
+            > (kw("vertices")|kw("vertex"))
             > '('
             > r_string
-            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                                |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                                |r_vectorExpression|r_scalarExpression) )
+            > r_featureSetFilterArgs
             > ')' > current_pos.current_pos
         ) [ _val = phx::bind(
                 &DeferredFeatureSet::create
@@ -195,9 +200,9 @@ void ISCADParser::createSelectionExpressions()
             (r_solidmodel_expression >> current_pos.current_pos >> '?')
                [ qi::_a=qi::_1, qi::_b=qi::_2 ]
             >> (
-                ( (lit("edges")|lit("edge"))
+                ( (kw("edges")|kw("edge"))
                 > (
-                   ( lit("from") > r_solidmodel_expression > current_pos.current_pos
+                   ( kw("from") > r_solidmodel_expression > current_pos.current_pos
                    ) [ _val = phx::bind(
                           &DeferredFeatureSet::create
                             <ConstFeaturePtr,EntityType,const std::string&,const FeatureSetParserArgList&>                                                                      ,
@@ -214,9 +219,7 @@ void ISCADParser::createSelectionExpressions()
                                       ) ]
                    |
                    ( '(' > r_string
-                    > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                                           |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                                           |r_vectorExpression|r_scalarExpression) )
+                    > r_featureSetFilterArgs
                     > ')' > current_pos.current_pos
                     ) [ _val = phx::bind(
                             &DeferredFeatureSet::create
@@ -246,7 +249,7 @@ void ISCADParser::createSelectionExpressions()
                   )
                 )
                 |
-                ( lit("eid") > '=' > '(' > ( qi::int_ % ',' ) > ')' > current_pos.current_pos
+                ( kw("eid") > '=' > '(' > ( qi::int_ % ',' ) > ')' > current_pos.current_pos
                 ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(
                     qi::_a, insight::cad::Edge, qi::_1)),
 
@@ -258,7 +261,7 @@ void ISCADParser::createSelectionExpressions()
                               phx::ref(qi::_val)
                               ) ]
                 |
-                ( lit("alledges") > current_pos.current_pos )
+                ( kw("alledges") > current_pos.current_pos )
                   [ _val = phx::bind(
                        &DeferredFeatureSet::create
                        <ConstFeaturePtr,EntityType>,
@@ -276,12 +279,10 @@ void ISCADParser::createSelectionExpressions()
         >>
         *(
             ( current_pos.current_pos >> '?' )
-            > (lit("edges")|lit("edge"))
+            > (kw("edges")|kw("edge"))
             > '('
             > r_string
-            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                              |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                              |r_vectorExpression|r_scalarExpression) )
+            > r_featureSetFilterArgs
             > ')' > current_pos.current_pos
         )
         [ _val = phx::bind(
@@ -320,9 +321,9 @@ void ISCADParser::createSelectionExpressions()
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' )
                     [qi::_a=qi::_1, qi::_b=qi::_2]
             >> (
-                 ( (lit("faces")|lit("face"))
+                 ( (kw("faces")|kw("face"))
                   > (
-                     ( lit("from") > r_solidmodel_expression > current_pos.current_pos
+                     ( kw("from") > r_solidmodel_expression > current_pos.current_pos
                        ) [ _val =
                           phx::bind(
                               &DeferredFeatureSet::create
@@ -341,9 +342,7 @@ void ISCADParser::createSelectionExpressions()
                       |
                       (
                         '(' > r_string
-                       > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                                           |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                                           |r_vectorExpression|r_scalarExpression) )
+                       > r_featureSetFilterArgs
                        > ')' > current_pos.current_pos )
                        [ _val = phx::bind(
                                &DeferredFeatureSet::create
@@ -373,7 +372,7 @@ void ISCADParser::createSelectionExpressions()
                     )
                )
                |
-               ( lit("fid") > '=' > '(' > ( qi::int_ % ',' ) > ')' > current_pos.current_pos
+               ( kw("fid") > '=' > '(' > ( qi::int_ % ',' ) > ')' > current_pos.current_pos
                ) [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Face, qi::_1)),
 
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
@@ -386,7 +385,7 @@ void ISCADParser::createSelectionExpressions()
 
                 //qi::lazy(phx::bind(&Feature::featureSymbols, qi::_a, Face)) [ qi::_val = qi::_1 ]
               |
-              ( lit("allfaces") > current_pos.current_pos
+              ( kw("allfaces") > current_pos.current_pos
                ) [ _val = phx::bind(
                            &DeferredFeatureSet::create
                            <ConstFeaturePtr,EntityType>,
@@ -404,12 +403,10 @@ void ISCADParser::createSelectionExpressions()
         >>
         *(
             ( current_pos.current_pos >> '?' )
-            > (lit("faces")|lit("face"))
+            > (kw("faces")|kw("face"))
             > '('
             > r_string
-            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                              |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                              |r_vectorExpression|r_scalarExpression) )
+            > r_featureSetFilterArgs
             > ')' > current_pos.current_pos
         )
         [ _val = phx::bind(
@@ -436,12 +433,10 @@ void ISCADParser::createSelectionExpressions()
             addAdditionalRule( map_lookup_parser(model_->solidFeatures()) ) [ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [ _a=qi::_1, _b=qi::_2 ]
-            >> ( ( (lit("solids")|lit("solid"))
+            >> ( ( (kw("solids")|kw("solid"))
                > (
                    ('(' > r_string
-                    > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                                      |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                                      |r_vectorExpression|r_scalarExpression) )
+                    > r_featureSetFilterArgs
                     > ')' > current_pos.current_pos )
                    [ _val = phx::bind(
                            &DeferredFeatureSet::create
@@ -471,7 +466,7 @@ void ISCADParser::createSelectionExpressions()
                 )
              )
              |
-             ( lit("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'> current_pos.current_pos
+             ( kw("sid") > '=' > '(' > (qi::int_ % ',' ) > ')'> current_pos.current_pos
               )
                  [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_a, insight::cad::Solid, qi::_1)),
 
@@ -483,7 +478,7 @@ void ISCADParser::createSelectionExpressions()
                             phx::ref(qi::_val)
                             ) ]
              |
-             ( lit("allsolids")> current_pos.current_pos
+             ( kw("allsolids")> current_pos.current_pos
               ) [ _val = phx::bind(
                           &DeferredFeatureSet::create
                           <ConstFeaturePtr,EntityType>,
@@ -501,12 +496,10 @@ void ISCADParser::createSelectionExpressions()
         >>
         *(
             ( current_pos.current_pos >> '?' )
-            > (lit("solids")|lit("solid"))
+            > (kw("solids")|kw("solid"))
             > '('
             > r_string
-            > *( ',' > (r_solidFeaturesExpression|r_faceFeaturesExpression
-                                               |r_edgeFeaturesExpression|r_vertexFeaturesExpression
-                                               |r_vectorExpression|r_scalarExpression) )
+            > r_featureSetFilterArgs
             > ')' > current_pos.current_pos
         )
         [ _val = _val = phx::bind(

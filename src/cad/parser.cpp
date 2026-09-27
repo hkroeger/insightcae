@@ -34,6 +34,7 @@
 #include "base/analysis.h"
 #include "base/tools.h"
 #include "parser.h"
+#include "parser_tools.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
@@ -249,7 +250,7 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
         ;
 
     r_model =
-        ( (qi::lit("cost") >> qi::double_ >> ';' ) | qi::attr(0.0) )
+        ( (kw("cost") >> iscad_double >> ';' ) | qi::attr(0.0) )
             [ phx::bind( &Model::setCost, model_, qi::_1 ) ]
         >>
         *(
@@ -287,6 +288,13 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
      *
      */
     r_assignment =
+        // function names cannot be used as symbol names, since the
+        // function would be picked up instead in expressions
+        !lexeme[
+            ( omit[modelstepFunctionRules] | omit[scalarFunctionRules]
+            | omit[vectorFunctionRules] | omit[postProcFunctionRules] )
+            >> !(alnum | '_') ]
+        >>
         //                 1              2                         3                            4                     5
         ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
         [ qi::_a=qi::_2, qi::_b=phx::construct<SyntaxElementPos>(qi::_1, qi::_3) ]
@@ -367,6 +375,38 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                [ phx::bind(&Model::addScalarIfNotPresent, model_, qi::_a, qi::_1) ]
             | ( r_vectorExpression >> ';' )
                [ phx::bind(&Model::addPointIfNotPresent, model_, qi::_a, qi::_1) ]
+
+            | ( r_vertexFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addVertexFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_edgeFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addEdgeFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_faceFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addFaceFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
+
+            | ( r_solidFeaturesExpression >> ';' )
+                [ phx::bind(&Model::addSolidFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                    phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
+                              phx::construct<SyntaxElementLocation>(
+                                  filenameinfo_, qi::_b ),
+                              qi::_1
+                              ) ]
 
             | ( r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
                [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_a, qi::_1, false, qi::_2),

@@ -61,9 +61,11 @@ using namespace insight::cad;
 
 void ISCADParser::createVectorExpressions()
 {
+    // the function name must not be the prefix of a longer identifier
+    // (e.g. "rot" in "rotor"), since the expectation afterwards would throw
     r_vectorFunction =
         ( current_pos.current_pos
-         >> omit[ vectorFunctionRules [ qi::_a = qi::_1 ] ]
+         >> omit[ lexeme[ vectorFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
          >> current_pos.current_pos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
               phx::at_c<1>(qi::_val) = qi::_2 ]
@@ -81,8 +83,8 @@ void ISCADParser::createVectorExpressions()
         "rot",
         ('('
          > r_vectorExpression
-         > lit("by") > r_scalarExpression
-         > ( (lit("around") > r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) )
+         > kw("by") > r_scalarExpression
+         > ( (kw("around") > r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) )
          > ')' ),
         [ _val = phx::construct<VectorPtr>(phx::new_<RotatedVector>(qi::_1, qi::_2, qi::_3)) ]
     );
@@ -225,28 +227,37 @@ void ISCADParser::createVectorExpressions()
 #undef ADD_VECTOR_FUNCTION
 
 
+    // no expectation after "+"/"-": a vector expression may be followed
+    // by a feature subtraction, e.g. "A << v - B"
     r_vectorExpression =
         r_vector_term [ _val = qi::_1 ]
         >> *(
-            ( '+' > r_vector_term )
+            ( '+' >> r_vector_term )
              [_val=phx::construct<VectorPtr>(phx::new_<AddedVector>(qi::_val, qi::_1)) ]
             |
-            ( '-' > r_vector_term )
+            ( '-' >> r_vector_term )
              [_val=phx::construct<VectorPtr>(phx::new_<SubtractedVector>(qi::_val, qi::_1)) ]
         )
-        >> -( lit("in") > r_solidmodel_expression )
+        >> -( kw("in") > r_solidmodel_expression )
              [ _val = phx::construct<VectorPtr>(phx::new_<PointInFeatureCS>(qi::_1, qi::_val)) ]
         ;
     r_vectorExpression.name("vector expression");
 
+    // A scalar prefix is tried first: a scalar term like "p.x" or "p&q"
+    // starts with a vector primary, which would otherwise be committed to.
+    // The scalar operands of "*" and "/" after a vector are single primaries,
+    // so that "v/a*b" evaluates as "(v/a)*b".
     r_vector_term =
+          ( r_scalar_term >> '*' >> r_vector_term )
+           [ _val = phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>(qi::_1, qi::_2)) ]
+        |
         r_vector_primary
             [ _val = qi::_1 ]
         >> *(
-                  ( '*' >> r_scalar_term )
+                  ( '*' >> r_scalar_primary )
                  [ _val=phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>(qi::_1, qi::_val)) ]
 
-                | ( '/' >> r_scalar_term )
+                | ( '/' >> r_scalar_primary )
                  [ _val=phx::construct<VectorPtr>(phx::new_<ScalarDividedVector>(qi::_val, qi::_1)) ]
 
                 | ( '^' >> r_vector_primary )
@@ -264,8 +275,6 @@ void ISCADParser::createVectorExpressions()
                      [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPoint>(qi::_val, qi::_1)) ]
                 )
             )
-        | ( r_scalar_primary >> '*' >> r_vector_term )
-           [ _val = phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>(qi::_1, qi::_2)) ]
         ;
     r_vector_term.name("vector term");
 

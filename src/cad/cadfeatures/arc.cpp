@@ -18,6 +18,7 @@
  */
 
 #include "arc.h"
+#include "parser_tools.h"
 #include "base/boost_include.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
@@ -320,7 +321,7 @@ void Arc::addParserRule(
              > ruleset.r_point > ','
              > ruleset.r_point > ','
              > ruleset.r_point
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > (( ',' >> parser::kw("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters > ')'
              )
                 [   qi::_a = phx::bind(
@@ -603,7 +604,7 @@ void ArcCenterPoint::addParserRule(
             ( '('
              > qi::int_ > ','
              > qi::double_ > ',' > qi::double_
-             > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > (( ',' >> parser::kw("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')' )
                 [ qi::_a = phx::bind(

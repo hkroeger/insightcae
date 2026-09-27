@@ -62,9 +62,11 @@ using namespace insight::cad;
 
 void ISCADParser::createFeatureExpressions()
 {
+    // the command name must not be the prefix of a longer identifier
+    // (e.g. "Box" in "Box1"), since the expectation afterwards would throw
     r_modelstepFunction =
         ( current_pos.current_pos
-         >> omit[ modelstepFunctionRules [ qi::_a = qi::_1 ] ]
+         >> omit[ lexeme[ modelstepFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
          >> current_pos.current_pos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
               phx::at_c<1>(qi::_val) = qi::_2 ]
@@ -82,6 +84,11 @@ void ISCADParser::createFeatureExpressions()
         ;
     r_solidmodel_expression.name("feature expression");
 
+    // Subfeature access, translation ("<<") and scaling ("*") apply only to
+    // the first primary of a term: "a << v | b" means "(a << v) | b", while
+    // "a | b << v" is not accepted. The translation vector is a complete
+    // vector expression, i.e. "a << v in b | c" uses the coordinate system of
+    // "b | c". Use parentheses to change the grouping.
     r_solidmodel_term =
         r_solidmodel_primary [_val=qi::_1 ]
         >>
@@ -117,7 +124,8 @@ void ISCADParser::createFeatureExpressions()
                         qi::_val, qi::_1) ] )
             |
             ('&' >> (
-                 r_solidmodel_primary
+                 // a primary followed by "%" is the start of a provided datum
+                 ( r_solidmodel_primary >> !lit('%') )
                     [ _val = phx::bind(
                         &BooleanIntersection::create<FeaturePtr, FeaturePtr>,
                             qi::_val, qi::_1) ]
@@ -200,16 +208,16 @@ void ISCADParser::createFeatureExpressions()
         r_modelstepSymbol [ _a = phx::at_c<1>(qi::_1) ]
         >> lit("->") >>
         (
-            ( lit("density") >> '=' >> r_scalarExpression )
+            ( kw("density") >> '=' >> r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
             |
-            ( lit("areaWeight") >> '=' >> r_scalarExpression )
+            ( kw("areaWeight") >> '=' >> r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
             |
-            ( lit("visresolution") >> '=' >> r_scalarExpression )
+            ( kw("visresolution") >> '=' >> r_scalarExpression )
                 [ lazy( phx::bind(&Feature::setAbsoluteVisResolution, *_a, qi::_1) ) ]
             |
-            ( lit("BOMDescription") >> '=' >> r_BOMDescriptionData )
+            ( kw("BOMDescription") >> '=' >> r_BOMDescriptionData )
                 [ lazy( phx::bind(&Feature::setBOMDescription,
                     *_a, *qi::_1) ) ]
         )

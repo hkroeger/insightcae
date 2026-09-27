@@ -112,6 +112,15 @@ protected:
     void defaultVariables();
     void copyVariables(const ModelVariableTable& vars);
 
+    /**
+     * @brief warnIfDefinedElsewhere
+     * issues a warning, if the symbol name is already used in
+     * another symbol table than the given one. Which symbol is
+     * picked up in expressions depends then on the context.
+     */
+    template<class Table>
+    void warnIfDefinedElsewhere(const std::string& name, const Table& table) const;
+
     size_t calcHash() const override;
     void build() override;
 
@@ -184,6 +193,10 @@ public:
     void addEdgeFeature(const std::string& name, FeatureSetPtr value);
     void addFaceFeature(const std::string& name, FeatureSetPtr value);
     void addSolidFeature(const std::string& name, FeatureSetPtr value);
+    void addVertexFeatureIfNotPresent(const std::string& name, FeatureSetPtr value);
+    void addEdgeFeatureIfNotPresent(const std::string& name, FeatureSetPtr value);
+    void addFaceFeatureIfNotPresent(const std::string& name, FeatureSetPtr value);
+    void addSolidFeatureIfNotPresent(const std::string& name, FeatureSetPtr value);
     void addModel(const std::string& name, ModelPtr value);
     void addPostprocAction(const std::string& name, PostprocActionPtr value);
     std::string addPostprocActionUnnamed(PostprocActionPtr value);

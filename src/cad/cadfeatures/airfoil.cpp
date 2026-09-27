@@ -18,6 +18,7 @@
  */
 
 #include "airfoil.h"
+#include "parser_tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
@@ -776,8 +777,8 @@ void Airfoil::insertrule(parser::ISCADParser& ruleset)
              > ruleset.r_vectorExpression > ','
              > ruleset.r_scalarExpression > ',' //c
              > ruleset.r_scalarExpression //t
-             > ( (',' >> qi::lit("r_EK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
-             > ( (',' >> qi::lit("r_AK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' >> parser::kw("r_EK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             > ( (',' >> parser::kw("r_AK") > ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
            > ')' )
     [ qi::_val = phx::bind(
                        &Airfoil::create<const std::string&, VectorPtr, VectorPtr, VectorPtr, ScalarPtr, ScalarPtr, ScalarPtr, ScalarPtr>,

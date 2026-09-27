@@ -18,6 +18,7 @@
  */
 
 #include "refplace.h"
+#include "parser_tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "gp_Quaternion.hxx"
@@ -441,28 +442,28 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset)
         (ruleset.r_vectorExpression >> qi::lit("==") >> ruleset.r_vectorExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<CoincidentPoint>(qi::_1, qi::_2)) ]
         |
-        (ruleset.r_vectorExpression >> qi::lit("parallel") >> ruleset.r_vectorExpression  )
+        (ruleset.r_vectorExpression >> parser::kw("parallel") >> ruleset.r_vectorExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelAxis>(qi::_1, qi::_2)) ]
         |
-        (ruleset.r_datumExpression >> qi::lit("planeparallel") >> ruleset.r_datumExpression
-          >> ( ( qi::lit("inverted") >> qi::attr(ParallelPlanes::Inverted) ) | ( qi::lit("oriented") >> qi::attr(ParallelPlanes::Same) ) | qi::attr(ParallelPlanes::Undefined) ) )
+        (ruleset.r_datumExpression >> parser::kw("planeparallel") >> ruleset.r_datumExpression
+          >> ( ( parser::kw("inverted") >> qi::attr(ParallelPlanes::Inverted) ) | ( parser::kw("oriented") >> qi::attr(ParallelPlanes::Same) ) | qi::attr(ParallelPlanes::Undefined) ) )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
-        (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  
-          >> ( ( qi::lit("inverted") >> qi::attr(AlignedPlanes::Inverted) ) | ( qi::lit("oriented") >> qi::attr(AlignedPlanes::Same) ) | qi::attr(AlignedPlanes::Undefined) ) )
+        (ruleset.r_datumExpression >> parser::kw("aligned") >> ruleset.r_datumExpression  
+          >> ( ( parser::kw("inverted") >> qi::attr(AlignedPlanes::Inverted) ) | ( parser::kw("oriented") >> qi::attr(AlignedPlanes::Same) ) | qi::attr(AlignedPlanes::Undefined) ) )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<AlignedPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
-        (ruleset.r_datumExpression >> qi::lit("inclined") >> ruleset.r_datumExpression >> ruleset.r_scalarExpression )
+        (ruleset.r_datumExpression >> parser::kw("inclined") >> ruleset.r_datumExpression >> ruleset.r_scalarExpression )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<InclinedPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
-        (ruleset.r_datumExpression >> qi::lit("coaxial") >> ruleset.r_datumExpression 
-	  >> ( ( qi::lit("inverted") >> qi::attr(true) ) | qi::attr(false) ) )
+        (ruleset.r_datumExpression >> parser::kw("coaxial") >> ruleset.r_datumExpression 
+	  >> ( ( parser::kw("inverted") >> qi::attr(true) ) | qi::attr(false) ) )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<Coaxial>(qi::_1, qi::_2, qi::_3)) ]
         |
-        (ruleset.r_vectorExpression >> qi::lit("inplane") >> ruleset.r_datumExpression  )
+        (ruleset.r_vectorExpression >> parser::kw("inplane") >> ruleset.r_datumExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<PointInPlane>(qi::_1, qi::_2)) ]
         |
-        (ruleset.r_vectorExpression >> qi::lit("onaxis") >> ruleset.r_datumExpression  )
+        (ruleset.r_vectorExpression >> parser::kw("onaxis") >> ruleset.r_datumExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<PointOnAxis>(qi::_1, qi::_2)) ]
         ;
     r_condition.name("placement condition");

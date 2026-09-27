@@ -18,6 +18,7 @@
  */
 
 #include "box.h"
+#include "parser_tools.h"
 #include "cadexception.h"
 #include "cadfeature.h"
 #include "datum.h"
@@ -165,7 +166,7 @@ void Box::insertrule(parser::ISCADParser& ruleset)
         > ruleset.r_vectorExpression > ','
         > ruleset.r_vectorExpression
         > ( ( ',' > (
-            (  qi::lit("centered") > qi::attr(true) > qi::attr(true) > qi::attr(true) )
+            (  parser::kw("centered") > qi::attr(true) > qi::attr(true) > qi::attr(true) )
             |
             (  qi::lit("center") 
             > (( 'x' > qi::attr(true) )|qi::attr(false))

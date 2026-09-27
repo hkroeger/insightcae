@@ -1,4 +1,5 @@
 #include "framemesh.h"
+#include "parser_tools.h"
 
 #include "meshing.h"
 
@@ -582,7 +583,7 @@ void FrameMesh::insertrule(parser::ISCADParser& rs)
             std::make_shared<parser::ISCADParser::PostProcFunctionRule>(
                 ( '(' > rs.r_path > ')'
                  > qi::lit("<<")
-                 > qi::lit("L") > '=' > rs.r_scalarExpression
+                 > parser::kw("L") > '=' > rs.r_scalarExpression
                  > ( rs.r_solidmodel_expression >
                     -( rs.r_solidmodel_expression > (rs.r_scalarExpression|qi::attr(scalarconst(0.5))) )
                     ) % ','

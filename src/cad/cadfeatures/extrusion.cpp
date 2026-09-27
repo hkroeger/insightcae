@@ -18,6 +18,7 @@
  */
 
 #include "extrusion.h"
+#include "parser_tools.h"
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -166,14 +167,14 @@ void Extrusion::insertrule(parser::ISCADParser& ruleset)
         std::make_shared<parser::ISCADParser::ModelstepRule>(
             '(' > ruleset.r_solidmodel_expression [ qi::_val = qi::_1 ] > ','
                 > ( ruleset.r_vectorExpression
-                   > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+                   > ( (  ',' > parser::kw("centered") > qi::attr(true) ) | qi::attr(false) )
                    > ')' )
                     [ qi::_val = phx::bind(
                          &Extrusion::create<FeaturePtr, VectorPtr, bool>,
                          qi::_val, qi::_1, qi::_2) ]
             |
             ( ruleset.r_scalarExpression
-             > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) )
+             > ( (  ',' > parser::kw("centered") > qi::attr(true) ) | qi::attr(false) )
              > ')' )
                 [ qi::_val = phx::bind(
                      &Extrusion::create<FeaturePtr, ScalarPtr, bool>,

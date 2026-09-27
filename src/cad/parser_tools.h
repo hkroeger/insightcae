@@ -8,6 +8,46 @@ namespace cad {
 namespace parser {
 
 
+/**
+ * matches the keyword s only, if it is not immediately followed
+ * by another identifier character. E.g. kw("in") does not match
+ * the beginning of "inplane".
+ */
+inline auto kw(const char* s)
+{
+    return boost::proto::deep_copy(
+        qi::lexeme[ qi::lit(s) >> !(qi::alnum | qi::char_('_')) ] );
+}
+
+
+/**
+ * real number parser, which does not accept "inf" or "nan".
+ * Otherwise identifiers like "infill" or "nanometer" would be
+ * partially consumed as numbers.
+ */
+template<typename T>
+struct iscad_real_policies
+    : qi::real_policies<T>
+{
+    template <typename Iterator, typename Attribute>
+    static bool parse_nan(Iterator&, Iterator const&, Attribute&)
+    {
+        return false;
+    }
+
+    template <typename Iterator, typename Attribute>
+    static bool parse_inf(Iterator&, Iterator const&, Attribute&)
+    {
+        return false;
+    }
+};
+
+const qi::real_parser<double, iscad_real_policies<double> > iscad_double
+    = qi::real_parser<double, iscad_real_policies<double> >();
+
+
+
+
 template<typename Map>
 struct MapLookup
 {

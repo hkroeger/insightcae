@@ -4,6 +4,8 @@
 #include "cadexception.h"
 #include "datum.h"
 
+#include "base/translations.h"
+
 ISCADParseResultPtr
 IQISCADScriptModelGenerator::parse(const std::string& script)
 {
@@ -22,7 +24,7 @@ IQISCADScriptModelGenerator::parse(const std::string& script)
         if (!res->success) // fail if we did not get a full match
         {
             res->failpos = failloc;
-            res->errorMsg = "Parsing of model script failed";
+            res->errorMsg = _("Parsing of model script failed");
             res->errorRange = 1;
         }
     }
@@ -43,7 +45,7 @@ IQISCADScriptModelGenerator::parse(const std::string& script)
 
     if (res->success)
     {
-        Q_EMIT statusMessage("Model parsed successfully.");
+        Q_EMIT statusMessage(_("Model parsed successfully."));
     }
 
     return res;
@@ -73,7 +75,7 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
 
     try
     {
-        emit statusMessage("Model parsed successfully, starting rebuild...");
+        emit statusMessage(_("Model parsed successfully, starting rebuild..."));
 
         auto scalars=model_->scalars();
         auto points=model_->points();
@@ -94,8 +96,9 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
 
         for (const auto& v: scalars)
         {
-            Q_EMIT statusMessage("Building scalar "+QString::fromStdString(v.first));
-//                    v.second->value();
+            Q_EMIT statusMessage(
+                QString::fromStdString( str(boost::format(_("Building scalar %s")) % v.first ) )
+            );
             std::cout<<v.first<<"="<<v.second->value()<<std::endl; // Trigger evaluation
             Q_EMIT statusProgress(is++, istepmax);
             Q_EMIT createdVariable(QString::fromStdString(v.first), v.second);
@@ -103,7 +106,9 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
 
         for (const auto& p: points)
         {
-            Q_EMIT statusMessage("Building point "+QString::fromStdString(p.first));
+            Q_EMIT statusMessage(
+                QString::fromStdString( str(boost::format(_("Building point %s")) % p.first ) )
+                );
             p.second->value(); // Trigger evaluation
             Q_EMIT statusProgress(is++, istepmax);
             Q_EMIT createdVariable(
@@ -113,7 +118,9 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
 
         for (const auto& d: directions)
         {
-            Q_EMIT statusMessage("Building vector "+QString::fromStdString(d.first));
+            Q_EMIT statusMessage(
+                QString::fromStdString( str(boost::format(_("Building vector %s")) % d.first ) )
+                );
             d.second->value(); // Trigger evaluation
             Q_EMIT statusProgress(is++, istepmax);
             Q_EMIT createdVariable(
@@ -124,14 +131,17 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
         for (const auto& v: modelsteps)
         {
             bool is_comp=false;
+
             if (model_->components().find(v.first) != model_->components().end())
             {
                 is_comp=true;
-                Q_EMIT statusMessage("Building component "+QString::fromStdString(v.first));
-            } else
-            {
-                Q_EMIT statusMessage("Building feature "+QString::fromStdString(v.first));
             }
+
+            Q_EMIT statusMessage(
+                QString::fromStdString( str(boost::format(_("Building %s %s"))
+                    % (is_comp?_("component"):_("model step")) % v.first ))
+                );
+
             v.second->checkForBuildDuringAccess(); // Trigger rebuild
             Q_EMIT statusProgress(is++, istepmax);
             Q_EMIT createdFeature(QString::fromStdString(v.first), v.second, is_comp);
@@ -139,7 +149,9 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
 
         for (const auto& v: datums)
         {
-            Q_EMIT statusMessage("Building datum "+QString::fromStdString(v.first));
+            Q_EMIT statusMessage(
+                QString::fromStdString( str(boost::format(_("Building datum %s")) % v.first))
+            );
             v.second->checkForBuildDuringAccess(); // Trigger rebuild
             Q_EMIT statusProgress(is++, istepmax);
             Q_EMIT createdDatum(QString::fromStdString(v.first), v.second);
@@ -149,7 +161,10 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
         {
             for (const auto& v: postprocActions)
             {
-                Q_EMIT statusMessage("Building postproc action "+QString::fromStdString(v.first));
+                Q_EMIT statusMessage(
+                    QString::fromStdString( str(boost::format(_("Building postproc action %s"))
+                     % v.first))
+                );
                  v.second->checkForBuildDuringAccess(); // Trigger evaluation
                 Q_EMIT statusProgress(is++, istepmax);
                 Q_EMIT createdEvaluation(QString::fromStdString(v.first), v.second, false);
@@ -160,7 +175,7 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
 
         std::cout << "total cost of model = " << model_->totalCost();
 
-        Q_EMIT statusMessage("Model rebuild successfully finished.");
+        Q_EMIT statusMessage(_("Model rebuild successfully finished."));
     }
     catch (const insight::CADException& e)
     {
@@ -171,7 +186,7 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
     }
     catch (const insight::cad::RebuildCancelException& e)
     {
-      Q_EMIT statusMessage("Model rebuild cancelled");
+      Q_EMIT statusMessage(_("Model rebuild cancelled"));
       throw;
     }
     catch (const insight::Exception& e)

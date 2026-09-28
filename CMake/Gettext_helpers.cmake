@@ -3,6 +3,7 @@ find_program(GETTEXT_XGETTEXT_COMMAND xgettext)
 find_program(GETTEXT_MSGFMT_COMMAND msgfmt)
 find_program(GETTEXT_MSGINIT_COMMAND msginit)
 find_program(GETTEXT_MSGMERGE_COMMAND msgmerge)
+find_program(GETTEXT_MSGATTRIB_COMMAND msgattrib)
 
 # configure_gettext(
 #     DOMAIN <domain-name>
@@ -10,7 +11,6 @@ find_program(GETTEXT_MSGMERGE_COMMAND msgmerge)
 #     SOURCES <file> ...
 #     POTFILE_DESTINATION <dir>
 #     POFILE_DESTINATION <dir>
-#     GMOFILE_DESTINATION <dir>
 #     LANGUAGES <file> ...
 #     [ALL]
 #     [INSTALL_DESTINATION <dest>]
@@ -25,14 +25,15 @@ find_program(GETTEXT_MSGMERGE_COMMAND msgmerge)
 function(configure_gettext)
     # Ensure the utility programs are available
     if(NOT GETTEXT_XGETTEXT_COMMAND OR NOT GETTEXT_MSGFMT_COMMAND
-            OR NOT GETTEXT_MSGMERGE_COMMAND OR NOT GETTEXT_MSGINIT_COMMAND)
+            OR NOT GETTEXT_MSGMERGE_COMMAND OR NOT GETTEXT_MSGINIT_COMMAND
+            OR NOT GETTEXT_MSGATTRIB_COMMAND)
         message(FATAL_ERROR "Could not find required programs!")
     endif()
 
     set(options ALL)
     set(one_value_args 
         DOMAIN INSTALL_DESTINATION INSTALL_COMPONENT TARGET_NAME
-        POTFILE_DESTINATION POFILE_DESTINATION GMOFILE_DESTINATION
+        POTFILE_DESTINATION POFILE_DESTINATION
         BUILD_DESTINATION
     )
     set(multi_args SOURCES LANGUAGES XGETTEXT_ARGS MSGFMT_ARGS MSGINIT_ARGS MSGMERGE_ARGS)
@@ -57,9 +58,8 @@ function(configure_gettext)
         set(GETTEXT_POFILE_DESTINATION "${GETTEXT_POTFILE_DESTINATION}/po/")
         message(STATUS "POFILE_DESTINATION defaulting to POTFILE_DESTINATION/po/")
     endif()
-    if(NOT GETTEXT_GMOFILE_DESTINATION)
-        set(GETTEXT_GMOFILE_DESTINATION "${GETTEXT_POFILE_DESTINATION}")
-        message(STATUS "GMOFILE_DESTINATION defaulting to POFILE_DESTINATION")
+    if(NOT GETTEXT_BUILD_DESTINATION)
+        set(GETTEXT_BUILD_DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/locale")
     endif()
 
     # Make input directories absolute in relation to the current directory
@@ -71,10 +71,6 @@ function(configure_gettext)
         set(GETTEXT_POFILE_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/${GETTEXT_POFILE_DESTINATION}")
         file(TO_CMAKE_PATH "${GETTEXT_POFILE_DESTINATION}" GETTEXT_POFILE_DESTINATION)
     endif()
-    if(NOT IS_ABSOLUTE "${GETTEXT_GMOFILE_DESTINATION}")
-        set(GETTEXT_GMOFILE_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/${GETTEXT_GMOFILE_DESTINATION}")
-        file(TO_CMAKE_PATH "${GETTEXT_GMOFILE_DESTINATION}" GETTEXT_GMOFILE_DESTINATION)
-    endif()
 
     # Create needed directories
     if(NOT EXISTS "${GETTEXT_POTFILE_DESTINATION}")
@@ -82,9 +78,6 @@ function(configure_gettext)
     endif()
     if(NOT EXISTS "${GETTEXT_POFILE_DESTINATION}")
         file(MAKE_DIRECTORY "${GETTEXT_POFILE_DESTINATION}")
-    endif()
-    if(NOT EXISTS "${GETTEXT_GMOFILE_DESTINATION}")
-        file(MAKE_DIRECTORY "${GETTEXT_GMOFILE_DESTINATION}")
     endif()
 
     if(GETTEXT_ALL)
@@ -117,9 +110,6 @@ function(configure_gettext)
         if(NOT EXISTS "${GETTEXT_POFILE_DESTINATION}/${lang}")
             file(MAKE_DIRECTORY "${GETTEXT_POFILE_DESTINATION}/${lang}")
         endif()
-        if(NOT EXISTS "${GETTEXT_GMOFILE_DESTINATION}/${lang}")
-            file(MAKE_DIRECTORY "${GETTEXT_GMOFILE_DESTINATION}/${lang}")
-        endif()
 
         # .pot ---{msginit}---> .po
         if(NOT EXISTS "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po")
@@ -137,24 +127,31 @@ function(configure_gettext)
                 "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
                 "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
                 "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+            COMMAND "${GETTEXT_MSGATTRIB_COMMAND}" --no-obsolete
+                "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
             COMMAND sed -i "/^\\\"POT-Creation-Date: .*\\\"$$/d"
                 "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
             DEPENDS "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            COMMENT "Updating the ${lang} .po file from the .pot file; Remove POT-Creation-Date")
+            COMMENT "Updating the ${lang} .po file from the .pot file; Remove obsolete entries and POT-Creation-Date")
 
 
+        # .po ---{msgfmt}---> .mo (directly into the build tree)
+        set(mo_dir "${GETTEXT_BUILD_DESTINATION}/${lang}/LC_MESSAGES")
+        set(mo_file "${mo_dir}/${GETTEXT_DOMAIN}.mo")
         add_custom_command(
-            OUTPUT "${GETTEXT_GMOFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.gmo"
+            OUTPUT "${mo_file}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${mo_dir}"
             COMMAND "${GETTEXT_MSGFMT_COMMAND}" ${GETTEXT_MSGFMT_ARGS}
                 "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-                "--output-file=${GETTEXT_GMOFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.gmo"
+                "--output-file=${mo_file}"
             DEPENDS "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            COMMENT "Creating the ${lang} .gmo file from the .po file")
+            COMMENT "Creating the ${lang} .mo file from the .po file")
 
         add_custom_target("${GETTEXT_TARGET_NAME}-${lang}"
-            DEPENDS "${GETTEXT_GMOFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.gmo")
+            DEPENDS "${mo_file}")
         add_dependencies("${GETTEXT_TARGET_NAME}" "${GETTEXT_TARGET_NAME}-${lang}")
 
         if(GETTEXT_INSTALL_DESTINATION)
@@ -164,19 +161,9 @@ function(configure_gettext)
                 set(comp_line)
             endif()
 
-            install(FILES "${GETTEXT_GMOFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.gmo"
+            install(FILES "${mo_file}"
                 DESTINATION "${GETTEXT_INSTALL_DESTINATION}/${lang}/LC_MESSAGES/"
-                ${comp_line}
-                RENAME "${GETTEXT_DOMAIN}.mo")
-        endif()
-
-        if(GETTEXT_BUILD_DESTINATION)
-            add_custom_command(
-                TARGET "${GETTEXT_TARGET_NAME}-${lang}" PRE_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                    "${GETTEXT_GMOFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.gmo"
-                    "${GETTEXT_BUILD_DESTINATION}/${lang}/LC_MESSAGES/${GETTEXT_DOMAIN}.mo"
-            )
+                ${comp_line})
         endif()
 
     endforeach() # lang IN LISTS GETTEXT_LANGUAGES

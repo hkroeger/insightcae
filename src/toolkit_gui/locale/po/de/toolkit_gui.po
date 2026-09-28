@@ -22,6 +22,51 @@ msgstr "Datei speichern"
 msgid "Open file"
 msgstr "Datei öffnen"
 
+msgid "Parsing of model script failed"
+msgstr "Einlesen des Modellskripts fehlgeschlagen"
+
+msgid "Model parsed successfully."
+msgstr "Modell erfolgreich eingelesen."
+
+msgid "Model parsed successfully, starting rebuild..."
+msgstr "Modell erfolgreich eingelesen, starte Neuaufbau..."
+
+#, c-format
+msgid "Building scalar %s"
+msgstr "Erzeuge Skalar %s"
+
+#, c-format
+msgid "Building point %s"
+msgstr "Erzeuge Punkt %s"
+
+#, c-format
+msgid "Building vector %s"
+msgstr "Erzeuge Vektor %s"
+
+#, c-format
+msgid "Building %s %s"
+msgstr "Erzeuge %s %s"
+
+msgid "component"
+msgstr "Komponente"
+
+msgid "model step"
+msgstr "Modellschritt"
+
+#, c-format
+msgid "Building datum %s"
+msgstr "Erzeuge Bezugselement %s"
+
+#, c-format
+msgid "Building postproc action %s"
+msgstr "Erzeuge Nachbearbeitungsschritt %s"
+
+msgid "Model rebuild successfully finished."
+msgstr "Neuaufbau des Modells erfolgreich abgeschlossen."
+
+msgid "Model rebuild cancelled"
+msgstr "Neuaufbau des Modells abgebrochen"
+
 msgid "Bleeching of background images"
 msgstr "Aufhellung der Hintergrundbilder"
 
@@ -102,7 +147,7 @@ msgid "Stack trace"
 msgstr "Aufrufstapel"
 
 msgid "More details on error origin."
-msgstr "Weitere Detail zur Fehlerursache"
+msgstr "Weitere Details zur Fehlerursache."
 
 msgid "Create file failed"
 msgstr "Erzeugen der Datei fehlgeschlagen"

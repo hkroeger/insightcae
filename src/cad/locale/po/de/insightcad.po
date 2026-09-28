@@ -112,7 +112,9 @@ msgstr "in %s(...): %s"
 msgid ""
 "Statements have the form 'name = expression;', 'name: feature expression;' "
 "or 'feature -> property = value;'."
-msgstr "Anweisungen haben die Form 'Name = Ausdruck;', 'Name: Feature-Ausdruck;' oder 'Feature -> Eigenschaft = Wert;'."
+msgstr ""
+"Anweisungen haben die Form 'Name = Ausdruck;', 'Name: Feature-Ausdruck;' "
+"oder 'Feature -> Eigenschaft = Wert;'."
 
 msgid "unexpected end of input"
 msgstr "unerwartetes Ende der Eingabe"
@@ -131,7 +133,9 @@ msgstr "'%s' ist hier nicht erlaubt"
 msgid ""
 "A script consists of assignments (and '@description'), optionally followed "
 "by an '@doc' section and then an '@post' section."
-msgstr "Ein Skript besteht aus Zuweisungen (und '@description'), optional gefolgt von einem '@doc'-Abschnitt und danach einem '@post'-Abschnitt."
+msgstr ""
+"Ein Skript besteht aus Zuweisungen (und '@description'), optional gefolgt "
+"von einem '@doc'-Abschnitt und danach einem '@post'-Abschnitt."
 
 #, c-format
 msgid "unknown postprocessing command '%s'"
@@ -139,12 +143,15 @@ msgstr "unbekannter Nachbearbeitungsbefehl '%s'"
 
 #, c-format
 msgid "cannot parse documentation statement starting with '%s'"
-msgstr "Dokumentationsanweisung, die mit '%s' beginnt, kann nicht interpretiert werden"
+msgstr ""
+"Dokumentationsanweisung, die mit '%s' beginnt, kann nicht interpretiert "
+"werden"
 
 #. TRANSLATORS: first %s: symbol name, second %s: kind of command, e.g. "feature command"
 #, c-format
 msgid "'%s' cannot be used as a symbol name (%s of the same name exists)"
-msgstr "'%s' kann nicht als Symbolname verwendet werden (Name bereits vergeben: %s)"
+msgstr ""
+"'%s' kann nicht als Symbolname verwendet werden (Name bereits vergeben: %s)"
 
 msgid "Please choose a different name."
 msgstr "Bitte einen anderen Namen wählen."
@@ -156,7 +163,9 @@ msgstr "undefiniertes Feature '%s'"
 #. TRANSLATORS: first %s: symbol name, second %s: list of symbol kinds, e.g. "scalar"
 #, c-format
 msgid "properties can only be assigned to features, but '%s' is defined as %s"
-msgstr "Eigenschaften können nur Features zugewiesen werden, aber '%s' ist als %s definiert"
+msgstr ""
+"Eigenschaften können nur Features zugewiesen werden, aber '%s' ist als %s "
+"definiert"
 
 #, c-format
 msgid "cannot parse assignment to '%s'"
@@ -322,7 +331,9 @@ msgstr "Volumenkörper-Auswahl"
 msgid ""
 "Symbol \"%s\" is already defined as %s. Which definition is used in an "
 "expression depends on the context."
-msgstr "Symbol \"%s\" ist bereits als %s definiert. Welche Definition in einem Ausdruck verwendet wird, hängt vom Kontext ab."
+msgstr ""
+"Symbol \"%s\" ist bereits als %s definiert. Welche Definition in einem "
+"Ausdruck verwendet wird, hängt vom Kontext ab."
 
 #, c-format
 msgid "searching %s with name %s"

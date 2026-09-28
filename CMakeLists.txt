@@ -348,6 +348,9 @@ macro(target_setup_gettext TARGET_NAME GETTEXT_DOMAIN)
      INSTALL_COMPONENT ${INSIGHT_INSTALL_COMPONENT}
      ALL
     )
+
+    # make sure the translations are up to date, whenever the target itself is built
+    add_dependencies(${TARGET_NAME} ${GETTEXT_TARGET})
 endmacro(target_setup_gettext)
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)

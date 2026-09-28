@@ -48,9 +48,9 @@ msgstr ""
 msgid "while"
 msgstr ""
 
-#, fuzzy, c-format
+#, c-format
 msgid "Execution of external application \"%s\" failed with return code %d!"
-msgstr "Executing application %s until end time %g."
+msgstr "Execution of external application \"%s\" failed with return code %d!"
 
 msgid "Error output was:"
 msgstr ""
@@ -292,6 +292,3 @@ msgstr ""
 "Possible inconsistency in solver output data detected!File %s from time "
 "directory %s was created before the output file of the previous time "
 "directory."
-
-#~ msgid "Creating execution environment"
-#~ msgstr "Creating execution environment"

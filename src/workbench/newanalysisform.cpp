@@ -7,6 +7,84 @@
 #include "base/analysis.h"
 #include "base/translations.h"
 
+#include <QProxyStyle>
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QFontMetrics>
+
+
+
+
+// enlargement factor for the tree of available analyses
+const double treeScale = 1.5;
+
+
+
+
+// draws large triangular expand/collapse handles
+class LargeBranchIndicatorStyle
+    : public QProxyStyle
+{
+public:
+    void drawPrimitive(
+        PrimitiveElement element,
+        const QStyleOption *option,
+        QPainter *painter,
+        const QWidget *widget = nullptr ) const override
+    {
+        if ( element==PE_IndicatorBranch && (option->state & State_Children) )
+        {
+            const QRect& r = option->rect;
+            int fh = widget ? QFontMetrics(widget->font()).height() : r.height();
+            double s = std::min( 0.5*std::min(r.width(), r.height()), double(fh) );
+            QPointF c = QRectF(r).center();
+
+            QPolygonF tri;
+            if (option->state & State_Open)
+            {
+                tri << c+QPointF(-0.5*s, -0.25*s)
+                    << c+QPointF( 0.5*s, -0.25*s)
+                    << c+QPointF( 0.,     0.25*s);
+            }
+            else
+            {
+                tri << c+QPointF(-0.25*s, -0.5*s)
+                    << c+QPointF(-0.25*s,  0.5*s)
+                    << c+QPointF( 0.25*s,  0.);
+            }
+
+            painter->save();
+            painter->setRenderHint(QPainter::Antialiasing);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(option->palette.color(QPalette::Text));
+            painter->drawPolygon(tri);
+            painter->restore();
+            return;
+        }
+        QProxyStyle::drawPrimitive(element, option, painter, widget);
+    }
+};
+
+
+
+
+// adds vertical spacing around each tree item
+class PaddedItemDelegate
+    : public QStyledItemDelegate
+{
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    QSize sizeHint(
+        const QStyleOptionViewItem &option,
+        const QModelIndex &index ) const override
+    {
+        QSize sz = QStyledItemDelegate::sizeHint(option, index);
+        sz.rheight() += QFontMetrics(option.font).height();
+        return sz;
+    }
+};
+
 
 
 
@@ -55,7 +133,7 @@ public:
     iterator addHierarchyLevel(const std::string& entry)
     {
         QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
-        { QFont f=newnode->font(0); f.setBold(true); f.setPointSize(f.pointSize()+5); newnode->setFont(0, f); }
+        { QFont f=parent_->treeWidget()->font(); f.setBold(true); f.setPointSizeF(f.pointSizeF()+5*treeScale); newnode->setFont(0, f); }
         std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
         return ret.first;
     }
@@ -76,17 +154,24 @@ public:
 
 void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
 {
+    { QFont f=treeWidget->font(); f.setPointSizeF(f.pointSizeF()*treeScale); treeWidget->setFont(f); }
+
+    auto *bs = new LargeBranchIndicatorStyle;
+    bs->setParent(treeWidget); // setStyle does not take ownership
+    treeWidget->setStyle(bs);
+    treeWidget->setItemDelegate(new PaddedItemDelegate(treeWidget));
+
     treeWidget->setColumnCount(2);
     treeWidget->setIconSize(QSize(80,80));
     treeWidget->setWordWrap(true);
-    treeWidget->setIndentation(5);
+    treeWidget->setIndentation(int(1.5*QFontMetrics(treeWidget->font()).height()));
     QStringList hdr;
     hdr << _("Analysis") << _("Description") ;
     treeWidget->setHeaderLabels(hdr);
 
     QTreeWidgetItem *topitem =
         new QTreeWidgetItem ( treeWidget, QStringList() << _("Available Analyses") );
-    { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+5); topitem->setFont(0, f); }
+    { QFont f=treeWidget->font(); f.setBold(true); f.setPointSizeF(f.pointSizeF()+5*treeScale); topitem->setFont(0, f); }
     HierarchyLevel toplevel ( topitem );
 
     HierarchyLevel::iterator i=toplevel.addHierarchyLevel(_("Uncategorized"));
@@ -132,7 +217,7 @@ void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
                 << analysisType.c_str()
                 << desc
             );
-        { QFont f=item->font(0); f.setItalic(true); f.setPointSize(f.pointSize()+1); item->setFont(0, f); }
+        { QFont f=treeWidget->font(); f.setItalic(true); f.setPointSizeF(f.pointSizeF()+1*treeScale); item->setFont(0, f); }
         item->setIcon(0,icon);
         item->setTextAlignment(0, Qt::AlignTop);
     }

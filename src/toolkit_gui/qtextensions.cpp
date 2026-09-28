@@ -292,14 +292,25 @@ void IQEphemeralLabel::mousePressEvent(QMouseEvent *event)
 
 void IQSimpleLatexView::updateContent()
 {
-    auto w = viewport()->width();
-    if (w!=cur_content_width_)
+    // setHtml may toggle the scrollbar, which resizes the viewport
+    // and calls resizeEvent => updateContent recursively.
+    // A nested setHtml would corrupt (duplicate) the content.
+    if (updatingContent_) return;
+    updatingContent_=true;
+
+    // repeat while width changes during setHtml (scrollbar (dis)appeared),
+    // limited to avoid oscillation
+    for (int i=0; i<3; ++i)
     {
+        auto w = viewport()->width();
+        if (w==cur_content_width_) break;
         cur_content_width_=w;
         setHtml(
             QString::fromStdString(
                 content_.toHTML(cur_content_width_) ) );
     }
+
+    updatingContent_=false;
 }
 
 

@@ -169,6 +169,7 @@ class TOOLKIT_GUI_EXPORT IQSimpleLatexView
     insight::SimpleLatex content_;
     int cur_content_width_;
     mutable std::pair<int,int> hfwCache_{-1,0}; // width -> heightForWidth
+    bool updatingContent_ = false;
 
     void updateContent();
 

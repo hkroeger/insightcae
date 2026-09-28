@@ -11,7 +11,6 @@
 
 #include <QObject>
 #include <QToolBar>
-#include <QToolBox>
 #include <QDockWidget>
 #include <memory>
 

@@ -10,7 +10,6 @@
 #include <QVBoxLayout>
 #include <QTreeView>
 
-#include <QToolBox>
 #include <QDockWidget>
 
 #include <QSortFilterProxyModel>
@@ -24,8 +23,6 @@ void CADEntityMultiSelection::showParameterEditor()
     editorContainerWidget_ = new QWidget;
     viewer_.addToolBox(
         editorContainerWidget_, "Selection Properties");
-
-    // viewer_.commonToolBox()->setCurrentIndex(tbi);
 
     auto lo = new QVBoxLayout;
     editorContainerWidget_->setLayout(lo);

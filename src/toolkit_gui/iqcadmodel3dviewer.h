@@ -7,7 +7,9 @@
 #include <QAbstractItemModel>
 #include <QTextEdit>
 #include <QMainWindow>
-#include <QToolBox>
+#include <QTabWidget>
+#include <QDockWidget>
+#include <QScrollArea>
 #include <QLabel>
 
 #include <vector>
@@ -40,6 +42,18 @@ public:
 private:
     Q_OBJECT
 
+    QDockWidget *toolBoxDock_ = nullptr;
+    QTabWidget *toolBoxTabs_ = nullptr;
+    bool toolBoxWidthSetByUser_ = false;
+    int toolBoxWidthAtPress_ = -1;
+
+    void growToolBoxDockIfNeeded();
+    void scheduleToolBoxDockGrowth();
+
+protected:
+    bool event(QEvent* e) override;
+    bool eventFilter(QObject* watched, QEvent* e) override;
+
 protected:
     QAbstractItemModel* model_;
     QLabel *userMessage_, *currentActionDesc_, *mouseCoordinateDisplay_;
@@ -51,7 +65,6 @@ public:
     QAbstractItemModel* model() const;
     IQCADItemModel* cadmodel() const;
 
-    // inline QToolBox *commonToolBox() { return commonToolBox_; }
     void addToolBox(QWidget* w, const QString& title);
 
     virtual void connectNotepad(QTextEdit *notepad) const;

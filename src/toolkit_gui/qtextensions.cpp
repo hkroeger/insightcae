@@ -6,6 +6,10 @@
 #include <QDebug>
 #include <QApplication>
 #include <QAbstractItemModel>
+#include <QTextDocument>
+
+#include <memory>
+#include <cmath>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -288,14 +292,25 @@ void IQEphemeralLabel::mousePressEvent(QMouseEvent *event)
 
 void IQSimpleLatexView::updateContent()
 {
-    auto w = viewport()->width();
-    if (w!=cur_content_width_)
+    // setHtml may toggle the scrollbar, which resizes the viewport
+    // and calls resizeEvent => updateContent recursively.
+    // A nested setHtml would corrupt (duplicate) the content.
+    if (updatingContent_) return;
+    updatingContent_=true;
+
+    // repeat while width changes during setHtml (scrollbar (dis)appeared),
+    // limited to avoid oscillation
+    for (int i=0; i<3; ++i)
     {
+        auto w = viewport()->width();
+        if (w==cur_content_width_) break;
         cur_content_width_=w;
         setHtml(
             QString::fromStdString(
                 content_.toHTML(cur_content_width_) ) );
     }
+
+    updatingContent_=false;
 }
 
 
@@ -325,25 +340,40 @@ IQSimpleLatexView::IQSimpleLatexView(
 
 int IQSimpleLatexView::heightForWidth(int width) const
 {
+    if (hfwCache_.first==width)
+        return hfwCache_.second;
+
+    // viewport width without scrollbar
+    int vw = std::max(1, width - 2*frameWidth());
+
+    // image sizes depend on the width: create content for exactly this width,
+    // with same font and margins as the displayed document.
+    // Note: don't call adjustSize(), it would override the text width
     QTextDocument td;
-    td.setHtml(document()->toHtml());
-    td.setTextWidth(width);
-    td.adjustSize();
-    auto h = td.size().height();
+    td.setDefaultFont(document()->defaultFont());
+    td.setDocumentMargin(document()->documentMargin());
+    td.setHtml(QString::fromStdString(content_.toHTML(vw)));
+    td.setTextWidth(vw);
+
+    int h = int(std::ceil(td.size().height())) + 2*frameWidth();
+    hfwCache_ = {width, h};
     return h;
 }
 
 QSize IQSimpleLatexView::sizeHint() const
 {
-    QTextDocument td;
-    td.setHtml(document()->toHtml());
+    int w;
     if (cur_content_width_>0)
-        td.setTextWidth(cur_content_width_);
+    {
+        w=cur_content_width_;
+    }
     else
-        td.setTextWidth(td.idealWidth());
-    td.adjustSize();
-    auto ts=td.size();
-    return QSize(ts.width(), ts.height());
+    {
+        std::unique_ptr<QTextDocument> td(document()->clone());
+        w=int(std::ceil(td->idealWidth()));
+    }
+    w+=2*frameWidth();
+    return QSize(w, heightForWidth(w));
 }
 
 void IQSimpleLatexView::resizeEvent(QResizeEvent *e)

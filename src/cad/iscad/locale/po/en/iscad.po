@@ -58,9 +58,8 @@ msgstr "Please wait"
 msgid "Select file"
 msgstr "Select file"
 
-#, fuzzy
 msgid "ISCAD Model Files"
-msgstr "ISCAD Model Files (*.iscad)"
+msgstr "ISCAD Model Files"
 
 msgid "STOP"
 msgstr "STOP"
@@ -138,9 +137,8 @@ msgstr "Inspect model &symbols..."
 msgid "Insert comment: new section..."
 msgstr "Insert comment: new section..."
 
-#, fuzzy
 msgid "Insert drawing..."
-msgstr "Insert &feature..."
+msgstr "Insert drawing..."
 
 msgid "C&lear cache"
 msgstr "C&lear cache"
@@ -306,13 +304,5 @@ msgstr ""
 msgid "Model"
 msgstr "Model"
 
-#, fuzzy
 msgid "Select output file name"
-msgstr "Select file"
-
-#~ msgid "Background model parsing in progress, rebuild is currently disabled!"
-#~ msgstr ""
-#~ "Background model parsing in progress, rebuild is currently disabled!"
-
-#~ msgid "ISCAD Model Files (*.iscad)"
-#~ msgstr "ISCAD Model Files (*.iscad)"
+msgstr "Select output file name"

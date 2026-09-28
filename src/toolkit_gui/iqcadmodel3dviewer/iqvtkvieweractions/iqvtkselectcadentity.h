@@ -11,7 +11,6 @@
 
 #include <QDockWidget>
 #include <QPointer>
-#include <QToolBox>
 
 #include <map>
 

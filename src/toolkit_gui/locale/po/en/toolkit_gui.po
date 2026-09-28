@@ -22,6 +22,51 @@ msgstr ""
 msgid "Open file"
 msgstr ""
 
+msgid "Parsing of model script failed"
+msgstr ""
+
+msgid "Model parsed successfully."
+msgstr ""
+
+msgid "Model parsed successfully, starting rebuild..."
+msgstr ""
+
+#, c-format
+msgid "Building scalar %s"
+msgstr ""
+
+#, c-format
+msgid "Building point %s"
+msgstr ""
+
+#, c-format
+msgid "Building vector %s"
+msgstr ""
+
+#, c-format
+msgid "Building %s %s"
+msgstr ""
+
+msgid "component"
+msgstr ""
+
+msgid "model step"
+msgstr ""
+
+#, c-format
+msgid "Building datum %s"
+msgstr ""
+
+#, c-format
+msgid "Building postproc action %s"
+msgstr ""
+
+msgid "Model rebuild successfully finished."
+msgstr ""
+
+msgid "Model rebuild cancelled"
+msgstr ""
+
 msgid "Bleeching of background images"
 msgstr ""
 

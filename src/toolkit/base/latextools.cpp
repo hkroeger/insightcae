@@ -390,7 +390,6 @@ struct HTMLReplacements
     std::string code =
         str(format("<img width=\"%d\" src=\"file:///%s\">")
             % int( double(imageWidth_)*width ) % fname.generic_path().string() );
-    insight::dbg()<<code<<std::endl;
     reformatted_ += code;
   }
 
@@ -403,7 +402,6 @@ struct HTMLReplacements
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
     std::string code = "<img src=\"file:///"+rff.generic_path().string()+"\">";
-    insight::dbg()<<code<<std::endl;
     reformatted_ += code;
   }
 
@@ -411,7 +409,6 @@ struct HTMLReplacements
   {
     auto rff = formulaCache.renderLatexFormula(latex_formula);
     std::string code = "<br>\n  <img src=\"file:///"+rff.generic_path().string()+"\"><br>\n";
-    insight::dbg()<<code<<std::endl;
     reformatted_ += code;
   }
 

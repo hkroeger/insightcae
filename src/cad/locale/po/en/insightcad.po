@@ -1163,15 +1163,3 @@ msgid ""
 msgstr ""
 "Creates fillets at selected vertices of a wire. All vertices in the "
 "selection set vertices are rounded with width r."
-
-#~ msgid "datum value %s already present!"
-#~ msgstr "datum value %s already present!"
-
-#~ msgid "datum point %s already present!"
-#~ msgstr "datum point %s already present!"
-
-#~ msgid "datum direction %s already present!"
-#~ msgstr "datum direction %s already present!"
-
-#~ msgid "datum %s already present!"
-#~ msgstr "datum %s already present!"

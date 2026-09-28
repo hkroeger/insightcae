@@ -3,12 +3,20 @@
 #include "constrainedsketch.h"
 #include "datum.h"
 
+#include <QApplication>
 #include <QColorDialog>
 #include <QDockWidget>
 #include <QStatusBar>
 #include <QResizeEvent>
 #include <QLayout>
+#include <QMouseEvent>
+#include <QScrollBar>
+#include <QStyle>
+#include <QTabBar>
+#include <QTimer>
 #include <qnamespace.h>
+
+#include <algorithm>
 
 #include "cadsketchparameter.h"
 
@@ -57,10 +65,158 @@ IQCADItemModel *IQCADModel3DViewer::cadmodel() const
 
 void IQCADModel3DViewer::addToolBox(QWidget *w, const QString &title)
 {
-    auto dw=new QDockWidget(title);
-    dw->setWidget(w);
-    connect(w, &QObject::destroyed, dw, &QWidget::deleteLater);
-    addDockWidget(Qt::RightDockWidgetArea, dw);
+    if (!toolBoxTabs_)
+    {
+        toolBoxTabs_ = new QTabWidget;
+        toolBoxDock_ = new QDockWidget;
+        toolBoxDock_->setWidget(toolBoxTabs_);
+        toolBoxDock_->setTitleBarWidget(new QWidget); // tab labels suffice
+        addDockWidget(Qt::RightDockWidgetArea, toolBoxDock_);
+
+        connect(toolBoxTabs_, &QTabWidget::currentChanged,
+                this, &IQCADModel3DViewer::scheduleToolBoxDockGrowth);
+
+        // remove "new content" mark, once a tab was visited
+        connect(toolBoxTabs_, &QTabWidget::currentChanged, toolBoxTabs_,
+                [this](int index)
+                {
+                    if (index>=0)
+                        toolBoxTabs_->tabBar()->setTabTextColor(index, QColor());
+                });
+    }
+
+    // don't take away the tab, the user is currently working in
+    // (e.g. multi-selection in model tree)
+    auto *cur = toolBoxTabs_->currentWidget();
+    auto *fw = QApplication::focusWidget();
+    bool userWorksInCurrentTab = cur && fw && cur->isAncestorOf(fw);
+
+    // wrap into scroll area, so that the content size does not
+    // enforce the dock width (and thus resize the 3D view)
+    auto sa = new QScrollArea;
+    sa->setWidgetResizable(true);
+    sa->setFrameShape(QFrame::NoFrame);
+    sa->setWidget(w);
+
+    // the tab is removed automatically, when the scroll area is deleted.
+    // The widget is owned by the caller, so remove its scroll area along with it.
+    connect(w, &QObject::destroyed, sa, &QObject::deleteLater);
+    // Queued, because the page is removed only after "destroyed" was emitted.
+    connect(sa, &QObject::destroyed, toolBoxTabs_,
+            [this]()
+            {
+                if (toolBoxTabs_->count()==0)
+                    toolBoxDock_->hide();
+            },
+            Qt::QueuedConnection );
+
+    // content is usually populated after this function returns:
+    // watch for layout changes to adapt dock width
+    w->installEventFilter(this);
+
+    // most recent toolbox is leftmost
+    int i = toolBoxTabs_->insertTab(0, sa, title);
+    if (userWorksInCurrentTab)
+    {
+        // keep current tab (index shifts automatically), mark the new one
+        toolBoxTabs_->tabBar()->setTabTextColor(
+            i, palette().color(QPalette::Highlight) );
+    }
+    else
+    {
+        toolBoxTabs_->setCurrentIndex(i);
+    }
+    toolBoxDock_->show();
+
+    scheduleToolBoxDockGrowth();
+}
+
+
+void IQCADModel3DViewer::scheduleToolBoxDockGrowth()
+{
+    QTimer::singleShot(0, this, &IQCADModel3DViewer::growToolBoxDockIfNeeded);
+}
+
+
+void IQCADModel3DViewer::growToolBoxDockIfNeeded()
+{
+    // only grow automatically, never shrink.
+    // Once the user has set the width, leave it alone.
+    if (toolBoxWidthSetByUser_ || !toolBoxDock_ || !toolBoxDock_->isVisible())
+        return;
+
+    auto sa = qobject_cast<QScrollArea*>(toolBoxTabs_->currentWidget());
+    if (!sa || !sa->widget() || sa->viewport()->width()<=0)
+        return;
+
+    auto w = sa->widget();
+    int contentWidth = std::max(
+        w->sizeHint().width(),
+        w->minimumSizeHint().width() );
+
+    // space taken by tab frame, margins etc.
+    int overhead = toolBoxDock_->width() - sa->viewport()->width();
+    if (!sa->verticalScrollBar()->isVisible())
+        overhead += sa->verticalScrollBar()->sizeHint().width();
+
+    int needed = contentWidth + overhead;
+    if (needed > toolBoxDock_->width())
+    {
+        resizeDocks({toolBoxDock_}, {needed}, Qt::Horizontal);
+    }
+}
+
+
+bool IQCADModel3DViewer::event(QEvent *e)
+{
+    // detect dragging of the separator between the view and the toolbox dock
+    // by the user. The separator belongs to the main window itself.
+    if (e->type()==QEvent::Show)
+    {
+        scheduleToolBoxDockGrowth();
+    }
+
+    if (toolBoxDock_ && toolBoxDock_->isVisible())
+    {
+        if (e->type()==QEvent::MouseButtonPress)
+        {
+            auto me = static_cast<QMouseEvent*>(e);
+            auto dg = toolBoxDock_->geometry();
+            int sepExtent = style()->pixelMetric(
+                QStyle::PM_DockWidgetSeparatorExtent, nullptr, this );
+            int x = me->pos().x(), y = me->pos().y();
+            if ( x >= dg.left()-sepExtent-2 && x < dg.left()
+                && y >= dg.top() && y <= dg.bottom() )
+            {
+                toolBoxWidthAtPress_ = toolBoxDock_->width();
+            }
+            else
+            {
+                toolBoxWidthAtPress_ = -1;
+            }
+        }
+        else if (e->type()==QEvent::MouseButtonRelease)
+        {
+            if ( toolBoxWidthAtPress_>=0
+                && toolBoxDock_->width()!=toolBoxWidthAtPress_ )
+            {
+                toolBoxWidthSetByUser_ = true;
+            }
+            toolBoxWidthAtPress_ = -1;
+        }
+    }
+
+    return QMainWindow::event(e);
+}
+
+
+bool IQCADModel3DViewer::eventFilter(QObject *watched, QEvent *e)
+{
+    if (e->type()==QEvent::LayoutRequest)
+    {
+        scheduleToolBoxDockGrowth();
+    }
+    return QMainWindow::eventFilter(watched, e);
 }
 
 void IQCADModel3DViewer::connectNotepad(QTextEdit *notepad) const

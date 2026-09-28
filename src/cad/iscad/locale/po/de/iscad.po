@@ -306,7 +306,3 @@ msgstr "Modell"
 
 msgid "Select output file name"
 msgstr "Namen der Ausgabedatei auswählen"
-
-#~ msgid "Background model parsing in progress, rebuild is currently disabled!"
-#~ msgstr ""
-#~ "Hintergrundparser ist aktiv, Neu Erzeugen ist im Moment nicht möglich!"

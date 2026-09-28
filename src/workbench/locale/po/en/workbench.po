@@ -77,17 +77,14 @@ msgstr ""
 "the current operating system.\n"
 " Therefore the execution is locked to a WSL backend or a remote host."
 
-#, fuzzy
 msgid "&Open..."
-msgstr "Open..."
+msgstr "&Open..."
 
-#, fuzzy
 msgid "&Create selected..."
-msgstr "Create &report..."
+msgstr "&Create selected..."
 
-#, fuzzy
 msgid "Analysis"
-msgstr "&Analysis"
+msgstr "Analysis"
 
 msgid "Description"
 msgstr ""
@@ -156,13 +153,11 @@ msgstr "&Tools"
 msgid "3D &viewer settings..."
 msgstr ""
 
-#, fuzzy
 msgid "&Undo parameter change"
-msgstr "&Parameters"
+msgstr "&Undo parameter change"
 
-#, fuzzy
 msgid "&Redo parameter change"
-msgstr "&Save parameter set"
+msgstr "&Redo parameter change"
 
 msgid "&Save parameter set as..."
 msgstr "&Save parameter set as..."
@@ -173,9 +168,8 @@ msgstr "&Pack external files into parameter file"
 msgid "&Merge other parameter set into current..."
 msgstr "&Merge other parameter set into current..."
 
-#, fuzzy
 msgid "Show in &XML format..."
-msgstr "&Show in XML format"
+msgstr "Show in &XML format..."
 
 msgid "&Run Analysis"
 msgstr "&Run Analysis"
@@ -214,9 +208,8 @@ msgstr ""
 "The current parameters have been modified without saving.\n"
 "Do you wish to save them before closing?"
 
-#, fuzzy
 msgid "Save input parameters"
-msgstr "Save Parameters"
+msgstr "Save input parameters"
 
 msgid ""
 "The current parameter set is unsaved and will be overwritten.\n"
@@ -231,9 +224,8 @@ msgstr "Open Parameters"
 msgid "Insight parameter sets (*.ist)"
 msgstr "Insight parameter sets (*.ist)"
 
-#, fuzzy
 msgid "Autosaved Parameters found"
-msgstr "Parameters unsaved"
+msgstr "Autosaved Parameters found"
 
 msgid ""
 "There is an automatically saved version of the selected file available.\n"
@@ -349,9 +341,8 @@ msgstr "Transfer from remote location to local directory finished"
 msgid "Transfer from remote location to local directory started"
 msgstr "Transfer from remote location to local directory started"
 
-#, fuzzy
 msgid "New Analysis"
-msgstr "Create New Analysis"
+msgstr "New Analysis"
 
 msgid "&Analysis"
 msgstr "&Analysis"
@@ -401,9 +392,8 @@ msgstr ""
 "Creation of an analysis of type \"%s\" failed.\n"
 "Reason: %s"
 
-#, fuzzy
 msgid "Insight parameter sets"
-msgstr "Insight parameter sets (*.ist)"
+msgstr "Insight parameter sets"
 
 #, c-format
 msgid ""
@@ -465,9 +455,8 @@ msgstr "Launching remote execution server..."
 msgid "Could not clean remote location! Reason: %s"
 msgstr "Could not clean remote location! Reason: %s"
 
-#, fuzzy
 msgid "Writing input file in execution directory..."
-msgstr "Start ParaView in execution directory"
+msgstr "Writing input file in execution directory..."
 
 msgid "launching the remote execution server"
 msgstr "launching the remote execution server"
@@ -504,18 +493,3 @@ msgstr "timeout while stopping remote analysis server"
 
 msgid "remote run cancelled"
 msgstr "remote run cancelled"
-
-#~ msgid "Pack: embed externally referenced files into parameterset"
-#~ msgstr "Pack: embed externally referenced files into parameterset"
-
-#~ msgid "Transmitting input data and starting analysis..."
-#~ msgstr "Transmitting input data and starting analysis..."
-
-#~ msgid "Monitoring remote run"
-#~ msgstr "Monitoring remote run"
-
-#~ msgid "Failed to start analysis on remote server!"
-#~ msgstr "Failed to start analysis on remote server!"
-
-#~ msgid "No response after starting analysis on remote server!"
-#~ msgstr "No response after starting analysis on remote server!"

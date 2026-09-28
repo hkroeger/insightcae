@@ -76,6 +76,13 @@ msgid "launch external command \"%s\" with arguments {%s}"
 msgstr "starte externen Befehl \"%s\" mit Argumenten {%s}"
 
 #, c-format
+msgid ""
+"too many CPU cores requested (%d requested, %d available). If you insist on "
+"oversubscription, set the environment variable INSIGHT_OVERSUBSCRIBE non-"
+"zero."
+msgstr ""
+
+#, c-format
 msgid "Error in GSL subroutine: %s (errno %d)"
 msgstr "Fehler in GSL-Unterroutine: %s (errno %d)"
 

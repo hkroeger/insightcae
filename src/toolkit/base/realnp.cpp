@@ -21,7 +21,7 @@
 
 #include "realnp.h"
 #include "base/exception.h"
-
+#include "base/translations.h"
 #include <cstdlib>
 #include <algorithm>
 
@@ -39,8 +39,9 @@ int realNp(int userInputNp)
         {
             insight::assertion(
                 userInputNp<=maxNp,
-                "too many CPU cores requested (%d requested, %d available)."
-                " If you insist on oversubscription, set environment variable INSIGHT_OVERSUBSCRIBE non-zero."
+                _("too many CPU cores requested (%d requested, %d available)."
+                " If you insist on oversubscription, set the environment variable INSIGHT_OVERSUBSCRIBE non-zero."),
+                userInputNp, maxNp
                 );
         }
         return userInputNp;

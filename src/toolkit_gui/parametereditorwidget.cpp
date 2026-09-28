@@ -24,6 +24,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QHeaderView>
+#include <QTimer>
 #include <exception>
 
 #include "base/exception.h"
@@ -170,17 +171,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                         }
                     }
 
-                    if (splitterV_)
-                    {
-
-                        auto s=splitterV_->sizes();
-                        auto sum=s[0]+s[1];
-
-                        s[1]=sum/2;
-                        s[0]=sum-s[1];
-
-                        splitterV_->setSizes(s);
-                    }
+                    // new controls are shown via queued event; compute height afterwards
+                    QTimer::singleShot(0, this, &ParameterEditorWidget::adjustEditPanelHeight);
 
 
                     // l->addStretch();
@@ -239,6 +231,23 @@ ParameterEditorWidget::ParameterEditorWidget
     }
 
     addWidget(splitterV_);
+
+    // on resize, keep the height of the edit controls panel
+    splitterV_->setStretchFactor(0, 1);
+    splitterV_->setStretchFactor(1, 0);
+
+    // splitterMoved is only emitted on user interaction, not by setSizes
+    connect(splitterV_, &QSplitter::splitterMoved, this,
+            [this](int, int) { editPanelHeightUserAdjusted_=true; } );
+
+    // moving the handle to the 3D view changes the width: re-fit edit panel height
+    connect(this, &QSplitter::splitterMoved, this,
+            [this](int, int) { adjustEditPanelHeight(); } );
+
+    // double-click on handle restores automatic height
+    auto *h = splitterV_->handle(1);
+    h->setToolTip("Drag to resize.\nDouble-click to restore automatic height.");
+    h->installEventFilter(this);
 
 
     setup(display);
@@ -307,6 +316,9 @@ void ParameterEditorWidget::resizeEvent(QResizeEvent*e)
 {
     QSplitter::resizeEvent(e);
 
+    // width may have changed: re-fit edit panel height
+    adjustEditPanelHeight();
+
     if (display_)
     {
         auto w = viewer()->centralWidget()->width();
@@ -321,6 +333,49 @@ void ParameterEditorWidget::resizeEvent(QResizeEvent*e)
 
     if (splitterV_)
         Q_EMIT adaptEditControlsLayout(splitterV_->size());
+}
+
+bool ParameterEditorWidget::eventFilter(QObject* watched, QEvent* event)
+{
+    if ( splitterV_
+        && watched == splitterV_->handle(1)
+        && event->type() == QEvent::MouseButtonDblClick )
+    {
+        editPanelHeightUserAdjusted_=false;
+        adjustEditPanelHeight();
+        return true;
+    }
+    return QSplitter::eventFilter(watched, event);
+}
+
+void ParameterEditorWidget::adjustEditPanelHeight()
+{
+    if (splitterV_ && !editPanelHeightUserAdjusted_)
+    {
+        auto s=splitterV_->sizes();
+        auto sum=s[0]+s[1];
+
+        int h = inputContents_->minimumSizeHint().height();
+
+        if (auto *l = inputContents_->layout())
+        {
+            l->activate(); // lay out the new controls, so that widths are known
+            for (auto *v: inputContents_->findChildren<IQSimpleLatexView*>(
+                     QString(), Qt::FindDirectChildrenOnly))
+            {
+                if (l->indexOf(v)>=0) // skip old controls pending deleteLater
+                {
+                    // extra height, beyond the minimum, to show the full description
+                    h += std::max(0, v->heightForWidth(v->width()) - v->minimumHeight());
+                }
+            }
+        }
+
+        s[1]=std::min(h, sum/2); // at most as high as the tree view
+        s[0]=sum-s[1];
+
+        splitterV_->setSizes(s);
+    }
 }
 
 ParameterEditorWidget::ParameterEditorWidget

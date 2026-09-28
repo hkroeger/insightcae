@@ -80,6 +80,7 @@ protected:
     QAbstractItemModel* model_;
 
     QSplitter* splitterV_=nullptr;
+    bool editPanelHeightUserAdjusted_=false;
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
 
@@ -105,6 +106,14 @@ protected:
         );
 
     void resizeEvent(QResizeEvent*) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
+    /**
+     * @brief adjustEditPanelHeight
+     * set the edit controls panel to its minimum height,
+     * unless the user has adjusted it manually
+     */
+    void adjustEditPanelHeight();
 
 public:
 

@@ -296,7 +296,9 @@ RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(
   pats.push_back( { boost::regex("PID===([0-9]+)===PID"), &pidMatch } );
   lookForPattern(is, pats);
 
-  std::cout<<pidMatch[1]<<std::endl;
+  insight::assertion(
+      pidMatch.size()==2,
+      "could not determine the PID of the remote background process" );
   int remotePid=boost::lexical_cast<int>(pidMatch[1]);
 
   insight::dbg()<<"remote process PID = "<<remotePid<<std::endl;

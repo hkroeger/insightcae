@@ -2,6 +2,7 @@
 #define REMOTERUN_H
 
 #include <memory>
+#include <chrono>
 
 #include "base/resultset.h"
 #include "workbenchaction.h"
@@ -44,6 +45,27 @@ class RemoteRun
 {
   Q_OBJECT
 
+public:
+  /**
+   * @brief The Timing struct
+   * intervals and limits used during a remote run
+   */
+  struct Timing
+  {
+      int contactAttempts = 20;
+      std::chrono::milliseconds contactInterval {2000};
+      std::chrono::milliseconds pollInterval {1000};
+      std::chrono::milliseconds requestTimeout {15*60*1000};
+  };
+
+  /**
+   * @brief defaultTiming
+   * timing, which is used by subsequently created remote runs
+   */
+  static Timing& defaultTiming();
+
+private:
+  Timing timing_;
   bool resume_;
   insight::RemoteServer::PortMappingPtr portMappings_;
   IQRemoteExecutionState* remote_;
@@ -73,7 +95,7 @@ protected:
   void undoLaunchRemoteExecutionServer();
 
   // 4. contact remote exec server
-  void waitForContact( int maxAttempt=20 );
+  void waitForContact( int maxAttempt );
 
   // // 5. launch analysis
   // void launchAnalysis();

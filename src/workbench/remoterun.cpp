@@ -31,8 +31,13 @@ void UndoSteps::addUndoStep(UndoFunction undoFunction, const std::string& label)
 
 void UndoSteps::performUndo(std::exception_ptr undoReason, bool rethrow)
 {
+    // take the steps out first: each step is executed only once,
+    // even if the rollback is triggered again (e.g. by error and cancellation)
+    UndoStepList steps;
+    steps.swap(undoSteps_);
+
     // attempt to roll back
-    for (auto& undoStep: undoSteps_)
+    for (auto& undoStep: steps)
     {
       try
       {
@@ -40,16 +45,21 @@ void UndoSteps::performUndo(std::exception_ptr undoReason, bool rethrow)
       }
       catch (std::exception& re)
       {
-
         insight::Warning(
-              boost::str(boost::format("during rollback in step %s:\n %s")
-                         % undoStep.label % re.what())
-              );
+              "during rollback in step %s:\n %s",
+              undoStep.label.c_str(), re.what() );
+      }
+      catch (...)
+      {
+        insight::Warning(
+              "during rollback in step %s: unknown error",
+              undoStep.label.c_str() );
       }
     }
 
     // rethrow
-    if (rethrow) throw undoReason;
+    if (rethrow && undoReason)
+        std::rethrow_exception(undoReason);
 }
 
 
@@ -58,8 +68,18 @@ void UndoSteps::performUndo(std::exception_ptr undoReason, bool rethrow)
 
 
 
+RemoteRun::Timing& RemoteRun::defaultTiming()
+{
+    static Timing timing;
+    return timing;
+}
+
+
+
+
 RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
   : WorkbenchAction(af),
+    timing_( defaultTiming() ),
     resume_( resume ),
     remote_( af->remoteExecutionConfiguration() ),
     killRequested_(false), disconnectRequested_(false),
@@ -105,6 +125,7 @@ void RemoteRun::launch()
           % portMappings_->localListenerPort(remote_->exeConfig().port()) ),
       &af_->progressDisplayer_
   );
+  ac_->httpClient().setTimeout( timing_.requestTimeout );
 
   if (!resume_)
   {
@@ -227,7 +248,7 @@ void RemoteRun::launchRemoteExecutionServer()
         launchProgress_->stepTo(3);
         launchProgress_->message(_("Establishing contact to remote execution server...") );
 
-        ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, 20) );
+        ac_->ioService().post( std::bind(&RemoteRun::waitForContact, this, timing_.contactAttempts) );
 
     } catch (...) { onError(std::current_exception()); }
 }
@@ -258,7 +279,7 @@ void RemoteRun::waitForContact( int maxAttempts )
         {
             insight::dbg()<<"schedule next contact attempt"<<std::endl;
             ac_->ioService().schedule(
-                    std::chrono::seconds(2),
+                    timing_.contactInterval,
                     std::bind( &RemoteRun::waitForContact, this,
                                maxAttempts-1 ) );
         }
@@ -387,7 +408,7 @@ void RemoteRun::monitor()
                             {
                                 // schedule next status query
                                 ac_->ioService().schedule(
-                                            std::chrono::milliseconds(1000),
+                                            timing_.pollInterval,
                                             std::bind(&RemoteRun::monitor, this) );
                             }
                         }

@@ -1,6 +1,8 @@
 #include "remoteserver.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <deque>
 #include <regex>
 
 #include "base/exception.h"
@@ -135,27 +137,28 @@ void RemoteServer::lookForPattern(
     std::vector<bool> found(pattern.size(), false);
     auto allFound = [&] () -> bool
     {
-        bool all=true;
-        for (const auto& f: found)
-        {
-            all = all && f;
-        }
-        return all;
+        return std::all_of(found.begin(), found.end(), [](bool f) { return f; });
     };
 
-    int linesRead = 0;
-    while ( !allFound() && (linesRead<100*(1+pattern.size())) )
+    // keep the last lines for the error message
+    std::deque<std::string> lastLines;
+    const size_t nLastLines = 10;
+
+    const size_t maxLines = 100*(1+pattern.size());
+    size_t linesRead = 0;
+    std::string line;
+    while ( !allFound() && (linesRead<maxLines) && getline(is, line) )
     {
-      std::string line;
-      if (getline(is, line))
-      {
         linesRead++;
 
-        for (int i=0; i<pattern.size(); ++i)
+        lastLines.push_back(line);
+        if (lastLines.size()>nLastLines) lastLines.pop_front();
+
+        for (size_t i=0; i<pattern.size(); ++i)
         {
             if (!found[i])
             {
-                auto pat = pattern[i];
+                const auto& pat = pattern[i];
                 boost::smatch matches;
                 if (boost::regex_match(line, matches, pat.first))
                 {
@@ -171,7 +174,29 @@ void RemoteServer::lookForPattern(
                 }
             }
         }
-      }
+    }
+
+    if (!allFound())
+    {
+        std::string missing;
+        for (size_t i=0; i<pattern.size(); ++i)
+        {
+            if (!found[i])
+                missing += "\n  "+pattern[i].first.str();
+        }
+
+        std::string output;
+        for (const auto& l: lastLines)
+            output += "\n  "+l;
+        if (output.empty())
+            output = "\n  (no output)";
+
+        throw insight::Exception(
+            "%s while waiting for the expected output of the remote process.\n"
+            "Missing:%s\nLast lines of output:%s",
+            (linesRead>=maxLines ?
+                 "Too many lines of output" : "Output ended"),
+            missing.c_str(), output.c_str() );
     }
 }
 

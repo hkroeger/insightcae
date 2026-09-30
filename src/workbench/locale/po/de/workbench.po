@@ -16,43 +16,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Allowed options"
-msgstr "Zulässige Optionen"
-
-msgid "produce help message"
-msgstr "Hilfe anzeigen"
-
-msgid "print version and exit"
-msgstr "Version anzeigen und beenden"
-
-msgid "put debug output to console instead of log window"
-msgstr "Debug-Ausgabe auf der Konsole anzeigen anstatt im Log-Fenster"
-
-msgid "Additional libraries with analysis modules to load"
-msgstr "Weitere Bibliotheken mit Analysen, die geladen werden sollen"
-
-msgid "open a new analysis of this on startup"
-msgstr "Nach dem Start eine neue Analyse des angegebenen Typs erzeugen"
-
-msgid "Specifies input file."
-msgstr "Eingabedatei angeben"
-
-msgid "Usage:"
-msgstr "Benutzung:"
-
-msgid "Could not parse command line"
-msgstr "Konnte die Kommandozeile nicht auswerten"
-
-msgid "Error: library file does not exist"
-msgstr "Fehler: die Bibliothek existiert nicht"
-
-msgid "Wait"
-msgstr "Warten"
-
-#, c-format
-msgid "Input file does not exist: %s"
-msgstr "Eingabedatei existiert nicht: %s"
-
 msgid "launch in local location"
 msgstr "in lokalem Ordner ausführen"
 
@@ -501,3 +464,40 @@ msgstr "Zeitüberschreitung beim Anhalten des entfernten Analyseservers"
 
 msgid "remote run cancelled"
 msgstr "entfernte Ausführung abgebrochen"
+
+msgid "Allowed options"
+msgstr "Zulässige Optionen"
+
+msgid "produce help message"
+msgstr "Hilfe anzeigen"
+
+msgid "print version and exit"
+msgstr "Version anzeigen und beenden"
+
+msgid "put debug output to console instead of log window"
+msgstr "Debug-Ausgabe auf der Konsole anzeigen anstatt im Log-Fenster"
+
+msgid "Additional libraries with analysis modules to load"
+msgstr "Weitere Bibliotheken mit Analysen, die geladen werden sollen"
+
+msgid "open a new analysis of this on startup"
+msgstr "Nach dem Start eine neue Analyse des angegebenen Typs erzeugen"
+
+msgid "Specifies input file."
+msgstr "Eingabedatei angeben"
+
+msgid "Usage:"
+msgstr "Benutzung:"
+
+msgid "Could not parse command line"
+msgstr "Konnte die Kommandozeile nicht auswerten"
+
+msgid "Error: library file does not exist"
+msgstr "Fehler: die Bibliothek existiert nicht"
+
+msgid "Wait"
+msgstr "Warten"
+
+#, c-format
+msgid "Input file does not exist: %s"
+msgstr "Eingabedatei existiert nicht: %s"

@@ -323,6 +323,9 @@ macro(target_setup_gettext TARGET_NAME GETTEXT_DOMAIN)
     target_compile_definitions(${TARGET_NAME} PRIVATE "GETTEXT_OUTPUT_DIR=\"${GETTEXT_OUTPUT_DIR}\"")
 
     get_target_property(ALL_SOURCES ${TARGET_NAME} SOURCES)
+    # optional additional sources, which are not part of the target
+    # but whose strings belong to the same domain
+    list(APPEND ALL_SOURCES ${ARGN})
 
     CONFIGURE_GETTEXT(
      DOMAIN ${GETTEXT_DOMAIN}

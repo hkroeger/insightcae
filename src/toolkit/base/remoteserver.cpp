@@ -25,7 +25,9 @@ RemoteServer::Config::Config(const boost::filesystem::path& bp, int np)
 std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml_node<> *e)
 {
   std::shared_ptr<RemoteServer::Config> result;
+
   string label = getAttribute(*e, "label");
+
   {
       CurrentExceptionContext ex("reading configuration of remote server %s", label.c_str());
 
@@ -48,7 +50,9 @@ std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml
   }
 
   if (result)
+  {
     static_cast<std::string&>(*result) = label;
+  }
 
   return result;
 }
@@ -87,6 +91,12 @@ bool RemoteServer::Config::isUnoccupied() const
     }
     else
         return true;
+}
+
+void RemoteServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<> &doc) const
+{
+    appendAttribute(doc, *e, "label", *this );
+    appendAttribute(doc, *e, "np", np_ );
 }
 
 bool RemoteServer::Config::isExpandable() const

@@ -36,12 +36,11 @@ SSHLinuxServer::Config::Config(
     rapidxml::xml_node<> *e
     )
   :LinuxRemoteServer::Config(
-     boost::filesystem::path(getAttribute(*e, "baseDirectory")),
-     ( e->first_attribute("np")?
-               getAttribute<int>(*e, "np") : 1 )
-     )
+     getMandatoryAttribute<boost::filesystem::path>(*e, "baseDirectory"),
+     getOptionalAttributeOrDefault(*e, "np", 1 )
+    ),
+   hostName_( getAttribute(*e, "host") )
 {
-  hostName_ = getAttribute(*e, "host");
 
   if (auto ac = e->first_attribute("creationCommand"))
   {
@@ -92,14 +91,14 @@ bool SSHLinuxServer::Config::isDynamicallyAllocated() const
 
 void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const
 {
-  appendAttribute(doc, *e, "label", *this );
-  appendAttribute(doc, *e, "type", "SSHLinux" );
-  appendAttribute(doc, *e, "host", hostName_ );
-  appendAttribute(doc, *e, "baseDirectory", defaultDirectory_.string() );
-  if (!creationCommand_.empty())
-      appendAttribute(doc, *e, "creationCommand", creationCommand_ );
-  if (!destructionCommand_.empty())
-      appendAttribute(doc, *e, "destructionCommand", destructionCommand_ );
+    RemoteServer::Config::save(e, doc);
+    appendAttribute(doc, *e, "type", "SSHLinux" );
+    appendAttribute(doc, *e, "host", hostName_ );
+    appendAttribute(doc, *e, "baseDirectory", defaultDirectory_.string() );
+    if (!creationCommand_.empty())
+        appendAttribute(doc, *e, "creationCommand", creationCommand_ );
+    if (!destructionCommand_.empty())
+        appendAttribute(doc, *e, "destructionCommand", destructionCommand_ );
 }
 
 RemoteServer::ConfigPtr SSHLinuxServer::Config::clone() const

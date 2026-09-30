@@ -1,10 +1,12 @@
 #include "wsllinuxserver.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <regex>
 #include <codecvt>
 
 #include "base/exception.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
 #include "base/shelltools.h"
 #include "openfoam/openfoamcase.h"
@@ -33,16 +35,11 @@ WSLLinuxServer::Config::Config(
 
 WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
   :LinuxRemoteServer::Config(
-     boost::filesystem::path(e->first_attribute("baseDirectory")->value()),
-      ( e->first_attribute("np")?
-           insight::toNumber<int>(e->first_attribute("np")->value())
-                                : 1 )
-     )
-{
-  auto* ha = e->first_attribute("distributionLabel");
-
-  distributionLabel_=ha->value();
-}
+     getMandatoryAttribute<boost::filesystem::path>(*e, "baseDirectory"),
+     getOptionalAttributeOrDefault(*e, "np", 1)
+    ),
+    distributionLabel_(getMandatoryAttribute(*e, "distributionLabel"))
+{}
 
 
 
@@ -76,12 +73,10 @@ bool WSLLinuxServer::Config::isDynamicallyAllocated() const
 
 void WSLLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const
 {
-  e->append_attribute( doc.allocate_attribute( "label", this->c_str() ) );
-  e->append_attribute( doc.allocate_attribute( "type", "WSLLinux" ) );
-  e->append_attribute( doc.allocate_attribute( "distributionLabel",doc.allocate_string(
-                                               distributionLabel_.c_str() ) ) );
-  e->append_attribute( doc.allocate_attribute( "baseDirectory", doc.allocate_string(
-                                               defaultDirectory_.string().c_str() ) ) );
+    RemoteServer::Config::save(e, doc);
+    appendAttribute(doc, *e, "type", "WSLLinux" );
+    appendAttribute(doc, *e, "distributionLabel", distributionLabel_);
+    appendAttribute(doc, *e, "baseDirectory", defaultDirectory_ );
 }
 
 RemoteServer::ConfigPtr WSLLinuxServer::Config::clone() const
@@ -540,6 +535,48 @@ void WSLLinuxServer::updateInstallation(
     }
 }
 
+int parseWslVersion(
+    const std::string& listOutput,
+    const std::string& distributionLabel )
+{
+    // remove NUL characters, which may remain from an imperfect UTF-16 conversion
+    std::string cleaned(listOutput);
+    cleaned.erase(std::remove(cleaned.begin(), cleaned.end(), '\0'), cleaned.end());
+
+    std::istringstream out(cleaned);
+    std::string line;
+    while (getline(out, line))
+    {
+        insight::dbg()<<line<<std::endl;
+
+        std::vector<std::string> tokens;
+        {
+            std::istringstream ls(line);
+            std::string tok;
+            while (ls >> tok) tokens.push_back(tok);
+        }
+
+        // "*" marks the default distribution
+        if (!tokens.empty() && tokens.front()=="*")
+            tokens.erase(tokens.begin());
+
+        // first token is the distribution name, last token the WSL version
+        if ( tokens.size()>=2 && tokens.front()==distributionLabel )
+        {
+            const auto& last = tokens.back();
+            if ( std::all_of(last.begin(), last.end(),
+                             [](unsigned char c) { return std::isdigit(c); }) )
+            {
+                return std::stoi(last);
+            }
+        }
+    }
+    return -1;
+}
+
+
+
+
 int WSLLinuxServer::detectWslVersion() const
 {
 
@@ -557,27 +594,16 @@ int WSLLinuxServer::detectWslVersion() const
     {
         using convert_type = std::codecvt_utf8<wchar_t>;
         std::wstring_convert<convert_type, wchar_t> converter;
+        std::string listOutput;
         wstring wline;
         while (getline(out, wline))
         {
-            std::string line=converter.to_bytes( wline );
-            boost::trim(line);
-            if (!line.empty())
-            {
-                insight::dbg()<<line<<std::endl;
-
-                // line starts with distro name
-                if (line.find(myDistributionLabel()) >= 0)
-                {
-                    // Last token is version number
-                    std::istringstream ls(line);
-                    std::string tok, last;
-                    while (ls >> tok) last = tok;
-                    if (!last.empty() && std::isdigit(static_cast<unsigned char>(last[0])))
-                        return std::stoi(last);
-                }
-            }
+            listOutput += converter.to_bytes( wline ) + "\n";
         }
+
+        int v = parseWslVersion(listOutput, myDistributionLabel());
+        if (v>=0)
+            return v;
     }
 
     throw insight::Exception("failed to detect WSL distribution version");

@@ -115,7 +115,9 @@ public:
         return ret;
     }
 
-    virtual void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const =0;
+    virtual void save(
+        rapidxml::xml_node<> *e,
+        rapidxml::xml_document<>& doc ) const;
 
     virtual ConfigPtr clone() const =0;
 

@@ -1,4 +1,5 @@
 #include "linuxremoteserver.h"
+#include "base/boost_include.h"
 #include "base/tools.h"
 #include "boost/regex/v4/regex_fwd.hpp"
 #include "base/cppextensions.h"
@@ -23,17 +24,11 @@ bool LinuxRemoteServer::Config::isRunning() const
 
 int LinuxRemoteServer::Config::occupiedProcessors(int* nProcAvail) const
 {
-    boost::process::ipstream out;
+    auto r = runCommand("LC_ALL=C mpstat -P all 1 1");
 
-    int ret = executeCommand(
-        "LC_ALL=C mpstat -P all 1 1",
-        boost::process::std_out > out,
-        boost::process::std_err > stderr,
-        boost::process::std_in < boost::process::null
-        );
-
-    if (ret==0)
+    if (r.exitCode==0)
     {
+        std::istringstream out(r.out);
         string line1, line4;
 
         getline(out, line1);
@@ -84,14 +79,42 @@ std::string toUnixPath(const boost::filesystem::path& wp)
 
 LinuxRemoteServer::SSHRemoteStream::~SSHRemoteStream()
 {
-    s_<<std::flush;
-    s_.pipe().close();
-    child_->wait();
+    if (!closed_)
+    {
+        try
+        {
+            close();
+        }
+        catch (const std::exception& e)
+        {
+            insight::Warning(
+                "error while closing remote file %s: %s",
+                remoteFilePath_.string().c_str(), e.what() );
+        }
+    }
 }
 
 std::ostream &LinuxRemoteServer::SSHRemoteStream::stream()
 {
     return s_;
+}
+
+void LinuxRemoteServer::SSHRemoteStream::close()
+{
+    if (closed_) return;
+    closed_=true;
+
+    s_<<std::flush;
+    s_.pipe().close();
+    child_->wait();
+
+    int ret = child_->exit_code();
+    if (ret!=0)
+    {
+        throw insight::Exception(
+            "writing remote file %s failed (exit code %d)",
+            remoteFilePath_.string().c_str(), ret );
+    }
 }
 
 
@@ -102,9 +125,10 @@ std::unique_ptr<RemoteServer::RemoteStream> LinuxRemoteServer::remoteOFStream(
     )
 {
     auto rs=std::make_unique<SSHRemoteStream>();
+    rs->remoteFilePath_=remoteFilePath;
 
     rs->child_ = launchCommand(
-        "cat - > \""+toUnixPath(remoteFilePath)+"\"",
+        "cat > "+shellQuote(toUnixPath(remoteFilePath)),
             boost::process::std_in < rs->s_ );
 
     insight::assertion(
@@ -114,121 +138,207 @@ std::unique_ptr<RemoteServer::RemoteStream> LinuxRemoteServer::remoteOFStream(
     return rs;
 }
 
+
+/**
+ * format the result of a failed remote command for an error message
+ */
+static std::string failureDescription(const RemoteServer::Config::CommandResult& r)
+{
+    std::string err = r.err;
+    boost::trim(err);
+    return str(boost::format("exit code %d%s")
+               % r.exitCode
+               % (err.empty() ? std::string() : ": "+err) );
+}
+
+
+/**
+ * shell command, which succeeds, if a non-zombie process of the group exists
+ * (zombies remain in the group without a reaping init process, e.g. in some containers)
+ */
+static std::string processGroupAliveCommand(int pgid)
+{
+  return "ps -e -o pgid=,stat= | awk '$1=="+std::to_string(pgid)+" && $2 !~ /^Z/ {f=1} END {exit !f}'";
+}
+
+
+LinuxRemoteServer::ProcessGroupJob::ProcessGroupJob(RemoteServer& server, int pgid)
+  : RemoteServer::BackgroundJob(server),
+    pgid_(pgid)
+{}
+
+
+void LinuxRemoteServer::ProcessGroupJob::kill()
+{
+  // terminate the whole group, escalate to SIGKILL after 5 s.
+  // A group, which does not exist (anymore), is not an error.
+  auto g = std::to_string(pgid_);
+  std::string alive = processGroupAliveCommand(pgid_);
+  server_.executeCommand(
+        "kill -TERM -- -"+g+" 2>/dev/null || exit 0; "
+        "for i in $(seq 1 50); do "+alive+" || exit 0; sleep 0.1; done; "
+        "kill -KILL -- -"+g+" 2>/dev/null; exit 0",
+        true );
+}
+
+
+bool LinuxRemoteServer::ProcessGroupJob::isRunning()
+{
+  return server_.executeCommand( processGroupAliveCommand(pgid_), false ) == 0;
+}
+
+
+RemoteServer::BackgroundJobPtr LinuxRemoteServer::launchBackgroundProcess(
+        const std::string &cmd,
+        const std::vector<ExpectedOutput>& eobd )
+{
+  // new session: the shell started by setsid is the leader,
+  // its PID is the process group id of the job and all its children.
+  // If no output is expected, the job releases the connection right after
+  // reporting its PID (otherwise it would depend on it, e.g. on the ssh session).
+  std::string job = "echo PID===$$===PID; ";
+  if (eobd.empty())
+      job += "exec </dev/null >/dev/null 2>&1; ";
+  job += cmd;
+
+  auto is = std::make_shared<boost::process::ipstream>();
+
+  // stderr is captured as well: the launching process must not inherit our stderr
+  // (it may live as long as the job) and error messages (e.g. from ssh) end up
+  // in the exception message of lookForPattern
+  auto process = launchCommand(
+        "setsid bash -c "+shellQuote(job)+" </dev/null &",
+        (boost::process::std_out & boost::process::std_err) > *is,
+        boost::process::std_in < boost::process::null );
+
+  std::vector<std::string> pidMatch;
+  std::vector<ExpectedOutput> pats(eobd.begin(), eobd.end());
+  pats.push_back( { boost::regex("PID===([0-9]+)===PID"), &pidMatch } );
+  lookForPattern(*is, pats);
+
+  insight::assertion(
+      pidMatch.size()==2,
+      "could not determine the PID of the remote background process" );
+  int pgid=boost::lexical_cast<int>(pidMatch[1]);
+
+  insight::dbg()<<"remote process group = "<<pgid<<std::endl;
+
+  process->detach();
+
+  return std::make_shared<ProcessGroupJob>(*this, pgid);
+}
+
+
 bool LinuxRemoteServer::checkIfDirectoryExists(const boost::filesystem::path& dir)
 {
   int ret = executeCommand(
-        "cd \""+toUnixPath(dir)+"\"", false );
+        "test -d "+shellQuote(toUnixPath(dir)), false );
 
-  if (ret==0)
-    return true;
-  else
-    return false;
+  return ret==0;
 }
 
 boost::filesystem::path LinuxRemoteServer::getTemporaryDirectoryName(const boost::filesystem::path& templatePath)
 {
-    assertRunning();
-  boost::process::ipstream out;
+  assertRunning();
 
-  int ret = executeCommand(
-        "mktemp -du \""+toUnixPath(templatePath)+"\"", false,
-        boost::process::std_out > out,
-        boost::process::std_err > stderr,
-        boost::process::std_in < boost::process::null
-        );
+  // create the directory (not only the name), so that it is reserved
+  auto r = config().runCommand(
+        "mkdir -p "+shellQuote(toUnixPath(templatePath.parent_path()))+
+        " && mktemp -d "+shellQuote(toUnixPath(templatePath)) );
 
-  if (ret==0)
+  if (r.exitCode!=0)
   {
-    string line;
-    getline(out, line);
-    insight::dbg()<<line<<std::endl;
-    return line;
-  }
-  else
-  {
-    throw insight::Exception("Could not find temporary remote directory name!");
+    throw insight::Exception(
+          "Could not create temporary remote directory from template %s (%s)",
+          templatePath.string().c_str(), failureDescription(r).c_str() );
   }
 
-  return "";
+  std::string dir = r.out;
+  boost::trim(dir);
+  insight::assertion(
+        !dir.empty(),
+        "no temporary directory name returned by remote server" );
+
+  insight::dbg()<<dir<<std::endl;
+  return dir;
 }
 
 void LinuxRemoteServer::createDirectory(const boost::filesystem::path& remoteDirectory)
 {
-  int ret = executeCommand(
-        "mkdir -p \""+toUnixPath(remoteDirectory)+"\"", false );
+  auto r = config().runCommand(
+        "mkdir -p "+shellQuote(toUnixPath(remoteDirectory)) );
 
-  if (ret!=0)
+  if (r.exitCode!=0)
   {
-    throw insight::Exception("Failed to create remote directory!");
+    throw insight::Exception(
+          "Failed to create remote directory %s (%s)",
+          remoteDirectory.string().c_str(), failureDescription(r).c_str() );
   }
 }
 
 void LinuxRemoteServer::removeDirectory(const boost::filesystem::path& remoteDirectory)
 {
-  int ret = executeCommand(
-        "rm -rf \""+toUnixPath(remoteDirectory)+"\"", false );
+  auto p = toUnixPath(remoteDirectory);
+  boost::trim_right_if(p, boost::is_any_of("/"));
+  insight::assertion(
+        !p.empty(),
+        "refusing to remove remote directory \"%s\"",
+        remoteDirectory.string().c_str() );
 
-  if (ret!=0)
+  auto r = config().runCommand( "rm -rf "+shellQuote(p) );
+
+  if (r.exitCode!=0)
   {
-    throw insight::Exception("Failed to remove remote directory!");
+    throw insight::Exception(
+          "Failed to remove remote directory %s (%s)",
+          remoteDirectory.string().c_str(), failureDescription(r).c_str() );
   }
 }
 
 std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteDirectory(const boost::filesystem::path& remoteDirectory)
 {
-  std::vector<bfs_path> res;
+  auto r = config().runCommand(
+        "ls -1 -- "+shellQuote(toUnixPath(remoteDirectory)) );
 
-  boost::process::ipstream is, ise;
-  auto childPtr = launchCommand(
-        "ls \""+toUnixPath(remoteDirectory)+"\"",
-        boost::process::std_out > is,
-        boost::process::std_err > ise,
-        boost::process::std_in < boost::process::null
-        );
-  if (!childPtr->running())
-    throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
-
-  std::string line;
-  while (std::getline(is, line))
+  if (r.exitCode!=0)
   {
-    cout<<line<<endl;
-    res.push_back(line);
-  }
-  while (std::getline(ise, line))
-  {
-    cerr<<"ERR: "<<line<<endl;
+    throw insight::Exception(
+          "Could not list remote directory %s (%s)",
+          remoteDirectory.string().c_str(), failureDescription(r).c_str() );
   }
 
-  childPtr->wait();
-
-  return res;
-}
-
-std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories(const boost::filesystem::path& remoteDirectory)
-{
   std::vector<bfs_path> res;
-  boost::process::ipstream is;
-
-  auto c = launchCommand(
-        "find "+toUnixPath(remoteDirectory)+"/" // add slash for symbolic links
-        " -maxdepth 1 -type d -printf \"%P\\\\n\"",
-        boost::process::std_out > is,
-        boost::process::std_err > stderr,
-        boost::process::std_in < boost::process::null
-        );
-
-  if (!c->running())
-    throw insight::Exception("Could not execute remote dir list process!");
-
+  std::istringstream is(r.out);
   std::string line;
   while (std::getline(is, line))
   {
     if (!line.empty())
       res.push_back(line);
   }
+  return res;
+}
 
-  c->wait();
+std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories(const boost::filesystem::path& remoteDirectory)
+{
+  auto r = config().runCommand(
+        "find "+shellQuote(toUnixPath(remoteDirectory)+"/") // add slash for symbolic links
+        +" -mindepth 1 -maxdepth 1 -type d -printf '%P\\n'" );
 
+  if (r.exitCode!=0)
+  {
+    throw insight::Exception(
+          "Could not list subdirectories of remote directory %s (%s)",
+          remoteDirectory.string().c_str(), failureDescription(r).c_str() );
+  }
+
+  std::vector<bfs_path> res;
+  std::istringstream is(r.out);
+  std::string line;
+  while (std::getline(is, line))
+  {
+    if (!line.empty())
+      res.push_back(line);
+  }
   return res;
 }
 
@@ -236,23 +346,17 @@ std::vector<boost::filesystem::path> LinuxRemoteServer::listRemoteSubdirectories
 
 int LinuxRemoteServer::findFreeRemotePort() const
 {
-    boost::process::ipstream out;
+    auto r = config().runCommand("isPVFindPort.sh");
 
-    int ret = executeCommand(
-                "isPVFindPort.sh", false,
-                boost::process::std_out > out,
-                boost::process::std_err > stderr,
-                boost::process::std_in < boost::process::null
-                );
-
-    if (ret!=0)
+    if (r.exitCode!=0)
     {
       throw insight::Exception(
-            str( boost::format("Failed to query remote server for free network port!") )
-            );
+            "Failed to query remote server for free network port! (%s)",
+            failureDescription(r).c_str() );
     }
 
     std::string outline;
+    std::istringstream out(r.out);
     getline(out, outline);
     std::vector<std::string> parts;
     boost::split(parts, outline, boost::is_any_of(" "));

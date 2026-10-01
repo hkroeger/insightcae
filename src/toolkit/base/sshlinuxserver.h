@@ -3,6 +3,7 @@
 
 #include "base/linuxremoteserver.h"
 #include <string>
+#include <chrono>
 
 
 namespace insight
@@ -21,6 +22,13 @@ public:
   {
     std::string hostName_;
     std::string creationCommand_, destructionCommand_;
+
+    /**
+     * time to wait, until a server created by the creation command becomes reachable
+     * (e.g. boot time of a cloud instance)
+     */
+    std::chrono::seconds creationTimeout_ = defaultCreationTimeout();
+    static std::chrono::seconds defaultCreationTimeout();
 
     Config(
         const boost::filesystem::path& bp,
@@ -74,19 +82,6 @@ public:
   std::string hostName() const;
 
 
-  struct BackgroundJob : public RemoteServer::BackgroundJob
-  {
-  protected:
-    int remotePid_;
-  public:
-    BackgroundJob(RemoteServer& server, int remotePid);
-    void kill() override;
-  };
-
-  BackgroundJobPtr launchBackgroundProcess(
-          const std::string& cmd,
-          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
-
   void putFile
   (
       const boost::filesystem::path& localFilePath,
@@ -126,6 +121,14 @@ public:
   {
     boost::process::child tunnelProcess_;
     std::map<int, int> remoteToLocal_, localToRemote_;
+    boost::filesystem::path errorLog_; // stderr of the ssh tunnel process
+
+    /**
+     * @brief waitUntilReady
+     * wait until the local ends of the tunnels accept connections.
+     * Throws, if ssh exits or the tunnels are not ready within the timeout.
+     */
+    void waitUntilReady(std::chrono::milliseconds timeout);
 
   public:
     int localListenerPort(int remoteListenerPort) const override;

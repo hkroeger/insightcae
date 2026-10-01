@@ -77,20 +77,6 @@ public:
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
   static boost::filesystem::path WSLcommand();
 
-  struct BackgroundJob : public RemoteServer::BackgroundJob
-  {
-  protected:
-    std::unique_ptr<boost::process::child> process_;
-  public:
-    BackgroundJob(RemoteServer& server, std::unique_ptr<boost::process::child> process);
-    void kill() override;
-  };
-
-  BackgroundJobPtr launchBackgroundProcess(
-          const std::string& cmd,
-          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
-
-
   void putFile
   (
       const boost::filesystem::path& localFilePath,

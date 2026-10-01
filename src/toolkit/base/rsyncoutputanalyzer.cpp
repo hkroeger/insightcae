@@ -21,6 +21,12 @@
 
 #include "rsyncoutputanalyzer.h"
 #include "base/stringconv.h"
+#include "base/exception.h"
+#include "base/externalprocess.h"
+
+#include <deque>
+#include <iostream>
+#include <mutex>
 
 #include <boost/format.hpp>
 
@@ -56,4 +62,52 @@ void RSyncOutputAnalyzer::update(const std::string& line)
     }
 }
 
+
+
+
+void runRSync(
+    Job& job,
+    std::function<void(int,const std::string&)> progressFunction )
+{
+    RSyncOutputAnalyzer rpa(progressFunction);
+
+    // keep the last error lines for the error message
+    std::mutex mx;
+    std::deque<std::string> errLines;
+
+    job.ios_run_with_interruption(
+
+        [&](const std::string& line)
+        {
+            std::cout<<line<<std::endl; // mirror to console
+            rpa.update(line);
+        },
+
+        [&](const std::string& line)
+        {
+            std::cout<<"[E] "<<line<<std::endl; // mirror to console
+            if (!line.empty())
+            {
+                std::lock_guard<std::mutex> l(mx);
+                errLines.push_back(line);
+                if (errLines.size()>10) errLines.pop_front();
+            }
+        }
+    );
+
+    job.wait();
+
+    int ret = job.process().exit_code();
+    if (ret!=0)
+    {
+        std::string msg;
+        for (const auto& l: errLines)
+            msg += "\n  "+l;
+        throw insight::Exception(
+            "file transfer with rsync failed (exit code %d)%s",
+            ret, msg.c_str() );
+    }
 }
+
+
+} // namespace insight

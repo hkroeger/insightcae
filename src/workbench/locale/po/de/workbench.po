@@ -435,11 +435,21 @@ msgstr "starte den entfernten Ausführungsserver"
 msgid "Establishing contact to remote execution server..."
 msgstr "Stelle Verbindung zum entfernten Ausführungsserver her..."
 
+msgid "The remote analysis server has exited during its startup."
+msgstr ""
+
 msgid "Could not contact analysis server after launching it!"
 msgstr "Analyseserver nach dem Start nicht erreichbar!"
 
 msgid "Monitoring analysis..."
 msgstr "Überwache Analyse..."
+
+msgid "The remote analysis server has exited unexpectedly."
+msgstr ""
+
+#, c-format
+msgid "Lost contact to the remote analysis server (%d failed status queries)."
+msgstr ""
 
 msgid "timeout in quering status of analysis server"
 msgstr "Zeitüberschreitung bei der Statusabfrage des Analyseservers"
@@ -462,8 +472,24 @@ msgstr "erfolgreich"
 msgid "timeout while stopping remote analysis server"
 msgstr "Zeitüberschreitung beim Anhalten des entfernten Analyseservers"
 
+#, fuzzy
+msgid "Downloading results"
+msgstr "Ergebnisse &laden..."
+
 msgid "remote run cancelled"
 msgstr "entfernte Ausführung abgebrochen"
+
+#, fuzzy
+msgid "Last output of the remote analysis server:"
+msgstr "Zeitüberschreitung beim Anhalten des entfernten Analyseservers"
+
+#, fuzzy
+msgid "Stopping remote analysis..."
+msgstr "Starte entfernte Analyse"
+
+msgid ""
+"The remote analysis server could not be stopped. The remote location is kept."
+msgstr ""
 
 msgid "Allowed options"
 msgstr "Zulässige Optionen"

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <deque>
+#include <thread>
 #include <regex>
 
 #include "base/exception.h"
@@ -18,6 +19,64 @@ using namespace std;
 using namespace boost;
 
 namespace insight {
+
+
+std::string shellQuote(const std::string& s)
+{
+    std::string r="'";
+    for (char c: s)
+    {
+        if (c=='\'')
+            r+="'\\''";
+        else
+            r+=c;
+    }
+    r+="'";
+    return r;
+}
+
+
+
+
+RemoteServer::Config::CommandResult
+RemoteServer::Config::runCommand(const std::string& command) const
+{
+    insight::CurrentExceptionContext ex(
+        "executing command \"%s\" on remote server %s",
+        command.c_str(), c_str() );
+
+    auto c_and_a = commandAndArgs(command);
+
+    // synchronous pipes, stderr is read by a separate thread:
+    // (the asynchronous pipes of boost.process 1.65 are not reliable,
+    // when several processes are run concurrently)
+    boost::process::ipstream out, err;
+
+    boost::process::child c(
+        c_and_a.first, boost::process::args(c_and_a.second),
+        boost::process::std_in < boost::process::null,
+        boost::process::std_out > out,
+        boost::process::std_err > err );
+
+    CommandResult r;
+    std::thread errReader(
+        [&err,&r]()
+        {
+            r.err.assign(
+                std::istreambuf_iterator<char>(err),
+                std::istreambuf_iterator<char>() );
+        } );
+    r.out.assign(
+        std::istreambuf_iterator<char>(out),
+        std::istreambuf_iterator<char>() );
+    errReader.join();
+
+    c.wait();
+    r.exitCode = c.exit_code();
+    return r;
+}
+
+
 
 
 RemoteServer::Config::Config(const boost::filesystem::path& bp, int np)

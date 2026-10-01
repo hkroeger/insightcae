@@ -31,6 +31,8 @@
 
 namespace insight {
 
+class Job;
+
 class RSyncOutputAnalyzer
     : public OutputAnalyzer
 {
@@ -41,6 +43,17 @@ public:
   RSyncOutputAnalyzer(std::function<void(int,const std::string&)> progressFunction);
   void update(const std::string& line) override;
 };
+
+
+/**
+ * @brief runRSync
+ * run an rsync job (started with "--info=progress2"),
+ * report its progress and wait for its end.
+ * Throws, if rsync fails. The message contains the error output of rsync.
+ */
+void runRSync(
+    Job& job,
+    std::function<void(int,const std::string&)> progressFunction );
 
 }
 

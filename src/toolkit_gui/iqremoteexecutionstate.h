@@ -61,6 +61,13 @@ public:
 
   virtual void cleanup(bool forceRemoval=false);
 
+  /**
+   * @brief discard
+   * remove this state from the GUI (without any action on the remote side).
+   * Must be called in the GUI thread.
+   */
+  virtual void discard();
+
 };
 
 

@@ -188,19 +188,49 @@ void AnalyzeRESTServer::setAnalysis(const boost::filesystem::path& inputFilePare
   inputFileParentPath_=inputFileParentPath;
 }
 
+void AnalyzeRESTServer::setAnalysisInfo(
+    const insight::ParameterSet& parameters,
+    const boost::filesystem::path& executionPath )
+{
+  std::ostringstream os;
+  parameters.saveToStream(os, insight::hierarchicalData::Element::OutputProperties());
+
+  boost::mutex::scoped_lock lock(analysisMx_);
+  parametersXml_=os.str();
+  executionPath_=executionPath;
+}
+
 void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
 {
+  boost::mutex::scoped_lock lock(analysisMx_);
   analysisThread_=at;
 }
 
 void AnalyzeRESTServer::setResults(insight::ResultSetPtr results)
 {
+  boost::mutex::scoped_lock lock(mx_);
   results_=std::move(results);
 }
 
 void AnalyzeRESTServer::setException(const insight::Exception &ex)
 {
+  boost::mutex::scoped_lock lock(mx_);
   exception_=std::make_shared<insight::Exception>(ex);
+}
+
+void AnalyzeRESTServer::waitForExitRequest()
+{
+  {
+    boost::mutex::scoped_lock lock(analysisMx_);
+    if (exitRequested_)
+    {
+      // requested during the analysis: give the reply some time to be sent
+      lock.unlock();
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
+      return;
+    }
+  }
+  waitForShutdown(); // ends with the stop, which is scheduled by the exit request
 }
 
 
@@ -370,19 +400,18 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
     if (stateSelection==Parameters)
     {
-        if (auto analysis = analysisThread_->analysis())
-        {
-            response.setStatus(200);
-            response.setMimeType("application/xml");
-            analysis->parameters().saveToStream(
-                response.out(),
-                insight::hierarchicalData::Element::OutputProperties() );
-
-            return;
-        }
+      boost::mutex::scoped_lock lock(analysisMx_);
+      if (!parametersXml_.empty())
+      {
+        response.setStatus(200);
+        response.setMimeType("application/xml");
+        response.out() << parametersXml_;
+        return;
+      }
     }
     else if (stateSelection==Results)
     {
+      boost::mutex::scoped_lock lock(mx_);
       if (results_)
       {
         response.setStatus(200);
@@ -396,14 +425,20 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else if (stateSelection==ExePath)
     {
-      response.setStatus(200);
-      response.setMimeType("text/plain");
-      response.out() << analysisThread_->executionPath();
-
-      return;
+      boost::mutex::scoped_lock lock(analysisMx_);
+      if (!executionPath_.empty())
+      {
+        response.setStatus(200);
+        response.setMimeType("text/plain");
+        response.out() << executionPath_.string();
+        return;
+      }
     }
     else
     {
+      // the analysis thread adds to the queues concurrently
+      boost::mutex::scoped_lock lock(mx_);
+
       Wt::Json::Array states, progressStates, logLines;
 
       if (recordedStates_.size()>0)
@@ -491,6 +526,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         boost::algorithm::to_lower(action);
         if (action=="kill")
         {
+          boost::mutex::scoped_lock lock(analysisMx_);
           if (analysisThread_)
           {
             analysisThread_->interrupt();
@@ -502,11 +538,23 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="exit")
         {
-          if (analysisThread_)
+          bool analysisRunning=false;
           {
-            analysisThread_->interrupt();
+            boost::mutex::scoped_lock lock(analysisMx_);
+            exitRequested_=true;
+            if (analysisThread_)
+            {
+              analysisThread_->interrupt();
+              analysisRunning=true;
+            }
           }
-          scheduleStop();
+          // scheduleStop() ends waitForShutdown() through a signal,
+          // which would terminate the process, while it does not wait yet.
+          // During the analysis, the main thread stops the server after its end.
+          if (!analysisRunning)
+          {
+            scheduleStop();
+          }
 
           response.setStatus(200);
           response.setMimeType("text/plain");
@@ -515,10 +563,10 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnow")
         {
-
-          if (auto analysis = analysisThread_->analysis())
+          boost::mutex::scoped_lock lock(analysisMx_);
+          if (!executionPath_.empty())
           {
-              std::ofstream f( (analysis->executionPath()/"wnow").string() );
+              std::ofstream f( (executionPath_/"wnow").string() );
               f.close();
           }
 
@@ -529,9 +577,10 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnowandstop")
         {
-          if (auto analysis = analysisThread_->analysis())
+          boost::mutex::scoped_lock lock(analysisMx_);
+          if (!executionPath_.empty())
           {
-              std::ofstream f( (analysis->executionPath()/"wnowandstop").string() );
+              std::ofstream f( (executionPath_/"wnowandstop").string() );
               f.close();
           }
 

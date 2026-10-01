@@ -199,6 +199,10 @@ msgstr "Für diesen Durchlauf angewendete Parameter"
 msgid "ANALYSIS FINISHED SUCCESSFULLY."
 msgstr "ANALYSE ERFOLGREICH AUSGEFÜHRT."
 
+#, fuzzy
+msgid "The analysis was interrupted before it produced results."
+msgstr "Die Analyse wurde wegen der folgenden Fehler beendet:"
+
 msgid "ANALYSIS STOPPED WITHOUT RESULTS."
 msgstr "ANALYSE OHNE ERGEBNIS BEENDET."
 

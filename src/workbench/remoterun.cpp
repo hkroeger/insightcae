@@ -82,7 +82,10 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
     timing_( defaultTiming() ),
     resume_( resume ),
     remote_( af->remoteExecutionConfiguration() ),
+    rec_( std::make_unique<insight::RemoteExecutionConfig>(
+              af->remoteExecutionConfiguration()->exeConfig() ) ),
     killRequested_(false), disconnectRequested_(false),
+    ended_(false), contactEstablished_(false),
     launchProgress_( af_->progressDisplayer_.forkNewAction(
           4,
           _("Launching remote analysis")) )
@@ -111,21 +114,27 @@ RemoteRun::RemoteRun(AnalysisForm *af, bool resume)
 void RemoteRun::launch()
 {
 
-  portMappings_ = remote_->exeConfig().server()->makePortsAccessible(
-      { remote_->exeConfig().port() },
+  portMappings_ = (*rec_).server()->makePortsAccessible(
+      { (*rec_).port() },
       {}
   );
 
   af_->progressDisplayer_.reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
+  // GUI state is read here (GUI thread), not in the IO threads
+  downloadWhenFinished_ =
+      af_->ui->cbDownloadWhenFinished->checkState()==Qt::Checked;
+  inputParameters_ = af_->parameters().cloneAs<insight::ParameterSet>();
+  inputParameters_->pack();
+
   ac_ = std::make_unique<insight::AnalyzeClient>(
       af_->psmodel_->getAnalysisName(),
-      str(format("http://"+remote_->exeConfig().server()->IPaddress()+":%d")
-          % portMappings_->localListenerPort(remote_->exeConfig().port()) ),
+      str(format("http://"+(*rec_).server()->IPaddress()+":%d")
+          % portMappings_->localListenerPort((*rec_).port()) ),
       &af_->progressDisplayer_
   );
-  ac_->httpClient().setTimeout( timing_.requestTimeout );
+  ac_->setTimeout( timing_.requestTimeout );
 
   if (!resume_)
   {
@@ -148,7 +157,7 @@ void RemoteRun::setupRemoteEnvironment()
 
         insight::dbg()<<"initialize remote location"<<std::endl;
 
-        auto &remexeenv = remote_->exeConfig();
+        auto &remexeenv = (*rec_);
         remexeenv.initialize(true);
 
         insight::assertion(
@@ -176,10 +185,7 @@ void RemoteRun::undoSetupRemoteEnvironment()
     // undo: if needed: remove remote work dir again, shutdown remote machine
     try
     {
-        if (remote_->exeConfig().isTemporaryStorage())
-        {
-            remote_->cleanup();
-        }
+        cleanupRemoteLocation();
     }
     catch (std::exception& e)
     {
@@ -198,17 +204,13 @@ void RemoteRun::uploadInputFile()
 
         insight::dbg()<<"upload input file"<<std::endl;
 
-        auto p = af_->parameters()
-                     .cloneAs<insight::ParameterSet>();
-
-        p->pack(); // pack
-
         {
-            auto rs = remote_->exeConfig().remoteOFStream(
+            auto rs = (*rec_).remoteOFStream(
                 "param.ist", 0 );
-            p->saveToStream(
+            inputParameters_->saveToStream(
                 *rs,
                 insight::hierarchicalData::Element::OutputProperties());
+            rs->close(); // throws, if the remote file could not be written
         }
 
         launchProgress_->stepTo(2);
@@ -230,15 +232,15 @@ void RemoteRun::launchRemoteExecutionServer()
 
         insight::dbg()<<"launch execution server"<<std::endl;
 
-        auto rd = remote_->exeConfig().remoteDir();
+        auto rd = (*rec_).remoteDir();
 
-        analyzeProcess_ = remote_->exeConfig().server()->launchBackgroundProcess(
+        analyzeProcess_ = (*rec_).server()->launchBackgroundProcess(
                     "analyze "
                     " --workdir=\""+insight::toUnixPath(rd)+"\""
                     " --server"
                     +str(format(
                     " --port %d"
-                             ) % remote_->exeConfig().port() )+
+                             ) % (*rec_).port() )+
                     " param.ist >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
                     );
 
@@ -274,7 +276,17 @@ void RemoteRun::undoLaunchRemoteExecutionServer()
 void RemoteRun::waitForContact( int maxAttempts )
 {
     auto scheduleNextAttempt = [this,maxAttempts]() {
-        // schedule next attempt in 10 secs, if some remain
+        if (disconnectRequested_) return;
+
+        if (remoteAnalyzeHasExited())
+        {
+            onErrorString(
+                _("The remote analysis server has exited during its startup.")
+                +remoteAnalyzeLog() );
+            return;
+        }
+
+        // schedule next attempt, if some remain
         if (maxAttempts>0)
         {
             insight::dbg()<<"schedule next contact attempt"<<std::endl;
@@ -290,7 +302,8 @@ void RemoteRun::waitForContact( int maxAttempts )
             ac_->ioService().post(
                         std::bind(
                         &RemoteRun::onErrorString, this,
-                    std::string{_("Could not contact analysis server after launching it!")} ) );
+                    std::string{_("Could not contact analysis server after launching it!")}
+                        + remoteAnalyzeLog() ) );
         }
 
     };
@@ -306,6 +319,7 @@ void RemoteRun::waitForContact( int maxAttempts )
                 {
                     if (r.success)
                     {
+                        contactEstablished_ = true;
                         // execute callback on success
 
                         launchProgress_->stepTo(4);
@@ -393,6 +407,38 @@ void RemoteRun::monitor()
         ac_->queryStatus(
                     [this](insight::QueryStatusAction::Result qsr)
                     {
+                      try
+                      {
+                        if (disconnectRequested_) return;
+
+                        if (!qsr.success)
+                        {
+                            // no answer: the server may have died or the connection be broken
+                            ++failedStatusQueries_;
+                            if (remoteAnalyzeHasExited())
+                            {
+                                onErrorString(
+                                    _("The remote analysis server has exited unexpectedly.")
+                                    +remoteAnalyzeLog() );
+                            }
+                            else if (failedStatusQueries_ >= timing_.maxFailedStatusQueries)
+                            {
+                                onErrorString(
+                                    str(format(_("Lost contact to the remote analysis server (%d failed status queries)."))
+                                        % failedStatusQueries_)
+                                    +remoteAnalyzeLog() );
+                            }
+                            else
+                            {
+                                ac_->ioService().schedule(
+                                            timing_.pollInterval,
+                                            std::bind(&RemoteRun::monitor, this) );
+                            }
+                            return;
+                        }
+                        failedStatusQueries_ = 0;
+                        contactEstablished_ = true;
+
                         if (qsr.errorOccurred)
                         {
                             onError(std::make_exception_ptr(*qsr.exception));
@@ -412,6 +458,8 @@ void RemoteRun::monitor()
                                             std::bind(&RemoteRun::monitor, this) );
                             }
                         }
+                      }
+                      catch (...) { onError(std::current_exception()); }
                     },
 
                     std::bind( &RemoteRun::onErrorString, this,
@@ -465,8 +513,9 @@ void RemoteRun::stopRemoteExecutionServer()
                                << (rs.success?_("was"):_("was not"))
                                << " "<<_("successful")<<" " <<std::endl;
 
+                        if (disconnectRequested_) return;
                         ac_->ioService().post(
-                                    af_->ui->cbDownloadWhenFinished->checkState()==Qt::Checked ?
+                                    downloadWhenFinished_ ?
                                     std::bind(&RemoteRun::download, this) :
                                     std::bind(&RemoteRun::cleanupRemote, this)
                                     );
@@ -484,14 +533,28 @@ void RemoteRun::stopRemoteExecutionServer()
 
 void RemoteRun::download()
 {
-    af_->downloadFromRemote(
-                [&]()
-                {
-                    ac_->ioService().post(
-                            std::bind(&RemoteRun::cleanupRemote, this)
-                            );
-                }
-                );
+    try
+    {
+        checkIfCancelled();
+        if (disconnectRequested_) return;
+
+        auto progress = af_->progressDisplayer_.forkNewAction(
+            100, _("Downloading results") );
+
+        rec_->syncToLocal(
+            false, false, {},
+            [progress](int p, const std::string& msg)
+            {
+                progress->stepTo(p);
+                progress->message(msg);
+            } );
+
+        progress->completed();
+
+        ac_->ioService().post(
+                std::bind(&RemoteRun::cleanupRemote, this) );
+
+    } catch (...) { onError(std::current_exception()); }
 }
 
 
@@ -501,11 +564,9 @@ void RemoteRun::cleanupRemote()
 {
     try
     {
-        if (remote_->exeConfig().isTemporaryStorage())
-        {
-            insight::dbg()<<"cleanup"<<std::endl;
-            remote_->cleanup();
-        }
+        checkIfCancelled();
+
+        cleanupRemoteLocation();
 
         finish();
 
@@ -515,10 +576,41 @@ void RemoteRun::cleanupRemote()
 
 
 
+void RemoteRun::cleanupRemoteLocation()
+{
+    if (rec_->isTemporaryStorage())
+    {
+        insight::dbg()<<"cleanup"<<std::endl;
+        rec_->cleanup(); // remote work, no GUI access
+
+        // the remote location does not exist anymore: remove it from the GUI
+        QPointer<IQRemoteExecutionState> remote = remote_;
+        if (remote)
+        {
+            QMetaObject::invokeMethod(
+                remote.data(),
+                [remote]() { if (remote) remote->discard(); },
+                Qt::QueuedConnection );
+        }
+    }
+}
+
+
+
+
 void RemoteRun::finish()
 {
+    if (!claimEnd()) return;
     insight::dbg()<<"emit finished"<<std::endl;
     Q_EMIT finished();
+}
+
+
+
+
+bool RemoteRun::claimEnd()
+{
+    return !ended_.exchange(true);
 }
 
 
@@ -537,14 +629,54 @@ void RemoteRun::checkIfCancelled()
 
 void RemoteRun::onErrorString(const std::string& errorMessage)
 {
+    // the message must not be interpreted as format string (e.g. log output)
     onError( std::make_exception_ptr(
-                 insight::Exception(errorMessage) ) );
+                 insight::Exception("%s", errorMessage.c_str()) ) );
+}
+
+
+
+
+std::string RemoteRun::remoteAnalyzeLog()
+{
+    try
+    {
+        auto& rec = (*rec_);
+        auto r = rec.server()->config().runCommand(
+            "tail -n 30 "+insight::shellQuote(insight::toUnixPath(rec.remoteDir()/"analyze.log")) );
+        if (r.exitCode==0 && !r.out.empty())
+        {
+            return "\n\n"+std::string(_("Last output of the remote analysis server:"))+"\n"+r.out;
+        }
+    }
+    catch (...)
+    {}
+    return std::string();
+}
+
+
+
+
+bool RemoteRun::remoteAnalyzeHasExited()
+{
+    try
+    {
+        return analyzeProcess_ && !analyzeProcess_->isRunning();
+    }
+    catch (...)
+    {
+        return false; // unknown
+    }
 }
 
 
 
 void RemoteRun::onError(std::exception_ptr ex)
 {
+    // after a cancellation request, the cancellation path does the rollback
+    // (errors are then mostly consequences of the cancellation)
+    if (killRequested_ || !claimEnd()) return;
+
     performUndo(ex, false);
     Q_EMIT failed(ex);
 }
@@ -563,8 +695,12 @@ RemoteRun* RemoteRun::create(AnalysisForm* af, bool resume)
 RemoteRun::~RemoteRun()
 {
     disconnectRequested_=true;
-    ac_->httpClient().abort();
-    ac_->ioService().stop();
+    // stop the client, while it is still accessible:
+    // handlers, which are currently running, may still use it
+    if (ac_)
+    {
+        ac_->shutdown();
+    }
 }
 
 
@@ -579,8 +715,83 @@ std::unique_ptr<insight::ResultSet> RemoteRun::moveResults()
 
 void RemoteRun::onCancel()
 {
-    killRequested_=true;
+    if (killRequested_.exchange(true)) return; // already cancelling
+
+    launchProgress_->message(_("Stopping remote analysis..."));
+    // don't wait for a pending (status) request
     ac_->httpClient().abort();
+    ac_->ioService().post( std::bind(&RemoteRun::cancelRemoteRun, this) );
+}
+
+
+
+
+void RemoteRun::cancelRemoteRun()
+{
+    if (!claimEnd()) return; // has ended already
+
+    insight::dbg()<<"cancel remote run"<<std::endl;
+
+    if (!contactEstablished_ && !resume_)
+    {
+        // the remote server was not yet contacted:
+        // the rollback stops it, if it was launched
+        completeCancellation(false);
+        return;
+    }
+
+    // request interruption of the analysis and termination of the server.
+    // This works also for resumed runs, which did not launch the server process.
+    auto requestExit = [this](bool killSucceeded)
+    {
+        ac_->exit(
+            [this,killSucceeded](insight::AnalyzeClientAction::ReportSuccessResult r)
+            { completeCancellation(killSucceeded || r.success); },
+            [this,killSucceeded]()
+            { completeCancellation(killSucceeded); },
+            timing_.cancelRequestTimeout );
+    };
+
+    ac_->kill(
+        [requestExit](insight::AnalyzeClientAction::ReportSuccessResult r)
+        { requestExit(r.success); },
+        [requestExit]()
+        { requestExit(false); },
+        timing_.cancelRequestTimeout );
+}
+
+
+
+
+void RemoteRun::completeCancellation(bool remoteServerStopped)
+{
+    insight::dbg()<<"complete cancellation"<<std::endl;
+
+    // kills the launched server process and removes the remote location,
+    // if they were created by this run
+    performUndo(nullptr, false);
+
+    if (resume_)
+    {
+        if (remoteServerStopped)
+        {
+            try
+            {
+                cleanupRemoteLocation();
+            }
+            catch (std::exception& e)
+            {
+                insight::Warning(_("Could not clean remote location! Reason: %s"), e.what());
+            }
+        }
+        else
+        {
+            insight::Warning(
+                _("The remote analysis server could not be stopped."
+                  " The remote location is kept."));
+        }
+    }
+
     Q_EMIT cancelled();
 }
 

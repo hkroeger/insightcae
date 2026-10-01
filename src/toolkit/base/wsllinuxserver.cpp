@@ -6,6 +6,7 @@
 #include <codecvt>
 
 #include "base/exception.h"
+#include "base/rsyncoutputanalyzer.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
 #include "base/shelltools.h"
@@ -145,57 +146,6 @@ boost::filesystem::path WSLLinuxServer::WSLcommand()
 
 
 
-WSLLinuxServer::BackgroundJob::BackgroundJob(
-    RemoteServer &server,
-    std::unique_ptr<boost::process::child> process )
-  : RemoteServer::BackgroundJob(server),
-    process_(std::move(process))
-{}
-
-
-
-
-void WSLLinuxServer::BackgroundJob::kill()
-{
-  if (process_)
-  {
-    process_->terminate();
-    process_->wait();
-    process_.reset();
-  }
-}
-
-
-
-
-RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(
-        const std::string &cmd,
-        const std::vector<ExpectedOutput>& pattern )
-{
-    insight::assertion(
-        pattern.size()==0,
-        "Not implemented: cannot look for pattern in WSL process");
-
-    //  lookForPattern(is, pattern);
-
-//  boost::process::ipstream is;
-  auto process = launchCommand(
-              cmd/*,
-              boost::process::std_out > is,
-              boost::process::std_in < boost::process::null*/
-              );
-
-  insight::assertion(
-              process->running(),
-              "could not start background process");
-
-
-  return std::make_shared<BackgroundJob>(*this, std::move(process));
-}
-
-
-
-
 void WSLLinuxServer::runRsync
 (
     const std::vector<std::string>& args,
@@ -215,10 +165,8 @@ void WSLLinuxServer::runRsync
   }
   auto ca = config().commandAndArgs(joinedArgs);
 
-  RSyncOutputAnalyzer rpa(pf);
   auto job = std::make_shared<Job>(ca, false); // don't use search_path! It will fail
-  job->ios_run_with_interruption(&rpa);
-  job->wait();
+  runRSync(*job, pf);
 }
 
 

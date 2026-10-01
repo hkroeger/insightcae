@@ -12,6 +12,7 @@ protected:
     void updateGUI(bool enabled) override;
     void commit(const boost::filesystem::path& location) override;
     void cleanup(bool forceRemoval=false) override;
+    void discard() override;
 };
 
 #endif // IQWORKBENCHREMOTEEXECUTIONSTATE_H

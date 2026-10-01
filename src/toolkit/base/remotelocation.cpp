@@ -20,6 +20,7 @@
 #include <signal.h>
 
 #include "sshlinuxserver.h"
+#include "base/linuxremoteserver.h"
 
 using namespace std;
 using namespace boost;
@@ -221,7 +222,20 @@ void RemoteLocation::cleanup(bool forceRemoval)
   CurrentExceptionContext ex("clean remote server");
   assertValid();
 
-  execRemoteCmd("tsp -K");
+  // stop the task spooler of this location, if there is one (best effort:
+  // must neither depend on an OpenFOAM environment nor prevent the removal)
+  try
+  {
+    auto sock = shellQuote(toUnixPath(socket()));
+    server()->executeCommand(
+          "if [ -S "+sock+" ] && command -v tsp >/dev/null 2>&1; then "
+          "TS_SOCKET="+sock+" tsp -K; fi; true",
+          false );
+  }
+  catch (const std::exception& e)
+  {
+    insight::Warning("could not stop the task spooler in the remote location: %s", e.what());
+  }
 
   if (isTemporaryStorage() || forceRemoval)
       removeRemoteDir();

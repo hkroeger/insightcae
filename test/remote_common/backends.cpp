@@ -11,6 +11,7 @@
 #include "base/wsllinuxserver.h"
 
 #include "boost/process.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace fs = boost::filesystem;
 namespace bp = boost::process;
@@ -108,19 +109,9 @@ boost::filesystem::path RemoteBackend::scratchDirectory()
 
 std::string RemoteBackend::remoteOutput(const std::string& command, int* exitCode)
 {
-    // read the output through a temporary file:
-    // avoids any pipe handling issues in the code under test
-    auto tf = fs::temp_directory_path()/fs::unique_path("remoteoutput-%%%%%%%%");
-    int ret = serverConfig()->executeCommand(
-        command,
-        bp::std_out > tf,
-        bp::std_err > bp::null,
-        bp::std_in < bp::null );
-    std::string result = fs::exists(tf) ? readFile(tf) : std::string();
-    boost::system::error_code ec;
-    fs::remove(tf, ec);
-    if (exitCode) *exitCode=ret;
-    return result;
+    auto r = serverConfig()->runCommand(command);
+    if (exitCode) *exitCode=r.exitCode;
+    return r.out;
 }
 
 
@@ -284,6 +275,12 @@ std::string SSHBackend::checkAvailability()
         if (ret!=0)
             return "analyze is not in PATH on "+std::string(*cfg_);
 
+        // the tests generate input files with the analysis definitions of the tested build:
+        // the remote analyze has to be the same build
+        auto reason = checkRemoteAnalyzeMatchesBuild();
+        if (!reason.empty())
+            return reason;
+
         remoteOutput("command -v rsync", &ret);
         if (ret!=0)
             return "rsync is not in PATH on "+std::string(*cfg_);
@@ -310,6 +307,53 @@ std::string SSHBackend::checkAvailability()
 RemoteServer::ConfigPtr SSHBackend::serverConfig()
 {
     return cfg_;
+}
+
+
+
+
+std::string SSHBackend::checkRemoteAnalyzeMatchesBuild()
+{
+    auto localExe = analyzeExecutable();
+    if (!localExe.has_parent_path())
+        return std::string(); // no specific build given: nothing to compare
+
+    int ret;
+    std::string remoteExe = remoteOutput("readlink -f \"$(command -v analyze)\"", &ret);
+    boost::trim(remoteExe);
+
+    if (isLocalMachine_)
+    {
+        boost::system::error_code ec;
+        auto canonicalLocal = fs::canonical(localExe, ec);
+        if (!ec && fs::path(remoteExe)!=canonicalLocal)
+        {
+            return "the analyze executable in the PATH of ssh sessions on "+std::string(*cfg_)
+                   +" ("+remoteExe+") is not the one of the tested build ("+canonicalLocal.string()+")."
+                   " Put the bin directory of the build first in PATH for non-interactive ssh sessions"
+                   " (e.g. in ~/.bashrc).";
+        }
+    }
+    else
+    {
+        // compare versions
+        bp::ipstream is;
+        bp::child c(localExe, "--version", bp::std_out > is, bp::std_err > bp::null, bp::std_in < bp::null);
+        std::string localVersion( (std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>() );
+        c.wait();
+        boost::trim(localVersion);
+
+        std::string remoteVersion = remoteOutput("analyze --version");
+        boost::trim(remoteVersion);
+
+        if (localVersion!=remoteVersion)
+        {
+            return "the analyze executable on "+std::string(*cfg_)+" ("+remoteExe
+                   +", version \""+remoteVersion+"\") does not match the tested build"
+                   " (version \""+localVersion+"\")";
+        }
+    }
+    return std::string();
 }
 
 

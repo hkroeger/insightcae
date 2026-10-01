@@ -124,6 +124,12 @@ protected:
     bool isLocalMachine_;
 public:
     SSHBackend(const std::string& name, RemoteServer::ConfigPtr cfg, bool isLocalMachine);
+
+    /**
+     * @brief checkRemoteAnalyzeMatchesBuild
+     * @return empty, if the remote analyze is the tested build, otherwise the reason
+     */
+    std::string checkRemoteAnalyzeMatchesBuild();
     std::string name() const override;
     std::string checkAvailability() override;
     RemoteServer::ConfigPtr serverConfig() override;

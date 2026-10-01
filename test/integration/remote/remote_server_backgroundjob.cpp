@@ -5,6 +5,7 @@
 
 #include "base/linuxremoteserver.h"
 #include "base/remoteexecution.h"
+#include "base/sshlinuxserver.h"
 
 #include "backends.h"
 #include "remotetest.h"
@@ -27,24 +28,26 @@ int main(int argc, char* argv[])
     {
         BackendSession session(be);
 
-        // unique marker for the processes of this test run
-        std::string marker = std::to_string(3000 + (getpid()%5000));
+        // unique process names for this test run (argv[0] set by "exec -a"),
+        // leftovers end by themselves after 10 minutes
+        std::string marker = "insight-remotejob-"+std::to_string(getpid())+"-";
 
 
         tr.run("background process is started and killed", [&]()
         {
             auto srv = be->server();
-            std::string cmd = "sleep "+marker+"1";
+            std::string name = marker+"1";
+            std::string pattern = "^"+name+" "; // argv[0] only, not the job's shell
 
-            auto job = srv->launchBackgroundProcess(cmd);
+            auto job = srv->launchBackgroundProcess("exec -a "+name+" sleep 600");
             check(bool(job), "no job returned");
 
-            check(waitFor([&]{ return be->remoteProcessesMatching(cmd).size()==1; }, 10s),
+            check(waitFor([&]{ return be->remoteProcessesMatching(pattern).size()==1; }, 10s),
                   "background process not found on the remote side");
 
             job->kill();
 
-            check(waitFor([&]{ return be->remoteProcessesMatching(cmd).empty(); }, 10s),
+            check(waitFor([&]{ return be->remoteProcessesMatching(pattern).empty(); }, 10s),
                   "background process still running after kill()");
         });
 
@@ -86,7 +89,7 @@ int main(int argc, char* argv[])
             auto srv = be->server();
             std::vector<std::string> m;
             auto job = srv->launchBackgroundProcess(
-                "echo READY===4242===READY; sleep "+marker+"3",
+                "echo READY===4242===READY; exec -a "+marker+"3 sleep 600",
                 { { boost::regex("READY===([0-9]+)===READY"), &m } } );
             check(m.size()==2 && m[1]=="4242", "expected output not captured");
             job->kill();
@@ -97,18 +100,18 @@ int main(int argc, char* argv[])
         {
             // "analyze" runs solvers as child processes: they must not survive
             auto srv = be->server();
-            std::string child = "sleep "+marker+"4";
+            std::string child = marker+"4";
+            std::string pattern = "^"+child+" "; // argv[0] only, not the job's shell
+            // subshell: the job's shell remains the parent of the child process
             auto job = srv->launchBackgroundProcess(
-                "bash -c '"+child+"; echo done'" );
+                "(exec -a "+child+" sleep 600); echo done" );
 
-            check(waitFor([&]{ return be->remoteProcessesMatching(child).size()==1; }, 10s),
+            check(waitFor([&]{ return be->remoteProcessesMatching(pattern).size()==1; }, 10s),
                   "child process not started");
 
             job->kill();
 
-            bool gone = waitFor([&]{ return be->remoteProcessesMatching(child).empty(); }, 10s);
-            if (!gone)
-                be->remoteOutput("pkill -f '"+child+"'");
+            bool gone = waitFor([&]{ return be->remoteProcessesMatching(pattern).empty(); }, 10s);
             check(gone, "child process survived kill() of the background job");
         });
 
@@ -125,6 +128,7 @@ int main(int argc, char* argv[])
             {
                 auto rs = rec.server()->remoteOFStream(rd/"param.ist", 0);
                 writeDummyAnalysisInputFile(rs->stream(), 600, 500, false);
+                rs->close();
             }
 
             int port = be->server()->findFreeRemotePort();
@@ -147,17 +151,26 @@ int main(int argc, char* argv[])
 
         tr.run("launch failure is reported instead of hanging", [&]()
         {
-            // the remote shell exits before the PID is reported
-            // (like a failing ssh connection)
-            auto cfg = be->serverConfig();
-            checkCompletesWithin(10s, [cfg]()
+            // the connection to the server fails
+            // (end of output without PID is covered by remote_lookforpattern)
+            if (!be->isSSH())
+                throw SkipCase("requires an SSH backend");
+
+            auto cfg = std::make_shared<SSHLinuxServer::Config>(
+                "/tmp", 1, "nonexistent-host.invalid" );
+            checkCompletesWithin(30s, [cfg]()
             {
                 auto srv = cfg->instance();
                 expectThrows<insight::Exception>(
-                    [&](){ srv->launchBackgroundProcess("exit 1; true"); },
-                    "launching a background process, which does not report its PID" );
-            }, "launchBackgroundProcess with failing remote shell");
+                    [&](){ srv->launchBackgroundProcess("sleep 1"); },
+                    "launching a background process on an unreachable host" );
+            }, "launchBackgroundProcess on unreachable host");
         });
+
+
+        // remove leftovers of failed cases
+        // ("[i]nsight" does not match the command line of the shell running pkill)
+        be->remoteOutput("pkill -f -- '[i]"+marker.substr(1)+"'");
     }
 
     if (abandonedThreads()>0)

@@ -201,6 +201,19 @@ struct RemoteRunFixture
 
     ~RemoteRunFixture()
     {
+        // a run, which is still active, is cancelled first:
+        // the form must not be deleted in the middle of a (failing) case
+        try
+        {
+            if (running())
+            {
+                if (auto *k = form->findChild<QPushButton*>("btnKill"))
+                    k->click();
+                processEventsUntil([this]{ return !running(); }, std::chrono::seconds(60));
+            }
+        }
+        catch (...) {}
+
         // stop anything, which might still be running
         try
         {
@@ -208,7 +221,7 @@ struct RemoteRunFixture
             {
                 auto pat = processPattern();
                 if (!be.remoteProcessesMatching(pat).empty())
-                    be.remoteOutput("pkill -f -- '"+pat+"'");
+                    be.remoteOutput("pkill -f -- '[a]"+pat.substr(1)+"'");
             }
             if (!remoteDir.empty() && be.remoteDirectoryExists(remoteDir))
                 be.server()->removeDirectory(remoteDir);
@@ -373,7 +386,8 @@ int main(int argc, char* argv[])
             check(f.waitUntilRemoteAnalyzeRuns(60s), "remote analyze did not start");
             processEventsFor(3s); // let the monitoring start
 
-            be->remoteOutput("pkill -9 -f -- '"+f.processPattern()+"'");
+            // "[a]" keeps pkill from matching the shell, which executes it
+            be->remoteOutput("pkill -9 -f -- '[a]"+f.processPattern().substr(1)+"'");
 
             bool done = processEventsUntil([&]{ return !f.running(); }, 60s);
             check(done, "loss of the remote analyze process was not detected within 60 s");
@@ -404,8 +418,8 @@ int main(int argc, char* argv[])
             check(done, "failing server launch was not detected within 120 s");
             auto ex = f.newExceptions();
             check(!ex.empty(), "failure should be reported as error");
-            check(ex.back().find("web server")!=std::string::npos
-                  || ex.back().find("analyze.log")!=std::string::npos,
+            check(ex.back().find("Address already in use")!=std::string::npos
+                  || ex.back().find("Could not bind")!=std::string::npos,
                   "error should contain the reason from the remote log: "+ex.back());
 
             f.checkRemoteCleanedUp();
@@ -417,13 +431,16 @@ int main(int argc, char* argv[])
             RemoteRunFixture f(app, *be, true);
             f.form->setDummyParameters(1, 100, false);
             f.setDownload(true);
+            // block the download of the remote log file by a non-empty local directory:
+            // rsync cannot replace it with a file.
+            // (Write protection of the local directory does not work:
+            // rsync sets the permissions of the target directory itself.)
+            fs::create_directories(f.localDir.path()/"analyze.log");
+            writeFile(f.localDir.path()/"analyze.log"/"blocker", "x");
+
             f.start();
 
-            // make the local directory unwritable
-            fs::permissions(f.localDir.path(), fs::owner_read|fs::owner_exe);
-
             bool done = processEventsUntil([&]{ return !f.running(); }, 180s);
-            fs::permissions(f.localDir.path(), fs::owner_all);
 
             check(done, "run with failing download did not end within 180 s");
             check(!f.closer.sawTitle("Finished!"), "run with failing download reported success");

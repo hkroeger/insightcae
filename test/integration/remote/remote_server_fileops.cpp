@@ -135,26 +135,34 @@ int main(int argc, char* argv[])
         auto srv = be->server();
         auto base = be->scratchDirectory();
 
-        std::vector<std::future<fs::path> > names;
-        for (int i=0; i<20; ++i)
-        {
-            names.push_back(std::async(std::launch::async, [srv,base]()
-            {
-                return srv->getTemporaryDirectoryName(base/"irXXXXXX");
-            }));
-        }
+        // at most 8 calls in parallel: each call opens ssh connections one after another,
+        // and sshd drops connections beyond 10 pending ones by default (MaxStartups 10:30:100)
+        const int nParallel=8, nRounds=3, nTotal=nParallel*nRounds;
+
         std::set<fs::path> unique;
-        for (auto& n: names) unique.insert(n.get());
-        check(unique.size()==20, "only %d unique names out of 20", int(unique.size()));
+        for (int round=0; round<nRounds; ++round)
+        {
+            std::vector<std::future<fs::path> > names;
+            for (int i=0; i<nParallel; ++i)
+            {
+                names.push_back(std::async(std::launch::async, [srv,base]()
+                {
+                    return srv->getTemporaryDirectoryName(base/"irXXXXXX");
+                }));
+            }
+            for (auto& n: names) unique.insert(n.get());
+        }
+        check(int(unique.size())==nTotal,
+              "only %d unique names out of %d", int(unique.size()), nTotal);
 
         // the name must be reserved on the remote side,
         // otherwise two runs could pick the same directory
         int nExisting=0;
         for (const auto& n: unique)
             if (be->remoteDirectoryExists(n)) ++nExisting;
-        check(nExisting==20,
-              "%d of 20 temporary directories exist on the remote side "
-              "(name is not reserved by creating it)", nExisting);
+        check(nExisting==nTotal,
+              "%d of %d temporary directories exist on the remote side "
+              "(name is not reserved by creating it)", nExisting, nTotal);
     });
 
 
@@ -169,6 +177,7 @@ int main(int argc, char* argv[])
         {
             auto rs = srv->remoteOFStream(base/"param.ist", content.size());
             rs->stream() << content;
+            rs->close();
         }
 
         check(be->remoteFileContent(base/"param.ist")==content,
@@ -182,7 +191,8 @@ int main(int argc, char* argv[])
         auto target = base/"doesnotexist"/"param.ist";
         auto cfg = be->serverConfig();
 
-        // a throwing destructor would terminate the process: run isolated
+        // run isolated: writing into a pipe, whose reader has already exited,
+        // may raise SIGPIPE
         checkIsolated([cfg,target]()
         {
             auto srv = cfg->instance();
@@ -191,7 +201,7 @@ int main(int argc, char* argv[])
                 {
                     auto rs = srv->remoteOFStream(target, 10);
                     rs->stream() << "some content\n";
-                    rs.reset();
+                    rs->close();
                 },
                 "writing to a remote file in a nonexistent directory" );
         }, "remote output stream error reporting");
@@ -200,19 +210,17 @@ int main(int argc, char* argv[])
 
     tr.run("command with large output does not deadlock", [&]()
     {
-        // executeCommand + ipstream: output must be consumed while the command runs
+        // output must be consumed while the command runs
         auto cfg = be->serverConfig();
         checkCompletesWithin(60s, [cfg]()
         {
-            bp::ipstream is;
-            int ret = cfg->executeCommand(
-                "seq 1 200000",
-                bp::std_out > is,
-                bp::std_in < bp::null );
-            check(ret==0, "command failed");
+            auto r = cfg->runCommand("seq 1 200000; seq 1 100000 >&2");
+            check(r.exitCode==0, "command failed");
+            std::istringstream is(r.out);
             std::string line, last;
             while (std::getline(is, line)) last=line;
-            check(last=="200000", "unexpected last line: "+last);
+            check(last=="200000", "unexpected last line of stdout: "+last);
+            check(r.err.size()>500000, "stderr not captured completely");
         }, "command with 1.3 MB of output");
     });
 

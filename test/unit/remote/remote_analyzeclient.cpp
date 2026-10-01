@@ -293,7 +293,7 @@ int main(int argc, char* argv[])
         auto o = std::make_shared<StatusOutcome>();
         {
             AnalyzeClient ac("test", srv.url(), nullptr);
-            ac.httpClient().setTimeout(2s);
+            ac.setTimeout(2s);
             ac.queryStatus(o->resultCallback(), o->timeoutCallback());
 
             bool gotTimeout = o->waitForTimeout(8s);
@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
     {
         FakeAnalyzeServer srv;
         AnalyzeClient ac("test", srv.url(), nullptr);
-        ac.httpClient().setTimeout(1s);
+        ac.setTimeout(1s);
 
         StatusOutcome o;
         ac.queryStatus(o.resultCallback(), o.timeoutCallback());
@@ -324,7 +324,7 @@ int main(int argc, char* argv[])
         FakeAnalyzeServer srv;
         srv.setFault(Fault::DelayResponse, 1000);
         AnalyzeClient ac("test", srv.url(), nullptr);
-        ac.httpClient().setTimeout(5s);
+        ac.setTimeout(5s);
 
         StatusOutcome o;
         ac.queryStatus(o.resultCallback(), o.timeoutCallback());

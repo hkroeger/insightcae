@@ -53,6 +53,7 @@ int main(int argc, char* argv[])
             "/tmp", 1, "nonexistent-host.invalid",
             "touch '"+created.string()+"'",
             "true" );
+        cfg.creationTimeout_ = 0s; // don't wait for the host
 
         try { cfg.instance(); } catch (...) {}
         check(fs::exists(created), "creation command was not executed");
@@ -61,10 +62,14 @@ int main(int argc, char* argv[])
 
     tr.run("server, which is still unreachable after creation, is reported", [&]()
     {
+        TemporaryDirectory d;
+        auto destroyed = d.path()/"destroyed";
+
         SSHLinuxServer::Config cfg(
             "/tmp", 1, "nonexistent-host.invalid",
             "true",   // "creation" succeeds, but host stays unreachable
-            "true" );
+            "touch '"+destroyed.string()+"'" );
+        cfg.creationTimeout_ = 10s;
 
         checkCompletesWithin(120s, [cfg]()
         {
@@ -72,6 +77,9 @@ int main(int argc, char* argv[])
                 [&](){ cfg.instance(); },
                 "instance() of a server, which is not reachable after creation" );
         }, "instance() of unreachable server");
+
+        check(fs::exists(destroyed),
+              "the unreachable server was not destroyed after the creation timeout");
     });
 
 

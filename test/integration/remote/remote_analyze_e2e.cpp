@@ -144,6 +144,7 @@ struct RemoteAnalyzeRun
         {
             auto rs = loc->server()->remoteOFStream(rd/"param.ist", 0);
             writeDummyAnalysisInputFile(rs->stream(), executionTime, deltaT, emitError);
+            rs->close();
         }
 
         if (beforeLaunch) beforeLaunch(port);
@@ -163,7 +164,7 @@ struct RemoteAnalyzeRun
             "http://"+loc->server()->IPaddress()+":"
                 +std::to_string(portMapping->localListenerPort(port)),
             nullptr );
-        client->httpClient().setTimeout(10s);
+        client->setTimeout(10s);
     }
 
     ~RemoteAnalyzeRun()
@@ -194,9 +195,16 @@ struct RemoteAnalyzeRun
 
     void waitForContact()
     {
-        bool contact = pollUntil(
-            *client, [](const QueryStatusAction::Result&){ return true; }, 60s );
-        check(contact, "no contact to remote analyze server within 60 s. Log:\n"+remoteLog());
+        // fail fast, if the remote analyze has exited (e.g. invalid input)
+        auto deadline=std::chrono::steady_clock::now()+60s;
+        while (std::chrono::steady_clock::now()<deadline)
+        {
+            if (pollUntil(*client, [](const QueryStatusAction::Result&){ return true; }, 2s))
+                return;
+            check(job->isRunning(),
+                  "the remote analyze server has exited before it could be contacted. Log:\n"+remoteLog());
+        }
+        fail("no contact to remote analyze server within 60 s. Log:\n"+remoteLog());
     }
 
     QueryStatusAction::Result waitForEnd(std::chrono::milliseconds timeout)

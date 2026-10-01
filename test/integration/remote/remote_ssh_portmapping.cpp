@@ -33,7 +33,7 @@ bool statusQuerySucceeds(const std::string& url, std::chrono::milliseconds timeo
     auto w=std::make_shared<W>();
 
     AnalyzeClient ac("test", url, nullptr);
-    ac.httpClient().setTimeout(timeout);
+    ac.setTimeout(timeout);
     ac.queryStatus(
         [w](QueryStatusAction::Result r)
         {

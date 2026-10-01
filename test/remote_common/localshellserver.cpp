@@ -102,54 +102,6 @@ const RemoteServer::Config& LocalShellServer::config() const
 
 
 
-LocalShellServer::BackgroundJob::BackgroundJob(RemoteServer& server, int pid)
-    : RemoteServer::BackgroundJob(server),
-      pid_(pid)
-{}
-
-
-
-
-void LocalShellServer::BackgroundJob::kill()
-{
-    server_.executeCommand(
-        "if ps -p "+std::to_string(pid_)+" >/dev/null; then kill "+std::to_string(pid_)+"; fi",
-        true );
-}
-
-
-
-
-RemoteServer::BackgroundJobPtr LocalShellServer::launchBackgroundProcess(
-    const std::string& cmd,
-    const std::vector<ExpectedOutput>& eobd )
-{
-    auto is = std::make_shared<boost::process::ipstream>();
-
-    auto process = launchCommand(
-        cmd+" & echo PID===$!===PID",
-        boost::process::std_out > *is,
-        boost::process::std_in < boost::process::null );
-
-    std::vector<std::string> pidMatch;
-    std::vector<ExpectedOutput> pats(eobd.begin(), eobd.end());
-    pats.push_back( { boost::regex("PID===([0-9]+)===PID"), &pidMatch } );
-    lookForPattern(*is, pats);
-
-    insight::assertion(
-        pidMatch.size()==2,
-        "could not determine PID of background process" );
-
-    int pid = std::stoi(pidMatch[1]);
-
-    process->detach();
-
-    return std::make_shared<BackgroundJob>(*this, pid);
-}
-
-
-
-
 static bool isExcluded(
     const fs::path& relPath,
     bool includeProcessorDirectories,

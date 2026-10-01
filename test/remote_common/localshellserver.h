@@ -13,7 +13,7 @@ namespace remotetest {
  *
  * It uses the same mechanisms as the real Linux backends
  * (command execution through a shell like WSLLinuxServer,
- * PID reporting through lookForPattern like SSHLinuxServer),
+ * background jobs from LinuxRemoteServer),
  * so that the code shared in LinuxRemoteServer can be tested without
  * any SSH or WSL installation.
  *
@@ -49,20 +49,6 @@ public:
     LocalShellServer(const Config& cfg);
 
     const RemoteServer::Config& config() const override;
-
-    struct BackgroundJob : public RemoteServer::BackgroundJob
-    {
-    protected:
-        int pid_;
-    public:
-        BackgroundJob(RemoteServer& server, int pid);
-        void kill() override;
-        int pid() const { return pid_; }
-    };
-
-    BackgroundJobPtr launchBackgroundProcess(
-        const std::string& cmd,
-        const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
 
     void putFile
         (

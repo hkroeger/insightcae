@@ -56,10 +56,14 @@ std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance() const
 std::pair<boost::filesystem::path,std::vector<std::string> >
 WSLLinuxServer::Config::commandAndArgs(const std::string& command) const
 {
+    // --exec: bash is started directly. With "--", wsl.exe would pass the
+    // command line to the default shell of the distribution, which parses it
+    // once more (e.g. "$!" or "$$" would be expanded by that shell).
+    // This way, the command is evaluated exactly once (as with ssh).
     return {
         WSLcommand(),
         { "-d", distributionLabel_,
-         "--", "bash", "-lc", command }
+         "--exec", "bash", "-lc", command }
     };
 }
 
@@ -142,6 +146,19 @@ boost::filesystem::path WSLLinuxServer::WSLcommand()
   return wsl;
 }
 
+
+
+
+
+bool WSLLinuxServer::launchingProcessMustOutliveJob() const
+{
+  // When a wsl.exe call ends, the processes started by it are cleaned up
+  // (also a background job, which has not yet completed its setsid),
+  // and WSL2 shuts an idle distribution down shortly after the last wsl.exe
+  // has ended, including all background processes.
+  // So the launching wsl.exe is kept alive as long as the job runs.
+  return true;
+}
 
 
 
@@ -413,7 +430,7 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 {
   boost::process::ipstream out;
 
-  std::string cmd="/usr/bin/insight_version.sh";
+  std::string cmd="analyze --version";
 
   int ret = executeCommand(
       cmd, false,
@@ -425,10 +442,12 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 
   if (ret==0)
   {
-    boost::regex pat("^  Installed: (.*)\\.(.*)\\.(.*)-(.*)~(.*)$");
+    // output format of ToolkitVersion::toString(): "major.minor.patch-commit (branch)"
+    boost::regex pat("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\S*)(?:\\s+\\((.*)\\))?$");
     std::string line;
     while (getline(out, line))
     {
+      boost::trim(line);
       boost::smatch m;
       if (boost::regex_search(line, m, pat))
       {
@@ -436,10 +455,18 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
         int minorVersion = lexical_cast<int>(m[2]);
         int patchVersion = lexical_cast<int>(m[3]);
         std::string commit = m[4];
-        return ToolkitVersion(majorVersion, minorVersion, patchVersion, commit, "");
+        std::string branch = m[5];
+        ToolkitVersion installedVersion(majorVersion, minorVersion, patchVersion, commit, branch);
+        insight::dbg()
+            << "WSL installed version: " << installedVersion.toString()
+            << ", own version: " << ToolkitVersion::current().toString()
+            << std::endl;
+        return installedVersion;
       }
     }
-    throw insight::Exception("Could not parse version information.\nMaybe package is not installed?");
+    throw insight::Exception(
+        "Could not parse version information from output of \""+cmd+"\".\n"
+        "Maybe InsightCAE is not installed in the WSL distribution?");
   }
   else
   {

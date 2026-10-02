@@ -209,7 +209,8 @@ int main(int argc, char *argv[])
 
         if (!server->start())
         {
-            std::cerr << _("Could not start web server!") << std::endl;
+            // without the server, the client could never contact this process
+            throw insight::Exception(_("Could not start web server!"));
         }
 
 //// disable for now. not working inside WSL

@@ -471,8 +471,28 @@ msgstr "&Load results..."
 msgid "remote run cancelled"
 msgstr "remote run cancelled"
 
-#, fuzzy
-msgid "Last output of the remote analysis server:"
+#, c-format
+msgid ""
+"The log file %s of the remote analysis server does not exist: the server "
+"process was not started (or it was terminated before it could run)."
+msgstr ""
+
+#, c-format
+msgid ""
+"The log file %s of the remote analysis server could not be read (exit code "
+"%d): %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "The log file %s of the remote analysis server is empty."
+msgstr "timeout while stopping remote analysis server"
+
+#, fuzzy, c-format
+msgid "Last output of the remote analysis server (%s):"
+msgstr "timeout while stopping remote analysis server"
+
+#, fuzzy, c-format
+msgid "The log file %s of the remote analysis server could not be read: %s"
 msgstr "timeout while stopping remote analysis server"
 
 #, fuzzy

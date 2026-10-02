@@ -188,18 +188,35 @@ bool LinuxRemoteServer::ProcessGroupJob::isRunning()
 }
 
 
+bool LinuxRemoteServer::launchingProcessMustOutliveJob() const
+{
+  return false;
+}
+
+
 RemoteServer::BackgroundJobPtr LinuxRemoteServer::launchBackgroundProcess(
         const std::string &cmd,
         const std::vector<ExpectedOutput>& eobd )
 {
-  // new session: the shell started by setsid is the leader,
+  // The job runs in a new session: the shell started by setsid is the leader,
   // its PID is the process group id of the job and all its children.
-  // If no output is expected, the job releases the connection right after
-  // reporting its PID (otherwise it would depend on it, e.g. on the ssh session).
-  std::string job = "echo PID===$$===PID; ";
+  // (The background child of the non-interactive shell is no process group leader,
+  // so setsid does not fork and $! is the session leader.)
+  //
+  // The PID is reported by the launching shell itself, before it exits:
+  // wsl.exe stops relaying output, as soon as its main process has ended,
+  // so output of the background job may get lost otherwise.
+  // If output is expected, the launching shell waits for the job and keeps
+  // the relay open. Otherwise, the job is detached from the connection.
+  std::string launch = "setsid bash -c "+shellQuote(cmd)+" </dev/null";
   if (eobd.empty())
-      job += "exec </dev/null >/dev/null 2>&1; ";
-  job += cmd;
+  {
+      launch += " >/dev/null 2>&1 & echo PID===$!===PID";
+      if (launchingProcessMustOutliveJob())
+          launch += "; wait";
+  }
+  else
+      launch += " 2>&1 & echo PID===$!===PID; wait";
 
   auto is = std::make_shared<boost::process::ipstream>();
 
@@ -207,7 +224,7 @@ RemoteServer::BackgroundJobPtr LinuxRemoteServer::launchBackgroundProcess(
   // (it may live as long as the job) and error messages (e.g. from ssh) end up
   // in the exception message of lookForPattern
   auto process = launchCommand(
-        "setsid bash -c "+shellQuote(job)+" </dev/null &",
+        launch,
         (boost::process::std_out & boost::process::std_err) > *is,
         boost::process::std_in < boost::process::null );
 

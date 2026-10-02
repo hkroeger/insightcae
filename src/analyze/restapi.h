@@ -24,6 +24,7 @@ class AnalyzeRESTServer
   boost::filesystem::path executionPath_;
   std::string parametersXml_;
   bool exitRequested_ = false;
+  boost::condition_variable exitRequestedCv_;
 
   boost::mutex mx_;
   std::deque<insight::ProgressState> recordedStates_;
@@ -85,7 +86,8 @@ public:
 
   /**
    * @brief waitForExitRequest
-   * keep serving until the client sends "exit" (or a signal is received)
+   * keep serving until the client sends "exit".
+   * The request may already have arrived (e.g. during the analysis).
    */
   void waitForExitRequest();
 

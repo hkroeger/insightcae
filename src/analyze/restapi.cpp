@@ -14,8 +14,54 @@
 
 #include <csignal>
 
+#ifdef WIN32
+#include <boost/asio.hpp>
+#endif
+
 using namespace std;
 using namespace Wt;
+
+
+#ifdef WIN32
+namespace {
+
+/**
+ * On Windows, SO_REUSEADDR (which is set by Wt) allows binding to a port,
+ * which is already in use by another socket: the server would start
+ * without error, but the requests might go to another process.
+ * A probe socket with exclusive address use fails to bind in that case.
+ */
+void checkPortIsFree(const std::string& listenAddr, int port)
+{
+    boost::system::error_code ec;
+    auto addr = boost::asio::ip::address::from_string(listenAddr, ec);
+    if (ec) return; // no numeric address: leave the check to Wt
+
+    boost::asio::io_service ios;
+    boost::asio::ip::tcp::acceptor probe(ios);
+    boost::asio::ip::tcp::endpoint ep(addr, port);
+
+    probe.open(ep.protocol(), ec);
+    if (!ec)
+    {
+        probe.set_option(
+            boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_EXCLUSIVEADDRUSE>(true), ec );
+    }
+    if (!ec)
+    {
+        probe.bind(ep, ec);
+    }
+    if (ec)
+    {
+        throw insight::Exception(
+            "Could not bind to address %s port %d: %s",
+            listenAddr.c_str(), port, ec.message().c_str() );
+    }
+    // the probe socket is closed here, before the server binds
+}
+
+}
+#endif
 
 
 
@@ -159,6 +205,9 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   : Wt::WServer(srvname.c_str()),
     analysisThread_(nullptr)
 {
+#ifdef WIN32
+  checkPortIsFree(listenAddr, port);
+#endif
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
   auto mmrs = insight::toString(32 * 1024*1024);
@@ -204,6 +253,11 @@ void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
 {
   boost::mutex::scoped_lock lock(analysisMx_);
   analysisThread_=at;
+  if (analysisThread_ && exitRequested_)
+  {
+    // the exit was requested before the analysis was started
+    analysisThread_->interrupt();
+  }
 }
 
 void AnalyzeRESTServer::setResults(insight::ResultSetPtr results)
@@ -222,15 +276,14 @@ void AnalyzeRESTServer::waitForExitRequest()
 {
   {
     boost::mutex::scoped_lock lock(analysisMx_);
-    if (exitRequested_)
+    while (!exitRequested_)
     {
-      // requested during the analysis: give the reply some time to be sent
-      lock.unlock();
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
-      return;
+      exitRequestedCv_.wait(lock);
     }
   }
-  waitForShutdown(); // ends with the stop, which is scheduled by the exit request
+  // give the reply to the exit request some time to be sent,
+  // before the server is stopped
+  boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
 }
 
 
@@ -538,23 +591,19 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="exit")
         {
-          bool analysisRunning=false;
+          // The main thread ends the process (waitForExitRequest).
+          // (scheduleStop() must not be used: it works through a signal,
+          // which terminates the process, if the main thread does not wait
+          // for it yet, e.g. before or during the analysis.)
           {
             boost::mutex::scoped_lock lock(analysisMx_);
             exitRequested_=true;
             if (analysisThread_)
             {
               analysisThread_->interrupt();
-              analysisRunning=true;
             }
           }
-          // scheduleStop() ends waitForShutdown() through a signal,
-          // which would terminate the process, while it does not wait yet.
-          // During the analysis, the main thread stops the server after its end.
-          if (!analysisRunning)
-          {
-            scheduleStop();
-          }
+          exitRequestedCv_.notify_all();
 
           response.setStatus(200);
           response.setMimeType("text/plain");

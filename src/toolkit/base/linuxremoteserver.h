@@ -68,10 +68,19 @@ public:
    * Otherwise, the output is read until the expected patterns are found
    * and remains connected to the (then no longer read) channel:
    * such jobs should not produce much output afterwards and may end with the connection.
+   * See also launchingProcessMustOutliveJob().
    */
   BackgroundJobPtr launchBackgroundProcess(
       const std::string& cmd,
       const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
+
+  /**
+   * @brief launchingProcessMustOutliveJob
+   * true, if the local process, which launches a background job
+   * (e.g. wsl.exe), has to keep running as long as the job:
+   * then it waits for the job (it is detached locally after the launch).
+   */
+  virtual bool launchingProcessMustOutliveJob() const;
 
   bool checkIfDirectoryExists(const boost::filesystem::path& dir) override;
   boost::filesystem::path getTemporaryDirectoryName(const boost::filesystem::path& templatePath) override;

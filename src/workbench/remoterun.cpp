@@ -242,6 +242,8 @@ void RemoteRun::launchRemoteExecutionServer()
                     " --port %d"
                              ) % (*rec_).port() )+
                     " param.ist >\""+insight::toUnixPath(rd/"analyze.log")+"\" 2>&1 </dev/null"
+                    // the exit code is a hint in the error message, if analyze ends unexpectedly
+                    "; echo \"[analyze exited with code $?]\" >>\""+insight::toUnixPath(rd/"analyze.log")+"\""
                     );
 
         addUndoStep( std::bind(&RemoteRun::undoLaunchRemoteExecutionServer, this),
@@ -639,19 +641,45 @@ void RemoteRun::onErrorString(const std::string& errorMessage)
 
 std::string RemoteRun::remoteAnalyzeLog()
 {
+    std::string logFile;
     try
     {
         auto& rec = (*rec_);
+        logFile = insight::toUnixPath(rec.remoteDir()/"analyze.log");
+        auto lf = insight::shellQuote(logFile);
+
+        // exit code 3: no log file
         auto r = rec.server()->config().runCommand(
-            "tail -n 30 "+insight::shellQuote(insight::toUnixPath(rec.remoteDir()/"analyze.log")) );
-        if (r.exitCode==0 && !r.out.empty())
+            "test -e "+lf+" || exit 3; tail -n 30 "+lf );
+
+        if (r.exitCode==3)
         {
-            return "\n\n"+std::string(_("Last output of the remote analysis server:"))+"\n"+r.out;
+            return "\n\n"+str(format(_(
+                "The log file %s of the remote analysis server does not exist:"
+                " the server process was not started"
+                " (or it was terminated before it could run).")) % logFile);
         }
+        else if (r.exitCode!=0)
+        {
+            return "\n\n"+str(format(_(
+                "The log file %s of the remote analysis server could not be read"
+                " (exit code %d): %s")) % logFile % r.exitCode % r.err);
+        }
+        else if (r.out.empty())
+        {
+            return "\n\n"+str(format(_(
+                "The log file %s of the remote analysis server is empty.")) % logFile);
+        }
+
+        return "\n\n"+str(format(_("Last output of the remote analysis server (%s):")) % logFile)
+               +"\n"+r.out;
     }
-    catch (...)
-    {}
-    return std::string();
+    catch (const std::exception& e)
+    {
+        return "\n\n"+str(format(_(
+            "The log file %s of the remote analysis server could not be read: %s"))
+                % logFile % e.what());
+    }
 }
 
 

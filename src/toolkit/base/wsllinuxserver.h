@@ -77,6 +77,8 @@ public:
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
   static boost::filesystem::path WSLcommand();
 
+  bool launchingProcessMustOutliveJob() const override;
+
   void putFile
   (
       const boost::filesystem::path& localFilePath,

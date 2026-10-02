@@ -17,8 +17,14 @@ class AnalyzeRESTServer
   public Wt::WResource,
   public insight::TextProgressDisplayer
 {
+  // access to the analysis thread and the information about the analysis
+  mutable boost::mutex analysisMx_;
   insight::AnalysisThread* analysisThread_;
   boost::filesystem::path inputFileParentPath_;
+  boost::filesystem::path executionPath_;
+  std::string parametersXml_;
+  bool exitRequested_ = false;
+  boost::condition_variable exitRequestedCv_;
 
   boost::mutex mx_;
   std::deque<insight::ProgressState> recordedStates_;
@@ -56,6 +62,15 @@ public:
 
 
   void setAnalysis(const boost::filesystem::path& inputFileParentPath);
+
+  /**
+   * @brief setAnalysisInfo
+   * information, which remains available after the analysis has finished
+   */
+  void setAnalysisInfo(
+      const insight::ParameterSet& parameters,
+      const boost::filesystem::path& executionPath );
+
   void setSolverThread(insight::AnalysisThread* at);
   void setResults(insight::ResultSetPtr results);
   void setException(const insight::Exception& ex);
@@ -68,6 +83,13 @@ public:
 
   bool hasResultsDelivered() const;
   bool waitForResultDelivery();
+
+  /**
+   * @brief waitForExitRequest
+   * keep serving until the client sends "exit".
+   * The request may already have arrived (e.g. during the analysis).
+   */
+  void waitForExitRequest();
 
   // bool hasInputFileReceived() const;
   // bool waitForInputFile(std::string& inputFileContents_);

@@ -39,7 +39,6 @@ add_toolkit_test(toolkit_chartrenderer)
 add_toolkit_test(toolkit_multiregion)
 add_toolkit_test(toolkit_filecontainer)
 add_toolkit_test(toolkit_tounixpath)
-add_toolkit_test(toolkit_remoteexecutionconfig)
 add_toolkit_test(toolkit_warningbox)
 add_toolkit_test(toolkit_linearalgebra_integrate_trpz)
 add_toolkit_test(toolkit_linearalgebra_convergencebyvariance)
@@ -64,7 +63,9 @@ add_library(toolkit_factory_lib_ext SHARED toolkit_factory_unit2.h
     toolkit_factory_unit3.h
     toolkit_factory_unit3.cpp)
 target_include_directories(toolkit_factory_lib_ext PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(toolkit_factory_lib_ext toolkitHeaders)
+# the extension uses the base class from toolkit_factory_lib_base
+# (DLLs need all symbols resolved at link time)
+target_link_libraries(toolkit_factory_lib_ext toolkitHeaders toolkit_factory_lib_base)
 
 add_executable(toolkit_factory toolkit_factory.cpp toolkit_factory_unit2.h toolkit_factory_unit3.h)
 target_include_directories(toolkit_factory PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

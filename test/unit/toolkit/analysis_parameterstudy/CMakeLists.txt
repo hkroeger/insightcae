@@ -9,5 +9,5 @@ target_include_directories(simple_analysis
   )
 target_add_PDL(simple_analysis)
 
-add_test(NAME unit_simple_analysis_single COMMAND analyze --libs ${CMAKE_CURRENT_BINARY_DIR}/libsimple_analysis.so -x ${CMAKE_CURRENT_SOURCE_DIR}/simple_analysis.ist)
-add_test(NAME unit_simple_analysis_parameterstudy COMMAND analyze --libs ${CMAKE_CURRENT_BINARY_DIR}/libsimple_analysis.so -x ${CMAKE_CURRENT_SOURCE_DIR}/simple_parameterstudy.ist) 
+add_test(NAME unit_simple_analysis_single COMMAND analyze --libs $<TARGET_FILE:simple_analysis> -x ${CMAKE_CURRENT_SOURCE_DIR}/simple_analysis.ist)
+add_test(NAME unit_simple_analysis_parameterstudy COMMAND analyze --libs $<TARGET_FILE:simple_analysis> -x ${CMAKE_CURRENT_SOURCE_DIR}/simple_parameterstudy.ist) 

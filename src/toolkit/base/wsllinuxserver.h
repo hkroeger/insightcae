@@ -6,6 +6,22 @@
 
 namespace insight {
 
+
+/**
+ * @brief parseWslVersion
+ * extract the WSL version of a distribution from the output of "wsl --list --verbose"
+ * @param listOutput
+ * output of wsl.exe, already converted to UTF-8
+ * @param distributionLabel
+ * name of the WSL distribution
+ * @return
+ * WSL version or -1, if it could not be determined
+ */
+int parseWslVersion(
+    const std::string& listOutput,
+    const std::string& distributionLabel );
+
+
 /**
  * @brief The WSLLinuxServer class
  * local WSL instance (not on a remote machine!)
@@ -61,19 +77,7 @@ public:
 //  int executeCommand(const std::string& command, bool throwOnFail) override;
   static boost::filesystem::path WSLcommand();
 
-  struct BackgroundJob : public RemoteServer::BackgroundJob
-  {
-  protected:
-    std::unique_ptr<boost::process::child> process_;
-  public:
-    BackgroundJob(RemoteServer& server, std::unique_ptr<boost::process::child> process);
-    void kill() override;
-  };
-
-  BackgroundJobPtr launchBackgroundProcess(
-          const std::string& cmd,
-          const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
-
+  bool launchingProcessMustOutliveJob() const override;
 
   void putFile
   (

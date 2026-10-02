@@ -26,9 +26,12 @@ public:
     struct SSHRemoteStream : public RemoteStream {
         std::unique_ptr<boost::process::child> child_;
         boost::process::opstream s_;
+        boost::filesystem::path remoteFilePath_;
+        bool closed_ = false;
 
         ~SSHRemoteStream();
         std::ostream& stream() override;
+        void close() override;
     };
 
     std::unique_ptr<RemoteStream> remoteOFStream
@@ -39,6 +42,45 @@ public:
             std::function<void(int,const std::string&)>()
             ) override;
 #endif
+
+  /**
+   * @brief The ProcessGroupJob struct
+   * background job, which runs in its own session / process group on the server.
+   * kill() terminates the whole group, including child processes (e.g. solvers).
+   */
+  struct ProcessGroupJob : public RemoteServer::BackgroundJob
+  {
+  protected:
+    int pgid_;
+  public:
+    ProcessGroupJob(RemoteServer& server, int pgid);
+    void kill() override;
+    bool isRunning() override;
+    inline int pgid() const { return pgid_; }
+  };
+
+  /**
+   * @brief launchBackgroundProcess
+   * start cmd in a new session (setsid). The process group id is reported back
+   * by the job itself and used for kill().
+   * If expectedOutputBeforeDetach is empty, the output of cmd is discarded
+   * and the job does not depend on the connection to the server.
+   * Otherwise, the output is read until the expected patterns are found
+   * and remains connected to the (then no longer read) channel:
+   * such jobs should not produce much output afterwards and may end with the connection.
+   * See also launchingProcessMustOutliveJob().
+   */
+  BackgroundJobPtr launchBackgroundProcess(
+      const std::string& cmd,
+      const std::vector<ExpectedOutput>& expectedOutputBeforeDetach = {} ) override;
+
+  /**
+   * @brief launchingProcessMustOutliveJob
+   * true, if the local process, which launches a background job
+   * (e.g. wsl.exe), has to keep running as long as the job:
+   * then it waits for the job (it is detached locally after the launch).
+   */
+  virtual bool launchingProcessMustOutliveJob() const;
 
   bool checkIfDirectoryExists(const boost::filesystem::path& dir) override;
   boost::filesystem::path getTemporaryDirectoryName(const boost::filesystem::path& templatePath) override;

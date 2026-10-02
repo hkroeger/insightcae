@@ -1,9 +1,13 @@
 #include "sshlinuxserver.h"
 
 #include <cstdlib>
+#include <boost/asio.hpp>
+#include <thread>
+#include <fstream>
 #include <regex>
 
 #include "base/exception.h"
+#include "base/rsyncoutputanalyzer.h"
 #include "base/warningdispatcher.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
@@ -36,12 +40,11 @@ SSHLinuxServer::Config::Config(
     rapidxml::xml_node<> *e
     )
   :LinuxRemoteServer::Config(
-     boost::filesystem::path(getAttribute(*e, "baseDirectory")),
-     ( e->first_attribute("np")?
-               getAttribute<int>(*e, "np") : 1 )
-     )
+     getMandatoryAttribute<boost::filesystem::path>(*e, "baseDirectory"),
+     getOptionalAttributeOrDefault(*e, "np", 1 )
+    ),
+   hostName_( getAttribute(*e, "host") )
 {
-  hostName_ = getAttribute(*e, "host");
 
   if (auto ac = e->first_attribute("creationCommand"))
   {
@@ -51,12 +54,21 @@ SSHLinuxServer::Config::Config(
   {
       destructionCommand_=dc->value();
   }
+  creationTimeout_ = std::chrono::seconds(
+      getOptionalAttributeOrDefault(
+          *e, "creationTimeout", int(defaultCreationTimeout().count()) ) );
+
   if (creationCommand_.empty() != destructionCommand_.empty())
   {
       throw insight::Exception(
           "allocation and deallocation commands must be both specified!"
           );
   }
+}
+
+std::chrono::seconds SSHLinuxServer::Config::defaultCreationTimeout()
+{
+    return std::chrono::seconds(300);
 }
 
 std::shared_ptr<RemoteServer> SSHLinuxServer::Config::instance() const
@@ -92,14 +104,16 @@ bool SSHLinuxServer::Config::isDynamicallyAllocated() const
 
 void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const
 {
-  appendAttribute(doc, *e, "label", *this );
-  appendAttribute(doc, *e, "type", "SSHLinux" );
-  appendAttribute(doc, *e, "host", hostName_ );
-  appendAttribute(doc, *e, "baseDirectory", defaultDirectory_.string() );
-  if (!creationCommand_.empty())
-      appendAttribute(doc, *e, "creationCommand", creationCommand_ );
-  if (!destructionCommand_.empty())
-      appendAttribute(doc, *e, "destructionCommand", destructionCommand_ );
+    RemoteServer::Config::save(e, doc);
+    appendAttribute(doc, *e, "type", "SSHLinux" );
+    appendAttribute(doc, *e, "host", hostName_ );
+    appendAttribute(doc, *e, "baseDirectory", defaultDirectory_.string() );
+    if (!creationCommand_.empty())
+        appendAttribute(doc, *e, "creationCommand", creationCommand_ );
+    if (!destructionCommand_.empty())
+        appendAttribute(doc, *e, "destructionCommand", destructionCommand_ );
+    if (creationTimeout_!=defaultCreationTimeout())
+        appendAttribute(doc, *e, "creationTimeout", int(creationTimeout_.count()) );
 }
 
 RemoteServer::ConfigPtr SSHLinuxServer::Config::clone() const
@@ -173,11 +187,8 @@ void SSHLinuxServer::runRsync
   std::vector<std::string> args(uargs);
   args.insert(args.begin(), "--info=progress2");
 
-  RSyncOutputAnalyzer rpa(pf);
   auto job = std::make_shared<Job>("rsync", args);
-  job->ios_run_with_interruption(&rpa);
-  job->wait();
-
+  runRSync(*job, pf);
 }
 
 
@@ -204,6 +215,29 @@ SSHLinuxServer::SSHLinuxServer(const Config& serverConfig)
             throw insight::Exception(
                 "failed to launch execution server"
                 );
+        }
+
+        // wait, until the new server is reachable
+        auto deadline = std::chrono::steady_clock::now() + serverConfig_.creationTimeout_;
+        while (!config().isRunning())
+        {
+            if (std::chrono::steady_clock::now() >= deadline)
+            {
+                // don't leave a (possibly costly) unusable instance behind
+                try
+                {
+                    SSHLinuxServer::destroyIfPossible();
+                }
+                catch (std::exception& e)
+                {
+                    insight::Warning("failed to deallocate execution server: %s", e.what());
+                }
+
+                throw insight::Exception(
+                    "the execution server %s was created, but is not reachable after %d s",
+                    hostName().c_str(), int(serverConfig_.creationTimeout_.count()) );
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
     }
 }
@@ -249,63 +283,6 @@ string SSHLinuxServer::hostName() const
   return SSHServerConfig().hostName_;
 }
 
-
-
-
-
-
-SSHLinuxServer::BackgroundJob::BackgroundJob(RemoteServer &server, int remotePid)
-  : RemoteServer::BackgroundJob(server),
-    remotePid_(remotePid)
-{}
-
-void SSHLinuxServer::BackgroundJob::kill()
-{
-  server_.executeCommand(
-        boost::str(boost::format
-         ( "if ps -q %d >/dev/null; then kill %d; fi" )
-          % remotePid_ % remotePid_
-        ),
-        true
-        );
-}
-
-
-RemoteServer::BackgroundJobPtr SSHLinuxServer::launchBackgroundProcess(
-        const std::string &cmd,
-        const std::vector<ExpectedOutput>& eobd )
-{
-  boost::process::ipstream is;
-
-  auto process = launchCommand(
-        cmd+" & echo PID===$!===PID",
-//#ifdef WIN32
-        boost::process::std_out > is
-//#else
-//        boost::process::std_err > is
-//#endif
-        , boost::process::std_in < boost::process::null
-        );
-
-  insight::assertion(
-              process->running(),
-              "could not start background process");
-
-  std::vector<std::string> pidMatch;
-
-  std::vector<ExpectedOutput> pats(eobd.begin(), eobd.end());
-  pats.push_back( { boost::regex("PID===([0-9]+)===PID"), &pidMatch } );
-  lookForPattern(is, pats);
-
-  std::cout<<pidMatch[1]<<std::endl;
-  int remotePid=boost::lexical_cast<int>(pidMatch[1]);
-
-  insight::dbg()<<"remote process PID = "<<remotePid<<std::endl;
-
-  process->detach();
-
-  return std::make_shared<BackgroundJob>(*this, remotePid );
-}
 
 
 
@@ -494,22 +471,138 @@ SSHLinuxServer::SSHTunnelPortMapping::SSHTunnelPortMapping(
     );
   }
 
-//  args.push_back( server() );
+#ifndef WIN32
+  // fail instead of hanging, if the forwarding cannot be established
+  // or the connection breaks down
+  args.insert(
+        std::end(args),
+        { "-o", "ExitOnForwardFailure=yes",
+          "-o", "BatchMode=yes",
+          "-o", "ServerAliveInterval=15",
+          "-o", "ServerAliveCountMax=3" } );
+#endif
+
+  errorLog_ = boost::filesystem::temp_directory_path()
+              / boost::filesystem::unique_path("insight-sshtunnel-%%%%%%%%.log");
 
   SSHCommand sc(cfg.hostName_, args);
   tunnelProcess_=
       boost::process::child
       (
-       sc.command(), boost::process::args( sc.arguments() )
+       sc.command(), boost::process::args( sc.arguments() ),
+       boost::process::std_in < boost::process::null,
+       boost::process::std_out > boost::process::null,
+       boost::process::std_err > errorLog_
       )
    ;
+
+  try
+  {
+    waitUntilReady(std::chrono::seconds(20));
+  }
+  catch (...)
+  {
+    // the destructor is not called: clean up here
+    std::error_code ec;
+    if (tunnelProcess_.running(ec)) tunnelProcess_.terminate(ec);
+    boost::system::error_code bec;
+    boost::filesystem::remove(errorLog_, bec);
+    throw;
+  }
+}
+
+
+
+
+void SSHLinuxServer::SSHTunnelPortMapping::waitUntilReady(std::chrono::milliseconds timeout)
+{
+  auto errorOutput = [this]() -> std::string
+  {
+    std::string err;
+    boost::system::error_code ec;
+    if (boost::filesystem::exists(errorLog_, ec))
+    {
+      std::ifstream f(errorLog_.string());
+      err.assign( std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>() );
+      boost::trim(err);
+    }
+    return err;
+  };
+
+  auto deadline = std::chrono::steady_clock::now() + timeout;
+
+  std::set<int> pendingPorts;
+  for (const auto& rl: remoteToLocal_)
+    pendingPorts.insert(rl.second);
+
+  while (true)
+  {
+    std::error_code ec;
+    if (!tunnelProcess_.running(ec))
+    {
+      throw insight::Exception(
+            "the SSH tunnel could not be established: %s",
+            errorOutput().c_str() );
+    }
+
+    // probe the local ends of the tunnels
+    for (auto i=pendingPorts.begin(); i!=pendingPorts.end(); )
+    {
+      boost::asio::io_service ios;
+      boost::asio::ip::tcp::socket sock(ios);
+      boost::system::error_code cec;
+      sock.connect(
+            boost::asio::ip::tcp::endpoint(
+                boost::asio::ip::address::from_string("127.0.0.1"), *i ),
+            cec );
+      if (!cec)
+        i=pendingPorts.erase(i);
+      else
+        ++i;
+    }
+
+    if (pendingPorts.empty())
+    {
+      if (remoteToLocal_.empty())
+      {
+        // only remote forwards: they cannot be probed from here.
+        // Give ssh some time to fail (ExitOnForwardFailure).
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (!tunnelProcess_.running(ec))
+          continue; // report the failure
+      }
+      return;
+    }
+
+    if (std::chrono::steady_clock::now() > deadline)
+    {
+      throw insight::Exception(
+            "the SSH tunnel was not ready within %d s: %s",
+            int(std::chrono::duration_cast<std::chrono::seconds>(timeout).count()),
+            errorOutput().c_str() );
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 }
 
 
 
 
 SSHLinuxServer::SSHTunnelPortMapping::~SSHTunnelPortMapping()
-{}
+{
+  std::error_code ec;
+  if (tunnelProcess_.running(ec))
+  {
+    tunnelProcess_.terminate(ec);
+  }
+  if (tunnelProcess_.valid())
+  {
+    tunnelProcess_.wait(ec);
+  }
+  boost::system::error_code bec;
+  boost::filesystem::remove(errorLog_, bec);
+}
 
 
 

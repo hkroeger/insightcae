@@ -26,6 +26,9 @@ else()
 endif()
 
 add_shared_file(genericmodules modules.d genericmodules.module)
+add_shared_file(genericmodules generic
+    nuwitu_domainsize_Lahead.svg
+)
 
 
 

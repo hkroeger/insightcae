@@ -24,7 +24,7 @@ struct ParserCase
 };
 
 
-bool near(double a, double b)
+bool isClose(double a, double b)
 {
     return std::fabs(a-b) < 1e-10;
 }
@@ -47,7 +47,7 @@ int main(int, char*[])
         // point names which start with a scalar function name
         { "point name with scalar function prefix",
           "position=[1,2,3]; s=position.x;",
-          [](const Model& m) { return near(m.lookupScalar("s")->value(), 1.); } },
+          [](const Model& m) { return isClose(m.lookupScalar("s")->value(), 1.); } },
 
         // keyword "in" must not match the start of "inplane"
         { "RefPlace inplane condition",
@@ -56,26 +56,26 @@ int main(int, char*[])
         // vector division must bind like multiplication
         { "vector division precedence",
           "v=[4,0,0]/2*2;",
-          [](const Model& m) { return near(m.lookupPoint("v")->value()(0), 4.); } },
+          [](const Model& m) { return isClose(m.lookupPoint("v")->value()(0), 4.); } },
 
         // scalar starting with a vector primary times a vector
         { "vector component times vector",
           "p=[3,2,1]; v=p.x*[1,0,0];",
-          [](const Model& m) { return near(m.lookupPoint("v")->value()(0), 3.); } },
+          [](const Model& m) { return isClose(m.lookupPoint("v")->value()(0), 3.); } },
 
         // dot product inside the multiplicative chain
         { "dot product in product",
           "p=[1,2,3]; q=[1,1,1]; s=p&q*2; t=2*p&q;",
           [](const Model& m) {
-              return near(m.lookupScalar("s")->value(), 12.)
-                  && near(m.lookupScalar("t")->value(), 12.); } },
+              return isClose(m.lookupScalar("s")->value(), 12.)
+                  && isClose(m.lookupScalar("t")->value(), 12.); } },
 
         // identifiers starting with inf/nan are no numbers
         { "scalar names starting with inf/nan",
           "infill=3; x=infill*2; nanometer=1e-9; y=nanometer*2;",
           [](const Model& m) {
-              return near(m.lookupScalar("x")->value(), 6.)
-                  && near(m.lookupScalar("y")->value(), 2e-9); } },
+              return isClose(m.lookupScalar("x")->value(), 6.)
+                  && isClose(m.lookupScalar("y")->value(), 2e-9); } },
 
         // scalar filter argument which starts like a vector
         { "scalar filter argument starting with vector",
@@ -104,15 +104,15 @@ int main(int, char*[])
         // regular expressions which must keep working
         { "unchanged: scalar arithmetic",
           "a=2; b=a-3*-1; c=-a*b/2+1;",
-          [](const Model& m) { return near(m.lookupScalar("c")->value(), -4.); } },
+          [](const Model& m) { return isClose(m.lookupScalar("c")->value(), -4.); } },
 
         { "unchanged: vector arithmetic",
           "v=2*EX+EY*3-[0,0,1]; w=(v^EX)*0.5;",
           [](const Model& m) {
               arma::mat v=m.lookupPoint("v")->value();
               arma::mat w=m.lookupPoint("w")->value();
-              return near(v(0),2.) && near(v(1),3.) && near(v(2),-1.)
-                  && near(w(1),-0.5) && near(w(2),-1.5); } },
+              return isClose(v(0),2.) && isClose(v(1),3.) && isClose(v(2),-1.)
+                  && isClose(w(1),-0.5) && isClose(w(2),-1.5); } },
 
         { "unchanged: point in feature CS",
           box+"p=[1,0,0] in B;", nullptr }

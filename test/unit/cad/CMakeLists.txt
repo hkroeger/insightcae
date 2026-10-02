@@ -26,5 +26,7 @@ if (INSIGHT_BUILD_CAD)
     add_cad_test(parametricsketch_io)
     add_cad_test(hash_and_cache)
     add_cad_gui_test(parametricsketch_copy)
+    add_cad_test(cadgeometryparameter_pack)
+    target_link_libraries(cadgeometryparameter_pack toolkit_cad)
 
 endif()

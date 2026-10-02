@@ -1,0 +1,74 @@
+site_name: InsightCAE Documentation
+site_description: >
+  Framework for building automated analysis and design workflows
+  in Computer-Aided Engineering, integrating OpenFOAM, OpenCASCADE,
+  Code_Aster, Dakota and ParaView.
+site_author: silentdynamics GmbH
+repo_url: https://github.com/hkroeger/insightcae
+repo_name: hkroeger/insightcae
+
+docs_dir: doc
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: README.md
+  - Installation:
+      - Linux (Package): installation/linux.md
+      - Windows: installation/windows.md
+      - Building from Source: installation/from-source.md
+  - User Guide:
+      - Workflow Automation: workflow_automation/insightcae.md
+      - CAD (ISCAD): cad/insightcad.md
+      - Extensions to Backend Tools: extensions_to_tools/insightcae-extensions.md
+  - Tutorials: tutorials/insightcae-tutorials.md
+  - Developer Guide: api/insightcae-api.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+plugins:
+  - search:
+      lang: en

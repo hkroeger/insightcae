@@ -198,6 +198,10 @@ msgstr "Applied Parameters for this run"
 msgid "ANALYSIS FINISHED SUCCESSFULLY."
 msgstr "ANALYSIS FINISHED SUCCESSFULLY."
 
+#, fuzzy
+msgid "The analysis was interrupted before it produced results."
+msgstr "The analysis was stopped due to this error:"
+
 msgid "ANALYSIS STOPPED WITHOUT RESULTS."
 msgstr "ANALYSIS STOPPED WITHOUT RESULTS."
 

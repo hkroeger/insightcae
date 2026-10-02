@@ -11,6 +11,7 @@
 #include "base/warningdispatcher.h"
 #include "base/tools.h"
 #include "base/rapidxml.h"
+#include "base/translations.h"
 #include "boost/algorithm/string/predicate.hpp"
 #include "openfoam/openfoamcase.h"
 
@@ -45,73 +46,122 @@ RemoteServerList::RemoteServerList()
 
             if ( exists(serverListFile) )
             {
-                CurrentExceptionContext ex("reading remote servers from %s", serverListFile.c_str());
-
-                XMLDocument doc(serverListFile);
-
-                auto *rootnode = doc.first_node("root");
-                if (!rootnode)
-                    throw insight::Exception("No valid \"remote\" node found in XML!");
-
-                for (auto *e = rootnode->first_node(); e; e = e->next_sibling())
+                try
                 {
-                    try
+                    CurrentExceptionContext ex(
+                            _("reading remote servers from %s"),
+                            serverListFile.c_str() );
+
+                    XMLDocument doc(serverListFile);
+
+                    auto *rootnode = doc.first_node("root");
+                    if (!rootnode)
                     {
-                        if (e->name()==string("remoteServer"))
+                        throw insight::Exception(
+                            _("No valid 'root' node found in XML!")
+                            );
+                    }
+
+                    // labels defined in this file: duplicates within one file are ignored
+                    std::set<std::string> labelsInThisFile;
+                    auto isDuplicateInThisFile = [&](const std::string& label)
+                    {
+                        if (!labelsInThisFile.insert(label).second)
                         {
-                            if ( auto rsc = RemoteServer::Config::create(e) )
+                            insight::Warning(
+                                _("remote server %s is defined more than once in %s. Only the first definition is used."),
+                                label.c_str(), serverListFile.c_str() );
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    for (auto *e = rootnode->first_node(); e; e = e->next_sibling())
+                    {
+                        try
+                        {
+                            if (e->name()==string("remoteServer"))
                             {
-                                std::string label = *rsc;
+                                if ( auto rsc = RemoteServer::Config::create(e) )
+                                {
+                                    std::string label = *rsc;
 
-                                // replace entries, which were already existing:
-                                // remove, if already present
-                                auto i=findServerIterator(label);
-                                if (i!=end()) erase(i);
-
-                                servers.insert(rsc);
+                                    if (!isDuplicateInThisFile(label))
+                                    {
+                                        // replace entries from previously read files (e.g. global config)
+                                        for (auto i=servers.begin(); i!=servers.end(); )
+                                        {
+                                            if (static_cast<const std::string&>(**i)==label)
+                                                i=servers.erase(i);
+                                            else
+                                                ++i;
+                                        }
+                                        servers.insert(rsc);
+                                    }
+                                }
+                                else
+                                {
+                                    std::string label("(unlabelled)");
+                                    if (auto *le=e->first_attribute("label"))
+                                        label=std::string(le->value());
+                                    insight::Warning(
+                                        _("ignored invalid remote machine configuration: %s"),
+                                        label.c_str());
+                                }
                             }
-                            else
+                            else if (e->name()==string("remoteServerPool"))
                             {
-                                std::string label("(unlabelled)");
-                                if (auto *le=e->first_attribute("label"))
-                                    label=std::string(le->value());
-                                insight::Warning(
-                                    "ignored invalid remote machine configuration: %s",
-                                    label.c_str());
+                                try
+                                {
+                                    RemoteServerPoolConfig pool(e);
+                                    std::string label = *pool.configTemplate_;
+
+                                    if (!isDuplicateInThisFile(label))
+                                    {
+                                        // replace pools from previously read files
+                                        for (auto i=pools.begin(); i!=pools.end(); )
+                                        {
+                                            if (static_cast<const std::string&>(*i->configTemplate_)==label)
+                                                i=pools.erase(i);
+                                            else
+                                                ++i;
+                                        }
+                                        pools.insert(pool);
+                                    }
+                                }
+                                catch (insight::Exception& ex)
+                                {
+                                    std::string label("(unlabelled)");
+                                    if (auto *le=e->first_attribute("label"))
+                                        label=std::string(le->value());
+                                    insight::Warning(
+                                        _("ignored invalid remote machine pool configuration: %s (Reason: %s)"),
+                                        label.c_str(), ex.message().c_str() );
+                                }
                             }
                         }
-                        else if (e->name()==string("remoteServerPool"))
+                        catch (insight::Exception& ex)
                         {
-                            try
-                            {
-                                pools.insert(RemoteServerPoolConfig(e));
-                            }
-                            catch (insight::Exception& ex)
-                            {
-                                std::string label("(unlabelled)");
-                                if (auto *le=e->first_attribute("label"))
-                                    label=std::string(le->value());
-                                insight::Warning(
-                                    "ignored invalid remote machine pool configuration: %s (Reason: %s)",
-                                    label.c_str(), ex.message().c_str() );
-                            }
+                            insight::Warning(ex);
                         }
                     }
-                    catch (insight::Exception& ex)
+
+                    if (auto *prevSrvNode = rootnode->first_node("preferredServer"))
                     {
-                        insight::Warning(ex);
+                        if (auto *lbl = prevSrvNode->first_attribute("label"))
+                        {
+                            insight::dbg()<<"setting preferred server as "<<lbl->value()<<std::endl;
+                            preferredServerLabel = lbl->value();
+                        }
                     }
                 }
-
-                if (auto *prevSrvNode = rootnode->first_node("preferredServer"))
+                catch (std::exception& ex)
                 {
-                    if (auto *lbl = prevSrvNode->first_attribute("label"))
-                    {
-                        insight::dbg()<<"setting preferred server as "<<lbl->value()<<std::endl;
-                        preferredServerLabel = lbl->value();
-                    }
+                    // a broken file must not prevent reading the other configuration files
+                    insight::Warning(
+                        _("ignoring remote server list %s: %s"),
+                        serverListFile.c_str(), ex.what() );
                 }
-
             }
         }
     }
@@ -125,8 +175,9 @@ RemoteServerList::RemoteServerList()
 
 
 RemoteServerList::RemoteServerList(const RemoteServerList& o)
-  : std::set<std::shared_ptr<RemoteServer::Config> >(o),
-    preferredServer_(o.preferredServer_)
+  : std::set<RemoteServer::ConfigPtr>(o),
+    preferredServer_(o.preferredServer_),
+    serverPools_(o.serverPools_)
 {
 }
 
@@ -201,7 +252,7 @@ RemoteServerList::iterator RemoteServerList::findServerIterator(
 {
   auto i = std::find_if(
         begin(), end(),
-        [&](const value_type& entry)
+        [&](auto& entry)
         {
           return static_cast<std::string&>(*entry)==serverLabel;
         }

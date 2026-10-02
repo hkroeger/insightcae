@@ -99,6 +99,31 @@ msgid "center of gravity of region %d"
 msgstr "Schwerpunkt von Bereich %d"
 
 #, c-format
+msgid "reading remote servers from %s"
+msgstr ""
+
+msgid "No valid 'root' node found in XML!"
+msgstr ""
+
+#, c-format
+msgid ""
+"remote server %s is defined more than once in %s. Only the first definition "
+"is used."
+msgstr ""
+
+#, c-format
+msgid "ignored invalid remote machine configuration: %s"
+msgstr ""
+
+#, c-format
+msgid "ignored invalid remote machine pool configuration: %s (Reason: %s)"
+msgstr ""
+
+#, c-format
+msgid "ignoring remote server list %s: %s"
+msgstr ""
+
+#, c-format
 msgid "invalid interval definition: begin (%g) must be before end (%g)!"
 msgstr ""
 "ungültige Intervalldefinition: Anfang (%g) muss vor dem Ende (%g) liegen!"

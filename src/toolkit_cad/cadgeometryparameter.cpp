@@ -26,6 +26,27 @@ defineType(CADGeometryParameter);
 addParameterFactories(CADGeometryParameter);
 
 
+namespace {
+
+/**
+ * @brief copyValue
+ * copy the value variant, but create an independent FileContainer,
+ * so that clones do not share packed content, path or base directory
+ */
+template<class V>
+V copyValue(const V& v)
+{
+    if (auto *fcp=boost::get<std::shared_ptr<FileContainer> >(&v))
+    {
+        if (*fcp)
+            return V(std::make_shared<FileContainer>(**fcp));
+    }
+    return v;
+}
+
+}
+
+
 
 
 cad::FeaturePtr CADGeometryParameter::createOrReadFeature()
@@ -117,6 +138,8 @@ bool CADGeometryParameter::isDifferent(const Parameter& p) const
         if (auto *fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
         {
             auto *ofcp=boost::get<std::shared_ptr<FileContainer> >(&pp->value_);
+            if (!*fcp || !*ofcp)
+                return bool(*fcp)!=bool(*ofcp);
             return (**fcp).isDifferent(**ofcp);
         }
         else if (auto *ftp=boost::get<cad::FeaturePtr>(&value_))
@@ -143,7 +166,7 @@ std::string CADGeometryParameter::latexRepresentation(
     int documentHierarchyLevel,
     const FileStorageInfo& fsi ) const
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         return SimpleLatex( (**fcp).filePath().string() ).toLaTeX();
     }
@@ -163,7 +186,7 @@ std::string CADGeometryParameter::latexRepresentation(
 
 std::string CADGeometryParameter::plainTextRepresentation(int indent) const
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         return (**fcp).filePath().string();
     }
@@ -184,7 +207,7 @@ std::string CADGeometryParameter::plainTextRepresentation(int indent) const
 void CADGeometryParameter::resolveRelativePaths(const boost::filesystem::path& baseDirectory)
 {
     baseDirectory_=baseDirectory;
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         if (*fcp)
         {
@@ -199,7 +222,7 @@ void CADGeometryParameter::resolveRelativePaths(const boost::filesystem::path& b
 
 bool CADGeometryParameter::isPacked() const
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         auto& fc=**fcp;
         return fc.hasFileContent();
@@ -212,12 +235,19 @@ bool CADGeometryParameter::isPacked() const
 
 void CADGeometryParameter::pack()
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         auto& fc=**fcp;
-        auto lfp=fc.expandedFilePath();
-        if (boost::filesystem::exists(lfp))
-            fc.replaceContent(lfp);
+        if (fc.isValid())
+        {
+            auto lfp=fc.expandedFilePath();
+            if (boost::filesystem::exists(lfp))
+            {
+                fc.replaceContent(lfp);
+                if (fc.hasFileContent())
+                    triggerValueChanged();
+            }
+        }
     }
 }
 
@@ -225,7 +255,7 @@ void CADGeometryParameter::pack()
 
 void CADGeometryParameter::unpack(const boost::filesystem::path& basePath)
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         auto& fc=**fcp;
         fc.accessibleFilePath(true, basePath); // triggers unpack
@@ -236,7 +266,7 @@ void CADGeometryParameter::unpack(const boost::filesystem::path& basePath)
 
 void CADGeometryParameter::clearPackedData()
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         auto& fc=**fcp;
         fc.clearPackedData();
@@ -250,7 +280,7 @@ void CADGeometryParameter::clearPackedData()
    */
 boost::optional<boost::filesystem::path> CADGeometryParameter::filePath() const
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         auto& fc=**fcp;
         return fc.filePath();
@@ -263,7 +293,7 @@ boost::optional<boost::filesystem::path> CADGeometryParameter::accessibleFilePat
     bool unpackIfNoLocalCopy,
     boost::optional<boost::filesystem::path> overrideBaseDirectory ) const
 {
-    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
+    if (auto* fcp=boost::get<std::shared_ptr<FileContainer> >(&value_); fcp && *fcp)
     {
         auto& fc=**fcp;
         return fc.accessibleFilePath(unpackIfNoLocalCopy, overrideBaseDirectory);
@@ -408,7 +438,9 @@ const rapidxml::xml_node<>* CADGeometryParameter::readFromNode(
         auto sourceType = getMandatoryAttribute(*child, "source");
         if (sourceType=="file")
         {
-            auto fc=std::make_shared<FileContainer>();
+            // keep base directory, so that relative paths remain resolvable
+            auto fc=std::make_shared<FileContainer>(
+                boost::filesystem::path(), baseDirectory_ );
             fc->readFromNode(*child, "fileName");
             value_=fc;
         }
@@ -447,7 +479,7 @@ const rapidxml::xml_node<>* CADGeometryParameter::readFromNode(
 std::unique_ptr<hierarchicalData::Element> CADGeometryParameter::doCloneUninitialized() const
 {
     auto p= std::make_unique<CADGeometryParameter>(
-        value_,
+        copyValue(value_),
         description().simpleLatex(),
         isHidden(), isExpert(), isNecessary(), order() );
 
@@ -467,24 +499,7 @@ void CADGeometryParameter::assignFrom(const Element& e)
     geometry_.reset();
 
     baseDirectory_=og.baseDirectory_;
-
-    if (auto *fcp=boost::get<std::shared_ptr<FileContainer> >(&value_))
-    {
-        auto ofc=boost::get<std::shared_ptr<FileContainer> >(og.value_);
-        (**fcp) = *ofc;
-    }
-    else if (auto *ftp=boost::get<cad::FeaturePtr>(&value_))
-    {
-        auto oft=boost::get<cad::FeaturePtr>(og.value_);
-        *ftp=oft;
-    }
-    else if (auto *scr = boost::get<std::string>(&value_))
-    {
-        auto& oscr = boost::get<std::string>(og.value_);
-        value_=oscr;
-    }
-    else
-        throw insight::UnhandledSelection();
+    value_=copyValue(og.value_);
 
     triggerValueChanged();
 }

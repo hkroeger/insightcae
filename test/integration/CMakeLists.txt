@@ -1,0 +1,7 @@
+# integration tests of the remote execution machinery (see test/remote_common)
+if (INSIGHT_REMOTE_TESTS_ENABLED)
+    add_subdirectory(remote)
+    if (TARGET workbench_core)
+        add_subdirectory(workbench)
+    endif()
+endif()

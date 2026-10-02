@@ -51,7 +51,10 @@ addTo_makeDefault { modifyDefaults(p); }
 
 geometry = set {
 
- LupstreamByL   = double 4 "[-] upstream domain extent, divided by object diagonal" *hidden
+ LupstreamByL   = double 4 "[-] Upstream domain extent, divided by object diagonal
+
+\\includesvg[width=0.8\\linewidth]{generic/nuwitu_domainsize_Lahead}" *hidden
+
  LdownstreamByL = double 10 "[-] downstream domain extent, divided by object diagonal" *hidden
  LasideByL      = double 3 "[-] lateral domain extent, divided by object diagonal" *hidden
  LupByL         = double 3 "[-] height of the domain (above floor), divided by object diagonal" *hidden#
@@ -62,8 +65,7 @@ geometry = set {
    localOrigin    = vector (0 0 0)
 "Origin in CAD geometry CS.
  This determines the pivot point for rotations.
- Also, this point will be coincident with the floor, if verticalPlacement 'onFloor' is chosen
- or at the defined height above the floor, if 'atHeight' is selected."
+ Also, this point will be coincident with the floor, if verticalPlacement 'onFloor' is chosen or at the defined height above the floor, if 'atHeight' is selected."
  }
 
  verticalPlacement = selectablesubset {{

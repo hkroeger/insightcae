@@ -7,6 +7,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 
 if(INSIGHT_BUILD_TESTS)
+    # shared infrastructure of the remote execution tests (needs to come first)
+    add_subdirectory(remote_common)
     add_subdirectory(unit)
     add_subdirectory(integration)
     add_subdirectory(manual)

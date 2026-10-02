@@ -209,7 +209,8 @@ int main(int argc, char *argv[])
 
         if (!server->start())
         {
-            std::cerr << _("Could not start web server!") << std::endl;
+            // without the server, the client could never contact this process
+            throw insight::Exception(_("Could not start web server!"));
         }
 
 //// disable for now. not working inside WSL
@@ -465,6 +466,7 @@ int main(int argc, char *argv[])
         std::cout<<std::flush;
 
         ResultSetPtr results;
+        bool errorReportedToServer = false;
         try
         {
           TextProgressDisplayer tpd;
@@ -483,6 +485,7 @@ int main(int argc, char *argv[])
           if (server)
           {
               server->setAnalysis( inputFileParentPath );
+              server->setAnalysisInfo( *parameters, workdir );
           }
 #endif
 
@@ -510,7 +513,7 @@ int main(int argc, char *argv[])
           if (server)
           {
             server->setException(ex);
-            server->waitForShutdown();
+            errorReportedToServer = true;
           }
           else
           {
@@ -523,19 +526,27 @@ int main(int argc, char *argv[])
         if (server)
         {
           server->setSolverThread(nullptr);
-        }
-#endif
 
-        if (results)
-        {
-#ifdef HAVE_WT
-          if (server)
+          // report the outcome and keep serving, until the client requests the exit
+          if (results)
           {
             server->setResults(std::move(results));
-            server->waitForShutdown();
+            std::cout
+                << "#### "<<_("ANALYSIS FINISHED SUCCESSFULLY.")<<" ####"
+                <<std::endl;
           }
-          else
+          else if (!errorReportedToServer)
+          {
+            // e.g. interrupted by "kill" request
+            server->setException(insight::Exception(
+                _("The analysis was interrupted before it produced results.") ));
+          }
+          server->waitForExitRequest();
+        }
+        else
 #endif
+        if (results)
+        {
           {
             if (!vm.count("output-file"))
             {

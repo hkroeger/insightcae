@@ -16,43 +16,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Allowed options"
-msgstr "Allowed options"
-
-msgid "produce help message"
-msgstr "produce help message"
-
-msgid "print version and exit"
-msgstr "print version and exit"
-
-msgid "put debug output to console instead of log window"
-msgstr "put debug output to console instead of log window"
-
-msgid "Additional libraries with analysis modules to load"
-msgstr "Additional libraries with analysis modules to load"
-
-msgid "open a new analysis of this on startup"
-msgstr "open a new analysis of this on startup"
-
-msgid "Specifies input file."
-msgstr "Specifies input file."
-
-msgid "Usage:"
-msgstr "Usage:"
-
-msgid "Could not parse command line"
-msgstr "Could not parse command line"
-
-msgid "Error: library file does not exist"
-msgstr "Error: library file does not exist"
-
-msgid "Wait"
-msgstr "Wait"
-
-#, c-format
-msgid "Input file does not exist: %s"
-msgstr "Input file does not exist: %s"
-
 msgid "launch in local location"
 msgstr "launch in local location"
 
@@ -464,10 +427,20 @@ msgstr "launching the remote execution server"
 msgid "Establishing contact to remote execution server..."
 msgstr "Establishing contact to remote execution server..."
 
+msgid "The remote analysis server has exited during its startup."
+msgstr ""
+
 msgid "Could not contact analysis server after launching it!"
 msgstr "Could not contact analysis server after launching it!"
 
 msgid "Monitoring analysis..."
+msgstr ""
+
+msgid "The remote analysis server has exited unexpectedly."
+msgstr ""
+
+#, c-format
+msgid "Lost contact to the remote analysis server (%d failed status queries)."
 msgstr ""
 
 msgid "timeout in quering status of analysis server"
@@ -491,5 +464,78 @@ msgstr "successful"
 msgid "timeout while stopping remote analysis server"
 msgstr "timeout while stopping remote analysis server"
 
+#, fuzzy
+msgid "Downloading results"
+msgstr "&Load results..."
+
 msgid "remote run cancelled"
 msgstr "remote run cancelled"
+
+#, c-format
+msgid ""
+"The log file %s of the remote analysis server does not exist: the server "
+"process was not started (or it was terminated before it could run)."
+msgstr ""
+
+#, c-format
+msgid ""
+"The log file %s of the remote analysis server could not be read (exit code "
+"%d): %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "The log file %s of the remote analysis server is empty."
+msgstr "timeout while stopping remote analysis server"
+
+#, fuzzy, c-format
+msgid "Last output of the remote analysis server (%s):"
+msgstr "timeout while stopping remote analysis server"
+
+#, fuzzy, c-format
+msgid "The log file %s of the remote analysis server could not be read: %s"
+msgstr "timeout while stopping remote analysis server"
+
+#, fuzzy
+msgid "Stopping remote analysis..."
+msgstr "Launching remote analysis"
+
+msgid ""
+"The remote analysis server could not be stopped. The remote location is kept."
+msgstr ""
+
+msgid "Allowed options"
+msgstr "Allowed options"
+
+msgid "produce help message"
+msgstr "produce help message"
+
+msgid "print version and exit"
+msgstr "print version and exit"
+
+msgid "put debug output to console instead of log window"
+msgstr "put debug output to console instead of log window"
+
+msgid "Additional libraries with analysis modules to load"
+msgstr "Additional libraries with analysis modules to load"
+
+msgid "open a new analysis of this on startup"
+msgstr "open a new analysis of this on startup"
+
+msgid "Specifies input file."
+msgstr "Specifies input file."
+
+msgid "Usage:"
+msgstr "Usage:"
+
+msgid "Could not parse command line"
+msgstr "Could not parse command line"
+
+msgid "Error: library file does not exist"
+msgstr "Error: library file does not exist"
+
+msgid "Wait"
+msgstr "Wait"
+
+#, c-format
+msgid "Input file does not exist: %s"
+msgstr "Input file does not exist: %s"

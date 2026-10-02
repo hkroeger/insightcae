@@ -1,10 +1,13 @@
 #include "wsllinuxserver.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <regex>
 #include <codecvt>
 
 #include "base/exception.h"
+#include "base/rsyncoutputanalyzer.h"
+#include "base/rapidxml.h"
 #include "base/tools.h"
 #include "base/shelltools.h"
 #include "openfoam/openfoamcase.h"
@@ -33,16 +36,11 @@ WSLLinuxServer::Config::Config(
 
 WSLLinuxServer::Config::Config(rapidxml::xml_node<> *e)
   :LinuxRemoteServer::Config(
-     boost::filesystem::path(e->first_attribute("baseDirectory")->value()),
-      ( e->first_attribute("np")?
-           insight::toNumber<int>(e->first_attribute("np")->value())
-                                : 1 )
-     )
-{
-  auto* ha = e->first_attribute("distributionLabel");
-
-  distributionLabel_=ha->value();
-}
+     getMandatoryAttribute<boost::filesystem::path>(*e, "baseDirectory"),
+     getOptionalAttributeOrDefault(*e, "np", 1)
+    ),
+    distributionLabel_(getMandatoryAttribute(*e, "distributionLabel"))
+{}
 
 
 
@@ -58,10 +56,14 @@ std::shared_ptr<RemoteServer> WSLLinuxServer::Config::instance() const
 std::pair<boost::filesystem::path,std::vector<std::string> >
 WSLLinuxServer::Config::commandAndArgs(const std::string& command) const
 {
+    // --exec: bash is started directly. With "--", wsl.exe would pass the
+    // command line to the default shell of the distribution, which parses it
+    // once more (e.g. "$!" or "$$" would be expanded by that shell).
+    // This way, the command is evaluated exactly once (as with ssh).
     return {
         WSLcommand(),
         { "-d", distributionLabel_,
-         "--", "bash", "-lc", command }
+         "--exec", "bash", "-lc", command }
     };
 }
 
@@ -76,12 +78,10 @@ bool WSLLinuxServer::Config::isDynamicallyAllocated() const
 
 void WSLLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const
 {
-  e->append_attribute( doc.allocate_attribute( "label", this->c_str() ) );
-  e->append_attribute( doc.allocate_attribute( "type", "WSLLinux" ) );
-  e->append_attribute( doc.allocate_attribute( "distributionLabel",doc.allocate_string(
-                                               distributionLabel_.c_str() ) ) );
-  e->append_attribute( doc.allocate_attribute( "baseDirectory", doc.allocate_string(
-                                               defaultDirectory_.string().c_str() ) ) );
+    RemoteServer::Config::save(e, doc);
+    appendAttribute(doc, *e, "type", "WSLLinux" );
+    appendAttribute(doc, *e, "distributionLabel", distributionLabel_);
+    appendAttribute(doc, *e, "baseDirectory", defaultDirectory_ );
 }
 
 RemoteServer::ConfigPtr WSLLinuxServer::Config::clone() const
@@ -150,52 +150,14 @@ boost::filesystem::path WSLLinuxServer::WSLcommand()
 
 
 
-WSLLinuxServer::BackgroundJob::BackgroundJob(
-    RemoteServer &server,
-    std::unique_ptr<boost::process::child> process )
-  : RemoteServer::BackgroundJob(server),
-    process_(std::move(process))
-{}
-
-
-
-
-void WSLLinuxServer::BackgroundJob::kill()
+bool WSLLinuxServer::launchingProcessMustOutliveJob() const
 {
-  if (process_)
-  {
-    process_->terminate();
-    process_->wait();
-    process_.reset();
-  }
-}
-
-
-
-
-RemoteServer::BackgroundJobPtr WSLLinuxServer::launchBackgroundProcess(
-        const std::string &cmd,
-        const std::vector<ExpectedOutput>& pattern )
-{
-    insight::assertion(
-        pattern.size()==0,
-        "Not implemented: cannot look for pattern in WSL process");
-
-    //  lookForPattern(is, pattern);
-
-//  boost::process::ipstream is;
-  auto process = launchCommand(
-              cmd/*,
-              boost::process::std_out > is,
-              boost::process::std_in < boost::process::null*/
-              );
-
-  insight::assertion(
-              process->running(),
-              "could not start background process");
-
-
-  return std::make_shared<BackgroundJob>(*this, std::move(process));
+  // When a wsl.exe call ends, the processes started by it are cleaned up
+  // (also a background job, which has not yet completed its setsid),
+  // and WSL2 shuts an idle distribution down shortly after the last wsl.exe
+  // has ended, including all background processes.
+  // So the launching wsl.exe is kept alive as long as the job runs.
+  return true;
 }
 
 
@@ -220,10 +182,8 @@ void WSLLinuxServer::runRsync
   }
   auto ca = config().commandAndArgs(joinedArgs);
 
-  RSyncOutputAnalyzer rpa(pf);
   auto job = std::make_shared<Job>(ca, false); // don't use search_path! It will fail
-  job->ios_run_with_interruption(&rpa);
-  job->wait();
+  runRSync(*job, pf);
 }
 
 
@@ -470,7 +430,7 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 {
   boost::process::ipstream out;
 
-  std::string cmd="/usr/bin/insight_version.sh";
+  std::string cmd="analyze --version";
 
   int ret = executeCommand(
       cmd, false,
@@ -482,10 +442,12 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
 
   if (ret==0)
   {
-    boost::regex pat("^  Installed: (.*)\\.(.*)\\.(.*)-(.*)~(.*)$");
+    // output format of ToolkitVersion::toString(): "major.minor.patch-commit (branch)"
+    boost::regex pat("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\S*)(?:\\s+\\((.*)\\))?$");
     std::string line;
     while (getline(out, line))
     {
+      boost::trim(line);
       boost::smatch m;
       if (boost::regex_search(line, m, pat))
       {
@@ -493,10 +455,18 @@ ToolkitVersion WSLLinuxServer::checkInstalledVersion()
         int minorVersion = lexical_cast<int>(m[2]);
         int patchVersion = lexical_cast<int>(m[3]);
         std::string commit = m[4];
-        return ToolkitVersion(majorVersion, minorVersion, patchVersion, commit, "");
+        std::string branch = m[5];
+        ToolkitVersion installedVersion(majorVersion, minorVersion, patchVersion, commit, branch);
+        insight::dbg()
+            << "WSL installed version: " << installedVersion.toString()
+            << ", own version: " << ToolkitVersion::current().toString()
+            << std::endl;
+        return installedVersion;
       }
     }
-    throw insight::Exception("Could not parse version information.\nMaybe package is not installed?");
+    throw insight::Exception(
+        "Could not parse version information from output of \""+cmd+"\".\n"
+        "Maybe InsightCAE is not installed in the WSL distribution?");
   }
   else
   {
@@ -540,6 +510,48 @@ void WSLLinuxServer::updateInstallation(
     }
 }
 
+int parseWslVersion(
+    const std::string& listOutput,
+    const std::string& distributionLabel )
+{
+    // remove NUL characters, which may remain from an imperfect UTF-16 conversion
+    std::string cleaned(listOutput);
+    cleaned.erase(std::remove(cleaned.begin(), cleaned.end(), '\0'), cleaned.end());
+
+    std::istringstream out(cleaned);
+    std::string line;
+    while (getline(out, line))
+    {
+        insight::dbg()<<line<<std::endl;
+
+        std::vector<std::string> tokens;
+        {
+            std::istringstream ls(line);
+            std::string tok;
+            while (ls >> tok) tokens.push_back(tok);
+        }
+
+        // "*" marks the default distribution
+        if (!tokens.empty() && tokens.front()=="*")
+            tokens.erase(tokens.begin());
+
+        // first token is the distribution name, last token the WSL version
+        if ( tokens.size()>=2 && tokens.front()==distributionLabel )
+        {
+            const auto& last = tokens.back();
+            if ( std::all_of(last.begin(), last.end(),
+                             [](unsigned char c) { return std::isdigit(c); }) )
+            {
+                return std::stoi(last);
+            }
+        }
+    }
+    return -1;
+}
+
+
+
+
 int WSLLinuxServer::detectWslVersion() const
 {
 
@@ -557,27 +569,16 @@ int WSLLinuxServer::detectWslVersion() const
     {
         using convert_type = std::codecvt_utf8<wchar_t>;
         std::wstring_convert<convert_type, wchar_t> converter;
+        std::string listOutput;
         wstring wline;
         while (getline(out, wline))
         {
-            std::string line=converter.to_bytes( wline );
-            boost::trim(line);
-            if (!line.empty())
-            {
-                insight::dbg()<<line<<std::endl;
-
-                // line starts with distro name
-                if (line.find(myDistributionLabel()) >= 0)
-                {
-                    // Last token is version number
-                    std::istringstream ls(line);
-                    std::string tok, last;
-                    while (ls >> tok) last = tok;
-                    if (!last.empty() && std::isdigit(static_cast<unsigned char>(last[0])))
-                        return std::stoi(last);
-                }
-            }
+            listOutput += converter.to_bytes( wline ) + "\n";
         }
+
+        int v = parseWslVersion(listOutput, myDistributionLabel());
+        if (v>=0)
+            return v;
     }
 
     throw insight::Exception("failed to detect WSL distribution version");

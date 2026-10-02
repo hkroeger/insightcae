@@ -5,7 +5,14 @@
 #include <iostream>
 #include <iterator>
 
+#ifdef WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
 #include <dlfcn.h>
+#endif
 #include <stdexcept>
 
 namespace insight
@@ -42,6 +49,15 @@ using namespace insight;
 
 int main()
 {
+#ifdef WIN32
+    std::string libFile="libtoolkit_factory_lib_ext.dll";
+    HMODULE handle = LoadLibraryA( libFile.c_str() );
+    if ( !handle )
+    {
+        std::cerr<<"Could not load module library "<<libFile<<"!\n"
+                    "Reason: error code " << GetLastError() << std::endl;
+    }
+#else
     std::string libFile="libtoolkit_factory_lib_ext.so";
     void *handle = dlopen ( libFile.c_str(), RTLD_LAZY|RTLD_GLOBAL|RTLD_NODELETE );
     if ( !handle )
@@ -49,6 +65,7 @@ int main()
         std::cerr<<"Could not load module library "<<libFile<<"!\n"
                     "Reason: " << dlerror() << std::endl;
     }
+#endif
 
     try
     {

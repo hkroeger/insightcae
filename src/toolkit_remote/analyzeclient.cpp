@@ -26,6 +26,7 @@
 #include "Wt/Json/Serializer.h"
 #include "base/exception.h"
 #include "base/hierarchicalelement.h"
+#include "base/warningdispatcher.h"
 
 #include <functional>
 
@@ -37,58 +38,32 @@ namespace insight
 
 
 
-void AnalyzeClientAction::setFinished()
+namespace
 {
-    isFinished_=true;
-    deadline_.cancel();
-    connection_.disconnect();
+
+boost::system::error_code requestNotSentError()
+{
+    return boost::system::errc::make_error_code(boost::system::errc::io_error);
 }
 
-
-AnalyzeClientAction::AnalyzeClientAction(
-        AnalyzeClient& cl,
-        SimpleCallBack onTimeout )
-    : cl_(cl),
-      isFinished_(false),
-      deadline_(cl_.ioService()),
-      timeoutCallback_(onTimeout)
+/**
+ * @return content type of the response, empty if missing
+ */
+std::string contentType(const Wt::Http::Message& response)
 {
-    insight::CurrentExceptionContext ex("creating analyze client action");
-
-    connection_ = cl_.httpClient().done().connect
-      (
-        std::bind(&AnalyzeClientAction::handleHttpResponse, this,
-                  std::placeholders::_1, std::placeholders::_2)
-        );
+    if (const auto *ct = response.getHeader("Content-Type"))
+        return *ct;
+    return std::string();
 }
 
-
-AnalyzeClientAction::~AnalyzeClientAction()
-{}
-
-
-void AnalyzeClientAction::start()
+bool isSuccess(boost::system::error_code err, const Wt::Http::Message& response)
 {
-    deadline_.expires_from_now(
-                boost::posix_time::milliseconds(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        cl_.httpClient().timeout() ).count() )
-                 );
-    deadline_.async_wait(
-                [this](boost::system::error_code)
-                {
-                    timeoutCallback_();
-                });
+    return !err && response.status() == 200;
 }
 
-
-void AnalyzeClientAction::handleHttpResponse(
-            boost::system::error_code err,
-            const Wt::Http::Message& response )
+void logResponse(boost::system::error_code err, const Wt::Http::Message& response)
 {
-    setFinished();
-
-    bool success = (!err && response.status() == 200);
+    bool success = isSuccess(err, response);
 
     dbg() <<   "httpResponse err="<<err
           << ", status="<<response.status()
@@ -108,7 +83,120 @@ void AnalyzeClientAction::handleHttpResponse(
         }
         ds<<std::endl;
     }
+}
 
+}
+
+
+
+
+AnalyzeClientAction::AnalyzeClientAction(
+        AnalyzeClient& cl,
+        SimpleCallBack onTimeout )
+    : cl_(cl),
+      timeoutCallback_(onTimeout),
+      deadline_(cl_.ioService()),
+      finished_(false)
+{}
+
+
+AnalyzeClientAction::~AnalyzeClientAction()
+{}
+
+
+void AnalyzeClientAction::setTimeout(std::chrono::milliseconds timeout)
+{
+    timeout_ = timeout;
+}
+
+
+bool AnalyzeClientAction::tryFinish()
+{
+    bool expected=false;
+    if (finished_.compare_exchange_strong(expected, true))
+    {
+        boost::system::error_code ec;
+        deadline_.cancel(ec);
+        return true;
+    }
+    return false;
+}
+
+
+void AnalyzeClientAction::post(std::function<void()> f)
+{
+    if (!cl_.shuttingDown_)
+        cl_.ioService().post(f);
+}
+
+
+bool AnalyzeClientAction::start()
+{
+    auto self = shared_from_this();
+
+    auto timeout = cl_.timeout();
+    if (timeout_.count()>0 && timeout_<timeout)
+        timeout = timeout_;
+    deadline_.expires_from_now(
+                boost::posix_time::milliseconds( timeout.count() ) );
+    deadline_.async_wait(
+                [self,this](const boost::system::error_code& ec)
+                {
+                    if (ec==boost::asio::error::operation_aborted)
+                        return; // cancelled: finished in time
+
+                    if (tryFinish())
+                    {
+                        dbg()<<"request timed out"<<std::endl;
+                        {
+                            // the client continues, once the aborted request is done
+                            std::lock_guard<std::mutex> l(cl_.mx_);
+                            if (!cl_.shuttingDown_)
+                                cl_.httpClient_->abort();
+                        }
+                        if (timeoutCallback_)
+                            post(timeoutCallback_);
+                    }
+                });
+
+    bool ok=false;
+    try
+    {
+        ok = doStart();
+    }
+    catch (const std::exception& e)
+    {
+        dbg()<<"could not send request: "<<e.what()<<std::endl;
+        ok = false;
+    }
+    return ok;
+}
+
+
+void AnalyzeClientAction::handleHttpResponse(
+            boost::system::error_code err,
+            const Wt::Http::Message& response )
+{
+    if (!tryFinish())
+        return; // timed out or cancelled before
+
+    logResponse(err, response);
+
+    try
+    {
+        evaluateResponse(err, response);
+    }
+    catch (const std::exception& e)
+    {
+        // must not happen, evaluateResponse should not throw
+        insight::Warning("unexpected error while evaluating the response of the analysis server: %s", e.what());
+    }
+}
+
+
+void AnalyzeClientAction::cancel()
+{
+    tryFinish();
 }
 
 
@@ -124,133 +212,115 @@ QueryStatusAction::QueryStatusAction(
 {}
 
 
-void QueryStatusAction::start()
+bool QueryStatusAction::doStart()
 {
     insight::CurrentExceptionContext ex("sending query status request");
-
-    if (!cl_.httpClient().get(cl_.url()+"/all"))
-        throw insight::Exception("Could not query status of remote analysis!");
+    return cl_.httpClient().get(cl_.url()+"/all");
 }
 
 
-void QueryStatusAction::handleHttpResponse(
+void QueryStatusAction::evaluateResponse(
                 boost::system::error_code err,
                 const Wt::Http::Message& response )
 {
-    AnalyzeClientAction::handleHttpResponse(err, response);
-    bool success = (!err && response.status() == 200);
+    Result qsr;
+    qsr.success = isSuccess(err, response);
 
-    bool resultsAvailable = false;
-    bool errorOccurred = false;
-    std::shared_ptr<insight::Exception> exception_;
-
-    if (success)
+    if (qsr.success)
     {
-      const auto *ct = response.getHeader("Content-Type");
-
-      if (!ct)
+      try
       {
-        throw insight::Exception("No content type specified in response!");
-      }
+        auto ct = contentType(response);
+        if (ct!="application/json")
+        {
+          throw insight::Exception(
+                "unexpected content type of status response: \"%s\"", ct.c_str() );
+        }
 
-      if (  (*ct)=="application/json" )
-      {
         Wt::Json::Object payload;
         Wt::Json::parse(response.body(), payload);
 
-        resultsAvailable = payload["resultsAvailable"].toBool();
+        qsr.resultsAreAvailable = payload["resultsAvailable"].toBool();
 
         if (cl_.progressDisplayer())
         {
 
           Wt::Json::Array states = payload.get("states");
-          if (states.size()>0)
+          for (Wt::Json::Array::const_iterator i=states.begin(); i!=states.end(); i++)
           {
-            for (Wt::Json::Array::const_iterator i=states.begin(); i!=states.end(); i++)
+            Wt::Json::Object s=*i;
+
+            ProgressVariableList pvl;
+            if (!s.isNull("ProgressVariableList"))
             {
-              Wt::Json::Object s=*i;
-
-              ProgressVariableList pvl;
-              if (!s.isNull("ProgressVariableList"))
+              Wt::Json::Object pvs = s.get("ProgressVariableList");
+              for (const auto& pv: pvs)
               {
-                Wt::Json::Object pvs = s.get("ProgressVariableList");
-                for (const auto& pv: pvs)
-                {
-                  pvl[pv.first]=pv.second.toNumber();
-                }
+                pvl[pv.first]=pv.second.toNumber();
               }
-
-              cl_.progressDisplayer()->update(
-                    ProgressState(
-                      s.get("time").toNumber(),
-                      pvl,
-                      s.get("logMessage").toString()
-                      )
-                    );
             }
+
+            cl_.progressDisplayer()->update(
+                  ProgressState(
+                    s.get("time").toNumber(),
+                    pvl,
+                    s.get("logMessage").toString()
+                    )
+                  );
           }
 
           Wt::Json::Array progressStates = payload.get("progressStates");
-          if (progressStates.size()>0)
+          for (auto i=progressStates.begin();
+               i!=progressStates.end(); i++)
           {
-            for (auto i=progressStates.begin();
-                 i!=progressStates.end(); i++)
+            Wt::Json::Object s=*i;
+            auto path = s.get("path").toString();
+            if (!s.isNull("double"))
             {
-              Wt::Json::Object s=*i;
-              auto path = s.get("path").toString();
-              if (!s.isNull("double"))
-              {
-                double value = s.get("double").toNumber();
-                cl_.progressDisplayer()->setActionProgressValue(path, value);
-              }
-              else if (!s.isNull("text"))
-              {
-                string text = s.get("text").toString();
-                cl_.progressDisplayer()->setMessageText(path, text);
-              }
-              else
-              {
-                cl_.progressDisplayer()->finishActionProgress(path);
-              }
+              double value = s.get("double").toNumber();
+              cl_.progressDisplayer()->setActionProgressValue(path, value);
+            }
+            else if (!s.isNull("text"))
+            {
+              string text = s.get("text").toString();
+              cl_.progressDisplayer()->setMessageText(path, text);
+            }
+            else
+            {
+              cl_.progressDisplayer()->finishActionProgress(path);
             }
           }
 
           Wt::Json::Array logLines = payload.get("logLines");
-          if (logLines.size()>0)
+          for (Wt::Json::Array::const_iterator i=logLines.begin(); i!=logLines.end(); i++)
           {
-            for (Wt::Json::Array::const_iterator i=logLines.begin(); i!=logLines.end(); i++)
-            {
-              cl_.progressDisplayer()->logMessage(
-                      i->toString()
-                    );
-            }
+            cl_.progressDisplayer()->logMessage(
+                    i->toString()
+                  );
           }
 
         }
 
         if (payload["errorOccurred"].toBool())
         {
-          errorOccurred=true;
-          exception_=std::make_shared<insight::Exception>(
-                std::string(payload.get("errorMessage").toString()),
-                std::string(payload.get("errorStackTrace").toString())
-                );
+          qsr.errorOccurred=true;
+          // the message must not be interpreted as format string
+          std::string msg = payload.get("errorMessage").toString();
+          qsr.exception=std::make_shared<insight::Exception>("%s", msg.c_str());
+          std::string trace = payload.get("errorStackTrace").toString();
+          qsr.exception->description()->strace_ = trace;
         }
-
       }
-      else
+      catch (const std::exception& e)
       {
-        success=false;
+        dbg()<<"invalid status response: "<<e.what()<<std::endl;
+        qsr = Result();
+        qsr.success=false;
       }
     }
 
-    Result qsr;
-    qsr.success=success;
-    qsr.resultsAreAvailable=resultsAvailable;
-    qsr.errorOccurred=errorOccurred;
-    qsr.exception=exception_;
-
-    cl_.ioService().post( std::bind(callback_, qsr) );
+    auto cb=callback_;
+    post([cb,qsr]() { cb(qsr); });
 }
 
 
@@ -268,7 +338,7 @@ ControlRequestAction::ControlRequestAction(
 {}
 
 
-void ControlRequestAction::start()
+bool ControlRequestAction::doStart()
 {
     Wt::Http::Message msg;
     msg.setHeader("Content-Type", "application/json");
@@ -276,21 +346,19 @@ void ControlRequestAction::start()
     payload["action"]=Wt::WString(action_);
     msg.addBodyText(Wt::Json::serialize(payload));
 
-    if (!cl_.httpClient().post(cl_.url(), msg))
-      throw insight::Exception("Could not launch control message!");
+    return cl_.httpClient().post(cl_.url(), msg);
 }
 
 
-void ControlRequestAction::handleHttpResponse(
+void ControlRequestAction::evaluateResponse(
             boost::system::error_code err,
             const Wt::Http::Message& response )
 {
-    AnalyzeClientAction::handleHttpResponse(err, response);
-
     ReportSuccessResult rsr;
-    rsr.success = (!err && response.status() == 200);
+    rsr.success = isSuccess(err, response);
 
-    cl_.ioService().post( std::bind(callback_, rsr) );
+    auto cb=callback_;
+    post([cb,rsr]() { cb(rsr); });
 }
 
 
@@ -314,27 +382,22 @@ LaunchAnalysisAction::LaunchAnalysisAction(
 }
 
 
-void LaunchAnalysisAction::start()
+bool LaunchAnalysisAction::doStart()
 {
     insight::CurrentExceptionContext ex("sending launch analysis request");
-
-    if (!cl_.httpClient().post(cl_.url(), msg_))
-      throw insight::Exception("Could not launch remote analysis!");
+    return cl_.httpClient().post(cl_.url(), msg_);
 }
 
 
-void LaunchAnalysisAction::handleHttpResponse(
+void LaunchAnalysisAction::evaluateResponse(
             boost::system::error_code err,
             const Wt::Http::Message& response )
 {
-    insight::CurrentExceptionContext ex("handling http response for launch analysis action");
-
-    AnalyzeClientAction::handleHttpResponse(err, response);
-
     ReportSuccessResult rsr;
-    rsr.success = (!err && response.status() == 200);
+    rsr.success = isSuccess(err, response);
 
-    cl_.ioService().post( std::bind(callback_, rsr) );
+    auto cb=callback_;
+    post([cb,rsr]() { cb(rsr); });
 }
 
 
@@ -350,47 +413,41 @@ QueryResultsAction::QueryResultsAction(
 {}
 
 
-void QueryResultsAction::start()
+bool QueryResultsAction::doStart()
 {
-    if (!cl_.httpClient().get(cl_.url()+"/results"))
-      throw insight::Exception("Could not query results of remote analysis!");
+    return cl_.httpClient().get(cl_.url()+"/results");
 }
 
 
-void QueryResultsAction::handleHttpResponse(
+void QueryResultsAction::evaluateResponse(
             boost::system::error_code err,
             const Wt::Http::Message& response )
 {
-    AnalyzeClientAction::handleHttpResponse(err, response);
+    auto qrr = std::make_shared<Result>();
+    qrr->success = isSuccess(err, response);
 
-    Result qrr;
-    qrr.success = (!err && response.status() == 200);
-
-    if (qrr.success)
+    if (qrr->success)
     {
-      const auto *ct = response.getHeader("Content-Type");
-
-      if (!ct)
-        throw insight::Exception("No content type specified in response!");
-
-      if ( (*ct)=="application/xml")
+      try
       {
-        qrr.results = ResultSet::createFromString( response.body() );
+        auto ct = contentType(response);
+        if (ct!="application/xml")
+        {
+          throw insight::Exception(
+                "unexpected content type of results response: \"%s\"", ct.c_str() );
+        }
+        qrr->results = ResultSet::createFromString( response.body() );
+      }
+      catch (const std::exception& e)
+      {
+        dbg()<<"invalid results response: "<<e.what()<<std::endl;
+        qrr->success=false;
+        qrr->results.reset();
       }
     }
 
-    callback_(std::move(qrr));
-    // //auto b=std::bind(callback_, qrr);
-    // auto b=[this,qrr](){
-    //     callback_(qrr);
-    // };
-    // struct CC
-    // {
-    //     std::unique_ptr<int> ii;
-    //     void operator()()
-    //     {}
-    // } cc;
-    // cl_.ioService().post(cc);
+    auto cb=callback_;
+    post([cb,qrr]() { cb(std::move(*qrr)); });
 }
 
 
@@ -406,44 +463,34 @@ QueryExepathAction::QueryExepathAction(
 {}
 
 
-void QueryExepathAction::start()
+bool QueryExepathAction::doStart()
 {
-    if (!cl_.httpClient().get(cl_.url()+"/exepath"))
-      throw insight::Exception("Could not query execution path of remote analysis!");
+    return cl_.httpClient().get(cl_.url()+"/exepath");
 }
 
 
-void QueryExepathAction::handleHttpResponse(
+void QueryExepathAction::evaluateResponse(
             boost::system::error_code err,
             const Wt::Http::Message& response )
 {
-    AnalyzeClientAction::handleHttpResponse(err, response);
-    bool success = (!err && response.status() == 200);
+    Result qer;
+    qer.success = isSuccess(err, response);
 
-    std::string exepath;
-
-    if (success)
+    if (qer.success)
     {
-
-      const auto *ct = response.getHeader("Content-Type");
-
-      if (!ct)
-        throw insight::Exception("No content type specified in response!");
-
-      if ( (*ct)=="text/plain" )
+      if ( contentType(response)=="text/plain" )
       {
-        exepath=response.body();
+        qer.exePath=response.body();
       }
       else
       {
-        success=false;
+        dbg()<<"unexpected content type of exepath response"<<std::endl;
+        qer.success=false;
       }
     }
 
-    Result qer;
-    qer.success=success;
-    qer.exePath=exepath;
-    cl_.ioService().post( std::bind(callback_, qer) );
+    auto cb=callback_;
+    post([cb,qer]() { cb(qer); });
 }
 
 
@@ -453,15 +500,17 @@ void QueryExepathAction::handleHttpResponse(
 void AnalyzeClient::controlRequest(
         const std::string &action,
         AnalyzeClientAction::ReportSuccessCallback onCompletion,
-        AnalyzeClientAction::SimpleCallBack onTimeout )
+        AnalyzeClientAction::SimpleCallBack onTimeout,
+        std::chrono::milliseconds timeout )
 {
   insight::CurrentExceptionContext ex("sending analyze client control request");
 
-  launchAction(
-              std::make_shared<ControlRequestAction>(
+  auto a = std::make_shared<ControlRequestAction>(
                   *this, action,
                   onCompletion,
-                  onTimeout ) );
+                  onTimeout );
+  a->setTimeout(timeout);
+  launchAction(a);
 }
 
 
@@ -469,12 +518,64 @@ void AnalyzeClient::controlRequest(
 void AnalyzeClient::launchAction( std::shared_ptr<AnalyzeClientAction> action )
 {
     insight::CurrentExceptionContext ex("launching analyze client action");
+    {
+        std::lock_guard<std::mutex> l(mx_);
+        if (shuttingDown_) return;
+        pendingActions_.push_back(action);
+    }
+    startNextAction();
+}
 
-    if ( isBusy() )
-        throw insight::Exception( "internal error: there is already a transaction in progress" );
 
-    currentAction_ = action;
-    currentAction_->start();
+
+void AnalyzeClient::startNextAction()
+{
+    while (true)
+    {
+        std::shared_ptr<AnalyzeClientAction> next;
+        {
+            std::lock_guard<std::mutex> l(mx_);
+            if (shuttingDown_ || requestInFlight_ || pendingActions_.empty())
+                return;
+            if (currentAction_ && !currentAction_->isFinished())
+                return;
+
+            next = pendingActions_.front();
+            pendingActions_.pop_front();
+            currentAction_ = next;
+            requestInFlight_ = true;
+        }
+
+        if (next->start())
+            return; // response will arrive through onHttpDone
+
+        // the request could not be sent: report failure and try the next one
+        {
+            std::lock_guard<std::mutex> l(mx_);
+            requestInFlight_ = false;
+        }
+        next->handleHttpResponse(requestNotSentError(), Wt::Http::Message());
+    }
+}
+
+
+
+void AnalyzeClient::onHttpDone(
+        boost::system::error_code err,
+        const Wt::Http::Message& response )
+{
+    std::shared_ptr<AnalyzeClientAction> action;
+    {
+        std::lock_guard<std::mutex> l(mx_);
+        requestInFlight_ = false;
+        action = currentAction_;
+    }
+    requestDone_.notify_all();
+
+    if (action)
+        action->handleHttpResponse(err, response);
+
+    startNextAction();
 }
 
 
@@ -487,13 +588,18 @@ AnalyzeClient::AnalyzeClient(
   : analysisName_(analysisName),
     url_(url),
     ioService_(),
-    httpClient_(ioService_),
+    httpClient_(std::make_unique<Wt::Http::Client>(ioService_)),
+    shuttingDown_(false),
     progressDisplayer_(progressDisplayer)
 {
   insight::CurrentExceptionContext ex("creating client for analysis execution at URL %s", url.c_str());
 
-  httpClient_.setMaximumResponseSize(512*1024*1024);
-  httpClient_.setTimeout(std::chrono::seconds{15*60});
+  httpClient_->setMaximumResponseSize(512*1024*1024);
+  setTimeout(timeout_);
+
+  httpClient_->done().connect(
+        std::bind(&AnalyzeClient::onHttpDone, this,
+                  std::placeholders::_1, std::placeholders::_2) );
 
   ioService_.start();
 }
@@ -503,7 +609,56 @@ AnalyzeClient::AnalyzeClient(
 
 AnalyzeClient::~AnalyzeClient()
 {
+  shutdown();
+}
+
+
+
+
+void AnalyzeClient::shutdown()
+{
+  std::shared_ptr<AnalyzeClientAction> current;
+  {
+    std::lock_guard<std::mutex> l(mx_);
+    if (shutDown_) return;
+    shutDown_ = true;
+    shuttingDown_ = true; // no more callbacks
+    pendingActions_.clear();
+    current = currentAction_;
+  }
+  if (current) current->cancel();
+
+  // abort a pending request and wait until it is really finished:
+  // the http client must not be destroyed, while its completion handler runs
+  {
+    std::unique_lock<std::mutex> l(mx_);
+    if (requestInFlight_)
+    {
+      httpClient_->abort();
+      requestDone_.wait_for(l, std::chrono::seconds(5), [this]{ return !requestInFlight_; });
+    }
+  }
+  httpClient_.reset();
+
   ioService_.stop();
+}
+
+
+
+
+void AnalyzeClient::setTimeout(std::chrono::milliseconds timeout)
+{
+  timeout_ = timeout;
+  // the own deadline of the actions shall expire first
+  httpClient_->setTimeout( timeout + std::chrono::seconds(5) );
+}
+
+
+
+
+std::chrono::milliseconds AnalyzeClient::timeout() const
+{
+  return timeout_;
 }
 
 
@@ -511,14 +666,10 @@ AnalyzeClient::~AnalyzeClient()
 
 bool AnalyzeClient::isBusy() const
 {
-    if ( currentAction_ )
-    {
-        if (!currentAction_->isFinished())
-        {
-            return true;
-        }
-    }
-    return false;
+    std::lock_guard<std::mutex> l(mx_);
+    return requestInFlight_
+            || (currentAction_ && !currentAction_->isFinished())
+            || !pendingActions_.empty();
 }
 
 
@@ -526,7 +677,13 @@ bool AnalyzeClient::isBusy() const
 
 void AnalyzeClient::forgetRequest()
 {
-  currentAction_.reset();
+    std::shared_ptr<AnalyzeClientAction> current;
+    {
+        std::lock_guard<std::mutex> l(mx_);
+        pendingActions_.clear();
+        current = currentAction_;
+    }
+    if (current) current->cancel();
 }
 
 
@@ -574,9 +731,10 @@ void AnalyzeClient::queryStatus(
 
 void AnalyzeClient::kill(
         AnalyzeClientAction::ReportSuccessCallback onCompletion,
-        AnalyzeClientAction::SimpleCallBack onTimeout)
+        AnalyzeClientAction::SimpleCallBack onTimeout,
+        std::chrono::milliseconds timeout )
 {
-  controlRequest("kill", onCompletion, onTimeout );
+  controlRequest("kill", onCompletion, onTimeout, timeout);
 }
 
 
@@ -584,9 +742,10 @@ void AnalyzeClient::kill(
 
 void AnalyzeClient::exit(
         AnalyzeClientAction::ReportSuccessCallback onCompletion,
-        AnalyzeClientAction::SimpleCallBack onTimeout )
+        AnalyzeClientAction::SimpleCallBack onTimeout,
+        std::chrono::milliseconds timeout )
 {
-  controlRequest("exit", onCompletion, onTimeout);
+  controlRequest("exit", onCompletion, onTimeout, timeout);
 }
 
 

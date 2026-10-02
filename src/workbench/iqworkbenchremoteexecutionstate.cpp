@@ -28,7 +28,11 @@ void IQWorkbenchRemoteExecutionState::toggleRemoteGUIElements(bool remoteEnabled
         }
         else
         {
-            ui->btnParaview->menu()->deleteLater();
+            if (auto *m = ui->btnParaview->menu())
+            {
+                ui->btnParaview->setMenu(nullptr);
+                m->deleteLater();
+            }
         }
     }
 }
@@ -117,7 +121,14 @@ void IQWorkbenchRemoteExecutionState::commit(const boost::filesystem::path &loca
 
 void IQWorkbenchRemoteExecutionState::cleanup(bool forceRemoval)
 {
-    IQRemoteExecutionState::cleanup(forceRemoval);
+    IQRemoteExecutionState::cleanup(forceRemoval); // calls discard()
+}
+
+
+
+void IQWorkbenchRemoteExecutionState::discard()
+{
     toggleRemoteGUIElements(false);
+    IQRemoteExecutionState::discard();
 }
 

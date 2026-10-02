@@ -14,6 +14,15 @@
 namespace insight {
 
 
+/**
+ * @brief shellQuote
+ * quote a string (e.g. a path) for literal use in a POSIX shell command line:
+ * wrapped in single quotes, contained single quotes are escaped
+ */
+std::string shellQuote(const std::string& s);
+
+
+
 
 
 
@@ -108,14 +117,34 @@ public:
             command.c_str(), c_str() );
 
         auto c_and_a = commandAndArgs(command);
-        int ret = boost::process::system(
+        // no boost::process::system: its internal io_service interferes
+        // with concurrently running asynchronous processes (see runCommand)
+        boost::process::child c(
             c_and_a.first, boost::process::args(c_and_a.second),
             std::forward<Args>(addArgs)...
             );
-        return ret;
+        c.wait();
+        return c.exit_code();
     }
 
-    virtual void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const =0;
+    struct CommandResult
+    {
+        int exitCode = -1;
+        std::string out, err;
+    };
+
+    /**
+     * @brief runCommand
+     * execute command on the server and capture its output.
+     * stdout and stderr are read while the command runs,
+     * so that large outputs cannot block the command.
+     * Use this instead of executeCommand, if the output is needed.
+     */
+    CommandResult runCommand(const std::string& command) const;
+
+    virtual void save(
+        rapidxml::xml_node<> *e,
+        rapidxml::xml_document<>& doc ) const;
 
     virtual ConfigPtr clone() const =0;
 
@@ -194,6 +223,12 @@ public:
   public:
     BackgroundJob(RemoteServer& server);
     virtual void kill() =0;
+
+    /**
+     * @brief isRunning
+     * check on the server, whether the job (or one of its child processes) is still alive
+     */
+    virtual bool isRunning() =0;
   };
   typedef std::shared_ptr<BackgroundJob> BackgroundJobPtr;
 
@@ -226,6 +261,14 @@ public:
       inline std::ostream& operator()() { return stream(); };
       inline operator std::ostream& () { return stream(); };
       virtual std::ostream& stream() =0;
+
+      /**
+       * @brief close
+       * finish the transfer.
+       * Throws, if the remote file could not be written.
+       * Should always be called explicitly: the destructor can only issue a warning.
+       */
+      virtual void close() =0;
   };
 
   virtual std::unique_ptr<RemoteStream> remoteOFStream

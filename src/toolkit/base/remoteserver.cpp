@@ -1,6 +1,9 @@
 #include "remoteserver.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <deque>
+#include <thread>
 #include <regex>
 
 #include "base/exception.h"
@@ -18,6 +21,64 @@ using namespace boost;
 namespace insight {
 
 
+std::string shellQuote(const std::string& s)
+{
+    std::string r="'";
+    for (char c: s)
+    {
+        if (c=='\'')
+            r+="'\\''";
+        else
+            r+=c;
+    }
+    r+="'";
+    return r;
+}
+
+
+
+
+RemoteServer::Config::CommandResult
+RemoteServer::Config::runCommand(const std::string& command) const
+{
+    insight::CurrentExceptionContext ex(
+        "executing command \"%s\" on remote server %s",
+        command.c_str(), c_str() );
+
+    auto c_and_a = commandAndArgs(command);
+
+    // synchronous pipes, stderr is read by a separate thread:
+    // (the asynchronous pipes of boost.process 1.65 are not reliable,
+    // when several processes are run concurrently)
+    boost::process::ipstream out, err;
+
+    boost::process::child c(
+        c_and_a.first, boost::process::args(c_and_a.second),
+        boost::process::std_in < boost::process::null,
+        boost::process::std_out > out,
+        boost::process::std_err > err );
+
+    CommandResult r;
+    std::thread errReader(
+        [&err,&r]()
+        {
+            r.err.assign(
+                std::istreambuf_iterator<char>(err),
+                std::istreambuf_iterator<char>() );
+        } );
+    r.out.assign(
+        std::istreambuf_iterator<char>(out),
+        std::istreambuf_iterator<char>() );
+    errReader.join();
+
+    c.wait();
+    r.exitCode = c.exit_code();
+    return r;
+}
+
+
+
+
 RemoteServer::Config::Config(const boost::filesystem::path& bp, int np)
     : defaultDirectory_(bp), np_(np), originatedFromExpansion_(false)
 {}
@@ -25,7 +86,9 @@ RemoteServer::Config::Config(const boost::filesystem::path& bp, int np)
 std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml_node<> *e)
 {
   std::shared_ptr<RemoteServer::Config> result;
+
   string label = getAttribute(*e, "label");
+
   {
       CurrentExceptionContext ex("reading configuration of remote server %s", label.c_str());
 
@@ -48,7 +111,9 @@ std::shared_ptr<RemoteServer::Config> RemoteServer::Config::create(rapidxml::xml
   }
 
   if (result)
+  {
     static_cast<std::string&>(*result) = label;
+  }
 
   return result;
 }
@@ -89,6 +154,12 @@ bool RemoteServer::Config::isUnoccupied() const
         return true;
 }
 
+void RemoteServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_document<> &doc) const
+{
+    appendAttribute(doc, *e, "label", *this );
+    appendAttribute(doc, *e, "np", np_ );
+}
+
 bool RemoteServer::Config::isExpandable() const
 {
     return false;
@@ -125,27 +196,28 @@ void RemoteServer::lookForPattern(
     std::vector<bool> found(pattern.size(), false);
     auto allFound = [&] () -> bool
     {
-        bool all=true;
-        for (const auto& f: found)
-        {
-            all = all && f;
-        }
-        return all;
+        return std::all_of(found.begin(), found.end(), [](bool f) { return f; });
     };
 
-    int linesRead = 0;
-    while ( !allFound() && (linesRead<100*(1+pattern.size())) )
+    // keep the last lines for the error message
+    std::deque<std::string> lastLines;
+    const size_t nLastLines = 10;
+
+    const size_t maxLines = 100*(1+pattern.size());
+    size_t linesRead = 0;
+    std::string line;
+    while ( !allFound() && (linesRead<maxLines) && getline(is, line) )
     {
-      std::string line;
-      if (getline(is, line))
-      {
         linesRead++;
 
-        for (int i=0; i<pattern.size(); ++i)
+        lastLines.push_back(line);
+        if (lastLines.size()>nLastLines) lastLines.pop_front();
+
+        for (size_t i=0; i<pattern.size(); ++i)
         {
             if (!found[i])
             {
-                auto pat = pattern[i];
+                const auto& pat = pattern[i];
                 boost::smatch matches;
                 if (boost::regex_match(line, matches, pat.first))
                 {
@@ -161,7 +233,29 @@ void RemoteServer::lookForPattern(
                 }
             }
         }
-      }
+    }
+
+    if (!allFound())
+    {
+        std::string missing;
+        for (size_t i=0; i<pattern.size(); ++i)
+        {
+            if (!found[i])
+                missing += "\n  "+pattern[i].first.str();
+        }
+
+        std::string output;
+        for (const auto& l: lastLines)
+            output += "\n  "+l;
+        if (output.empty())
+            output = "\n  (no output)";
+
+        throw insight::Exception(
+            "%s while waiting for the expected output of the remote process.\n"
+            "Missing:%s\nLast lines of output:%s",
+            (linesRead>=maxLines ?
+                 "Too many lines of output" : "Output ended"),
+            missing.c_str(), output.c_str() );
     }
 }
 

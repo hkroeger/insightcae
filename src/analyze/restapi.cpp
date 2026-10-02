@@ -14,8 +14,54 @@
 
 #include <csignal>
 
+#ifdef WIN32
+#include <boost/asio.hpp>
+#endif
+
 using namespace std;
 using namespace Wt;
+
+
+#ifdef WIN32
+namespace {
+
+/**
+ * On Windows, SO_REUSEADDR (which is set by Wt) allows binding to a port,
+ * which is already in use by another socket: the server would start
+ * without error, but the requests might go to another process.
+ * A probe socket with exclusive address use fails to bind in that case.
+ */
+void checkPortIsFree(const std::string& listenAddr, int port)
+{
+    boost::system::error_code ec;
+    auto addr = boost::asio::ip::address::from_string(listenAddr, ec);
+    if (ec) return; // no numeric address: leave the check to Wt
+
+    boost::asio::io_service ios;
+    boost::asio::ip::tcp::acceptor probe(ios);
+    boost::asio::ip::tcp::endpoint ep(addr, port);
+
+    probe.open(ep.protocol(), ec);
+    if (!ec)
+    {
+        probe.set_option(
+            boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_EXCLUSIVEADDRUSE>(true), ec );
+    }
+    if (!ec)
+    {
+        probe.bind(ep, ec);
+    }
+    if (ec)
+    {
+        throw insight::Exception(
+            "Could not bind to address %s port %d: %s",
+            listenAddr.c_str(), port, ec.message().c_str() );
+    }
+    // the probe socket is closed here, before the server binds
+}
+
+}
+#endif
 
 
 
@@ -159,6 +205,9 @@ AnalyzeRESTServer::AnalyzeRESTServer(
   : Wt::WServer(srvname.c_str()),
     analysisThread_(nullptr)
 {
+#ifdef WIN32
+  checkPortIsFree(listenAddr, port);
+#endif
 
   auto addr = boost::str(boost::format(listenAddr+":%d") % port);
   auto mmrs = insight::toString(32 * 1024*1024);
@@ -188,19 +237,53 @@ void AnalyzeRESTServer::setAnalysis(const boost::filesystem::path& inputFilePare
   inputFileParentPath_=inputFileParentPath;
 }
 
+void AnalyzeRESTServer::setAnalysisInfo(
+    const insight::ParameterSet& parameters,
+    const boost::filesystem::path& executionPath )
+{
+  std::ostringstream os;
+  parameters.saveToStream(os, insight::hierarchicalData::Element::OutputProperties());
+
+  boost::mutex::scoped_lock lock(analysisMx_);
+  parametersXml_=os.str();
+  executionPath_=executionPath;
+}
+
 void AnalyzeRESTServer::setSolverThread(insight::AnalysisThread *at)
 {
+  boost::mutex::scoped_lock lock(analysisMx_);
   analysisThread_=at;
+  if (analysisThread_ && exitRequested_)
+  {
+    // the exit was requested before the analysis was started
+    analysisThread_->interrupt();
+  }
 }
 
 void AnalyzeRESTServer::setResults(insight::ResultSetPtr results)
 {
+  boost::mutex::scoped_lock lock(mx_);
   results_=std::move(results);
 }
 
 void AnalyzeRESTServer::setException(const insight::Exception &ex)
 {
+  boost::mutex::scoped_lock lock(mx_);
   exception_=std::make_shared<insight::Exception>(ex);
+}
+
+void AnalyzeRESTServer::waitForExitRequest()
+{
+  {
+    boost::mutex::scoped_lock lock(analysisMx_);
+    while (!exitRequested_)
+    {
+      exitRequestedCv_.wait(lock);
+    }
+  }
+  // give the reply to the exit request some time to be sent,
+  // before the server is stopped
+  boost::this_thread::sleep_for(boost::chrono::milliseconds(500));
 }
 
 
@@ -370,19 +453,18 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
 
     if (stateSelection==Parameters)
     {
-        if (auto analysis = analysisThread_->analysis())
-        {
-            response.setStatus(200);
-            response.setMimeType("application/xml");
-            analysis->parameters().saveToStream(
-                response.out(),
-                insight::hierarchicalData::Element::OutputProperties() );
-
-            return;
-        }
+      boost::mutex::scoped_lock lock(analysisMx_);
+      if (!parametersXml_.empty())
+      {
+        response.setStatus(200);
+        response.setMimeType("application/xml");
+        response.out() << parametersXml_;
+        return;
+      }
     }
     else if (stateSelection==Results)
     {
+      boost::mutex::scoped_lock lock(mx_);
       if (results_)
       {
         response.setStatus(200);
@@ -396,14 +478,20 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
     }
     else if (stateSelection==ExePath)
     {
-      response.setStatus(200);
-      response.setMimeType("text/plain");
-      response.out() << analysisThread_->executionPath();
-
-      return;
+      boost::mutex::scoped_lock lock(analysisMx_);
+      if (!executionPath_.empty())
+      {
+        response.setStatus(200);
+        response.setMimeType("text/plain");
+        response.out() << executionPath_.string();
+        return;
+      }
     }
     else
     {
+      // the analysis thread adds to the queues concurrently
+      boost::mutex::scoped_lock lock(mx_);
+
       Wt::Json::Array states, progressStates, logLines;
 
       if (recordedStates_.size()>0)
@@ -491,6 +579,7 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         boost::algorithm::to_lower(action);
         if (action=="kill")
         {
+          boost::mutex::scoped_lock lock(analysisMx_);
           if (analysisThread_)
           {
             analysisThread_->interrupt();
@@ -502,11 +591,19 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="exit")
         {
-          if (analysisThread_)
+          // The main thread ends the process (waitForExitRequest).
+          // (scheduleStop() must not be used: it works through a signal,
+          // which terminates the process, if the main thread does not wait
+          // for it yet, e.g. before or during the analysis.)
           {
-            analysisThread_->interrupt();
+            boost::mutex::scoped_lock lock(analysisMx_);
+            exitRequested_=true;
+            if (analysisThread_)
+            {
+              analysisThread_->interrupt();
+            }
           }
-          scheduleStop();
+          exitRequestedCv_.notify_all();
 
           response.setStatus(200);
           response.setMimeType("text/plain");
@@ -515,10 +612,10 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnow")
         {
-
-          if (auto analysis = analysisThread_->analysis())
+          boost::mutex::scoped_lock lock(analysisMx_);
+          if (!executionPath_.empty())
           {
-              std::ofstream f( (analysis->executionPath()/"wnow").string() );
+              std::ofstream f( (executionPath_/"wnow").string() );
               f.close();
           }
 
@@ -529,9 +626,10 @@ void AnalyzeRESTServer::handleRequest(const Http::Request &request, Http::Respon
         }
         else if (action=="wnowandstop")
         {
-          if (auto analysis = analysisThread_->analysis())
+          boost::mutex::scoped_lock lock(analysisMx_);
+          if (!executionPath_.empty())
           {
-              std::ofstream f( (analysis->executionPath()/"wnowandstop").string() );
+              std::ofstream f( (executionPath_/"wnowandstop").string() );
               f.close();
           }
 

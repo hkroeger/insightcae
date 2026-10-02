@@ -65,6 +65,14 @@ insight::RemoteExecutionConfig& IQRemoteExecutionState::exeConfig()
 void IQRemoteExecutionState::cleanup(bool forceRemoval)
 {
   rlc_->cleanup(forceRemoval);
+  discard();
+}
+
+
+
+
+void IQRemoteExecutionState::discard()
+{
   deleteLater();
 }
 

@@ -421,6 +421,8 @@ int main(int argc, char* argv[])
             check(ex.back().find("Address already in use")!=std::string::npos
                   || ex.back().find("Could not bind")!=std::string::npos,
                   "error should contain the reason from the remote log: "+ex.back());
+            check(ex.back().find("analyze exited with code")!=std::string::npos,
+                  "error should contain the exit code of analyze: "+ex.back());
 
             f.checkRemoteCleanedUp();
         });

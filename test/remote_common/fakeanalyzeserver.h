@@ -134,6 +134,13 @@ public:
     PortBlocker(int port=0, bool closeConnections=true);
     ~PortBlocker();
     int port() const { return port_; }
+
+    /**
+     * @brief otherSocketCanBind
+     * diagnostics: true, if another socket with SO_REUSEADDR (like Wt's server)
+     * can still bind to the blocked port (possible on Windows)
+     */
+    bool otherSocketCanBind() const;
 };
 
 

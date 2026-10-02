@@ -385,6 +385,10 @@ int main(int argc, char* argv[])
     tr.run("occupied server port makes analyze fail", [&]()
     {
         PortBlocker blocker(0, true);
+        check(!blocker.otherSocketCanBind(),
+              "test setup: port %d is not occupied exclusively "
+              "(another socket with SO_REUSEADDR can bind to it)", blocker.port());
+
         AnalyzeServerProcess p(600, 200, false, blocker.port());
 
         int ec=0;

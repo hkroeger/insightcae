@@ -376,13 +376,35 @@ void FakeAnalyzeServer::serve(std::shared_ptr<tcp::socket> sock)
 
 
 
+bool PortBlocker::otherSocketCanBind() const
+{
+    boost::asio::io_service ios;
+    tcp::acceptor other(ios);
+    tcp::endpoint ep(boost::asio::ip::address::from_string("127.0.0.1"), port_);
+    boost::system::error_code ec;
+    other.open(ep.protocol(), ec);
+    if (!ec) other.set_option(tcp::acceptor::reuse_address(true), ec);
+    if (!ec) other.bind(ep, ec);
+    return !ec;
+}
+
+
+
+
 PortBlocker::PortBlocker(int port, bool closeConnections)
     : acceptor_(ios_),
       closeConnections_(closeConnections)
 {
     tcp::endpoint ep(boost::asio::ip::address::from_string("127.0.0.1"), port);
     acceptor_.open(ep.protocol());
+#ifdef WIN32
+    // On Windows, SO_REUSEADDR allows other sockets to bind to the same port
+    // (Wt's server sets it): the port has to be occupied exclusively
+    acceptor_.set_option(
+        boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_EXCLUSIVEADDRUSE>(true) );
+#else
     acceptor_.set_option(tcp::acceptor::reuse_address(true));
+#endif
     acceptor_.bind(ep);
     acceptor_.listen();
     port_ = acceptor_.local_endpoint().port();

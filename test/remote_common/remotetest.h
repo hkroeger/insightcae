@@ -136,6 +136,8 @@ struct IsolatedResult
 /**
  * @brief runIsolated
  * execute fn in a forked child process.
+ * (On Windows, where fork() is not available, fn is executed in a separate thread:
+ * exceptions and hangs are detected, but crashes are not isolated.)
  * The child exits with 0, if fn returns normally,
  * and with 1, if it throws (the message is printed to stderr).
  * Crashes (signals) and hangs (timeout) are reported in the result.
@@ -235,6 +237,14 @@ std::string uniqueName(const std::string& prefix);
 
 std::string env(const std::string& name, const std::string& defaultValue = std::string());
 
+void setEnv(const std::string& name, const std::string& value);
+
+/**
+ * @brief pathListSeparator
+ * separator of the entries in PATH (':' or ';' on Windows)
+ */
+char pathListSeparator();
+
 /**
  * @brief analyzeExecutable
  * path to the analyze executable.
@@ -245,6 +255,8 @@ boost::filesystem::path analyzeExecutable();
 
 
 // ======== process helpers
+
+int currentProcessId();
 
 bool localProcessIsAlive(int pid);
 

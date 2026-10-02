@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 
         // unique process names for this test run (argv[0] set by "exec -a"),
         // leftovers end by themselves after 10 minutes
-        std::string marker = "insight-remotejob-"+std::to_string(getpid())+"-";
+        std::string marker = "insight-remotejob-"+std::to_string(currentProcessId())+"-";
 
 
         tr.run("background process is started and killed", [&]()
@@ -92,6 +92,36 @@ int main(int argc, char* argv[])
                 "echo READY===4242===READY; exec -a "+marker+"3 sleep 600",
                 { { boost::regex("READY===([0-9]+)===READY"), &m } } );
             check(m.size()==2 && m[1]=="4242", "expected output not captured");
+            job->kill();
+        });
+
+
+        tr.run("job keeps running for a while after launch", [&]()
+        {
+            // WSL cleans up the processes of a finished wsl.exe call
+            // and shuts an idle distribution down after some seconds
+            auto srv = be->server();
+            std::string name = marker+"6";
+            auto job = srv->launchBackgroundProcess("exec -a "+name+" sleep 600");
+            std::this_thread::sleep_for(15s);
+            check(job->isRunning(), "job is not running anymore 15 s after its launch");
+            check(be->remoteProcessesMatching("^"+name+" ").size()==1,
+                  "job process not found 15 s after its launch");
+            job->kill();
+            check(!job->isRunning(), "job still running after kill");
+        });
+
+
+        tr.run("expected output, which appears late, is captured", [&]()
+        {
+            // the launching connection has to stay open until the output appears
+            // (wsl.exe stops relaying, when its main process has ended)
+            auto srv = be->server();
+            std::vector<std::string> m;
+            auto job = srv->launchBackgroundProcess(
+                "sleep 3; echo READY===4243===READY; exec -a "+marker+"5 sleep 600",
+                { { boost::regex("READY===([0-9]+)===READY"), &m } } );
+            check(m.size()==2 && m[1]=="4243", "late expected output not captured");
             job->kill();
         });
 

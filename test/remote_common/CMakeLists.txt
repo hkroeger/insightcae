@@ -124,6 +124,20 @@ if (wt_FOUND AND TARGET dummies)
     set_tests_properties(remote_check_localhost_remote PROPERTIES
         FIXTURES_SETUP remote_ssh)
 
+    # Windows test machines have no ctest: the script runs the tests instead.
+    # It is copied next to the test executables on each build (if changed).
+    if (WIN32)
+        add_custom_target(remote_tests_script ALL
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/run_remote_tests.ps1
+                $<TARGET_FILE_DIR:testexe_check_localhost_remote>/run_remote_tests.ps1
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/run_remote_tests.ps1
+            COMMENT "Copying run_remote_tests.ps1 to the test executables"
+            SOURCES run_remote_tests.ps1
+        )
+        add_dependencies(remote_tests_script testexe_check_localhost_remote)
+    endif()
+
     set(INSIGHT_REMOTE_TESTS_ENABLED ON PARENT_SCOPE)
 
 else()

@@ -178,7 +178,7 @@ LocalShellBackend::LocalShellBackend()
     auto exe = analyzeExecutable();
     if (exe.has_parent_path())
     {
-        setenv("PATH", (exe.parent_path().string()+":"+env("PATH")).c_str(), 1);
+        setEnv("PATH", exe.parent_path().string()+pathListSeparator()+env("PATH"));
     }
 
     baseDir_ = fs::temp_directory_path()/fs::unique_path("insight-localshell-%%%%-%%%%");
@@ -414,7 +414,13 @@ RemoteBackendPtr sshLocalhostBackend()
             "remote server \"localhost\" is not of type SSHLinux" );
     }
 
+#ifdef WIN32
+    // the SSH target is a Linux machine (or a WSL instance):
+    // its processes are not visible in the process list of Windows
+    return std::make_shared<SSHBackend>("ssh-localhost", cfg, false);
+#else
     return std::make_shared<SSHBackend>("ssh-localhost", cfg, true);
+#endif
 }
 
 
@@ -430,9 +436,12 @@ RemoteBackendPtr sshHostBackend()
         env("INSIGHT_TEST_SSH_BASEDIR", "/tmp"), 1, host );
     static_cast<std::string&>(*cfg)="ssh-env";
 
-    return std::make_shared<SSHBackend>(
-        "ssh-env", cfg,
-        host=="localhost" || host=="127.0.0.1" );
+#ifdef WIN32
+    bool isLocal = false; // see sshLocalhostBackend()
+#else
+    bool isLocal = host=="localhost" || host=="127.0.0.1";
+#endif
+    return std::make_shared<SSHBackend>("ssh-env", cfg, isLocal);
 }
 
 

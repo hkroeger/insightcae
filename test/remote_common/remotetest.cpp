@@ -14,13 +14,26 @@
 #include <boost/regex.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#include "base/parameterset.h"
+#include "base/parameters/subsetparameter.h"
+
+#ifdef WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <process.h>
+#include <cstdio>
+#else
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
-
-#include "base/parameterset.h"
-#include "base/parameters/subsetparameter.h"
+#include <cstring>
+#endif
 
 
 namespace fs = boost::filesystem;
@@ -140,7 +153,11 @@ std::string IsolatedResult::description() const
     if (timedOut)
         return "child process did not finish in time (hang)";
     if (!exitedNormally)
+#ifdef WIN32
+        return format("child process crashed with signal %d", signal);
+#else
         return format("child process crashed with signal %d (%s)", signal, strsignal(signal));
+#endif
     if (exitCode!=0)
         return format("child process failed with exit code %d", exitCode);
     return "child process succeeded";
@@ -148,6 +165,65 @@ std::string IsolatedResult::description() const
 
 
 
+
+#ifdef WIN32
+
+IsolatedResult runIsolated(
+    std::function<void()> fn,
+    std::chrono::milliseconds timeout )
+{
+    // no fork() on Windows: run in a thread (crashes are not isolated)
+    struct State
+    {
+        std::mutex mx;
+        std::condition_variable cv;
+        bool done=false;
+        int ret=0;
+    };
+    auto st = std::make_shared<State>();
+
+    std::thread t(
+        [st,fn]()
+        {
+            int ret=0;
+            try
+            {
+                fn();
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr<<"  [isolated] exception: "<<e.what()<<std::endl;
+                ret=1;
+            }
+            catch (...)
+            {
+                std::cerr<<"  [isolated] unknown exception"<<std::endl;
+                ret=1;
+            }
+            std::lock_guard<std::mutex> l(st->mx);
+            st->ret=ret;
+            st->done=true;
+            st->cv.notify_all();
+        });
+
+    IsolatedResult r;
+    std::unique_lock<std::mutex> l(st->mx);
+    if (!st->cv.wait_for(l, timeout, [st]{ return st->done; }))
+    {
+        l.unlock();
+        t.detach();
+        ++abandonedThreadCount;
+        r.timedOut=true;
+        return r;
+    }
+    l.unlock();
+    t.join();
+    r.exitedNormally=true;
+    r.exitCode=st->ret;
+    return r;
+}
+
+#else
 
 IsolatedResult runIsolated(
     std::function<void()> fn,
@@ -213,6 +289,8 @@ IsolatedResult runIsolated(
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 }
+
+#endif
 
 
 
@@ -468,7 +546,7 @@ std::string uniqueName(const std::string& prefix)
 {
     static std::mt19937 gen(std::random_device{}());
     std::uniform_int_distribution<int> dist(0, 0xffffff);
-    return prefix+format("-%d-%06x", int(getpid()), dist(gen));
+    return prefix+format("-%d-%06x", currentProcessId(), dist(gen));
 }
 
 
@@ -484,6 +562,30 @@ std::string env(const std::string& name, const std::string& defaultValue)
 
 
 
+void setEnv(const std::string& name, const std::string& value)
+{
+#ifdef WIN32
+    _putenv_s(name.c_str(), value.c_str());
+#else
+    setenv(name.c_str(), value.c_str(), 1);
+#endif
+}
+
+
+
+
+char pathListSeparator()
+{
+#ifdef WIN32
+    return ';';
+#else
+    return ':';
+#endif
+}
+
+
+
+
 boost::filesystem::path analyzeExecutable()
 {
     auto e = env("INSIGHT_TEST_ANALYZE_EXE");
@@ -494,6 +596,77 @@ boost::filesystem::path analyzeExecutable()
 
 
 
+
+int currentProcessId()
+{
+#ifdef WIN32
+    return int(_getpid());
+#else
+    return int(getpid());
+#endif
+}
+
+
+
+
+#ifdef WIN32
+
+bool localProcessIsAlive(int pid)
+{
+    HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, DWORD(pid));
+    if (!h)
+        return false;
+    DWORD code=0;
+    bool alive = GetExitCodeProcess(h, &code) && code==STILL_ACTIVE;
+    CloseHandle(h);
+    return alive;
+}
+
+
+
+
+std::vector<int> localProcessesMatching(const std::string& pattern)
+{
+    std::vector<int> result;
+    boost::regex re(pattern, boost::regex::extended);
+    int self = currentProcessId();
+
+    // one line per process: "<pid> <command line>"
+    FILE* p = _popen(
+        "powershell -NoProfile -NonInteractive -Command \""
+        "Get-CimInstance Win32_Process | "
+        "ForEach-Object { '{0} {1}' -f $_.ProcessId, $_.CommandLine }\"",
+        "r" );
+    if (!p)
+        throw std::runtime_error("could not list processes");
+
+    std::string out;
+    char buf[4096];
+    size_t n;
+    while ((n=fread(buf, 1, sizeof(buf), p))>0)
+        out.append(buf, n);
+    _pclose(p);
+
+    std::istringstream is(out);
+    std::string line;
+    while (std::getline(is, line))
+    {
+        if (!line.empty() && line.back()=='\r') line.pop_back();
+        auto sp = line.find(' ');
+        if (sp==std::string::npos || sp==0) continue;
+        int pid;
+        try { pid = std::stoi(line.substr(0, sp)); }
+        catch (...) { continue; }
+        if (pid==self) continue;
+
+        auto cmdline = line.substr(sp+1);
+        if (!cmdline.empty() && boost::regex_search(cmdline, re))
+            result.push_back(pid);
+    }
+    return result;
+}
+
+#else
 
 bool localProcessIsAlive(int pid)
 {
@@ -519,7 +692,7 @@ std::vector<int> localProcessesMatching(const std::string& pattern)
 {
     std::vector<int> result;
     boost::regex re(pattern, boost::regex::extended);
-    int self = getpid();
+    int self = currentProcessId();
 
     for (fs::directory_iterator i("/proc"), e; i!=e; ++i)
     {
@@ -545,6 +718,8 @@ std::vector<int> localProcessesMatching(const std::string& pattern)
     }
     return result;
 }
+
+#endif
 
 
 

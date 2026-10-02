@@ -1,6 +1,5 @@
 #include "localshellserver.h"
 
-#include <fnmatch.h>
 
 #include "base/exception.h"
 #include "base/rapidxml.h"
@@ -102,6 +101,32 @@ const RemoteServer::Config& LocalShellServer::config() const
 
 
 
+/**
+ * shell-like wildcard match ('*' and '?'), as used by the rsync exclude patterns
+ * (fnmatch is not available on all platforms)
+ */
+static bool wildcardMatch(const char* pat, const char* str)
+{
+    for (; *pat; ++pat, ++str)
+    {
+        if (*pat=='*')
+        {
+            while (*(pat+1)=='*') ++pat;
+            for (const char* s=str; ; ++s)
+            {
+                if (wildcardMatch(pat+1, s)) return true;
+                if (!*s) return false;
+            }
+        }
+        if (!*str) return false;
+        if (*pat!='?' && *pat!=*str) return false;
+    }
+    return !*str;
+}
+
+
+
+
 static bool isExcluded(
     const fs::path& relPath,
     bool includeProcessorDirectories,
@@ -115,7 +140,7 @@ static bool isExcluded(
     {
         for (const auto& p: pats)
         {
-            if (fnmatch(p.c_str(), part.string().c_str(), 0)==0)
+            if (wildcardMatch(p.c_str(), part.string().c_str()))
                 return true;
         }
     }

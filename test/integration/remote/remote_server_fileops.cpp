@@ -7,6 +7,8 @@
 #include <set>
 
 #include "boost/process.hpp"
+#include "boost/algorithm/string/trim.hpp"
+#include "boost/regex.hpp"
 
 #include "base/linuxremoteserver.h"
 #include "base/remotecommand.h"
@@ -43,6 +45,19 @@ int main(int argc, char* argv[])
         expectThrows<insight::Exception>(
             [&](){ srv->executeCommand("exit 3", true); },
             "executeCommand with throwOnFail" );
+    });
+
+
+    tr.run("command is evaluated exactly once by the remote shell", [&]()
+    {
+        // an intermediate shell (e.g. the default shell of a WSL distribution)
+        // would expand the variables before they are set
+        int ret;
+        auto out = be->remoteOutput("v=inner; sleep 0 & echo \"[$v][$!]\"", &ret);
+        boost::trim(out);
+        check(ret==0, "command failed with exit code %d", ret);
+        check(boost::regex_match(out, boost::regex("\\[inner\\]\\[[0-9]+\\]")),
+              "variables were not expanded by the executing shell: got \""+out+"\"");
     });
 
 

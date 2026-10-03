@@ -21,6 +21,11 @@ find_program(GETTEXT_MSGATTRIB_COMMAND msgattrib)
 #     [MSGINIT_ARGS <args> ...]
 #     [MSGFMT_ARGS <args> ... ]
 #     )
+#
+# The .pot and .po files in the source tree are regenerated during build
+# only if INSIGHT_UPDATE_PO is ON. Otherwise, the existing .po files are
+# just compiled into .mo files (missing files are still created initially
+# at configure time).
 
 function(configure_gettext)
     # Ensure the utility programs are available
@@ -96,14 +101,16 @@ function(configure_gettext)
                 "--output=${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     endif()
-    add_custom_command(
-        OUTPUT "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
-        COMMAND "${GETTEXT_XGETTEXT_COMMAND}" ${GETTEXT_XGETTEXT_ARGS}
-            ${GETTEXT_SOURCES}
-            "--output=${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
-        DEPENDS ${GETTEXT_SOURCES}
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        COMMENT "Generating a .pot file from program sources")
+    if(INSIGHT_UPDATE_PO)
+        add_custom_command(
+            OUTPUT "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+            COMMAND "${GETTEXT_XGETTEXT_COMMAND}" ${GETTEXT_XGETTEXT_ARGS}
+                ${GETTEXT_SOURCES}
+                "--output=${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+            DEPENDS ${GETTEXT_SOURCES}
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            COMMENT "Generating a .pot file from program sources")
+    endif()
 
     foreach(lang IN LISTS GETTEXT_LANGUAGES)
         # Create needed directories
@@ -121,20 +128,22 @@ function(configure_gettext)
                     "--locale=${lang}"
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
         endif()
-        add_custom_command(
-            OUTPUT "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-            COMMAND "${GETTEXT_MSGMERGE_COMMAND}" ${GETTEXT_MSGMERGE_ARGS}
-                "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-                "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
-                "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-            COMMAND "${GETTEXT_MSGATTRIB_COMMAND}" --no-obsolete
-                "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-                "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-            COMMAND sed -i "/^\\\"POT-Creation-Date: .*\\\"$$/d"
-                "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-            DEPENDS "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            COMMENT "Updating the ${lang} .po file from the .pot file; Remove obsolete entries and POT-Creation-Date")
+        if(INSIGHT_UPDATE_PO)
+            add_custom_command(
+                OUTPUT "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                COMMAND "${GETTEXT_MSGMERGE_COMMAND}" ${GETTEXT_MSGMERGE_ARGS}
+                    "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                    "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+                    "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                COMMAND "${GETTEXT_MSGATTRIB_COMMAND}" --no-obsolete
+                    "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                    "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                COMMAND sed -i "/^\\\"POT-Creation-Date: .*\\\"$$/d"
+                    "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                DEPENDS "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                COMMENT "Updating the ${lang} .po file from the .pot file; Remove obsolete entries and POT-Creation-Date")
+        endif()
 
 
         # .po ---{msgfmt}---> .mo (directly into the build tree)

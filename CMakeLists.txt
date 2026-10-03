@@ -56,6 +56,8 @@ SET(INSIGHT_SUPERBUILD "" CACHE STRING "Path to superbuild (build directory). If
 
 option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)
 
+option(INSIGHT_UPDATE_PO "Regenerate the .pot/.po translation files in the source tree during build (disable e.g. on CI working copies)" OFF)
+
 option(INSIGHT_BUILD_GUICOMPONENTS "Enable the GUI tools (workbench, CAD, case builder..., Qt is required)" ON)
 if (INSIGHT_BUILD_GUICOMPONENTS)
  OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt is required)" ON)

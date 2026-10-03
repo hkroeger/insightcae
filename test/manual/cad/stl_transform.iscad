@@ -15,8 +15,6 @@ s3:Transform(s2, EY*3, O);
 s4:Transform(s3, EX*1, 45*deg*EZ, 2);
 s4b:Transform(s4, O, O, 2);
 
-@post
-
 exportSTL("s2.stl", 0.001)<<s2;
 exportSTL("s3.stl", 0.001)<<s3;
 exportSTL("s4.stl", 0.001)<<s4;

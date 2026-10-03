@@ -56,7 +56,7 @@ Export::Export
 
 void Export::build()
 {
-   model_->saveAs(filename_, namedfeats_);
+   model_->checkForBuildDuringAccess();
 }
 
 Handle_AIS_InteractiveObject Export::createAISRepr() const
@@ -65,8 +65,11 @@ Handle_AIS_InteractiveObject Export::createAISRepr() const
   return Handle_AIS_InteractiveObject();
 }
 
-void Export::write(std::ostream& ) const
-{}
+void Export::write(std::ostream& console) const
+{
+   console << "Exporting to " << filename_.string() << std::endl;
+   model_->saveAs(filename_, namedfeats_);
+}
 
 
 void Export::insertrule(parser::ISCADParser& rs)
@@ -116,7 +119,9 @@ ExportEMesh::ExportEMesh(FeatureSetPtr eMesh_featureSet, const boost::filesystem
 
 void ExportEMesh::build()
 {
-  eMesh_featureSet_->model()->exportEMesh(filename_, *eMesh_featureSet_, eMesh_accuracy_->value(), eMesh_maxlen_->value());
+  eMesh_featureSet_->model()->checkForBuildDuringAccess();
+  eMesh_accuracy_->value();
+  eMesh_maxlen_->value();
 }
 
 Handle_AIS_InteractiveObject ExportEMesh::createAISRepr() const
@@ -125,8 +130,11 @@ Handle_AIS_InteractiveObject ExportEMesh::createAISRepr() const
   return Handle_AIS_InteractiveObject();
 }
 
-void ExportEMesh::write(std::ostream& ) const
-{}
+void ExportEMesh::write(std::ostream& console) const
+{
+  console << "Exporting eMesh to " << filename_.string() << std::endl;
+  eMesh_featureSet_->model()->exportEMesh(filename_, *eMesh_featureSet_, eMesh_accuracy_->value(), eMesh_maxlen_->value());
+}
 
 void ExportEMesh::insertrule(parser::ISCADParser& rs)
 {
@@ -174,6 +182,17 @@ ExportSTL::ExportSTL(FeaturePtr model, const boost::filesystem::path& filename, 
 
 void ExportSTL::build()
 {
+  model_->checkForBuildDuringAccess();
+}
+
+Handle_AIS_InteractiveObject ExportSTL::createAISRepr() const
+{
+  checkForBuildDuringAccess();
+  return Handle_AIS_InteractiveObject();
+}
+
+void ExportSTL::write(std::ostream& console) const
+{
 
   double abstol=5e-5;
   if (STL_accuracy_)
@@ -192,17 +211,9 @@ void ExportSTL::build()
       if (ext==".stlb") binary=true;
     }
 
+  console << "Exporting STL to " << filename_.string() << std::endl;
   model_->exportSTL(filename_, abstol, binary);
 }
-
-Handle_AIS_InteractiveObject ExportSTL::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-  return Handle_AIS_InteractiveObject();
-}
-
-void ExportSTL::write(std::ostream& ) const
-{}
 
 
 void ExportSTL::insertrule(parser::ISCADParser& rs)

@@ -230,6 +230,13 @@ msgstr "Hintergr.-Parser"
 msgid "Skip Postproc Actions"
 msgstr "Auswerteaktionen ausschalten"
 
+msgid ""
+"Skip writing the output of the postproc actions during rebuild (e.g. "
+"meshing, file export).\n"
+"Previews are always built. Single postproc actions can be executed from "
+"their context menu."
+msgstr ""
+
 msgid "Model Tree"
 msgstr "Modellbaum"
 

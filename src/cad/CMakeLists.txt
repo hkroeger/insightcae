@@ -416,6 +416,8 @@ add_library(insightcad SHARED
   cadpostprocactions/mesh.h
   cadpostprocactions/pointdistance.cpp
   cadpostprocactions/pointdistance.h
+  cadpostprocactions/diameter.cpp
+  cadpostprocactions/diameter.h
   cadpostprocactions/solidproperties.cpp
   cadpostprocactions/solidproperties.h
   cadpostprocactions/cuttingstockoptimizer.cpp

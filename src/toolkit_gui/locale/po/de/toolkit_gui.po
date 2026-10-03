@@ -61,6 +61,10 @@ msgstr "Erzeuge Bezugselement %s"
 msgid "Building postproc action %s"
 msgstr "Erzeuge Nachbearbeitungsschritt %s"
 
+#, fuzzy, c-format
+msgid "Writing postproc action %s"
+msgstr "Erzeuge Nachbearbeitungsschritt %s"
+
 msgid "Model rebuild successfully finished."
 msgstr "Neuaufbau des Modells erfolgreich abgeschlossen."
 

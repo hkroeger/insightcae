@@ -3,6 +3,7 @@
 
 
 #include "cadtypes.h"
+#include "cadfeature.h"
 #include "cadpostprocaction.h"
 
 
@@ -13,6 +14,7 @@ class BOMCreator
     : public PostprocAction
 {
     FeaturePtr model_;
+    BOM bom_;
 
     size_t calcHash() const override;
     void build() override;

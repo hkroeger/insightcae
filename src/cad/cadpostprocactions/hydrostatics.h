@@ -71,6 +71,11 @@ public:
    * metacentre
    */
   arma::mat M_;
+
+  /**
+   * principal moments of inertia of the waterplane area
+   */
+  arma::mat I_;
   
   virtual size_t calcHash() const;
   virtual void build();

@@ -30,14 +30,31 @@ defineStaticFunctionTable2(
 
 
 
-void PostprocAction::execute()
+// void PostprocAction::execute()
+// {
+//   if (!valid()) build();
+// }
+
+PostprocAction::PostprocAction(const PostprocAction& o)
+    : ASTBase(o)
+{}
+
+PostprocAction& PostprocAction::operator=(const PostprocAction& o)
 {
-  if (!valid()) build();
+    ASTBase::operator=(o);
+    return *this;
 }
 
 std::vector<vtkSmartPointer<vtkProp> > PostprocAction::createVTKRepr() const
 {
     return {};
+}
+
+void PostprocAction::execute(std::ostream& console) const
+{
+    checkForBuildDuringAccess();
+    std::lock_guard<std::mutex> l(write_mtx_);
+    write(console);
 }
 
 }

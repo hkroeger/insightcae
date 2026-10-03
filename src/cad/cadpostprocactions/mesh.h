@@ -81,10 +81,17 @@ protected:
   ScrewBases screwBases_;
   ScrewBodies screwBodies_;
   bool keepTmpDir_;
+
+  /**
+   * vertex and edge groups, which are generated from the screw definitions
+   * (computed in build())
+   */
+  GroupsDesc screwVertexGroups_;
+  GroupsDesc screwEdgeGroups_;
   
   size_t calcHash() const override;
 
-  virtual void setupGmshCase(GmshCase& c);
+  virtual void setupGmshCase(GmshCase& c) const;
   void build() override;
 
   Mesh
@@ -104,8 +111,8 @@ public:
 
   CREATE_FUNCTION(Mesh);
 
-//  Handle_AIS_InteractiveObject createAISRepr() const override;
-  void write(std::ostream& ) const override;
+  std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const override;
+  void write(std::ostream& console) const override;
 
   static void insertrule(parser::ISCADParser& ruleset);
 };
@@ -147,6 +154,8 @@ protected:
 public:
   declareType("ExtrudedMesh");
   CREATE_FUNCTION(ExtrudedMesh);
+
+  void write(std::ostream& console) const override;
 
   static void insertrule(parser::ISCADParser& ruleset);
 };

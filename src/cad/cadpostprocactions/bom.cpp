@@ -28,9 +28,8 @@ BOMCreator::BOMCreator
 
 void BOMCreator::build()
 {
-    BOM bom;
-    model_->addToBOM(bom);
-    bom.report(std::cout);
+    bom_.clear();
+    model_->addToBOM(bom_);
 }
 
 
@@ -50,8 +49,10 @@ void BOMCreator::insertrule(parser::ISCADParser& ruleset)
 
 
 
-void BOMCreator::write(std::ostream& ) const
-{}
+void BOMCreator::write(std::ostream& console) const
+{
+    bom_.report(console);
+}
 
 
 

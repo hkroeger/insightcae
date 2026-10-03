@@ -61,6 +61,9 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
 
         QCheckBox *toggleSkipPostprocActions=new QCheckBox(_("Skip Postproc Actions"), gb);
         toggleSkipPostprocActions->setCheckState( Qt::Checked );
+        toggleSkipPostprocActions->setToolTip(
+            _("Skip writing the output of the postproc actions during rebuild (e.g. meshing, file export).\n"
+              "Previews are always built. Single postproc actions can be executed from their context menu.") );
         tglHBox->addWidget(toggleSkipPostprocActions);
 
         tglHBox->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Expanding, QSizePolicy::Minimum));

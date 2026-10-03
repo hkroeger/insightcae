@@ -148,7 +148,8 @@ public slots:
     void editModel(QObject* mo_ptr);
 
     /**
-     * switch evaluation of Postproc Actions on/off
+     * switch writing of the Postproc Actions output during rebuild on/off
+     * (previews are always built)
      */
     void toggleSkipPostprocActions(int state);
     

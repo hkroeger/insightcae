@@ -298,7 +298,7 @@ void FindIntersections::append(
 void FrameMesh::splitEdge(
         const TopoDS_Edge& e,
         const FindIntersections::IntersectionLocations& spl
-        )
+        ) const
 {
     if (spl.size())
     {
@@ -326,11 +326,11 @@ void FrameMesh::splitEdge(
             auto newEdge = BRepBuilderAPI_MakeEdge(crv, *fp, *np).Edge();
             meshEdges.insert( newEdge );
 
-            auto i = crossSectionModels.find(e);
-            if ( i!=crossSectionModels.end() )
+            auto i = meshCrossSectionModels.find(e);
+            if ( i!=meshCrossSectionModels.end() )
             {
                 auto xsec=i->second;
-                crossSectionModels[newEdge]=xsec;
+                meshCrossSectionModels[newEdge]=xsec;
             }
         }
     }
@@ -368,8 +368,9 @@ void FrameMesh::build()
 {
 #if defined(HAVE_MED)
 
+    L_->value();
+
     modelEdges.clear();
-    meshEdges.clear();
     crossSectionModels.clear();
 
     // unify all into compound
@@ -403,6 +404,21 @@ void FrameMesh::build()
                     std::make_pair( feat, 0.5 );
         }
     }
+#else
+    throw insight::Exception("InsightCAE has to be compiled with MED support to use the Frame Mesh export feature.");
+#endif
+}
+
+
+
+void FrameMesh::write(std::ostream& console) const
+{
+#if defined(HAVE_MED)
+
+    console << "Writing frame mesh" << std::endl;
+
+    meshEdges.clear();
+    meshCrossSectionModels = crossSectionModels;
 
     // break all edges at crossing points
     enum VertexType { Hinge, Stiff };
@@ -468,9 +484,9 @@ void FrameMesh::build()
     int k=0;
     for (const auto& e: meshEdges)
     {
-        auto i=crossSectionModels.find(e);
-//        std::cout<<e<<" >> "<<(i!=crossSectionModels.end())<<std::endl;
-        if (i!=crossSectionModels.end())
+        auto i=meshCrossSectionModels.find(e);
+//        std::cout<<e<<" >> "<<(i!=meshCrossSectionModels.end())<<std::endl;
+        if (i!=meshCrossSectionModels.end())
         {
             cad::FeaturePtr xsecf = i->second.first;
             double x = i->second.second;
@@ -572,8 +588,6 @@ FrameMesh::FrameMesh
 //      v_e_groups_(v_e_groups)
 {}
 
-void FrameMesh::write(std::ostream& ) const
-{}
 
 void FrameMesh::insertrule(parser::ISCADParser& rs)
 {

@@ -34,6 +34,7 @@
 
 #include "base/analysis.h"
 #include "base/tools.h"
+#include "base/warningdispatcher.h"
 #include "parser.h"
 #include "base/translations.h"
 #include "parser_tools.h"
@@ -268,12 +269,22 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                 > r_BOMDescriptionData
                 > ';' )
               [ phx::bind( &Model::setDescription, model_, qi::_1 ) ]
-
+          |
+          r_postproc
+          |
+          r_deprecatedPostKeyword
         )
-        >> -( lit("@doc") [ phx::ref(section_) = DocSection ] > *r_doc )
-        >> -( lit("@post") [ phx::ref(section_) = PostSection ] > *r_postproc )
+        >> -( lit("@doc") [ phx::ref(section_) = DocSection ]
+              > *( r_doc | r_postproc | r_deprecatedPostKeyword ) )
         ;
     r_model.name(_("model description"));
+
+    // "@post" used to start the postprocessing section.
+    // Postprocessing statements are now allowed everywhere, the keyword is ignored.
+    r_deprecatedPostKeyword =
+        ( current_pos.current_pos >> lexeme[ lit("@post") >> !(alnum | '_') ] )
+            [ phx::bind(&ISCADParser::deprecatedPostKeyword, this, qi::_1) ];
+    r_deprecatedPostKeyword.name(_("'@post' keyword"));
 
 
     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
@@ -498,6 +509,14 @@ void ISCADParser::popCommand()
 
 
 
+void ISCADParser::deprecatedPostKeyword(std::size_t pos)
+{
+    deprecatedPostKeywordPositions_.push_back(pos);
+}
+
+
+
+
 
 
 }
@@ -614,10 +633,7 @@ std::set<std::string> knownNames(const ISCADParser& parser)
     auto names = parser.model_->symbolNames();
     for (const auto& c: parser.commandKinds_)
     {
-        // postprocessing commands are only valid in the @post section
-        if ( (c.second==ISCADParser::PostprocCommand)
-             == (parser.section_==ISCADParser::PostSection) )
-            names.insert(c.first);
+        names.insert(c.first);
     }
     return names;
 }
@@ -743,19 +759,19 @@ iscadParserException incompleteParseError(
     else if (script[pos]=='@')
     {
         std::string word = "@"+identifierAt(script, pos+1);
-        std::set<std::string> sections = { "@description", "@doc", "@post" };
+        std::set<std::string> sections = { "@description", "@doc" };
         if (!sections.count(word))
         {
             diag = str(format(_("unknown keyword '%s'")) % word);
             notes.push_back(didYouMean(similarNames(word, sections)));
-            notes.push_back(_("Valid keywords are '@description', '@doc' and '@post'."));
+            notes.push_back(_("Valid keywords are '@description' and '@doc'."));
         }
         else
         {
             diag = str(format(_("'%s' is not allowed here")) % word);
             notes.push_back(
-                _("A script consists of assignments (and '@description'),"
-                  " optionally followed by an '@doc' section and then an '@post' section.") );
+                _("A script consists of assignments, postprocessing statements (and '@description'),"
+                  " optionally followed by an '@doc' section.") );
         }
     }
     else if (!id.empty())
@@ -769,7 +785,11 @@ iscadParserException incompleteParseError(
         auto ck = parser.commandKinds_.find(id);
         auto kinds = parser.model_->symbolKinds(id);
 
-        if (parser.section_==ISCADParser::PostSection)
+        if (parser.section_==ISCADParser::DocSection && ck==parser.commandKinds_.end())
+        {
+            diag = str(format(_("cannot parse documentation statement starting with '%s'")) % id);
+        }
+        else if (ck==parser.commandKinds_.end() && kinds.empty() && followedBy("("))
         {
             diag = str(format(_("unknown postprocessing command '%s'")) % id);
             std::set<std::string> ppcmds;
@@ -777,10 +797,6 @@ iscadParserException incompleteParseError(
                 if (c.second==ISCADParser::PostprocCommand)
                     ppcmds.insert(c.first);
             notes.push_back(didYouMean(similarNames(id, ppcmds)));
-        }
-        else if (parser.section_==ISCADParser::DocSection)
-        {
-            diag = str(format(_("cannot parse documentation statement starting with '%s'")) % id);
         }
         else if (ck!=parser.commandKinds_.end() && assignment)
         {
@@ -923,6 +939,17 @@ bool parseISCADModel
         throwParserError(
             incompleteParseError(parser, raw_contents, filenameinfo, first-orgbegin),
             failloc );
+    }
+
+    for (auto pos: parser.deprecatedPostKeywordPositions_)
+    {
+        auto loc=insight::cad::parser::locateInSource(raw_contents, pos);
+        insight::Warning(
+            _("%s, line %d: the keyword '@post' is deprecated and ignored."
+              " Postprocessing statements are allowed everywhere in the script."
+              " Please remove the keyword."),
+            filenameinfo.empty() ? "script" : filenameinfo.string().c_str(),
+            loc.line );
     }
 
     return true;

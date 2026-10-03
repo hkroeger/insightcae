@@ -28,6 +28,7 @@
 #include "cadpostprocactions/mesh.h"
 #include "cadpostprocactions/solidproperties.h"
 #include "cadpostprocactions/pointdistance.h"
+#include "cadpostprocactions/diameter.h"
 #include "cadpostprocactions/cuttingstockoptimizer.h"
 
 #endif

@@ -9,8 +9,6 @@ st2=Transform(s, [0,0,0], [0,5,0]);
 st3=Transform(s, [0,0,0], [0,0,0], 2);
 asm=Compound(s,st1);
 
-@post
-
 SolidProperties(props) << s;
 SolidProperties(propst1) << st1;
 SolidProperties(propst12) << st12;

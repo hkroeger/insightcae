@@ -40,6 +40,11 @@
 
 #include "openfoam/blockmesh_templates.h"
 
+#include "vtkActor.h"
+#include "vtkPolyDataMapper.h"
+#include "vtkProperty.h"
+#include "vtkSphereSource.h"
+
 using namespace std;
 
 namespace insight
@@ -97,15 +102,93 @@ Mesh::Mesh
 //  return Handle_AIS_InteractiveObject();
 //}
 
-void Mesh::write(std::ostream& ) const
-{}
-
-void Mesh::setupGmshCase(GmshCase& c)
+void Mesh::setupGmshCase(GmshCase& c) const
 {
   if (quad_)
     c.setQuadratic();
   else
     c.setLinear();
+
+  for (const auto* groups: {&vertexGroups_, &screwVertexGroups_})
+  for (const GroupDesc& gd: *groups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameVertices(gname, *gfs);
+  }
+  for (const auto* groups: {&edgeGroups_, &screwEdgeGroups_})
+  for (const GroupDesc& gd: *groups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameEdges(gname, *gfs);
+  }
+  for (const GroupDesc& gd: faceGroups_)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameFaces(gname, *gfs);
+  }
+  for (const GroupDesc& gd: solidGroups_)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameSolids(gname, *gfs);
+  }
+  for (const NamedVertex& gd: namedVertices_)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const arma::mat& loc=boost::fusion::at_c<1>(gd)->value();
+    c.addSingleNamedVertex(gname, loc);
+  }
+
+  for (const auto* groups: {&vertexGroups_, &screwVertexGroups_})
+  for (const GroupDesc& gd: *groups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
+    {
+      cout<<"set vertex "<<gname<<" to L="<<(*gs)->value()<<endl;
+      c.setVertexLen(gname, (*gs)->value());
+    }
+  }
+  for (const auto* groups: {&edgeGroups_, &screwEdgeGroups_})
+  for (const GroupDesc& gd: *groups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
+    {
+      c.setEdgeLen(gname, (*gs)->value());
+    }
+  }
+  for (const GroupDesc& gd: faceGroups_)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
+    {
+      c.setFaceEdgeLen(gname, (*gs)->value());
+    }
+  }
+
+}
+
+void Mesh::build()
+{
+  // only evaluate the inputs and collect the groups here.
+  // The meshing is done in write()
+
+  model_->checkForBuildDuringAccess();
+  Lmax_->value();
+  Lmin_->value();
+  for (const auto& b: meshSizeBalls_)
+  {
+    boost::fusion::get<0>(b)->value();
+    boost::fusion::get<1>(b)->value();
+    boost::fusion::get<2>(b)->value();
+  }
+
+  screwVertexGroups_.clear();
+  screwEdgeGroups_.clear();
 
   auto findLoopInstances = [&](
         cad::FeaturePtr bfeat,
@@ -156,7 +239,7 @@ void Mesh::setupGmshCase(GmshCase& c)
               pref=str(boost::format("%s%d")%name%(i.first+1));
           }
 
-          edgeGroups_.push_back(
+          screwEdgeGroups_.push_back(
               GroupDesc{
                str(boost::format("%she")%pref),
                 makeEdgeFeatureSet(
@@ -184,7 +267,7 @@ void Mesh::setupGmshCase(GmshCase& c)
               pref=str(boost::format("%s%d")%name%(i.first+1));
           }
           auto sbe=i.second->providedFeatureSet("screwbase_edge");
-          edgeGroups_.push_back(
+          screwEdgeGroups_.push_back(
               GroupDesc{
                   str(boost::format("%sbe")%pref),
                   makeEdgeFeatureSet(
@@ -212,7 +295,7 @@ void Mesh::setupGmshCase(GmshCase& c)
               pref=str(boost::format("%s%d")%name%(i.first+1));
           }
 
-          vertexGroups_.push_back(
+          screwVertexGroups_.push_back(
               GroupDesc{
                   str(boost::format("%sh")%pref),
                   makeVertexFeatureSet(
@@ -221,7 +304,7 @@ void Mesh::setupGmshCase(GmshCase& c)
                   boost::optional<ScalarPtr>()
               }
               );
-          vertexGroups_.push_back(
+          screwVertexGroups_.push_back(
               GroupDesc{
                   str(boost::format("%sb")%pref),
                   makeVertexFeatureSet(
@@ -230,7 +313,7 @@ void Mesh::setupGmshCase(GmshCase& c)
                   boost::optional<ScalarPtr>()
               }
               );
-          edgeGroups_.push_back(
+          screwEdgeGroups_.push_back(
               GroupDesc{
                   str(boost::format("%s")%pref),
                   makeEdgeFeatureSet(
@@ -241,68 +324,13 @@ void Mesh::setupGmshCase(GmshCase& c)
               );
       }
   }
-
-  for (const GroupDesc& gd: vertexGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
-    c.nameVertices(gname, *gfs);
-  }
-  for (const GroupDesc& gd: edgeGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
-    c.nameEdges(gname, *gfs);
-  }
-  for (const GroupDesc& gd: faceGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
-    c.nameFaces(gname, *gfs);
-  }
-  for (const GroupDesc& gd: solidGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
-    c.nameSolids(gname, *gfs);
-  }
-  for (const NamedVertex& gd: namedVertices_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    const arma::mat& loc=boost::fusion::at_c<1>(gd)->value();
-    c.addSingleNamedVertex(gname, loc);
-  }
-
-  for (const GroupDesc& gd: vertexGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
-    {
-      cout<<"set vertex "<<gname<<" to L="<<(*gs)->value()<<endl;
-      c.setVertexLen(gname, (*gs)->value());
-    }
-  }
-  for (const GroupDesc& gd: edgeGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
-    {
-      c.setEdgeLen(gname, (*gs)->value());
-    }
-  }
-  for (const GroupDesc& gd: faceGroups_)
-  {
-    const std::string& gname=boost::fusion::at_c<0>(gd);
-    if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
-    {
-      c.setFaceEdgeLen(gname, (*gs)->value());
-    }
-  }
-
 }
 
-void Mesh::build()
+
+void Mesh::write(std::ostream& console) const
 {
+  console << "Meshing into " << outpath_.string() << std::endl;
+
   GmshCase c(model_, outpath_, Lmax_->value(), Lmin_->value(), keepTmpDir_);
   setupGmshCase(c);
 
@@ -342,6 +370,34 @@ void Mesh::build()
       c.endOfMeshingOptions_, addcode);
 
   c.doMeshing(std::thread::hardware_concurrency());
+}
+
+
+std::vector<vtkSmartPointer<vtkProp> > Mesh::createVTKRepr() const
+{
+  // preview: show the mesh size refinement regions
+  std::vector<vtkSmartPointer<vtkProp> > reprs;
+  for (const auto& b: meshSizeBalls_)
+  {
+    arma::mat location = boost::fusion::get<0>(b)->value();
+    double D = boost::fusion::get<1>(b)->value();
+
+    auto sphere = vtkSmartPointer<vtkSphereSource>::New();
+    sphere->SetCenter(location(0), location(1), location(2));
+    sphere->SetRadius(0.5*D);
+    sphere->SetThetaResolution(32);
+    sphere->SetPhiResolution(16);
+
+    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(sphere->GetOutputPort());
+
+    auto actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetColor(1., 0.5, 0.);
+    actor->GetProperty()->SetOpacity(0.3);
+    reprs.push_back(actor);
+  }
+  return reprs;
 }
 
 
@@ -445,6 +501,15 @@ ExtrudedMesh::ExtrudedMesh
 
 void ExtrudedMesh::build()
 {
+  Mesh::build();
+  h_->value();
+  nLayers_->value();
+}
+
+
+void ExtrudedMesh::write(std::ostream& console) const
+{
+  console << "Meshing into " << outpath_.string() << std::endl;
 
   SheetExtrusionGmshCase c(
         model_, "G_3D_1", outpath_,
@@ -521,6 +586,16 @@ SnappyHexMesh::SnappyHexMesh
 }
 
 void SnappyHexMesh::build()
+{
+}
+
+// Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
+// {
+//  checkForBuildDuringAccess();
+//  return Handle_AIS_InteractiveObject();
+// }
+
+void SnappyHexMesh::write(std::ostream& ) const
 {
 #warning reimplement
 //     boost::filesystem::create_directory(outpath_); // create dir, if not existing
@@ -647,16 +722,6 @@ void SnappyHexMesh::build()
 //         false,
 //         false
 //     );
-}
-
-// Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
-// {
-//  checkForBuildDuringAccess();
-//  return Handle_AIS_InteractiveObject();
-// }
-
-void SnappyHexMesh::write(std::ostream& ) const
-{
 }
 
 

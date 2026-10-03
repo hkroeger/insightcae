@@ -482,6 +482,14 @@ public Q_SLOTS:
   void showContextMenu(const QModelIndex& idx, const QPoint &pos, IQCADModel3DViewer* viewer);
   void showMultiSelectionContextMenu(const QModelIndexList& idxs, const QPoint &pos, IQCADModel3DViewer* viewer);
 
+  /**
+   * @brief executePostprocActions
+   * build (if required) and write the output of the given postproc actions.
+   * Executed in a background thread, the actions are processed one after another.
+   */
+  void executePostprocActions(
+      const std::vector<std::pair<std::string, insight::cad::PostprocActionPtr> >& actions );
+
   void addPlane();
   void addImportedFeature();
   void addImportedSketch(insight::cad::DatumPtr plane);
@@ -495,6 +503,8 @@ Q_SIGNALS:
 
   void jumpToDefinition(const QString& name);
   void insertParserStatementAtCursor(const QString& name);
+
+  void statusMessage(const QString& msg, double timeout=0);
 };
 
 #endif // IQCADMODELCONTAINER_H

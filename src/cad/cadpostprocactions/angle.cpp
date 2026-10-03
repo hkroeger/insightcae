@@ -93,8 +93,10 @@ void Angle::build()
 
 
 
-void Angle::write(ostream&) const
-{}
+void Angle::write(ostream& console) const
+{
+    console << "angle = " << (angle_/SI::deg) << " deg" << std::endl;
+}
 
 
 

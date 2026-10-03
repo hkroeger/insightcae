@@ -91,6 +91,7 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
                 + directions.size()
                 + modelsteps.size()
                 + datums.size()
+                + postprocActions.size()
                 + ( finalTask >= Post ? postprocActions.size() : 0 )
                 - 1;
 
@@ -157,17 +158,29 @@ void IQISCADScriptModelGenerator::rebuild(const ISCADParseResult& parsed, Task f
             Q_EMIT createdDatum(QString::fromStdString(v.first), v.second);
         }
 
+        // postproc actions are always built (lightweight preview)
+        for (const auto& v: postprocActions)
+        {
+            Q_EMIT statusMessage(
+                QString::fromStdString( str(boost::format(_("Building postproc action %s"))
+                 % v.first))
+            );
+            v.second->checkForBuildDuringAccess(); // Trigger evaluation
+            Q_EMIT statusProgress(is++, istepmax);
+            Q_EMIT createdEvaluation(QString::fromStdString(v.first), v.second, false);
+        }
+
+        // the potentially expensive output is only written on request
         if (finalTask >= Post)
         {
             for (const auto& v: postprocActions)
             {
                 Q_EMIT statusMessage(
-                    QString::fromStdString( str(boost::format(_("Building postproc action %s"))
+                    QString::fromStdString( str(boost::format(_("Writing postproc action %s"))
                      % v.first))
                 );
-                 v.second->checkForBuildDuringAccess(); // Trigger evaluation
+                v.second->execute(std::cout);
                 Q_EMIT statusProgress(is++, istepmax);
-                Q_EMIT createdEvaluation(QString::fromStdString(v.first), v.second, false);
             }
         }
 

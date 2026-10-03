@@ -66,14 +66,18 @@ protected:
     EdgesDesc edges_;
 //    FrameMeshGroupDefinitions v_e_groups_;
 
+    // computed in build()
     EdgeSet modelEdges;
-    EdgeSet meshEdges;
     std::map<TopoDS_Edge, std::pair<cad::FeaturePtr,double> > crossSectionModels;
+
+    // working data of write()
+    mutable EdgeSet meshEdges;
+    mutable std::map<TopoDS_Edge, std::pair<cad::FeaturePtr,double> > meshCrossSectionModels;
 
     void splitEdge(
             const TopoDS_Edge& e,
             const FindIntersections::IntersectionLocations& spl
-            );
+            ) const;
 
   size_t calcHash() const override;
   void build() override;
@@ -90,7 +94,7 @@ public:
   declareType("FrameMesh");
     CREATE_FUNCTION(FrameMesh);
 
-   void write(std::ostream& ) const override;
+   void write(std::ostream& console) const override;
 
    static void insertrule(parser::ISCADParser& ruleset);
 };

@@ -11,5 +11,4 @@ for (i,1,ni,{
  });
 });
 
-@post
 saveAs("/home/hannes/tmp/test2.dot") << model;

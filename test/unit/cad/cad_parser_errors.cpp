@@ -54,8 +54,13 @@ int main(int, char*[])
 
         // unknown keyword
         { "a=1;\n"
-          "@pots\n",
-          2, 1, { "unknown keyword '@pots'", "Did you mean '@post'?" } },
+          "@descriptio\n",
+          2, 1, { "unknown keyword '@descriptio'", "Did you mean '@description'?" } },
+
+        // unknown postprocessing command
+        { "c1: Cylinder(O, ax EX, 1);\n"
+          "SolidPropertes(p) << c1;\n",
+          2, 1, { "unknown postprocessing command 'SolidPropertes'", "Did you mean 'SolidProperties'?" } },
 
         // unknown command
         { "c1: Cylindr(O, ax EX, 1);\n",
@@ -117,28 +122,47 @@ int main(int, char*[])
     }
 
     // valid scripts must still parse
+    std::vector<std::string> validScripts = {
+
+        // postprocessing statements are allowed everywhere
+        "D1=10;\n"
+        "c1: Cylinder(O, ax EX, D1);\n"
+        "SolidProperties(p1) << c1;\n"
+        "c1->density=7.8;\n"
+        "c2: Cylinder(O, ax EY, D1);\n"
+        "SolidProperties(p2) << c2;\n",
+
+        // deprecated "@post" keyword is ignored (backwards compatibility)
+        "D1=10;\n"
+        "c1: Cylinder(O, ax EX, D1);\n"
+        "c1->density=7.8;\n"
+        "@post\n",
+
+        "D1=10;\n"
+        "c1: Cylinder(O, ax EX, D1);\n"
+        "@post\n"
+        "SolidProperties(p1) << c1;\n"
+        "c2: Cylinder(O, ax EY, D1);\n"
+    };
+
+    for (const auto& scr: validScripts)
     {
         auto m = std::make_shared<cad::Model>();
-        std::string scr =
-            "D1=10;\n"
-            "c1: Cylinder(O, ax EX, D1);\n"
-            "c1->density=7.8;\n"
-            "@post\n";
         try
         {
             if (!parseISCADModel(scr, m.get()))
             {
-                std::cerr << "FAIL: valid script not parsed" << std::endl;
+                std::cerr << "FAIL: valid script not parsed:\n" << scr << std::endl;
                 ++failed;
             }
         }
         catch (const std::exception& e)
         {
-            std::cerr << "FAIL: valid script raised " << e.what() << std::endl;
+            std::cerr << "FAIL: valid script raised " << e.what() << "\n" << scr << std::endl;
             ++failed;
         }
     }
 
-    std::cout << failed << " of " << cases.size()+1 << " cases failed." << std::endl;
+    std::cout << failed << " of " << cases.size()+validScripts.size() << " cases failed." << std::endl;
     return failed ? -1 : 0;
 }

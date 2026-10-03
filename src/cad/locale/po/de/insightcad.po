@@ -44,6 +44,9 @@ msgstr "Stücklistenbeschreibung"
 msgid "model description"
 msgstr "Modellbeschreibung"
 
+msgid "'@post' keyword"
+msgstr "Schlüsselwort '@post'"
+
 msgid "identifier"
 msgstr "Bezeichner"
 
@@ -123,29 +126,29 @@ msgstr "unerwartetes Ende der Eingabe"
 msgid "unknown keyword '%s'"
 msgstr "unbekanntes Schlüsselwort '%s'"
 
-msgid "Valid keywords are '@description', '@doc' and '@post'."
-msgstr "Gültige Schlüsselwörter sind '@description', '@doc' und '@post'."
+msgid "Valid keywords are '@description' and '@doc'."
+msgstr "Gültige Schlüsselwörter sind '@description' und '@doc'."
 
 #, c-format
 msgid "'%s' is not allowed here"
 msgstr "'%s' ist hier nicht erlaubt"
 
 msgid ""
-"A script consists of assignments (and '@description'), optionally followed "
-"by an '@doc' section and then an '@post' section."
+"A script consists of assignments, postprocessing statements (and "
+"'@description'), optionally followed by an '@doc' section."
 msgstr ""
-"Ein Skript besteht aus Zuweisungen (und '@description'), optional gefolgt "
-"von einem '@doc'-Abschnitt und danach einem '@post'-Abschnitt."
-
-#, c-format
-msgid "unknown postprocessing command '%s'"
-msgstr "unbekannter Nachbearbeitungsbefehl '%s'"
+"Ein Skript besteht aus Zuweisungen, Nachbearbeitungsanweisungen (und "
+"'@description'), optional gefolgt von einem '@doc'-Abschnitt."
 
 #, c-format
 msgid "cannot parse documentation statement starting with '%s'"
 msgstr ""
 "Dokumentationsanweisung, die mit '%s' beginnt, kann nicht interpretiert "
 "werden"
+
+#, c-format
+msgid "unknown postprocessing command '%s'"
+msgstr "unbekannter Nachbearbeitungsbefehl '%s'"
 
 #. TRANSLATORS: first %s: symbol name, second %s: kind of command, e.g. "feature command"
 #, c-format
@@ -179,6 +182,15 @@ msgstr "nach '%s' wurde ':', '=', '?=' oder '->' erwartet, aber %s gefunden"
 #, c-format
 msgid "unexpected %s at the beginning of a statement"
 msgstr "unerwartet am Anfang einer Anweisung: %s"
+
+#, c-format
+msgid ""
+"%s, line %d: the keyword '@post' is deprecated and ignored. Postprocessing "
+"statements are allowed everywhere in the script. Please remove the keyword."
+msgstr ""
+"%s, Zeile %d: das Schlüsselwort '@post' ist veraltet und wird ignoriert. "
+"Nachbearbeitungsanweisungen sind überall im Skript erlaubt. Bitte entfernen "
+"Sie das Schlüsselwort."
 
 msgid "feature set filter arguments"
 msgstr "Argumente des Feature-Auswahlfilters"

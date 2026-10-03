@@ -136,8 +136,8 @@ int main ( int argc, char** argv )
         auto postprocActions=model->postprocActions();
         for ( decltype ( postprocActions ) ::value_type const& v: postprocActions )
         {
-            cout << _("Executing")<<" " << v.first << endl;
-          v.second->execute();
+          cout << _("Executing")<<" " << v.first << endl;
+          v.second->execute(std::cout);
         }
 
         return 0;

@@ -292,6 +292,14 @@ void IQHierarchicalDataElement::populateContextMenu(
 {}
 
 
+bool IQHierarchicalDataElement::activate(IQCADModel3DViewer *)
+{
+    return false;
+}
+
+
+
+
 QVBoxLayout* IQHierarchicalDataElement::populateEditControls(
     QWidget* editControlsContainer,
     IQCADModel3DViewer * )

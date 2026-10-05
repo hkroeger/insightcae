@@ -120,6 +120,15 @@ public:
         QWidget* editControlsContainer,
         IQCADModel3DViewer *viewer );
 
+    /**
+     * @brief activate
+     * default action of the element, invoked on double click in views.
+     * @return
+     * true, if an action was performed. Then the view's default
+     * double click behaviour (expand/collapse, inline editing) is suppressed.
+     */
+    virtual bool activate(IQCADModel3DViewer *viewer);
+
 
     static QAbstractItemDelegate* createIQParameterGridViewDelegate(QWidget *parent);
 

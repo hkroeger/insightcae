@@ -29,6 +29,7 @@ class IQSelectableSubsetParameter;
 class IQCADModel3DViewer;
 template<class IQBaseParameter, const char* N> class IQArrayElementParameter;
 class IQParameterSetModel;
+class QAbstractItemView;
 
 
 
@@ -111,6 +112,19 @@ public:
       const QModelIndex& index,
       const QPoint& p,
       IQCADModel3DViewer *viewer = nullptr );
+
+  /**
+   * @brief enableActivationOnDoubleClick
+   * invoke IQHierarchicalDataElement::activate on double click in the view
+   * (e.g. opens the sketch editor for sketch parameters).
+   * If the element handles the activation, the view's default double click
+   * behaviour is suppressed. Works also with proxy models.
+   * @param viewer
+   * returns the 3D viewer, which shall be passed to the element (may return null)
+   */
+  static void enableActivationOnDoubleClick(
+      QAbstractItemView* view,
+      std::function<IQCADModel3DViewer*()> viewer );
 
   // class ParameterEditor
   // {

@@ -73,6 +73,11 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         }
         );
 
+    // e.g. open sketch editor on double click
+    IQParameterSetModel::enableActivationOnDoubleClick(
+        parameterTreeView_,
+        [this]() { return viewer_; } );
+
     if (hasVisualizer())
     {
         insight::CurrentExceptionContext ex("setting up 3D viewer");

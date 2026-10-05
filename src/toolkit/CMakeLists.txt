@@ -61,6 +61,7 @@ add_library(toolkit SHARED
     base/globalconfiguration.h base/globalconfiguration.cpp
     base/externalprograms.h base/externalprograms.cpp
     base/supplementedinputdata.cpp base/supplementedinputdata.h
+    base/supplementedquantity.cpp base/supplementedquantity.h
     base/analysis.cpp base/analysis.h
     base/analysislibrary.cpp base/analysislibrary.h
     base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp

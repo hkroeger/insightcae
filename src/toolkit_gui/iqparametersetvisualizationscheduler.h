@@ -86,7 +86,7 @@ public:
      * @return
      * the supplemented input data, which was computed from the current parameters,
      * if the scheduler is idle. Null, if a computation is pending/running
-     * or no supplemented input data could be computed.
+     * or the supplemented input data could not be computed completely.
      */
     supplementedInputDataBasePtr upToDateSupplementedInputData() const;
 

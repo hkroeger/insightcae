@@ -26,34 +26,52 @@ InternalPressureLossBase::supplementedInputData::supplementedInputData(
     // * Domain BB
     // * Inlet hydraulic diam.
 
-
-    ap.message("Analyzing geometry...");
-
+    // bounding boxes of all geometry files, computed in parallel
+    std::vector<Supplemented<arma::mat> > geomBBs;
     for (auto &w: p().geometry)
     {
-        auto file = w.second.file;
-        if (file->isValid())
+        const auto label=w.first;
+        geomBBs.push_back(deferred("geometry/"+label, [this,label]() -> arma::mat
         {
-            auto tbb=file->geometry()->modelBndBox();
-            std::cout<<w.first<<": BB="<<tbb<<std::endl;
-            bb_.extend(tbb);
-        }
+            auto file = p().geometry.at(label).file;
+            if (file->isValid())
+            {
+                auto tbb=file->geometry()->modelBndBox();
+                std::cout<<label<<": BB="<<tbb<<std::endl;
+                return tbb;
+            }
+            return arma::mat();
+        }));
     }
 
+    bb_ = deferred("bounding box", [geomBBs]()
+    {
+        BoundingBox bb;
+        for (const auto& tbb: geomBBs)
+        {
+            if (tbb->n_elem>0)
+                bb.extend(tbb);
+        }
+        return bb;
+    });
 
+    L_ = deferred("model size", [this]() -> arma::mat
+    {
+        arma::mat L=bb_->col(1)-bb_->col(0);
 
-    L_=bb_.col(1)-bb_.col(0);
+        if (L(0)<1e-12)
+            throw insight::Exception("model size in x direction is zero!");
+        if (L(1)<1e-12)
+            throw insight::Exception("model size in y direction is zero!");
+        if (L(2)<1e-12)
+            throw insight::Exception("model size in z direction is zero!");
 
-    if (L_(0)<1e-12)
-        throw insight::Exception("model size in x direction is zero!");
-    if (L_(1)<1e-12)
-        throw insight::Exception("model size in y direction is zero!");
-    if (L_(2)<1e-12)
-        throw insight::Exception("model size in z direction is zero!");
+        return L;
+    });
 
-    nx_=std::max(1, int(ceil(L_(0)/p().mesh.size)));
-    ny_=std::max(1, int(ceil(L_(1)/p().mesh.size)));
-    nz_=std::max(1, int(ceil(L_(2)/p().mesh.size)));
+    nx_=deferred("nx", [this]() { return std::max(1, int(ceil(L_(0)/p().mesh.size))); });
+    ny_=deferred("ny", [this]() { return std::max(1, int(ceil(L_(1)/p().mesh.size))); });
+    nz_=deferred("nz", [this]() { return std::max(1, int(ceil(L_(2)/p().mesh.size))); });
 
 }
 
@@ -76,7 +94,7 @@ InternalPressureLoss::supplementedInputData::supplementedInputData(
         auto updateTmima = [&](si::Temperature T)
         {
             globalTmin=std::min(globalTmin, T);
-            globalTmin=std::min(globalTmin, T);
+            globalTmax=std::max(globalTmax, T);
         };
 
         // updateTmima(double(thermsolve->inletTemperature)*si::degK);

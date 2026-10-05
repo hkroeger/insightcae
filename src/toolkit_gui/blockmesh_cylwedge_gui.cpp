@@ -63,7 +63,7 @@ void blockMeshDict_CylWedge_ParameterSet_Visualizer::setBlockMeshName(const std:
 
 void blockMeshDict_CylWedge_ParameterSet_Visualizer::recreateVisualizationElements()
 {
-  auto &bcw = dynamic_cast<const blockMeshDict_CylWedge::supplementedInputData&>(*sid_);
+  auto &bcw = dynamic_cast<const blockMeshDict_CylWedge::supplementedInputData&>(sidBase());
   auto &p = bcw.p();
 
   auto dom =

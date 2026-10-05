@@ -130,10 +130,10 @@ eval = set {
             const boost::filesystem::path& workDir,
             ActionProgress& progress );
 
-        BoundingBox bb_;
-        arma::mat L_;
+        Supplemented<BoundingBox> bb_;
+        Supplemented<arma::mat> L_;
 
-        int nx_, ny_, nz_;
+        Supplemented<int> nx_, ny_, nz_;
 
         // cad::FeaturePtr inlet_, outlet_;
         // std::map<std::string, cad::FeaturePtr> walls_;

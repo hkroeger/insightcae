@@ -129,7 +129,7 @@ msgstr ""
 msgid "Please enter new layer name:"
 msgstr ""
 
-msgid "The visualization could not be generated."
+msgid "The visualization could not be generated completely."
 msgstr ""
 
 msgid "Change Item Label"

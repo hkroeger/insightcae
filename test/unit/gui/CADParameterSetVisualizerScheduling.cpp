@@ -46,6 +46,7 @@ namespace
 
 const std::string valuePath = "ap/0";
 const double throwingValue = -1.;
+const double throwingDeferredValue = -2.;
 const int nFiller = 5;
 
 
@@ -99,6 +100,37 @@ std::string parityName(double x)
 
 
 
+/**
+ * supplemented input data with deferred quantities,
+ * one of which fails for the sentinel value throwingDeferredValue
+ */
+struct ProbeSID
+    : public supplementedInputDataBase
+{
+    Supplemented<double> fine_, broken_;
+
+    ProbeSID(
+        ParameterSetInput&& ip,
+        const boost::filesystem::path& wd,
+        ActionProgress& ap,
+        bool breakIt )
+        : supplementedInputDataBase(std::move(ip), wd, ap)
+    {
+        fine_ = deferred("fine", []() { return 1.; });
+        broken_ = deferred("broken", [breakIt]() -> double
+        {
+            if (breakIt)
+                throw insight::Exception("probe failure in deferred quantity");
+            return 2.;
+        });
+        reportSupplementQuantity("fine", fine_, "always computable");
+        reportSupplementQuantity("broken", broken_, "fails for sentinel value");
+    }
+};
+
+
+
+
 class ProbeVisualizer
     : public CADParameterSetModelVisualizer
 {
@@ -138,10 +170,11 @@ public:
             // no conversion into the static TestPDL::Parameters:
             // would require the property libraries (e.g. brake pads) to be installed.
             // The sid refers to the parameter snapshot, which must stay alive with it.
-            return std::make_shared<supplementedInputDataBase>(
+            return std::make_shared<ProbeSID>(
                 ParameterSetInput(this->parameters()),
                 this->workDir_,
-                *this->progress_.forkNewAction(99, "Process input data") );
+                *this->progress_.forkNewAction(99, "Process input data"),
+                x_==throwingDeferredValue );
         }
         catch (const boost::thread_interrupted&)
         {
@@ -164,6 +197,15 @@ public:
                     boost::this_thread::sleep_for(boost::chrono::milliseconds(s));
                 addPoint("filler_"+std::to_string(i), vec3(x_, i, 0));
             }
+
+            // independent part, which fails for the sentinel value:
+            // must not prevent the visualization of the rest
+            step("deferred", [this]()
+            {
+                auto& sid = dynamic_cast<const ProbeSID&>(sidBase());
+                double v = sid.fine_ + sid.broken_;
+                (void)v;
+            });
 
             ++st_.completed;
             std::lock_guard<std::mutex> l(st_.m);
@@ -584,6 +626,52 @@ private Q_SLOTS:
         QCOMPARE(errors_, 1);
         verifyModelShows(5);
         verifyLastSid(5);
+    }
+
+    /**
+     * failure in the supplemented input data:
+     * the parts of the visualization, which do not depend on it, are shown nevertheless
+     */
+    void partialVisualizationOnInputDataError()
+    {
+        setValue(throwingValue);
+        waitIdle();
+        QCOMPARE(errors_, 1);
+        QCOMPARE(finishedSignals_, 0);
+        verifyModelShows(throwingValue);
+        QVERIFY(!lastSid_);
+        QVERIFY(!sched_->upToDateSupplementedInputData());
+    }
+
+    /**
+     * failure in a deferred quantity:
+     * the complete visualization is shown, the error is reported once,
+     * the sid is delivered (for the table) but never used for a run
+     */
+    void partialVisualizationOnDeferredError()
+    {
+        setValue(throwingDeferredValue);
+        waitIdle();
+        QCOMPARE(errors_, 1);
+        QCOMPARE(finishedSignals_, 0);
+        verifyModelShows(throwingDeferredValue);
+        verifyLastSid(throwingDeferredValue);
+        QVERIFY(!lastSid_->complete());
+        QCOMPARE(int(lastSid_->rootErrors().size()), 1);
+        QVERIFY(!sched_->upToDateSupplementedInputData());
+
+        auto t=lastSid_->reportedSupplementQuantities();
+        QVERIFY(boost::get<supplementedInputDataBase::ReportedError>(&t.at("broken").value));
+        QCOMPARE(boost::get<double>(t.at("fine").value), 1.);
+
+        // recovers
+        setValue(4);
+        waitIdle();
+        QCOMPARE(errors_, 1);
+        verifyModelShows(4);
+        verifyLastSid(4);
+        QVERIFY(lastSid_->complete());
+        QVERIFY(bool(sched_->upToDateSupplementedInputData()));
     }
 
     /**

@@ -1,5 +1,7 @@
 #include "iqsupplementedinputdatamodel.h"
 
+#include <QColor>
+
 IQSupplementedInputDataModel::IQSupplementedInputDataModel(QObject *parent)
   : QAbstractTableModel(parent)
 {}
@@ -55,11 +57,25 @@ QVariant IQSupplementedInputDataModel::data(const QModelIndex &index, int role) 
           return QString::fromStdString(insight::toString(*v));
         else if (auto* v = boost::get<std::string>(&vv))
           return QString::fromStdString(*v);
+        else if (auto* v = boost::get<insight::supplementedInputDataBase::ReportedError>(&vv))
+          return QString::fromStdString("error: "+v->message);
         else
           return QVariant();
       }
       case 2: return QString::fromStdString(i->second.unit);
       case 3: return QString::fromStdString(i->second.description);
+    }
+  }
+  else if (role==Qt::ForegroundRole || role==Qt::ToolTipRole)
+  {
+    auto i = reportedSupplementQuantities_.begin();
+    std::advance(i, index.row());
+    if (auto* v = boost::get<insight::supplementedInputDataBase::ReportedError>(&i->second.value))
+    {
+      if (role==Qt::ForegroundRole)
+        return QColor(Qt::red);
+      else
+        return QString::fromStdString(v->message);
     }
   }
 

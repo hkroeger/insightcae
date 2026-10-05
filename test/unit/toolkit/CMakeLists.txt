@@ -53,6 +53,7 @@ add_toolkit_test(toolkit_vtkrendering_readmultiregioncase ${CMAKE_CURRENT_SOURCE
 add_toolkit_test(toolkit_paralleltimedirectories ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_cacheableentity ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_observer_ptr)
+add_toolkit_test(toolkit_supplementedquantity)
 add_toolkit_test(toolkit_resultantforce)
 add_toolkit_test(toolkit_predefinedfilters)
 

@@ -144,7 +144,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
     };
 
     evalForces(sp().FOname_allObjects, "entire assembly");
-    if (sp().geometry_.size()>1)
+    if (sp().geometry_->size()>1)
     {
         for (auto& g: sp().geometry_)
         {
@@ -176,7 +176,9 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm, ProgressDisp
         insight::CoordinateSystem evalCS(
             vec3(0.5*sp().l_, 0, sp().Ldown_+0.5*(sp().hup_+sp().dlo_)),
             vec3X(), vec3Z() );
-        double maxObjSize=std::max(sp().l_, std::max(sp().w_, (sp().hup_+sp().dlo_)));
+        double maxObjSize=std::max<double>(
+            sp().l_,
+            std::max<double>(sp().w_, (sp().hup_+sp().dlo_)));
         double camDist=10.*maxObjSize;
 
 

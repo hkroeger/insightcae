@@ -46,7 +46,8 @@ IQParameterSetVisualizationScheduler::currentVisualizer() const
 supplementedInputDataBasePtr
 IQParameterSetVisualizationScheduler::upToDateSupplementedInputData() const
 {
-    if (isIdle())
+    // never hand out incomplete input data (e.g. for starting a run)
+    if (isIdle() && currentSid_ && currentSid_->complete())
         return currentSid_;
     return nullptr;
 }

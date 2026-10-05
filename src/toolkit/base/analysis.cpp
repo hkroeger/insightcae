@@ -86,6 +86,8 @@ defineStaticFunctionTable2(
 void Analysis::resetParameters(
     std::shared_ptr<supplementedInputDataBase> sid )
 {
+    if (sid)
+        sid->throwIfIncomplete();
     sp_ = sid;
 }
 
@@ -129,7 +131,12 @@ std::unique_ptr<ParameterSet> Analysis::getPropositionsForParameter(
 Analysis::Analysis(
     const std::shared_ptr<supplementedInputDataBase> &sp )
     : sp_(sp)
-{}
+{
+    // never run on incomplete input data:
+    // compute all deferred quantities (in parallel) and report all errors at once
+    if (sp_)
+        sp_->throwIfIncomplete();
+}
 
 
 Analysis::~Analysis()

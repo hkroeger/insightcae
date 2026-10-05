@@ -7,11 +7,13 @@
 #include "iqcadmodel3dviewer.h"
 #include "iqcaditemmodel.h"
 #include "qtextensions.h"
+#include "iqcollapsiblesection.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QTextEdit>
 #include <QInputDialog>
 
 #include "base/tools.h"
@@ -53,8 +55,22 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
 
     auto* layout = IQParameter::populateEditControls(editControlsContainer, viewer);
 
+    // main edit control: graphical sketch editor
+    if (viewer)
+    {
+        QPushButton* edit=new QPushButton("&Edit sketch", editControlsContainer);
+        layout->addWidget(edit);
 
-    auto *teScript = new QTextEdit(editControlsContainer);
+        connect(edit, &QPushButton::pressed,
+                std::bind(&IQCADSketchParameter::edit, this, viewer) );
+    }
+
+    // script editing for advanced use, collapsed by default
+    auto *scriptSection = new IQCollapsibleSection(
+        "Sketch script", editControlsContainer );
+    layout->addWidget(scriptSection);
+
+    auto *teScript = new QTextEdit(scriptSection);
     auto updateScriptEdit = [this,teScript]() {
         DBG_SLOT(valueChanged);
 
@@ -71,30 +87,18 @@ QVBoxLayout* IQCADSketchParameter::populateEditControls(
             )
         );
 
-    layout->addWidget(teScript);
+    scriptSection->contentsLayout()->addWidget(teScript);
 
 
-    QPushButton* apply=new QPushButton("&Apply", editControlsContainer);
-    layout->addWidget(apply);
+    QPushButton* apply=new QPushButton("&Apply", scriptSection);
+    scriptSection->contentsLayout()->addWidget(apply);
 
-    if (viewer)
+    auto applyFunction = [=]()
     {
-        QPushButton* edit=new QPushButton("&Edit sketch", editControlsContainer);
-        layout->addWidget(edit);
-
-        auto applyFunction = [=]()
-        {
-            auto&p = this->parameterRef();
-            // p.setUpdateValueSignalBlockage(true);
-            p.setScript( teScript->document()->toPlainText().toStdString() );
-            // p.setUpdateValueSignalBlockage(false);
-            // p.triggerValueChanged();
-        };
-        connect(apply, &QPushButton::pressed, applyFunction);
-
-        connect(edit, &QPushButton::pressed,
-                std::bind(&IQCADSketchParameter::edit, this, viewer) );
-    }
+        auto&p = this->parameterRef();
+        p.setScript( teScript->document()->toPlainText().toStdString() );
+    };
+    connect(apply, &QPushButton::pressed, applyFunction);
 
     return layout;
 }

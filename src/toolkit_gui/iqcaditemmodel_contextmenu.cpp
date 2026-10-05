@@ -9,10 +9,18 @@
 #include "datum.h"
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqvtkconstrainedsketcheditor.h"
+#include "qinsighterror.h"
+#include "cadpostprocaction.h"
+#include "base/exception.h"
 
 #include <QInputDialog>
 #include <QColorDialog>
 #include <QFileDialog>
+#include <QPointer>
+#include <QThread>
+#include <QApplication>
+
+#include <iostream>
 
 void IQCADItemModel::showMultiSelectionContextMenu(
     const QModelIndexList& idxs,
@@ -54,17 +62,43 @@ void IQCADItemModel::showMultiSelectionContextMenu(
         }
     }
 
+    // collect selected postproc actions (selection contains one index per column)
+    std::vector<std::pair<std::string, insight::cad::PostprocActionPtr> > ppas;
+    std::set<const TreeNode*> seen;
+    for (auto idx: idxs)
+    {
+        auto *n = static_cast<TreeNode*>(idx.internalPointer());
+        if (auto *pn=dynamic_cast<PostProcNode*>(n))
+        {
+            if (seen.insert(pn).second)
+                ppas.push_back({pn->label.toStdString(), pn->value});
+        }
+    }
+
     if (allHideShow)
     {
         cm.addAction(show);
         cm.addAction(hide);
-
-        cm.exec(pos);
     }
     else
     {
         delete show;
         delete hide;
+    }
+
+    if (!ppas.empty())
+    {
+        if (allHideShow) cm.addSeparator();
+        auto *exe=new QAction(
+            QString("Execute %1 postproc action(s) (write output)").arg(ppas.size()), &cm);
+        connect(exe, &QAction::triggered, exe,
+                [this,ppas]() { executePostprocActions(ppas); } );
+        cm.addAction(exe);
+    }
+
+    if (!cm.actions().isEmpty())
+    {
+        cm.exec(pos);
     }
 
 }
@@ -224,6 +258,17 @@ void IQCADItemModel::showContextMenu(
                     }
                 }
             }
+        }
+
+        if (auto *pn=dynamic_cast<PostProcNode*>(n))
+        {
+            a=new QAction("Execute (write output)", &cm);
+            connect(a, &QAction::triggered, a,
+                    [this,name=pn->label.toStdString(),ppa=pn->value]() {
+                        executePostprocActions({{name, ppa}});
+                    });
+            cm.addAction(a);
+            cm.addSeparator();
         }
 
         a=new QAction("Show", &cm);
@@ -521,4 +566,72 @@ void IQCADItemModel::showContextMenu(
     }
 
     cm.exec(pos);
+}
+
+
+
+
+void IQCADItemModel::executePostprocActions(
+    const std::vector<std::pair<std::string, insight::cad::PostprocActionPtr> >& actions )
+{
+    if (actions.empty()) return;
+
+    QPointer<IQCADItemModel> self(this);
+
+    auto *thread = QThread::create(
+        [self,actions]()
+        {
+            for (const auto& a: actions)
+            {
+                QString name = QString::fromStdString(a.first);
+
+                QMetaObject::invokeMethod(
+                    qApp,
+                    [self,name]()
+                    {
+                        if (self)
+                            Q_EMIT self->statusMessage(
+                                QString("Executing postproc action %1...").arg(name) );
+                    } );
+
+                try
+                {
+                    std::cout << "Executing " << a.first << std::endl;
+                    a.second->execute(std::cout);
+
+                    QMetaObject::invokeMethod(
+                        qApp,
+                        [self,name]()
+                        {
+                            if (self)
+                                Q_EMIT self->statusMessage(
+                                    QString("Postproc action %1 executed.").arg(name), 5000 );
+                        } );
+                }
+                catch (...)
+                {
+                    auto ex = std::current_exception();
+                    QMetaObject::invokeMethod(
+                        qApp,
+                        [self,name,ex]()
+                        {
+                            if (self)
+                                Q_EMIT self->statusMessage(
+                                    QString("Execution of postproc action %1 failed!").arg(name), 5000 );
+                            try
+                            {
+                                std::rethrow_exception(ex);
+                            }
+                            catch (...)
+                            {
+                                displayCurrentException();
+                            }
+                        } );
+                    return;
+                }
+            }
+        } );
+
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
 }

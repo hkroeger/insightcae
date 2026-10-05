@@ -54,6 +54,12 @@ class TOOLKIT_GUI_EXPORT IQISCADScriptModelGenerator
     Q_OBJECT
 
 public:
+    /**
+     * @brief The Task enum
+     * Parse: only parse the script
+     * Rebuild: parse and build all entities, including the previews of the postproc actions
+     * Post: like Rebuild, but additionally write the output of all postproc actions
+     */
     enum Task { Parse = 0, Rebuild = 1, Post = 2 };
 
 public:

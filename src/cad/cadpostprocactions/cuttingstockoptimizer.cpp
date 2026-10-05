@@ -368,7 +368,6 @@ void CuttingStockOptimizer::build()
     }
 
     if (pieces_.empty()) {
-        std::cout << "CuttingStockOptimizer: no linear edges found.\n";
         return;
     }
 
@@ -533,10 +532,19 @@ void CuttingStockOptimizer::build()
                 pieces_[pi].stockItemIdx = si;
     }
 
+}
+
+// ----------------------------------------------------------------------------
+void CuttingStockOptimizer::write(std::ostream& console) const
+{
+    if (pieces_.empty()) {
+        console << "CuttingStockOptimizer: no linear edges found.\n";
+        return;
+    }
+
     // ------------------------------------------------------------------ 7.
-    // Print results to std::cout.
+    // Print results to console.
     // ------------------------------------------------------------------
-    using std::cout;
     using std::setw;
     using std::left;
     using std::right;
@@ -550,14 +558,14 @@ void CuttingStockOptimizer::build()
     const int W_STK  = 12;
 
     auto hline = [&](char fill = '-') {
-        cout << std::string(W_IDX + 1 + W_NAME + 1 + W_EID + 1 + W_LEN + 1 + W_STK, fill) << "\n";
+        console << std::string(W_IDX + 1 + W_NAME + 1 + W_EID + 1 + W_LEN + 1 + W_STK, fill) << "\n";
     };
 
     // --- Table 1: one row per edge ---
-    cout << "\n";
-    cout << "=== CuttingStockOptimizer: Edge Assignment ===\n";
+    console << "\n";
+    console << "=== CuttingStockOptimizer: Edge Assignment ===\n";
     hline('=');
-    cout << right << setw(W_IDX)  << "Feat#"  << " "
+    console << right << setw(W_IDX)  << "Feat#"  << " "
          << left  << setw(W_NAME) << "Feature Name" << " "
          << right << setw(W_EID)  << "Edge ID" << " "
          << right << setw(W_LEN)  << "Length"  << " "
@@ -565,21 +573,21 @@ void CuttingStockOptimizer::build()
          << "\n";
     hline();
     for (const auto& p : pieces_) {
-        cout << right << setw(W_IDX)  << p.featureIdx << " "
+        console << right << setw(W_IDX)  << p.featureIdx << " "
              << left  << setw(W_NAME) << p.featureName << " "
              << right << setw(W_EID)  << p.edgeId      << " "
              << right << setw(W_LEN)  << fixed << setprecision(4) << p.length << " "
              << right << setw(W_STK);
         if (p.stockItemIdx >= 0)
-            cout << p.stockItemIdx;
+            console << p.stockItemIdx;
         else
-            cout << "UNASSIGNED";
-        cout << "\n";
+            console << "UNASSIGNED";
+        console << "\n";
     }
     hline('=');
 
     // --- Table 2: one block per used stock item ---
-    cout << "\n=== CuttingStockOptimizer: Stock Item Usage ===\n";
+    console << "\n=== CuttingStockOptimizer: Stock Item Usage ===\n";
 
     for (int si = 0; si < static_cast<int>(usedStock_.size()); ++si) {
         const UsedStockItem& item = usedStock_[si];
@@ -587,11 +595,11 @@ void CuttingStockOptimizer::build()
         const int    orig_k   = item.stockTypeIdx;
         const double stk_len  = item.stockLength;
 
-        cout << "\nStock item #" << si
+        console << "\nStock item #" << si
              << "  (type " << orig_k
              << ", length " << fixed << setprecision(4) << stk_len << "):\n";
         hline('-');
-        cout << right << setw(W_IDX)  << "Feat#"  << " "
+        console << right << setw(W_IDX)  << "Feat#"  << " "
              << left  << setw(W_NAME) << "Feature Name" << " "
              << right << setw(W_EID)  << "Edge ID" << " "
              << right << setw(W_LEN)  << "Length"
@@ -600,14 +608,14 @@ void CuttingStockOptimizer::build()
 
         for (int pi : item.pieceIndices) {
             const PieceInfo& p = pieces_[pi];
-            cout << right << setw(W_IDX)  << p.featureIdx << " "
+            console << right << setw(W_IDX)  << p.featureIdx << " "
                  << left  << setw(W_NAME) << p.featureName << " "
                  << right << setw(W_EID)  << p.edgeId << " "
                  << right << setw(W_LEN)  << fixed << setprecision(4) << p.length
                  << "\n";
         }
         hline('-');
-        cout << "  Remaining uncut length: "
+        console << "  Remaining uncut length: "
              << fixed << setprecision(4) << item.remainingLength << "\n";
     }
 
@@ -617,9 +625,9 @@ void CuttingStockOptimizer::build()
         if (p.stockItemIdx < 0) { any_unassigned = true; break; }
     }
     if (any_unassigned) {
-        cout << "\n*** WARNING: the following edges could not be assigned (insufficient stock) ***\n";
+        console << "\n*** WARNING: the following edges could not be assigned (insufficient stock) ***\n";
         hline('*');
-        cout << right << setw(W_IDX)  << "Feat#"  << " "
+        console << right << setw(W_IDX)  << "Feat#"  << " "
              << left  << setw(W_NAME) << "Feature Name" << " "
              << right << setw(W_EID)  << "Edge ID" << " "
              << right << setw(W_LEN)  << "Length"
@@ -627,7 +635,7 @@ void CuttingStockOptimizer::build()
         hline('*');
         for (const auto& p : pieces_) {
             if (p.stockItemIdx >= 0) continue;
-            cout << right << setw(W_IDX)  << p.featureIdx << " "
+            console << right << setw(W_IDX)  << p.featureIdx << " "
                  << left  << setw(W_NAME) << p.featureName << " "
                  << right << setw(W_EID)  << p.edgeId << " "
                  << right << setw(W_LEN)  << fixed << setprecision(4) << p.length
@@ -636,12 +644,8 @@ void CuttingStockOptimizer::build()
         hline('*');
     }
 
-    cout << std::flush;
+    console << std::flush;
 }
-
-// ----------------------------------------------------------------------------
-void CuttingStockOptimizer::write(std::ostream&) const
-{}
 
 // ----------------------------------------------------------------------------
 void CuttingStockOptimizer::insertrule(parser::ISCADParser& ruleset)

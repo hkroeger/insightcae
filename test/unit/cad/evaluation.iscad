@@ -1,5 +1,3 @@
 box=Cylinder(O, EX, 0.5);
 
-@post
-
 SolidProperties(props) << box;

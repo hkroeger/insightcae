@@ -81,6 +81,27 @@ DrawingExport::DrawingExport
 
 void DrawingExport::build()
 {
+    // only evaluate and check the inputs here,
+    // the expensive view creation is done in write()
+    for (const DrawingViewDefinitions& vds: viewdefs_)
+    {
+        boost::fusion::at_c<0>(vds)->checkForBuildDuringAccess();
+
+        for (const DrawingViewDefinition& vd: boost::fusion::at_c<1>(vds))
+        {
+            boost::get<1>(vd)->value();
+            boost::get<2>(vd)->value();
+            VectorPtr upd=boost::get<3>(vd);
+            if (!upd || arma::norm(upd->value(),2)<1e-6)
+                throw insight::Exception("length of upward direction vector must not be zero!");
+        }
+    }
+}
+
+
+
+void DrawingExport::write(std::ostream& console) const
+{
     Feature::Views views;
     for (const DrawingViewDefinitions& vds: viewdefs_)
     {
@@ -207,25 +228,9 @@ void DrawingExport::build()
             }
         }
     }
-    shape_=views.begin()->second.visibleEdges;
-
+    console << "Writing drawing to " << file_.string() << std::endl;
     DXFWriter::writeViews(file_, views);
 }
-
-
-
-  
-//Handle_AIS_InteractiveObject DrawingExport::createAISRepr() const
-//{
-//  checkForBuildDuringAccess();
-//  return Handle_AIS_InteractiveObject(new AIS_Shape(shape_));
-//}
-
-
-
-
-void DrawingExport::write(std::ostream& ) const
-{}
 
 
 

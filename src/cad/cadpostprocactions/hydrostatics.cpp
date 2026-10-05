@@ -25,6 +25,7 @@
 // #include "AIS_Drawer.hxx"
 #include "Prs3d_TextAspect.hxx"
 #include "occtools.h"
+#include "base/warningdispatcher.h"
 
 using namespace boost;
 using namespace std;
@@ -74,52 +75,44 @@ void Hydrostatics::build()
   std::shared_ptr<Cutaway> submerged_volume = std::dynamic_pointer_cast<Cutaway,Feature>( Cutaway::create(hullvolume_, psurf_, nsurf_) );
   submerged_volume->checkForBuildDuringAccess();
   V_=submerged_volume->modelVolume();
-  cout<<"displacement V="<<V_<<endl;
-  
   m_=shipmodel_->mass();
-  cout<<"ship mass m="<<m_<<endl;
 
   FeaturePtr csf = submerged_volume->providedSubshapes().find("CutSurface")->second;
   if (!csf)
     throw insight::Exception("No cut surface present!");
 
-  // write surface for debug
   TopoDS_Shape issh=static_cast<const TopoDS_Shape&>(*csf);
-  
-//  std::cout<<issh<<std::endl;
   
   TopExp_Explorer ex(issh, TopAbs_FACE);
   TopoDS_Face f=TopoDS::Face(ex.Current());
-  if (ex.More()) { std::cout<<"another"<<std::endl; ex.Next();
-  if (ex.More()) std::cout<<"yet another"<<std::endl; }
-//     throw insight::Exception("cut surface consists of more than a single face!");
-  
-  BRepTools::Write(f, "test.brep");
+  if (ex.More()) { ex.Next();
+  if (ex.More()) insight::Warning("cut surface consists of more than a single face! Using only the first one."); }
   
   GProp_GProps props;
   BRepGProp::SurfaceProperties(f, props);
   GProp_PrincipalProps pcp = props.PrincipalProperties();
-  arma::mat I=arma::zeros(3);
-  pcp.Moments(I(0), I(1), I(2));
-  cout<<"I="<<I<<endl;
-  double BM = I.min()/V_;
-  cout<<"BM="<<BM<<endl;
+  I_=arma::zeros(3);
+  pcp.Moments(I_(0), I_(1), I_(2));
+  double BM = I_.min()/V_;
 
   G_ = shipmodel_->modelCoG();
   B_ = submerged_volume->modelCoG();
   M_ = B_ + BM*(evert_->value());
-  double GM = norm(M_ - G_, 2);
-  cout<<"G="<<G_<<endl;
-  cout<<"B="<<B_<<endl;
-  cout<<"M="<<M_<<endl;
-  cout<<"GM="<<GM<<endl;
 }
 
 
 
 
-void Hydrostatics::write(std::ostream& ) const
+void Hydrostatics::write(std::ostream& console) const
 {
+  console<<"displacement V="<<V_<<endl;
+  console<<"ship mass m="<<m_<<endl;
+  console<<"I="<<I_<<endl;
+  console<<"BM="<<arma::norm(M_ - B_, 2)<<endl;
+  console<<"G="<<G_<<endl;
+  console<<"B="<<B_<<endl;
+  console<<"M="<<M_<<endl;
+  console<<"GM="<<arma::norm(M_ - G_, 2)<<endl;
 }
 
 

@@ -42,22 +42,56 @@ class ISCADParser;
 
 
 
+/**
+ * @brief The PostprocAction class
+ * base class of all postprocessing actions.
+ *
+ * build() shall only perform lightweight evaluations and prepare
+ * an easily displayable preview. It is always executed during rebuilds.
+ *
+ * write() performs the potentially expensive operations
+ * (e.g. meshing, file export, reports). It is only executed on request.
+ */
 class PostprocAction
     : public ASTBase
 {
+    mutable std::mutex write_mtx_;
+
 public:
     declareType ( "PostprocAction" );
+
+    PostprocAction() = default;
+    PostprocAction(const PostprocAction& o);
+    PostprocAction& operator=(const PostprocAction& o);
 
     declareStaticFunctionTable2(
         InsertRule, insertrule,
         void, parser::ISCADParser&);
 
-    virtual void execute();
-
-    virtual void write(std::ostream&) const =0;
-    //  virtual Handle_AIS_InteractiveObject createAISRepr() const =0;
-
+    /**
+     * @brief createVTKRepr
+     * creates a visualization of the result in the 3D viewer
+     * @return
+     * VTK prop
+     */
     virtual std::vector<vtkSmartPointer<vtkProp> > createVTKRepr() const;
+
+    /**
+     * @brief write
+     * export the result. either to console stream (given as parameter)
+     * or to some file (e.g. meshing into file).
+     * Contains the expensive operations.
+     * Requires a previous build, use execute() for automatic build.
+     */
+    virtual void write(std::ostream& console) const =0;
+
+    /**
+     * @brief execute
+     * builds (if required) and then writes the result.
+     * Concurrent executions of the same action are serialized.
+     */
+    void execute(std::ostream& console) const;
+
 };
 
 }

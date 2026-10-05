@@ -49,7 +49,6 @@ class DrawingExport
 {
   boost::filesystem::path file_; 
   std::vector<DrawingViewDefinitions> viewdefs_;
-  TopoDS_Shape shape_;
 
   virtual size_t calcHash() const;
   virtual void build();

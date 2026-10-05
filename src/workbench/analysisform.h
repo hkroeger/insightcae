@@ -256,6 +256,12 @@ public:
   bool isOpenFOAMAnalysis() const;
   insight::OperatingSystemSet compatibleOperatingSystems() const;
 
+  /**
+   * settings key for the splitter state of the parameter editor.
+   * Differs, since the layout depends on the presence of a visualizer and a wizard.
+   */
+  QString parameterEditorStateKey() const;
+
   void saveState(
       rapidxml::xml_document<>& doc,
       rapidxml::xml_node<>& rootNode,

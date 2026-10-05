@@ -273,6 +273,7 @@ struct ISCADParser
     qi::rule<std::string::iterator, skip_grammar, qi::locals<std::string,SyntaxElementPos> > r_assignment;
     qi::rule<std::string::iterator, qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_propertyAssignment;
     qi::rule<std::string::iterator, skip_grammar> r_doc;
+    qi::rule<std::string::iterator, skip_grammar> r_deprecatedPostKeyword;
     qi::rule<std::string::iterator, DrawingViewDefinition(), skip_grammar> r_viewDef;
 
     // ModelstepRule r_modelstep;
@@ -299,8 +300,14 @@ struct ISCADParser
     void pushCommand(std::size_t nameBegin, std::size_t nameEnd);
     void popCommand();
 
-    enum Section { ModelSection, DocSection, PostSection };
+    enum Section { ModelSection, DocSection };
     Section section_ = ModelSection;
+
+    /**
+     * locations of the deprecated (and ignored) "@post" keyword
+     */
+    std::vector<std::size_t> deprecatedPostKeywordPositions_;
+    void deprecatedPostKeyword(std::size_t pos);
 
     enum CommandKind { FeatureCommand, ScalarFunction, VectorFunction, PostprocCommand };
 

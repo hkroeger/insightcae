@@ -103,8 +103,10 @@ void insight::cad::Distance::build()
 
 
 
-void insight::cad::Distance::write(ostream&) const
-{}
+void insight::cad::Distance::write(ostream& console) const
+{
+  console << "distance = " << distance_ << std::endl;
+}
 
 
 

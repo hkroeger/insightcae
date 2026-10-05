@@ -519,6 +519,8 @@ void IQISCADModelScriptEdit::setModel(IQCADItemModel* model)
             this, &IQISCADModelScriptEdit::jumpTo);
     connect(cur_model_, &IQCADItemModel::insertParserStatementAtCursor,
             this, &IQISCADModelScriptEdit::insertTextAtCursor);
+    connect(cur_model_, &IQCADItemModel::statusMessage,
+            this, &IQISCADModelScriptEdit::displayStatusMessage);
     scheduler_->setModel(model);
 }
 

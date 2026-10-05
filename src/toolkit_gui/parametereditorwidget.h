@@ -79,7 +79,9 @@ protected:
 //    insight::ParameterSet defaultParameters_;
     QAbstractItemModel* model_;
 
-    QSplitter* splitterV_=nullptr;
+    // might be detached and then be owned (and deleted) by another widget
+    QPointer<QSplitter> splitterV_;
+    QLabel* inputParametersLabel_ = nullptr;
     bool editPanelHeightUserAdjusted_=false;
     QTreeView* parameterTreeView_;
     QWidget *inputContents_;
@@ -162,6 +164,20 @@ public:
 
 
     bool hasVisualizer() const;
+
+    /**
+     * @brief detachParameterPanel
+     * remove the parameter tree view and the edit controls panel
+     * from this widget, so that it can be placed elsewhere (e.g. as a tab of a wizard).
+     * Afterwards, only the 3D view remains in this widget.
+     * Ownership goes to the widget, into which the panel is inserted.
+     * Only available with the constructor, which creates its own tree view.
+     * @return
+     * the panel or null, if not available or already detached
+     */
+    QWidget* detachParameterPanel();
+
+    bool isParameterPanelDetached() const;
 
     void setModel(QAbstractItemModel* model);
 

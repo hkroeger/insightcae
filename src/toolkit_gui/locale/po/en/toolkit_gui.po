@@ -61,6 +61,10 @@ msgstr ""
 msgid "Building postproc action %s"
 msgstr ""
 
+#, c-format
+msgid "Writing postproc action %s"
+msgstr ""
+
 msgid "Model rebuild successfully finished."
 msgstr ""
 

@@ -2,6 +2,7 @@
 #include "base/hierarchicalelement.h"
 
 #include <QLabel>
+#include <QAbstractProxyModel>
 #include "qtextensions.h"
 
 void IQHierarchicalDataElement::invalidate()
@@ -449,11 +450,18 @@ void IQHierarchicalDataGridViewSelectorDelegate::paint(
 QWidget* IQHierarchicalDataGridViewSelectorDelegate::createEditor(
     QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
+    // the view might show the data model through proxy models (e.g. for filtering)
+    QModelIndex sourceIndex = index;
+    while (auto *pm = dynamic_cast<const QAbstractProxyModel*>(sourceIndex.model()))
+    {
+        sourceIndex = pm->mapToSource(sourceIndex);
+    }
+
     if (auto *psm =dynamic_cast<const IQHierarchicalDataModel*>(
-            index.model()))
+            sourceIndex.model()))
     {
         auto &iqp = dynamic_cast<const IQHierarchicalDataElement&>(
-            *psm->iqElementOfIndex(index));
+            *psm->iqElementOfIndex(sourceIndex));
         auto dw = new IQHierarchicalDataGridViewDelegateEditorWidget(
             const_cast<IQHierarchicalDataGridViewSelectorDelegate*>(this),
             iqp, index);

@@ -59,6 +59,7 @@ namespace insight {
 
 
 defineType(InternalPressureLossBase);
+addToAnalysisTypeHierarchy(InternalPressureLossBase, InternalPressureLossBase::typeName_());
 
 
 InternalPressureLossBase::InternalPressureLossBase(

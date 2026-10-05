@@ -157,6 +157,13 @@ bool IQResultSetDisplayerWidget::hasResults() const
 }
 
 
+void IQResultSetDisplayerWidget::setFilter(
+    const insight::hierarchicalData::Filter &filter )
+{
+    filterModel_->resetFilter(filter);
+}
+
+
 void IQResultSetDisplayerWidget::loadResultSet()
 {
     if (auto f = getFileName(

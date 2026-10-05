@@ -111,6 +111,7 @@ protected:
   // ====================================================================================
   // ======== Analysis-related members
 
+  std::string analysisName_;
   bool isOpenFOAMAnalysis_;
   insight::supplementedInputDataBasePtr sid_;
 

@@ -61,6 +61,7 @@ namespace insight
 
 
 defineType(ChannelBase);
+addToAnalysisTypeHierarchy(ChannelBase, ChannelBase::typeName_());
 
 double ChannelBase::Re(double Re_tau)
 {

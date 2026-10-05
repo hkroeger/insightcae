@@ -48,6 +48,7 @@ namespace insight
 
 
 defineType ( Analysis );
+addToAnalysisTypeHierarchy(Analysis, Analysis::typeName_());
 
 defineFactoryTable2(
     Analysis, AnalysisFactories, analyses );
@@ -235,6 +236,8 @@ void SynchronisedAnalysisQueue::cancelAll()
 
 
 
+
+addToAnalysisTypeHierarchy(AnalysisWithParameters, "AnalysisWithParameters");
 
 AnalysisWithParameters::AnalysisWithParameters(
     const std::shared_ptr<supplementedInputDataBase>& sp )

@@ -162,6 +162,12 @@ msgstr "Konnte die Datei %1 nicht erzeugen"
 msgid "Select Remote Directory"
 msgstr "Entferntes Verzeichnis auswählen"
 
+msgid "(none defined)"
+msgstr ""
+
+msgid "&No filter"
+msgstr ""
+
 msgid "Clear"
 msgstr "Leeren"
 

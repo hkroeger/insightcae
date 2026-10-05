@@ -184,6 +184,8 @@ add_library(toolkit SHARED
     base/resultelements/fastgnuplotrenderer.h base/resultelements/fastgnuplotrenderer.cpp
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
     base/hierarchicaldatafilter.h base/hierarchicaldatafilter.cpp
+    base/analysistypehierarchy.h base/analysistypehierarchy.cpp
+    base/predefinedfilters.h base/predefinedfilters.cpp
     base/propertylibrary.h base/propertylibrary.cpp
     base/materialslibrary.h base/materialslibrary.cpp
     base/zipfile.h base/zipfile.cpp

@@ -52,6 +52,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 {
     insight::CurrentExceptionContext ex("creating parameter set editor");
 
+    treeFilterModel_ = new IQHierarchicalDataFilterProxyModel(this);
+
     parameterTreeView_->setAlternatingRowColors(true);
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
     parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
@@ -67,7 +69,7 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 
             IQParameterSetModel::contextMenu(
                 parameterTreeView_,
-                parameterTreeView_->indexAt(p),
+                treeFilterModel_->mapToSource(parameterTreeView_->indexAt(p)),
                 p,
                 viewer_ );
         }
@@ -462,6 +464,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
         if (!model)
         {
             parameterTreeView_->setModel(nullptr);
+            treeFilterModel_->setSourceModel(nullptr);
             if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
         }
     }
@@ -478,7 +481,8 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
                 this, &ParameterEditorWidget::onParameterSetChanged);
     }
 
-    parameterTreeView_->setModel(model_);
+    treeFilterModel_->setSourceModel(model_);
+    parameterTreeView_->setModel(model_ ? treeFilterModel_ : nullptr);
     parameterTreeView_->setIconSize(QSize(32,32));
     parameterTreeView_->setItemDelegate(
         new IQHierarchicalDataGridViewSelectorDelegate);
@@ -488,6 +492,17 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
         display_->model()->setAssociatedParameterSetModel(model_);
     }
 
+    expandParameterTree();
+
+    parameterTreeView_->header()->setSectionResizeMode(
+        QHeaderView::ResizeMode::ResizeToContents);
+}
+
+
+
+
+void ParameterEditorWidget::expandParameterTree()
+{
     parameterTreeView_->expandToDepth(2);
 
     // Collapse sketch parameter nodes — their entity children clutter the view
@@ -499,9 +514,25 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
                     .data().value<void*>());
             return iqe && iqe->type() == IQCADSketchParameter::typeName_();
         });
+}
 
-    parameterTreeView_->header()->setSectionResizeMode(
-        QHeaderView::ResizeMode::ResizeToContents);
+
+
+
+void ParameterEditorWidget::setParameterFilter(
+    const insight::hierarchicalData::Filter &filter )
+{
+    treeFilterModel_->resetFilter(filter);
+    expandParameterTree();
+}
+
+
+
+
+const insight::hierarchicalData::Filter &
+ParameterEditorWidget::parameterFilter() const
+{
+    return treeFilterModel_->filter();
 }
 
 bool ParameterEditorWidget::hasViewer() const

@@ -28,6 +28,9 @@ namespace insight
 {
 
 
+addToAnalysisTypeHierarchy(OpenFOAMAnalysis, "OpenFOAMAnalysis");
+
+
 
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {

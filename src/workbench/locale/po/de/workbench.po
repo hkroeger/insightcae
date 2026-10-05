@@ -135,6 +135,9 @@ msgstr "Anderen Parametersatz in Aktuellen einfügen"
 msgid "Show in &XML format..."
 msgstr "In &XML-Format anzeigen..."
 
+msgid "&Filter"
+msgstr ""
+
 msgid "&Run Analysis"
 msgstr "&Analyse starten"
 
@@ -155,6 +158,9 @@ msgstr "&Filter laden..."
 
 msgid "Sa&ve filter..."
 msgstr "Filter spei&chern..."
+
+msgid "&Predefined filter"
+msgstr ""
 
 msgid "Start ParaView in execution directory"
 msgstr "Paraview in Arbeitsverzeichnis starten"

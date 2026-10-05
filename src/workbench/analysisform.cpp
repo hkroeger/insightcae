@@ -47,6 +47,7 @@
 
 //#include "parameterwrapper.h"
 #include "iqresultsetmodel.h"
+#include "iqhierarchicaldatafilterproxymodel.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -183,6 +184,7 @@ AnalysisForm::AnalysisForm(
     )
 : QWidget(parent),
   IQExecutionWorkspace(this),
+  analysisName_(analysisName),
   isOpenFOAMAnalysis_(false),
   pack_parameterset_(true),
   actionProgress_(actionProgress)
@@ -578,6 +580,17 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
     menu_parameters->addAction( act_param_show_ );
     connect( act_param_show_, &QAction::triggered, this, &AnalysisForm::onShowParameterXML );
 
+    menu_parameters->addSeparator();
+
+    populatePredefinedFilterMenu(
+        menu_parameters->addMenu(_("&Filter")),
+        analysisName_,
+        insight::hierarchicalData::PredefinedFilter::Target::Parameters,
+        [this](const insight::hierarchicalData::Filter& f)
+        {
+            peditor_->setParameterFilter(f);
+        } );
+
 
 
     auto act_run_=new QAction(_("&Run Analysis"), this);
@@ -627,6 +640,15 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
         connect( act, &QAction::triggered,
                  resultsViewer_, &IQResultSetDisplayerWidget::saveFilter );
     }
+
+    populatePredefinedFilterMenu(
+        menu_results->addMenu(_("&Predefined filter")),
+        analysisName_,
+        insight::hierarchicalData::PredefinedFilter::Target::Results,
+        [this](const insight::hierarchicalData::Filter& f)
+        {
+            resultsViewer_->setFilter(f);
+        } );
 
     auto act_tool_of_paraview_=new QAction(_("Start ParaView in execution directory"), this);
     menu_tools_of->addAction( act_tool_of_paraview_ );

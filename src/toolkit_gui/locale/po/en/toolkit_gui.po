@@ -162,6 +162,12 @@ msgstr ""
 msgid "Select Remote Directory"
 msgstr ""
 
+msgid "(none defined)"
+msgstr ""
+
+msgid "&No filter"
+msgstr ""
+
 msgid "Clear"
 msgstr ""
 

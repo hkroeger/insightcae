@@ -20,6 +20,7 @@
 
 #include "base/parameterset.h"
 #include "cadparametersetvisualizer.h"
+#include "iqparametersetwizard.h"
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include "base/warningdispatcher.h"
@@ -89,6 +90,19 @@
 namespace fs = boost::filesystem;
 
 
+
+
+
+
+QString AnalysisForm::parameterEditorStateKey() const
+{
+    if (peditor_->isParameterPanelDetached())
+        return "parameterEditor_wWizard";
+    else if (peditor_->hasVisualizer())
+        return "parameterEditor_wViz";
+    else
+        return "parameterEditor_woViz";
+}
 
 
 
@@ -354,11 +368,6 @@ AnalysisForm::AnalysisForm(
 
     QSettings settings("silentdynamics", "workbench");
 
-    if (peditor_->hasVisualizer())
-      peditor_->restoreState(settings.value("parameterEditor_wViz").toByteArray());
-    else
-      peditor_->restoreState(settings.value("parameterEditor_woViz").toByteArray());
-
     pack_parameterset_ = settings.value("pack_parameterset", QVariant(true)).toBool();
 
     connectLocalActions();
@@ -402,11 +411,19 @@ AnalysisForm::AnalysisForm(
     if (insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis().count(
             analysisName ))
     {
-#warning check StaticFunctionTable parameter: r-value ref?
-        auto ppm=psmodel_;
+        // function table expects r-values: pass copies of the pointers
         auto wiz=insight::CADParameterSetModelVisualizer::createGUIWizardForAnalysis()(
-            analysisName, std::move(ppm)
+            analysisName,
+            static_cast<IQParameterSetModel*>(psmodel_),
+            static_cast<IQCADModel3DViewer*>(peditor_->viewer())
             );
+
+        // the complete parameter tree becomes the last tab of the wizard
+        if (auto *pswiz = dynamic_cast<IQParameterSetWizard*>(wiz))
+        {
+            if (auto *panel = peditor_->detachParameterPanel())
+                pswiz->addTab(panel, tr("Input Parameters"));
+        }
 
         auto *container=new QSplitter;
         container->setOrientation(Qt::Horizontal);
@@ -419,6 +436,9 @@ AnalysisForm::AnalysisForm(
     {
         vsplit->addWidget(peditor_);
     }
+
+    // layout of parameter editor differs, depending on visualizer and wizard
+    peditor_->restoreState(settings.value(parameterEditorStateKey()).toByteArray());
 
 
     sidtab_ = new QTableView;
@@ -660,10 +680,7 @@ void AnalysisForm::closeEvent(QCloseEvent * event)
       {
           QSettings settings("silentdynamics", "workbench");
 
-          if (peditor_->hasVisualizer())
-            settings.setValue("parameterEditor_wViz", peditor_->saveState());
-          else
-            settings.setValue("parameterEditor_woViz", peditor_->saveState());
+          settings.setValue(parameterEditorStateKey(), peditor_->saveState());
 
           settings.setValue("pack_parameterset", QVariant(pack_parameterset_) );
 

@@ -68,6 +68,17 @@ if (INSIGHT_BUILD_CAD)
     add_test(NAME gui_IQFilteredParameterSetModel COMMAND IQFilteredParameterSetModel nogui)
 
 
+    add_executable(IQParameterBinding IQParameterBinding.cpp)
+    target_link_libraries(IQParameterBinding
+    toolkit_gui
+    Qt5::Test
+    )
+    linkToolkitVtk(IQParameterBinding Offscreen)
+    add_test(NAME gui_IQParameterBinding COMMAND IQParameterBinding)
+    set_tests_properties(gui_IQParameterBinding PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+
     add_executable(IQGroupingItemModel IQGroupingItemModel.cpp)
     target_link_libraries(IQGroupingItemModel
     insightcad toolkit_gui

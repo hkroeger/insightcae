@@ -209,7 +209,8 @@ ParameterEditorWidget::ParameterEditorWidget
         QVBoxLayout *l=new QVBoxLayout;
         w->setLayout(l);
 
-        l->addWidget(new QLabel("Input Parameters"));
+        inputParametersLabel_=new QLabel("Input Parameters");
+        l->addWidget(inputParametersLabel_);
         parameterTreeView_ = new QTreeView(w);
         l->addWidget(parameterTreeView_);
 
@@ -337,6 +338,15 @@ void ParameterEditorWidget::resizeEvent(QResizeEvent*e)
 
 bool ParameterEditorWidget::eventFilter(QObject* watched, QEvent* event)
 {
+    // detached panel: resizes are not seen by resizeEvent
+    if ( splitterV_
+        && watched == splitterV_.data()
+        && event->type() == QEvent::Resize )
+    {
+        adjustEditPanelHeight();
+        Q_EMIT adaptEditControlsLayout(splitterV_->size());
+    }
+
     if ( splitterV_
         && watched == splitterV_->handle(1)
         && event->type() == QEvent::MouseButtonDblClick )
@@ -408,6 +418,29 @@ ParameterEditorWidget::~ParameterEditorWidget()
 bool ParameterEditorWidget::hasVisualizer() const
 {
     return bool(createVisualizer_);
+}
+
+
+
+
+QWidget *ParameterEditorWidget::detachParameterPanel()
+{
+    if (!splitterV_ || !inputParametersLabel_ || isParameterPanelDetached())
+        return nullptr;
+
+    splitterV_->setParent(nullptr); // removes it from this splitter
+    splitterV_->installEventFilter(this);
+    inputParametersLabel_->hide();
+
+    return splitterV_;
+}
+
+
+
+
+bool ParameterEditorWidget::isParameterPanelDetached() const
+{
+    return splitterV_ && (indexOf(splitterV_)<0);
 }
 
 

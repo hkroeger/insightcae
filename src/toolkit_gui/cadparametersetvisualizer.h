@@ -252,10 +252,16 @@ public:
       CreateGUIActionsFunctions, createGUIActionsForOpenFOAMCaseElement);
 
 
+  /**
+   * wizards, which provide an organized view on a subset of the analysis parameters.
+   * Arguments: the parameter set model under edit and the 3D viewer (may be null).
+   * See IQParameterSetWizard for a base class.
+   */
   declareStaticFunctionTable2(
       GUIWizardFunctions, createGUIWizardForAnalysis,
       QWidget*,
-      IQParameterSetModel * );
+      IQParameterSetModel *,
+      IQCADModel3DViewer * );
 
 
 protected:

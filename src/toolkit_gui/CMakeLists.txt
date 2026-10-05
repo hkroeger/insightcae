@@ -137,6 +137,13 @@ add_library(toolkit_gui SHARED
        iqhierarchicaldataelement.h iqhierarchicaldataelement.cpp
        iqparametersetmodel.h iqparametersetmodel.cpp
        iqfilteredparametersetmodel.h iqfilteredparametersetmodel.cpp
+       iqparametersetmodelobserver.h iqparametersetmodelobserver.cpp
+       iqparameterbinding.h iqparameterbinding.cpp
+       iqembeddedparametereditor.h iqembeddedparametereditor.cpp
+       iqarrayelementselector.h iqarrayelementselector.cpp
+       iqparameterchildrenform.h iqparameterchildrenform.cpp
+       iqparametersetwizard.h iqparametersetwizard.cpp
+       iqcollapsiblesection.h iqcollapsiblesection.cpp
 
        iqresultsetfiltermodel.h iqresultsetfiltermodel.cpp
        iqparameter.cpp iqparameter.h

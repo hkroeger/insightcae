@@ -395,10 +395,9 @@ const insight::ParameterSet *IQParameterSetModel::defaultParameterSet() const
 
 IQParameter *IQParameterSetModel::parameterFromIndex(const QModelIndex &index)
 {
-  return static_cast<IQParameter*>(
-      index.siblingAtColumn(IQParameterSetModel::iqParamCol)
-          .data()
-          .value<void*>() );
+  // the view might show the model through proxy models
+  return dynamic_cast<IQParameter*>(
+      IQHierarchicalDataModel::wrapperFromIndex(index) );
 }
 
 

@@ -451,11 +451,7 @@ QWidget* IQHierarchicalDataGridViewSelectorDelegate::createEditor(
     QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     // the view might show the data model through proxy models (e.g. for filtering)
-    QModelIndex sourceIndex = index;
-    while (auto *pm = dynamic_cast<const QAbstractProxyModel*>(sourceIndex.model()))
-    {
-        sourceIndex = pm->mapToSource(sourceIndex);
-    }
+    QModelIndex sourceIndex = IQHierarchicalDataModel::sourceIndex(index);
 
     if (auto *psm =dynamic_cast<const IQHierarchicalDataModel*>(
             sourceIndex.model()))

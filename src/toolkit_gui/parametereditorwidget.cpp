@@ -509,9 +509,7 @@ void ParameterEditorWidget::expandParameterTree()
     collapseMatchingNodes(
         parameterTreeView_,
         [](const QModelIndex& idx) {
-            auto* iqe = static_cast<IQHierarchicalDataElement*>(
-                idx.siblingAtColumn(IQHierarchicalDataModel::iqParamCol)
-                    .data().value<void*>());
+            auto* iqe = IQHierarchicalDataModel::wrapperFromIndex(idx);
             return iqe && iqe->type() == IQCADSketchParameter::typeName_();
         });
 }
@@ -600,7 +598,7 @@ void ParameterEditorWidget::rebuildVisualization()
                         auto desc=insight::describeCurrentException();
                         overlayText_->setTextFormat(Qt::MarkdownText);
                         overlayText_->setText(QString::fromStdString(
-                            std::string(_("The visualization could not be generated."))
+                            std::string(_("The visualization could not be generated completely."))
                             +"\n\n"
                             +_("Reason:")
                             +"\n\n"

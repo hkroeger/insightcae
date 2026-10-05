@@ -9,6 +9,7 @@
 #include "base/parameters/selectionparameter.h"
 
 #include <QTimer>
+#include <QAbstractProxyModel>
 #include <QApplication>
 #include <QStyle>
 #include <QStatusBar>
@@ -309,6 +310,34 @@ IQHierarchicalDataModel::elementOfIndex(const QModelIndex& idx)
     return
         static_cast<insight::hierarchicalData::Element*>(
             idx.internalPointer() );
+}
+
+
+
+
+
+QModelIndex IQHierarchicalDataModel::sourceIndex(const QModelIndex &index)
+{
+    QModelIndex si = index.siblingAtColumn(0);
+    while (auto *pm = dynamic_cast<const QAbstractProxyModel*>(si.model()))
+    {
+        si = pm->mapToSource(si);
+    }
+    return si;
+}
+
+
+
+
+IQHierarchicalDataElement *IQHierarchicalDataModel::wrapperFromIndex(const QModelIndex &index)
+{
+    auto si = sourceIndex(index);
+    if (!si.isValid()
+        || !dynamic_cast<const IQHierarchicalDataModel*>(si.model()))
+        return nullptr;
+
+    return static_cast<IQHierarchicalDataElement*>(
+        si.siblingAtColumn(iqParamCol).data().value<void*>() );
 }
 
 

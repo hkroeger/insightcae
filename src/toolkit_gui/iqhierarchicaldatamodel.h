@@ -155,6 +155,22 @@ public:
     }
 
     static insight::hierarchicalData::Element* elementOfIndex(const QModelIndex& idx);
+
+    /**
+     * @brief sourceIndex
+     * views might show the model through (a chain of) proxy models.
+     * Map a view index (column 0) down to the underlying model.
+     */
+    static QModelIndex sourceIndex(const QModelIndex& index);
+
+    /**
+     * @brief wrapperFromIndex
+     * the wrapper of the element at a view index.
+     * Works also through proxy models, which don't map the hidden columns.
+     * @return
+     * null, if the index is invalid or does not belong to an IQHierarchicalDataModel
+     */
+    static IQHierarchicalDataElement* wrapperFromIndex(const QModelIndex& index);
     IQHierarchicalDataElement* iqElementOfIndex(const QModelIndex& idx);
     const IQHierarchicalDataElement* iqElementOfIndex(const QModelIndex& idx) const;
 

@@ -59,6 +59,7 @@ namespace insight {
 
 
 defineType(InternalPressureLossBase);
+addToAnalysisTypeHierarchy(InternalPressureLossBase, InternalPressureLossBase::typeName_());
 
 
 InternalPressureLossBase::InternalPressureLossBase(
@@ -95,7 +96,7 @@ void InternalPressureLossBase::createMesh(insight::OpenFOAMCase& cm, ProgressDis
     bmd->setScaleFactor(p().geometryscale);
     bmd->setDefaultPatch("walls", "wall");
 
-    double eps=0.01*arma::min(sp().bb_.col(1)-sp().bb_.col(0));
+    double eps=0.01*arma::min(sp().bb_->col(1)-sp().bb_->col(0));
     std::map<int, bmd::Point> pt = boost::assign::map_list_of
                                    (0, 	vec3(sp().bb_(0,0)-eps, sp().bb_(1,0)-eps, sp().bb_(2,0)-eps))
                                    (1, 	vec3(sp().bb_(0,1)+eps, sp().bb_(1,0)-eps, sp().bb_(2,0)-eps))

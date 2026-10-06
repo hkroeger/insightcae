@@ -37,11 +37,27 @@
 namespace insight {
 
 
+class ScopedWarningRecorder;
+
+
 class WarningDispatcher
 {
+  friend class ScopedWarningRecorder;
 
   WarningDispatcher *superDispatcher_=nullptr;
   std::vector<insight::Exception> warnings_;
+
+  /**
+   * active recorders of the thread, which owns this dispatcher.
+   * Only accessed from that thread.
+   */
+  std::vector<ScopedWarningRecorder*> recorders_;
+
+  /**
+   * true while a warning, which was captured by a recorder,
+   * is forwarded and its callbacks are executed (in the issuing thread)
+   */
+  bool currentIssueRecorded_=false;
 
   mutable std::mutex mutex_;
   std::map<int, std::function<void(const insight::Exception&)>> issueCallbacks_;
@@ -69,6 +85,43 @@ public:
 
   static WarningDispatcher& getCurrent();
 
+  /**
+   * @brief currentIssueIsRecorded
+   * To be called from issue callbacks.
+   * @return
+   * true, if the warning, which is currently dispatched,
+   * has been captured by a ScopedWarningRecorder in the issuing thread.
+   */
+  static bool currentIssueIsRecorded();
+
+};
+
+
+
+
+/**
+ * @brief The ScopedWarningRecorder class
+ * captures all warnings, which are issued in the current thread
+ * while this object exists. The warnings are dispatched as usual in addition.
+ * If recorders are nested, only the innermost one receives the warnings.
+ */
+class ScopedWarningRecorder
+{
+  friend class WarningDispatcher;
+
+public:
+  typedef std::function<void(const insight::Exception&)> Sink;
+
+private:
+  Sink sink_;
+  WarningDispatcher& dispatcher_;
+
+public:
+  explicit ScopedWarningRecorder(Sink sink);
+  ~ScopedWarningRecorder();
+
+  ScopedWarningRecorder(const ScopedWarningRecorder&) = delete;
+  ScopedWarningRecorder& operator=(const ScopedWarningRecorder&) = delete;
 };
 
 

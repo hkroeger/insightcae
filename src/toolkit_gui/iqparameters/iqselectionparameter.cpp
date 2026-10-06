@@ -50,15 +50,16 @@ void IQSelectionDelegate::setEditorData(
     const QModelIndex &index) const
 {
     auto *cb=dynamic_cast<QComboBox*>(editor);
-    auto *iqp=static_cast<IQParameter*>(
-        index.siblingAtColumn(IQParameterSetModel::iqParamCol)
-            .data().value<void*>() );
-    auto &iqssp=dynamic_cast<IQSelectionParameterInterface&>(*iqp);
+    // the view might show the model through proxy models
+    auto *iqssp=dynamic_cast<IQSelectionParameterInterface*>(
+        IQParameterSetModel::parameterFromIndex(index) );
+    if (!cb || !iqssp)
+        return;
 
     cb->setIconSize(QSize(48,48));
-    for (auto& k: iqssp.selectionKeys())
+    for (auto& k: iqssp->selectionKeys())
     {
-        auto ip=iqssp.selectionParameter().iconPathForKey(k.toStdString());
+        auto ip=iqssp->selectionParameter().iconPathForKey(k.toStdString());
         if (ip.empty())
         {
             cb->addItem(k);
@@ -68,7 +69,7 @@ void IQSelectionDelegate::setEditorData(
             cb->addItem(QIcon(QString::fromStdString(ip)), k);
         }
     }
-    cb->setCurrentIndex(iqssp.selectionParameter().selectionIndex());
+    cb->setCurrentIndex(iqssp->selectionParameter().selectionIndex());
 }
 
 

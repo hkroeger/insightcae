@@ -134,6 +134,9 @@ msgstr "&Merge other parameter set into current..."
 msgid "Show in &XML format..."
 msgstr "Show in &XML format..."
 
+msgid "&Filter"
+msgstr ""
+
 msgid "&Run Analysis"
 msgstr "&Run Analysis"
 
@@ -154,6 +157,9 @@ msgstr "Load &filter..."
 
 msgid "Sa&ve filter..."
 msgstr "Sa&ve filter..."
+
+msgid "&Predefined filter"
+msgstr ""
 
 msgid "Start ParaView in execution directory"
 msgstr "Start ParaView in execution directory"

@@ -129,7 +129,7 @@ msgstr ""
 msgid "Please enter new layer name:"
 msgstr ""
 
-msgid "The visualization could not be generated."
+msgid "The visualization could not be generated completely."
 msgstr ""
 
 msgid "Change Item Label"
@@ -160,6 +160,12 @@ msgid "Could not create file %1"
 msgstr ""
 
 msgid "Select Remote Directory"
+msgstr ""
+
+msgid "(none defined)"
+msgstr ""
+
+msgid "&No filter"
 msgstr ""
 
 msgid "Clear"

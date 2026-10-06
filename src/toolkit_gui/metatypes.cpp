@@ -12,6 +12,7 @@ ISMetaTypeRegistrator::ISMetaTypeRegistrator()
   qRegisterMetaType<arma::mat>("arma::mat");
   qRegisterMetaType<std::exception_ptr>("::std::exception_ptr");
   qRegisterMetaType<insight::supplementedInputDataBasePtr>("insight::supplementedInputDataBasePtr");
+  qRegisterMetaType<insight::InputDataIssueList>("insight::InputDataIssueList");
 }
 
 

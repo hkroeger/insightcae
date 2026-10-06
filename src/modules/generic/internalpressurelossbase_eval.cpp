@@ -107,8 +107,8 @@ InternalPressureLoss::RenderingScene::RenderingScene(
     arma::mat bb = PolyDataBndBox(internal->GetOutput());
 
 
-    L=p().geometryscale*sp().L_;
-    Lmax=p().geometryscale*arma::as_scalar(arma::max(sp().L_));
+    L=p().geometryscale*(*sp().L_);
+    Lmax=p().geometryscale*arma::as_scalar(arma::max(*sp().L_));
 
     objCS=CoordinateSystem(
         ( bb.col(1) + bb.col(0) )*0.5,

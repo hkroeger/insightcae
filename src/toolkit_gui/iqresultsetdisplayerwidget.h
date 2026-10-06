@@ -28,6 +28,12 @@ public:
 
     bool hasResults() const;
 
+    /**
+     * @brief setFilter
+     * replace the current result filter
+     */
+    void setFilter(const insight::hierarchicalData::Filter& filter);
+
 public Q_SLOTS:
     void loadResultSet();
     void saveResultSetAs();

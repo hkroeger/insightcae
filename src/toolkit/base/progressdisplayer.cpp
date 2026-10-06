@@ -45,7 +45,7 @@ ActionProgressPtr ProgressDisplayer::forkNewAction(
     double nSteps, const std::string& name)
 {
     ActionProgressPtr ap(new ActionProgress(this, name, nSteps));
-    ap->startAction();
+    ap->ensureStarted();
     return ap;
 }
 

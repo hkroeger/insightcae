@@ -52,6 +52,8 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 {
     insight::CurrentExceptionContext ex("creating parameter set editor");
 
+    treeFilterModel_ = new IQHierarchicalDataFilterProxyModel(this);
+
     parameterTreeView_->setAlternatingRowColors(true);
     parameterTreeView_->setContextMenuPolicy(Qt::CustomContextMenu);
     parameterTreeView_->setDragDropMode(QAbstractItemView::DragDrop);
@@ -67,11 +69,16 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
 
             IQParameterSetModel::contextMenu(
                 parameterTreeView_,
-                parameterTreeView_->indexAt(p),
+                treeFilterModel_->mapToSource(parameterTreeView_->indexAt(p)),
                 p,
                 viewer_ );
         }
         );
+
+    // e.g. open sketch editor on double click
+    IQParameterSetModel::enableActivationOnDoubleClick(
+        parameterTreeView_,
+        [this]() { return viewer_; } );
 
     if (hasVisualizer())
     {
@@ -457,6 +464,7 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
         if (!model)
         {
             parameterTreeView_->setModel(nullptr);
+            treeFilterModel_->setSourceModel(nullptr);
             if (display_) display_->model()->setAssociatedParameterSetModel(nullptr);
         }
     }
@@ -473,7 +481,8 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
                 this, &ParameterEditorWidget::onParameterSetChanged);
     }
 
-    parameterTreeView_->setModel(model_);
+    treeFilterModel_->setSourceModel(model_);
+    parameterTreeView_->setModel(model_ ? treeFilterModel_ : nullptr);
     parameterTreeView_->setIconSize(QSize(32,32));
     parameterTreeView_->setItemDelegate(
         new IQHierarchicalDataGridViewSelectorDelegate);
@@ -483,20 +492,45 @@ void ParameterEditorWidget::setModel(QAbstractItemModel *model)
         display_->model()->setAssociatedParameterSetModel(model_);
     }
 
+    expandParameterTree();
+
+    parameterTreeView_->header()->setSectionResizeMode(
+        QHeaderView::ResizeMode::ResizeToContents);
+}
+
+
+
+
+void ParameterEditorWidget::expandParameterTree()
+{
     parameterTreeView_->expandToDepth(2);
 
     // Collapse sketch parameter nodes — their entity children clutter the view
     collapseMatchingNodes(
         parameterTreeView_,
         [](const QModelIndex& idx) {
-            auto* iqe = static_cast<IQHierarchicalDataElement*>(
-                idx.siblingAtColumn(IQHierarchicalDataModel::iqParamCol)
-                    .data().value<void*>());
+            auto* iqe = IQHierarchicalDataModel::wrapperFromIndex(idx);
             return iqe && iqe->type() == IQCADSketchParameter::typeName_();
         });
+}
 
-    parameterTreeView_->header()->setSectionResizeMode(
-        QHeaderView::ResizeMode::ResizeToContents);
+
+
+
+void ParameterEditorWidget::setParameterFilter(
+    const insight::hierarchicalData::Filter &filter )
+{
+    treeFilterModel_->resetFilter(filter);
+    expandParameterTree();
+}
+
+
+
+
+const insight::hierarchicalData::Filter &
+ParameterEditorWidget::parameterFilter() const
+{
+    return treeFilterModel_->filter();
 }
 
 bool ParameterEditorWidget::hasViewer() const
@@ -540,6 +574,14 @@ void ParameterEditorWidget::rebuildVisualization()
                 this, &ParameterEditorWidget::updateSupplementedInputData
                 );
             connect(
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::inputDataPending,
+                this, &ParameterEditorWidget::inputDataPending
+                );
+            connect(
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::inputDataIssuesChanged,
+                this, &ParameterEditorWidget::inputDataIssuesChanged
+                );
+            connect(
                 vizScheduler_, &insight::IQParameterSetVisualizationScheduler::visualizationCalculationFinished, this,
                 [this](bool success)
                 {
@@ -564,7 +606,7 @@ void ParameterEditorWidget::rebuildVisualization()
                         auto desc=insight::describeCurrentException();
                         overlayText_->setTextFormat(Qt::MarkdownText);
                         overlayText_->setText(QString::fromStdString(
-                            std::string(_("The visualization could not be generated."))
+                            std::string(_("The visualization could not be generated completely."))
                             +"\n\n"
                             +_("Reason:")
                             +"\n\n"

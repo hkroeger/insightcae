@@ -129,8 +129,8 @@ msgstr "Layer umbenennen"
 msgid "Please enter new layer name:"
 msgstr "Neuen Layernamen eingeben:"
 
-msgid "The visualization could not be generated."
-msgstr "Die Visualisierung konnte nicht erzeugt werden."
+msgid "The visualization could not be generated completely."
+msgstr "Die Visualisierung konnte nicht vollständig erzeugt werden."
 
 msgid "Change Item Label"
 msgstr "Bezeichner ändern"
@@ -161,6 +161,12 @@ msgstr "Konnte die Datei %1 nicht erzeugen"
 
 msgid "Select Remote Directory"
 msgstr "Entferntes Verzeichnis auswählen"
+
+msgid "(none defined)"
+msgstr ""
+
+msgid "&No filter"
+msgstr ""
 
 msgid "Clear"
 msgstr "Leeren"

@@ -26,6 +26,7 @@
 #include <cstring>
 #include <mutex>
 #include <sstream>
+#include <algorithm>
 
 #ifdef WIN32
 #include <windows.h>  // FlsAlloc / FlsGetValue / FlsSetValue
@@ -53,6 +54,23 @@ void WarningDispatcher::issue(const std::string& message)
 
 void WarningDispatcher::issue(const insight::Exception& warning)
 {
+  auto& threadDispatcher = getCurrent();
+  bool prevRecorded = threadDispatcher.currentIssueRecorded_;
+
+  // recorders are only consulted in the issuing thread's own dispatcher
+  if (this==&threadDispatcher && !recorders_.empty())
+  {
+    try
+    {
+      recorders_.back()->sink_(warning);
+    }
+    catch (...)
+    {
+      // never let recording interfere with dispatching
+    }
+    threadDispatcher.currentIssueRecorded_=true;
+  }
+
   if (superDispatcher_)
   {
     superDispatcher_->issue(warning);
@@ -66,6 +84,31 @@ void WarningDispatcher::issue(const insight::Exception& warning)
     for (const auto& cb : issueCallbacks_)
       cb.second(warning);
   }
+
+  threadDispatcher.currentIssueRecorded_=prevRecorded;
+}
+
+
+bool WarningDispatcher::currentIssueIsRecorded()
+{
+  return getCurrent().currentIssueRecorded_;
+}
+
+
+
+
+ScopedWarningRecorder::ScopedWarningRecorder(Sink sink)
+  : sink_(sink),
+    dispatcher_(WarningDispatcher::getCurrent())
+{
+  dispatcher_.recorders_.push_back(this);
+}
+
+
+ScopedWarningRecorder::~ScopedWarningRecorder()
+{
+  auto& r=dispatcher_.recorders_;
+  r.erase(std::remove(r.begin(), r.end(), this), r.end());
 }
 
 

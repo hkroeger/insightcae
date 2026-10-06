@@ -33,6 +33,7 @@
 #include "base/progressdisplayer.h"
 
 #include "iqparametersetmodel.h"
+#include "iqhierarchicaldatafilterproxymodel.h"
 
 #undef None
 #undef Bool
@@ -84,6 +85,8 @@ protected:
     QLabel* inputParametersLabel_ = nullptr;
     bool editPanelHeightUserAdjusted_=false;
     QTreeView* parameterTreeView_;
+    // sits between model_ and parameterTreeView_ to hide filtered parameters
+    IQHierarchicalDataFilterProxyModel* treeFilterModel_;
     QWidget *inputContents_;
 
     ParameterSetDisplay* display_;
@@ -116,6 +119,12 @@ protected:
      * unless the user has adjusted it manually
      */
     void adjustEditPanelHeight();
+
+    /**
+     * @brief expandParameterTree
+     * restore the default expansion state of the parameter tree
+     */
+    void expandParameterTree();
 
 public:
 
@@ -189,6 +198,14 @@ public:
 
     inline QAbstractItemModel* model() const { return model_; }
 
+    /**
+     * @brief setParameterFilter
+     * hide all parameters (and their children) in the parameter tree,
+     * whose paths match the filter
+     */
+    void setParameterFilter(const insight::hierarchicalData::Filter& filter);
+    const insight::hierarchicalData::Filter& parameterFilter() const;
+
     bool hasViewer() const;
     CADViewer *viewer() const;
     inline ParameterSetDisplay* display()
@@ -226,6 +243,19 @@ public Q_SLOTS:
 Q_SIGNALS:
     void parameterSetChanged();
     void updateSupplementedInputData(std::shared_ptr<insight::supplementedInputDataBase> sid);
+
+    /**
+     * @brief inputDataPending
+     * the input data is being recomputed after a parameter change
+     */
+    void inputDataPending();
+
+    /**
+     * @brief inputDataIssuesChanged
+     * warnings and errors of the input data computed from the current parameters
+     */
+    void inputDataIssuesChanged(insight::InputDataIssueList issues);
+
     void adaptEditControlsLayout(QSize ns);
 };
 

@@ -5,6 +5,7 @@ namespace insight
 {
 
 IQFilteredResultSetModel::IQFilteredResultSetModel(QObject *parent)
+    : IQHierarchicalDataFilterProxyModel(parent)
 {}
 
 
@@ -19,20 +20,6 @@ IQResultElement *IQFilteredResultSetModel::getResultElement(const QModelIndex &i
     }
     return nullptr;
 }
-
-const hierarchicalData::Filter &IQFilteredResultSetModel::filter() const
-{
-    return filter_;
-}
-
-
-
-void IQFilteredResultSetModel::resetFilter(const hierarchicalData::Filter &filter)
-{
-    filter_=filter;
-    invalidateFilter();
-}
-
 
 // void IQFilteredResultSetModel::addChildren(
 //     const QModelIndex& pidx,
@@ -77,28 +64,5 @@ void IQFilteredResultSetModel::resetFilter(const hierarchicalData::Filter &filte
 //     return fr;
 // }
 
-
-bool IQFilteredResultSetModel::filterAcceptsRow(
-    int sourceRow,
-    const QModelIndex &sourceParent ) const
-{
-    if ( auto *rsm =
-        dynamic_cast<IQResultSetModel*>(sourceModel()) )
-    {
-        QModelIndex index0 = rsm->index(sourceRow, 0, sourceParent);
-
-        bool isDisplayed = !filter_.matches(
-            rsm->elementOfIndex(index0)->path() );
-
-        if ( sourceParent.isValid() )
-        {
-            QModelIndex pindex0 = rsm->parent(index0);
-            isDisplayed = isDisplayed
-                          && filterAcceptsRow(pindex0.row(), rsm->parent(pindex0));
-        }
-        return isDisplayed;
-    }
-    return true;
-}
 
 }

@@ -118,46 +118,139 @@ bool AnalysisForm::checkAnalysisExecutionPreconditions()
 
 
 
-void AnalysisForm::clearWarnings()
+bool AnalysisForm::inputDataHasErrors() const
 {
-    collectedWarnings_.clear();
-    insight::WarningDispatcher::getCurrent().clear();
-    warningBtn_->hide();
-    if (warningListWidget_)
-        warningListWidget_->clear();
+    if (inputDataPending_) return false;
+    return std::any_of(
+        inputDataIssues_.begin(), inputDataIssues_.end(),
+        [](const insight::InputDataIssue& i)
+        { return i.severity==insight::InputDataIssue::Error; } );
 }
 
 
-void AnalysisForm::onShowWarningDialog()
+insight::InputDataIssueList AnalysisForm::allIssues() const
 {
-    if (warningDialog_)
+    auto r = inputDataPending_ ? insight::InputDataIssueList() : inputDataIssues_;
+    r.insert(r.end(), otherIssues_.begin(), otherIssues_.end());
+    return r;
+}
+
+
+void AnalysisForm::updateRunAvailability()
+{
+    bool runPossible = !currentWorkbenchAction_ && !inputDataHasErrors();
+    ui->btnRun->setEnabled(runPossible);
+    if (act_run_) act_run_->setEnabled(runPossible);
+}
+
+
+void AnalysisForm::updateIssueIndication()
+{
+    auto issues = allIssues();
+
+    // traffic light
+    if (trafficLight_)
     {
-        warningDialog_->raise();
-        warningDialog_->activateWindow();
+        if (inputDataPending_)
+        {
+            trafficLight_->setState(IQTrafficLight::Unknown);
+            trafficLight_->setToolTip(tr("Checking input data..."));
+        }
+        else if (inputDataHasErrors())
+        {
+            trafficLight_->setState(IQTrafficLight::Red);
+            trafficLight_->setToolTip(tr("The input data contains errors. The analysis cannot be run."));
+        }
+        else if (!issues.empty())
+        {
+            trafficLight_->setState(IQTrafficLight::Yellow);
+            trafficLight_->setToolTip(tr("There are warnings. Please review."));
+        }
+        else
+        {
+            trafficLight_->setState(IQTrafficLight::Green);
+            trafficLight_->setToolTip(tr("Input data ok"));
+        }
+    }
+
+    // review button
+    if (btnReview_)
+        btnReview_->setVisible(!issues.empty());
+
+    // review dialog, if open
+    if (issueListWidget_)
+    {
+        issueListWidget_->clear();
+        for (const auto& i: issues)
+        {
+            auto *item = new QListWidgetItem(
+                style()->standardIcon(
+                    i.severity==insight::InputDataIssue::Error ?
+                        QStyle::SP_MessageBoxCritical : QStyle::SP_MessageBoxWarning ),
+                QString::fromStdString(i.source+": "+i.message),
+                issueListWidget_ );
+            item->setToolTip(QString::fromStdString(i.message));
+        }
+    }
+
+    updateRunAvailability();
+}
+
+
+void AnalysisForm::clearOtherIssues()
+{
+    otherIssues_.clear();
+    insight::WarningDispatcher::getCurrent().clear();
+    updateIssueIndication();
+}
+
+
+void AnalysisForm::onInputDataPending()
+{
+    inputDataPending_=true;
+    inputDataIssues_.clear();
+    otherIssues_.clear();
+    updateIssueIndication();
+}
+
+
+void AnalysisForm::onInputDataIssuesChanged(insight::InputDataIssueList issues)
+{
+    inputDataPending_=false;
+    inputDataIssues_=issues;
+    updateIssueIndication();
+}
+
+
+void AnalysisForm::onReviewIssues()
+{
+    if (issueDialog_)
+    {
+        issueDialog_->raise();
+        issueDialog_->activateWindow();
         return;
     }
 
     auto *dlg = new QDialog(this);
-    warningDialog_ = dlg;
-    dlg->setWindowTitle(tr("Computation Warnings"));
+    issueDialog_ = dlg;
+    dlg->setWindowTitle(tr("Warnings and Errors"));
     dlg->setAttribute(Qt::WA_DeleteOnClose);
-    dlg->resize(600, 300);
+    dlg->resize(700, 350);
 
     auto *layout = new QVBoxLayout(dlg);
-    warningListWidget_ = new QListWidget(dlg);
-    warningListWidget_->setWordWrap(true);
-    for (const auto& w : collectedWarnings_)
-        warningListWidget_->addItem(w);
-    layout->addWidget(warningListWidget_);
+    issueListWidget_ = new QListWidget(dlg);
+    issueListWidget_->setWordWrap(true);
+    layout->addWidget(issueListWidget_);
 
     auto *btnBox = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
     connect(btnBox, &QDialogButtonBox::rejected, dlg, &QDialog::close);
     layout->addWidget(btnBox);
 
     connect(dlg, &QDialog::destroyed, this, [this]() {
-        warningListWidget_ = nullptr;
+        issueListWidget_ = nullptr;
     });
 
+    updateIssueIndication(); // fills the list
     dlg->show();
 }
 
@@ -170,10 +263,13 @@ void AnalysisForm::onRunAnalysis()
   if (currentWorkbenchAction_)
     throw insight::Exception(_("Internal error: there is an action running currently!"));
 
+  if (inputDataHasErrors())
+    return; // red light: run is not possible
+
   if (!checkAnalysisExecutionPreconditions())
     return;
 
-  clearWarnings();
+  clearOtherIssues();
 
   if (remoteExecutionConfiguration())
   {

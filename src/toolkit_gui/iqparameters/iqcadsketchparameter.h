@@ -27,6 +27,11 @@ public:
 
     void populateContextMenu(QMenu* m, IQCADModel3DViewer *viewer) override;
 
+    /**
+     * opens the sketch editor
+     */
+    bool activate(IQCADModel3DViewer *viewer) override;
+
     void edit(IQCADModel3DViewer *viewer);
 };
 

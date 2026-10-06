@@ -61,6 +61,7 @@ add_library(toolkit SHARED
     base/globalconfiguration.h base/globalconfiguration.cpp
     base/externalprograms.h base/externalprograms.cpp
     base/supplementedinputdata.cpp base/supplementedinputdata.h
+    base/supplementedquantity.cpp base/supplementedquantity.h
     base/analysis.cpp base/analysis.h
     base/analysislibrary.cpp base/analysislibrary.h
     base/analysisparameterpropositions.h base/analysisparameterpropositions.cpp
@@ -184,6 +185,8 @@ add_library(toolkit SHARED
     base/resultelements/fastgnuplotrenderer.h base/resultelements/fastgnuplotrenderer.cpp
     base/resultelements/contourchart.cpp base/resultelements/contourchart.h
     base/hierarchicaldatafilter.h base/hierarchicaldatafilter.cpp
+    base/analysistypehierarchy.h base/analysistypehierarchy.cpp
+    base/predefinedfilters.h base/predefinedfilters.cpp
     base/propertylibrary.h base/propertylibrary.cpp
     base/materialslibrary.h base/materialslibrary.cpp
     base/zipfile.h base/zipfile.cpp

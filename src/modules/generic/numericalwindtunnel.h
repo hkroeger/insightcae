@@ -211,19 +211,34 @@ eval = set
           const boost::filesystem::path& workDir,
           ActionProgress& progress );
 
-    std::map<std::string,cad::FeaturePtr> geometry_;
-    gp_Trsf cad_to_cfd_;
-    double Lupstream_;
-    double Ldownstream_;
-    double Hdom_, Lup_, Ldown_;
-    double Laside_;
-    double Lref_, l_, w_, hup_, dlo_;
+    /**
+     * an object, rotated into the wind tunnel CS
+     */
+    struct TransformedObject
+    {
+        cad::FeaturePtr geometry; // includes attitude change
+        arma::mat bb; // bounding box without attitude change
+        arma::mat bbAtt; // bounding box with attitude change
+    };
 
-    arma::mat PiM_;
+    std::map<std::string, Supplemented<TransformedObject> > transformedObjects_;
+
+    /**
+     * objects in their final location in the wind tunnel
+     */
+    Supplemented<std::map<std::string,cad::FeaturePtr> > geometry_;
+    gp_Trsf cad_to_cfd_;
+    Supplemented<double> Lupstream_;
+    Supplemented<double> Ldownstream_;
+    Supplemented<double> Hdom_, Lup_, Ldown_;
+    Supplemented<double> Laside_;
+    Supplemented<double> Lref_, l_, w_, hup_, dlo_;
+
+    Supplemented<arma::mat> PiM_;
 
     const std::string FOname_allObjects;
 
-    std::shared_ptr<bmd::blockMeshBlocking> blocking;
+    Supplemented<std::shared_ptr<bmd::blockMeshBlocking> > blocking;
   };
 
   addParameterMembers_SupplementedInputData(NumericalWindtunnel::Parameters);

@@ -166,7 +166,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm, ProgressDisplaye
   }
 
 
-  shm_cfg.PiM.push_back(sp().PiM_);
+  shm_cfg.PiM.push_back(*sp().PiM_);
 
   shm_cfg
   .set_tlayer ( p().mesh.tlayer )
@@ -212,7 +212,7 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm, ProgressDisplaye
       std::string ppat="\""+g.first+".*\"";
       patchList.push_back(ppat);
 
-      if (sp().geometry_.size()>1)
+      if (sp().geometry_->size()>1)
       {
           cm.insert(new forces(
               cm, forces::Parameters()

@@ -89,6 +89,31 @@ protected:
     boost::filesystem::path workDir_;
     ProgressDisplayer& progress_;
 
+    typedef std::vector<std::pair<std::string,std::exception_ptr> > ErrorList;
+
+private:
+    mutable boost::mutex errorsMutex_;
+    /**
+     * @brief errors_
+     * errors in individual visualization steps or entities,
+     * which did not stop the remaining visualization
+     */
+    ErrorList errors_;
+
+protected:
+    void recordError(const std::string& label, std::exception_ptr ex);
+    void clearErrors();
+    ErrorList errors() const;
+
+    /**
+     * @brief aggregatedError
+     * @return
+     * a single exception, which describes all recorded errors.
+     * Null, if there were no errors.
+     */
+    std::exception_ptr aggregatedError(
+        const ErrorList& inputDataErrors = ErrorList() ) const;
+
 
 public:
     /**
@@ -165,11 +190,33 @@ public:
         insight::cad::PostprocActionPtr ppa,
         bool visible = true );
 
+    /**
+     * @brief step
+     * executes a part of the visualization.
+     * If it fails, the error is recorded and reported at the end of the visualization,
+     * but the visualization continues with the next step.
+     * Should be used in recreateVisualizationElements to separate independent parts, e.g.
+     *
+     *   step("domain", [&]() { ... addFeature(...); } );
+     *
+     * @param label
+     * name of the step for error reporting
+     */
+    void step(const std::string& label, std::function<void()> f);
+
 
 Q_SIGNALS:
     void visualizationCalculationFinished(bool success);
     void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
     void visualizationComputationError(std::exception_ptr ex);
+
+    /**
+     * @brief inputDataIssuesChanged
+     * emitted once at the end of a (not cancelled) computation:
+     * all warnings and errors, which occurred while processing the input data
+     * (and warnings of the visualization itself).
+     */
+    void inputDataIssuesChanged(insight::InputDataIssueList issues);
 
     /**
      * @brief computationThreadEnded
@@ -285,6 +332,22 @@ protected:
 
   std::shared_ptr<supplementedInputDataBase> sid_;
 
+  /**
+   * @brief sidError_
+   * the error, which prevented the creation of the supplemented input data, if any
+   */
+  std::exception_ptr sidError_;
+
+  /**
+   * @brief sidBase
+   * access the supplemented input data.
+   * Throws, if the supplemented input data could not be created.
+   */
+  const supplementedInputDataBase& sidBase() const;
+
+  mutable boost::mutex typedParametersMutex_;
+  mutable std::unique_ptr<ParametersBase> typedParameters_;
+
   mutable boost::atomic<Status> status_;
   mutable boost::atomic<bool> success_;
   boost::atomic<bool> cancelled_;
@@ -330,6 +393,27 @@ public:
 
   virtual std::shared_ptr<supplementedInputDataBase> computeSupplementedInput() = 0;
 
+  /**
+   * @brief parametersAs
+   * the parameters in their typed (PDL generated) form.
+   * Taken from the supplemented input data, if available.
+   * Otherwise created from the parameter snapshot.
+   * Hence also available, if the supplemented input data could not be computed.
+   */
+  template<class P>
+  const P& parametersAs() const
+  {
+      if (auto *sidp = dynamic_cast<const supplementedInputDataFromParameters*>(sid_.get()))
+      {
+          if (auto *pp = dynamic_cast<const P*>(sidp->baseParametersPtr()))
+              return *pp;
+      }
+      boost::mutex::scoped_lock lck(typedParametersMutex_);
+      if (!typedParameters_)
+          typedParameters_ = std::make_unique<P>(parameters());
+      return dynamic_cast<const P&>(*typedParameters_);
+  }
+
   virtual void recreateVisualizationElements();
 };
 
@@ -367,12 +451,12 @@ public:
     {
         return dynamic_cast<
             const typename AnalysisInstance::supplementedInputData&>(
-            *this->sid_ );
+            this->sidBase() );
     }
 
     const Parameters& p() const
     {
-        return sp().p();
+        return this->template parametersAs<Parameters>();
     }
 };
 
@@ -401,12 +485,16 @@ public:
     {
         return dynamic_cast<
             const typename AnalysisInstance::supplementedInputData&>(
-                *this->sid_ );
+                this->sidBase() );
     }
 
+    /**
+     * @brief p
+     * the parameters. Available also, if the supplemented input data could not be created.
+     */
     const Parameters& p() const
     {
-        return sp().p();
+        return this->template parametersAs<Parameters>();
     }
 };
 

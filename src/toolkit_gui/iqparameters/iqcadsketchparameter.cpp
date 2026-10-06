@@ -121,6 +121,19 @@ void IQCADSketchParameter::populateContextMenu(QMenu *cm, IQCADModel3DViewer *vi
 
 
 
+bool IQCADSketchParameter::activate(IQCADModel3DViewer *viewer)
+{
+    if (viewer)
+    {
+        edit(viewer);
+        return true;
+    }
+    return false;
+}
+
+
+
+
 void IQCADSketchParameter::edit(IQCADModel3DViewer *viewer)
 {
     if (auto editctrl = viewer->editSketchParameter(

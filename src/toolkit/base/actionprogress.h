@@ -3,6 +3,8 @@
 
 
 #include <set>
+#include <mutex>
+#include <atomic>
 
 #include "boost/signals2.hpp"
 #include "boost/smart_ptr/enable_shared_from_this.hpp"
@@ -28,7 +30,17 @@ public:
 protected:
     // action status
     boost::variant<ProgressDisplayer*,ActionProgressPtr> parent_;
+
+    mutable std::mutex childrenMutex_; ///< guards children_: children may be forked from different threads
     std::set<ActionProgress*> children_;
+
+    /**
+     * the action is registered in its parent and displayed only after it was started.
+     * Lazy actions (see forkNewLazyAction) are started on their first progress report.
+     */
+    std::atomic<bool> started_{false};
+    std::recursive_mutex startMutex_;
+    bool starting_ = false;
 
     std::string name_; ///< label of this action
     double ci_=0.; ///< current action index
@@ -44,6 +56,13 @@ protected:
 
     void startAction();
 
+    /**
+     * @brief ensureStarted
+     * starts this action (and its parents), if not yet done:
+     * registers it in its parent and creates its display.
+     */
+    void ensureStarted();
+
     ActionProgress(
         ProgressDisplayer* parent,
         std::string name,
@@ -52,13 +71,24 @@ protected:
     ActionProgress(
         ActionProgressPtr parentAction,
         std::string name,
-        double nSteps );
+        double nSteps,
+        bool startImmediately = true );
 
 public:
     virtual ~ActionProgress();
 
     ActionProgressPtr forkNewAction(
         double nSteps, const std::string& name = "Overall" );
+
+    /**
+     * @brief forkNewLazyAction
+     * creates a child action, which is not displayed until
+     * it reports progress for the first time (stepUp, stepTo, message,
+     * or forking a child of its own).
+     * Unused lazy actions leave no trace in the display.
+     */
+    ActionProgressPtr forkNewLazyAction(
+        double nSteps, const std::string& name );
 
     const std::string& name() const;
 

@@ -172,6 +172,7 @@ add_library(toolkit_gui SHARED
        iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
        iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
+       iqtrafficlight.h iqtrafficlight.cpp
 
        iqremoteservereditdialog.h
        iqremoteservereditdialog.cpp
@@ -229,6 +230,7 @@ add_library(toolkit_gui SHARED
        qactionprogressdisplayerwidget.cpp qactionprogressdisplayerwidget.h
 
        iqresultsetmodel.cpp iqresultsetmodel.h
+       iqhierarchicaldatafilterproxymodel.h iqhierarchicaldatafilterproxymodel.cpp
        iqfilteredresultsetmodel.h iqfilteredresultsetmodel.cpp
        qresultelements/qcomment.cpp qresultelements/qcomment.h
        qresultelements/qimage.cpp qresultelements/qimage.h

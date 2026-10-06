@@ -74,6 +74,135 @@ void CADParameterSetVisualizerGenerator::cancelAndDeleteLater()
     }
 }
 
+namespace {
+
+/**
+ * the current exception as exception_ptr.
+ * Exceptions, which are not derived from std::exception, are converted.
+ */
+std::exception_ptr currentExceptionPtr()
+{
+    try { throw; }
+    catch (std::exception&)
+    {
+        return std::current_exception();
+    }
+    catch (...)
+    {
+        auto errdesc = insight::describeCurrentException();
+
+        std::ostringstream os;
+        os
+            << *(errdesc) << "\n"
+            << errdesc->errorDetails_;
+        return std::make_exception_ptr(
+            insight::Exception("%s", os.str().c_str()));
+    }
+}
+
+}
+
+
+
+
+void CADParameterSetVisualizerGenerator::recordError(
+    const std::string& label, std::exception_ptr ex)
+{
+    boost::mutex::scoped_lock lck(errorsMutex_);
+    errors_.push_back({label, ex});
+}
+
+
+
+
+void CADParameterSetVisualizerGenerator::clearErrors()
+{
+    boost::mutex::scoped_lock lck(errorsMutex_);
+    errors_.clear();
+}
+
+
+
+
+CADParameterSetVisualizerGenerator::ErrorList
+CADParameterSetVisualizerGenerator::errors() const
+{
+    boost::mutex::scoped_lock lck(errorsMutex_);
+    return errors_;
+}
+
+
+
+
+std::exception_ptr CADParameterSetVisualizerGenerator::aggregatedError(
+    const ErrorList& inputDataErrors ) const
+{
+    auto visErrors=errors();
+
+    if (inputDataErrors.empty() && visErrors.empty())
+        return nullptr;
+
+    std::ostringstream os;
+    os << "The visualization is incomplete.\n";
+
+    if (!inputDataErrors.empty())
+    {
+        os << "\nThe input data could not be processed completely:\n";
+        for (const auto& e: inputDataErrors)
+            os << " * " << e.first << ": " << describeException(e.second) << "\n";
+    }
+
+    if (!visErrors.empty())
+    {
+        os << "\nThe following parts could not be visualized:\n";
+        for (const auto& e: visErrors)
+        {
+            os << " * " << e.first << ": ";
+            try
+            {
+                std::rethrow_exception(e.second);
+            }
+            catch (const SupplementedQuantityError& sqe)
+            {
+                os << "requires \"" << sqe.rootQuantity() << "\", which is unavailable";
+            }
+            catch (...)
+            {
+                os << describeException(e.second);
+            }
+            os << "\n";
+        }
+    }
+
+    return std::make_exception_ptr(
+        insight::Exception("%s", os.str().c_str()) );
+}
+
+
+
+
+void CADParameterSetVisualizerGenerator::step(
+    const std::string& label,
+    std::function<void()> f )
+{
+    try
+    {
+        CurrentExceptionContext ec("visualization step "+label);
+        f();
+    }
+    catch (const boost::thread_interrupted&)
+    {
+        throw;
+    }
+    catch (...)
+    {
+        recordError(label, currentExceptionPtr());
+    }
+}
+
+
+
+
 void CADParameterSetVisualizerGenerator::addPoint(
     const std::string& name,
     const arma::mat& p,
@@ -112,11 +241,24 @@ void CADParameterSetVisualizerGenerator::addFeature(
   // cancellation point: visualizers call this frequently from the background thread
   boost::this_thread::interruption_point();
   CurrentExceptionContext ec(GUIEvents, "adding visualizer feature "+name);
-  if (!feat->hasTriangulation()) // tesselate here, if needed. Will happen in GUI thread otherwise
+  try
   {
-      insight::CurrentExceptionContext ex(
-          str(boost::format("pre-tesselating feature %s")%name));
-      feat->createTriangulation();
+      if (!feat->hasTriangulation()) // tesselate here, if needed. Will happen in GUI thread otherwise
+      {
+          insight::CurrentExceptionContext ex(
+              str(boost::format("pre-tesselating feature %s")%name));
+          feat->createTriangulation();
+      }
+  }
+  catch (const boost::thread_interrupted&)
+  {
+      throw;
+  }
+  catch (...)
+  {
+      // skip this feature, but continue with the remaining visualization
+      recordError(name, currentExceptionPtr());
+      return;
   }
   Q_EMIT createdFeature( QString::fromStdString(name), feat, true, fvs );
 }
@@ -228,6 +370,24 @@ void CADParameterSetModelVisualizer::recreateVisualizationElements()
 
 
 
+const supplementedInputDataBase& CADParameterSetModelVisualizer::sidBase() const
+{
+    if (!sid_)
+    {
+        if (sidError_)
+            throw insight::Exception(
+                "the supplemented input data is unavailable: %s",
+                describeException(sidError_).c_str() );
+        else
+            throw insight::Exception(
+                "the supplemented input data is unavailable" );
+    }
+    return *sid_;
+}
+
+
+
+
 const ParameterSet &CADParameterSetModelVisualizer::parameters() const
 {
     if (paramSnapshot_)
@@ -302,11 +462,54 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
             WarningDispatcher::getCurrent().setSuperDispatcher(mainThreadWD);
 
             CurrentExceptionContext ex("computing visualization of scheduled parameter set");
+            clearErrors();
+
+            // warnings of this computation (only accessed from this thread)
+            std::vector<std::string> sidConstructionWarnings, visualizationWarnings;
+
+            auto collectIssues = [&]()
+            {
+                InputDataIssueList issues;
+                if (sid_)
+                {
+                    issues=sid_->issues();
+                }
+                else
+                {
+                    for (const auto& w: sidConstructionWarnings)
+                        issues.push_back({InputDataIssue::Warning, "input data", w});
+                    if (sidError_)
+                        issues.push_back({InputDataIssue::Error, "input data", describeException(sidError_)});
+                }
+                for (const auto& w: visualizationWarnings)
+                    issues.push_back({InputDataIssue::Warning, "visualization", w});
+                return issues;
+            };
+
             try
             {
-                CurrentExceptionContext ex("recreate visualization elements");
+                // 1. supplemented input data.
+                // Errors in here do not prevent the (partial) visualization.
+                std::shared_ptr<supplementedInputDataBase> sid;
+                try
+                {
+                    CurrentExceptionContext ex("computing supplemented input data");
+                    ScopedWarningRecorder rec(
+                        [&](const insight::Exception& w)
+                        { sidConstructionWarnings.push_back(w.message()); } );
+                    sid=computeSupplementedInput();
+                }
+                catch (const boost::thread_interrupted&)
+                {
+                    throw;
+                }
+                catch (...)
+                {
+                    if (cancelled_) throw boost::thread_interrupted();
+                    sidError_=currentExceptionPtr();
+                }
 
-                if (auto sid=computeSupplementedInput())
+                if (sid)
                 {
                     // the supplemented input data refers to the parameter snapshot
                     // by raw pointer: keep the snapshot alive as long as the sid
@@ -314,19 +517,61 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                     sid_=supplementedInputDataBasePtr(
                         sid.get(), [sid,snap](supplementedInputDataBase*) {} );
 
+                    for (const auto& w: sidConstructionWarnings)
+                        sid_->recordWarning("input data", w);
+
+                    // compute all deferred quantities in parallel.
+                    // The visualization waits only for those, which it needs.
+                    sid_->launchAll(
+                        progress_.forkNewAction(1, "Computing input data") );
+
                     boost::this_thread::interruption_point();
                     if (!cancelled_)
                         Q_EMIT updateSupplementedInputData( sid_ );
                 }
 
+                // 2. visualization. Parts which fail are skipped.
                 boost::this_thread::interruption_point();
-                recreateVisualizationElements();
+                step("visualization", [&]()
+                {
+                    ScopedWarningRecorder rec(
+                        [&](const insight::Exception& w)
+                        { visualizationWarnings.push_back(w.message()); } );
+                    recreateVisualizationElements();
+                } );
                 boost::this_thread::interruption_point();
 
-                success_=true;
+                // 3. complete the deferred quantities, which are not needed for the visualization
+                ErrorList inputDataErrors;
+                if (sid_)
+                {
+                    sid_->computeAll();
+                    boost::this_thread::interruption_point();
+
+                    inputDataErrors=sid_->rootErrors();
+                    if (inputDataErrors.empty())
+                        inputDataErrors=sid_->errors();
+
+                    // update the table: now including the results of all quantities
+                    if (!cancelled_)
+                        Q_EMIT updateSupplementedInputData( sid_ );
+                }
+                else if (sidError_)
+                {
+                    inputDataErrors.push_back({"input data", sidError_});
+                }
+
+                auto err=aggregatedError(inputDataErrors);
+                success_=!err;
                 status_=Finished;
                 if (!cancelled_)
-                    Q_EMIT visualizationCalculationFinished(success_);
+                {
+                    Q_EMIT inputDataIssuesChanged(collectIssues());
+                    if (err)
+                        Q_EMIT visualizationComputationError(err);
+                    else
+                        Q_EMIT visualizationCalculationFinished(success_);
+                }
             }
             catch (const boost::thread_interrupted&)
             {
@@ -343,27 +588,16 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                 else
                 {
                     status_=Finished;
-
-                    std::exception_ptr exptr;
-                    try { throw; }
-                    catch (std::exception&)
-                    {
-                        exptr=std::current_exception();
-                    }
-                    catch (...)
-                    {
-                        auto errdesc = insight::describeCurrentException();
-
-                        std::ostringstream os;
-                        os
-                            << *(errdesc) << "\n"
-                            << errdesc->errorDetails_;
-                        exptr=std::make_exception_ptr(
-                            insight::Exception(os.str()));
-                    }
+                    auto exptr=currentExceptionPtr();
+                    Q_EMIT inputDataIssuesChanged(collectIssues());
                     Q_EMIT visualizationComputationError(exptr);
                 }
             }
+
+            // never leave background computations behind:
+            // they access the sid, which might be deleted after the thread has ended
+            if (sid_)
+                sid_->cancelDeferredComputations();
 
             threadActive_=false;
             Q_EMIT computationThreadEnded();

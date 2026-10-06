@@ -28,6 +28,7 @@
 #include "base/parameterset.h"
 #include "base/factory.h"
 #include "base/resultset.h"
+#include "base/analysistypehierarchy.h"
 #include "base/analysisstepcontrol.h"
 #include "base/operatingsystem.h"
 #include "boost/chrono/duration.hpp"
@@ -150,6 +151,8 @@ public:
                 Analysis,
                 DescriptionFunctions, descriptions,
                 AnalysisInstance,  &AnalysisInstance::description);
+
+            AnalysisTypeHierarchy::global().registerType<AnalysisInstance>();
         }
     };
 

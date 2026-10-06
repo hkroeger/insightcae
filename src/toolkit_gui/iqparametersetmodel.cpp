@@ -10,6 +10,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QTreeView>
+#include <QMouseEvent>
 #include <QVBoxLayout>
 #include <sstream>
 #include <boost/algorithm/string/predicate.hpp>
@@ -168,6 +169,60 @@ void IQParameterSetModel::paste(const QModelIndexList &indexes)
     std::string xml = mimeData->data("application/xml").toStdString();
     std::istringstream is(xml);
     elem->readFromStream(is);
+}
+
+
+
+
+namespace {
+
+class ActivationOnDoubleClickFilter
+    : public QObject
+{
+    QAbstractItemView* view_;
+    std::function<IQCADModel3DViewer*()> viewer_;
+
+public:
+    ActivationOnDoubleClickFilter(
+        QAbstractItemView* view,
+        std::function<IQCADModel3DViewer*()> viewer )
+        : QObject(view), view_(view), viewer_(viewer)
+    {}
+
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if ( event->type()==QEvent::MouseButtonDblClick
+            && watched==view_->viewport() )
+        {
+            auto *me = static_cast<QMouseEvent*>(event);
+            if (me->button()==Qt::LeftButton)
+            {
+                auto idx = view_->indexAt(me->pos());
+                if (idx.isValid())
+                {
+                    if (auto *p = IQParameterSetModel::parameterFromIndex(idx))
+                    {
+                        if (p->activate(viewer_ ? viewer_() : nullptr))
+                            return true; // handled: no expand/collapse, no inline editor
+                    }
+                }
+            }
+        }
+        return QObject::eventFilter(watched, event);
+    }
+};
+
+}
+
+
+
+
+void IQParameterSetModel::enableActivationOnDoubleClick(
+    QAbstractItemView *view,
+    std::function<IQCADModel3DViewer *()> viewer )
+{
+    view->viewport()->installEventFilter(
+        new ActivationOnDoubleClickFilter(view, viewer) );
 }
 
 
@@ -340,10 +395,9 @@ const insight::ParameterSet *IQParameterSetModel::defaultParameterSet() const
 
 IQParameter *IQParameterSetModel::parameterFromIndex(const QModelIndex &index)
 {
-  return static_cast<IQParameter*>(
-      index.siblingAtColumn(IQParameterSetModel::iqParamCol)
-          .data()
-          .value<void*>() );
+  // the view might show the model through proxy models
+  return dynamic_cast<IQParameter*>(
+      IQHierarchicalDataModel::wrapperFromIndex(index) );
 }
 
 

@@ -61,6 +61,7 @@
 
 
 #include "iqsupplementedinputdatamodel.h"
+#include "iqtrafficlight.h"
 #include "iqremoteparaviewdialog.h"
 #include "iqparaviewdialog.h"
 #include "iqexecutionworkspace.h"
@@ -111,6 +112,7 @@ protected:
   // ====================================================================================
   // ======== Analysis-related members
 
+  std::string analysisName_;
   bool isOpenFOAMAnalysis_;
   insight::supplementedInputDataBasePtr sid_;
 
@@ -127,11 +129,50 @@ protected:
   LogViewerWidget *log_;
 
   QProgressBar* progressbar_;
-  QToolButton* warningBtn_ = nullptr;
-  QStringList collectedWarnings_;
-  QPointer<QDialog> warningDialog_;
-  QListWidget* warningListWidget_ = nullptr;
+
+  // ====================================================================================
+  // ======== indication of warnings and errors
+
+  IQTrafficLight* trafficLight_ = nullptr;
+  QToolButton* btnReview_ = nullptr;
+  QPointer<QAction> act_run_;
+
+  /**
+   * @brief inputDataPending_
+   * true, while the input data is (re-)computed after a parameter change
+   */
+  bool inputDataPending_ = true;
+
+  /**
+   * @brief inputDataIssues_
+   * warnings and errors of the input data computed from the current parameters
+   */
+  insight::InputDataIssueList inputDataIssues_;
+
+  /**
+   * @brief otherIssues_
+   * warnings, which occurred outside of the input data processing (e.g. during runs)
+   */
+  insight::InputDataIssueList otherIssues_;
+
+  QPointer<QDialog> issueDialog_;
+  QListWidget* issueListWidget_ = nullptr;
   int warningCallbackId_ = -1;
+
+  bool inputDataHasErrors() const;
+  insight::InputDataIssueList allIssues() const;
+
+  /**
+   * @brief updateIssueIndication
+   * update traffic light, review button, issue dialog and run availability
+   */
+  void updateIssueIndication();
+
+  /**
+   * @brief updateRunAvailability
+   * run is possible, if no action is running and the input data has no errors
+   */
+  void updateRunAvailability();
 
   IQGraphProgressDisplayer *graphProgress_;
   insight::IQActionProgressDisplayManager* actionProgress_;
@@ -303,9 +344,11 @@ private Q_SLOTS:
   void onStartPVRemote();
 
   void onCleanOFC();
-  void onShowWarningDialog();
+  void onReviewIssues();
 
-  void clearWarnings();
+  void clearOtherIssues();
+  void onInputDataPending();
+  void onInputDataIssuesChanged(insight::InputDataIssueList issues);
   void onWnow();
   void onWnowAndStop();
   void onShell();

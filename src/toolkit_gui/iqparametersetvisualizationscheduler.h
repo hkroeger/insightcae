@@ -86,7 +86,7 @@ public:
      * @return
      * the supplemented input data, which was computed from the current parameters,
      * if the scheduler is idle. Null, if a computation is pending/running
-     * or no supplemented input data could be computed.
+     * or the supplemented input data could not be computed completely.
      */
     supplementedInputDataBasePtr upToDateSupplementedInputData() const;
 
@@ -94,6 +94,19 @@ Q_SIGNALS:
     void visualizationCalculationFinished(bool success);
     void updateSupplementedInputData(insight::supplementedInputDataBasePtr sid);
     void visualizationComputationError(std::exception_ptr ex);
+
+    /**
+     * @brief inputDataPending
+     * the parameters have changed: the previously reported issues are obsolete,
+     * new input data is going to be computed.
+     */
+    void inputDataPending();
+
+    /**
+     * @brief inputDataIssuesChanged
+     * the warnings and errors of the input data computed from the current parameters
+     */
+    void inputDataIssuesChanged(insight::InputDataIssueList issues);
 };
 
 

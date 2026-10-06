@@ -46,6 +46,8 @@ namespace
 
 const std::string valuePath = "ap/0";
 const double throwingValue = -1.;
+const double throwingDeferredValue = -2.;
+const double warningValue = -3.;
 const int nFiller = 5;
 
 
@@ -99,6 +101,44 @@ std::string parityName(double x)
 
 
 
+/**
+ * supplemented input data with deferred quantities,
+ * one of which fails for the sentinel value throwingDeferredValue
+ */
+struct ProbeSID
+    : public supplementedInputDataBase
+{
+    Supplemented<double> fine_, broken_, warned_;
+
+    ProbeSID(
+        ParameterSetInput&& ip,
+        const boost::filesystem::path& wd,
+        ActionProgress& ap,
+        bool breakIt,
+        bool warn )
+        : supplementedInputDataBase(std::move(ip), wd, ap)
+    {
+        fine_ = deferred("fine", []() { return 1.; });
+        warned_ = deferred("warned", [warn]()
+        {
+            if (warn)
+                insight::Warning("probe warning in deferred quantity");
+            return 3.;
+        });
+        broken_ = deferred("broken", [breakIt]() -> double
+        {
+            if (breakIt)
+                throw insight::Exception("probe failure in deferred quantity");
+            return 2.;
+        });
+        reportSupplementQuantity("fine", fine_, "always computable");
+        reportSupplementQuantity("broken", broken_, "fails for sentinel value");
+    }
+};
+
+
+
+
 class ProbeVisualizer
     : public CADParameterSetModelVisualizer
 {
@@ -138,10 +178,12 @@ public:
             // no conversion into the static TestPDL::Parameters:
             // would require the property libraries (e.g. brake pads) to be installed.
             // The sid refers to the parameter snapshot, which must stay alive with it.
-            return std::make_shared<supplementedInputDataBase>(
+            return std::make_shared<ProbeSID>(
                 ParameterSetInput(this->parameters()),
                 this->workDir_,
-                *this->progress_.forkNewAction(99, "Process input data") );
+                *this->progress_.forkNewAction(99, "Process input data"),
+                x_==throwingDeferredValue,
+                x_==warningValue );
         }
         catch (const boost::thread_interrupted&)
         {
@@ -164,6 +206,15 @@ public:
                     boost::this_thread::sleep_for(boost::chrono::milliseconds(s));
                 addPoint("filler_"+std::to_string(i), vec3(x_, i, 0));
             }
+
+            // independent part, which fails for the sentinel value:
+            // must not prevent the visualization of the rest
+            step("deferred", [this]()
+            {
+                auto& sid = dynamic_cast<const ProbeSID&>(sidBase());
+                double v = sid.fine_ + sid.broken_;
+                (void)v;
+            });
 
             ++st_.completed;
             std::lock_guard<std::mutex> l(st_.m);
@@ -195,6 +246,9 @@ class CADParameterSetVisualizerScheduling
 
     int errors_ = 0;
     int finishedSignals_ = 0;
+    int pendingSignals_ = 0;
+    int issueSignals_ = 0;
+    InputDataIssueList lastIssues_;
     supplementedInputDataBasePtr lastSid_;
 
     // supplemented input data, which did not match the current parameters on arrival
@@ -300,6 +354,9 @@ private Q_SLOTS:
         finishedSignals_ = 0;
         staleSids_ = 0;
         lastSid_.reset();
+        pendingSignals_ = 0;
+        issueSignals_ = 0;
+        lastIssues_.clear();
         pTimeline_.clear();
 
         auto *st = st_.get();
@@ -324,6 +381,14 @@ private Q_SLOTS:
                 } );
         connect(sched_.get(), &IQParameterSetVisualizationScheduler::visualizationCalculationFinished,
                 this, [this](bool) { ++finishedSignals_; } );
+        connect(sched_.get(), &IQParameterSetVisualizationScheduler::inputDataPending,
+                this, [this]() { ++pendingSignals_; } );
+        connect(sched_.get(), &IQParameterSetVisualizationScheduler::inputDataIssuesChanged,
+                this, [this](InputDataIssueList issues)
+                {
+                    ++issueSignals_;
+                    lastIssues_=issues;
+                } );
         connect(sched_.get(), &IQParameterSetVisualizationScheduler::updateSupplementedInputData,
                 this, [this](supplementedInputDataBasePtr sid)
                 {
@@ -584,6 +649,98 @@ private Q_SLOTS:
         QCOMPARE(errors_, 1);
         verifyModelShows(5);
         verifyLastSid(5);
+    }
+
+    /**
+     * failure in the supplemented input data:
+     * the parts of the visualization, which do not depend on it, are shown nevertheless
+     */
+    void partialVisualizationOnInputDataError()
+    {
+        setValue(throwingValue);
+        waitIdle();
+        QCOMPARE(errors_, 1);
+        QCOMPARE(finishedSignals_, 0);
+        verifyModelShows(throwingValue);
+        QVERIFY(!lastSid_);
+        QVERIFY(!sched_->upToDateSupplementedInputData());
+    }
+
+    /**
+     * failure in a deferred quantity:
+     * the complete visualization is shown, the error is reported once,
+     * the sid is delivered (for the table) but never used for a run
+     */
+    void partialVisualizationOnDeferredError()
+    {
+        setValue(throwingDeferredValue);
+        waitIdle();
+        QCOMPARE(errors_, 1);
+        QCOMPARE(finishedSignals_, 0);
+        verifyModelShows(throwingDeferredValue);
+        verifyLastSid(throwingDeferredValue);
+        QVERIFY(!lastSid_->complete());
+        QCOMPARE(int(lastSid_->rootErrors().size()), 1);
+        QVERIFY(!sched_->upToDateSupplementedInputData());
+
+        auto t=lastSid_->reportedSupplementQuantities();
+        QVERIFY(boost::get<supplementedInputDataBase::ReportedError>(&t.at("broken").value));
+        QCOMPARE(boost::get<double>(t.at("fine").value), 1.);
+
+        // recovers
+        setValue(4);
+        waitIdle();
+        QCOMPARE(errors_, 1);
+        verifyModelShows(4);
+        verifyLastSid(4);
+        QVERIFY(lastSid_->complete());
+        QVERIFY(bool(sched_->upToDateSupplementedInputData()));
+    }
+
+    bool lastIssuesContain(InputDataIssue::Severity sev, const std::string& source) const
+    {
+        return std::any_of(
+            lastIssues_.begin(), lastIssues_.end(),
+            [&](const InputDataIssue& i) { return i.severity==sev && i.source==source; } );
+    }
+
+    /**
+     * warnings and errors of the input data are reported after each computation
+     * (basis of the traffic light in the workbench)
+     */
+    void inputDataIssuesReported()
+    {
+        // no issues
+        setValue(4);
+        waitIdle();
+        QVERIFY(pendingSignals_>=1);
+        QVERIFY(issueSignals_>=1);
+        QVERIFY(lastIssues_.empty());
+
+        // warning in a deferred quantity: run remains possible
+        int n=issueSignals_;
+        setValue(warningValue);
+        waitIdle();
+        QVERIFY(issueSignals_>n);
+        QCOMPARE(int(lastIssues_.size()), 1);
+        QVERIFY(lastIssuesContain(InputDataIssue::Warning, "warned"));
+        QVERIFY(bool(sched_->upToDateSupplementedInputData()));
+
+        // error in a deferred quantity
+        setValue(throwingDeferredValue);
+        waitIdle();
+        QVERIFY(lastIssuesContain(InputDataIssue::Error, "broken"));
+        QVERIFY(!sched_->upToDateSupplementedInputData());
+
+        // error during construction of the supplemented input data
+        setValue(throwingValue);
+        waitIdle();
+        QVERIFY(lastIssuesContain(InputDataIssue::Error, "input data"));
+
+        // recovers
+        setValue(6);
+        waitIdle();
+        QVERIFY(lastIssues_.empty());
     }
 
     /**

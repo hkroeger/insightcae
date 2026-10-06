@@ -46,7 +46,8 @@ IQParameterSetVisualizationScheduler::currentVisualizer() const
 supplementedInputDataBasePtr
 IQParameterSetVisualizationScheduler::upToDateSupplementedInputData() const
 {
-    if (isIdle())
+    // never hand out incomplete input data (e.g. for starting a run)
+    if (isIdle() && currentSid_ && currentSid_->complete())
         return currentSid_;
     return nullptr;
 }
@@ -86,6 +87,13 @@ QObject* IQParameterSetVisualizationScheduler::createDebouncedJob(quint64 id)
         {
             if (isCurrent(id))
                 Q_EMIT visualizationComputationError(ex);
+        });
+    connect(
+        viz, &CADParameterSetVisualizerGenerator::inputDataIssuesChanged,
+        this, [this,id](insight::InputDataIssueList issues)
+        {
+            if (isCurrent(id))
+                Q_EMIT inputDataIssuesChanged(issues);
         });
 
     // connected after the visualizers internal handler:
@@ -135,6 +143,7 @@ void IQParameterSetVisualizationScheduler::jobLaunchFailed(std::exception_ptr ex
 void IQParameterSetVisualizationScheduler::currentJobInvalidated()
 {
     currentSid_.reset();
+    Q_EMIT inputDataPending();
 }
 
 

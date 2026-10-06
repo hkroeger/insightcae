@@ -2,6 +2,7 @@
 
 #include "base/exceptionhandling.h"
 #include "base/progressdisplayer.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 
@@ -144,9 +145,11 @@ bool SupplementedQuantityError::isDependencyFailure() const
 
 SupplementedQuantityBase::SupplementedQuantityBase(
     const std::string& name,
-    ProgressSource progressSource )
+    ProgressSource progressSource,
+    IssueSink issueSink )
     : name_(name),
     progressSource_(progressSource),
+    issueSink_(issueSink),
     status_(Pending)
 {}
 
@@ -192,6 +195,14 @@ void SupplementedQuantityBase::execute()
     try
     {
         CurrentExceptionContext ec("computing supplemented quantity \""+name_+"\"");
+
+        // warnings issued during this computation belong to this quantity
+        ScopedWarningRecorder warnings(
+            [this](const insight::Exception& w)
+            {
+                if (issueSink_) issueSink_(name_, w.message());
+            } );
+
         ActionProgressPtr ap;
         if (progressSource_) ap=progressSource_(name_);
         if (!ap) ap=silentProgressDisplayer.forkNewAction(1, name_);

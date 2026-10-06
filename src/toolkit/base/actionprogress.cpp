@@ -48,6 +48,7 @@ ActionProgress* ActionProgress::getChildAction(
     auto firstElem=ep.front();
     ep.erase(ep.begin());
 
+    std::lock_guard<std::mutex> lock(childrenMutex_);
     auto i=std::find_if(
         children_.begin(), children_.end(),
         [firstElem](ActionProgress* ap)
@@ -67,7 +68,10 @@ ActionProgress* ActionProgress::getChildAction(
 void ActionProgress::startAction()
 {
     if (auto *pa=boost::get<ActionProgressPtr>(&parent_))
+    {
+        std::lock_guard<std::mutex> lock((*pa)->childrenMutex_);
         (*pa)->children_.insert(this);
+    }
     else
     {
         auto& pd = *boost::get<ProgressDisplayer*>(parent_);
@@ -92,15 +96,38 @@ ActionProgress::ActionProgress(
 
 
 
+void ActionProgress::ensureStarted()
+{
+    if (started_) return;
+
+    // recursive: startAction itself reports progress (re-entry from the same thread)
+    std::lock_guard<std::recursive_mutex> lock(startMutex_);
+    if (started_ || starting_) return;
+    starting_=true;
+
+    // the parent needs to be displayed before its children
+    if (auto *pa=boost::get<ActionProgressPtr>(&parent_))
+        (*pa)->ensureStarted();
+
+    startAction();
+
+    starting_=false;
+    started_=true;
+}
+
+
+
 ActionProgress::ActionProgress(
     ActionProgressPtr parentAction,
     std::string name,
-    double nSteps )
+    double nSteps,
+    bool startImmediately )
  : parent_(parentAction),
    name_(name),
     maxi_(nSteps)
 {
-    startAction();
+    if (startImmediately)
+        ensureStarted();
 }
 
 
@@ -108,10 +135,16 @@ ActionProgress::ActionProgress(
 
 ActionProgress::~ActionProgress()
 {
+    if (!started_)
+        return; // never displayed, not registered anywhere
+
     if (!skipFinishOnDestroy_)
         parentDisplayer().finishActionProgress(actionPath());
     if (auto *pa=boost::get<ActionProgressPtr>(&parent_))
+    {
+        std::lock_guard<std::mutex> lock((*pa)->childrenMutex_);
         (*pa)->children_.erase(this);
+    }
     else if (!skipFinishOnDestroy_)
     {
         // When the displayer is being destroyed it sets skipFinishOnDestroy_
@@ -137,7 +170,16 @@ ActionProgress::forkNewAction(
     double nSteps, const std::string& name )
 {
     return ActionProgressPtr(
-        new ActionProgress(shared_from_this(), name, nSteps));
+        new ActionProgress(shared_from_this(), name, nSteps, true));
+}
+
+
+ActionProgressPtr
+ActionProgress::forkNewLazyAction(
+    double nSteps, const std::string& name )
+{
+    return ActionProgressPtr(
+        new ActionProgress(shared_from_this(), name, nSteps, false));
 }
 
 const std::string &ActionProgress::name() const
@@ -160,6 +202,7 @@ void ActionProgress::stepUp(
 
 void ActionProgress::stepTo(double i)
 {
+    ensureStarted();
     ci_=std::min(maxi_,i);
     insight::dbg()<<actionPath()<<": progress "<<ci_<<"/"<<maxi_<<std::endl;
     parentDisplayer().setActionProgressValue(actionPath(), ci_/maxi_);
@@ -190,6 +233,7 @@ void ActionProgress::operator+=(double n)
 
 void ActionProgress::message(const std::string &message)
 {
+    ensureStarted();
     insight::dbg()<<actionPath()<<": "<<message<<std::endl;
     parentDisplayer().setMessageText(actionPath(), message);
 }

@@ -341,6 +341,14 @@ AnalysisForm::AnalysisForm(
                  ) -> insight::GUIActionList { return {}; },
             vali
         );
+        connect(
+              peditor_, &ParameterEditorWidget::inputDataPending,
+              this, &AnalysisForm::onInputDataPending
+              );
+        connect(
+              peditor_, &ParameterEditorWidget::inputDataIssuesChanged,
+              this, &AnalysisForm::onInputDataIssuesChanged
+              );
         peditor_->setModel(psmodel_);
         connect(
               peditor_, &ParameterEditorWidget::updateSupplementedInputData,
@@ -382,30 +390,58 @@ AnalysisForm::AnalysisForm(
     connect(this, &AnalysisForm::statusMessage,
             sb, &QStatusBar::showMessage);
 
-    warningBtn_ = new QToolButton(this);
-    warningBtn_->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
-    warningBtn_->setToolTip(tr("Warnings occurred during computation - click to view"));
-    warningBtn_->hide();
-    sb->addWidget(warningBtn_);
-    connect(warningBtn_, &QToolButton::clicked,
-            this, &AnalysisForm::onShowWarningDialog);
+    // status indication above the run button:
+    // traffic light (input data ok / warnings / errors) and button to review the issues
+    // compact, so that it does not widen the column of buttons below
+    {
+        auto *row = new QWidget(this);
+        row->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+        auto *l = new QHBoxLayout(row);
+        l->setContentsMargins(0, 0, 0, 0);
+        l->setSpacing(4);
 
+        trafficLight_ = new IQTrafficLight(row);
+        l->addWidget(trafficLight_);
+
+        btnReview_ = new QToolButton(row);
+        btnReview_->setText(tr("Review"));
+        btnReview_->setToolTip(tr("Show the list of warnings and errors"));
+        btnReview_->hide();
+        l->addWidget(btnReview_);
+
+        ui->verticalLayout->insertWidget(0, row, 0, Qt::AlignLeft);
+
+        connect(btnReview_, &QToolButton::clicked,
+                this, &AnalysisForm::onReviewIssues);
+
+        // without visualizer, the input data is not evaluated in advance
+        trafficLight_->setVisible(peditor_->hasVisualizer());
+    }
+
+    // warnings, which do not belong to the input data processing (e.g. from runs)
     warningCallbackId_ =
         insight::WarningDispatcher::getCurrent().addIssueCallback(
             [this](const insight::Exception& ex)
             {
-                QString msg = QString::fromStdString(ex.message());
+                // captured by the input data processing: reported with its issues
+                if (insight::WarningDispatcher::currentIssueIsRecorded())
+                    return;
+
+                auto msg = ex.message();
                 QMetaObject::invokeMethod(
                     this,
                     [this, msg]()
                     {
-                        collectedWarnings_.append(msg);
-                        warningBtn_->show();
-                        if (warningListWidget_)
-                            warningListWidget_->addItem(msg);
+                        otherIssues_.push_back({
+                            insight::InputDataIssue::Warning,
+                            currentWorkbenchAction_ ? "run" : "workbench",
+                            msg });
+                        updateIssueIndication();
                     },
                     Qt::QueuedConnection);
             });
+
+    updateIssueIndication();
 
 
     IQExecutionWorkspace::initializeToDefaults();
@@ -499,6 +535,11 @@ const insight::ParameterSet& AnalysisForm::parameters() const
 
 AnalysisForm::~AnalysisForm()
 {
+  // the parameter editor (and its visualization) is deleted after this object:
+  // its signals must not reach this partially destroyed form
+  if (peditor_)
+    disconnect(peditor_, nullptr, this, nullptr);
+
   if (warningCallbackId_ >= 0)
     insight::WarningDispatcher::getCurrent().removeIssueCallback(warningCallbackId_);
   prepareDeletion();
@@ -593,7 +634,7 @@ WidgetWithDynamicMenuEntries* AnalysisForm::createMenus(WorkbenchMainWindow* mw)
 
 
 
-    auto act_run_=new QAction(_("&Run Analysis"), this);
+    act_run_=new QAction(_("&Run Analysis"), this);
     menu_actions->addAction( act_run_ );
     connect( act_run_, &QAction::triggered, this, &AnalysisForm::onRunAnalysis );
     auto act_kill_=new QAction(_("&Stop Analysis"), this);
@@ -921,8 +962,6 @@ void AnalysisForm::onUpdateSupplementedInputData(
     insight::supplementedInputDataBasePtr sid)
 {
   DBG_SLOT(ParameterEditorWidget::updateSupplementedInputData);
-
-  clearWarnings();
 
   sid_=sid;
   supplementedInputDataModel_.reset( sid_->reportedSupplementQuantities() );

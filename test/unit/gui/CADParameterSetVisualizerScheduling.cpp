@@ -47,6 +47,7 @@ namespace
 const std::string valuePath = "ap/0";
 const double throwingValue = -1.;
 const double throwingDeferredValue = -2.;
+const double warningValue = -3.;
 const int nFiller = 5;
 
 
@@ -107,16 +108,23 @@ std::string parityName(double x)
 struct ProbeSID
     : public supplementedInputDataBase
 {
-    Supplemented<double> fine_, broken_;
+    Supplemented<double> fine_, broken_, warned_;
 
     ProbeSID(
         ParameterSetInput&& ip,
         const boost::filesystem::path& wd,
         ActionProgress& ap,
-        bool breakIt )
+        bool breakIt,
+        bool warn )
         : supplementedInputDataBase(std::move(ip), wd, ap)
     {
         fine_ = deferred("fine", []() { return 1.; });
+        warned_ = deferred("warned", [warn]()
+        {
+            if (warn)
+                insight::Warning("probe warning in deferred quantity");
+            return 3.;
+        });
         broken_ = deferred("broken", [breakIt]() -> double
         {
             if (breakIt)
@@ -174,7 +182,8 @@ public:
                 ParameterSetInput(this->parameters()),
                 this->workDir_,
                 *this->progress_.forkNewAction(99, "Process input data"),
-                x_==throwingDeferredValue );
+                x_==throwingDeferredValue,
+                x_==warningValue );
         }
         catch (const boost::thread_interrupted&)
         {
@@ -237,6 +246,9 @@ class CADParameterSetVisualizerScheduling
 
     int errors_ = 0;
     int finishedSignals_ = 0;
+    int pendingSignals_ = 0;
+    int issueSignals_ = 0;
+    InputDataIssueList lastIssues_;
     supplementedInputDataBasePtr lastSid_;
 
     // supplemented input data, which did not match the current parameters on arrival
@@ -342,6 +354,9 @@ private Q_SLOTS:
         finishedSignals_ = 0;
         staleSids_ = 0;
         lastSid_.reset();
+        pendingSignals_ = 0;
+        issueSignals_ = 0;
+        lastIssues_.clear();
         pTimeline_.clear();
 
         auto *st = st_.get();
@@ -366,6 +381,14 @@ private Q_SLOTS:
                 } );
         connect(sched_.get(), &IQParameterSetVisualizationScheduler::visualizationCalculationFinished,
                 this, [this](bool) { ++finishedSignals_; } );
+        connect(sched_.get(), &IQParameterSetVisualizationScheduler::inputDataPending,
+                this, [this]() { ++pendingSignals_; } );
+        connect(sched_.get(), &IQParameterSetVisualizationScheduler::inputDataIssuesChanged,
+                this, [this](InputDataIssueList issues)
+                {
+                    ++issueSignals_;
+                    lastIssues_=issues;
+                } );
         connect(sched_.get(), &IQParameterSetVisualizationScheduler::updateSupplementedInputData,
                 this, [this](supplementedInputDataBasePtr sid)
                 {
@@ -672,6 +695,52 @@ private Q_SLOTS:
         verifyLastSid(4);
         QVERIFY(lastSid_->complete());
         QVERIFY(bool(sched_->upToDateSupplementedInputData()));
+    }
+
+    bool lastIssuesContain(InputDataIssue::Severity sev, const std::string& source) const
+    {
+        return std::any_of(
+            lastIssues_.begin(), lastIssues_.end(),
+            [&](const InputDataIssue& i) { return i.severity==sev && i.source==source; } );
+    }
+
+    /**
+     * warnings and errors of the input data are reported after each computation
+     * (basis of the traffic light in the workbench)
+     */
+    void inputDataIssuesReported()
+    {
+        // no issues
+        setValue(4);
+        waitIdle();
+        QVERIFY(pendingSignals_>=1);
+        QVERIFY(issueSignals_>=1);
+        QVERIFY(lastIssues_.empty());
+
+        // warning in a deferred quantity: run remains possible
+        int n=issueSignals_;
+        setValue(warningValue);
+        waitIdle();
+        QVERIFY(issueSignals_>n);
+        QCOMPARE(int(lastIssues_.size()), 1);
+        QVERIFY(lastIssuesContain(InputDataIssue::Warning, "warned"));
+        QVERIFY(bool(sched_->upToDateSupplementedInputData()));
+
+        // error in a deferred quantity
+        setValue(throwingDeferredValue);
+        waitIdle();
+        QVERIFY(lastIssuesContain(InputDataIssue::Error, "broken"));
+        QVERIFY(!sched_->upToDateSupplementedInputData());
+
+        // error during construction of the supplemented input data
+        setValue(throwingValue);
+        waitIdle();
+        QVERIFY(lastIssuesContain(InputDataIssue::Error, "input data"));
+
+        // recovers
+        setValue(6);
+        waitIdle();
+        QVERIFY(lastIssues_.empty());
     }
 
     /**

@@ -84,9 +84,16 @@ public:
      */
     typedef std::function<ActionProgressPtr(const std::string&)> ProgressSource;
 
+    /**
+     * receives the warnings, which are issued during the computation of the named quantity.
+     * Provided by the owning supplementedInputData.
+     */
+    typedef std::function<void(const std::string& quantity, const std::string& message)> IssueSink;
+
 private:
     std::string name_;
     ProgressSource progressSource_;
+    IssueSink issueSink_;
 
     mutable boost::mutex mtx_;
     mutable boost::condition_variable cv_;
@@ -113,7 +120,8 @@ protected:
 public:
     SupplementedQuantityBase(
         const std::string& name,
-        ProgressSource progressSource );
+        ProgressSource progressSource,
+        IssueSink issueSink = IssueSink() );
 
     virtual ~SupplementedQuantityBase();
 
@@ -169,8 +177,9 @@ public:
     SupplementedQuantity(
         const std::string& name,
         ProgressSource progressSource,
+        IssueSink issueSink,
         std::function<T(ActionProgress&)> function )
-        : SupplementedQuantityBase(name, progressSource),
+        : SupplementedQuantityBase(name, progressSource, issueSink),
         function_(function)
     {}
 

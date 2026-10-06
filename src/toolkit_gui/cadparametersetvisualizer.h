@@ -211,6 +211,14 @@ Q_SIGNALS:
     void visualizationComputationError(std::exception_ptr ex);
 
     /**
+     * @brief inputDataIssuesChanged
+     * emitted once at the end of a (not cancelled) computation:
+     * all warnings and errors, which occurred while processing the input data
+     * (and warnings of the visualization itself).
+     */
+    void inputDataIssuesChanged(insight::InputDataIssueList issues);
+
+    /**
      * @brief computationThreadEnded
      * emitted in any case (success, error, cancellation),
      * when the background computation has ended

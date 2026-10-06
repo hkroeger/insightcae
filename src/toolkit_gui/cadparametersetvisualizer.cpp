@@ -463,6 +463,29 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
 
             CurrentExceptionContext ex("computing visualization of scheduled parameter set");
             clearErrors();
+
+            // warnings of this computation (only accessed from this thread)
+            std::vector<std::string> sidConstructionWarnings, visualizationWarnings;
+
+            auto collectIssues = [&]()
+            {
+                InputDataIssueList issues;
+                if (sid_)
+                {
+                    issues=sid_->issues();
+                }
+                else
+                {
+                    for (const auto& w: sidConstructionWarnings)
+                        issues.push_back({InputDataIssue::Warning, "input data", w});
+                    if (sidError_)
+                        issues.push_back({InputDataIssue::Error, "input data", describeException(sidError_)});
+                }
+                for (const auto& w: visualizationWarnings)
+                    issues.push_back({InputDataIssue::Warning, "visualization", w});
+                return issues;
+            };
+
             try
             {
                 // 1. supplemented input data.
@@ -471,6 +494,9 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                 try
                 {
                     CurrentExceptionContext ex("computing supplemented input data");
+                    ScopedWarningRecorder rec(
+                        [&](const insight::Exception& w)
+                        { sidConstructionWarnings.push_back(w.message()); } );
                     sid=computeSupplementedInput();
                 }
                 catch (const boost::thread_interrupted&)
@@ -491,10 +517,13 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                     sid_=supplementedInputDataBasePtr(
                         sid.get(), [sid,snap](supplementedInputDataBase*) {} );
 
+                    for (const auto& w: sidConstructionWarnings)
+                        sid_->recordWarning("input data", w);
+
                     // compute all deferred quantities in parallel.
                     // The visualization waits only for those, which it needs.
                     sid_->launchAll(
-                        progress_.forkNewAction(1, "Processing input data") );
+                        progress_.forkNewAction(1, "Computing input data") );
 
                     boost::this_thread::interruption_point();
                     if (!cancelled_)
@@ -503,7 +532,13 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
 
                 // 2. visualization. Parts which fail are skipped.
                 boost::this_thread::interruption_point();
-                step("visualization", [this]() { recreateVisualizationElements(); } );
+                step("visualization", [&]()
+                {
+                    ScopedWarningRecorder rec(
+                        [&](const insight::Exception& w)
+                        { visualizationWarnings.push_back(w.message()); } );
+                    recreateVisualizationElements();
+                } );
                 boost::this_thread::interruption_point();
 
                 // 3. complete the deferred quantities, which are not needed for the visualization
@@ -531,6 +566,7 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                 status_=Finished;
                 if (!cancelled_)
                 {
+                    Q_EMIT inputDataIssuesChanged(collectIssues());
                     if (err)
                         Q_EMIT visualizationComputationError(err);
                     else
@@ -552,7 +588,9 @@ void CADParameterSetModelVisualizer::launch(IQCADItemModel *model)
                 else
                 {
                     status_=Finished;
-                    Q_EMIT visualizationComputationError(currentExceptionPtr());
+                    auto exptr=currentExceptionPtr();
+                    Q_EMIT inputDataIssuesChanged(collectIssues());
+                    Q_EMIT visualizationComputationError(exptr);
                 }
             }
 

@@ -243,6 +243,19 @@ public Q_SLOTS:
 Q_SIGNALS:
     void parameterSetChanged();
     void updateSupplementedInputData(std::shared_ptr<insight::supplementedInputDataBase> sid);
+
+    /**
+     * @brief inputDataPending
+     * the input data is being recomputed after a parameter change
+     */
+    void inputDataPending();
+
+    /**
+     * @brief inputDataIssuesChanged
+     * warnings and errors of the input data computed from the current parameters
+     */
+    void inputDataIssuesChanged(insight::InputDataIssueList issues);
+
     void adaptEditControlsLayout(QSize ns);
 };
 

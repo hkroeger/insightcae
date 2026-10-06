@@ -13,6 +13,7 @@ WorkbenchAction::WorkbenchAction(AnalysisForm *af)
   : af_(af)
 {
   af_->ui->btnRun->setEnabled(false);
+  if (af_->act_run_) af_->act_run_->setEnabled(false);
   af_->ui->btnKill->setEnabled(true);
 
   // // presumption: all signals have to be emitted from another thread!
@@ -37,6 +38,6 @@ WorkbenchAction::WorkbenchAction(AnalysisForm *af)
 
 WorkbenchAction::~WorkbenchAction()
 {
-  af_->ui->btnRun->setEnabled(true);
+  af_->updateRunAvailability(); // run is not possible, if the input data has errors
   af_->ui->btnKill->setEnabled(false);
 }

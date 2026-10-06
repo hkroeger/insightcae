@@ -65,11 +65,15 @@ NumericalWindtunnel::supplementedInputData::supplementedInputData(
         transformedObjects_[label] =
             deferred("geometry/"+label, [this,label,toWindTunnelCS,toAttitude](ActionProgress& ap)
             {
+                // wait for the dependency before reporting progress:
+                // the progress display appears only, when the actual work starts
+                const SpatialTransformation& trsf = toWindTunnelCS;
+
                 ap.message("Loading geometry file, computing bounding box");
 
                 TransformedObject o;
                 auto geom=cad::Transform::create(
-                    p().geometry.objects.at(label)->geometry(), toWindTunnelCS );
+                    p().geometry.objects.at(label)->geometry(), trsf );
                 o.bb=geom->modelBndBox();
 
                 geom=cad::Transform::create(geom, toAttitude);

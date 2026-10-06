@@ -88,6 +88,13 @@ QObject* IQParameterSetVisualizationScheduler::createDebouncedJob(quint64 id)
             if (isCurrent(id))
                 Q_EMIT visualizationComputationError(ex);
         });
+    connect(
+        viz, &CADParameterSetVisualizerGenerator::inputDataIssuesChanged,
+        this, [this,id](insight::InputDataIssueList issues)
+        {
+            if (isCurrent(id))
+                Q_EMIT inputDataIssuesChanged(issues);
+        });
 
     // connected after the visualizers internal handler:
     // is delivered after the output of the computation has been processed
@@ -136,6 +143,7 @@ void IQParameterSetVisualizationScheduler::jobLaunchFailed(std::exception_ptr ex
 void IQParameterSetVisualizationScheduler::currentJobInvalidated()
 {
     currentSid_.reset();
+    Q_EMIT inputDataPending();
 }
 
 

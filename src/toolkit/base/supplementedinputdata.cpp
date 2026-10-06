@@ -71,21 +71,71 @@ supplementedInputDataBase::progressSource()
     auto mtx=progressMutex_;
     return [this,mtx](const std::string& name) -> ActionProgressPtr
     {
-        boost::mutex::scoped_lock lck(*mtx);
-        if (!deferredProgress_)
+        ActionProgressPtr parent;
+        {
+            boost::mutex::scoped_lock lck(*mtx);
+            parent=deferredProgress_;
+        }
+        if (!parent)
             return nullptr;
 
-        // ActionProgress is not thread safe: fork and release
-        // of child actions need to be serialized
-        auto child=deferredProgress_->forkNewAction(1, name);
+        // lazy: displayed only, when the computation reports progress itself.
+        // Quantities, which only wait for their dependencies
+        // or which are computed quickly, do not show up.
+        auto child=parent->forkNewLazyAction(1, name);
         return ActionProgressPtr(
             child.get(),
-            [child,mtx](ActionProgress*) mutable
+            [child,parent,mtx,name](ActionProgress*) mutable
             {
-                boost::mutex::scoped_lock lck(*mtx);
                 child.reset();
+
+                // computation of this quantity has ended: advance the overall progress
+                boost::mutex::scoped_lock lck(*mtx);
+                parent->stepUp(name+" finished");
             } );
     };
+}
+
+
+
+
+SupplementedQuantityBase::IssueSink
+supplementedInputDataBase::issueSink()
+{
+    return [this](const std::string& quantity, const std::string& message)
+    {
+        recordWarning(quantity, message);
+    };
+}
+
+
+
+
+void supplementedInputDataBase::recordWarning(
+    const std::string& source, const std::string& message )
+{
+    boost::mutex::scoped_lock lck(warningsMutex_);
+    warnings_.push_back({source, message});
+}
+
+
+
+
+InputDataIssueList supplementedInputDataBase::issues() const
+{
+    InputDataIssueList r;
+    {
+        boost::mutex::scoped_lock lck(warningsMutex_);
+        for (const auto& w: warnings_)
+            r.push_back({InputDataIssue::Warning, w.first, w.second});
+    }
+
+    auto errs=rootErrors();
+    if (errs.empty()) errs=errors(); // root cause outside of this object
+    for (const auto& e: errs)
+        r.push_back({InputDataIssue::Error, e.first, describeException(e.second)});
+
+    return r;
 }
 
 
@@ -111,7 +161,11 @@ void supplementedInputDataBase::launchAll(ActionProgressPtr progress)
     {
         boost::mutex::scoped_lock plck(*progressMutex_);
         if (progress)
+        {
             deferredProgress_=progress;
+            // overall progress: one step per quantity
+            deferredProgress_->setNSteps(pending.size());
+        }
     }
 
     auto* mainThreadWD = &WarningDispatcher::getCurrent();
@@ -211,6 +265,8 @@ void supplementedInputDataBase::releaseDeferredProgress()
     // the progress display of the parent action ends.
     // Later on-demand computations are not displayed.
     boost::mutex::scoped_lock plck(*progressMutex_);
+    if (deferredProgress_)
+        deferredProgress_->completed();
     deferredProgress_.reset();
 }
 

@@ -172,6 +172,7 @@ add_library(toolkit_gui SHARED
        iqparameters/iqcadsketchparameter.h iqparameters/iqcadsketchparameter.cpp
 
        iqsupplementedinputdatamodel.h iqsupplementedinputdatamodel.cpp
+       iqtrafficlight.h iqtrafficlight.cpp
 
        iqremoteservereditdialog.h
        iqremoteservereditdialog.cpp

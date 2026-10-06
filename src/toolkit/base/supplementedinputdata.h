@@ -23,6 +23,24 @@ namespace insight {
 
 
 
+/**
+ * @brief The InputDataIssue struct
+ * a warning or error, which occurred while processing the input data
+ */
+struct InputDataIssue
+{
+    enum Severity { Warning, Error };
+
+    Severity severity;
+    std::string source; ///< e.g. the name of the supplemented quantity
+    std::string message;
+};
+
+typedef std::vector<InputDataIssue> InputDataIssueList;
+
+
+
+
 class supplementedInputDataBase
 {
 
@@ -81,15 +99,19 @@ private:
   std::vector<std::unique_ptr<boost::thread> > deferredWorkers_;
 
   /**
-   * guards forking/releasing of the progress objects
-   * of the deferred computations
+   * guards the parent progress object of the deferred computations
+   * (overall progress is advanced from different threads)
    */
   std::shared_ptr<boost::mutex> progressMutex_;
   ActionProgressPtr deferredProgress_;
 
+  mutable boost::mutex warningsMutex_;
+  std::vector<std::pair<std::string,std::string> > warnings_; ///< source, message
+
   void registerDeferred(SupplementedQuantityBasePtr q);
   void releaseDeferredProgress();
   SupplementedQuantityBase::ProgressSource progressSource();
+  SupplementedQuantityBase::IssueSink issueSink();
 #endif
 
 protected:
@@ -132,7 +154,7 @@ public:
       {
           typedef std::decay_t<std::invoke_result_t<F, ActionProgress&> > T;
           auto q = std::make_shared<SupplementedQuantity<T> >(
-              name, progressSource(),
+              name, progressSource(), issueSink(),
               std::function<T(ActionProgress&)>(std::forward<F>(f)) );
           registerDeferred(q);
           return Supplemented<T>(q);
@@ -141,7 +163,7 @@ public:
       {
           typedef std::decay_t<std::invoke_result_t<F> > T;
           auto q = std::make_shared<SupplementedQuantity<T> >(
-              name, progressSource(),
+              name, progressSource(), issueSink(),
               std::function<T(ActionProgress&)>(
                   [fn=std::forward<F>(f)](ActionProgress&) mutable { return fn(); } ) );
           registerDeferred(q);
@@ -201,6 +223,23 @@ public:
   ErrorList rootErrors() const;
 
 #endif
+
+  /**
+   * @brief recordWarning
+   * add a warning to the list of issues of this input data.
+   * Warnings issued during deferred computations are recorded automatically.
+   * Thread safe.
+   */
+  void recordWarning(const std::string& source, const std::string& message);
+
+  /**
+   * @brief issues
+   * non-blocking.
+   * @return
+   * all recorded warnings and the errors of all failed deferred quantities
+   * (only the root causes, if they are known).
+   */
+  InputDataIssueList issues() const;
 
   /**
    * @brief throwIfIncomplete

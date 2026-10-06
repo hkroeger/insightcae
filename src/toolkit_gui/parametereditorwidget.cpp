@@ -574,6 +574,14 @@ void ParameterEditorWidget::rebuildVisualization()
                 this, &ParameterEditorWidget::updateSupplementedInputData
                 );
             connect(
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::inputDataPending,
+                this, &ParameterEditorWidget::inputDataPending
+                );
+            connect(
+                vizScheduler_, &insight::IQParameterSetVisualizationScheduler::inputDataIssuesChanged,
+                this, &ParameterEditorWidget::inputDataIssuesChanged
+                );
+            connect(
                 vizScheduler_, &insight::IQParameterSetVisualizationScheduler::visualizationCalculationFinished, this,
                 [this](bool success)
                 {

@@ -27,6 +27,7 @@ Q_DECLARE_METATYPE(insight::TaskSpoolerInterface::JobList);
 Q_DECLARE_METATYPE(arma::mat);
 Q_DECLARE_METATYPE(std::exception_ptr);
 Q_DECLARE_METATYPE(insight::supplementedInputDataBasePtr);
+Q_DECLARE_METATYPE(insight::InputDataIssueList);
 
 class TOOLKIT_GUI_EXPORT ISMetaTypeRegistrator
 {

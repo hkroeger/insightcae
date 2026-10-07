@@ -24,6 +24,7 @@
 #include "openfoam/ofes.h"
 #include "openfoam/openfoamcase.h"
 #include "base/warningdispatcher.h"
+#include "openfoam/openfoamcasedirectoryparameter.h"
 
 namespace insight {
     
@@ -60,7 +61,7 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
     ParameterSet& newp ) const
 {
   boost::filesystem::path oldmf =
-        newp.get<PathParameter>("run/mapFrom").accessibleFilePath();
+        newp.get<OpenFOAMCaseDirectoryParameter>("run/mapFrom").expandedFilePath(true);
   boost::filesystem::path newmf = "";
 
   if (oldmf!="")
@@ -75,7 +76,7 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(
       newmf="";
     }
   }
-  newp.get<PathParameter>("run/mapFrom").setFilePath(newmf);
+  newp.get<OpenFOAMCaseDirectoryParameter>("run/mapFrom").setFilePath(newmf);
 }
 
 

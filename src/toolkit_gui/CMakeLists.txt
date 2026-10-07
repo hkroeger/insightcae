@@ -156,6 +156,7 @@ add_library(toolkit_gui SHARED
        iqparameters/iqpathparameter.cpp iqparameters/iqpathparameter.h
        iqparameters/iqmatrixparameter.cpp iqparameters/iqmatrixparameter.h
        iqparameters/iqdirectoryparameter.cpp iqparameters/iqdirectoryparameter.h
+       iqparameters/iqopenfoamcasedirectoryparameter.cpp iqparameters/iqopenfoamcasedirectoryparameter.h
        iqparameters/iqselectionparameter.cpp iqparameters/iqselectionparameter.h
        iqparameters/iqarrayparameter.cpp iqparameters/iqarrayparameter.h
        iqparameters/iqselectablesubsetparameter.cpp iqparameters/iqselectablesubsetparameter.h

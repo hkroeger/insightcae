@@ -13,6 +13,7 @@ set(pdl_SOURCES
     stringparameterparser.cpp stringparameterparser.h
     pathgenerator.cpp pathgenerator.h
     directorygenerator.h directorygenerator.cpp
+    openfoamcasedirectorygenerator.h openfoamcasedirectorygenerator.cpp
     selectiongenerator.cpp selectiongenerator.h
     dynamicclassselectablesubsetparameterparser.cpp dynamicclassselectablesubsetparameterparser.h
     dynamicclassparametersselectablesubsetgenerator.cpp dynamicclassparametersselectablesubsetgenerator.h

@@ -1,8 +1,12 @@
 #include "zipfile.h"
 
 #include "unzip.h"
+#include "zip.h"
 
 #include "base/cppextensions.h"
+#include "base/exception.h"
+
+#include <fstream>
 
 
 namespace insight {
@@ -167,6 +171,152 @@ ZipFile::uncompressFiles(
     } while (cf.gotoNextFile());
 
     return result;
+}
+
+
+void ZipFile::uncompressTo(const boost::filesystem::path& targetDirectory) const
+{
+    std::vector<char> buf(READ_SIZE);
+
+    // reject entries which would be written outside the target directory
+    for (const auto& f: files(true))
+    {
+        bool unsafe = f.has_root_path();
+        for (const auto& c: f)
+        {
+            if (c=="..") unsafe=true;
+        }
+        if (unsafe)
+        {
+            throw insight::Exception(
+                "refusing to extract archive: entry %s points outside the target directory",
+                f.string().c_str() );
+        }
+    }
+
+    CurrentArchiveFile cf(*zipfile_);
+    do
+    {
+        auto target = targetDirectory / cf.fileName;
+
+        if (cf.isDirectory())
+        {
+            boost::filesystem::create_directories(target);
+        }
+        else
+        {
+            if (target.has_parent_path())
+                boost::filesystem::create_directories(target.parent_path());
+
+            if ( unzOpenCurrentFile( zipfile_->handle ) != UNZ_OK )
+            {
+                throw insight::Exception(
+                    "could not open file %s in archive",
+                    cf.fileName.string().c_str() );
+            }
+
+            std::ofstream f(target.string(), std::ios::binary);
+            if (!f.good())
+            {
+                throw insight::Exception(
+                    "could not create file %s",
+                    target.string().c_str() );
+            }
+
+            int n;
+            while ( (n = unzReadCurrentFile(zipfile_->handle, buf.data(), buf.size())) > 0 )
+            {
+                f.write(buf.data(), n);
+            }
+            if (n<0)
+            {
+                throw insight::Exception(
+                    "error in reading file %s from archive",
+                    cf.fileName.string().c_str() );
+            }
+        }
+    } while (cf.gotoNextFile());
+}
+
+
+
+
+void writeZipFile(
+    const boost::filesystem::path& zipFilePath,
+    const std::map<boost::filesystem::path, boost::filesystem::path>& entries )
+{
+    zipFile zf = zipOpen64(zipFilePath.string().c_str(), APPEND_STATUS_CREATE);
+    if (!zf)
+    {
+        throw insight::Exception(
+            "could not create ZIP file %s",
+            zipFilePath.string().c_str() );
+    }
+
+    std::vector<char> buf(READ_SIZE);
+
+    try
+    {
+        for (const auto& e: entries)
+        {
+            const auto& src = e.second;
+            auto entryName = e.first.generic_string();
+
+            std::ifstream f(src.string(), std::ios::binary);
+            if (!f.good())
+            {
+                throw insight::Exception(
+                    "could not read file %s",
+                    src.string().c_str() );
+            }
+
+            zip_fileinfo zi{};
+            if ( zipOpenNewFileInZip64(
+                    zf, entryName.c_str(), &zi,
+                    nullptr, 0, nullptr, 0, nullptr,
+                    Z_DEFLATED, Z_DEFAULT_COMPRESSION,
+                    1 /* zip64 */ ) != ZIP_OK )
+            {
+                throw insight::Exception(
+                    "could not add entry %s to ZIP file",
+                    entryName.c_str() );
+            }
+
+            while (f)
+            {
+                f.read(buf.data(), buf.size());
+                auto n = f.gcount();
+                if (n>0)
+                {
+                    if (zipWriteInFileInZip(zf, buf.data(), n) != ZIP_OK)
+                    {
+                        throw insight::Exception(
+                            "error writing entry %s to ZIP file",
+                            entryName.c_str() );
+                    }
+                }
+            }
+
+            if (zipCloseFileInZip(zf) != ZIP_OK)
+            {
+                throw insight::Exception(
+                    "could not close entry %s in ZIP file",
+                    entryName.c_str() );
+            }
+        }
+    }
+    catch (...)
+    {
+        zipClose(zf, nullptr);
+        throw;
+    }
+
+    if (zipClose(zf, nullptr) != ZIP_OK)
+    {
+        throw insight::Exception(
+            "could not finalize ZIP file %s",
+            zipFilePath.string().c_str() );
+    }
 }
 
 } // namespace insight

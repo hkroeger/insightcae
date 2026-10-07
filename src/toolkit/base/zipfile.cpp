@@ -270,12 +270,25 @@ void writeZipFile(
                     src.string().c_str() );
             }
 
+            // zipOpenNewFileInZip4_64 is available in classic minizip
+            // as well as in the compat layer of minizip-ng (e.g. MXE).
+            // zlib constants are given as values, since minizip-ng's
+            // zip.h does not include zlib.h
             zip_fileinfo zi{};
-            if ( zipOpenNewFileInZip64(
+            if ( zipOpenNewFileInZip4_64(
                     zf, entryName.c_str(), &zi,
                     nullptr, 0, nullptr, 0, nullptr,
-                    Z_DEFLATED, Z_DEFAULT_COMPRESSION,
-                    1 /* zip64 */ ) != ZIP_OK )
+                    Z_DEFLATED,
+                    -1,  /* level: Z_DEFAULT_COMPRESSION */
+                    0,   /* raw */
+                    -15, /* windowBits: -MAX_WBITS */
+                    8,   /* memLevel: DEF_MEM_LEVEL */
+                    0,   /* strategy: Z_DEFAULT_STRATEGY */
+                    nullptr, /* password */
+                    0,   /* crcForCrypting */
+                    0,   /* versionMadeBy */
+                    0,   /* flagBase */
+                    1    /* zip64 */ ) != ZIP_OK )
             {
                 throw insight::Exception(
                     "could not add entry %s to ZIP file",

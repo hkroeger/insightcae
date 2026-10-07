@@ -19,7 +19,28 @@ public:
     std::map<boost::filesystem::path, std::shared_ptr<std::string> >
     uncompressFiles(
             const std::set<boost::filesystem::path>& filesToInclude = std::set<boost::filesystem::path>() ) const;
+
+    /**
+     * @brief uncompressTo
+     * extract all files into the given directory, streaming them to disk.
+     * Parent directories are created as needed.
+     * @param targetDirectory
+     */
+    void uncompressTo(const boost::filesystem::path& targetDirectory) const;
 };
+
+
+/**
+ * @brief writeZipFile
+ * create a ZIP archive from local files
+ * @param zipFilePath
+ * the archive to create
+ * @param entries
+ * map of path inside archive => path of source file on disk
+ */
+void writeZipFile(
+    const boost::filesystem::path& zipFilePath,
+    const std::map<boost::filesystem::path, boost::filesystem::path>& entries );
 
 } // namespace insight
 

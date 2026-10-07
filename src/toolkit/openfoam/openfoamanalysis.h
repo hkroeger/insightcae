@@ -82,7 +82,7 @@ run = set
  machine 	= 	string 	"" 	"Machine or queue, where the external commands are executed on. Defaults to 'localhost', if left empty." *hidden
  OFEname 	= 	string 	"OFesi2112" "Identifier of the OpenFOAM installation, that shall be used"
  np 		= 	int 	0 	"Number of processors for parallel run (1 means serial execution, <1 means that all available processors are used)" *necessary
- mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
+ mapFrom 	= 	openfoamCaseDirectory 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done" *hidden
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
  preprocessonly	= 	bool 	false 	"Whether to only prepare the case and stop before launching the solver" *hidden
@@ -430,7 +430,7 @@ public:
             if ((cm.OFversion()>=230) && (p().run.mapFrom->isValid()))
             {
                 // parallelTarget option is not present in OF2.3.x
-                mapFromOther(cm, parentProgress, p().run.mapFrom->expandedFilePath(), false);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->accessibleCaseDirectory(exepath), false);
             }
         }
 
@@ -452,7 +452,7 @@ public:
         {
             if ( (!(cm.OFversion()>=230)) && (p().run.mapFrom->isValid()) )
             {
-                mapFromOther(cm, parentProgress, p().run.mapFrom->expandedFilePath(), is_parallel);
+                mapFromOther(cm, parentProgress, p().run.mapFrom->accessibleCaseDirectory(exepath), is_parallel);
             }
             else
             {

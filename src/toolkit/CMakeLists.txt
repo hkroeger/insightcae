@@ -200,6 +200,7 @@ add_library(toolkit SHARED
     openfoam/openfoamboundarydict.cpp openfoam/openfoamboundarydict.h
     openfoam/openfoamtools.cpp openfoam/openfoamtools.h
     openfoam/oftimedirectories.cpp openfoam/oftimedirectories.h
+    openfoam/openfoamcasedirectoryparameter.cpp openfoam/openfoamcasedirectoryparameter.h
     openfoam/ofmeshcopy.cpp openfoam/ofmeshcopy.h
     openfoam/ofmeshquality.cpp openfoam/ofmeshquality.h
     openfoam/ofcsvreaders.cpp openfoam/ofcsvreaders.h

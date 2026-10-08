@@ -58,25 +58,29 @@ addToStaticFunctionTable(Feature, ModelFeature, ruleDocumentation);
 void ModelFeature::copyModelDatums(ModelPtr model_)
 {
 
+    // symbols inherited from an enclosing scope (in-situ submodels)
+    // are not re-exported
+    const auto& inherited = model_->inheritedSymbols();
+
     copyDatumItems(model_->scalars(), refvalues_,
                    [](ScalarPtr s)
                    { return s->value(); },
-                   "datum value");
+                   "datum value", std::string(), inherited);
 
     copyDatumItems(model_->points(), refpoints_,
                    [](VectorPtr p)
                    { return p->value(); },
-                   "datum point", std::string(), {}, {"O"} );
+                   "datum point", std::string(), inherited, {"O"} );
 
     copyDatumItems(model_->directions(), refvectors_,
                    [](VectorPtr v)
                    { return v->value(); },
-                   "datum vector", std::string(), {}, {"EX", "EY", "EZ"} );
+                   "datum vector", std::string(), inherited, {"EX", "EY", "EZ"} );
 
     copyDatumItems(model_->datums(), providedDatums_,
                    [](DatumPtr sd)
                    { return sd; },
-                   "datum", std::string(), {}, {"XY", "XZ", "YZ"} );
+                   "datum", std::string(), inherited, {"XY", "XZ", "YZ"} );
 
     auto addfs=
         [this]
@@ -264,7 +268,9 @@ void ModelFeature::build()
         {
             std::string name=c.first;
             // Compound::build copies the components. Here, the rest is copied.
-            if (components_.find(name)==components_.end())
+            // Features inherited from an enclosing scope are not re-exported.
+            if (components_.find(name)==components_.end()
+                && !model->isInherited(name) )
             {
                 FeaturePtr p=c.second;
 

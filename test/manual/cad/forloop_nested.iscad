@@ -1,5 +1,17 @@
-ni=3;
-nj=5;
+ni=13;
+nj=15;
+
+model2:
+for (i,1,ni-1,{
+ iii=i;
+ sph:for(j,3,nj-1,{
+  ii=i;
+  jj=j;
+  p=i+j;
+  s: Sphere(ii*EX+jj*EY, 2.5e-2*p);
+ });
+});
+
 
 model:
 for (i,1,ni,{
@@ -8,7 +20,8 @@ for (i,1,ni,{
   ii=i;
   jj=j;
   p=i+j;
+  s: Sphere(ii*EX+jj*EY, 2.5e-2*p);
  });
 });
 
-saveAs("/home/hannes/tmp/test2.dot") << model;
+#saveAs("/home/hannes/tmp/test2.dot") << model;

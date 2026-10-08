@@ -1226,37 +1226,39 @@ void IQCADItemModel::addSymbolsToSubmenu(
         bool *someSubMenu,
         bool *someHoverDisplay )
 {
+  // all submenus are created as children of their parent menu
+  // (QMenu::addMenu(const QString&)), so they are deleted along with it
   if (feat->getDatumScalars().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Scalar Symbols");
-    menu->addMenu(sm);
-    for (auto i: feat->getDatumScalars())
+    QMenu *sm = menu->addMenu("Scalar Symbols");
+    for (const auto& i: feat->getDatumScalars())
     {
       QAction *a = new QAction(
                   QString::fromStdString(
                       boost::str(boost::format("%s to Notepad (= %g)") % i.first % i.second)
-                      ), menu );
+                      ), sm );
       sm->addAction(a);
-      connect(a, &QAction::triggered, this, [=]() {
-               Q_EMIT insertIntoNotebook( name+"$"+QString::fromStdString(i.first) );
+      connect(a, &QAction::triggered, this,
+              [this,label=name+"$"+QString::fromStdString(i.first)]() {
+               Q_EMIT insertIntoNotebook( label );
               } );
     }
   }
   if (feat->getDatumPoints().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Point Symbols");
-    menu->addMenu(sm);
-    for (auto i: feat->getDatumPoints())
+    QMenu *sm = menu->addMenu("Point Symbols");
+    for (const auto& i: feat->getDatumPoints())
     {
       QAction *a = new QAction( QString::fromStdString(
               boost::str(boost::format("%s to Notepad (= [%g %g %g])")
                          % i.first % i.second(0) % i.second(1) % i.second(2))
-              ), menu );
+              ), sm );
       sm->addAction(a);
-      connect(a, &QAction::triggered, this, [=]() {
-          Q_EMIT insertIntoNotebook( name+"@"+QString::fromStdString(i.first) );
+      connect(a, &QAction::triggered, this,
+              [this,label=name+"@"+QString::fromStdString(i.first)]() {
+          Q_EMIT insertIntoNotebook( label );
         });
 //      connect(a, &QAction::hovered,
 //              [=]() {
@@ -1274,56 +1276,61 @@ void IQCADItemModel::addSymbolsToSubmenu(
   if (feat->getDatumVectors().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Vector Symbols");
-    menu->addMenu(sm);
-    for (auto i: feat->getDatumVectors())
+    QMenu *sm = menu->addMenu("Vector Symbols");
+    for (const auto& i: feat->getDatumVectors())
     {
       QAction *a = new QAction(
                   QString::fromStdString(
                       boost::str(boost::format("%s to Notepad (= [%g %g %g])") % i.first % i.second(0) % i.second(1) % i.second(2))
-                      ), menu );
+                      ), sm );
       sm->addAction(a);
-      connect(a, &QAction::triggered, this, [=]() {
-          Q_EMIT insertIntoNotebook( name+"^"+QString::fromStdString(i.first) );
+      connect(a, &QAction::triggered, this,
+              [this,label=name+"^"+QString::fromStdString(i.first)]() {
+          Q_EMIT insertIntoNotebook( label );
         });
     }
   }
   if (feat->providedSubshapes().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Subshapes");
-    menu->addMenu(sm);
-    for (auto i: feat->providedSubshapes())
+    QMenu *sm = menu->addMenu("Subshapes");
+    for (const auto& i: feat->providedSubshapes())
     {
         QString subname=QString::fromStdString(i.first);
         if (subname!="PREV") // cause too deep recursion
         {
+            QString subpath = name+"."+subname;
+            insight::cad::FeaturePtr subfeat = i.second;
 
             QAction *a = new QAction(
                 subname + " to Notepad",
-                menu );
+                sm );
             sm->addAction(a);
 
-            connect(a, &QAction::triggered, this, [=]() {
-                Q_EMIT insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
+            connect(a, &QAction::triggered, this, [this,subpath]() {
+                Q_EMIT insertIntoNotebook( subpath );
             });
 
-            connect(a, &QAction::hovered, this, [=]() {
-                Q_EMIT highlightInView(i.second);
+            connect(a, &QAction::hovered, this, [this,subfeat]() {
+                Q_EMIT highlightInView(subfeat);
             });
 
-            bool someEntries=false;
-            QMenu* submenu=new QMenu(QString::fromStdString(i.first));
-
-            addSymbolsToSubmenu(name+"."+subname, submenu, i.second, &someEntries);
-            if (someEntries)
-            {
-                sm->addMenu(submenu);
-            }
-            else
-            {
-                delete submenu;
-            }
+            // The symbols of the subshape are only collected when its
+            // submenu is opened. Building the complete tree upfront
+            // explodes with nested submodels and loops.
+            QMenu* submenu=sm->addMenu(subname);
+            connect(submenu, &QMenu::aboutToShow, submenu,
+                    [this,submenu,subpath,subfeat]() {
+                        if (submenu->isEmpty())
+                        {
+                            addSymbolsToSubmenu(subpath, submenu, subfeat);
+                            if (submenu->isEmpty())
+                            {
+                                submenu->addAction("(no symbols)")
+                                    ->setEnabled(false);
+                            }
+                        }
+                    });
         }
 
       if (someHoverDisplay) *someHoverDisplay=true;

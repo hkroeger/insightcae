@@ -101,8 +101,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
   if (feat->getDatumScalars().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Scalar Symbols");
-    menu->addMenu(sm);
+    QMenu *sm = menu->addMenu("Scalar Symbols");
     for (auto i: feat->getDatumScalars())
     {
       QAction *a = new QAction( QString::fromStdString(
@@ -117,8 +116,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
   if (feat->getDatumPoints().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Point Symbols");
-    menu->addMenu(sm);
+    QMenu *sm = menu->addMenu("Point Symbols");
     for (auto i: feat->getDatumPoints())
     {
       QAction *a = new QAction( QString::fromStdString(
@@ -144,8 +142,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
   if (feat->getDatumVectors().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Vector Symbols");
-    menu->addMenu(sm);
+    QMenu *sm = menu->addMenu("Vector Symbols");
     for (auto i: feat->getDatumVectors())
     {
       QAction *a = new QAction( QString::fromStdString(
@@ -160,8 +157,7 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
   if (feat->providedSubshapes().size()>0)
   {
     if (someSubMenu) *someSubMenu=true;
-    QMenu *sm = new QMenu("Subshapes");
-    menu->addMenu(sm);
+    QMenu *sm = menu->addMenu("Subshapes");
     for (auto i: feat->providedSubshapes())
     {
       QString subname=QString::fromStdString(i.first);
@@ -179,18 +175,19 @@ void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight
 //          contextMenu->setStyleSheet( "QMenu { background-color: rgba(0,0,0,0%); }" );
       });
 
-      bool someEntries=false;
-      QMenu* submenu=new QMenu(QString::fromStdString(i.first));
-
-      addSymbolsToSubmenu(name+"."+subname, submenu, i.second, &someEntries);
-      if (someEntries)
-      {
-        sm->addMenu(submenu);
-      }
-      else
-      {
-        delete submenu;
-      }
+      // collect the symbols of the subshape only when its submenu is opened
+      QMenu* submenu=sm->addMenu(subname);
+      connect(submenu, &QMenu::aboutToShow, submenu,
+              [this,submenu,subpath=name+"."+subname,subfeat=i.second]() {
+        if (submenu->isEmpty())
+        {
+          addSymbolsToSubmenu(subpath, submenu, subfeat);
+          if (submenu->isEmpty())
+          {
+            submenu->addAction("(no symbols)")->setEnabled(false);
+          }
+        }
+      });
 
       if (someHoverDisplay) *someHoverDisplay=true;
     }

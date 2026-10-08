@@ -149,7 +149,8 @@ Model::Model(const Model& o, TreeCloneMap& tcm)
     components_(o.components_),
 #warning implement dep source API
     // syn_elem_dir_(o.syn_elem_dir_)
-    modelfile_(o.modelfile_)
+    modelfile_(o.modelfile_),
+    inheritedSymbols_(o.inheritedSymbols_)
 {
     tcm.clone(o.scalars_, scalars_);
     tcm.clone(o.points_, points_);
@@ -261,6 +262,27 @@ ModelVariableTable Model::allVariables() const
 }
 
 
+void Model::markInherited(const ModelVariableTable& vars)
+{
+    for (const auto& v: vars)
+    {
+        inheritedSymbols_.insert(boost::fusion::at_c<0>(v));
+    }
+}
+
+
+bool Model::isInherited(const std::string& name) const
+{
+    return inheritedSymbols_.count(name)>0;
+}
+
+
+const std::set<std::string>& Model::inheritedSymbols() const
+{
+    return inheritedSymbols_;
+}
+
+
 void Model::build()
 {
     if (!modelfile_.empty())
@@ -348,6 +370,7 @@ void Model::addScalar(const std::string& name, ScalarPtr value)
   // if (scalars_.find(name)) scalars_.remove(name);
   // scalars_.add(name, value);
   scalars_[name]=value;
+  inheritedSymbols_.erase(name);
 }
 
 void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
@@ -360,6 +383,7 @@ void Model::addPoint(const std::string& name, VectorPtr value)
 {
   warnIfDefinedElsewhere(name, points_);
   points_[name]=value;
+  inheritedSymbols_.erase(name);
 }
 
 void Model::addPointIfNotPresent(const std::string& name, VectorPtr value)
@@ -372,6 +396,7 @@ void Model::addDirection(const std::string& name, VectorPtr value)
 {
   warnIfDefinedElsewhere(name, directions_);
   directions_[name]=value;
+  inheritedSymbols_.erase(name);
 }
 
 void Model::addDirectionIfNotPresent(const std::string& name, VectorPtr value)
@@ -384,6 +409,7 @@ void Model::addDatum(const std::string& name, DatumPtr value)
 {
   warnIfDefinedElsewhere(name, datums_);
   datums_[name]=value;
+  inheritedSymbols_.erase(name);
 }
 
 void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
@@ -414,6 +440,7 @@ void Model::addModelstep(
   }
 
   modelsteps_[name]=value;
+  inheritedSymbols_.erase(name);
 }
 
 

@@ -16,6 +16,7 @@ add_library(toolkit_cad SHARED
 
     openfoam/snappyhexmesh.h openfoam/snappyhexmesh.cpp
     iscadparametricgeometrygenerator.h iscadparametricgeometrygenerator.cpp
+    openfoam/additionalrefinements.h openfoam/additionalrefinements.cpp
 )
 target_add_PDL(toolkit_cad)
 

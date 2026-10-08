@@ -193,6 +193,34 @@ namespace snappyHexMeshFeats
 
 
 
+/**
+ * Minimal base without own parameters.
+ * ExternalGeometryFile<GeometryOnly>::Parameters contains only the geometry
+ * and placement parameters (no feature name), e.g. for use in includedset.
+ */
+class GeometryOnly
+{
+public:
+#include "snappyhexmesh__GeometryOnly__Parameters.h"
+/*
+PARAMETERSET>>> GeometryOnly Parameters
+
+createGetter
+<<<PARAMETERSET
+*/
+public:
+  GeometryOnly( ParameterSetInput ip = Parameters() )
+    : p_(ip.forward<Parameters>())
+  {}
+
+  virtual ~GeometryOnly() = default;
+
+  virtual std::string name() const { return std::string(); }
+};
+
+
+
+
 class Feature;
 
 typedef std::shared_ptr<Feature> FeaturePtr;

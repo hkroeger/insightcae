@@ -58,6 +58,15 @@ size_t LookupTableScalar::calcHash() const
 {
     ParameterListHash h;
     h+=name_;
+    try
+    {
+      // incorporate file time stamp, so that changes to the table trigger a rebuild
+      h+=sharedModelFilePath(name_+".csv");
+    }
+    catch (...)
+    {
+      // file not found: will fail in calcValue
+    }
     h+=keycol_;
     h+=keyval_;
     h+=depcol_;

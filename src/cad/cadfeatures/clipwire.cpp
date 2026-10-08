@@ -51,7 +51,8 @@ size_t ClipWire::calcHash() const
   ParameterListHash h;
   h+=*ls_;
   h+=*le_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 

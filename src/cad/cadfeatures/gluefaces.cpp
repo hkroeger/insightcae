@@ -53,7 +53,8 @@ size_t GlueFaces::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*tol_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 

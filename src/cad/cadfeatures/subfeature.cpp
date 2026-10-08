@@ -34,7 +34,8 @@ size_t Subfeature::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=subfeatname_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 

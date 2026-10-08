@@ -52,7 +52,8 @@ size_t Chamfer::calcHash() const
   h+=*edges_;
   h+=*l_;
   h+=*angle_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 
@@ -74,33 +75,25 @@ void Chamfer::build()
 {
     ExecTimer t("Chamfer::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
+    double l1=l_->value();
+    double l2=::tan(angle_->value())*l1;
+
+    const Feature& m1=*(baseFeature());
+
+    m1.unsetLeaf();
+    BRepFilletAPI_MakeChamfer fb(m1);
+
+    for (FeatureID f: edges_->data())
     {
-        double l1=l_->value();
-        double l2=::tan(angle_->value())*l1;
-
-        const Feature& m1=*(baseFeature());
-
-        m1.unsetLeaf();
-        BRepFilletAPI_MakeChamfer fb(m1);
-
-        for (FeatureID f: edges_->data())
-        {
-            TopoDS_Edge e = m1.edge(f);
-            TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
-            TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
-            int i = mapEdgeFace.FindIndex(e);
-            fb.Add(l1, l2, e, TopoDS::Face(mapEdgeFace(i).First()) );
-        }
-
-        fb.Build();
-        setShape(fb.Shape());
-        cache.insert(shared_from_this());
+        TopoDS_Edge e = m1.edge(f);
+        TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
+        TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
+        int i = mapEdgeFace.FindIndex(e);
+        fb.Add(l1, l2, e, TopoDS::Face(mapEdgeFace(i).First()) );
     }
-    else
-    {
-        this->operator=(*cache.markAsUsed<Chamfer>(hash()));
-    }
+
+    fb.Build();
+    setShape(fb.Shape());
 }
 
 

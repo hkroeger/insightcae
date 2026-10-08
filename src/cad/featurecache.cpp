@@ -3,6 +3,7 @@
 #include "cadexception.h"
 #include "datum.h"
 #include "base/tools.h"
+#include "base/warningdispatcher.h"
 
 namespace insight {
 namespace cad {
@@ -14,76 +15,101 @@ FeatureCache::FeatureCache()
 FeatureCache::~FeatureCache()
 {}
 
-void FeatureCache::cleanup()
-{
-  std::set<size_t> toBeDeleted;
-  for (const auto& i: *this)
-  {
-    if (i.second.expired())
-      toBeDeleted.insert(i.first);
-  }
-  for (const auto& i: toBeDeleted)
-  {
-    erase(i);
-  }
 
-  std::cout<<"== After cache cleanup: cache summary =="<<std::endl;
-  printSummary(std::cout);
-}
-
-std::string FeatureCache::featureInfo(FeaturePtr fp)
+std::string FeatureCache::featureInfo(std::shared_ptr<const Feature> fp)
 {
   return fp->featureSymbolName() +
       " (type " + fp->type() + ", hash=" + toString(fp->hash()) + ")";
 }
 
 
-void FeatureCache::printSummary(std::ostream& os, bool detailed) const
+std::shared_ptr<Feature> FeatureCache::lookup(size_t hash, const std::type_info& type)
 {
-  os<<"Cache contains "<<size()<<" entities."<<std::endl;
-  if (detailed)
+  std::lock_guard<std::mutex> l(mtx_);
+
+  auto i=entries_.find(hash);
+  if (i==entries_.end())
+    return nullptr;
+
+  auto sp=i->second.lock();
+  if (!sp)
   {
-    for (const auto&i: *this)
-    {
-      auto wp=i.second;
-      os << "  " << i.first <<" \t";
-      if(wp.expired())
-      {
-        os<<"EXPIRED!\n";
-      }
-      else
-      {
-        auto fp=wp.lock();
-        os <<featureInfo(fp) << "\n";
-      }
-    }
+    entries_.erase(i);
+    return nullptr;
+  }
+
+  if (typeid(*sp)!=type)
+  {
+    insight::Warning(
+          "hash collision in CAD feature cache: requested type %s, found %s. "
+          "Ignoring cache entry.",
+          type.name(), featureInfo(sp).c_str() );
+    return nullptr;
+  }
+
+  return sp;
+}
+
+
+void FeatureCache::insert(std::shared_ptr<Feature> p)
+{
+  size_t h=p->hash();
+  std::lock_guard<std::mutex> l(mtx_);
+  entries_[h]=p;
+}
+
+
+void FeatureCache::release(size_t hash, const Feature* f)
+{
+  if (hash==0) return;
+
+  std::lock_guard<std::mutex> l(mtx_);
+
+  auto i=entries_.find(hash);
+  if (i==entries_.end())
+    return;
+
+  auto sp=i->second.lock();
+  if (!sp || sp.get()==f)
+  {
+    entries_.erase(i);
   }
 }
 
-void FeatureCache::insert(FeaturePtr p)
+
+void FeatureCache::clear()
 {
-  size_t h=p->hash();
-  const_iterator i=find(h);
-  if (i!=end())
-    {
-      insight::assertion( !i->second.expired(),
-                          "cache contained expired element!" );
-
-      auto sp=i->second.lock();
-
-      std::ostringstream msg;
-      msg<<"Internal error: trying to insert feature into CAD feature cache twice!\n";
-      msg<<"feature to insert: hash="<<h<<" (of type "<<p->type()<<" named \""<<p->featureSymbolName()<<"\")\n";
-      msg<<"present feature: "<<featureInfo(sp)<<"\n";
-      throw insight::CADException(p, msg.str());
-    }
-  (*this)[h]=p;
+  std::lock_guard<std::mutex> l(mtx_);
+  entries_.clear();
 }
 
 
-bool FeatureCache::contains(size_t hash) const
+size_t FeatureCache::size() const
 {
-  return ( this->find(hash) != end() );
+  std::lock_guard<std::mutex> l(mtx_);
+  return entries_.size();
+}
+
+
+void FeatureCache::printSummary(std::ostream& os, bool detailed) const
+{
+  std::lock_guard<std::mutex> l(mtx_);
+  os<<"Cache contains "<<entries_.size()<<" entities."<<std::endl;
+  if (detailed)
+  {
+    for (const auto&i: entries_)
+    {
+      os << "  " << i.first <<" \t";
+      if (auto fp=i.second.lock())
+      {
+        os << featureInfo(fp) << "\n";
+      }
+      else
+      {
+        os << "EXPIRED!\n";
+      }
+    }
+  }
 }
 
 

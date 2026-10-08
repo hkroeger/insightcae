@@ -292,6 +292,26 @@ protected:
   
   void updateVolProps() const;
   virtual void setShape(const TopoDS_Shape& shape);
+
+  /**
+   * Result caching across rebuilds.
+   * If isCacheable() returns true, a feature whose hash matches that of
+   * a live, already built feature of the same type takes over that
+   * feature's results via copyResultsFrom() instead of calling build().
+   */
+  virtual bool isCacheable() const;
+
+  /**
+   * Copies the build products (shape, subshapes, feature sets, datums,
+   * reference values) from o. Inputs (including density, area weight,
+   * visualization resolution, BOM description and leaf state) are kept.
+   * Derived classes with additional result members need to override
+   * this and call the base implementation.
+   */
+  virtual void copyResultsFrom(const Feature& o);
+
+  bool restoreFromCache() override;
+  void storeInCache() override;
   
   
   static std::mutex step_read_mutex_;
@@ -344,6 +364,7 @@ public:
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
   void checkForBuildDuringAccess() const override;
+  void invalidate() override;
     
   inline const DatumPtrMap& providedDatums() const 
     { checkForBuildDuringAccess(); return providedDatums_; }

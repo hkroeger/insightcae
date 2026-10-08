@@ -88,66 +88,58 @@ void Box::build()
 { 
   ExecTimer t("Box::build() ["+featureSymbolName()+"]");
 
-  if (!cache.contains(hash()))
-  {
-    arma::mat p0=p0_->value();
-    if (boost::fusion::at_c<0>(center_))  p0-=0.5*+L1_->value();
-    if (boost::fusion::at_c<1>(center_))  p0-=0.5*+L2_->value();
-    if (boost::fusion::at_c<2>(center_))  p0-=0.5*+L3_->value();
+  arma::mat p0=p0_->value();
+  if (boost::fusion::at_c<0>(center_))  p0-=0.5*+L1_->value();
+  if (boost::fusion::at_c<1>(center_))  p0-=0.5*+L2_->value();
+  if (boost::fusion::at_c<2>(center_))  p0-=0.5*+L3_->value();
 
-    refpoints_["p0"]=p0;
-    refpoints_["p1"]=p0+L1_->value()+L2_->value()+L3_->value();
+  refpoints_["p0"]=p0;
+  refpoints_["p1"]=p0+L1_->value()+L2_->value()+L3_->value();
 
-    refvalues_["L1"]=arma::norm(L1_->value(), 2);
-    refvalues_["L2"]=arma::norm(L2_->value(), 2);
-    refvalues_["L3"]=arma::norm(L3_->value(), 2);
+  refvalues_["L1"]=arma::norm(L1_->value(), 2);
+  refvalues_["L2"]=arma::norm(L2_->value(), 2);
+  refvalues_["L3"]=arma::norm(L3_->value(), 2);
 
-    arma::mat e1=insight::normalized(L1_->value());
-    arma::mat e2=insight::normalized(L2_->value());
-    arma::mat e3=insight::normalized(L3_->value());
+  arma::mat e1=insight::normalized(L1_->value());
+  arma::mat e2=insight::normalized(L2_->value());
+  arma::mat e3=insight::normalized(L3_->value());
 
-    if (fabs(fabs(arma::dot(e1,e2))-1.)<SMALL)
-        throw insight::CADException(shared_from_this(), "edge 1 and 2 are colinear");
-    if (fabs(fabs(arma::dot(e1,e3))-1.)<SMALL)
-        throw insight::CADException(shared_from_this(), "edge 1 and 3 are colinear");
-    if (fabs(fabs(arma::dot(e2,e3))-1.)<SMALL)
-        throw insight::CADException(shared_from_this(), "edge 2 and 3 are colinear");
+  if (fabs(fabs(arma::dot(e1,e2))-1.)<SMALL)
+      throw insight::CADException(shared_from_this(), "edge 1 and 2 are colinear");
+  if (fabs(fabs(arma::dot(e1,e3))-1.)<SMALL)
+      throw insight::CADException(shared_from_this(), "edge 1 and 3 are colinear");
+  if (fabs(fabs(arma::dot(e2,e3))-1.)<SMALL)
+      throw insight::CADException(shared_from_this(), "edge 2 and 3 are colinear");
 
-    refvectors_["e1"]=e1;
-    refvectors_["e2"]=e2;
-    refvectors_["e3"]=e3;
+  refvectors_["e1"]=e1;
+  refvectors_["e2"]=e2;
+  refvectors_["e3"]=e3;
 
-    refvectors_["L1"]=L1_->value();
-    refvectors_["L2"]=L2_->value();
-    refvectors_["L3"]=L3_->value();
+  refvectors_["L1"]=L1_->value();
+  refvectors_["L2"]=L2_->value();
+  refvectors_["L3"]=L3_->value();
 
-    Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1_->value()), to_Pnt(p0+L2_->value())).Value();
-    TopoDS_Shape box=
-        BRepPrimAPI_MakePrism
-        (
-            BRepBuilderAPI_MakeFace
-            (
-                pln,
-                BRepBuilderAPI_MakePolygon
-                (
-                    to_Pnt(p0),
-                    to_Pnt(p0+L1_->value()),
-                    to_Pnt(p0+L1_->value()+L2_->value()),
-                    to_Pnt(p0+L2_->value()),
-                    true
-                ).Wire()
-            ).Face(),
-            to_Vec(L3_->value())
-        ).Shape();
+  Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1_->value()), to_Pnt(p0+L2_->value())).Value();
+  TopoDS_Shape box=
+      BRepPrimAPI_MakePrism
+      (
+          BRepBuilderAPI_MakeFace
+          (
+              pln,
+              BRepBuilderAPI_MakePolygon
+              (
+                  to_Pnt(p0),
+                  to_Pnt(p0+L1_->value()),
+                  to_Pnt(p0+L1_->value()+L2_->value()),
+                  to_Pnt(p0+L2_->value()),
+                  true
+              ).Wire()
+          ).Face(),
+          to_Vec(L3_->value())
+      ).Shape();
 
-    setShape(box);
+  setShape(box);
 
-    cache.insert(shared_from_this());
-  }
-  else
-  {
-      this->operator=(*cache.markAsUsed<Box>(hash()));
-  }
 }
 
 

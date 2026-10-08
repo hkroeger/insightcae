@@ -142,8 +142,6 @@ void Sketch::build()
     insight::CurrentExceptionContext ex("building sketch "+featureSymbolName());
     ExecTimer t("Sketch::build() ["+featureSymbolName()+"]");
     
-    if (!cache.contains(hash()))
-    {
         if (!pl_->providesPlanarReference())
             throw insight::Exception("Sketch: Planar reference required!");
 
@@ -309,12 +307,6 @@ void Sketch::build()
 
         setShape(result);
 
-        cache.insert(shared_from_this());
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<Sketch>(hash()));
-    }
 }
 
 
@@ -431,17 +423,6 @@ void Sketch::executeEditor()
         throw insight::Exception("Not implemented: starting other editor than FreeCAD!");
     }
 }
-
-void Sketch::operator=(const Sketch& o)
-{
-  pl_=o.pl_;
-  fn_=o.fn_;
-  ln_=o.ln_;
-  vars_=o.vars_;
-  tol_=o.tol_;
-  Feature::operator=(o);
-}
-
 
 Sketch::operator const TopoDS_Face& () const
 {

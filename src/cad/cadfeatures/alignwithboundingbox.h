@@ -40,6 +40,8 @@ private:
 
     size_t calcHash() const override;
     void build() override;
+    bool isCacheable() const override { return true; }
+    void copyResultsFrom(const Feature& o) override;
 
 public:
     declareType ( "AlignWithBoundingBox" );

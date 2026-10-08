@@ -49,8 +49,9 @@ size_t BooleanUnion::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  if (m2_) h+=*m2_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=bool(m2_); if (m2_) h+=*m2_;
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 
@@ -89,27 +90,19 @@ void BooleanUnion::build()
     if (m2_)
     {
 
-        if (!cache.contains(hash()))
+        copyDatums(*baseFeature(), "m1_");
+        copyDatums(*m2_, "m2_");
+        BRepAlgoAPI_Fuse fuser(*baseFeature(), *m2_);
+        fuser.Build();
+        if (!fuser.IsDone())
         {
-            copyDatums(*baseFeature(), "m1_");
-            copyDatums(*m2_, "m2_");
-            BRepAlgoAPI_Fuse fuser(*baseFeature(), *m2_);
-            fuser.Build();
-            if (!fuser.IsDone())
-            {
-                throw CADException
-                (
-                    shared_from_this(),
-                    _("could not perform fuse operation.")
-                );
-            }
-            setShape(fuser.Shape());
-            cache.insert(shared_from_this());
+            throw CADException
+            (
+                shared_from_this(),
+                _("could not perform fuse operation.")
+            );
         }
-        else
-        {
-            this->operator=(*cache.markAsUsed<BooleanUnion>(hash()));
-        }
+        setShape(fuser.Shape());
         baseFeature()->unsetLeaf();
         m2_->unsetLeaf();
     }
@@ -195,14 +188,6 @@ FeatureCmdInfoList BooleanUnion::ruleDocumentation()
         )
   };
 }
-
-void BooleanUnion::operator=(const BooleanUnion& o)
-{
-    DerivedFeature::operator=(o);
-    m2_=o.m2_;
-}
-
-
 
 FeaturePtr operator|(FeaturePtr m1, FeaturePtr m2)
 {

@@ -49,7 +49,8 @@ size_t FixShape::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 

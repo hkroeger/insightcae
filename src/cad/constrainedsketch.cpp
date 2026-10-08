@@ -1289,43 +1289,35 @@ void ConstrainedSketch::build()
 {
     ExecTimer t("ConstrainedSketch::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
+    if (!pl_->providesPlanarReference())
+        throw insight::Exception("Sketch: Planar reference required!");
+
+    /* Should only be solved in constrainedsketcheditor under user supervision!!
+     * Otherwise, only the saved DoFs are used.
+     */
+    // try
+    // {
+    //     resolveConstraints();
+    // }
+    // catch (insight::NonConvergenceException& ex)
+    // {
+    //     insight::Warning(ex);
+    // }
+
+    BRep_Builder bb;
+    TopoDS_Compound result;
+    bb.MakeCompound ( result );
+
+    for ( auto& sg: geometry_ )
     {
-        if (!pl_->providesPlanarReference())
-            throw insight::Exception("Sketch: Planar reference required!");
-
-        /* Should only be solved in constrainedsketcheditor under user supervision!!
-         * Otherwise, only the saved DoFs are used.
-         */
-        // try
-        // {
-        //     resolveConstraints();
-        // }
-        // catch (insight::NonConvergenceException& ex)
-        // {
-        //     insight::Warning(ex);
-        // }
-
-        BRep_Builder bb;
-        TopoDS_Compound result;
-        bb.MakeCompound ( result );
-
-        for ( auto& sg: geometry_ )
+        if ( auto f = std::dynamic_pointer_cast<Feature>(sg.second) )
         {
-            if ( auto f = std::dynamic_pointer_cast<Feature>(sg.second) )
-            {
-                bb.Add ( result, f->shape() );
-            }
+            bb.Add ( result, f->shape() );
         }
-
-        setShape(result);
-
-        cache.insert(shared_from_this());
     }
-    else
-    {
-        this->operator=(*cache.markAsUsed<ConstrainedSketch>(hash()));
-    }
+
+    setShape(result);
+
 }
 
 void ConstrainedSketch::replaceDependency(const DependencyReplacement &repl)

@@ -117,7 +117,8 @@ size_t ForLoop::calcHash() const
     h+=*i0_;
     h+=*imax_;
     h+=*increment_;
-    return h.getHash()+Compound::calcHash();
+    h+=Compound::calcHash();
+    return h.getHash();
 }
 
 void ForLoop::build()

@@ -57,6 +57,17 @@ protected:
   virtual size_t calcHash() const =0;
   virtual void build() =0;
 
+  /**
+   * called before build(). If it returns true, the result was obtained
+   * otherwise (e.g. from a cache) and build() is skipped.
+   */
+  virtual bool restoreFromCache();
+
+  /**
+   * called after a successful build()
+   */
+  virtual void storeInCache();
+
 public:
   static void cancelRebuild(std::thread::id thread_id = std::this_thread::get_id());
 
@@ -72,7 +83,7 @@ public:
   
   bool valid() const;
   bool building() const;
-  void invalidate();
+  virtual void invalidate();
 
   virtual void checkForBuildDuringAccess() const;
 

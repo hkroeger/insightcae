@@ -56,6 +56,7 @@ size_t Cutaway::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
+  h+=bool(p0_ && n_);
   if (p0_ && n_)
     {
       h+=*p0_;
@@ -66,7 +67,8 @@ size_t Cutaway::calcHash() const
       h+=*pl_;
       h+=inverted_;
     }
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 
@@ -99,83 +101,76 @@ void Cutaway::build()
 {
   ExecTimer t("Cutaway::build() ["+featureSymbolName()+"]");
 
-  if (!cache.contains(hash()))
-    {
 
-      arma::mat p0, n;
+  arma::mat p0, n;
 
-      if ( pl_ ) {
-          if ( !pl_->providesPlanarReference() ) {
-              throw insight::Exception ( _("Cutaway: Given datum does not provide a planar reference!") );
-            }
-          gp_Ax3 pl=pl_->plane();
-
-          p0=vec3 ( pl.Location() );
-          n=vec3 ( pl.Direction() );
-          if ( inverted_ ) {
-              n*=-1.;
-            }
-        } else {
-          if ( ( !p0_ ) || ( !n_ ) ) {
-              throw insight::Exception ( _("Cutaway: origin and normal direction undefined!") );
-            }
-          p0=p0_->value();
-          n=n_->value();
+  if ( pl_ ) {
+      if ( !pl_->providesPlanarReference() ) {
+          throw insight::Exception ( _("Cutaway: Given datum does not provide a planar reference!") );
         }
+      gp_Ax3 pl=pl_->plane();
 
-      arma::mat bb=baseFeature()->modelBndBox (
-            TesselationResolution::absolute(0.1) );
-      double delta=arma::norm(p0 - 0.5*(bb.col(0)+bb.col(1)),2);
-      double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 )+ delta, 2 ) ;
-
-      arma::mat ex=cross ( n, vec3 ( 1,0,0 ) );
-      if ( norm ( ex,2 ) <1e-8 ) {
-          ex=cross ( n, vec3 ( 0,1,0 ) );
+      p0=vec3 ( pl.Location() );
+      n=vec3 ( pl.Direction() );
+      if ( inverted_ ) {
+          n*=-1.;
         }
-      ex/=norm ( ex,2 );
+    } else {
+      if ( ( !p0_ ) || ( !n_ ) ) {
+          throw insight::Exception ( _("Cutaway: origin and normal direction undefined!") );
+        }
+      p0=p0_->value();
+      n=n_->value();
+    }
 
-      arma::mat ey=cross ( n,ex );
-      ey/=norm ( ey,2 );
+  arma::mat bb=baseFeature()->modelBndBox (
+        TesselationResolution::absolute(0.1) );
+  double delta=arma::norm(p0 - 0.5*(bb.col(0)+bb.col(1)),2);
+  double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 )+ delta, 2 ) ;
+
+  arma::mat ex=cross ( n, vec3 ( 1,0,0 ) );
+  if ( norm ( ex,2 ) <1e-8 ) {
+      ex=cross ( n, vec3 ( 0,1,0 ) );
+    }
+  ex/=norm ( ex,2 );
+
+  arma::mat ey=cross ( n,ex );
+  ey/=norm ( ey,2 );
 
 #warning Relocate p0 in plane to somewhere nearer to model center!
-      FeaturePtr q=Quad::create
-          (
-            matconst ( p0-0.5*L* ( ex+ey ) ),
-            matconst ( L*ex ),
-            matconst ( L*ey )
-            );
-      this->setShape ( q->shape() );
-      //   std::cout<<"Airspace"<<std::endl;
-      // TopoDS_Shape airspace=BRepPrimAPI_MakePrism ( TopoDS::Face ( q->shape() ), to_Vec ( L*n ) );
-      auto airspace=Extrusion::create( q, cad::matconst( L*n ) );
+  FeaturePtr q=Quad::create
+      (
+        matconst ( p0-0.5*L* ( ex+ey ) ),
+        matconst ( L*ex ),
+        matconst ( L*ey )
+        );
+  this->setShape ( q->shape() );
+  //   std::cout<<"Airspace"<<std::endl;
+  // TopoDS_Shape airspace=BRepPrimAPI_MakePrism ( TopoDS::Face ( q->shape() ), to_Vec ( L*n ) );
+  auto airspace=Extrusion::create( q, cad::matconst( L*n ) );
 
-      //   SolidModel(airspace).saveAs("airspace.stp");
-      refpoints_["p0"]=p0;
-      refvectors_["n"]=n;
-      // providedSubshapes_["input"]=baseFeature();
-      providedSubshapes_["AirSpace"]=airspace;
+  //   SolidModel(airspace).saveAs("airspace.stp");
+  refpoints_["p0"]=p0;
+  refvectors_["n"]=n;
+  // providedSubshapes_["input"]=baseFeature();
+  providedSubshapes_["AirSpace"]=airspace;
 
-      try {
-        providedSubshapes_["CutSurface"]=
-            BooleanIntersection::create
-            (
-              baseFeature(), q
-              );
-      } catch ( ... ) {
-        insight::Warning ( _("Could not create cutting surface!") );
-      }
+  try {
+    providedSubshapes_["CutSurface"]=
+        BooleanIntersection::create
+        (
+          baseFeature(), q
+          );
+  } catch ( ... ) {
+    insight::Warning ( _("Could not create cutting surface!") );
+  }
 
-      try {
-        this->setShape ( BooleanSubtract::create( baseFeature(), airspace )->shape() );
-      } catch ( ... ) {
-        throw insight::Exception ( _("Could not create cut!") );
-      }
+  try {
+    this->setShape ( BooleanSubtract::create( baseFeature(), airspace )->shape() );
+  } catch ( ... ) {
+    throw insight::Exception ( _("Could not create cut!") );
+  }
 
-    }
-  else
-    {
-      this->operator=(*cache.markAsUsed<Cutaway>(hash()));
-    }
 }
 
 

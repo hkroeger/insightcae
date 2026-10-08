@@ -64,6 +64,14 @@ void ASTBase::setValid()
   valid_=true;
 }
 
+bool ASTBase::restoreFromCache()
+{
+  return false;
+}
+
+void ASTBase::storeInCache()
+{}
+
 bool ASTBase::valid() const
 {
   return valid_;
@@ -102,7 +110,11 @@ void ASTBase::checkForBuildDuringAccess() const
           auto nct=const_cast<ASTBase*>(this);
 
           building_=true;
-          nct->build();
+          if (!nct->restoreFromCache())
+          {
+            nct->build();
+            nct->storeInCache();
+          }
           building_=false;
           const_cast<ASTBase*>(this)->setValid();
       }

@@ -48,6 +48,7 @@ class Quad
 
     size_t calcHash() const override;
     void build() override;
+    bool isCacheable() const override { return true; }
 
 public:
     declareType ( "Quad" );
@@ -59,7 +60,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    void operator= ( const Quad& o );
 
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();

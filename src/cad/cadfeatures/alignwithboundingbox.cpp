@@ -67,15 +67,23 @@ size_t AlignWithBoundingBox::calcHash() const
         h+=int(a.atOther_);
         h+=int(a.atThis_);
     }
-    return h.getHash()+DerivedFeature::calcHash();
+    h+=DerivedFeature::calcHash();
+    return h.getHash();
 }
+
+void AlignWithBoundingBox::copyResultsFrom(const Feature& o)
+{
+    DerivedFeature::copyResultsFrom(o);
+    trsf_=dynamic_cast<const AlignWithBoundingBox&>(o).trsf_;
+}
+
+
+
 
 void AlignWithBoundingBox::build()
 {
     ExecTimer t("Transform::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
-    {
         auto org = baseFeature();
 
         for (auto& a: alignments_)
@@ -133,12 +141,6 @@ void AlignWithBoundingBox::build()
         copyDatums(*org);
         trsf_=org->transformation();
 
-        cache.insert(shared_from_this());
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<AlignWithBoundingBox>(hash()));
-    }
 }
 
 

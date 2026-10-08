@@ -61,7 +61,6 @@ public:
   bool isSingleFace() const override;
   bool isSingleVolume() const override;
 
-  void operator=(const DerivedFeature& o);
 
   boost::optional<BOMDescriptionData> BOMDescription() const override;
 };

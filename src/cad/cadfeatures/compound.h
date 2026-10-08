@@ -56,6 +56,13 @@ protected:
 
     size_t calcHash() const override;
     void build() override;
+    bool isCacheable() const override { return true; }
+
+    /**
+     * For derived classes, which create their components during build():
+     * call this from copyResultsFrom().
+     */
+    void copyComponentsFrom(const Feature& o);
 
 public:
     declareType ( "Compound" );
@@ -73,7 +80,6 @@ public:
     arma::mat modelCoG ( double density_ovr=-1. ) const override;
     arma::mat modelInertia ( double density_ovr=-1. ) const override;
 
-    Compound& operator=(const Compound& o);
 
     void addToBOM(BOM& bom) const override;
 };

@@ -58,7 +58,8 @@ size_t Offset::calcHash() const
   h+=this->type();
   h+=*thickness_;
   h+=*tol_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 

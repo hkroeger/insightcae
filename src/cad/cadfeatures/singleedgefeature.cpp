@@ -115,42 +115,34 @@ void ImportedSingleEdgeFeature::build()
 {
     ExecTimer t("Import::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
+
+    if (auto *e=boost::get<TopoDS_Edge>(&importSource_))
     {
+        setShape(*e);
+    }
+    else if (auto *fs=boost::get<FeatureSetPtr>(&importSource_))
+    {
+        auto& featSet=*fs;
 
-        if (auto *e=boost::get<TopoDS_Edge>(&importSource_))
-        {
-            setShape(*e);
-        }
-        else if (auto *fs=boost::get<FeatureSetPtr>(&importSource_))
-        {
-            auto& featSet=*fs;
+        insight::assertion(
+            featSet->shape()==Edge,
+            "an edge type feature set is expected!");
 
-            insight::assertion(
-                featSet->shape()==Edge,
-                "an edge type feature set is expected!");
-
-            insight::assertion(
-                featSet->size()==1,
-                "a feature set containing a single edge is expected!");
+        insight::assertion(
+            featSet->size()==1,
+            "a feature set containing a single edge is expected!");
 
 
-            setShape(
-                featSet->model()->edge(
-                    *featSet->data().begin()
-                )
-            );
-        }
-        else
-            throw insight::UnhandledSelection();
-
-
-        cache.insert(shared_from_this());
+        setShape(
+            featSet->model()->edge(
+                *featSet->data().begin()
+            )
+        );
     }
     else
-    {
-        this->operator=(*cache.markAsUsed<ImportedSingleEdgeFeature>(hash()));
-    }
+        throw insight::UnhandledSelection();
+
+
 }
 
 void ImportedSingleEdgeFeature::replaceDependency(const DependencyReplacement &repl)

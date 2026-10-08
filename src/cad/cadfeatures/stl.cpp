@@ -158,8 +158,6 @@ void STL::build()
 {
   ExecTimer t("STL::build() ["+featureSymbolName()+"]");
 
-  if (!cache.contains(hash()))
-  {
     CurrentExceptionContext ex(_("reading STL geometry"));
 
     vtkSmartPointer<vtkPolyData> pd;
@@ -307,13 +305,6 @@ void STL::build()
       setShape(BRepPrimAPI_MakeSphere(1).Shape());
     }
 
-    cache.insert(shared_from_this());
-  }
-  else
-  {
-//    std::cout<<"Retrieving STL from cache"<<std::endl;
-    this->operator=(*cache.markAsUsed<STL>(hash()));
-  }
 }
 
 

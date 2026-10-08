@@ -79,44 +79,81 @@ Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering ce
 
 
 
-void Quad::operator=(const Quad& o)
-{
-  p0_=o.p0_;
-  L_=o.L_;
-  W_=o.W_;
-  t_=o.t_;
-  center_=o.center_;
-  Feature::operator=(o);
-}
-
-
-
-
 void Quad::build()
 {
-    if ( !cache.contains ( hash() ) )
-    {
-        double L=arma::norm(L_->value(), 2);
-        double W=arma::norm(W_->value(), 2);
-        
-        refvalues_["W"]=W;
-        refvalues_["L"]=L;
-        
-        refvectors_["L"]=L_->value();
-        refvectors_["W"]=W_->value();
-        refvectors_["el"]=normalized(L_->value());
-        refvectors_["ew"]=normalized(W_->value());
-        refvectors_["n"]=normalized(arma::cross(L_->value(), W_->value()));
+    double L=arma::norm(L_->value(), 2);
+    double W=arma::norm(W_->value(), 2);
+    
+    refvalues_["W"]=W;
+    refvalues_["L"]=L;
+    
+    refvectors_["L"]=L_->value();
+    refvectors_["W"]=W_->value();
+    refvectors_["el"]=normalized(L_->value());
+    refvectors_["ew"]=normalized(W_->value());
+    refvectors_["n"]=normalized(arma::cross(L_->value(), W_->value()));
 
-        if (L<1e-10)
+    if (L<1e-10)
+        throw insight::Exception(str(format(
+            _("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"))%L));
+    if (W<1e-10)
+        throw insight::Exception(str(format(
+            _("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"))%W));
+    
+    gp_Pnt
+        p1 ( to_Pnt ( p0_->value() ) );
+
+    if ( boost::fusion::at_c<0> ( center_ ) ) {
+        p1.Translate ( to_Vec ( -0.5*L_->value() ) );
+    }
+    if ( boost::fusion::at_c<1> ( center_ ) ) {
+        p1.Translate ( to_Vec ( -0.5*W_->value() ) );
+    }
+
+    gp_Pnt
+    p2=p1.Translated ( to_Vec ( W_->value() ) ),
+    p3=p2.Translated ( to_Vec ( L_->value() ) ),
+    p4=p1.Translated ( to_Vec ( L_->value() ) )
+       ;
+
+    BRepBuilderAPI_MakeWire w;
+    w.Add ( BRepBuilderAPI_MakeEdge ( p1, p2 ) );
+    w.Add ( BRepBuilderAPI_MakeEdge ( p2, p3 ) );
+    w.Add ( BRepBuilderAPI_MakeEdge ( p3, p4 ) );
+    w.Add ( BRepBuilderAPI_MakeEdge ( p4, p1 ) );
+
+    refpoints_["c1"]=vec3 ( p1 );
+    refpoints_["c2"]=vec3 ( p2 );
+    refpoints_["c3"]=vec3 ( p3 );
+    refpoints_["c4"]=vec3 ( p4 );
+
+    providedDatums_["plane"] = std::make_shared<DatumPlane>(
+          p0_,
+          matconst(insight::Vector(p2)),
+          matconst(insight::Vector(p4)),
+          true
+    );
+    providedSubshapes_["OuterWire"]=Import::create( w.Wire() );
+
+    TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
+    
+    if (t_)
+    {
+        double maxt=std::min(L,W)/2.;
+        double t=t_->value();
+        refvalues_["t"]=t;
+        
+        if (t<1e-10)
             throw insight::Exception(str(format(
-                _("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!"))%L));
-        if (W<1e-10)
+                _("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"))%t));
+        if (t>maxt)
             throw insight::Exception(str(format(
-                _("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!"))%W));
+                _("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!"))%t%maxt));
         
         gp_Pnt
             p1 ( to_Pnt ( p0_->value() ) );
+            
+        p1.Translate ( to_Vec ( L_->value()*(t/L) + W_->value()*(t/W) ) );
 
         if ( boost::fusion::at_c<0> ( center_ ) ) {
             p1.Translate ( to_Vec ( -0.5*L_->value() ) );
@@ -126,104 +163,46 @@ void Quad::build()
         }
 
         gp_Pnt
-        p2=p1.Translated ( to_Vec ( W_->value() ) ),
-        p3=p2.Translated ( to_Vec ( L_->value() ) ),
-        p4=p1.Translated ( to_Vec ( L_->value() ) )
-           ;
+        p2=p1.Translated ( to_Vec ( W_->value()*((W-2*t)/W) ) ),
+        p3=p2.Translated ( to_Vec ( L_->value()*((L-2*t)/L) ) ),
+        p4=p1.Translated ( to_Vec ( L_->value()*((L-2*t)/L) ) )
+        ;
 
         BRepBuilderAPI_MakeWire w;
         w.Add ( BRepBuilderAPI_MakeEdge ( p1, p2 ) );
         w.Add ( BRepBuilderAPI_MakeEdge ( p2, p3 ) );
         w.Add ( BRepBuilderAPI_MakeEdge ( p3, p4 ) );
         w.Add ( BRepBuilderAPI_MakeEdge ( p4, p1 ) );
-
-        refpoints_["c1"]=vec3 ( p1 );
-        refpoints_["c2"]=vec3 ( p2 );
-        refpoints_["c3"]=vec3 ( p3 );
-        refpoints_["c4"]=vec3 ( p4 );
-
-        providedDatums_["plane"] = std::make_shared<DatumPlane>(
-              p0_,
-              matconst(insight::Vector(p2)),
-              matconst(insight::Vector(p4)),
-              true
-        );
-        providedSubshapes_["OuterWire"]=Import::create( w.Wire() );
-
-        TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
         
-        if (t_)
-        {
-            double maxt=std::min(L,W)/2.;
-            double t=t_->value();
-            refvalues_["t"]=t;
-            
-            if (t<1e-10)
-                throw insight::Exception(str(format(
-                    _("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!"))%t));
-            if (t>maxt)
-                throw insight::Exception(str(format(
-                    _("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!"))%t%maxt));
-            
-            gp_Pnt
-                p1 ( to_Pnt ( p0_->value() ) );
-                
-            p1.Translate ( to_Vec ( L_->value()*(t/L) + W_->value()*(t/W) ) );
-
-            if ( boost::fusion::at_c<0> ( center_ ) ) {
-                p1.Translate ( to_Vec ( -0.5*L_->value() ) );
-            }
-            if ( boost::fusion::at_c<1> ( center_ ) ) {
-                p1.Translate ( to_Vec ( -0.5*W_->value() ) );
-            }
-
-            gp_Pnt
-            p2=p1.Translated ( to_Vec ( W_->value()*((W-2*t)/W) ) ),
-            p3=p2.Translated ( to_Vec ( L_->value()*((L-2*t)/L) ) ),
-            p4=p1.Translated ( to_Vec ( L_->value()*((L-2*t)/L) ) )
-            ;
-
-            BRepBuilderAPI_MakeWire w;
-            w.Add ( BRepBuilderAPI_MakeEdge ( p1, p2 ) );
-            w.Add ( BRepBuilderAPI_MakeEdge ( p2, p3 ) );
-            w.Add ( BRepBuilderAPI_MakeEdge ( p3, p4 ) );
-            w.Add ( BRepBuilderAPI_MakeEdge ( p4, p1 ) );
-            
-            s = BRepAlgoAPI_Cut( s,  BRepBuilderAPI_MakeFace ( w.Wire() ) );
-        }
-        
-        setShape ( s ); // naming
-
-        providedFeatureSets_["e12"] =
-            makeEdgeFeatureSet(
-                shared_from_this(),
-                "connects(%0, %1)",
-                { vertexAt(vec3(p1)),
-                  vertexAt(vec3(p2)) });
-        providedFeatureSets_["e23"] =
-            makeEdgeFeatureSet(
-                shared_from_this(),
-                "connects(%0, %1)",
-                { vertexAt(vec3(p2)),
-                 vertexAt(vec3(p3)) });
-        providedFeatureSets_["e34"] =
-            makeEdgeFeatureSet(
-                shared_from_this(),
-                "connects(%0, %1)",
-                { vertexAt(vec3(p3)),
-                 vertexAt(vec3(p4)) });
-        providedFeatureSets_["e41"] =
-            makeEdgeFeatureSet(
-                shared_from_this(),
-                "connects(%0, %1)",
-                { vertexAt(vec3(p4)),
-                 vertexAt(vec3(p1)) });
-
-        cache.insert ( shared_from_this() );
-        
-    } else {
-        this->operator= ( *cache.markAsUsed<Quad> ( hash() ) );
+        s = BRepAlgoAPI_Cut( s,  BRepBuilderAPI_MakeFace ( w.Wire() ) );
     }
+    
+    setShape ( s ); // naming
+
+    providedFeatureSets_["e12"] =
+        makeEdgeFeatureSet(
+            shared_from_this(),
+            "connects(%0, %1)",
+            { vertexAt(vec3(p1)),
+              vertexAt(vec3(p2)) });
+    providedFeatureSets_["e23"] =
+        makeEdgeFeatureSet(
+            shared_from_this(),
+            "connects(%0, %1)",
+            { vertexAt(vec3(p2)),
+             vertexAt(vec3(p3)) });
+    providedFeatureSets_["e34"] =
+        makeEdgeFeatureSet(
+            shared_from_this(),
+            "connects(%0, %1)",
+            { vertexAt(vec3(p3)),
+             vertexAt(vec3(p4)) });
+    providedFeatureSets_["e41"] =
+        makeEdgeFeatureSet(
+            shared_from_this(),
+            "connects(%0, %1)",
+            { vertexAt(vec3(p4)),
+             vertexAt(vec3(p1)) });
 }
 
 

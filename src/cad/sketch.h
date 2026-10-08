@@ -64,6 +64,7 @@ class Sketch
 
   size_t calcHash() const override;
   void build() override;
+  bool isCacheable() const override { return true; }
 
   Sketch(const Sketch&o, TreeCloneMap& tcm);
 public:
@@ -75,7 +76,6 @@ public:
 
   CREATE_FUNCTION(Sketch);
   
-  void operator=(const Sketch& o);
   
   
   void executeEditor();

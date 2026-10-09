@@ -207,11 +207,18 @@ LabeledArrayKeySelectionParameter::readFromNode (
     const std::string& name,
     const rapidxml::xml_node<>& node )
 {
-    auto* child = Parameter::readFromNode(name, node);
+    const rapidxml::xml_node<>* child = Parameter::readFromNode(name, node);
     if (child)
     {
         value_              = getMandatoryAttribute(*child, "value");
         arrayParameterPath_ = getMandatoryAttribute(*child, "arrayPath");
+        triggerValueChanged();
+    }
+    else if ( !name.empty()
+              && (child = findNode(node, name, StringParameter::typeName_())) ) // attempt compatibility read
+    {
+        value_ = getMandatoryAttribute(*child, "value");
+        // arrayParameterPath_ is kept (comes from the parameter definition)
         triggerValueChanged();
     }
     else

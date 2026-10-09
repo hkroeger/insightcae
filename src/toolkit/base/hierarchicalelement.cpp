@@ -261,6 +261,13 @@ std::string splitOffFirstParameter(std::string& path, int& nRemaining)
 
 bool Element::hasPath( std::string path ) const
 {
+    if (!path.empty() && path[0]=='/')
+    {
+        const Element* root = this;
+        while (root->hasParent())
+            root = &root->parent();
+        return root->hasPath(path.substr(1));
+    }
 
     std::function<bool(const Element&, std::string)> checkChildren;
 
@@ -268,6 +275,15 @@ bool Element::hasPath( std::string path ) const
     {
         int nRemaining=-1;
         std::string parameterName = splitOffFirstParameter(path, nRemaining);
+        if (parameterName=="..")
+        {
+            if (!cp.hasParent())
+                return false;
+            else if (nRemaining == 0)
+                return true;
+            else
+                return checkChildren(cp.parent(), path);
+        }
         int i = cp.childElementIndex(parameterName);
         if (i==-1)
         {

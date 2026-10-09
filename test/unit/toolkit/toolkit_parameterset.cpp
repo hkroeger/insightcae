@@ -415,7 +415,8 @@ int main()
             auto makeOldXML = [&](const std::string& v)
             {
                 auto old = makeSet();
-                old->insert("sel", StringParameter(v, "selected specie"));
+                // note: pass std::string, a literal would select the (description, bool isHidden) overload
+                old->insert("sel", StringParameter(v, std::string("selected specie")));
                 std::string xml;
                 old->saveToString(xml);
                 return xml;
@@ -423,7 +424,8 @@ int main()
 
             auto root = makeSet();
             root->insert("sel",
-                LabeledArrayKeySelectionParameter("/fluid/species", "A", "selected specie") );
+                LabeledArrayKeySelectionParameter(
+                    std::string("/fluid/species"), std::string("A"), std::string("selected specie") ) );
 
             root->readFromString(makeOldXML("B"));
             {

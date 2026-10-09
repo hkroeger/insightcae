@@ -65,7 +65,9 @@ public:
      * @brief addToPreview
      * implemented in toolkit_gui (snappyhexmesh_gui.cpp)
      */
-    void addToPreview(CADParameterSetModelVisualizer &psv) const;
+    void addToPreview(
+        CADParameterSetModelVisualizer &psv,
+        gp_Trsf trsf = gp_Trsf() ) const;
 
     void addIntoSnappyHexMeshConfiguration(
         snappyHexMeshConfiguration::Parameters &p) const;

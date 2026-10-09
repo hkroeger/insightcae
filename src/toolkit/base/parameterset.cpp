@@ -116,6 +116,13 @@ void AnalysisParameterSet::readFromRootNode(
     }
 
     ParameterSet::readFromRootNode(rootNode, startAtSubnode);
+
+    if (startAtSubnode.empty())
+    {
+        // the complete hierarchy is filled now:
+        // re-sync dependent data (e.g. keys of labeled arrays with key source)
+        initializeHierarchy();
+    }
 }
 
 
@@ -136,6 +143,8 @@ void AnalysisParameterSet::mergeIncompatibleParameterSet(
         getByPath(subset->second)
             .readFromRootNode(*doc.rootNode, subset->first);
     }
+
+    initializeHierarchy();
 }
 
 

@@ -322,10 +322,16 @@ int ArrayParameter::childElementIndex(const std::string &name) const
 
 void ArrayParameter::clear()
 {
+    int n=value_.size();
+
+    if (n>0) beforeChildRemoval(0, n-1);
 
     valueChangedConnections_.clear();
     childValueChangedConnections_.clear();
+    auto items=std::move(value_); // don't delete before childRemovalDone
     value_.clear();
+
+    if (n>0) childRemovalDone(0, n-1);
 
     triggerValueChanged();
 }

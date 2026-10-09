@@ -870,7 +870,10 @@ void AnalysisForm::onMergeParameters()
             importedPS->resolveRelativePaths(fn.asFilesystemPath().parent_path());
             ps->copyMatching(*importedPS);
 
-            psmodel_->resetParameterValues(*ps);
+            // re-sync dependent data (e.g. keys of labeled arrays with key source)
+            auto fps = insight::ParameterSet::finalize(std::move(ps));
+
+            psmodel_->resetParameterValues(*fps);
         }
     }
 }

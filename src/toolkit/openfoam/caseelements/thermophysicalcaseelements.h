@@ -29,8 +29,7 @@
 #include <array>
 #include <map>
 
-#include "thermophysicalcaseelements__cavitatingFoamThermodynamics__Parameters_headers.h"
-#include "thermophysicalcaseelements__compressibleMixtureThermophysicalProperties__Parameters_headers.h"
+#include "thermophysicalcaseelements_pdl.h"
 
 namespace insight {
 
@@ -40,9 +39,9 @@ class cavitatingFoamThermodynamics
 : public thermodynamicModel
 {
 public:
-#include "thermophysicalcaseelements__cavitatingFoamThermodynamics__Parameters.h"
+#include THERMOPHYSICALCASEELEMENTS_PDL_cavitatingFoamThermodynamics
 /*
-PARAMETERSET>>> cavitatingFoamThermodynamics Parameters
+PARAMETERSET>>>
 inherits thermodynamicModel::Parameters
 
 psiv = double 2.5e-6 ""
@@ -84,20 +83,19 @@ protected:
   std::string getThermoType() const;
 
 public:
-#include "thermophysicalcaseelements__compressibleMixtureThermophysicalProperties__Parameters.h"
+#include THERMOPHYSICALCASEELEMENTS_PDL_compressibleMixtureThermophysicalProperties
 /*
-PARAMETERSET>>> compressibleMixtureThermophysicalProperties Parameters
+PARAMETERSET>>>
 inherits thermodynamicModel::Parameters
 addTo_makeDefault { modifyDefaults(p); }
-
-inertSpecie = string "N2" ""
 
 composition = selectablesubset {{
 
   fromFile set {
     foamChemistryThermoFile = path "" "" *necessary
 
-    defaultMassFractions = labeledarray "specie%d" [ double 1.0 "" ] *1
+    // "species" needs to be a labeledarray with same path as below for compatibility
+    species = labeledarray "specie%d" [ double 1.0 "" ] *1
       "The composition of the mixture which initially fills the entire domain."
   }
 
@@ -111,6 +109,7 @@ composition = selectablesubset {{
  }} fromList ""
 
 
+inertSpecie = labeledArrayKeySelection "composition/species" ""
 
 reactions = selectablesubset {{
 

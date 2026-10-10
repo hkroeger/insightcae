@@ -52,6 +52,22 @@ namespace insight
 
 
 
+/**
+ * @brief doubleToJson
+ * JSON numbers cannot represent nan or inf (Wt serializes them as null).
+ * Non-finite values are therefore encoded as strings "nan", "inf" or "-inf".
+ */
+Wt::Json::Value doubleToJson(double v);
+
+/**
+ * @brief doubleFromJson
+ * inverse of doubleToJson. A null value is interpreted as nan
+ * (for compatibility with servers which do not encode non-finite values).
+ */
+double doubleFromJson(const Wt::Json::Value& v);
+
+
+
 
 class AnalyzeClient;
 
@@ -171,6 +187,7 @@ public:
     {
       bool resultsAreAvailable = false;
       bool errorOccurred = false;
+      bool parseError = false; // server answered, but the response could not be interpreted
       std::shared_ptr<insight::Exception> exception;
     };
     typedef std::function<void(Result)> Callback;

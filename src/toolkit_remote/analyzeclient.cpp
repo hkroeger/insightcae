@@ -29,11 +29,54 @@
 #include "base/warningdispatcher.h"
 
 #include <functional>
+#include <cmath>
+#include <limits>
 
 using namespace std;
 
 namespace insight
 {
+
+
+
+
+Wt::Json::Value doubleToJson(double v)
+{
+    if (std::isnan(v))
+        return Wt::Json::Value(Wt::WString("nan"));
+    else if (std::isinf(v))
+        return Wt::Json::Value(Wt::WString(v>0 ? "inf" : "-inf"));
+    else
+        return Wt::Json::Value(v);
+}
+
+
+
+
+double doubleFromJson(const Wt::Json::Value& v)
+{
+    if (v.isNull())
+    {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    else if (v.type()==Wt::Json::Type::String)
+    {
+        std::string s = v.toString().orIfNull("");
+        if (s=="nan")
+            return std::numeric_limits<double>::quiet_NaN();
+        else if (s=="inf")
+            return std::numeric_limits<double>::infinity();
+        else if (s=="-inf")
+            return -std::numeric_limits<double>::infinity();
+        else
+            throw insight::Exception(
+                "unexpected string representation of a number: \"%s\"", s.c_str() );
+    }
+    else
+    {
+        return v.toNumber();
+    }
+}
 
 
 
@@ -256,13 +299,13 @@ void QueryStatusAction::evaluateResponse(
               Wt::Json::Object pvs = s.get("ProgressVariableList");
               for (const auto& pv: pvs)
               {
-                pvl[pv.first]=pv.second.toNumber();
+                pvl[pv.first]=doubleFromJson(pv.second);
               }
             }
 
             cl_.progressDisplayer()->update(
                   ProgressState(
-                    s.get("time").toNumber(),
+                    doubleFromJson(s.get("time")),
                     pvl,
                     s.get("logMessage").toString()
                     )
@@ -275,9 +318,9 @@ void QueryStatusAction::evaluateResponse(
           {
             Wt::Json::Object s=*i;
             auto path = s.get("path").toString();
-            if (!s.isNull("double"))
+            if (s.contains("double"))
             {
-              double value = s.get("double").toNumber();
+              double value = doubleFromJson(s.get("double"));
               cl_.progressDisplayer()->setActionProgressValue(path, value);
             }
             else if (!s.isNull("text"))
@@ -316,6 +359,7 @@ void QueryStatusAction::evaluateResponse(
         dbg()<<"invalid status response: "<<e.what()<<std::endl;
         qsr = Result();
         qsr.success=false;
+        qsr.parseError=true;
       }
     }
 

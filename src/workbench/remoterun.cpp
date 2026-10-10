@@ -319,7 +319,7 @@ void RemoteRun::waitForContact( int maxAttempts )
         ac_->queryStatus(
                 [this,scheduleNextAttempt](insight::QueryStatusAction::Result r)
                 {
-                    if (r.success)
+                    if (r.success || r.parseError)
                     {
                         contactEstablished_ = true;
                         // execute callback on success
@@ -412,6 +412,18 @@ void RemoteRun::monitor()
                       try
                       {
                         if (disconnectRequested_) return;
+
+                        if (qsr.parseError)
+                        {
+                            // the server answered: contact is not lost,
+                            // only this status update could not be interpreted
+                            insight::dbg()<<"ignoring uninterpretable status response"<<std::endl;
+                            failedStatusQueries_ = 0;
+                            ac_->ioService().schedule(
+                                        timing_.pollInterval,
+                                        std::bind(&RemoteRun::monitor, this) );
+                            return;
+                        }
 
                         if (!qsr.success)
                         {

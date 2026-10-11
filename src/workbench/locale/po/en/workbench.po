@@ -22,6 +22,15 @@ msgstr "launch in local location"
 msgid "launch in remote workspace"
 msgstr "launch in remote workspace"
 
+msgid "%1 (not connected)"
+msgstr ""
+
+msgid ""
+"The remote server is currently not reachable or not running.\n"
+"A connection will be established (and the server launched, if possible) when "
+"a remote action is started."
+msgstr ""
+
 msgid "(none)"
 msgstr "(none)"
 
@@ -373,6 +382,35 @@ msgstr ""
 "Creation of an analysis of type \"%s\" failed.\n"
 "Please check, if the analysis type entry in the parameter file is correct.\n"
 "Error information: %s\n"
+
+msgid "online"
+msgstr ""
+
+msgid "not reachable"
+msgstr ""
+
+msgid "Checking, if the host is reachable..."
+msgstr ""
+
+msgid ""
+"The host is not reachable. A new directory can only be created on a running "
+"host."
+msgstr ""
+
+msgid ""
+"Create a new remote directory with a random name.\n"
+"Unlike the temporary directory, it is kept after the analysis."
+msgstr ""
+
+#, fuzzy
+msgid "Remote directory creation failed"
+msgstr "Remote directory is invalid!"
+
+#, fuzzy
+msgid ""
+"The remote directory could not be created:\n"
+"%1"
+msgstr "The remote directory is invalid!"
 
 msgid "Invalid Working Directory"
 msgstr "Invalid Working Directory"

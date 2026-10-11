@@ -1,6 +1,7 @@
 
 #include "iqexecutionworkspace.h"
 #include "base/tools.h"
+#include "base/warningdispatcher.h"
 #include "qexecutionworkspacedialog.h"
 
 #include <QMessageBox>
@@ -57,7 +58,7 @@ void IQExecutionWorkspace::initializeToDefaults()
 
         if ( (remoteExecutionConfiguration_ = defaultOpenFOAMRemoteWorkspace()) != nullptr )
         {
-            if ( af_->remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting()
+            if ( af_->remoteExecutionConfiguration_->location().tryConnect()
                  && !af_->localCaseDirectory_->empty() )
             {
                 af_->remoteExecutionConfiguration_->commit( af_->localCaseDirectory() );
@@ -173,10 +174,22 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
         if (insight::RemoteExecutionConfig::remoteLocationConfigIsValid(
                 insight::RemoteExecutionConfig::defaultConfigFile(lwd)) )
         {
-            presentRL = std::make_unique<insight::RemoteLocation>(
-                        insight::RemoteExecutionConfig::defaultConfigFile(lwd) );
+            try
+            {
+                // don't validate here: the server might be switched off.
+                // The connection is established on the first remote action.
+                presentRL = std::make_unique<insight::RemoteLocation>(
+                            insight::RemoteExecutionConfig::defaultConfigFile(lwd), true );
 
-            insight::dbg()<<"remote location configuration read from directory "<<lwd<<std::endl;
+                insight::dbg()<<"remote location configuration read from directory "<<lwd<<std::endl;
+            }
+            catch (const std::exception& e)
+            {
+                insight::Warning(
+                    "The remote execution configuration in directory %s could not be read and is ignored.\n"
+                    "Reason: %s",
+                    lwd.string().c_str(), e.what() );
+            }
         }
         else
         {
@@ -211,7 +224,7 @@ void IQExecutionWorkspace::resetExecutionEnvironment(
                         *nrl );
 
             // if the remote location is ready available, commit it immediately
-            if (remoteExecutionConfiguration_->remoteHostRunningAndDirectoryExisting())
+            if (remoteExecutionConfiguration_->location().tryConnect())
                 remoteExecutionConfiguration_->commit( localCaseDirectory() );
 
             connectReinitializeToDefault();

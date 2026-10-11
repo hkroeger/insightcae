@@ -51,10 +51,29 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
 
       ui->lblHostName->setEnabled(enabled);
       if (enabled)
-        ui->lblHostName->setText(
-              QString::fromStdString( rlc_->serverLabel() ) );
+      {
+        if (rlc_->isActive())
+        {
+          ui->lblHostName->setText(
+                QString::fromStdString( rlc_->serverLabel() ) );
+          ui->lblHostName->setToolTip(QString());
+        }
+        else
+        {
+          ui->lblHostName->setText(
+                QString(_("%1 (not connected)")).arg(
+                  QString::fromStdString( rlc_->serverLabel() ) ) );
+          ui->lblHostName->setToolTip(
+                _("The remote server is currently not reachable or not running.\n"
+                  "A connection will be established (and the server launched, if possible)"
+                  " when a remote action is started.") );
+        }
+      }
       else
+      {
         ui->lblHostName->setText(_("(none)"));
+        ui->lblHostName->setToolTip(QString());
+      }
 
       ui->lblRemoteDirectory->setEnabled(enabled);
       if (enabled)

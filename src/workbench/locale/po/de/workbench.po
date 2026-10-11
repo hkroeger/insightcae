@@ -22,6 +22,15 @@ msgstr "in lokalem Ordner ausführen"
 msgid "launch in remote workspace"
 msgstr "in entferntem Workspace ausführen"
 
+msgid "%1 (not connected)"
+msgstr ""
+
+msgid ""
+"The remote server is currently not reachable or not running.\n"
+"A connection will be established (and the server launched, if possible) when "
+"a remote action is started."
+msgstr ""
+
 msgid "(none)"
 msgstr "(kein)"
 
@@ -381,6 +390,35 @@ msgstr ""
 "Bitte prüfen, ob der Analysetyp in der Parameterdatei korrekt angegeben "
 "ist.\n"
 "Fehlerinformation: %s\n"
+
+msgid "online"
+msgstr ""
+
+msgid "not reachable"
+msgstr ""
+
+msgid "Checking, if the host is reachable..."
+msgstr ""
+
+msgid ""
+"The host is not reachable. A new directory can only be created on a running "
+"host."
+msgstr ""
+
+msgid ""
+"Create a new remote directory with a random name.\n"
+"Unlike the temporary directory, it is kept after the analysis."
+msgstr ""
+
+#, fuzzy
+msgid "Remote directory creation failed"
+msgstr "Entferntes Verzeichnis ist ungültig!"
+
+#, fuzzy
+msgid ""
+"The remote directory could not be created:\n"
+"%1"
+msgstr "Das entfernte Verzeichnis ist ungültig!"
 
 msgid "Invalid Working Directory"
 msgstr "Ungültiges Arbeitsverzeichnis"

@@ -342,6 +342,25 @@ void RemoteLocation::validate()
 
 
 
+bool RemoteLocation::tryConnect()
+{
+  try
+  {
+    if (!serverInstance_)
+      serverInstance_ = serverConfig_->getInstanceIfRunning();
+    validate();
+  }
+  catch (const std::exception& e)
+  {
+    insight::dbg()<<"could not connect to remote location: "<<e.what()<<std::endl;
+    isValidated_=false;
+  }
+  return isValidated_;
+}
+
+
+
+
 void RemoteLocation::removeRemoteDir()
 {
   if (remoteDirExists())

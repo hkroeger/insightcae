@@ -97,6 +97,24 @@ SSHLinuxServer::Config::commandAndArgs(const std::string& command) const
             ssh.arguments() };
 }
 
+bool SSHLinuxServer::Config::isRunning() const
+{
+    CurrentExceptionContext ex("checking, if server %s is reachable", c_str());
+
+    std::vector<std::string> args;
+#ifndef WIN32
+    args = { "-o", "ConnectTimeout=5", "-o", "BatchMode=yes" };
+#endif
+    args.push_back("exit");
+
+    SSHCommand ssh(hostName_, args);
+    boost::process::child c(
+        ssh.command(), boost::process::args(ssh.arguments()),
+        boost::process::std_in < boost::process::null );
+    c.wait();
+    return c.exit_code()==0;
+}
+
 bool SSHLinuxServer::Config::isDynamicallyAllocated() const
 {
   return false;

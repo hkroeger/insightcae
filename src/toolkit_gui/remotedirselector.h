@@ -5,6 +5,8 @@
 
 #include <QDialog>
 
+class QLabel;
+
 #include "base/boost_include.h"
 #include "iqremotefoldermodel.h"
 
@@ -20,6 +22,9 @@ class TOOLKIT_GUI_EXPORT RemoteDirSelector : public QDialog
 
   insight::RemoteServerPtr server_;
   IQRemoteFolderModel* fs_model_;
+
+  QWidget* status_;
+  QLabel* statusLabel_;
 
 public:
   explicit RemoteDirSelector(QWidget *parent, insight::RemoteServerPtr server);

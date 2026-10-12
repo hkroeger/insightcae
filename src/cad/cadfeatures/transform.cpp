@@ -52,13 +52,15 @@ size_t Transform::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  if (trans_) h+=*trans_;
-  if (rot_) h+=*rot_;
-  if (rotorg_) h+=*rotorg_;
-  if (sf_) h+=*sf_;
-  if (otherTrsfSource_) h+=*otherTrsfSource_;
-  if (trsf_) h+=*trsf_;
-  return h.getHash()+DerivedFeature::calcHash();
+  // tag each optional input, so that e.g. (trans=a, rot=b) and (rot=a, rotorg=b) differ
+  h+=bool(trans_); if (trans_) h+=*trans_;
+  h+=bool(rot_); if (rot_) h+=*rot_;
+  h+=bool(rotorg_); if (rotorg_) h+=*rotorg_;
+  h+=bool(sf_); if (sf_) h+=*sf_;
+  h+=bool(otherTrsfSource_); if (otherTrsfSource_) h+=*otherTrsfSource_;
+  h+=bool(trsf_); if (trsf_) h+=*trsf_;
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 
@@ -181,108 +183,115 @@ gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
 
 
 
+void Transform::copyResultsFrom(const Feature& o)
+{
+    DerivedFeature::copyResultsFrom(o);
+    // the transformation is computed during build, if not given explicitly
+    if (!trsf_)
+    {
+        const auto& ot=dynamic_cast<const Transform&>(o);
+        if (ot.trsf_)
+            trsf_.reset(new gp_Trsf(*ot.trsf_));
+    }
+}
+
+
+
+
 void Transform::build()
 {
   ExecTimer t("Transform::build() ["+featureSymbolName()+"]");
 
-  if (!cache.contains(hash()))
+  if (!trsf_)
   {
-    if (!trsf_)
-    {
 
-        if (otherTrsfSource_)
-        {
-            trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(otherTrsfSource_)));
-        }
-        else
-        {
-            gp_Trsf tr0, tr1, tr2;
+      if (otherTrsfSource_)
+      {
+          trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(otherTrsfSource_)));
+      }
+      else
+      {
+          gp_Trsf tr0, tr1, tr2;
 
-            if (sf_)
-            {
-                tr0.SetScaleFactor(*sf_);
-                refvalues_["scaleFactor"]=*sf_;
-            }
-            else
-            {
-                refvalues_["scaleFactor"]=1.0;
-            }
-            
-            if (trans_)
-            {
-                tr1.SetTranslation(to_Vec(*trans_));
-                refvectors_["translation"]=*trans_;
-            }
-            else
-            {
-                refvectors_["translation"]=vec3(0,0,0);
-            }
+          if (sf_)
+          {
+              tr0.SetScaleFactor(*sf_);
+              refvalues_["scaleFactor"]=*sf_;
+          }
+          else
+          {
+              refvalues_["scaleFactor"]=1.0;
+          }
+          
+          if (trans_)
+          {
+              tr1.SetTranslation(to_Vec(*trans_));
+              refvectors_["translation"]=*trans_;
+          }
+          else
+          {
+              refvectors_["translation"]=vec3(0,0,0);
+          }
 
-            if (rot_)
-            {
-                double phi=norm(rot_->value(), 2);
-                if (phi>1e-10)
-                {
-                    gp_Vec axis=to_Vec(rot_->value());
-                    axis.Normalize();
-                    gp_Pnt rorg(0,0,0);
-                    if (rotorg_) 
-                    {
-                        rorg=to_Pnt(rotorg_->value());
-                        refpoints_["rotationOrigin"]=rotorg_->value();
-                    }
-                    else
-                    {
-                        refpoints_["rotationOrigin"]=vec3(0,0,0);
-                    }
-                    tr2.SetRotation(gp_Ax1(rorg, axis), phi);
-                }
-                refvectors_["rotation"]=rot_->value();
-            }
-            else
-            {
-                refpoints_["rotationOrigin"]=vec3(0,0,0);
-                refvectors_["rotation"]=vec3(0,0,0);
-            }
-            trsf_.reset(new gp_Trsf(tr2.Multiplied(tr1).Multiplied(tr0)));
-        }
-        
-    }
-
-
-    TopoDS_Shape s = BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape();
-    if (visresolution_)
-    {
-        if (visresolution_->specification==TesselationResolution::Absolute)
-        {
-            visresolution_->value=
-                std::make_shared<cad::MultipliedScalar>(
-                    visresolution_->value,
-                    cad::scalarconst(trsf_->ScaleFactor()));
-        }
-    }
-    setShape(s);
-
-    // Transform all ref points and ref vectors
-    copyDatumsTransformed(
-                *baseFeature(), *trsf_, "",
-                { "scaleFactor", "translation", "rotationOrigin", "rotation" }
-                );
-
-    if (refvalues_.count("isSTLGeometry"))
-    {
-        transformTriangulation(*baseFeature(), s, *trsf_);
-    }
-
-    providedSubshapes_["basefeat"]=
-        std::const_pointer_cast<Feature>(baseFeature()); // overwrite existing basefeat, if there
-
-    cache.insert(shared_from_this());
+          if (rot_)
+          {
+              double phi=norm(rot_->value(), 2);
+              if (phi>1e-10)
+              {
+                  gp_Vec axis=to_Vec(rot_->value());
+                  axis.Normalize();
+                  gp_Pnt rorg(0,0,0);
+                  if (rotorg_) 
+                  {
+                      rorg=to_Pnt(rotorg_->value());
+                      refpoints_["rotationOrigin"]=rotorg_->value();
+                  }
+                  else
+                  {
+                      refpoints_["rotationOrigin"]=vec3(0,0,0);
+                  }
+                  tr2.SetRotation(gp_Ax1(rorg, axis), phi);
+              }
+              refvectors_["rotation"]=rot_->value();
+          }
+          else
+          {
+              refpoints_["rotationOrigin"]=vec3(0,0,0);
+              refvectors_["rotation"]=vec3(0,0,0);
+          }
+          trsf_.reset(new gp_Trsf(tr2.Multiplied(tr1).Multiplied(tr0)));
+      }
+      
   }
-  else
+
+
+  TopoDS_Shape s = BRepBuilderAPI_Transform(*baseFeature(), *trsf_).Shape();
+  if (visresolution_)
   {
-      this->operator=(*cache.markAsUsed<Transform>(hash()));
+      if (visresolution_->specification==TesselationResolution::Absolute)
+      {
+          visresolution_->value=
+              std::make_shared<cad::MultipliedScalar>(
+                  visresolution_->value,
+                  cad::scalarconst(trsf_->ScaleFactor()));
+      }
   }
+  setShape(s);
+
+  // Transform all ref points and ref vectors
+  copyDatumsTransformed(
+              *baseFeature(), *trsf_, "",
+              { "scaleFactor", "translation", "rotationOrigin", "rotation" }
+              );
+
+  if (refvalues_.count("isSTLGeometry"))
+  {
+      transformTriangulation(*baseFeature(), s, *trsf_);
+  }
+
+  providedSubshapes_["basefeat"]=
+      std::const_pointer_cast<Feature>(baseFeature()); // overwrite existing basefeat, if there
+
 }
 
 

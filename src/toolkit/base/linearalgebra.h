@@ -26,6 +26,7 @@
 #include <set>
 #include <type_traits>
 #include <iterator>
+#include <functional>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
@@ -47,12 +48,28 @@ namespace std
 extern double armaMatIdentityTolerance;
 /**
  * @brief operator <
- * required for using amra::mat as key in STL containers
+ * required for using arma::mat as key in STL containers
  * @param v1
  * @param v2
  * @return
  */
 bool operator<(const arma::mat& v1, const arma::mat& v2);
+
+/**
+ * @brief std::less specialization
+ * Required, because std::less does not find the operator< above:
+ * it is declared after std::less and argument-dependent lookup only
+ * searches namespace arma, where the elementwise operator< resides.
+ * Makes arma::mat usable as key in std::map and std::set.
+ */
+template<>
+struct less<arma::mat>
+{
+    bool operator()(const arma::mat& v1, const arma::mat& v2) const
+    {
+        return std::operator<(v1, v2);
+    }
+};
 
 }
 
@@ -740,7 +757,7 @@ double computeMedian(double* p, std::size_t n);
 typedef Processor<double, computeMedian> median;
 
 
-
+double finalValue(const arma::mat& values);
 
 }
 

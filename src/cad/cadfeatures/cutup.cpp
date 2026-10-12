@@ -38,7 +38,8 @@ size_t CutUp::calcHash() const
   }
   h+=*n_;
   h+=*t_;
-  return h.getHash()+DerivedFeature::calcHash();
+  h+=DerivedFeature::calcHash();
+  return h.getHash();
 }
 
 
@@ -66,61 +67,54 @@ void CutUp::build()
 {
   ExecTimer t("CutUp::build() ["+featureSymbolName()+"]");
 
-  if (!cache.contains(hash()))
+
+  auto bb = baseFeature()->modelBndBox();
+  auto n = n_->value();
+  double ln=arma::norm(n, 2);
+  insight::assertion(fabs(ln)>1e-10, _("normal vector must not be zero"));
+  n/=ln;
+
+  arma::mat Ldiag = bb.col(1)-bb.col(0);
+  arma::mat pctr = 0.5*(bb.col(1)+bb.col(0));
+  pctr -= arma::dot(pctr, n)*n;
+
+  double Ln = arma::dot(Ldiag, n);
+
+  double Lmax = Ldiag.max();
+
+
+  // collect section coordinates
+  std::vector<double> mks = { arma::dot(bb.col(0)-pctr, n) }, ts={0};
+  for (const auto& c: clips_)
   {
+    arma::mat p = c->value();
 
-    auto bb = baseFeature()->modelBndBox();
-    auto n = n_->value();
-    double ln=arma::norm(n, 2);
-    insight::assertion(fabs(ln)>1e-10, _("normal vector must not be zero"));
-    n/=ln;
+    double x = arma::dot(p-pctr, n);
 
-    arma::mat Ldiag = bb.col(1)-bb.col(0);
-    arma::mat pctr = 0.5*(bb.col(1)+bb.col(0));
-    pctr -= arma::dot(pctr, n)*n;
-
-    double Ln = arma::dot(Ldiag, n);
-
-    double Lmax = Ldiag.max();
-
-
-    // collect section coordinates
-    std::vector<double> mks = { arma::dot(bb.col(0)-pctr, n) }, ts={0};
-    for (const auto& c: clips_)
-    {
-      arma::mat p = c->value();
-
-      double x = arma::dot(p-pctr, n);
-
-      mks.push_back(x);
-      ts.push_back(t_->value());
-    }
-    mks.push_back(arma::dot(bb.col(1)-pctr, n));
-    ts.push_back(0);
-
-    for (size_t i=1; i<mks.size(); i++)
-    {
-      double x0=mks[i-1] + ts[i-1] * 0.5;
-      double x1=mks[i]   - ts[i]   * 0.5;
-
-      auto p0 = matconst(pctr + x0 * n);
-      auto p1 = matconst(pctr + x1 * n);
-
-      auto tool=Cylinder::create(p0, p1, scalarconst(Lmax), false, false);
-
-      refpoints_[str(format("p0_%d")%i)]=x0 * n;
-      refpoints_[str(format("p1_%d")%i)]=x1 * n;
-
-      providedSubshapes_[str(format("tool_%d")%i)]=tool;
-      providedSubshapes_[str(format("cut_%d")%i)]=BooleanIntersection::create(baseFeature(), tool);
-    }
-
-    setShape(TopoDS_Shape());
+    mks.push_back(x);
+    ts.push_back(t_->value());
   }
-  else
+  mks.push_back(arma::dot(bb.col(1)-pctr, n));
+  ts.push_back(0);
+
+  for (size_t i=1; i<mks.size(); i++)
   {
-    this->operator=(*cache.markAsUsed<CutUp>(hash()));
+    double x0=mks[i-1] + ts[i-1] * 0.5;
+    double x1=mks[i]   - ts[i]   * 0.5;
+
+    auto p0 = matconst(pctr + x0 * n);
+    auto p1 = matconst(pctr + x1 * n);
+
+    auto tool=Cylinder::create(p0, p1, scalarconst(Lmax), false, false);
+
+    refpoints_[str(format("p0_%d")%i)]=x0 * n;
+    refpoints_[str(format("p1_%d")%i)]=x1 * n;
+
+    providedSubshapes_[str(format("tool_%d")%i)]=tool;
+    providedSubshapes_[str(format("cut_%d")%i)]=BooleanIntersection::create(baseFeature(), tool);
   }
+
+  setShape(TopoDS_Shape());
 }
 
 

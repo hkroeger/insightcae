@@ -100,12 +100,15 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   else
     ddt["default"]="Euler";
 
-//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 //  std::string bgrads="Gauss linear";
 //  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
 //  grad["default"]=bgrads;
 //  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+
   insertStandardGradientConfig(dictionaries);
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["grad("+pName_+")"]="Gauss linear";
+  grad["grad(rho)"]="Gauss linear";
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -198,7 +201,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   laplacian["default"]="Gauss linear limited 0.66";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-  interpolation["interpolate(U)"]="pointLinear";
+  // interpolation["interpolate(U)"]="pointLinear";
   interpolation["default"]="linear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");

@@ -37,6 +37,9 @@ class ModelFeature
     boost::variant<std::string, boost::filesystem::path,ModelPtr> modelinput_;
     ModelVariableTable vars_;
 
+    // description of the loaded model (build result)
+    BOMDescriptionDataPtr modelDescription_;
+
     void copyModelDatums(ModelPtr model);
 
     ModelFeature ( const ModelFeature& o, TreeCloneMap& tcm );
@@ -46,6 +49,7 @@ class ModelFeature
 
     size_t calcHash() const override;
     void build() override;
+    void copyResultsFrom(const Feature& o) override;
 
 public:
     declareType ( "loadmodel" );

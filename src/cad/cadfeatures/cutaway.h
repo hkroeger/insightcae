@@ -42,6 +42,7 @@ class Cutaway
 
     size_t calcHash() const override;
     void build() override;
+    bool isCacheable() const override { return true; }
 
 public:
     declareType ( "Cutaway" );

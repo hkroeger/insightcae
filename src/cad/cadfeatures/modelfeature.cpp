@@ -58,25 +58,29 @@ addToStaticFunctionTable(Feature, ModelFeature, ruleDocumentation);
 void ModelFeature::copyModelDatums(ModelPtr model_)
 {
 
+    // symbols inherited from an enclosing scope (in-situ submodels)
+    // are not re-exported
+    const auto& inherited = model_->inheritedSymbols();
+
     copyDatumItems(model_->scalars(), refvalues_,
                    [](ScalarPtr s)
                    { return s->value(); },
-                   "datum value");
+                   "datum value", std::string(), inherited);
 
     copyDatumItems(model_->points(), refpoints_,
                    [](VectorPtr p)
                    { return p->value(); },
-                   "datum point", std::string(), {}, {"O"} );
+                   "datum point", std::string(), inherited, {"O"} );
 
     copyDatumItems(model_->directions(), refvectors_,
                    [](VectorPtr v)
                    { return v->value(); },
-                   "datum vector", std::string(), {}, {"EX", "EY", "EZ"} );
+                   "datum vector", std::string(), inherited, {"EX", "EY", "EZ"} );
 
     copyDatumItems(model_->datums(), providedDatums_,
                    [](DatumPtr sd)
                    { return sd; },
-                   "datum", std::string(), {}, {"XY", "XZ", "YZ"} );
+                   "datum", std::string(), inherited, {"XY", "XZ", "YZ"} );
 
     auto addfs=
         [this]
@@ -229,65 +233,74 @@ void ModelFeature::build()
     insight::CurrentExceptionContext ex(_("building model %s"), featureSymbolName().c_str());
     ExecTimer t("ModelFeature::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
+    ModelPtr model;
+
+    if (auto* fp = boost::get<boost::filesystem::path>(&modelinput_))
     {
-        ModelPtr model;
-
-        if (auto* fp = boost::get<boost::filesystem::path>(&modelinput_))
-        {
-            ex += " from file \""+fp->string()+"\"";
-            model.reset(new Model(*fp, vars_));
-        }
-        else if (auto* mn = boost::get<std::string>(&modelinput_))
-        {
-            ex += " named "+*mn;
-            model.reset(new Model(*mn, vars_));
-        }
-        else if (auto* mn = boost::get<ModelPtr>(&modelinput_))
-        {
-            ex += " supplied model";
-            model=*mn;
-        }
-        else
-        {
-            throw insight::Exception(_("ModelFeature: Model input unspecified!"));
-        }
-        model->checkForBuildDuringAccess();    
-
-        for (auto& c: model->components())
-        {
-            components_[c]=model->lookupModelstep(c);
-        }
-
-        auto modelsteps=model->modelsteps();
-        for (decltype(modelsteps)::value_type const& c: modelsteps)
-        {
-            std::string name=c.first;
-            // Compound::build copies the components. Here, the rest is copied.
-            if (components_.find(name)==components_.end())
-            {
-                FeaturePtr p=c.second;
-
-                //                 copyDatums(*p, name+"_");
-                providedSubshapes_[name]=p;
-            }
-        }
-
-
-        copyModelDatums(model);
-
-        if (auto bd=model->description())
-        {
-            setBOMDescription(*bd);
-        }
-
-        Compound::build();
-
-        cache.insert(shared_from_this());
+        ex += " from file \""+fp->string()+"\"";
+        model.reset(new Model(*fp, vars_));
+    }
+    else if (auto* mn = boost::get<std::string>(&modelinput_))
+    {
+        ex += " named "+*mn;
+        model.reset(new Model(*mn, vars_));
+    }
+    else if (auto* mn = boost::get<ModelPtr>(&modelinput_))
+    {
+        ex += " supplied model";
+        model=*mn;
     }
     else
     {
-        this->operator=(*cache.markAsUsed<ModelFeature>(hash()));
+        throw insight::Exception(_("ModelFeature: Model input unspecified!"));
+    }
+    model->checkForBuildDuringAccess();    
+
+    for (auto& c: model->components())
+    {
+        components_[c]=model->lookupModelstep(c);
+    }
+
+    auto modelsteps=model->modelsteps();
+    for (decltype(modelsteps)::value_type const& c: modelsteps)
+    {
+        std::string name=c.first;
+        // Compound::build copies the components. Here, the rest is copied.
+        // Features inherited from an enclosing scope are not re-exported.
+        if (components_.find(name)==components_.end()
+            && !model->isInherited(name) )
+        {
+            FeaturePtr p=c.second;
+
+            //                 copyDatums(*p, name+"_");
+            providedSubshapes_[name]=p;
+        }
+    }
+
+
+    copyModelDatums(model);
+
+    modelDescription_=model->description();
+    if (modelDescription_)
+    {
+        setBOMDescription(*modelDescription_);
+    }
+
+    Compound::build();
+
+}
+
+
+
+void ModelFeature::copyResultsFrom(const Feature& o)
+{
+    Compound::copyResultsFrom(o);
+    copyComponentsFrom(o);
+
+    modelDescription_=dynamic_cast<const ModelFeature&>(o).modelDescription_;
+    if (modelDescription_)
+    {
+        setBOMDescription(*modelDescription_);
     }
 }
 

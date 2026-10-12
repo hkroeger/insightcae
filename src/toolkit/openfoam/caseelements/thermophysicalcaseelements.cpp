@@ -148,7 +148,7 @@ compressibleMixtureThermophysicalProperties::defaultComposition() const
   {
         void operator()(const Parameters::composition_fromFile_type& ff)
         {
-            for (auto &s: ff.defaultMassFractions)
+            for (auto &s: ff.species)
             {
                 emplace(
                     s.first,

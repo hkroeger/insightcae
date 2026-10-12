@@ -275,7 +275,8 @@ size_t RefPlace::calcHash() const
 
 #warning hashes of placement rules missing
 
-  return p.getHash()+DerivedFeature::calcHash();
+  p+=DerivedFeature::calcHash();
+  return p.getHash();
 }
 
 

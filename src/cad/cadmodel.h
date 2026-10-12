@@ -108,6 +108,12 @@ protected:
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     boost::filesystem::path modelfile_;
 
+    /**
+     * names of symbols, which were only inherited from an enclosing scope
+     * (in-situ submodels) and not (re-)defined in this model
+     */
+    std::set<std::string> inheritedSymbols_;
+
 
     void defaultVariables();
     void copyVariables(const ModelVariableTable& vars);
@@ -159,6 +165,17 @@ public:
     const DatasetTable& 	datasets() const;
 
     ModelVariableTable allVariables() const;
+
+    /**
+     * @brief markInherited
+     * mark the given symbols as inherited from an enclosing scope.
+     * Inherited symbols are visible inside the model but are not
+     * re-exported by features which wrap the model (ModelFeature).
+     * A later (re-)definition of a symbol removes the mark.
+     */
+    void markInherited(const ModelVariableTable& vars);
+    bool isInherited(const std::string& name) const;
+    const std::set<std::string>& inheritedSymbols() const;
 
     /**
      * @brief symbolKinds

@@ -200,10 +200,14 @@ add_library(toolkit_gui SHARED
        iqparametersetvisualizationscheduler.cpp iqparametersetvisualizationscheduler.h
        logviewerwidget.cpp logviewerwidget.h
        iqgraphprogressdisplayer.cpp iqgraphprogressdisplayer.h
+       iqsimulationtimedisplay.cpp iqsimulationtimedisplay.h
        progressrelay.cpp progressrelay.h
        insightcaeapplication.cpp insightcaeapplication.h
        iqremotefoldermodel.h iqremotefoldermodel.cpp
        remotedirselector.cpp remotedirselector.h
+       qexecutionworkspacedialog.cpp qexecutionworkspacedialog.h
+       iqserverlaunchdialog.cpp iqserverlaunchdialog.h
+       iqremoteserverstatus.cpp iqremoteserverstatus.h
        remotesync.cpp remotesync.h
        sdmdiarea.cpp sdmdiarea.h
        blockmesh_gui.cpp blockmesh_gui.h
@@ -253,6 +257,7 @@ add_library(toolkit_gui SHARED
        iqremoteparaviewdialog.ui
        iqparaviewdialog.ui
        remotedirselector.ui
+       qexecutionworkspacedialog.ui
        of_clean_case.ui
        iqaddfilterdialog.ui
        iqselectresultelementsdialog.ui

@@ -318,12 +318,14 @@ void LabeledArrayParameter::eraseValueImpl ( const std::string& label )
 
     valueChangedConnections_.erase(idx->second.get());
     childValueChangedConnections_.erase(idx->second.get());
-    itemRemoved(idx->first);
 
     auto item=std::move(*idx); // don't delete yet, this would cause crash in IQParameterSetModel.
     v.erase ( idx ); // Just remove from array
 
     childRemovalDone(i, i);
+
+    // notify dependents only after own row removal is complete
+    itemRemoved(item.first);
 
     triggerValueChanged();
 }
@@ -379,10 +381,10 @@ void LabeledArrayParameter::insertValueImpl(
     if (initializeHierarchy && baseDirectory_)
         ins.first->second->resolveRelativePaths(*baseDirectory_);
 
-    newItemAdded(ins.first->first, ins.first->second);
-
-
     childInsertionDone(i, i);
+
+    // notify dependents only after own row insertion is complete
+    newItemAdded(ins.first->first, ins.first->second);
 
     triggerValueChanged();
 }
@@ -498,10 +500,11 @@ void LabeledArrayParameter::changeLabelImpl(
         std::swap(v[newLabel], idx->second);
         v.erase(idx);
 
-        itemRelabeled(label, newLabel);
-
         if (positionChanged)
             childPositionMoveDone(iold, inew);
+
+        // notify dependents only after own row move is complete
+        itemRelabeled(label, newLabel);
 
         triggerValueChanged();
     }
@@ -606,13 +609,23 @@ void LabeledArrayParameter::clear()
         !keysAreLocked(),
         "attempt to clear synchronized array");
 
+    int n=value().size();
+    std::vector<std::string> removedKeys;
+    boost::copy(value() | boost::adaptors::map_keys, std::back_inserter(removedKeys));
+
+    if (n>0) beforeChildRemoval(0, n-1);
+
     valueChangedConnections_.clear();
     childValueChangedConnections_.clear();
-    for (const auto&v: value())
-    {
-        itemRemoved(v.first);
-    }
+    auto items=std::move(value()); // don't delete yet, see eraseValueImpl
     value().clear();
+
+    if (n>0) childRemovalDone(0, n-1);
+
+    for (const auto& k: removedKeys)
+    {
+        itemRemoved(k);
+    }
 
     triggerValueChanged();
 }
@@ -770,8 +783,7 @@ LabeledArrayParameter::readFromNode (
             {
                 if (readKeys.count(k)==0)
                 {
-                    itemRemoved(k);
-                    value_.erase(k);
+                    eraseValueImpl(k);
                 }
             }
         }
@@ -889,8 +901,7 @@ void LabeledArrayParameter::assignFrom(const Element& oe)
         {
             if (op.value_.count(k)==0)
             {
-                itemRemoved(k);
-                value_.erase(k);
+                eraseValueImpl(k);
             }
         }
     }
@@ -931,8 +942,7 @@ void LabeledArrayParameter::copyMatching(const Element& oe)
         {
             if (op.value_.count(k)==0)
             {
-                itemRemoved(k);
-                value_.erase(k);
+                eraseValueImpl(k);
             }
         }
     }

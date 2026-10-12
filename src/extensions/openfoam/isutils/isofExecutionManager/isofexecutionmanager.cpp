@@ -37,6 +37,7 @@
 #include "insightcaeapplication.h"
 #include "mainwindow.h"
 #include "remotedirselector.h"
+#include "qexecutionworkspacedialog.h"
 #include "base/exceptionhandling.h"
 #include "base/warningdispatcher.h"
 
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
       ("remote-dir-for-mapping", po::value<std::string>(), "return remote directory name of another case to be used as result mapping source. An error will occur, if the remote dir does not exists or is on another computer than the remote of the current case.")
       ("create-remote-temp,T", po::value<std::string>(), "create a unique remote directory name on the specified server and store in meta file. This will be skipped, if config exists already, except if -f is given.")
       ("force-create-remote-temp,f", "force creation, if config exists already.")
+      ("create-connection", "interactively select the server and the directory on the server (GUI dialog) and write the remote execution config file. An existing config is preselected and overwritten.")
       ("sync-remote,r", "sync current case to remote location")
       ("sync-local,l", "sync from remote location to current case")
       ("sync-local-repeat", po::value<int>(), "sync from remote location to current case, restart transfer periodically after given number of seconds")
@@ -207,6 +209,68 @@ int main(int argc, char *argv[])
             std::cout<<localDir.string()<<" \t "<<serverLabel<<" \t "<<rl.remoteDir().string()<<std::endl;
       }
       anything_done=true;
+  }
+
+  if (vm.count("create-connection"))
+  {
+    bf::path meta=mf;
+    if (meta.empty())
+    {
+      meta=insight::RemoteExecutionConfig::defaultConfigFile(location);
+    }
+
+    InsightCAEApplication app(argc, argv, "isofExecutionManager");
+
+    try
+    {
+      // preselect existing configuration (without contacting the server)
+      std::unique_ptr<insight::RemoteLocation> existingRL;
+      if (insight::RemoteLocation::remoteLocationConfigIsValid(meta))
+      {
+        try
+        {
+          existingRL = std::make_unique<insight::RemoteLocation>(meta, true);
+        }
+        catch (const std::exception& e)
+        {
+          insight::Warning(
+              "The existing remote configuration %s could not be read and will be ignored.\n"
+              "Reason: %s", meta.string().c_str(), e.what() );
+        }
+      }
+
+      QExecutionWorkspaceDialog dlg(nullptr, existingRL.get());
+      dlg.restrictToRemoteLocation(location);
+
+      if (dlg.exec()!=QDialog::Accepted)
+      {
+        std::cout<<"Cancelled, no remote configuration written."<<std::endl;
+        return 1;
+      }
+
+      auto *rl = dlg.remoteLocation();
+      insight::assertion(bool(rl), "no remote location was selected");
+
+      if (rl->remoteDir().empty())
+      {
+        // temporary storage: resolve the directory name now
+        // (launches the server, if possible)
+        rl->initialize();
+      }
+
+      rl->writeConfigFile(meta);
+
+      std::cout
+          <<"Remote configuration written to "<<meta.string()<<": "
+          <<rl->serverLabel()<<":"<<rl->remoteDir().string()<<std::endl;
+    }
+    catch (...)
+    {
+      insight::printCurrentException();
+      return -1;
+    }
+
+    return 0;
   }
 
   if (vm.count("create-remote-temp"))

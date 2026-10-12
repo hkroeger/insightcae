@@ -6,10 +6,26 @@
 #include "base/cppextensions.h"
 #include "base/translations.h"
 
+#include "base/warningdispatcher.h"
+
+#include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPointer>
 #include <QToolTip>
 #include "remotedirselector.h"
+#include "iqserverlaunchdialog.h"
+#include "iqremoteserverstatus.h"
+
+#include <algorithm>
+#include <cmath>
+#include <thread>
+#include <vector>
+
+
+
+using IQRemoteServerStatus::State;
 
 
 
@@ -66,6 +82,247 @@ void QExecutionWorkspaceDialog::displayCurrentRemoteWorkingDir()
                     QString::fromStdString(
                         remoteLocation_->remoteDir().string() ) );
         ui->leRemoteDirectory->blockSignals(false);
+    }
+}
+
+
+
+
+void QExecutionWorkspaceDialog::setHostState(const QString& serverLabel, bool online)
+{
+    hostOnline_[serverLabel]=online;
+
+    int i = ui->cbHost->findText(serverLabel);
+    if (i>=0)
+    {
+        ui->cbHost->setItemIcon(
+            i, IQRemoteServerStatus::icon(online ? State::Online : State::Offline) );
+        ui->cbHost->setItemData(
+            i, online ? _("online") : _("not reachable"), Qt::ToolTipRole );
+    }
+
+    updateHostActionButtons();
+}
+
+
+
+
+void QExecutionWorkspaceDialog::setHostLoad(
+    const QString& serverLabel,
+    const insight::RemoteServer::Config::ProcessorLoad& load )
+{
+    int i = ui->cbHost->findText(serverLabel);
+    if (i<0) return;
+
+    if (IQRemoteServerStatus::isBusy(load))
+    {
+        ui->cbHost->setItemIcon(
+            i, IQRemoteServerStatus::icon(State::Busy, load.utilization) );
+    }
+    ui->cbHost->setItemData(
+        i, IQRemoteServerStatus::describe(load), Qt::ToolTipRole );
+}
+
+
+
+
+void QExecutionWorkspaceDialog::updateHostActionButtons()
+{
+    auto label = ui->cbHost->currentText();
+    auto i = hostOnline_.find(label);
+
+    // browse remote directories: only for a host known to be online
+    {
+        bool online = (i!=hostOnline_.end()) && i->second;
+        ui->btnSelectRemoteDirectory->setEnabled(online);
+        ui->btnSelectRemoteDirectory->setToolTip(
+            online ? _("Browse the directories on the host") :
+            (i==hostOnline_.end()) ? _("Checking, if the host is reachable...") :
+                                     _("The host is not reachable.") );
+    }
+
+    // launch: only for a host known to be down, which can be created
+    {
+        bool creatable=false;
+        try
+        {
+            if (!label.isEmpty())
+                creatable = insight::remoteServers().findServer(
+                    label.toStdString() )->isDynamicallyCreatable();
+        }
+        catch (...) {}
+
+        if (i==hostOnline_.end())
+        {
+            ui->btnLaunchHost->setEnabled(false);
+            ui->btnLaunchHost->setToolTip(_("Checking, if the host is reachable..."));
+        }
+        else if (i->second)
+        {
+            ui->btnLaunchHost->setEnabled(false);
+            ui->btnLaunchHost->setToolTip(_("The host is running."));
+        }
+        else if (!creatable)
+        {
+            ui->btnLaunchHost->setEnabled(false);
+            ui->btnLaunchHost->setToolTip(
+                _("The host is not reachable and cannot be launched from here"
+                  " (no creation command configured)."));
+        }
+        else
+        {
+            ui->btnLaunchHost->setEnabled(true);
+            ui->btnLaunchHost->setToolTip(_("Launch the host (execute its creation command)."));
+        }
+    }
+
+    if (i==hostOnline_.end())
+    {
+        ui->btnCreateRemoteDirectory->setEnabled(false);
+        ui->btnCreateRemoteDirectory->setToolTip(
+            _("Checking, if the host is reachable..."));
+    }
+    else if (!i->second)
+    {
+        ui->btnCreateRemoteDirectory->setEnabled(false);
+        ui->btnCreateRemoteDirectory->setToolTip(
+            _("The host is not reachable. A new directory can only be created on a running host."));
+    }
+    else
+    {
+        ui->btnCreateRemoteDirectory->setEnabled(true);
+        ui->btnCreateRemoteDirectory->setToolTip(
+            _("Create a new remote directory with a random name.\n"
+              "Unlike the temporary directory, it is kept after the analysis."));
+    }
+}
+
+
+
+
+void QExecutionWorkspaceDialog::createRemoteDirectory()
+{
+    try
+    {
+        auto cfg = insight::remoteServers().findServer(
+            ui->cbHost->currentText().toStdString() );
+
+        auto srv = cfg->getInstanceIfRunning();
+        if (!srv)
+        {
+            setHostState(ui->cbHost->currentText(), false);
+            throw insight::Exception("The host %s is not reachable.", cfg->c_str());
+        }
+
+        // same naming as for temporary storage, see RemoteLocation::initialize
+        // (mktemp -d: the directory is created)
+        auto dir = srv->getTemporaryDirectoryName(
+            cfg->defaultDirectory_/"irXXXXXX" );
+
+        removeCreatedRemoteDirIfUnused(false); // a previously created one
+        createdRemoteDir_.reset(new CreatedRemoteDir{cfg, dir});
+
+        checkAndChangeRemoteConfig(
+            ui->cbHost->currentText(),
+            QString::fromStdString(dir.generic_string()) );
+        displayCurrentRemoteWorkingDir();
+    }
+    catch (const std::exception& e)
+    {
+        QMessageBox::critical(
+            this, _("Remote directory creation failed"),
+            QString(_("The remote directory could not be created:\n%1"))
+                .arg(QString::fromStdString(e.what())) );
+    }
+}
+
+
+
+
+void QExecutionWorkspaceDialog::removeCreatedRemoteDirIfUnused(bool accepted)
+{
+    if (!createdRemoteDir_) return;
+
+    bool used =
+        accepted
+        && ui->gbPerformRemoteExecution->isChecked()
+        && ui->cbHost->currentText().toStdString()
+               == static_cast<const std::string&>(*createdRemoteDir_->server)
+        && boost::filesystem::path(ui->leRemoteDirectory->text().toStdString())
+               == createdRemoteDir_->directory;
+
+    if (!used)
+    {
+        try
+        {
+            if (auto srv = createdRemoteDir_->server->getInstanceIfRunning())
+            {
+                insight::dbg()<<"removing unused remote directory "
+                               <<createdRemoteDir_->directory<<std::endl;
+                srv->removeDirectory(createdRemoteDir_->directory);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            insight::Warning(
+                "could not remove the unused remote directory %s: %s",
+                createdRemoteDir_->directory.string().c_str(), e.what() );
+        }
+    }
+
+    createdRemoteDir_.reset();
+}
+
+
+
+
+void QExecutionWorkspaceDialog::checkHostInBackground(
+    insight::RemoteServer::ConfigPtr cfg )
+{
+    auto label = QString::fromStdString(*cfg);
+    IQRemoteServerStatus::checkInBackground(
+        cfg, this,
+        [this,label](bool online) { setHostState(label, online); },
+        [this,label](const insight::RemoteServer::Config::ProcessorLoad& l)
+        { setHostLoad(label, l); } );
+}
+
+
+
+
+void QExecutionWorkspaceDialog::launchHost()
+{
+    auto label = ui->cbHost->currentText();
+
+    insight::RemoteServer::ConfigPtr cfg;
+    try
+    {
+        cfg = insight::remoteServers().findServer(label.toStdString());
+    }
+    catch (const std::exception& e)
+    {
+        QMessageBox::critical(this, _("Launch failed"), QString::fromStdString(e.what()));
+        return;
+    }
+
+    // shows the output of the creation command; displays errors itself
+    bool launched = IQServerLaunchDialog::launchServer(*cfg, this);
+
+    // re-evaluate the host state (and load) in any case
+    hostOnline_.erase(label);
+    int idx = ui->cbHost->findText(label);
+    if (idx>=0)
+    {
+        ui->cbHost->setItemIcon(idx, IQRemoteServerStatus::icon(State::Unknown));
+        ui->cbHost->setItemData(idx, QVariant(), Qt::ToolTipRole);
+    }
+    updateHostActionButtons();
+    checkHostInBackground(cfg);
+
+    if (launched && ui->cbHost->currentText()==label)
+    {
+        // re-check the remote directory, now that the host is up
+        checkAndChangeRemoteConfig(label, ui->leRemoteDirectory->text());
     }
 }
 
@@ -200,9 +457,25 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
 
   defaultPal_ = ui->leRemoteDirectory->palette();
 
-  for (const auto& i: insight::remoteServers())
+  // the server list is ordered by pointer: sort alphabetically for display
+  std::vector<insight::RemoteServer::ConfigPtr> servers(
+      insight::remoteServers().begin(), insight::remoteServers().end() );
+  std::sort(
+      servers.begin(), servers.end(),
+      [](const insight::RemoteServer::ConfigPtr& a,
+         const insight::RemoteServer::ConfigPtr& b)
+      {
+        return QString::fromStdString(*a).compare(
+                 QString::fromStdString(*b), Qt::CaseInsensitive ) < 0;
+      }
+  );
+
+  for (const auto& i: servers)
   {
-    ui->cbHost->addItem( QString::fromStdString(*i) );
+    auto label = QString::fromStdString(*i);
+    ui->cbHost->addItem( IQRemoteServerStatus::icon(State::Unknown), label );
+
+    checkHostInBackground(i);
   }
 
   // connect actions
@@ -266,11 +539,18 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   connect(ui->cbHost, &QComboBox::currentTextChanged, this,
           [&](const QString &srv)
           {
+            updateHostActionButtons();
             checkAndChangeRemoteConfig(
                   srv,
                   ui->leRemoteDirectory->text() );
           }
   );
+
+  connect(ui->btnCreateRemoteDirectory, &QPushButton::clicked,
+          this, &QExecutionWorkspaceDialog::createRemoteDirectory );
+
+  connect(ui->btnLaunchHost, &QPushButton::clicked,
+          this, &QExecutionWorkspaceDialog::launchHost );
 
   connect(ui->leRemoteDirectory, &QLineEdit::editingFinished, this,
           [&]()
@@ -300,9 +580,27 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
   connect(ui->btnSelectRemoteDirectory, &QPushButton::clicked, this,
           [&]()
           {
-            if (remoteLocation_)
+            // the button is only enabled, if the host is known to be online:
+            // no additional reachability check here
+            insight::RemoteServerPtr server;
+            try
             {
-              if (auto server = remoteLocation_->serverConfig().getInstanceIfRunning())
+              QApplication::setOverrideCursor(Qt::WaitCursor);
+              server = insight::remoteServers().findServer(
+                    ui->cbHost->currentText().toStdString() )->instance();
+              QApplication::restoreOverrideCursor();
+            }
+            catch (const std::exception& e)
+            {
+              QApplication::restoreOverrideCursor();
+              QMessageBox::critical(
+                    this, _("Remote directory selection"),
+                    QString(_("Could not connect to the host:\n%1"))
+                      .arg(QString::fromStdString(e.what())) );
+              return;
+            }
+
+            {
               {
                 RemoteDirSelector dlg(this, server);
 
@@ -320,9 +618,18 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
           }
   );
 
+  connect(this, &QDialog::rejected, this,
+          [&]()
+          {
+            removeCreatedRemoteDirIfUnused(false);
+          }
+  );
+
   connect(this, &QDialog::accepted, this,
           [&]()
           {
+            removeCreatedRemoteDirIfUnused(true);
+
             if (ui->gbPerformRemoteExecution->isChecked())
             {
               remoteLocation_.reset(
@@ -373,6 +680,7 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
             remoteLocation_->remoteDir().string() ) );
   }
 
+  updateHostActionButtons();
 }
 
 
@@ -381,6 +689,35 @@ void QExecutionWorkspaceDialog::lockRemoteExecution(const QString& reason)
     ui->gbPerformRemoteExecution->setChecked(true);
     ui->gbPerformRemoteExecution->setToolTip(reason);
     lockRemoteExecution_=true;
+}
+
+
+
+
+void QExecutionWorkspaceDialog::restrictToRemoteLocation(
+    const boost::filesystem::path& localDirectory )
+{
+    // stays checkable (isChecked() is always false otherwise), but locked
+    ui->gbPerformRemoteExecution->setChecked(true);
+    ui->gbPerformRemoteExecution->setTitle(_("Remote location"));
+    lockRemoteExecution_=true;
+
+    ui->label->hide();
+    ui->leLocalWorkingDirectory->hide();
+    ui->btnSelectLocalWorkingDirectory->hide();
+
+    // setChecked(true) above might not have emitted toggled, if it was checked already
+    if (!remoteLocation_)
+    {
+        checkAndChangeRemoteConfig(
+            ui->cbHost->currentText(),
+            ui->leRemoteDirectory->text() );
+    }
+
+    setWindowTitle(
+        QString(_("Setup Remote Location for %1"))
+            .arg(QString::fromStdString(
+                boost::filesystem::absolute(localDirectory).string() ) ) );
 }
 
 

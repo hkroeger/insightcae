@@ -1,7 +1,9 @@
 
 #include "snappyhexmesh_gui.h"
+#include "cadfeatures/transform.h"
 #include "occtools.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/additionalrefinements.h"
 
 #include "cadfeatures.h"
 #include "qoccviewwidget.h"
@@ -111,6 +113,19 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::recreateVisualizationEl
     }
   }
 
+}
+
+
+void AdditionalRefinement::addToPreview(
+    CADParameterSetModelVisualizer &psv,
+    gp_Trsf trsf ) const
+{
+  if (auto g = geometry())
+  {
+    psv.addFeature(
+          "refinements/"+p().name,
+          cad::Transform::create(g, trsf) );
+  }
 }
 
 

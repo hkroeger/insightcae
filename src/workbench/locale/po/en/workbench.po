@@ -22,6 +22,22 @@ msgstr "launch in local location"
 msgid "launch in remote workspace"
 msgstr "launch in remote workspace"
 
+#, fuzzy
+msgid "%1 (remote directory not found)"
+msgstr "The remote directory is invalid!"
+
+msgid "The server is reachable, but the remote directory does not exist."
+msgstr ""
+
+msgid "%1 (not connected)"
+msgstr ""
+
+msgid ""
+"The remote server is currently not reachable or not running.\n"
+"A connection will be established (and the server launched, if possible) when "
+"a remote action is started."
+msgstr ""
+
 msgid "(none)"
 msgstr "(none)"
 
@@ -217,6 +233,39 @@ msgstr ""
 "If you continue, the results will be deleted and the execution directory on "
 "disk will be removed (only if it was created). Continue?"
 
+msgid "Disconnect"
+msgstr ""
+
+msgid "Detach from the running remote analysis. It continues on the server."
+msgstr ""
+
+msgid "Resume"
+msgstr ""
+
+msgid "Reconnect to an analysis running in the remote location."
+msgstr ""
+
+msgid "The download has started already or was skipped."
+msgstr ""
+
+msgid ""
+"Download the results into the local directory, when the remote analysis has "
+"finished."
+msgstr ""
+
+msgid "The shutdown is in progress."
+msgstr ""
+
+msgid ""
+"The server cannot be shut down from here (no destruction command configured)."
+msgstr ""
+
+msgid ""
+"Shut down the server (execute its destruction command), once the result set "
+"has been retrieved (and the files have been downloaded, if selected).\n"
+"Files in the remote directory, which are not downloaded, might be lost."
+msgstr ""
+
 msgid "Internal error: there is an action running currently!"
 msgstr "Internal error: there is an action running currently!"
 
@@ -304,6 +353,52 @@ msgstr "Transfer to remote location finished"
 msgid "Transfer to remote location started"
 msgstr "Transfer to remote location started"
 
+#, fuzzy
+msgid "Remote server not reachable"
+msgstr "Remote servers..."
+
+msgid ""
+"The remote server %1 is not reachable and cannot be launched from here (no "
+"creation command configured).\n"
+"Please make sure that it is running and try again."
+msgstr ""
+
+#, fuzzy
+msgid "Remote server not running"
+msgstr "Remote servers..."
+
+msgid ""
+"The remote server %1 is not running.\n"
+"Shall it be launched?\n"
+"\n"
+"Note: if there was an analysis running on that server before, it was most "
+"probably terminated, when the server was stopped.\n"
+"Resuming will then fail, but the remote directory can still be used."
+msgstr ""
+
+#, fuzzy
+msgid "Connecting to remote server %1..."
+msgstr "Launching remote execution server..."
+
+msgid "Connection failed"
+msgstr ""
+
+msgid ""
+"Could not connect to the remote server %1:\n"
+"%2\n"
+"\n"
+"The remote configuration was kept unchanged."
+msgstr ""
+
+#, fuzzy
+msgid "Remote directory not available"
+msgstr "Remote directory is invalid!"
+
+msgid ""
+"The server %1 is up, but the remote directory %2 does not exist.\n"
+"There is nothing to resume."
+msgstr ""
+
 msgid "Transfer from remote location to local directory finished"
 msgstr "Transfer from remote location to local directory finished"
 
@@ -374,37 +469,6 @@ msgstr ""
 "Please check, if the analysis type entry in the parameter file is correct.\n"
 "Error information: %s\n"
 
-msgid "Invalid Working Directory"
-msgstr "Invalid Working Directory"
-
-msgid ""
-"The selected working directory \"%1\" is invalid.\n"
-"Please enter a valid working directory!"
-msgstr ""
-"The selected working directory \"%1\" is invalid.\n"
-"Please enter a valid working directory!"
-
-msgid "The remote directory is invalid!"
-msgstr "The remote directory is invalid!"
-
-msgid "Verified."
-msgstr "Verified."
-
-msgid ""
-"The remote directory cannot be checked because the server is unreachable "
-"yet!\n"
-"Please make sure that it is existing!"
-msgstr ""
-"The remote directory cannot be checked because the server is unreachable "
-"yet!\n"
-"Please make sure that it is existing!"
-
-msgid "Setup Workspace"
-msgstr ""
-
-msgid "Please select working directory"
-msgstr "Please select working directory"
-
 msgid "Launching remote analysis"
 msgstr "Launching remote analysis"
 
@@ -473,6 +537,16 @@ msgstr "timeout while stopping remote analysis server"
 #, fuzzy
 msgid "Downloading results"
 msgstr "&Load results..."
+
+#, c-format
+msgid "Shutting down server %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"The server %s could not be shut down after completion: %s\n"
+"Please check and shut it down manually, to avoid unnecessary costs."
+msgstr ""
 
 msgid "remote run cancelled"
 msgstr "remote run cancelled"

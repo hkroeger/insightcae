@@ -74,7 +74,26 @@ private:
   insight::RemoteServer::PortMappingPtr portMappings_;
   QPointer<IQRemoteExecutionState> remote_; // GUI object: only to be used in the GUI thread
   std::unique_ptr<insight::RemoteExecutionConfig> rec_; // copy for the work in the IO threads
-  bool downloadWhenFinished_ = false;
+  // options, which may be changed from the GUI during the run.
+  // They are read in the IO threads at the moment, when they are needed.
+  std::atomic<bool> downloadWhenFinished_{false};
+  std::atomic<bool> shutdownWhenFinished_{false};
+  std::atomic<bool> downloadStepStarted_{false}; // decision about download is final
+  std::atomic<bool> shutdownStepStarted_{false};
+  std::atomic<bool> resultsRetrieved_{false}; // result set received via the REST API
+
+  /**
+   * @brief requestGUIUpdate
+   * update the remote action buttons and options (from any thread)
+   */
+  void requestGUIUpdate();
+
+  /**
+   * @brief shutdownServer
+   * execute the destruction command of the server (IO thread).
+   * Failures are reported as warning: the results are available already.
+   */
+  void shutdownServer();
   std::unique_ptr<insight::ParameterSet> inputParameters_; // copied in the GUI thread
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
@@ -170,6 +189,12 @@ public:
   std::unique_ptr<insight::ResultSet> moveResults() override;
 
   inline insight::AnalyzeClient& analyzeClient() { return *ac_; }
+
+  // change the options during the run (effective, until the respective step has started)
+  void setDownloadWhenFinished(bool download);
+  void setShutdownWhenFinished(bool shutdown);
+  bool downloadStepStarted() const;
+  bool shutdownStepStarted() const;
 
 public Q_SLOTS:
   void onCancel() override;

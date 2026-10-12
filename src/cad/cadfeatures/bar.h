@@ -62,6 +62,7 @@ private:
 
   size_t calcHash() const override;
   void build() override;
+  bool isCacheable() const override { return true; }
 
   Bar(const Bar&o, TreeCloneMap& tcm);
  /**
@@ -123,7 +124,6 @@ public:
     VectorPtr attractPt
   );
 
-  void operator=(const Bar& o);
 
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();

@@ -140,63 +140,56 @@ std::shared_ptr<Compound> Compound::create_named( const CompoundFeatureMapData& 
     
 void Compound::build()
 {
-  if (!cache.contains(hash()))
+  BRep_Builder bb;
+  TopoDS_Compound result;
+  bb.MakeCompound ( result );
+
+  for ( const CompoundFeatureMap::value_type& c: components_ )
   {
-      BRep_Builder bb;
-      TopoDS_Compound result;
-      bb.MakeCompound ( result );
+      std::string name = c.first;
+      FeaturePtr p = c.second;
 
-      for ( const CompoundFeatureMap::value_type& c: components_ )
-      {
-          std::string name = c.first;
-          FeaturePtr p = c.second;
+      bb.Add ( result, p->shape() );
+      p->unsetLeaf();
 
-          bb.Add ( result, p->shape() );
-          p->unsetLeaf();
+      providedSubshapes_[c.first]=c.second;
+  }
 
-          providedSubshapes_[c.first]=c.second;
-      }
+  setShape ( result );
 
-      setShape ( result );
+  for ( const CompoundFeatureMap::value_type& c: components_ )
+  {
+    FeaturePtr p=c.second;
 
-      for ( const CompoundFeatureMap::value_type& c: components_ )
-      {
-        FeaturePtr p=c.second;
-
-        // delayed evaluation: will be evaluated upon first use
-        auto f = DeferredFeatureSet::create(
-                    shared_from_this(), Face,
-                    "isIdentical(%0)",
-                    FeatureSetParserArgList{
-                        makeFaceFeatureSet(p)
-                    } );
-//        auto f = find( p->allFaces() ); // find not usable during rebuild!
-
-        providedFeatureSets_[c.first+"_faces"] = f;
-        providedFeatureSets_[c.first+"_edges"] =
-            DeferredFeatureSet::create(
-                shared_from_this(), Edge,
+    // delayed evaluation: will be evaluated upon first use
+    auto f = DeferredFeatureSet::create(
+                shared_from_this(), Face,
                 "isIdentical(%0)",
                 FeatureSetParserArgList{
-                    makeEdgeFeatureSet(p)
+                    makeFaceFeatureSet(p)
                 } );
-      }
+//        auto f = find( p->allFaces() ); // find not usable during rebuild!
 
-      boost::copy(
-          explicitSubShapes_,
-          std::inserter(providedSubshapes_, providedSubshapes_.begin())
-          );
+    providedFeatureSets_[c.first+"_faces"] = f;
+    providedFeatureSets_[c.first+"_edges"] =
+        DeferredFeatureSet::create(
+            shared_from_this(), Edge,
+            "isIdentical(%0)",
+            FeatureSetParserArgList{
+                makeEdgeFeatureSet(p)
+            } );
+  }
 
-      boost::copy(
-          explicitRefPoints_,
-          std::inserter(refpoints_, refpoints_.begin())
-          );
+  boost::copy(
+      explicitSubShapes_,
+      std::inserter(providedSubshapes_, providedSubshapes_.begin())
+      );
 
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<Compound>(hash()));
-    }
+  boost::copy(
+      explicitRefPoints_,
+      std::inserter(refpoints_, refpoints_.begin())
+      );
+
 }
 
 void Compound::replaceDependency(const DependencyReplacement &repl)
@@ -319,13 +312,10 @@ arma::mat Compound::modelInertia(double density_ovr) const
 
 
 
-Compound &Compound::operator=(const Compound &o)
+void Compound::copyComponentsFrom(const Feature& o)
 {
-    components_ = o.components_;
-    Feature::operator=(o);
-    return *this;
+    components_ = dynamic_cast<const Compound&>(o).components_;
 }
-
 
 
 

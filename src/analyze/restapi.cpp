@@ -11,6 +11,7 @@
 #include "boost/algorithm/string.hpp"
 
 #include "base/analysisthread.h"
+#include "analyzeclient.h"
 
 #include <csignal>
 
@@ -143,11 +144,11 @@ std::pair<double,Json::Object> AnalyzeRESTServer::nextStateInfo()
   Json::Object s;
   auto& pi = recordedStates_.front();
   double t = pi.first; //copy (non-reference) for proper use as return value
-  s["time"]=t;
+  s["time"]=insight::doubleToJson(t);
   Wt::Json::Object pvl;
   for (const auto& cpv: pi.second)
   {
-    pvl[cpv.first]=cpv.second;
+    pvl[cpv.first]=insight::doubleToJson(cpv.second);
   }
   s["ProgressVariableList"]=pvl;
   s["logMessage"]=Wt::WString(pi.logMessage_);
@@ -169,7 +170,7 @@ Json::Object AnalyzeRESTServer::nextProgressInfo()
   s["path"]=Wt::WString(pi.path);
   if (auto *dbl=boost::get<double>(&pi.value))
   {
-    s["double"]=*dbl;
+    s["double"]=insight::doubleToJson(*dbl);
   }
   else if (auto *text=boost::get<std::string>(&pi.value))
   {
@@ -217,10 +218,15 @@ AnalyzeRESTServer::AnalyzeRESTServer(
     "--docroot", ".",
     "--http-listen", addr.c_str(),
     "--max-memory-request-size", mmrs.c_str(),
-    "--max-request-size", mrs.c_str()
+    "--max-request-size", mrs.c_str(),
+    "--accesslog", "-"
   };
 
-  setServerConfiguration(9, const_cast<char**>(cargv) );
+  setServerConfiguration(
+      sizeof(cargv)/sizeof(cargv[0]),
+      const_cast<char**>(cargv) );
+
+  logger().configure("* -debug -info"); // no per-request messages; keep warnings and errors
 
   addResource(this, std::string());
   addResource(this, "/next");

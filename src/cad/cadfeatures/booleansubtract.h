@@ -39,6 +39,7 @@ class BooleanSubtract
 
   size_t calcHash() const override;
   void build() override;
+  bool isCacheable() const override { return true; }
 
 public:
   declareType("BooleanSubtract");
@@ -51,7 +52,6 @@ public:
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();
   
-  void operator=(const BooleanSubtract& o);
   
 };
 

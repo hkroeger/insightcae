@@ -40,6 +40,7 @@ class BooleanIntersection
 
   size_t calcHash() const override;
   void build() override;
+  bool isCacheable() const override { return true; }
 
 public:
   declareType("BooleanIntersection");
@@ -56,7 +57,6 @@ public:
   static void insertrule(parser::ISCADParser& ruleset);
   static FeatureCmdInfoList ruleDocumentation();
   
-  void operator=(const BooleanIntersection& o);
 };
 
 std::shared_ptr<BooleanIntersection> operator&(FeaturePtr m1, FeaturePtr m2);

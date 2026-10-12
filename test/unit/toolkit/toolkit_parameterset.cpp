@@ -3,6 +3,7 @@
 #include "base/parameterset.h"
 #include "base/parameters/arrayparameter.h"
 #include "base/parameters/labeledarrayparameter.h"
+#include "base/parameters/labeledarraykeyselectionparameter.h"
 #include "cadgeometryparameter.h"
 
 #include <iostream>
@@ -232,6 +233,218 @@ int main()
             }
 
             boost::filesystem::remove_all(tmpDir);
+        }
+
+
+        // --- test hasPath with absolute and ".." paths, consistent with getByPath ---
+        {
+            auto root = ParameterSet::create("root");
+            {
+                auto b = ParameterSet::create("b");
+                b->insert("x", DoubleParameter(1., "x"));
+                auto a = ParameterSet::create("a");
+                a->insert("b", *b);
+                root->insert("a", *a);
+
+                auto c = ParameterSet::create("c");
+                c->insert("y", DoubleParameter(2., "y"));
+                root->insert("c", *c);
+            }
+
+            auto& b = root->get<ParameterSet>("a/b");
+
+            auto check = [](hierarchicalData::Element& e, const std::string& p, bool expected)
+            {
+                bool hp = e.hasPath(p);
+                bool gp = true;
+                try { e.getByPath(p); }
+                catch (const insight::ElementNotFoundException&) { gp = false; }
+
+                insight::assertion(
+                    hp==expected,
+                    "hasPath(\""+p+"\") returned unexpected result" );
+                insight::assertion(
+                    hp==gp,
+                    "hasPath(\""+p+"\") is inconsistent with getByPath" );
+            };
+
+            check(b, "x", true);
+            check(b, "/c/y", true);
+            check(b, "/a/b/x", true);
+            check(b, "/c/nope", false);
+            check(b, "../../c/y", true);
+            check(b, "../../c/nope", false);
+            check(*root, "/c/y", true);
+
+            insight::assertion(
+                !root->hasPath(".."),
+                "hasPath(\"..\") on root should be false" );
+            insight::assertion(
+                !root->hasPath("../c/y"),
+                "hasPath(\"../c/y\") on root should be false" );
+
+            std::cout<<"hasPath absolute/relative path test passed"<<std::endl;
+        }
+
+
+        // --- test re-sync of labeled array keys with key source after reading ---
+        {
+            auto makeSet = [](const std::set<std::string>& depKeys, bool bind)
+            {
+                auto root = ParameterSet::create("root");
+
+                LabeledArrayParameter species(DoubleParameter(0., "fraction"), 0, "species");
+                species.insertValue("A", std::make_unique<DoubleParameter>(0.5, "fraction"));
+                species.insertValue("B", std::make_unique<DoubleParameter>(0.5, "fraction"));
+                auto fluid = ParameterSet::create("fluid");
+                fluid->insert("species", species);
+                root->insert("fluid", *fluid);
+
+                LabeledArrayParameter dep(DoubleParameter(1., "Lewis number"), 0, "dependent");
+                for (const auto& k: depKeys)
+                    dep.insertValue(k, std::make_unique<DoubleParameter>(2.5, "Lewis number"));
+                root->insert("a_dep", dep);  // read before key source
+                root->insert("lewisnumbers", dep); // read after key source
+
+                if (bind)
+                {
+                    root->get<LabeledArrayParameter>("a_dep")
+                        .setKeySourceParameterPath("/fluid/species");
+                    root->get<LabeledArrayParameter>("lewisnumbers")
+                        .setKeySourceParameterPath("/fluid/species");
+                }
+                return root;
+            };
+
+            auto root = makeSet({}, true);
+            for (const auto& n: {"a_dep", "lewisnumbers"})
+            {
+                insight::assertion(
+                    root->get<LabeledArrayParameter>(n).keys()==std::set<std::string>({"A", "B"}),
+                    std::string(n)+": keys not synchronized with key source after setup" );
+            }
+
+            std::string xml;
+            makeSet({"A", "X"}, false)->saveToString(xml);
+
+            root->readFromString(xml);
+            insight::assertion(
+                root->get<LabeledArrayParameter>("lewisnumbers").hasKey("X"),
+                "expected stale key from file before re-sync" );
+
+            root = ParameterSet::finalize(std::move(root));
+
+            for (const auto& n: {"a_dep", "lewisnumbers"})
+            {
+                auto& dep = root->get<LabeledArrayParameter>(n);
+                insight::assertion(
+                    dep.keys()==std::set<std::string>({"A", "B"}),
+                    std::string(n)+": keys not re-synchronized with key source after read" );
+                insight::assertion(
+                    dynamic_cast<const DoubleParameter&>(dep["A"])()==2.5,
+                    std::string(n)+": value read from file was not preserved" );
+            }
+
+            std::cout<<"labeled array key re-sync after read test passed"<<std::endl;
+
+
+            // --- row change notifications must be balanced and not nested
+            //     (they are mapped to Qt's begin/end{Insert,Remove}Rows) ---
+            int depth=0, maxDepth=0, nBefore=0, nDone=0;
+            std::vector<boost::signals2::scoped_connection> conns;
+            auto watch = [&](hierarchicalData::Element& e)
+            {
+                auto before = [&](int, int) { ++nBefore; maxDepth=std::max(maxDepth, ++depth); };
+                auto done = [&](int, int) { ++nDone; --depth; };
+                conns.emplace_back(e.beforeChildInsertion.connect(before));
+                conns.emplace_back(e.childInsertionDone.connect(done));
+                conns.emplace_back(e.beforeChildRemoval.connect(before));
+                conns.emplace_back(e.childRemovalDone.connect(done));
+            };
+            watch(root->get<LabeledArrayParameter>("fluid/species"));
+            watch(root->get<LabeledArrayParameter>("lewisnumbers"));
+            watch(root->get<LabeledArrayParameter>("a_dep"));
+
+            // source with different species: C replaces B
+            auto other = makeSet({}, true);
+            {
+                auto& sp = other->get<LabeledArrayParameter>("fluid/species");
+                sp.eraseValue("B");
+                sp.insertValue("C", std::make_unique<DoubleParameter>(0.5, "fraction"));
+            }
+
+            root->assignFrom(*other);
+
+            insight::assertion(
+                nBefore>0 && nBefore==nDone && depth==0,
+                str(boost::format("unbalanced row change notifications (before: %d, done: %d)")
+                    % nBefore % nDone) );
+            insight::assertion(
+                maxDepth==1,
+                str(boost::format("nested row change notifications (max depth %d)") % maxDepth) );
+
+            for (const auto& n: {"a_dep", "lewisnumbers"})
+            {
+                auto& dep = root->get<LabeledArrayParameter>(n);
+                insight::assertion(
+                    dep.keys()==std::set<std::string>({"A", "C"}),
+                    std::string(n)+": keys not synchronized after assignFrom" );
+                insight::assertion(
+                    dep.nChildren()==2,
+                    std::string(n)+": unexpected number of children after assignFrom" );
+            }
+
+            std::cout<<"labeled array row change notification test passed"<<std::endl;
+        }
+
+
+        // --- test compatibility read of labeledArrayKeySelection from string parameter ---
+        {
+            auto makeSet = []()
+            {
+                auto root = ParameterSet::create("root");
+                LabeledArrayParameter species(DoubleParameter(0., "fraction"), 0, "species");
+                species.insertValue("A", std::make_unique<DoubleParameter>(0.5, "fraction"));
+                species.insertValue("B", std::make_unique<DoubleParameter>(0.5, "fraction"));
+                auto fluid = ParameterSet::create("fluid");
+                fluid->insert("species", species);
+                root->insert("fluid", *fluid);
+                return root;
+            };
+
+            auto makeOldXML = [&](const std::string& v)
+            {
+                auto old = makeSet();
+                // note: pass std::string, a literal would select the (description, bool isHidden) overload
+                old->insert("sel", StringParameter(v, std::string("selected specie")));
+                std::string xml;
+                old->saveToString(xml);
+                return xml;
+            };
+
+            auto root = makeSet();
+            root->insert("sel",
+                LabeledArrayKeySelectionParameter(
+                    std::string("/fluid/species"), std::string("A"), std::string("selected specie") ) );
+
+            root->readFromString(makeOldXML("B"));
+            {
+                auto& sel = root->get<LabeledArrayKeySelectionParameter>("sel");
+                insight::assertion(
+                    sel.selection()=="B",
+                    "selection not read from string parameter, got \""+sel.selection()+"\"" );
+                insight::assertion(
+                    sel.arrayParameterPath()=="/fluid/species",
+                    "array path changed during compatibility read" );
+            }
+
+            root->readFromString(makeOldXML("Z"));
+            root = ParameterSet::finalize(std::move(root));
+            insight::assertion(
+                root->get<LabeledArrayKeySelectionParameter>("sel").selection().empty(),
+                "invalid key read from string parameter was not cleared" );
+
+            std::cout<<"labeledArrayKeySelection compatibility read test passed"<<std::endl;
         }
 
         return 0;

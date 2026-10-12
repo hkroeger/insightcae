@@ -59,6 +59,7 @@ public:
 
   virtual ~DXFReader();
   virtual void addArc(const DL_ArcData &);
+  virtual void addCircle(const DL_CircleData &);
   virtual void addLine(const DL_LineData &);
   virtual void addPolyline(const DL_PolylineData &);
   virtual void addVertex(const DL_VertexData &);

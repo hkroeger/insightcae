@@ -170,12 +170,6 @@ bool DerivedFeature::isSingleVolume() const
     return basefeat_->isSingleVolume();
 }
 
-void DerivedFeature::operator=(const DerivedFeature& o)
-{
-    basefeat_=o.basefeat_;
-    Feature::operator=(o);
-}
-
 boost::optional<BOMDescriptionData> DerivedFeature::BOMDescription() const
 {
     auto myBD=Feature::BOMDescription();

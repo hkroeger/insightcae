@@ -46,6 +46,7 @@
 #include "base/progressdisplayer/combinedprogressdisplayer.h"
 #include "workbenchwindow.h"
 #include "iqgraphprogressdisplayer.h"
+#include "iqsimulationtimedisplay.h"
 
 #include "iqdebugstream.h"
 #include "logviewerwidget.h"
@@ -174,7 +175,24 @@ protected:
    */
   void updateRunAvailability();
 
+  /**
+   * @brief updateRemoteActionAvailability
+   * enable the remote action buttons (connect/disconnect, up, down, remove),
+   * if they can be used in the current state
+   * @param rs
+   * the remote execution state to consider (nullptr: no remote location)
+   */
+  void updateRemoteActionAvailability(const IQRemoteExecutionState* rs);
+  void updateRemoteActionAvailability();
+
+  /**
+   * @brief setCurrentWorkbenchAction
+   * set the running action and update the GUI accordingly
+   */
+  void setCurrentWorkbenchAction(WorkbenchAction* a);
+
   IQGraphProgressDisplayer *graphProgress_;
+  IQSimulationTimeDisplay *simulationTime_;
   insight::IQActionProgressDisplayManager* actionProgress_;
   insight::CombinedProgressDisplayer progressDisplayer_;
 
@@ -286,6 +304,15 @@ public:
 
 
   void startRemoteRun();
+
+  /**
+   * @brief launchRemoteServerIfRequired
+   * if the remote server is not connected, not running and can be created:
+   * launch it, displaying the output of the creation command.
+   * @return
+   * false, if the launch failed (the error was displayed)
+   */
+  bool launchRemoteServerIfRequired();
 //  void disconnectFromRemoteRun();
 
   // ================================================================================

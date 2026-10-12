@@ -46,6 +46,12 @@ public:
     std::pair<boost::filesystem::path,std::vector<std::string> >
     commandAndArgs(const std::string& command) const override;
 
+    /**
+     * probe with a short connect timeout, so that an unreachable host
+     * does not block the caller for the OS TCP timeout
+     */
+    bool isRunning() const override;
+
     bool isDynamicallyAllocated() const override;
 
     void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const override;
@@ -57,6 +63,15 @@ public:
 
     bool isDynamicallyCreatable() const override;
     bool isDynamicallyDestructable() const override;
+
+    void launch(OutputLineCallback outputLine = OutputLineCallback()) const override;
+    void shutdown(OutputLineCallback outputLine = OutputLineCallback()) const override;
+
+    /**
+     * @brief runDestructionCommand
+     * execute the destruction command, if there is one. Does not throw.
+     */
+    void runDestructionCommand(OutputLineCallback outputLine = OutputLineCallback()) const;
   };
 
 

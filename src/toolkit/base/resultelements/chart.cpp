@@ -503,10 +503,6 @@ void addChartAndFinalValues(
             return y;
         };
 
-        auto finalValue = [&](const arma::mat& values) {
-            return values(values.n_rows-1);
-        };
-
         results.insert<ScalarResult>(
             curve.shortLabel, finalValue(getY(xyavg)),
             curve.finalValueDescription, "", curve.unit);

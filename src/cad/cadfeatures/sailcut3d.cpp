@@ -324,574 +324,566 @@ void SailCut3D::build()
 {
     ExecTimer t("SailCut3D::build() [" + featureSymbolName() + "]");
 
-    if (!cache.contains(hash()))
+    // Resolve file path (may be relative to shared model paths)
+    boost::filesystem::path fp = filepath_;
+    if (!boost::filesystem::exists(fp))
     {
-        // Resolve file path (may be relative to shared model paths)
-        boost::filesystem::path fp = filepath_;
-        if (!boost::filesystem::exists(fp))
+        fp = sharedModelFilePath(filepath_.string());
+    }
+
+    if (!boost::filesystem::exists(fp))
+        throw insight::Exception(
+            _("File not found: %s"), filepath_.string().c_str());
+
+    if (boost::filesystem::is_directory(fp))
+        throw insight::Exception(
+            _("File is a directory: %s"), filepath_.string().c_str());
+
+    // insight::XMLDocument handles file I/O and rapidxml parsing.
+    // The panel3d root element is <CPanelGroup>, not <root>, so
+    // doc.rootNode is null; we call first_node() on the document directly.
+    insight::XMLDocument doc(fp, "CSailDoc");
+    const auto* root = doc.rootNode->first_node("CPanelGroup");
+    if (!root)
+        throw insight::Exception(
+            "No <CPanelGroup> root element found in %s",
+            fp.string().c_str());
+
+
+    // CPanel elements are wrapped in <vector name="panel" size="N">
+    const auto* panelVec = insight::findNode(*root, "panel", "vector");
+    if (!panelVec)
+        throw insight::Exception(
+            "No <vector name=\"panel\"> found in CPanelGroup in %s",
+            fp.string().c_str());
+
+    int panelIndex = 0;
+    int addedFaces = 0;
+
+    // All panel sides collected for topological boundary detection.
+    // A side is on the sail boundary iff no other panel has a side with
+    // the same two endpoints — interior seams are always shared between
+    // exactly two panels regardless of cut type (horizontal, vertical,
+    // radial, mitre, …).
+    std::vector<Points> allPanelSides;
+
+    for (const auto* pNode = panelVec->first_node("CPanel");
+         pNode;
+         pNode = pNode->next_sibling("CPanel"), ++panelIndex)
+    {
+        try
         {
-            fp = sharedModelFilePath(filepath_.string());
-        }
+            auto name=insight::getMandatoryAttribute(*pNode, "name");
+            std::cout<<"processing panel "<<name<<std::endl;
 
-        if (!boost::filesystem::exists(fp))
-            throw insight::Exception(
-                _("File not found: %s"), filepath_.string().c_str());
+            // insight::findNode(father, nameAttrValue, tagName)
+            const auto* leftNode   = insight::findNode(*pNode, "left",   "CSide");
+            const auto* rightNode  = insight::findNode(*pNode, "right",  "CSide");
+            const auto* topNode    = insight::findNode(*pNode, "top",    "CSide");
+            const auto* bottomNode = insight::findNode(*pNode, "bottom", "CSide");
 
-        if (boost::filesystem::is_directory(fp))
-            throw insight::Exception(
-                _("File is a directory: %s"), filepath_.string().c_str());
+            if (!leftNode || !rightNode || !topNode || !bottomNode)
+                throw insight::Exception(
+                    "Panel %d: one or more side elements missing", panelIndex);
 
-        // insight::XMLDocument handles file I/O and rapidxml parsing.
-        // The panel3d root element is <CPanelGroup>, not <root>, so
-        // doc.rootNode is null; we call first_node() on the document directly.
-        insight::XMLDocument doc(fp, "CSailDoc");
-        const auto* root = doc.rootNode->first_node("CPanelGroup");
-        if (!root)
-            throw insight::Exception(
-                "No <CPanelGroup> root element found in %s",
-                fp.string().c_str());
+            const auto left   = parseSide(*leftNode);
+            const auto right  = parseSide(*rightNode);
+            const auto top    = parseSide(*topNode);
+            const auto bottom = parseSide(*bottomNode);
 
+            // Collect all four sides for post-loop boundary detection.
+            for (const Points* s : {&left, &right, &top, &bottom})
+                if (s->size() >= 2)
+                    allPanelSides.push_back(*s);
 
-        // CPanel elements are wrapped in <vector name="panel" size="N">
-        const auto* panelVec = insight::findNode(*root, "panel", "vector");
-        if (!panelVec)
-            throw insight::Exception(
-                "No <vector name=\"panel\"> found in CPanelGroup in %s",
-                fp.string().c_str());
+            // if (left.size() < 2 || right.size() < 2 ||
+            //     top.size()  < 2 || bottom.size() < 2)
+            //     throw insight::Exception(
+            //         "Panel %d: a side has fewer than 2 points", panelIndex);
 
-        int panelIndex = 0;
-        int addedFaces = 0;
+            // SailCut panel orientation:
+            //   left   : luff,  from foot (index 0) to head (index n-1)
+            //   right  : leech, from foot (index 0) to head (index n-1)
+            //   bottom : foot,  from luff (index 0) to leech (index m-1)
+            //   top    : head,  from luff (index 0) to leech (index m-1)
+            //
+            // Closed boundary traversal (counterclockwise):
+            //   bottom:       bottom[0]   -> bottom.back()
+            //   right:        right[0]    -> right.back()
+            //   top reversed: top.back()  -> top[0]
+            //   left reversed:left.back() -> left[0]
 
-        // All panel sides collected for topological boundary detection.
-        // A side is on the sail boundary iff no other panel has a side with
-        // the same two endpoints — interior seams are always shared between
-        // exactly two panels regardless of cut type (horizontal, vertical,
-        // radial, mitre, …).
-        std::vector<Points> allPanelSides;
+            const Points topRev(top.rbegin(),  top.rend());
+            const Points leftRev(left.rbegin(), left.rend());
 
-        for (const auto* pNode = panelVec->first_node("CPanel");
-             pNode;
-             pNode = pNode->next_sibling("CPanel"), ++panelIndex)
-        {
-            try
+            // Determine split parameters along each pair of opposite sides.
+            // splitsH are interior split t-values in bottom's parameterisation (luff→leech).
+            // splitsV are interior split t-values in right's parameterisation (foot→head).
+            constexpr double kinkAngle = M_PI / 6.0; // 30 degrees
+            const auto splitsH = splitOppositePair(
+                bottom, topRev,  kinkAngle, "bottom", "top");
+            const auto splitsV = splitOppositePair(
+                right,  leftRev, kinkAngle, "right",  "left");
+
+            // Build boundary vectors: [0, split..., 1]
+            std::vector<double> boundsH = {0.0};
+            boundsH.insert(boundsH.end(), splitsH.begin(), splitsH.end());
+            boundsH.push_back(1.0);
+
+            std::vector<double> boundsV = {0.0};
+            boundsV.insert(boundsV.end(), splitsV.begin(), splitsV.end());
+            boundsV.push_back(1.0);
+
+            const int NH = static_cast<int>(boundsH.size()) - 1;
+            const int NV = static_cast<int>(boundsV.size()) - 1;
+
+            std::cout << "  sub-panel grid: " << NH << " x " << NV << "\n";
+
+            // Arc-length params for all 4 sides in their natural orientation.
+            const auto sBottom  = arcParams(bottom);
+            const auto sTop     = arcParams(top);
+            const auto sRight   = arcParams(right);
+            const auto sLeft    = arcParams(left);
+            const auto sTopRev  = arcParams(topRev);
+            const auto sLeftRev = arcParams(leftRev);
+
+            // Coons bilinear interpolation: P(u,v) where
+            //   u ∈ [0,1] = luff→leech, v ∈ [0,1] = foot→head.
+            const gp_Pnt P00 = evalAt(bottom, sBottom, 0.0); // luff-foot
+            const gp_Pnt P10 = evalAt(bottom, sBottom, 1.0); // leech-foot
+            const gp_Pnt P01 = evalAt(top,    sTop,    0.0); // luff-head
+            const gp_Pnt P11 = evalAt(top,    sTop,    1.0); // leech-head
+
+            auto coons = [&](double u, double v) -> gp_Pnt
             {
-                auto name=insight::getMandatoryAttribute(*pNode, "name");
-                std::cout<<"processing panel "<<name<<std::endl;
+                const gp_Pnt Rb = evalAt(bottom, sBottom, u);
+                const gp_Pnt Rt = evalAt(top,    sTop,    u);
+                const gp_Pnt Cl = evalAt(left,   sLeft,   v);
+                const gp_Pnt Cr = evalAt(right,  sRight,  v);
+                const double x =
+                    (1-v)*Rb.X() + v*Rt.X() + (1-u)*Cl.X() + u*Cr.X()
+                    - ((1-u)*(1-v)*P00.X() + u*(1-v)*P10.X()
+                     + (1-u)*v   *P01.X() + u*v    *P11.X());
+                const double y =
+                    (1-v)*Rb.Y() + v*Rt.Y() + (1-u)*Cl.Y() + u*Cr.Y()
+                    - ((1-u)*(1-v)*P00.Y() + u*(1-v)*P10.Y()
+                     + (1-u)*v   *P01.Y() + u*v    *P11.Y());
+                const double z =
+                    (1-v)*Rb.Z() + v*Rt.Z() + (1-u)*Cl.Z() + u*Cr.Z()
+                    - ((1-u)*(1-v)*P00.Z() + u*(1-v)*P10.Z()
+                     + (1-u)*v   *P01.Z() + u*v    *P11.Z());
+                return {x, y, z};
+            };
 
-                // insight::findNode(father, nameAttrValue, tagName)
-                const auto* leftNode   = insight::findNode(*pNode, "left",   "CSide");
-                const auto* rightNode  = insight::findNode(*pNode, "right",  "CSide");
-                const auto* topNode    = insight::findNode(*pNode, "top",    "CSide");
-                const auto* bottomNode = insight::findNode(*pNode, "bottom", "CSide");
+            // Pre-compute grid corner points (col = 0..NH, row = 0..NV).
+            std::vector<std::vector<gp_Pnt>> grid(
+                NH+1, std::vector<gp_Pnt>(NV+1));
+            for (int col = 0; col <= NH; ++col)
+                for (int row = 0; row <= NV; ++row)
+                    grid[col][row] = coons(boundsH[col], boundsV[row]);
 
-                if (!leftNode || !rightNode || !topNode || !bottomNode)
-                    throw insight::Exception(
-                        "Panel %d: one or more side elements missing", panelIndex);
+            // Interior edge generators: isoparametric curves on the Coons surface.
+            // makeHorizEdge: constant v = vFixed, u from u0 to u1.
+            // makeVertEdge:  constant u = uFixed, v from v0 to v1.
+            constexpr int N_INTERP = 10;
+            auto makeHorizEdge = [&](double u0, double u1, double vFixed) -> Points
+            {
+                Points pts;
+                pts.reserve(N_INTERP + 1);
+                for (int k = 0; k <= N_INTERP; ++k)
+                    pts.push_back(coons(u0 + (u1 - u0) * k / N_INTERP, vFixed));
+                return pts;
+            };
+            auto makeVertEdge = [&](double uFixed, double v0, double v1) -> Points
+            {
+                Points pts;
+                pts.reserve(N_INTERP + 1);
+                for (int k = 0; k <= N_INTERP; ++k)
+                    pts.push_back(coons(uFixed, v0 + (v1 - v0) * k / N_INTERP));
+                return pts;
+            };
 
-                const auto left   = parseSide(*leftNode);
-                const auto right  = parseSide(*rightNode);
-                const auto top    = parseSide(*topNode);
-                const auto bottom = parseSide(*bottomNode);
-
-                // Collect all four sides for post-loop boundary detection.
-                for (const Points* s : {&left, &right, &top, &bottom})
-                    if (s->size() >= 2)
-                        allPanelSides.push_back(*s);
-
-                // if (left.size() < 2 || right.size() < 2 ||
-                //     top.size()  < 2 || bottom.size() < 2)
-                //     throw insight::Exception(
-                //         "Panel %d: a side has fewer than 2 points", panelIndex);
-
-                // SailCut panel orientation:
-                //   left   : luff,  from foot (index 0) to head (index n-1)
-                //   right  : leech, from foot (index 0) to head (index n-1)
-                //   bottom : foot,  from luff (index 0) to leech (index m-1)
-                //   top    : head,  from luff (index 0) to leech (index m-1)
-                //
-                // Closed boundary traversal (counterclockwise):
-                //   bottom:       bottom[0]   -> bottom.back()
-                //   right:        right[0]    -> right.back()
-                //   top reversed: top.back()  -> top[0]
-                //   left reversed:left.back() -> left[0]
-
-                const Points topRev(top.rbegin(),  top.rend());
-                const Points leftRev(left.rbegin(), left.rend());
-
-                // Determine split parameters along each pair of opposite sides.
-                // splitsH are interior split t-values in bottom's parameterisation (luff→leech).
-                // splitsV are interior split t-values in right's parameterisation (foot→head).
-                constexpr double kinkAngle = M_PI / 6.0; // 30 degrees
-                const auto splitsH = splitOppositePair(
-                    bottom, topRev,  kinkAngle, "bottom", "top");
-                const auto splitsV = splitOppositePair(
-                    right,  leftRev, kinkAngle, "right",  "left");
-
-                // Build boundary vectors: [0, split..., 1]
-                std::vector<double> boundsH = {0.0};
-                boundsH.insert(boundsH.end(), splitsH.begin(), splitsH.end());
-                boundsH.push_back(1.0);
-
-                std::vector<double> boundsV = {0.0};
-                boundsV.insert(boundsV.end(), splitsV.begin(), splitsV.end());
-                boundsV.push_back(1.0);
-
-                const int NH = static_cast<int>(boundsH.size()) - 1;
-                const int NV = static_cast<int>(boundsV.size()) - 1;
-
-                std::cout << "  sub-panel grid: " << NH << " x " << NV << "\n";
-
-                // Arc-length params for all 4 sides in their natural orientation.
-                const auto sBottom  = arcParams(bottom);
-                const auto sTop     = arcParams(top);
-                const auto sRight   = arcParams(right);
-                const auto sLeft    = arcParams(left);
-                const auto sTopRev  = arcParams(topRev);
-                const auto sLeftRev = arcParams(leftRev);
-
-                // Coons bilinear interpolation: P(u,v) where
-                //   u ∈ [0,1] = luff→leech, v ∈ [0,1] = foot→head.
-                const gp_Pnt P00 = evalAt(bottom, sBottom, 0.0); // luff-foot
-                const gp_Pnt P10 = evalAt(bottom, sBottom, 1.0); // leech-foot
-                const gp_Pnt P01 = evalAt(top,    sTop,    0.0); // luff-head
-                const gp_Pnt P11 = evalAt(top,    sTop,    1.0); // leech-head
-
-                auto coons = [&](double u, double v) -> gp_Pnt
+            // Create one BRepOffsetAPI_MakeFilling per sub-panel (i, j).
+            for (int i = 0; i < NH; ++i)
+            {
+                for (int j = 0; j < NV; ++j)
                 {
-                    const gp_Pnt Rb = evalAt(bottom, sBottom, u);
-                    const gp_Pnt Rt = evalAt(top,    sTop,    u);
-                    const gp_Pnt Cl = evalAt(left,   sLeft,   v);
-                    const gp_Pnt Cr = evalAt(right,  sRight,  v);
-                    const double x =
-                        (1-v)*Rb.X() + v*Rt.X() + (1-u)*Cl.X() + u*Cr.X()
-                        - ((1-u)*(1-v)*P00.X() + u*(1-v)*P10.X()
-                         + (1-u)*v   *P01.X() + u*v    *P11.X());
-                    const double y =
-                        (1-v)*Rb.Y() + v*Rt.Y() + (1-u)*Cl.Y() + u*Cr.Y()
-                        - ((1-u)*(1-v)*P00.Y() + u*(1-v)*P10.Y()
-                         + (1-u)*v   *P01.Y() + u*v    *P11.Y());
-                    const double z =
-                        (1-v)*Rb.Z() + v*Rt.Z() + (1-u)*Cl.Z() + u*Cr.Z()
-                        - ((1-u)*(1-v)*P00.Z() + u*(1-v)*P10.Z()
-                         + (1-u)*v   *P01.Z() + u*v    *P11.Z());
-                    return {x, y, z};
-                };
+                    // Four boundary polylines for this sub-panel:
+                    // south: grid[i][j]    → grid[i+1][j]   (foot side, luff→leech)
+                    // east:  grid[i+1][j]  → grid[i+1][j+1] (leech side, foot→head)
+                    // north: grid[i+1][j+1]→ grid[i][j+1]   (head side, leech→luff)
+                    // west:  grid[i][j+1]  → grid[i][j]     (luff side, head→foot)
+                    //
+                    // Boundary sub-panels use the original sampled curves.
+                    // Interior edges use Coons isoparametric interpolation so
+                    // they follow the surface curvature rather than a straight line.
+                    Points south = (j == 0)
+                        ? extractSegment(bottom, sBottom,
+                                         boundsH[i], boundsH[i+1])
+                        : makeHorizEdge(boundsH[i], boundsH[i+1], boundsV[j]);
 
-                // Pre-compute grid corner points (col = 0..NH, row = 0..NV).
-                std::vector<std::vector<gp_Pnt>> grid(
-                    NH+1, std::vector<gp_Pnt>(NV+1));
-                for (int col = 0; col <= NH; ++col)
-                    for (int row = 0; row <= NV; ++row)
-                        grid[col][row] = coons(boundsH[col], boundsV[row]);
+                    Points east = (i == NH-1)
+                        ? extractSegment(right, sRight,
+                                         boundsV[j], boundsV[j+1])
+                        : makeVertEdge(boundsH[i+1], boundsV[j], boundsV[j+1]);
 
-                // Interior edge generators: isoparametric curves on the Coons surface.
-                // makeHorizEdge: constant v = vFixed, u from u0 to u1.
-                // makeVertEdge:  constant u = uFixed, v from v0 to v1.
-                constexpr int N_INTERP = 10;
-                auto makeHorizEdge = [&](double u0, double u1, double vFixed) -> Points
-                {
-                    Points pts;
-                    pts.reserve(N_INTERP + 1);
-                    for (int k = 0; k <= N_INTERP; ++k)
-                        pts.push_back(coons(u0 + (u1 - u0) * k / N_INTERP, vFixed));
-                    return pts;
-                };
-                auto makeVertEdge = [&](double uFixed, double v0, double v1) -> Points
-                {
-                    Points pts;
-                    pts.reserve(N_INTERP + 1);
-                    for (int k = 0; k <= N_INTERP; ++k)
-                        pts.push_back(coons(uFixed, v0 + (v1 - v0) * k / N_INTERP));
-                    return pts;
-                };
+                    // topRev[t] = top[1-t], so column i in bottom coords
+                    // maps to topRev interval [1-boundsH[i+1], 1-boundsH[i]].
+                    // Interior north edges go leech→luff (u decreasing).
+                    Points north = (j == NV-1)
+                        ? extractSegment(topRev, sTopRev,
+                                         1.0-boundsH[i+1], 1.0-boundsH[i])
+                        : makeHorizEdge(boundsH[i+1], boundsH[i], boundsV[j+1]);
 
-                // Create one BRepOffsetAPI_MakeFilling per sub-panel (i, j).
-                for (int i = 0; i < NH; ++i)
-                {
-                    for (int j = 0; j < NV; ++j)
+                    // leftRev[t] = left[1-t], so row j in right coords
+                    // maps to leftRev interval [1-boundsV[j+1], 1-boundsV[j]].
+                    // Interior west edges go head→foot (v decreasing).
+                    Points west = (i == 0)
+                        ? extractSegment(leftRev, sLeftRev,
+                                         1.0-boundsV[j+1], 1.0-boundsV[j])
+                        : makeVertEdge(boundsH[i], boundsV[j+1], boundsV[j]);
+
+                    BRepOffsetAPI_MakeFilling filling;
+                    filling.SetApproxParam(3, 8);
+                    int ns = 0;
+                    for (const auto* edgePts : {&south, &east, &north, &west})
                     {
-                        // Four boundary polylines for this sub-panel:
-                        // south: grid[i][j]    → grid[i+1][j]   (foot side, luff→leech)
-                        // east:  grid[i+1][j]  → grid[i+1][j+1] (leech side, foot→head)
-                        // north: grid[i+1][j+1]→ grid[i][j+1]   (head side, leech→luff)
-                        // west:  grid[i][j+1]  → grid[i][j]     (luff side, head→foot)
-                        //
-                        // Boundary sub-panels use the original sampled curves.
-                        // Interior edges use Coons isoparametric interpolation so
-                        // they follow the surface curvature rather than a straight line.
-                        Points south = (j == 0)
-                            ? extractSegment(bottom, sBottom,
-                                             boundsH[i], boundsH[i+1])
-                            : makeHorizEdge(boundsH[i], boundsH[i+1], boundsV[j]);
-
-                        Points east = (i == NH-1)
-                            ? extractSegment(right, sRight,
-                                             boundsV[j], boundsV[j+1])
-                            : makeVertEdge(boundsH[i+1], boundsV[j], boundsV[j+1]);
-
-                        // topRev[t] = top[1-t], so column i in bottom coords
-                        // maps to topRev interval [1-boundsH[i+1], 1-boundsH[i]].
-                        // Interior north edges go leech→luff (u decreasing).
-                        Points north = (j == NV-1)
-                            ? extractSegment(topRev, sTopRev,
-                                             1.0-boundsH[i+1], 1.0-boundsH[i])
-                            : makeHorizEdge(boundsH[i+1], boundsH[i], boundsV[j+1]);
-
-                        // leftRev[t] = left[1-t], so row j in right coords
-                        // maps to leftRev interval [1-boundsV[j+1], 1-boundsV[j]].
-                        // Interior west edges go head→foot (v decreasing).
-                        Points west = (i == 0)
-                            ? extractSegment(leftRev, sLeftRev,
-                                             1.0-boundsV[j+1], 1.0-boundsV[j])
-                            : makeVertEdge(boundsH[i], boundsV[j+1], boundsV[j]);
-
-                        BRepOffsetAPI_MakeFilling filling;
-                        filling.SetApproxParam(3, 8);
-                        int ns = 0;
-                        for (const auto* edgePts : {&south, &east, &north, &west})
+                        try
                         {
-                            try
-                            {
-                                filling.Add(makeSplineEdge(*edgePts), GeomAbs_C0);
-                                ++ns;
-                            }
-                            catch (...)
-                            {
-                                std::cout << "  skipping degenerate edge in sub-panel "
-                                          << i << "," << j << "\n";
-                            }
+                            filling.Add(makeSplineEdge(*edgePts), GeomAbs_C0);
+                            ++ns;
                         }
-
-                        if (ns < 1)
+                        catch (...)
                         {
-                            std::cerr << "  no edges for sub-panel "
-                                      << i << "," << j << " — skipping\n";
-                            continue;
+                            std::cout << "  skipping degenerate edge in sub-panel "
+                                      << i << "," << j << "\n";
                         }
-
-                        filling.Build();
-                        if (!filling.IsDone())
-                        {
-                            std::cerr << "  filling failed for sub-panel "
-                                      << i << "," << j << " of panel " << name << "\n";
-                            continue;
-                        }
-
-                        const std::string subName =
-                            name + "_" + std::to_string(i) + "_" + std::to_string(j);
-                        components_[subName] = cad::Import::create(filling.Shape());
-                        ++addedFaces;
                     }
+
+                    if (ns < 1)
+                    {
+                        std::cerr << "  no edges for sub-panel "
+                                  << i << "," << j << " — skipping\n";
+                        continue;
+                    }
+
+                    filling.Build();
+                    if (!filling.IsDone())
+                    {
+                        std::cerr << "  filling failed for sub-panel "
+                                  << i << "," << j << " of panel " << name << "\n";
+                        continue;
+                    }
+
+                    const std::string subName =
+                        name + "_" + std::to_string(i) + "_" + std::to_string(j);
+                    components_[subName] = cad::Import::create(filling.Shape());
+                    ++addedFaces;
                 }
             }
-            catch (const std::exception& ex)
+        }
+        catch (const std::exception& ex)
+        {
+            std::cerr << "SailCut3D: skipping panel " << panelIndex
+                      << ": " << ex.what() << "\n";
+        }
+    }
+
+    if (addedFaces == 0)
+        throw insight::Exception(
+            "No valid panel faces could be built from %s",
+            fp.string().c_str());
+
+    // ── Sail corner reference points via topological boundary detection ──
+    //
+    // Step 1: mark interior seams.
+    // Two sides are a shared seam when their two endpoints coincide
+    // (in either order).  Boundary sides are those not matched.
+    constexpr double seamTol = 1e-6;
+    const size_t nSides = allPanelSides.size();
+    std::vector<bool> isBnd(nSides, true);
+    for (size_t a = 0; a < nSides; ++a)
+    {
+        if (!isBnd[a]) continue;
+        const gp_Pnt fa = allPanelSides[a].front();
+        const gp_Pnt la = allPanelSides[a].back();
+        for (size_t b = a + 1; b < nSides; ++b)
+        {
+            if (!isBnd[b]) continue;
+            const gp_Pnt fb = allPanelSides[b].front();
+            const gp_Pnt lb = allPanelSides[b].back();
+            if ((fa.IsEqual(fb, seamTol) && la.IsEqual(lb, seamTol)) ||
+                (fa.IsEqual(lb, seamTol) && la.IsEqual(fb, seamTol)))
             {
-                std::cerr << "SailCut3D: skipping panel " << panelIndex
-                          << ": " << ex.what() << "\n";
+                isBnd[a] = isBnd[b] = false;
+                break;
             }
         }
+    }
 
-        if (addedFaces == 0)
-            throw insight::Exception(
-                "No valid panel faces could be built from %s",
-                fp.string().c_str());
+    // Step 2: collect boundary polylines and assemble into one closed perimeter.
+    std::vector<Points> bndSegs;
+    for (size_t i = 0; i < nSides; ++i)
+        if (isBnd[i])
+            bndSegs.push_back(allPanelSides[i]);
 
-        // ── Sail corner reference points via topological boundary detection ──
-        //
-        // Step 1: mark interior seams.
-        // Two sides are a shared seam when their two endpoints coincide
-        // (in either order).  Boundary sides are those not matched.
-        constexpr double seamTol = 1e-6;
-        const size_t nSides = allPanelSides.size();
-        std::vector<bool> isBnd(nSides, true);
-        for (size_t a = 0; a < nSides; ++a)
+    Points perimeter;
+    if (!bndSegs.empty())
+    {
+        std::vector<Points> rem = std::move(bndSegs);
+        perimeter = rem[0];
+        rem.erase(rem.begin());
+        while (!rem.empty())
         {
-            if (!isBnd[a]) continue;
-            const gp_Pnt fa = allPanelSides[a].front();
-            const gp_Pnt la = allPanelSides[a].back();
-            for (size_t b = a + 1; b < nSides; ++b)
+            const gp_Pnt& tip = perimeter.back();
+            bool found = false;
+            for (size_t i = 0; i < rem.size(); ++i)
             {
-                if (!isBnd[b]) continue;
-                const gp_Pnt fb = allPanelSides[b].front();
-                const gp_Pnt lb = allPanelSides[b].back();
-                if ((fa.IsEqual(fb, seamTol) && la.IsEqual(lb, seamTol)) ||
-                    (fa.IsEqual(lb, seamTol) && la.IsEqual(fb, seamTol)))
+                if (tip.IsEqual(rem[i].front(), seamTol))
                 {
-                    isBnd[a] = isBnd[b] = false;
+                    for (size_t k = 1; k < rem[i].size(); ++k)
+                        perimeter.push_back(rem[i][k]);
+                    rem.erase(rem.begin() + i);
+                    found = true; break;
+                }
+                if (tip.IsEqual(rem[i].back(), seamTol))
+                {
+                    for (size_t k = rem[i].size() - 1; k-- > 0; )
+                        perimeter.push_back(rem[i][k]);
+                    rem.erase(rem.begin() + i);
+                    found = true; break;
+                }
+            }
+            if (!found) break; // chain gap — partial sail?
+        }
+        // Drop closing duplicate if chain is fully closed.
+        if (perimeter.size() > 1 &&
+            perimeter.back().IsEqual(perimeter.front(), seamTol))
+            perimeter.pop_back();
+    }
+
+    // Step 3: find sail corner points on the closed perimeter.
+    // Use a 15° threshold — low enough to catch gentle gaff angles at the
+    // head, well above the < 5° kinks at smooth panel-to-panel junctions.
+    constexpr double sailCornerAngle = M_PI / 12.0; // 15°
+    const auto cornerIdxs =
+        findCornersOnClosedPolyline(perimeter, sailCornerAngle);
+    const size_t nCorners = cornerIdxs.size();
+    std::cout << "SailCut3D: detected " << nCorners
+              << " sail corners on perimeter of "
+              << perimeter.size() << " points\n";
+
+    // sideRanges: sail-side name → perimeter index range (from, to), inclusive.
+    // Populated inside the nCorners block; used after Compound::build().
+    std::map<std::string, std::pair<size_t,size_t>> sideRanges;
+
+    if (nCorners >= 3 && nCorners <= 4)
+    {
+        // Collect corner points.
+        std::vector<gp_Pnt> cp;
+        for (size_t ci : cornerIdxs)
+            cp.push_back(perimeter[ci]);
+
+        // Step 4: assign tack / clew / head / peak purely by coordinate.
+        //
+        // In SailCut's coordinate system Y is the vertical (height) axis and
+        // X runs roughly from luff (mast / forestay, lower X) to leech (higher X).
+        //
+        // - The 2 corners with the lowest Y are the foot corners.
+        //   Among those, lower X → tack, higher X → clew.
+        // - The remaining corner(s) are the head.
+        //   For a 4-corner sail: lower X → head, higher X → peak.
+        //   For a triangular sail: single head corner → head = peak.
+
+        std::vector<int> byY(nCorners);
+        std::iota(byY.begin(), byY.end(), 0);
+        std::sort(byY.begin(), byY.end(),
+            [&](int a, int b){ return cp[a].Y() < cp[b].Y(); });
+
+        // Foot pair: byY[0] and byY[1] (lowest Y = foot of sail)
+        int fi0 = byY[0], fi1 = byY[1];
+        int ci_tack = (cp[fi0].X() <= cp[fi1].X()) ? fi0 : fi1;
+        int ci_clew = (cp[fi0].X() <= cp[fi1].X()) ? fi1 : fi0;
+        gp_Pnt tack = cp[ci_tack];
+        gp_Pnt clew = cp[ci_clew];
+
+        int ci_head, ci_peak;
+        gp_Pnt head, peak;
+        if (nCorners == 4)
+        {
+            int hi0 = byY[2], hi1 = byY[3];
+            ci_head = (cp[hi0].X() <= cp[hi1].X()) ? hi0 : hi1;
+            ci_peak   = (cp[hi0].X() <= cp[hi1].X()) ? hi1 : hi0;
+            head = cp[ci_head];
+            peak   = cp[ci_peak];
+        }
+        else // triangular sail: single head corner
+        {
+            ci_head = ci_peak = byY[2];
+            head = peak = cp[ci_head];
+        }
+
+        refpoints_[TACK]   = insight::vec3(tack);
+        refpoints_[CLEW]   = insight::vec3(clew);
+        refpoints_[HEAD] = insight::vec3(head);
+        refpoints_[PEAK]   = insight::vec3(peak);
+
+        std::cout << "  tack   " << tack.X()   << " " << tack.Y()   << " " << tack.Z()   << "\n"
+                  << "  clew   " << clew.X()   << " " << clew.Y()   << " " << clew.Z()   << "\n"
+                  << "  head " << head.X() << " " << head.Y() << " " << head.Z() << "\n"
+                  << "  peak   " << peak.X()   << " " << peak.Y()   << " " << peak.Z()   << "\n";
+
+        // Compute perimeter index ranges for each sail side.
+        // cornerIdxs is in perimeter order; consecutive pairs bound a side.
+        auto cornerName = [&](int ci) -> std::string {
+            if (ci == ci_tack)   return TACK;
+            if (ci == ci_clew)   return CLEW;
+            if (ci == ci_head)   return HEAD;
+            if (ci == ci_peak)   return PEAK;
+            return "";
+        };
+        auto sideNameForPair = [](const std::string& a, const std::string& b) -> std::string {
+            auto both = [&](const std::string& x, const std::string& y){
+                return (a==x && b==y) || (a==y && b==x);
+            };
+            if (both(TACK,   CLEW))    return FOOT;
+            if (both(TACK,   HEAD))  return LUFF;
+            if (both(CLEW,   PEAK))    return LEECH;
+            if (both(HEAD, PEAK))    return GAFF;
+            // Triangular sail: head==peak; clew→head is leech.
+            if (both(CLEW,   HEAD))  return LEECH;
+            return "";
+        };
+        for (int k = 0; k < (int)nCorners; ++k)
+        {
+            int nextK = (k + 1) % (int)nCorners;
+            std::string name = sideNameForPair(
+                cornerName(k), cornerName(nextK));
+            if (!name.empty())
+                sideRanges[name] = { cornerIdxs[k], cornerIdxs[nextK] };
+        }
+    }
+    else
+    {
+        std::cerr << "SailCut3D: unexpected corner count (" << nCorners
+                  << ") — sail corner reference points not set\n";
+    }
+
+    Compound::build();
+
+    // ── Sail-side edge feature sets ──────────────────────────────────────
+    // After Compound::build() the topology index (idx_) is ready.
+    // We access it directly (bypassing checkForBuildDuringAccess()) to
+    // avoid a recursive-lock deadlock while still inside build().
+    if (!sideRanges.empty() && idx_)
+    {
+        const size_t N = perimeter.size();
+
+        // Returns true when perimeter index idx lies in [from, to]
+        // following the forward (increasing) perimeter direction.
+        auto inRange = [&](size_t idx, size_t from, size_t to) -> bool {
+            if (from == to)  return idx == from;
+            if (from < to)   return idx >= from && idx <= to;
+            else             return idx >= from || idx <= to; // wraps
+        };
+
+        // Find the perimeter index for point p.
+        // First try exact vertex match; if that fails, project p onto each
+        // perimeter segment (handles interpolated split-point endpoints that
+        // land between two perimeter vertices).  Returns the segment-start
+        // index so the result is always inside the side's [from,to] range.
+        constexpr double matchTol = 1e-3;
+        auto perimIdx = [&](const gp_Pnt& p) -> int {
+            for (size_t i = 0; i < N; ++i)
+                if (perimeter[i].IsEqual(p, matchTol))
+                    return (int)i;
+            // Segment-interior fallback for interpolated kink-split endpoints
+            for (size_t i = 0; i < N; ++i) {
+                const size_t next = (i + 1) % N;
+                const gp_Vec seg(perimeter[i], perimeter[next]);
+                const double len2 = seg.SquareMagnitude();
+                if (len2 < Precision::Confusion()) continue;
+                const gp_Vec toP(perimeter[i], p);
+                const double t = std::max(0.0, std::min(1.0,
+                    toP.Dot(seg) / len2));
+                const gp_Pnt proj = perimeter[i].Translated(seg.Scaled(t));
+                if (proj.Distance(p) < matchTol)
+                    return (int)i; // classify at segment-start index
+            }
+            return -1;
+        };
+
+        std::map<std::string, std::vector<FeatureID>> sideEdgeIds;
+
+        FeatureSetData allEdgeTags;
+        idx_->insertAllEdgeTags(allEdgeTags);
+
+        for (FeatureID eid : allEdgeTags)
+        {
+            const TopoDS_Edge& e = idx_->edgeByTag(eid);
+            gp_Pnt p1 = BRep_Tool::Pnt(TopExp::FirstVertex(e));
+            gp_Pnt p2 = BRep_Tool::Pnt(TopExp::LastVertex(e));
+            int i1 = perimIdx(p1);
+            int i2 = perimIdx(p2);
+            if (i1 < 0 || i2 < 0) continue; // interior / seam edge
+
+            for (const auto& [name, range] : sideRanges)
+            {
+                if (inRange(i1, range.first, range.second) &&
+                    inRange(i2, range.first, range.second))
+                {
+                    sideEdgeIds[name].push_back(eid);
                     break;
                 }
             }
         }
 
-        // Step 2: collect boundary polylines and assemble into one closed perimeter.
-        std::vector<Points> bndSegs;
-        for (size_t i = 0; i < nSides; ++i)
-            if (isBnd[i])
-                bndSegs.push_back(allPanelSides[i]);
-
-        Points perimeter;
-        if (!bndSegs.empty())
+        for (auto& [name, ids] : sideEdgeIds)
         {
-            std::vector<Points> rem = std::move(bndSegs);
-            perimeter = rem[0];
-            rem.erase(rem.begin());
-            while (!rem.empty())
+            if (!ids.empty())
             {
-                const gp_Pnt& tip = perimeter.back();
-                bool found = false;
-                for (size_t i = 0; i < rem.size(); ++i)
+                auto efs=std::make_shared<FeatureSet>(
+                    shared_from_this(), Edge, ids);
+
+                providedFeatureSets_[name] = efs;
+                std::cout << "SailCut3D: sail side \"" << name
+                          << "\" — " << ids.size() << " edges\n";
+                providedSubshapes_[name]=cad::Wire::create(efs);
+            }
+        }
+
+        // ── Tangent vectors of the leech and foot edges at the clew ──
+        if (refpoints_.count(CLEW))
+        {
+            const gp_Pnt clewPt = to_Pnt(refpoints_.at(CLEW));
+            for (const std::string& sideName : {FOOT, LEECH})
+            {
+                auto it = sideEdgeIds.find(sideName);
+                if (it == sideEdgeIds.end())
+                    continue;
+
+                for (FeatureID eid : it->second)
                 {
-                    if (tip.IsEqual(rem[i].front(), seamTol))
+                    const TopoDS_Edge& e = idx_->edgeByTag(eid);
+                    const gp_Pnt p1 = BRep_Tool::Pnt(TopExp::FirstVertex(e));
+                    const gp_Pnt p2 = BRep_Tool::Pnt(TopExp::LastVertex(e));
+                    if (p1.Distance(clewPt) < matchTol ||
+                        p2.Distance(clewPt) < matchTol)
                     {
-                        for (size_t k = 1; k < rem[i].size(); ++k)
-                            perimeter.push_back(rem[i][k]);
-                        rem.erase(rem.begin() + i);
-                        found = true; break;
-                    }
-                    if (tip.IsEqual(rem[i].back(), seamTol))
-                    {
-                        for (size_t k = rem[i].size() - 1; k-- > 0; )
-                            perimeter.push_back(rem[i][k]);
-                        rem.erase(rem.begin() + i);
-                        found = true; break;
-                    }
-                }
-                if (!found) break; // chain gap — partial sail?
-            }
-            // Drop closing duplicate if chain is fully closed.
-            if (perimeter.size() > 1 &&
-                perimeter.back().IsEqual(perimeter.front(), seamTol))
-                perimeter.pop_back();
-        }
-
-        // Step 3: find sail corner points on the closed perimeter.
-        // Use a 15° threshold — low enough to catch gentle gaff angles at the
-        // head, well above the < 5° kinks at smooth panel-to-panel junctions.
-        constexpr double sailCornerAngle = M_PI / 12.0; // 15°
-        const auto cornerIdxs =
-            findCornersOnClosedPolyline(perimeter, sailCornerAngle);
-        const size_t nCorners = cornerIdxs.size();
-        std::cout << "SailCut3D: detected " << nCorners
-                  << " sail corners on perimeter of "
-                  << perimeter.size() << " points\n";
-
-        // sideRanges: sail-side name → perimeter index range (from, to), inclusive.
-        // Populated inside the nCorners block; used after Compound::build().
-        std::map<std::string, std::pair<size_t,size_t>> sideRanges;
-
-        if (nCorners >= 3 && nCorners <= 4)
-        {
-            // Collect corner points.
-            std::vector<gp_Pnt> cp;
-            for (size_t ci : cornerIdxs)
-                cp.push_back(perimeter[ci]);
-
-            // Step 4: assign tack / clew / head / peak purely by coordinate.
-            //
-            // In SailCut's coordinate system Y is the vertical (height) axis and
-            // X runs roughly from luff (mast / forestay, lower X) to leech (higher X).
-            //
-            // - The 2 corners with the lowest Y are the foot corners.
-            //   Among those, lower X → tack, higher X → clew.
-            // - The remaining corner(s) are the head.
-            //   For a 4-corner sail: lower X → head, higher X → peak.
-            //   For a triangular sail: single head corner → head = peak.
-
-            std::vector<int> byY(nCorners);
-            std::iota(byY.begin(), byY.end(), 0);
-            std::sort(byY.begin(), byY.end(),
-                [&](int a, int b){ return cp[a].Y() < cp[b].Y(); });
-
-            // Foot pair: byY[0] and byY[1] (lowest Y = foot of sail)
-            int fi0 = byY[0], fi1 = byY[1];
-            int ci_tack = (cp[fi0].X() <= cp[fi1].X()) ? fi0 : fi1;
-            int ci_clew = (cp[fi0].X() <= cp[fi1].X()) ? fi1 : fi0;
-            gp_Pnt tack = cp[ci_tack];
-            gp_Pnt clew = cp[ci_clew];
-
-            int ci_head, ci_peak;
-            gp_Pnt head, peak;
-            if (nCorners == 4)
-            {
-                int hi0 = byY[2], hi1 = byY[3];
-                ci_head = (cp[hi0].X() <= cp[hi1].X()) ? hi0 : hi1;
-                ci_peak   = (cp[hi0].X() <= cp[hi1].X()) ? hi1 : hi0;
-                head = cp[ci_head];
-                peak   = cp[ci_peak];
-            }
-            else // triangular sail: single head corner
-            {
-                ci_head = ci_peak = byY[2];
-                head = peak = cp[ci_head];
-            }
-
-            refpoints_[TACK]   = insight::vec3(tack);
-            refpoints_[CLEW]   = insight::vec3(clew);
-            refpoints_[HEAD] = insight::vec3(head);
-            refpoints_[PEAK]   = insight::vec3(peak);
-
-            std::cout << "  tack   " << tack.X()   << " " << tack.Y()   << " " << tack.Z()   << "\n"
-                      << "  clew   " << clew.X()   << " " << clew.Y()   << " " << clew.Z()   << "\n"
-                      << "  head " << head.X() << " " << head.Y() << " " << head.Z() << "\n"
-                      << "  peak   " << peak.X()   << " " << peak.Y()   << " " << peak.Z()   << "\n";
-
-            // Compute perimeter index ranges for each sail side.
-            // cornerIdxs is in perimeter order; consecutive pairs bound a side.
-            auto cornerName = [&](int ci) -> std::string {
-                if (ci == ci_tack)   return TACK;
-                if (ci == ci_clew)   return CLEW;
-                if (ci == ci_head)   return HEAD;
-                if (ci == ci_peak)   return PEAK;
-                return "";
-            };
-            auto sideNameForPair = [](const std::string& a, const std::string& b) -> std::string {
-                auto both = [&](const std::string& x, const std::string& y){
-                    return (a==x && b==y) || (a==y && b==x);
-                };
-                if (both(TACK,   CLEW))    return FOOT;
-                if (both(TACK,   HEAD))  return LUFF;
-                if (both(CLEW,   PEAK))    return LEECH;
-                if (both(HEAD, PEAK))    return GAFF;
-                // Triangular sail: head==peak; clew→head is leech.
-                if (both(CLEW,   HEAD))  return LEECH;
-                return "";
-            };
-            for (int k = 0; k < (int)nCorners; ++k)
-            {
-                int nextK = (k + 1) % (int)nCorners;
-                std::string name = sideNameForPair(
-                    cornerName(k), cornerName(nextK));
-                if (!name.empty())
-                    sideRanges[name] = { cornerIdxs[k], cornerIdxs[nextK] };
-            }
-        }
-        else
-        {
-            std::cerr << "SailCut3D: unexpected corner count (" << nCorners
-                      << ") — sail corner reference points not set\n";
-        }
-
-        Compound::build();
-
-        // ── Sail-side edge feature sets ──────────────────────────────────────
-        // After Compound::build() the topology index (idx_) is ready.
-        // We access it directly (bypassing checkForBuildDuringAccess()) to
-        // avoid a recursive-lock deadlock while still inside build().
-        if (!sideRanges.empty() && idx_)
-        {
-            const size_t N = perimeter.size();
-
-            // Returns true when perimeter index idx lies in [from, to]
-            // following the forward (increasing) perimeter direction.
-            auto inRange = [&](size_t idx, size_t from, size_t to) -> bool {
-                if (from == to)  return idx == from;
-                if (from < to)   return idx >= from && idx <= to;
-                else             return idx >= from || idx <= to; // wraps
-            };
-
-            // Find the perimeter index for point p.
-            // First try exact vertex match; if that fails, project p onto each
-            // perimeter segment (handles interpolated split-point endpoints that
-            // land between two perimeter vertices).  Returns the segment-start
-            // index so the result is always inside the side's [from,to] range.
-            constexpr double matchTol = 1e-3;
-            auto perimIdx = [&](const gp_Pnt& p) -> int {
-                for (size_t i = 0; i < N; ++i)
-                    if (perimeter[i].IsEqual(p, matchTol))
-                        return (int)i;
-                // Segment-interior fallback for interpolated kink-split endpoints
-                for (size_t i = 0; i < N; ++i) {
-                    const size_t next = (i + 1) % N;
-                    const gp_Vec seg(perimeter[i], perimeter[next]);
-                    const double len2 = seg.SquareMagnitude();
-                    if (len2 < Precision::Confusion()) continue;
-                    const gp_Vec toP(perimeter[i], p);
-                    const double t = std::max(0.0, std::min(1.0,
-                        toP.Dot(seg) / len2));
-                    const gp_Pnt proj = perimeter[i].Translated(seg.Scaled(t));
-                    if (proj.Distance(p) < matchTol)
-                        return (int)i; // classify at segment-start index
-                }
-                return -1;
-            };
-
-            std::map<std::string, std::vector<FeatureID>> sideEdgeIds;
-
-            FeatureSetData allEdgeTags;
-            idx_->insertAllEdgeTags(allEdgeTags);
-
-            for (FeatureID eid : allEdgeTags)
-            {
-                const TopoDS_Edge& e = idx_->edgeByTag(eid);
-                gp_Pnt p1 = BRep_Tool::Pnt(TopExp::FirstVertex(e));
-                gp_Pnt p2 = BRep_Tool::Pnt(TopExp::LastVertex(e));
-                int i1 = perimIdx(p1);
-                int i2 = perimIdx(p2);
-                if (i1 < 0 || i2 < 0) continue; // interior / seam edge
-
-                for (const auto& [name, range] : sideRanges)
-                {
-                    if (inRange(i1, range.first, range.second) &&
-                        inRange(i2, range.first, range.second))
-                    {
-                        sideEdgeIds[name].push_back(eid);
+                        refvectors_[sideName + "TangentAtClew"] =
+                            edgeTangent(e, refpoints_.at(CLEW));
                         break;
                     }
                 }
             }
-
-            for (auto& [name, ids] : sideEdgeIds)
-            {
-                if (!ids.empty())
-                {
-                    auto efs=std::make_shared<FeatureSet>(
-                        shared_from_this(), Edge, ids);
-
-                    providedFeatureSets_[name] = efs;
-                    std::cout << "SailCut3D: sail side \"" << name
-                              << "\" — " << ids.size() << " edges\n";
-                    providedSubshapes_[name]=cad::Wire::create(efs);
-                }
-            }
-
-            // ── Tangent vectors of the leech and foot edges at the clew ──
-            if (refpoints_.count(CLEW))
-            {
-                const gp_Pnt clewPt = to_Pnt(refpoints_.at(CLEW));
-                for (const std::string& sideName : {FOOT, LEECH})
-                {
-                    auto it = sideEdgeIds.find(sideName);
-                    if (it == sideEdgeIds.end())
-                        continue;
-
-                    for (FeatureID eid : it->second)
-                    {
-                        const TopoDS_Edge& e = idx_->edgeByTag(eid);
-                        const gp_Pnt p1 = BRep_Tool::Pnt(TopExp::FirstVertex(e));
-                        const gp_Pnt p2 = BRep_Tool::Pnt(TopExp::LastVertex(e));
-                        if (p1.Distance(clewPt) < matchTol ||
-                            p2.Distance(clewPt) < matchTol)
-                        {
-                            refvectors_[sideName + "TangentAtClew"] =
-                                edgeTangent(e, refpoints_.at(CLEW));
-                            break;
-                        }
-                    }
-                }
-                refvectors_[CLEWTANGENT]=0.5*(
-                                               refvectors_.at(FOOT+ "TangentAtClew")
-                                               +
-                                                  (-refvectors_.at(LEECH+ "TangentAtClew"))
-                                               );
-            }
+            refvectors_[CLEWTANGENT]=0.5*(
+                                           refvectors_.at(FOOT+ "TangentAtClew")
+                                           +
+                                              (-refvectors_.at(LEECH+ "TangentAtClew"))
+                                           );
         }
+    }
 
-        cache.insert(shared_from_this());
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<SailCut3D>(hash()));
-    }
 }
 
 void SailCut3D::replaceDependency(const DependencyReplacement &repl)

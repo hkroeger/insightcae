@@ -68,6 +68,15 @@ public:
    */
   virtual void discard();
 
+  /**
+   * @brief serverStopped
+   * the server was shut down: revert to an uncommitted remote location
+   * (the configuration file is kept). The connection is re-established
+   * (and the server launched, if possible) on the next remote action.
+   * Must be called in the GUI thread.
+   */
+  virtual void serverStopped();
+
 };
 
 

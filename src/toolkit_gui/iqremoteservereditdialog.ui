@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>495</width>
+    <width>760</width>
     <height>474</height>
    </rect>
   </property>
@@ -24,7 +24,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QListView" name="lwServers"/>
+      <widget class="QTreeView" name="lwServers">
+       <property name="rootIsDecorated">
+        <bool>false</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -64,6 +71,43 @@
        </property>
        <property name="text">
         <string>Set as preferred</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnLaunch">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Launch</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnShutdown">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Shutdown</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnRefreshStatus">
+       <property name="toolTip">
+        <string>Check the state of all servers again</string>
+       </property>
+       <property name="text">
+        <string>Refresh status</string>
        </property>
       </widget>
      </item>

@@ -4,6 +4,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include <boost/optional.hpp>
 #include "base/exception.h"
 
 #include "boost/process.hpp"
@@ -97,6 +98,35 @@ public:
 
     bool isUnoccupied() const;
 
+#ifndef SWIG
+    /**
+     * processor load, counted in physical cores
+     * (hyperthreads of one core count as a single processor)
+     */
+    struct ProcessorLoad
+    {
+        int nProcessors = 0;
+        /**
+         * number of physical cores, which are (nearly) fully utilized
+         */
+        int nFullyOccupied = 0;
+        /**
+         * average utilization of all physical cores, between 0 and 1
+         */
+        double utilization = 0.;
+    };
+
+    /**
+     * @brief processorLoad
+     * measure the current processor load on the running machine
+     * (takes about one second).
+     * @return
+     * the load or nothing, if it could not be determined.
+     * Does not throw.
+     */
+    virtual boost::optional<ProcessorLoad> processorLoad() const;
+#endif
+
     /**
      * @brief instance
      * attempts to connect and launches a new instance, if necessary
@@ -154,6 +184,29 @@ public:
 
     virtual bool isDynamicallyCreatable() const =0;
     virtual bool isDynamicallyDestructable() const =0;
+
+#ifndef SWIG
+    typedef std::function<void(const std::string& line)> OutputLineCallback;
+
+    /**
+     * @brief launch
+     * create the server, if it is dynamically creatable and not running,
+     * and wait until it is reachable. Throws on failure.
+     * @param outputLine
+     * receives the console output of the launch (from a different thread
+     * than the caller's, possibly). If empty, the output goes to the console.
+     */
+    virtual void launch(OutputLineCallback outputLine = OutputLineCallback()) const;
+
+    /**
+     * @brief shutdown
+     * stop the server by executing its destruction command.
+     * Throws, if the server cannot be shut down or the command fails.
+     * @param outputLine
+     * receives the console output (see launch)
+     */
+    virtual void shutdown(OutputLineCallback outputLine = OutputLineCallback()) const;
+#endif
   };
 
 

@@ -77,6 +77,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="btnLaunchHost">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Launch</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -103,7 +113,7 @@
         <item>
          <widget class="QLineEdit" name="leRemoteDirectory">
           <property name="placeholderText">
-           <string>(auto create)</string>
+           <string>(temporary, removed after analysis)</string>
           </property>
           <property name="clearButtonEnabled">
            <bool>true</bool>
@@ -114,6 +124,17 @@
          <widget class="QPushButton" name="btnSelectRemoteDirectory">
           <property name="text">
            <string>...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnCreateRemoteDirectory">
+          <property name="toolTip">
+           <string>Create a new remote directory with a random name.
+Unlike the temporary directory, it is kept after the analysis.</string>
+          </property>
+          <property name="text">
+           <string>new</string>
           </property>
          </widget>
         </item>

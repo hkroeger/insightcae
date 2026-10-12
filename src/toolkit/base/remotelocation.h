@@ -51,6 +51,22 @@ protected:
 public:
 
   static bool remoteLocationConfigIsValid( const boost::filesystem::path& mf );
+
+  /**
+   * @brief tryConnect
+   * check, if the server is running and the remote directory exists.
+   * Does not launch the server and does not throw.
+   * @return
+   * true, if the location is active afterwards
+   */
+  bool tryConnect();
+
+  /**
+   * @brief markInactive
+   * the server is known to be stopped: forget the instance
+   * (without any remote communication)
+   */
+  void markInactive();
     /**
      * @brief RemoteLocation
      * copies configuration from another remote location container

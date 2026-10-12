@@ -1,11 +1,11 @@
 #ifndef INSIGHT_CAD_FEATURECACHE_H
 #define INSIGHT_CAD_FEATURECACHE_H
 
-//#include "cadfeature.h"
-
 #include <map>
-#include <set>
 #include <memory>
+#include <mutex>
+#include <typeinfo>
+#include <iostream>
 
 #include "base/exception.h"
 
@@ -14,58 +14,56 @@ namespace cad {
 
 class Feature;
 
+
+/**
+ * Registry of built features, indexed by their input hash.
+ *
+ * Entries are held weakly: the cache never keeps a feature alive.
+ * When a new feature with an identical hash is built, its results
+ * are copied from the registered feature (see Feature::restoreFromCache)
+ * and the new feature takes over the entry.
+ *
+ * All member functions are thread-safe.
+ */
 class FeatureCache
-: public std::map<size_t, std::weak_ptr<Feature> >
 {
+  typedef std::map<size_t, std::weak_ptr<Feature> > Entries;
+
+  mutable std::mutex mtx_;
+  Entries entries_;
 
 public:
   FeatureCache();
   ~FeatureCache();
 
-  void cleanup();
+  static std::string featureInfo(std::shared_ptr<const Feature>);
 
-  static std::string featureInfo(FeaturePtr);
-  void printSummary(std::ostream& os, bool detailed=false) const;
+  /**
+   * returns the live feature registered for hash, if it is of the given type.
+   * Returns null otherwise. Expired entries are removed.
+   */
+  std::shared_ptr<Feature> lookup(size_t hash, const std::type_info& type);
 
+  /**
+   * registers p under its hash. An existing entry is replaced.
+   */
   void insert(std::shared_ptr<Feature> p);
-  bool contains(size_t hash) const;
 
-  template<class T>
-  std::shared_ptr<T> markAsUsed(size_t hash)
-  {
-    iterator i=this->find(hash);
+  /**
+   * removes the entry for hash, but only if it refers to f or is expired.
+   * Entries of other live features with the same hash are kept.
+   */
+  void release(size_t hash, const Feature* f);
 
-    if (i==end())
-      throw insight::Exception
-      (
-        "requested entry in CAD feature cache is not found!"
-      );
+  void clear();
+  size_t size() const;
 
-    auto wp=i->second;
-
-    insight::assertion( !i->second.expired(),
-                        "cache contained expired element!" );
-
-    auto sp=wp.lock();
-
-    std::shared_ptr<T> cp
-    (
-      std::dynamic_pointer_cast<T>( sp )
-    );
-
-    if (!cp)
-      throw insight::Exception
-      (
-        "requested entry in CAD feature cache found,"
-        " but is of wrong type! Found in cache: "+featureInfo(sp)
-      );
-
-    return cp;
-  }
-
+  void printSummary(std::ostream& os, bool detailed=false) const;
 };
 
+
 extern FeatureCache cache;
+
 
 } // namespace cad
 } // namespace insight

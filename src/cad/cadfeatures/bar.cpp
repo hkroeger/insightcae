@@ -91,221 +91,213 @@ size_t Bar::calcHash() const
 void Bar::build()
 {
 
-    if (!cache.contains(hash()))
+
+    arma::mat p0, p1;
+
+    if (const auto* p0p1 =
+            boost::get<std::pair<VectorPtr,VectorPtr>>(&endPts_))
     {
-
-        arma::mat p0, p1;
-
-        if (const auto* p0p1 =
-                boost::get<std::pair<VectorPtr,VectorPtr>>(&endPts_))
+        p0 = p0p1->first->value();
+        p1 = p0p1->second->value();
+    }
+    else if (const auto* feat =
+             boost::get<FeaturePtr>(&endPts_))
+    {
+        if (auto sef = std::dynamic_pointer_cast<SingleEdgeFeature>(*feat))
         {
-            p0 = p0p1->first->value();
-            p1 = p0p1->second->value();
+            p0 = sef->start()->value();
+            p1 = sef->end()->value();
         }
-        else if (const auto* feat =
-                 boost::get<FeaturePtr>(&endPts_))
+        else
         {
-            if (auto sef = std::dynamic_pointer_cast<SingleEdgeFeature>(*feat))
-            {
-                p0 = sef->start()->value();
-                p1 = sef->end()->value();
-            }
-            else
-            {
-                p0 = (*feat)->getDatumPoint("p0");
-                p1 = (*feat)->getDatumPoint("p1");
-            }
+            p0 = (*feat)->getDatumPoint("p0");
+            p1 = (*feat)->getDatumPoint("p1");
         }
-        refpoints_["p0"]=p0;
-        refpoints_["p1"]=p1;
+    }
+    refpoints_["p0"]=p0;
+    refpoints_["p1"]=p1;
 
-        if (norm(vert_->value(),2)<1e-10)
-            throw insight::Exception(_("Bar: length of vertical direction is zero!"));
-        arma::mat v=vert_->value() / norm(vert_->value(),2);
-        /*
-              if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
-        	throw insight::Exception("xsec feature has to provide a face or wire!");
-          */
-        arma::mat baraxis=p1-p0;
-        double lba=norm(baraxis,2);
-        if (lba<1e-10)
-            throw insight::Exception(_("Bar: invalid definition of bar end points!"));
-        baraxis/=lba;
+    if (norm(vert_->value(),2)<1e-10)
+        throw insight::Exception(_("Bar: length of vertical direction is zero!"));
+    arma::mat v=vert_->value() / norm(vert_->value(),2);
+    /*
+          if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
+    	throw insight::Exception("xsec feature has to provide a face or wire!");
+      */
+    arma::mat baraxis=p1-p0;
+    double lba=norm(baraxis,2);
+    if (lba<1e-10)
+        throw insight::Exception(_("Bar: invalid definition of bar end points!"));
+    baraxis/=lba;
 
-        p0 += -baraxis*(*ext0_);
-        p1 +=  baraxis*(*ext1_);
-        double L=norm(p1-p0, 2);
-        insight::assertion(L>1e-10, _("the bar length must not be zero!"));
+    p0 += -baraxis*(*ext0_);
+    p1 +=  baraxis*(*ext1_);
+    double L=norm(p1-p0, 2);
+    insight::assertion(L>1e-10, _("the bar length must not be zero!"));
 
-        refpoints_["start"]=p0;
-        refpoints_["end"]=p1;
+    refpoints_["start"]=p0;
+    refpoints_["end"]=p1;
 
-        refvectors_["ex"]=(p1 - p0)/L;
+    refvectors_["ex"]=(p1 - p0)/L;
 
-        refvalues_["L"]=L;
+    refvalues_["L"]=L;
 
-        TopoDS_Wire spine=BRepBuilderAPI_MakeWire
+    TopoDS_Wire spine=BRepBuilderAPI_MakeWire
+                      (
+                          BRepBuilderAPI_MakeEdge
                           (
-                              BRepBuilderAPI_MakeEdge
-                              (
-                                  GC_MakeSegment(to_Pnt(p0), to_Pnt(p1)).Value()
-                              )
-                          );
-        //   TopoDS_Vertex pfirst, plast;
-        //   TopExp::Vertices( spine, pfirst, plast );
+                              GC_MakeSegment(to_Pnt(p0), to_Pnt(p1)).Value()
+                          )
+                      );
+    //   TopoDS_Vertex pfirst, plast;
+    //   TopExp::Vertices( spine, pfirst, plast );
 
 
-        arma::mat ex=-arma::cross(baraxis, vert_->value());
+    arma::mat ex=-arma::cross(baraxis, vert_->value());
 
-        double lex=norm(ex, 2);
-        if (lex<1e-10)
-            throw insight::Exception(_("Bar: invalid definition of vertical direction!"));
-        ex/=lex;
+    double lex=norm(ex, 2);
+    if (lex<1e-10)
+        throw insight::Exception(_("Bar: invalid definition of vertical direction!"));
+    ex/=lex;
 
-        arma::mat ey=arma::cross(baraxis, ex);
+    arma::mat ey=arma::cross(baraxis, ex);
 
-        setLocalCoordinateSystem(p0, baraxis, arma::cross(baraxis,ey));
+    setLocalCoordinateSystem(p0, baraxis, arma::cross(baraxis,ey));
 
-        gp_Trsf tr;
-        tr.SetTransformation
+    gp_Trsf tr;
+    tr.SetTransformation
+    (
+        // from
+        gp_Ax3
         (
-            // from
-            gp_Ax3
-            (
-                gp_Pnt(0,0,0),
-                gp_Dir(0,0,1),
-                gp_Dir(1,0,0)
-            ),
-            //to
-            gp_Ax3
-            (
-                to_Pnt(p0),
-                to_Vec(baraxis),
-                to_Vec(ex)
-            )
-        );
-        
-        auto xsect=Transform::create(xsec_, tr.Inverted());
+            gp_Pnt(0,0,0),
+            gp_Dir(0,0,1),
+            gp_Dir(1,0,0)
+        ),
+        //to
+        gp_Ax3
+        (
+            to_Pnt(p0),
+            to_Vec(baraxis),
+            to_Vec(ex)
+        )
+    );
+    
+    auto xsect=Transform::create(xsec_, tr.Inverted());
 
-        bool isThinFeature = xsect->topologicalProperties().onlyEdges();
+    bool isThinFeature = xsect->topologicalProperties().onlyEdges();
 
-        if (thickness_ && !isThinFeature)
-            throw insight::CADException(
-                {{"cross section", xsect}},
-                "Thickness was specified by the section does not comprise of edges only!"
-                " Please check modelling intention."
-                );
+    if (thickness_ && !isThinFeature)
+        throw insight::CADException(
+            {{"cross section", xsect}},
+            "Thickness was specified by the section does not comprise of edges only!"
+            " Please check modelling intention."
+            );
 
-        if (attractPt_)
-        {
-            auto vidx=xsect->query_vertices("maximal(dist(loc,%m0))", {attractPt_});
-            insight::assertion(
-                vidx.size()>0,
-                "no reference vertex found!");
-
-            auto pzero = vec3(BRep_Tool::Pnt(xsect->vertex(*vidx.begin())));
-            xsect=Transform::create(xsect, cad::matconst(-(pzero-p0)));
-        }
-
-        providedSubshapes_["xsec"]=xsect;
-        providedSubshapes_["spine"]=Line::create(matconst(p0), matconst(p1));
-        TopoDS_Shape xsecs = *xsect;
-
-        //   BRepOffsetAPI_MakePipeShell p(spinew);
-        //   Handle_Law_Constant law(new Law_Constant());
-        //   law->Set(1.0, -1e10, 1e10);
-        //   p.SetLaw(static_cast<TopoDS_Shape>(xsec), law, pfirst);
-        //   p.SetMode(true);
-        //   p.MakeSolid();
-
-        BRepOffsetAPI_MakePipe p(spine, xsecs);
-
-        p.Build();
-        TopoDS_Shape result=p.Shape();
-
-        // cut away at end 0
-        if ( (fabs(*miterangle0_vert_)>1e-10) || (fabs(*miterangle0_hor_)>1e-10) )
-        {
-            arma::mat cex=rotMatrix(*miterangle0_vert_, ey)*ex;
-            arma::mat cey=rotMatrix(*miterangle0_hor_, ex)*ey;
-            FeaturePtr q=Quad::create
-                         (
-                             matconst(p0 -0.5*L*(cex+cey)),
-                             matconst(L*cex),
-                             matconst(L*cey)
-                         );
-            TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(-L*baraxis) );
-            result=BRepAlgoAPI_Cut(result, airspace);
-        }
-
-        // cut away at end 1
-        if ( (fabs(*miterangle1_vert_)>1e-10) || (fabs(*miterangle1_hor_)>1e-10) )
-        {
-            arma::mat cex=rotMatrix(*miterangle1_vert_, ey)*ex;
-            arma::mat cey=rotMatrix(*miterangle1_hor_, ex)*ey;
-            FeaturePtr q=Quad::create
-                         (
-                             matconst(p1 -0.5*L*(cex+cey)),
-                             matconst(L*cex),
-                             matconst(L*cey)
-                         );
-            TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*baraxis) );
-            result=BRepAlgoAPI_Cut(result, airspace);
-        }
-
-
-        if (thickness_)
-        {
-
-            auto sf=Import::create(result);
-            providedSubshapes_["shell"]=sf;
-
-            auto longedgs=cad::makeEdgeFeatureSet(
-                sf, "angleMag(end-start, %m0)<0.001", {cad::matconst(p1 - p0)});
-            providedFeatureSets_["e_shell_longi"]=longedgs;
-            arma::mat midp=0.5*(p0+p1);
-            providedFeatureSets_["e_shell_start"]=
-                cad::makeEdgeFeatureSet(
-                    sf, "(!in(%0)) && (((CoG-%m1)&%m2)<0)",
-                {longedgs, cad::matconst(midp), cad::matconst(normalized(p1 - p0))} );
-            providedFeatureSets_["e_shell_end"]=
-                cad::makeEdgeFeatureSet(
-                    sf, "(!in(%0)) && (((CoG-%m1)&%m2)>0)",
-                    {longedgs, cad::matconst(midp), cad::matconst(normalized(p1 - p0))} );
-
-
-
-            BRepOffset_MakeOffset maker;
-            maker.Initialize
-                (
-                result, thickness_->value(),
-                Precision::Confusion(),
-                BRepOffset_Skin, Standard_True, Standard_True, GeomAbs_Arc, Standard_True
-                );
-            for (TopExp_Explorer ex(result, TopAbs_FACE); ex.More(); ex.Next())
-            {
-                maker.SetOffsetOnFace(TopoDS::Face(ex.Current()), thickness_->value());
-            }
-
-
-            maker.MakeThickSolid();
-
-            result=maker.Shape();
-
-            ShapeFix_Solid FixShape;
-            FixShape.Init(TopoDS::Solid(result));
-            FixShape.Perform();
-            result=FixShape.Shape();
-        }
-
-        setShape(result);
-
-        cache.insert(shared_from_this());
-    }
-    else
+    if (attractPt_)
     {
-        this->operator=(*cache.markAsUsed<Bar>(hash()));
+        auto vidx=xsect->query_vertices("maximal(dist(loc,%m0))", {attractPt_});
+        insight::assertion(
+            vidx.size()>0,
+            "no reference vertex found!");
+
+        auto pzero = vec3(BRep_Tool::Pnt(xsect->vertex(*vidx.begin())));
+        xsect=Transform::create(xsect, cad::matconst(-(pzero-p0)));
     }
+
+    providedSubshapes_["xsec"]=xsect;
+    providedSubshapes_["spine"]=Line::create(matconst(p0), matconst(p1));
+    TopoDS_Shape xsecs = *xsect;
+
+    //   BRepOffsetAPI_MakePipeShell p(spinew);
+    //   Handle_Law_Constant law(new Law_Constant());
+    //   law->Set(1.0, -1e10, 1e10);
+    //   p.SetLaw(static_cast<TopoDS_Shape>(xsec), law, pfirst);
+    //   p.SetMode(true);
+    //   p.MakeSolid();
+
+    BRepOffsetAPI_MakePipe p(spine, xsecs);
+
+    p.Build();
+    TopoDS_Shape result=p.Shape();
+
+    // cut away at end 0
+    if ( (fabs(*miterangle0_vert_)>1e-10) || (fabs(*miterangle0_hor_)>1e-10) )
+    {
+        arma::mat cex=rotMatrix(*miterangle0_vert_, ey)*ex;
+        arma::mat cey=rotMatrix(*miterangle0_hor_, ex)*ey;
+        FeaturePtr q=Quad::create
+                     (
+                         matconst(p0 -0.5*L*(cex+cey)),
+                         matconst(L*cex),
+                         matconst(L*cey)
+                     );
+        TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(-L*baraxis) );
+        result=BRepAlgoAPI_Cut(result, airspace);
+    }
+
+    // cut away at end 1
+    if ( (fabs(*miterangle1_vert_)>1e-10) || (fabs(*miterangle1_hor_)>1e-10) )
+    {
+        arma::mat cex=rotMatrix(*miterangle1_vert_, ey)*ex;
+        arma::mat cey=rotMatrix(*miterangle1_hor_, ex)*ey;
+        FeaturePtr q=Quad::create
+                     (
+                         matconst(p1 -0.5*L*(cex+cey)),
+                         matconst(L*cex),
+                         matconst(L*cey)
+                     );
+        TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*baraxis) );
+        result=BRepAlgoAPI_Cut(result, airspace);
+    }
+
+
+    if (thickness_)
+    {
+
+        auto sf=Import::create(result);
+        providedSubshapes_["shell"]=sf;
+
+        auto longedgs=cad::makeEdgeFeatureSet(
+            sf, "angleMag(end-start, %m0)<0.001", {cad::matconst(p1 - p0)});
+        providedFeatureSets_["e_shell_longi"]=longedgs;
+        arma::mat midp=0.5*(p0+p1);
+        providedFeatureSets_["e_shell_start"]=
+            cad::makeEdgeFeatureSet(
+                sf, "(!in(%0)) && (((CoG-%m1)&%m2)<0)",
+            {longedgs, cad::matconst(midp), cad::matconst(normalized(p1 - p0))} );
+        providedFeatureSets_["e_shell_end"]=
+            cad::makeEdgeFeatureSet(
+                sf, "(!in(%0)) && (((CoG-%m1)&%m2)>0)",
+                {longedgs, cad::matconst(midp), cad::matconst(normalized(p1 - p0))} );
+
+
+
+        BRepOffset_MakeOffset maker;
+        maker.Initialize
+            (
+            result, thickness_->value(),
+            Precision::Confusion(),
+            BRepOffset_Skin, Standard_True, Standard_True, GeomAbs_Arc, Standard_True
+            );
+        for (TopExp_Explorer ex(result, TopAbs_FACE); ex.More(); ex.Next())
+        {
+            maker.SetOffsetOnFace(TopoDS::Face(ex.Current()), thickness_->value());
+        }
+
+
+        maker.MakeThickSolid();
+
+        result=maker.Shape();
+
+        ShapeFix_Solid FixShape;
+        FixShape.Init(TopoDS::Solid(result));
+        FixShape.Perform();
+        result=FixShape.Shape();
+    }
+
+    setShape(result);
+
 }
 
 
@@ -431,25 +423,6 @@ std::shared_ptr<Bar> Bar::create_derived
                )
             );
 }
-
-
-
-void Bar::operator=(const Bar& o)
-{
-  endPts_=o.endPts_;
-  thickness_=o.thickness_;
-  xsec_=o.xsec_;
-  vert_=o.vert_;
-  ext0_=o.ext0_;
-  ext1_=o.ext1_;
-  miterangle0_vert_=o.miterangle0_vert_;
-  miterangle1_vert_=o.miterangle1_vert_;
-  miterangle0_hor_=o.miterangle0_hor_;
-  miterangle1_hor_=o.miterangle1_hor_;
-  attractPt_=o.attractPt_;
-  Feature::operator=(o);
-}
-
 
 
 

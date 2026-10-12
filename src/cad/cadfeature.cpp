@@ -534,12 +534,7 @@ void Feature::setLocalCoordinateSystem(
 
 Feature::~Feature()
 {
-  auto h=hash_;
-  if (h!=0)
-  {
-      if (cache.contains(h))
-        cache.erase(h);
-  }
+  cache.release(hash_, this);
 }
 
 
@@ -665,6 +660,82 @@ void Feature::checkForBuildDuringAccess() const
   }
 }
 
+
+
+
+
+void Feature::invalidate()
+{
+  // the result is going to change: don't let other features take it over
+  cache.release(hash_, this);
+  ASTBase::invalidate();
+}
+
+
+
+
+bool Feature::isCacheable() const
+{
+  return false;
+}
+
+
+
+
+void Feature::copyResultsFrom(const Feature& o)
+{
+  shape_ = o.shape_;
+  if (o.idx_)
+    idx_.reset(new SubshapeNumbering(*o.idx_));
+  else
+    idx_.reset();
+  if (o.volprops_)
+    volprops_.reset(new GProp_GProps(*o.volprops_));
+  else
+    volprops_.reset();
+
+  providedSubshapes_=o.providedSubshapes_;
+  providedFeatureSets_=o.providedFeatureSets_;
+  providedDatums_=o.providedDatums_;
+  refvalues_=o.refvalues_;
+  refpoints_=o.refpoints_;
+  refvectors_=o.refvectors_;
+}
+
+
+
+
+bool Feature::restoreFromCache()
+{
+  if (!isCacheable())
+    return false;
+
+  auto cached = cache.lookup(hash(), typeid(*this));
+  if (!cached || cached.get()==this)
+    return false;
+
+  dbg(insight::DetailedBusiness)
+      << "restore ["<<featureSymbolName()<<"] from cache: "
+      << FeatureCache::featureInfo(cached) << std::endl;
+
+  copyResultsFrom(*cached);
+
+  // let this feature take over the cache entry,
+  // since the previous one is likely to be released soon
+  cache.insert(shared_from_this());
+  return true;
+}
+
+
+
+
+void Feature::storeInCache()
+{
+  if (isCacheable())
+  {
+    cache.insert(shared_from_this());
+  }
+}
 
 
 

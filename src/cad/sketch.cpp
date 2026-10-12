@@ -31,6 +31,11 @@
 
 #include "TColStd_Array1OfInteger.hxx"
 #include "GC_MakeArcOfCircle.hxx"
+#include "BRepClass_FaceClassifier.hxx"
+#include "BRepAdaptor_Curve.hxx"
+#include "BRepGProp.hxx"
+#include "GProp_GProps.hxx"
+#include "BRepTools.hxx"
 
 #include <chrono>
 
@@ -48,6 +53,139 @@ namespace phx   = boost::phoenix;
 namespace insight {
 namespace cad {
 
+
+
+
+namespace {
+
+
+/**
+ * a closed contour in the sketch plane together with
+ * the finite planar face, which it bounds
+ */
+struct ClosedContour
+{
+    TopoDS_Wire wire;
+    TopoDS_Face face; // properly oriented, finite face bounded by wire
+    double area;
+
+    ClosedContour(const gp_Pln& pln, const TopoDS_Wire& w)
+        : wire(w)
+    {
+        // Inside=true: orientation is corrected such that the face is finite
+        BRepBuilderAPI_MakeFace mf(pln, w, true);
+        if (!mf.IsDone())
+            throw insight::Exception("Sketch: could not create face from closed contour!");
+        face=mf.Face();
+
+        GProp_GProps props;
+        BRepGProp::SurfaceProperties(face, props);
+        area=std::fabs(props.Mass());
+    }
+
+    /**
+     * checks, if the other contour lies inside this contour.
+     * Points on the other contour are classified against the face of this contour.
+     * Points on the boundary (touching contours) are skipped.
+     */
+    bool contains(const ClosedContour& o, double tol) const
+    {
+        for (TopExp_Explorer ex(o.wire, TopAbs_EDGE); ex.More(); ex.Next())
+        {
+            BRepAdaptor_Curve c(TopoDS::Edge(ex.Current()));
+            for (double t: {0.5, 0.25, 0.75})
+            {
+                gp_Pnt p = c.Value(
+                    c.FirstParameter()
+                    + t*(c.LastParameter()-c.FirstParameter()) );
+
+                BRepClass_FaceClassifier fc(face, p, tol);
+                auto st=fc.State();
+                if (st==TopAbs_IN)
+                    return true;
+                else if (st==TopAbs_OUT)
+                    return false;
+                // TopAbs_ON: undecided, try next point
+            }
+        }
+        return false;
+    }
+};
+
+
+
+
+/**
+ * Creates faces from a set of closed, non-intersecting contours.
+ * Each contour's nesting depth is determined.
+ * Contours at even depth (0, 2, ...) form outer boundaries of faces,
+ * contours at odd depth are holes in their enclosing contour.
+ */
+std::vector<TopoDS_Face> buildFacesFromNestedContours(
+    std::vector<ClosedContour> contours,
+    double tol )
+{
+    // a contour can only be contained in contours of larger area
+    std::sort(
+        contours.begin(), contours.end(),
+        [](const ClosedContour& a, const ClosedContour& b)
+        { return a.area > b.area; }
+        );
+
+    const int n=contours.size();
+    std::vector<int> parent(n, -1), depth(n, 0);
+    for (int i=0; i<n; ++i)
+    {
+        // the direct parent is the smallest enclosing contour
+        for (int j=i-1; j>=0; --j)
+        {
+            if (contours[j].contains(contours[i], tol))
+            {
+                parent[i]=j;
+                depth[i]=depth[j]+1;
+                break;
+            }
+        }
+    }
+
+    // collect the holes of each outer contour
+    std::map<int, std::vector<int> > holes;
+    for (int i=0; i<n; ++i)
+    {
+        if (depth[i]%2==0)
+            holes[i];
+        else
+            holes[parent[i]].push_back(i);
+    }
+
+    std::vector<TopoDS_Face> faces;
+    for (const auto& h: holes)
+    {
+        if (h.second.empty())
+        {
+            faces.push_back(contours[h.first].face);
+        }
+        else
+        {
+            BRepBuilderAPI_MakeFace mf(contours[h.first].face);
+            for (int i: h.second)
+            {
+                // holes need to be oriented opposite to the outer wire
+                mf.Add(
+                    TopoDS::Wire(
+                        BRepTools::OuterWire(contours[i].face).Reversed() ) );
+            }
+            if (!mf.IsDone())
+                throw insight::Exception("Sketch: could not create face with holes!");
+            faces.push_back(mf.Face());
+        }
+    }
+
+    return faces;
+}
+
+
+}
 
 
 
@@ -142,8 +280,6 @@ void Sketch::build()
     insight::CurrentExceptionContext ex("building sketch "+featureSymbolName());
     ExecTimer t("Sketch::build() ["+featureSymbolName()+"]");
     
-    if (!cache.contains(hash()))
-    {
         if (!pl_->providesPlanarReference())
             throw insight::Exception("Sketch: Planar reference required!");
 
@@ -291,30 +427,35 @@ void Sketch::build()
         gp_Ax3 ax=*pl_;
         tr.SetTransformation(ax);
 
-        BRep_Builder bb;
-        TopoDS_Compound result;
-        bb.MakeCompound ( result );
+        // transform all wires into the sketch plane,
+        // separate closed contours from open wires
+        gp_Pln pln(ax);
+        std::vector<TopoDS_Wire> openWires;
+        std::vector<ClosedContour> contours;
         for (auto w=1; w<=ws->Length(); ++w)
         {
             auto shape=ws->Value(w);
             BRepBuilderAPI_Transform btr(shape, tr.Inverted(), true);
+            TopoDS_Wire tw=TopoDS::Wire(btr.Shape());
 
             if (shape.Closed())
-                bb.Add ( result, BRepBuilderAPI_MakeFace(
-                             gp_Pln(ax),
-                             TopoDS::Wire(btr.Shape())).Shape());
+                contours.push_back(ClosedContour(pln, tw));
             else
-                bb.Add ( result, TopoDS::Wire(btr.Shape()));
+                openWires.push_back(tw);
         }
+
+        BRep_Builder bb;
+        TopoDS_Compound result;
+        bb.MakeCompound ( result );
+
+        for (const auto& f: buildFacesFromNestedContours(contours, tol_))
+            bb.Add ( result, f );
+
+        for (const auto& w: openWires)
+            bb.Add ( result, w );
 
         setShape(result);
 
-        cache.insert(shared_from_this());
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<Sketch>(hash()));
-    }
 }
 
 
@@ -432,20 +573,9 @@ void Sketch::executeEditor()
     }
 }
 
-void Sketch::operator=(const Sketch& o)
-{
-  pl_=o.pl_;
-  fn_=o.fn_;
-  ln_=o.ln_;
-  vars_=o.vars_;
-  tol_=o.tol_;
-  Feature::operator=(o);
-}
-
-
 Sketch::operator const TopoDS_Face& () const
 {
-  if (!shape().ShapeType()==TopAbs_FACE)
+  if (shape().ShapeType()!=TopAbs_FACE)
     throw insight::Exception("Shape is not a face: presumably, original wire was not closed");
   return TopoDS::Face(shape());
 }

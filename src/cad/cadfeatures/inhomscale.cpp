@@ -42,7 +42,8 @@ size_t InhomScale::calcHash() const
     ParameterListHash h;
     h+=this->type();
     if (scale_) h+=*scale_;
-    return h.getHash()+DerivedFeature::calcHash();
+    h+=DerivedFeature::calcHash();
+    return h.getHash();
 }
 
 
@@ -52,41 +53,33 @@ void InhomScale::build()
 {
     ExecTimer t("Transform::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
-    {
-        arma::mat sf=scale_->value();
-        refvectors_["scaleFactors"]=sf;
+    arma::mat sf=scale_->value();
+    refvectors_["scaleFactors"]=sf;
 
-        gp_GTrsf tr;
-        gp_Mat m (sf(0), 0, 0,
-                 0, sf(1), 0,
-                 0, 0, sf(2));
-        tr.SetVectorialPart(m);
+    gp_GTrsf tr;
+    gp_Mat m (sf(0), 0, 0,
+             0, sf(1), 0,
+             0, 0, sf(2));
+    tr.SetVectorialPart(m);
 
-        BRepBuilderAPI_GTransform aBRepGTrsf(*baseFeature(), tr);
+    BRepBuilderAPI_GTransform aBRepGTrsf(*baseFeature(), tr);
 
-        TopoDS_Shape s = aBRepGTrsf.Shape();
+    TopoDS_Shape s = aBRepGTrsf.Shape();
 
-        transformTriangulation(*baseFeature(), s, tr);
+    transformTriangulation(*baseFeature(), s, tr);
 
-        setShape(s);
+    setShape(s);
 
 
-        // Transform all ref points and ref vectors
-        copyDatums(
-            *baseFeature(), "",
-            { "scaleFactors" }
-            );
+    // Transform all ref points and ref vectors
+    copyDatums(
+        *baseFeature(), "",
+        { "scaleFactors" }
+        );
 
-        providedSubshapes_["basefeat"]=
-            std::const_pointer_cast<Feature>(baseFeature()); // overwrite existing basefeat, if there
+    providedSubshapes_["basefeat"]=
+        std::const_pointer_cast<Feature>(baseFeature()); // overwrite existing basefeat, if there
 
-        cache.insert(shared_from_this());
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<InhomScale>(hash()));
-    }
 }
 
 

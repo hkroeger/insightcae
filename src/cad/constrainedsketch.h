@@ -226,6 +226,7 @@ private:
 
     size_t calcHash() const override;
     void build() override;
+    bool isCacheable() const override { return true; }
 
 public:
     void replaceDependency(const DependencyReplacement& repl) override;

@@ -39,6 +39,19 @@ TabularResult::TabularResult
 }
 
 
+TabularResult::Table TabularResult::toTable(const arma::mat& rows)
+{
+    Table t;
+    for ( arma::uword i=0; i<rows.n_rows; i++ ) {
+        Row r;
+        for ( arma::uword j=0; j<rows.n_cols; j++ ) {
+            r.push_back ( rows ( i,j ) );
+        }
+        t.push_back ( r );
+    }
+    return t;
+}
+
 
 TabularResult::TabularResult
 (
@@ -50,15 +63,51 @@ TabularResult::TabularResult
 )
     : ResultElement ( shortDesc, longDesc, unit )
 {
-    Table t;
-    for ( arma::uword i=0; i<rows.n_rows; i++ ) {
-        Row r;
-        for ( arma::uword j=0; j<rows.n_cols; j++ ) {
-            r.push_back ( rows ( i,j ) );
-        }
-        t.push_back ( r );
+
+    setTableData ( headings, toTable(rows) );
+}
+
+
+TabularResult::TabularResult(
+    const Headings &headings,
+    const RowLabels &rowLabels,
+    const arma::mat &rows,
+    const std::string &shortDesc,
+    const std::string &longDesc,
+    const std::string &unit)
+    : ResultElement ( shortDesc, longDesc, unit )
+{
+    setTableData ( headings, toTable(rows), rowLabels );
+}
+
+
+TabularResult::TabularResult(
+    const Headings &headings,
+    const RowLabels &rowLabels,
+    const Table &rows,
+    const std::string &shortDesc,
+    const std::string &longDesc,
+    const std::string &unit)
+    : ResultElement ( shortDesc, longDesc, unit )
+{
+    setTableData ( headings, rows, rowLabels );
+}
+
+
+void TabularResult::setTableData (
+    const Headings& headings,
+    const Table& rows,
+    const RowLabels& rowLabels )
+{
+    if ( !rowLabels.empty() && rowLabels.size()!=rows.size() )
+    {
+        throw insight::Exception(
+            "number of row labels (%d) does not match number of rows (%d)!",
+            int(rowLabels.size()), int(rows.size()) );
     }
-    setTableData ( headings, t );
+    headings_=headings;
+    rows_=rows;
+    rowLabels_=rowLabels;
 }
 
 
@@ -132,7 +181,7 @@ void TabularResult::writeGnuplotData ( std::ostream& f ) const
 std::unique_ptr<hierarchicalData::Element> TabularResult::cloneUninitialized() const
 {
     auto res=std::make_unique<TabularResult>(
-        headings_, rows_,
+        headings_, rowLabels_, rows_,
         shortDescription_.simpleLatex(), longDescription_.simpleLatex(),
         unit_.simpleLatex() );
     res->setOrder ( order() );
@@ -169,11 +218,17 @@ std::string TabularResult::latexRepresentation(
   {
     f<<
      "\\begin{longtable}{";
+    if ( hasRowLabels() ) {
+        f<<"l";
+    }
     for (int c=0; c<cols.size(); ++c) {
         f<<"c";
     }
     f<<"}\n";
 
+    if ( hasRowLabels() ) {
+        f<<" & ";
+    }
     for (size_t i=0; i<cols.size(); i++) {
         if ( i!=0 ) {
             f<<" & ";
@@ -185,17 +240,20 @@ std::string TabularResult::latexRepresentation(
      "\\hline\n"
      "\\endfirsthead\n"
      "\\endhead\n";
-    for ( TabularResult::Table::const_iterator i=rows_.begin(); i!=rows_.end(); i++ ) {
-        if ( i!=rows_.begin() ) {
+    for ( size_t r=0; r<rows_.size(); r++ ) {
+        const Row& row=rows_[r];
+        if ( r!=0 ) {
             f<<"\\\\\n";
         }
-//        for ( std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++ ) {
+        if ( hasRowLabels() ) {
+            f<<rowLabels_[r].toLaTeX()<<" & ";
+        }
         for (size_t j=0; j< cols.size(); j++) {
             if ( j!=0 ) {
                 f<<" & ";
             }
-            if ( !std::isnan ( (*i)[cols[j]] ) ) {
-                f<<(*i)[cols[j]];
+            if ( !std::isnan ( row[cols[j]] ) ) {
+                f<<row[cols[j]];
             }
         }
     }
@@ -231,6 +289,20 @@ xml_node< char >* TabularResult::appendToNode (
         appendAttribute(doc, *chead, "title", headings_[i].simpleLatex() );
     }
 
+    if ( hasRowLabels() ) {
+        xml_node<>* labels = doc.allocate_node ( node_element, doc.allocate_string ( "rowLabels" ) );
+        child->append_node ( labels );
+        for ( size_t i=0; i<rowLabels_.size(); i++ ) {
+            xml_node<>* clabel = doc.allocate_node (
+                  node_element,
+                  doc.allocate_string ( str ( format ( "label_%i" ) %i ).c_str() ) );
+
+            labels->append_node ( clabel );
+
+            appendAttribute(doc, *clabel, "title", rowLabels_[i].simpleLatex() );
+        }
+    }
+
     xml_node<>* values = doc.allocate_node ( node_element, doc.allocate_string ( "values" ) );
     child->append_node ( values );
     writeMatToXMLNode ( toMat(), doc, *values );
@@ -253,6 +325,14 @@ TabularResult::readFromNode(
   for (xml_node<> *e = heads->first_node(); e; e = e->next_sibling())
   {
     headings_.push_back(SimpleLatex(getMandatoryAttribute(*e, "title")));
+  }
+
+  if (auto* labels = node.first_node("rowLabels"))
+  {
+    for (xml_node<> *e = labels->first_node(); e; e = e->next_sibling())
+    {
+      rowLabels_.push_back(SimpleLatex(getMandatoryAttribute(*e, "title")));
+    }
   }
 
   auto* vals = node.first_node("values");
@@ -283,6 +363,14 @@ bool TabularResult::isEqual(const Element &op) const
             return false;
         if (rows_.size()!=oa->rows_.size())
             return false;
+        if (rowLabels_.size()!=oa->rowLabels_.size())
+            return false;
+
+        for (size_t i=0; i<rowLabels_.size(); ++i)
+        {
+            if (rowLabels_[i]!=oa->rowLabels_[i])
+                return false;
+        }
 
         {
             auto i=headings_.begin();
@@ -342,15 +430,23 @@ void TabularResult::exportDataToFile (
     std::ofstream f ( fname.c_str() );
 
     std::string sep="";
+    if ( hasRowLabels() ) {
+        f<<"\"\"";
+        sep=";";
+    }
     for ( auto& h: headings_ ) {
         f<<sep<<"\""<<h.toPlainText()<<"\"";
         sep=";";
     }
     f<<endl;
 
-    for ( const Row& r: rows_ ) {
+    for ( size_t i=0; i<rows_.size(); i++ ) {
         sep="";
-        for ( const double& v: r ) {
+        if ( hasRowLabels() ) {
+            f<<"\""<<rowLabels_[i].toPlainText()<<"\"";
+            sep=";";
+        }
+        for ( const double& v: rows_[i] ) {
             f<<sep<<v;
             sep=";";
         }

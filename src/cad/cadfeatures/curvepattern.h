@@ -41,6 +41,8 @@ class CurvePattern
 
     size_t calcHash() const override;
     void build() override;
+    void copyResultsFrom(const Feature& o) override
+    { Compound::copyResultsFrom(o); copyComponentsFrom(o); }
 
 public:
     declareType ( "CurvePattern" );

@@ -78,52 +78,44 @@ void Revolution::build()
 {
     ExecTimer t("Revolution::build() ["+featureSymbolName()+"]");
 
-    if (!cache.contains(hash()))
-    {
 
-        if ( !centered_ ) {
-            try {
-                BRepPrimAPI_MakeRevol mkr (
-                    *sk_,
-                    gp_Ax1 (
-                        to_Pnt ( p0_->value() ),
-                        gp_Dir ( to_Vec ( axis_->value() ) ) ),
-                    angle_->value(),
-                    centered_
-                    );
-                providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
-                providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
-                setShape ( mkr.Shape() );
-            }
-            catch (...)
-            {
-                throw insight::CADException({
-                                                {"base", sk_}
-                                            }, "could not revolve shape"
-                                            );
-            }
-        } else {
-            gp_Trsf trsf;
-            gp_Vec ax=to_Vec ( axis_->value() );
-            ax.Normalize();
-            trsf.SetRotation ( gp_Ax1 ( to_Pnt ( p0_->value() ), ax ), -0.5*angle_->value() );
-            BRepPrimAPI_MakeRevol mkr
-                (
-                    BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
-                    gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
-                    );
+    if ( !centered_ ) {
+        try {
+            BRepPrimAPI_MakeRevol mkr (
+                *sk_,
+                gp_Ax1 (
+                    to_Pnt ( p0_->value() ),
+                    gp_Dir ( to_Vec ( axis_->value() ) ) ),
+                angle_->value(),
+                centered_
+                );
             providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
             providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
             setShape ( mkr.Shape() );
         }
+        catch (...)
+        {
+            throw insight::CADException({
+                                            {"base", sk_}
+                                        }, "could not revolve shape"
+                                        );
+        }
+    } else {
+        gp_Trsf trsf;
+        gp_Vec ax=to_Vec ( axis_->value() );
+        ax.Normalize();
+        trsf.SetRotation ( gp_Ax1 ( to_Pnt ( p0_->value() ), ax ), -0.5*angle_->value() );
+        BRepPrimAPI_MakeRevol mkr
+            (
+                BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
+                gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
+                );
+        providedSubshapes_["frontFace"]=Import::create ( mkr.FirstShape() );
+        providedSubshapes_["backFace"]=Import::create ( mkr.LastShape() );
+        setShape ( mkr.Shape() );
+    }
 
-        copyDatums ( *sk_ );
-        cache.insert(shared_from_this());
-    }
-    else
-    {
-        this->operator=(*cache.markAsUsed<Revolution>(hash()));
-    }
+    copyDatums ( *sk_ );
 }
 
 

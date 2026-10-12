@@ -51,10 +51,37 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
 
       ui->lblHostName->setEnabled(enabled);
       if (enabled)
-        ui->lblHostName->setText(
-              QString::fromStdString( rlc_->serverLabel() ) );
+      {
+        if (rlc_->isActive())
+        {
+          ui->lblHostName->setText(
+                QString::fromStdString( rlc_->serverLabel() ) );
+          ui->lblHostName->setToolTip(QString());
+        }
+        else if (isCommitted())
+        {
+          ui->lblHostName->setText(
+                QString(_("%1 (remote directory not found)")).arg(
+                  QString::fromStdString( rlc_->serverLabel() ) ) );
+          ui->lblHostName->setToolTip(
+                _("The server is reachable, but the remote directory does not exist.") );
+        }
+        else
+        {
+          ui->lblHostName->setText(
+                QString(_("%1 (not connected)")).arg(
+                  QString::fromStdString( rlc_->serverLabel() ) ) );
+          ui->lblHostName->setToolTip(
+                _("The remote server is currently not reachable or not running.\n"
+                  "A connection will be established (and the server launched, if possible)"
+                  " when a remote action is started.") );
+        }
+      }
       else
+      {
         ui->lblHostName->setText(_("(none)"));
+        ui->lblHostName->setToolTip(QString());
+      }
 
       ui->lblRemoteDirectory->setEnabled(enabled);
       if (enabled)
@@ -75,19 +102,8 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
           ui->lblRemoteDirectory->setText(_("(none)"));
       }
 
-      if (dynamic_cast<const insight::WSLLinuxServer::Config*>(&rlc_->serverConfig()))
-      {
-        ui->btnDisconnect->setEnabled(false);
-        ui->btnResume->setEnabled(false);
-      }
-      else
-      {
-        ui->btnDisconnect->setEnabled(enabled);
-        ui->btnResume->setEnabled(enabled);
-      }
-      ui->btnUpload->setEnabled(enabled);
-      ui->btnDownload->setEnabled(enabled);
-      ui->btnRemoveRemote->setEnabled(enabled);
+      // pass this explicitly: when disabling, this state is about to be destroyed
+      af->updateRemoteActionAvailability( enabled ? this : nullptr );
       ui->lblRemote_1->setEnabled(enabled);
       ui->lblRemote_2->setEnabled(enabled);
 
@@ -102,7 +118,7 @@ void IQWorkbenchRemoteExecutionState::updateGUI(bool enabled)
               ui->cbDownloadWhenFinished->setChecked(true);
           }
       }
-      ui->cbDownloadWhenFinished->setEnabled(enabled);
+      // enabling: see AnalysisForm::updateRemoteActionAvailability
   }
 
   insight::dbg()<<"IQWorkbenchRemoteExecutionState updated"<<std::endl;
@@ -122,6 +138,14 @@ void IQWorkbenchRemoteExecutionState::commit(const boost::filesystem::path &loca
 void IQWorkbenchRemoteExecutionState::cleanup(bool forceRemoval)
 {
     IQRemoteExecutionState::cleanup(forceRemoval); // calls discard()
+}
+
+
+
+void IQWorkbenchRemoteExecutionState::serverStopped()
+{
+    toggleRemoteGUIElements(false); // e.g. remote paraview is not possible anymore
+    IQRemoteExecutionState::serverStopped();
 }
 
 

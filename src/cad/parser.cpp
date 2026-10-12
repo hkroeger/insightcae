@@ -19,6 +19,7 @@
  */
 
 #include "cadtypes.h"
+#include <algorithm>
 #include <memory>
 #include <cstring>
 #ifdef INSIGHT_CAD_DEBUG
@@ -203,7 +204,27 @@ SubmodelRule::SubmodelRule(
           mergeMVTs(parentModel->allVariables(),
                     addVars) ) ),
     submodelParser_(submodel_.get())
-{}
+{
+    // the enclosing scope is visible inside the submodel,
+    // but shall not be re-exported by it.
+    // The default coordinate system symbols are treated as the submodel's own.
+    static const std::set<std::string> defaultSymbols
+        = { "O", "EX", "EY", "EZ", "XY", "XZ", "YZ" };
+
+    ModelVariableTable inherited;
+    for (const auto& pv: parentModel->allVariables())
+    {
+        const auto& name = boost::fusion::at_c<0>(pv);
+        if (!defaultSymbols.count(name) && std::none_of(
+                addVars.begin(), addVars.end(),
+                [&name](const ModelVariableTable::value_type& av)
+                { return boost::fusion::at_c<0>(av)==name; } ) )
+        {
+            inherited.push_back(pv);
+        }
+    }
+    submodel_->markInherited(inherited);
+}
 
 const qi::rule<std::string::iterator, skip_grammar>&
 SubmodelRule::rule() const

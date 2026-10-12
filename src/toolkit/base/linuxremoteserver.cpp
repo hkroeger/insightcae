@@ -68,6 +68,118 @@ int LinuxRemoteServer::Config::occupiedProcessors(int* nProcAvail) const
 
 
 
+boost::optional<RemoteServer::Config::ProcessorLoad>
+LinuxRemoteServer::Config::processorLoad() const
+{
+    // a core with less idle time is considered to be fully occupied
+    const double fullyOccupiedIdlePercent = 10.;
+    const std::string separator = "#MPSTAT";
+
+    try
+    {
+        // one remote call: topology (logical CPU -> physical core), then load
+        auto r = runCommand(
+            "(LC_ALL=C lscpu -p=CPU,CORE,SOCKET 2>/dev/null || true); "
+            "echo '"+separator+"'; "
+            "LC_ALL=C mpstat -P ALL 1 1" );
+        if (r.exitCode!=0)
+        {
+            insight::dbg()<<"could not execute mpstat on "<<c_str()<<std::endl;
+            return boost::none;
+        }
+
+        auto tokenize = [](const std::string& line, const char* seps)
+        {
+            std::vector<std::string> tok;
+            boost::split(tok, line, boost::is_any_of(seps), boost::token_compress_on);
+            tok.erase(std::remove(tok.begin(), tok.end(), std::string()), tok.end());
+            return tok;
+        };
+
+        std::istringstream out(r.out);
+        std::string line;
+
+        // logical CPU -> physical core (socket, core)
+        //  # CPU,Core,Socket
+        //  0,0,0
+        //  1,1,0  ...
+        std::map<int, std::pair<int,int> > coreOfCPU;
+        while (getline(out, line) && line!=separator)
+        {
+            if (line.empty() || line[0]=='#') continue;
+            std::vector<std::string> tok;
+            boost::split(tok, line, boost::is_any_of(","));
+            if (tok.size()<3 || tok[0].empty() || tok[1].empty()) continue;
+            try
+            {
+                coreOfCPU[insight::toNumber<int>(tok[0])] = {
+                    tok[2].empty() ? 0 : insight::toNumber<int>(tok[2]),
+                    insight::toNumber<int>(tok[1]) };
+            }
+            catch (...) {}
+        }
+
+        // utilization per logical CPU from the summary lines:
+        //  Average:     CPU    %usr ... %idle
+        //  Average:     all    ...       75.00
+        //  Average:       0    ...       12.00
+        std::map<int, double> utilOfCPU;
+        while (getline(out, line))
+        {
+            auto tok = tokenize(line, " \t");
+            if (tok.size()<3 || tok[0]!="Average:" || tok[1]=="all") continue;
+            try
+            {
+                double idle = insight::toNumber<double>(tok.back());
+                utilOfCPU[insight::toNumber<int>(tok[1])] =
+                    std::max(0., std::min(1., 1.-idle/100.));
+            }
+            catch (...) {} // header line
+        }
+
+        if (utilOfCPU.empty())
+        {
+            insight::dbg()<<"unexpected output from mpstat on "<<c_str()<<std::endl;
+            return boost::none;
+        }
+
+        // physical core utilization: a core is busy, if one of its
+        // hardware threads is busy (hyperthreads don't add capacity).
+        // Without topology information, each logical CPU is its own core.
+        std::map<std::pair<int,int>, double> utilOfCore;
+        for (const auto& cu: utilOfCPU)
+        {
+            auto c = coreOfCPU.find(cu.first);
+            auto core = (c!=coreOfCPU.end()) ?
+                            c->second : std::make_pair(-1, cu.first);
+            auto& u = utilOfCore[core]; // initialized to 0
+            u = std::max(u, cu.second);
+        }
+
+        ProcessorLoad pl;
+        double sum=0.;
+        for (const auto& cu: utilOfCore)
+        {
+            pl.nProcessors++;
+            sum+=cu.second;
+            if (cu.second > 1.-fullyOccupiedIdlePercent/100.)
+                pl.nFullyOccupied++;
+        }
+        pl.utilization = sum/double(pl.nProcessors);
+
+        return pl;
+    }
+    catch (const std::exception& e)
+    {
+        insight::dbg()<<"could not determine processor load on "<<c_str()
+                       <<": "<<e.what()<<std::endl;
+    }
+    return boost::none;
+}
+
+
+
+
 std::string toUnixPath(const boost::filesystem::path& wp)
 {
   auto wpl = wp.relative_path().generic_path().string();

@@ -16,10 +16,10 @@ class TabularResult
 public:
     typedef std::vector<double> Row;
     typedef std::vector<Row> Table;
-    typedef std::vector<SimpleLatex> Headings;
+    typedef std::vector<SimpleLatex> Headings, RowLabels;
 
 protected:
-    std::vector<SimpleLatex> headings_;
+    std::vector<SimpleLatex> headings_, rowLabels_;
     Table rows_;
 
 public:
@@ -48,9 +48,37 @@ public:
         const std::string& unit
     );
 
+    TabularResult
+    (
+        const Headings& headings,
+        const RowLabels& rowLabels,
+        const arma::mat& rows,
+        const std::string& shortDesc,
+        const std::string& longDesc,
+        const std::string& unit
+    );
+
+    TabularResult
+    (
+        const Headings& headings,
+        const RowLabels& rowLabels,
+        const Table& rows,
+        const std::string& shortDesc,
+        const std::string& longDesc,
+        const std::string& unit
+    );
+
     inline const Headings& headings() const
     {
         return headings_;
+    }
+    inline const RowLabels& rowLabels() const
+    {
+        return rowLabels_;
+    }
+    inline bool hasRowLabels() const
+    {
+        return !rowLabels_.empty();
     }
     inline const Table& rows() const
     {
@@ -58,6 +86,16 @@ public:
     }
     inline Row& appendRow()
     {
+        if ( hasRowLabels() ) {
+            rowLabels_.push_back ( SimpleLatex() );
+        }
+        rows_.push_back ( Row ( headings_.size() ) );
+        return rows_.back();
+    }
+    inline Row& appendRow ( const SimpleLatex& label )
+    {
+        rowLabels_.resize ( rows_.size() );
+        rowLabels_.push_back ( label );
         rows_.push_back ( Row ( headings_.size() ) );
         return rows_.back();
     }
@@ -67,11 +105,12 @@ public:
 
     arma::mat toMat() const;
 
-    inline void setTableData ( const std::vector<SimpleLatex>& headings, const Table& rows )
-    {
-        headings_=headings;
-        rows_=rows;
-    }
+    static Table toTable(const arma::mat& m);
+
+    void setTableData (
+        const Headings& headings,
+        const Table& rows,
+        const RowLabels& rowLabels = {} );
 
     virtual void writeGnuplotData ( std::ostream& f ) const;
 

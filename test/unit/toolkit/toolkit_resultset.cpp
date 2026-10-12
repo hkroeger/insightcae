@@ -59,6 +59,17 @@ int main()
             "A table with some values", "", ""
             );
 
+        r.insert<TabularResult>(
+            "labeledtabularresult",
+            TabularResult::Headings{"Col_1", "Col_2"},
+            TabularResult::RowLabels{"Row_1", "Row_$\\alpha$"},
+            TabularResult::Table{
+             {1., 2.},
+             {4., 6.}
+            },
+            "A table with row labels", "", ""
+            );
+
         r.insert<AttributeTableResult>(
             "attributeresulttable",
             AttributeTableResult::AttributeNames{

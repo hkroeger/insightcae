@@ -128,7 +128,8 @@ void IQGraphProgressChart::update(double iter, const std::string& name, double y
         curve_[name]=crv;
     }
 
-    if ( !logscale_ || ( logscale_ && (y_value > 0.0) ) ) // only add, if y>0. Plot gets unreadable otherwise
+    if ( std::isfinite(iter) && std::isfinite(y_value) // nan/inf cannot be plotted and would break the axis ranges
+         && ( !logscale_ || ( logscale_ && (y_value > 0.0) ) ) ) // only add, if y>0. Plot gets unreadable otherwise
     {
         crv->append(iter, y_value);
     }

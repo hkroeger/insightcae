@@ -87,6 +87,19 @@ void DXFReader::addArc(const DL_ArcData &a)
       insight::dbg()<<"=> filtered ("<<layerpattern_<<")"<<std::endl;
 }
 
+void DXFReader::addCircle(const DL_CircleData &c)
+{
+  insight::dbg()<<"add circle, layer "<<getAttributes().getLayer()<<std::endl;
+  if (notFiltered())
+  {
+    gp_Circ ci = gce_MakeCirc( gp_Ax2(gp_Pnt(c.cx, c.cy, c.cz), gp_Dir(0,0,1)), c.radius );
+    TopoDS_Edge e=BRepBuilderAPI_MakeEdge(ci).Edge();
+    ls_[curLayerName()].Append(e);
+  }
+  else
+      insight::dbg()<<"=> filtered ("<<layerpattern_<<")"<<std::endl;
+}
+
 void DXFReader::addLine (const DL_LineData &l)
 {
   insight::dbg()<<"add line, layer "<<getAttributes().getLayer()<<std::endl;

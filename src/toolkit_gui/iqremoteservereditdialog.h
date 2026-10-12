@@ -18,6 +18,11 @@ class TOOLKIT_GUI_EXPORT IQRemoteServerEditDialog
 
   IQRemoteServerListModel serverListModel_;
 
+  /**
+   * enable launch/shutdown according to the state of the current server
+   */
+  void updateServerActionButtons();
+
 public:
   explicit IQRemoteServerEditDialog(QWidget *parent = nullptr);
   ~IQRemoteServerEditDialog();

@@ -140,98 +140,90 @@ void Import::build()
 {
   ExecTimer t("Import::build() ["+featureSymbolName()+"]");
 
-  if (!cache.contains(hash()))
-  {
 
-      if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
-      {
-          boost::filesystem::path fp = *f;
-          if (!boost::filesystem::exists(fp))
-          {
-              fp=sharedModelFilePath(f->string());
-              if (!boost::filesystem::exists(fp))
-              {
-                  throw insight::Exception(_("File not found: %s"), f->string().c_str());
-              }
-          }
-          setShapeFromFile(fp);
+    if (auto *f=boost::get<boost::filesystem::path>(&importSource_))
+    {
+        boost::filesystem::path fp = *f;
+        if (!boost::filesystem::exists(fp))
+        {
+            fp=sharedModelFilePath(f->string());
+            if (!boost::filesystem::exists(fp))
+            {
+                throw insight::Exception(_("File not found: %s"), f->string().c_str());
+            }
+        }
+        setShapeFromFile(fp);
 
-          FeatureSetData fsd;
-          idx_->insertAllSolidTags(fsd);
-          for (FeatureID i: fsd)
-          {
-              auto label=boost::str(boost::format("solid%d")%i);
-              auto feat=Import::create(idx_->solidByTag(i));
-              feat->setFeatureSymbolName(
-                  this->featureSymbolName()+"."+label );
-              providedSubshapes_[label]=feat;
-          }
+        FeatureSetData fsd;
+        idx_->insertAllSolidTags(fsd);
+        for (FeatureID i: fsd)
+        {
+            auto label=boost::str(boost::format("solid%d")%i);
+            auto feat=Import::create(idx_->solidByTag(i));
+            feat->setFeatureSymbolName(
+                this->featureSymbolName()+"."+label );
+            providedSubshapes_[label]=feat;
+        }
 
-          setFeatureSymbolName("importedFrom_"+fp.string());
-      }
-      else if (auto *s=boost::get<TopoDS_Shape>(&importSource_))
-      {
-          setShape(*s);
-      }
-      else if (auto *fs=boost::get<FeatureSetPtr>(&importSource_))
-      {
-          auto& featSet=*fs;
+        setFeatureSymbolName("importedFrom_"+fp.string());
+    }
+    else if (auto *s=boost::get<TopoDS_Shape>(&importSource_))
+    {
+        setShape(*s);
+    }
+    else if (auto *fs=boost::get<FeatureSetPtr>(&importSource_))
+    {
+        auto& featSet=*fs;
 
-          std::vector<TopoDS_Shape> shapes;
-          for (const FeatureID& id: featSet->data())
-          {
-              if (featSet->shape()==Vertex)
-              {
-                  shapes.push_back(featSet->model()->vertex(id));
-              }
-              else if (featSet->shape()==Edge)
-              {
-                  shapes.push_back(featSet->model()->edge(id));
-              }
-              else if (featSet->shape()==Face)
-              {
-                  shapes.push_back(featSet->model()->face(id));
-              }
-              else if (featSet->shape()==Solid)
-              {
-                  shapes.push_back(featSet->model()->subsolid(id));
-              }
-              else
-                  throw insight::UnhandledSelection();
-          }
+        std::vector<TopoDS_Shape> shapes;
+        for (const FeatureID& id: featSet->data())
+        {
+            if (featSet->shape()==Vertex)
+            {
+                shapes.push_back(featSet->model()->vertex(id));
+            }
+            else if (featSet->shape()==Edge)
+            {
+                shapes.push_back(featSet->model()->edge(id));
+            }
+            else if (featSet->shape()==Face)
+            {
+                shapes.push_back(featSet->model()->face(id));
+            }
+            else if (featSet->shape()==Solid)
+            {
+                shapes.push_back(featSet->model()->subsolid(id));
+            }
+            else
+                throw insight::UnhandledSelection();
+        }
 
-          TopoDS_Shape result;
+        TopoDS_Shape result;
 
-          if (shapes.size()==1)
-          {
-              result=shapes.front();
-          }
-          else
-          {
-              TopoDS_Compound comp;
-              BRep_Builder builder;
-              builder.MakeCompound( comp );
+        if (shapes.size()==1)
+        {
+            result=shapes.front();
+        }
+        else
+        {
+            TopoDS_Compound comp;
+            BRep_Builder builder;
+            builder.MakeCompound( comp );
 
-              for (auto& ss: shapes)
-              {
-                  builder.Add(comp, ss);
-              }
+            for (auto& ss: shapes)
+            {
+                builder.Add(comp, ss);
+            }
 
-              result=comp;
-          }
+            result=comp;
+        }
 
-          setShape(result);
-      }
-      else
-          throw insight::UnhandledSelection();
+        setShape(result);
+    }
+    else
+        throw insight::UnhandledSelection();
 
 
-    cache.insert(shared_from_this());
-  }
-  else
-  {
-      this->operator=(*cache.markAsUsed<Import>(hash()));
-  }
 
 }
 

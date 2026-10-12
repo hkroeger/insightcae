@@ -138,6 +138,57 @@ msgstr "Bezeichner ändern"
 msgid "New label:"
 msgstr "Neuer Bezeichner:"
 
+msgid "Shut down server"
+msgstr ""
+
+msgid ""
+"Shut down the server %1?\n"
+"\n"
+"Analyses, which are currently running on it, will be terminated and data on "
+"its local storage might be lost."
+msgstr ""
+
+msgid "Select a server (not a server pool)."
+msgstr ""
+
+msgid "Checking, if the server is reachable..."
+msgstr ""
+
+msgid "The server is running."
+msgstr ""
+
+msgid ""
+"The server cannot be launched from here (no creation command configured)."
+msgstr ""
+
+msgid "Launch the server (execute its creation command)."
+msgstr ""
+
+msgid "The server is not running."
+msgstr ""
+
+msgid ""
+"The server cannot be shut down from here (no destruction command configured)."
+msgstr ""
+
+msgid "Shut down the server (execute its destruction command)."
+msgstr ""
+
+msgid "Server Label"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "checking..."
+msgstr ""
+
+msgid "not reachable"
+msgstr ""
+
+msgid "online"
+msgstr ""
+
 msgid "Load result set"
 msgstr "Ergebnisse laden"
 
@@ -159,8 +210,140 @@ msgstr "Erzeugen der Datei fehlgeschlagen"
 msgid "Could not create file %1"
 msgstr "Konnte die Datei %1 nicht erzeugen"
 
+msgid "t = %1"
+msgstr ""
+
+msgid "Current simulation time, as reported in the solver output"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Folder Name"
+msgstr ""
+
+#, fuzzy
+msgid "could not list: %1"
+msgstr "Konnte die Datei %1 nicht erzeugen"
+
 msgid "Select Remote Directory"
 msgstr "Entferntes Verzeichnis auswählen"
+
+msgid "Listing %1 on %2..."
+msgstr ""
+
+msgid "Browse the directories on the host"
+msgstr ""
+
+msgid "Checking, if the host is reachable..."
+msgstr ""
+
+msgid "The host is not reachable."
+msgstr ""
+
+msgid "The host is running."
+msgstr ""
+
+msgid ""
+"The host is not reachable and cannot be launched from here (no creation "
+"command configured)."
+msgstr ""
+
+msgid "Launch the host (execute its creation command)."
+msgstr ""
+
+msgid ""
+"The host is not reachable. A new directory can only be created on a running "
+"host."
+msgstr ""
+
+msgid ""
+"Create a new remote directory with a random name.\n"
+"Unlike the temporary directory, it is kept after the analysis."
+msgstr ""
+
+msgid "Remote directory creation failed"
+msgstr ""
+
+msgid ""
+"The remote directory could not be created:\n"
+"%1"
+msgstr ""
+
+msgid "Launch failed"
+msgstr ""
+
+msgid "Invalid Working Directory"
+msgstr ""
+
+msgid ""
+"The selected working directory \"%1\" is invalid.\n"
+"Please enter a valid working directory!"
+msgstr ""
+
+msgid "The remote directory is invalid!"
+msgstr ""
+
+msgid "Verified."
+msgstr ""
+
+msgid ""
+"The remote directory cannot be checked because the server is unreachable "
+"yet!\n"
+"Please make sure that it is existing!"
+msgstr ""
+
+msgid "Setup Workspace"
+msgstr ""
+
+msgid "Please select working directory"
+msgstr ""
+
+#, fuzzy
+msgid "Remote directory selection"
+msgstr "Entferntes Verzeichnis auswählen"
+
+#, fuzzy
+msgid ""
+"Could not connect to the host:\n"
+"%1"
+msgstr "Konnte die Datei %1 nicht erzeugen"
+
+msgid "Remote location"
+msgstr ""
+
+msgid "Setup Remote Location for %1"
+msgstr ""
+
+msgid "unknown error"
+msgstr ""
+
+msgid "Launching server %1"
+msgstr ""
+
+msgid "Launching the server, please wait..."
+msgstr ""
+
+msgid "The server could not be launched:"
+msgstr ""
+
+msgid "Shutting down server %1"
+msgstr ""
+
+msgid "Shutting down the server, please wait..."
+msgstr ""
+
+msgid "The server could not be shut down:"
+msgstr ""
+
+msgid "%1 of %2 cores fully occupied, %3% utilization"
+msgstr ""
+
+msgid "online, busy: %1"
+msgstr ""
+
+msgid "online: %1"
+msgstr ""
 
 msgid "(none defined)"
 msgstr ""

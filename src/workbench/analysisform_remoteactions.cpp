@@ -41,10 +41,12 @@
 #include "remoterun.h"
 #endif
 
+#include <QApplication>
 #include <QMessageBox>
 #include <QDebug>
 
 #include "qsetupremotedialog.h"
+#include "iqserverlaunchdialog.h"
 
 
 
@@ -55,16 +57,34 @@ namespace fs = boost::filesystem;
 void AnalysisForm::connectRemoteActions()
 {
 
-  connect(ui->btnDisconnect, &QPushButton::clicked, ui->btnDisconnect,
+  connect(ui->btnRemoteConnection, &QPushButton::clicked, this,
           [&]()
           {
             if (isRunningRemotely())
-              currentWorkbenchAction_.reset();
+              currentWorkbenchAction_.reset(); // disconnect, run continues remotely
+            else
+              resumeRemoteRun();
           }
   );
 
-  connect(ui->btnResume, &QPushButton::clicked,
-          this, &AnalysisForm::resumeRemoteRun );
+  // the options may be changed during a remote run: pass them to it
+  connect(ui->cbDownloadWhenFinished, &QCheckBox::toggled, this,
+          [this](bool checked)
+          {
+#ifdef HAVE_WT
+            if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.data()))
+              rr->setDownloadWhenFinished(checked);
+#endif
+            updateRemoteActionAvailability();
+          } );
+  connect(ui->cbShutdownWhenFinished, &QCheckBox::toggled, this,
+          [this](bool checked)
+          {
+#ifdef HAVE_WT
+            if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.data()))
+              rr->setShutdownWhenFinished(checked);
+#endif
+          } );
 
   connect(ui->btnUpload, &QPushButton::clicked,
           this, &AnalysisForm::upload );
@@ -95,8 +115,25 @@ void AnalysisForm::connectRemoteActions()
 
 
 
+bool AnalysisForm::launchRemoteServerIfRequired()
+{
+  auto *rs = remoteExecutionConfiguration();
+  if (!rs || rs->isCommitted()) return true; // connected: nothing to do
+
+  const auto& scfg = rs->location().serverConfig();
+  if (!scfg.isDynamicallyCreatable() || scfg.isRunning())
+    return true; // the connection (commit) handles or reports it
+
+  // instead of the silent launch upon commit (blocking the GUI)
+  return IQServerLaunchDialog::launchServer(scfg, this);
+}
+
+
+
+
 void AnalysisForm::upload()
 {
+  if (!launchRemoteServerIfRequired()) return;
 
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
 
@@ -137,8 +174,10 @@ void AnalysisForm::upload()
 void AnalysisForm::startRemoteRun()
 {
 #ifdef HAVE_WT
+  if (!launchRemoteServerIfRequired()) return;
+
   remoteExecutionConfiguration()->commit( localCaseDirectory() );
-  currentWorkbenchAction_.reset( RemoteRun::create(this, false) );
+  setCurrentWorkbenchAction( RemoteRun::create(this, false) );
 #endif
 }
 
@@ -151,8 +190,86 @@ void AnalysisForm::resumeRemoteRun()
   if (currentWorkbenchAction_)
       throw insight::Exception(_("Internal error: there is an action running currently!"));
 
-  remoteExecutionConfiguration()->commit( localCaseDirectory() );
-  currentWorkbenchAction_.reset( RemoteRun::create(this, true) );
+  auto *rs = remoteExecutionConfiguration();
+  if (!rs) return;
+
+  if (!rs->isCommitted())
+  {
+    const auto& scfg = rs->location().serverConfig();
+    auto serverLabel = QString::fromStdString(rs->location().serverLabel());
+
+    if (!scfg.isRunning())
+    {
+      if (!scfg.isDynamicallyCreatable())
+      {
+        QMessageBox::warning(
+              this, _("Remote server not reachable"),
+              QString(_("The remote server %1 is not reachable and cannot be launched"
+                        " from here (no creation command configured).\n"
+                        "Please make sure that it is running and try again."))
+                .arg(serverLabel) );
+        return;
+      }
+
+      auto answer = QMessageBox::question(
+            this, _("Remote server not running"),
+            QString(_("The remote server %1 is not running.\n"
+                      "Shall it be launched?\n\n"
+                      "Note: if there was an analysis running on that server before,"
+                      " it was most probably terminated, when the server was stopped.\n"
+                      "Resuming will then fail, but the remote directory can still be used."))
+              .arg(serverLabel) );
+      if (answer!=QMessageBox::Yes)
+        return;
+
+      // launch with visible console output of the creation command
+      if (!IQServerLaunchDialog::launchServer(scfg, this))
+        return; // the error was displayed in the dialog
+    }
+
+    {
+      struct WaitCursor
+      {
+        WaitCursor() { QApplication::setOverrideCursor(Qt::WaitCursor); }
+        ~WaitCursor() { QApplication::restoreOverrideCursor(); }
+      } wc;
+      Q_EMIT statusMessage(
+            QString(_("Connecting to remote server %1...")).arg(serverLabel) );
+
+      // launches the server, if required, and re-evaluates the remote directory.
+      // Updates the GUI (incl. remote action buttons).
+      // On failure, the remote configuration is left unchanged.
+      try
+      {
+        rs->commit( localCaseDirectory() );
+      }
+      catch (const std::exception& e)
+      {
+        Q_EMIT statusMessage(QString());
+        QMessageBox::critical(
+              this, _("Connection failed"),
+              QString(_("Could not connect to the remote server %1:\n%2\n\n"
+                        "The remote configuration was kept unchanged."))
+                .arg(serverLabel, QString::fromStdString(e.what())) );
+        return;
+      }
+
+      Q_EMIT statusMessage(QString());
+    }
+
+    if (!rs->location().isActive())
+    {
+      QMessageBox::critical(
+            this, _("Remote directory not available"),
+            QString(_("The server %1 is up, but the remote directory %2 does not exist.\n"
+                      "There is nothing to resume."))
+              .arg(serverLabel)
+              .arg(QString::fromStdString(rs->location().remoteDir().string())) );
+      return;
+    }
+  }
+
+  setCurrentWorkbenchAction( RemoteRun::create(this, true) );
 #endif
 }
 

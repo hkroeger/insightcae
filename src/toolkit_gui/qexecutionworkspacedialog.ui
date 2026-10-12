@@ -77,6 +77,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="btnLaunchHost">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Launch</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>

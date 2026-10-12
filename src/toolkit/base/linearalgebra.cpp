@@ -2049,6 +2049,12 @@ double computeMedian(double *p, std::size_t n)
     return (*leftMax + *mid) / 2.0;
 }
 
+
+double finalValue(const arma::mat& values)
+{
+    return values(values.n_rows-1);
+};
+
 arma::mat appendZeroColsIfNeeded(
     const arma::mat &m,
     int minCols)

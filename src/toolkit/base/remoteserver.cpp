@@ -141,6 +141,24 @@ int RemoteServer::Config::unoccupiedProcessors() const
 }
 
 
+void RemoteServer::Config::launch(OutputLineCallback) const
+{
+    instance(); // launches, if needed
+}
+
+void RemoteServer::Config::shutdown(OutputLineCallback) const
+{
+    throw insight::Exception(
+        "The server %s cannot be shut down (no destruction command available).",
+        c_str() );
+}
+
+boost::optional<RemoteServer::Config::ProcessorLoad>
+RemoteServer::Config::processorLoad() const
+{
+    return boost::none; // not available for this kind of server
+}
+
 bool RemoteServer::Config::isUnoccupied() const
 {
     if (isRunning())

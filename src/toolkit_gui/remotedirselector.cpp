@@ -8,8 +8,12 @@
 #include "base/translations.h"
 #include <cstdlib>
 
+#include <QApplication>
 #include <QDebug>
+#include <QHBoxLayout>
 #include <QInputDialog>
+#include <QLabel>
+#include <QProgressBar>
 
 
 
@@ -24,6 +28,37 @@ RemoteDirSelector::RemoteDirSelector(QWidget *parent, insight::RemoteServerPtr s
 
   fs_model_ = new IQRemoteFolderModel(this, server, server->config().defaultDirectory_);
   ui->directory->setModel(fs_model_);
+
+  // status line below the tree: shown, while remote folders are listed
+  status_ = new QWidget;
+  auto *sl = new QHBoxLayout(status_);
+  sl->setContentsMargins(0,0,0,0);
+  auto *busy = new QProgressBar;
+  busy->setRange(0, 0); // indeterminate
+  busy->setTextVisible(false);
+  busy->setMaximumWidth(80);
+  busy->setMaximumHeight(12);
+  sl->addWidget(busy);
+  statusLabel_ = new QLabel;
+  statusLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  sl->addWidget(statusLabel_, 1);
+  ui->verticalLayout->addWidget(status_);
+  status_->hide();
+
+  auto serverLabel = QString::fromStdString(server->config());
+  connect(fs_model_, &IQRemoteFolderModel::listingStateChanged, this,
+          [this,serverLabel](int pending, const QString& path)
+          {
+            status_->setVisible(pending>0);
+            if (pending>0)
+            {
+              statusLabel_->setText(
+                  QString(_("Listing %1 on %2...")).arg(path, serverLabel) );
+            }
+          } );
+
+  // list the base folder now (in background), the dialog appears immediately
+  fs_model_->fetchMore(QModelIndex());
 
   connect(ui->createDirTopLevel, &QPushButton::clicked, this,
           std::bind(&RemoteDirSelector::createDirBelow, this, QModelIndex()) );
@@ -67,8 +102,20 @@ bfs_path RemoteDirSelector::selectedRemoteDir()
              );
      if (ok)
      {
-         server_->createDirectory(baseDir/newdir);
-         fs_model_->refreshBelow(i);
+         {
+             QApplication::setOverrideCursor(Qt::WaitCursor);
+             try
+             {
+                 server_->createDirectory(baseDir/newdir);
+             }
+             catch (...)
+             {
+                 QApplication::restoreOverrideCursor();
+                 throw;
+             }
+             QApplication::restoreOverrideCursor();
+         }
+         fs_model_->refreshBelow(i); // in background
      }
  }
 

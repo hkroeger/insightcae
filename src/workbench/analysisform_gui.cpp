@@ -37,6 +37,7 @@
 #include "remotedirselector.h"
 #include "of_clean_case.h"
 #include "base/warningdispatcher.h"
+#include "base/wsllinuxserver.h"
 
 namespace fs = boost::filesystem;
 
@@ -141,6 +142,104 @@ void AnalysisForm::updateRunAvailability()
     bool runPossible = !currentWorkbenchAction_ && !inputDataHasErrors();
     ui->btnRun->setEnabled(runPossible);
     if (act_run_) act_run_->setEnabled(runPossible);
+
+    updateRemoteActionAvailability();
+}
+
+
+
+
+void AnalysisForm::updateRemoteActionAvailability(const IQRemoteExecutionState* rs)
+{
+    bool hasRemote = (rs!=nullptr);
+    // committed and remote directory verified (server up, directory existing)
+    bool committed = hasRemote && rs->isCommitted() && rs->location().isActive();
+    bool isWSL = hasRemote &&
+        dynamic_cast<const insight::WSLLinuxServer::Config*>(
+            &rs->location().serverConfig() );
+
+    // connect/disconnect
+    bool connected = isRunningRemotely();
+    // a temporary directory, which was not yet created, contains nothing to resume
+    bool resumable = hasRemote && !rs->location().remoteDir().empty();
+    ui->btnRemoteConnection->setEnabled(
+        hasRemote && !isWSL
+        && (connected || resumable)
+        && !isRunningLocally() && !waitingForInputPreprocessing_ );
+    if (connected)
+    {
+        ui->btnRemoteConnection->setText(_("Disconnect"));
+        ui->btnRemoteConnection->setToolTip(
+            _("Detach from the running remote analysis. It continues on the server."));
+    }
+    else
+    {
+        ui->btnRemoteConnection->setText(_("Resume"));
+        ui->btnRemoteConnection->setToolTip(
+            _("Reconnect to an analysis running in the remote location."));
+    }
+
+    // upload commits the remote location itself
+    ui->btnUpload->setEnabled(
+        hasRemote && !isRunning() && !waitingForInputPreprocessing_ );
+
+    // download is possible during a remote run (intermediate results)
+    ui->btnDownload->setEnabled(
+        committed && !isRunningLocally() );
+
+    // without commit, nothing exists in the remote location
+    ui->btnRemoveRemote->setEnabled(
+        committed && !isRunning() && !waitingForInputPreprocessing_ );
+
+    // the options may be changed during a remote run,
+    // until the respective step has started
+    bool downloadDecided = false, shutdownStarted = false;
+#ifdef HAVE_WT
+    if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.data()))
+    {
+        downloadDecided = rr->downloadStepStarted();
+        shutdownStarted = rr->shutdownStepStarted();
+    }
+#endif
+
+    ui->cbDownloadWhenFinished->setEnabled( hasRemote && !downloadDecided );
+    ui->cbDownloadWhenFinished->setToolTip(
+        !hasRemote ? QString() :
+        downloadDecided ? _("The download has started already or was skipped.") :
+        _("Download the results into the local directory, when the remote analysis has finished.") );
+
+    // shut down the server after completion: only possible with a destruction command.
+    // (Performed after the result set has been retrieved and the
+    // files have been downloaded, if selected)
+    bool destructable = hasRemote && rs->location().serverConfig().isDynamicallyDestructable();
+    if (!destructable && !shutdownStarted)
+        ui->cbShutdownWhenFinished->setChecked(false);
+    ui->cbShutdownWhenFinished->setEnabled(
+        destructable && !shutdownStarted );
+    ui->cbShutdownWhenFinished->setToolTip(
+        !hasRemote ? QString() :
+        shutdownStarted ? _("The shutdown is in progress.") :
+        !destructable ? _("The server cannot be shut down from here (no destruction command configured).") :
+        _("Shut down the server (execute its destruction command), once the result set"
+          " has been retrieved (and the files have been downloaded, if selected).\n"
+          "Files in the remote directory, which are not downloaded, might be lost.") );
+}
+
+
+
+
+void AnalysisForm::updateRemoteActionAvailability()
+{
+    updateRemoteActionAvailability(remoteExecutionConfiguration());
+}
+
+
+
+
+void AnalysisForm::setCurrentWorkbenchAction(WorkbenchAction* a)
+{
+    currentWorkbenchAction_.reset(a);
+    updateRemoteActionAvailability();
 }
 
 
@@ -291,6 +390,7 @@ void AnalysisForm::onKillAnalysis()
     // run not yet started: just don't start it
     peditor_->cancelWaitForVisualization();
     waitingForInputPreprocessing_=false;
+    updateRemoteActionAvailability();
     Q_EMIT statusMessage(_("Analysis start cancelled"), 5000);
     return;
   }

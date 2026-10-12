@@ -5,6 +5,9 @@
 #include "base/tools.h"
 #include "base/cppextensions.h"
 
+#include "iqremoteserverstatus.h"
+#include "base/translations.h"
+
 #include <QFont>
 #include <QIcon>
 #include <qnamespace.h>
@@ -35,7 +38,8 @@ QVariant IQRemoteServerListModel::headerData(int section, Qt::Orientation orient
   {
     switch (section)
     {
-      case 0: return "Server Label";
+      case NameColumn: return _("Server Label");
+      case StatusColumn: return _("Status");
     }
   }
   return QVariant();
@@ -45,7 +49,7 @@ QModelIndex IQRemoteServerListModel::index(int row, int column, const QModelInde
 {
   if (!parent.isValid())
   {
-    if (row>=0 && row<remoteServers_.size())
+    if (row>=0 && row<remoteServers_.size() && column>=0 && column<2)
     {
       return createIndex(row, column, nullptr);
     }
@@ -65,7 +69,7 @@ int IQRemoteServerListModel::rowCount(const QModelIndex &/*parent*/) const
 
 int IQRemoteServerListModel::columnCount(const QModelIndex &/*parent*/) const
 {
-  return 1;
+  return 2;
 }
 
 QVariant IQRemoteServerListModel::data(const QModelIndex &index, int role) const
@@ -74,6 +78,41 @@ QVariant IQRemoteServerListModel::data(const QModelIndex &index, int role) const
     {
         auto i=remoteServers_.begin();
         std::advance(i, index.row());
+
+        if (index.column()==StatusColumn)
+        {
+            auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&*i);
+            if (!rsc) return QVariant(); // server pool: no state
+
+            auto s = status_.find(rsc->get());
+            using IQRemoteServerStatus::State;
+
+            if (s==status_.end() || !s->second.online)
+            {
+                if (role==Qt::DecorationRole) return IQRemoteServerStatus::icon(State::Unknown);
+                if (role==Qt::DisplayRole) return _("checking...");
+            }
+            else if (!*s->second.online)
+            {
+                if (role==Qt::DecorationRole) return IQRemoteServerStatus::icon(State::Offline);
+                if (role==Qt::DisplayRole || role==Qt::ToolTipRole) return _("not reachable");
+            }
+            else if (const auto& l = s->second.load)
+            {
+                if (role==Qt::DecorationRole)
+                    return IQRemoteServerStatus::isBusy(*l) ?
+                        IQRemoteServerStatus::icon(State::Busy, l->utilization) :
+                        IQRemoteServerStatus::icon(State::Online);
+                if (role==Qt::DisplayRole || role==Qt::ToolTipRole)
+                    return IQRemoteServerStatus::describe(*l);
+            }
+            else
+            {
+                if (role==Qt::DecorationRole) return IQRemoteServerStatus::icon(State::Online);
+                if (role==Qt::DisplayRole || role==Qt::ToolTipRole) return _("online");
+            }
+            return QVariant();
+        }
 
         if (role==Qt::DisplayRole)
         {
@@ -209,13 +248,120 @@ void IQRemoteServerListModel::addRemoteServer(insight::RemoteServer::ConfigPtr n
   beginInsertRows(QModelIndex(), inew, inew);
   remoteServers_.push_back(newRemoteServer);
   endInsertRows();
+
+  checkStatus(index(inew, 0));
 }
 
 void IQRemoteServerListModel::removeRemoteServer(const QModelIndex &index)
 {
     auto i=remoteServers_.begin();
     std::advance(i, index.row());
+    if (auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&*i))
+        status_.erase(rsc->get()); // pending results are discarded (row not found)
     beginRemoveRows(QModelIndex(), index.row(), index.row());
     remoteServers_.erase(i);
     endRemoveRows();
+}
+
+
+
+
+int IQRemoteServerListModel::rowOf(const insight::RemoteServer::Config* cfg) const
+{
+    for (size_t r=0; r<remoteServers_.size(); ++r)
+    {
+        if (auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&remoteServers_[r]))
+            if (rsc->get()==cfg) return int(r);
+    }
+    return -1;
+}
+
+
+
+
+void IQRemoteServerListModel::statusUpdated(const insight::RemoteServer::Config* cfg)
+{
+    int r=rowOf(cfg);
+    if (r>=0)
+    {
+        auto i=index(r, StatusColumn);
+        Q_EMIT dataChanged(i, i);
+    }
+}
+
+
+
+
+void IQRemoteServerListModel::checkStatus(const QModelIndex& idx)
+{
+    if (!idx.isValid() || idx.row()>=int(remoteServers_.size())) return;
+
+    auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&remoteServers_[idx.row()]);
+    if (!rsc) return; // server pool
+
+    insight::RemoteServer::ConfigPtr cfg = *rsc;
+    const auto* key = cfg.get();
+
+    auto& s = status_[key];
+    s.online.reset();
+    s.load.reset();
+    int gen = s.generation = ++lastGeneration_;
+    statusUpdated(key);
+
+    auto current = [this,key,gen]() -> ServerStatus*
+    {
+        auto s = status_.find(key);
+        if (s==status_.end() || s->second.generation!=gen) return nullptr;
+        return &s->second;
+    };
+
+    IQRemoteServerStatus::checkInBackground(
+        cfg, this,
+        [this,key,current](bool online)
+        {
+            if (auto *s=current())
+            {
+                s->online=online;
+                statusUpdated(key);
+            }
+        },
+        [this,key,current](const insight::RemoteServer::Config::ProcessorLoad& l)
+        {
+            if (auto *s=current())
+            {
+                s->load=l;
+                statusUpdated(key);
+            }
+        } );
+}
+
+
+
+
+void IQRemoteServerListModel::checkAllStatus()
+{
+    for (int r=0; r<rowCount(); ++r)
+        checkStatus(index(r, 0));
+}
+
+
+
+
+boost::optional<bool> IQRemoteServerListModel::isOnline(const QModelIndex& idx) const
+{
+    if (!idx.isValid() || idx.row()>=int(remoteServers_.size())) return boost::none;
+    auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&remoteServers_[idx.row()]);
+    if (!rsc) return boost::none;
+    auto s = status_.find(rsc->get());
+    if (s==status_.end()) return boost::none;
+    return s->second.online;
+}
+
+
+
+
+bool IQRemoteServerListModel::isServerPool(const QModelIndex& idx) const
+{
+    if (!idx.isValid() || idx.row()>=int(remoteServers_.size())) return false;
+    return boost::get<insight::RemoteServerPoolConfig>(&remoteServers_[idx.row()]) != nullptr;
 }

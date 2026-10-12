@@ -757,7 +757,7 @@ double computeMedian(double* p, std::size_t n);
 typedef Processor<double, computeMedian> median;
 
 
-
+double finalValue(const arma::mat& values);
 
 }
 

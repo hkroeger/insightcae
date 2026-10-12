@@ -291,7 +291,16 @@ void RemoteLocation::initialize(bool findFreeRemotePort)
     CurrentExceptionContext ex( "initializing remote location" );
 
     if (!serverInstance_)
-      serverInstance_ = serverConfig_->instance(); // launch
+      serverInstance_ = serverConfig_->instance(); // launch, if possible
+
+    // servers without creation command are not launched by instance():
+    // don't attempt any remote operation on an unreachable server
+    if (!serverConfig_->isRunning())
+    {
+      throw insight::Exception(
+            "The remote server %s is not reachable.",
+            serverConfig_->c_str() );
+    }
 
     if (remoteDir_.empty())
     {
@@ -337,6 +346,15 @@ void RemoteLocation::validate()
         isValidated_=true;
     }
   }
+}
+
+
+
+
+void RemoteLocation::markInactive()
+{
+  serverInstance_.reset();
+  isValidated_=false;
 }
 
 

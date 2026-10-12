@@ -60,6 +60,13 @@ public:
    * true, if the location is active afterwards
    */
   bool tryConnect();
+
+  /**
+   * @brief markInactive
+   * the server is known to be stopped: forget the instance
+   * (without any remote communication)
+   */
+  void markInactive();
     /**
      * @brief RemoteLocation
      * copies configuration from another remote location container

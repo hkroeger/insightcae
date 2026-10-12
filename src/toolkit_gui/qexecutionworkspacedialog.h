@@ -1,6 +1,8 @@
 #ifndef QEXECUTIONENVIRONMENTDIALOG_H
 #define QEXECUTIONENVIRONMENTDIALOG_H
 
+#include "toolkit_gui_export.h"
+
 #include <QDialog>
 
 #include <map>
@@ -14,7 +16,7 @@ namespace Ui {
 class QExecutionWorkspaceDialog;
 }
 
-class QExecutionWorkspaceDialog
+class TOOLKIT_GUI_EXPORT QExecutionWorkspaceDialog
     : public QDialog
 {
   Q_OBJECT
@@ -49,13 +51,18 @@ class QExecutionWorkspaceDialog
   void displayCurrentServerName();
   void displayCurrentRemoteWorkingDir();
   void setHostState(const QString& serverLabel, bool online);
-  void updateCreateRemoteDirButton();
+  void setHostLoad(
+      const QString& serverLabel,
+      const insight::RemoteServer::Config::ProcessorLoad& load );
+  void updateHostActionButtons();
+  void checkHostInBackground(insight::RemoteServer::ConfigPtr cfg);
 
   // change configuration
   void changeWorkingDirectory(const QString& newDir);
   void checkAndChangeRemoteConfig(const QString& serverName, const QString& remoteDir);
   void setRemoteConfigFromWorkingDir();
   void createRemoteDirectory();
+  void launchHost();
   void removeCreatedRemoteDirIfUnused(bool accepted);
 
 public:
@@ -66,6 +73,16 @@ public:
   ~QExecutionWorkspaceDialog();
 
   void lockRemoteExecution(const QString& reason);
+
+  /**
+   * @brief restrictToRemoteLocation
+   * variant of the dialog for setting up only the remote location
+   * of a fixed local directory (e.g. for writing a remote config file):
+   * the local directory selection is hidden and remote execution is always on.
+   * @param localDirectory
+   * the local directory, displayed in the window title
+   */
+  void restrictToRemoteLocation(const boost::filesystem::path& localDirectory);
 
   // query
   boost::filesystem::path localDirectory() const;

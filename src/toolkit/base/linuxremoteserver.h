@@ -20,6 +20,9 @@ public:
         Config(const boost::filesystem::path& bp, int np);
         bool isRunning() const override;
         int occupiedProcessors(int* nProcAvail=nullptr) const override;
+#ifndef SWIG
+        boost::optional<ProcessorLoad> processorLoad() const override;
+#endif
     };
 
 #ifndef SWIG

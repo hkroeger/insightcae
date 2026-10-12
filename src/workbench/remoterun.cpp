@@ -13,6 +13,8 @@
 #include "boost/process.hpp"
 #include "base/warningdispatcher.h"
 
+#include <QCoreApplication>
+
 using namespace std;
 using namespace boost;
 namespace bf=boost::filesystem;
@@ -122,9 +124,13 @@ void RemoteRun::launch()
   af_->progressDisplayer_.reset();
   af_->ui->tabWidget->setCurrentWidget(af_->ui->runTab);
 
-  // GUI state is read here (GUI thread), not in the IO threads
+  // GUI state is read here (GUI thread), not in the IO threads.
+  // Initial values: the options may be changed during the run (see AnalysisForm)
   downloadWhenFinished_ =
       af_->ui->cbDownloadWhenFinished->checkState()==Qt::Checked;
+  shutdownWhenFinished_ =
+      af_->ui->cbShutdownWhenFinished->isEnabled()
+      && af_->ui->cbShutdownWhenFinished->checkState()==Qt::Checked;
   inputParameters_ = af_->parameters().cloneAs<insight::ParameterSet>();
   inputParameters_->pack();
 
@@ -499,6 +505,7 @@ void RemoteRun::fetchResults()
                     [this](insight::QueryResultsAction::Result qrs)
                     {
                         results_=std::move(qrs.results);
+                        resultsRetrieved_ = bool(results_);
 
                         ac_->ioService().post(
                                     std::bind(&RemoteRun::stopRemoteExecutionServer, this ) );
@@ -528,8 +535,14 @@ void RemoteRun::stopRemoteExecutionServer()
                                << " "<<_("successful")<<" " <<std::endl;
 
                         if (disconnectRequested_) return;
+
+                        // the option is evaluated now: the decision is final
+                        bool download = downloadWhenFinished_;
+                        downloadStepStarted_ = true;
+                        requestGUIUpdate();
+
                         ac_->ioService().post(
-                                    downloadWhenFinished_ ?
+                                    download ?
                                     std::bind(&RemoteRun::download, this) :
                                     std::bind(&RemoteRun::cleanupRemote, this)
                                     );
@@ -582,9 +595,103 @@ void RemoteRun::cleanupRemote()
 
         cleanupRemoteLocation();
 
+        // evaluated now. Only, if the result set has been retrieved:
+        // it would be lost otherwise
+        if (shutdownWhenFinished_ && resultsRetrieved_)
+        {
+            shutdownStepStarted_ = true;
+            requestGUIUpdate();
+            shutdownServer();
+        }
+
         finish();
 
     } catch (...) { onError(std::current_exception()); }
+}
+
+
+
+
+void RemoteRun::requestGUIUpdate()
+{
+    QPointer<AnalysisForm> af(af_);
+    QMetaObject::invokeMethod(
+        qApp,
+        [af]() { if (af) af->updateRemoteActionAvailability(); },
+        Qt::QueuedConnection );
+}
+
+
+
+
+void RemoteRun::setDownloadWhenFinished(bool download)
+{
+    downloadWhenFinished_ = download;
+}
+
+
+
+
+void RemoteRun::setShutdownWhenFinished(bool shutdown)
+{
+    shutdownWhenFinished_ = shutdown;
+}
+
+
+
+
+bool RemoteRun::downloadStepStarted() const
+{
+    return downloadStepStarted_;
+}
+
+
+
+
+bool RemoteRun::shutdownStepStarted() const
+{
+    return shutdownStepStarted_;
+}
+
+
+
+
+void RemoteRun::shutdownServer()
+{
+    const auto& scfg = rec_->serverConfig();
+
+    auto progress = af_->progressDisplayer_.forkNewAction(
+        1, str(format(_("Shutting down server %s")) % scfg.c_str()) );
+
+    try
+    {
+        scfg.shutdown(
+            [this,progress](const std::string& line)
+            {
+                progress->message(line);
+                af_->progressDisplayer_.logMessage(line);
+            } );
+        progress->completed();
+
+        // the remote location is not reachable anymore. A temporary one
+        // has been removed from the GUI already (see cleanupRemoteLocation)
+        if (!rec_->isTemporaryStorage())
+        {
+            QPointer<IQRemoteExecutionState> remote = remote_;
+            QMetaObject::invokeMethod(
+                qApp,
+                [remote]() { if (remote) remote->serverStopped(); },
+                Qt::QueuedConnection );
+        }
+    }
+    catch (const std::exception& e)
+    {
+        progress->completed();
+        insight::Warning(
+            _("The server %s could not be shut down after completion: %s\n"
+              "Please check and shut it down manually, to avoid unnecessary costs."),
+            scfg.c_str(), e.what() );
+    }
 }
 
 

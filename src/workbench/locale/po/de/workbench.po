@@ -22,6 +22,13 @@ msgstr "in lokalem Ordner ausführen"
 msgid "launch in remote workspace"
 msgstr "in entferntem Workspace ausführen"
 
+#, fuzzy
+msgid "%1 (remote directory not found)"
+msgstr "Das entfernte Verzeichnis ist ungültig!"
+
+msgid "The server is reachable, but the remote directory does not exist."
+msgstr ""
+
 msgid "%1 (not connected)"
 msgstr ""
 
@@ -231,6 +238,39 @@ msgstr ""
 "Arbeitsverzeichniswird entfernt (falls es automatisch erzeugt wurde). "
 "Fortsetzen?"
 
+msgid "Disconnect"
+msgstr ""
+
+msgid "Detach from the running remote analysis. It continues on the server."
+msgstr ""
+
+msgid "Resume"
+msgstr ""
+
+msgid "Reconnect to an analysis running in the remote location."
+msgstr ""
+
+msgid "The download has started already or was skipped."
+msgstr ""
+
+msgid ""
+"Download the results into the local directory, when the remote analysis has "
+"finished."
+msgstr ""
+
+msgid "The shutdown is in progress."
+msgstr ""
+
+msgid ""
+"The server cannot be shut down from here (no destruction command configured)."
+msgstr ""
+
+msgid ""
+"Shut down the server (execute its destruction command), once the result set "
+"has been retrieved (and the files have been downloaded, if selected).\n"
+"Files in the remote directory, which are not downloaded, might be lost."
+msgstr ""
+
 msgid "Internal error: there is an action running currently!"
 msgstr "Interner Fehler: Es läuft gerade eine Aktion!"
 
@@ -318,6 +358,52 @@ msgstr "Übertragung zum entfernten Speicherort abgeschlossen"
 msgid "Transfer to remote location started"
 msgstr "Übertragung zum entfernten Speicherort gestartet"
 
+#, fuzzy
+msgid "Remote server not reachable"
+msgstr "Entfernte Server..."
+
+msgid ""
+"The remote server %1 is not reachable and cannot be launched from here (no "
+"creation command configured).\n"
+"Please make sure that it is running and try again."
+msgstr ""
+
+#, fuzzy
+msgid "Remote server not running"
+msgstr "Entfernte Server..."
+
+msgid ""
+"The remote server %1 is not running.\n"
+"Shall it be launched?\n"
+"\n"
+"Note: if there was an analysis running on that server before, it was most "
+"probably terminated, when the server was stopped.\n"
+"Resuming will then fail, but the remote directory can still be used."
+msgstr ""
+
+#, fuzzy
+msgid "Connecting to remote server %1..."
+msgstr "Starte entfernten Ausführungsserver..."
+
+msgid "Connection failed"
+msgstr ""
+
+msgid ""
+"Could not connect to the remote server %1:\n"
+"%2\n"
+"\n"
+"The remote configuration was kept unchanged."
+msgstr ""
+
+#, fuzzy
+msgid "Remote directory not available"
+msgstr "Entferntes Verzeichnis ist ungültig!"
+
+msgid ""
+"The server %1 is up, but the remote directory %2 does not exist.\n"
+"There is nothing to resume."
+msgstr ""
+
 msgid "Transfer from remote location to local directory finished"
 msgstr ""
 "Übertragung vom entfernten Speicherort ins lokale Verzeichnis abgeschlossen"
@@ -391,66 +477,6 @@ msgstr ""
 "ist.\n"
 "Fehlerinformation: %s\n"
 
-msgid "online"
-msgstr ""
-
-msgid "not reachable"
-msgstr ""
-
-msgid "Checking, if the host is reachable..."
-msgstr ""
-
-msgid ""
-"The host is not reachable. A new directory can only be created on a running "
-"host."
-msgstr ""
-
-msgid ""
-"Create a new remote directory with a random name.\n"
-"Unlike the temporary directory, it is kept after the analysis."
-msgstr ""
-
-#, fuzzy
-msgid "Remote directory creation failed"
-msgstr "Entferntes Verzeichnis ist ungültig!"
-
-#, fuzzy
-msgid ""
-"The remote directory could not be created:\n"
-"%1"
-msgstr "Das entfernte Verzeichnis ist ungültig!"
-
-msgid "Invalid Working Directory"
-msgstr "Ungültiges Arbeitsverzeichnis"
-
-msgid ""
-"The selected working directory \"%1\" is invalid.\n"
-"Please enter a valid working directory!"
-msgstr ""
-"Das gewählte Arbeitsverzeichnis \"%1\" ist ungültig.\n"
-"Bitte ein gültiges Arbeitsverzeichnis angeben!"
-
-msgid "The remote directory is invalid!"
-msgstr "Das entfernte Verzeichnis ist ungültig!"
-
-msgid "Verified."
-msgstr "Überprüft."
-
-msgid ""
-"The remote directory cannot be checked because the server is unreachable "
-"yet!\n"
-"Please make sure that it is existing!"
-msgstr ""
-"Das entfernte Verzeichnis kann nicht geprüft werden, da der Server noch "
-"nicht erreichbar ist!\n"
-"Bitte sicherstellen, dass es existiert!"
-
-msgid "Setup Workspace"
-msgstr "Workspace einrichten"
-
-msgid "Please select working directory"
-msgstr "Bitte Arbeitsverzeichnis auswählen"
-
 msgid "Launching remote analysis"
 msgstr "Starte entfernte Analyse"
 
@@ -519,6 +545,16 @@ msgstr "Zeitüberschreitung beim Anhalten des entfernten Analyseservers"
 #, fuzzy
 msgid "Downloading results"
 msgstr "Ergebnisse &laden..."
+
+#, c-format
+msgid "Shutting down server %s"
+msgstr ""
+
+#, c-format
+msgid ""
+"The server %s could not be shut down after completion: %s\n"
+"Please check and shut it down manually, to avoid unnecessary costs."
+msgstr ""
 
 msgid "remote run cancelled"
 msgstr "entfernte Ausführung abgebrochen"

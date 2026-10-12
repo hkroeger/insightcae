@@ -212,72 +212,144 @@ void SSHLinuxServer::runRsync
 
 
 
+namespace {
+
+void runShellCommand(
+    const std::string& cmd,
+    const RemoteServer::Config::OutputLineCallback& outputLine,
+    int* exitCode )
+{
+    auto job= Job::forkExternalProcess("bash", {"-lc", cmd});
+
+    if (outputLine)
+    {
+        job->ios_run_with_interruption(
+            [&](const std::string& line) { outputLine(line); },
+            [&](const std::string& line) { outputLine("[E] "+line); } );
+        job->wait(); // exit code is not set correctly, if this is skipped
+    }
+    else
+    {
+        job->runAndTransferOutput();
+    }
+
+    *exitCode = job->process().exit_code();
+}
+
+}
+
+
+
+
+void SSHLinuxServer::Config::launch(OutputLineCallback outputLine) const
+{
+    if ( creationCommand_.empty() || isRunning() )
+        return;
+
+    CurrentExceptionContext ex("launching server %s", c_str());
+
+    auto msg = [&](const std::string& line)
+    {
+        if (outputLine) outputLine(line); else std::cout<<line<<std::endl;
+    };
+
+    msg("$ "+creationCommand_);
+    int retcode=-1;
+    runShellCommand(creationCommand_, outputLine, &retcode);
+    if (retcode!=0)
+    {
+        throw insight::Exception(
+            "failed to launch execution server (creation command exited with code %d)",
+            retcode );
+    }
+
+    // wait, until the new server is reachable
+    msg(str(format("Waiting for %s to become reachable (at most %d s)...")
+            % hostName_ % int(creationTimeout_.count()) ));
+    auto deadline = std::chrono::steady_clock::now() + creationTimeout_;
+    while (!isRunning())
+    {
+        if (std::chrono::steady_clock::now() >= deadline)
+        {
+            // don't leave a (possibly costly) unusable instance behind
+            runDestructionCommand(outputLine);
+
+            throw insight::Exception(
+                "the execution server %s was created, but is not reachable after %d s",
+                hostName_.c_str(), int(creationTimeout_.count()) );
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+    msg(hostName_+" is reachable.");
+}
+
+
+
+
+void SSHLinuxServer::Config::shutdown(OutputLineCallback outputLine) const
+{
+    if (!isDynamicallyDestructable())
+    {
+        RemoteServer::Config::shutdown(outputLine); // throws
+    }
+
+    CurrentExceptionContext ex("shutting down server %s", c_str());
+
+    auto msg = [&](const std::string& line)
+    {
+        if (outputLine) outputLine(line); else std::cout<<line<<std::endl;
+    };
+
+    msg("$ "+destructionCommand_);
+    int retcode=-1;
+    runShellCommand(destructionCommand_, outputLine, &retcode);
+    if (retcode!=0)
+    {
+        throw insight::Exception(
+            "failed to shut down the execution server (destruction command exited with code %d)",
+            retcode );
+    }
+    msg(c_str()+std::string(" was shut down."));
+}
+
+
+
+
+void SSHLinuxServer::Config::runDestructionCommand(OutputLineCallback outputLine) const
+{
+    if (!isDynamicallyDestructable()) return;
+
+    try
+    {
+        CurrentExceptionContext ex("stopping server %s", c_str());
+
+        if (outputLine) outputLine("$ "+destructionCommand_);
+        int retcode=-1;
+        runShellCommand(destructionCommand_, outputLine, &retcode);
+        if (retcode!=0)
+        {
+            insight::Warning("failed to deallocate execution server");
+        }
+    }
+    catch (std::exception& e)
+    {
+        insight::Warning("failed to deallocate execution server: %s", e.what());
+    }
+}
+
+
+
+
 SSHLinuxServer::SSHLinuxServer(const Config& serverConfig)
     : serverConfig_(serverConfig),
     bwlimit_(-1)
 {
-    if (
-        !serverConfig_.creationCommand_.empty()
-         &&
-        !config().isRunning() )
-    {
-        CurrentExceptionContext ex("launching server %s", serverLabel().c_str());
-
-        auto job= Job::forkExternalProcess("bash", {"-lc", serverConfig_.creationCommand_});
-
-        job->runAndTransferOutput();
-
-        auto retcode = job->process().exit_code();
-        if (retcode!=0)
-        {
-            throw insight::Exception(
-                "failed to launch execution server"
-                );
-        }
-
-        // wait, until the new server is reachable
-        auto deadline = std::chrono::steady_clock::now() + serverConfig_.creationTimeout_;
-        while (!config().isRunning())
-        {
-            if (std::chrono::steady_clock::now() >= deadline)
-            {
-                // don't leave a (possibly costly) unusable instance behind
-                try
-                {
-                    SSHLinuxServer::destroyIfPossible();
-                }
-                catch (std::exception& e)
-                {
-                    insight::Warning("failed to deallocate execution server: %s", e.what());
-                }
-
-                throw insight::Exception(
-                    "the execution server %s was created, but is not reachable after %d s",
-                    hostName().c_str(), int(serverConfig_.creationTimeout_.count()) );
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-        }
-    }
+    serverConfig_.launch();
 }
 
 void SSHLinuxServer::destroyIfPossible()
 {
-    if (serverConfig_.isDynamicallyDestructable())
-    {
-        CurrentExceptionContext ex("stopping server %s", serverLabel().c_str());
-
-        auto job= Job::forkExternalProcess("bash", {"-lc", serverConfig_.destructionCommand_});
-
-        job->runAndTransferOutput();
-
-        auto retcode = job->process().exit_code();
-        if (retcode!=0)
-        {
-            insight::Warning(
-                "failed to deallocate execution server"
-                );
-        }
-    }
+    serverConfig_.runDestructionCommand();
 }
 
 

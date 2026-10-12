@@ -63,6 +63,15 @@ public:
 
     bool isDynamicallyCreatable() const override;
     bool isDynamicallyDestructable() const override;
+
+    void launch(OutputLineCallback outputLine = OutputLineCallback()) const override;
+    void shutdown(OutputLineCallback outputLine = OutputLineCallback()) const override;
+
+    /**
+     * @brief runDestructionCommand
+     * execute the destruction command, if there is one. Does not throw.
+     */
+    void runDestructionCommand(OutputLineCallback outputLine = OutputLineCallback()) const;
   };
 
 

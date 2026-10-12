@@ -41,13 +41,11 @@ add_library(workbench_core STATIC
     workbenchaction.h workbenchaction.cpp
     localrun.h localrun.cpp
 
-    qexecutionworkspacedialog.h qexecutionworkspacedialog.cpp
 
     newanalysisdlg.ui
     analysisform.ui
     xml_display.ui
     qsetupremotedialog.ui
-    qexecutionworkspacedialog.ui
     newanalysisform.ui
 
     ${workbench_SRCS}

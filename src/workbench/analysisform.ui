@@ -112,17 +112,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="btnDisconnect">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Disconnect</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnResume">
+         <widget class="QPushButton" name="btnRemoteConnection">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -190,6 +180,19 @@
           </property>
           <property name="checked">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cbShutdownWhenFinished">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Shutdown after completion</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
           </property>
          </widget>
         </item>

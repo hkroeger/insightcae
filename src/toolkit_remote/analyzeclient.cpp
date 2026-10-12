@@ -116,15 +116,15 @@ void logResponse(boost::system::error_code err, const Wt::Http::Message& respons
     if (success)
     {
         std::string body=response.body();
-        auto&ds=dbg();
-        ds << "body=";
-        if (body.size()<1024)
-            ds<<body;
-        else
-        {
-            ds<<body.substr(0, 512)<<"\n...\n"<<body.substr(body.size()-512, body.size());
-        }
-        ds<<std::endl;
+        // auto&ds=dbg();
+        // ds << "body=";
+        // if (body.size()<1024)
+        //     ds<<body;
+        // else
+        // {
+        //     ds<<body.substr(0, 512)<<"\n...\n"<<body.substr(body.size()-512, body.size());
+        // }
+        // ds<<std::endl;
     }
 }
 

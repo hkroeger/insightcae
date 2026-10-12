@@ -13,6 +13,7 @@ protected:
     void commit(const boost::filesystem::path& location) override;
     void cleanup(bool forceRemoval=false) override;
     void discard() override;
+    void serverStopped() override;
 };
 
 #endif // IQWORKBENCHREMOTEEXECUTIONSTATE_H

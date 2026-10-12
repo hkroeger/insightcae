@@ -23,10 +23,12 @@ void IQRemoteExecutionState::commit(const boost::filesystem::path &location)
 {
   if (!dynamic_cast<const insight::RemoteExecutionConfig*>(rlc_.get()))
   {
-    auto rec = std::make_unique<insight::RemoteExecutionConfig>(location, *rlc_);
-    rec->initialize(true);
-    rec->writeConfig(); // re-write with temporary directory resolved.
-    rlc_ = std::move(rec);
+    // initialize a copy first: if it fails, the state and the
+    // configuration file remain untouched
+    insight::RemoteLocation rl(*rlc_);
+    rl.initialize(true);
+    // writes the config file (with temporary directory resolved)
+    rlc_ = std::make_unique<insight::RemoteExecutionConfig>(location, rl);
     updateGUI(true);
   }
 }
@@ -66,6 +68,18 @@ void IQRemoteExecutionState::cleanup(bool forceRemoval)
 {
   rlc_->cleanup(forceRemoval);
   discard();
+}
+
+
+
+
+void IQRemoteExecutionState::serverStopped()
+{
+  // keep only the location part (uncommit)
+  auto rl = std::make_unique<insight::RemoteLocation>(*rlc_);
+  rl->markInactive();
+  rlc_ = std::move(rl);
+  updateGUI(true);
 }
 
 

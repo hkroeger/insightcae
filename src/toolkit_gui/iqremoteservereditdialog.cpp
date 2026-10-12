@@ -2,6 +2,11 @@
 #include "ui_iqremoteservereditdialog.h"
 
 #include "iqselectremotehosttypedialog.h"
+#include "iqserverlaunchdialog.h"
+
+#include "base/translations.h"
+
+#include <QHeaderView>
 
 #include "base/tools.h"
 
@@ -13,6 +18,11 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
 {
   ui->setupUi(this);
   ui->lwServers->setModel(&serverListModel_);
+  ui->lwServers->setSelectionBehavior(QAbstractItemView::SelectRows);
+  ui->lwServers->header()->setSectionResizeMode(
+      IQRemoteServerListModel::NameColumn, QHeaderView::ResizeToContents );
+  ui->lwServers->header()->setSectionResizeMode(
+      IQRemoteServerListModel::StatusColumn, QHeaderView::Stretch );
 
   connect(ui->lwServers->selectionModel(), &QItemSelectionModel::currentChanged, this,
           [&](const QModelIndex &current, const QModelIndex &/*previous*/)
@@ -20,8 +30,50 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
             ui->btnEdit->setEnabled(current.isValid());
             ui->btnRemove->setEnabled(current.isValid());
             ui->btnSetPreferred->setEnabled(current.isValid());
+            updateServerActionButtons();
           }
   );
+
+  // the state of the servers is determined in background
+  connect(&serverListModel_, &QAbstractItemModel::dataChanged, this,
+          [this]() { updateServerActionButtons(); } );
+  connect(&serverListModel_, &QAbstractItemModel::rowsRemoved, this,
+          [this]() { updateServerActionButtons(); } );
+
+  connect(ui->btnLaunch, &QPushButton::clicked, this,
+          [&]()
+          {
+            auto index = ui->lwServers->currentIndex();
+            if (!index.isValid()) return;
+            auto rsc = serverListModel_.getRemoteServer(index);
+            IQServerLaunchDialog::launchServer(*rsc, this); // displays errors itself
+            serverListModel_.checkStatus(index);
+          }
+  );
+
+  connect(ui->btnShutdown, &QPushButton::clicked, this,
+          [&]()
+          {
+            auto index = ui->lwServers->currentIndex();
+            if (!index.isValid()) return;
+            auto rsc = serverListModel_.getRemoteServer(index);
+
+            auto answer = QMessageBox::question(
+                this, _("Shut down server"),
+                QString(_("Shut down the server %1?\n\n"
+                          "Analyses, which are currently running on it, will be terminated"
+                          " and data on its local storage might be lost."))
+                    .arg(QString::fromStdString(*rsc)),
+                QMessageBox::Yes|QMessageBox::No, QMessageBox::No );
+            if (answer!=QMessageBox::Yes) return;
+
+            IQServerLaunchDialog::shutdownServer(*rsc, this); // displays errors itself
+            serverListModel_.checkStatus(index);
+          }
+  );
+
+  connect(ui->btnRefreshStatus, &QPushButton::clicked,
+          &serverListModel_, &IQRemoteServerListModel::checkAllStatus );
 
   connect(ui->btnAdd, &QPushButton::clicked, this,
           [&]()
@@ -85,6 +137,43 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
           }
   );
 
+  serverListModel_.checkAllStatus();
+}
+
+
+
+
+void IQRemoteServerEditDialog::updateServerActionButtons()
+{
+  auto index = ui->lwServers->currentIndex();
+
+  bool isServer = index.isValid() && !serverListModel_.isServerPool(index);
+  auto online = serverListModel_.isOnline(index);
+
+  insight::RemoteServer::ConfigPtr rsc;
+  if (isServer) rsc = serverListModel_.getRemoteServer(index);
+
+  // launch: only a server, which is down and can be created
+  ui->btnLaunch->setEnabled(
+      rsc && online && !*online && rsc->isDynamicallyCreatable() );
+  ui->btnLaunch->setToolTip(
+      !rsc ? _("Select a server (not a server pool).") :
+      !online ? _("Checking, if the server is reachable...") :
+      *online ? _("The server is running.") :
+      !rsc->isDynamicallyCreatable() ?
+          _("The server cannot be launched from here (no creation command configured).") :
+          _("Launch the server (execute its creation command).") );
+
+  // shutdown: only a running server, which can be destroyed
+  ui->btnShutdown->setEnabled(
+      rsc && online && *online && rsc->isDynamicallyDestructable() );
+  ui->btnShutdown->setToolTip(
+      !rsc ? _("Select a server (not a server pool).") :
+      !online ? _("Checking, if the server is reachable...") :
+      !*online ? _("The server is not running.") :
+      !rsc->isDynamicallyDestructable() ?
+          _("The server cannot be shut down from here (no destruction command configured).") :
+          _("Shut down the server (execute its destruction command).") );
 }
 
 

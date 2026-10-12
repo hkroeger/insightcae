@@ -281,6 +281,12 @@ AnalysisForm::AnalysisForm(
     progressDisplayer_.add(actionProgress_);
     progressDisplayer_.add(log_);
 
+    // current simulation time between run and kill button
+    simulationTime_ = new IQSimulationTimeDisplay(this);
+    ui->verticalLayout->insertWidget(
+        ui->verticalLayout->indexOf(ui->btnKill), simulationTime_ );
+    progressDisplayer_.add(simulationTime_);
+
     if (!logToConsole)
     {
         insight::CurrentExceptionContext ex(_("redirect console"));

@@ -39,6 +39,17 @@ void QTabularResult::createFullDisplay(QVBoxLayout* layout)
     headers << QString::fromStdString(h.toPlainText());
   }
   tw->setHorizontalHeaderLabels( headers );
+
+  if (res.hasRowLabels())
+  {
+    QStringList rowLabels;
+    for (auto& l: res.rowLabels() )
+    {
+      rowLabels << QString::fromStdString(l.toPlainText());
+    }
+    tw->setVerticalHeaderLabels( rowLabels );
+  }
+
   tw->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   tw->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   tw->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

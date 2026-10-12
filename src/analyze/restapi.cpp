@@ -218,10 +218,15 @@ AnalyzeRESTServer::AnalyzeRESTServer(
     "--docroot", ".",
     "--http-listen", addr.c_str(),
     "--max-memory-request-size", mmrs.c_str(),
-    "--max-request-size", mrs.c_str()
+    "--max-request-size", mrs.c_str(),
+    "--accesslog", "-"
   };
 
-  setServerConfiguration(9, const_cast<char**>(cargv) );
+  setServerConfiguration(
+      sizeof(cargv)/sizeof(cargv[0]),
+      const_cast<char**>(cargv) );
+
+  logger().configure("* -debug -info"); // no per-request messages; keep warnings and errors
 
   addResource(this, std::string());
   addResource(this, "/next");

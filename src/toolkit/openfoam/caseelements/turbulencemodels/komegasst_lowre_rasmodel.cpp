@@ -14,15 +14,15 @@ kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(OpenFOAMCase& c, ParameterSet
 {}
 
 
-void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+std::string kOmegaSST_LowRe_RASModel::RASModelName() const
 {
-  RASModel::addIntoDictionaries(dictionaries);
+  return type();
+}
 
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="kOmegaSST_LowRe";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
-  RASProperties.subDict("kOmegaSST_LowReCoeffs");
+
+OFDictData::dict kOmegaSST_LowRe_RASModel::RASModelCoeffs() const
+{
+  return OFDictData::dict();
 }
 
 bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const

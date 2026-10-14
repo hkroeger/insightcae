@@ -37,12 +37,8 @@ void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]=this->type(); //"kEpsilon";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
   RASProperties["kMin"]=1e-3;
   RASProperties["epsilonMin"]=1e-3;
-  RASProperties.subDict(type()+"Coeffs");
 }
 
 bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const

@@ -24,11 +24,6 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   }
   else{
     RASModel::addIntoDictionaries(dictionaries);
-    OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-    RASProperties["RASModel"]="laminar";
-    RASProperties["turbulence"]="true";
-    RASProperties["printCoeffs"]="true";
-    RASProperties.subDict("laminarCoeffs");
   }
 }
 

@@ -31,28 +31,35 @@ kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
 }
 
 
+std::string kOmegaSST_RASModel::RASModelName() const
+{
+  if (boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p().freeSurfaceProductionDamping))
+    return "kOmegaSST3";
+  else
+    return "kOmegaSST";
+}
+
+
+OFDictData::dict kOmegaSST_RASModel::RASModelCoeffs() const
+{
+  OFDictData::dict coeffs = RASModel::RASModelCoeffs();
+  if (const auto *damp = boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p().freeSurfaceProductionDamping))
+  {
+    coeffs["freeSurfaceAlphaName"]=damp->alphaFieldName;
+  }
+  return coeffs;
+}
+
+
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  if (const auto *none = boost::get<Parameters::freeSurfaceProductionDamping_none_type>(&p().freeSurfaceProductionDamping))
+  if (boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p().freeSurfaceProductionDamping))
   {
-    RASProperties["RASModel"]="kOmegaSST";
-    RASProperties.subDict("kOmegaSSTCoeffs");
-  }
-  else if (const auto *damp = boost::get<Parameters::freeSurfaceProductionDamping_enabled_type>(&p().freeSurfaceProductionDamping))
-  {
-    RASProperties["RASModel"]="kOmegaSST3";
-
-    auto& coeffs = RASProperties.subDict("kOmegaSST3Coeffs");
-    coeffs["freeSurfaceAlphaName"]=damp->alphaFieldName;
-
     OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
     controlDict.getList("libs").insertNoDuplicate( "\"libkOmegaSST3.so\"" );
   }
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
 }
 
 bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const

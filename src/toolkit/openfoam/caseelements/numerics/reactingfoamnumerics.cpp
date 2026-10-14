@@ -107,8 +107,8 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   insertStandardGradientConfig(dictionaries);
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["grad("+pName_+")"]="Gauss linear";
-  grad["grad(rho)"]="Gauss linear";
+  grad["grad("+pName_+")"]="cellLimited Gauss linear 1";
+  grad["grad(rho)"]="cellLimited Gauss linear 1";
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

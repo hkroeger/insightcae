@@ -70,7 +70,7 @@ RemoteServer::ConfigPtr LocalShellServer::Config::clone() const
 
 
 
-bool LocalShellServer::Config::isDynamicallyCreatable() const
+bool LocalShellServer::Config::canBeLaunched() const
 {
     return false;
 }
@@ -78,7 +78,7 @@ bool LocalShellServer::Config::isDynamicallyCreatable() const
 
 
 
-bool LocalShellServer::Config::isDynamicallyDestructable() const
+bool LocalShellServer::Config::canBeShutDown() const
 {
     return false;
 }
@@ -154,8 +154,23 @@ static void copyTree(
     const fs::path& from,
     const fs::path& to,
     bool includeProcessorDirectories,
-    const std::vector<std::string>& exclude_pattern )
+    const std::vector<std::string>& exclude_pattern,
+    const std::vector<fs::path>& selection = {} )
 {
+    // a path is transferred, if it is a selected item, inside one or a parent of one
+    auto isSelected = [&selection](const fs::path& rel)
+    {
+        if (selection.empty()) return true;
+        for (const auto& sp: selection)
+        {
+            auto s=sp.generic_path(), r=rel.generic_path();
+            auto si=s.begin(), ri=r.begin();
+            for (; si!=s.end() && ri!=r.end() && *si==*ri; ++si, ++ri) ;
+            if (si==s.end() || ri==r.end()) return true;
+        }
+        return false;
+    };
+
     insight::assertion(
         fs::is_directory(from),
         "source directory %s does not exist", from.string().c_str() );
@@ -164,7 +179,7 @@ static void copyTree(
     for (fs::recursive_directory_iterator i(from), e; i!=e; ++i)
     {
         auto rel = fs::relative(i->path(), from);
-        if (isExcluded(rel, includeProcessorDirectories, exclude_pattern))
+        if (!isSelected(rel) || isExcluded(rel, includeProcessorDirectories, exclude_pattern))
         {
             if (fs::is_directory(i->path()))
                 i.no_push();
@@ -196,9 +211,10 @@ void LocalShellServer::syncToRemote(
     const boost::filesystem::path& remoteDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> )
+    std::function<void(int,const std::string&)>,
+    const std::vector<boost::filesystem::path>& selection )
 {
-    copyTree(localDir, remoteDir, includeProcessorDirectories, exclude_pattern);
+    copyTree(localDir, remoteDir, includeProcessorDirectories, exclude_pattern, selection);
 }
 
 
@@ -209,9 +225,10 @@ void LocalShellServer::syncToLocal(
     const boost::filesystem::path& remoteDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> )
+    std::function<void(int,const std::string&)>,
+    const std::vector<boost::filesystem::path>& selection )
 {
-    copyTree(remoteDir, localDir, includeProcessorDirectories, exclude_pattern);
+    copyTree(remoteDir, localDir, includeProcessorDirectories, exclude_pattern, selection);
 }
 
 

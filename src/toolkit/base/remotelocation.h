@@ -183,7 +183,9 @@ public:
         bool includeProcessorDirectories,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
         std::function<void(int progress,const std::string& status_text)> progress_callback =
-                            std::function<void(int,const std::string&)>()
+                            std::function<void(int,const std::string&)>(),
+        const std::vector<boost::filesystem::path>& selection =
+                            std::vector<boost::filesystem::path>()
     );
     virtual void syncToLocal
     (
@@ -192,7 +194,9 @@ public:
         bool skipTimeSteps=false,
         const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
         std::function<void(int progress,const std::string& status_text)> progress_callback =
-                            std::function<void(int,const std::string&)>()
+                            std::function<void(int,const std::string&)>(),
+        const std::vector<boost::filesystem::path>& selection =
+                            std::vector<boost::filesystem::path>()
     );
 
 

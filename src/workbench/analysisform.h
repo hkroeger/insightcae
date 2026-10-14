@@ -308,7 +308,7 @@ public:
   /**
    * @brief launchRemoteServerIfRequired
    * if the remote server is not connected, not running and can be created:
-   * launch it, displaying the output of the creation command.
+   * launch it, displaying the output of the launch command.
    * @return
    * false, if the launch failed (the error was displayed)
    */

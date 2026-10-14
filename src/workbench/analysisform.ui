@@ -197,6 +197,32 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="cbRemoveRemoteDirWhenFinished">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Remove remote directory</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cbDisposeWhenFinished">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Dispose host</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="btnRemoveRemote">
           <property name="enabled">
            <bool>false</bool>

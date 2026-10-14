@@ -102,6 +102,16 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="btnDispose">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>Shutdown &amp;&amp; Dispose</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btnRefreshStatus">
        <property name="toolTip">
         <string>Check the state of all servers again</string>

@@ -21,21 +21,39 @@ public:
   struct Config : public LinuxRemoteServer::Config
   {
     std::string hostName_;
-    std::string creationCommand_, destructionCommand_;
 
     /**
-     * time to wait, until a server created by the creation command becomes reachable
+     * commands for hosts, which are launched on demand (e.g. virtual machines),
+     * executed locally. Both or none have to be given.
+     */
+    std::string launchCommand_, shutdownCommand_;
+
+    /**
+     * commands for instances, which have to be created and disposed
+     * (e.g. cloud instances), executed locally. All or none have to be given.
+     * The existence check command has to exit with code 0, if the instance exists.
+     */
+    std::string creationCommand_, destructionCommand_, existenceCheckCommand_;
+
+    /**
+     * In all commands, the placeholders %{serverLabel} and %{host} are replaced
+     * by the server label and the host name before execution.
+     */
+    std::string expandPlaceholders(const std::string& command) const;
+
+    /**
+     * time to wait, until a launched or created server becomes reachable
      * (e.g. boot time of a cloud instance)
      */
-    std::chrono::seconds creationTimeout_ = defaultCreationTimeout();
-    static std::chrono::seconds defaultCreationTimeout();
+    std::chrono::seconds launchTimeout_ = defaultLaunchTimeout();
+    static std::chrono::seconds defaultLaunchTimeout();
 
     Config(
         const boost::filesystem::path& bp,
         int np,
         const std::string hostName,
-        const std::string& creationCommand=std::string(),
-        const std::string& destructionCommand=std::string()
+        const std::string& launchCommand=std::string(),
+        const std::string& shutdownCommand=std::string()
         );
 
     Config(rapidxml::xml_node<> *e);
@@ -61,17 +79,35 @@ public:
     bool isExpandable() const override;
     ConfigPtr expanded(int id) const override;
 
-    bool isDynamicallyCreatable() const override;
-    bool isDynamicallyDestructable() const override;
+    bool canBeLaunched() const override;
+    bool canBeShutDown() const override;
+    bool canBeCreated() const override;
+    bool canBeDisposed() const override;
 
     void launch(OutputLineCallback outputLine = OutputLineCallback()) const override;
     void shutdown(OutputLineCallback outputLine = OutputLineCallback()) const override;
+    boost::optional<bool> exists() const override;
+    void dispose(OutputLineCallback outputLine = OutputLineCallback()) const override;
+
+  private:
+    /**
+     * execute a command locally after placeholder expansion
+     * @return exit code
+     */
+    int runLocalCommand(const std::string& command, OutputLineCallback outputLine) const;
 
     /**
-     * @brief runDestructionCommand
-     * execute the destruction command, if there is one. Does not throw.
+     * @return false, if the server did not become reachable within the launch timeout
      */
-    void runDestructionCommand(OutputLineCallback outputLine = OutputLineCallback()) const;
+    bool waitUntilReachable(OutputLineCallback outputLine) const;
+
+  public:
+
+    /**
+     * @brief runShutdownCommand
+     * execute the shutdown command, if there is one. Does not throw.
+     */
+    void runShutdownCommand(OutputLineCallback outputLine = OutputLineCallback()) const;
   };
 
 
@@ -115,7 +151,9 @@ public:
       bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
-                          std::function<void(int,const std::string&)>()
+                          std::function<void(int,const std::string&)>(),
+      const std::vector<boost::filesystem::path>& selection =
+                          std::vector<boost::filesystem::path>()
   ) override;
 
   void syncToLocal
@@ -125,7 +163,9 @@ public:
       bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
-                          std::function<void(int,const std::string&)>()
+                          std::function<void(int,const std::string&)>(),
+      const std::vector<boost::filesystem::path>& selection =
+                          std::vector<boost::filesystem::path>()
   ) override;
 
 

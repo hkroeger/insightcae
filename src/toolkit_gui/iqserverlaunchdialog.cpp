@@ -162,7 +162,7 @@ bool IQServerLaunchDialog::launchServer(
     auto label = QString::fromStdString(serverConfig);
     IQServerLaunchDialog dlg(
         QString(_("Launching server %1")).arg(label),
-        _("Launching the server, please wait..."),
+        _("Launching the server (creating its instance, if required), please wait..."),
         _("The server could not be launched:"),
         [&serverConfig](insight::RemoteServer::Config::OutputLineCallback ol)
         { serverConfig.launch(ol); },
@@ -184,6 +184,24 @@ bool IQServerLaunchDialog::shutdownServer(
         _("The server could not be shut down:"),
         [&serverConfig](insight::RemoteServer::Config::OutputLineCallback ol)
         { serverConfig.shutdown(ol); },
+        parent );
+    return dlg.exec() == QDialog::Accepted;
+}
+
+
+
+
+bool IQServerLaunchDialog::disposeServer(
+    const insight::RemoteServer::Config& serverConfig,
+    QWidget* parent )
+{
+    auto label = QString::fromStdString(serverConfig);
+    IQServerLaunchDialog dlg(
+        QString(_("Disposing server %1")).arg(label),
+        _("Shutting down and deleting the server instance, please wait..."),
+        _("The server could not be disposed:"),
+        [&serverConfig](insight::RemoteServer::Config::OutputLineCallback ol)
+        { serverConfig.dispose(ol); },
         parent );
     return dlg.exec() == QDialog::Accepted;
 }

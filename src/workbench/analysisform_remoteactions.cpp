@@ -85,6 +85,23 @@ void AnalysisForm::connectRemoteActions()
               rr->setShutdownWhenFinished(checked);
 #endif
           } );
+  connect(ui->cbRemoveRemoteDirWhenFinished, &QCheckBox::toggled, this,
+          [this](bool checked)
+          {
+#ifdef HAVE_WT
+            if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.data()))
+              rr->setRemoveRemoteDirWhenFinished(checked);
+#endif
+          } );
+  connect(ui->cbDisposeWhenFinished, &QCheckBox::toggled, this,
+          [this](bool checked)
+          {
+#ifdef HAVE_WT
+            if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.data()))
+              rr->setDisposeWhenFinished(checked);
+#endif
+            updateRemoteActionAvailability(); // locks the shutdown option
+          } );
 
   connect(ui->btnUpload, &QPushButton::clicked,
           this, &AnalysisForm::upload );
@@ -121,7 +138,7 @@ bool AnalysisForm::launchRemoteServerIfRequired()
   if (!rs || rs->isCommitted()) return true; // connected: nothing to do
 
   const auto& scfg = rs->location().serverConfig();
-  if (!scfg.isDynamicallyCreatable() || scfg.isRunning())
+  if (!scfg.canBeLaunched() || scfg.isRunning())
     return true; // the connection (commit) handles or reports it
 
   // instead of the silent launch upon commit (blocking the GUI)
@@ -200,29 +217,46 @@ void AnalysisForm::resumeRemoteRun()
 
     if (!scfg.isRunning())
     {
-      if (!scfg.isDynamicallyCreatable())
+      if (!scfg.canBeLaunched())
       {
         QMessageBox::warning(
               this, _("Remote server not reachable"),
               QString(_("The remote server %1 is not reachable and cannot be launched"
-                        " from here (no creation command configured).\n"
+                        " from here (no launch or creation command configured).\n"
                         "Please make sure that it is running and try again."))
                 .arg(serverLabel) );
         return;
       }
 
+      // does the instance exist at all? (cloud CLI call)
+      bool willBeCreated = false;
+      if (scfg.canBeCreated())
+      {
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        auto ex = scfg.exists();
+        QApplication::restoreOverrideCursor();
+        willBeCreated = ex && !*ex;
+      }
+
       auto answer = QMessageBox::question(
             this, _("Remote server not running"),
-            QString(_("The remote server %1 is not running.\n"
-                      "Shall it be launched?\n\n"
-                      "Note: if there was an analysis running on that server before,"
-                      " it was most probably terminated, when the server was stopped.\n"
-                      "Resuming will then fail, but the remote directory can still be used."))
-              .arg(serverLabel) );
+            willBeCreated ?
+              QString(_("The instance of the remote server %1 does not exist.\n"
+                        "Shall it be created and launched?\n\n"
+                        "Note: a new instance does not contain the remote directory"
+                        " and the analysis, which ran before. Resuming will fail."))
+                .arg(serverLabel)
+            :
+              QString(_("The remote server %1 is not running.\n"
+                        "Shall it be launched?\n\n"
+                        "Note: if there was an analysis running on that server before,"
+                        " it was most probably terminated, when the server was stopped.\n"
+                        "Resuming will then fail, but the remote directory can still be used."))
+                .arg(serverLabel) );
       if (answer!=QMessageBox::Yes)
         return;
 
-      // launch with visible console output of the creation command
+      // launch with visible console output of the launch command
       if (!IQServerLaunchDialog::launchServer(scfg, this))
         return; // the error was displayed in the dialog
     }

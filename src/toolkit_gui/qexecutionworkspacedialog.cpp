@@ -148,7 +148,7 @@ void QExecutionWorkspaceDialog::updateHostActionButtons()
         {
             if (!label.isEmpty())
                 creatable = insight::remoteServers().findServer(
-                    label.toStdString() )->isDynamicallyCreatable();
+                    label.toStdString() )->canBeLaunched();
         }
         catch (...) {}
 
@@ -167,12 +167,12 @@ void QExecutionWorkspaceDialog::updateHostActionButtons()
             ui->btnLaunchHost->setEnabled(false);
             ui->btnLaunchHost->setToolTip(
                 _("The host is not reachable and cannot be launched from here"
-                  " (no creation command configured)."));
+                  " (no launch command configured)."));
         }
         else
         {
             ui->btnLaunchHost->setEnabled(true);
-            ui->btnLaunchHost->setToolTip(_("Launch the host (execute its creation command)."));
+            ui->btnLaunchHost->setToolTip(_("Launch the host (execute its launch command)."));
         }
     }
 
@@ -305,7 +305,7 @@ void QExecutionWorkspaceDialog::launchHost()
         return;
     }
 
-    // shows the output of the creation command; displays errors itself
+    // shows the output of the launch command; displays errors itself
     bool launched = IQServerLaunchDialog::launchServer(*cfg, this);
 
     // re-evaluate the host state (and load) in any case

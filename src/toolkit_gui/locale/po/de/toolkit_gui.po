@@ -148,6 +148,16 @@ msgid ""
 "its local storage might be lost."
 msgstr ""
 
+msgid "Dispose server"
+msgstr ""
+
+msgid ""
+"Shut down the server %1 and delete its instance?\n"
+"\n"
+"Analyses, which are currently running on it, will be terminated and all data "
+"on the instance will be deleted!"
+msgstr ""
+
 msgid "Select a server (not a server pool)."
 msgstr ""
 
@@ -158,20 +168,44 @@ msgid "The server is running."
 msgstr ""
 
 msgid ""
-"The server cannot be launched from here (no creation command configured)."
+"The server cannot be launched from here (no launch or creation command "
+"configured)."
 msgstr ""
 
-msgid "Launch the server (execute its creation command)."
+msgid ""
+"Create the instance and launch the server (execute its creation command)."
+msgstr ""
+
+msgid ""
+"Launch the server (execute its launch command; create its instance before, "
+"if it does not exist)."
 msgstr ""
 
 msgid "The server is not running."
 msgstr ""
 
 msgid ""
-"The server cannot be shut down from here (no destruction command configured)."
+"The server cannot be shut down from here (no shutdown command configured)."
 msgstr ""
 
-msgid "Shut down the server (execute its destruction command)."
+msgid "Shut down the server (execute its shutdown command)."
+msgstr ""
+
+msgid ""
+"The server instance cannot be disposed from here (no destruction command "
+"configured)."
+msgstr ""
+
+#, fuzzy
+msgid "The instance does not exist."
+msgstr "die Bitmap-Datei \"%s\" existiert nicht"
+
+msgid "Checking, if the instance exists..."
+msgstr ""
+
+msgid ""
+"Shut down the server (if running) and delete its instance (execute its "
+"destruction command)."
 msgstr ""
 
 msgid "Server Label"
@@ -182,6 +216,13 @@ msgstr ""
 
 msgid "checking..."
 msgstr ""
+
+msgid "not reachable (instance exists)"
+msgstr ""
+
+#, fuzzy
+msgid "instance does not exist"
+msgstr "die Bitmap-Datei \"%s\" existiert nicht"
 
 msgid "not reachable"
 msgstr ""
@@ -219,6 +260,9 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
+msgid "Name"
+msgstr ""
+
 msgid "Folder Name"
 msgstr ""
 
@@ -245,11 +289,11 @@ msgid "The host is running."
 msgstr ""
 
 msgid ""
-"The host is not reachable and cannot be launched from here (no creation "
+"The host is not reachable and cannot be launched from here (no launch "
 "command configured)."
 msgstr ""
 
-msgid "Launch the host (execute its creation command)."
+msgid "Launch the host (execute its launch command)."
 msgstr ""
 
 msgid ""
@@ -321,7 +365,8 @@ msgstr ""
 msgid "Launching server %1"
 msgstr ""
 
-msgid "Launching the server, please wait..."
+msgid ""
+"Launching the server (creating its instance, if required), please wait..."
 msgstr ""
 
 msgid "The server could not be launched:"
@@ -334,6 +379,15 @@ msgid "Shutting down the server, please wait..."
 msgstr ""
 
 msgid "The server could not be shut down:"
+msgstr ""
+
+msgid "Disposing server %1"
+msgstr ""
+
+msgid "Shutting down and deleting the server instance, please wait..."
+msgstr ""
+
+msgid "The server could not be disposed:"
 msgstr ""
 
 msgid "%1 of %2 cores fully occupied, %3% utilization"

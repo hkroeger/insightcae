@@ -35,6 +35,7 @@ class TOOLKIT_GUI_EXPORT IQRemoteServerListModel
   {
     boost::optional<bool> online; // unset: being checked
     boost::optional<insight::RemoteServer::Config::ProcessorLoad> load;
+    boost::optional<bool> exists; // only for unreachable servers, whose instance can be created
     int generation = 0; // to discard results of outdated checks
   };
   std::map<const insight::RemoteServer::Config*, ServerStatus> status_;
@@ -85,6 +86,13 @@ public:
    * unset, if the server is being checked or the entry is a server pool
    */
   boost::optional<bool> isOnline(const QModelIndex& index) const;
+
+  /**
+   * @brief exists
+   * @return
+   * unset, if unknown (being checked, reachable server, no existence check possible)
+   */
+  boost::optional<bool> exists(const QModelIndex& index) const;
   bool isServerPool(const QModelIndex& index) const;
 
 private:

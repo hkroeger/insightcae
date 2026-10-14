@@ -38,8 +38,8 @@ public:
         bool isDynamicallyAllocated() const override;
         void save(rapidxml::xml_node<> *e, rapidxml::xml_document<>& doc) const override;
         ConfigPtr clone() const override;
-        bool isDynamicallyCreatable() const override;
-        bool isDynamicallyDestructable() const override;
+        bool canBeLaunched() const override;
+        bool canBeShutDown() const override;
     };
 
 protected:
@@ -65,7 +65,9 @@ public:
             bool includeProcessorDirectories,
             const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
             std::function<void(int progress,const std::string& status_text)> progress_callback =
-            std::function<void(int,const std::string&)>()
+            std::function<void(int,const std::string&)>(),
+            const std::vector<boost::filesystem::path>& selection =
+                                std::vector<boost::filesystem::path>()
             ) override;
 
     void syncToLocal
@@ -75,7 +77,9 @@ public:
             bool includeProcessorDirectories,
             const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
             std::function<void(int progress,const std::string& status_text)> progress_callback =
-            std::function<void(int,const std::string&)>()
+            std::function<void(int,const std::string&)>(),
+            const std::vector<boost::filesystem::path>& selection =
+                                std::vector<boost::filesystem::path>()
             ) override;
 };
 

@@ -293,7 +293,7 @@ void RemoteLocation::initialize(bool findFreeRemotePort)
     if (!serverInstance_)
       serverInstance_ = serverConfig_->instance(); // launch, if possible
 
-    // servers without creation command are not launched by instance():
+    // servers without launch command are not launched by instance():
     // don't attempt any remote operation on an unreachable server
     if (!serverConfig_->isRunning())
     {
@@ -507,7 +507,8 @@ void RemoteLocation::syncToRemote
     const boost::filesystem::path& localDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> pf
+    std::function<void(int,const std::string&)> pf,
+    const std::vector<boost::filesystem::path>& selection
 )
 {
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
@@ -515,7 +516,7 @@ void RemoteLocation::syncToRemote
 
   server()->syncToRemote(localDir, remoteDir_,
                          includeProcessorDirectories,
-                         exclude_pattern, pf);
+                         exclude_pattern, pf, selection);
 }
 
 
@@ -527,7 +528,8 @@ void RemoteLocation::syncToLocal
     bool includeProcessorDirectories,
     bool skipTimeSteps,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> pf
+    std::function<void(int,const std::string&)> pf,
+    const std::vector<boost::filesystem::path>& selection
 )
 {
   CurrentExceptionContext ex("download remote files to local directory");
@@ -555,7 +557,7 @@ void RemoteLocation::syncToLocal
   server()->syncToLocal(
               localDir, remoteDir_,
               includeProcessorDirectories,
-              excl, pf);
+              excl, pf, selection);
 }
 
 

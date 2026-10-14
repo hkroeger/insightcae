@@ -104,12 +104,13 @@ void checkInBackground(
     insight::RemoteServer::ConfigPtr cfg,
     QObject* receiver,
     std::function<void(bool online)> onReachability,
-    std::function<void(const insight::RemoteServer::Config::ProcessorLoad&)> onLoad )
+    std::function<void(const insight::RemoteServer::Config::ProcessorLoad&)> onLoad,
+    std::function<void(bool exists)> onExistence )
 {
     // the guard is only dereferenced in the GUI thread
     QPointer<QObject> guard(receiver);
     std::thread(
-        [cfg, guard, onReachability, onLoad]()
+        [cfg, guard, onReachability, onLoad, onExistence]()
         {
             bool online=false;
             try
@@ -128,6 +129,22 @@ void checkInBackground(
                     if (guard && onReachability) onReachability(online);
                 },
                 Qt::QueuedConnection );
+
+            // not reachable: does the instance exist at all?
+            if (!online && onExistence && cfg->canBeCreated())
+            {
+                if (auto ex = cfg->exists())
+                {
+                    bool e = *ex;
+                    QMetaObject::invokeMethod(
+                        qApp,
+                        [guard, onExistence, e]()
+                        {
+                            if (guard) onExistence(e);
+                        },
+                        Qt::QueuedConnection );
+                }
+            }
 
             // then evaluate the processor load (takes some time)
             if (online && onLoad)

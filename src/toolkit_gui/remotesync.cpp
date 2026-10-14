@@ -5,8 +5,10 @@
 namespace insight {
 
 
-RunSyncToRemote::RunSyncToRemote(insight::RemoteExecutionConfig& rec, bool includeProcDirs)
-  : rec_(rec), includeProcDirs_(includeProcDirs)
+RunSyncToRemote::RunSyncToRemote(
+    insight::RemoteExecutionConfig& rec, bool includeProcDirs,
+    const std::vector<boost::filesystem::path>& selection )
+  : rec_(rec), includeProcDirs_(includeProcDirs), selection_(selection)
 {}
 
 void RunSyncToRemote::start()
@@ -22,7 +24,8 @@ void RunSyncToRemote::start()
                     {
                         Q_EMIT progressValueChanged(progress);
                         Q_EMIT progressTextChanged(QString(progress_text.c_str()));
-                    }
+                    },
+                    selection_
                     );
 
             Q_EMIT transferFinished();
@@ -38,8 +41,10 @@ void RunSyncToRemote::wait()
 
 
 
-RunSyncToLocal::RunSyncToLocal(insight::RemoteExecutionConfig& rec, bool includeProcDirs)
-  : rec_(rec), includeProcDirs_(includeProcDirs)
+RunSyncToLocal::RunSyncToLocal(
+    insight::RemoteExecutionConfig& rec, bool includeProcDirs,
+    const std::vector<boost::filesystem::path>& selection )
+  : rec_(rec), includeProcDirs_(includeProcDirs), selection_(selection)
 {}
 
 void RunSyncToLocal::start()
@@ -56,7 +61,8 @@ void RunSyncToLocal::start()
                     {
                         Q_EMIT progressValueChanged(progress);
                         Q_EMIT progressTextChanged(QString(progress_text.c_str()));
-                    }
+                    },
+                    selection_
                     );
             Q_EMIT transferFinished();
         }

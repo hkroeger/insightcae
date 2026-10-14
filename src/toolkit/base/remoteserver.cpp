@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <deque>
+#include <set>
 #include <thread>
 #include <regex>
 
@@ -33,6 +34,53 @@ std::string shellQuote(const std::string& s)
     }
     r+="'";
     return r;
+}
+
+
+
+
+void RemoteServer::rsyncSelectionFilter(
+    const std::vector<boost::filesystem::path>& selection,
+    std::vector<std::string>& rulesBeforeExcludes,
+    std::vector<std::string>& rulesAfterExcludes )
+{
+  if (selection.empty()) return;
+
+  std::set<std::string> parents;
+  for (const auto& sp: selection)
+  {
+    // anchored at the root of the transfer
+    std::string item;
+    for (const auto& part: sp.generic_path())
+    {
+      auto p=part.string();
+      if (p.empty() || p=="." || p=="/") continue;
+      if (!item.empty() && parents.insert(item+"/").second)
+      {
+        rulesBeforeExcludes.push_back("--include="+item+"/");
+      }
+      // no wildcard interpretation of the names
+      std::string ep;
+      for (char c: p)
+      {
+        if (c=='*' || c=='?' || c=='[' || c=='\\') ep+='\\';
+        ep+=c;
+      }
+      item += "/"+ep;
+    }
+    if (item.empty())
+    {
+      // the transferred directory itself is selected: transfer everything
+      rulesBeforeExcludes.clear();
+      rulesAfterExcludes.clear();
+      return;
+    }
+
+    rulesBeforeExcludes.push_back("--include="+item);
+    rulesAfterExcludes.push_back("--include="+item+"/**");
+  }
+
+  rulesAfterExcludes.push_back("--exclude=*");
 }
 
 
@@ -149,7 +197,29 @@ void RemoteServer::Config::launch(OutputLineCallback) const
 void RemoteServer::Config::shutdown(OutputLineCallback) const
 {
     throw insight::Exception(
-        "The server %s cannot be shut down (no destruction command available).",
+        "The server %s cannot be shut down (no shutdown command available).",
+        c_str() );
+}
+
+bool RemoteServer::Config::canBeCreated() const
+{
+    return false;
+}
+
+bool RemoteServer::Config::canBeDisposed() const
+{
+    return false;
+}
+
+boost::optional<bool> RemoteServer::Config::exists() const
+{
+    return boost::none;
+}
+
+void RemoteServer::Config::dispose(OutputLineCallback) const
+{
+    throw insight::Exception(
+        "The server %s cannot be disposed (no destruction command available).",
         c_str() );
 }
 

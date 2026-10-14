@@ -476,7 +476,7 @@ int main(int argc, char *argv[])
 
       if(vm.count("clean"))
       {
-          if (re->serverConfig().isDynamicallyDestructable())
+          if (re->serverConfig().canBeShutDown())
           {
               boost::filesystem::remove(re->metaFile());
               re->server()->destroyIfPossible();

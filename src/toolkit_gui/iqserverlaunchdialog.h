@@ -73,10 +73,19 @@ public:
 
     /**
      * @brief shutdownServer
-     * execute the destruction command of the server and show the output.
+     * execute the shutdown command of the server and show the output.
      * Same behaviour as launchServer.
      */
     static bool shutdownServer(
+        const insight::RemoteServer::Config& serverConfig,
+        QWidget* parent = nullptr );
+
+    /**
+     * @brief disposeServer
+     * shut the server down (if running) and delete its instance,
+     * showing the output. Same behaviour as launchServer.
+     */
+    static bool disposeServer(
         const insight::RemoteServer::Config& serverConfig,
         QWidget* parent = nullptr );
 };

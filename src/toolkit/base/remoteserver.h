@@ -182,16 +182,26 @@ public:
     virtual ConfigPtr expanded(int id) const;
     inline bool wasExpanded() const { return originatedFromExpansion_; }
 
-    virtual bool isDynamicallyCreatable() const =0;
-    virtual bool isDynamicallyDestructable() const =0;
+    virtual bool canBeLaunched() const =0;
+    virtual bool canBeShutDown() const =0;
+
+    /**
+     * the instance can be created (e.g. a cloud instance) and its existence checked
+     */
+    virtual bool canBeCreated() const;
+    /**
+     * the instance can be disposed (deleted)
+     */
+    virtual bool canBeDisposed() const;
 
 #ifndef SWIG
     typedef std::function<void(const std::string& line)> OutputLineCallback;
 
     /**
      * @brief launch
-     * create the server, if it is dynamically creatable and not running,
-     * and wait until it is reachable. Throws on failure.
+     * launch the server, if it is not running (creating the instance before,
+     * if it does not exist and can be created), and wait until it is reachable.
+     * Throws on failure.
      * @param outputLine
      * receives the console output of the launch (from a different thread
      * than the caller's, possibly). If empty, the output goes to the console.
@@ -200,12 +210,30 @@ public:
 
     /**
      * @brief shutdown
-     * stop the server by executing its destruction command.
+     * stop the server by executing its shutdown command.
      * Throws, if the server cannot be shut down or the command fails.
      * @param outputLine
      * receives the console output (see launch)
      */
     virtual void shutdown(OutputLineCallback outputLine = OutputLineCallback()) const;
+
+    /**
+     * @brief exists
+     * check, if the instance exists (by the existence check command).
+     * Does not throw.
+     * @return
+     * nothing, if the existence cannot be checked
+     */
+    virtual boost::optional<bool> exists() const;
+
+    /**
+     * @brief dispose
+     * delete the instance: shut it down before, if it is running.
+     * Throws, if the instance cannot be disposed or a command fails.
+     * @param outputLine
+     * receives the console output (see launch)
+     */
+    virtual void dispose(OutputLineCallback outputLine = OutputLineCallback()) const;
 #endif
   };
 
@@ -355,7 +383,9 @@ public:
       bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
-                          std::function<void(int,const std::string&)>()
+                          std::function<void(int,const std::string&)>(),
+      const std::vector<boost::filesystem::path>& selection =
+                          std::vector<boost::filesystem::path>()
   ) =0;
 
   virtual void syncToLocal
@@ -365,9 +395,32 @@ public:
       bool includeProcessorDirectories,
       const std::vector<std::string>& exclude_pattern = std::vector<std::string>(),
       std::function<void(int progress,const std::string& status_text)> progress_callback =
-                          std::function<void(int,const std::string&)>()
+                          std::function<void(int,const std::string&)>(),
+      const std::vector<boost::filesystem::path>& selection =
+                          std::vector<boost::filesystem::path>()
   ) =0;
 
+protected:
+  /**
+   * @brief rsyncSelectionFilter
+   * create rsync filter rules, which restrict a transfer to the selected items
+   * @param selection
+   * paths (files or directories) relative to the transferred directory.
+   * If empty, no rules are created (everything is transferred).
+   * @param rulesBeforeExcludes
+   * rules to be placed before the default exclude rules:
+   * include the parent directories and the selected items themselves
+   * (so that explicitly selected items are transferred, even if they match an exclude pattern)
+   * @param rulesAfterExcludes
+   * rules to be placed after the exclude rules:
+   * include the contents of the selected directories, exclude everything else
+   */
+  static void rsyncSelectionFilter(
+      const std::vector<boost::filesystem::path>& selection,
+      std::vector<std::string>& rulesBeforeExcludes,
+      std::vector<std::string>& rulesAfterExcludes );
+
+public:
 
   virtual bool checkIfDirectoryExists(const boost::filesystem::path& dir) =0;
   virtual boost::filesystem::path getTemporaryDirectoryName(const boost::filesystem::path& templatePath) =0;

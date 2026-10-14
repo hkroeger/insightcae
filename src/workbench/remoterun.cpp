@@ -129,8 +129,12 @@ void RemoteRun::launch()
   downloadWhenFinished_ =
       af_->ui->cbDownloadWhenFinished->checkState()==Qt::Checked;
   shutdownWhenFinished_ =
-      af_->ui->cbShutdownWhenFinished->isEnabled()
-      && af_->ui->cbShutdownWhenFinished->checkState()==Qt::Checked;
+      af_->ui->cbShutdownWhenFinished->checkState()==Qt::Checked;
+  removeRemoteDirWhenFinished_ =
+      af_->ui->cbRemoveRemoteDirWhenFinished->checkState()==Qt::Checked;
+  disposeWhenFinished_ =
+      af_->ui->cbDisposeWhenFinished->isEnabled()
+      && af_->ui->cbDisposeWhenFinished->checkState()==Qt::Checked;
   inputParameters_ = af_->parameters().cloneAs<insight::ParameterSet>();
   inputParameters_->pack();
 
@@ -593,15 +597,24 @@ void RemoteRun::cleanupRemote()
     {
         checkIfCancelled();
 
+        // the options are evaluated now
+        finalStepsStarted_ = true;
+        requestGUIUpdate();
+
+        // temporary locations are always removed
+        bool locationRemoved = rec_->isTemporaryStorage();
         cleanupRemoteLocation();
 
-        // evaluated now. Only, if the result set has been retrieved:
-        // it would be lost otherwise
-        if (shutdownWhenFinished_ && resultsRetrieved_)
+        if (!locationRemoved && removeRemoteDirWhenFinished_)
+            locationRemoved = removeRemoteDirectory();
+
+        // only, if the result set has been retrieved: it would be lost otherwise
+        if (resultsRetrieved_)
         {
-            shutdownStepStarted_ = true;
-            requestGUIUpdate();
-            shutdownServer();
+            if (disposeWhenFinished_)
+                stopServer(true, locationRemoved); // includes the shutdown
+            else if (shutdownWhenFinished_)
+                stopServer(false, locationRemoved);
         }
 
         finish();
@@ -640,6 +653,22 @@ void RemoteRun::setShutdownWhenFinished(bool shutdown)
 
 
 
+void RemoteRun::setRemoveRemoteDirWhenFinished(bool remove)
+{
+    removeRemoteDirWhenFinished_ = remove;
+}
+
+
+
+
+void RemoteRun::setDisposeWhenFinished(bool dispose)
+{
+    disposeWhenFinished_ = dispose;
+}
+
+
+
+
 bool RemoteRun::downloadStepStarted() const
 {
     return downloadStepStarted_;
@@ -648,48 +677,105 @@ bool RemoteRun::downloadStepStarted() const
 
 
 
-bool RemoteRun::shutdownStepStarted() const
+bool RemoteRun::finalStepsStarted() const
 {
-    return shutdownStepStarted_;
+    return finalStepsStarted_;
 }
 
 
 
 
-void RemoteRun::shutdownServer()
+bool RemoteRun::removeRemoteDirectory()
+{
+    auto progress = af_->progressDisplayer_.forkNewAction(
+        1, str(format(_("Removing remote directory %s")) % rec_->remoteDir().string()) );
+    try
+    {
+        rec_->cleanup(true); // removes the remote directory and the local config file
+        progress->completed();
+
+        // the remote location does not exist anymore: remove it from the GUI
+        QPointer<IQRemoteExecutionState> remote = remote_;
+        QMetaObject::invokeMethod(
+            qApp,
+            [remote]() { if (remote) remote->discard(); },
+            Qt::QueuedConnection );
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        progress->completed();
+        insight::Warning(
+            _("The remote directory %s could not be removed: %s"),
+            rec_->remoteDir().string().c_str(), e.what() );
+    }
+    return false;
+}
+
+
+
+
+void RemoteRun::stopServer(bool dispose, bool locationRemoved)
 {
     const auto& scfg = rec_->serverConfig();
 
     auto progress = af_->progressDisplayer_.forkNewAction(
-        1, str(format(_("Shutting down server %s")) % scfg.c_str()) );
+        1, str(format( dispose ? _("Disposing server %s") : _("Shutting down server %s") )
+                % scfg.c_str()) );
+
+    auto output = [this,progress](const std::string& line)
+    {
+        progress->message(line);
+        af_->progressDisplayer_.logMessage(line);
+    };
 
     try
     {
-        scfg.shutdown(
-            [this,progress](const std::string& line)
-            {
-                progress->message(line);
-                af_->progressDisplayer_.logMessage(line);
-            } );
+        if (dispose)
+            scfg.dispose(output);
+        else
+            scfg.shutdown(output);
         progress->completed();
 
-        // the remote location is not reachable anymore. A temporary one
-        // has been removed from the GUI already (see cleanupRemoteLocation)
-        if (!rec_->isTemporaryStorage())
+        if (!locationRemoved)
         {
             QPointer<IQRemoteExecutionState> remote = remote_;
-            QMetaObject::invokeMethod(
-                qApp,
-                [remote]() { if (remote) remote->serverStopped(); },
-                Qt::QueuedConnection );
+            if (dispose)
+            {
+                // the instance, including the remote directory, does not exist anymore
+                try
+                {
+                    boost::filesystem::remove(rec_->metaFile());
+                }
+                catch (const std::exception& e)
+                {
+                    insight::Warning(_("Could not remove %s: %s"),
+                                     rec_->metaFile().string().c_str(), e.what());
+                }
+                QMetaObject::invokeMethod(
+                    qApp,
+                    [remote]() { if (remote) remote->discard(); },
+                    Qt::QueuedConnection );
+            }
+            else
+            {
+                // not reachable anymore
+                QMetaObject::invokeMethod(
+                    qApp,
+                    [remote]() { if (remote) remote->serverStopped(); },
+                    Qt::QueuedConnection );
+            }
         }
     }
     catch (const std::exception& e)
     {
         progress->completed();
         insight::Warning(
-            _("The server %s could not be shut down after completion: %s\n"
-              "Please check and shut it down manually, to avoid unnecessary costs."),
+            dispose ?
+              _("The server %s could not be disposed after completion: %s\n"
+                "Please check and dispose it manually, to avoid unnecessary costs.") :
+              _("The server %s could not be shut down after completion: %s\n"
+                "Please check and shut it down manually, to avoid unnecessary costs."),
             scfg.c_str(), e.what() );
     }
 }

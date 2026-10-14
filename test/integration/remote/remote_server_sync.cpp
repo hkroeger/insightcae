@@ -123,6 +123,61 @@ int main(int argc, char* argv[])
         });
 
 
+        tr.run("upload of selected items only", [&]()
+        {
+            auto srv = be->server();
+            TemporaryDirectory src;
+            createCase(src);
+            auto rd = be->scratchDirectory()/"case";
+
+            srv->syncToRemote(src, rd, false, {}, {},
+                              {"system", "0/U", "processor0", "file with blanks.txt"});
+            check(be->remoteFileExists(rd/"system"/"controlDict"), "selected directory missing");
+            check(be->remoteFileExists(rd/"0"/"U"), "selected file in subdirectory missing");
+            check(be->remoteFileExists(rd/"file with blanks.txt"), "selected file with blanks missing");
+            check(be->remoteFileExists(rd/"processor0"/"0"/"U"),
+                  "explicitly selected processor directory missing");
+            check(!be->remoteDirectoryExists(rd/"constant"), "unselected directory was transferred");
+            check(!be->remoteFileExists(rd/"big.dat"), "unselected file was transferred");
+        });
+
+
+        tr.run("selective upload does not delete unselected remote items", [&]()
+        {
+            auto srv = be->server();
+            TemporaryDirectory src;
+            createCase(src);
+            auto rd = be->scratchDirectory()/"case";
+
+            srv->syncToRemote(src, rd, true);
+            fs::remove(src.path()/"big.dat");
+            fs::remove(src.path()/"system"/"controlDict");
+            writeFile(src.path()/"system"/"fvSchemes", "schemes\n");
+
+            srv->syncToRemote(src, rd, true, {}, {}, {"system"});
+            check(be->remoteFileExists(rd/"big.dat"), "unselected remote file was deleted");
+            check(be->remoteFileExists(rd/"system"/"fvSchemes"), "new file in selected directory missing");
+            check(!be->remoteFileExists(rd/"system"/"controlDict"),
+                  "file removed locally in selected directory still exists remotely");
+        });
+
+
+        tr.run("download of selected items only", [&]()
+        {
+            auto srv = be->server();
+            TemporaryDirectory src, dst;
+            createCase(src);
+            auto rd = be->scratchDirectory()/"case";
+            srv->syncToRemote(src, rd, true);
+
+            srv->syncToLocal(dst, rd, true, {}, {}, {"constant", "big.dat"});
+            check(fs::exists(dst.path()/"constant"/"transportProperties"), "selected directory missing");
+            check(fs::exists(dst.path()/"big.dat"), "selected file missing");
+            check(!fs::exists(dst.path()/"system"), "unselected directory was transferred");
+            check(!fs::exists(dst.path()/"0"), "unselected directory was transferred");
+        });
+
+
         tr.run("upload into an unwritable remote directory is reported", [&]()
         {
             auto srv = be->server();

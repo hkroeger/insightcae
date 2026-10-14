@@ -18,12 +18,20 @@
 #include <QStatusBar>
 #include <QDateTime>
 #include <QInputDialog>
+#include <QDir>
+#include <QHeaderView>
 
 #include "base/qt5_helper.h"
 
 #include "iqremoteparaviewdialog.h"
+#include "iqremoteservereditdialog.h"
+#include "iqremoteserverstatus.h"
+#include "iqserverlaunchdialog.h"
 #include "remotesync.h"
 #include "base/sshlinuxserver.h"
+#include "base/warningdispatcher.h"
+
+#include <QApplication>
 
 
 void IQRXRemoteExecutionState::updateGUI(bool enabled)
@@ -61,12 +69,29 @@ void IQRXRemoteExecutionState::updateGUI(bool enabled)
           mw->tsi_.reset(new insight::TaskSpoolerInterface(
                        exeConfig().socket(), exeConfig().server()));
           mw->onRefreshJobList();
+          mw->setRemoteFilesView(exeConfig().server(), rlc_->remoteDir());
+        }
+        else
+        {
+          // not connected (e.g. host stopped): no access to the job queue
+          mw->setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
+          mw->tsi_.reset();
+          ui->commands->clear();
+          mw->setRemoteFilesView(nullptr);
         }
       }
       else
       {
+        // this state is destroyed (deferred): don't touch the GUI,
+        // if it has been replaced by another state meanwhile
+        if (mw->remote_ && mw->remote_.data()!=this) return;
+
         mw->setWindowTitle( ui->localDir->text() + " - InsightCAE Execution Manager" );
         mw->tsi_.reset();
+        ui->commands->clear();
+        mw->setRemoteFilesView(nullptr);
+        ui->server->setText("(unset)");
+        ui->remoteDir->setText("(unset)");
       }
   }
 //  else insight::assertion(mw, "internal error: main window is unset");
@@ -229,6 +254,51 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
   ui->localDir->setText( QString::fromStdString(boost::filesystem::absolute(location).string()) );
 
+  // file trees in the status tab
+  localFilesModel_ = new QFileSystemModel(this);
+  localFilesModel_->setFilter(QDir::AllEntries|QDir::NoDotAndDotDot|QDir::Hidden);
+  ui->local_files->setModel(localFilesModel_);
+  ui->local_files->setRootIndex( localFilesModel_->setRootPath(ui->localDir->text()) );
+  ui->local_files->hideColumn(2); // type
+  ui->local_files->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+  ui->local_files->header()->setStretchLastSection(false);
+  ui->btn_refresh_remote_files->setEnabled(false); // until connected
+
+  // state of the remote host and actions on it (in the server row)
+  serverStatusIcon_ = new QLabel;
+  ui->horizontalLayout->addWidget(serverStatusIcon_);
+  serverStatus_ = new QLabel;
+  serverStatus_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  ui->horizontalLayout->addWidget(serverStatus_, 1);
+  btnLaunch_ = new QPushButton("Launch");
+  btnShutdown_ = new QPushButton("Shutdown");
+  btnDispose_ = new QPushButton("Shutdown && Dispose");
+  btnRefreshStatus_ = new QPushButton("Refresh status");
+  btnRefreshStatus_->setToolTip("Check the state of the remote host again");
+  for (auto *b: {btnLaunch_, btnShutdown_, btnDispose_, btnRefreshStatus_})
+    ui->horizontalLayout->addWidget(b);
+  connect(btnLaunch_, &QPushButton::clicked, this, &MainWindow::launchServer);
+  connect(btnShutdown_, &QPushButton::clicked, this, &MainWindow::shutdownServer);
+  connect(btnDispose_, &QPushButton::clicked, this, &MainWindow::disposeServer);
+  connect(btnRefreshStatus_, &QPushButton::clicked, this, &MainWindow::checkServerStatus);
+
+  // remote server configuration (same dialog as in the workbench)
+  {
+    ui->menuRemote->addSeparator();
+    auto *a = ui->menuRemote->addAction("Remote servers...");
+    connect(a, &QAction::triggered, this,
+            [this]()
+            {
+              IQRemoteServerEditDialog dlg(this);
+              dlg.exec();
+              checkServerStatus();
+            } );
+  }
+  connect(ui->actionRemove_remote_directory, &QAction::triggered,
+          this, &MainWindow::removeRemoteDirectory );
+
+  updateServerControls();
+
 
   setWindowIcon(QIcon(":/resources/logo_insight_cae.svg"));
   this->setWindowTitle("InsightCAE Execution Manager");
@@ -259,13 +329,13 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
               "Please select the remote server:", servers,
               currentServerIdx, false, &ok);
 
-        if (!selectedServer.isEmpty())
+        if (ok && !selectedServer.isEmpty())
         {
-          remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+          setRemote( IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
                 this,
                 insight::remoteServers().findServer(
                   selectedServer.toStdString() )
-                );
+                ) );
           remote_->location().writeConfigFile(
                 insight::RemoteExecutionConfig::defaultConfigFile("."));
 
@@ -279,8 +349,22 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
       {
           if (remote_)
           {
-              auto server = remote_->location().serverConfig().getInstanceIfRunning();
-              insight::assertion(bool(server), "server is not running");
+              // the host has to be running for browsing its directories
+              const auto& scfg = remote_->location().serverConfig();
+              if (!scfg.isRunning() && scfg.canBeLaunched())
+              {
+                  if (!IQServerLaunchDialog::launchServer(scfg, this))
+                      return; // error was displayed
+                  checkServerStatus();
+              }
+              auto server = scfg.getInstanceIfRunning();
+              if (!server)
+              {
+                  QMessageBox::critical(
+                      this, "Server not reachable",
+                      "The remote server is not reachable. Please make sure, that it is running.");
+                  return;
+              }
 
               RemoteDirSelector dlg(this, server);
 
@@ -289,11 +373,11 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
 
                   ui->remoteDir->setText( QString::fromStdString(dlg.selectedRemoteDir().string()) );
 
-                  remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+                  setRemote( IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
                       this,
                       remote_->location().serverConfig().clone(),
                       dlg.selectedRemoteDir()
-                      );
+                      ) );
                   remote_->location().writeConfigFile(
                       insight::RemoteExecutionConfig::defaultConfigFile("."));
               }
@@ -302,9 +386,9 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   );
 
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this,
-          std::bind(&MainWindow::syncLocalToRemote, this, false) );
+          [this]() { syncLocalToRemote(false); } );
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this,
-          std::bind(&MainWindow::syncRemoteToLocal, this, false, -1) );
+          [this]() { syncRemoteToLocal(false); } );
   connect(ui->actionRemote_Local_restart_periodically, &QAction::triggered, this,
           [this]()
           {
@@ -321,9 +405,9 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   );
 
   connect(ui->action_syncLocalToRemote_includeprocessor, &QAction::triggered, this,
-          std::bind(&MainWindow::syncLocalToRemote, this, true) );
+          [this]() { syncLocalToRemote(true); } );
   connect(ui->action_syncRemoteToLocal_includeprocessor, &QAction::triggered, this,
-          std::bind(&MainWindow::syncRemoteToLocal, this, true, -1) );
+          [this]() { syncRemoteToLocal(true); } );
   connect(ui->actionRemote_Local_incl_proc_dirs_restart_periodically, &QAction::triggered, this,
           [this]()
           {
@@ -358,9 +442,17 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
           }
   );
 
-  connect(ui->sync_to_remote, &QPushButton::clicked, this, &MainWindow::syncLocalToRemote);
+  // transfer the selected items or (if nothing is selected) everything
+  connect(ui->sync_to_remote, &QPushButton::clicked, this,
+          [this]() { syncLocalToRemote(false, localSelection()); } );
   connect(ui->sync_to_local, &QPushButton::clicked, this,
-          std::bind(&MainWindow::syncRemoteToLocal, this, false, -1) );
+          [this]() { syncRemoteToLocal(false, -1, remoteSelection()); } );
+  connect(ui->btn_refresh_remote_files, &QPushButton::clicked, this,
+          [this]()
+          {
+            if (remoteFilesModel_)
+              remoteFilesModel_->refreshBelow(QModelIndex()); // in background
+          } );
   connect(ui->actionRemote_write_and_copy_to_local, &QAction::triggered, this,
           [=]() {
             this->remoteWriteAndCopyBack(false);
@@ -424,13 +516,396 @@ MainWindow::MainWindow(const boost::filesystem::path& location, QWidget *parent)
   auto reccfg = insight::RemoteExecutionConfig::defaultConfigFile(location);
   if ( boost::filesystem::exists( reccfg ) )
   {
-    remote_ = IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
-          this, reccfg );
-    remote_->commit(location);
+    try
+    {
+      // don't validate here: the host might be switched off.
+      // The connection is established on demand.
+      setRemote( IQRemoteExecutionState::New<IQRXRemoteExecutionState>(
+            this, reccfg, true ) );
+      if (remote_->location().tryConnect())
+        remote_->commit(location);
+    }
+    catch (const std::exception& e)
+    {
+      insight::Warning(
+          "The remote execution configuration %s could not be read and is ignored.\n"
+          "Reason: %s", reccfg.string().c_str(), e.what() );
+    }
   }
 
   readSettings(); // after remote location is set
 
+}
+
+
+
+
+void MainWindow::setRemote(IQRemoteExecutionState* newRemote)
+{
+  if (remote_ && remote_.data()!=newRemote)
+  {
+    auto *old = remote_.data();
+    remote_ = nullptr;
+    old->discard();
+  }
+  remote_ = newRemote;
+  checkServerStatus();
+}
+
+
+
+
+void MainWindow::setRemoteFilesView(
+    insight::RemoteServerPtr server,
+    const boost::filesystem::path& remoteDir )
+{
+  if ( server==remoteFilesServer_ && remoteDir==remoteFilesDir_
+       && bool(remoteFilesModel_)==bool(server) )
+    return; // unchanged, keep the expanded state
+
+  remoteFilesServer_ = server;
+  remoteFilesDir_ = remoteDir;
+
+  auto *oldModel = remoteFilesModel_;
+  auto *oldSelectionModel = ui->remote_files->selectionModel();
+
+  remoteFilesModel_ = nullptr;
+  if (server)
+  {
+    remoteFilesModel_ = new IQRemoteFolderModel(this, server, remoteDir, true);
+    auto serverLabel = QString::fromStdString(server->serverLabel());
+    connect(remoteFilesModel_, &IQRemoteFolderModel::listingStateChanged, this,
+            [this,serverLabel](int pending, const QString& path)
+            {
+              if (pending>0)
+                statusBar()->showMessage(
+                    QString("Listing %1 on %2...").arg(path, serverLabel) );
+              else
+                statusBar()->clearMessage();
+            } );
+  }
+
+  ui->remote_files->setModel(remoteFilesModel_);
+  ui->btn_refresh_remote_files->setEnabled(bool(remoteFilesModel_));
+  delete oldSelectionModel;
+  if (oldModel) oldModel->deleteLater();
+
+  if (remoteFilesModel_)
+    remoteFilesModel_->fetchMore(QModelIndex()); // in background
+}
+
+
+
+
+std::vector<boost::filesystem::path> MainWindow::localSelection() const
+{
+  std::vector<boost::filesystem::path> sel;
+  QDir base(ui->localDir->text());
+  for (const auto& i: ui->local_files->selectionModel()->selectedRows(0))
+  {
+    sel.push_back(
+        base.relativeFilePath(localFilesModel_->filePath(i)).toStdString() );
+  }
+  return sel;
+}
+
+
+
+
+std::vector<boost::filesystem::path> MainWindow::remoteSelection() const
+{
+  std::vector<boost::filesystem::path> sel;
+  if (remoteFilesModel_)
+  {
+    for (const auto& i: ui->remote_files->selectionModel()->selectedRows(0))
+    {
+      if (remoteFilesModel_->isEntry(i))
+        sel.push_back(remoteFilesModel_->relativePath(i));
+    }
+  }
+  return sel;
+}
+
+
+
+
+bool MainWindow::ensureConnected()
+{
+  if (!remote_)
+  {
+    QMessageBox::critical(
+        this, "No remote location",
+        "There is no remote location configured.\n"
+        "Please select a remote server and directory first." );
+    return false;
+  }
+
+  if (remote_->isCommitted() && remote_->location().isActive())
+    return true;
+
+  const auto& scfg = remote_->location().serverConfig();
+  if (scfg.canBeLaunched() && !scfg.isRunning())
+  {
+    // shows the output of the launch (incl. creation); displays errors itself
+    if (!IQServerLaunchDialog::launchServer(scfg, this))
+    {
+      checkServerStatus();
+      return false;
+    }
+  }
+
+  try
+  {
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    remote_->commit( ui->localDir->text().toStdString() );
+    QApplication::restoreOverrideCursor();
+  }
+  catch (const std::exception& e)
+  {
+    QApplication::restoreOverrideCursor();
+    QMessageBox::critical(
+        this, "Connection failed",
+        QString("Could not connect to the remote location:\n%1")
+          .arg(QString::fromStdString(e.what())) );
+    checkServerStatus();
+    return false;
+  }
+
+  setBWLimit(bwLimit_); // apply to the connected server
+  checkServerStatus();
+
+  if (!remote_->location().isActive())
+  {
+    QMessageBox::critical(
+        this, "Remote directory not available",
+        QString("The remote directory %1 does not exist.")
+          .arg(QString::fromStdString(remote_->location().remoteDir().string())) );
+    return false;
+  }
+  return true;
+}
+
+
+
+
+void MainWindow::checkServerStatus()
+{
+  serverOnline_.reset();
+  serverExists_.reset();
+  serverLoad_.reset();
+  int gen = ++statusGeneration_;
+  updateServerControls();
+
+  if (!remote_) return;
+
+  IQRemoteServerStatus::checkInBackground(
+      remote_->location().serverConfig().clone(), this,
+      [this,gen](bool online)
+      {
+        if (gen!=statusGeneration_) return;
+        serverOnline_=online;
+        updateServerControls();
+      },
+      [this,gen](const insight::RemoteServer::Config::ProcessorLoad& l)
+      {
+        if (gen!=statusGeneration_) return;
+        serverLoad_=l;
+        updateServerControls();
+      },
+      [this,gen](bool exists)
+      {
+        if (gen!=statusGeneration_) return;
+        serverExists_=exists;
+        updateServerControls();
+      } );
+}
+
+
+
+
+void MainWindow::updateServerControls()
+{
+  using IQRemoteServerStatus::State;
+
+  // status display
+  State st = State::Unknown;
+  QString txt;
+  if (!remote_)
+  {
+    txt = QString();
+  }
+  else if (!serverOnline_)
+  {
+    txt = "checking...";
+  }
+  else if (*serverOnline_)
+  {
+    st = State::Online;
+    txt = "online";
+    if (serverLoad_)
+    {
+      if (IQRemoteServerStatus::isBusy(*serverLoad_)) st = State::Busy;
+      txt = IQRemoteServerStatus::describe(*serverLoad_);
+    }
+    if (!remote_->isCommitted())
+      txt += " (not connected)";
+  }
+  else
+  {
+    st = State::Offline;
+    txt = serverExists_ ?
+            ( *serverExists_ ? "not reachable (instance exists)" : "instance does not exist" ) :
+            "not reachable";
+  }
+  serverStatusIcon_->setVisible(bool(remote_));
+  serverStatusIcon_->setPixmap(
+      IQRemoteServerStatus::icon(
+          st, serverLoad_ ? serverLoad_->utilization : 0. ).pixmap(12, 12) );
+  serverStatus_->setText(txt);
+
+  // actions (same rules as in the remote servers dialog)
+  const insight::RemoteServer::Config* cfg =
+      remote_ ? &remote_->location().serverConfig() : nullptr;
+  bool known = bool(serverOnline_);
+  bool online = known && *serverOnline_;
+  bool exists = (serverExists_ && *serverExists_);
+  const QString checking = "Checking, if the server is reachable...";
+
+  btnLaunch_->setEnabled( cfg && known && !online && cfg->canBeLaunched() );
+  btnLaunch_->setToolTip(
+      !cfg ? "No remote server selected." :
+      !known ? checking :
+      online ? "The server is running." :
+      !cfg->canBeLaunched() ?
+        "The server cannot be launched from here (no launch or creation command configured)." :
+      (serverExists_ && !*serverExists_) ?
+        "Create the instance and launch the server (execute its creation command)." :
+        "Launch the server (execute its launch command; create its instance before, if it does not exist)." );
+
+  btnShutdown_->setEnabled( cfg && online && cfg->canBeShutDown() );
+  btnShutdown_->setToolTip(
+      !cfg ? "No remote server selected." :
+      !known ? checking :
+      !online ? "The server is not running." :
+      !cfg->canBeShutDown() ?
+        "The server cannot be shut down from here (no shutdown command configured)." :
+        "Shut down the server (execute its shutdown command)." );
+
+  btnDispose_->setEnabled( cfg && cfg->canBeDisposed() && (online || exists) );
+  btnDispose_->setToolTip(
+      !cfg ? "No remote server selected." :
+      !cfg->canBeDisposed() ?
+        "The server instance cannot be disposed from here (no destruction command configured)." :
+      !known ? checking :
+      (serverExists_ && !*serverExists_) ? "The instance does not exist." :
+      !(online || exists) ? "Checking, if the instance exists..." :
+        "Shut down the server (if running) and delete its instance (execute its destruction command).\n"
+        "The remote directory and the local remote configuration are removed as well." );
+
+  btnRefreshStatus_->setEnabled( bool(remote_) );
+  ui->actionRemove_remote_directory->setEnabled( bool(remote_) );
+}
+
+
+
+
+void MainWindow::launchServer()
+{
+  if (!remote_) return;
+  if (IQServerLaunchDialog::launchServer(remote_->location().serverConfig(), this)) // displays errors itself
+  {
+    // connect: job list and terminal become available
+    ensureConnected();
+  }
+  checkServerStatus();
+}
+
+
+
+
+void MainWindow::shutdownServer()
+{
+  if (!remote_) return;
+  auto label = QString::fromStdString(remote_->location().serverLabel());
+
+  auto answer = QMessageBox::question(
+      this, "Shut down server",
+      QString("Shut down the server %1?\n\n"
+              "Analyses, which are currently running on it, will be terminated"
+              " and data on its local storage might be lost.").arg(label),
+      QMessageBox::Yes|QMessageBox::No, QMessageBox::No );
+  if (answer!=QMessageBox::Yes) return;
+
+  if (tsi_) tsi_->stopTail();
+  if (IQServerLaunchDialog::shutdownServer(remote_->location().serverConfig(), this))
+  {
+    remote_->serverStopped(); // not connected anymore, the job queue is dropped
+  }
+  checkServerStatus();
+}
+
+
+
+
+void MainWindow::disposeServer()
+{
+  if (!remote_) return;
+  auto label = QString::fromStdString(remote_->location().serverLabel());
+
+  auto answer = QMessageBox::warning(
+      this, "Dispose server",
+      QString("Shut down the server %1 and delete its instance?\n\n"
+              "Analyses, which are currently running on it, will be terminated"
+              " and all data on the instance will be deleted!\n"
+              "The local remote configuration (meta.foam) is removed as well.").arg(label),
+      QMessageBox::Yes|QMessageBox::No, QMessageBox::No );
+  if (answer!=QMessageBox::Yes) return;
+
+  if (tsi_) tsi_->stopTail();
+  if (IQServerLaunchDialog::disposeServer(remote_->location().serverConfig(), this))
+  {
+    // the instance (incl. the remote directory) does not exist anymore
+    try
+    {
+      boost::filesystem::remove(
+          insight::RemoteExecutionConfig::defaultConfigFile(
+              ui->localDir->text().toStdString() ) );
+    }
+    catch (const std::exception& e)
+    {
+      insight::Warning("Could not remove the remote configuration file: %s", e.what());
+    }
+    setRemote(nullptr);
+  }
+  else
+  {
+    checkServerStatus();
+  }
+}
+
+
+
+
+void MainWindow::removeRemoteDirectory()
+{
+  if (!remote_) return;
+
+  auto answer = QMessageBox::question(
+      this, "Remove remote directory",
+      QString("The directory %1 on server %2 and its contents will be deleted!\n"
+              "The local remote configuration (meta.foam) is removed as well.\n"
+              "Continue?")
+        .arg(QString::fromStdString(remote_->location().remoteDir().string()))
+        .arg(QString::fromStdString(remote_->location().serverLabel())),
+      QMessageBox::Yes|QMessageBox::No, QMessageBox::No );
+  if (answer!=QMessageBox::Yes) return;
+
+  if (!ensureConnected()) return;
+
+  if (tsi_) tsi_->stopTail();
+  remote_->cleanup(true); // removes the remote directory and meta.foam, discards the state
+  remote_ = nullptr;
+  checkServerStatus();
 }
 
 
@@ -453,13 +928,16 @@ MainWindow::~MainWindow()
 
 
 
-void MainWindow::syncLocalToRemote(bool includeProcDirs)
+void MainWindow::syncLocalToRemote(
+    bool includeProcDirs,
+    const std::vector<boost::filesystem::path>& selection )
 {
-  if (remote_)
+  if (ensureConnected())
   {
     auto *rstr = new insight::RunSyncToRemote(
                 remote_->exeConfig(),
-                includeProcDirs );
+                includeProcDirs,
+                selection );
 
     auto pb = new QProgressBar;
     statusBar()->addPermanentWidget(pb);
@@ -472,6 +950,9 @@ void MainWindow::syncLocalToRemote(bool includeProcDirs)
             [&]()
             {
               statusBar()->showMessage("Transfer to remote location finished");
+              // show the new remote contents
+              if (remoteFilesModel_)
+                remoteFilesModel_->refreshBelow(QModelIndex());
             }
     );
     connect(rstr, &insight::RunSyncToRemote::transferFinished, rstr, &QObject::deleteLater);
@@ -483,7 +964,11 @@ void MainWindow::syncLocalToRemote(bool includeProcDirs)
     connect(rstr, &insight::RunSyncToRemote::transferFinished,
             stopBtn, &QObject::deleteLater);
 
-    statusBar()->showMessage("Transfer to remote location started");
+    statusBar()->showMessage(
+        selection.empty() ?
+            QString("Transfer to remote location started") :
+            QString("Transfer of %1 selected item(s) to remote location started")
+              .arg(selection.size()) );
 
     rstr->start();
   }
@@ -493,13 +978,16 @@ void MainWindow::syncLocalToRemote(bool includeProcDirs)
 
 
 
-void MainWindow::syncRemoteToLocal(bool includeProcDirs, int autoRestartSeconds)
+void MainWindow::syncRemoteToLocal(
+    bool includeProcDirs, int autoRestartSeconds,
+    const std::vector<boost::filesystem::path>& selection )
 {
-  if (remote_)
+  if (ensureConnected())
   {
     auto* rstl = new insight::RunSyncToLocal(
                 remote_->exeConfig(),
-                includeProcDirs);
+                includeProcDirs,
+                selection );
 
     auto pb = new QProgressBar;
     statusBar()->addPermanentWidget(pb);
@@ -525,18 +1013,22 @@ void MainWindow::syncRemoteToLocal(bool includeProcDirs, int autoRestartSeconds)
     connect(rstl, &insight::RunSyncToLocal::transferFinished,
             stopBtn, &QObject::deleteLater);
 
-    statusBar()->showMessage("Transfer from remote location to local directory started");
+    statusBar()->showMessage(
+        selection.empty() ?
+            QString("Transfer from remote location to local directory started") :
+            QString("Transfer of %1 selected item(s) from remote location to local directory started")
+              .arg(selection.size()) );
 
     if (autoRestartSeconds>0)
     {
 
       connect(rstl, &insight::RunSyncToLocal::transferFinished, rstl,
-          [this,includeProcDirs,autoRestartSeconds]()
+          [this,includeProcDirs,autoRestartSeconds,selection]()
           {
             auto timer = new QTimer(this);
             timer->setSingleShot(true);
             connect(timer, &QTimer::timeout, this,
-              std::bind(&MainWindow::syncRemoteToLocal, this, includeProcDirs, autoRestartSeconds)
+              std::bind(&MainWindow::syncRemoteToLocal, this, includeProcDirs, autoRestartSeconds, selection)
               );
             connect(timer, &QTimer::timeout, timer, &QTimer::deleteLater);
 
@@ -561,11 +1053,15 @@ void MainWindow::syncRemoteToLocal(bool includeProcDirs, int autoRestartSeconds)
 void MainWindow::setBWLimit(int bwlimit)
 {
     QString label = "Set bandwidth limit";
+    bwLimit_ = bwlimit;
 
-    if (remote_)
     {
-        auto srv = remote_->exeConfig().server();
-        srv->setTransferBandWidthLimit(bwlimit);
+        // applied to the server now, if connected, otherwise when connecting
+        if (remote_ && remote_->isCommitted())
+        {
+            auto srv = remote_->exeConfig().server();
+            srv->setTransferBandWidthLimit(bwlimit);
+        }
 
         if (bwlimit>0)
         {
@@ -596,7 +1092,7 @@ void MainWindow::onStartParaview()
 
 void MainWindow::onStartRemoteParaview()
 {
-  if (remote_)
+  if (ensureConnected())
   {
     IQRemoteParaviewDialog dlg(remote_->exeConfig(), this);
     dlg.exec();
@@ -623,13 +1119,7 @@ void MainWindow::saveSettings()
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
     settings.setValue("vsplitter", ui->v_splitter->saveState());
-    if (remote_)
-    {
-        settings.setValue(
-                    "bwlimit",
-                    remote_->exeConfig().server()
-                    ->transferBandWidthLimit() );
-    }
+    settings.setValue("bwlimit", bwLimit_);
 }
 
 
@@ -639,13 +1129,7 @@ void MainWindow::readSettings()
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
     ui->v_splitter->restoreState(settings.value("vsplitter").toByteArray());
-    if (remote_)
-    {
-        remote_->exeConfig().server()
-                ->setTransferBandWidthLimit(
-                    settings.value("bwlimit").toInt()
-                    );
-    }
+    setBWLimit( settings.value("bwlimit", -1).toInt() );
 }
 
 
@@ -677,6 +1161,8 @@ void AuxiliaryJob::run()
 
 void MainWindow::remoteWriteAndCopyBack(bool parallel)
 {
+  if (!ensureConnected()) return;
+
   std::ostringstream cmd;
 
   cmd

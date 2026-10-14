@@ -32,6 +32,12 @@ ServerSetup::~ServerSetup()
   delete parent_->layout();
 }
 
+QString ServerSetup::validationError() const
+{
+  return QString();
+}
+
+
 Ui::IQSelectRemoteHostTypeDialog *ServerSetup::dlgui()
 {
     return dlg_->ui;
@@ -83,16 +89,133 @@ SSHLinuxSetup::SSHLinuxSetup(
     l->addWidget(leBaseDir_);
     vl->addLayout(l);
   }
+
+  const QString placeholderHelp =
+      "%{serverLabel} and %{host} are replaced by the server label and the host name.\n"
+      "In server pools, %d is replaced by the instance number.";
+
+  // hosts, which are launched on demand (e.g. virtual machines)
+  {
+    auto *l = new QHBoxLayout;
+    l->addWidget(new QLabel("Launch command:"));
+    leLaunchCommand_ = new QLineEdit;
+    leLaunchCommand_->setPlaceholderText("(none: host is always running)");
+    leLaunchCommand_->setToolTip(
+        "Executed locally, when the host is needed but not reachable.\n"
+        +placeholderHelp );
+    if (ini)
+      leLaunchCommand_->setText( QString::fromStdString(ini->launchCommand_) );
+    l->addWidget(leLaunchCommand_);
+    vl->addLayout(l);
+  }
+
+  {
+    auto *l = new QHBoxLayout;
+    l->addWidget(new QLabel("Shutdown command:"));
+    leShutdownCommand_ = new QLineEdit;
+    leShutdownCommand_->setPlaceholderText("(none)");
+    leShutdownCommand_->setToolTip(
+        "Executed locally to shut the host down.\n"
+        +placeholderHelp );
+    if (ini)
+      leShutdownCommand_->setText( QString::fromStdString(ini->shutdownCommand_) );
+    l->addWidget(leShutdownCommand_);
+    vl->addLayout(l);
+  }
+
+  // instances, which have to be created and disposed (e.g. cloud instances)
+  auto addCommandRow = [&](const QString& label, const QString& tooltip,
+                           const std::string* initial, QLineEdit*& le)
+  {
+    auto *l = new QHBoxLayout;
+    l->addWidget(new QLabel(label));
+    le = new QLineEdit;
+    le->setPlaceholderText("(none)");
+    le->setToolTip(tooltip+"\n"+placeholderHelp);
+    if (initial)
+      le->setText( QString::fromStdString(*initial) );
+    l->addWidget(le);
+    vl->addLayout(l);
+  };
+  addCommandRow(
+      "Creation command:",
+      "Executed locally to create the instance, when it is needed but does not exist.\n"
+      "Afterwards, the host is expected to start up (otherwise, the launch command is executed).",
+      ini ? &ini->creationCommand_ : nullptr, leCreationCommand_ );
+  addCommandRow(
+      "Destruction command:",
+      "Executed locally to delete the instance (after shutting it down, if it is running).",
+      ini ? &ini->destructionCommand_ : nullptr, leDestructionCommand_ );
+  addCommandRow(
+      "Existence check command:",
+      "Executed locally to check, if the instance exists:\n"
+      "exit code 0 means, the instance exists, any other exit code means, it does not exist.",
+      ini ? &ini->existenceCheckCommand_ : nullptr, leExistenceCheckCommand_ );
+
+  {
+    auto *l = new QHBoxLayout;
+    l->addWidget(new QLabel("Launch timeout:"));
+    sbLaunchTimeout_ = new QSpinBox;
+    sbLaunchTimeout_->setRange(0, 7200);
+    sbLaunchTimeout_->setSuffix(" s");
+    sbLaunchTimeout_->setToolTip(
+        "Time to wait after the launch command, until the host is reachable." );
+    sbLaunchTimeout_->setValue( int(
+        (ini ? ini->launchTimeout_
+             : insight::SSHLinuxServer::Config::defaultLaunchTimeout()).count() ) );
+    l->addWidget(sbLaunchTimeout_);
+    l->addStretch();
+    vl->addLayout(l);
+  }
+
+  // the timeout is only relevant with a launch or creation command
+  auto updateTimeoutEnabled = [this]()
+  {
+    sbLaunchTimeout_->setEnabled(
+        !leLaunchCommand_->text().trimmed().isEmpty()
+        || !leCreationCommand_->text().trimmed().isEmpty() );
+  };
+  QObject::connect(leLaunchCommand_, &QLineEdit::textChanged, leLaunchCommand_, updateTimeoutEnabled);
+  QObject::connect(leCreationCommand_, &QLineEdit::textChanged, leCreationCommand_, updateTimeoutEnabled);
+  updateTimeoutEnabled();
 }
 
 
 insight::RemoteServer::ConfigPtr SSHLinuxSetup::result()
 {
-  return std::make_shared<insight::SSHLinuxServer::Config>(
+  auto cfg = std::make_shared<insight::SSHLinuxServer::Config>(
         leBaseDir_->text().toStdString(),
         sbNp_->value(),
-        leHostName_->text().toStdString()
+        leHostName_->text().toStdString(),
+        leLaunchCommand_->text().trimmed().toStdString(),
+        leShutdownCommand_->text().trimmed().toStdString()
         );
+  cfg->creationCommand_ = leCreationCommand_->text().trimmed().toStdString();
+  cfg->destructionCommand_ = leDestructionCommand_->text().trimmed().toStdString();
+  cfg->existenceCheckCommand_ = leExistenceCheckCommand_->text().trimmed().toStdString();
+  cfg->launchTimeout_ = std::chrono::seconds(sbLaunchTimeout_->value());
+  return cfg;
+}
+
+
+QString SSHLinuxSetup::validationError() const
+{
+  // required by the server list file format
+  if ( leLaunchCommand_->text().trimmed().isEmpty()
+       != leShutdownCommand_->text().trimmed().isEmpty() )
+  {
+    return "Launch and shutdown command must be both given, or both left empty.";
+  }
+
+  int nCreationCommands =
+      int(!leCreationCommand_->text().trimmed().isEmpty())
+      + int(!leDestructionCommand_->text().trimmed().isEmpty())
+      + int(!leExistenceCheckCommand_->text().trimmed().isEmpty());
+  if (nCreationCommands!=0 && nCreationCommands!=3)
+  {
+    return "Creation, destruction and existence check command must be all given, or all left empty.";
+  }
+  return QString();
 }
 
 
@@ -315,6 +438,13 @@ void IQSelectRemoteHostTypeDialog::accept()
   {
     if (setupControls_)
     {
+      auto err = setupControls_->validationError();
+      if (!err.isEmpty())
+      {
+        QMessageBox::critical(this, "Invalid server configuration", err);
+        return;
+      }
+
       result_=setupControls_->result();
       static_cast<std::string&>(*result_) = srvlbl;
     }

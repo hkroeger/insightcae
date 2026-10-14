@@ -1,9 +1,9 @@
 /*
  * Dynamically created / destroyed SSH servers
- * (creationCommand / destructionCommand of SSHLinuxServer::Config).
+ * (launchCommand / shutdownCommand of SSHLinuxServer::Config).
  *
  * This is the mechanism, which will be extended for cloud instances.
- * The creation and destruction commands are local marker scripts here.
+ * The launch and shutdown commands are local marker scripts here.
  */
 
 #include <iostream>
@@ -42,21 +42,50 @@ int main(int argc, char* argv[])
     }
 
 
-    tr.run("creation command is executed for a server, which is not running", [&]()
+    tr.run("launch command is executed for a server, which is not running", [&]()
     {
         TemporaryDirectory d;
         auto created = d.path()/"created";
 
-        // the host is unreachable, so the creation command has to be run.
+        // the host is unreachable, so the launch command has to be run.
         // Only its execution is checked here (the host stays unreachable).
         SSHLinuxServer::Config cfg(
             "/tmp", 1, "nonexistent-host.invalid",
             "touch '"+created.string()+"'",
             "true" );
-        cfg.creationTimeout_ = 0s; // don't wait for the host
+        cfg.launchTimeout_ = 0s; // don't wait for the host
 
         try { cfg.instance(); } catch (...) {}
+        check(fs::exists(created), "launch command was not executed");
+    });
+
+
+    tr.run("non-existing instance is created, and disposed if it does not become reachable", [&]()
+    {
+        TemporaryDirectory d;
+        auto created = d.path()/"created", disposed = d.path()/"disposed";
+
+        // the existence check fails: the creation command has to be run
+        // (with the placeholders replaced). The host stays unreachable,
+        // so the created instance has to be disposed again.
+        SSHLinuxServer::Config cfg("/tmp", 1, "nonexistent-host.invalid");
+        static_cast<std::string&>(cfg) = "cloudtest";
+        cfg.creationCommand_ = "echo '%{serverLabel} %{host}' > '"+created.string()+"'";
+        cfg.destructionCommand_ = "touch '"+disposed.string()+"'";
+        cfg.existenceCheckCommand_ = "false";
+        cfg.launchTimeout_ = 0s; // don't wait for the host
+
+        check(cfg.exists() && !*cfg.exists(), "existence check should report a missing instance");
+
+        expectThrows<insight::Exception>(
+            [&]() { cfg.launch(); },
+            "launching an instance, which does not become reachable" );
+
         check(fs::exists(created), "creation command was not executed");
+        auto content = readFile(created);
+        check(content.find("cloudtest nonexistent-host.invalid")!=std::string::npos,
+              "placeholders not replaced in creation command: "+content);
+        check(fs::exists(disposed), "destruction command was not executed after failed launch");
     });
 
 
@@ -69,7 +98,7 @@ int main(int argc, char* argv[])
             "/tmp", 1, "nonexistent-host.invalid",
             "true",   // "creation" succeeds, but host stays unreachable
             "touch '"+destroyed.string()+"'" );
-        cfg.creationTimeout_ = 10s;
+        cfg.launchTimeout_ = 10s;
 
         checkCompletesWithin(120s, [cfg]()
         {
@@ -83,7 +112,7 @@ int main(int argc, char* argv[])
     });
 
 
-    tr.run("failing creation command is reported", [&]()
+    tr.run("failing launch command is reported", [&]()
     {
         SSHLinuxServer::Config cfg(
             "/tmp", 1, "nonexistent-host.invalid",
@@ -92,11 +121,11 @@ int main(int argc, char* argv[])
 
         expectThrows<insight::Exception>(
             [&](){ cfg.instance(); },
-            "instance() with failing creation command" );
+            "instance() with failing launch command" );
     });
 
 
-    tr.run("creation command is not executed for a running server", [&]()
+    tr.run("launch command is not executed for a running server", [&]()
     {
         TemporaryDirectory d;
         auto created = d.path()/"created";
@@ -108,11 +137,11 @@ int main(int argc, char* argv[])
 
         auto srv = cfg.instance();
         check(bool(srv), "no instance");
-        check(!fs::exists(created), "creation command executed although server is running");
+        check(!fs::exists(created), "launch command executed although server is running");
     });
 
 
-    tr.run("destruction command is executed", [&]()
+    tr.run("shutdown command is executed", [&]()
     {
         TemporaryDirectory d;
         auto destroyed = d.path()/"destroyed";
@@ -124,11 +153,11 @@ int main(int argc, char* argv[])
 
         auto srv = cfg.instance();
         srv->destroyIfPossible();
-        check(fs::exists(destroyed), "destruction command was not executed");
+        check(fs::exists(destroyed), "shutdown command was not executed");
     });
 
 
-    tr.run("failing destruction command does not throw", [&]()
+    tr.run("failing shutdown command does not throw", [&]()
     {
         SSHLinuxServer::Config cfg(
             sshCfg->defaultDirectory_, 1, sshCfg->hostName_,
@@ -151,8 +180,8 @@ int main(int argc, char* argv[])
         auto e = std::dynamic_pointer_cast<SSHLinuxServer::Config>(cfg.expanded(7));
         check(bool(e), "expanded config has wrong type");
         check(e->hostName_=="node7.example", "host: "+e->hostName_);
-        check(e->creationCommand_=="create-node 7", "creation command: "+e->creationCommand_);
-        check(e->destructionCommand_=="destroy-node 7", "destruction command: "+e->destructionCommand_);
+        check(e->launchCommand_=="create-node 7", "launch command: "+e->launchCommand_);
+        check(e->shutdownCommand_=="destroy-node 7", "shutdown command: "+e->shutdownCommand_);
     });
 
 

@@ -78,9 +78,19 @@ private:
   // They are read in the IO threads at the moment, when they are needed.
   std::atomic<bool> downloadWhenFinished_{false};
   std::atomic<bool> shutdownWhenFinished_{false};
+  std::atomic<bool> removeRemoteDirWhenFinished_{false};
+  std::atomic<bool> disposeWhenFinished_{false};
   std::atomic<bool> downloadStepStarted_{false}; // decision about download is final
-  std::atomic<bool> shutdownStepStarted_{false};
+  std::atomic<bool> finalStepsStarted_{false}; // remove dir, shutdown, dispose
   std::atomic<bool> resultsRetrieved_{false}; // result set received via the REST API
+
+  /**
+   * @brief removeRemoteDirectory
+   * remove the (non-temporary) remote directory and the local
+   * configuration file (IO thread). Failures are reported as warning.
+   * @return true, if removed
+   */
+  bool removeRemoteDirectory();
 
   /**
    * @brief requestGUIUpdate
@@ -89,11 +99,13 @@ private:
   void requestGUIUpdate();
 
   /**
-   * @brief shutdownServer
-   * execute the destruction command of the server (IO thread).
+   * @brief stopServer
+   * shut down or dispose the server (IO thread).
    * Failures are reported as warning: the results are available already.
+   * @param locationRemoved
+   * the remote location was removed from the GUI already
    */
-  void shutdownServer();
+  void stopServer(bool dispose, bool locationRemoved);
   std::unique_ptr<insight::ParameterSet> inputParameters_; // copied in the GUI thread
   std::unique_ptr<insight::AnalyzeClient> ac_;
   insight::RemoteServer::BackgroundJobPtr analyzeProcess_;
@@ -193,8 +205,13 @@ public:
   // change the options during the run (effective, until the respective step has started)
   void setDownloadWhenFinished(bool download);
   void setShutdownWhenFinished(bool shutdown);
+  void setRemoveRemoteDirWhenFinished(bool remove);
+  void setDisposeWhenFinished(bool dispose);
   bool downloadStepStarted() const;
-  bool shutdownStepStarted() const;
+  /**
+   * removal of the remote directory, shutdown and disposal have started
+   */
+  bool finalStepsStarted() const;
 
 public Q_SLOTS:
   void onCancel() override;

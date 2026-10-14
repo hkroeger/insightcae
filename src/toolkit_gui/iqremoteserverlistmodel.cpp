@@ -95,7 +95,13 @@ QVariant IQRemoteServerListModel::data(const QModelIndex &index, int role) const
             else if (!*s->second.online)
             {
                 if (role==Qt::DecorationRole) return IQRemoteServerStatus::icon(State::Offline);
-                if (role==Qt::DisplayRole || role==Qt::ToolTipRole) return _("not reachable");
+                if (role==Qt::DisplayRole || role==Qt::ToolTipRole)
+                {
+                    if (const auto& ex = s->second.exists)
+                        return *ex ? _("not reachable (instance exists)")
+                                   : _("instance does not exist");
+                    return _("not reachable");
+                }
             }
             else if (const auto& l = s->second.load)
             {
@@ -305,6 +311,7 @@ void IQRemoteServerListModel::checkStatus(const QModelIndex& idx)
     auto& s = status_[key];
     s.online.reset();
     s.load.reset();
+    s.exists.reset();
     int gen = s.generation = ++lastGeneration_;
     statusUpdated(key);
 
@@ -332,6 +339,14 @@ void IQRemoteServerListModel::checkStatus(const QModelIndex& idx)
                 s->load=l;
                 statusUpdated(key);
             }
+        },
+        [this,key,current](bool exists)
+        {
+            if (auto *s=current())
+            {
+                s->exists=exists;
+                statusUpdated(key);
+            }
         } );
 }
 
@@ -355,6 +370,19 @@ boost::optional<bool> IQRemoteServerListModel::isOnline(const QModelIndex& idx) 
     auto s = status_.find(rsc->get());
     if (s==status_.end()) return boost::none;
     return s->second.online;
+}
+
+
+
+
+boost::optional<bool> IQRemoteServerListModel::exists(const QModelIndex& idx) const
+{
+    if (!idx.isValid() || idx.row()>=int(remoteServers_.size())) return boost::none;
+    auto rsc = boost::get<insight::RemoteServer::ConfigPtr>(&remoteServers_[idx.row()]);
+    if (!rsc) return boost::none;
+    auto s = status_.find(rsc->get());
+    if (s==status_.end()) return boost::none;
+    return s->second.exists;
 }
 
 

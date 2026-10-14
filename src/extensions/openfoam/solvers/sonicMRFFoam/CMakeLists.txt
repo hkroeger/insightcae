@@ -1,4 +1,10 @@
-set(SRC sonicMRFFoam.C)
+set(SRC
+    sonicMRFFoam.C
+    createFields.H
+    UEqn.H
+    eEqn.H
+    pEqn.H
+)
 
 set(OF_INCLUDE_DIRS
     transportModels transportModels/compressible

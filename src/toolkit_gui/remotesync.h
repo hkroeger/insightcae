@@ -19,11 +19,19 @@ class TOOLKIT_GUI_EXPORT RunSyncToRemote
 
   insight::RemoteExecutionConfig& rec_;
   bool includeProcDirs_;
+  std::vector<boost::filesystem::path> selection_;
 
 //  void run() override;
 
 public:
-  RunSyncToRemote(insight::RemoteExecutionConfig& rec, bool includeProcDirs);
+  /**
+   * @param selection
+   * files and directories (relative to the local directory) to transfer.
+   * If empty, the complete directory is synchronized.
+   */
+  RunSyncToRemote(
+      insight::RemoteExecutionConfig& rec, bool includeProcDirs,
+      const std::vector<boost::filesystem::path>& selection = {} );
 
   void start();
   void wait();
@@ -44,11 +52,19 @@ class TOOLKIT_GUI_EXPORT RunSyncToLocal
 
   insight::RemoteExecutionConfig& rec_;
   bool includeProcDirs_;
+  std::vector<boost::filesystem::path> selection_;
 
 //  void run() override;
 
 public:
-  RunSyncToLocal(insight::RemoteExecutionConfig& rec, bool includeProcDirs);
+  /**
+   * @param selection
+   * files and directories (relative to the remote directory) to transfer.
+   * If empty, the complete directory is synchronized.
+   */
+  RunSyncToLocal(
+      insight::RemoteExecutionConfig& rec, bool includeProcDirs,
+      const std::vector<boost::filesystem::path>& selection = {} );
 
   void start();
   void wait();

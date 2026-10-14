@@ -44,7 +44,10 @@ public:
   );
 
 
+  void connectSignals() override;
+
   void resetModificationState();
+  void resetCachedState() override;
   virtual bool isModified() const;
 
   QVariant backgroundColor() const override;

@@ -287,6 +287,9 @@ QVariant IQHierarchicalDataElement::textFont() const
     return QVariant();
 }
 
+void IQHierarchicalDataElement::resetCachedState()
+{}
+
 void IQHierarchicalDataElement::populateContextMenu(
     QMenu* /*cm*/,
     IQCADModel3DViewer */*viewer*/)

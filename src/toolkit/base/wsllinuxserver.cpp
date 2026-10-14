@@ -90,13 +90,13 @@ RemoteServer::ConfigPtr WSLLinuxServer::Config::clone() const
 }
 
 
-bool WSLLinuxServer::Config::isDynamicallyCreatable() const
+bool WSLLinuxServer::Config::canBeLaunched() const
 {
     return false;
 }
 
 
-bool WSLLinuxServer::Config::isDynamicallyDestructable() const
+bool WSLLinuxServer::Config::canBeShutDown() const
 {
     return false;
 }
@@ -228,7 +228,8 @@ void WSLLinuxServer::syncToRemote
     const boost::filesystem::path& remoteDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> pf
+    std::function<void(int,const std::string&)> pf,
+    const std::vector<boost::filesystem::path>& selection
 )
 {
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
@@ -259,6 +260,14 @@ void WSLLinuxServer::syncToRemote
       args.push_back(ex);
     }
 
+    // restrict to the selected items (if any)
+    {
+      std::vector<std::string> selBefore, selAfter;
+      rsyncSelectionFilter(selection, selBefore, selAfter);
+      args.insert(args.begin()+1, selBefore.begin(), selBefore.end()); // after "-az"
+      args.insert(args.end(), selAfter.begin(), selAfter.end());
+    }
+
     args.push_back(convertWindowsPathToWSLPath(localDir).string()+"/");
     args.push_back(remoteDir.string());
 
@@ -274,7 +283,8 @@ void WSLLinuxServer::syncToLocal
     const boost::filesystem::path& remoteDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> pf
+    std::function<void(int,const std::string&)> pf,
+    const std::vector<boost::filesystem::path>& selection
 )
 {
   CurrentExceptionContext ex("download remote files to local directory");
@@ -303,6 +313,14 @@ void WSLLinuxServer::syncToLocal
     {
       args.push_back("--exclude");
       args.push_back(ex);
+    }
+
+    // restrict to the selected items (if any)
+    {
+      std::vector<std::string> selBefore, selAfter;
+      rsyncSelectionFilter(selection, selBefore, selAfter);
+      args.insert(args.begin()+1, selBefore.begin(), selBefore.end()); // after "-az"
+      args.insert(args.end(), selAfter.begin(), selAfter.end());
     }
 
     args.push_back(remoteDir.string()+"/");

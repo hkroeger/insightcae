@@ -253,16 +253,40 @@ msgid ""
 "finished."
 msgstr ""
 
-msgid "The shutdown is in progress."
+msgid "The final actions after completion are in progress."
+msgstr ""
+
+msgid "Temporary remote directories are always removed after completion."
 msgstr ""
 
 msgid ""
-"The server cannot be shut down from here (no destruction command configured)."
+"Remove the remote directory (and the local remote configuration), once the "
+"remote analysis has finished.\n"
+"Files, which are not downloaded, are lost."
 msgstr ""
 
 msgid ""
-"Shut down the server (execute its destruction command), once the result set "
-"has been retrieved (and the files have been downloaded, if selected).\n"
+"The server instance cannot be disposed from here (no destruction command "
+"configured)."
+msgstr ""
+
+msgid ""
+"Shut down the server and delete its instance (execute its destruction "
+"command), once the result set has been retrieved (and the files have been "
+"downloaded, if selected).\n"
+"All data on the instance, which is not downloaded, is lost."
+msgstr ""
+
+msgid ""
+"The server cannot be shut down from here (no shutdown command configured)."
+msgstr ""
+
+msgid "The server is shut down as part of its disposal."
+msgstr ""
+
+msgid ""
+"Shut down the server (execute its shutdown command), once the result set has "
+"been retrieved (and the files have been downloaded, if selected).\n"
 "Files in the remote directory, which are not downloaded, might be lost."
 msgstr ""
 
@@ -359,13 +383,21 @@ msgstr "Remote servers..."
 
 msgid ""
 "The remote server %1 is not reachable and cannot be launched from here (no "
-"creation command configured).\n"
+"launch or creation command configured).\n"
 "Please make sure that it is running and try again."
 msgstr ""
 
 #, fuzzy
 msgid "Remote server not running"
 msgstr "Remote servers..."
+
+msgid ""
+"The instance of the remote server %1 does not exist.\n"
+"Shall it be created and launched?\n"
+"\n"
+"Note: a new instance does not contain the remote directory and the analysis, "
+"which ran before. Resuming will fail."
+msgstr ""
 
 msgid ""
 "The remote server %1 is not running.\n"
@@ -538,8 +570,30 @@ msgstr "timeout while stopping remote analysis server"
 msgid "Downloading results"
 msgstr "&Load results..."
 
+#, fuzzy, c-format
+msgid "Removing remote directory %s"
+msgstr "Remote directory is invalid!"
+
+#, fuzzy, c-format
+msgid "The remote directory %s could not be removed: %s"
+msgstr "timeout while stopping remote analysis server"
+
+#, fuzzy, c-format
+msgid "Disposing server %s"
+msgstr "stop server"
+
 #, c-format
 msgid "Shutting down server %s"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Could not remove %s: %s"
+msgstr "Could not clean remote location! Reason: %s"
+
+#, c-format
+msgid ""
+"The server %s could not be disposed after completion: %s\n"
+"Please check and dispose it manually, to avoid unnecessary costs."
 msgstr ""
 
 #, c-format

@@ -13,12 +13,14 @@ addToStaticFunctionTable(ParameterGenerator, LabeledArrayGenerator, insertrule);
 LabeledArrayGenerator::LabeledArrayGenerator(
     const std::string& pok,
     ArgType at,
+    const boost::optional<std::string>& ekp,
     ParameterGeneratorPtr v,
     size_t n,
     const std::string& d)
 : ParameterGenerator(d),
     patternOrKeysPath(pok),
     argType(at),
+    excludeKeysPath(ekp),
     value(v),
     num(n)
 {}
@@ -115,6 +117,10 @@ void LabeledArrayGenerator::cppWriteCreateStatement
     {
         auto keyPath = patternOrKeysPath;
         os<<psvarname<<"->setKeySourceParameterPathUninitialized(ParameterSetBuilder::key(), \""<<keyPath<<"\");";
+        if (excludeKeysPath)
+        {
+            os<<psvarname<<"->setExcludeKeySourceParameterPathUninitialized(ParameterSetBuilder::key(), \""<<*excludeKeysPath<<"\");";
+        }
     }
 
     value->cppWriteCreateStatement(os, name+"_default_value");

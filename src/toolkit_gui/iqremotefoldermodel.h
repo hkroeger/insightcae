@@ -18,12 +18,14 @@ struct IQRemoteFolder;
  * The folders are listed lazily (when expanded) and in background,
  * so that the GUI remains responsive. While a folder is being listed,
  * a placeholder row is displayed below it.
+ * Optionally, the files are displayed as well.
  */
 class TOOLKIT_GUI_EXPORT IQRemoteFolderModel : public QAbstractItemModel
 {
   Q_OBJECT
 
   insight::RemoteServerPtr server_;
+  bool showFiles_;
   IQRemoteFolder* baseFolder_;
   QStringList pendingPaths_; // folders being listed
 
@@ -34,6 +36,7 @@ class TOOLKIT_GUI_EXPORT IQRemoteFolderModel : public QAbstractItemModel
   void listingFinished(
       IQRemoteFolder* folder,
       const std::vector<boost::filesystem::path>& subfolders,
+      const std::vector<boost::filesystem::path>& files,
       const QString& error );
 
   void removeChildren(IQRemoteFolder* folder);
@@ -42,7 +45,8 @@ public:
   explicit IQRemoteFolderModel(
       QObject *parent,
       insight::RemoteServerPtr server,
-      const boost::filesystem::path& basePath );
+      const boost::filesystem::path& basePath,
+      bool showFiles = false );
 
   // Header:
   QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
@@ -71,6 +75,21 @@ public:
    * For an invalid index, the base path.
    */
   boost::filesystem::path folder(QModelIndex i) const;
+
+  /**
+   * @brief relativePath
+   * @return
+   * the path of the file or folder at the index, relative to the base path.
+   * Empty for placeholder rows and for an invalid index.
+   */
+  boost::filesystem::path relativePath(QModelIndex i) const;
+
+  /**
+   * @brief isEntry
+   * @return
+   * true, if the index refers to a file or folder (not a placeholder row)
+   */
+  bool isEntry(QModelIndex i) const;
 
   /**
    * @brief refreshBelow

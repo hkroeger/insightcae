@@ -146,7 +146,7 @@ void AnalysisForm::restoreState(
     auto ps = parameters().cloneAs<insight::ParameterSet>();
     ps->readFromRootNode(rootNode);
     ps->resolveRelativePaths(parentPath);
-    psmodel_->resetParameterValues( *ps );
+    psmodel_->assignParameterValues( *ps );
 
     if (auto *vs = rootNode.first_node("viewerState"))
     {
@@ -879,7 +879,7 @@ void AnalysisForm::onMergeParameters()
             // re-sync dependent data (e.g. keys of labeled arrays with key source)
             auto fps = insight::ParameterSet::finalize(std::move(ps));
 
-            psmodel_->resetParameterValues(*fps);
+            psmodel_->assignParameterValues(*fps);
         }
     }
 }

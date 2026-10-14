@@ -74,6 +74,11 @@ int requestedVerbosityLevel();
 std::ostream& dbg(int verbosityLevel = 1);
 std::ostream& dbg_slot(const std::string& signalName);
 
+// like dbg(VL), but the streamed expressions are not evaluated at all,
+// if the verbosity level is too low. Use in performance critical code.
+#define INSIGHT_DBG(VL) \
+if (insight::requestedVerbosityLevel()<(VL)) {} else insight::dbg(VL)
+
 #define DBG_LOC_EXPL(VL) \
 insight::dbg(VL) << "(in " __FILE__ "@" << __LINE__ << "): "
 

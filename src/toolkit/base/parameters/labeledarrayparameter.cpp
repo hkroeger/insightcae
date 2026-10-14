@@ -7,6 +7,8 @@
 #include "base/translations.h"
 #include "base/parameters/subsetparameter.h"
 #include "base/parameters/arrayparameter.h"
+#include "base/parameters/selectionparameter.h"
+#include "base/parameters/simpleparameter.h"
 #include <algorithm>
 #include <iterator>
 
@@ -18,6 +20,82 @@ namespace insight {
 
 defineType(LabeledArrayParameter);
 addParameterFactories(LabeledArrayParameter);
+
+
+
+
+boost::optional<std::string> LabeledArrayParameter::excludedKey() const
+{
+    if (!excludeKeySourceParameterPath_.empty()
+        && hasParent()
+        && parentSet().hasPath(excludeKeySourceParameterPath_))
+    {
+        auto& e = const_cast<ParameterSet&>(parentSet())
+                      .getByPath(excludeKeySourceParameterPath_);
+
+        if (auto* sp = dynamic_cast<const SelectionParameterInterface*>(&e))
+        {
+            if (!sp->selection().empty()) return sp->selection();
+        }
+        else if (auto* sp = dynamic_cast<const StringParameter*>(&e))
+        {
+            if (!(*sp)().empty()) return (*sp)();
+        }
+    }
+    return boost::optional<std::string>();
+}
+
+
+
+
+void LabeledArrayParameter::syncKeysWith(const LabeledArrayParameter& src)
+{
+    auto srcKeys = src.keys();
+
+    auto validKeys = srcKeys;
+    currentExcludedKey_ = excludedKey();
+    if (currentExcludedKey_)
+        validKeys.erase(*currentExcludedKey_);
+
+    // Only remove stale keys when the key-source is non-empty.
+    // If the key-source is empty, the parent hierarchy may not yet
+    // be fully assembled (e.g. during assignFrom when parameters are
+    // processed alphabetically and the key-source parameter comes
+    // after this one). Removing keys prematurely would destroy
+    // values that were correctly cloned/loaded into this array.
+    // The signal connections set up in initializeHierarchy will keep this array in
+    // sync once the key-source is populated.
+    // (The check is done on the source keys before exclusion, so that
+    // a source containing only the excluded key still clears this array.)
+    if (!srcKeys.empty())
+    {
+        auto myKeys = keys();
+        std::set<std::string>  tbr;
+        std::set_difference(
+            myKeys.begin(), myKeys.end(),
+            validKeys.begin(), validKeys.end(),
+            std::inserter(tbr, tbr.begin()) );
+
+        for (auto& k: tbr)
+        {
+            eraseValueImpl(k);
+        }
+    }
+
+    {
+        auto myKeys = keys();
+        std::set<std::string> tba;
+        std::set_difference(
+            validKeys.begin(), validKeys.end(),
+            myKeys.begin(), myKeys.end(),
+            std::inserter(tba, tba.begin()) );
+
+        for (auto& k: tba)
+        {
+            insertWithDefaultsImpl(k);
+        }
+    }
+}
 
 
 
@@ -39,56 +117,7 @@ void LabeledArrayParameter::initializeHierarchy()
                 .get<LabeledArrayParameter>(
                     keySourceParameterPath_);
 
-                // auto ukeys = [this]() {
-                //     std::set<std::string> r;
-                //     std::transform(
-                //         value_.begin(), value_.end(),
-                //         std::inserter(r, r.begin()),
-                //         [](const value_type::value_type& v){return v.first;} );
-                //     return r;
-                // };
-
-                // auto blocker = blockUpdateValueSignal();
-
-                {
-                    auto myKeys = keys();
-                    auto validKeys = op.keys();
-                    // Only remove stale keys when the key-source is non-empty.
-                    // If the key-source is empty, the parent hierarchy may not yet
-                    // be fully assembled (e.g. during assignFrom when parameters are
-                    // processed alphabetically and the key-source parameter comes
-                    // after this one). Removing keys prematurely would destroy
-                    // values that were correctly cloned/loaded into this array.
-                    // The signal connections set up below will keep this array in
-                    // sync once the key-source is populated.
-                    if (!validKeys.empty())
-                    {
-                        std::set<std::string>  tbr;
-                        std::set_difference(
-                            myKeys.begin(), myKeys.end(),
-                            validKeys.begin(), validKeys.end(),
-                            std::inserter(tbr, tbr.begin()) );
-
-                        for (auto& k: tbr)
-                        {
-                            eraseValueImpl(k);
-                        }
-                    }
-                }
-                {
-                    auto myKeys = keys();
-                    auto validKeys = op.keys();
-                    std::set<std::string> tba;
-                    std::set_difference(
-                        validKeys.begin(), validKeys.end(),
-                        myKeys.begin(), myKeys.end(),
-                        std::inserter(tba, tba.begin()) );
-
-                    for (auto& k: tba)
-                    {
-                        insertWithDefaultsImpl(k);
-                    }
-                }
+                syncKeysWith(op);
 
                 syncConnections_.insert(std::move(
                     op.newItemAdded.connect(
@@ -96,7 +125,8 @@ void LabeledArrayParameter::initializeHierarchy()
                         {
                             DBG_SLOT(newItemAdded);
 
-                            getOrInsertDefaultValueImpl(label);
+                            if (excludedKey()!=label)
+                                getOrInsertDefaultValueImpl(label);
                         })
                     ));
                 syncConnections_.insert(std::move(
@@ -112,14 +142,42 @@ void LabeledArrayParameter::initializeHierarchy()
 
                 syncConnections_.insert(std::move(
                     op.itemRelabeled.connect(
-                        [this](const std::string& label, const std::string& newLabel)
+                        [this,&op](const std::string& label, const std::string& newLabel)
                         {
                             DBG_SLOT(itemRelabeled);
 
-                            if (value_.count(label))
+                            if (value_.count(label) && excludedKey()!=newLabel)
                                 changeLabelImpl(label, newLabel);
+                            else
+                                syncKeysWith(op); // renamed into or out of the excluded key
                         })
                     ));
+
+                if (!excludeKeySourceParameterPath_.empty()
+                    && ps.hasPath(excludeKeySourceParameterPath_))
+                {
+                    auto& ex = ps.getByPath(excludeKeySourceParameterPath_);
+                    syncConnections_.insert(std::move(
+                        ex.valueChanged.connect(
+                            [this]()
+                            {
+                                DBG_SLOT(excludedKeyChanged);
+
+                                // valueChanged may be emitted without change of the excluded key
+                                // (e.g. by a key selection, while its array is being relabeled).
+                                // A full re-sync at that point would drop the values of
+                                // entries, which are about to be relabeled.
+                                if (excludedKey()==currentExcludedKey_)
+                                    return;
+
+                                // look up key source again, it may have been replaced
+                                auto& ps=parentSet();
+                                if (ps.hasPath(keySourceParameterPath_))
+                                    syncKeysWith(
+                                        ps.get<LabeledArrayParameter>(keySourceParameterPath_) );
+                            })
+                        ));
+                }
 
                 isBound_ = true;
             }
@@ -209,6 +267,17 @@ void LabeledArrayParameter::setKeySourceParameterPathImpl(const std::string& pp,
 {
     keySourceParameterPath_=pp;
     if (init) initializeHierarchy();
+}
+
+void LabeledArrayParameter::setExcludeKeySourceParameterPathImpl(const std::string& pp, bool init)
+{
+    excludeKeySourceParameterPath_=pp;
+    if (init) initializeHierarchy();
+}
+
+const std::string& LabeledArrayParameter::excludeKeySourceParameterPath() const
+{
+    return excludeKeySourceParameterPath_;
 }
 
 void LabeledArrayParameter::unsetKeySourceParameterPath()
@@ -875,6 +944,7 @@ std::unique_ptr<hierarchicalData::Element> LabeledArrayParameter::doCloneUniniti
     }
 
     np->setKeySourceParameterPathImpl(keySourceParameterPath_, false);
+    np->setExcludeKeySourceParameterPathImpl(excludeKeySourceParameterPath_, false);
 
     if (baseDirectory_)
         np->resolveRelativePaths(*baseDirectory_);
@@ -982,6 +1052,8 @@ bool LabeledArrayParameter::isEqual(const Element &op) const
         if (labelPattern_!=oa->labelPattern_)
             return false;
         if (keySourceParameterPath_!=oa->keySourceParameterPath_)
+            return false;
+        if (excludeKeySourceParameterPath_!=oa->excludeKeySourceParameterPath_)
             return false;
         if (size()!=oa->size())
             return false;

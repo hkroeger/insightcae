@@ -237,6 +237,20 @@ public:
    */
     void notifyElementChange(const QModelIndex &index);
 
+    /**
+     * @brief notifyElementAppearanceChange
+     * trigger repaint of an element, whose value did not change
+     * but whose appearance (e.g. font) might have.
+     * Does not record an undo state.
+     */
+    void notifyElementAppearanceChange(const insight::hierarchicalData::Element& e);
+
+    /**
+     * @brief invalidateCachedStates
+     * discard cached display states of all wrappers and repaint them
+     */
+    void invalidateCachedStates();
+
     const insight::hierarchicalData::Element& getHierarchicalData() const;
     inline bool hasData() const
     {

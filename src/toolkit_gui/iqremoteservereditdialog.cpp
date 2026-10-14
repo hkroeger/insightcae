@@ -72,6 +72,27 @@ IQRemoteServerEditDialog::IQRemoteServerEditDialog(QWidget *parent) :
           }
   );
 
+  connect(ui->btnDispose, &QPushButton::clicked, this,
+          [&]()
+          {
+            auto index = ui->lwServers->currentIndex();
+            if (!index.isValid()) return;
+            auto rsc = serverListModel_.getRemoteServer(index);
+
+            auto answer = QMessageBox::warning(
+                this, _("Dispose server"),
+                QString(_("Shut down the server %1 and delete its instance?\n\n"
+                          "Analyses, which are currently running on it, will be terminated"
+                          " and all data on the instance will be deleted!"))
+                    .arg(QString::fromStdString(*rsc)),
+                QMessageBox::Yes|QMessageBox::No, QMessageBox::No );
+            if (answer!=QMessageBox::Yes) return;
+
+            IQServerLaunchDialog::disposeServer(*rsc, this); // displays errors itself
+            serverListModel_.checkStatus(index);
+          }
+  );
+
   connect(ui->btnRefreshStatus, &QPushButton::clicked,
           &serverListModel_, &IQRemoteServerListModel::checkAllStatus );
 
@@ -149,31 +170,47 @@ void IQRemoteServerEditDialog::updateServerActionButtons()
 
   bool isServer = index.isValid() && !serverListModel_.isServerPool(index);
   auto online = serverListModel_.isOnline(index);
+  auto exists = serverListModel_.exists(index);
 
   insight::RemoteServer::ConfigPtr rsc;
   if (isServer) rsc = serverListModel_.getRemoteServer(index);
 
   // launch: only a server, which is down and can be created
   ui->btnLaunch->setEnabled(
-      rsc && online && !*online && rsc->isDynamicallyCreatable() );
+      rsc && online && !*online && rsc->canBeLaunched() );
   ui->btnLaunch->setToolTip(
       !rsc ? _("Select a server (not a server pool).") :
       !online ? _("Checking, if the server is reachable...") :
       *online ? _("The server is running.") :
-      !rsc->isDynamicallyCreatable() ?
-          _("The server cannot be launched from here (no creation command configured).") :
-          _("Launch the server (execute its creation command).") );
+      !rsc->canBeLaunched() ?
+          _("The server cannot be launched from here (no launch or creation command configured).") :
+      (exists && !*exists) ?
+          _("Create the instance and launch the server (execute its creation command).") :
+          _("Launch the server (execute its launch command; create its instance before, if it does not exist).") );
 
   // shutdown: only a running server, which can be destroyed
   ui->btnShutdown->setEnabled(
-      rsc && online && *online && rsc->isDynamicallyDestructable() );
+      rsc && online && *online && rsc->canBeShutDown() );
   ui->btnShutdown->setToolTip(
       !rsc ? _("Select a server (not a server pool).") :
       !online ? _("Checking, if the server is reachable...") :
       !*online ? _("The server is not running.") :
-      !rsc->isDynamicallyDestructable() ?
-          _("The server cannot be shut down from here (no destruction command configured).") :
-          _("Shut down the server (execute its destruction command).") );
+      !rsc->canBeShutDown() ?
+          _("The server cannot be shut down from here (no shutdown command configured).") :
+          _("Shut down the server (execute its shutdown command).") );
+
+  // dispose: a running or existing instance, which can be deleted
+  bool instancePresent = (online && *online) || (exists && *exists);
+  ui->btnDispose->setEnabled(
+      rsc && rsc->canBeDisposed() && instancePresent );
+  ui->btnDispose->setToolTip(
+      !rsc ? _("Select a server (not a server pool).") :
+      !rsc->canBeDisposed() ?
+          _("The server instance cannot be disposed from here (no destruction command configured).") :
+      !online ? _("Checking, if the server is reachable...") :
+      (exists && !*exists) ? _("The instance does not exist.") :
+      !instancePresent ? _("Checking, if the instance exists...") :
+          _("Shut down the server (if running) and delete its instance (execute its destruction command).") );
 }
 
 

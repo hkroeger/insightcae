@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
             "<remoteServer label=\"srv1\" type=\"SSHLinux\" host=\"host1.example\" baseDirectory=\"/scratch/x\" np=\"8\"/>"
             "<remoteServer label=\"srv2\" host=\"host2.example\" baseDirectory=\"/scratch/y\"/>"
             "<remoteServer label=\"srv3\" type=\"SSHLinux\" host=\"host3.example\" baseDirectory=\"/scratch/z\""
-            "   creationCommand=\"create %d\" destructionCommand=\"destroy %d\"/>"
+            "   launchCommand=\"create %d\" shutdownCommand=\"destroy %d\"/>"
             "</root>" );
 
         RemoteServerList l;
@@ -113,8 +113,88 @@ int main(int argc, char* argv[])
         check(s2->np_==1, "default np of srv2: %d", s2->np_);
 
         auto s3 = findAs<SSHLinuxServer::Config>(l, "srv3");
-        check(s3->isDynamicallyCreatable() && s3->isDynamicallyDestructable(),
+        check(s3->canBeLaunched() && s3->canBeShutDown(),
               "srv3 should be dynamically creatable and destructable");
+    });
+
+
+    tr.run("cloud instance commands: parsing, placeholders and saving", [&]()
+    {
+        dirs.clear();
+        dirs.writeUser(
+            "<root>"
+            "<remoteServer label=\"cloud\" type=\"SSHLinux\" host=\"vm1.example\" baseDirectory=\"/b\""
+            "   launchCommand=\"start %{serverLabel}\" shutdownCommand=\"stop %{host}\""
+            "   creationCommand=\"create %{serverLabel} %{host}\" destructionCommand=\"delete %{serverLabel}\""
+            "   existenceCheckCommand=\"show %{serverLabel}\"/>"
+            "</root>" );
+
+        RemoteServerList l;
+        auto c = findAs<SSHLinuxServer::Config>(l, "cloud");
+        check(c->creationCommand_=="create %{serverLabel} %{host}", "creation command: "+c->creationCommand_);
+        check(c->destructionCommand_=="delete %{serverLabel}", "destruction command: "+c->destructionCommand_);
+        check(c->existenceCheckCommand_=="show %{serverLabel}", "existence check command: "+c->existenceCheckCommand_);
+        check(c->canBeCreated() && c->canBeDisposed() && c->canBeLaunched() && c->canBeShutDown(),
+              "cloud server should be creatable, disposable, launchable and shut-downable");
+
+        auto e = c->expandPlaceholders(c->creationCommand_);
+        check(e=="create cloud vm1.example", "expanded creation command: "+e);
+
+        TemporaryDirectory out;
+        l.writeConfiguration(out.path()/"remoteservers.list");
+        auto content = readFile(out.path()/"remoteservers.list");
+        for (const char* a: {"creationCommand", "destructionCommand", "existenceCheckCommand"})
+        {
+            check(content.find(a)!=std::string::npos,
+                  std::string(a)+" must be written:\n"+content);
+        }
+    });
+
+
+    tr.run("server without creation commands cannot be created", [&]()
+    {
+        SSHLinuxServer::Config c("/b", 1, "h", "start", "stop");
+        check(c.canBeLaunched() && !c.canBeCreated() && !c.canBeDisposed(),
+              "server with only launch/shutdown commands");
+        check(!c.exists(), "existence must be unknown without check command");
+    });
+
+
+    tr.run("incomplete set of creation commands is rejected", [&]()
+    {
+        checkIsolated([]()
+        {
+            XMLDocument doc;
+            auto *e = doc.allocate_node(rapidxml::node_element, "remoteServer");
+            e->append_attribute(doc.allocate_attribute("label", "cloud"));
+            e->append_attribute(doc.allocate_attribute("type", "SSHLinux"));
+            e->append_attribute(doc.allocate_attribute("host", "h"));
+            e->append_attribute(doc.allocate_attribute("baseDirectory", "/b"));
+            e->append_attribute(doc.allocate_attribute("creationCommand", "create"));
+            e->append_attribute(doc.allocate_attribute("destructionCommand", "delete"));
+            expectThrows<insight::Exception>(
+                [&]() { RemoteServer::Config::create(e); },
+                "creating SSH config without existence check command" );
+        }, "incomplete set of creation commands");
+    });
+
+
+    tr.run("pool expansion keeps the %{...} placeholders", [&]()
+    {
+        SSHLinuxServer::Config c("/b", 1, "node%d", "start %d", "stop %d");
+        c.creationCommand_ = "create %{serverLabel} --name vm%d";
+        c.destructionCommand_ = "delete vm%d";
+        c.existenceCheckCommand_ = "show %{host}";
+        static_cast<std::string&>(c) = "pool";
+        check(c.isExpandable(), "config with %d should be expandable");
+
+        auto x = std::dynamic_pointer_cast<SSHLinuxServer::Config>(c.expanded(3));
+        check(bool(x), "expanded config has unexpected type");
+        check(x->hostName_=="node3", "expanded host: "+x->hostName_);
+        check(x->creationCommand_=="create %{serverLabel} --name vm3",
+              "expanded creation command: "+x->creationCommand_);
+        auto e = x->expandPlaceholders(x->existenceCheckCommand_);
+        check(e=="show node3", "existence check after placeholder expansion: "+e);
     });
 
 

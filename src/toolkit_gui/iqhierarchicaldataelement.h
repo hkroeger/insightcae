@@ -112,6 +112,13 @@ public:
     virtual QVariant textColor() const;
     virtual QVariant textFont() const;
 
+    /**
+     * @brief resetCachedState
+     * discard any cached display state (e.g. modification state),
+     * which depends on the element value or on external data
+     */
+    virtual void resetCachedState();
+
     virtual void populateContextMenu(
         QMenu* m,
         IQCADModel3DViewer *viewer );

@@ -10,6 +10,7 @@
 #include <QStyle>
 
 #include <algorithm>
+#include <set>
 #include <thread>
 
 
@@ -19,10 +20,10 @@ struct IQRemoteFolder
   : public QObject,
     public QList<IQRemoteFolder*>
 {
-  enum Kind { Folder, Loading, Error } kind;
+  enum Kind { Folder, File, Loading, Error } kind;
   enum State { NotListed, Listing, Listed } state = NotListed;
 
-  QString name; // folder name or message
+  QString name; // folder/file name or message
 
   IQRemoteFolder(QObject* parent, Kind k, const QString& n)
     : QObject(parent), kind(k), name(n)
@@ -33,9 +34,11 @@ struct IQRemoteFolder
     return dynamic_cast<IQRemoteFolder*>(parent());
   }
 
+  bool isEntry() const { return kind==Folder || kind==File; }
+
   boost::filesystem::path folderPath() const
   {
-    if (kind!=Folder)
+    if (!isEntry())
     {
       // placeholder rows: path of the folder above
       if (auto *pf=parentFolder()) return pf->folderPath();
@@ -46,6 +49,13 @@ struct IQRemoteFolder
     if (auto* pf=parentFolder())
       pp=pf->folderPath();
     return ( pp / boost::filesystem::path(name.toStdString()) ).generic_path();
+  }
+
+  boost::filesystem::path relativePath() const
+  {
+    auto *pf=parentFolder();
+    if (!isEntry() || !pf) return boost::filesystem::path(); // placeholder or base
+    return ( pf->relativePath() / boost::filesystem::path(name.toStdString()) ).generic_path();
   }
 };
 
@@ -114,14 +124,26 @@ void IQRemoteFolderModel::startListing(IQRemoteFolder* folder)
   QPointer<IQRemoteFolderModel> modelGuard(this);
   QPointer<IQRemoteFolder> folderGuard(folder);
   auto server = server_;
+  bool showFiles = showFiles_;
   std::thread(
-      [server, path, qpath, modelGuard, folderGuard]()
+      [server, path, qpath, modelGuard, folderGuard, showFiles]()
       {
-        std::vector<boost::filesystem::path> subfolders;
+        std::vector<boost::filesystem::path> subfolders, files;
         QString error;
         try
         {
           subfolders = server->listRemoteSubdirectories(path);
+          if (showFiles)
+          {
+            // all entries, which are not folders
+            std::set<std::string> sfn;
+            for (const auto& sf: subfolders) sfn.insert(sf.string());
+            for (const auto& e: server->listRemoteDirectory(path))
+            {
+              if (sfn.find(e.string())==sfn.end())
+                files.push_back(e);
+            }
+          }
         }
         catch (const std::exception& e)
         {
@@ -130,12 +152,12 @@ void IQRemoteFolderModel::startListing(IQRemoteFolder* folder)
 
         QMetaObject::invokeMethod(
             qApp,
-            [modelGuard, folderGuard, qpath, subfolders, error]()
+            [modelGuard, folderGuard, qpath, subfolders, files, error]()
             {
               if (!modelGuard) return;
               modelGuard->pendingPaths_.removeOne(qpath);
               if (folderGuard)
-                modelGuard->listingFinished(folderGuard.data(), subfolders, error);
+                modelGuard->listingFinished(folderGuard.data(), subfolders, files, error);
               Q_EMIT modelGuard->listingStateChanged(
                   modelGuard->pendingPaths_.size(),
                   modelGuard->pendingPaths_.isEmpty() ?
@@ -152,6 +174,7 @@ void IQRemoteFolderModel::startListing(IQRemoteFolder* folder)
 void IQRemoteFolderModel::listingFinished(
     IQRemoteFolder* folder,
     const std::vector<boost::filesystem::path>& subfolders,
+    const std::vector<boost::filesystem::path>& files,
     const QString& error )
 {
   removeChildren(folder); // placeholder
@@ -167,18 +190,27 @@ void IQRemoteFolderModel::listingFinished(
     return;
   }
 
-  QStringList names;
-  for (const auto& sf: subfolders)
-    names.append(QString::fromStdString(sf.string()));
-  std::sort(names.begin(), names.end(),
-            [](const QString& a, const QString& b)
-            { return a.compare(b, Qt::CaseInsensitive)<0; } );
-
-  if (!names.isEmpty())
+  auto sortedNames = [](const std::vector<boost::filesystem::path>& paths)
   {
-    beginInsertRows(idx, 0, names.size()-1);
-    for (const auto& n: names)
+    QStringList names;
+    for (const auto& p: paths)
+      names.append(QString::fromStdString(p.string()));
+    std::sort(names.begin(), names.end(),
+              [](const QString& a, const QString& b)
+              { return a.compare(b, Qt::CaseInsensitive)<0; } );
+    return names;
+  };
+  auto folderNames = sortedNames(subfolders);
+  auto fileNames = sortedNames(files);
+
+  if (!folderNames.isEmpty() || !fileNames.isEmpty())
+  {
+    // folders first, then files
+    beginInsertRows(idx, 0, folderNames.size()+fileNames.size()-1);
+    for (const auto& n: folderNames)
       folder->append(new IQRemoteFolder(folder, IQRemoteFolder::Folder, n));
+    for (const auto& n: fileNames)
+      folder->append(new IQRemoteFolder(folder, IQRemoteFolder::File, n));
     endInsertRows();
   }
   else if (idx.isValid())
@@ -194,9 +226,11 @@ void IQRemoteFolderModel::listingFinished(
 IQRemoteFolderModel::IQRemoteFolderModel(
     QObject *parent,
     insight::RemoteServerPtr server,
-    const boost::filesystem::path& basePath )
+    const boost::filesystem::path& basePath,
+    bool showFiles )
   : QAbstractItemModel(parent),
-    server_(server)
+    server_(server),
+    showFiles_(showFiles)
 {
   // the base folder is the (invisible) root. It is listed upon the first fetchMore().
   baseFolder_=new IQRemoteFolder(
@@ -211,7 +245,7 @@ QVariant IQRemoteFolderModel::headerData(int section, Qt::Orientation orientatio
 {
   if (section==0 && orientation==Qt::Horizontal && role==Qt::DisplayRole)
   {
-    return _("Folder Name");
+    return showFiles_ ? _("Name") : _("Folder Name");
   }
   return QVariant();
 }
@@ -314,12 +348,14 @@ QVariant IQRemoteFolderModel::data(const QModelIndex &index, int role) const
   case Qt::DecorationRole:
     if (f->kind==IQRemoteFolder::Folder)
       return QApplication::style()->standardIcon(QStyle::SP_DirIcon);
+    if (f->kind==IQRemoteFolder::File)
+      return QApplication::style()->standardIcon(QStyle::SP_FileIcon);
     if (f->kind==IQRemoteFolder::Error)
       return QApplication::style()->standardIcon(QStyle::SP_MessageBoxWarning);
     break;
 
   case Qt::FontRole:
-    if (f->kind!=IQRemoteFolder::Folder)
+    if (!f->isEntry())
     {
       QFont fnt;
       fnt.setItalic(true);
@@ -344,7 +380,7 @@ Qt::ItemFlags IQRemoteFolderModel::flags(const QModelIndex &index) const
   if (!index.isValid())
     return Qt::NoItemFlags;
 
-  if (node(index)->kind!=IQRemoteFolder::Folder)
+  if (!node(index)->isEntry())
     return Qt::ItemIsEnabled; // placeholder rows are not selectable
 
   return Qt::ItemIsEnabled|Qt::ItemIsSelectable;
@@ -356,6 +392,23 @@ Qt::ItemFlags IQRemoteFolderModel::flags(const QModelIndex &index) const
 boost::filesystem::path IQRemoteFolderModel::folder(QModelIndex i) const
 {
   return node(i)->folderPath();
+}
+
+
+
+
+boost::filesystem::path IQRemoteFolderModel::relativePath(QModelIndex i) const
+{
+  if (!i.isValid()) return boost::filesystem::path();
+  return node(i)->relativePath();
+}
+
+
+
+
+bool IQRemoteFolderModel::isEntry(QModelIndex i) const
+{
+  return i.isValid() && node(i)->isEntry();
 }
 
 

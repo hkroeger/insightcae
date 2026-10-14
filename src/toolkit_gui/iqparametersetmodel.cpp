@@ -369,6 +369,18 @@ void IQParameterSetModel::resetParameterValues(
   }
 
   resetValue(ps);
+
+  // defaults have changed
+  invalidateCachedStates();
+}
+
+
+
+void IQParameterSetModel::assignParameterValues(
+    const insight::ParameterSet &ps )
+{
+  resetValue(ps);
+  invalidateCachedStates();
 }
 
 

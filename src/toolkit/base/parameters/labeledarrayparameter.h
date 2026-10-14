@@ -31,6 +31,15 @@ protected:
      * path to another parameter, to which the keys are synchronized
      */
     std::string keySourceParameterPath_;
+
+    /**
+     * @brief excludeKeySourceParameterPath_
+     * path to a parameter yielding a single key (selection or string parameter),
+     * which is excluded from the keys synchronized from the key source
+     */
+    std::string excludeKeySourceParameterPath_;
+    boost::optional<std::string> currentExcludedKey_; ///< excluded key at last sync
+
     bool isBound_ = false;
     std::set<boost::signals2::scoped_connection> syncConnections_;
 
@@ -48,6 +57,10 @@ protected:
     Parameter& getOrInsertDefaultValueImpl( const std::string& label );
 
     void setKeySourceParameterPathImpl(const std::string& pp, bool initializeHierarchy = true);
+    void setExcludeKeySourceParameterPathImpl(const std::string& pp, bool initializeHierarchy = true);
+
+    boost::optional<std::string> excludedKey() const;
+    void syncKeysWith(const LabeledArrayParameter& src);
 
     void initializeHierarchy() override;
 
@@ -82,6 +95,11 @@ public:
     { setKeySourceParameterPathImpl(pp, true); };
 
     void unsetKeySourceParameterPath();
+
+    inline void setExcludeKeySourceParameterPath(const std::string& pp)
+    { setExcludeKeySourceParameterPathImpl(pp, true); };
+    const std::string& excludeKeySourceParameterPath() const;
+
     bool keysAreLocked() const;
 
     std::set<std::string> keys() const;
@@ -149,6 +167,10 @@ public:
     inline void setKeySourceParameterPathUninitialized(
         ParameterSetBuilder::Key, const std::string& pp)
     { setKeySourceParameterPathImpl(pp, false); };
+
+    inline void setExcludeKeySourceParameterPathUninitialized(
+        ParameterSetBuilder::Key, const std::string& pp)
+    { setExcludeKeySourceParameterPathImpl(pp, false); };
 #endif
 
 protected:

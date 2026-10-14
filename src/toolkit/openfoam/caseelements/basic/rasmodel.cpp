@@ -10,6 +10,20 @@ RASModel::RASModel(OpenFOAMCase& c, ParameterSetInput ip)
 {}
 
 
+std::string RASModel::RASModelName() const
+{
+  return type();
+}
+
+
+OFDictData::dict RASModel::RASModelCoeffs() const
+{
+  OFDictData::dict d;
+  d["Prt"]=p().Prt;
+  return d;
+}
+
+
 void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& turbProperties=dictionaries.lookupDict(turbPropertiesDictName());
@@ -17,6 +31,13 @@ void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
     turbProperties["simulationType"]="RAS";
   else
     turbProperties["simulationType"]="RASModel";
+
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
+  std::string modelName=RASModelName();
+  RASProperties["RASModel"]=modelName;
+  RASProperties["turbulence"]="true";
+  RASProperties["printCoeffs"]="true";
+  RASProperties.subDict(modelName+"Coeffs").merge_overwrite(RASModelCoeffs());
 }
 
 OFDictData::dict& RASModel::modelPropsDict(OFdicts& dictionaries) const

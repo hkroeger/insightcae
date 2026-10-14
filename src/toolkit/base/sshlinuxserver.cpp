@@ -28,12 +28,12 @@ SSHLinuxServer::Config::Config(
     const boost::filesystem::path& bp,
     int np,
     const std::string hostName,
-    const std::string& creationCommand,
-    const std::string& destructionCommand )
+    const std::string& launchCommand,
+    const std::string& shutdownCommand )
   : LinuxRemoteServer::Config(bp, np),
     hostName_(hostName),
-    creationCommand_(creationCommand),
-    destructionCommand_(destructionCommand)
+    launchCommand_(launchCommand),
+    shutdownCommand_(shutdownCommand)
 {}
 
 SSHLinuxServer::Config::Config(
@@ -46,27 +46,44 @@ SSHLinuxServer::Config::Config(
    hostName_( getAttribute(*e, "host") )
 {
 
-  if (auto ac = e->first_attribute("creationCommand"))
+  if (auto ac = e->first_attribute("launchCommand"))
   {
-      creationCommand_=ac->value();
+      launchCommand_=ac->value();
   }
-  if (auto dc = e->first_attribute("destructionCommand"))
+  if (auto dc = e->first_attribute("shutdownCommand"))
   {
-      destructionCommand_=dc->value();
+      shutdownCommand_=dc->value();
   }
-  creationTimeout_ = std::chrono::seconds(
+  if (auto a = e->first_attribute("creationCommand"))
+      creationCommand_=a->value();
+  if (auto a = e->first_attribute("destructionCommand"))
+      destructionCommand_=a->value();
+  if (auto a = e->first_attribute("existenceCheckCommand"))
+      existenceCheckCommand_=a->value();
+  launchTimeout_ = std::chrono::seconds(
       getOptionalAttributeOrDefault(
-          *e, "creationTimeout", int(defaultCreationTimeout().count()) ) );
+          *e, "launchTimeout", int(defaultLaunchTimeout().count()) ) );
 
-  if (creationCommand_.empty() != destructionCommand_.empty())
+  if (launchCommand_.empty() != shutdownCommand_.empty())
   {
       throw insight::Exception(
-          "allocation and deallocation commands must be both specified!"
+          "launch and shutdown commands must be both specified!"
+          );
+  }
+
+  int nCreationCommands =
+      int(!creationCommand_.empty())
+      + int(!destructionCommand_.empty())
+      + int(!existenceCheckCommand_.empty());
+  if (nCreationCommands!=0 && nCreationCommands!=3)
+  {
+      throw insight::Exception(
+          "creation, destruction and existence check commands must be all specified!"
           );
   }
 }
 
-std::chrono::seconds SSHLinuxServer::Config::defaultCreationTimeout()
+std::chrono::seconds SSHLinuxServer::Config::defaultLaunchTimeout()
 {
     return std::chrono::seconds(300);
 }
@@ -126,12 +143,18 @@ void SSHLinuxServer::Config::save(rapidxml::xml_node<> *e, rapidxml::xml_documen
     appendAttribute(doc, *e, "type", "SSHLinux" );
     appendAttribute(doc, *e, "host", hostName_ );
     appendAttribute(doc, *e, "baseDirectory", defaultDirectory_.string() );
+    if (!launchCommand_.empty())
+        appendAttribute(doc, *e, "launchCommand", launchCommand_ );
+    if (!shutdownCommand_.empty())
+        appendAttribute(doc, *e, "shutdownCommand", shutdownCommand_ );
     if (!creationCommand_.empty())
         appendAttribute(doc, *e, "creationCommand", creationCommand_ );
     if (!destructionCommand_.empty())
         appendAttribute(doc, *e, "destructionCommand", destructionCommand_ );
-    if (creationTimeout_!=defaultCreationTimeout())
-        appendAttribute(doc, *e, "creationTimeout", int(creationTimeout_.count()) );
+    if (!existenceCheckCommand_.empty())
+        appendAttribute(doc, *e, "existenceCheckCommand", existenceCheckCommand_ );
+    if (launchTimeout_!=defaultLaunchTimeout())
+        appendAttribute(doc, *e, "launchTimeout", int(launchTimeout_.count()) );
 }
 
 RemoteServer::ConfigPtr SSHLinuxServer::Config::clone() const
@@ -143,11 +166,12 @@ RemoteServer::ConfigPtr SSHLinuxServer::Config::clone() const
 
 bool SSHLinuxServer::Config::isExpandable() const
 {
-    return
-        (hostName_.find("%d")!=std::string::npos)
-        || (creationCommand_.find("%d")!=std::string::npos)
-        || (destructionCommand_.find("%d")!=std::string::npos)
-        ;
+    for (const auto* s: { &hostName_, &launchCommand_, &shutdownCommand_,
+                          &creationCommand_, &destructionCommand_, &existenceCheckCommand_ })
+    {
+        if (s->find("%d")!=std::string::npos) return true;
+    }
+    return false;
 }
 
 RemoteServer::ConfigPtr SSHLinuxServer::Config::expanded(int id) const
@@ -155,40 +179,46 @@ RemoteServer::ConfigPtr SSHLinuxServer::Config::expanded(int id) const
     auto cp = std::make_shared<SSHLinuxServer::Config>(*this);
     cp->originatedFromExpansion_=true;
 
-    if (cp->hostName_.find("%d")
-        != std::string::npos)
+    // plain replacement: boost::format would not accept the %{...} placeholders
+    auto sid = boost::lexical_cast<std::string>(id);
+    for (auto* s: { &cp->hostName_, &cp->launchCommand_, &cp->shutdownCommand_,
+                    &cp->creationCommand_, &cp->destructionCommand_, &cp->existenceCheckCommand_ })
     {
-        cp->hostName_=
-            str(boost::format(cp->hostName_)%id);
+        boost::replace_all(*s, "%d", sid);
     }
 
     cp->std::string::operator=(
         *cp+"/"+cp->hostName_ );
 
-    if (cp->creationCommand_.find("%d")
-        != std::string::npos)
-    {
-        cp->creationCommand_=
-            str(boost::format(cp->creationCommand_)%id);
-    }
-
-    if (cp->destructionCommand_.find("%d")
-        != std::string::npos)
-    {
-        cp->destructionCommand_=
-            str(boost::format(cp->destructionCommand_)%id);
-    }
-
     return cp;
 }
 
 
-bool SSHLinuxServer::Config::isDynamicallyCreatable() const
+std::string SSHLinuxServer::Config::expandPlaceholders(const std::string& command) const
 {
-    return !creationCommand_.empty();
+    std::string r(command);
+    boost::replace_all(r, "%{serverLabel}", static_cast<const std::string&>(*this));
+    boost::replace_all(r, "%{host}", hostName_);
+    return r;
 }
 
-bool SSHLinuxServer::Config::isDynamicallyDestructable() const
+
+bool SSHLinuxServer::Config::canBeLaunched() const
+{
+    return !launchCommand_.empty() || canBeCreated();
+}
+
+bool SSHLinuxServer::Config::canBeShutDown() const
+{
+    return !shutdownCommand_.empty();
+}
+
+bool SSHLinuxServer::Config::canBeCreated() const
+{
+    return !creationCommand_.empty() && !existenceCheckCommand_.empty();
+}
+
+bool SSHLinuxServer::Config::canBeDisposed() const
 {
     return !destructionCommand_.empty();
 }
@@ -241,9 +271,45 @@ void runShellCommand(
 
 
 
+int SSHLinuxServer::Config::runLocalCommand(
+    const std::string& command, OutputLineCallback outputLine ) const
+{
+    auto cmd = expandPlaceholders(command);
+    if (outputLine) outputLine("$ "+cmd); else std::cout<<"$ "<<cmd<<std::endl;
+    int retcode=-1;
+    runShellCommand(cmd, outputLine, &retcode);
+    return retcode;
+}
+
+
+
+
+bool SSHLinuxServer::Config::waitUntilReachable(OutputLineCallback outputLine) const
+{
+    auto msg = [&](const std::string& line)
+    {
+        if (outputLine) outputLine(line); else std::cout<<line<<std::endl;
+    };
+
+    msg(str(format("Waiting for %s to become reachable (at most %d s)...")
+            % hostName_ % int(launchTimeout_.count()) ));
+    auto deadline = std::chrono::steady_clock::now() + launchTimeout_;
+    while (!isRunning())
+    {
+        if (std::chrono::steady_clock::now() >= deadline)
+            return false;
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+    msg(hostName_+" is reachable.");
+    return true;
+}
+
+
+
+
 void SSHLinuxServer::Config::launch(OutputLineCallback outputLine) const
 {
-    if ( creationCommand_.empty() || isRunning() )
+    if ( !canBeLaunched() || isRunning() )
         return;
 
     CurrentExceptionContext ex("launching server %s", c_str());
@@ -253,34 +319,81 @@ void SSHLinuxServer::Config::launch(OutputLineCallback outputLine) const
         if (outputLine) outputLine(line); else std::cout<<line<<std::endl;
     };
 
-    msg("$ "+creationCommand_);
-    int retcode=-1;
-    runShellCommand(creationCommand_, outputLine, &retcode);
-    if (retcode!=0)
+    // don't leave a (possibly costly) unusable instance behind
+    bool created=false;
+    auto cleanupAfterFailure = [&]()
+    {
+        if (created)
+        {
+            try
+            {
+                dispose(outputLine);
+            }
+            catch (std::exception& e)
+            {
+                insight::Warning("failed to dispose the execution server: %s", e.what());
+            }
+        }
+        else
+        {
+            runShutdownCommand(outputLine);
+        }
+    };
+
+    // create the instance, if it does not exist
+    if (canBeCreated())
+    {
+        auto ex = exists();
+        if (ex && !*ex)
+        {
+            msg("The instance does not exist, creating it...");
+            int retcode = runLocalCommand(creationCommand_, outputLine);
+            if (retcode!=0)
+            {
+                throw insight::Exception(
+                    "failed to create the execution server (creation command exited with code %d)",
+                    retcode );
+            }
+            created=true;
+
+            if (waitUntilReachable(outputLine))
+                return;
+
+            if (launchCommand_.empty())
+            {
+                cleanupAfterFailure();
+                throw insight::Exception(
+                    "the execution server %s was created, but is not reachable after %d s",
+                    hostName_.c_str(), int(launchTimeout_.count()) );
+            }
+
+            msg("The created instance is not reachable, executing the launch command...");
+        }
+    }
+
+    if (launchCommand_.empty())
     {
         throw insight::Exception(
-            "failed to launch execution server (creation command exited with code %d)",
+            "the execution server %s is not reachable and there is no launch command",
+            hostName_.c_str() );
+    }
+
+    int retcode = runLocalCommand(launchCommand_, outputLine);
+    if (retcode!=0)
+    {
+        cleanupAfterFailure();
+        throw insight::Exception(
+            "failed to launch execution server (launch command exited with code %d)",
             retcode );
     }
 
-    // wait, until the new server is reachable
-    msg(str(format("Waiting for %s to become reachable (at most %d s)...")
-            % hostName_ % int(creationTimeout_.count()) ));
-    auto deadline = std::chrono::steady_clock::now() + creationTimeout_;
-    while (!isRunning())
+    if (!waitUntilReachable(outputLine))
     {
-        if (std::chrono::steady_clock::now() >= deadline)
-        {
-            // don't leave a (possibly costly) unusable instance behind
-            runDestructionCommand(outputLine);
-
-            throw insight::Exception(
-                "the execution server %s was created, but is not reachable after %d s",
-                hostName_.c_str(), int(creationTimeout_.count()) );
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        cleanupAfterFailure();
+        throw insight::Exception(
+            "the execution server %s was launched, but is not reachable after %d s",
+            hostName_.c_str(), int(launchTimeout_.count()) );
     }
-    msg(hostName_+" is reachable.");
 }
 
 
@@ -288,44 +401,92 @@ void SSHLinuxServer::Config::launch(OutputLineCallback outputLine) const
 
 void SSHLinuxServer::Config::shutdown(OutputLineCallback outputLine) const
 {
-    if (!isDynamicallyDestructable())
+    if (!canBeShutDown())
     {
         RemoteServer::Config::shutdown(outputLine); // throws
     }
 
     CurrentExceptionContext ex("shutting down server %s", c_str());
 
-    auto msg = [&](const std::string& line)
-    {
-        if (outputLine) outputLine(line); else std::cout<<line<<std::endl;
-    };
-
-    msg("$ "+destructionCommand_);
-    int retcode=-1;
-    runShellCommand(destructionCommand_, outputLine, &retcode);
+    int retcode = runLocalCommand(shutdownCommand_, outputLine);
     if (retcode!=0)
     {
         throw insight::Exception(
-            "failed to shut down the execution server (destruction command exited with code %d)",
+            "failed to shut down the execution server (shutdown command exited with code %d)",
             retcode );
     }
-    msg(c_str()+std::string(" was shut down."));
+
+    std::string m = c_str()+std::string(" was shut down.");
+    if (outputLine) outputLine(m); else std::cout<<m<<std::endl;
 }
 
 
 
 
-void SSHLinuxServer::Config::runDestructionCommand(OutputLineCallback outputLine) const
+boost::optional<bool> SSHLinuxServer::Config::exists() const
 {
-    if (!isDynamicallyDestructable()) return;
+    if (existenceCheckCommand_.empty())
+        return boost::none;
+
+    try
+    {
+        auto cmd = expandPlaceholders(existenceCheckCommand_);
+        int retcode=-1;
+        runShellCommand(
+            cmd,
+            [](const std::string& line) { insight::dbg()<<line<<std::endl; },
+            &retcode );
+        insight::dbg()<<"existence check of "<<c_str()<<": exit code "<<retcode<<std::endl;
+        return retcode==0;
+    }
+    catch (std::exception& e)
+    {
+        insight::dbg()<<"existence check of "<<c_str()<<" failed: "<<e.what()<<std::endl;
+    }
+    return boost::none;
+}
+
+
+
+
+void SSHLinuxServer::Config::dispose(OutputLineCallback outputLine) const
+{
+    if (!canBeDisposed())
+    {
+        RemoteServer::Config::dispose(outputLine); // throws
+    }
+
+    CurrentExceptionContext ex("disposing server %s", c_str());
+
+    if (canBeShutDown() && isRunning())
+    {
+        shutdown(outputLine);
+    }
+
+    int retcode = runLocalCommand(destructionCommand_, outputLine);
+    if (retcode!=0)
+    {
+        throw insight::Exception(
+            "failed to dispose the execution server (destruction command exited with code %d)",
+            retcode );
+    }
+
+    std::string m = c_str()+std::string(" was disposed.");
+    if (outputLine) outputLine(m); else std::cout<<m<<std::endl;
+}
+
+
+
+
+void SSHLinuxServer::Config::runShutdownCommand(OutputLineCallback outputLine) const
+{
+    if (!canBeShutDown()) return;
 
     try
     {
         CurrentExceptionContext ex("stopping server %s", c_str());
 
-        if (outputLine) outputLine("$ "+destructionCommand_);
-        int retcode=-1;
-        runShellCommand(destructionCommand_, outputLine, &retcode);
+        int retcode = runLocalCommand(shutdownCommand_, outputLine);
         if (retcode!=0)
         {
             insight::Warning("failed to deallocate execution server");
@@ -349,7 +510,7 @@ SSHLinuxServer::SSHLinuxServer(const Config& serverConfig)
 
 void SSHLinuxServer::destroyIfPossible()
 {
-    serverConfig_.runDestructionCommand();
+    serverConfig_.runShutdownCommand();
 }
 
 
@@ -414,7 +575,8 @@ void SSHLinuxServer::syncToRemote
     const boost::filesystem::path& remoteDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> pf
+    std::function<void(int,const std::string&)> pf,
+    const std::vector<boost::filesystem::path>& selection
 )
 {
   CurrentExceptionContext ex("upload local directory "+localDir.string()+" to remote location");
@@ -445,6 +607,14 @@ void SSHLinuxServer::syncToRemote
       args.push_back(ex);
     }
 
+    // restrict to the selected items (if any)
+    {
+      std::vector<std::string> selBefore, selAfter;
+      rsyncSelectionFilter(selection, selBefore, selAfter);
+      args.insert(args.begin()+1, selBefore.begin(), selBefore.end()); // after "-az"
+      args.insert(args.end(), selAfter.begin(), selAfter.end());
+    }
+
     if (bwlimit_>0)
     {
         args.push_back(
@@ -467,7 +637,8 @@ void SSHLinuxServer::syncToLocal
     const boost::filesystem::path& remoteDir,
     bool includeProcessorDirectories,
     const std::vector<std::string>& exclude_pattern,
-    std::function<void(int,const std::string&)> pf
+    std::function<void(int,const std::string&)> pf,
+    const std::vector<boost::filesystem::path>& selection
 )
 {
   CurrentExceptionContext ex("download remote files to local directory");
@@ -496,6 +667,14 @@ void SSHLinuxServer::syncToLocal
     {
       args.push_back("--exclude");
       args.push_back(ex);
+    }
+
+    // restrict to the selected items (if any)
+    {
+      std::vector<std::string> selBefore, selAfter;
+      rsyncSelectionFilter(selection, selBefore, selAfter);
+      args.insert(args.begin()+1, selBefore.begin(), selBefore.end()); // after "-az"
+      args.insert(args.end(), selAfter.begin(), selAfter.end());
     }
 
     if (bwlimit_>0)

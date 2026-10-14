@@ -50,12 +50,16 @@ TOOLKIT_GUI_EXPORT QString describe(const insight::RemoteServer::Config::Process
  * as long as the receiver exists.
  * @param onLoad
  * only called for online servers, if the load could be determined
+ * @param onExistence
+ * only called for servers, which are not reachable and whose
+ * instance can be created, if the existence could be checked
  */
 TOOLKIT_GUI_EXPORT void checkInBackground(
     insight::RemoteServer::ConfigPtr cfg,
     QObject* receiver,
     std::function<void(bool online)> onReachability,
-    std::function<void(const insight::RemoteServer::Config::ProcessorLoad&)> onLoad );
+    std::function<void(const insight::RemoteServer::Config::ProcessorLoad&)> onLoad,
+    std::function<void(bool exists)> onExistence = std::function<void(bool)>() );
 
 }
 

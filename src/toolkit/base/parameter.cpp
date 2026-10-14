@@ -19,12 +19,15 @@
  */
 
 #include "parameter.h"
+#include "base/parameters/arrayparameter.h"
+#include "base/parameters/propertylibraryselectionparameter.h"
 #include "base/exception.h"
 #include "base/factory.h"
 #include "base/latextools.h"
 #include "base/tools.h"
 #include <iostream>
 
+#include <algorithm>
 #include <iterator>
 #include <memory>
 #include "boost/algorithm/string/trim.hpp"
@@ -121,38 +124,104 @@ bool Parameter::isDifferent(const Parameter &) const
 
 
 
+namespace {
+
+/**
+ * find the element in otherRoot, which corresponds to element e
+ * in its own hierarchy. Array elements are matched by index
+ * (the array prototype, if the index is beyond the other array's size),
+ * selectable subset alternatives by their key.
+ * Returns nullptr, if there is no counterpart.
+ */
+const hierarchicalData::Element* findCounterpart(
+    const hierarchicalData::Element& e,
+    const hierarchicalData::Element& otherRoot )
+{
+    if (!e.hasParent())
+        return &otherRoot;
+
+    const auto& ep = e.parent();
+    auto *op = findCounterpart(ep, otherRoot);
+    if (!op)
+        return nullptr;
+
+    if (auto *essp = dynamic_cast<const SelectableSubsetParameter*>(&ep))
+    {
+        auto *ossp = dynamic_cast<const SelectableSubsetParameter*>(op);
+        if (!ossp)
+            return nullptr;
+
+        // e is one of the alternatives: match by key
+        for (const auto& k: essp->selectionKeys())
+        {
+            if (&essp->getParametersForSelection(k) == &e)
+            {
+                auto okeys = ossp->selectionKeys();
+                if (std::find(okeys.begin(), okeys.end(), k)==okeys.end())
+                    return nullptr;
+                return &ossp->getParametersForSelection(k);
+            }
+        }
+    }
+    else if (auto *eplsp = dynamic_cast<const PropertyLibrarySelectionParameter*>(&ep))
+    {
+        auto *oplsp = dynamic_cast<const PropertyLibrarySelectionParameter*>(op);
+        if (!oplsp)
+            return nullptr;
+
+        // e is the instance parameter set of the selected entry
+        if (&eplsp->instanceParameters() == &e)
+        {
+            if (oplsp->selection() != eplsp->selection())
+                return nullptr;
+            return &oplsp->instanceParameters();
+        }
+    }
+    else if (auto *eap = dynamic_cast<const ArrayParameter*>(&ep))
+    {
+        auto *oap = dynamic_cast<const ArrayParameter*>(op);
+        if (!oap)
+            return nullptr;
+
+        int i = ep.childElementIndex(&e);
+        if (i>=0 && i<oap->size())
+            return &oap->element(i);
+        else // added element or prototype: compare to other prototype
+            return &oap->childElement(oap->nChildren());
+    }
+
+    int i = op->childElementIndex( ep.childElementName(&e) );
+    if (i<0)
+        return nullptr;
+    return &op->childElement(i);
+}
+
+}
+
+
+
 bool Parameter::isModified(const ParameterSet &defaultValues) const
 {
-    bool cmodified = false;
     try
     {
-        if (nChildren()>0) // has children
+        if (auto *dp = dynamic_cast<const Parameter*>(
+                findCounterpart(*this, defaultValues) ) )
         {
-            for (int k=0; k<nChildren(); ++k)
-            {
-                if (auto *cp=dynamic_cast<const Parameter*>(&childElement(k)))
-                {
-                    cmodified |= cp->isModified(defaultValues);
-                }
-            }
+            return isDifferent(*dp);
         }
         else
         {
-            auto pp=path(true);
-            if (defaultValues.hasPath(pp))
-            {
-                const auto& dp = defaultValues.get<insight::Parameter>(pp);
-                cmodified = isDifferent(dp);
-            }
+            // not present in defaults: was added
+            return true;
         }
     }
     catch (...)
     {
-        cmodified=true;
+        return true;
     }
-
-    return cmodified;
 }
+
+
 
 void Parameter::resolveRelativePaths(const boost::filesystem::path &baseDirectory)
 {

@@ -14,18 +14,24 @@ kOmegaHe_RASModel::kOmegaHe_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
 {}
 
 
+std::string kOmegaHe_RASModel::RASModelName() const
+{
+  return type();
+}
+
+
+OFDictData::dict kOmegaHe_RASModel::RASModelCoeffs() const
+{
+  return OFDictData::dict();
+}
+
+
 void kOmegaHe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaHe.so\"") );
-
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="kOmegaHe";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
-  RASProperties.subDict("kOmegaHeCoeffs");
 
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");

@@ -55,9 +55,40 @@ IQParameter::IQParameter(
 
 
 
+void IQParameter::connectSignals()
+{
+    // connect before base class signals: the cached state has to be
+    // discarded before the view is notified about the change
+    disconnectAtEOL(
+        (*this)->valueChanged.connect(
+            [this]() { resetModificationState(); }
+            )
+        );
+
+    IQHierarchicalDataElement::connectSignals();
+
+    // the modification state of a parent depends on its children:
+    // update, if any child has changed
+    disconnectAtEOL(
+        (*this)->childValueChanged.connect(
+            [this]()
+            {
+                resetModificationState();
+                model()->notifyElementAppearanceChange( *get() );
+            }
+            )
+        );
+}
+
 void IQParameter::resetModificationState()
 {
   markedAsModified_.reset();
+}
+
+void IQParameter::resetCachedState()
+{
+  IQHierarchicalDataElement::resetCachedState();
+  resetModificationState();
 }
 
 bool IQParameter::isModified() const

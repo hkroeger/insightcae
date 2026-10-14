@@ -176,10 +176,23 @@ public:
 
 public Q_SLOTS:
 
+  /**
+   * @brief resetParameterValues
+   * assign new values and new defaults.
+   * If no defaults are given, the new values become the defaults.
+   */
   void resetParameterValues(
       const insight::ParameterSet& ps,
       boost::optional<const insight::ParameterSet&> defaultps
       = boost::optional<const insight::ParameterSet&>() );
+
+  /**
+   * @brief assignParameterValues
+   * assign new values (e.g. loaded from file),
+   * but keep the current defaults
+   */
+  void assignParameterValues(
+      const insight::ParameterSet& ps );
 
 
 };

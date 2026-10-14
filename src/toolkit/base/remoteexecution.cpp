@@ -187,13 +187,14 @@ RemoteExecutionConfig::remoteOFStream(
 void RemoteExecutionConfig::syncToRemote(
     bool includeProcessorDirectories,
     const std::vector<string> &exclude_pattern,
-    std::function<void (int, const string &)> progress_callback
+    std::function<void (int, const string &)> progress_callback,
+    const std::vector<boost::filesystem::path>& selection
     )
 {
   RemoteLocation::syncToRemote(
               localDir_,
               includeProcessorDirectories,
-              exclude_pattern, progress_callback );
+              exclude_pattern, progress_callback, selection );
 }
 
 
@@ -203,13 +204,14 @@ void RemoteExecutionConfig::syncToLocal(
     bool includeProcessorDirectories,
     bool skipTimeSteps,
     const std::vector<string> &exclude_pattern,
-    std::function<void (int, const string &)> progress_callback)
+    std::function<void (int, const string &)> progress_callback,
+    const std::vector<boost::filesystem::path>& selection)
 {
     RemoteLocation::syncToLocal(
                 localDir_,
                 includeProcessorDirectories,
                 skipTimeSteps,
-                exclude_pattern, progress_callback);
+                exclude_pattern, progress_callback, selection);
 }
 
 

@@ -193,12 +193,12 @@ void AnalysisForm::updateRemoteActionAvailability(const IQRemoteExecutionState* 
 
     // the options may be changed during a remote run,
     // until the respective step has started
-    bool downloadDecided = false, shutdownStarted = false;
+    bool downloadDecided = false, finalStarted = false;
 #ifdef HAVE_WT
     if (auto *rr = dynamic_cast<RemoteRun*>(currentWorkbenchAction_.data()))
     {
         downloadDecided = rr->downloadStepStarted();
-        shutdownStarted = rr->shutdownStepStarted();
+        finalStarted = rr->finalStepsStarted();
     }
 #endif
 
@@ -208,19 +208,74 @@ void AnalysisForm::updateRemoteActionAvailability(const IQRemoteExecutionState* 
         downloadDecided ? _("The download has started already or was skipped.") :
         _("Download the results into the local directory, when the remote analysis has finished.") );
 
-    // shut down the server after completion: only possible with a destruction command.
+    const QString finalStartedText = _("The final actions after completion are in progress.");
+
+    // remove the remote directory: temporary directories are always removed
+    {
+        auto *cb = ui->cbRemoveRemoteDirWhenFinished;
+        bool temporary = hasRemote &&
+            ( rs->location().isTemporaryStorage() || rs->location().remoteDir().empty() );
+        const char* forcedProp = "checkedForTemporaryDirectory";
+        if (!finalStarted)
+        {
+            if (temporary)
+            {
+                cb->setChecked(true);
+                cb->setProperty(forcedProp, true);
+            }
+            else if (cb->property(forcedProp).toBool())
+            {
+                cb->setChecked(false); // back to the default for kept directories
+                cb->setProperty(forcedProp, false);
+            }
+            if (!hasRemote) cb->setChecked(false);
+        }
+        cb->setEnabled( hasRemote && !temporary && !finalStarted );
+        cb->setToolTip(
+            !hasRemote ? QString() :
+            finalStarted ? finalStartedText :
+            temporary ? _("Temporary remote directories are always removed after completion.") :
+            _("Remove the remote directory (and the local remote configuration),"
+              " once the remote analysis has finished.\n"
+              "Files, which are not downloaded, are lost.") );
+    }
+
+    // dispose the host: only with a destruction command. Includes the shutdown.
+    bool disposable = hasRemote && rs->location().serverConfig().canBeDisposed();
+    {
+        auto *cb = ui->cbDisposeWhenFinished;
+        if (!disposable && !finalStarted)
+            cb->setChecked(false);
+        cb->setEnabled( disposable && !finalStarted );
+        cb->setToolTip(
+            !hasRemote ? QString() :
+            finalStarted ? finalStartedText :
+            !disposable ? _("The server instance cannot be disposed from here (no destruction command configured).") :
+            _("Shut down the server and delete its instance (execute its destruction command),"
+              " once the result set has been retrieved (and the files have been downloaded, if selected).\n"
+              "All data on the instance, which is not downloaded, is lost.") );
+    }
+    bool dispose = ui->cbDisposeWhenFinished->isChecked();
+
+    // shut down the server after completion: only possible with a shutdown command.
     // (Performed after the result set has been retrieved and the
     // files have been downloaded, if selected)
-    bool destructable = hasRemote && rs->location().serverConfig().isDynamicallyDestructable();
-    if (!destructable && !shutdownStarted)
-        ui->cbShutdownWhenFinished->setChecked(false);
+    bool destructable = hasRemote && rs->location().serverConfig().canBeShutDown();
+    if (!finalStarted)
+    {
+        if (!destructable)
+            ui->cbShutdownWhenFinished->setChecked(false);
+        else if (dispose)
+            ui->cbShutdownWhenFinished->setChecked(true); // part of the disposal
+    }
     ui->cbShutdownWhenFinished->setEnabled(
-        destructable && !shutdownStarted );
+        destructable && !dispose && !finalStarted );
     ui->cbShutdownWhenFinished->setToolTip(
         !hasRemote ? QString() :
-        shutdownStarted ? _("The shutdown is in progress.") :
-        !destructable ? _("The server cannot be shut down from here (no destruction command configured).") :
-        _("Shut down the server (execute its destruction command), once the result set"
+        finalStarted ? finalStartedText :
+        !destructable ? _("The server cannot be shut down from here (no shutdown command configured).") :
+        dispose ? _("The server is shut down as part of its disposal.") :
+        _("Shut down the server (execute its shutdown command), once the result set"
           " has been retrieved (and the files have been downloaded, if selected).\n"
           "Files in the remote directory, which are not downloaded, might be lost.") );
 }

@@ -19,15 +19,21 @@ kOmegaSST2_RASModel::kOmegaSST2_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
 }
 
 
+std::string kOmegaSST2_RASModel::RASModelName() const
+{
+  return type();
+}
+
+
+OFDictData::dict kOmegaSST2_RASModel::RASModelCoeffs() const
+{
+  return OFDictData::dict();
+}
+
+
 void kOmegaSST2_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
-
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="kOmegaSST2";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
-  RASProperties.subDict("kOmegaSST2");
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaSST2.so\"") );

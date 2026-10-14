@@ -9,6 +9,7 @@ struct LabeledArrayGenerator
 {
         std::string patternOrKeysPath;
         enum ArgType { Pattern, KeysPath} argType;
+        boost::optional<std::string> excludeKeysPath;
 
         ParameterGeneratorPtr value;
         size_t num;
@@ -16,6 +17,7 @@ struct LabeledArrayGenerator
         LabeledArrayGenerator (
             const std::string& pok,
             ArgType at,
+            const boost::optional<std::string>& ekp,
             ParameterGeneratorPtr v,
             size_t n,
             const std::string& d );
@@ -60,12 +62,13 @@ struct LabeledArrayGenerator
                 std::make_shared<PDLParserRuleset::ParameterDataRule>(
 
                 ( qi::lit("keysFrom") >> ruleset.r_string
+                 >> -( qi::lit("excludeKeysFrom") >> ruleset.r_string )
                  >> '[' >> ruleset.r_parameterdata >> ']'
                  >> '*' >> qi::int_ >> ruleset.r_description_string )
                     [ qi::_val = phx::construct<ParameterGeneratorPtr>(
                          phx::new_<LabeledArrayGenerator>(
-                             qi::_1, LabeledArrayGenerator::KeysPath,
-                             qi::_2, qi::_3, qi::_4)) ]
+                             qi::_1, LabeledArrayGenerator::KeysPath, qi::_2,
+                             qi::_3, qi::_4, qi::_5)) ]
                 |
                 ( ruleset.r_string
                  >> '[' >> ruleset.r_parameterdata >> ']'
@@ -73,6 +76,7 @@ struct LabeledArrayGenerator
                     [ qi::_val = phx::construct<ParameterGeneratorPtr>(
                          phx::new_<LabeledArrayGenerator>(
                              qi::_1, LabeledArrayGenerator::Pattern,
+                             phx::construct<boost::optional<std::string> >(),
                              qi::_2, qi::_3, qi::_4)) ]
                 )
             );

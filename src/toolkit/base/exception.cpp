@@ -183,14 +183,11 @@ void ExceptionBase::saveContext(bool strace)
 
   errorDescription_->strace_="";
 
-  if (const char* iv = getenv("INSIGHT_VERBOSE"))
+  if (strace && (requestedVerbosityLevel()>=VerbosityLevel::DeepDetail) )
   {
-      if (strace && (atoi(iv)>=VerbosityLevel::DeepDetail) )
-      {
-        ostringstream trace_buf;
-        trace_buf  << boost::stacktrace::stacktrace();
-        errorDescription_->strace_=trace_buf.str();
-      }
+    ostringstream trace_buf;
+    trace_buf  << boost::stacktrace::stacktrace();
+    errorDescription_->strace_=trace_buf.str();
   }
 
 }
@@ -308,12 +305,9 @@ void CurrentExceptionContext::start(const char* msg)
 {
   this->std::string::operator=(msg);
 
-  if (const char* iv = getenv("INSIGHT_VERBOSE"))
+  if (requestedVerbosityLevel()>=verbosityLevel_)
   {
-      if (atoi(iv)>=verbosityLevel_)
-      {
-        std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
-      }
+    std::cout << ">> [BEGIN, "<< std::this_thread::get_id() <<"] " << contextDescription() << std::endl;
   }
   ExceptionContext::getCurrent().push_back(this);
 }
@@ -330,12 +324,9 @@ CurrentExceptionContext::~CurrentExceptionContext()
       std::cerr<<"Oops: CurrentExceptionContext destructor: expected to be last!"<<endl;
     }
 
-  if (const char* iv = getenv("INSIGHT_VERBOSE"))
+  if (requestedVerbosityLevel()>=verbosityLevel_)
   {
-      if (atoi(iv)>=verbosityLevel_)
-      {
-        std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
-      }
+    std::cout << "<< [FINISH, "<< std::this_thread::get_id() <<"]: "<<contextDescription() << std::endl;
   }
 }
 
@@ -357,22 +348,38 @@ public:
 };
 
 
+// badbit set => all operator<< return immediately without formatting
+class NullOstream : public std::ostream
+{
+  NullBuffer nullBuffer_;
+public:
+  NullOstream()
+    : std::ostream(&nullBuffer_)
+  {
+    setstate(std::ios::badbit);
+  }
+};
+
+
 
 int requestedVerbosityLevel()
 {
-    int vl=0;
-    if (auto *verbev=getenv("INSIGHT_VERBOSE"))
+    // evaluated only once: INSIGHT_VERBOSE is not expected to change at runtime
+    static const int vl = []()
     {
-        vl = atoi(verbev);
-    }
+        if (auto *verbev=getenv("INSIGHT_VERBOSE"))
+        {
+            return atoi(verbev);
+        }
+        return 0;
+    }();
     return vl;
 }
 
 
 std::ostream& dbg(int verbosityLevel)
 {
-  static NullBuffer nullBuffer;
-  static std::ostream nullOstream(&nullBuffer);
+  thread_local NullOstream nullOstream;
 
   if (requestedVerbosityLevel()>=verbosityLevel)
   {

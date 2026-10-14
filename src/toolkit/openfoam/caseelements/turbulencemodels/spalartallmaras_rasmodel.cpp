@@ -29,17 +29,6 @@ SpalartAllmaras_RASModel::SpalartAllmaras_RASModel(OpenFOAMCase& c, ParameterSet
 }
 
 
-void SpalartAllmaras_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  RASModel::addIntoDictionaries(dictionaries);
-
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="SpalartAllmaras";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
-  RASProperties.subDict("SpalartAllmarasCoeffs");
-}
-
 bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
     if (roughness_z0>0.)

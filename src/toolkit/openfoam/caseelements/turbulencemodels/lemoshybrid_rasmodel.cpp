@@ -23,27 +23,18 @@ LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c, ParameterSetInput ip
 
 
 
-void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+std::string LEMOSHybrid_RASModel::RASModelName() const
 {
-  // add k-O stuff first, we will overwrite afterwards, where necessary
-  kOmegaSST_RASModel::addIntoDictionaries(dictionaries);
+  return "hybKOmegaSST2";
+}
 
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
 
-  std::string modelName="hybKOmegaSST2";
-
-  if (OFversion()<230)
-    throw insight::UnsupportedFeature("The LES model "+modelName+" is unsupported in the selected OF version!");
-
-  RASProperties["RASModel"]=modelName;
-  RASProperties["delta"]="maxEdge";
-  RASProperties["printCoeffs"]=true;
-
+OFDictData::dict LEMOSHybrid_RASModel::RASModelCoeffs() const
+{
   OFDictData::dict mec;
   mec["deltaCoeff"]=1.0;
-  RASProperties["maxEdgeCoeffs"]=mec;
 
-  OFDictData::dict& cd=RASProperties.subDict(modelName+"Coeffs");
+  OFDictData::dict cd;
   cd["filter"]="simple";
   cd["x1"]=1.0;
   cd["x2"]=2.0;
@@ -59,6 +50,25 @@ void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   cd["cubeRootVolCoeffs"]=mec;
   cd["IDDESDeltaCoeffs"]=mec;
   cd["maxEdgeCoeffs"]=mec;
+
+  return cd;
+}
+
+
+void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  if (OFversion()<230)
+    throw insight::UnsupportedFeature("The LES model "+RASModelName()+" is unsupported in the selected OF version!");
+
+  // add k-O stuff first
+  kOmegaSST_RASModel::addIntoDictionaries(dictionaries);
+
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
+  RASProperties["delta"]="maxEdge";
+
+  OFDictData::dict mec;
+  mec["deltaCoeff"]=1.0;
+  RASProperties["maxEdgeCoeffs"]=mec;
 
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libLEMOS-2.3.x.so\"") );

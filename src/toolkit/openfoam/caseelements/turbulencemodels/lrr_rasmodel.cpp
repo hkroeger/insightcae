@@ -23,17 +23,6 @@ LRR_RASModel::LRR_RASModel(OpenFOAMCase& c, ParameterSetInput ip)
 }
 
 
-void LRR_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  RASModel::addIntoDictionaries(dictionaries);
-
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="LRR";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
-  RASProperties.subDict("LRRCoeffs");
-}
-
 bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
     if (fieldname == fieldName("k"))

@@ -124,7 +124,9 @@ void AdditionalRefinement::addToPreview(
   {
     psv.addFeature(
           "refinements/"+p().name,
-          cad::Transform::create(g, trsf) );
+          cad::Transform::create(g, trsf),
+          { insight::Wireframe }
+          );
   }
 }
 

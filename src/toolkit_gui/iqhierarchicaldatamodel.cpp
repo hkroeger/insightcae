@@ -174,6 +174,8 @@ void IQHierarchicalDataModel::applyUndoState(
 
     dataBeforeLastChange_ =
         data_->clone();
+
+    invalidateCachedStates();
 }
 
 
@@ -276,6 +278,11 @@ void IQHierarchicalDataModel::handleDataChangeForUndo(
     const QVector<int> &roles)
 {
     if (bulkUpdateInProgress_)
+        return;
+
+    // pure appearance updates (see notifyElementAppearanceChange)
+    // do not modify data
+    if (roles.size()==1 && roles.first()==Qt::FontRole)
         return;
 
     // qDebug() << "store undo "<<topLeft<<bottomRight<<roles;
@@ -423,7 +430,7 @@ QModelIndex IQHierarchicalDataModel::indexOfElement(
     const insight::hierarchicalData::Element &p, int col) const
 {
     insight::CurrentExceptionContext ex(
-        insight::VerbosityLevel::DeepDetail, "finding index of element %s (type %s, col %d)",
+        insight::VerbosityLevel::Loops, "finding index of element %s (type %s, col %d)",
         p.path().c_str(), p.type().c_str(), col);
 
     auto *element = const_cast<insight::hierarchicalData::Element*>(&p);
@@ -866,6 +873,46 @@ void IQHierarchicalDataModel::notifyElementChange(const QModelIndex &index)
         index.siblingAtColumn(0),
         index.siblingAtColumn(columnCount(index)-1)
         );
+}
+
+
+
+
+void IQHierarchicalDataModel::notifyElementAppearanceChange(
+    const insight::hierarchicalData::Element& p )
+{
+    if (&p == data_.get() || !p.hasParent())
+        return;
+
+    auto idx=indexOfElement(p, 0);
+    if (idx.isValid())
+    {
+        Q_EMIT dataChanged(
+            idx.siblingAtColumn(0),
+            idx.siblingAtColumn(columnCount(idx)-1),
+            { Qt::FontRole }
+            );
+    }
+}
+
+
+
+
+void IQHierarchicalDataModel::invalidateCachedStates()
+{
+    // collect first: repainting might create new wrappers
+    std::vector<IQHierarchicalDataElement*> ws;
+    for (auto v: wrappers_)
+    {
+        if (v.first.valid())
+            ws.push_back(const_cast<IQHierarchicalDataElement*>(&v.first));
+    }
+
+    for (auto *w: ws)
+    {
+        w->resetCachedState();
+        notifyElementAppearanceChange(*w->get());
+    }
 }
 
 

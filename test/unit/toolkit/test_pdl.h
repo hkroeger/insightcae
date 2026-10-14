@@ -254,6 +254,12 @@ wallBCs = labeledarray keysFrom "geometry/walls" [ selectablesubset {{
      }
 }} adiabatic "" ] *0 ""
 
+excludedWall = labeledArrayKeySelection "geometry/walls" "" "wall without heat transfer coefficient"
+
+wallHTCs = labeledarray keysFrom "geometry/walls" excludeKeysFrom "excludedWall" [
+  double 10 "[W/m^2/K] heat transfer coefficient"
+] *0 "heat transfer coefficients of all walls except the excluded one"
+
 run = set {
 
  regime = selectablesubset

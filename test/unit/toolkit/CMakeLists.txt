@@ -32,6 +32,7 @@ add_toolkit_test(toolkit_resultset)
 add_dependencies(testexe_toolkit_resultset testexe_pdl)
 target_link_libraries(testexe_toolkit_resultset toolkit_cad) # for cadsketchparameter
 
+add_toolkit_test(toolkit_parametermodification)
 add_toolkit_test(toolkit_simplelatex)
 add_toolkit_test(toolkit_meminfo)
 add_toolkit_test(toolkit_execution)

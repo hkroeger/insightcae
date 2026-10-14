@@ -447,6 +447,88 @@ int main()
             std::cout<<"labeledArrayKeySelection compatibility read test passed"<<std::endl;
         }
 
+
+        // --- test excludeKeysFrom of synchronized labeled arrays ---
+        {
+            typedef std::set<std::string> Keys;
+
+            auto root = ParameterSet::create("root");
+            {
+                LabeledArrayParameter species(DoubleParameter(0., "fraction"), 0, "species");
+                for (const auto& k: {"A", "B", "C"})
+                    species.insertValue(k, std::make_unique<DoubleParameter>(0.5, "fraction"));
+                auto fluid = ParameterSet::create("fluid");
+                fluid->insert("species", species);
+                root->insert("fluid", *fluid);
+            }
+            // note: pass std::string, literals would select the (description, bool isHidden...) overloads
+            root->insert("inert",
+                LabeledArrayKeySelectionParameter(
+                    std::string("/fluid/species"), std::string("B"), std::string("inert specie") ) );
+            root->insert("inertStr", StringParameter(std::string("A"), std::string("inert specie")));
+            root->insert("lewis",
+                LabeledArrayParameter(DoubleParameter(1., "Lewis number"), 0, "Lewis numbers") );
+
+            auto& species = root->get<LabeledArrayParameter>("fluid/species");
+            auto& inert = root->get<LabeledArrayKeySelectionParameter>("inert");
+            auto& lewis = root->get<LabeledArrayParameter>("lewis");
+            lewis.setKeySourceParameterPath("/fluid/species");
+            lewis.setExcludeKeySourceParameterPath("/inert");
+
+            auto checkKeys = [&](const Keys& expected, const std::string& step)
+            {
+                insight::assertion(
+                    lewis.keys()==expected,
+                    "excludeKeysFrom: unexpected keys after "+step+": "
+                        +containerKeyList_to_string(lewis.value(), 10) );
+            };
+
+            checkKeys({"A", "C"}, "setup");
+
+            dynamic_cast<DoubleParameter&>(lewis["A"]).set(0.7);
+            inert.setSelection("C");
+            checkKeys({"A", "B"}, "change of excluded key");
+            insight::assertion(
+                dynamic_cast<const DoubleParameter&>(lewis["A"])()==0.7,
+                "excludeKeysFrom: value lost after change of excluded key" );
+
+            species.insertValue("D", std::make_unique<DoubleParameter>(0.5, "fraction"));
+            checkKeys({"A", "B", "D"}, "adding key to source");
+
+            species.eraseValue("A");
+            checkKeys({"B", "D"}, "removing key from source");
+
+            dynamic_cast<DoubleParameter&>(lewis["B"]).set(0.3);
+            species.changeLabel("B", "B2");
+            checkKeys({"B2", "D"}, "relabeling key in source");
+            insight::assertion(
+                dynamic_cast<const DoubleParameter&>(lewis["B2"])()==0.3,
+                "excludeKeysFrom: value lost after relabeling" );
+
+            // relabel the excluded key: inert follows, B2 must stay excluded... (C is excluded)
+            species.changeLabel("C", "C2");
+            insight::assertion(inert.selection()=="C2", "key selection did not follow relabeling");
+            checkKeys({"B2", "D"}, "relabeling excluded key in source");
+
+            // string parameter as exclusion source
+            root->get<StringParameter>("inertStr").set("D");
+            lewis.setExcludeKeySourceParameterPath("/inertStr");
+            checkKeys({"B2", "C2"}, "switching exclusion source to string parameter");
+            root->get<StringParameter>("inertStr").set("B2");
+            checkKeys({"C2", "D"}, "change of string exclusion source");
+
+            // generated from PDL
+            auto ps = TestPDL::defaultParameters();
+            auto& walls = ps->get<LabeledArrayParameter>("geometry/walls");
+            auto& htcs = ps->get<LabeledArrayParameter>("wallHTCs");
+            insight::assertion(htcs.keys()==walls.keys(), "PDL excludeKeysFrom: keys not synchronized");
+            ps->get<LabeledArrayKeySelectionParameter>("excludedWall")
+                .setSelection(*walls.keys().begin());
+            insight::assertion(htcs.keys().empty(), "PDL excludeKeysFrom: key not excluded");
+
+            std::cout<<"labeled array excludeKeysFrom test passed"<<std::endl;
+        }
+
         return 0;
     }
     catch (std::exception& e)

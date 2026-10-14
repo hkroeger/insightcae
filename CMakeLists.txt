@@ -1053,7 +1053,7 @@ endmacro(install_package_script)
 add_subdirectory(src)
 add_subdirectory(share)
 add_subdirectory(test)
-
+add_subdirectory(doc)
 
 
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")

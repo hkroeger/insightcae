@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPointer>
+#include <QSignalBlocker>
 #include <QToolTip>
 #include "remotedirselector.h"
 #include "iqserverlaunchdialog.h"
@@ -62,9 +63,16 @@ void QExecutionWorkspaceDialog::displayCurrentServerName()
         if (!serverName.isEmpty())
         {
             ui->cbHost->blockSignals(true);
-            ui->cbHost->setCurrentIndex(
-                        ui->cbHost->findText( serverName )
-                        );
+            int i = ui->cbHost->findText( serverName );
+            if (i<0)
+            {
+                // not in the list of configured servers:
+                // add it, so that the configured value is displayed
+                ui->cbHost->addItem(
+                    IQRemoteServerStatus::icon(State::Unknown), serverName );
+                i = ui->cbHost->count()-1;
+            }
+            ui->cbHost->setCurrentIndex(i);
             ui->cbHost->blockSignals(false);
         }
     }
@@ -632,6 +640,16 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
 
             if (ui->gbPerformRemoteExecution->isChecked())
             {
+              if ( remoteLocation_
+                   && ui->cbHost->currentText().toStdString()
+                        == remoteLocation_->serverLabel()
+                   && boost::filesystem::path(ui->leRemoteDirectory->text().toStdString())
+                        == remoteLocation_->remoteDir() )
+              {
+                // unchanged: keep the existing location (incl. its flags)
+                return;
+              }
+
               remoteLocation_.reset(
                     new insight::RemoteLocation(
                       insight::remoteServers().findServer(
@@ -663,21 +681,15 @@ QExecutionWorkspaceDialog::QExecutionWorkspaceDialog(
     remoteLocation_.reset(
           new insight::RemoteLocation(*remoteLocation));
 
-    ui->gbPerformRemoteExecution->setChecked(true);
-
-    auto serverName =
-        QString::fromStdString( remoteLocation_->serverLabel() );
-
-    if (!serverName.isEmpty())
     {
-      ui->cbHost->setCurrentIndex(
-          ui->cbHost->findText( serverName )
-          );
+      // the signal handlers would overwrite remoteLocation_
+      // with the not yet initialized control contents
+      QSignalBlocker bgb(ui->gbPerformRemoteExecution);
+      ui->gbPerformRemoteExecution->setChecked(true);
     }
 
-    ui->leRemoteDirectory->setText(
-          QString::fromStdString(
-            remoteLocation_->remoteDir().string() ) );
+    displayCurrentServerName();
+    displayCurrentRemoteWorkingDir();
   }
 
   updateHostActionButtons();

@@ -25,6 +25,8 @@ typedef
         ConstrainedSketchEntityPtr;
 
 
+
+
 class ConstrainedSketchEntity
 {
 public:
@@ -48,6 +50,8 @@ private:
     std::string layerName_;
 
     bool dynamicParameterLoading_ = false;
+
+    ParameterBindings parameterBindings_;
 
     std::map<std::shared_ptr<boost::signals2::scoped_connection>, const void*> connectedNotifiers_;
 
@@ -111,6 +115,33 @@ public:
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const;
 
     std::string parameterString() const;
+
+    /**
+     * @brief setParameterBindings
+     * Binds parameters to scalar expressions. All bound parameters
+     * need to exist as top-level double parameters.
+     */
+    void setParameterBindings(const ParameterBindings& bindings);
+    const ParameterBindings& parameterBindings() const;
+    ParameterBindings& parameterBindingsRef();
+    bool isParameterBound(const std::string& name) const;
+    void removeParameterBinding(const std::string& name);
+
+    /**
+     * @brief parameterBindingConversionFactor
+     * @return factor between the value of the expression and the parameter value
+     * (e.g. for parameters, which are not stored in SI units)
+     */
+    virtual double parameterBindingConversionFactor(const std::string& name) const;
+
+    /**
+     * @brief applyParameterBindings
+     * transfers the current values of the bound expressions into the parameters
+     * @return true, if any parameter value was changed
+     */
+    bool applyParameterBindings();
+
+    std::string parameterBindingString() const;
 
     virtual void generateScriptCommand(
         ConstrainedSketchScriptBuffer& script,

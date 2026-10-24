@@ -192,6 +192,15 @@ void FixedAngleConstraint::setTargetValue(double angle)
 }
 
 
+double FixedAngleConstraint::parameterBindingConversionFactor(const std::string& name) const
+{
+    // the parameter is stored in degrees, expressions yield radians
+    if (name=="angle")
+        return 1./SI::deg;
+    return AngleConstraint::parameterBindingConversionFactor(name);
+}
+
+
 
 
 void FixedAngleConstraint::generateScriptCommand(
@@ -209,6 +218,7 @@ void FixedAngleConstraint::generateScriptCommand(
                    pointSpec(p2_, script, entityLabels) ) + ", "
             + pointSpec(pCtr_, script, entityLabels)
             + ", layer " + layerName()
+            + parameterBindingString()
             + parameterString()
             + ")"
         );
@@ -231,6 +241,7 @@ void FixedAngleConstraint::addParserRule(
              > ( ( qi::lit("toHorizontal") >> qi::attr(VectorPtr()) ) | (ruleset.r_point) ) > ','
              > ruleset.r_point
              > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > ruleset.r_parameterBindings
              > ruleset.r_parameters >
              ')' )
                 [ qi::_a = phx::bind(
@@ -238,8 +249,9 @@ void FixedAngleConstraint::addParserRule(
                          VectorPtr, VectorPtr, VectorPtr, const std::string&>,
                      qi::_2, qi::_3, qi::_4, qi::_5),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6,
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_7,
                        boost::filesystem::path(".")),
+                 phx::bind(&ConstrainedSketchEntity::setParameterBindings, qi::_a, qi::_6),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -275,6 +287,7 @@ ConstrainedSketchEntityPtr FixedAngleConstraint::clone() const
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef().assignFrom( parameters() );
+    cl->setParameterBindings( parameterBindings() );
     return cl;
 }
 

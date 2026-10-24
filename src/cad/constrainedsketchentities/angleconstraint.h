@@ -80,6 +80,8 @@ public:
     double targetValue() const override;
     void setTargetValue(double angle);
 
+    double parameterBindingConversionFactor(const std::string& name) const override;
+
     void generateScriptCommand(
         ConstrainedSketchScriptBuffer& script,
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const override;

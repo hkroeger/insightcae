@@ -17,3 +17,14 @@ sk=ConstrainedSketch(
 );
 
 ex:Extrusion(BoundedFlatFace(sk?alledges), 5*EZ);
+
+# parameters of Fixed* constraints bound to script variables
+H=4;
+psk=ParametricSketch( XY,
+ SketchPoint(1, 0, 0),
+ SketchPoint(2, 3, 0.1),
+ Line(3, 1, 2),
+ FixedPoint(4, 1, set (x = 1, y = H)),
+ DistanceConstraint(5, 1, 2, set (distance = 0.5*L)),
+ HorizontalConstraint(6, 3)
+);

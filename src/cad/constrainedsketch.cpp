@@ -4,11 +4,13 @@
 #include "base/linearalgebra.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
+#include "base/warningdispatcher.h"
 
 #include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "cadfeatures/wire.h"
 #include "cadfeatures/line.h"
+#include "cadfeatures/arc.h"
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
@@ -36,7 +38,11 @@ size_t ConstrainedSketch::calcHash() const
     ParameterListHash p;
     p+=*pl_;
     for (const auto& se: geometry_)
+    {
         p+=se.second->hash();
+        for (const auto& b: se.second->parameterBindings())
+            p+=b.second.value->value();
+    }
     return p.getHash();
 }
 
@@ -140,6 +146,15 @@ ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tc
         else
         {
             geometry_[g.first]=g.second->clone();
+        }
+    }
+    // the arcs cannot set the back link from their center points
+    // during their construction
+    for (auto& g: geometry_)
+    {
+        if (auto arc = std::dynamic_pointer_cast<Arc>(g.second))
+        {
+            arc->linkCenterPoint();
         }
     }
 #warning replace internal references missing ??
@@ -510,8 +525,21 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
     beforeGeometryRemoval(geomEntityId, r);
     ConstrainedSketchEntityPtr entity = std::move(i->second); // move out before erase
     geometry_.erase(i);
+
+    // the center point of an arc is useless without the arc
+    std::shared_ptr<ArcCenterPoint> orphanedCenterPoint;
+    if (auto arc = std::dynamic_pointer_cast<Arc>(entity))
+    {
+        orphanedCenterPoint = arc->centerPoint();
+    }
+
     entity.reset(); // delete last reference to really destruct object
     geometryRemoved(geomEntityId, r);
+
+    if (orphanedCenterPoint)
+    {
+        eraseGeometry(orphanedCenterPoint); // does nothing, if not in sketch
+    }
 }
 
 
@@ -520,7 +548,7 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 {
     auto i=findGeometry(geomEntity).first;
-    if (i!=GeometryMap::const_iterator())
+    if (i!=geometry_.cend())
     {
         eraseGeometry(i->first);
     }
@@ -763,6 +791,11 @@ void ConstrainedSketch::resolveConstraints(
     };
     std::vector<LocalIndexMapping> dofs, constrs;
 
+    for (auto& ge: geometry_)
+    {
+        ge.second->applyParameterBindings();
+    }
+
     for (auto ge=geometry_.begin(); ge!=geometry_.end(); ge++)
     {
         auto &e=ge->second;
@@ -889,8 +922,7 @@ void ConstrainedSketch::resolveConstraints(
                     auto& dm=dofs[i];
                     if (ex.zeroCols().count(i))
                     {
-                        auto i=std::distance(geometry_.cbegin(), dm.entityIt);
-                        ucdofs.insert(toString(i));
+                        ucdofs.insert(toString(dm.entityIt->first));
                     }
                 }
 
@@ -1292,17 +1324,31 @@ void ConstrainedSketch::build()
     if (!pl_->providesPlanarReference())
         throw insight::Exception("Sketch: Planar reference required!");
 
-    /* Should only be solved in constrainedsketcheditor under user supervision!!
+    /* Should usually only be solved in constrainedsketcheditor under user supervision!!
      * Otherwise, only the saved DoFs are used.
+     * Exception: if parameters are bound to expressions and their values
+     * have changed, the sketch is resolved, starting from the saved DoFs.
      */
-    // try
-    // {
-    //     resolveConstraints();
-    // }
-    // catch (insight::NonConvergenceException& ex)
-    // {
-    //     insight::Warning(ex);
-    // }
+    bool bindingsChanged=false;
+    for (auto& ge: geometry_)
+    {
+        bindingsChanged = ge.second->applyParameterBindings() || bindingsChanged;
+    }
+    if (bindingsChanged)
+    {
+        try
+        {
+            resolveConstraints();
+        }
+        catch (const insight::Exception& ex)
+        {
+            insight::Warning(
+                "Sketch %s: could not resolve constraints after a change of"
+                " the bound parameter values. The previous geometry is kept.\n"
+                "Reason: %s",
+                featureSymbolName().c_str(), ex.message().c_str() );
+        }
+    }
 
     BRep_Builder bb;
     TopoDS_Compound result;
@@ -1326,6 +1372,10 @@ void ConstrainedSketch::replaceDependency(const DependencyReplacement &repl)
     for (auto& geom: geometry_)
     {
         repl(geom.second);
+        for (auto& b: geom.second->parameterBindingsRef())
+        {
+            repl(b.second.value);
+        }
     }
     invalidate();
 }
@@ -1337,6 +1387,10 @@ void ConstrainedSketch::addDependencies(DependencyList& dl) const
     for (auto& geom: geometry_)
     {
         DepListInserter(dl, toString(geom.first))(geom.second);
+        for (auto& b: geom.second->parameterBindings())
+        {
+            DepListInserter(dl, toString(geom.first)+"."+b.first)(b.second.value);
+        }
     }
 }
 

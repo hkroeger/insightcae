@@ -73,6 +73,7 @@ defineType(Arc);
 
 addToStaticFunctionTable(Feature, Arc, insertrule);
 addToStaticFunctionTable(Feature, Arc, ruleDocumentation);
+addToStaticFunctionTable(ConstrainedSketchEntity, Arc, addParserRule);
 
 
 size_t Arc::calcHash() const
@@ -117,10 +118,8 @@ Handle_Geom_TrimmedCurve Arc::calcArc() const
         double s=arma::norm(S,2);
         double r=s/2./sin(alpha/2.);
 
-        double a=sqrt(r*r-0.25*s*s);
+        double a=sqrt(std::max(0., r*r-0.25*s*s));
         arma::mat ctr= p0 + S*0.5 + normalized(arma::cross(n,S))*a *(alpha<M_PI?1.:-1.);
-
-        std::cout<<p0.t()<<p1.t()<<S.t()<<r<<" "<<a<<"\n"<<ctr.t();
 
         return GC_MakeArcOfCircle(
             gp_Circ(gp_Ax2(to_Pnt(ctr), to_Dir(n), to_Dir(normalized(p0-ctr))), r),
@@ -210,11 +209,47 @@ std::shared_ptr<Arc> Arc::create(
     const std::string &layerName)
 {
     auto f=std::shared_ptr<Arc>(new Arc(p0, avType, av, p1, layerName));
-    if (auto skmp = std::dynamic_pointer_cast<ArcCenterPoint>(av))
-    {
-        skmp->linktoArc( f );
-    }
+    f->linkCenterPoint();
     return f;
+}
+
+
+
+
+std::shared_ptr<Arc> Arc::createInSketch(
+    VectorPtr p0,
+    VectorPtr centerPoint,
+    VectorPtr p1,
+    const std::string &layerName)
+{
+    insight::assertion(
+        bool(p0) && bool(p1),
+        "Arc: start or end point refers to an undefined sketch entity!" );
+    insight::assertion(
+        bool(std::dynamic_pointer_cast<ArcCenterPoint>(centerPoint)),
+        "Arc: the third argument has to be an ArcCenterPoint!" );
+
+    return create(p0, NormalTimesRadius, centerPoint, p1, layerName);
+}
+
+
+
+
+void Arc::linkCenterPoint()
+{
+    if (auto skmp = centerPoint())
+    {
+        skmp->linktoArc(
+            std::dynamic_pointer_cast<Arc>(shared_from_this()) );
+    }
+}
+
+
+
+
+std::shared_ptr<ArcCenterPoint> Arc::centerPoint() const
+{
+    return std::dynamic_pointer_cast<ArcCenterPoint>(av_);
 }
 
 
@@ -325,11 +360,8 @@ void Arc::addParserRule(
              > ruleset.r_parameters > ')'
              )
                 [   qi::_a = phx::bind(
-                     &Arc::create,
-                     qi::_2, NormalTimesRadius, qi::_3, qi::_4, qi::_5),
-                 phx::bind( &ArcCenterPoint::linktoArc,
-                       phx::dynamic_cast_<ArcCenterPoint*>(&*qi::_3),
-                       phx::bind(&std::dynamic_pointer_cast<Arc,ConstrainedSketchEntity>, qi::_a) ),
+                     &Arc::createInSketch,
+                     qi::_2, qi::_3, qi::_4, qi::_5),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters,
                            &pd, phx::ref(*qi::_a) ),
                  phx::bind(&ConstrainedSketchEntity::parseParameterSet,
@@ -374,6 +406,7 @@ void Arc::replaceDependency(
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(av_) == entity )
         {
             av_ = p;
+            linkCenterPoint();
             invalidate();
         }
         if (std::dynamic_pointer_cast<ConstrainedSketchEntity>(p1_) == entity )
@@ -454,9 +487,12 @@ void Arc::operator=(const Arc& other)
 
 ConstrainedSketchEntityPtr Arc::clone() const
 {
-    auto cl=Arc::create(
+    // don't use create() here: it would link the center point
+    // of this arc to the clone. The link is established, when
+    // the dependencies of the clone are replaced.
+    auto cl=std::shared_ptr<Arc>(new Arc(
         p0_, avType_, av_, p1_,
-        layerName() );
+        layerName() ));
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef().assignFrom( parameters() );
@@ -481,6 +517,14 @@ defineType(ArcCenterPoint);
 addToStaticFunctionTable(ConstrainedSketchEntity, ArcCenterPoint, addParserRule);
 
 
+ArcCenterPoint::ArcCenterPoint(const ArcCenterPoint&o, TreeCloneMap& tcm)
+  : SketchPoint(o, tcm),
+    angle_(o.angle_)
+{
+    // link to arc is established by the cloned arc
+}
+
+
 ArcCenterPoint::ArcCenterPoint(
     DatumPtr plane, double angle,
     const std::string& layerName)
@@ -499,7 +543,8 @@ ArcCenterPoint::ArcCenterPoint(
 void ArcCenterPoint::linktoArc(std::weak_ptr<Arc> arc)
 {
     arc_=arc;
-    coords2D(); // trigger recalc
+    // no recalculation here: coords2D() evaluates the arc on each access
+    // and the arc might not be ready for evaluation yet (e.g. during cloning)
 }
 
 
@@ -529,6 +574,17 @@ arma::mat ArcCenterPoint::coords2D() const
         -> SketchPoint::setCoords2D(p2(0), p2(1));
 
     return SketchPoint::coords2D();
+}
+
+
+size_t ArcCenterPoint::calcHash() const
+{
+    // do not include the arc: it depends on this point
+    ParameterListHash h;
+    h+=this->type();
+    h+=*plane();
+    h+=angle_;
+    return h.getHash();
 }
 
 
@@ -570,7 +626,7 @@ void ArcCenterPoint::setDoFValue(unsigned int iDoF, double value)
 
 void ArcCenterPoint::scaleSketch(double scaleFactor)
 {
-    angle_ *= scaleFactor;
+    // the arc angle is invariant to scaling
 }
 
 
@@ -580,12 +636,11 @@ void ArcCenterPoint::generateScriptCommand(
     const std::map<const ConstrainedSketchEntity *, int> &entityLabels) const
 {
     int myLabel=entityLabels.at(this);
-    auto v = coords2D();
     script.insertCommandFor(
         myLabel,
         type() + "( "
             + toString(myLabel) + ", "
-            + str(boost::format("%g, %g")%v(0)%v(1))
+            + str(boost::format("%.12g")%angle_)
             + ", layer " + layerName()
             + parameterString()
             + ")"
@@ -603,15 +658,15 @@ void ArcCenterPoint::addParserRule(
             typeName,
             ( '('
              > qi::int_ > ','
-             > qi::double_ > ',' > qi::double_
+             > qi::double_ // arc angle
              > (( ',' >> parser::kw("layer") >> ruleset.r_label) | qi::attr(std::string()))
              > ruleset.r_parameters >
              ')' )
                 [ qi::_a = phx::bind(
-                     &SketchPoint::create<DatumPtr, double, double, const std::string&>,
-                     ruleset.sketch->plane(), qi::_2, qi::_3, qi::_4),
+                     &ArcCenterPoint::create<DatumPtr, double, const std::string&>,
+                     ruleset.sketch->plane(), qi::_2, qi::_3),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, phx::ref(*qi::_a)),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4,
                            boost::filesystem::path(".")),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
@@ -636,7 +691,9 @@ ConstrainedSketchEntityPtr ArcCenterPoint::clone() const
         plane(),
         angle_,
         layerName() );
-    cl->linktoArc(arc_);
+    // keep the link without triggering a recalculation;
+    // it is redirected, when the dependencies of the cloned arc are replaced
+    cl->arc_=arc_;
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef().assignFrom( parameters() );
     return cl;

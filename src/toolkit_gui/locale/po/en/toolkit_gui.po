@@ -111,6 +111,11 @@ msgstr ""
 msgid "image file \"%s\" does not exist"
 msgstr ""
 
+msgid ""
+"Bound to expression: %1\n"
+"Entering a different value replaces the expression by a constant."
+msgstr ""
+
 msgid "Visible"
 msgstr ""
 

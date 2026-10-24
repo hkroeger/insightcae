@@ -129,6 +129,7 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
 
 
     modelEdit_->setModel(model_);
+    modelEdit_->setViewer(viewer_);
     viewer_->setModel(model_);
     viewer_->connectNotepad(notepad_);
 

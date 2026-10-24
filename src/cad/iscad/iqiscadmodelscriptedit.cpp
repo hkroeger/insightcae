@@ -46,6 +46,11 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
+#include <QPointer>
+#include <QApplication>
+#include <QClipboard>
+
+#include <sstream>
 
 #include "base/tools.h"
 #include "base/exceptionhandling.h"
@@ -54,6 +59,10 @@
 
 #include "cadfeatures/modelfeature.h"
 #include "sketch.h"
+#include "constrainedsketch.h"
+#include "cadfeatures/parametricsketch.h"
+#include "iqcadmodel3dviewer.h"
+#include "iqvtkconstrainedsketcheditor.h"
 #include "modelcomponentselectordlg.h"
 #include "insertfeaturedlg.h"
 #include "loadmodeldialog.h"
@@ -69,6 +78,7 @@ IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing
 : QTextEdit(parent),
   unsaved_(false),
   cur_model_(nullptr),
+  viewer_(nullptr),
   skipPostprocActions_(true),
   hasBeenRebuilt_(false),
   inSelectionChanged_(false)
@@ -525,6 +535,12 @@ void IQISCADModelScriptEdit::setModel(IQCADItemModel* model)
 }
 
 
+void IQISCADModelScriptEdit::setViewer(IQCADModel3DViewer* viewer)
+{
+    viewer_=viewer;
+}
+
+
 QSize IQISCADModelScriptEdit::sizeHint() const
 {
   return sizehint_;
@@ -536,6 +552,104 @@ void IQISCADModelScriptEdit::editSketch(QObject* skPtr)
 {
     auto sk = reinterpret_cast<insight::cad::Sketch*>(skPtr);
     sk->executeEditor();
+}
+
+
+void IQISCADModelScriptEdit::editParametricSketch(
+    std::shared_ptr<insight::cad::ParametricSketch> ps )
+{
+    if (!viewer_) return;
+
+    // the parser positions are byte offsets in the UTF-8 encoded script,
+    // convert them into character positions in the editor
+    std::string script = toPlainText().toStdString();
+    auto range = ps->scriptRange();
+    QString text = toPlainText();
+
+    bool ok = (range.first<=range.second) && (range.second<=script.size());
+    int b=0, e=0;
+    if (ok)
+    {
+        b = QString::fromStdString(script.substr(0, range.first)).size();
+        e = QString::fromStdString(script.substr(0, range.second)).size();
+        // replace up to the closing bracket
+        while (e<text.size() && text[e].isSpace()) ++e;
+        ok = (e<text.size()) && (text[e]==')');
+    }
+    if (!ok)
+    {
+        QMessageBox::warning(
+            this, _("Edit Parametric Sketch"),
+            _("The script has been modified since it was parsed last."
+              " Please wait for the background parsing to complete and try again.") );
+        return;
+    }
+
+    if (ps->hasScriptArgument())
+    {
+        // replace everything after the comma
+        int i=b;
+        while (i>0 && text[i-1].isSpace()) --i;
+        if (i>0 && text[i-1]==',') b=i;
+    }
+
+    QString orgText = text.mid(b, e-b);
+    bool hasScriptArgument = ps->hasScriptArgument();
+
+    QPointer<IQISCADModelScriptEdit> self(this);
+    viewer_->editSketch(
+        *ps->sketch(),
+        insight::cad::noParametersDelegate,
+        defaultGUIConstrainedSketchPresentationDelegate,
+        [self,b,e,orgText,hasScriptArgument](insight::cad::ConstrainedSketchPtr editedSk)
+        {
+            if (self)
+            {
+                self->replaceParametricSketchScript(
+                    b, e, orgText, hasScriptArgument, *editedSk );
+            }
+        }
+        );
+}
+
+
+void IQISCADModelScriptEdit::replaceParametricSketchScript(
+    int begin, int end,
+    const QString& orgText,
+    bool hasScriptArgument,
+    const insight::cad::ConstrainedSketch& sketch )
+{
+    std::ostringstream os;
+    sketch.generateScript(os);
+    QString sketchScript = QString::fromStdString(os.str()).trimmed();
+
+    QString replacement;
+    if (sketchScript.isEmpty())
+        replacement = hasScriptArgument ? " " : ", ";
+    else
+        replacement = (hasScriptArgument ? "\n" : ",\n") + sketchScript + "\n";
+
+    if (toPlainText().mid(begin, end-begin) != orgText)
+    {
+        auto answer = QMessageBox::warning(
+            this, _("Edit Parametric Sketch"),
+            _("The script has been modified during sketch editing."
+              " The sketch script cannot be inserted automatically.\n"
+              "Copy the sketch script to the clipboard?"),
+            QMessageBox::Yes|QMessageBox::No );
+        if (answer==QMessageBox::Yes)
+        {
+            QApplication::clipboard()->setText(sketchScript);
+        }
+        return;
+    }
+
+    QTextCursor c = textCursor();
+    c.beginEditBlock();
+    c.setPosition(begin);
+    c.setPosition(end, QTextCursor::KeepAnchor);
+    c.insertText(replacement);
+    c.endEditBlock();
 }
 
 
@@ -727,6 +841,15 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
 //                signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
 //                connect(signalMapper, QOverload<QObject*>::of(&QSignalMapper::mapped),
 //                        this, &ISCADModel::editSketch);
+            }
+            else if (auto ps=std::dynamic_pointer_cast<insight::cad::ParametricSketch>(*fpp))
+            {
+                act=new QAction(_("Edit Parametric Sketch..."), this);
+                act->setEnabled(viewer_!=nullptr);
+                slotFunction=[this,ps]()
+                {
+                    this->editParametricSketch(ps);
+                };
             }
             else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fp))
             {

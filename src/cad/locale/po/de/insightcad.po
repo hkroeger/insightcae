@@ -904,6 +904,13 @@ msgstr ""
 "Erzeugt eine Offsetfläche aus einem Shell-Feature, indem die Flächen in "
 "Normalenrichtung um den Abstand t verschoben werden."
 
+msgid ""
+"Creates a constrained sketch on the given plane. The sketch is defined by "
+"the sketch script. The sketch script may be empty. It can be created and "
+"modified in the graphical sketch editor, which is accessible through the "
+"context menu of the script editor."
+msgstr ""
+
 msgid "Partionates of the base feature by the tool feature."
 msgstr "Partitioniert das Basis-Feature durch das Werkzeug-Feature."
 

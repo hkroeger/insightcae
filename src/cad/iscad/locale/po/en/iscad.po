@@ -281,6 +281,21 @@ msgstr "The file %1 does not exists!"
 msgid "Could not display the selected entity: %1"
 msgstr ""
 
+#, fuzzy
+msgid "Edit Parametric Sketch"
+msgstr "Edit Sketch..."
+
+msgid ""
+"The script has been modified since it was parsed last. Please wait for the "
+"background parsing to complete and try again."
+msgstr ""
+
+msgid ""
+"The script has been modified during sketch editing. The sketch script cannot "
+"be inserted automatically.\n"
+"Copy the sketch script to the clipboard?"
+msgstr ""
+
 msgid "Please select file"
 msgstr "Please select file"
 
@@ -294,6 +309,10 @@ msgid "BREP model"
 msgstr "BREP model"
 
 msgid "Edit Sketch..."
+msgstr "Edit Sketch..."
+
+#, fuzzy
+msgid "Edit Parametric Sketch..."
 msgstr "Edit Sketch..."
 
 msgid "Edit Model..."

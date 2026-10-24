@@ -33,6 +33,12 @@
 
 class IQCADItemModel;
 class IQISCADSyntaxHighlighter;
+class IQCADModel3DViewer;
+
+namespace insight { namespace cad {
+class ParametricSketch;
+class ConstrainedSketch;
+} }
 
 
 
@@ -55,6 +61,12 @@ protected:
     bool unsaved_;
 
     IQCADItemModel* cur_model_;
+
+    /**
+     * @brief viewer_
+     * the 3D viewer, in which the sketch editor is executed
+     */
+    IQCADModel3DViewer* viewer_;
     
     /**
      * @brief scheduler_
@@ -79,6 +91,22 @@ protected:
     
 protected:
     void clearDerivedData();
+
+    /**
+     * start the constrained sketch editor for the given parametric sketch
+     * and replace its sketch script argument after editing
+     */
+    void editParametricSketch(std::shared_ptr<insight::cad::ParametricSketch> ps);
+
+    /**
+     * replace the text range [begin, end) by the script of the edited sketch.
+     * The replacement is only done, if the text range still contains orgText.
+     */
+    void replaceParametricSketchScript(
+        int begin, int end,
+        const QString& orgText,
+        bool hasScriptArgument,
+        const insight::cad::ConstrainedSketch& sketch );
 
     /**
      * write the editor contents to the given file.
@@ -108,6 +136,7 @@ public:
 
 //    void connectModelTree(QModelTree* mt) const;
     void setModel(IQCADItemModel* model);
+    void setViewer(IQCADModel3DViewer* viewer);
 
     inline bool isUnsaved() const { return unsaved_; }
 

@@ -111,6 +111,11 @@ msgstr "konnte keinen Reader für die Datei \"%s\" erzeugen"
 msgid "image file \"%s\" does not exist"
 msgstr "die Bitmap-Datei \"%s\" existiert nicht"
 
+msgid ""
+"Bound to expression: %1\n"
+"Entering a different value replaces the expression by a constant."
+msgstr ""
+
 msgid "Visible"
 msgstr "Sichtbar"
 

@@ -62,6 +62,8 @@ add_library(insightcad SHARED
   constrainedsketchentities/distanceconstraint.h constrainedsketchentities/distanceconstraint.cpp
   constrainedsketchentities/externalreference.h constrainedsketchentities/externalreference.cpp
   constrainedsketchentities/tangentconstraint.h constrainedsketchentities/tangentconstraint.cpp
+  constrainedsketchentities/perpendicularconstraint.h constrainedsketchentities/perpendicularconstraint.cpp
+  constrainedsketchentities/perpendicularconstraint.h constrainedsketchentities/perpendicularconstraint.cpp
   constrainedsketchgrammar.h constrainedsketchgrammar.cpp
 
   geotest.cpp
@@ -281,6 +283,8 @@ add_library(insightcad SHARED
   cadfeatures/nacafourdigit.h
   cadfeatures/offset.cpp
   cadfeatures/offset.h
+  cadfeatures/parametricsketch.cpp
+  cadfeatures/parametricsketch.h
   cadfeatures/partition.cpp
   cadfeatures/partition.h
   cadfeatures/pipe.cpp

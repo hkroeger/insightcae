@@ -40,6 +40,7 @@
 
 #include "constrainedsketchentities/distanceconstraint.h"
 #include "constrainedsketchentities/tangentconstraint.h"
+#include "constrainedsketchentities/perpendicularconstraint.h"
 #include "constrainedsketchentities/angleconstraint.h"
 #include "constrainedsketchentities/fixedpointconstraint.h"
 #include "constrainedsketchentities/horizontalconstraint.h"
@@ -796,6 +797,35 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                         (++selact->currentSelection().begin())->lock() );
 
                     auto c = TangentConstraint::create(
+                        l1, l2,
+                        std::string() );
+
+                    (*this)->insertGeometry(c);
+                    (*this)->invalidate();
+                    Q_EMIT sketchChanged();
+                }
+            }
+        }
+        );
+
+    toolBar_->addAction(
+        "P",
+        this, [this]()
+        {
+            if ( auto selact = runningAction<IQVTKSelectConstrainedSketchEntity>() )
+            {
+                if (selact->somethingSelected())
+                {
+                    insight::assertion(
+                        selact->currentSelection().size()==2,
+                        "exactly two entities should be selected!");
+
+                    auto l1=std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
+                        selact->currentSelection().begin()->lock() );
+                    auto l2=std::dynamic_pointer_cast<insight::cad::SingleEdgeFeature>(
+                        (++selact->currentSelection().begin())->lock() );
+
+                    auto c = PerpendicularConstraint::create(
                         l1, l2,
                         std::string() );
 
@@ -1581,13 +1611,40 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    auto editInPlace = [&](double initValue, std::function<void(double)> setNewValue)
+    // describe parameters, which are bound to expressions in the ISCAD script
+    auto bindingToolTip = [](
+                              const ConstrainedSketchEntity& e,
+                              const std::vector<std::string>& names ) -> QString
+    {
+        QStringList bl;
+        for (const auto& n: names)
+        {
+            auto i=e.parameterBindings().find(n);
+            if (i!=e.parameterBindings().end())
+            {
+                bl.append(QString("%1 = %2")
+                              .arg(QString::fromStdString(i->first),
+                                   QString::fromStdString(i->second.expression)));
+            }
+        }
+        if (bl.isEmpty())
+            return QString();
+        return QString(_("Bound to expression: %1\n"
+                         "Entering a different value replaces the expression by a constant."))
+            .arg(bl.join(", "));
+    };
+
+    auto editInPlace = [&](
+                           double initValue,
+                           std::function<void(double)> setNewValue,
+                           const QString& toolTip = QString() )
     {
         auto *ed = new QLineEdit(&viewer());
         ed->setGeometry(point.x(), point.y(),
                         ed->size().width(), ed->size().height());
 
         ed->setText(QString::number(initValue));
+        ed->setToolTip(toolTip);
         ed->selectAll();
 
         connect(ed, &QLineEdit::returnPressed, ed,
@@ -1613,32 +1670,53 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
         {
             if (auto ac = std::dynamic_pointer_cast<FixedAngleConstraint>(selitem))
             {
+                // compare against displayed (rounded) value
+                double orgValue = QString::number(ac->targetValue()/SI::deg).toDouble();
                 editInPlace(
-                    ac->targetValue()/SI::deg,
-                    [this,ac](double na) {
+                    orgValue,
+                    [ac,orgValue](double na) {
+                        if (na!=orgValue)
+                            ac->removeParameterBinding("angle");
                         ac->setTargetValue(na*SI::deg);
-                    }
+                    },
+                    bindingToolTip(*ac, {"angle"})
                     );
                 return true;
             }
             else if (auto dc = std::dynamic_pointer_cast<FixedDistanceConstraint>(selitem))
             {
+                double orgValue = QString::number(dc->targetValue()).toDouble();
                 editInPlace(
-                    dc->targetValue(),
-                    std::bind(&FixedDistanceConstraint::setTargetValue, dc, std::placeholders::_1)
+                    orgValue,
+                    [dc,orgValue](double nv) {
+                        if (nv!=orgValue)
+                            dc->removeParameterBinding("distance");
+                        dc->setTargetValue(nv);
+                    },
+                    bindingToolTip(*dc, {"distance"})
                     );
                 return true;
             }
             else if (auto dc = std::dynamic_pointer_cast<FixedPointConstraint>(selitem))
             {
+                auto xy0 = dc->getXY();
+                // compare against displayed (rounded) values
+                std::pair<double,double> orgXY{
+                    QString::number(xy0.first).toDouble(),
+                    QString::number(xy0.second).toDouble() };
                 auto *eq=new XYEditor(
-                    dc->getXY(),
-                    [this,dc](const std::pair<double,double>& xy) {
+                    xy0,
+                    [this,dc,orgXY](const std::pair<double,double>& xy) {
+                        if (xy.first!=orgXY.first)
+                            dc->removeParameterBinding("x");
+                        if (xy.second!=orgXY.second)
+                            dc->removeParameterBinding("y");
                         dc->setXY(xy);
                         solve();
                     },
                     &viewer()
                 );
+                eq->setToolTip(bindingToolTip(*dc, {"x", "y"}));
                 eq->showAt(point);
                 return true;
             }

@@ -229,6 +229,8 @@ void FixedDistanceConstraint::setTargetValue(double dist)
 
 void FixedDistanceConstraint::scaleSketch(double scaleFactor)
 {
+    if (isParameterBound("distance")) return;
+
     auto& dp=parametersRef().get<DoubleParameter>("distance");
     dp.set(dp() * scaleFactor);
 }
@@ -254,6 +256,7 @@ void FixedDistanceConstraint::generateScriptCommand(
                        % distanceAlong_->value()(1)
                        % distanceAlong_->value()(2) ) : std::string("") )
             + ", layer " + layerName()
+            + parameterBindingString()
             + parameterString()
             + ")"
         );
@@ -277,6 +280,7 @@ void FixedDistanceConstraint::addParserRule(
              > ruleset.r_point
              > (( ',' >> qi::lit("along") > ruleset.r_vector) | qi::attr(VectorPtr()))
              > (( ',' >> qi::lit("layer") > ruleset.r_label) | qi::attr(std::string()))
+             > ruleset.r_parameterBindings
              > ruleset.r_parameters >
              ')'
              )
@@ -287,8 +291,9 @@ void FixedDistanceConstraint::addParserRule(
                      phx::bind(&ConstrainedSketch::sketchPlaneNormal, ruleset.sketch),
                      qi::_5, qi::_4 ),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6,
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_7,
                        boost::filesystem::path(".")),
+                 phx::bind(&ConstrainedSketchEntity::setParameterBindings, qi::_a, qi::_6),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -319,6 +324,7 @@ ConstrainedSketchEntityPtr FixedDistanceConstraint::clone() const
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef().assignFrom( parameters() );
+    cl->setParameterBindings( parameterBindings() );
     return cl;
 }
 

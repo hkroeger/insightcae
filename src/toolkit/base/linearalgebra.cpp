@@ -1293,20 +1293,25 @@ arma::mat nonlinearSolveND(
           if (status!=0)   /* check if solver is stuck */
               throw insight::NonConvergenceException(iter);
 
+          if (relax<1.)
+          {
+              // relax and restart the solver from the relaxed point,
+              // so that its internal state (f, J, trust region)
+              // is consistent with x
+              for (int i=0; i<n; i++)
+              {
+                  gsl_vector_set(
+                    x, i,
+                  relax * gsl_vector_get(s->x, i)
+                     +
+                  (1.-relax) * gsl_vector_get(olditer_p, i)
+                 );
+              }
+              gsl_multiroot_fdfsolver_set (s, &f, x);
+          }
+
           status =
               gsl_multiroot_test_residual (s->f, tol);
-
-
-          //relax
-          for (int i=0; i<n; i++)
-          {
-              gsl_vector_set(
-                s->x, i,
-              relax * gsl_vector_get(s->x, i)
-                 +
-              (1.-relax) * gsl_vector_get(olditer_p, i)
-             );
-          }
 
           if (perIterationCallback)
           {
@@ -1315,7 +1320,7 @@ arma::mat nonlinearSolveND(
         }
         while (status == GSL_CONTINUE && iter < nMaxIter);
 
-        if (iter>=nMaxIter)
+        if (status == GSL_CONTINUE) // max. iterations reached without convergence
             throw insight::NonConvergenceException(iter);
     }
     catch (...)
@@ -1332,6 +1337,89 @@ arma::mat nonlinearSolveND(
 
     return result;
 }
+
+
+arma::mat nonlinearLeastSquaresND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol, int nMaxIter,
+    std::function<void(const arma::mat&)> perIterationCallback
+    )
+{
+    f_adapter_params fp{
+        obj, x0,
+        std::max(arma::norm(arma::vectorise(x0), "inf"), 1e-3) };
+
+    arma::mat x = arma::vectorise(x0);
+    arma::mat f = obj(x);
+    double F = 0.5*arma::dot(f, f);
+    arma::mat J = fd_jacobian(fp, x, f);
+
+    double mu=-1., nu=2.;
+
+    for (int iter=0; iter<nMaxIter; ++iter)
+    {
+        if (arma::norm(f, "inf") < tol)
+            return x;
+
+        arma::mat A = J.t()*J;
+        arma::mat g = J.t()*f;
+
+        if (arma::norm(g, "inf") < tol*tol)
+            return x; // stationary point: least squares minimum
+
+        // Marquardt scaling of the damping term
+        arma::vec dA = arma::diagvec(A);
+        double dAmax = std::max(dA.max(), SMALL);
+        dA = arma::clamp(dA, 1e-12*dAmax, arma::datum::inf);
+
+        if (mu<0.) mu = 1e-3;
+
+        arma::mat dx;
+        bool ok = arma::solve(
+            dx, A + mu*arma::diagmat(dA), -g,
+            arma::solve_opts::no_approx );
+
+        if (ok && arma::norm(dx, 2) < tol*(arma::norm(x, 2)+tol))
+            return x; // no further progress possible
+
+        bool accepted=false;
+        if (ok)
+        {
+            arma::mat xn = x + dx;
+            arma::mat fn = obj(xn);
+            if (fn.is_finite())
+            {
+                double Fn = 0.5*arma::dot(fn, fn);
+                double pred = 0.5*arma::dot(dx, mu*(dA%arma::vectorise(dx)) - g);
+                double rho = pred>0. ? (F-Fn)/pred : -1.;
+                if (rho>0.)
+                {
+                    x=xn;
+                    f=fn;
+                    F=Fn;
+                    J = fd_jacobian(fp, x, f);
+                    mu *= std::max(1./3., 1.-pow(2.*rho-1., 3));
+                    nu = 2.;
+                    accepted=true;
+
+                    if (perIterationCallback)
+                        perIterationCallback(x);
+                }
+            }
+        }
+
+        if (!accepted)
+        {
+            mu *= nu;
+            nu *= 2.;
+        }
+    }
+
+    throw insight::NonConvergenceException(nMaxIter);
+}
+
+
 
 
 arma::mat movingAverage(

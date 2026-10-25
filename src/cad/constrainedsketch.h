@@ -172,6 +172,14 @@ public:
         double tolerance_;
         double relax_;
         int maxIter_;
+
+        /**
+         * max. number of bisections of the continuation step.
+         * Large changes in constraint values are applied stepwise
+         * (homotopy from the current state towards the target),
+         * the step is halved on failure. 0 = solve in one step.
+         */
+        int maxContinuationRefinements_;
     };
 
 

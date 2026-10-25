@@ -116,7 +116,7 @@ Handle_Geom_TrimmedCurve Arc::calcArc() const
         arma::mat S=p1-p0;
 
         double s=arma::norm(S,2);
-        double r=s/2./sin(alpha/2.);
+        double r=std::max(SMALL, s/2./sin(alpha/2.)); // clip for constrained solver
 
         double a=sqrt(std::max(0., r*r-0.25*s*s));
         arma::mat ctr= p0 + S*0.5 + normalized(arma::cross(n,S))*a *(alpha<M_PI?1.:-1.);

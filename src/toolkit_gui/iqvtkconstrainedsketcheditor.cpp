@@ -1167,6 +1167,26 @@ IQVTKConstrainedSketchEditor::IQVTKConstrainedSketchEditor(
                 );
         l->addRow("max. iterations", maxiteredit);
     }
+    {
+        auto  maxrefedit = new QLineEdit;
+        maxrefedit->setValidator(new QIntValidator(0,30));
+        maxrefedit->setText(QString::number((*this)->solverSettings().maxContinuationRefinements_));
+        connect(maxrefedit, &QLineEdit::textChanged, this,
+                [this](const QString& txt)
+                {
+                    int newmaxref = txt.toInt();
+                    auto css=(*this)->solverSettings();
+                    if ( newmaxref!=css.maxContinuationRefinements_ )
+                    {
+                        css.maxContinuationRefinements_=newmaxref;
+                        (*this)->changeSolverSettings(css);
+                        solve();
+                        Q_EMIT sketchChanged();
+                    }
+                }
+                );
+        l->addRow("max. continuation refinements", maxrefedit);
+    }
 
     {
         auto  layerlist = new QTableView;

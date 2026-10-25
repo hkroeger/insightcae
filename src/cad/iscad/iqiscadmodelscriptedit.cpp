@@ -380,6 +380,7 @@ void IQISCADModelScriptEdit::setScript(const std::string& contents)
         );
 
     setPlainText(contents.c_str());
+    collapseSketchesOnNextParse_=true;
 
     connect
         (
@@ -571,6 +572,9 @@ void IQISCADModelScriptEdit::onScriptParsed(
 
     highlighter_->rehighlight();
 
+    // only the first parse result after loading collapses the sketches
+    collapseSketchesOnNextParse_=false;
+
     emit modelUpdated();
 }
 
@@ -626,14 +630,26 @@ void IQISCADModelScriptEdit::updateAnnotations(
         if (r.begin<validChars && r.end>r.begin)
         {
             // keep the state of previously known regions
+            bool known=false;
             for (const auto& o: foldRegions_)
             {
                 if (o.begin==r.begin && o.command==r.command)
                 {
                     r.collapsed=o.collapsed;
+                    known=true;
                     break;
                 }
             }
+
+            // sketch arguments are collapsed after loading
+            if ( !known && collapseSketchesOnNextParse_
+                 && r.command=="ParametricSketch"
+                 && isFoldable(r)
+                 && !hidesPosition(r, textCursor().position()) )
+            {
+                r.collapsed=true;
+            }
+
             regions.push_back(r);
         }
     }
@@ -1301,6 +1317,19 @@ bool IQISCADModelScriptEdit::hidesPosition(const FoldRegion& r, int pos) const
 }
 
 
+bool IQISCADModelScriptEdit::hasCollapsedRegionStartingIn(const QTextBlock& block) const
+{
+    const int bb=block.position(), be=bb+block.length();
+    for (const auto& r: foldRegions_)
+    {
+        if (r.begin>=be) break;
+        if (r.begin>=bb && r.collapsed && isFoldable(r))
+            return true;
+    }
+    return false;
+}
+
+
 int IQISCADModelScriptEdit::foldRegionStartingIn(const QTextBlock& block) const
 {
     const int bb=block.position(), be=bb+block.length();
@@ -1459,11 +1488,10 @@ void IQISCADModelScriptEdit::marginPaintEvent(QPaintEvent *event)
             int ri=foldRegionStartingIn(block);
             if (ri>=0)
             {
-                const auto& r = foldRegions_[ri];
                 QRectF mr(numberWidth+4, top, markerSize, fm.height());
                 mr.adjust(markerSize*0.25, markerSize*0.25, -markerSize*0.25, -markerSize*0.25);
                 QPolygonF tri;
-                if (r.collapsed)
+                if (hasCollapsedRegionStartingIn(block))
                 {
                     tri << mr.topLeft() << QPointF(mr.right(), mr.center().y()) << mr.bottomLeft();
                 }
@@ -1499,7 +1527,22 @@ void IQISCADModelScriptEdit::marginMousePressEvent(QMouseEvent *event)
             int ri=foldRegionStartingIn(block);
             if (ri>=0)
             {
-                setCollapsed(ri, !foldRegions_[ri].collapsed);
+                if (hasCollapsedRegionStartingIn(block))
+                {
+                    // expand all regions of this line, also nested ones
+                    const int bb=block.position(), be=bb+block.length();
+                    for (auto& r: foldRegions_)
+                    {
+                        if (r.begin>=bb && r.begin<be)
+                            r.collapsed=false;
+                    }
+                    applyFolding();
+                }
+                else
+                {
+                    setCollapsed(ri, true);
+                }
+                margin_->update();
             }
             return;
         }

@@ -135,6 +135,11 @@ double ConstrainedSketchEntity::getConstraintError(unsigned int iConstraint) con
 
 
 
+void ConstrainedSketchEntity::prepareConstraintSolve(const arma::mat&)
+{}
+
+
+
 
 size_t ConstrainedSketchEntity::hash() const
 {

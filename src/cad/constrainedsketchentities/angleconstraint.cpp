@@ -6,6 +6,7 @@
 #include "base/parameters/simpleparameter.h"
 
 #include "constrainedsketch.h"
+#include <cmath>
 
 namespace insight {
 namespace cad {
@@ -51,8 +52,45 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
     insight::assertion(
         iConstraint==0,
         "invalid constraint id" );
+
+    if (refNormal_.n_elem==3)
+    {
+        arma::mat d1 = p1_->value() - pCtr_->value();
+        arma::mat d2 = p2_->value() - pCtr_->value();
+        if ( (arma::norm(d1, 2)>SMALL) && (arma::norm(d2, 2)>SMALL) )
+        {
+            double phi = atan2(
+                arma::dot(arma::cross(d1, d2), refNormal_),
+                arma::dot(d1, d2) );
+            // wrap, so that the discontinuity is located at the
+            // opposite configuration, far away from the solution
+            return std::remainder(phi - targetValue(), 2.*M_PI)/M_PI;
+        }
+    }
+
     checkForBuildDuringAccess();
     return (angle_ - targetValue())/M_PI;
+}
+
+void AngleConstraint::prepareConstraintSolve(const arma::mat& sketchPlaneNormal)
+{
+    refNormal_.reset();
+
+    arma::mat d1 = p1_->value() - pCtr_->value();
+    arma::mat d2 = p2_->value() - pCtr_->value();
+    arma::mat n = arma::cross(d1, d2);
+    double ln = arma::norm(n, 2);
+
+    if ( ln > 1e-6*arma::norm(d1, 2)*arma::norm(d2, 2) && ln > SMALL )
+    {
+        // keep the side of the current configuration
+        refNormal_ = n/ln;
+    }
+    else if (arma::norm(sketchPlaneNormal, 2) > SMALL)
+    {
+        // collinear legs: no preferred side, use sketch plane
+        refNormal_ = arma::normalise(sketchPlaneNormal);
+    }
 }
 
 void AngleConstraint::scaleSketch(double scaleFactor)

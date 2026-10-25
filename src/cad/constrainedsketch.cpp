@@ -170,7 +170,7 @@ ConstrainedSketch::ConstrainedSketch(
     DatumPtr pl,
     const ConstrainedSketchParametersDelegate& pd )
     : pl_(pl),
-    solverSettings_({rootND, insight::SMALL, 1., 1000})
+    solverSettings_({rootND, insight::SMALL, 1., 1000, 8})
 {
     addLayer( defaultLayerName, pd );
 }
@@ -845,6 +845,15 @@ void ConstrainedSketch::resolveConstraints(
     }
 
 
+    if (pl_ && pl_->providesPlanarReference())
+    {
+        arma::mat n = sketchPlaneNormal()->value();
+        for (auto& ge: geometry_)
+        {
+            ge.second->prepareConstraintSolve(n);
+        }
+    }
+
     arma::mat x0 = arma::zeros(dofs.size());
     for (int i=0; i<dofs.size(); ++i)
     {
@@ -866,6 +875,23 @@ void ConstrainedSketch::resolveConstraints(
                 e->invalidate();
             }
         }
+    };
+
+    auto residuals = [&](const arma::mat& x) -> arma::mat
+    {
+        setX(x);
+
+        if (perIterationCallback)
+            perIterationCallback();
+
+        arma::mat Qs=arma::zeros(constrs.size());
+        for (int i=0;i<constrs.size();++i)
+        {
+            auto& constr=constrs[i];
+            Qs(i)=constr.entity->getConstraintError(constr.iLocal);
+        }
+        insight::dbg()<<"Q="<<Qs.t()<<std::endl;
+        return Qs;
     };
 
 
@@ -890,86 +916,153 @@ void ConstrainedSketch::resolveConstraints(
 
     }
 
-    arma::mat xsol;
-    switch (solverType)
+    if (solverType==rootND)
     {
-        case minimumND:
+        for (int i=0;i<constrs.size();++i)
         {
-            xsol = nonlinearMinimizeND(
-                [&](const arma::mat& x) -> double
-                {
-                    setX(x);
-
-                    double Q=0;
-                    for (int i=0;i<constrs.size();++i)
-                    {
-                        auto& constr = constrs[i];
-                        Q+=pow(constr.entity->getConstraintError(constr.iLocal), 2);
-                    }
-                    insight::dbg()<<"Q="<<Q<<std::endl;
-                    return Q;
-                },
-                x0, solverSettings_.tolerance_, arma::mat(),
-                solverSettings_.maxIter_, solverSettings_.relax_
-                );
+            auto& constr=constrs[i];
+            insight::dbg()<<"constraint "<<i<<" : idx "<<constr.iLocal<<" of "<<constr.entity->type()<<endl;
         }
-        break;
+    }
 
-        case rootND:
+    try
+    {
+        /*
+         * Newton homotopy:
+         *  H(x, lambda) = F(x) - (1-lambda) F(x0) = 0
+         * x0 is the exact solution for lambda=0, lambda=1 is the original problem.
+         * lambda is advanced adaptively: try the full step first,
+         * halve the step on failure, enlarge it again after easy steps.
+         */
+        const arma::mat r0 = residuals(x0);
+        const double r0max = arma::norm(r0, "inf");
+        const double minStep = pow(0.5, std::max(0, solverSettings_.maxContinuationRefinements_));
+
+        arma::mat x = x0;
+        double lambda = 0., dl = 1.;
+
+        while (lambda < 1.)
         {
-            for (int i=0;i<constrs.size();++i)
+            double lambdaNew = std::min(1., lambda+dl);
+            bool isFinal = (lambdaNew >= 1.);
+
+            // intermediate solutions need not be accurate
+            double tol = isFinal ?
+                             solverSettings_.tolerance_ :
+                             std::max(solverSettings_.tolerance_, 1e-2*dl*r0max);
+
+            auto H = [&](const arma::mat& xi) -> arma::mat
             {
-                auto& constr=constrs[i];
-                insight::dbg()<<"constraint "<<i<<" : idx "<<constr.iLocal<<" of "<<constr.entity->type()<<endl;
-            }
+                return residuals(xi) - (1.-lambdaNew)*r0;
+            };
+
+            int nIter=0;
+            auto countIter = [&](const arma::mat&) { ++nIter; };
 
             try
             {
-             xsol = nonlinearSolveND(
-                [&](const arma::mat& x) -> arma::mat
+                arma::mat xn;
+
+                // fallback: Levenberg-Marquardt is more robust
+                // for bad starting points and singular jacobians
+                auto rootSolverFailed = [&](const std::string& reason)
                 {
+                    insight::dbg()<<"root solver failed ("<<reason
+                                   <<"), trying Levenberg-Marquardt"<<std::endl;
+                    nIter=0;
+                    xn = nonlinearLeastSquaresND(
+                        H, x, tol, solverSettings_.maxIter_, countIter );
 
-                    setX(x);
+                    if (arma::norm(H(xn), "inf") > tol)
+                        throw insight::NonConvergenceException(nIter);
+                };
 
-                    if (perIterationCallback)
-                        perIterationCallback();
-
-                    arma::mat Qs=arma::zeros(constrs.size());
-
-                    for (int i=0;i<constrs.size();++i)
+                if (solverType==rootND)
+                {
+                    try
                     {
-                        auto& constr=constrs[i];
-                        Qs(i)=constr.entity->getConstraintError(constr.iLocal);
+                        xn = nonlinearSolveND(
+                            H, x, tol,
+                            solverSettings_.maxIter_, solverSettings_.relax_,
+                            countIter );
                     }
-                    insight::dbg()<<"Q="<<Qs.t()<<std::endl;
-                    return Qs;
-                },
-                x0, solverSettings_.tolerance_,
-                solverSettings_.maxIter_, solverSettings_.relax_
-                );
-            }
-            catch (insight::JacobiDeterminatException& ex)
-            {
-                std::set<std::string> ucdofs;
-                for (int i=0; i<dofs.size(); ++i)
-                {
-                    auto& dm=dofs[i];
-                    if (ex.zeroCols().count(i))
+                    catch (insight::JacobiDeterminatException&)
                     {
-                        ucdofs.insert(toString(dm.entityIt->first));
+                        if (lambda==0.)
+                            throw; // unconstrained DoFs in initial geometry
+                        rootSolverFailed("singular jacobian");
+                    }
+                    catch (insight::Exception& ex)
+                    {
+                        rootSolverFailed(ex.message());
                     }
                 }
+                else // minimumND
+                {
+                    xn = nonlinearLeastSquaresND(
+                        H, x, tol, solverSettings_.maxIter_, countIter );
+                }
 
-                throw insight::Exception(
-                    "solve failed because of unconstrained DoFs\n"
-                    "enties with unconstrained DoFs are: %s",
-                    boost::algorithm::join(ucdofs, ", ").c_str());
+                if (!xn.is_finite())
+                    throw insight::NonConvergenceException(nIter);
+
+                x = xn;
+                lambda = lambdaNew;
+                insight::dbg()<<"continuation: lambda="<<lambda
+                               <<" reached in "<<nIter<<" iterations"<<std::endl;
+
+                if (nIter<5) dl = std::min(1., 2.*dl);
+            }
+            catch (insight::Exception& ex)
+            {
+                // a singular jacobian at the initial geometry indicates
+                // unconstrained DoFs. At intermediate states, it may be
+                // a singular configuration on the path: try smaller steps.
+                if ( (lambda==0.)
+                    && dynamic_cast<insight::JacobiDeterminatException*>(&ex) )
+                {
+                    throw;
+                }
+
+                if (dl <= minStep)
+                {
+                    throw insight::Exception(
+                        "solve failed at continuation parameter %g (step size %g).\n"
+                        "Reason: %s", lambda, dl, ex.message().c_str() );
+                }
+                dl *= 0.5;
+                insight::dbg()<<"continuation: step failed at lambda="<<lambdaNew
+                               <<", reducing step to "<<dl<<std::endl;
             }
         }
-        break;
-    }
 
-    setX(xsol);
+        setX(x);
+    }
+    catch (insight::JacobiDeterminatException& ex)
+    {
+        setX(x0);
+
+        std::set<std::string> ucdofs;
+        for (int i=0; i<dofs.size(); ++i)
+        {
+            auto& dm=dofs[i];
+            if (ex.zeroCols().count(i))
+            {
+                ucdofs.insert(toString(dm.entityIt->first));
+            }
+        }
+
+        throw insight::Exception(
+            "solve failed because of unconstrained DoFs\n"
+            "enties with unconstrained DoFs are: %s",
+            boost::algorithm::join(ucdofs, ", ").c_str());
+    }
+    catch (...)
+    {
+        // restore initial geometry
+        setX(x0);
+        throw;
+    }
 }
 
 

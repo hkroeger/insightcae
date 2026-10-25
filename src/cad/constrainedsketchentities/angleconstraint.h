@@ -15,6 +15,15 @@ class AngleConstraint
 
     size_t calcHash() const override;
 
+    /**
+     * orientation (normal of the plane spanned by both legs),
+     * captured at the start of a solve. Used to compute a signed angle,
+     * which avoids the kinks of the unsigned angle at 0 and pi
+     * and prevents flipping into the mirrored configuration.
+     * Empty, if not prepared.
+     */
+    arma::mat refNormal_;
+
 protected:
     /**
      * @brief AngleConstraint
@@ -35,6 +44,7 @@ public:
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+    void prepareConstraintSolve(const arma::mat& sketchPlaneNormal) override;
     void scaleSketch(double scaleFactor) override;
 
 

@@ -15,6 +15,12 @@ class TangentConstraint
 {
     std::shared_ptr<SingleEdgeFeature> line1_, line2_;
 
+    /**
+     * sketch plane normal, captured at the start of a solve.
+     * Used for a signed residual. Empty, if not prepared.
+     */
+    arma::mat planeNormal_;
+
     enum Attachment { Start, End };
 
     std::pair<Attachment,Attachment> commonPoint() const;
@@ -34,6 +40,7 @@ public:
 
     int nConstraints() const override;
     double getConstraintError(unsigned int iConstraint) const override;
+    void prepareConstraintSolve(const arma::mat& sketchPlaneNormal) override;
     void scaleSketch(double scaleFactor) override;
 
     void generateScriptCommand(

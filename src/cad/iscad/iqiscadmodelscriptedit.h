@@ -149,6 +149,12 @@ protected:
      */
     bool completionAccepted_ = false;
 
+    /**
+     * set after loading a script: the arguments of ParametricSketch commands
+     * are collapsed, when the first parse result arrives
+     */
+    bool collapseSketchesOnNextParse_ = false;
+
     bool unsaved_;
 
     IQCADItemModel* cur_model_;
@@ -243,6 +249,12 @@ protected:
      * index of the foldable region, which starts in the given block, -1 if none
      */
     int foldRegionStartingIn(const QTextBlock& block) const;
+
+    /**
+     * true, if any of the foldable regions, which start in the given block, is collapsed.
+     * (Nested regions may start in the same line, e.g. a sketch as argument of an extrusion.)
+     */
+    bool hasCollapsedRegionStartingIn(const QTextBlock& block) const;
     bool isFoldable(const FoldRegion& r) const;
 
     /**

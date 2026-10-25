@@ -93,6 +93,18 @@ public:
     virtual int nConstraints() const;
     virtual double getConstraintError(unsigned int iConstraint) const;
 
+    /**
+     * @brief prepareConstraintSolve
+     * called by ConstrainedSketch::resolveConstraints() before the solver starts,
+     * with the geometry in its initial state.
+     * Constraints may capture orientation information here (e.g. on which side
+     * a configuration is), which is then used to formulate signed, smooth
+     * residuals during the solve.
+     * @param sketchPlaneNormal
+     * unit normal of the sketch plane
+     */
+    virtual void prepareConstraintSolve(const arma::mat& sketchPlaneNormal);
+
     virtual void scaleSketch(double scaleFactor) =0;
 
     virtual size_t hash() const;

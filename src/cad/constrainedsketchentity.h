@@ -7,6 +7,7 @@
 
 #include "base/parameterset.h"
 #include "boost/signals2/connection.hpp"
+#include "boost/optional.hpp"
 #include "cadtypes.h"
 
 #include "constrainedsketchgrammar.h"
@@ -52,6 +53,8 @@ private:
     bool dynamicParameterLoading_ = false;
 
     ParameterBindings parameterBindings_;
+
+    void checkParameterBindings(const ParameterBindings& bindings) const;
 
     std::map<std::shared_ptr<boost::signals2::scoped_connection>, const void*> connectedNotifiers_;
 
@@ -122,6 +125,21 @@ public:
      * need to exist as top-level double parameters.
      */
     void setParameterBindings(const ParameterBindings& bindings);
+
+    /**
+     * @brief setParameterBinding
+     * binds a single parameter (replaces an existing binding of this parameter)
+     */
+    void setParameterBinding(
+        const std::string& name,
+        const std::string& expression,
+        ScalarPtr value );
+
+    /**
+     * @brief parameterExpression
+     * @return the expression text, if the parameter is bound
+     */
+    boost::optional<std::string> parameterExpression(const std::string& name) const;
     const ParameterBindings& parameterBindings() const;
     ParameterBindings& parameterBindingsRef();
     bool isParameterBound(const std::string& name) const;

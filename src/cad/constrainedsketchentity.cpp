@@ -249,8 +249,8 @@ std::string ConstrainedSketchEntity::parameterString() const
 
 
 
-void ConstrainedSketchEntity::setParameterBindings(
-    const ParameterBindings& bindings )
+void ConstrainedSketchEntity::checkParameterBindings(
+    const ParameterBindings& bindings ) const
 {
     for (const auto& b: bindings)
     {
@@ -269,7 +269,41 @@ void ConstrainedSketchEntity::setParameterBindings(
                 type().c_str(), b.first.c_str() );
         }
     }
+}
+
+
+
+
+void ConstrainedSketchEntity::setParameterBindings(
+    const ParameterBindings& bindings )
+{
+    checkParameterBindings(bindings);
     parameterBindings_=bindings;
+}
+
+
+
+
+void ConstrainedSketchEntity::setParameterBinding(
+    const std::string &name,
+    const std::string &expression,
+    ScalarPtr value )
+{
+    ParameterBindings b{ { name, ParameterBinding(expression, value) } };
+    checkParameterBindings(b);
+    parameterBindings_[name]=b.at(name);
+}
+
+
+
+
+boost::optional<std::string>
+ConstrainedSketchEntity::parameterExpression(const std::string &name) const
+{
+    auto i=parameterBindings_.find(name);
+    if (i!=parameterBindings_.end())
+        return i->second.expression;
+    return boost::none;
 }
 
 

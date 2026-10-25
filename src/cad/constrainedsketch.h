@@ -220,6 +220,12 @@ private:
 
     std::map<std::string, std::unique_ptr<LayerProperties> > layerProperties_;
 
+    /**
+     * symbols of the ISCAD script, which are visible at the location of the sketch.
+     * Null, if the sketch is not defined inside an ISCAD script.
+     */
+    std::shared_ptr<const ModelVariableTable> expressionScope_;
+
     ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm);
     ConstrainedSketch( DatumPtr pl, const ConstrainedSketchParametersDelegate& pd );
     ConstrainedSketch( const ConstrainedSketch& other );
@@ -307,6 +313,20 @@ public:
 
     const SolverSettings& solverSettings() const;
     void changeSolverSettings(const SolverSettings& ss);
+
+    /**
+     * @brief setExpressionScope
+     * set the symbols, which can be used in expressions of parameter bindings
+     */
+    void setExpressionScope(const ModelVariableTable& scope);
+    bool hasExpressionScope() const;
+
+    /**
+     * @brief parseScalarExpression
+     * parses a scalar expression in the scope of the sketch.
+     * Throws, if the expression is invalid or if there is no scope.
+     */
+    ScalarPtr parseScalarExpression(const std::string& expression) const;
 
     void resolveConstraints(
         std::function<void(void)> perIterationCallback = std::function<void(void)>(),

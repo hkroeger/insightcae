@@ -978,6 +978,70 @@ bool parseISCADModel
 
 
 
+ScalarPtr parseISCADScalarExpression
+(
+    const std::string& expression,
+    const ModelVariableTable& scope
+)
+{
+    std::string raw_contents(expression);
+
+    std::string::iterator orgbegin,
+        first=raw_contents.begin(),
+        last=raw_contents.end();
+
+    orgbegin=first;
+
+    // the symbols of the scope are looked up from this model
+    auto m = std::make_shared<Model>(scope);
+    ISCADParser parser ( m.get() );
+
+    ScalarPtr result;
+    bool r = false;
+    try
+    {
+        skip_grammar skip;
+
+        parser.current_pos.setStartPos ( first );
+        r = qi::phrase_parse (
+            first,
+            last,
+            parser.r_scalarExpression,
+            skip,
+            result
+            );
+    }
+    catch ( const qi::expectation_failure<std::string::iterator>& e )
+    {
+        throwParserError(
+            expectationError(parser, raw_contents, "", e.first-orgbegin, e.what_),
+            nullptr );
+    }
+    catch ( const iscadParserException& )
+    {
+        throw;
+    }
+    catch ( const insight::Exception& e )
+    {
+        throwParserError( semanticError(parser, raw_contents, "", e.message()), nullptr );
+    }
+
+    if ( !r || first != last || !result ) // fail if we did not get a full match
+    {
+        throwParserError(
+            incompleteParseError(parser, raw_contents, "", first-orgbegin),
+            nullptr );
+    }
+
+    // evaluate once, to report errors early
+    result->value();
+
+    return result;
+}
+
+
+
+
 bool parseISCADModelStream (
     std::istream& in,
     Model* m,

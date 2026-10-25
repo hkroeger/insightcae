@@ -14,6 +14,7 @@
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
+#include "cadmodel.h"
 #include "datum.h"
 #include <algorithm>
 #include <memory>
@@ -135,7 +136,8 @@ void ConstrainedSketchPresentationDelegate::setEntityAppearance(
 ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm)
   : Feature(o, tcm), CL(pl_),
     propertiesParent_(o.propertiesParent_),
-    solverSettings_(o.solverSettings_)
+    solverSettings_(o.solverSettings_),
+    expressionScope_(o.expressionScope_)
 {
     for (auto& g: o.geometry_)
     {
@@ -177,7 +179,8 @@ ConstrainedSketch::ConstrainedSketch(
 ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
     // propertiesParent_(other.propertiesParent_),
-    solverSettings_(other.solverSettings_)
+    solverSettings_(other.solverSettings_),
+    expressionScope_(other.expressionScope_)
 {
     for (auto &lp: other.layerProperties_)
     {
@@ -671,6 +674,7 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
 {
     Feature::operator=(o);
     pl_=o.pl_;
+    expressionScope_=o.expressionScope_;
 
     for (auto &lp: o.layerProperties_)
     {
@@ -774,6 +778,36 @@ const ConstrainedSketch::SolverSettings& ConstrainedSketch::solverSettings() con
 void ConstrainedSketch::changeSolverSettings(const ConstrainedSketch::SolverSettings& ss)
 {
     solverSettings_=ss;
+}
+
+
+
+
+void ConstrainedSketch::setExpressionScope(const ModelVariableTable &scope)
+{
+    expressionScope_=std::make_shared<const ModelVariableTable>(scope);
+}
+
+
+
+
+bool ConstrainedSketch::hasExpressionScope() const
+{
+    return bool(expressionScope_);
+}
+
+
+
+
+ScalarPtr ConstrainedSketch::parseScalarExpression(const std::string &expression) const
+{
+    if (!expressionScope_)
+    {
+        throw insight::Exception(
+            "expressions are only available for sketches,"
+            " which are defined inside an ISCAD script!" );
+    }
+    return parseISCADScalarExpression(expression, *expressionScope_);
 }
 
 
@@ -998,6 +1032,8 @@ void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
                   [ qi::_a = phx::bind(
                    &ConstrainedSketch::create<DatumPtr, const ConstrainedSketchParametersDelegate&>,
                    qi::_1, *noParametersDelegate),
+               phx::bind(&ConstrainedSketch::setExpressionScope, qi::_a,
+                   phx::bind(&Model::allVariables, phx::val(ruleset.model_))),
                qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(
                    qi::_a, *noParametersDelegate,
                    phx::val(&ruleset)),

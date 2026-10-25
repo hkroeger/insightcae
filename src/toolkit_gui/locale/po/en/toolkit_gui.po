@@ -111,9 +111,21 @@ msgstr ""
 msgid "image file \"%s\" does not exist"
 msgstr ""
 
+msgid "Enter a number for a constant value."
+msgstr ""
+
 msgid ""
-"Bound to expression: %1\n"
-"Entering a different value replaces the expression by a constant."
+"Any other input is evaluated as an ISCAD scalar expression (e.g. 0.5*L, "
+"angles in radians, e.g. 30*deg)"
+msgstr ""
+
+msgid "Bound to expression, current value: %1"
+msgstr ""
+
+msgid "Angle [deg]:"
+msgstr ""
+
+msgid "Distance:"
 msgstr ""
 
 msgid "Visible"

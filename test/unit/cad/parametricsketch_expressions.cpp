@@ -7,6 +7,7 @@
 #include "constrainedsketch.h"
 #include "cadfeatures/parametricsketch.h"
 #include "constrainedsketchentities/sketchpoint.h"
+#include "constrainedsketchentities/distanceconstraint.h"
 
 using namespace insight;
 using namespace insight::cad;
@@ -48,6 +49,21 @@ void checkGeometry(const ConstrainedSketch& sk, double L)
     insight::assertion(
         std::fabs(arma::norm(p2-p1, 2)-L)<1e-6,
         "point distance does not match the expression" );
+}
+
+
+bool throws(std::function<void()> f)
+{
+    try
+    {
+        f();
+    }
+    catch (const std::exception& e)
+    {
+        std::cout<<"expected failure: "<<e.what()<<std::endl;
+        return true;
+    }
+    return false;
 }
 
 
@@ -110,6 +126,47 @@ int main(int, char*argv[])
             sk2->hash() != sk3->hash(),
             "sketch hash does not reflect changed expression value" );
 
+        // expressions entered in the sketch editor:
+        // only symbols defined before the sketch are visible
+        {
+            auto m = parseModel("L=4;\n" + sketchHead + sketchScript + ");\nM=7;\n");
+            auto sk = builtSketch(*m);
+
+            insight::assertion(sk->hasExpressionScope(), "sketch has no expression scope");
+            insight::assertion(
+                std::fabs(sk->parseScalarExpression("0.5*L")->value()-2.)<1e-10,
+                "unexpected value of expression" );
+            insight::assertion(
+                throws([&]() { sk->parseScalarExpression("M"); }),
+                "symbol defined after the sketch was accepted" );
+            insight::assertion(
+                throws([&]() { sk->parseScalarExpression("0.5*"); }),
+                "incomplete expression was accepted" );
+            insight::assertion(
+                throws([&]() { sk->parseScalarExpression("L L"); }),
+                "expression with trailing garbage was accepted" );
+
+            // editor works on a copy
+            auto skc = ConstrainedSketch::create<const ConstrainedSketch&>(*sk);
+            insight::assertion(skc->hasExpressionScope(), "copy lost the expression scope");
+
+            skc->get<FixedDistanceConstraint>(5)->setParameterBinding(
+                "distance", "0.5*L", skc->parseScalarExpression("0.5*L") );
+            skc->resolveConstraints();
+
+            auto p1 = skc->get<SketchPoint>(1)->coords2D();
+            auto p2 = skc->get<SketchPoint>(2)->coords2D();
+            insight::assertion(
+                std::fabs(arma::norm(p2-p1, 2)-2.)<1e-6,
+                "point distance does not match the expression entered in the editor" );
+
+            std::ostringstream os;
+            skc->generateScript(os);
+            insight::assertion(
+                os.str().find("set (distance = 0.5*L)")!=std::string::npos,
+                "binding entered in the editor was not written to the script" );
+        }
+
         // unknown parameter
         insight::assertion(
             parseFails(
@@ -139,6 +196,15 @@ int main(int, char*argv[])
             insight::assertion(
                 failed,
                 "binding was accepted in standalone sketch script" );
+
+            std::istringstream is2("SketchPoint(1, 0, 0)\n");
+            auto sk = ConstrainedSketch::createFromStream(pl, is2, *noParametersDelegate);
+            insight::assertion(
+                !sk->hasExpressionScope(),
+                "standalone sketch must not have an expression scope" );
+            insight::assertion(
+                throws([&]() { sk->parseScalarExpression("1"); }),
+                "expression was accepted in standalone sketch" );
         }
     }
     catch (const std::exception& e)

@@ -32,6 +32,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QFormLayout>
+#include <QToolTip>
 #include <QDoubleValidator>
 #include <QComboBox>
 #include <QTableView>
@@ -1566,40 +1567,146 @@ IQVTKConstrainedSketchEditor::selectedItemUnderCursor() const
 
 
 
-class XYEditor
+/**
+ * @brief The ParameterInPlaceEditor class
+ * edits one or more double parameters of a sketch entity in place.
+ * Each field accepts either a number (constant value)
+ * or an ISCAD scalar expression (parameter is bound to the expression).
+ */
+class ParameterInPlaceEditor
     : public IQInPlaceEditorWidget
 {
 public:
-    XYEditor(
-        const std::pair<double,double>& iniv,
-        std::function<void(std::pair<double,double>)> setNewValue,
-        QWidget *parent)
-        : IQInPlaceEditorWidget(QSize{200,100}, parent)
+    struct Field
     {
+        QString label;
+        std::string parameterName;
+    };
+
+    typedef std::function<void(void)> ChangeFunction;
+
+private:
+    struct FieldEditor
+    {
+        Field field;
+        QLineEdit* edit;
+        QString initialText;
+    };
+    std::vector<FieldEditor> editors_;
+
+public:
+    ParameterInPlaceEditor(
+        const ConstrainedSketch& sketch,
+        ConstrainedSketchEntityPtr entity,
+        const std::vector<Field>& fields,
+        std::function<void(ChangeFunction)> applyChanges,
+        QWidget *parent )
+        : IQInPlaceEditorWidget(QSize{240, 20+40*int(fields.size())}, parent)
+    {
+        QString hint = _("Enter a number for a constant value.");
+        if (sketch.hasExpressionScope())
+            hint += "\n" + QString(_(
+                "Any other input is evaluated as an ISCAD scalar expression"
+                " (e.g. 0.5*L, angles in radians, e.g. 30*deg)"));
+
         auto *l=new QFormLayout;
-        auto *ed1=new QLineEdit;
-        ed1->setText(QString::number(iniv.first));
-        ed1->installEventFilter(this);
-        auto *ed2=new QLineEdit;
-        ed2->setText(QString::number(iniv.second));
-        ed2->installEventFilter(this);
-        l->addRow("X:", ed1);
-        l->addRow("Y:", ed2);
+        for (const auto& f: fields)
+        {
+            auto *ed=new QLineEdit;
+            QString text;
+            if (auto expr = entity->parameterExpression(f.parameterName))
+            {
+                text = QString::fromStdString(*expr);
+                ed->setToolTip(
+                    QString(_("Bound to expression, current value: %1"))
+                        .arg(entity->parameters().getDouble(f.parameterName))
+                    + "\n" + hint );
+            }
+            else
+            {
+                text = QString::number(entity->parameters().getDouble(f.parameterName));
+                ed->setToolTip(hint);
+            }
+            ed->setText(text);
+            ed->selectAll();
+            ed->installEventFilter(this);
+            l->addRow(f.label, ed);
+            editors_.push_back({f, ed, text});
+        }
         setLayout(l);
 
-        auto accept = [this,ed1,ed2,setNewValue]() {
-            bool ok=false;
-            double x=ed1->text().toDouble(&ok);
-            double y=ed2->text().toDouble(&ok);
-            if (ok)
+        auto sk=&sketch;
+        auto accept = [this,sk,entity,applyChanges]()
+        {
+            std::vector<ChangeFunction> changes;
+
+            for (auto& fe: editors_)
             {
-                setNewValue(std::pair{x,y});
-                closeOverlay();
+                auto text = fe.edit->text().trimmed();
+                if (text == fe.initialText)
+                    continue; // keep as is, including an existing binding
+
+                auto name = fe.field.parameterName;
+                bool isNumber=false;
+                double v = text.toDouble(&isNumber);
+                if (isNumber)
+                {
+                    changes.push_back(
+                        [entity,name,v]()
+                        {
+                            entity->removeParameterBinding(name);
+                            entity->parametersRef().setDouble(name, v);
+                        } );
+                }
+                else
+                {
+                    try
+                    {
+                        auto expr = text.toStdString();
+                        auto value = sk->parseScalarExpression(expr);
+                        changes.push_back(
+                            [entity,name,expr,value]()
+                            {
+                                entity->setParameterBinding(name, expr, value);
+                            } );
+                    }
+                    catch (const std::exception& ex)
+                    {
+                        fe.edit->setStyleSheet("QLineEdit { border: 2px solid red; }");
+                        fe.edit->setToolTip(QString::fromStdString(ex.what()));
+                        QToolTip::showText(
+                            fe.edit->mapToGlobal(QPoint(0, fe.edit->height())),
+                            fe.edit->toolTip(), fe.edit );
+                        fe.edit->setFocus();
+                        return; // keep editor open
+                    }
+                }
             }
+
+            if (!changes.empty())
+            {
+                applyChanges(
+                    [changes]()
+                    {
+                        for (const auto& c: changes) c();
+                    } );
+            }
+            closeOverlay();
         };
 
-        connect(ed1, &QLineEdit::returnPressed, ed1, accept);
-        connect(ed2, &QLineEdit::returnPressed, ed2, accept);
+        for (auto& fe: editors_)
+        {
+            connect(fe.edit, &QLineEdit::returnPressed, fe.edit, accept);
+            connect(fe.edit, &QLineEdit::textEdited, fe.edit,
+                    [ed=fe.edit]() { ed->setStyleSheet(QString()); } );
+        }
+    }
+
+    void showAt(const QPoint &pos)
+    {
+        IQInPlaceEditorWidget::showAt(pos);
+        if (!editors_.empty())
+            editors_.front().edit->setFocus(Qt::OtherFocusReason);
     }
 };
 
@@ -1611,56 +1718,20 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
     Qt::KeyboardModifiers nFlags,
     const QPoint point )
 {
-    // describe parameters, which are bound to expressions in the ISCAD script
-    auto bindingToolTip = [](
-                              const ConstrainedSketchEntity& e,
-                              const std::vector<std::string>& names ) -> QString
-    {
-        QStringList bl;
-        for (const auto& n: names)
-        {
-            auto i=e.parameterBindings().find(n);
-            if (i!=e.parameterBindings().end())
-            {
-                bl.append(QString("%1 = %2")
-                              .arg(QString::fromStdString(i->first),
-                                   QString::fromStdString(i->second.expression)));
-            }
-        }
-        if (bl.isEmpty())
-            return QString();
-        return QString(_("Bound to expression: %1\n"
-                         "Entering a different value replaces the expression by a constant."))
-            .arg(bl.join(", "));
-    };
-
     auto editInPlace = [&](
-                           double initValue,
-                           std::function<void(double)> setNewValue,
-                           const QString& toolTip = QString() )
+                           ConstrainedSketchEntityPtr e,
+                           const std::vector<ParameterInPlaceEditor::Field>& fields )
     {
-        auto *ed = new QLineEdit(&viewer());
-        ed->setGeometry(point.x(), point.y(),
-                        ed->size().width(), ed->size().height());
-
-        ed->setText(QString::number(initValue));
-        ed->setToolTip(toolTip);
-        ed->selectAll();
-
-        connect(ed, &QLineEdit::returnPressed, ed,
-                [this,ed,setNewValue]()
-                {
-                    bool ok=false;
-                    auto newval=ed->text().toDouble(&ok);
-                    setNewValue(newval);
-                    solve();
-                }
-                );
-        connect(ed, &QLineEdit::editingFinished,
-                ed, &QObject::deleteLater );
-
-        ed->show();
-        ed->setFocus(Qt::OtherFocusReason);
+        auto *ed = new ParameterInPlaceEditor(
+            sketch(), e, fields,
+            [this](ParameterInPlaceEditor::ChangeFunction change)
+            {
+                storeUndoState("Edit Dimension");
+                change();
+                solve();
+            },
+            &viewer() );
+        ed->showAt(point);
     };
 
 
@@ -1670,54 +1741,17 @@ bool IQVTKConstrainedSketchEditor::onDoubleClick(
         {
             if (auto ac = std::dynamic_pointer_cast<FixedAngleConstraint>(selitem))
             {
-                // compare against displayed (rounded) value
-                double orgValue = QString::number(ac->targetValue()/SI::deg).toDouble();
-                editInPlace(
-                    orgValue,
-                    [ac,orgValue](double na) {
-                        if (na!=orgValue)
-                            ac->removeParameterBinding("angle");
-                        ac->setTargetValue(na*SI::deg);
-                    },
-                    bindingToolTip(*ac, {"angle"})
-                    );
+                editInPlace(ac, { { _("Angle [deg]:"), "angle" } });
                 return true;
             }
             else if (auto dc = std::dynamic_pointer_cast<FixedDistanceConstraint>(selitem))
             {
-                double orgValue = QString::number(dc->targetValue()).toDouble();
-                editInPlace(
-                    orgValue,
-                    [dc,orgValue](double nv) {
-                        if (nv!=orgValue)
-                            dc->removeParameterBinding("distance");
-                        dc->setTargetValue(nv);
-                    },
-                    bindingToolTip(*dc, {"distance"})
-                    );
+                editInPlace(dc, { { _("Distance:"), "distance" } });
                 return true;
             }
-            else if (auto dc = std::dynamic_pointer_cast<FixedPointConstraint>(selitem))
+            else if (auto pc = std::dynamic_pointer_cast<FixedPointConstraint>(selitem))
             {
-                auto xy0 = dc->getXY();
-                // compare against displayed (rounded) values
-                std::pair<double,double> orgXY{
-                    QString::number(xy0.first).toDouble(),
-                    QString::number(xy0.second).toDouble() };
-                auto *eq=new XYEditor(
-                    xy0,
-                    [this,dc,orgXY](const std::pair<double,double>& xy) {
-                        if (xy.first!=orgXY.first)
-                            dc->removeParameterBinding("x");
-                        if (xy.second!=orgXY.second)
-                            dc->removeParameterBinding("y");
-                        dc->setXY(xy);
-                        solve();
-                    },
-                    &viewer()
-                );
-                eq->setToolTip(bindingToolTip(*dc, {"x", "y"}));
-                eq->showAt(point);
+                editInPlace(pc, { { "X:", "x" }, { "Y:", "y" } });
                 return true;
             }
             else

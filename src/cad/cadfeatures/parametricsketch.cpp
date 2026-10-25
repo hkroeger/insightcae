@@ -21,6 +21,7 @@
 #include "cadfeature.h"
 #include "constrainedsketch.h"
 #include "constrainedsketchgrammar.h"
+#include "cadmodel.h"
 #include "datum.h"
 #include "base/boost_include.h"
 #include "base/translations.h"
@@ -133,6 +134,9 @@ void ParametricSketch::insertrule ( parser::ISCADParser& ruleset )
              [ qi::_a = phx::bind(
                   &ConstrainedSketch::create<DatumPtr, const ConstrainedSketchParametersDelegate&>,
                   qi::_1, *noParametersDelegate),
+               // symbols visible at this location, for expressions entered in the sketch editor
+               phx::bind(&ConstrainedSketch::setExpressionScope, qi::_a,
+                  phx::bind(&Model::allVariables, phx::val(ruleset.model_))),
                qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(
                   qi::_a, *noParametersDelegate,
                   phx::val(&ruleset)) ]

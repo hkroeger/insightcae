@@ -367,6 +367,22 @@ bool parseISCADModel
 );
 
 
+/**
+ * @brief parseISCADScalarExpression
+ * parses a single scalar expression
+ * @param expression
+ * expression text in ISCAD syntax, e.g. "0.5*L"
+ * @param scope
+ * symbols, which can be referenced in the expression
+ * @return the parsed and evaluated expression. Throws on error.
+ */
+ScalarPtr parseISCADScalarExpression
+(
+    const std::string& expression,
+    const ModelVariableTable& scope
+);
+
+
 bool parseISCADModelStream
 (
     std::istream& in, 

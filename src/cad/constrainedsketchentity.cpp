@@ -2,6 +2,7 @@
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/parameters/subsetparameter.h"
+#include "base/parameters/simpleparameter.h"
 #include "constrainedsketch.h"
 
 #include "base/exception.h"
@@ -134,6 +135,11 @@ double ConstrainedSketchEntity::getConstraintError(unsigned int iConstraint) con
 
 
 
+void ConstrainedSketchEntity::prepareConstraintSolve(const arma::mat&)
+{}
+
+
+
 
 size_t ConstrainedSketchEntity::hash() const
 {
@@ -248,6 +254,145 @@ std::string ConstrainedSketchEntity::parameterString() const
 
 
 
+void ConstrainedSketchEntity::checkParameterBindings(
+    const ParameterBindings& bindings ) const
+{
+    for (const auto& b: bindings)
+    {
+        insight::assertion(
+            bool(b.second.value),
+            "no expression given for parameter \"%s\"", b.first.c_str() );
+        try
+        {
+            parameters().get<DoubleParameter>(b.first);
+        }
+        catch (const std::exception&)
+        {
+            throw insight::Exception(
+                "%s: cannot bind parameter \"%s\" to an expression:"
+                " there is no such parameter of type double!",
+                type().c_str(), b.first.c_str() );
+        }
+    }
+}
+
+
+
+
+void ConstrainedSketchEntity::setParameterBindings(
+    const ParameterBindings& bindings )
+{
+    checkParameterBindings(bindings);
+    parameterBindings_=bindings;
+}
+
+
+
+
+void ConstrainedSketchEntity::setParameterBinding(
+    const std::string &name,
+    const std::string &expression,
+    ScalarPtr value )
+{
+    ParameterBindings b{ { name, ParameterBinding(expression, value) } };
+    checkParameterBindings(b);
+    parameterBindings_[name]=b.at(name);
+}
+
+
+
+
+boost::optional<std::string>
+ConstrainedSketchEntity::parameterExpression(const std::string &name) const
+{
+    auto i=parameterBindings_.find(name);
+    if (i!=parameterBindings_.end())
+        return i->second.expression;
+    return boost::none;
+}
+
+
+
+
+const ParameterBindings& ConstrainedSketchEntity::parameterBindings() const
+{
+    return parameterBindings_;
+}
+
+
+
+
+ParameterBindings& ConstrainedSketchEntity::parameterBindingsRef()
+{
+    return parameterBindings_;
+}
+
+
+
+
+bool ConstrainedSketchEntity::isParameterBound(const std::string &name) const
+{
+    return parameterBindings_.count(name)>0;
+}
+
+
+
+
+void ConstrainedSketchEntity::removeParameterBinding(const std::string &name)
+{
+    parameterBindings_.erase(name);
+}
+
+
+
+
+double ConstrainedSketchEntity::parameterBindingConversionFactor(const std::string&) const
+{
+    return 1.;
+}
+
+
+
+
+bool ConstrainedSketchEntity::applyParameterBindings()
+{
+    bool changed=false;
+    for (const auto& b: parameterBindings_)
+    {
+        double v = b.second.value->value()
+                   * parameterBindingConversionFactor(b.first);
+        double cv = parameters().getDouble(b.first);
+        if ( std::fabs(v-cv) > SMALL*std::max(1., std::fabs(v)) )
+        {
+            parametersRef().setDouble(b.first, v);
+            changed=true;
+        }
+    }
+    return changed;
+}
+
+
+
+
+std::string ConstrainedSketchEntity::parameterBindingString() const
+{
+    std::string s;
+    if (parameterBindings_.size())
+    {
+        s=", set (";
+        for (auto b=parameterBindings_.begin(); b!=parameterBindings_.end(); ++b)
+        {
+            if (b!=parameterBindings_.begin()) s+=", ";
+            s+=b->first+" = "+b->second.expression;
+        }
+        s+=")";
+    }
+    return s;
+}
+
+
+
+
 bool ConstrainedSketchEntity::dependsOn(const std::weak_ptr<ConstrainedSketchEntity> &entity) const
 {
     auto deps = dependencies();
@@ -262,6 +407,7 @@ void ConstrainedSketchEntity::operator=(const ConstrainedSketchEntity &other)
     defaultParameters_->assignFrom(*other.defaultParameters_);
     layerName_=other.layerName_;
     parametersRef().assignFrom( other.parameters() );
+    parameterBindings_=other.parameterBindings_;
 }
 
 

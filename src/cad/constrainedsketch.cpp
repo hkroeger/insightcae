@@ -4,14 +4,17 @@
 #include "base/linearalgebra.h"
 #include "base/rapidxml.h"
 #include "base/tools.h"
+#include "base/warningdispatcher.h"
 
 #include "boost/range/adaptor/indexed.hpp"
 #include "cadfeature.h"
 #include "cadfeatures/wire.h"
 #include "cadfeatures/line.h"
+#include "cadfeatures/arc.h"
 #include "constrainedsketchgrammar.h"
 
 #include "parser.h"
+#include "cadmodel.h"
 #include "datum.h"
 #include <algorithm>
 #include <memory>
@@ -36,7 +39,11 @@ size_t ConstrainedSketch::calcHash() const
     ParameterListHash p;
     p+=*pl_;
     for (const auto& se: geometry_)
+    {
         p+=se.second->hash();
+        for (const auto& b: se.second->parameterBindings())
+            p+=b.second.value->value();
+    }
     return p.getHash();
 }
 
@@ -129,7 +136,8 @@ void ConstrainedSketchPresentationDelegate::setEntityAppearance(
 ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tcm)
   : Feature(o, tcm), CL(pl_),
     propertiesParent_(o.propertiesParent_),
-    solverSettings_(o.solverSettings_)
+    solverSettings_(o.solverSettings_),
+    expressionScope_(o.expressionScope_)
 {
     for (auto& g: o.geometry_)
     {
@@ -140,6 +148,15 @@ ConstrainedSketch::ConstrainedSketch(const ConstrainedSketch&o, TreeCloneMap& tc
         else
         {
             geometry_[g.first]=g.second->clone();
+        }
+    }
+    // the arcs cannot set the back link from their center points
+    // during their construction
+    for (auto& g: geometry_)
+    {
+        if (auto arc = std::dynamic_pointer_cast<Arc>(g.second))
+        {
+            arc->linkCenterPoint();
         }
     }
 #warning replace internal references missing ??
@@ -153,7 +170,7 @@ ConstrainedSketch::ConstrainedSketch(
     DatumPtr pl,
     const ConstrainedSketchParametersDelegate& pd )
     : pl_(pl),
-    solverSettings_({rootND, insight::SMALL, 1., 1000})
+    solverSettings_({rootND, insight::SMALL, 1., 1000, 8})
 {
     addLayer( defaultLayerName, pd );
 }
@@ -162,7 +179,8 @@ ConstrainedSketch::ConstrainedSketch(
 ConstrainedSketch::ConstrainedSketch( const ConstrainedSketch& other )
     : pl_(other.pl_),
     // propertiesParent_(other.propertiesParent_),
-    solverSettings_(other.solverSettings_)
+    solverSettings_(other.solverSettings_),
+    expressionScope_(other.expressionScope_)
 {
     for (auto &lp: other.layerProperties_)
     {
@@ -510,8 +528,21 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
     beforeGeometryRemoval(geomEntityId, r);
     ConstrainedSketchEntityPtr entity = std::move(i->second); // move out before erase
     geometry_.erase(i);
+
+    // the center point of an arc is useless without the arc
+    std::shared_ptr<ArcCenterPoint> orphanedCenterPoint;
+    if (auto arc = std::dynamic_pointer_cast<Arc>(entity))
+    {
+        orphanedCenterPoint = arc->centerPoint();
+    }
+
     entity.reset(); // delete last reference to really destruct object
     geometryRemoved(geomEntityId, r);
+
+    if (orphanedCenterPoint)
+    {
+        eraseGeometry(orphanedCenterPoint); // does nothing, if not in sketch
+    }
 }
 
 
@@ -520,7 +551,7 @@ void ConstrainedSketch::eraseGeometry(GeometryMap::key_type geomEntityId)
 void ConstrainedSketch::eraseGeometry(ConstrainedSketchEntityPtr geomEntity)
 {
     auto i=findGeometry(geomEntity).first;
-    if (i!=GeometryMap::const_iterator())
+    if (i!=geometry_.cend())
     {
         eraseGeometry(i->first);
     }
@@ -643,6 +674,7 @@ void ConstrainedSketch::operator=(const ConstrainedSketch &o)
 {
     Feature::operator=(o);
     pl_=o.pl_;
+    expressionScope_=o.expressionScope_;
 
     for (auto &lp: o.layerProperties_)
     {
@@ -751,6 +783,36 @@ void ConstrainedSketch::changeSolverSettings(const ConstrainedSketch::SolverSett
 
 
 
+void ConstrainedSketch::setExpressionScope(const ModelVariableTable &scope)
+{
+    expressionScope_=std::make_shared<const ModelVariableTable>(scope);
+}
+
+
+
+
+bool ConstrainedSketch::hasExpressionScope() const
+{
+    return bool(expressionScope_);
+}
+
+
+
+
+ScalarPtr ConstrainedSketch::parseScalarExpression(const std::string &expression) const
+{
+    if (!expressionScope_)
+    {
+        throw insight::Exception(
+            "expressions are only available for sketches,"
+            " which are defined inside an ISCAD script!" );
+    }
+    return parseISCADScalarExpression(expression, *expressionScope_);
+}
+
+
+
+
 void ConstrainedSketch::resolveConstraints(
     std::function<void(void)> perIterationCallback,
     ProgressDisplayer& progress
@@ -762,6 +824,11 @@ void ConstrainedSketch::resolveConstraints(
         GeometryMap::const_iterator entityIt;
     };
     std::vector<LocalIndexMapping> dofs, constrs;
+
+    for (auto& ge: geometry_)
+    {
+        ge.second->applyParameterBindings();
+    }
 
     for (auto ge=geometry_.begin(); ge!=geometry_.end(); ge++)
     {
@@ -777,6 +844,15 @@ void ConstrainedSketch::resolveConstraints(
         }
     }
 
+
+    if (pl_ && pl_->providesPlanarReference())
+    {
+        arma::mat n = sketchPlaneNormal()->value();
+        for (auto& ge: geometry_)
+        {
+            ge.second->prepareConstraintSolve(n);
+        }
+    }
 
     arma::mat x0 = arma::zeros(dofs.size());
     for (int i=0; i<dofs.size(); ++i)
@@ -801,6 +877,23 @@ void ConstrainedSketch::resolveConstraints(
         }
     };
 
+    auto residuals = [&](const arma::mat& x) -> arma::mat
+    {
+        setX(x);
+
+        if (perIterationCallback)
+            perIterationCallback();
+
+        arma::mat Qs=arma::zeros(constrs.size());
+        for (int i=0;i<constrs.size();++i)
+        {
+            auto& constr=constrs[i];
+            Qs(i)=constr.entity->getConstraintError(constr.iLocal);
+        }
+        insight::dbg()<<"Q="<<Qs.t()<<std::endl;
+        return Qs;
+    };
+
 
     auto solverType = solverSettings_.solver_;
 
@@ -823,87 +916,153 @@ void ConstrainedSketch::resolveConstraints(
 
     }
 
-    arma::mat xsol;
-    switch (solverType)
+    if (solverType==rootND)
     {
-        case minimumND:
+        for (int i=0;i<constrs.size();++i)
         {
-            xsol = nonlinearMinimizeND(
-                [&](const arma::mat& x) -> double
-                {
-                    setX(x);
-
-                    double Q=0;
-                    for (int i=0;i<constrs.size();++i)
-                    {
-                        auto& constr = constrs[i];
-                        Q+=pow(constr.entity->getConstraintError(constr.iLocal), 2);
-                    }
-                    insight::dbg()<<"Q="<<Q<<std::endl;
-                    return Q;
-                },
-                x0, solverSettings_.tolerance_, arma::mat(),
-                solverSettings_.maxIter_, solverSettings_.relax_
-                );
+            auto& constr=constrs[i];
+            insight::dbg()<<"constraint "<<i<<" : idx "<<constr.iLocal<<" of "<<constr.entity->type()<<endl;
         }
-        break;
+    }
 
-        case rootND:
+    try
+    {
+        /*
+         * Newton homotopy:
+         *  H(x, lambda) = F(x) - (1-lambda) F(x0) = 0
+         * x0 is the exact solution for lambda=0, lambda=1 is the original problem.
+         * lambda is advanced adaptively: try the full step first,
+         * halve the step on failure, enlarge it again after easy steps.
+         */
+        const arma::mat r0 = residuals(x0);
+        const double r0max = arma::norm(r0, "inf");
+        const double minStep = pow(0.5, std::max(0, solverSettings_.maxContinuationRefinements_));
+
+        arma::mat x = x0;
+        double lambda = 0., dl = 1.;
+
+        while (lambda < 1.)
         {
-            for (int i=0;i<constrs.size();++i)
+            double lambdaNew = std::min(1., lambda+dl);
+            bool isFinal = (lambdaNew >= 1.);
+
+            // intermediate solutions need not be accurate
+            double tol = isFinal ?
+                             solverSettings_.tolerance_ :
+                             std::max(solverSettings_.tolerance_, 1e-2*dl*r0max);
+
+            auto H = [&](const arma::mat& xi) -> arma::mat
             {
-                auto& constr=constrs[i];
-                insight::dbg()<<"constraint "<<i<<" : idx "<<constr.iLocal<<" of "<<constr.entity->type()<<endl;
-            }
+                return residuals(xi) - (1.-lambdaNew)*r0;
+            };
+
+            int nIter=0;
+            auto countIter = [&](const arma::mat&) { ++nIter; };
 
             try
             {
-             xsol = nonlinearSolveND(
-                [&](const arma::mat& x) -> arma::mat
+                arma::mat xn;
+
+                // fallback: Levenberg-Marquardt is more robust
+                // for bad starting points and singular jacobians
+                auto rootSolverFailed = [&](const std::string& reason)
                 {
+                    insight::dbg()<<"root solver failed ("<<reason
+                                   <<"), trying Levenberg-Marquardt"<<std::endl;
+                    nIter=0;
+                    xn = nonlinearLeastSquaresND(
+                        H, x, tol, solverSettings_.maxIter_, countIter );
 
-                    setX(x);
+                    if (arma::norm(H(xn), "inf") > tol)
+                        throw insight::NonConvergenceException(nIter);
+                };
 
-                    if (perIterationCallback)
-                        perIterationCallback();
-
-                    arma::mat Qs=arma::zeros(constrs.size());
-
-                    for (int i=0;i<constrs.size();++i)
+                if (solverType==rootND)
+                {
+                    try
                     {
-                        auto& constr=constrs[i];
-                        Qs(i)=constr.entity->getConstraintError(constr.iLocal);
+                        xn = nonlinearSolveND(
+                            H, x, tol,
+                            solverSettings_.maxIter_, solverSettings_.relax_,
+                            countIter );
                     }
-                    insight::dbg()<<"Q="<<Qs.t()<<std::endl;
-                    return Qs;
-                },
-                x0, solverSettings_.tolerance_,
-                solverSettings_.maxIter_, solverSettings_.relax_
-                );
-            }
-            catch (insight::JacobiDeterminatException& ex)
-            {
-                std::set<std::string> ucdofs;
-                for (int i=0; i<dofs.size(); ++i)
-                {
-                    auto& dm=dofs[i];
-                    if (ex.zeroCols().count(i))
+                    catch (insight::JacobiDeterminatException&)
                     {
-                        auto i=std::distance(geometry_.cbegin(), dm.entityIt);
-                        ucdofs.insert(toString(i));
+                        if (lambda==0.)
+                            throw; // unconstrained DoFs in initial geometry
+                        rootSolverFailed("singular jacobian");
+                    }
+                    catch (insight::Exception& ex)
+                    {
+                        rootSolverFailed(ex.message());
                     }
                 }
+                else // minimumND
+                {
+                    xn = nonlinearLeastSquaresND(
+                        H, x, tol, solverSettings_.maxIter_, countIter );
+                }
 
-                throw insight::Exception(
-                    "solve failed because of unconstrained DoFs\n"
-                    "enties with unconstrained DoFs are: %s",
-                    boost::algorithm::join(ucdofs, ", ").c_str());
+                if (!xn.is_finite())
+                    throw insight::NonConvergenceException(nIter);
+
+                x = xn;
+                lambda = lambdaNew;
+                insight::dbg()<<"continuation: lambda="<<lambda
+                               <<" reached in "<<nIter<<" iterations"<<std::endl;
+
+                if (nIter<5) dl = std::min(1., 2.*dl);
+            }
+            catch (insight::Exception& ex)
+            {
+                // a singular jacobian at the initial geometry indicates
+                // unconstrained DoFs. At intermediate states, it may be
+                // a singular configuration on the path: try smaller steps.
+                if ( (lambda==0.)
+                    && dynamic_cast<insight::JacobiDeterminatException*>(&ex) )
+                {
+                    throw;
+                }
+
+                if (dl <= minStep)
+                {
+                    throw insight::Exception(
+                        "solve failed at continuation parameter %g (step size %g).\n"
+                        "Reason: %s", lambda, dl, ex.message().c_str() );
+                }
+                dl *= 0.5;
+                insight::dbg()<<"continuation: step failed at lambda="<<lambdaNew
+                               <<", reducing step to "<<dl<<std::endl;
             }
         }
-        break;
-    }
 
-    setX(xsol);
+        setX(x);
+    }
+    catch (insight::JacobiDeterminatException& ex)
+    {
+        setX(x0);
+
+        std::set<std::string> ucdofs;
+        for (int i=0; i<dofs.size(); ++i)
+        {
+            auto& dm=dofs[i];
+            if (ex.zeroCols().count(i))
+            {
+                ucdofs.insert(toString(dm.entityIt->first));
+            }
+        }
+
+        throw insight::Exception(
+            "solve failed because of unconstrained DoFs\n"
+            "enties with unconstrained DoFs are: %s",
+            boost::algorithm::join(ucdofs, ", ").c_str());
+    }
+    catch (...)
+    {
+        // restore initial geometry
+        setX(x0);
+        throw;
+    }
 }
 
 
@@ -966,6 +1125,8 @@ void ConstrainedSketch::insertrule(parser::ISCADParser& ruleset)
                   [ qi::_a = phx::bind(
                    &ConstrainedSketch::create<DatumPtr, const ConstrainedSketchParametersDelegate&>,
                    qi::_1, *noParametersDelegate),
+               phx::bind(&ConstrainedSketch::setExpressionScope, qi::_a,
+                   phx::bind(&Model::allVariables, phx::val(ruleset.model_))),
                qi::_b = parser::make_shared_<ConstrainedSketchGrammar>()(
                    qi::_a, *noParametersDelegate,
                    phx::val(&ruleset)),
@@ -1292,17 +1453,31 @@ void ConstrainedSketch::build()
     if (!pl_->providesPlanarReference())
         throw insight::Exception("Sketch: Planar reference required!");
 
-    /* Should only be solved in constrainedsketcheditor under user supervision!!
+    /* Should usually only be solved in constrainedsketcheditor under user supervision!!
      * Otherwise, only the saved DoFs are used.
+     * Exception: if parameters are bound to expressions and their values
+     * have changed, the sketch is resolved, starting from the saved DoFs.
      */
-    // try
-    // {
-    //     resolveConstraints();
-    // }
-    // catch (insight::NonConvergenceException& ex)
-    // {
-    //     insight::Warning(ex);
-    // }
+    bool bindingsChanged=false;
+    for (auto& ge: geometry_)
+    {
+        bindingsChanged = ge.second->applyParameterBindings() || bindingsChanged;
+    }
+    if (bindingsChanged)
+    {
+        try
+        {
+            resolveConstraints();
+        }
+        catch (const insight::Exception& ex)
+        {
+            insight::Warning(
+                "Sketch %s: could not resolve constraints after a change of"
+                " the bound parameter values. The previous geometry is kept.\n"
+                "Reason: %s",
+                featureSymbolName().c_str(), ex.message().c_str() );
+        }
+    }
 
     BRep_Builder bb;
     TopoDS_Compound result;
@@ -1326,6 +1501,10 @@ void ConstrainedSketch::replaceDependency(const DependencyReplacement &repl)
     for (auto& geom: geometry_)
     {
         repl(geom.second);
+        for (auto& b: geom.second->parameterBindingsRef())
+        {
+            repl(b.second.value);
+        }
     }
     invalidate();
 }
@@ -1337,6 +1516,10 @@ void ConstrainedSketch::addDependencies(DependencyList& dl) const
     for (auto& geom: geometry_)
     {
         DepListInserter(dl, toString(geom.first))(geom.second);
+        for (auto& b: geom.second->parameterBindings())
+        {
+            DepListInserter(dl, toString(geom.first)+"."+b.first)(b.second.value);
+        }
     }
 }
 

@@ -67,10 +67,33 @@ double TangentConstraint::getConstraintError(unsigned int iConstraint) const
                        line2_->startTangent()->value()
                      : line2_->endTangent()->value();
 
+    double l1=arma::norm(d1, 2), l2=arma::norm(d2, 2);
+    if ( (l1>SMALL) && (l2>SMALL) )
+    {
+        d1/=l1;
+        d2/=l2;
+    }
+
     //auto err = pow(arma::dot(d1, d2),2) - 1.; // bad convergence
-    auto err=arma::norm(arma::cross(d1, d2), 2);
-    // std::cout<<"d1="<<d1.t()<<" d2="<<d2.t()<<" err="<<err<<std::endl;
-    return err;
+    if (planeNormal_.n_elem==3)
+    {
+        // signed sine of the enclosed angle:
+        // smooth through the solution (in contrast to its magnitude)
+        return arma::dot(arma::cross(d1, d2), planeNormal_);
+    }
+    else
+    {
+        return arma::norm(arma::cross(d1, d2), 2);
+    }
+}
+
+void TangentConstraint::prepareConstraintSolve(const arma::mat& sketchPlaneNormal)
+{
+    planeNormal_.reset();
+    if (arma::norm(sketchPlaneNormal, 2) > SMALL)
+    {
+        planeNormal_ = arma::normalise(sketchPlaneNormal);
+    }
 }
 
 void TangentConstraint::scaleSketch(double scaleFactor)

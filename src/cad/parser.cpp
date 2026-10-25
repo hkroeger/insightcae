@@ -170,6 +170,18 @@ void SyntaxElementDirectory::addFSEntry(
 }
 
 
+void SyntaxElementDirectory::addToken(long begin, long end, TokenKind kind)
+{
+    tokens[begin]=ScriptToken{ SyntaxElementPos(begin, end), kind };
+}
+
+
+void SyntaxElementDirectory::addFoldRange(long begin, long end, const std::string& command)
+{
+    foldRanges[begin]=FoldRange{ SyntaxElementPos(begin, end), command };
+}
+
+
 SyntaxElement SyntaxElementDirectory::findElement(
     long location, const boost::filesystem::path& file ) const
 {
@@ -198,13 +210,22 @@ skip_grammar::skip_grammar()
 
 
 SubmodelRule::SubmodelRule(
-    const Model* parentModel,
+    ISCADParser* parentParser,
     const ModelVariableTable& addVars )
   : submodel_(std::make_shared<Model>(
-          mergeMVTs(parentModel->allVariables(),
+          mergeMVTs(parentParser->model_->allVariables(),
                     addVars) ) ),
-    submodelParser_(submodel_.get())
+    submodelParser_(
+          submodel_.get(),
+          parentParser->filenameinfo_,
+          parentParser->syntax_element_locations )
 {
+    const Model* parentModel = parentParser->model_;
+
+    // positions shall be relative to the start of the main script
+    submodelParser_.current_pos.setStartPos(
+        parentParser->current_pos.startPos() );
+
     // the enclosing scope is visible inside the submodel,
     // but shall not be re-exported by it.
     // The default coordinate system symbols are treated as the submodel's own.
@@ -256,12 +277,23 @@ SubmodelRule::rule() const
 
 
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenameinfo)
+ISCADParser::ISCADParser(
+    Model* model,
+    const boost::filesystem::path& filenameinfo,
+    SyntaxElementDirectoryPtr sharedSyntaxElementLocations )
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >(r_model),
       filenameinfo_(filenameinfo),
-      syntax_element_locations(new SyntaxElementDirectory()),
+      syntax_element_locations(
+          sharedSyntaxElementLocations ?
+              sharedSyntaxElementLocations :
+              std::make_shared<SyntaxElementDirectory>() ),
       model_(model)
 {
+
+    // current_pos skips whitespace and comments before taking the position.
+    // This is correct for begin positions, but end positions shall not
+    // include the whitespace after a token.
+    r_endPos = qi::no_skip[ current_pos.current_pos ];
 
     r_descriptionWithParameters =
         ( r_string > (('%' > r_scalarExpression % '%')
@@ -334,13 +366,14 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
             >> !(alnum | '_') ]
         >>
         //                 1              2                         3                            4                     5
-        ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
+        ( current_pos.current_pos >> r_identifier >> r_endPos )
         [ qi::_a=qi::_2, qi::_b=phx::construct<SyntaxElementPos>(qi::_1, qi::_3) ]
         >> (
          ( ':' >
           //              1                2
           (r_solidmodel_expression > ( r_string | qi::attr(std::string()) ) > ';' )
-             [ ( phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, true, qi::_2),
+             [ ( phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::ComponentDef),
+                 phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, true, qi::_2),
                phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                          phx::construct<SyntaxElementLocation>(
                              filenameinfo_, qi::_b ),
@@ -352,16 +385,20 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
          ( qi::lit("=") >
           (
               ( r_datumExpression >> ';' )
-                [ phx::bind(&Model::addDatum, model_, qi::_a, qi::_1) ]
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::DatumDef),
+                 phx::bind(&Model::addDatum, model_, qi::_a, qi::_1) ]
 
             | ( r_scalarExpression >> ';' )
-                [ phx::bind(&Model::addScalar, model_, qi::_a, qi::_1) ]
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::ScalarDef),
+                 phx::bind(&Model::addScalar, model_, qi::_a, qi::_1) ]
 
             | ( r_vectorExpression >> ';' )
-                [ phx::bind(&Model::addPoint, model_, qi::_a, qi::_1) ]
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::VectorDef),
+                 phx::bind(&Model::addPoint, model_, qi::_a, qi::_1) ]
 
             | ( r_vertexFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addVertexFeature, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addVertexFeature, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -369,7 +406,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_edgeFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addEdgeFeature, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addEdgeFeature, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -377,7 +415,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_faceFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addFaceFeature, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addFaceFeature, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -385,7 +424,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_solidFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addSolidFeature, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addSolidFeature, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -394,7 +434,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
 
             //              1                2
             | (r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-                [ ( phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, false, qi::_2),
+                [ ( phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::FeatureDef),
+                 phx::bind(&Model::addModelstep, model_, qi::_a, qi::_1, false, qi::_2),
                   phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                            phx::construct<SyntaxElementLocation>(
                                filenameinfo_, qi::_b ),
@@ -407,15 +448,19 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
          ( qi::lit("?=") >
            (
               ( r_datumExpression >> ';' )
-               [ phx::bind(&Model::addDatumIfNotPresent, model_, qi::_a, qi::_1) ]
+               [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::DatumDef),
+                 phx::bind(&Model::addDatumIfNotPresent, model_, qi::_a, qi::_1) ]
 
             | ( r_scalarExpression >> ';' )
-               [ phx::bind(&Model::addScalarIfNotPresent, model_, qi::_a, qi::_1) ]
+               [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::ScalarDef),
+                 phx::bind(&Model::addScalarIfNotPresent, model_, qi::_a, qi::_1) ]
             | ( r_vectorExpression >> ';' )
-               [ phx::bind(&Model::addPointIfNotPresent, model_, qi::_a, qi::_1) ]
+               [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::VectorDef),
+                 phx::bind(&Model::addPointIfNotPresent, model_, qi::_a, qi::_1) ]
 
             | ( r_vertexFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addVertexFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addVertexFeatureIfNotPresent, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -423,7 +468,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_edgeFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addEdgeFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addEdgeFeatureIfNotPresent, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -431,7 +477,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_faceFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addFaceFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addFaceFeatureIfNotPresent, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -439,7 +486,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_solidFeaturesExpression >> ';' )
-                [ phx::bind(&Model::addSolidFeatureIfNotPresent, model_, qi::_a, qi::_1),
+                [ phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::SelectionDef),
+                 phx::bind(&Model::addSolidFeatureIfNotPresent, model_, qi::_a, qi::_1),
                     phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
                               phx::construct<SyntaxElementLocation>(
                                   filenameinfo_, qi::_b ),
@@ -447,7 +495,8 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                               ) ]
 
             | ( r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
-               [ ( phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_a, qi::_1, false, qi::_2),
+               [ ( phx::bind(&ISCADParser::defineSymbol, this, qi::_b, TokenKind::FeatureDef),
+                 phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_a, qi::_1, false, qi::_2),
                   phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
                             phx::construct<SyntaxElementLocation>(
                                 filenameinfo_, qi::_b ),
@@ -487,10 +536,15 @@ ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenamein
                 commandKinds_[name]=kind;
             });
     };
-    registerCommands(modelstepFunctionRules, FeatureCommand);
-    registerCommands(scalarFunctionRules, ScalarFunction);
-    registerCommands(vectorFunctionRules, VectorFunction);
-    registerCommands(postProcFunctionRules, PostprocCommand);
+    registerCommands(modelstepFunctionRules, CommandKind::FeatureCommand);
+    registerCommands(scalarFunctionRules, CommandKind::ScalarFunction);
+    registerCommands(vectorFunctionRules, CommandKind::VectorFunction);
+    registerCommands(postProcFunctionRules, CommandKind::PostprocCommand);
+
+    if (!sharedSyntaxElementLocations)
+    {
+        syntax_element_locations->commands = commandKinds_;
+    }
 
     // BOOST_SPIRIT_DEBUG_RULE(r_assignment);
 }
@@ -502,10 +556,10 @@ std::string ISCADParser::commandKindDescription(CommandKind kind)
 {
     switch (kind)
     {
-        case FeatureCommand: return _("feature command");
-        case ScalarFunction: return _("scalar function");
-        case VectorFunction: return _("vector function");
-        case PostprocCommand: return _("postprocessing command");
+        case CommandKind::FeatureCommand: return _("feature command");
+        case CommandKind::ScalarFunction: return _("scalar function");
+        case CommandKind::VectorFunction: return _("vector function");
+        case CommandKind::PostprocCommand: return _("postprocessing command");
     }
     return std::string();
 }
@@ -513,9 +567,19 @@ std::string ISCADParser::commandKindDescription(CommandKind kind)
 
 
 
-void ISCADParser::pushCommand(std::size_t nameBegin, std::size_t nameEnd)
+void ISCADParser::pushCommand(std::size_t nameBegin, std::size_t nameEnd, CommandKind kind)
 {
     commandStack_.push_back(SyntaxElementPos(nameBegin, nameEnd));
+
+    TokenKind tk = TokenKind::FeatureCommand;
+    switch (kind)
+    {
+        case CommandKind::FeatureCommand: tk=TokenKind::FeatureCommand; break;
+        case CommandKind::ScalarFunction: tk=TokenKind::ScalarFunction; break;
+        case CommandKind::VectorFunction: tk=TokenKind::VectorFunction; break;
+        case CommandKind::PostprocCommand: tk=TokenKind::PostprocCommand; break;
+    }
+    syntax_element_locations->addToken(nameBegin, nameEnd, tk);
 }
 
 
@@ -525,6 +589,54 @@ void ISCADParser::popCommand()
 {
     if (!commandStack_.empty())
         commandStack_.pop_back();
+}
+
+
+
+
+void ISCADParser::endCommand(std::size_t argsEnd)
+{
+    if (!commandStack_.empty())
+    {
+        auto nameRange = commandStack_.back();
+        auto scriptBegin = current_pos.startPos();
+        syntax_element_locations->addFoldRange(
+            nameRange.first, argsEnd,
+            std::string(
+                scriptBegin+nameRange.first,
+                scriptBegin+nameRange.second ) );
+    }
+    popCommand();
+}
+
+
+
+
+void ISCADParser::endSubmodel(std::size_t begin, std::size_t end)
+{
+    syntax_element_locations->addFoldRange(begin, end, std::string());
+}
+
+
+
+
+void ISCADParser::defineSymbol(const SyntaxElementPos& namePos, TokenKind kind)
+{
+    syntax_element_locations->addToken(namePos.first, namePos.second, kind);
+}
+
+
+
+
+void ISCADParser::addToken(
+    std::string::const_iterator begin,
+    std::string::const_iterator end,
+    TokenKind kind )
+{
+    syntax_element_locations->addToken(
+        current_pos.positionOf(begin),
+        current_pos.positionOf(end),
+        kind );
 }
 
 
@@ -815,7 +927,7 @@ iscadParserException incompleteParseError(
             diag = str(format(_("unknown postprocessing command '%s'")) % id);
             std::set<std::string> ppcmds;
             for (const auto& c: parser.commandKinds_)
-                if (c.second==ISCADParser::PostprocCommand)
+                if (c.second==CommandKind::PostprocCommand)
                     ppcmds.insert(c.first);
             notes.push_back(didYouMean(similarNames(id, ppcmds)));
         }
@@ -975,6 +1087,70 @@ bool parseISCADModel
 
     return true;
 }
+
+
+
+ScalarPtr parseISCADScalarExpression
+(
+    const std::string& expression,
+    const ModelVariableTable& scope
+)
+{
+    std::string raw_contents(expression);
+
+    std::string::iterator orgbegin,
+        first=raw_contents.begin(),
+        last=raw_contents.end();
+
+    orgbegin=first;
+
+    // the symbols of the scope are looked up from this model
+    auto m = std::make_shared<Model>(scope);
+    ISCADParser parser ( m.get() );
+
+    ScalarPtr result;
+    bool r = false;
+    try
+    {
+        skip_grammar skip;
+
+        parser.current_pos.setStartPos ( first );
+        r = qi::phrase_parse (
+            first,
+            last,
+            parser.r_scalarExpression,
+            skip,
+            result
+            );
+    }
+    catch ( const qi::expectation_failure<std::string::iterator>& e )
+    {
+        throwParserError(
+            expectationError(parser, raw_contents, "", e.first-orgbegin, e.what_),
+            nullptr );
+    }
+    catch ( const iscadParserException& )
+    {
+        throw;
+    }
+    catch ( const insight::Exception& e )
+    {
+        throwParserError( semanticError(parser, raw_contents, "", e.message()), nullptr );
+    }
+
+    if ( !r || first != last || !result ) // fail if we did not get a full match
+    {
+        throwParserError(
+            incompleteParseError(parser, raw_contents, "", first-orgbegin),
+            nullptr );
+    }
+
+    // evaluate once, to report errors early
+    result->value();
+
+    return result;
+}
+
 
 
 

@@ -68,7 +68,7 @@ void ISCADParser::createDatumExpressions()
 // 	  qi::lexeme[model_->datumSymbols()]
 // 	    [ _val =  phx::bind(&Model::lookupDatum, model_, qi::_1) ]
       (
-        addAdditionalRule( map_lookup_parser(model_->datums()) )
+        addAdditionalRule( recordedLookup(model_->datums(), TokenKind::DatumRef) )
                 [ qi::_val = qi::_1 ]
         |
         ( kw("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )

@@ -430,6 +430,21 @@ arma::mat nonlinearSolveND(
         = std::function<void(const arma::mat&)>()
     );
 
+/**
+ * @brief nonlinearLeastSquaresND
+ * Levenberg-Marquardt solver for min |obj(x)|^2 with finite difference jacobian.
+ * Works also for non-square systems.
+ * Returns, when |obj(x)|_inf < tol or when a (local) least squares minimum is reached.
+ * Throws NonConvergenceException, if nMaxIter is exceeded.
+ */
+arma::mat nonlinearLeastSquaresND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol=1e-3, int nMaxIter=10000,
+    std::function<void(const arma::mat&)> perIterationCallback
+        = std::function<void(const arma::mat&)>()
+    );
+
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 
 /**

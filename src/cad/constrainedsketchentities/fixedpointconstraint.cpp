@@ -76,10 +76,14 @@ double FixedPointConstraint::getConstraintError(unsigned int iConstraint) const
 
 void FixedPointConstraint::scaleSketch(double scaleFactor)
 {
-    auto& x = parametersRef().get<insight::DoubleParameter>("x");
-    x.set(x() * scaleFactor);
-    auto& y = parametersRef().get<insight::DoubleParameter>("y");
-    y.set(y() * scaleFactor);
+    for (const auto& c: {"x", "y"})
+    {
+        if (!isParameterBound(c))
+        {
+            auto& p = parametersRef().get<insight::DoubleParameter>(c);
+            p.set(p() * scaleFactor);
+        }
+    }
 }
 
 void FixedPointConstraint::generateScriptCommand(
@@ -95,6 +99,7 @@ void FixedPointConstraint::generateScriptCommand(
             + toString(myLabel) + ", "
             + pointSpec(p_, script, entityLabels)
             + ", layer " + layerName()
+            + parameterBindingString()
             + parameterString()
             + ")"
         );
@@ -118,7 +123,8 @@ void FixedPointConstraint::addParserRule(
              > qi::int_ > ',' //1
              > qi::int_ // 2
              > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string())) // 3
-             > ruleset.r_parameters > // 4
+             > ruleset.r_parameterBindings // 4
+             > ruleset.r_parameters > // 5
              ')' )
             [
                 qi::_a = phx::bind(
@@ -126,8 +132,9 @@ void FixedPointConstraint::addParserRule(
                  phx::bind(&ConstrainedSketch::get<SketchPoint>, ruleset.sketch, qi::_2), qi::_3
                  ),
                 phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_4,
+                phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_5,
                     boost::filesystem::path(".")),
+                phx::bind(&ConstrainedSketchEntity::setParameterBindings, qi::_a, qi::_4),
                 qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -173,6 +180,7 @@ ConstrainedSketchEntityPtr FixedPointConstraint::clone() const
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef().assignFrom( parameters() );
+    cl->setParameterBindings( parameterBindings() );
     return cl;
 }
 

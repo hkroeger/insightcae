@@ -7,6 +7,7 @@
 
 #include "base/parameterset.h"
 #include "boost/signals2/connection.hpp"
+#include "boost/optional.hpp"
 #include "cadtypes.h"
 
 #include "constrainedsketchgrammar.h"
@@ -23,6 +24,8 @@ class ConstrainedSketchScriptBuffer;
 typedef
     std::shared_ptr<ConstrainedSketchEntity>
         ConstrainedSketchEntityPtr;
+
+
 
 
 class ConstrainedSketchEntity
@@ -48,6 +51,10 @@ private:
     std::string layerName_;
 
     bool dynamicParameterLoading_ = false;
+
+    ParameterBindings parameterBindings_;
+
+    void checkParameterBindings(const ParameterBindings& bindings) const;
 
     std::map<std::shared_ptr<boost::signals2::scoped_connection>, const void*> connectedNotifiers_;
 
@@ -86,6 +93,18 @@ public:
     virtual int nConstraints() const;
     virtual double getConstraintError(unsigned int iConstraint) const;
 
+    /**
+     * @brief prepareConstraintSolve
+     * called by ConstrainedSketch::resolveConstraints() before the solver starts,
+     * with the geometry in its initial state.
+     * Constraints may capture orientation information here (e.g. on which side
+     * a configuration is), which is then used to formulate signed, smooth
+     * residuals during the solve.
+     * @param sketchPlaneNormal
+     * unit normal of the sketch plane
+     */
+    virtual void prepareConstraintSolve(const arma::mat& sketchPlaneNormal);
+
     virtual void scaleSketch(double scaleFactor) =0;
 
     virtual size_t hash() const;
@@ -111,6 +130,48 @@ public:
         const std::map<const ConstrainedSketchEntity*, int>& entityLabels) const;
 
     std::string parameterString() const;
+
+    /**
+     * @brief setParameterBindings
+     * Binds parameters to scalar expressions. All bound parameters
+     * need to exist as top-level double parameters.
+     */
+    void setParameterBindings(const ParameterBindings& bindings);
+
+    /**
+     * @brief setParameterBinding
+     * binds a single parameter (replaces an existing binding of this parameter)
+     */
+    void setParameterBinding(
+        const std::string& name,
+        const std::string& expression,
+        ScalarPtr value );
+
+    /**
+     * @brief parameterExpression
+     * @return the expression text, if the parameter is bound
+     */
+    boost::optional<std::string> parameterExpression(const std::string& name) const;
+    const ParameterBindings& parameterBindings() const;
+    ParameterBindings& parameterBindingsRef();
+    bool isParameterBound(const std::string& name) const;
+    void removeParameterBinding(const std::string& name);
+
+    /**
+     * @brief parameterBindingConversionFactor
+     * @return factor between the value of the expression and the parameter value
+     * (e.g. for parameters, which are not stored in SI units)
+     */
+    virtual double parameterBindingConversionFactor(const std::string& name) const;
+
+    /**
+     * @brief applyParameterBindings
+     * transfers the current values of the bound expressions into the parameters
+     * @return true, if any parameter value was changed
+     */
+    bool applyParameterBindings();
+
+    std::string parameterBindingString() const;
 
     virtual void generateScriptCommand(
         ConstrainedSketchScriptBuffer& script,

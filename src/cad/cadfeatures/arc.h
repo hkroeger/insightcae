@@ -31,6 +31,7 @@ namespace insight
 namespace cad
 {
 
+class ArcCenterPoint;
         
     
 class Arc
@@ -73,8 +74,31 @@ public:
         VectorPtr p1,
         const std::string& layerName=std::string() );
 
+    /**
+     * @brief createInSketch
+     * create an arc from a constrained sketch script.
+     * Checks the arguments and throws an exception, if they are invalid.
+     */
+    static std::shared_ptr<Arc> createInSketch(
+        VectorPtr p0,
+        VectorPtr centerPoint,
+        VectorPtr p1,
+        const std::string& layerName );
+
     static void insertrule ( parser::ISCADParser& ruleset );
     static FeatureCmdInfoList ruleDocumentation();
+
+    /**
+     * @brief linkCenterPoint
+     * set the link from the ArcCenterPoint (if present) back to this arc
+     */
+    void linkCenterPoint();
+
+    /**
+     * @brief centerPoint
+     * @return the center point, if the arc is defined by an ArcCenterPoint. Null otherwise.
+     */
+    std::shared_ptr<ArcCenterPoint> centerPoint() const;
 
     VectorPtr start() const override { return p0_; }
     VectorPtr end() const  override { return p1_; }
@@ -121,6 +145,7 @@ class ArcCenterPoint
     double angle_;
     std::weak_ptr<Arc> arc_;
 
+    ArcCenterPoint(const ArcCenterPoint&o, TreeCloneMap& tcm);
     ArcCenterPoint(DatumPtr plane, double angle, const std::string& layerName = std::string());
 
     friend class Arc;
@@ -131,7 +156,10 @@ class ArcCenterPoint
 public:
     declareType("ArcCenterPoint");
 
+    CLONEABLE(ArcCenterPoint);
     CREATE_FUNCTION(ArcCenterPoint);
+
+    size_t calcHash() const override;
 
     void setCoords2D(double x, double y) override;
     arma::mat coords2D() const override;

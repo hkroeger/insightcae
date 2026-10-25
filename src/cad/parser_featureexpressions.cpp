@@ -68,13 +68,14 @@ void ISCADParser::createFeatureExpressions()
     r_modelstepFunction =
         ( current_pos.current_pos
          >> omit[ lexeme[ modelstepFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
-         >> current_pos.current_pos )
+         >> r_endPos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
               phx::at_c<1>(qi::_val) = qi::_2,
-              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
+              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2, CommandKind::FeatureCommand) ]
          > qi::lazy(*qi::_a)
-            [ phx::at_c<2>(qi::_val) = qi::_1,
-              phx::bind(&ISCADParser::popCommand, this) ]
+            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+         > qi::omit[ r_endPos
+            [ phx::bind(&ISCADParser::endCommand, this, qi::_1) ] ]
         ;
     r_modelstepFunction.name(_("feature function"));
 
@@ -95,7 +96,7 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_term =
         r_solidmodel_primary [_val=qi::_1 ]
         >>
-        *( '.' >> ( current_pos.current_pos >> r_identifier >> current_pos.current_pos )
+        *( '.' >> ( current_pos.current_pos >> r_identifier >> r_endPos )
            [ (
               _val = phx::bind(
                     &Subfeature::create<FeaturePtr, const std::string&>,
@@ -146,22 +147,26 @@ void ISCADParser::createFeatureExpressions()
 
     r_modelstepSymbol =
         current_pos.current_pos >>
-        addAdditionalRule( map_lookup_parser(model_->modelsteps()) )
-        >> current_pos.current_pos
+        addAdditionalRule( recordedLookup(model_->modelsteps(), TokenKind::FeatureRef) )
+        >> r_endPos
         ;
     r_modelstepSymbol.name(_("feature symbol"));
 
     r_submodel =
-        '{'
+        current_pos.current_pos
+            [ qi::_b = qi::_1 ]
+        >> '{'
         >> qi::eps
             [ qi::_a= phx::bind(
-                &SubmodelRule::create<const Model*, const ModelVariableTable&>,
-                    model_, qi::_r1 ) ]
+                &SubmodelRule::create<ISCADParser*, const ModelVariableTable&>,
+                    this, qi::_r1 ) ]
         >> qi::lazy( phx::bind(&SubmodelRule::rule, qi::_a) )
             [ qi::_val = phx::bind(
                 &cad::ModelFeature::create<ModelPtr, const ModelVariableTable&>,
                     phx::bind(&SubmodelRule::submodel_, qi::_a), qi::_r1) ]
-        >> '}';
+        >> '}'
+        >> qi::omit[ r_endPos
+            [ phx::bind(&ISCADParser::endSubmodel, this, qi::_b, qi::_1) ] ];
     r_submodel.name(_("in-situ submodel"));
 
     r_solidmodel_primary =

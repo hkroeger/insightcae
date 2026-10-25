@@ -281,6 +281,21 @@ msgstr "The file %1 does not exists!"
 msgid "Could not display the selected entity: %1"
 msgstr ""
 
+#, fuzzy
+msgid "Edit Parametric Sketch"
+msgstr "Edit Sketch..."
+
+msgid ""
+"The script has been modified since it was parsed last. Please wait for the "
+"background parsing to complete and try again."
+msgstr ""
+
+msgid ""
+"The script has been modified during sketch editing. The sketch script cannot "
+"be inserted automatically.\n"
+"Copy the sketch script to the clipboard?"
+msgstr ""
+
 msgid "Please select file"
 msgstr "Please select file"
 
@@ -296,8 +311,24 @@ msgstr "BREP model"
 msgid "Edit Sketch..."
 msgstr "Edit Sketch..."
 
+#, fuzzy
+msgid "Edit Parametric Sketch..."
+msgstr "Edit Sketch..."
+
 msgid "Edit Model..."
 msgstr "Edit Model..."
+
+msgid "Folding"
+msgstr ""
+
+msgid "Collapse all sketches"
+msgstr ""
+
+msgid "Collapse all"
+msgstr ""
+
+msgid "Expand all"
+msgstr ""
 
 msgid "Script error"
 msgstr "Script error"
@@ -306,6 +337,58 @@ msgid "Script Error"
 msgstr "Script Error"
 
 msgid "Model rebuild cancelled"
+msgstr ""
+
+msgid "keyword of "
+msgstr ""
+
+msgid "predefined scalar"
+msgstr ""
+
+msgid "predefined vector"
+msgstr ""
+
+msgid "predefined plane"
+msgstr ""
+
+msgid "loop variable"
+msgstr ""
+
+msgid "vector component"
+msgstr ""
+
+msgid "last loop instance"
+msgstr ""
+
+msgid "(from last rebuild)"
+msgstr ""
+
+msgid "feature command"
+msgstr ""
+
+msgid "function"
+msgstr ""
+
+msgid "postprocessing command"
+msgstr ""
+
+msgid "feature"
+msgstr ""
+
+msgid "scalar"
+msgstr ""
+
+msgid "vector"
+msgstr ""
+
+msgid "datum"
+msgstr ""
+
+#, fuzzy
+msgid "selection"
+msgstr "&Selection"
+
+msgid "keyword"
 msgstr ""
 
 msgid "Model"

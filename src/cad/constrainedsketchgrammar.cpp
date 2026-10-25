@@ -7,6 +7,17 @@ namespace insight {
 namespace cad {
 
 
+namespace {
+
+void throwNoParameterBindingsAvailable()
+{
+    throw insight::Exception(
+        "parameter bindings (\"set (...)\") in constrained sketch scripts"
+        " are only available, if the sketch is defined inside an ISCAD script!" );
+}
+
+}
+
 
 
 ConstrainedSketchGrammar::ConstrainedSketchGrammar(
@@ -36,6 +47,34 @@ ConstrainedSketchGrammar::ConstrainedSketchGrammar(
         );
 
     r_label = qi::lexeme[ qi::alpha >> *(qi::alnum | qi::char_('_')) >> !(qi::alnum | '_') ];
+
+    if (iscadScriptRules)
+    {
+        r_parameterBinding =
+            ( r_label >> '='
+             > qi::as_string[ qi::raw[
+                 iscadScriptRules->r_scalarExpression [ qi::_a = qi::_1 ] ] ] )
+                [ qi::_val = phx::construct<std::pair<std::string, ParameterBinding> >(
+                     qi::_1, phx::construct<ParameterBinding>(qi::_2, qi::_a) ) ]
+            ;
+
+        r_parameterBindings =
+            ( ',' >> qi::lit("set") >> '('
+             > ( r_parameterBinding [ phx::insert(qi::_val, qi::_1) ] % ',' )
+             > ')' )
+            |
+            qi::eps
+            ;
+    }
+    else
+    {
+        r_parameterBindings =
+            ( ',' >> qi::lit("set") >> '(' )
+                [ phx::bind(&throwNoParameterBindingsAvailable) ]
+            |
+            qi::eps
+            ;
+    }
 
     r_vector =
         ( '[' > qi::double_ > ',' > qi::double_ > ',' > qi::double_ > ']' )

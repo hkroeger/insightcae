@@ -106,11 +106,12 @@ void ISCADParser::createPostProcExpressions()
     r_postproc =
         ( current_pos.current_pos
          >> omit [ lexeme[ postProcFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
-         >> current_pos.current_pos )
-            [ phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
+         >> r_endPos )
+            [ phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2, CommandKind::PostprocCommand) ]
         > qi::lazy(*qi::_a)
-            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1),
-              phx::bind(&ISCADParser::popCommand, this) ];
+            [ phx::bind(&Model::addPostprocActionUnnamed, model_, qi::_1) ]
+        > qi::omit[ r_endPos
+            [ phx::bind(&ISCADParser::endCommand, this, qi::_1) ] ];
 
 
     r_postproc.name(_("postprocessing statement"));

@@ -6,6 +6,7 @@
 #include "base/parameters/simpleparameter.h"
 
 #include "constrainedsketch.h"
+#include <cmath>
 
 namespace insight {
 namespace cad {
@@ -51,8 +52,45 @@ double AngleConstraint::getConstraintError(unsigned int iConstraint) const
     insight::assertion(
         iConstraint==0,
         "invalid constraint id" );
+
+    if (refNormal_.n_elem==3)
+    {
+        arma::mat d1 = p1_->value() - pCtr_->value();
+        arma::mat d2 = p2_->value() - pCtr_->value();
+        if ( (arma::norm(d1, 2)>SMALL) && (arma::norm(d2, 2)>SMALL) )
+        {
+            double phi = atan2(
+                arma::dot(arma::cross(d1, d2), refNormal_),
+                arma::dot(d1, d2) );
+            // wrap, so that the discontinuity is located at the
+            // opposite configuration, far away from the solution
+            return std::remainder(phi - targetValue(), 2.*M_PI)/M_PI;
+        }
+    }
+
     checkForBuildDuringAccess();
     return (angle_ - targetValue())/M_PI;
+}
+
+void AngleConstraint::prepareConstraintSolve(const arma::mat& sketchPlaneNormal)
+{
+    refNormal_.reset();
+
+    arma::mat d1 = p1_->value() - pCtr_->value();
+    arma::mat d2 = p2_->value() - pCtr_->value();
+    arma::mat n = arma::cross(d1, d2);
+    double ln = arma::norm(n, 2);
+
+    if ( ln > 1e-6*arma::norm(d1, 2)*arma::norm(d2, 2) && ln > SMALL )
+    {
+        // keep the side of the current configuration
+        refNormal_ = n/ln;
+    }
+    else if (arma::norm(sketchPlaneNormal, 2) > SMALL)
+    {
+        // collinear legs: no preferred side, use sketch plane
+        refNormal_ = arma::normalise(sketchPlaneNormal);
+    }
 }
 
 void AngleConstraint::scaleSketch(double scaleFactor)
@@ -192,6 +230,15 @@ void FixedAngleConstraint::setTargetValue(double angle)
 }
 
 
+double FixedAngleConstraint::parameterBindingConversionFactor(const std::string& name) const
+{
+    // the parameter is stored in degrees, expressions yield radians
+    if (name=="angle")
+        return 1./SI::deg;
+    return AngleConstraint::parameterBindingConversionFactor(name);
+}
+
+
 
 
 void FixedAngleConstraint::generateScriptCommand(
@@ -209,6 +256,7 @@ void FixedAngleConstraint::generateScriptCommand(
                    pointSpec(p2_, script, entityLabels) ) + ", "
             + pointSpec(pCtr_, script, entityLabels)
             + ", layer " + layerName()
+            + parameterBindingString()
             + parameterString()
             + ")"
         );
@@ -231,6 +279,7 @@ void FixedAngleConstraint::addParserRule(
              > ( ( qi::lit("toHorizontal") >> qi::attr(VectorPtr()) ) | (ruleset.r_point) ) > ','
              > ruleset.r_point
              > (( ',' >> qi::lit("layer") >> ruleset.r_label) | qi::attr(std::string()))
+             > ruleset.r_parameterBindings
              > ruleset.r_parameters >
              ')' )
                 [ qi::_a = phx::bind(
@@ -238,8 +287,9 @@ void FixedAngleConstraint::addParserRule(
                          VectorPtr, VectorPtr, VectorPtr, const std::string&>,
                      qi::_2, qi::_3, qi::_4, qi::_5),
                  phx::bind(&ConstrainedSketchParametersDelegate::changeDefaultParameters, &pd, *qi::_a),
-                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_6,
+                 phx::bind(&ConstrainedSketchEntity::parseParameterSet, qi::_a, qi::_7,
                        boost::filesystem::path(".")),
+                 phx::bind(&ConstrainedSketchEntity::setParameterBindings, qi::_a, qi::_6),
                  qi::_val = phx::construct<ConstrainedSketchGrammar::ParserRuleResult>(qi::_1, qi::_a) ]
             );
 }
@@ -275,6 +325,7 @@ ConstrainedSketchEntityPtr FixedAngleConstraint::clone() const
 
     cl->changeDefaultParameters(defaultParameters());
     cl->parametersRef().assignFrom( parameters() );
+    cl->setParameterBindings( parameterBindings() );
     return cl;
 }
 

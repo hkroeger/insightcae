@@ -21,6 +21,27 @@ class ConstrainedSketchEntity;
 class ConstrainedSketchGeometry;
 class ConstrainedSketchParametersDelegate;
 
+
+
+/**
+ * @brief The ParameterBinding struct
+ * links a (top-level double) parameter of a sketch entity
+ * to a scalar expression of the ISCAD script, which contains the sketch.
+ */
+struct ParameterBinding
+{
+    std::string expression; ///< expression text, as given in the script
+    ScalarPtr value;
+
+    ParameterBinding() = default;
+    ParameterBinding(const std::string& expr, ScalarPtr v)
+        : expression(expr), value(v)
+    {}
+};
+
+typedef std::map<std::string, ParameterBinding> ParameterBindings;
+
+
 struct ConstrainedSketchGrammar
     :  public ExtendedGrammar<qi::grammar<std::string::iterator, cad::parser::skip_grammar> >
 {
@@ -70,6 +91,24 @@ public:
         std::string(),
         insight::cad::parser::skip_grammar
         > r_parameters;
+
+    boost::spirit::qi::rule<
+        std::string::iterator,
+        std::pair<std::string, ParameterBinding>(),
+        insight::cad::parser::skip_grammar,
+        boost::spirit::qi::locals<ScalarPtr>
+        > r_parameterBinding;
+
+    /**
+     * @brief r_parameterBindings
+     * optional clause ", set ( <name> = <scalar expression>, ... )".
+     * Only available, if the sketch is parsed as part of an ISCAD script.
+     */
+    boost::spirit::qi::rule<
+        std::string::iterator,
+        ParameterBindings(),
+        insight::cad::parser::skip_grammar
+        > r_parameterBindings;
 
     boost::spirit::qi::rule<
         std::string::iterator,

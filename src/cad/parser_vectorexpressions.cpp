@@ -67,13 +67,14 @@ void ISCADParser::createVectorExpressions()
     r_vectorFunction =
         ( current_pos.current_pos
          >> omit[ lexeme[ vectorFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
-         >> current_pos.current_pos )
+         >> r_endPos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
               phx::at_c<1>(qi::_val) = qi::_2,
-              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
+              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2, CommandKind::VectorFunction) ]
          > qi::lazy(*qi::_a)
-            [ phx::at_c<2>(qi::_val) = qi::_1,
-              phx::bind(&ISCADParser::popCommand, this) ]
+            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+         > qi::omit[ r_endPos
+            [ phx::bind(&ISCADParser::endCommand, this, qi::_1) ] ]
         ;
     r_vectorFunction.name(_("vector function"));
 
@@ -295,10 +296,10 @@ void ISCADParser::createVectorExpressions()
         | ( '+' >> r_vector_primary ) // expressions starting with plus
           [ _val = qi::_1 ]
 
-        | addAdditionalRule( map_lookup_parser(model_->points()) )
+        | addAdditionalRule( recordedLookup(model_->points(), TokenKind::VectorRef) )
           [ qi::_val = qi::_1 ]
 
-        | addAdditionalRule( map_lookup_parser(model_->directions()) )
+        | addAdditionalRule( recordedLookup(model_->directions(), TokenKind::VectorRef) )
           [ qi::_val = qi::_1 ]
 
         | r_vectorFunction

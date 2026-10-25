@@ -1167,6 +1167,7 @@ void gsl_vector_set(const arma::mat& x, gsl_vector * xo)
 struct f_adapter_params {
     std::function<arma::mat(const arma::mat&)> func;
     arma::mat x0;
+    double xScale;
 };
 
 int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
@@ -1185,6 +1186,58 @@ int f_adapter (const gsl_vector * x, void * p, gsl_vector * y)
 }
 
 
+/**
+ * forward difference jacobian.
+ * In contrast to gsl_multiroot_fdjacobian, the step size has an absolute
+ * lower bound related to the problem scale. Otherwise, tiny nonzero
+ * values (e.g. round-off "zeros" like 1e-15) yield steps which are
+ * below the resolution of the function values and produce spurious
+ * zero columns.
+ */
+arma::mat fd_jacobian(const f_adapter_params& F, const arma::mat& x, const arma::mat& f0)
+{
+    const double eps = sqrt(GSL_DBL_EPSILON);
+
+    arma::mat J = arma::zeros(f0.n_elem, x.n_elem);
+    arma::mat xp = x;
+    for (arma::uword j=0; j<x.n_elem; ++j)
+    {
+        double h = eps * std::max(fabs(x(j)), F.xScale);
+        xp(j) = x(j) + h;
+        h = xp(j) - x(j); // exactly representable step
+        J.col(j) = (F.func(xp) - f0) / h;
+        xp(j) = x(j);
+    }
+    return J;
+}
+
+
+int df_adapter (const gsl_vector * x, void * p, gsl_matrix * J)
+{
+    auto& F = *reinterpret_cast<f_adapter_params*>(p);
+    arma::mat vx = vec(x);
+    arma::mat mJ = fd_jacobian(F, vx, F.func(vx));
+    for (size_t i=0; i<J->size1; ++i)
+        for (size_t j=0; j<J->size2; ++j)
+            gsl_matrix_set(J, i, j, mJ(i,j));
+    return GSL_SUCCESS;
+}
+
+
+int fdf_adapter (const gsl_vector * x, void * p, gsl_vector * y, gsl_matrix * J)
+{
+    auto& F = *reinterpret_cast<f_adapter_params*>(p);
+    arma::mat vx = vec(x);
+    arma::mat f0 = F.func(vx);
+    arma::mat mJ = fd_jacobian(F, vx, f0);
+    gsl_vector_set (f0, y);
+    for (size_t i=0; i<J->size1; ++i)
+        for (size_t j=0; j<J->size2; ++j)
+            gsl_matrix_set(J, i, j, mJ(i,j));
+    return GSL_SUCCESS;
+}
+
+
 
 arma::mat nonlinearSolveND(
     std::function<arma::mat(const arma::mat& x)> obj,
@@ -1193,111 +1246,180 @@ arma::mat nonlinearSolveND(
     std::function<void(const arma::mat&)> perIterationCallback
     )
 {
-    const gsl_multiroot_fsolver_type *T;
-    gsl_multiroot_fsolver *s;
-
     int status;
     size_t n = x0.n_elem;
-    size_t i, iter = 0;
+    size_t iter = 0;
 
-    f_adapter_params fp{obj, x0};
-    gsl_multiroot_function f = {&f_adapter, n, &fp};
+    f_adapter_params fp{
+        obj, x0,
+        std::max(arma::norm(arma::vectorise(x0), "inf"), 1e-3) };
+
+    {
+        arma::mat J = fd_jacobian(fp, x0, obj(x0));
+        if ( arma::rcond(J) < SMALL )
+        {
+            throw insight::JacobiDeterminatException(J);
+        }
+    }
+
+    gsl_multiroot_function_fdf f = {&f_adapter, &df_adapter, &fdf_adapter, n, &fp};
 
     gsl_vector *x = gsl_vector_alloc (n);
     gsl_vector * olditer_p = gsl_vector_alloc (n);
     for (int i=0; i<n; ++i)
       gsl_vector_set (x, i, x0(i));
 
-    //T = gsl_multiroot_fsolver_hybrids;
-    T = gsl_multiroot_fsolver_hybrids;
-    s = gsl_multiroot_fsolver_alloc (T, n);
-    gsl_multiroot_fsolver_set (s, &f, x);
+    const gsl_multiroot_fdfsolver_type *T = gsl_multiroot_fdfsolver_hybridsj;
+    gsl_multiroot_fdfsolver *s = gsl_multiroot_fdfsolver_alloc (T, n);
+    gsl_multiroot_fdfsolver_set (s, &f, x);
 
-
-    typedef struct
+    auto cleanup = [&]()
     {
-        size_t iter;
-        size_t ncfail;
-        size_t ncsuc;
-        size_t nslow1;
-        size_t nslow2;
-        double fnorm;
-        double delta;
-        gsl_matrix *J;
-        gsl_matrix *q;
-        gsl_matrix *r;
-        gsl_vector *tau;
-        gsl_vector *diag;
-        gsl_vector *qtf;
-        gsl_vector *newton;
-        gsl_vector *gradient;
-        gsl_vector *x_trial;
-        gsl_vector *f_trial;
-        gsl_vector *df;
-        gsl_vector *qtdf;
-        gsl_vector *rdx;
-        gsl_vector *w;
-        gsl_vector *v;
-    }
-    hybrid_state_t;
+        gsl_multiroot_fdfsolver_free (s);
+        gsl_vector_free (x);
+        gsl_vector_free (olditer_p);
+    };
 
-    arma::mat J=insight::mat(
-        static_cast<hybrid_state_t*>(s->state)
-            ->J );
-
-    if(fabs(arma::det(J))<SMALL*SMALL)
+    try
     {
-        throw insight::JacobiDeterminatException(J);
+        do
+        {
+          std::cout<<"iter="<<iter<<std::endl;
+          gsl_vector_memcpy(olditer_p, s->x);
+
+          iter++;
+          status = gsl_multiroot_fdfsolver_iterate (s);
+
+          if (status!=0)   /* check if solver is stuck */
+              throw insight::NonConvergenceException(iter);
+
+          if (relax<1.)
+          {
+              // relax and restart the solver from the relaxed point,
+              // so that its internal state (f, J, trust region)
+              // is consistent with x
+              for (int i=0; i<n; i++)
+              {
+                  gsl_vector_set(
+                    x, i,
+                  relax * gsl_vector_get(s->x, i)
+                     +
+                  (1.-relax) * gsl_vector_get(olditer_p, i)
+                 );
+              }
+              gsl_multiroot_fdfsolver_set (s, &f, x);
+          }
+
+          status =
+              gsl_multiroot_test_residual (s->f, tol);
+
+          if (perIterationCallback)
+          {
+            perIterationCallback(vec(s->x));
+          }
+        }
+        while (status == GSL_CONTINUE && iter < nMaxIter);
+
+        if (status == GSL_CONTINUE) // max. iterations reached without convergence
+            throw insight::NonConvergenceException(iter);
     }
-
-
-    do
+    catch (...)
     {
-      std::cout<<"iter="<<iter<<std::endl;
-      gsl_vector_memcpy(olditer_p, s->x);
-
-      iter++;
-      status = gsl_multiroot_fsolver_iterate (s);
-
-      //      print_state (iter, s);
-
-      if (status!=0)   /* check if solver is stuck */
-          throw insight::NonConvergenceException(iter);
-
-      status =
-          gsl_multiroot_test_residual (s->f, tol);
-
-
-      //relax
-      for (int i=0; i<n; i++)
-      {
-          gsl_vector_set(
-            s->x, i,
-          relax * gsl_vector_get(s->x, i)
-             +
-          (1.-relax) * gsl_vector_get(olditer_p, i)
-         );
-      }
-
-      if (perIterationCallback)
-      {
-        perIterationCallback(vec(s->x));
-      }
+        cleanup();
+        throw;
     }
-    while (status == GSL_CONTINUE && iter < nMaxIter);
-
-    if (iter>=nMaxIter)
-        throw insight::NonConvergenceException(iter);
 
     printf ("status = %s\n", gsl_strerror (status));
 
     arma::mat result = vec(s->x);
 
-    gsl_multiroot_fsolver_free (s);
-    gsl_vector_free (x);
+    cleanup();
 
     return result;
 }
+
+
+arma::mat nonlinearLeastSquaresND(
+    std::function<arma::mat(const arma::mat& x)> obj,
+    const arma::mat& x0,
+    double tol, int nMaxIter,
+    std::function<void(const arma::mat&)> perIterationCallback
+    )
+{
+    f_adapter_params fp{
+        obj, x0,
+        std::max(arma::norm(arma::vectorise(x0), "inf"), 1e-3) };
+
+    arma::mat x = arma::vectorise(x0);
+    arma::mat f = obj(x);
+    double F = 0.5*arma::dot(f, f);
+    arma::mat J = fd_jacobian(fp, x, f);
+
+    double mu=-1., nu=2.;
+
+    for (int iter=0; iter<nMaxIter; ++iter)
+    {
+        if (arma::norm(f, "inf") < tol)
+            return x;
+
+        arma::mat A = J.t()*J;
+        arma::mat g = J.t()*f;
+
+        if (arma::norm(g, "inf") < tol*tol)
+            return x; // stationary point: least squares minimum
+
+        // Marquardt scaling of the damping term
+        arma::vec dA = arma::diagvec(A);
+        double dAmax = std::max(dA.max(), SMALL);
+        dA = arma::clamp(dA, 1e-12*dAmax, arma::datum::inf);
+
+        if (mu<0.) mu = 1e-3;
+
+        arma::mat dx;
+        bool ok = arma::solve(
+            dx, A + mu*arma::diagmat(dA), -g,
+            arma::solve_opts::no_approx );
+
+        if (ok && arma::norm(dx, 2) < tol*(arma::norm(x, 2)+tol))
+            return x; // no further progress possible
+
+        bool accepted=false;
+        if (ok)
+        {
+            arma::mat xn = x + dx;
+            arma::mat fn = obj(xn);
+            if (fn.is_finite())
+            {
+                double Fn = 0.5*arma::dot(fn, fn);
+                double pred = 0.5*arma::dot(dx, mu*(dA%arma::vectorise(dx)) - g);
+                double rho = pred>0. ? (F-Fn)/pred : -1.;
+                if (rho>0.)
+                {
+                    x=xn;
+                    f=fn;
+                    F=Fn;
+                    J = fd_jacobian(fp, x, f);
+                    mu *= std::max(1./3., 1.-pow(2.*rho-1., 3));
+                    nu = 2.;
+                    accepted=true;
+
+                    if (perIterationCallback)
+                        perIterationCallback(x);
+                }
+            }
+        }
+
+        if (!accepted)
+        {
+            mu *= nu;
+            nu *= 2.;
+        }
+    }
+
+    throw insight::NonConvergenceException(nMaxIter);
+}
+
+
 
 
 arma::mat movingAverage(

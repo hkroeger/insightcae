@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_ISCADMODEL_H
 
 #include <QPlainTextEdit>
+#include <QTimer>
 
 #include <functional>
 #include <map>
@@ -39,6 +40,7 @@
 class IQCADItemModel;
 class IQISCADSyntaxHighlighter;
 class IQISCADFoldingMargin;
+struct IQISCADToken;
 class IQCADModel3DViewer;
 
 namespace insight { namespace cad {
@@ -105,6 +107,48 @@ protected:
     std::map<QString, IQISCADCompleter::CandidateKind> knownCommands_;
     void updateKnownCommands();
 
+    /**
+     * member names of a built feature,
+     * accessible by ".", "$", "@", "!" and "%"
+     */
+    struct BuiltMembers
+    {
+        QStringList subfeatures, scalars, points, vectors, datums;
+    };
+
+    /**
+     * members of the features, which were built during the last rebuild.
+     * Keyed by symbol path, e.g. "m" or "m.instanceFinal".
+     */
+    std::map<QString, BuiltMembers> builtMembers_;
+
+    /**
+     * collect the members of all built features after a rebuild.
+     * Must only be called while no job is running.
+     */
+    void harvestBuiltMembers();
+
+    /**
+     * true, if the current completion popup shows members (after an accessor)
+     */
+    bool popupShowsMembers_ = false;
+
+    /**
+     * the feature highlighted in the completion popup is displayed
+     * in the viewer after a short delay (it might need to be built)
+     */
+    QTimer* exposeTimer_ = nullptr;
+
+    /**
+     * symbol chain of the feature to display (e.g. {"m", "instanceFinal", "s"})
+     */
+    QStringList pendingExposeChain_;
+
+    /**
+     * set, when a completion has been inserted (the popup closes before)
+     */
+    bool completionAccepted_ = false;
+
     bool unsaved_;
 
     IQCADItemModel* cur_model_;
@@ -138,6 +182,32 @@ protected:
     
 protected:
     void clearDerivedData();
+
+    /**
+     * emit focus for the feature. Errors during creation or display
+     * are reported in the status bar.
+     * @return true, if a feature was focussed
+     */
+    bool tryFocus(std::function<insight::cad::FeaturePtr()> getFeature);
+
+    /**
+     * focus the element under the cursor in the viewer, unfocus if there is none
+     */
+    void focusElementAtCursor();
+
+    /**
+     * the feature, which is denoted by the symbol chain
+     * (e.g. {"m", "instanceFinal", "s"} for m.instanceFinal.s) at the given position.
+     * Returns nullptr, if the base symbol is unknown.
+     */
+    insight::cad::FeaturePtr resolveFeature(const QStringList& chain, int pos) const;
+
+    /**
+     * an entry of the completion popup was highlighted
+     */
+    void onCompletionHighlighted(const QModelIndex& index);
+
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
     // ========== parse result based highlighting
 
@@ -212,6 +282,45 @@ protected:
      * highlight all occurrences of the given identifier
      */
     void highlightOccurrences(const QString& word);
+
+    /**
+     * an accessor (".", "$", "@", "!" or "%") in front of the cursor
+     * (respectively in front of the identifier prefix), applied to the symbol chain
+     * (e.g. "m.instanceFinal" -> {"m", "instanceFinal"})
+     */
+    struct MemberContext
+    {
+        QChar accessor;
+        QStringList chain;
+        bool valid = false;
+    };
+    MemberContext memberContext(int pos) const;
+
+    /**
+     * innermost submodel block, which contains the given range. nullptr if there is none.
+     */
+    const FoldRegion* innermostBlock(int begin, int end) const;
+
+    /**
+     * true, if the defined symbol is visible at pos
+     */
+    bool isVisibleAt(const IQISCADToken& def, int pos) const;
+
+    /**
+     * what is known before building about the feature, to which a symbol is assigned
+     */
+    struct StaticScope
+    {
+        enum Kind { None, Block, Loop } kind = None;
+        /**
+         * the submodel block (Block) or the loop body (Loop)
+         */
+        const FoldRegion* block = nullptr;
+    };
+    StaticScope staticScopeOf(const IQISCADToken& def, const QString& text) const;
+
+    std::vector<IQISCADCompleter::Candidate> memberCandidates(
+        const MemberContext& mc, int pos, const QString& text ) const;
 
     std::vector<IQISCADCompleter::Candidate> completionCandidates(int pos) const;
     void showCompletion(bool explicitlyRequested);

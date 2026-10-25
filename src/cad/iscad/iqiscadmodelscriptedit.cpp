@@ -66,6 +66,7 @@
 
 #include "cadfeature.h"
 #include "cadfeatures/modelfeature.h"
+#include "cadfeatures/subfeature.h"
 #include "sketch.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/parametricsketch.h"
@@ -148,6 +149,24 @@ IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing
             this, &IQISCADModelScriptEdit::insertCompletion);
     updateKnownCommands();
 
+    // display the feature, which is highlighted in the completion popup
+    exposeTimer_=new QTimer(this);
+    exposeTimer_->setSingleShot(true);
+    exposeTimer_->setInterval(200);
+    connect(exposeTimer_, &QTimer::timeout, this,
+            [this]()
+            {
+                auto chain=pendingExposeChain_;
+                int pos=textCursor().position();
+                if (!tryFocus([this,chain,pos]() { return resolveFeature(chain, pos); }))
+                {
+                    Q_EMIT unfocus();
+                }
+            });
+    connect(completer_, QOverload<const QModelIndex&>::of(&QCompleter::highlighted),
+            this, &IQISCADModelScriptEdit::onCompletionHighlighted);
+    completer_->popup()->installEventFilter(this);
+
     connect(this, &QPlainTextEdit::cursorPositionChanged,
             this, [this]()
             {
@@ -185,9 +204,14 @@ IQISCADModelScriptEdit::IQISCADModelScriptEdit(QWidget* parent, bool dobgparsing
     connect(scheduler_, &IQISCADScriptJobScheduler::statusProgress,
             this, &IQISCADModelScriptEdit::statusProgress);
     connect(scheduler_, &IQISCADScriptJobScheduler::jobEnded,
-            this, [this](IQISCADScriptModelGenerator::Task)
+            this, [this](IQISCADScriptModelGenerator::Task task)
             {
                 Q_EMIT statusProgress(1, 1);
+
+                // delivered before the next job is started:
+                // the built model can be accessed safely
+                if (task>=IQISCADScriptModelGenerator::Rebuild)
+                    harvestBuiltMembers();
             });
     connect(scheduler_, &IQISCADScriptJobScheduler::scriptError,
             this, &IQISCADModelScriptEdit::onScriptError);
@@ -318,6 +342,7 @@ void IQISCADModelScriptEdit::clearDerivedData()
   clear();
   syn_elem_dir_.reset();
   syn_elem_pos_=ScriptPositionMap();
+  builtMembers_.clear();
   highlighter_->setErrorRange(-1, -1);
   calltipCommand_.clear();
   emit clearData();
@@ -379,50 +404,65 @@ void IQISCADModelScriptEdit::onEditorSelectionChanged()
 
     highlightOccurrences(textCursor().selectedText());
 
-    if (syn_elem_dir_)
+    focusElementAtCursor();
+}
+
+
+
+
+bool IQISCADModelScriptEdit::tryFocus(std::function<insight::cad::FeaturePtr()> getFeature)
+{
+    // the entity is built on demand for display. Build errors must not
+    // propagate: cursor movement should not raise dialogs
+    try
     {
-        bool somethingFocussed=false;
-      auto sde=syn_elem_dir_->findElement( parserPosition(textCursor().position()) );
+        auto f=getFeature();
+        if (!f) return false;
+        Q_EMIT focus(f);
+        return true;
+    }
+    catch (...)
+    {
+        auto desc = insight::describeCurrentException();
+        Q_EMIT displayStatusMessage(
+            QString(_("Could not display the selected entity: %1"))
+                .arg(QString::fromStdString(std::string(*desc))) );
+    }
+    return false;
+}
 
-      // the entity is built on demand for display. Build errors must not
-      // propagate: cursor movement should not raise dialogs
-      auto tryFocus = [&](std::function<insight::cad::FeaturePtr()> getFeature)
-      {
-          try
-          {
-              Q_EMIT focus(getFeature());
-              somethingFocussed=true;
-          }
-          catch (...)
-          {
-              auto desc = insight::describeCurrentException();
-              Q_EMIT displayStatusMessage(
-                  QString(_("Could not display the selected entity: %1"))
-                      .arg(QString::fromStdString(std::string(*desc))) );
-          }
-      };
 
-      if (auto fp=boost::get<insight::cad::FeaturePtr>(&sde))
-      {
-          if (*fp)
-          {
+
+
+void IQISCADModelScriptEdit::focusElementAtCursor()
+{
+    if (!syn_elem_dir_)
+        return;
+
+    bool somethingFocussed=false;
+    auto sde=syn_elem_dir_->findElement( parserPosition(textCursor().position()) );
+
+    if (auto fp=boost::get<insight::cad::FeaturePtr>(&sde))
+    {
+        if (*fp)
+        {
             auto f=*fp;
-            tryFocus([f]() { return f; });
-          }
-      }
-      else if (auto fsp=boost::get<insight::cad::FeatureSetPtr>(&sde))
-      {
-          if (*fsp)
-          {
+            somethingFocussed=tryFocus([f]() { return f; });
+        }
+    }
+    else if (auto fsp=boost::get<insight::cad::FeatureSetPtr>(&sde))
+    {
+        if (*fsp)
+        {
             auto fs=*fsp;
-            tryFocus([fs]() { return insight::cad::Import::create(fs); });
-          }
-      }
+            somethingFocussed=tryFocus(
+                [fs]() -> insight::cad::FeaturePtr { return insight::cad::Import::create(fs); });
+        }
+    }
 
-      if (!somethingFocussed)
-      {
+    if (!somethingFocussed)
+    {
         Q_EMIT unfocus();
-      }
     }
 }
 
@@ -1519,6 +1559,21 @@ inline bool isIdentifierChar(QChar c)
     return c.isLetterOrNumber() || c==QChar('_');
 }
 
+inline bool isIdentifierStart(QChar c)
+{
+    return c.isLetter() || c==QChar('_');
+}
+
+/**
+ * the operators for accessing members of a feature:
+ * subfeature, scalar, point, vector, datum
+ */
+inline bool isAccessor(QChar c)
+{
+    return c==QChar('.') || c==QChar('$') || c==QChar('@')
+           || c==QChar('!') || c==QChar('%');
+}
+
 }
 
 
@@ -1655,6 +1710,11 @@ IQISCADModelScriptEdit::completionCandidates(int pos) const
     std::vector<C::Candidate> cands;
     const QString text=toPlainText();
 
+    // after an accessor, only the members of the feature are offered
+    auto mc=memberContext(pos);
+    if (mc.valid)
+        return memberCandidates(mc, pos, text);
+
     // keywords of the current command come first
     QString cmd=enclosingCommand(pos);
     if (!cmd.isEmpty())
@@ -1725,14 +1785,7 @@ IQISCADModelScriptEdit::completionCandidates(int pos) const
         }
 
         // symbols inside a submodel are only visible there
-        const FoldRegion* scope=nullptr;
-        for (const auto& r: foldRegions_)
-        {
-            if (r.command.isEmpty() && r.begin<t.begin && t.end<=r.end
-                && (!scope || r.begin>scope->begin) )
-                scope=&r;
-        }
-        if (scope && !(scope->begin<pos && pos<scope->end))
+        if (!isVisibleAt(t, pos))
             continue;
 
         cands.push_back({text.mid(t.begin, t.end-t.begin), k, QString()});
@@ -1753,10 +1806,12 @@ void IQISCADModelScriptEdit::showCompletion(bool explicitlyRequested)
     }
 
     const QString prefix=identifierPrefix();
+    const bool members=memberContext(textCursor().position()).valid;
 
-    if (!popup->isVisible() || explicitlyRequested)
+    if (!popup->isVisible() || explicitlyRequested || members!=popupShowsMembers_)
     {
         completer_->setCandidates(completionCandidates(textCursor().position()));
+        popupShowsMembers_=members;
     }
 
     completer_->setCompletionPrefix(prefix);
@@ -1778,6 +1833,9 @@ void IQISCADModelScriptEdit::showCompletion(bool explicitlyRequested)
         popup->sizeHintForColumn(0) + popup->sizeHintForColumn(1)
             + popup->verticalScrollBar()->sizeHint().width() + 20 ));
     completer_->complete(cr);
+
+    // the first entry is selected without user interaction
+    onCompletionHighlighted(popup->currentIndex());
 }
 
 
@@ -1786,6 +1844,9 @@ void IQISCADModelScriptEdit::insertCompletion(const QModelIndex& index)
     const QString completion=index.sibling(index.row(), 0).data().toString();
     const auto kind=IQISCADCompleter::CandidateKind(
         index.sibling(index.row(), 0).data(IQISCADCompleter::KindRole).toInt() );
+
+    // keep the inserted feature highlighted in the viewer
+    completionAccepted_ = (kind==IQISCADCompleter::Feature);
 
     auto c=textCursor();
     c.beginEditBlock();
@@ -1879,9 +1940,16 @@ void IQISCADModelScriptEdit::keyPressEvent(QKeyEvent *e)
 
     const int autoCompletionMinPrefix=3;
     const QString prefix=identifierPrefix();
-    if (popup->isVisible())
+    const bool members=memberContext(textCursor().position()).valid;
+    if (members && t.size()==1 && isAccessor(t[0]))
     {
-        if (prefix.isEmpty())
+        // the members of another feature
+        popup->hide();
+        showCompletion(false);
+    }
+    else if (popup->isVisible())
+    {
+        if (prefix.isEmpty() && !members)
             popup->hide();
         else
             showCompletion(false);
@@ -1900,4 +1968,417 @@ void IQISCADModelScriptEdit::keyPressEvent(QKeyEvent *e)
                 viewport()->mapToGlobal(cursorRect().bottomLeft()), sig, this );
         }
     }
+}
+
+
+
+
+// ================================================================
+// member completion
+// ================================================================
+
+
+void IQISCADModelScriptEdit::harvestBuiltMembers()
+{
+    builtMembers_.clear();
+
+    auto pr=scheduler_->lastParseResult();
+    if (!pr || !pr->model)
+        return;
+
+    int budget=5000;
+    const int maxDepth=3;
+
+    std::function<void(const QString&, insight::cad::FeaturePtr, int)> harvest =
+        [&](const QString& path, insight::cad::FeaturePtr f, int depth)
+    {
+        if (!f || budget<=0) return;
+
+        // the accessors build the feature, if it is not built:
+        // only consider features which were built during the rebuild
+        if (!f->valid()) return;
+
+        BuiltMembers m;
+        insight::cad::SubfeatureMap subs;
+        try
+        {
+            subs=f->providedSubshapes();
+            for (const auto& s: subs)
+                m.subfeatures << QString::fromStdString(s.first);
+            for (const auto& s: f->getDatumScalars())
+                m.scalars << QString::fromStdString(s.first);
+            for (const auto& s: f->getDatumPoints())
+                m.points << QString::fromStdString(s.first);
+            for (const auto& s: f->getDatumVectors())
+                m.vectors << QString::fromStdString(s.first);
+            for (const auto& s: f->providedDatums())
+                m.datums << QString::fromStdString(s.first);
+        }
+        catch (...)
+        {
+            // completion information is optional
+        }
+        builtMembers_[path]=m;
+        --budget;
+
+        if (depth<maxDepth)
+        {
+            for (const auto& s: subs)
+                harvest(path+"."+QString::fromStdString(s.first), s.second, depth+1);
+        }
+    };
+
+    for (const auto& ms: pr->model->modelsteps())
+    {
+        harvest(QString::fromStdString(ms.first), ms.second, 0);
+    }
+}
+
+
+IQISCADModelScriptEdit::MemberContext
+IQISCADModelScriptEdit::memberContext(int pos) const
+{
+    const auto* doc=document();
+    MemberContext mc;
+
+    // skip the identifier prefix
+    int i=pos;
+    while (i>0 && isIdentifierChar(doc->characterAt(i-1))) --i;
+
+    if (i==0 || !isAccessor(doc->characterAt(i-1)))
+        return mc;
+    mc.accessor=doc->characterAt(i-1);
+
+    // the symbol chain in front of the accessor: a.b.c
+    int e=i-1;
+    for (;;)
+    {
+        int b=e;
+        while (b>0 && isIdentifierChar(doc->characterAt(b-1))) --b;
+        if (b==e || !isIdentifierStart(doc->characterAt(b)))
+            return MemberContext(); // e.g. a number or a closing bracket
+
+        QString id;
+        for (int k=b; k<e; ++k) id+=doc->characterAt(k);
+        mc.chain.prepend(id);
+
+        if (b>0 && doc->characterAt(b-1)==QChar('.'))
+            e=b-1;
+        else
+            break;
+    }
+
+    mc.valid=true;
+    return mc;
+}
+
+
+const IQISCADModelScriptEdit::FoldRegion*
+IQISCADModelScriptEdit::innermostBlock(int begin, int end) const
+{
+    const FoldRegion* scope=nullptr;
+    for (const auto& r: foldRegions_)
+    {
+        if (r.command.isEmpty() && r.begin<begin && end<=r.end
+            && (!scope || r.begin>scope->begin) )
+            scope=&r;
+    }
+    return scope;
+}
+
+
+bool IQISCADModelScriptEdit::isVisibleAt(const IQISCADToken& def, int pos) const
+{
+    if (def.begin>=pos)
+        return false;
+    auto *scope=innermostBlock(def.begin, def.end);
+    return !scope || (scope->begin<pos && pos<scope->end);
+}
+
+
+IQISCADModelScriptEdit::StaticScope
+IQISCADModelScriptEdit::staticScopeOf(const IQISCADToken& def, const QString& text) const
+{
+    StaticScope sc;
+
+    // the beginning of the right hand side of the assignment
+    int i=def.end;
+    auto skipBlanks = [&]() { while (i<text.size() && text[i].isSpace()) ++i; };
+    skipBlanks();
+    if (i<text.size() && text[i]==QChar(':'))
+        ++i;
+    else if (i+1<text.size() && text[i]==QChar('?') && text[i+1]==QChar('='))
+        i+=2;
+    else if (i<text.size() && text[i]==QChar('='))
+        ++i;
+    else
+        return sc;
+    skipBlanks();
+
+    for (const auto& r: foldRegions_)
+    {
+        if (r.begin!=i) continue;
+
+        if (r.command.isEmpty())
+        {
+            sc.kind=StaticScope::Block;
+            sc.block=&r;
+            return sc;
+        }
+        else if (r.command=="for")
+        {
+            // the loop body is the outermost submodel block inside the loop arguments
+            for (const auto& b: foldRegions_)
+            {
+                if (b.command.isEmpty() && r.begin<b.begin && b.end<=r.end)
+                {
+                    sc.kind=StaticScope::Loop;
+                    sc.block=&b;
+                    return sc;
+                }
+            }
+        }
+    }
+    return sc;
+}
+
+
+std::vector<IQISCADCompleter::Candidate>
+IQISCADModelScriptEdit::memberCandidates(
+    const MemberContext& mc, int pos, const QString& text ) const
+{
+    using C=IQISCADCompleter;
+    using insight::cad::parser::TokenKind;
+
+    std::vector<C::Candidate> cands;
+    const auto& tokens=highlighter_->tokens();
+
+    auto tokenText = [&text](const IQISCADToken& t)
+    {
+        return text.mid(t.begin, t.end-t.begin);
+    };
+    auto isFeatureDef = [](const IQISCADToken& t)
+    {
+        return t.kind==TokenKind::FeatureDef || t.kind==TokenKind::ComponentDef;
+    };
+
+    // ===== static information from the script
+
+    // the last visible definition of the chain base
+    const IQISCADToken* baseDef=nullptr;
+    for (const auto& t: tokens)
+    {
+        if (t.begin>=pos) break;
+        if ( (isFeatureDef(t) || t.kind==TokenKind::VectorDef)
+             && tokenText(t)==mc.chain[0] && isVisibleAt(t, pos) )
+            baseDef=&t;
+    }
+
+    // vector components
+    static const QStringList predefinedVectors = {"O", "EX", "EY", "EZ"};
+    if ( mc.accessor==QChar('.') && mc.chain.size()==1
+         && ( (baseDef && baseDef->kind==TokenKind::VectorDef)
+              || (!baseDef && predefinedVectors.contains(mc.chain[0])) ) )
+    {
+        for (const char* c: {"x", "y", "z"})
+            cands.push_back({c, C::Scalar, _("vector component")});
+        return cands;
+    }
+
+    StaticScope sc;
+    if (baseDef && isFeatureDef(*baseDef))
+        sc=staticScopeOf(*baseDef, text);
+
+    static const QRegularExpression instanceName("^instance(Final|[0-9]+)$");
+    for (int k=1; k<mc.chain.size() && sc.kind!=StaticScope::None; ++k)
+    {
+        if (sc.kind==StaticScope::Block)
+        {
+            StaticScope next;
+            for (const auto& t: tokens)
+            {
+                if ( isFeatureDef(t) && innermostBlock(t.begin, t.end)==sc.block
+                     && tokenText(t)==mc.chain[k] )
+                {
+                    next=staticScopeOf(t, text);
+                }
+            }
+            sc=next;
+        }
+        else // loop: each instance is a copy of the body
+        {
+            if (instanceName.match(mc.chain[k]).hasMatch())
+                sc.kind=StaticScope::Block;
+            else
+                sc=StaticScope();
+        }
+    }
+
+    if (sc.kind==StaticScope::Block)
+    {
+        for (const auto& t: tokens)
+        {
+            if (innermostBlock(t.begin, t.end)!=sc.block) continue;
+
+            if (mc.accessor==QChar('.') && isFeatureDef(t))
+                cands.push_back({tokenText(t), C::Feature, QString()});
+            else if (mc.accessor==QChar('$') && t.kind==TokenKind::ScalarDef)
+                cands.push_back({tokenText(t), C::Scalar, QString()});
+            else if (mc.accessor==QChar('@') && t.kind==TokenKind::VectorDef)
+                cands.push_back({tokenText(t), C::Vector, QString()});
+            else if (mc.accessor==QChar('%') && t.kind==TokenKind::DatumDef)
+                cands.push_back({tokenText(t), C::Datum, QString()});
+        }
+    }
+    else if (sc.kind==StaticScope::Loop && mc.accessor==QChar('.'))
+    {
+        cands.push_back({"instanceFinal", C::Feature, _("last loop instance")});
+    }
+
+    // ===== information from the last rebuild
+    // (after the static information: names, which are still in the script,
+    // shall not be marked as possibly outdated)
+    auto bm=builtMembers_.find(mc.chain.join('.'));
+    if (bm!=builtMembers_.end())
+    {
+        const QStringList* names=nullptr;
+        C::CandidateKind kind=C::Feature;
+        switch (mc.accessor.toLatin1())
+        {
+            case '.': names=&bm->second.subfeatures; kind=C::Feature; break;
+            case '$': names=&bm->second.scalars; kind=C::Scalar; break;
+            case '@': names=&bm->second.points; kind=C::Vector; break;
+            case '!': names=&bm->second.vectors; kind=C::Vector; break;
+            case '%': names=&bm->second.datums; kind=C::Datum; break;
+        }
+        if (names)
+        {
+            QString detail=C::kindDescription(kind)+" "+_("(from last rebuild)");
+            for (const auto& n: *names)
+                cands.push_back({n, kind, detail});
+        }
+    }
+
+    return cands;
+}
+
+
+
+
+// ================================================================
+// display of the feature highlighted in the completion popup
+// ================================================================
+
+
+insight::cad::FeaturePtr IQISCADModelScriptEdit::resolveFeature(
+    const QStringList& chain, int pos ) const
+{
+    using insight::cad::FeaturePtr;
+    using insight::cad::parser::TokenKind;
+
+    if (chain.isEmpty())
+        return FeaturePtr();
+
+    const std::string baseName=chain[0].toStdString();
+    FeaturePtr f;
+
+    // the visible definition of the base symbol
+    // (also inside submodels, where the model has no table)
+    if (syn_elem_dir_)
+    {
+        const QString text=toPlainText();
+        const IQISCADToken* baseDef=nullptr;
+        for (const auto& t: highlighter_->tokens())
+        {
+            if (t.begin>=pos) break;
+            if ( (t.kind==TokenKind::FeatureDef || t.kind==TokenKind::ComponentDef)
+                 && text.mid(t.begin, t.end-t.begin)==chain[0]
+                 && isVisibleAt(t, pos) )
+                baseDef=&t;
+        }
+        if (baseDef)
+        {
+            auto se=syn_elem_dir_->findElement(parserPosition(baseDef->begin));
+            if (auto *fp=boost::get<FeaturePtr>(&se))
+            {
+                // guard against positions, which are outdated by edits
+                if (*fp && (*fp)->featureSymbolName()==baseName)
+                    f=*fp;
+            }
+        }
+    }
+
+    // top level symbols of the last parsed model
+    if (!f)
+    {
+        if (auto pr=scheduler_->lastParseResult())
+        {
+            if (pr->model)
+            {
+                const auto& ms=pr->model->modelsteps();
+                auto i=ms.find(baseName);
+                if (i!=ms.end())
+                    f=i->second;
+            }
+        }
+    }
+
+    if (!f)
+        return FeaturePtr();
+
+    // the same, as the parser creates for "base.sub"
+    for (int k=1; k<chain.size(); ++k)
+    {
+        f=insight::cad::Subfeature::create(f, chain[k].toStdString());
+    }
+    return f;
+}
+
+
+void IQISCADModelScriptEdit::onCompletionHighlighted(const QModelIndex& index)
+{
+    exposeTimer_->stop();
+
+    if (!index.isValid())
+        return;
+
+    auto i0=index.sibling(index.row(), 0);
+    auto kind=IQISCADCompleter::CandidateKind(i0.data(IQISCADCompleter::KindRole).toInt());
+    if (kind!=IQISCADCompleter::Feature)
+        return;
+
+    QStringList chain;
+    if (popupShowsMembers_)
+    {
+        auto mc=memberContext(textCursor().position());
+        if (!mc.valid || mc.accessor!=QChar('.'))
+            return;
+        chain=mc.chain;
+    }
+    chain << i0.data().toString();
+
+    pendingExposeChain_=chain;
+    exposeTimer_->start();
+}
+
+
+bool IQISCADModelScriptEdit::eventFilter(QObject *watched, QEvent *event)
+{
+    if (completer_ && watched==completer_->popup() && event->type()==QEvent::Hide)
+    {
+        exposeTimer_->stop();
+
+        // QCompleter hides the popup before the completion is inserted:
+        // decide later, whether the previous highlighting is restored
+        QTimer::singleShot(0, this,
+            [this]()
+            {
+                if (!completionAccepted_ && !completer_->popup()->isVisible())
+                {
+                    focusElementAtCursor();
+                }
+                completionAccepted_=false;
+            });
+    }
+    return QPlainTextEdit::eventFilter(watched, event);
 }

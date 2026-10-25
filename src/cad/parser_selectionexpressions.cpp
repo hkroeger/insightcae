@@ -84,7 +84,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_vertexFeaturesExpression =
         (
-            addAdditionalRule( map_lookup_parser(model_->vertexFeatures()) )  [ qi::_val = qi::_1 ]
+            addAdditionalRule( recordedLookup(model_->vertexFeatures(), TokenKind::SelectionRef) )  [ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [qi::_a=qi::_1, qi::_b=qi::_2 ]
             >> (
@@ -196,7 +196,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_edgeFeaturesExpression =
         (
-            addAdditionalRule( map_lookup_parser(model_->edgeFeatures()) ) [ _val = qi::_1 ]
+            addAdditionalRule( recordedLookup(model_->edgeFeatures(), TokenKind::SelectionRef) ) [ _val = qi::_1 ]
             |
             (r_solidmodel_expression >> current_pos.current_pos >> '?')
                [ qi::_a=qi::_1, qi::_b=qi::_2 ]
@@ -308,7 +308,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_faceFeaturesExpression =
         (
-            ( current_pos.current_pos >> addAdditionalRule( map_lookup_parser(model_->faceFeatures()) ) >> current_pos.current_pos ) [
+            ( current_pos.current_pos >> addAdditionalRule( recordedLookup(model_->faceFeatures(), TokenKind::SelectionRef) ) >> current_pos.current_pos ) [
                                     qi::_val = qi::_2,
 
                      phx::bind( &SyntaxElementDirectory::addFSEntry, syntax_element_locations.get(),
@@ -431,7 +431,7 @@ void ISCADParser::createSelectionExpressions()
 
     r_solidFeaturesExpression =
         (
-            addAdditionalRule( map_lookup_parser(model_->solidFeatures()) ) [ qi::_val = qi::_1 ]
+            addAdditionalRule( recordedLookup(model_->solidFeatures(), TokenKind::SelectionRef) ) [ qi::_val = qi::_1 ]
             |
             ( r_solidmodel_expression >> current_pos.current_pos >> '?' ) [ _a=qi::_1, _b=qi::_2 ]
             >> ( ( (kw("solids")|kw("solid"))

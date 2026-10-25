@@ -432,6 +432,7 @@ add_library(insightcad SHARED
 
   ${insightcad_ADDITIONAL_SOURCES}
   parser_tools.h
+  parser_tokens.h
   parser_errors.h
   featurefilter_vertex.cpp
   featurefilter_edge.cpp

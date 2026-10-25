@@ -45,6 +45,7 @@
 
 #include "cadtypes.h"
 #include "cadmodel.h"
+#include "parser_tokens.h"
 
 
 namespace insight {
@@ -65,19 +66,40 @@ typedef insight::cad::FeaturePtr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
-typedef std::pair<long, long> SyntaxElementPos;
 typedef std::pair<boost::filesystem::path, SyntaxElementPos> SyntaxElementLocation;
 
 std::ostream& operator<<(std::ostream& os, const SyntaxElementLocation& sel);
 
 typedef boost::variant<FeaturePtr,FeatureSetPtr> SyntaxElement;
 
+
 class SyntaxElementDirectory
 : public std::map<SyntaxElementLocation, SyntaxElement>
 {
 public:
+    /**
+     * recognized tokens of the main script, keyed by begin position.
+     * All positions are byte offsets in the script.
+     * A token is replaced, when another one with the same begin position is recorded
+     * (the last recording is from the alternative, which finally matched).
+     */
+    std::map<long, ScriptToken> tokens;
+
+    /**
+     * collapsible ranges, keyed by begin position
+     */
+    std::map<long, FoldRange> foldRanges;
+
+    /**
+     * all available command and function names
+     */
+    std::map<std::string, CommandKind> commands;
+
     void addEntry(SyntaxElementLocation location, FeaturePtr element);
     void addFSEntry(SyntaxElementLocation location, FeatureSetPtr element);
+
+    void addToken(long begin, long end, TokenKind kind);
+    void addFoldRange(long begin, long end, const std::string& command);
 
     SyntaxElement findElement(long location, const boost::filesystem::path& file="") const;
 
@@ -200,7 +222,15 @@ typedef std::shared_ptr<SubmodelRule> SubmodelRulePtr;
 struct ISCADParser
     : insight::ExtendedGrammar<qi::grammar<std::string::iterator, skip_grammar> >
 {
+    typedef insight::cad::parser::CommandKind CommandKind;
+
     CurrentPos<std::string::iterator> current_pos;
+
+    /**
+     * the current position, without skipping whitespace and comments before.
+     * To be used for the end positions of tokens.
+     */
+    qi::rule<std::string::iterator, std::size_t(), skip_grammar> r_endPos;
     boost::filesystem::path filenameinfo_;
     SyntaxElementDirectoryPtr syntax_element_locations;
 
@@ -285,7 +315,7 @@ struct ISCADParser
 
     qi::rule<std::string::iterator,
              std::shared_ptr<ModelFeature>(ModelVariableTable),
-             skip_grammar, qi::locals<SubmodelRulePtr> >
+             skip_grammar, qi::locals<SubmodelRulePtr, std::size_t> >
         r_submodel;
 
 
@@ -297,8 +327,40 @@ struct ISCADParser
      * Remains intact, if an expectation failure is thrown.
      */
     std::vector<SyntaxElementPos> commandStack_;
-    void pushCommand(std::size_t nameBegin, std::size_t nameEnd);
+    void pushCommand(std::size_t nameBegin, std::size_t nameEnd, CommandKind kind);
     void popCommand();
+
+    /**
+     * the argument list of the innermost command ends at argsEnd:
+     * record the collapsible range and pop the command
+     */
+    void endCommand(std::size_t argsEnd);
+
+    /**
+     * record a token at the given iterator range
+     * (absolute position w.r.t. the start of the main script)
+     */
+    void addToken(
+        std::string::const_iterator begin,
+        std::string::const_iterator end,
+        TokenKind kind );
+
+    /**
+     * record the range of an in-situ submodel block
+     */
+    void endSubmodel(std::size_t begin, std::size_t end);
+
+    /**
+     * record the name of a newly defined symbol
+     */
+    void defineSymbol(const SyntaxElementPos& namePos, TokenKind kind);
+
+    /**
+     * a parser for a symbol from the given table, which records a token of the given kind
+     */
+    template<class Map>
+    std::shared_ptr<qi::rule<std::string::iterator, typename Map::mapped_type(), skip_grammar> >
+    recordedLookup(const Map& map, TokenKind kind);
 
     enum Section { ModelSection, DocSection };
     Section section_ = ModelSection;
@@ -308,8 +370,6 @@ struct ISCADParser
      */
     std::vector<std::size_t> deprecatedPostKeywordPositions_;
     void deprecatedPostKeyword(std::size_t pos);
-
-    enum CommandKind { FeatureCommand, ScalarFunction, VectorFunction, PostprocCommand };
 
     /**
      * translated description of a command kind, e.g. "feature command"
@@ -322,7 +382,14 @@ struct ISCADParser
     std::map<std::string, CommandKind> commandKinds_;
 
 
-    ISCADParser(Model* model, const boost::filesystem::path& filenameinfo="");
+    /**
+     * @param sharedSyntaxElementLocations
+     * if given, syntax elements are recorded into this directory instead of a new one
+     */
+    ISCADParser(
+        Model* model,
+        const boost::filesystem::path& filenameinfo="",
+        SyntaxElementDirectoryPtr sharedSyntaxElementLocations = SyntaxElementDirectoryPtr() );
     
     void createScalarExpressions();
     void createVectorExpressions();
@@ -338,8 +405,13 @@ struct ISCADParser
 
 class SubmodelRule
 {
+    /**
+     * the submodel parser records its tokens into the
+     * syntax element directory of the parent parser
+     * and uses the same position reference.
+     */
     SubmodelRule(
-        const Model* parentModel,
+        ISCADParser* parentParser,
         const ModelVariableTable& addVars );
 
 public:

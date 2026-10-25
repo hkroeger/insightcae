@@ -20,10 +20,15 @@
 #ifndef INSIGHT_CAD_ISCADMODEL_H
 #define INSIGHT_CAD_ISCADMODEL_H
 
-#include <QTextEdit>
+#include <QPlainTextEdit>
+
+#include <functional>
+#include <map>
 
 #include "base/boost_include.h"
 #include "iqiscadscriptjobscheduler.h"
+#include "scriptpositionmap.h"
+#include "iqiscadcompleter.h"
 
 
 #ifndef Q_MOC_RUN
@@ -33,6 +38,7 @@
 
 class IQCADItemModel;
 class IQISCADSyntaxHighlighter;
+class IQISCADFoldingMargin;
 class IQCADModel3DViewer;
 
 namespace insight { namespace cad {
@@ -46,18 +52,59 @@ class ConstrainedSketch;
  * the container for the CAD modeling data, is also the text editor widget
  */
 class IQISCADModelScriptEdit
-: public QTextEdit
+: public QPlainTextEdit
 {
     Q_OBJECT
     
     friend class IQISCADMainWindow;
-    
+    friend class IQISCADFoldingMargin;
+
+public:
+    /**
+     * a collapsible range of the script (in editor positions):
+     * the argument list of a command or an in-situ submodel block
+     */
+    struct FoldRegion
+    {
+        int begin, end;
+        /**
+         * name of the command, empty for a submodel block
+         */
+        QString command;
+        bool collapsed;
+    };
+
 protected:
     boost::filesystem::path filename_;
     IQISCADSyntaxHighlighter* highlighter_;
+    IQISCADFoldingMargin* margin_;
+    IQISCADCompleter* completer_;
 
     const int bgparseInterval=1000;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
+
+    /**
+     * position conversion for the script, from which syn_elem_dir_ was created
+     */
+    ScriptPositionMap syn_elem_pos_;
+
+    /**
+     * collapsible ranges, sorted by begin position.
+     * The positions are adapted to edits until the next parse result arrives.
+     */
+    std::vector<FoldRegion> foldRegions_;
+
+    /**
+     * the command, whose signature is currently displayed in the status bar
+     */
+    QString calltipCommand_;
+
+    /**
+     * all known command and function names
+     */
+    std::map<QString, IQISCADCompleter::CandidateKind> knownCommands_;
+    void updateKnownCommands();
+
     bool unsaved_;
 
     IQCADItemModel* cur_model_;
@@ -91,6 +138,94 @@ protected:
     
 protected:
     void clearDerivedData();
+
+    // ========== parse result based highlighting
+
+    /**
+     * update the tokens and fold ranges from a new parse result.
+     * The new information is valid up to validChars.
+     * Beyond, the previous information is kept.
+     */
+    void updateAnnotations(
+        const insight::cad::parser::SyntaxElementDirectory& sd,
+        const ScriptPositionMap& pm,
+        int validChars );
+
+    /**
+     * adapt all positions to an edit
+     */
+    void onContentsChange(int pos, int removed, int added);
+
+    /**
+     * the parser position (byte offset) for the given editor position
+     */
+    long parserPosition(int editorPosition) const;
+
+    // ========== folding
+
+    int marginWidth() const;
+    void marginPaintEvent(QPaintEvent *event);
+    void marginMousePressEvent(QMouseEvent *event);
+    void updateMarginWidth();
+    void updateMarginArea(const QRect &rect, int dy);
+
+    /**
+     * index of the foldable region, which starts in the given block, -1 if none
+     */
+    int foldRegionStartingIn(const QTextBlock& block) const;
+    bool isFoldable(const FoldRegion& r) const;
+
+    /**
+     * true, if the given position is on one of the lines, which are hidden,
+     * when the region is collapsed
+     */
+    bool hidesPosition(const FoldRegion& r, int pos) const;
+
+    /**
+     * set the visibility of all blocks according to the collapsed state of the fold regions
+     */
+    void applyFolding();
+    void setCollapsed(int regionIndex, bool collapsed);
+    void setAllCollapsed(bool collapsed, const std::function<bool(const FoldRegion&)>& filter);
+
+    /**
+     * expand all regions, which hide the cursor
+     */
+    void revealCursor();
+
+    // ========== completion
+
+    /**
+     * the identifier left of the cursor
+     */
+    QString identifierPrefix() const;
+    bool cursorInCommentOrString() const;
+
+    /**
+     * name of the innermost command, whose argument list contains the given position.
+     * Empty, if there is none.
+     * Works on the text, i.e. also for incomplete commands.
+     */
+    QString enclosingCommand(int pos) const;
+
+    /**
+     * highlight all occurrences of the given identifier
+     */
+    void highlightOccurrences(const QString& word);
+
+    std::vector<IQISCADCompleter::Candidate> completionCandidates(int pos) const;
+    void showCompletion(bool explicitlyRequested);
+    void insertCompletion(const QModelIndex& index);
+    void updateCalltip();
+
+    /**
+     * the signature of the command (empty, if unknown)
+     */
+    static QString commandSignature(const QString& command);
+
+    void keyPressEvent(QKeyEvent *e) override;
+    void paintEvent(QPaintEvent *e) override;
+    void resizeEvent(QResizeEvent *e) override;
 
     /**
      * start the constrained sketch editor for the given parametric sketch
@@ -128,6 +263,8 @@ public:
     
     void loadFile(const boost::filesystem::path& file);
     void setScript(const std::string& contents);
+
+    inline const std::vector<FoldRegion>& foldRegions() const { return foldRegions_; }
     
     /**
      * add all defined planes to the clip plane menu
@@ -191,6 +328,10 @@ public slots:
 
     void onIncreaseFontSize();
     void onDecreaseFontSize();
+
+    void collapseAllSketches();
+    void collapseAll();
+    void expandAll();
 //    /**
 //     * display everything shaded
 //     */

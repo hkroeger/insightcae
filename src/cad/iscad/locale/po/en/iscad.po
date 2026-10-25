@@ -318,6 +318,18 @@ msgstr "Edit Sketch..."
 msgid "Edit Model..."
 msgstr "Edit Model..."
 
+msgid "Folding"
+msgstr ""
+
+msgid "Collapse all sketches"
+msgstr ""
+
+msgid "Collapse all"
+msgstr ""
+
+msgid "Expand all"
+msgstr ""
+
 msgid "Script error"
 msgstr "Script error"
 
@@ -325,6 +337,49 @@ msgid "Script Error"
 msgstr "Script Error"
 
 msgid "Model rebuild cancelled"
+msgstr ""
+
+msgid "keyword of "
+msgstr ""
+
+msgid "predefined scalar"
+msgstr ""
+
+msgid "predefined vector"
+msgstr ""
+
+msgid "predefined plane"
+msgstr ""
+
+msgid "loop variable"
+msgstr ""
+
+msgid "feature command"
+msgstr ""
+
+msgid "function"
+msgstr ""
+
+msgid "postprocessing command"
+msgstr ""
+
+msgid "feature"
+msgstr ""
+
+msgid "scalar"
+msgstr ""
+
+msgid "vector"
+msgstr ""
+
+msgid "datum"
+msgstr ""
+
+#, fuzzy
+msgid "selection"
+msgstr "&Selection"
+
+msgid "keyword"
 msgstr ""
 
 msgid "Model"

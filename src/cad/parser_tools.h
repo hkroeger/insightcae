@@ -87,6 +87,49 @@ map_lookup_parser(const Map& map)
         );
 }
 
+
+
+
+/**
+ * like MapLookup, but records the location of the matched symbol
+ */
+template<typename Map>
+struct RecordingMapLookup
+{
+    const Map& map;
+    ISCADParser* parser;
+    TokenKind kind;
+
+    template<typename Attrib, typename Context>
+    void operator()(Attrib& attr, Context& ctx, bool& success) const
+    {
+        std::string k(attr.begin(), attr.end());
+        auto it = map.find(k);
+        if (it == map.end())
+        {
+            success=false;
+        }
+        else
+        {
+            success=true;
+            boost::fusion::at_c<0>(ctx.attributes)=
+                it->second;
+            parser->addToken(attr.begin(), attr.end(), kind);
+        }
+    }
+};
+
+
+template<class Map>
+std::shared_ptr<qi::rule<std::string::iterator, typename Map::mapped_type(), skip_grammar> >
+ISCADParser::recordedLookup(const Map& map, TokenKind kind)
+{
+    return std::make_shared<qi::rule<std::string::iterator, typename Map::mapped_type(), skip_grammar> >(
+        qi::raw[ qi::lexeme[ qi::alpha >> *(qi::alnum | qi::char_('_')) ] ]
+                        [ RecordingMapLookup<Map>{map, this, kind} ]
+        );
+}
+
 }
 }
 }

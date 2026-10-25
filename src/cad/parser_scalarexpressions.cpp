@@ -69,13 +69,14 @@ void ISCADParser::createScalarExpressions()
     r_scalarFunction =
         ( current_pos.current_pos
          >> omit[ lexeme[ scalarFunctionRules [ qi::_a = qi::_1 ] >> !(alnum | '_') ] ]
-         >> current_pos.current_pos )
+         >> r_endPos )
             [ phx::at_c<0>(qi::_val) = qi::_1,
               phx::at_c<1>(qi::_val) = qi::_2,
-              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2) ]
+              phx::bind(&ISCADParser::pushCommand, this, qi::_1, qi::_2, CommandKind::ScalarFunction) ]
          > qi::lazy(*qi::_a)
-            [ phx::at_c<2>(qi::_val) = qi::_1,
-              phx::bind(&ISCADParser::popCommand, this) ]
+            [ phx::at_c<2>(qi::_val) = qi::_1 ]
+         > qi::omit[ r_endPos
+            [ phx::bind(&ISCADParser::endCommand, this, qi::_1) ] ]
         ;
     r_scalarFunction.name(_("scalar function"));
 
@@ -256,7 +257,7 @@ void ISCADParser::createScalarExpressions()
         | ('+' >> r_scalar_primary ) // expressions starting with plus
          [ _val = qi::_1 ]
 
-        | addAdditionalRule( map_lookup_parser(model_->scalars()) ) //model_->scalarSymbols()
+        | addAdditionalRule( recordedLookup(model_->scalars(), TokenKind::ScalarRef) ) //model_->scalarSymbols()
          [ qi::_val = qi::_1 ]
 
         | r_scalarFunction

@@ -43,6 +43,16 @@ struct CurrentPos
         start_pos_ = iterator;
     }
 
+    const Iterator& startPos() const {
+        return start_pos_;
+    }
+
+    template<class OtherIterator>
+    std::size_t positionOf(const OtherIterator &iterator) const {
+        return std::distance(
+            static_cast<OtherIterator>(start_pos_), iterator );
+    }
+
 private:
     std::size_t getCurrentPos(const Iterator &iterator) {
         return std::distance(start_pos_, iterator);

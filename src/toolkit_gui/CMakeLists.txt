@@ -210,10 +210,8 @@ add_library(toolkit_gui SHARED
        iqremoteserverstatus.cpp iqremoteserverstatus.h
        remotesync.cpp remotesync.h
        sdmdiarea.cpp sdmdiarea.h
-       blockmesh_gui.cpp blockmesh_gui.h
-       blockmesh_cylwedge_gui.cpp blockmesh_cylwedge_gui.h
        blockmeshvisualization.h blockmeshvisualization.cpp
-       #blockmesh_cylwedgeortho_gui.cpp
+       blockmeshtemplatevisualizer.h blockmeshtemplatevisualizer.cpp
        metatypes.cpp metatypes.h
        iqparaviewdialog.h iqparaviewdialog.cpp
        iqremoteparaviewdialog.cpp iqremoteparaviewdialog.h

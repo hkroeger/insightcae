@@ -40,6 +40,7 @@ namespace bmd {
 
 blockMeshBlocking::blockMeshBlocking()
 : scaleFactor_(1.0),
+  outputScale_(1.0),
   defaultPatchName_("defaultFaces"),
   defaultPatchType_("wall"),
   allPoints_()
@@ -48,6 +49,7 @@ blockMeshBlocking::blockMeshBlocking()
 
 blockMeshBlocking::blockMeshBlocking(const blockMeshBlocking &o)
   : scaleFactor_(o.scaleFactor_),
+    outputScale_(o.outputScale_),
     defaultPatchName_(o.defaultPatchName_),
     defaultPatchType_(o.defaultPatchType_)
 {
@@ -87,6 +89,12 @@ void blockMeshBlocking::copy(const blockMeshBlocking& other)
 void blockMeshBlocking::setScaleFactor(double sf)
 {
   scaleFactor_=sf;
+}
+
+void blockMeshBlocking::setOutputScale(double s)
+{
+  insight::assertion(s>0., "output scale has to be positive");
+  outputScale_=s;
 }
 
 void blockMeshBlocking::setDefaultPatch(const std::string& name, std::string type)
@@ -236,6 +244,32 @@ OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) co
   return dictionaries.lookupDict(bmdLoc);
 }
 
+namespace {
+
+// multiply all coordinate triples (lists of three doubles) by f
+void scaleCoordinateTriples(OFDictData::data& d, double f)
+{
+    if (auto *l = boost::get<OFDictData::list>(&d))
+    {
+        bool isTriple = (l->size()==3);
+        for (const auto& e: *l)
+            isTriple = isTriple && (boost::get<double>(&e)!=nullptr);
+
+        if (isTriple)
+        {
+            for (auto& e: *l)
+                boost::get<double>(e) *= f;
+        }
+        else
+        {
+            for (auto& e: *l)
+                scaleCoordinateTriples(e, f);
+        }
+    }
+}
+
+}
+
 void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 {
     PointMap pts(allPoints_);
@@ -243,7 +277,8 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 
     OFDictData::dict& blockMeshDict=getBlockMeshDict(dictionaries);
 
-    blockMeshDict["convertToMeters"]=scaleFactor_;
+    const double os = outputScale_;
+    blockMeshDict["convertToMeters"]=scaleFactor_*os;
 
     OFDictData::dict def;
     def["name"]=OFDictData::data(defaultPatchName_);
@@ -256,7 +291,7 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
     {
         auto p = i->first;
         OFDictData::list cl;
-        cl += p[0], p[1], p[2];
+        cl += p[0]/os, p[1]/os, p[2]/os;
 
         auto pv = projectedVertices_.find(p);
         if (pv==projectedVertices_.end())
@@ -295,6 +330,11 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
              blockCorners.find(e.c1())!=blockCorners.end() )
         {
             std::vector<OFDictData::data> l = e.bmdEntry(pts, OFversion());
+            if (os!=1.)
+            {
+                for (auto& d: l)
+                    scaleCoordinateTriples(d, 1./os);
+            }
             el.insert( el.end(), l.begin(), l.end() );
         }
     }
@@ -323,6 +363,8 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
             OFDictData::dict d;
             d["type"]="triSurfaceMesh";
             d["file"]="\""+geo.fileName().string()+"\"";
+            if (os!=1.)
+                d["scale"]=1./os; // surfaces in unscaled coordinates
             gd[geo]=d;
         }
         blockMeshDict["geometry"]=gd;

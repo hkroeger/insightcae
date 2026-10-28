@@ -178,6 +178,59 @@ void Block::swapGrad()
 
 
 
+PointList Block::orderedCorners() const
+{
+    std::vector<int> ci;
+    if (!inv_) ci+=0,1,2,3,4,5,6,7; else ci+=4,5,6,7,0,1,2,3;
+
+    PointList oc;
+    for (auto i: ci)
+    {
+        oc.push_back(corners_[i]);
+    }
+    return oc;
+}
+
+
+
+
+std::array<double,12> Block::edgeGradings() const
+{
+    std::array<double,12> eg;
+    int k=0;
+    for (const auto& g: grading_)
+    {
+        if (const auto* grad = boost::get<double>(&g) )
+        {
+            for (int j=0; j<4; ++j) eg[k++]=*grad;
+        }
+        else if (const auto* gradl = boost::get<std::vector<double> >(&g))
+        {
+            if (gradl->size()==2)
+            {
+                eg[k++]=(*gradl)[0];
+                eg[k++]=(*gradl)[1];
+                eg[k++]=(*gradl)[1];
+                eg[k++]=(*gradl)[0];
+            }
+            else if (gradl->size()==4)
+            {
+                for (int j=0; j<4; ++j) eg[k++]=(*gradl)[j];
+            }
+            else
+            {
+                throw Exception("Invalid number of grading coefficients given!");
+            }
+        }
+        else throw insight::UnhandledSelection();
+    }
+    insight::assertion(k==12, "invalid grading specification");
+    return eg;
+}
+
+
+
+
 std::vector<OFDictData::data>
 Block::bmdEntry(const PointMap& allPoints, int OFversion) const
 {
@@ -185,14 +238,11 @@ Block::bmdEntry(const PointMap& allPoints, int OFversion) const
     retval.push_back( OFDictData::data("hex") );
 
     OFDictData::list cl;
-    std::vector<int> ci;
-    if (!inv_) ci+=0,1,2,3,4,5,6,7; else ci+=4,5,6,7,0,1,2,3;
-    for (auto i: ci)
+    for (const auto& c: orderedCorners())
     {
         cl.push_back(
             OFDictData::data(
-                allPoints.find(
-                    corners_[i] )->second ) );
+                allPoints.find( c )->second ) );
     }
     retval.push_back( cl );
 
@@ -203,28 +253,9 @@ Block::bmdEntry(const PointMap& allPoints, int OFversion) const
     retval.push_back( rl );
 
     OFDictData::list gl;
-    for (const auto& g: grading_)
+    for (double g: edgeGradings())
     {
-        if (const auto* grad = boost::get<double>(&g) )
-        {
-            gl += *grad, *grad, *grad, *grad;
-        }
-        else if (const auto* gradl = boost::get<std::vector<double> >(&g))
-        {
-            if (gradl->size()==2)
-            {
-                gl += (*gradl)[0], (*gradl)[1], (*gradl)[1], (*gradl)[0];
-            }
-            else if (gradl->size()==4)
-            {
-                gl += (*gradl)[0], (*gradl)[1], (*gradl)[2], (*gradl)[3];
-            }
-            else
-            {
-                throw Exception("Invalid number of grading coefficients given!");
-            }
-        }
-        else throw insight::UnhandledSelection();
+        gl.push_back(g);
     }
     retval.push_back( gl );
 

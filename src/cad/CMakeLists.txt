@@ -345,6 +345,8 @@ add_library(insightcad SHARED
   cadfeatures/sailcut3d.h
   cadfeatures/stl.cpp
   cadfeatures/stl.h
+  cadfeatures/structuredsurfacemesh.cpp
+  cadfeatures/structuredsurfacemesh.h
   cadfeatures/stringer.cpp
   cadfeatures/stringer.h
   cadfeatures/subfeature.cpp
@@ -406,6 +408,8 @@ add_library(insightcad SHARED
 
   cadpostprocactions/angle.cpp
   cadpostprocactions/angle.h
+  cadpostprocactions/featureannotation.cpp
+  cadpostprocactions/featureannotation.h
   cadpostprocactions/bom.cpp
   cadpostprocactions/bom.h
   cadpostprocactions/drawingexport.cpp

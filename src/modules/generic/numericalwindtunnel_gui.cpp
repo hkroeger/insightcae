@@ -82,8 +82,9 @@ void NumericalWindtunnel_ParameterSet_Visualizer::recreateVisualizationElements(
 
     step("domain", [&]()
     {
-        bmd::blockMeshVisualization(
-            *sp().blocking).addToVisualizer(*this, "domain");
+        // the domain encloses the object: don't hide it by shaded faces
+        bmd::addBlockingToVisualizer(
+            *this, *sp().blocking, "domain", 1.0, insight::Wireframe);
     });
 }
 

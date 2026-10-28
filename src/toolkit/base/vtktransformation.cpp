@@ -6,6 +6,8 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkSTLReader.h>
+#include "vtkPolyData.h"
+
 
 namespace insight {
 
@@ -132,6 +134,30 @@ readSTL
   }
 
   return i0;
+}
+
+
+
+vtkSmartPointer<vtkPolyData> warpPoints(
+    vtkSmartPointer<vtkPolyData> in,
+    const PointMapping& f )
+{
+    CurrentExceptionContext ec("Applying non-homogeneous point mapping");
+
+    auto pd = vtkSmartPointer<vtkPolyData>::New();
+    pd->DeepCopy(in);
+
+    vtkPoints* pts = pd->GetPoints();
+    for (vtkIdType i=0; i<pts->GetNumberOfPoints(); ++i)
+    {
+        double p[3];
+        pts->GetPoint(i, p);
+        arma::mat pn = f( vec3(p[0], p[1], p[2]) );
+        pts->SetPoint(i, pn(0), pn(1), pn(2));
+    }
+    pts->Modified();
+
+    return pd;
 }
 
 

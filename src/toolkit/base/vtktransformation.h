@@ -8,8 +8,9 @@
 
 #include <functional>
 
-namespace insight {
+class vtkPolyData;
 
+namespace insight {
 
 
 class vtk_ChangeCS
@@ -56,6 +57,11 @@ readSTL
 
 
 
+typedef std::function<arma::mat(const arma::mat&)> PointMapping;
+
+vtkSmartPointer<vtkPolyData> warpPoints(
+    vtkSmartPointer<vtkPolyData> in,
+    const PointMapping& f );
 
 } // namespace insight
 

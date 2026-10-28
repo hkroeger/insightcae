@@ -70,6 +70,7 @@ public:
 
 protected:
     double scaleFactor_;
+    double outputScale_;
     std::string defaultPatchName_;
     std::string defaultPatchType_;
 
@@ -88,12 +89,22 @@ public:
     void copy(const blockMeshBlocking& other);
 
     void setScaleFactor(double sf);
+
+    /**
+     * Write all coordinates divided by s into the blockMeshDict
+     * (convertToMeters and the scale of the geometry surfaces are corrected accordingly).
+     * Reduces round-off in blockMesh's block check, which is applied
+     * to the unscaled coordinates and uses an absolute tolerance (SMALL),
+     * e.g. for collapsed blocks in large-dimensioned domains.
+     */
+    void setOutputScale(double s);
     void setDefaultPatch(const std::string& name, std::string type="patch");
 
     void addGeometry(const Geometry& geo);
     const std::vector<Geometry>& allGeometry() const;
 
     void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
+    inline const std::map<Point,std::string>& projectedVertices() const { return projectedVertices_; }
 
     void addProjectedFace(const ProjectedFace& pf);
     const std::vector<ProjectedFace>& allProjectedFaces() const;

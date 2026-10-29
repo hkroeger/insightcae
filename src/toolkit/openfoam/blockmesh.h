@@ -56,6 +56,7 @@
 #include "openfoam/blockmesh/geometry.h"
 #include "openfoam/blockmesh/projectededge.h"
 #include "openfoam/blockmesh/projectedface.h"
+#include "openfoam/blockmesh/blockmeshsmoother.h"
 
 
 namespace insight {
@@ -70,6 +71,7 @@ public:
 
 protected:
     double scaleFactor_;
+    double outputScale_;
     std::string defaultPatchName_;
     std::string defaultPatchType_;
 
@@ -80,6 +82,7 @@ protected:
     std::vector<Geometry> geometries_;
     std::map<Point,std::string> projectedVertices_;
     std::vector<ProjectedFace> projectedFaces_;
+    std::map<std::string, SurfaceProjection> surfaceProjections_;
 
 public:
     blockMeshBlocking();
@@ -88,15 +91,50 @@ public:
     void copy(const blockMeshBlocking& other);
 
     void setScaleFactor(double sf);
+
+    /**
+     * Write all coordinates divided by s into the blockMeshDict
+     * (convertToMeters and the scale of the geometry surfaces are corrected accordingly).
+     * Reduces round-off in blockMesh's block check, which is applied
+     * to the unscaled coordinates and uses an absolute tolerance (SMALL),
+     * e.g. for collapsed blocks in large-dimensioned domains.
+     */
+    void setOutputScale(double s);
+
+    /**
+     * Optimize the blocking for minimal non-orthogonality of the cells, which blockMesh will create:
+     * moves interior block vertices and support points of interior spline edges.
+     * Interior straight edges and arcs are replaced by splines.
+     * Boundary, projected vertices and edges stay unchanged, unless sliding along the boundaries is enabled
+     * (see SmoothingParameters::slideOnBoundaries).
+     * @return quality statistics of the predicted mesh after optimization
+     */
+    NonOrthogonalityStatistics smooth(
+        const SmoothingParameters& par = SmoothingParameters(),
+        ActionProgress* progress = nullptr );
+
+    /**
+     * transfer modified vertex coordinates and edges from a model back into this blocking
+     * (patch faces, projected faces and projected vertices are updated as well)
+     */
+    void applyModel(const BlockingModel& model);
     void setDefaultPatch(const std::string& name, std::string type="patch");
 
     void addGeometry(const Geometry& geo);
     const std::vector<Geometry>& allGeometry() const;
 
     void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
+    inline const std::map<Point,std::string>& projectedVertices() const { return projectedVertices_; }
 
     void addProjectedFace(const ProjectedFace& pf);
     const std::vector<ProjectedFace>& allProjectedFaces() const;
+
+    /**
+     * set the projection onto a geometry (nearest point on the surface).
+     * Optional: used by the mesh prediction (projected faces) and the block smoother (sliding along the surface)
+     */
+    void setSurfaceProjection(const std::string& geometryLabel, const SurfaceProjection& proj);
+    inline const std::map<std::string, SurfaceProjection>& surfaceProjections() const { return surfaceProjections_; }
 
     inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
     inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }

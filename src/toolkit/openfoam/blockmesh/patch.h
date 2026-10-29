@@ -3,6 +3,8 @@
 
 #include "openfoam/blockmesh/point.h"
 
+#include <functional>
+
 namespace insight {
 namespace bmd {
 
@@ -33,6 +35,11 @@ public:
   virtual Patch* clone() const;
 
   inline const FaceList& faces() const { return faces_; }
+
+  /**
+   * replace the face corner points by f(p)
+   */
+  void mapPoints(const std::function<Point(const Point&)>& f);
 
   std::vector<OFDictData::data>
   bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;

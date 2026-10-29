@@ -13,6 +13,8 @@ class ProjectedEdge
 public:
   ProjectedEdge(const Point& c0, const Point& c1, const std::string& geometryLabel);
 
+  inline const std::string& geometryLabel() const { return geometryLabel_; }
+
   std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const override;
 
   Edge* transformed(const arma::mat& tm, const arma::mat trans=vec3(0,0,0)) const override;

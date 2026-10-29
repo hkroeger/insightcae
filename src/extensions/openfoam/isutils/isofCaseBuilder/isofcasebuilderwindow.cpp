@@ -135,6 +135,10 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
   overlayText_->setFont(f);
   overlayText_->hide();
 
+  // the CAD pane is resized by the splitter, which the main window's
+  // resizeEvent does not see: track the viewer area directly
+  display_->viewer()->centralWidget()->installEventFilter(this);
+
   availableBCsModel_=new AvailableBCsModel(this);
   availableCaseElementsModel_=new AvailableCaseElementsModel(this);
   caseConfigModel_=new CaseConfigurationModel(this);
@@ -559,18 +563,32 @@ void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
 void isofCaseBuilderWindow::resizeEvent(QResizeEvent*e)
 {
     QMainWindow::resizeEvent(e);
+    updateOverlayGeometry();
+}
 
-    if (display_)
+
+bool isofCaseBuilderWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if ( display_
+        && watched == display_->viewer()->centralWidget()
+        && event->type() == QEvent::Resize )
     {
-        auto w = display_->viewer()->centralWidget()->width();
-        auto h = display_->viewer()->centralWidget()->height();
-
-        int m = w / 10;
-        overlayText_->setGeometry(
-            m, m,
-            w - 2 * m,
-            h - 2 * m );
+        updateOverlayGeometry();
     }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+
+void isofCaseBuilderWindow::updateOverlayGeometry()
+{
+    if (!display_ || !overlayText_) return;
+
+    // overlay is a child of the viewer (a QMainWindow with toolbars):
+    // place it relative to the central widget, below the toolbars
+    QRect r = display_->viewer()->centralWidget()->geometry();
+    int m = r.width() / 10;
+    overlayText_->setGeometry( r.adjusted(m, m, -m, -m) );
+    overlayText_->raise();
 }
 
 
@@ -1117,6 +1135,7 @@ void isofCaseBuilderWindow::rebuildVisualization()
                         +boost::replace_all_copy(std::string(*desc), "\n", "\n\n")+"\n\n"
                         +boost::replace_all_copy(desc->context_, "\n", "\n\n")
                         ));
+                    updateOverlayGeometry();
                     overlayText_->show();
                 }
 

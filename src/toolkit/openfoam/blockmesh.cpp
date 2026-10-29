@@ -19,6 +19,8 @@
  */
 
 #include "openfoam/blockmesh.h"
+#include "base/actionprogress.h"
+#include "base/progressdisplayer/textprogressdisplayer.h"
 #include "base/vtktools.h"
 #include "base/vtklegacymodel.h"
 #include "openfoam/ofdicts.h"
@@ -40,6 +42,7 @@ namespace bmd {
 
 blockMeshBlocking::blockMeshBlocking()
 : scaleFactor_(1.0),
+  outputScale_(1.0),
   defaultPatchName_("defaultFaces"),
   defaultPatchType_("wall"),
   allPoints_()
@@ -48,6 +51,7 @@ blockMeshBlocking::blockMeshBlocking()
 
 blockMeshBlocking::blockMeshBlocking(const blockMeshBlocking &o)
   : scaleFactor_(o.scaleFactor_),
+    outputScale_(o.outputScale_),
     defaultPatchName_(o.defaultPatchName_),
     defaultPatchType_(o.defaultPatchType_)
 {
@@ -56,6 +60,7 @@ blockMeshBlocking::blockMeshBlocking(const blockMeshBlocking &o)
     geometries_=o.geometries_;
     projectedVertices_=o.projectedVertices_;
     projectedFaces_=o.projectedFaces_;
+    surfaceProjections_=o.surfaceProjections_;
 }
 
 
@@ -89,6 +94,196 @@ void blockMeshBlocking::setScaleFactor(double sf)
   scaleFactor_=sf;
 }
 
+void blockMeshBlocking::setOutputScale(double s)
+{
+  insight::assertion(s>0., "output scale has to be positive");
+  outputScale_=s;
+}
+
+
+
+
+NonOrthogonalityStatistics blockMeshBlocking::smooth(
+    const SmoothingParameters& par,
+    ActionProgress* progress )
+{
+  ActionProgressPtr ownProgress;
+  if (!progress)
+  {
+    ownProgress = consoleProgressDisplayer.forkNewAction(1, "Block smoothing");
+    progress = ownProgress.get();
+  }
+
+  // quality before smoothing at the check resolution
+  NonOrthogonalityStatistics statsBefore;
+  double fBefore=0.;
+  int nInvalidBefore=0;
+  std::vector<PointList> cornersBefore;
+  boost::ptr_vector<Edge> edgesBefore;
+  std::vector<ProjectedFace> projectedFacesBefore;
+  std::map<Point,std::string> projectedVerticesBefore;
+  if (par.checkMaxCells>0)
+  {
+    progress->message("evaluating the initial quality at check resolution");
+    MeshPredictor chk(*this, par.checkMaxCells);
+    statsBefore = chk.statistics();
+    fBefore = chk.objective({}, par.p, nInvalidBefore);
+    progress->message("initial (check resolution): "+statsBefore.summary());
+
+    for (const auto& b: allBlocks_) cornersBefore.push_back(b.corners());
+    for (const auto& e: allEdges_) edgesBefore.push_back(e.clone());
+    projectedFacesBefore = projectedFaces_;
+    projectedVerticesBefore = projectedVertices_;
+  }
+
+  progress->message("predicting the mesh at optimizer resolution");
+  MeshPredictor mp(*this, par.maxCells);
+  BlockMeshSmoother smoother(mp, par);
+  auto stats = smoother.run(*progress);
+
+  // vertices must stay distinct (blockMesh identifies them by coordinates)
+  {
+    std::set<Point> distinct;
+    for (const auto& v: mp.model.vertices) distinct.insert(v.toArma());
+    if (distinct.size()!=mp.model.vertices.size())
+    {
+      insight::Warning(
+          "block smoothing moved %d vertices onto other vertices. The original blocking is kept.",
+          int(mp.model.vertices.size()-distinct.size()) );
+      return MeshPredictor(*this, par.checkMaxCells>0 ? par.checkMaxCells : par.maxCells).statistics();
+    }
+  }
+
+  applyModel(mp.model);
+
+  if (par.checkMaxCells>0)
+  {
+    progress->message("evaluating the final quality at check resolution");
+    MeshPredictor chk(*this, par.checkMaxCells);
+    auto statsAfter = chk.statistics();
+    int nInvalidAfter=0;
+    double fAfter = chk.objective({}, par.p, nInvalidAfter);
+    progress->message("smoothed (check resolution): "+statsAfter.summary());
+
+    if (nInvalidAfter>nInvalidBefore || fAfter>fBefore)
+    {
+      insight::Warning(
+          "block smoothing did not improve the mesh at the check resolution "
+          "(objective %g -> %g, invalid cells %d -> %d). The original blocking is restored. "
+          "Consider increasing the optimizer resolution (maxCells).",
+          fBefore, fAfter, nInvalidBefore, nInvalidAfter );
+
+      std::map<Point, Point> oldPos;
+      size_t i=0;
+      for (auto& b: allBlocks_)
+      {
+        auto c = b.corners();
+        for (size_t k=0; k<c.size(); ++k) oldPos[c[k]] = cornersBefore[i][k];
+        b.setCorners(cornersBefore[i++]);
+      }
+      for (auto p: allPatches_)
+        p.second->mapPoints(
+            [&](const Point& p) { auto j=oldPos.find(p); return j==oldPos.end() ? p : j->second; } );
+      projectedFaces_ = projectedFacesBefore;
+      projectedVertices_ = projectedVerticesBefore;
+      allEdges_.swap(edgesBefore);
+      allPoints_.clear();
+      for (const auto& b: allBlocks_) b.registerPoints(*this);
+      for (const auto& e: allEdges_) e.registerPoints(*this);
+      return statsBefore;
+    }
+    return statsAfter;
+  }
+
+  return stats;
+}
+
+
+
+
+void blockMeshBlocking::applyModel(const BlockingModel& model)
+{
+  std::map<Point, Point> newPos;
+  for (size_t i=0; i<model.vertices.size(); ++i)
+  {
+    newPos[model.originalVertices[i]] = model.vertices[i].toArma();
+  }
+
+  auto mapPoint = [&](const Point& p) -> Point
+  {
+    auto i = newPos.find(p);
+    return i==newPos.end() ? p : i->second;
+  };
+
+  for (auto& b: allBlocks_)
+  {
+    PointList c = b.corners();
+    for (auto& p: c) p = mapPoint(p);
+    b.setCorners(c);
+  }
+
+  // boundary vertices may have been moved
+  for (auto p: allPatches_)
+    p.second->mapPoints(mapPoint);
+
+  for (auto& pf: projectedFaces_)
+  {
+    PointList f = pf.face();
+    for (auto& p: f) p = mapPoint(p);
+    pf = ProjectedFace(f, pf.geometryLabel());
+  }
+
+  std::map<Point,std::string> newProjectedVertices;
+  for (const auto& pv: projectedVertices_)
+    newProjectedVertices[mapPoint(pv.first)] = pv.second;
+  projectedVertices_.swap(newProjectedVertices);
+
+  auto splinePoints = [&](const BlockingModel::EdgeData& ed)
+  {
+    PointList pts;
+    pts.push_back(model.vertices[ed.v0].toArma());
+    for (const auto& ip: ed.intermediate)
+      pts.push_back(ip.toArma());
+    pts.push_back(model.vertices[ed.v1].toArma());
+    return pts;
+  };
+
+  std::map<int, const BlockingModel::EdgeData*> modelEdgeOfOriginal;
+  for (const auto& ed: model.edges)
+  {
+    if (ed.originalIndex>=0) modelEdgeOfOriginal[ed.originalIndex]=&ed;
+  }
+
+  boost::ptr_vector<Edge> newEdges;
+  for (size_t ei=0; ei<allEdges_.size(); ++ei)
+  {
+    auto me = modelEdgeOfOriginal.find(int(ei));
+    if ( me!=modelEdgeOfOriginal.end()
+         && me->second->kind==BlockingModel::EdgeData::Spline )
+    {
+      const auto& ed = *me->second;
+      if (ed.splineKeyword.empty() && ed.geometryLabel.empty())
+        newEdges.push_back(new SplineEdge(splinePoints(ed)));
+      else
+        newEdges.push_back(new SplineEdge(splinePoints(ed), ed.splineKeyword, ed.geometryLabel));
+    }
+    else
+    {
+      newEdges.push_back(allEdges_[ei].clone());
+    }
+  }
+  for (const auto& ed: model.edges)
+  {
+    if (ed.generated)
+      newEdges.push_back(new SplineEdge(splinePoints(ed)));
+  }
+  allEdges_.swap(newEdges);
+
+  allPoints_.clear();
+  for (const auto& b: allBlocks_) b.registerPoints(*this);
+  for (const auto& e: allEdges_) e.registerPoints(*this);
+}
+
 void blockMeshBlocking::setDefaultPatch(const std::string& name, std::string type)
 {
   defaultPatchName_=name;
@@ -103,6 +298,11 @@ void blockMeshBlocking::addGeometry(const Geometry& geo)
 const std::vector<Geometry>& blockMeshBlocking::allGeometry() const
 {
     return geometries_;
+}
+
+void blockMeshBlocking::setSurfaceProjection(const std::string& geometryLabel, const SurfaceProjection& proj)
+{
+    surfaceProjections_[geometryLabel]=proj;
 }
 
 void blockMeshBlocking::addProjectedVertex(const Point& pf, const std::string& geometryLabel)
@@ -236,6 +436,32 @@ OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) co
   return dictionaries.lookupDict(bmdLoc);
 }
 
+namespace {
+
+// multiply all coordinate triples (lists of three doubles) by f
+void scaleCoordinateTriples(OFDictData::data& d, double f)
+{
+    if (auto *l = boost::get<OFDictData::list>(&d))
+    {
+        bool isTriple = (l->size()==3);
+        for (const auto& e: *l)
+            isTriple = isTriple && (boost::get<double>(&e)!=nullptr);
+
+        if (isTriple)
+        {
+            for (auto& e: *l)
+                boost::get<double>(e) *= f;
+        }
+        else
+        {
+            for (auto& e: *l)
+                scaleCoordinateTriples(e, f);
+        }
+    }
+}
+
+}
+
 void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 {
     PointMap pts(allPoints_);
@@ -243,7 +469,8 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
 
     OFDictData::dict& blockMeshDict=getBlockMeshDict(dictionaries);
 
-    blockMeshDict["convertToMeters"]=scaleFactor_;
+    const double os = outputScale_;
+    blockMeshDict["convertToMeters"]=scaleFactor_*os;
 
     OFDictData::dict def;
     def["name"]=OFDictData::data(defaultPatchName_);
@@ -256,7 +483,7 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
     {
         auto p = i->first;
         OFDictData::list cl;
-        cl += p[0], p[1], p[2];
+        cl += p[0]/os, p[1]/os, p[2]/os;
 
         auto pv = projectedVertices_.find(p);
         if (pv==projectedVertices_.end())
@@ -295,6 +522,11 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
              blockCorners.find(e.c1())!=blockCorners.end() )
         {
             std::vector<OFDictData::data> l = e.bmdEntry(pts, OFversion());
+            if (os!=1.)
+            {
+                for (auto& d: l)
+                    scaleCoordinateTriples(d, 1./os);
+            }
             el.insert( el.end(), l.begin(), l.end() );
         }
     }
@@ -323,6 +555,8 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
             OFDictData::dict d;
             d["type"]="triSurfaceMesh";
             d["file"]="\""+geo.fileName().string()+"\"";
+            if (os!=1.)
+                d["scale"]=1./os; // surfaces in unscaled coordinates
             gd[geo]=d;
         }
         blockMeshDict["geometry"]=gd;

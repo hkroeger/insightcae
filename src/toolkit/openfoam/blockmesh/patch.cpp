@@ -63,6 +63,13 @@ Patch* Patch::transformed(const arma::mat& tm, bool inv, const arma::mat trans) 
   return np.release();
 }
 
+void Patch::mapPoints(const std::function<Point(const Point&)>& f)
+{
+  for (auto& fc: faces_)
+    for (auto& p: fc)
+      p=f(p);
+}
+
 Patch* Patch::clone() const
 {
   std::unique_ptr<Patch> p(new Patch(typ_));

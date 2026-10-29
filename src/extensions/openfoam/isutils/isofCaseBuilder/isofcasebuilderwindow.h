@@ -81,8 +81,8 @@ private:
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
 
     //IQCADItemModel cadmodel_;
-    IQVTKParameterSetDisplay* display_;
-    QLabel* overlayText_;
+    IQVTKParameterSetDisplay* display_ = nullptr;
+    QLabel* overlayText_ = nullptr;
 
     insight::MultiCADParameterSetVisualizer::SubVisualizerList multiVizSources_;
     QPointer<insight::IQParameterSetVisualizationScheduler> vizScheduler_;
@@ -116,6 +116,7 @@ protected:
 
     bool CADisCollapsed() const;
     void expandOrCollapseCADIfNeeded();
+    void updateOverlayGeometry();
 
     bool checkIfSaveNeeded();
     bool checkIfCaseIsEmpty();
@@ -142,6 +143,7 @@ public:
 
     void closeEvent(QCloseEvent *event) override;
     void resizeEvent(QResizeEvent *e) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
     void readSettings();
 
 

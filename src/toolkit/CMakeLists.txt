@@ -215,6 +215,8 @@ add_library(toolkit SHARED
     openfoam/blockmesh/arcedge.cpp openfoam/blockmesh/arcedge.h
     openfoam/blockmesh/block2d.cpp openfoam/blockmesh/block2d.h
     openfoam/blockmesh/block.cpp openfoam/blockmesh/block.h
+    openfoam/blockmesh/blockmeshprediction.cpp openfoam/blockmesh/blockmeshprediction.h
+    openfoam/blockmesh/blockmeshsmoother.cpp openfoam/blockmesh/blockmeshsmoother.h
     openfoam/blockmesh/circularedge_center.cpp openfoam/blockmesh/circularedge_center.h
     openfoam/blockmesh/circularedge.cpp openfoam/blockmesh/circularedge.h
     openfoam/blockmesh/discretecurve.cpp openfoam/blockmesh/discretecurve.h

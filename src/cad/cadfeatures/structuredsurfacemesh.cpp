@@ -99,7 +99,13 @@ void StructuredSurfaceMesh::build()
 
         for (size_t k=0; k<p.pts.size(); ++k)
         {
-            tri->ChangeNode(k+1) = p.pts[k].Transformed(trsf_);
+            tri->
+#if OCC_VERSION_MAJOR<7
+                ChangeNodes().ChangeValue(k+1)
+#else
+                ChangeNode (k+1)
+#endif
+                = p.pts[k].Transformed(trsf_);
         }
 
         auto node = [&](int i, int j) { return j*(p.nu+1)+i+1; };
@@ -108,10 +114,25 @@ void StructuredSurfaceMesh::build()
         {
             for (int i=0; i<p.nu; ++i)
             {
-                tri->ChangeTriangle(l++) =
+
+                tri->
+#if OCC_VERSION_MAJOR<7
+                    ChangeTriangles().ChangeValue(l++)
+#else
+                    ChangeTriangle (l++)
+#endif
+                    =
                     Poly_Triangle( node(i,j), node(i+1,j), node(i+1,j+1) );
-                tri->ChangeTriangle(l++) =
+
+                tri->
+#if OCC_VERSION_MAJOR<7
+                    ChangeTriangles().ChangeValue(l++)
+#else
+                    ChangeTriangle (l++)
+#endif
+                    =
                     Poly_Triangle( node(i,j), node(i+1,j+1), node(i,j+1) );
+
             }
         }
 

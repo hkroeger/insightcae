@@ -79,6 +79,14 @@ const PointList &Block::corners() const
     return corners_;
 }
 
+void Block::setCorners(const PointList& corners)
+{
+    insight::assertion(
+        corners.size()==corners_.size(),
+        "invalid number of block corners");
+    corners_=corners;
+}
+
 
 
 

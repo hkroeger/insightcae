@@ -15,6 +15,11 @@
 #include "vtkOBJReader.h"
 #include "vtkPolyDataReader.h"
 #include "vtkCellLocator.h"
+#include "vtkIntArray.h"
+#include "vtkDoubleArray.h"
+#include "vtkCellData.h"
+#include "vtkCellArray.h"
+#include "vtkPoints.h"
 
 #include "base/exception.h"
 #include "base/spatialtransformation.h"
@@ -1018,6 +1023,72 @@ void addBlockingToVisualizer(
     insight::DatasetRepresentation repr )
 {
     blockMeshVisualization(bm).addToVisualizer(vz, prefix, s_or_t, repr);
+}
+
+
+
+
+
+vtkSmartPointer<vtkPolyData> createNonOrthogonalFacesDataset(
+    const bmd::MeshPredictor& mp,
+    double thresholdDeg )
+{
+    auto pts = vtkSmartPointer<vtkPoints>::New();
+    auto polys = vtkSmartPointer<vtkCellArray>::New();
+
+    auto nonOrtho = vtkSmartPointer<vtkDoubleArray>::New();
+    nonOrtho->SetName("nonOrthogonality");
+    auto blk = vtkSmartPointer<vtkIntArray>::New();
+    blk->SetName("block");
+
+    mp.forEachFace(
+        {},
+        [&](const std::array<bmd::V3,4>& fp, double theta, int block)
+        {
+            if (theta<thresholdDeg) return;
+
+            vtkIdType ids[4];
+            for (int k=0; k<4; ++k)
+                ids[k]=pts->InsertNextPoint(fp[k](0), fp[k](1), fp[k](2));
+            polys->InsertNextCell(4, ids);
+            nonOrtho->InsertNextValue(theta);
+            blk->InsertNextValue(block);
+        } );
+
+    auto pd = vtkSmartPointer<vtkPolyData>::New();
+    pd->SetPoints(pts);
+    pd->SetPolys(polys);
+    pd->GetCellData()->AddArray(nonOrtho); // first array: used for coloring
+    pd->GetCellData()->AddArray(blk);
+    pd->GetCellData()->SetActiveScalars("nonOrthogonality");
+    return pd;
+}
+
+
+
+
+bmd::NonOrthogonalityStatistics addBlockingQualityToVisualizer(
+    CADParameterSetModelVisualizer& vz,
+    const bmd::blockMeshBlocking& bm,
+    const std::string& prefix,
+    int maxCells,
+    double thresholdDeg )
+{
+    bmd::MeshPredictor mp(bm, maxCells);
+    auto stats = mp.statistics();
+
+    std::cout<<stats.summary()<<std::endl;
+
+    vz.addDataset(
+        prefix+"/quality/nonOrthogonalFaces",
+        createNonOrthogonalFacesDataset(mp, thresholdDeg) );
+
+    if (stats.maxDeg>70. || stats.nInvalidCells>0)
+    {
+        insight::Warning(stats.summary());
+    }
+
+    return stats;
 }
 
 

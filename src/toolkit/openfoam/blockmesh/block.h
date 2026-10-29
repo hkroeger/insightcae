@@ -75,6 +75,11 @@ public:
 
   const PointList& corners() const;
 
+  /**
+   * replace the corner coordinates (in the order of corners())
+   */
+  void setCorners(const PointList& corners);
+
 };
 
 

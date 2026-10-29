@@ -32,6 +32,8 @@ public:
    * the geometry, onto which the spline is projected. Empty, if not projected.
    */
   inline const std::string& geometryLabel() const { return geometryLabel_; }
+
+  inline const std::string& splineKeyword() const { return splinekeyword_; }
 };
 
 } // namespace bmd

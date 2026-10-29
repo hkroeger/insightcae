@@ -78,7 +78,7 @@ Edge* SplineEdge::transformed(const arma::mat& tm, const arma::mat trans) const
     pl+=tm*p+trans;
   }
   pl+=tm*c1_+trans;
-  return new SplineEdge(pl, splinekeyword_);
+  return new SplineEdge(pl, splinekeyword_, geometryLabel_);
 }
 
 Edge* SplineEdge::clone() const
@@ -87,7 +87,7 @@ Edge* SplineEdge::clone() const
   pts.push_back(c0_);
   copy(intermediatepoints_.begin(), intermediatepoints_.end(), std::back_inserter(pts));
   pts.push_back(c1_);
-  return new SplineEdge(pts, splinekeyword_);
+  return new SplineEdge(pts, splinekeyword_, geometryLabel_);
 }
 
 

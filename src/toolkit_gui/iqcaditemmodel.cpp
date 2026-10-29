@@ -1,4 +1,6 @@
 #include "iqcaditemmodel.h"
+#include "vtkCellData.h"
+#include "vtkPointData.h"
 #include "base/exception.h"
 #include "iqcadmodel3dviewer.h"
 #include "datum.h"
@@ -1063,6 +1065,11 @@ void IQCADItemModel::addDataset(const std::string &name, vtkSmartPointer<vtkData
             {
                 if (ds->GetNumberOfCells()==0 && ds->GetNumberOfPoints()>0)
                     pn.representation=insight::Points;
+
+                // color by cell data, if there is no point data
+                if (ds->GetPointData()->GetNumberOfArrays()==0
+                    && ds->GetCellData()->GetNumberOfArrays()>0)
+                    pn.fieldSupport=insight::OnCell;
             }
         }
         );

@@ -10,6 +10,10 @@
 #include "base/parameters/spatialtransformationparameter.h"
 #include "openfoam/blockmesh.h"
 #include "cadfeatures/structuredsurfacemesh.h"
+#include "openfoam/blockmesh/blockmeshprediction.h"
+
+#include "vtkSmartPointer.h"
+#include "vtkPolyData.h"
 
 namespace insight {
 
@@ -229,6 +233,31 @@ TOOLKIT_GUI_EXPORT void addBlockingToVisualizer(
     const std::string& prefix,
     const blockMeshVisualization::ScaleOrTransform& s_or_t = 1.0,
     insight::DatasetRepresentation repr = insight::Surface );
+
+
+/**
+ * @brief createNonOrthogonalFacesDataset
+ * polydata of all internal faces of the predicted mesh with a non-orthogonality
+ * above the threshold, with cell data "nonOrthogonality" [deg] and "block"
+ */
+TOOLKIT_GUI_EXPORT vtkSmartPointer<vtkPolyData> createNonOrthogonalFacesDataset(
+    const bmd::MeshPredictor& mp,
+    double thresholdDeg );
+
+
+/**
+ * @brief addBlockingQualityToVisualizer
+ * predict the mesh of the blocking (with reduced resolution), evaluate the
+ * non-orthogonality and add the faces above the threshold as dataset
+ * "<prefix>/quality/nonOrthogonalFaces" to the visualizer.
+ * @return statistics of the predicted mesh
+ */
+TOOLKIT_GUI_EXPORT bmd::NonOrthogonalityStatistics addBlockingQualityToVisualizer(
+    CADParameterSetModelVisualizer& vz,
+    const bmd::blockMeshBlocking& bm,
+    const std::string& prefix,
+    int maxCells = 100000,
+    double thresholdDeg = 30. );
 
 
 }

@@ -7,81 +7,98 @@
 #include "base/analysis.h"
 #include "base/translations.h"
 
-#include <QProxyStyle>
-#include <QStyledItemDelegate>
-#include <QPainter>
+#include <QScrollArea>
+#include <QToolButton>
+#include <QVBoxLayout>
 #include <QFontMetrics>
+#include <QSignalBlocker>
+#include <QResizeEvent>
+#include <QTextLayout>
+
+#include <cmath>
+#include <map>
+#include <algorithm>
 
 
 
 
-// enlargement factor for the tree of available analyses
-const double treeScale = 1.5;
+// enlargement factor for the gallery of available analyses
+const double galleryScale = 1.5;
 
 
 
 
-// draws large triangular expand/collapse handles
-class LargeBranchIndicatorStyle
-    : public QProxyStyle
+// breaks a label into at most maxLines lines of given width, elides the last one
+static QString wrapLabel(const QString& text, const QFont& font, int width, int maxLines)
 {
-public:
-    void drawPrimitive(
-        PrimitiveElement element,
-        const QStyleOption *option,
-        QPainter *painter,
-        const QWidget *widget = nullptr ) const override
+    QFontMetrics fm(font);
+    QTextLayout layout(text, font);
+    QTextOption opt;
+    opt.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    layout.setTextOption(opt);
+
+    QStringList lines;
+    layout.beginLayout();
+    for (QTextLine line=layout.createLine(); line.isValid(); line=layout.createLine())
     {
-        if ( element==PE_IndicatorBranch && (option->state & State_Children) )
+        line.setLineWidth(width);
+        if (lines.size()==maxLines-1)
         {
-            const QRect& r = option->rect;
-            int fh = widget ? QFontMetrics(widget->font()).height() : r.height();
-            double s = std::min( 0.5*std::min(r.width(), r.height()), double(fh) );
-            QPointF c = QRectF(r).center();
-
-            QPolygonF tri;
-            if (option->state & State_Open)
-            {
-                tri << c+QPointF(-0.5*s, -0.25*s)
-                    << c+QPointF( 0.5*s, -0.25*s)
-                    << c+QPointF( 0.,     0.25*s);
-            }
-            else
-            {
-                tri << c+QPointF(-0.25*s, -0.5*s)
-                    << c+QPointF(-0.25*s,  0.5*s)
-                    << c+QPointF( 0.25*s,  0.);
-            }
-
-            painter->save();
-            painter->setRenderHint(QPainter::Antialiasing);
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(option->palette.color(QPalette::Text));
-            painter->drawPolygon(tri);
-            painter->restore();
-            return;
+            lines << fm.elidedText(text.mid(line.textStart()), Qt::ElideRight, width);
+            break;
         }
-        QProxyStyle::drawPrimitive(element, option, painter, widget);
+        lines << text.mid(line.textStart(), line.textLength()).trimmed();
     }
-};
+    layout.endLayout();
+    return lines.join('\n');
+}
 
 
 
 
-// adds vertical spacing around each tree item
-class PaddedItemDelegate
-    : public QStyledItemDelegate
+// icon gallery which adapts its height to show all items without scrolling
+class AnalysisGalleryList
+    : public QListWidget
 {
-public:
-    using QStyledItemDelegate::QStyledItemDelegate;
-
-    QSize sizeHint(
-        const QStyleOptionViewItem &option,
-        const QModelIndex &index ) const override
+    void updateHeight()
     {
-        QSize sz = QStyledItemDelegate::sizeHint(option, index);
-        sz.rheight() += QFontMetrics(option.font).height();
-        return sz;
+        QSize g = gridSize();
+        int perRow = std::max( 1, viewport()->width() / std::max(1, g.width()) );
+        int rows = std::max( 1, int(std::ceil( double(count()) / double(perRow) )) );
+        int h = rows*g.height() + 2*frameWidth() + 4;
+        if (h!=height())
+            setFixedHeight(h);
+    }
+
+public:
+    AnalysisGalleryList(QWidget* parent = nullptr)
+        : QListWidget(parent)
+    {
+        setViewMode(QListView::IconMode);
+        setFlow(QListView::LeftToRight);
+        setWrapping(true);
+        setResizeMode(QListView::Adjust);
+        setMovement(QListView::Static);
+        setDragEnabled(false);
+        setWordWrap(true);
+        setSpacing(0);
+        setFrameShape(QFrame::NoFrame);
+        setSelectionMode(QAbstractItemView::SingleSelection);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    }
+
+    QSize sizeHint() const override
+    {
+        return QSize( gridSize().width(), height() );
+    }
+
+protected:
+    void resizeEvent(QResizeEvent* e) override
+    {
+        QListWidget::resizeEvent(e);
+        updateHeight();
     }
 };
 
@@ -97,7 +114,7 @@ NewAnalysisForm::NewAnalysisForm(QWidget *parent)
     ui->openBtn->setText(_("&Open..."));
     ui->createBtn->setText(_("&Create selected..."));
 
-    fillAnalysisList(ui->treeWidget);
+    fillAnalysisGallery();
 }
 
 
@@ -120,61 +137,37 @@ void NewAnalysisForm::replaceLoadButton(QPushButton *b)
 
 
 
-class HierarchyLevel
-    : public std::map<std::string, HierarchyLevel>
+QListWidgetItem* NewAnalysisForm::selectedItem() const
 {
-public:
-    QTreeWidgetItem* parent_;
-
-    HierarchyLevel(QTreeWidgetItem* parent)
-        : parent_(parent)
-    {}
-
-    iterator addHierarchyLevel(const std::string& entry)
+    for (auto* g: galleries_)
     {
-        QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
-        { QFont f=parent_->treeWidget()->font(); f.setBold(true); f.setPointSizeF(f.pointSizeF()+5*treeScale); newnode->setFont(0, f); }
-        std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
-        return ret.first;
+        auto si=g->selectedItems();
+        if (!si.isEmpty())
+            return si.first();
     }
-
-    HierarchyLevel& sublevel(const std::string& entry)
-    {
-        iterator it = find(entry);
-        if (it == end())
-        {
-            it=addHierarchyLevel(entry);
-        }
-        return it->second;
-    }
-};
+    return nullptr;
+}
 
 
 
 
-void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
+void NewAnalysisForm::fillAnalysisGallery()
 {
-    { QFont f=treeWidget->font(); f.setPointSizeF(f.pointSizeF()*treeScale); treeWidget->setFont(f); }
+    auto *contents = ui->galleryContents;
+    { QFont f=contents->font(); f.setPointSizeF(f.pointSizeF()*galleryScale); contents->setFont(f); }
 
-    auto *bs = new LargeBranchIndicatorStyle;
-    bs->setParent(treeWidget); // setStyle does not take ownership
-    treeWidget->setStyle(bs);
-    treeWidget->setItemDelegate(new PaddedItemDelegate(treeWidget));
+    auto *vl = new QVBoxLayout(contents);
 
-    treeWidget->setColumnCount(2);
-    treeWidget->setIconSize(QSize(80,80));
-    treeWidget->setWordWrap(true);
-    treeWidget->setIndentation(int(1.5*QFontMetrics(treeWidget->font()).height()));
-    QStringList hdr;
-    hdr << _("Analysis") << _("Description") ;
-    treeWidget->setHeaderLabels(hdr);
+    const QSize iconSize(80,80);
+    QFontMetrics fm(contents->font());
+    const QSize grid(
+        std::max( iconSize.width()+2*fm.height(), 14*fm.averageCharWidth() ),
+        iconSize.height() + 3*fm.lineSpacing() + fm.height()/2 );
 
-    QTreeWidgetItem *topitem =
-        new QTreeWidgetItem ( treeWidget, QStringList() << _("Available Analyses") );
-    { QFont f=treeWidget->font(); f.setBold(true); f.setPointSizeF(f.pointSizeF()+5*treeScale); topitem->setFont(0, f); }
-    HierarchyLevel toplevel ( topitem );
-
-    HierarchyLevel::iterator i=toplevel.addHierarchyLevel(_("Uncategorized"));
+    // group analyses by category path, uncategorized ones are put last
+    typedef std::vector<std::pair<int, QListWidgetItem*> > SectionItems;
+    std::map<QString, SectionItems> categorized;
+    SectionItems uncategorized;
 
     auto analyses = insight::Analysis::analyses().ToC();
 
@@ -186,10 +179,10 @@ void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
                                insight::Analysis::categories()( analysisType ) )
                 .split ( "/", Qt::SkipEmptyParts );
 
-        HierarchyLevel* parent = &toplevel;
-        for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
+        int order = insight::Analysis::defaultGalleryOrder;
+        if (insight::Analysis::galleryOrders().count(analysisType))
         {
-            parent = & ( parent->sublevel ( pit->toStdString() ) );
+            order = insight::Analysis::galleryOrders()(analysisType);
         }
 
         QString desc;
@@ -211,40 +204,118 @@ void NewAnalysisForm::fillAnalysisList(QTreeWidget* treeWidget)
                 desc=QString::fromStdString(d.description);
             }
         }
-        QTreeWidgetItem* item = new QTreeWidgetItem (
-            parent->parent_,
-            QStringList()
-                << analysisType.c_str()
-                << desc
-            );
-        { QFont f=treeWidget->font(); f.setItalic(true); f.setPointSizeF(f.pointSizeF()+1*treeScale); item->setFont(0, f); }
-        item->setIcon(0,icon);
-        item->setTextAlignment(0, Qt::AlignTop);
+
+        // allow line breaks at CamelCase boundaries (zero-width spaces)
+        QString label = QString::fromStdString(analysisType);
+        for (int k=label.size()-1; k>0; --k)
+        {
+            if (label[k].isUpper() && label[k-1].isLower())
+                label.insert(k, QChar(0x200B));
+        }
+
+        auto *item = new QListWidgetItem(
+            icon, wrapLabel(label, contents->font(), grid.width()-fm.averageCharWidth(), 3) );
+        item->setData(Qt::UserRole, QString::fromStdString(analysisType));
+        item->setToolTip(
+            QString("<b>%1</b>").arg(QString::fromStdString(analysisType).toHtmlEscaped())
+            + (desc.isEmpty() ? QString() : "<br>"+desc) );
+        item->setTextAlignment(Qt::AlignHCenter|Qt::AlignTop);
+
+        if (path.isEmpty())
+            uncategorized.push_back({order, item});
+        else
+            categorized[path.join(QString::fromUtf8(" \u203A "))].push_back({order, item});
     }
 
-    //treeWidget->expandItem(topitem);
-    treeWidget->expandAll();
-    treeWidget->resizeColumnToContents(0);
+    // within a section: ascending gallery order, then by name
+    auto sortItems = [](SectionItems& items)
+    {
+        std::stable_sort(
+            items.begin(), items.end(),
+            [](const SectionItems::value_type& a, const SectionItems::value_type& b)
+            { return a.first < b.first; } );
+    };
 
-    connect(
-        treeWidget, &QTreeWidget::itemActivated, treeWidget,
-        [this](QTreeWidgetItem *item, int column) {
-            if (item->childCount()==0) // don't accept headers
-                Q_EMIT createAnalysis(item->text(0).toStdString());
-        });
+    auto addSection = [&](const QString& title, SectionItems items)
+    {
+        sortItems(items);
+
+        auto *header = new QToolButton;
+        header->setCheckable(true);
+        header->setChecked(true);
+        header->setAutoRaise(true);
+        header->setStyleSheet("QToolButton { border: none; }");
+        header->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        { QFont f=contents->font(); f.setBold(true); f.setPointSizeF(f.pointSizeF()+2*galleryScale); header->setFont(f); }
+        auto setHeaderText = [header,title](bool expanded) {
+            header->setText( QString::fromUtf8(expanded ? "\u25BE " : "\u25B8 ") + title );
+        };
+        setHeaderText(true);
+        vl->addWidget(header);
+
+        auto *gallery = new AnalysisGalleryList;
+        gallery->setIconSize(iconSize);
+        gallery->setGridSize(grid);
+        for (auto &item: items)
+            gallery->addItem(item.second);
+        vl->addWidget(gallery);
+        galleries_.push_back(gallery);
+
+        connect(header, &QToolButton::toggled, gallery,
+                [setHeaderText,gallery](bool expanded) {
+                    setHeaderText(expanded);
+                    gallery->setVisible(expanded);
+                });
+
+        // only one selected analysis across all groups
+        connect(gallery, &QListWidget::itemSelectionChanged, gallery,
+                [this,gallery]() {
+                    if (gallery->selectedItems().isEmpty()) return;
+                    for (auto* g: galleries_)
+                    {
+                        if (g!=gallery)
+                        {
+                            QSignalBlocker sb(g);
+                            g->clearSelection();
+                            g->viewport()->update();
+                        }
+                    }
+                });
+
+        connect(gallery, &QListWidget::itemActivated, gallery,
+                [this](QListWidgetItem *item) {
+                    Q_EMIT createAnalysis(item->data(Qt::UserRole).toString().toStdString());
+                });
+    };
+
+    // sections: ascending lowest gallery order of their analyses, then by path
+    std::vector<std::pair<int, QString> > sections;
+    for (const auto& c: categorized)
+    {
+        int minOrder = std::min_element(
+            c.second.begin(), c.second.end(),
+            [](const SectionItems::value_type& a, const SectionItems::value_type& b)
+            { return a.first < b.first; } )->first;
+        sections.push_back({minOrder, c.first});
+    }
+    std::sort(sections.begin(), sections.end());
+
+    for (const auto& sec: sections)
+        addSection(sec.second, categorized[sec.second]);
+    if (!uncategorized.empty())
+        addSection(_("Uncategorized"), uncategorized);
+
+    vl->addStretch();
 
     connect(
         ui->openBtn, &QPushButton::clicked,
         this, &NewAnalysisForm::openAnalysis);
 
     connect(
-        ui->createBtn, &QPushButton::clicked, treeWidget,
-        [this,treeWidget]() {
-            if (auto si=treeWidget->currentItem())
-            {
-                if (si->childCount()==0) // don't accept headers
-                    Q_EMIT createAnalysis(si->text(0).toStdString());
-            }
+        ui->createBtn, &QPushButton::clicked, this,
+        [this]() {
+            if (auto si=selectedItem())
+                Q_EMIT createAnalysis(si->data(Qt::UserRole).toString().toStdString());
         });
 
 }

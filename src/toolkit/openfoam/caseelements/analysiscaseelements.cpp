@@ -1384,7 +1384,7 @@ double CorrelationFunctionModel::lengthScale() const
 
 // addToAnalysisFactoryTable(ComputeLengthScale);
 defineType(ComputeLengthScale);
-Analysis::Add<ComputeLengthScale> addComputeLengthScale;
+// Analysis::Add<ComputeLengthScale> addComputeLengthScale;
 
 ComputeLengthScale::ComputeLengthScale(
     const std::shared_ptr<supplementedInputDataBase>& sp  )

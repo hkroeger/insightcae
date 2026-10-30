@@ -62,15 +62,6 @@ msgstr "&Open..."
 msgid "&Create selected..."
 msgstr "&Create selected..."
 
-msgid "Analysis"
-msgstr "Analysis"
-
-msgid "Description"
-msgstr ""
-
-msgid "Available Analyses"
-msgstr "Available Analyses"
-
 msgid "Uncategorized"
 msgstr "Uncategorized"
 

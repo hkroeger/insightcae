@@ -153,6 +153,6 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer& /*display
 }
 
 defineType(HomogeneousAveragedProfile);
-Analysis::Add<HomogeneousAveragedProfile> addHomogeneousAveragedProfile;
+// Analysis::Add<HomogeneousAveragedProfile> addHomogeneousAveragedProfile;
 
 }

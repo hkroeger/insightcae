@@ -69,6 +69,7 @@ public:
     double calcT() const;    
 
     static std::string category() { return "Validation Cases/Inflow Generator"; }
+    static int galleryOrder() { return 900; } // validation cases at the end of the gallery, before the dummies
     
     virtual void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
     virtual void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);

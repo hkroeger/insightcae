@@ -63,15 +63,6 @@ msgstr "Ö&ffnen..."
 msgid "&Create selected..."
 msgstr "Ausgewählte e&rzeugen..."
 
-msgid "Analysis"
-msgstr "Analyse"
-
-msgid "Description"
-msgstr "Beschreibung"
-
-msgid "Available Analyses"
-msgstr "Verfügbare Analysen"
-
 msgid "Uncategorized"
 msgstr "Unkategorisiert"
 

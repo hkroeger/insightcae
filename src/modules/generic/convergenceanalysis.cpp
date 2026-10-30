@@ -37,7 +37,7 @@ namespace insight
 
 
 defineType(ConvergenceAnalysis);
-Analysis::Add<ConvergenceAnalysis> addConvergenceAnalysis;
+// Analysis::Add<ConvergenceAnalysis> addConvergenceAnalysis;
 
 
 ConvergenceAnalysis::ConvergenceAnalysis(

@@ -66,6 +66,10 @@ defineStaticFunctionTable2(
     Analysis, CategoryFunctions, categories );
 
 defineStaticFunctionTable2(
+    "gallery orders",
+    Analysis, GalleryOrderFunctions, galleryOrders );
+
+defineStaticFunctionTable2(
     "supported operating systems",
     Analysis, CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions );
 
@@ -95,6 +99,14 @@ void Analysis::resetParameters(
 std::string Analysis::category()
 {
     return "Uncategorized";
+}
+
+
+
+
+int Analysis::galleryOrder()
+{
+    return defaultGalleryOrder;
 }
 
 

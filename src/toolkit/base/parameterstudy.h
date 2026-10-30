@@ -110,6 +110,11 @@ public:
       return BaseAnalysis::category();
   }
 
+  static int galleryOrder()
+  {
+      return BaseAnalysis::galleryOrder();
+  }
+
   static AnalysisDescription description()
   {
       auto basedesc=BaseAnalysis::description();

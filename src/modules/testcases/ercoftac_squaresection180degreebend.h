@@ -42,6 +42,7 @@ public:
     ERCOFTAC_SquareSection180DegreeBend(const ParameterSet& ps, const boost::filesystem::path& exepath);
     static insight::ParameterSet defaultParameters();
     static std::string category() { return "Validation Cases"; }
+    static int galleryOrder() { return 900; } // validation cases at the end of the gallery, before the dummies
     virtual void calcDerivedInputData(ProgressDisplayer& progress);
     virtual void createMesh(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);
     virtual void createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& progress);

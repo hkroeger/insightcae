@@ -89,6 +89,10 @@ public:
         std::string );
 
     declareStaticFunctionTable2(
+        GalleryOrderFunctions, galleryOrders,
+        int );
+
+    declareStaticFunctionTable2(
         CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions,
         OperatingSystemSet );
 
@@ -139,6 +143,12 @@ public:
 
             addToStaticFunctionTable2(
                 Analysis,
+                GalleryOrderFunctions, galleryOrders,
+                AnalysisInstance,
+                &AnalysisInstance::galleryOrder );
+
+            addToStaticFunctionTable2(
+                Analysis,
                 CompatibleOperatingSystemFunctions, compatibleOperatingSystemFunctions,
                 AnalysisInstance, &AnalysisInstance::compatibleOperatingSystems );
 
@@ -175,6 +185,15 @@ protected:
 public:
     
     static std::string category();
+
+    /**
+     * @brief galleryOrder
+     * position of the analysis in the selection gallery:
+     * low values are placed on top, high values at the bottom.
+     * The default is defaultGalleryOrder.
+     */
+    static const int defaultGalleryOrder = 500;
+    static int galleryOrder();
     static OperatingSystemSet compatibleOperatingSystems();
 
     static ParameterSet_ValidatorPtr validator();

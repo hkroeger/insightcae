@@ -77,6 +77,7 @@ public:
     ResultSetPtr operator()(ProgressDisplayer& displayer=consoleProgressDisplayer) override;    
 
     static std::string category() { return "Generic Analyses"; }
+    static int galleryOrder() { return 100; } // generic analyses on top of the gallery
     static AnalysisDescription description() { return {"FileTemplate", "File template based analysis"}; }
 };
 }

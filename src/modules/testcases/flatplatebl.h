@@ -185,6 +185,7 @@ public:
           const std::shared_ptr<supplementedInputDataBase>& sp );
 
   static std::string category() { return "Validation Cases"; }
+  static int galleryOrder() { return 900; } // validation cases at the end of the gallery, before the dummies
   static AnalysisDescription description() { return {"Flat Plate Boundary Layer Test Case",
                                              "Flat Plate with Evolving Boundary Layer"}; }
   

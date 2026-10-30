@@ -103,15 +103,37 @@ public:
 
     /**
      * Optimize the blocking for minimal non-orthogonality of the cells, which blockMesh will create:
-     * moves interior block vertices and support points of interior spline edges.
+     * moves interior block vertices and bends the attached spline edges (rotation of their end tangents).
      * Interior straight edges and arcs are replaced by splines.
      * Boundary, projected vertices and edges stay unchanged, unless sliding along the boundaries is enabled
      * (see SmoothingParameters::slideOnBoundaries).
+     * @param result
+     * optional: receives the modification relative to the unmodified blocking
+     * (for re-applying it with applyModification). Empty, if the original blocking is kept.
+     * @param initial
+     * optional: start from this modification (warm start)
      * @return quality statistics of the predicted mesh after optimization
      */
     NonOrthogonalityStatistics smooth(
         const SmoothingParameters& par = SmoothingParameters(),
-        ActionProgress* progress = nullptr );
+        ActionProgress* progress = nullptr,
+        BlockingModification* result = nullptr,
+        const BlockingModification* initial = nullptr );
+
+    /**
+     * apply a modification, which was computed by smooth() for this blocking
+     * or a topologically identical blocking.
+     * @param par
+     * the smoothing parameters, with which the modification was computed
+     * (sliding on boundaries and periodic transformations are required for the classification)
+     * @param message
+     * optional: receives a description of the outcome
+     * @return false, if not applicable (the blocking is left unmodified)
+     */
+    bool applyModification(
+        const BlockingModification& mod,
+        const SmoothingParameters& par,
+        std::string* message = nullptr );
 
     /**
      * transfer modified vertex coordinates and edges from a model back into this blocking

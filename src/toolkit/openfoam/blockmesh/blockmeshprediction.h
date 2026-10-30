@@ -167,6 +167,7 @@ struct NonOrthogonalityStatistics
     double maxDeg = 0.;
     double avgDeg = 0.;     //!< as reported by checkMesh: acos(mean of cosines)
     int nFaces = 0;
+    int nAbove65 = 0;
     int nAbove70 = 0;
     int nInvalidCells = 0;  //!< cells with negative volume or incorrectly oriented face pyramids
     int nCells = 0;
@@ -255,7 +256,7 @@ private:
      */
     void applyFaceProjections(int bi);
 
-    void init(int maxCells);
+    void init(int maxCells, int minCellsPerDir);
     void setupInterfaces();
 
     double thetaPow(double theta) const;
@@ -267,10 +268,15 @@ private:
     void computeBlockQuality(int bi);
 
 public:
-    MeshPredictor(const blockMeshBlocking& bmd, int maxCells=100000);
-    MeshPredictor(const BlockingModel& model, int maxCells=100000);
+    /**
+     * @param maxCells approx. max. number of cells: the resolution of all blocks is reduced by a common factor
+     * @param minCellsPerDir min. number of cells per block and direction (if the block has as many), even if maxCells is exceeded
+     */
+    MeshPredictor(const blockMeshBlocking& bmd, int maxCells=100000, int minCellsPerDir=1);
+    MeshPredictor(const BlockingModel& model, int maxCells=100000, int minCellsPerDir=1);
 
     inline double resolutionFactor() const { return resolutionFactor_; }
+    int nCells() const;
     inline const std::vector<BlockGrid>& grids() const { return grids_; }
 
     /**

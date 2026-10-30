@@ -92,6 +92,13 @@ protected:
     ParameterSetDisplay* display_;
     IQCADModel3DViewer* viewer_;
 
+    /**
+     * viewer passed to the GUI actions (may be null).
+     * Without an own visualizer (e.g. in the case builder, which visualizes on case level),
+     * this is the viewer of the supplied display, while viewer_ stays null.
+     */
+    IQCADModel3DViewer* actionViewer_ = nullptr;
+
     QLabel* overlayText_ = nullptr;
 
     insight::ParameterSet_ValidatorPtr vali_;

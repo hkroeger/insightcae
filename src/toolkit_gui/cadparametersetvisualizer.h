@@ -284,6 +284,11 @@ public:
       DefaultCameraStateFunctions, defaultCameraStateForOpenFOAMCaseElement);
 
 
+  /**
+   * actions, which are offered for a parameter in the parameter editor.
+   * Arguments: path of the selected parameter, parent object,
+   * the 3D viewer (may be null), the parameter set model under edit.
+   */
   typedef insight::StaticFunctionTable<
       GUIActionList,
       const std::string&,

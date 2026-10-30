@@ -105,8 +105,12 @@ void blockMeshBlocking::setOutputScale(double s)
 
 NonOrthogonalityStatistics blockMeshBlocking::smooth(
     const SmoothingParameters& par,
-    ActionProgress* progress )
+    ActionProgress* progress,
+    BlockingModification* result,
+    const BlockingModification* initial )
 {
+  if (result) *result = BlockingModification();
+
   ActionProgressPtr ownProgress;
   if (!progress)
   {
@@ -125,7 +129,7 @@ NonOrthogonalityStatistics blockMeshBlocking::smooth(
   if (par.checkMaxCells>0)
   {
     progress->message("evaluating the initial quality at check resolution");
-    MeshPredictor chk(*this, par.checkMaxCells);
+    MeshPredictor chk(*this, par.checkMaxCells, par.minCellsPerBlockDir);
     statsBefore = chk.statistics();
     fBefore = chk.objective({}, par.p, nInvalidBefore);
     progress->message("initial (check resolution): "+statsBefore.summary());
@@ -137,9 +141,9 @@ NonOrthogonalityStatistics blockMeshBlocking::smooth(
   }
 
   progress->message("predicting the mesh at optimizer resolution");
-  MeshPredictor mp(*this, par.maxCells);
+  MeshPredictor mp(*this, par.maxCells, par.minCellsPerBlockDir);
   BlockMeshSmoother smoother(mp, par);
-  auto stats = smoother.run(*progress);
+  auto stats = smoother.run(*progress, initial);
 
   // vertices must stay distinct (blockMesh identifies them by coordinates)
   {
@@ -150,20 +154,29 @@ NonOrthogonalityStatistics blockMeshBlocking::smooth(
       insight::Warning(
           "block smoothing moved %d vertices onto other vertices. The original blocking is kept.",
           int(mp.model.vertices.size()-distinct.size()) );
-      return MeshPredictor(*this, par.checkMaxCells>0 ? par.checkMaxCells : par.maxCells).statistics();
+      return MeshPredictor(
+          *this, par.checkMaxCells>0 ? par.checkMaxCells : par.maxCells,
+          par.minCellsPerBlockDir ).statistics();
     }
   }
 
   applyModel(mp.model);
+  if (result)
+  {
+    *result = smoother.extract();
+    result->summary = "optimizer resolution, after: "+stats.summary();
+  }
 
   if (par.checkMaxCells>0)
   {
     progress->message("evaluating the final quality at check resolution");
-    MeshPredictor chk(*this, par.checkMaxCells);
+    MeshPredictor chk(*this, par.checkMaxCells, par.minCellsPerBlockDir);
     auto statsAfter = chk.statistics();
     int nInvalidAfter=0;
     double fAfter = chk.objective({}, par.p, nInvalidAfter);
     progress->message("smoothed (check resolution): "+statsAfter.summary());
+    if (result) result->summary =
+        "check resolution, before: "+statsBefore.summary()+"; after: "+statsAfter.summary();
 
     if (nInvalidAfter>nInvalidBefore || fAfter>fBefore)
     {
@@ -190,12 +203,37 @@ NonOrthogonalityStatistics blockMeshBlocking::smooth(
       allPoints_.clear();
       for (const auto& b: allBlocks_) b.registerPoints(*this);
       for (const auto& e: allEdges_) e.registerPoints(*this);
+      if (result) *result = BlockingModification();
       return statsBefore;
     }
     return statsAfter;
   }
 
   return stats;
+}
+
+
+
+
+bool blockMeshBlocking::applyModification(
+    const BlockingModification& mod,
+    const SmoothingParameters& par,
+    std::string* message )
+{
+  if (mod.empty())
+  {
+    if (message) *message = "no modification stored";
+    return false;
+  }
+
+  // only the model is needed, no prediction quality
+  MeshPredictor mp(*this, 1, 1);
+  BlockMeshSmoother smoother(mp, par);
+  if (!smoother.apply(mod, message))
+    return false;
+
+  applyModel(mp.model);
+  return true;
 }
 
 

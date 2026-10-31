@@ -1741,16 +1741,16 @@ void Interpolator::initialize(const arma::mat& xy_us, bool force_linear)
         int nf=xy.n_cols-1;
         int nrows=xy.n_rows;
 
-        acc.reset( gsl_interp_accel_alloc () );
+        acc.reset( gsl_interp_accel_alloc (), &gsl_interp_accel_free );
         for (int i=0; i<nf; i++)
         {
 //             cout<<"building interpolator for col "<<i<<endl;
             if ( (xy.n_rows==2) || force_linear )
-                spline.push_back( gsl_spline_alloc (gsl_interp_linear, nrows) );
+                spline.emplace_back( gsl_spline_alloc (gsl_interp_linear, nrows), &gsl_spline_free );
             else
-                spline.push_back( gsl_spline_alloc (gsl_interp_cspline, nrows) );
+                spline.emplace_back( gsl_spline_alloc (gsl_interp_cspline, nrows), &gsl_spline_free );
             //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
-            gsl_spline_init (&spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
+            gsl_spline_init (spline[i].get(), xy.colptr(0), xy.colptr(i+1), nrows);
         }
 
         first_=xy.row(0);
@@ -1794,11 +1794,7 @@ Interpolator::Interpolator(const arma::mat& x, const arma::mat& y, bool force_li
 }
 
 Interpolator::~Interpolator()
-{
-//   for (int i=0; i<spline.size(); i++)
-//     gsl_spline_free (spline[i]);
-//   gsl_interp_accel_free (acc);
-}
+{}
 
 double Interpolator::integrate(double a, double b, int col) const
 {
@@ -1820,7 +1816,7 @@ double Interpolator::integrate(double a, double b, int col) const
 //     throw insight::Exception(str(format("End of integration interval (%g) after end of definition interval (%g)!")
 // 			    % b % last(0)));
   
-  return gsl_spline_eval_integ( &(spline[col]), a, b, &(*acc) );
+  return gsl_spline_eval_integ( spline[col].get(), a, b, &(*acc) );
 }
 
 
@@ -1853,7 +1849,7 @@ double Interpolator::y(double x, int col, OutOfBounds* outOfBounds) const
   if (x>last_(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_LARGE; return last_(col+1); }
   if (outOfBounds) *outOfBounds=IP_INBOUND;
 
-  double v=gsl_spline_eval (&(spline[col]), x, &(*acc));
+  double v=gsl_spline_eval (spline[col].get(), x, &(*acc));
   return v;
 }
 
@@ -1905,7 +1901,7 @@ double Interpolator::dydx(double x, int col, OutOfBounds* outOfBounds) const
   if (x>last_(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_LARGE; return dydx(last_(0), col); }
   if (outOfBounds) *outOfBounds=IP_INBOUND;
 
-  double v=gsl_spline_eval_deriv (&(spline[col]), x, &(*acc));
+  double v=gsl_spline_eval_deriv (spline[col].get(), x, &(*acc));
   return v;
 }
 

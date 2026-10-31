@@ -538,7 +538,7 @@ public:
 private:
   arma::mat xy_, first_, last_;
   std::shared_ptr<gsl_interp_accel> acc;
-  boost::ptr_vector<gsl_spline> spline ;
+  std::vector<std::shared_ptr<gsl_spline> > spline; // shared by copies, not modified after initialization
   
 //   Interpolator(const Interpolator&);
   void initialize(const arma::mat& xy, bool force_linear=false);

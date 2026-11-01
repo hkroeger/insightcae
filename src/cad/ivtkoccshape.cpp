@@ -1,4 +1,5 @@
 #include "ivtkoccshape.h"
+#include "occbndbox.h"
 
 #include "vtkInformation.h"
 #include "Standard_Version.hxx"
@@ -71,6 +72,8 @@ int ivtkOCCShape::RequestData(
 
   if (Representation == insight::DatasetRepresentation::Surface)
   {
+      // the faces are triangulated in place, the shape may be shared with other threads
+      std::lock_guard<std::recursive_mutex> lock(insight::cad::shapeModificationMutex());
       for (TopExp_Explorer ex(Shape,TopAbs_FACE); ex.More(); ex.Next())
       {
           auto face = TopoDS::Face(ex.Current());

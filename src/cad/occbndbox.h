@@ -24,8 +24,19 @@
 #include "base/linearalgebra.h"
 #include "occinclude.h"
 
+#include <mutex>
+
 namespace insight {
 namespace cad {
+
+/**
+ * lock for all operations, which modify OCC shapes in place
+ * (triangulation, BRepTools::Clean, tolerance changes).
+ * Shapes may be shared between threads (e.g. features restored from the feature cache
+ * share their TShapes), so these operations must not run concurrently.
+ * Also hold it, while reading triangulations, which another thread might create.
+ */
+std::recursive_mutex& shapeModificationMutex();
 
 arma::mat calcBndBox(TopoDS_Shape);
 

@@ -25,13 +25,17 @@ std::string FeatureCache::featureInfo(std::shared_ptr<const Feature> fp)
 
 std::shared_ptr<Feature> FeatureCache::lookup(size_t hash, const std::type_info& type)
 {
+  // declared before the lock: if sp becomes the last reference (another thread released
+  // the feature meanwhile), the feature is destroyed after unlocking.
+  // Its destructor calls release(), which would deadlock otherwise.
+  std::shared_ptr<Feature> sp;
   std::lock_guard<std::mutex> l(mtx_);
 
   auto i=entries_.find(hash);
   if (i==entries_.end())
     return nullptr;
 
-  auto sp=i->second.lock();
+  sp=i->second.lock();
   if (!sp)
   {
     entries_.erase(i);
@@ -63,13 +67,14 @@ void FeatureCache::release(size_t hash, const Feature* f)
 {
   if (hash==0) return;
 
+  std::shared_ptr<Feature> sp; // before the lock, see lookup()
   std::lock_guard<std::mutex> l(mtx_);
 
   auto i=entries_.find(hash);
   if (i==entries_.end())
     return;
 
-  auto sp=i->second.lock();
+  sp=i->second.lock();
   if (!sp || sp.get()==f)
   {
     entries_.erase(i);
@@ -93,6 +98,7 @@ size_t FeatureCache::size() const
 
 void FeatureCache::printSummary(std::ostream& os, bool detailed) const
 {
+  std::vector<std::shared_ptr<Feature> > keepAlive; // before the lock, see lookup()
   std::lock_guard<std::mutex> l(mtx_);
   os<<"Cache contains "<<entries_.size()<<" entities."<<std::endl;
   if (detailed)
@@ -102,6 +108,7 @@ void FeatureCache::printSummary(std::ostream& os, bool detailed) const
       os << "  " << i.first <<" \t";
       if (auto fp=i.second.lock())
       {
+        keepAlive.push_back(fp);
         os << featureInfo(fp) << "\n";
       }
       else

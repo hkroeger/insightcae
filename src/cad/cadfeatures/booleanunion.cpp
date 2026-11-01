@@ -18,6 +18,7 @@
  */
 
 #include "booleanunion.h"
+#include "occshapeutils.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -92,8 +93,8 @@ void BooleanUnion::build()
 
         copyDatums(*baseFeature(), "m1_");
         copyDatums(*m2_, "m2_");
-        BRepAlgoAPI_Fuse fuser(*baseFeature(), *m2_);
-        fuser.Build();
+        BRepAlgoAPI_Fuse fuser;
+        performBoolean(fuser, *baseFeature(), *m2_);
         if (!fuser.IsDone())
         {
             throw CADException
@@ -120,8 +121,8 @@ void BooleanUnion::build()
             }
             else
             {
-                BRepAlgoAPI_Fuse fuser(res, TopoDS::Solid(ex.Current()));
-                fuser.Build();
+                BRepAlgoAPI_Fuse fuser;
+                performBoolean(fuser, res, TopoDS::Solid(ex.Current()));
                 if (!fuser.IsDone())
                 {
                     throw CADException

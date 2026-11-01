@@ -21,6 +21,8 @@
 #include "geotest.h"
 #include "cadexception.h"
 #include "cadfeature.h"
+#include "occbndbox.h"
+#include "occshapeutils.h"
 #include "datum.h"
 #include "BRepClass_FaceClassifier.hxx"
 #include "cadfeatures/importsolidmodel.h"
@@ -139,6 +141,7 @@ bool isPartOf(const TopoDS_Face& big, const TopoDS_Face& small, double tolerance
         }
         // Testpunkte prüfen
         if (ok) {
+          std::lock_guard<std::recursive_mutex> lock(shapeModificationMutex());
           TopLoc_Location L;
           Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation (small, L);
           if (tri.IsNull()){
@@ -378,8 +381,8 @@ bool isGeometricallyIdentical(const TopoDS_Shape &s1, const TopoDS_Shape &s2)
     if (e1&&e2) return true;
     if (e1!=e2) return false;
 
-    BRepAlgoAPI_Cut cutter(s1, s2);
-    cutter.Build();
+    BRepAlgoAPI_Cut cutter;
+    performBoolean(cutter, s1, s2);
 
     if (!cutter.IsDone())
     {

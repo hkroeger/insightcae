@@ -470,6 +470,20 @@ const rapidxml::xml_node<>* CADGeometryParameter::readFromNode(
 
         triggerValueChanged();
     }
+    else if (!name.empty())
+    {
+        // compatibility: the parameter might have been a path parameter before
+        if (auto* pathChild = findNode(node, name, PathParameter::typeName_()))
+        {
+            geometry_.reset();
+            auto fc=std::make_shared<FileContainer>(
+                boost::filesystem::path(), baseDirectory_ );
+            fc->readFromNode(*pathChild);
+            value_=fc;
+            triggerValueChanged();
+            return pathChild;
+        }
+    }
     return child;
 }
 

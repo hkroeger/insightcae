@@ -14,6 +14,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <mutex>
 #ifndef WIN32
 #include <sys/mman.h>
 #endif
@@ -324,6 +325,10 @@ FileContainer::accessibleFilePath(
 
     if (unpackIfNoLocalCopy && hasFileContent())
     {
+        // the same file may be requested from several threads:
+        // none may read it, before it is completely written
+        static std::mutex unpackMutex;
+        std::lock_guard<std::mutex> lock(unpackMutex);
         if (!boost::filesystem::exists(fp))
         {
             copyTo(fp, true);

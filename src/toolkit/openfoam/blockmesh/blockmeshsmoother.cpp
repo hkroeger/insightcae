@@ -84,6 +84,9 @@ const double inadmissible = 1e30;
 // (prevents collapsing edges, which removes the bad faces from the objective)
 const double minEdgeLengthRatio = 0.25;
 
+// tolerance of the comparison of the violations of the face size limit
+const double faceSizeTol = 1e-9;
+
 }
 
 
@@ -201,7 +204,67 @@ void BlockMeshSmoother::setup()
             faceOrientation0_[bi][f] = faceOrientation(int(bi), f);
     mp_.updateAll();
 
+    setupFaceSizeChecks(mp_, faceSize_, faceSizeRef_);
+
     setupDone_ = true;
+}
+
+
+
+
+void BlockMeshSmoother::setupFaceSizeChecks(
+    const MeshPredictor& mp,
+    std::vector<std::unique_ptr<PeriodicFaceSizeCheck> >& checks,
+    std::vector<std::vector<double> >& reference ) const
+{
+    // mp has to be in the reference (unmodified) state
+    checks.clear();
+    reference.clear();
+    if (par_.minPeriodicFaceAreaRatio<=0.) return;
+
+    insight::assertion(
+        par_.periodicSurfaces.empty() || par_.periodicSurfaces.size()==par_.periodicTransforms.size(),
+        "one pair of periodic surfaces is required per periodic transformation" );
+
+    for (size_t i=0; i<par_.periodicSurfaces.size(); ++i)
+    {
+        std::unique_ptr<PeriodicFaceSizeCheck> c(new PeriodicFaceSizeCheck(
+            mp, par_.periodicSurfaces[i].first, par_.periodicSurfaces[i].second,
+            par_.periodicTransforms[i] ));
+        if (c->active())
+        {
+            reference.push_back(c->areaRatios(mp));
+            checks.push_back(std::move(c));
+        }
+    }
+}
+
+
+
+
+double BlockMeshSmoother::faceSizeViolation(bool onCheckGrid, const std::set<int>& blocks) const
+{
+    const auto& checks = onCheckGrid ? faceSizeCheck_ : faceSize_;
+    const auto& ref = onCheckGrid ? faceSizeCheckRef_ : faceSizeRef_;
+    const MeshPredictor& mp = onCheckGrid ? *check_ : mp_;
+    double v=0.;
+    for (size_t i=0; i<checks.size(); ++i)
+        if (checks[i]->involves(blocks))
+            v += checks[i]->evaluate(mp, par_.minPeriodicFaceAreaRatio, &ref[i]).violation;
+    return v;
+}
+
+
+
+
+std::string BlockMeshSmoother::periodicFaceSizeSummary() const
+{
+    std::string s;
+    for (size_t i=0; i<faceSize_.size(); ++i)
+        s += (s.empty() ? "" : "; ")
+             + faceSize_[i]->evaluate(mp_, par_.minPeriodicFaceAreaRatio, &faceSizeRef_[i])
+                   .summary(par_.minPeriodicFaceAreaRatio);
+    return s;
 }
 
 
@@ -521,6 +584,13 @@ void BlockMeshSmoother::classify()
         return int(constraints_.size()-1);
     };
 
+    // vertices and edges may slide along the surface with this label
+    auto slidingSurface = [&](const std::string& label)
+    {
+        return m.surfaceProjections.count(label)
+               && !par_.fixedSurfaces.count(label);
+    };
+
     // surface, along which the vertices and edges of a boundary face may slide (-1: none)
     auto faceConstraint = [&](int bi, int f) -> int
     {
@@ -536,7 +606,7 @@ void BlockMeshSmoother::classify()
         auto pl = m.projectedFaceLabels.find(key);
         if (pl!=m.projectedFaceLabels.end())
         {
-            if (!m.surfaceProjections.count(pl->second)) return -1;
+            if (!slidingSurface(pl->second)) return -1;
             Constraint cs;
             cs.label = pl->second;
             return addConstraint(cs);
@@ -689,7 +759,7 @@ void BlockMeshSmoother::classify()
         auto l = m.projectedVertexLabels.find(v);
         if ( par_.slideOnBoundaries
              && l!=m.projectedVertexLabels.end()
-             && m.surfaceProjections.count(l->second) )
+             && slidingSurface(l->second) )
         {
             Constraint cs;
             cs.label = l->second;
@@ -709,7 +779,7 @@ void BlockMeshSmoother::classify()
         }
         else if (!e.geometryLabel.empty())
         {
-            if (par_.slideOnBoundaries && m.surfaceProjections.count(e.geometryLabel))
+            if (par_.slideOnBoundaries && slidingSurface(e.geometryLabel))
             {
                 Constraint cs;
                 cs.label = e.geometryLabel;
@@ -982,17 +1052,18 @@ void BlockMeshSmoother::syncCheck(const std::set<int>& blocks)
 
 
 bool BlockMeshSmoother::acceptMove(
-    const std::set<int>& blocks, double fCheckBefore,
+    const std::set<int>& blocks, double fCheckBefore, double faceSizeViolationCheckBefore,
     const std::function<void()>& revert )
 {
     if (!check_) return true;
 
     syncCheck(blocks);
-    if (penalizedObjective(*check_, blocks) <= fCheckBefore)
+    if ( penalizedObjective(*check_, blocks) <= fCheckBefore
+         && faceSizeViolation(true, blocks) <= faceSizeViolationCheckBefore+faceSizeTol )
         return true;
 
     // the improvement on the optimizer grid is not confirmed on the finer grid
-    // (e.g. folding between the coarse grid lines): reject
+    // (e.g. folding between the coarse grid lines) or the face size limit is violated: reject
     revert();
     syncCheck(blocks);
     nRejectedByCheck_++;
@@ -1288,6 +1359,7 @@ bool BlockMeshSmoother::optimizeVertex(int v)
     };
 
     double fRef = 0.; // scale of the fairness penalty
+    double faceSize0 = 0.; // violation of the face size limit in the initial state
     auto fairness = [&]()
     {
         return par_.fairnessWeight*fRef*magSqr(vertexRotation_[v])/(maxRot*maxRot);
@@ -1311,13 +1383,17 @@ bool BlockMeshSmoother::optimizeVertex(int v)
             for (int e: monotonicEdges)
                 if (!monotonicAlongChord(m.edgePoints(e)))
                     return inadmissible;
+            if (faceSizeViolation(false, blocks) > faceSize0+faceSizeTol)
+                return inadmissible;
             return penalizedObjective(blocks) + fairness();
         };
 
     const double fCheck0 = check_ ? penalizedObjective(*check_, blocks) : 0.;
+    const double faceSizeCheck0 = check_ ? faceSizeViolation(true, blocks) : 0.;
 
     arma::mat x0 = arma::zeros(nPar);
     apply(x0);
+    faceSize0 = faceSizeViolation(false, blocks);
     fRef = penalizedObjective(blocks);
     double f0 = obj(x0);
 
@@ -1336,7 +1412,7 @@ bool BlockMeshSmoother::optimizeVertex(int v)
 
     double f1 = obj(x);
     if (f1 < f0*(1.-1e-9))
-        return acceptMove(blocks, fCheck0, [&]() { apply(x0); });
+        return acceptMove(blocks, fCheck0, faceSizeCheck0, [&]() { apply(x0); });
 
     apply(x0);
     return false;
@@ -1381,7 +1457,7 @@ bool BlockMeshSmoother::optimizeEdge(int e)
         for (int bi: blocks) mp_.updateBlock(bi);
     };
 
-    double fRef = 0.;
+    double fRef = 0., faceSize0 = 0.;
     std::function<double(const arma::mat&)> obj =
         [&](const arma::mat& x)
         {
@@ -1390,14 +1466,18 @@ bool BlockMeshSmoother::optimizeEdge(int e)
                 return inadmissible;
             if (checkMonotonic && !monotonicAlongChord(m.edgePoints(e)))
                 return inadmissible;
+            if (faceSizeViolation(false, blocks) > faceSize0+faceSizeTol)
+                return inadmissible;
             return penalizedObjective(blocks)
                    + par_.fairnessWeight*fRef*magSqr(s.bow)/(maxBow*maxBow);
         };
 
     const double fCheck0 = check_ ? penalizedObjective(*check_, blocks) : 0.;
+    const double faceSizeCheck0 = check_ ? faceSizeViolation(true, blocks) : 0.;
 
     arma::mat x0 = arma::zeros(2);
     apply(x0);
+    faceSize0 = faceSizeViolation(false, blocks);
     fRef = penalizedObjective(blocks);
     double f0 = obj(x0);
 
@@ -1414,7 +1494,7 @@ bool BlockMeshSmoother::optimizeEdge(int e)
 
     double f1 = obj(x);
     if (f1 < f0*(1.-1e-9))
-        return acceptMove(blocks, fCheck0, [&]() { apply(x0); });
+        return acceptMove(blocks, fCheck0, faceSizeCheck0, [&]() { apply(x0); });
 
     apply(x0);
     return false;
@@ -1439,15 +1519,7 @@ NonOrthogonalityStatistics BlockMeshSmoother::run(
     progress.message("classifying vertices and edges, converting interior edges");
     setup();
 
-    if (initial && !initial->empty())
-    {
-        std::string msg;
-        bool ok = apply(*initial, &msg);
-        progress.message(
-            ok ? "warm start: "+msg
-               : "warm start not possible ("+msg+"), starting from the unmodified blocking" );
-    }
-
+    // the check grid is set up from the unmodified blocking (reference of the face size limit)
     check_.reset();
     nRejectedByCheck_=0;
     if (par_.checkMaxCells > par_.maxCells)
@@ -1456,6 +1528,25 @@ NonOrthogonalityStatistics BlockMeshSmoother::run(
         check_.reset(new MeshPredictor(mp_.model, par_.checkMaxCells, par_.minCellsPerBlockDir));
         if (check_->nCells() <= mp_.nCells())
             check_.reset(); // no finer than the optimizer grid
+    }
+    faceSizeCheck_.clear();
+    faceSizeCheckRef_.clear();
+    if (check_)
+        setupFaceSizeChecks(*check_, faceSizeCheck_, faceSizeCheckRef_);
+
+    if (initial && !initial->empty())
+    {
+        std::string msg;
+        bool ok = apply(*initial, &msg);
+        progress.message(
+            ok ? "warm start: "+msg
+               : "warm start not possible ("+msg+"), starting from the unmodified blocking" );
+        if (ok && check_)
+        {
+            std::set<int> allBlocks;
+            for (size_t bi=0; bi<mp_.model.blocks.size(); ++bi) allBlocks.insert(int(bi));
+            syncCheck(allBlocks);
+        }
     }
 
     const auto& m = mp_.model;
@@ -1486,6 +1577,10 @@ NonOrthogonalityStatistics BlockMeshSmoother::run(
             "note: the optimizer mesh has more cells than maxCells=%d to resolve each block with min. %d cells per direction")
                              % par_.maxCells % par_.minCellsPerBlockDir));
     progress.message("initial "+mp_.statistics().summary());
+    if (!faceSize_.empty())
+        progress.message("initial cyclic face sizes: "+periodicFaceSizeSummary());
+    else if (par_.minPeriodicFaceAreaRatio>0. && !par_.periodicSurfaces.empty())
+        progress.message("note: no faces found on the periodic surfaces, face size limit inactive");
 
     const double f0 = penalizedObjective({});
     double f = f0;
@@ -1547,6 +1642,9 @@ NonOrthogonalityStatistics BlockMeshSmoother::run(
 
     if (stopped)
         progress.message("stopped by user, keeping the current state");
+
+    if (!faceSize_.empty())
+        progress.message("final cyclic face sizes: "+periodicFaceSizeSummary());
 
     // measures of the deformation of the edges ("waviness")
     {

@@ -28,6 +28,8 @@
 
 #include "boost/assign/std/vector.hpp"
 
+#include <algorithm>
+
 using namespace boost::assign; // for operator+=
 
 using namespace std;
@@ -161,10 +163,12 @@ NonOrthogonalityStatistics blockMeshBlocking::smooth(
   }
 
   applyModel(mp.model);
+  const std::string faceSizes = smoother.periodicFaceSizeSummary();
   if (result)
   {
     *result = smoother.extract();
     result->summary = "optimizer resolution, after: "+stats.summary();
+    if (!faceSizes.empty()) result->summary += "; "+faceSizes;
   }
 
   if (par.checkMaxCells>0)
@@ -175,8 +179,12 @@ NonOrthogonalityStatistics blockMeshBlocking::smooth(
     int nInvalidAfter=0;
     double fAfter = chk.objective({}, par.p, nInvalidAfter);
     progress->message("smoothed (check resolution): "+statsAfter.summary());
-    if (result) result->summary =
+    if (result)
+    {
+      result->summary =
         "check resolution, before: "+statsBefore.summary()+"; after: "+statsAfter.summary();
+      if (!faceSizes.empty()) result->summary += "; optimizer resolution: "+faceSizes;
+    }
 
     if (nInvalidAfter>nInvalidBefore || fAfter>fBefore)
     {
@@ -328,14 +336,43 @@ void blockMeshBlocking::setDefaultPatch(const std::string& name, std::string typ
   defaultPatchType_=type;
 }
 
-void blockMeshBlocking::addGeometry(const Geometry& geo)
+void blockMeshBlocking::addGeometry(GeometryPtr geo)
 {
-    geometries_.push_back(geo);
+    insight::assertion(bool(geo), "invalid geometry");
+    auto i=std::find_if(
+        geometries_.begin(), geometries_.end(),
+        [&](const GeometryPtr& g) { return *g==*geo; } );
+    if (i!=geometries_.end())
+        *i=geo;
+    else
+        geometries_.push_back(geo);
 }
 
-const std::vector<Geometry>& blockMeshBlocking::allGeometry() const
+const std::vector<GeometryPtr>& blockMeshBlocking::allGeometry() const
 {
     return geometries_;
+}
+
+void blockMeshBlocking::writeGeometryFiles(const boost::filesystem::path& dir) const
+{
+    for (const auto& geo: geometries_)
+    {
+        geo->writeFile(dir);
+    }
+}
+
+std::map<std::string, SurfaceProjection> blockMeshBlocking::surfaceProjections() const
+{
+    auto res=surfaceProjections_;
+    for (const auto& geo: geometries_)
+    {
+        if (!res.count(*geo))
+        {
+            if (auto proj=geo->projection())
+                res[*geo]=proj;
+        }
+    }
+    return res;
 }
 
 void blockMeshBlocking::setSurfaceProjection(const std::string& geometryLabel, const SurfaceProjection& proj)
@@ -592,10 +629,10 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
         {
             OFDictData::dict d;
             d["type"]="triSurfaceMesh";
-            d["file"]="\""+geo.fileName().string()+"\"";
+            d["file"]="\""+geo->fileName().string()+"\"";
             if (os!=1.)
                 d["scale"]=1./os; // surfaces in unscaled coordinates
-            gd[geo]=d;
+            gd[*geo]=d;
         }
         blockMeshDict["geometry"]=gd;
     }

@@ -102,6 +102,20 @@ int GradingAnalyzer::calc_n(double delta0, double L) const
     x_l = 1.;
     x_r = 10000.;
 
+    // root not bracketed (otherwise, the GSL error handler would abort):
+    // the edge is shorter than the first cell (e.g. grading <1, which is inverted in f_calc_n)
+    // or more than x_r cells are required
+    if (f_calc_n(x_l, &p) >= 0.)
+    {
+        gsl_root_fsolver_free(workspace_f);
+        return int(x_l);
+    }
+    if (f_calc_n(x_r, &p) < 0.)
+    {
+        gsl_root_fsolver_free(workspace_f);
+        return int(x_r);
+    }
+
     gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
 
     for(times = 0; times < 100; times++)

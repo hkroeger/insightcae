@@ -121,6 +121,7 @@ add_library(toolkit SHARED
     base/shelltools.h base/shelltools.cpp
     base/latextools.cpp base/latextools.h
     base/linearalgebra.cpp base/linearalgebra.h
+    base/patternsearch.cpp base/patternsearch.h
     base/resultelement.cpp base/resultelement.h
     base/resultelementcollection.cpp base/resultelementcollection.h
     base/resultset.cpp base/resultset.h
@@ -224,6 +225,8 @@ add_library(toolkit SHARED
     openfoam/blockmesh/ellipseedge.cpp openfoam/blockmesh/ellipseedge.h
     openfoam/blockmesh/geometry.cpp openfoam/blockmesh/geometry.h
     openfoam/blockmesh/gradinganalyzer.cpp openfoam/blockmesh/gradinganalyzer.h
+    openfoam/blockmesh/resolutionharmonizer.cpp openfoam/blockmesh/resolutionharmonizer.h
+    openfoam/blockmesh/periodicfacesize.cpp openfoam/blockmesh/periodicfacesize.h
     openfoam/blockmesh/patch2d.cpp openfoam/blockmesh/patch2d.h
     openfoam/blockmesh/patch.cpp openfoam/blockmesh/patch.h
     openfoam/blockmesh/plane2d.cpp openfoam/blockmesh/plane2d.h

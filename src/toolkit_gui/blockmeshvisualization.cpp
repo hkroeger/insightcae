@@ -252,7 +252,7 @@ blockMeshVisualization::projectionSurface(const std::string& label)
 
     auto geo=std::find_if(
         bm_.allGeometry().begin(), bm_.allGeometry().end(),
-        [&](const Geometry& g) { return g==label; } );
+        [&](const GeometryPtr& g) { return *g==label; } );
 
     if (geo==bm_.allGeometry().end())
     {
@@ -260,15 +260,21 @@ blockMeshVisualization::projectionSurface(const std::string& label)
             "The geometry \"%s\" for projection is not defined in the blocking."
             " Projection is not shown in the visualization.", label.c_str() );
     }
+    else if (auto pd=(*geo)->surface())
+    {
+        // surface in memory (as it will be written)
+        if (pd->GetNumberOfCells()>0)
+            surf=std::make_shared<ProjectionSurface>(pd);
+    }
     else
     {
         // triSurfaceMesh files are searched in constant/triSurface by blockMesh
         namespace fs=boost::filesystem;
         fs::path fn;
         for (const auto& candidate: {
-                 geo->fileName(),
-                 geometryDir_/geo->fileName(),
-                 geometryDir_/"constant"/"triSurface"/geo->fileName() })
+                 (*geo)->fileName(),
+                 geometryDir_/(*geo)->fileName(),
+                 geometryDir_/"constant"/"triSurface"/(*geo)->fileName() })
         {
             if (fs::exists(candidate)) { fn=candidate; break; }
         }
@@ -278,7 +284,7 @@ blockMeshVisualization::projectionSurface(const std::string& label)
             insight::Warning(
                 "The file %s of geometry \"%s\" was not found."
                 " Projection is not shown in the visualization.",
-                geo->fileName().string().c_str(), label.c_str() );
+                (*geo)->fileName().string().c_str(), label.c_str() );
         }
         else
         {

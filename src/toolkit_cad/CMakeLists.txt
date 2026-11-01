@@ -15,6 +15,7 @@ add_library(toolkit_cad SHARED
     blockmesh_cylwedge.cpp blockmesh_cylwedge.h
 
     openfoam/snappyhexmesh.h openfoam/snappyhexmesh.cpp
+    openfoam/blockmeshcadgeometry.h openfoam/blockmeshcadgeometry.cpp
     iscadparametricgeometrygenerator.h iscadparametricgeometrygenerator.cpp
     openfoam/additionalrefinements.h openfoam/additionalrefinements.cpp
 )

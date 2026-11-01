@@ -2,9 +2,11 @@
 #define INSIGHT_BMD_BLOCKMESHSMOOTHER_H
 
 #include "openfoam/blockmesh/blockmeshprediction.h"
+#include "openfoam/blockmesh/periodicfacesize.h"
 
 #include <functional>
 #include <memory>
+#include <set>
 #include <string>
 
 #include "boost/filesystem/path.hpp"
@@ -48,11 +50,32 @@ struct SmoothingParameters
     bool slideOnBoundaries = false;
 
     /**
+     * labels of projection surfaces, on which the vertices and edges stay fixed,
+     * even if a projection is known (it is used by the mesh prediction only)
+     */
+    std::set<std::string> fixedSurfaces;
+
+    /**
      * transformations between periodic (cyclic) boundaries.
      * Each boundary vertex v, for which T(v) coincides with another boundary vertex w,
      * is paired with w: w follows v, edges between paired vertices are transformed accordingly.
      */
     std::vector<PointFunction> periodicTransforms;
+
+    /**
+     * geometry labels (side A, side B) of the projected block faces on the periodic boundaries,
+     * one entry per entry of periodicTransforms (which maps side A onto side B).
+     * Required for the face size limit (minPeriodicFaceAreaRatio), also for non-conformal periodic boundaries.
+     */
+    std::vector<std::pair<std::string,std::string> > periodicSurfaces;
+
+    /**
+     * min. area of a cell face on a periodic boundary relative to the opposite face on the other side
+     * (see PeriodicFaceSizeCheck). Faces may not get smaller than this limit or, if they are already smaller
+     * in the unmodified blocking, than there. Prevents slivers, which make stitching of rotated copies fail.
+     * 0: no limit
+     */
+    double minPeriodicFaceAreaRatio = 0.1;
 };
 
 
@@ -159,7 +182,23 @@ class BlockMeshSmoother
     std::unique_ptr<MeshPredictor> check_;
     int nRejectedByCheck_ = 0;
     void syncCheck(const std::set<int>& blocks);
-    bool acceptMove(const std::set<int>& blocks, double fCheckBefore, const std::function<void()>& revert);
+    bool acceptMove(
+        const std::set<int>& blocks, double fCheckBefore, double faceSizeViolationCheckBefore,
+        const std::function<void()>& revert );
+
+    // size limit of the faces on the periodic boundaries, for the optimizer and for the check grid,
+    // and the area ratios of the unmodified blocking (faces below the limit there may not get smaller)
+    std::vector<std::unique_ptr<PeriodicFaceSizeCheck> > faceSize_, faceSizeCheck_;
+    std::vector<std::vector<double> > faceSizeRef_, faceSizeCheckRef_;
+    void setupFaceSizeChecks(
+        const MeshPredictor& mp,
+        std::vector<std::unique_ptr<PeriodicFaceSizeCheck> >& checks,
+        std::vector<std::vector<double> >& reference ) const;
+    /**
+     * sum of the violations of the face size limit of the periodic boundaries touched by the blocks
+     * (0 if none), on the optimizer grid or on the check grid
+     */
+    double faceSizeViolation(bool onCheckGrid, const std::set<int>& blocks) const;
     double minAdjacentEdgeLength(int v) const;
     void updateSlaveEdge(int e);
 
@@ -229,6 +268,12 @@ public:
     NonOrthogonalityStatistics run(
         ActionProgress& progress,
         const BlockingModification* initial = nullptr );
+
+    /**
+     * sizes of the faces on the periodic boundaries in the current state
+     * (empty, if there is no face size limit)
+     */
+    std::string periodicFaceSizeSummary() const;
 };
 
 

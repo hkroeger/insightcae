@@ -162,6 +162,7 @@ add_library(toolkit SHARED
     base/xmlfile.h base/xmlfile.cpp
     base/intervals.h base/intervals.cpp
     base/spatialtransformation.h base/spatialtransformation.cpp
+    base/framedvector.h
     base/vtktransformation.h base/vtktransformation.cpp
     base/progressdisplayer/textprogressdisplayer.cpp base/progressdisplayer/textprogressdisplayer.h
     base/progressdisplayer/combinedprogressdisplayer.cpp base/progressdisplayer/combinedprogressdisplayer.h

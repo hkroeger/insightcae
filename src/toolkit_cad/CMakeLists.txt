@@ -18,6 +18,7 @@ add_library(toolkit_cad SHARED
     openfoam/blockmeshcadgeometry.h openfoam/blockmeshcadgeometry.cpp
     iscadparametricgeometrygenerator.h iscadparametricgeometrygenerator.cpp
     openfoam/additionalrefinements.h openfoam/additionalrefinements.cpp
+    openfoam/ofpatchcadfeature.h openfoam/ofpatchcadfeature.cpp
 )
 target_add_PDL(toolkit_cad)
 

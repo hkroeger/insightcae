@@ -207,6 +207,7 @@ add_library(toolkit SHARED
     openfoam/ofcsvreaders.cpp openfoam/ofcsvreaders.h
     openfoam/ofdictreaders.cpp openfoam/ofdictreaders.h
     openfoam/ofpatchutils.cpp openfoam/ofpatchutils.h
+    openfoam/ofpolymeshreader.cpp openfoam/ofpolymeshreader.h
     openfoam/ofparalleltools.cpp openfoam/ofparalleltools.h
     openfoam/emesh.cpp openfoam/emesh.h
     openfoam/hydrostaticpressure.cpp openfoam/hydrostaticpressure.h

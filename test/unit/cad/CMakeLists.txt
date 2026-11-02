@@ -32,4 +32,11 @@ if (INSIGHT_BUILD_CAD)
     add_cad_test(cadgeometryparameter_pack)
     target_link_libraries(cadgeometryparameter_pack toolkit_cad)
 
+    if (INSIGHT_BUILD_ISCAD)
+      add_executable(ofpatchfeature ofpatchfeature.cpp)
+      linkToolkitVtk(ofpatchfeature Offscreen)
+      target_link_libraries(ofpatchfeature insightcad toolkit_cad)
+      add_test(NAME unit_cad_ofpatchfeature COMMAND ofpatchfeature ${CMAKE_CURRENT_SOURCE_DIR}/../toolkit)
+    endif()
+
 endif()

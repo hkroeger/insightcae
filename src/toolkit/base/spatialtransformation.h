@@ -25,7 +25,8 @@ class vtk_Transformer
 {
 public:
   virtual ~vtk_Transformer();
-  virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) const =0;
+  virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(
+      vtkSmartPointer<vtkPolyDataAlgorithm> in ) const =0;
 };
 
 typedef vtk_Transformer* vtk_TransformerPtr;

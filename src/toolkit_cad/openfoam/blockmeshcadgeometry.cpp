@@ -40,13 +40,25 @@ vtkSmartPointer<vtkPolyData> triangulationToVTK(const TopoDS_Shape& s)
         vtkIdType ofs = pts->GetNumberOfPoints();
         for (int i=1; i<=mesh->NbNodes(); ++i)
         {
-            auto p = mesh->Node(i).Transformed(trsf);
+            auto p = mesh->
+#if OCC_VERSION_MAJOR<7
+                     Nodes().Value(i)
+#else
+                     Node(i)
+#endif
+                         .Transformed(trsf);
             pts->InsertNextPoint(p.X(), p.Y(), p.Z());
         }
         for (int i=1; i<=mesh->NbTriangles(); ++i)
         {
             int n1, n2, n3;
-            mesh->Triangle(i).Get(n1, n2, n3);
+            mesh->
+#if OCC_VERSION_MAJOR<7
+                Triangles().Value(i)
+#else
+                Triangle(i)
+#endif
+                .Get(n1, n2, n3);
             if (f.Orientation()==TopAbs_REVERSED) std::swap(n2, n3); // like StlAPI_Writer
             vtkIdType vtx[]={ofs+n1-1, ofs+n2-1, ofs+n3-1};
             cells->InsertNextCell(3, vtx);

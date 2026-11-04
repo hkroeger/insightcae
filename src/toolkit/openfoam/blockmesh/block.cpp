@@ -186,6 +186,16 @@ void Block::swapGrad()
 
 
 
+void Block::setResolution(int dir, int n)
+{
+  insight::assertion(dir>=0 && dir<3, "invalid block direction %d", dir);
+  insight::assertion(n>=1, "invalid number of cells %d", n);
+  resolution_[dir]=n;
+}
+
+
+
+
 PointList Block::orderedCorners() const
 {
     std::vector<int> ci;

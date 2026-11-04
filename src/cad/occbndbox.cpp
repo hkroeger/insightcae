@@ -23,8 +23,17 @@
 namespace insight {
 namespace cad {
 
+
+std::recursive_mutex& shapeModificationMutex()
+{
+    static std::recursive_mutex m;
+    return m;
+}
+
+
 Bnd_Box getBoundingBox(const TopoDS_Shape& shape, double deflection)
 {
+    std::lock_guard<std::recursive_mutex> lock(shapeModificationMutex());
 
     if (deflection>0){
         Bnd_Box box;

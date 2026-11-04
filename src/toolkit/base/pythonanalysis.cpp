@@ -228,6 +228,11 @@ PythonAnalysisLoader::PythonAnalysisLoader()
                                 [scriptfile](){ return PythonAnalysis::category(scriptfile); }
                                 );
 
+                            Analysis::galleryOrders().emplace(
+                                analysisName,
+                                [](){ return PythonAnalysis::galleryOrder(); }
+                                );
+
                             Analysis::defaultParameters().emplace(
                                 analysisName,
                                 [scriptfile](){ return PythonAnalysis::defaultParameters(scriptfile); }

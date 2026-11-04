@@ -1087,6 +1087,8 @@ arma::mat Feature::modelBndBox(ResoArg deflection) const
 {
   checkForBuildDuringAccess();
 
+  std::lock_guard<std::recursive_mutex> lock(shapeModificationMutex());
+
   if (!hasTriangulation() || deflection )
       createTriangulation(deflection);
 
@@ -1104,6 +1106,8 @@ std::pair<CoordinateSystem, arma::mat>
 Feature::orientedModelBndBox(ResoArg deflection) const
 {
     checkForBuildDuringAccess();
+
+    std::lock_guard<std::recursive_mutex> lock(shapeModificationMutex());
 
     if (!hasTriangulation() || deflection )
         createTriangulation(deflection);
@@ -1928,6 +1932,7 @@ void Feature::performTriangulationBuilding(TesselationResolution res) const
     //     );
     //     m.Perform(shape_);
 
+    std::lock_guard<std::recursive_mutex> lock(shapeModificationMutex());
     BRepTools::Clean(shape_);
     BRepMesh_IncrementalMesh aMesher(
         shape_, res.value->value(),

@@ -258,6 +258,7 @@ public:
   ResultSetPtr evaluateResults(OpenFOAMCase& cm, ProgressDisplayer& parentActionProgress) override;
 
   static std::string category() { return "Generic Analyses"; }
+  static int galleryOrder() { return 100; } // generic analyses on top of the gallery
   static AnalysisDescription description() { return {"Numerical Wind Tunnel", ""}; }
 };
 

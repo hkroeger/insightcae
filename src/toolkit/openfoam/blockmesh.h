@@ -79,7 +79,7 @@ protected:
     boost::ptr_vector<Block> allBlocks_;
     boost::ptr_vector<Edge> allEdges_;
     PatchMap allPatches_;
-    std::vector<Geometry> geometries_;
+    std::vector<GeometryPtr> geometries_;
     std::map<Point,std::string> projectedVertices_;
     std::vector<ProjectedFace> projectedFaces_;
     std::map<std::string, SurfaceProjection> surfaceProjections_;
@@ -103,15 +103,37 @@ public:
 
     /**
      * Optimize the blocking for minimal non-orthogonality of the cells, which blockMesh will create:
-     * moves interior block vertices and support points of interior spline edges.
+     * moves interior block vertices and bends the attached spline edges (rotation of their end tangents).
      * Interior straight edges and arcs are replaced by splines.
      * Boundary, projected vertices and edges stay unchanged, unless sliding along the boundaries is enabled
      * (see SmoothingParameters::slideOnBoundaries).
+     * @param result
+     * optional: receives the modification relative to the unmodified blocking
+     * (for re-applying it with applyModification). Empty, if the original blocking is kept.
+     * @param initial
+     * optional: start from this modification (warm start)
      * @return quality statistics of the predicted mesh after optimization
      */
     NonOrthogonalityStatistics smooth(
         const SmoothingParameters& par = SmoothingParameters(),
-        ActionProgress* progress = nullptr );
+        ActionProgress* progress = nullptr,
+        BlockingModification* result = nullptr,
+        const BlockingModification* initial = nullptr );
+
+    /**
+     * apply a modification, which was computed by smooth() for this blocking
+     * or a topologically identical blocking.
+     * @param par
+     * the smoothing parameters, with which the modification was computed
+     * (sliding on boundaries and periodic transformations are required for the classification)
+     * @param message
+     * optional: receives a description of the outcome
+     * @return false, if not applicable (the blocking is left unmodified)
+     */
+    bool applyModification(
+        const BlockingModification& mod,
+        const SmoothingParameters& par,
+        std::string* message = nullptr );
 
     /**
      * transfer modified vertex coordinates and edges from a model back into this blocking
@@ -120,8 +142,17 @@ public:
     void applyModel(const BlockingModel& model);
     void setDefaultPatch(const std::string& name, std::string type="patch");
 
-    void addGeometry(const Geometry& geo);
-    const std::vector<Geometry>& allGeometry() const;
+    /**
+     * add a geometry for projections.
+     * An existing geometry with the same label is replaced.
+     */
+    void addGeometry(GeometryPtr geo);
+    const std::vector<GeometryPtr>& allGeometry() const;
+
+    /**
+     * write the files of all geometries, which supply their surface in memory, into directory dir
+     */
+    void writeGeometryFiles(const boost::filesystem::path& dir) const;
 
     void addProjectedVertex(const Point& pf, const std::string& geometryLabel);
     inline const std::map<Point,std::string>& projectedVertices() const { return projectedVertices_; }
@@ -131,12 +162,19 @@ public:
 
     /**
      * set the projection onto a geometry (nearest point on the surface).
-     * Optional: used by the mesh prediction (projected faces) and the block smoother (sliding along the surface)
+     * Optional: used by the mesh prediction (projected faces) and the block smoother (sliding along the surface).
+     * Overrides the projection onto the surface, which the geometry supplies (Geometry::surface).
      */
     void setSurfaceProjection(const std::string& geometryLabel, const SurfaceProjection& proj);
-    inline const std::map<std::string, SurfaceProjection>& surfaceProjections() const { return surfaceProjections_; }
+
+    /**
+     * the known projections: those set by setSurfaceProjection
+     * and those onto the surfaces supplied by the geometries
+     */
+    std::map<std::string, SurfaceProjection> surfaceProjections() const;
 
     inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
+    inline boost::ptr_vector<Block>& allBlocks() { return allBlocks_; }
     inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }
     inline const PatchMap& allPatches() const { return allPatches_; }
 

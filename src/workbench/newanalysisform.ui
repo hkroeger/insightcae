@@ -52,12 +52,11 @@
     </layout>
    </item>
    <item>
-    <widget class="QTreeWidget" name="treeWidget">
-     <column>
-      <property name="text">
-       <string notr="true">1</string>
-      </property>
-     </column>
+    <widget class="QScrollArea" name="galleryArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="galleryContents"/>
     </widget>
    </item>
   </layout>

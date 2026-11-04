@@ -1,6 +1,7 @@
 #include "cadfeatures/transform.h"
 #include "alignwithboundingbox.h"
 #include "cadfeature.h"
+#include "occbndbox.h"
 #include "datum.h"
 #include "base/tools.h"
 #include "base/translations.h"
@@ -99,6 +100,7 @@ void AlignWithBoundingBox::build()
             toWorkCS.Invert(); // http://opencascade.wikidot.com/occrefdoc
 
 
+            std::lock_guard<std::recursive_mutex> lock(shapeModificationMutex());
             BRepMesh_IncrementalMesh Inc1(*org, 0.0001);
             BRepBndLib::Add(BRepBuilderAPI_Transform(*org, toWorkCS).Shape(), bbOrg);
             BRepMesh_IncrementalMesh Inc2(*a.other_, 0.0001);

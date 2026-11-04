@@ -49,9 +49,27 @@ add_toolkit_test(toolkit_overlappingintervals)
 add_toolkit_test(toolkit_readpostprocessingfiles)
 add_toolkit_test(toolkit_codeaster_coordinatesystems)
 add_toolkit_test(toolkit_spatialtransformation)
+add_toolkit_test(toolkit_framedvector)
+
+# misuse of frame-tagged points/vectors has to be rejected by the compiler:
+# each case is a separate object library, which is built by the test and expected to fail.
+# The case NONE is the control: it contains only valid code and has to compile.
+foreach(CASE NONE
+        POINT_MINUS_OTHERFRAME VECTOR_PLUS_OTHERFRAME POINT_PLUS_POINT
+        SCALAR_TIMES_POINT TRSF_WRONG_FRAME COMPOSE_MISMATCH)
+    add_library(compilefail_framedvector_${CASE} OBJECT EXCLUDE_FROM_ALL toolkit_framedvector_compilefail.cpp)
+    target_compile_definitions(compilefail_framedvector_${CASE} PRIVATE CASE_${CASE})
+    linkToolkitVtk(compilefail_framedvector_${CASE} Offscreen) # usage requirements (include dirs) only, nothing is linked
+    add_test(NAME unit_toolkit_framedvector_compilefail_${CASE}
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target compilefail_framedvector_${CASE})
+    if (NOT CASE STREQUAL "NONE")
+        set_tests_properties(unit_toolkit_framedvector_compilefail_${CASE} PROPERTIES WILL_FAIL TRUE)
+    endif()
+endforeach()
 add_toolkit_test(toolkit_lsdynainputdeck)
 add_toolkit_test(toolkit_units)
 add_toolkit_test(toolkit_vtkrendering_readmultiregioncase ${CMAKE_CURRENT_SOURCE_DIR})
+add_toolkit_test(toolkit_ofpolymeshreader ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_paralleltimedirectories ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_cacheableentity ${CMAKE_CURRENT_SOURCE_DIR})
 add_toolkit_test(toolkit_observer_ptr)
@@ -59,6 +77,9 @@ add_toolkit_test(toolkit_supplementedquantity)
 add_toolkit_test(toolkit_resultantforce)
 add_toolkit_test(toolkit_predefinedfilters)
 add_toolkit_test(toolkit_blockmeshquality)
+add_toolkit_test(toolkit_resolutionharmonizer)
+add_toolkit_test(toolkit_patternsearch)
+add_toolkit_test(toolkit_periodicfacesize)
 
 add_library(toolkit_factory_lib_base SHARED  toolkit_factory_unit2.cpp toolkit_factory_unit2.h)
 target_include_directories(toolkit_factory_lib_base PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

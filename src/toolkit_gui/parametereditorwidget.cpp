@@ -119,6 +119,10 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
         viewer_=nullptr;
     }
 
+    actionViewer_ = viewer_;
+    if (!actionViewer_ && display)
+        actionViewer_ = display->viewer();
+
     QObject::connect(
         parameterTreeView_, &QTreeView::clicked, parameterTreeView_,
         [this](const QModelIndex& index)
@@ -156,26 +160,24 @@ void ParameterEditorWidget::setup(ParameterSetDisplay* display)
                     //         });
 
 
-                    if (vizScheduler_ && viewer_)
+                    if (createGUIActions_)
                     {
-                        if (createGUIActions_)
+                        auto cmdl=new QHBoxLayout;
+                        auto acts = createGUIActions_(
+                            p->get()->path(),
+                            inputContents_,
+                            actionViewer_,
+                            dynamic_cast<IQParameterSetModel*>(model_)
+                        );
+                        for (auto& act: acts)
                         {
-                            auto cmdl=new QHBoxLayout;
-                            auto acts = createGUIActions_(
-                                p->get()->path(),
-                                inputContents_,
-                                viewer_,
-                                dynamic_cast<IQParameterSetModel*>(model_)
-                            );
-                            for (auto& act: acts)
-                            {
-                                auto btn = new QPushButton(act.icon, act.label);
-                                connect(btn, &QPushButton::clicked, btn,
-                                        act.action);
-                                cmdl->addWidget(btn);
-                            }
-                            l->addLayout(cmdl);
+                            auto btn = new QPushButton(act.icon, act.label);
+                            btn->setToolTip(act.tooltip);
+                            connect(btn, &QPushButton::clicked, btn,
+                                    act.action);
+                            cmdl->addWidget(btn);
                         }
+                        l->addLayout(cmdl);
                     }
 
                     // new controls are shown via queued event; compute height afterwards
@@ -411,6 +413,7 @@ ParameterEditorWidget::ParameterEditorWidget
 {
     setup(nullptr);
     viewer_=viewer; // would be nullified in setup
+    actionViewer_=viewer;
 }
 
 

@@ -427,32 +427,32 @@ EdgeCurve BlockingModel::curve(int a, int b) const
 std::string NonOrthogonalityStatistics::summary() const
 {
     return str(boost::format(
-        "predicted mesh (%d cells, %d internal faces): non-orthogonality max %.1f deg, avg %.1f deg, %d faces above 70 deg, %d invalid cells")
-               % nCells % nFaces % maxDeg % avgDeg % nAbove70 % nInvalidCells );
+        "predicted mesh (%d cells, %d internal faces): non-orthogonality max %.1f deg, avg %.1f deg, %d faces above 65 deg, %d above 70 deg, %d invalid cells")
+               % nCells % nFaces % maxDeg % avgDeg % nAbove65 % nAbove70 % nInvalidCells );
 }
 
 
 
 
-MeshPredictor::MeshPredictor(const blockMeshBlocking& bmd, int maxCells)
+MeshPredictor::MeshPredictor(const blockMeshBlocking& bmd, int maxCells, int minCellsPerDir)
 : model(bmd)
 {
-    init(maxCells);
+    init(maxCells, minCellsPerDir);
 }
 
 
 
 
-MeshPredictor::MeshPredictor(const BlockingModel& m, int maxCells)
+MeshPredictor::MeshPredictor(const BlockingModel& m, int maxCells, int minCellsPerDir)
 : model(m)
 {
-    init(maxCells);
+    init(maxCells, minCellsPerDir);
 }
 
 
 
 
-void MeshPredictor::init(int maxCells)
+void MeshPredictor::init(int maxCells, int minCellsPerDir)
 {
     double nTotal = 0.;
     for (const auto& b: model.blocks)
@@ -467,9 +467,14 @@ void MeshPredictor::init(int maxCells)
     {
         const auto& b = model.blocks[bi];
         auto& g = grids_[bi];
-        g.ni = std::max(1, int(std::ceil(resolutionFactor_*b.n[0])));
-        g.nj = std::max(1, int(std::ceil(resolutionFactor_*b.n[1])));
-        g.nk = std::max(1, int(std::ceil(resolutionFactor_*b.n[2])));
+        // function of the original resolution only: consistent across block interfaces
+        auto reduced = [&](int n)
+        {
+            return std::max( {1, int(std::ceil(resolutionFactor_*n)), std::min(n, minCellsPerDir)} );
+        };
+        g.ni = reduced(b.n[0]);
+        g.nj = reduced(b.n[1]);
+        g.nk = reduced(b.n[2]);
     }
 
     faceProjection_.assign(model.blocks.size(), {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr});
@@ -1347,6 +1352,16 @@ double MeshPredictor::objective(const std::set<int>& blocks, double p, int& nInv
 
 
 
+int MeshPredictor::nCells() const
+{
+    int n=0;
+    for (const auto& g: grids_) n += g.ni*g.nj*g.nk;
+    return n;
+}
+
+
+
+
 NonOrthogonalityStatistics MeshPredictor::statistics() const
 {
     NonOrthogonalityStatistics s;
@@ -1358,6 +1373,7 @@ NonOrthogonalityStatistics MeshPredictor::statistics() const
             s.maxDeg = std::max(s.maxDeg, theta);
             sum += std::cos(theta*M_PI/180.);
             s.nFaces++;
+            if (theta>65.) s.nAbove65++;
             if (theta>70.) s.nAbove70++;
         } );
     // average as reported by checkMesh: angle of the mean cosine

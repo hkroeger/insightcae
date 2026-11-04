@@ -2,8 +2,10 @@
 #define NEWANALYSISFORM_H
 
 #include <QWidget>
-#include <QTreeWidget>
+#include <QListWidget>
 #include <QPushButton>
+
+#include <vector>
 
 namespace Ui {
 class NewAnalysisForm;
@@ -14,7 +16,10 @@ class NewAnalysisForm : public QWidget
     Q_OBJECT
 
 
-    void fillAnalysisList(QTreeWidget* treeWidget);
+    std::vector<QListWidget*> galleries_;
+
+    void fillAnalysisGallery();
+    QListWidgetItem* selectedItem() const;
 
 public:
     explicit NewAnalysisForm(QWidget *parent = nullptr);

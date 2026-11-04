@@ -245,6 +245,7 @@ public:
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp, ProgressDisplayer& progress);
 
   static std::string category() { return "Validation Cases"; }
+  static int galleryOrder() { return 900; } // validation cases at the end of the gallery, before the dummies
   static AnalysisDescription description() { return {"Channel Flow Test Case",
                                              "Rectangular domain with cyclic BCs on axial ends"}; }
 };

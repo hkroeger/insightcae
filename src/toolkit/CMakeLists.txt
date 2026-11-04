@@ -121,6 +121,7 @@ add_library(toolkit SHARED
     base/shelltools.h base/shelltools.cpp
     base/latextools.cpp base/latextools.h
     base/linearalgebra.cpp base/linearalgebra.h
+    base/patternsearch.cpp base/patternsearch.h
     base/resultelement.cpp base/resultelement.h
     base/resultelementcollection.cpp base/resultelementcollection.h
     base/resultset.cpp base/resultset.h
@@ -161,6 +162,7 @@ add_library(toolkit SHARED
     base/xmlfile.h base/xmlfile.cpp
     base/intervals.h base/intervals.cpp
     base/spatialtransformation.h base/spatialtransformation.cpp
+    base/framedvector.h
     base/vtktransformation.h base/vtktransformation.cpp
     base/progressdisplayer/textprogressdisplayer.cpp base/progressdisplayer/textprogressdisplayer.h
     base/progressdisplayer/combinedprogressdisplayer.cpp base/progressdisplayer/combinedprogressdisplayer.h
@@ -206,6 +208,7 @@ add_library(toolkit SHARED
     openfoam/ofcsvreaders.cpp openfoam/ofcsvreaders.h
     openfoam/ofdictreaders.cpp openfoam/ofdictreaders.h
     openfoam/ofpatchutils.cpp openfoam/ofpatchutils.h
+    openfoam/ofpolymeshreader.cpp openfoam/ofpolymeshreader.h
     openfoam/ofparalleltools.cpp openfoam/ofparalleltools.h
     openfoam/emesh.cpp openfoam/emesh.h
     openfoam/hydrostaticpressure.cpp openfoam/hydrostaticpressure.h
@@ -224,6 +227,8 @@ add_library(toolkit SHARED
     openfoam/blockmesh/ellipseedge.cpp openfoam/blockmesh/ellipseedge.h
     openfoam/blockmesh/geometry.cpp openfoam/blockmesh/geometry.h
     openfoam/blockmesh/gradinganalyzer.cpp openfoam/blockmesh/gradinganalyzer.h
+    openfoam/blockmesh/resolutionharmonizer.cpp openfoam/blockmesh/resolutionharmonizer.h
+    openfoam/blockmesh/periodicfacesize.cpp openfoam/blockmesh/periodicfacesize.h
     openfoam/blockmesh/patch2d.cpp openfoam/blockmesh/patch2d.h
     openfoam/blockmesh/patch.cpp openfoam/blockmesh/patch.h
     openfoam/blockmesh/plane2d.cpp openfoam/blockmesh/plane2d.h

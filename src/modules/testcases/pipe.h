@@ -118,6 +118,7 @@ public:
   ~PipeBase();
 
   static std::string category() { return "Validation Cases"; }
+  static int galleryOrder() { return 900; } // validation cases at the end of the gallery, before the dummies
   static AnalysisDescription description() { return {    "Pipe Flow Test Case",
                                              "Cylindrical domain with cyclic BCs on axial ends"}; }
 

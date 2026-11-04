@@ -59,6 +59,11 @@ std::string MatrixParameterParser::cppStaticType() const
 std::string MatrixParameterParser::cppDefaultValueExpression() const
 {
   std::ostringstream os;
+  if (value.n_elem==0)
+  {
+    os<<"arma::mat(arma::zeros("<<value.n_rows<<", "<<value.n_cols<<"))";
+    return os.str();
+  }
   os<<"arma::mat(boost::assign::list_of";
   for (size_t i=0; i<value.n_rows; i++)
   {
@@ -80,6 +85,12 @@ void MatrixParameterParser::cppWriteCreateStatement(
   os<<"std::unique_ptr< "<<cppInsightType()<<" > "<<psvarname<<";"<<endl;
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
   os<<"{"<<endl;
+  if (value.n_elem==0)
+  {
+    os<<"arma::mat data = arma::zeros("<<value.n_rows<<", "<<value.n_cols<<");"<<endl;
+  }
+  else
+  {
   os<<"arma::mat data = insight::ArmaMatCmpts{"<<endl;
   for (arma::uword i=0; i<value.n_rows;i++)
   {
@@ -98,6 +109,7 @@ void MatrixParameterParser::cppWriteCreateStatement(
           os<<"\n}";
   };
   os<<";"<<endl;
+  }
   os<<psvarname<<".reset(new "<<cppInsightType()<<"(data, "<<cppInsightTypeConstructorParameters()<<"));\n";
   os<<"}"<<endl;
 }

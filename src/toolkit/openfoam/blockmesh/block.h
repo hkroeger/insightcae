@@ -62,6 +62,11 @@ public:
   inline const std::vector<int>& resolution() const { return resolution_; }
 
   /**
+   * set the number of cells in direction dir (0..2)
+   */
+  void setResolution(int dir, int n);
+
+  /**
    * @brief edgeGradings
    * the expansion ratios of all 12 edges in OpenFOAM edge order:
    * x1: 0-1, 3-2, 7-6, 4-5; x2: 0-3, 1-2, 5-6, 4-7; x3: 0-4, 1-5, 2-6, 3-7

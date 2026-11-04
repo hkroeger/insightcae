@@ -23,6 +23,9 @@
 
 #include "base/linearalgebra.h"
 #include "occinclude.h"
+#include "BRepAlgoAPI_BooleanOperation.hxx"
+#include "BRepBuilderAPI_Copy.hxx"
+#include "TopTools_ListOfShape.hxx"
 
 namespace insight {
 namespace cad {
@@ -31,6 +34,25 @@ bool isShapeEmpty(const TopoDS_Shape& shape);
 
 std::vector<arma::mat> orderedCornerPoints(const TopoDS_Shape& f);
 TopoDS_Face asSingleFace(const TopoDS_Shape& shape);
+
+/**
+ * performs the boolean operation op (BRepAlgoAPI_Cut, _Fuse, _Common, default constructed)
+ * of the argument and the tool.
+ * The operation works on copies of their topology (the geometry is shared):
+ * OCC modifies the arguments in place (adds pcurves, increases tolerances) and reads
+ * their triangulations. The shapes may be shared with other threads (e.g. features restored
+ * from the feature cache), which might triangulate them concurrently.
+ */
+template<class Op>
+void performBoolean(Op& op, const TopoDS_Shape& argument, const TopoDS_Shape& tool)
+{
+    TopTools_ListOfShape args, tools;
+    args.Append(BRepBuilderAPI_Copy(argument, Standard_False).Shape());
+    tools.Append(BRepBuilderAPI_Copy(tool, Standard_False).Shape());
+    op.SetArguments(args);
+    op.SetTools(tools);
+    op.Build();
+}
 
 }
 }

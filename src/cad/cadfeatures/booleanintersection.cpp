@@ -25,6 +25,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include "base/translations.h"
 #include "cadexception.h"
+#include "occshapeutils.h"
 
 #include "datum.h"
 
@@ -102,8 +103,8 @@ void BooleanIntersection::build()
     
       if (auto *f = boost::get<FeaturePtr>(&m2_))
     {
-            BRepAlgoAPI_Common intersector(*baseFeature(), **f);
-            intersector.Build();
+            BRepAlgoAPI_Common intersector;
+            performBoolean(intersector, *baseFeature(), **f);
             if (!intersector.IsDone())
             {
                 throw CADException
@@ -154,10 +155,11 @@ void BooleanIntersection::build()
             }
             else
             {
-                BRepAlgoAPI_Common intersector(
+                BRepAlgoAPI_Common intersector;
+                performBoolean(
+                            intersector,
                             *baseFeature(),
                             BRepBuilderAPI_MakeFace((*pl)->plane()).Face() );
-                intersector.Build();
                 if (!intersector.IsDone())
                 {
                     throw CADException

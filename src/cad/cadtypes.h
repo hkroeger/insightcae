@@ -29,6 +29,8 @@
 
 #include <set>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 
@@ -50,9 +52,12 @@
 #include "dependencysource.h"
 #include "dependencyreplacement.h"
 
-namespace insight 
+namespace insight
 {
-namespace cad 
+
+template<class T> struct PrimitiveStaticValueWrap;
+
+namespace cad
 {
 
 
@@ -85,10 +90,68 @@ typedef std::shared_ptr<Model> ModelPtr;
 typedef std::shared_ptr<Model const> ConstModelPtr;
 typedef std::shared_ptr<PostprocAction> PostprocActionPtr;
 typedef std::shared_ptr<PostprocAction const> ConstPostprocActionPtr;
-typedef std::shared_ptr<Scalar> ScalarPtr;
+
+/**
+ * @brief Shared pointer to a scalar expression.
+ * Numbers convert implicitly into a constant scalar expression, so
+ * that scalarconst() is not needed when passing constants to features.
+ * bool is excluded, so that a misplaced flag remains a compile error.
+ */
+class ScalarPtr : public std::shared_ptr<Scalar>
+{
+    static std::shared_ptr<Scalar> makeConstant(double value);
+
+public:
+    using std::shared_ptr<Scalar>::shared_ptr;
+
+    ScalarPtr() = default;
+
+    ScalarPtr(std::shared_ptr<Scalar> p) noexcept
+        : std::shared_ptr<Scalar>(std::move(p))
+    {}
+
+    template<class T, std::enable_if_t<
+        std::is_arithmetic_v<T> && !std::is_same_v<T, bool>, int> = 0>
+    ScalarPtr(T value)
+        : std::shared_ptr<Scalar>(makeConstant(double(value)))
+    {}
+
+    // A parameter value from a PDL parameter set. Its conversion operator
+    // cannot be used for this: it would be a second user-defined conversion.
+    template<class T, std::enable_if_t<
+        std::is_arithmetic_v<T> && !std::is_same_v<T, bool>, int> = 0>
+    ScalarPtr(const PrimitiveStaticValueWrap<T>& value)
+        : std::shared_ptr<Scalar>(makeConstant(double(value.value)))
+    {}
+};
 typedef std::shared_ptr<Scalar const> ConstScalarPtr;
-typedef std::shared_ptr<Vector> VectorPtr;
+
+/**
+ * @brief Shared pointer to a vector expression.
+ * Armadillo matrices and expressions convert implicitly into a constant
+ * vector expression, so that matconst() is not needed when passing
+ * constants to features.
+ */
+class VectorPtr : public std::shared_ptr<Vector>
+{
+    static std::shared_ptr<Vector> makeConstant(const arma::mat& value);
+
+public:
+    using std::shared_ptr<Vector>::shared_ptr;
+
+    VectorPtr() = default;
+
+    VectorPtr(std::shared_ptr<Vector> p) noexcept
+        : std::shared_ptr<Vector>(std::move(p))
+    {}
+
+    template<class T1>
+    VectorPtr(const arma::Base<double, T1>& value)
+        : std::shared_ptr<Vector>(makeConstant(arma::mat(value.get_ref())))
+    {}
+};
 typedef std::shared_ptr<Vector const> ConstVectorPtr;
+
 typedef std::shared_ptr<FeatureSet> FeatureSetPtr;
 typedef std::shared_ptr<FeatureSet const> ConstFeatureSetPtr;
 typedef std::shared_ptr<Filter> FilterPtr;

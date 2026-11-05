@@ -69,5 +69,10 @@ VectorPtr vec3const(double x, double y, double z)
   return VectorPtr(new ConstantVector(vec3(x, y, z)));
 }
 
+std::shared_ptr<Vector> VectorPtr::makeConstant(const arma::mat& value)
+{
+  return std::make_shared<ConstantVector>(value);
+}
+
 }
 }

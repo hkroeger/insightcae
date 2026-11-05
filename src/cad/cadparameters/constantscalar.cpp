@@ -58,3 +58,9 @@ insight::cad::ScalarPtr insight::cad::scalarconst(double v)
 {
   return ScalarPtr(new ConstantScalar(v));
 }
+
+std::shared_ptr<insight::cad::Scalar>
+insight::cad::ScalarPtr::makeConstant(double value)
+{
+  return std::make_shared<ConstantScalar>(value);
+}

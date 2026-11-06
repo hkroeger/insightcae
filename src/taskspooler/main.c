@@ -423,7 +423,7 @@ int main(int argc, char **argv)
     switch(command_line.request)
     {
     case c_SHOW_VERSION:
-        print_version(argv[0]);
+        print_version();
         break;
     case c_SHOW_HELP:
         print_help(argv[0]);

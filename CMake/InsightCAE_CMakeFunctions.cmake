@@ -7,6 +7,8 @@ macro(install_headers NAME HEADERS)
   foreach (_hdr ${HEADERS})
       file (RELATIVE_PATH _relName "${CMAKE_CURRENT_LIST_DIR}" ${_hdr})
       get_filename_component(_pd ${_relName} DIRECTORY)
+      # normalize: no "//" or ".." or trailing slash in install destination (CMP0177)
+      file (RELATIVE_PATH _hdrDest "/" "/include/insightcae/${_pd}")
       add_custom_command(
           TARGET ${NAME} POST_BUILD
           COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include/insightcae/${_pd}
@@ -14,7 +16,7 @@ macro(install_headers NAME HEADERS)
       )
       install(
         FILES ${_hdr}
-        DESTINATION include/insightcae/${_pd}/
+        DESTINATION ${_hdrDest}
         COMPONENT ${INSIGHT_INSTALL_COMPONENT}
       )
  endforeach()

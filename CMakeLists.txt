@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.18)
 
-cmake_policy(SET CMP0078 NEW)
-cmake_policy(SET CMP0086 NEW)
+# honor upper-case <PACKAGENAME>_ROOT variables like BOOST_ROOT in find_package
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
 
 project(InsightCAE)
 

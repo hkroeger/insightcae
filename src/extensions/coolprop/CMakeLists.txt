@@ -7,6 +7,8 @@ if (INSIGHT_BUILD_COOLPROP AND NOT WIN32)
        SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/CoolProp"
 
        CMAKE_ARGS
+         # CoolProp requests cmake 2.8, which cmake>=4 refuses otherwise
+         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
          -DCOOLPROP_SHARED_LIBRARY=ON
          -DCOOLPROP_RELEASE=ON
          -DCMAKE_BUILD_TYPE=Release

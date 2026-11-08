@@ -199,14 +199,11 @@ void writeMED(
 
 
 
-namespace std
-{
-
+// must be in the global namespace (like TopoDS_Shape itself),
+// otherwise std::less can't find it through ADL
 bool operator<(const TopoDS_Shape& s1, const TopoDS_Shape& s2)
 {
     return s1.HashCode(INT_MAX) < s2.HashCode(INT_MAX);
-}
-
 }
 
 bool operator<(const gp_Pnt& v1, const gp_Pnt& v2)

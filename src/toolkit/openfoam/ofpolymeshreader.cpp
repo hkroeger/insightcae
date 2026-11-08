@@ -25,7 +25,11 @@
 
 #include <algorithm>
 #include <cctype>
-#include <charconv>
+#if defined(__has_include)
+#  if __has_include(<charconv>)
+#    include <charconv> // not available in older toolchains, e.g. GCC 7 (devtoolset-7 on CentOS 7)
+#  endif
+#endif
 #include <cmath>
 #include <cstring>
 #include <fstream>

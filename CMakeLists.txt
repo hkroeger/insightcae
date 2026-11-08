@@ -311,6 +311,11 @@ if (INSIGHT_BUILD_OPENFOAM)
 "
 )
 
+    # re-detection is a one-shot request
+    if (INSIGHT_OF_REDETECT)
+      set(INSIGHT_OF_REDETECT OFF CACHE BOOL "" FORCE)
+    endif()
+
 endif()
 
 

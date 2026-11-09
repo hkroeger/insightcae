@@ -1,0 +1,10 @@
+# OpenFOAM-2.1.x
+insight_define_openfoam(OF21x
+  FAMILY openfoam  FORK vanilla  OF_VERSION 020100
+  SHORTCUT of21x  ENV_ID 210
+  DIRS OpenFOAM/OpenFOAM-2.1.x OpenFOAM/OpenFOAM-2.1.0
+  LIBRARIES AUTO
+  NO_DEPLIBS
+  LEGACY_ENV_SCRIPT
+  EXTRA_LINK_LIBS @LIB_DIR@/@FOAM_MPI@/libPstream.so
+)

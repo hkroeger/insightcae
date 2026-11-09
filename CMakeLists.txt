@@ -286,25 +286,11 @@ endfunction()
 
 
 if (INSIGHT_BUILD_OPENFOAM)
-    SET(INSIGHT_OFES_VARCONTENT "")
     SET(INSIGHT_OF_ALIASES "")
-    
-    find_package(OpenFOAM-16ext)
-    find_package(FOAM-extend-31)
-    find_package(FOAM-extend-32)
-    find_package(FOAM-extend-40)
-    find_package(FOAM-extend-41)
-    find_package(OpenFOAM-21x)
-    find_package(OpenFOAM-22x)
-    find_package(OpenFOAM-22eng)
-    find_package(OpenFOAM-23x)
-    find_package(OpenFOAM-24x)
-    find_package(OpenFOAM-301)
-    find_package(OpenFOAM-plus)
-    find_package(OpenFOAM-dev)
-    find_package(OpenFOAM-esi1806)
-    find_package(OpenFOAM-esi1906)
-    find_package(OpenFOAM-esi2112)
+
+    # detect all OpenFOAM installations defined in CMake/openfoam/versions
+    include(openfoam/OpenFOAMDetection)
+    insight_detect_openfoam_versions()
 
     create_script("insight.aliases.OpenFOAM"
 "${INSIGHT_OF_ALIASES}
@@ -385,56 +371,11 @@ ADD_DEFINITIONS(
 
 
 
+# OF_VERSIONS: the OpenFOAM versions, for which targets are created.
+# Can be set to a subset before calling setup_*_target_OF; defaults to all detected versions.
 macro(version_list_OF)
   if (NOT OF_VERSIONS)
-    if (OF16ext_FOUND)
-      list (APPEND OF_VERSIONS OF16ext)
-    endif()
-    if (Fx31_FOUND)
-      list (APPEND OF_VERSIONS Fx31)
-    endif()
-    if (Fx32_FOUND)
-      list (APPEND OF_VERSIONS Fx32)
-    endif()
-    if (Fx40_FOUND)
-      list (APPEND OF_VERSIONS Fx40)
-    endif()
-    if (Fx41_FOUND)
-      list (APPEND OF_VERSIONS Fx41)
-    endif()
-    if (OF21x_FOUND)
-      list (APPEND OF_VERSIONS OF21x)
-    endif()
-    if (OF22x_FOUND)
-      list (APPEND OF_VERSIONS OF22x)
-    endif()
-    if (OF22eng_FOUND)
-      list (APPEND OF_VERSIONS OF22eng)
-    endif()
-    if (OF23x_FOUND)
-      list (APPEND OF_VERSIONS OF23x)
-    endif()
-    if (OF24x_FOUND)
-      list (APPEND OF_VERSIONS OF24x)
-    endif()
-    if (OF301_FOUND)
-      list (APPEND OF_VERSIONS OF301)
-    endif()
-    if (OFplus_FOUND)
-      list (APPEND OF_VERSIONS OFplus)
-    endif()
-    if (OFdev_FOUND)
-      list (APPEND OF_VERSIONS OFdev)
-    endif()
-    if (OFesi1806_FOUND)
-      list (APPEND OF_VERSIONS OFesi1806)
-    endif()
-    if (OFesi1906_FOUND)
-      list (APPEND OF_VERSIONS OFesi1906)
-    endif()
-    if (OFesi2112_FOUND)
-      list (APPEND OF_VERSIONS OFesi2112)
-    endif()
+    set(OF_VERSIONS ${INSIGHT_OF_DETECTED_VERSIONS})
   endif()
 endmacro(version_list_OF)
 
@@ -473,150 +414,13 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       )
     endforeach()
 
-    if (${_ofvers} STREQUAL "OF16ext")
-      setup_exe_target_OF16ext(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "Fx31")
-      setup_exe_target_Fx31(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "Fx32")
-      setup_exe_target_Fx32(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "Fx40")
-      setup_exe_target_Fx40(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "Fx41")
-      setup_exe_target_Fx41(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF21x")
-      setup_exe_target_OF21x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF22x")
-      setup_exe_target_OF22x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF22eng")
-      setup_exe_target_OF22eng(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF23x")
-      setup_exe_target_OF23x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF24x")
-      setup_exe_target_OF24x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF301")
-      setup_exe_target_OF301(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OFplus")
-      setup_exe_target_OFplus(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OFdev")
-      setup_exe_target_OFdev(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OFesi1806")
-      setup_exe_target_OFesi1806(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OFesi1906")
-      setup_exe_target_OFesi1906(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OFesi2112")
-      setup_exe_target_OFesi2112(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
+    setup_exe_target_for_OF(${_ofvers}
+      ${PRJ_NAME}${_ofvers}
+      "${sources}"
+      "${PRJ_NAME}"
+      "${${PRJ_NAME}_INCLUDE_DIRS}"
+      "${${PRJ_NAME}_LIBRARIES}"
+    )
    endif()
   endforeach()
 endmacro(setup_exe_target_OF)
@@ -663,150 +467,13 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       )
     endforeach()
 
-    if (${_ofvers} STREQUAL "OF16ext")
-      setup_lib_target_OF16ext(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "Fx31")
-      setup_lib_target_Fx31(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "Fx32")
-      setup_lib_target_Fx32(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "Fx40")
-      setup_lib_target_Fx40(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "Fx41")
-      setup_lib_target_Fx41(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OF21x")
-      setup_lib_target_OF21x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OF22x")
-      setup_lib_target_OF22x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OF22eng")
-      setup_lib_target_OF22eng(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OF23x")
-      setup_lib_target_OF23x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OF24x")
-      setup_lib_target_OF24x(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OF301")
-      setup_lib_target_OF301(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OFplus")
-      setup_lib_target_OFplus(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OFdev")
-      setup_lib_target_OFdev(
-	${PRJ_NAME}${_ofvers} 
-	"${sources}" 
-	"${PRJ_NAME}" 
-	"${${PRJ_NAME}_INCLUDE_DIRS}"
-	"${${PRJ_NAME}_LIBRARIES}"
-      ) 
-    endif()
-    if (${_ofvers} STREQUAL "OFesi1806")
-      setup_lib_target_OFesi1806(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OFesi1906")
-      setup_lib_target_OFesi1906(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
-    if (${_ofvers} STREQUAL "OFesi2112")
-      setup_lib_target_OFesi2112(
-        ${PRJ_NAME}${_ofvers}
-        "${sources}"
-        "${PRJ_NAME}"
-        "${${PRJ_NAME}_INCLUDE_DIRS}"
-        "${${PRJ_NAME}_LIBRARIES}"
-      )
-    endif()
+    setup_lib_target_for_OF(${_ofvers}
+      ${PRJ_NAME}${_ofvers}
+      "${sources}"
+      "${PRJ_NAME}"
+      "${${PRJ_NAME}_INCLUDE_DIRS}"
+      "${${PRJ_NAME}_LIBRARIES}"
+    )
    endif()
   endforeach()
 endmacro(setup_lib_target_OF)
@@ -1069,7 +736,15 @@ set(PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR
 if(DPKG_PROGRAM)
 
   SET(CPACK_GENERATOR "DEB")
-  set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+  # Let dpkg-shlibdeps derive the dependencies on system libraries, so that the
+  # package names match the distribution release the package is built on
+  # (e.g. libpoppler-cpp0v5 on jammy vs. libpoppler-cpp3 on resolute).
+  # Libraries without package info (the thirdparty libraries in /opt/insightcae)
+  # are skipped, CPack passes --ignore-missing-info. They are found through
+  # LD_LIBRARY_PATH, so cpack has to run with the thirdparty environment sourced.
+  # Our own libraries are looked up in the package itself.
+  set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+  set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS ${CMAKE_INSTALL_PREFIX}/lib) # needs CMake >= 3.20
   execute_process(
     COMMAND ${DPKG_PROGRAM} --print-architecture
     OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
@@ -1091,7 +766,8 @@ if(DPKG_PROGRAM)
   message(STATUS "Package version: ${PACKAGE_VERSION}")
 
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "insightcae-dependencies,libpoppler-cpp0v5")
+  # dependencies which are not linked (tools, thirdparty packages)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "insightcae-dependencies")
 
 else(DPKG_PROGRAM)
 

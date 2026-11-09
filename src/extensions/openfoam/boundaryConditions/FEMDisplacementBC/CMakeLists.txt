@@ -33,7 +33,7 @@ set(include_directories
   ${OF16ext_LIBSRC_DIR}/finiteArea/lnInclude
 )
   
-setup_lib_target_OF16ext(FEMDisplacementBC16ext "${FEMDisplacementBC_SOURCES}" "FEMDisplacementBC" "${include_directories}"
+setup_lib_target_for_OF(OF16ext FEMDisplacementBC16ext "${FEMDisplacementBC_SOURCES}" "FEMDisplacementBC" "${include_directories}"
   ${OF16ext_LIB_DIR}/libfiniteVolume.so
   ${OF16ext_LIB_DIR}/libincompressibleRASModels.so 
   ${OF16ext_LIB_DIR}/libincompressibleTransportModels.so

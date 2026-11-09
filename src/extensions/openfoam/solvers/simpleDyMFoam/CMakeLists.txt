@@ -17,7 +17,7 @@ set(include_directories
   ${OF16ext_LIBSRC_DIR}/dynamicMesh/dynamicMesh/lnInclude
   ${OF16ext_LIBSRC_DIR}/meshTools/lnInclude
   )
-setup_exe_target_OF16ext(simpleDyMFoam16ext "${simpleDyMFoam_SOURCES}" "simpleDyMFoam" "${include_directories}"
+setup_exe_target_for_OF(OF16ext simpleDyMFoam16ext "${simpleDyMFoam_SOURCES}" "simpleDyMFoam" "${include_directories}"
   ${OF16ext_LIB_DIR}/libfiniteVolume.so
   ${OF16ext_LIB_DIR}/libincompressibleRASModels.so
   ${OF16ext_LIB_DIR}/libincompressibleTransportModels.so

@@ -1,33 +1,24 @@
 #!/bin/bash
+# Print all libraries built from $FOAM_SRC which exist in $FOAM_LIBBIN.
+# Usage: printOFLibs <bashrc>
+# (set MANUAL to print bare library names instead of a semicolon-separated path list)
 
 ARG_BRC=$1
 shift 1
-#ARGS=$*
 source $ARG_BRC
 EXPR='^ *LIB *= *$(FOAM_LIBBIN)/\(.*\)$'
-FIRST=1
 
-#"$FOAM_APP" \
-(
-for bd in \
-  "$FOAM_SRC" \
-; do
-
- for d in `find "$bd" -name "Make" -a -type d`; do 
-  if [ -e $d/files ]; then
-   libbn=`grep -o "$EXPR" $d/files |sed -e "s#$EXPR#\\1#g"`
-   #echo $libbn
-   if [[ "${libbn}" != "" ]] && [[ "${libbn}" != *"/"* ]]; then
-    lib=$FOAM_LIBBIN/${libbn}.so
-    if [ -e "$lib" ]; then
-     #if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
-     #echo -n "$lib"
-     #echo  "${libbn#lib}"
-     echo $lib
-    fi
+# grep all Make/files at once instead of forking grep/sed for each directory
+find "$FOAM_SRC" -path "*/Make/files" -type f -exec grep -h -o "$EXPR" {} + 2>/dev/null \
+| sed -e "s#$EXPR#\\1#g" \
+| (
+ while IFS= read -r libbn; do
+  if [[ "${libbn}" != "" ]] && [[ "${libbn}" != *"/"* ]]; then
+   lib=$FOAM_LIBBIN/${libbn}.so
+   if [ -e "$lib" ]; then
+    echo $lib
    fi
   fi
  done
-done
 ) \
 | if [ "$MANUAL" ]; then sed -e 's#^.*/lib\([^/]*\)\.so *$#\1#g'; else ( tr '\n' ';' | sed -e 's/;$//')  fi

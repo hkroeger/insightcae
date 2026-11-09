@@ -1,4 +1,37 @@
 
+option(INSIGHT_OF_REDETECT "Force re-detection of the OpenFOAM installations configuration (otherwise cached results are reused as long as the installations are unchanged)" OFF)
+
+# Run an OpenFOAM detection helper script and cache its output.
+# Sourcing the OpenFOAM bashrc and scanning the source tree is slow, so the result
+# is stored in the cache and reused as long as the signature (command line plus
+# modification times of the given files/directories) does not change.
+#
+# Usage: _ofCachedExec(<outvar> <cachekey> COMMAND <cmd...> DEPENDS <files...>)
+function(_ofCachedExec OUTVAR CACHEKEY)
+  cmake_parse_arguments(ARG "" "" "COMMAND;DEPENDS" ${ARGN})
+  set(sig "${ARG_COMMAND}")
+  foreach(_f ${ARG_COMMAND} ${ARG_DEPENDS})
+    if (EXISTS "${_f}")
+      file(TIMESTAMP "${_f}" _ts "%s" UTC)
+      string(APPEND sig "|${_f}@${_ts}")
+    endif()
+  endforeach()
+  string(MD5 sig "${sig}")
+
+  if ( (NOT INSIGHT_OF_REDETECT) AND ("${_OFDETECT_${CACHEKEY}_SIG}" STREQUAL "${sig}") )
+    # cache entries cannot hold newlines, so they are stored encoded
+    string(REPLACE "@@NL@@" "\n" _out "${_OFDETECT_${CACHEKEY}_VALUE}")
+    set(${OUTVAR} "${_out}" PARENT_SCOPE)
+  else()
+    execute_process(COMMAND ${ARG_COMMAND} OUTPUT_VARIABLE _out)
+    string(REPLACE "\n" "@@NL@@" _enc "${_out}")
+    set(_OFDETECT_${CACHEKEY}_VALUE "${_enc}" CACHE INTERNAL "")
+    set(_OFDETECT_${CACHEKEY}_SIG "${sig}" CACHE INTERNAL "")
+    set(${OUTVAR} "${_out}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+
 macro(setOFlibvar prefix)
   SET(${prefix}_LIBRARIES "")
    FOREACH(f ${ARGN})
@@ -16,10 +49,10 @@ macro(detectEnvVars prefix)
     set(TARGETS "${TARGETS} print-${_var}")
   endforeach()
 
-  execute_process(
+  _ofCachedExec(GETOFCFGVAR_OUTPUT ${prefix}_envvars
    COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVars
    ${${prefix}_BASHRC} ${TARGETS}
-   OUTPUT_VARIABLE GETOFCFGVAR_OUTPUT
+   DEPENDS ${${prefix}_ETC_DIR}/prefs.sh ${${prefix}_ETC_DIR}/config.sh ${${prefix}_ETC_DIR}/config
   )
   string(REPLACE "\n" ";" VALUES ${GETOFCFGVAR_OUTPUT})
 
@@ -42,13 +75,19 @@ macro(filterWarningFlags VARNAME)
 endmacro()
 
 macro(detectDepLib prefix fromlib pattern)
- execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/findInDepLibs ${${prefix}_BASHRC} ${fromlib} "${pattern}" OUTPUT_VARIABLE addlibs)
+ _ofCachedExec(addlibs "${prefix}_deplib_${fromlib}_${pattern}"
+   COMMAND ${CMAKE_SOURCE_DIR}/CMake/findInDepLibs ${${prefix}_BASHRC} ${fromlib} "${pattern}"
+ )
  #message(STATUS "detected for ${pattern} in dependencies of ${fromlib}: " ${addlibs})
  LIST(APPEND ${prefix}_LIBRARIES "${addlibs}")
 endmacro()
 
 macro(detectIncPaths prefix)
- execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} ${ARGN} OUTPUT_VARIABLE ${prefix}_INCLUDE_PATHS)
+ # the dir timestamps change when sub-directories (e.g. modules) are added or removed
+ _ofCachedExec(${prefix}_INCLUDE_PATHS ${prefix}_incpaths
+   COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} ${ARGN}
+   DEPENDS ${${prefix}_DIR} ${${prefix}_DIR}/src ${${prefix}_DIR}/applications ${${prefix}_DIR}/modules ${${prefix}_FOAM_LIBBIN}
+ )
  list(APPEND ${prefix}_INCLUDE_PATHS ${${prefix}_LIBSRC_DIR})
 endmacro()
 

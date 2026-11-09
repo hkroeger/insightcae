@@ -1,0 +1,7 @@
+# OpenFOAM-v1906 (ESI)
+insight_define_openfoam(OFesi1906
+  FAMILY openfoam  FORK esi  OF_VERSION 060500
+  SHORTCUT of1906  ENV_ID 610
+  DIRS OpenFOAM/OpenFOAM-v1906
+  LIBRARIES_LIKE OFesi1806
+)

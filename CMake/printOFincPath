@@ -1,27 +1,28 @@
 #!/bin/bash
+# Print the semicolon-separated list of all lnInclude directories of an OpenFOAM installation.
+# Usage: printOFincPath <bashrc> ["<skip pattern> ..."]
+#
+# Note: avoid forking subprocesses inside the loop over the Make directories.
+# There are several hundred of them and per-directory subshells made this script
+# take several seconds per OpenFOAM installation.
 
 ARG_BRC=$1
 shift 1
-#ARGS=$*
 SKIPPATTERN=$1
 source $ARG_BRC
-FIRST=1
 if [ -d $WM_PROJECT_DIR/modules ]; then
  FOAM_MODULES=$WM_PROJECT_DIR/modules
 fi
-for bd in "$FOAM_SRC" "$FOAM_APP" $FOAM_MODULES; do
- for d in `find "$bd" -name "Make" -a -type d`; do 
-  p="$(cd $d; cd ..; pwd)"
-  SKIP=
-  for skip in $SKIPPATTERN; do
-   if [[ "$p" == *${skip} ]]; then SKIP=1; fi
-  done
-  if [ `basename $p` != "finiteArea" ] && [ ! "$SKIP" ]; then # skip this because of interfering header names, has to be included manually, if needed
-   P="$p/lnInclude"
-   if [ -d "$P" ]; then 
-    if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
-    echo -n "$P"
-   fi
-  fi
+FIRST=1
+while IFS= read -r d; do
+ p=${d%/Make}
+ SKIP=
+ for skip in $SKIPPATTERN; do
+  if [[ "$p" == *${skip} ]]; then SKIP=1; fi
  done
-done
+ # skip finiteArea because of interfering header names, has to be included manually, if needed
+ if [ "${p##*/}" != "finiteArea" ] && [ ! "$SKIP" ] && [ -d "$p/lnInclude" ]; then
+  if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
+  echo -n "$p/lnInclude"
+ fi
+done < <(for bd in "$FOAM_SRC" "$FOAM_APP" $FOAM_MODULES; do find "$bd" -name "Make" -a -type d; done)

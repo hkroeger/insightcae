@@ -327,6 +327,10 @@ msgstr ""
 "ungültige Daten: mindestens zwei Spalten erwartet (Zeit + 1 Datenspalte), "
 "erhalten: %s"
 
+#, fuzzy, c-format
+msgid "no data found for output file %s in time directories of %s"
+msgstr "keine gültige Ausgabedatei im Zeitverzeichnis %s gefunden!"
+
 #, c-format
 msgid ""
 "reading output files %s for function object %s (filtering out any of '%s')"
@@ -335,6 +339,12 @@ msgstr "lese Ausgabedateien %s für Function Object %s (filtere '%s' heraus)"
 #, c-format
 msgid "data path %s of function object %s does not exist!"
 msgstr "Datenpfad %s von Function Object %s existiert nicht!"
+
+#, fuzzy, c-format
+msgid ""
+"reading output files %s from time directories in %s (filtering out any of "
+"'%s')"
+msgstr "lese Ausgabedateien %s für Function Object %s (filtere '%s' heraus)"
 
 #, c-format
 msgid ""

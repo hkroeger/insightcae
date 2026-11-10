@@ -98,11 +98,12 @@ fluid = set
 
 run=set
 {
- residual       = double 1e-5
- "The required relative change in forces for considering the solution as converged.
+ residual       = double 1e-2
+ "Threshold of the coefficient of variation (CoV) of the forces for considering the solution as converged.
 
-Basis is the moving average of the forces over the last half of the acquired samples.
-The maximum relative change between the last 15 average values needs to stay below this limit."
+The CoV (standard deviation divided by mean) is computed over a trailing window of the last 20% of the acquired samples.
+The solution is considered converged, if the CoV of all monitored force and moment components is below this limit
+and the trailing window contains at least 50 samples."
 
 } "Execution parameters"
 

@@ -69,6 +69,35 @@ readAndCombineTabularFiles
     std::vector<std::string>* columnNames = nullptr
 );
 
+#ifndef SWIG
+/**
+ * Like above, but reads directly from a directory, which contains
+ * the time directories (e.g. postProcessing/<FOName>).
+ * In each time directory, the newest file matching
+ * fileName (optionally with suffix "_<anything>" before the extension) is read.
+ * The time segments are combined in the order of the file modification times,
+ * overlapping parts are taken from the newer files.
+ */
+std::map<std::string,arma::mat>
+readAndCombineGroupedTabularFiles
+(
+    const boost::filesystem::path& dataDir,
+    const std::string& fileName,
+    int groupByColumn,
+    const std::string& filterChars="()",
+    std::vector<std::string>* columnNames = nullptr
+);
+
+arma::mat
+readAndCombineTabularFiles
+(
+    const boost::filesystem::path& dataDir,
+    const std::string& fileName,
+    const std::string& filterChars="()",
+    std::vector<std::string>* columnNames = nullptr
+);
+#endif
+
 } // namespace insight
 
 #endif // READPOSTPROCESSINGFILES_H

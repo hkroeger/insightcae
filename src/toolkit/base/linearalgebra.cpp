@@ -1631,7 +1631,7 @@ arma::rowvec ConvergenceByVariance::operator()(const arma::rowvec& sample)
     // First sample: initialise running state, no variance yet
     mean_ = sample;
     M2_   = arma::zeros<arma::rowvec>(m);
-    windowSize_ = W_new;
+    windowSize_ = 1; // actual number of samples in window (W_new may be 2 already)
     result_.insert_rows(0, cov);
     return cov;
   }
@@ -1658,6 +1658,11 @@ arma::rowvec ConvergenceByVariance::operator()(const arma::rowvec& sample)
       mean_(j) += delta / static_cast<double>(W_new);
       M2_(j)   += delta * (x_new - mean_(j));
     }
+
+    // cancellation in the running update may drive M2 slightly negative
+    // for (nearly) constant signals => sqrt would yield NaN
+    if (M2_(j) < 0.0)
+      M2_(j) = 0.0;
 
     const double sig = (W_new > 1) ? std::sqrt(M2_(j) / static_cast<double>(W_new - 1)) : 0.0;
 
@@ -1689,6 +1694,11 @@ const arma::mat& ConvergenceByVariance::values() const
 const arma::mat& ConvergenceByVariance::convergenceMeasure() const
 {
   return result_;
+}
+
+arma::uword ConvergenceByVariance::windowSize() const
+{
+  return windowSize_;
 }
 
 

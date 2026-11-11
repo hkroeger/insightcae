@@ -101,12 +101,17 @@ function(configure_gettext)
                 "--output=${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     endif()
+    # Note: only stamp files in the build tree are declared as OUTPUTs.
+    # The .pot/.po files in the source tree are updated as a side effect,
+    # so that the "clean" target never deletes them.
+    set(pot_stamp "${CMAKE_CURRENT_BINARY_DIR}/${GETTEXT_DOMAIN}.pot.stamp")
     if(INSIGHT_UPDATE_PO)
         add_custom_command(
-            OUTPUT "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+            OUTPUT "${pot_stamp}"
             COMMAND "${GETTEXT_XGETTEXT_COMMAND}" ${GETTEXT_XGETTEXT_ARGS}
                 ${GETTEXT_SOURCES}
                 "--output=${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+            COMMAND ${CMAKE_COMMAND} -E touch "${pot_stamp}"
             DEPENDS ${GETTEXT_SOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             COMMENT "Generating a .pot file from program sources")
@@ -128,9 +133,12 @@ function(configure_gettext)
                     "--locale=${lang}"
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
         endif()
+        set(po_stamp "${CMAKE_CURRENT_BINARY_DIR}/${GETTEXT_DOMAIN}-${lang}.po.stamp")
+        set(po_dep)
         if(INSIGHT_UPDATE_PO)
+            set(po_dep "${po_stamp}")
             add_custom_command(
-                OUTPUT "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+                OUTPUT "${po_stamp}"
                 COMMAND "${GETTEXT_MSGMERGE_COMMAND}" ${GETTEXT_MSGMERGE_ARGS}
                     "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
                     "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
@@ -140,7 +148,8 @@ function(configure_gettext)
                     "--output-file=${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
                 COMMAND sed -i "/^\\\"POT-Creation-Date: .*\\\"$$/d"
                     "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
-                DEPENDS "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
+                COMMAND ${CMAKE_COMMAND} -E touch "${po_stamp}"
+                DEPENDS "${pot_stamp}" "${GETTEXT_POTFILE_DESTINATION}/${GETTEXT_DOMAIN}.pot"
                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                 COMMENT "Updating the ${lang} .po file from the .pot file; Remove obsolete entries and POT-Creation-Date")
         endif()
@@ -155,7 +164,7 @@ function(configure_gettext)
             COMMAND "${GETTEXT_MSGFMT_COMMAND}" ${GETTEXT_MSGFMT_ARGS}
                 "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
                 "--output-file=${mo_file}"
-            DEPENDS "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po"
+            DEPENDS "${GETTEXT_POFILE_DESTINATION}/${lang}/${GETTEXT_DOMAIN}.po" ${po_dep}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             COMMENT "Creating the ${lang} .mo file from the .po file")
 

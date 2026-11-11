@@ -6,6 +6,7 @@
 #include <functional>
 
 #include "parser.h"
+#include "constrainedsketchparameterbinding.h"
 
 
 
@@ -23,23 +24,6 @@ class ConstrainedSketchParametersDelegate;
 
 
 
-/**
- * @brief The ParameterBinding struct
- * links a (top-level double) parameter of a sketch entity
- * to a scalar expression of the ISCAD script, which contains the sketch.
- */
-struct ParameterBinding
-{
-    std::string expression; ///< expression text, as given in the script
-    ScalarPtr value;
-
-    ParameterBinding() = default;
-    ParameterBinding(const std::string& expr, ScalarPtr v)
-        : expression(expr), value(v)
-    {}
-};
-
-typedef std::map<std::string, ParameterBinding> ParameterBindings;
 
 
 struct ConstrainedSketchGrammar

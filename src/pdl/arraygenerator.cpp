@@ -154,3 +154,13 @@ void ArrayGenerator::cppWriteGetStatement
   os << "}\n";
 }
 
+
+
+
+
+void ArrayGenerator::writeCppOutOfLineDefinitions(
+    std::ostream& os,
+    const std::string& scope ) const
+{
+    value->writeCppOutOfLineDefinitions(os, scope);
+}

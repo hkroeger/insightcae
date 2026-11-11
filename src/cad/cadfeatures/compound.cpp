@@ -18,6 +18,7 @@
  */
 
 #include "boost/range/adaptor/indexed.hpp"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "compound.h"

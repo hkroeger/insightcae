@@ -28,6 +28,10 @@
 #include "vtkWindowToImageFilter.h"
 #include "vtkPNGWriter.h"
 #include "vtkProperty.h"
+
+static_assert(insight::Points==VTK_POINTS, "DatasetRepresentation mismatch");
+static_assert(insight::Wireframe==VTK_WIREFRAME, "DatasetRepresentation mismatch");
+static_assert(insight::Surface==VTK_SURFACE, "DatasetRepresentation mismatch");
 #include "vtkAutoInit.h"
 #include "vtkAlgorithmOutput.h"
 #include "vtkDoubleArray.h"

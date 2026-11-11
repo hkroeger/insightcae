@@ -1,5 +1,6 @@
 
 #include "base/exception.h"
+#include "parser.h"
 #include "datum.h"
 #include "constrainedsketch.h"
 #include "cadfeatures/line.h"

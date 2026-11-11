@@ -1,4 +1,5 @@
 #include "test_pdl.h"
+#include <boost/optional/optional_io.hpp>
 #include "base/exception.h"
 #include "base/parameters/pathparameter.h"
 #include "base/units.h"

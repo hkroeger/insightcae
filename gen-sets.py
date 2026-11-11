@@ -45,6 +45,132 @@ def find_enclosing_class(lines, filename):
         "but no enclosing class/struct found")
 
 
+# ---------------------------------------------------------------------------
+# Scope analysis for out-of-line code generation
+#
+# The PDL-generated struct is included into the user code by an #include of
+# the generated header ("<stem>.h" or the computed-include macro). To define
+# its member functions outside the class, its fully qualified scope is needed.
+# A lightweight scanner tracks namespaces and class definitions (brace
+# matching on comment- and string-stripped code) up to that #include line.
+# ---------------------------------------------------------------------------
+
+re_token = re.compile(r'[A-Za-z_]\w*|::|[{}();<>,:=]|\S')
+
+
+class ScopeScanner:
+    """Tracks the stack of namespace/class scopes line by line."""
+
+    def __init__(self):
+        self.stack   = []     # entries: (kind, name), kind in namespace/class/template/other
+        self.pending = []     # tokens since last ; { }
+        self.in_comment = False
+        self.in_pp_continuation = False
+
+    def _strip(self, line):
+        """remove comments and string/char literals; keeps block comment state"""
+        out = []
+        i = 0
+        n = len(line)
+        while i < n:
+            if self.in_comment:
+                j = line.find('*/', i)
+                if j < 0:
+                    return ''.join(out)
+                self.in_comment = False
+                i = j + 2
+                continue
+            c = line[i]
+            if line.startswith('//', i):
+                break
+            if line.startswith('/*', i):
+                self.in_comment = True
+                i += 2
+                continue
+            if c == '"' or c == "'":
+                # raw strings are not expected in headers with PDL
+                j = i + 1
+                while j < n and line[j] != c:
+                    if line[j] == '\\':
+                        j += 1
+                    j += 1
+                out.append(' ')
+                i = j + 1
+                continue
+            out.append(c)
+            i += 1
+        return ''.join(out)
+
+    def is_preprocessor(self, line):
+        """True for preprocessor lines (incl. continuation), which are not scanned."""
+        if self.in_pp_continuation:
+            self.in_pp_continuation = line.rstrip().endswith('\\')
+            return True
+        if not self.in_comment and line.lstrip().startswith('#'):
+            self.in_pp_continuation = line.rstrip().endswith('\\')
+            return True
+        return False
+
+    def _classify(self, toks):
+        # namespace
+        if 'namespace' in toks:
+            i = toks.index('namespace')
+            names = [t for t in toks[i+1:] if re.match(r'[A-Za-z_]\w*$', t)]
+            if not names or (len(toks) > i+1 and toks[i+1] == '{'):
+                return [('other', None)]   # anonymous namespace
+            return [('namespace', nm) for nm in names]
+        # class/struct head at angle bracket depth 0
+        depth = 0
+        for i, t in enumerate(toks):
+            if t == '<':
+                depth += 1
+            elif t == '>':
+                depth -= 1
+            elif t == '(' and depth == 0:
+                return [('other', None)]   # function, lambda, initializer
+            elif t in ('class', 'struct', 'union') and depth == 0:
+                if i > 0 and toks[i-1] == 'enum':
+                    return [('other', None)]
+                name = None
+                for u in toks[i+1:]:
+                    if u in (':', '{', 'final'):
+                        break
+                    if re.match(r'[A-Za-z_]\w*$', u):
+                        name = u
+                if name is None:
+                    return [('other', None)]   # unnamed struct
+                is_template = 'template' in toks[:i]
+                return [('template' if is_template else 'class', name)]
+        return [('other', None)]
+
+    def feed(self, line):
+        code = self._strip(line)
+        for t in re_token.findall(code):
+            if t == '{':
+                entries = self._classify(self.pending)
+                self.stack.append(entries)
+                self.pending = []
+            elif t == '}':
+                if self.stack:
+                    self.stack.pop()
+                self.pending = []
+            elif t == ';':
+                self.pending = []
+            else:
+                self.pending.append(t)
+
+    def qualified_scope(self):
+        """fully qualified scope (e.g. "insight::MyClass::") or None,
+        if the definitions cannot be placed outside (templates, function scopes, anonymous namespaces)"""
+        scope = ''
+        for entries in self.stack:
+            for kind, name in entries:
+                if kind not in ('namespace', 'class'):
+                    return None
+                scope += name + '::'
+        return scope
+
+
 def copy(l, out, expanded):
     m = re_include.match(l)
     if m is not None:
@@ -60,10 +186,24 @@ def copy(l, out, expanded):
         out.write(l)
 
 
-filename = sys.argv[1]
-pdlexe   = sys.argv[2]
-addlocs  = sys.argv[3:] if len(sys.argv) > 3 else []
-basename = os.path.splitext(os.path.basename(sys.argv[1]))[0]
+# options (anywhere on the command line):
+#   --pdl-cpp=<file>  generate the member functions of the parameter structs
+#                     out of line and write a source file <file>, which
+#                     contains their definitions. Without this option,
+#                     all code is generated inline into the headers.
+pdl_cpp = None
+args = []
+for a in sys.argv[1:]:
+    if a.startswith('--pdl-cpp='):
+        pdl_cpp = a[len('--pdl-cpp='):]
+    else:
+        args.append(a)
+
+filename = args[0]
+pdlexe   = args[1]
+addlocs  = args[2:]
+basename = os.path.splitext(os.path.basename(filename))[0]
+upper_base = re.sub(r'[^A-Za-z0-9]', '_', basename).upper()
 
 print("Scanning", filename, "for PDL definitions")
 generated    = []
@@ -81,8 +221,20 @@ lines_seen = []   # C++ lines outside PDL blocks, used for class inference
 inside = False
 out    = None
 
+scanner       = ScopeScanner()
+include_scope = {}   # include token -> qualified scope (or None) at its #include
+re_pp_include = re.compile(r'^\s*#\s*include\s*(?:"([^"]*)"|<([^>]*)>|(\w+))')
+
 with open(filename, "r") as f:
     for l in f:
+        if not inside:
+            if scanner.is_preprocessor(l):
+                m = re_pp_include.match(l)
+                if m is not None:
+                    tok = m.group(1) or m.group(2) or m.group(3)
+                    include_scope.setdefault(tok, scanner.qualified_scope())
+            elif re_start.search(l) is None:
+                scanner.feed(l)
         if inside:
             if re_end.match(l):
                 if out is not None:
@@ -115,18 +267,59 @@ with open(filename, "r") as f:
             lines_seen.append(l)
 
 
+def out_of_line_scope(stem):
+    """the qualified scope, if the definitions can be generated out of line"""
+    if pdl_cpp is None:
+        return None
+    parts = stem.split("__")
+    candidates = [stem + ".h"]
+    if len(parts) == 3:
+        candidates.append(upper_base + "_PDL_" + parts[1])
+    found = [c for c in candidates if c in include_scope]
+    if not found:
+        print("Generated header of", stem, "is not included in", filename, ": generating inline code")
+        return None
+    scope = include_scope[found[0]]
+    if scope is None:
+        print("Scope of", stem, "is a template or local: generating inline code")
+    return scope
+
+
+out_of_line = []
 for stem in generated:
-    if os.system('"%s" "%s"' % (pdlexe, stem + ".pdl")) != 0:
+    scope = out_of_line_scope(stem)
+    opts = ''
+    if scope is not None:
+        opts = '"--out-of-line-scope=%s" ' % scope
+        out_of_line.append(stem)
+    if os.system('"%s" %s"%s"' % (pdlexe, opts, stem + ".pdl")) != 0:
         sys.exit(-1)
     for file in glob.glob(stem + "__*.h"):
         for al in addlocs:
             shutil.copy(file, al)
 
 
+# Generate the source file with the out-of-line definitions
+if pdl_cpp is not None:
+    content = "// Generated by gen-sets.py from %s -- do not edit\n" % filename
+    if out_of_line:
+        content += '#include "%s"\n' % os.path.abspath(filename)
+        for stem in out_of_line:
+            content += '#include "%s_impl.h"\n' % stem
+    # write only on changes to avoid needless recompilation
+    try:
+        with open(pdl_cpp) as cf:
+            old = cf.read()
+    except FileNotFoundError:
+        old = None
+    if old != content:
+        with open(pdl_cpp, "w") as cf:
+            cf.write(content)
+
+
 # Generate basename_pdl.h:
 #   - #include lines for all *_headers.h prerequisites (replaces per-class file-scope includes)
 #   - #define macros for computed class-body includes (e.g. #include MYFILE_PDL_MyClass)
-upper_base   = re.sub(r'[^A-Za-z0-9]', '_', basename).upper()
 pdl_hdr_name = basename + "_pdl.h"
 with open(pdl_hdr_name, "w") as ph:
     ph.write("// Generated by gen-sets.py — do not edit\n")

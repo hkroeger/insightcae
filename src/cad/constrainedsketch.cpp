@@ -1,4 +1,5 @@
 #include "constrainedsketch.h"
+#include "vtkProperty.h"
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"

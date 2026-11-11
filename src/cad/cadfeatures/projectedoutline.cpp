@@ -18,6 +18,7 @@
  */
 
 #include "projectedoutline.h"
+#include "parser.h"
 #include "datum.h"
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "base/boost_include.h"

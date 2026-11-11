@@ -1,4 +1,4 @@
-#include "featurefilter.h"
+#include "featurefilter_grammar.h"
 #include <boost/spirit/include/phoenix.hpp>
 
 #include "quantitycomputers/solidcog.h"

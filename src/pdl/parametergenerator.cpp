@@ -214,6 +214,17 @@ void ParameterGenerator::writeCppStaticVariableDefinition(
 
 
 
+bool ParameterGenerator::outOfLineDefinitions = false;
+
+
+void ParameterGenerator::writeCppOutOfLineDefinitions(
+    std::ostream&,
+    const std::string& ) const
+{}
+
+
+
+
 /**
  * write the code to create a new parameter object for the dynamic parameter set
  */

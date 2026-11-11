@@ -1,4 +1,5 @@
 #include "cadgeometryparameter.h"
+#include "parser.h"
 
 #include "base/hierarchicalelement.h"
 #include "base/exception.h"

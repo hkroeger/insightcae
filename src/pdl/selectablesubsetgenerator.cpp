@@ -268,3 +268,16 @@ void SelectableSubsetGenerator::cppWriteGetStatement
     }
     os<<"}\n";
 }
+
+
+
+
+void SelectableSubsetGenerator::writeCppOutOfLineDefinitions(
+    std::ostream& os,
+    const std::string& scope ) const
+{
+    for ( const auto& v: value )
+    {
+        v->writeCppOutOfLineDefinitions( os, scope );
+    }
+}

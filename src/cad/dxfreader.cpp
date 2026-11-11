@@ -19,6 +19,7 @@
  */
 
 #include "sketch.h"
+#include "parser.h"
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "boost/format.hpp"

@@ -20,6 +20,7 @@
 
 
 #include "line.h"
+#include "constrainedsketchgrammar.h"
 #include "parser_tools.h"
 #include "base/exception.h"
 #include "boost/phoenix/core/reference.hpp"

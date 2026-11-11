@@ -5,6 +5,7 @@
 #include "iqcadmodel3dviewer/viewwidgetaction.h"
 
 #include <memory>
+#include <vtkActor.h>
 #include <vtkPointSource.h>
 #include <vtkTransformFilter.h>
 

@@ -3,6 +3,7 @@
 
 
 #include "constrainedsketchentity.h"
+#include "cadparameter.h"
 
 
 

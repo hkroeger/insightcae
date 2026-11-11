@@ -72,14 +72,8 @@ public:
     //     return model_;
     // }
 
-    typedef qi::rule<
-        std::string::iterator,
-        std::shared_ptr<ModelFeature>(ModelVariableTable),
-        insight::cad::parser::skip_grammar
-        > ModelFeatureArgRule;
-
-    static const ModelFeatureArgRule&
-    rule( parser::ISCADParser& ruleset );
+    // the grammar rule for the model arguments is declared in
+    // modelfeature_rule.h (kept out of here to avoid including boost::spirit)
 
     // boost::spirit::qi::symbols<char, FeatureSetPtr> featureSymbols(EntityType et) const override;
 

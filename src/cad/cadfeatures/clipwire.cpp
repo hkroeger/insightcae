@@ -19,6 +19,7 @@
 
 
 #include "GCPnts_AbscissaPoint.hxx"
+#include "parser.h"
 
 #include "clipwire.h"
 #include "cadfeature.h"

@@ -1,5 +1,6 @@
 
 #include <QApplication>
+#include <boost/optional/optional_io.hpp>
 #include <QAbstractItemModelTester>
 #include <QDialog>
 #include <QTreeView>

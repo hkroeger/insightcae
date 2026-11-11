@@ -32,7 +32,6 @@
 #include "cadtypes.h"
 
 #ifndef Q_MOC_RUN
-#include <boost/spirit/include/qi.hpp>
 #include "boost/functional/hash.hpp"
 //#include "boost/enable_shared_from_this.hpp"
 #endif
@@ -47,7 +46,8 @@
 
 #include "featureset.h"
 #include "datum.h"
-#include "parser.h"
+#include "parser_fwd.h"
+#include "spirit_fwd.h"
 
 #include "parameterlisthash.h"
 #include "featurecache.h"
@@ -372,7 +372,7 @@ public:
   FeaturePtr subshape(const std::string& name);
   FeatureSetPtr providedFeatureSet(const std::string& name);
 
-  virtual boost::spirit::qi::symbols<char, FeatureSetPtr> featureSymbols(EntityType et) const;
+  virtual boost::spirit::qi::default_symbols<char, FeatureSetPtr> featureSymbols(EntityType et) const;
   
   inline const SubfeatureMap& providedSubshapes() const // caused failure with phx::bind!
     { checkForBuildDuringAccess(); return providedSubshapes_; }

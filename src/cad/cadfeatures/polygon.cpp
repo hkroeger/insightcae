@@ -1,4 +1,5 @@
 #include "polygon.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include <boost/spirit/include/qi.hpp>

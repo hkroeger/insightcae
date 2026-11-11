@@ -26,7 +26,7 @@
 #include "base/parameters/subsetparameter.h"
 #include "openfoam/openfoamanalysis.h"
 
-#include "numericalwindtunnel__NumericalWindtunnel__Parameters_headers.h"
+#include "numericalwindtunnel_pdl.h"
 
 #include "gp_Trsf.hxx"
 
@@ -43,9 +43,10 @@ class NumericalWindtunnel
 
 public:
   static void modifyDefaults(insight::ParameterSet& p);
-#include "numericalwindtunnel__NumericalWindtunnel__Parameters.h"
+
+#include NUMERICALWINDTUNNEL_PDL_NumericalWindtunnel
 /*
-PARAMETERSET>>> NumericalWindtunnel Parameters
+PARAMETERSET>>>
 inherits OpenFOAMAnalysis::Parameters
 addTo_makeDefault { modifyDefaults(p); }
 

@@ -23,9 +23,11 @@ void ParameterSetGenerator::writeCppTypeDeclMakeDefaultFunction_populate(std::os
     // os << name << ".initialize();\n";
 }
 
-void ParameterSetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) const
+void ParameterSetGenerator::writeCppTypeDeclGetSetFunctions(
+    std::ostream &os,
+    CodeMode mode, const std::string& qual ) const
 {
-    SubsetGenerator::writeCppTypeDeclGetSetFunctions(os);
+    SubsetGenerator::writeCppTypeDeclGetSetFunctions(os, mode, qual);
 
     if (
         base_types_ &&
@@ -35,12 +37,30 @@ void ParameterSetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) co
             !=base_types_->end())
         )
     {
-        // convert static data into a ParameterSet
-        os << "std::unique_ptr<ParameterSet> cloneParameterSet() const override\n"
-           << "{ auto p=makeDefault(); set(*p); return ParameterSet::finalize(std::move(p)); }\n";
+        switch (mode)
+        {
+        case CodeMode::Inline:
+            // convert static data into a ParameterSet
+            os << "std::unique_ptr<ParameterSet> cloneParameterSet() const override\n"
+               << "{ auto p=makeDefault(); set(*p); return ParameterSet::finalize(std::move(p)); }\n";
 
-        // clone function
-        os << "std::unique_ptr<insight::ParametersBase> clone() const override\n"
-           << "{ return std::unique_ptr<"<<name<<">(new "<<name<<"(*this)); }\n";
+            // clone function
+            os << "std::unique_ptr<insight::ParametersBase> clone() const override\n"
+               << "{ return std::unique_ptr<"<<name<<">(new "<<name<<"(*this)); }\n";
+            break;
+
+        case CodeMode::Declaration:
+            os << "std::unique_ptr<insight::ParameterSet> cloneParameterSet() const override;\n"
+               << "std::unique_ptr<insight::ParametersBase> clone() const override;\n";
+            break;
+
+        case CodeMode::Definition:
+            os << "std::unique_ptr<insight::ParameterSet> "<<qual<<"cloneParameterSet() const\n"
+               << "{ auto p=makeDefault(); set(*p); return ParameterSet::finalize(std::move(p)); }\n";
+
+            os << "std::unique_ptr<insight::ParametersBase> "<<qual<<"clone() const\n"
+               << "{ return std::unique_ptr<"<<name<<">(new "<<name<<"(*this)); }\n";
+            break;
+        }
     }
 }

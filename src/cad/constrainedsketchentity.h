@@ -9,9 +9,8 @@
 #include "boost/signals2/connection.hpp"
 #include "boost/optional.hpp"
 #include "cadtypes.h"
+#include "constrainedsketchparameterbinding.h"
 
-#include "constrainedsketchgrammar.h"
-#include "boost/spirit/include/qi.hpp"
 
 
 namespace insight {
@@ -20,6 +19,8 @@ namespace cad {
 class ConstrainedSketch;
 class ConstrainedSketchEntity;
 class ConstrainedSketchScriptBuffer;
+struct ConstrainedSketchGrammar; // defined in constrainedsketchgrammar.h
+class ConstrainedSketchParametersDelegate;
 
 typedef
     std::shared_ptr<ConstrainedSketchEntity>

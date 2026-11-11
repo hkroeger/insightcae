@@ -46,8 +46,6 @@ public:
     {}
 };
 
-defineType(BrakePad);
-
 typedef PropertyLibrary<BrakePad, &libSubDir> BrakePads;
 
 

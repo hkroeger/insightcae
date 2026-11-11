@@ -1,4 +1,5 @@
 #include "forloop.h"
+#include "modelfeature_rule.h"
 #include "parser_tools.h"
 #include "base/exception.h"
 #include "boost/phoenix/stl/algorithm/transformation.hpp"
@@ -154,7 +155,7 @@ void ForLoop::insertrule ( parser::ISCADParser& ruleset )
                 > (
                     ruleset.r_submodel ( phx::bind(&loopvar, qi::_a, qi::_b) )
                     |
-                    ModelFeature::rule(ruleset) ( phx::bind(&loopvar, qi::_a, qi::_b) )
+                    modelFeatureArgRule(ruleset) ( phx::bind(&loopvar, qi::_a, qi::_b) )
                   )
                 > ')' )
                     [ qi::_val = phx::bind(

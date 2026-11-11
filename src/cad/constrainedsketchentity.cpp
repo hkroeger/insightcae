@@ -1,4 +1,5 @@
 #include "constrainedsketchentity.h"
+#include "constrainedsketchgrammar.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/parameters/subsetparameter.h"

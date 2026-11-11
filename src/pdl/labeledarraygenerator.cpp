@@ -190,3 +190,13 @@ void LabeledArrayGenerator::cppWriteGetStatement(
     os << "}\n";
 }
 
+
+
+
+
+void LabeledArrayGenerator::writeCppOutOfLineDefinitions(
+    std::ostream& os,
+    const std::string& scope ) const
+{
+    value->writeCppOutOfLineDefinitions(os, scope);
+}

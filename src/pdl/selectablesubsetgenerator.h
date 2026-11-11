@@ -28,6 +28,10 @@ struct SelectableSubsetGenerator
 
         void writeCppTypeDecl ( std::ostream& os ) const override;
 
+    void writeCppOutOfLineDefinitions(
+        std::ostream& os,
+        const std::string& scope ) const override;
+
 
         void cppWriteCreateStatement
         (

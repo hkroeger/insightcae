@@ -1,4 +1,5 @@
 #include "angleconstraint.h"
+#include "constrainedsketchgrammar.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/units.h"

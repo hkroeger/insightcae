@@ -1,4 +1,5 @@
 #include "splitsurface.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "TopTools_MapOfShape.hxx"

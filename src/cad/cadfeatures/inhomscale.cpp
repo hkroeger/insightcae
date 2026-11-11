@@ -1,4 +1,5 @@
 #include "inhomscale.h"
+#include "parser.h"
 
 #include "base/translations.h"
 

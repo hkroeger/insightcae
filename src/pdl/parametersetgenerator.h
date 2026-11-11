@@ -15,7 +15,8 @@ public:
     void writeCppTypeDeclMakeDefaultFunction_populate(std::ostream &os) const override;
 
     void writeCppTypeDeclGetSetFunctions(
-        std::ostream& os ) const override;
+        std::ostream& os,
+        CodeMode mode, const std::string& qual ) const override;
 };
 
 #endif // PARAMETERSETGENERATOR_H

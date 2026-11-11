@@ -18,6 +18,7 @@
  */
 
 #include "transform.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "cadparameters/scalarops.h"
 #include "datum.h"

@@ -18,6 +18,7 @@
  */
 
 #include "base/exception.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "pointdistance.h"
@@ -35,6 +36,8 @@
 #include "vtkGlyph3D.h"
 #include "vtkCaptionActor2D.h"
 #include "vtkTextActor.h"
+#include "vtkPointData.h"
+#include "vtkProperty.h"
 
 namespace insight {
 namespace cad {

@@ -12,6 +12,7 @@
 
 #include "assistant/ssestreamparser.h"
 #include "assistant/anthropicbackend.h"
+#include "assistant/openaicompatbackend.h"
 #include "assistant/iscadassistantagent.h"
 
 using namespace insight::assistant;
@@ -245,6 +246,30 @@ const QByteArray sampleStream =
     "data: {\"type\":\"message_stop\"}\n\n";
 
 
+
+
+
+QByteArray sseData(const QList<QByteArray>& chunks)
+{
+    QByteArray r;
+    for (const auto& c: chunks)
+        r+="data: "+c+"\n\n";
+    return r;
+}
+
+
+const QByteArray openaiStream = sseData({
+    "{\"id\":\"c1\",\"model\":\"qwen3:32b\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"reasoning_content\":\"Think.\"},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"model\":\"qwen3:32b\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"I will \"},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"model\":\"qwen3:32b\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"edit.\"},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"type\":\"function\",\"function\":{\"name\":\"edit_script\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"old_string\\\":\\\"L=1\"}}]},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\";\\\",\\\"new_string\\\":\\\"L=2;\\\"}\"}}]},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":1,\"id\":\"call_b\",\"type\":\"function\",\"function\":{\"name\":\"rebuild\",\"arguments\":\"{}\"}}]},\"finish_reason\":null}]}",
+    "{\"id\":\"c1\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}",
+    "{\"id\":\"c1\",\"choices\":[],\"usage\":{\"prompt_tokens\":1000,\"completion_tokens\":50,\"prompt_tokens_details\":{\"cached_tokens\":800}}}",
+    "[DONE]"
+});
 
 
 // ================================================================
@@ -694,6 +719,225 @@ private Q_SLOTS:
         be.sendTurn("sys", {}, {});
         QVERIFY(failed.wait(1000));
         QVERIFY(failed[0][0].toString().contains("ANTHROPIC_API_KEY"));
+    }
+
+
+    void openaiStreamAccumulator()
+    {
+        SSEStreamParser p;
+        OpenAICompatStreamAccumulator acc;
+        QString text, thinking;
+        acc.onText=[&](const QString& t) { text+=t; };
+        acc.onThinking=[&](const QString& t) { thinking+=t; };
+        for (int i=0; i<openaiStream.size(); i+=23)
+            for (const auto& ev: p.feed(openaiStream.mid(i, 23)))
+                acc.processEvent(ev);
+        QCOMPARE(int(acc.status()), int(StreamAccumulator::Done));
+        QCOMPARE(text, QString("I will edit."));
+        QCOMPARE(thinking, QString("Think."));
+
+        auto r=acc.result("openai-compat");
+        QCOMPARE(r.stopReason, QString("tool_use"));
+        QCOMPARE(r.model, QString("qwen3:32b"));
+        QCOMPARE(r.usage.inputTokens, qint64(200));
+        QCOMPARE(r.usage.cacheReadTokens, qint64(800));
+        QCOMPARE(r.usage.outputTokens, qint64(50));
+        QCOMPARE(r.message.toolCalls.size(), 2);
+        QCOMPARE(r.message.toolCalls[0].id, QString("call_a"));
+        QCOMPARE(r.message.toolCalls[0].name, QString("edit_script"));
+        QCOMPARE(r.message.toolCalls[0].input.value("new_string").toString(), QString("L=2;"));
+        QCOMPARE(r.message.toolCalls[1].name, QString("rebuild"));
+
+        auto pc=r.message.providerContent.toObject();
+        QCOMPARE(pc.value("role").toString(), QString("assistant"));
+        QCOMPARE(pc.value("content").toString(), QString("I will edit."));
+        QCOMPARE(pc.value("tool_calls").toArray().size(), 2);
+        // reasoning is not sent back
+        QVERIFY(!pc.contains("reasoning_content"));
+    }
+
+
+    void openaiStreamVariants()
+    {
+        // tool call reported with finish_reason "stop", no index, arguments as object,
+        // stream closed without [DONE]
+        QByteArray s=sseData({
+            "{\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"id\":\"x1\",\"function\":{\"name\":\"read_script\",\"arguments\":{\"from_line\":2}}}]},\"finish_reason\":null}]}",
+            "{\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"id\":\"x2\",\"function\":{\"name\":\"rebuild\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}",
+            "{\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}"
+        });
+        SSEStreamParser p;
+        OpenAICompatStreamAccumulator acc;
+        for (const auto& ev: p.feed(s))
+            acc.processEvent(ev);
+        QCOMPARE(int(acc.status()), int(StreamAccumulator::InProgress));
+        QCOMPARE(int(acc.finishStream()), int(StreamAccumulator::Done));
+        auto r=acc.result("openai-compat");
+        QCOMPARE(r.stopReason, QString("tool_use"));
+        QCOMPARE(r.message.toolCalls.size(), 2);
+        QCOMPARE(r.message.toolCalls[0].input.value("from_line").toInt(), 2);
+        QCOMPARE(r.message.toolCalls[1].id, QString("x2"));
+        QVERIFY(r.message.toolCalls[1].inputValid);
+        // content is null for a pure tool call message
+        QVERIFY(r.message.providerContent.toObject().value("content").isNull());
+
+        // invalid arguments, truncated output
+        QByteArray s2=sseData({
+            "{\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"y\",\"function\":{\"name\":\"edit_script\",\"arguments\":\"{\\\"old_str\"}}]},\"finish_reason\":\"length\"}]}",
+            "[DONE]"
+        });
+        SSEStreamParser p2;
+        OpenAICompatStreamAccumulator acc2;
+        for (const auto& ev: p2.feed(s2))
+            acc2.processEvent(ev);
+        auto r2=acc2.result("openai-compat");
+        QCOMPARE(r2.stopReason, QString("max_tokens"));
+        QVERIFY(!r2.message.toolCalls[0].inputValid);
+
+        // error in stream
+        SSEStreamParser p3;
+        OpenAICompatStreamAccumulator acc3;
+        for (const auto& ev: p3.feed(sseData({"{\"error\":{\"message\":\"boom\",\"type\":\"server_error\"}}"})))
+            acc3.processEvent(ev);
+        QCOMPARE(int(acc3.status()), int(StreamAccumulator::Error));
+        QCOMPARE(acc3.errorMessage(), QString("server_error: boom"));
+    }
+
+
+    void openaiRequestFormat()
+    {
+        OpenAICompatConfig cfg;
+        cfg.model="qwen3:32b";
+
+        QList<ChatMessage> h;
+        ChatMessage u; u.role=ChatMessage::User; u.text="make a box";
+        h<<u;
+
+        // produced by another backend (Anthropic): converted from text and tool calls
+        ChatMessage a; a.role=ChatMessage::Assistant;
+        a.providerId="anthropic";
+        a.providerContent=QJsonArray{ QJsonObject{{"type","thinking"},{"thinking","x"},{"signature","S"}} };
+        a.text="Reading.";
+        ToolCall tc; tc.id="toolu_1"; tc.name="read_script"; tc.input=QJsonObject{{"from_line",1}};
+        a.toolCalls<<tc;
+        h<<a;
+
+        ChatMessage r; r.role=ChatMessage::User;
+        r.toolResults<<ToolResult{"toolu_1", "failed", true};
+        r.text="go on";
+        h<<r;
+
+        auto req=OpenAICompatBackend::buildRequest(cfg, "openai-compat", "SYS", h, ISCADAssistantAgent::toolDefinitions());
+        QCOMPARE(req.value("model").toString(), QString("qwen3:32b"));
+        QVERIFY(req.value("stream").toBool());
+        QVERIFY(req.value("stream_options").toObject().value("include_usage").toBool());
+        QVERIFY(!req.contains("max_tokens"));
+
+        auto tools=req.value("tools").toArray();
+        QCOMPARE(tools[0].toObject().value("type").toString(), QString("function"));
+        QCOMPARE(tools[0].toObject().value("function").toObject().value("name").toString(), QString("read_script"));
+        QVERIFY(tools[0].toObject().value("function").toObject().contains("parameters"));
+
+        auto m=req.value("messages").toArray();
+        QCOMPARE(m.size(), 5);
+        QCOMPARE(m[0].toObject().value("role").toString(), QString("system"));
+        QCOMPARE(m[1].toObject().value("role").toString(), QString("user"));
+        auto am=m[2].toObject();
+        QCOMPARE(am.value("role").toString(), QString("assistant"));
+        QCOMPARE(am.value("content").toString(), QString("Reading."));
+        auto tcf=am.value("tool_calls").toArray()[0].toObject().value("function").toObject();
+        QCOMPARE(tcf.value("arguments").toString(), QString("{\"from_line\":1}"));
+        QCOMPARE(m[3].toObject().value("role").toString(), QString("tool"));
+        QCOMPARE(m[3].toObject().value("tool_call_id").toString(), QString("toolu_1"));
+        QCOMPARE(m[3].toObject().value("content").toString(), QString("ERROR: failed"));
+        QCOMPARE(m[4].toObject().value("content").toString(), QString("go on"));
+
+        // and back: an OpenAI message in an Anthropic request
+        ChatMessage o; o.role=ChatMessage::Assistant;
+        o.providerId="openai-compat";
+        o.providerContent=QJsonObject{{"role","assistant"}};
+        o.toolCalls<<tc;
+        QList<ChatMessage> h2{u, o, r};
+        auto areq=AnthropicBackend::buildRequest(AnthropicConfig(), "anthropic", "S", h2, {});
+        auto ac=areq.value("messages").toArray()[1].toObject().value("content").toArray();
+        QCOMPARE(ac.size(), 1);
+        QCOMPARE(ac[0].toObject().value("type").toString(), QString("tool_use"));
+        QCOMPARE(ac[0].toObject().value("input").toObject().value("from_line").toInt(), 1);
+    }
+
+
+    void errorBodies()
+    {
+        QCOMPARE(StreamingHttpBackend::errorMessageFromBody(404, "{\"error\":\"model 'x' not found\"}"),
+                 QString("HTTP 404: model 'x' not found"));
+        QCOMPARE(StreamingHttpBackend::errorMessageFromBody(400, "{\"error\":{\"message\":\"bad\",\"type\":\"invalid_request_error\"}}"),
+                 QString("HTTP 400, invalid_request_error: bad"));
+        QCOMPARE(StreamingHttpBackend::errorMessageFromBody(502, ""), QString("HTTP 502"));
+        QCOMPARE(StreamingHttpBackend::endpoint(QUrl("http://h:1/v1/"), "/models").toString(),
+                 QString("http://h:1/v1/models"));
+        QCOMPARE(OpenAICompatBackend::parseModelList("{\"object\":\"list\",\"data\":[{\"id\":\"b\"},{\"id\":\"a\"}]}"),
+                 QStringList({"a","b"}));
+    }
+
+
+    void pricing()
+    {
+        auto p=AnthropicBackend::pricingOf("claude-opus-5-5");
+        QVERIFY(p.known);
+        Usage u;
+        u.inputTokens=1000000; u.outputTokens=100000; u.cacheReadTokens=1000000; u.cacheWriteTokens=1000000;
+        // 4 + 2 + 0.2 + 5
+        QCOMPARE(p.cost(u), 11.2);
+        QVERIFY(!AnthropicBackend::pricingOf("unknown-model").known);
+
+        OpenAICompatConfig c;
+        QVERIFY(!OpenAICompatBackend(c).pricing().known);
+        c.priceInput=1;
+        QVERIFY(OpenAICompatBackend(c).pricing().known);
+    }
+
+
+    void openaiAgentOverHttp()
+    {
+        FakeHttpServer server;
+        QVERIFY(server.listen(QHostAddress::LocalHost));
+        server.responses
+            << QByteArray("HTTP/1.1 503 Busy\r\nContent-Length: 0\r\nretry-after: 1\r\n\r\n")
+            << sseResponse(sseData({
+                   "{\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c1\",\"function\":{\"name\":\"edit_script\",\"arguments\":\"{\\\"old_string\\\":\\\"L=1;\\\",\\\"new_string\\\":\\\"L=2;\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}",
+                   "[DONE]" }))
+            << sseResponse(sseData({
+                   "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Done.\"},\"finish_reason\":\"stop\"}]}",
+                   "[DONE]" }));
+
+        OpenAICompatConfig cfg;
+        cfg.baseUrl=QUrl(QString("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+        cfg.model="local-model";
+        cfg.apiKey="secret";
+
+        FakeHost host;
+        host.script="L=1;\n";
+        ISCADAssistantAgent agent(&host);
+        agent.setSystemPrompt("SYS");
+        agent.setBackend(new OpenAICompatBackend(cfg));
+
+        QSignalSpy finished(&agent, &ISCADAssistantAgent::requestFinished);
+        agent.sendUserMessage("set L to 2");
+        QVERIFY(finished.wait(10000));
+        QCOMPARE(finished[0][0].toString(), QString("end_turn"));
+        QCOMPARE(host.script, QString("L=2;\n"));
+
+        QCOMPARE(server.requests.size(), 3);
+        const auto& req=server.requests[2];
+        QVERIFY(req.startsWith("POST /v1/chat/completions "));
+        QVERIFY(req.toLower().contains("authorization: bearer secret"));
+        auto body=QJsonDocument::fromJson(req.mid(req.indexOf("\r\n\r\n")+4)).object();
+        auto msgs=body.value("messages").toArray();
+        // system, user, assistant (tool call), tool result
+        QCOMPARE(msgs.size(), 4);
+        QCOMPARE(msgs[3].toObject().value("role").toString(), QString("tool"));
+        QCOMPARE(msgs[3].toObject().value("tool_call_id").toString(), QString("c1"));
+        checkHistoryConsistency(agent.history());
     }
 };
 

@@ -44,6 +44,11 @@ public:
 
     virtual void cancel() =0;
 
+    /**
+     * token prices of the used model (known=false, if unknown)
+     */
+    virtual ModelPricing pricing() const { return ModelPricing(); }
+
     virtual bool isBusy() const =0;
 
 Q_SIGNALS:

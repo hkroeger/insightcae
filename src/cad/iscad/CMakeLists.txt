@@ -9,7 +9,9 @@ add_library(iscadassistant STATIC
     assistant/llmtypes.h
     assistant/llmbackend.h
     assistant/ssestreamparser.h assistant/ssestreamparser.cpp
+    assistant/streamingbackend.h assistant/streamingbackend.cpp
     assistant/anthropicbackend.h assistant/anthropicbackend.cpp
+    assistant/openaicompatbackend.h assistant/openaicompatbackend.cpp
     assistant/iscadassistanthost.h
     assistant/iscadassistantagent.h assistant/iscadassistantagent.cpp
 )
@@ -55,6 +57,7 @@ add_executable(iscad
     insertdrawingdialog.h insertdrawingdialog.cpp
     iqiscadassistanthost.h iqiscadassistanthost.cpp
     iqiscadchatwidget.h iqiscadchatwidget.cpp
+    iqiscadassistantsettings.h iqiscadassistantsettings.cpp
 
     modelcomponentselectordlg.ui
     insertfeaturedlg.ui

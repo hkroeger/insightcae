@@ -33,7 +33,10 @@ class IQISCADChatWidget
     QTextBrowser* transcript_;
     QPlainTextEdit* input_;
     QPushButton *sendBtn_, *stopBtn_, *newBtn_, *settingsBtn_;
-    QLabel* statusLabel_;
+    QLabel *statusLabel_, *costLabel_;
+
+    insight::assistant::Usage lastSeenUsage_, requestUsage_, conversationUsage_;
+    double requestCost_ = 0, conversationCost_ = 0;
     QTimer* renderTimer_;
 
     /**
@@ -44,7 +47,7 @@ class IQISCADChatWidget
     void scheduleRender();
     void render();
     void updateButtons();
-    void updateUsage(const insight::assistant::Usage& u);
+    void updateUsage(const insight::assistant::Usage& sessionUsage);
 
     /**
      * create the backend from the stored settings

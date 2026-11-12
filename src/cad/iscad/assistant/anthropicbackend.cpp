@@ -1,11 +1,9 @@
 #include "anthropicbackend.h"
 
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonArray>
-#include <QTimer>
+
+#include <map>
 
 namespace insight {
 namespace assistant {
@@ -69,8 +67,7 @@ AnthropicStreamAccumulator::processEvent(const SSEStreamParser::Event& ev)
     auto doc = QJsonDocument::fromJson(ev.data, &err);
     if (err.error!=QJsonParseError::NoError || !doc.isObject())
     {
-        status_=Error;
-        errorMessage_=QString("invalid event data in response stream: %1").arg(err.errorString());
+        setError(QString(), QString("invalid event data in response stream: %1").arg(err.errorString()));
         return status_;
     }
     auto d = doc.object();
@@ -110,8 +107,7 @@ AnthropicStreamAccumulator::processEvent(const SSEStreamParser::Event& ev)
         size_t i = size_t(d.value("index").toInt());
         if (i>=blocks_.size())
         {
-            status_=Error;
-            errorMessage_="delta for unknown content block in response stream";
+            setError(QString(), "delta for unknown content block in response stream");
             return status_;
         }
         auto& b = blocks_[i];
@@ -165,10 +161,7 @@ AnthropicStreamAccumulator::processEvent(const SSEStreamParser::Event& ev)
     else if (type=="error")
     {
         auto e=d.value("error").toObject();
-        status_=Error;
-        errorType_=e.value("type").toString();
-        errorMessage_=QString("%1: %2")
-                .arg(errorType_, e.value("message").toString());
+        setError(e.value("type").toString(), e.value("message").toString());
     }
     // "ping" and unknown events are ignored
 
@@ -234,22 +227,11 @@ TurnResult AnthropicStreamAccumulator::result(const QString& providerId) const
 
 
 AnthropicBackend::AnthropicBackend(const AnthropicConfig& cfg, QObject* parent)
-    : LLMBackend(parent),
-      cfg_(cfg),
-      nam_(new QNetworkAccessManager(this)),
-      idleTimer_(new QTimer(this)),
-      retryTimer_(new QTimer(this))
+    : StreamingHttpBackend(parent),
+      cfg_(cfg)
 {
-    idleTimer_->setSingleShot(true);
-    connect(idleTimer_, &QTimer::timeout, this, &AnthropicBackend::onIdleTimeout);
-    retryTimer_->setSingleShot(true);
-    connect(retryTimer_, &QTimer::timeout, this, &AnthropicBackend::startRequest);
-}
-
-
-AnthropicBackend::~AnthropicBackend()
-{
-    abortReply();
+    idleTimeoutSeconds_=cfg_.idleTimeoutSeconds;
+    maxRetries_=cfg_.maxRetries;
 }
 
 
@@ -262,6 +244,42 @@ QString AnthropicBackend::id() const
 QString AnthropicBackend::description() const
 {
     return QString("Anthropic %1").arg(cfg_.model);
+}
+
+
+ModelPricing AnthropicBackend::pricingOf(const QString& model)
+{
+    // USD per million tokens: input, output, cache read (cache write: 1.25 x input)
+    struct P { double in, out, cacheRead; };
+    static const std::map<QString, P> prices{
+        {"claude-fable-5-1", {10., 50., 0.25}},
+        {"claude-opus-5-5", {4., 20., 0.2}},
+        {"claude-sonnet-5-5", {2., 10., 0.2}},
+        {"claude-haiku-5-5", {0.1, 0.5, 0.01}}
+    };
+    ModelPricing r;
+    auto i=prices.find(model);
+    if (i!=prices.end())
+    {
+        r.known=true;
+        r.input=i->second.in;
+        r.output=i->second.out;
+        r.cacheRead=i->second.cacheRead;
+        r.cacheWrite=1.25*i->second.in;
+    }
+    return r;
+}
+
+
+ModelPricing AnthropicBackend::pricing() const
+{
+    return pricingOf(cfg_.model);
+}
+
+
+std::unique_ptr<StreamAccumulator> AnthropicBackend::createAccumulator() const
+{
+    return std::make_unique<AnthropicStreamAccumulator>();
 }
 
 
@@ -384,64 +402,19 @@ QJsonObject AnthropicBackend::buildRequest(
 }
 
 
-QString AnthropicBackend::errorMessageFromBody(int httpStatus, const QByteArray& body)
-{
-    QJsonParseError err;
-    auto doc=QJsonDocument::fromJson(body, &err);
-    if (err.error==QJsonParseError::NoError && doc.isObject())
-    {
-        auto e=doc.object().value("error").toObject();
-        if (!e.isEmpty())
-        {
-            return QString("HTTP %1, %2: %3")
-                .arg(httpStatus)
-                .arg(e.value("type").toString(), e.value("message").toString());
-        }
-    }
-    return QString("HTTP %1: %2").arg(httpStatus).arg(QString::fromUtf8(body.left(500)));
-}
-
-
 void AnthropicBackend::sendTurn(
     const QString& systemPrompt,
     const QList<ChatMessage>& history,
     const QList<ToolDefinition>& tools )
 {
-    cancel();
-
-    busy_=true;
-    attempt_=0;
-
     if (cfg_.apiKey.isEmpty())
     {
-        // report asynchronously, like all other results
-        QTimer::singleShot(0, this, [this]() {
-            fail("No Anthropic API key configured. "
-                 "Set the environment variable ANTHROPIC_API_KEY or enter the key in the assistant settings.");
-        });
+        failLater("No Anthropic API key configured. "
+                  "Set the environment variable ANTHROPIC_API_KEY or enter the key in the assistant settings.");
         return;
     }
 
-    requestBody_ = QJsonDocument(
-        buildRequest(cfg_, id(), systemPrompt, history, tools)
-        ).toJson(QJsonDocument::Compact);
-
-    startRequest();
-}
-
-
-void AnthropicBackend::startRequest()
-{
-    if (!busy_)
-        return;
-
-    QUrl url=cfg_.baseUrl;
-    QString path=url.path();
-    if (path.endsWith('/'))
-        path.chop(1);
-    url.setPath(path+"/v1/messages");
-
-    QNetworkRequest req(url);
+    QNetworkRequest req(endpoint(cfg_.baseUrl, "/v1/messages"));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setRawHeader("x-api-key", cfg_.apiKey.toUtf8());
     req.setRawHeader("anthropic-version", apiVersion);
@@ -449,192 +422,10 @@ void AnthropicBackend::startRequest()
     if (cfg_.serverSideFallback && isFirstPartyEndpoint(cfg_.baseUrl))
         req.setRawHeader("anthropic-beta", fallbackBeta);
 
-    httpStatus_=0;
-    errorBody_.clear();
-    sse_.reset();
-    acc_.reset(new AnthropicStreamAccumulator);
-    acc_->onText = [this](const QString& t) { Q_EMIT textDelta(t); };
-    acc_->onThinking = [this](const QString& t) { Q_EMIT thinkingDelta(t); };
-
-    reply_=nam_->post(req, requestBody_);
-    connect(reply_, &QNetworkReply::readyRead, this, &AnthropicBackend::onReadyRead);
-    connect(reply_, &QNetworkReply::finished, this, &AnthropicBackend::onReplyFinished);
-
-    idleTimer_->start(cfg_.idleTimeoutSeconds*1000);
-}
-
-
-void AnthropicBackend::onReadyRead()
-{
-    if (!reply_ || !busy_)
-        return;
-
-    idleTimer_->start(cfg_.idleTimeoutSeconds*1000);
-
-    if (httpStatus_==0)
-        httpStatus_=reply_->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    QByteArray data=reply_->readAll();
-    if (httpStatus_!=200)
-    {
-        errorBody_.append(data);
-        return;
-    }
-
-    for (const auto& ev: sse_.feed(data))
-    {
-        auto st=acc_->processEvent(ev);
-        if (st==AnthropicStreamAccumulator::Done)
-        {
-            auto result=acc_->result(id());
-            abortReply();
-            busy_=false;
-            Q_EMIT turnFinished(result);
-            return;
-        }
-        else if (st==AnthropicStreamAccumulator::Error)
-        {
-            static const QStringList retryable{"overloaded_error", "api_error", "rate_limit_error"};
-            if (!acc_->receivedContent()
-                && retryable.contains(acc_->errorType())
-                && attempt_<cfg_.maxRetries )
-            {
-                abortReply();
-                int delay=std::min(30, 2<<attempt_);
-                ++attempt_;
-                Q_EMIT statusMessage(
-                    QString("%1 - retrying in %2 s").arg(acc_->errorMessage()).arg(delay) );
-                retryTimer_->start(delay*1000);
-            }
-            else
-            {
-                fail(acc_->errorMessage());
-            }
-            return;
-        }
-    }
-}
-
-
-void AnthropicBackend::onReplyFinished()
-{
-    if (!reply_ || !busy_)
-        return;
-
-    onReadyRead();
-    if (!reply_ || !busy_ || retryTimer_->isActive())
-        return; // finished or retry scheduled
-
-    idleTimer_->stop();
-
-    if (httpStatus_==0)
-        httpStatus_=reply_->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    auto netError=reply_->error();
-    QString netErrorString=reply_->errorString();
-    QByteArray retryAfter=reply_->rawHeader("retry-after");
-
-    if (httpStatus_==200)
-    {
-        // stream ended without message_stop
-        for (const auto& ev: sse_.finish())
-            acc_->processEvent(ev);
-        if (acc_->status()==AnthropicStreamAccumulator::Done)
-        {
-            auto result=acc_->result(id());
-            abortReply();
-            busy_=false;
-            Q_EMIT turnFinished(result);
-        }
-        else
-        {
-            fail(QString("The response stream ended unexpectedly (%1)").arg(netErrorString));
-        }
-        return;
-    }
-
-    bool retry=false;
-    QString msg;
-    if (httpStatus_==0)
-    {
-        // no HTTP response at all
-        msg=QString("Network error: %1").arg(netErrorString);
-        retry = netError!=QNetworkReply::OperationCanceledError;
-    }
-    else
-    {
-        msg=errorMessageFromBody(httpStatus_, errorBody_);
-        retry = (httpStatus_==429 || httpStatus_==500 || httpStatus_==502
-                 || httpStatus_==503 || httpStatus_==504 || httpStatus_==529);
-    }
-
-    abortReply();
-
-    if (retry && attempt_<cfg_.maxRetries)
-    {
-        bool ok=false;
-        int delay=retryAfter.toInt(&ok);
-        if (!ok || delay<=0)
-            delay=std::min(30, 2<<attempt_);
-        delay=std::min(delay, 120);
-        ++attempt_;
-        Q_EMIT statusMessage(QString("%1 - retrying in %2 s").arg(msg).arg(delay));
-        retryTimer_->start(delay*1000);
-    }
-    else
-    {
-        fail(msg);
-    }
-}
-
-
-void AnthropicBackend::onIdleTimeout()
-{
-    if (!busy_)
-        return;
-    abortReply();
-    fail(QString("No response from the API within %1 s").arg(cfg_.idleTimeoutSeconds));
-}
-
-
-void AnthropicBackend::fail(const QString& msg)
-{
-    abortReply();
-    idleTimer_->stop();
-    retryTimer_->stop();
-    if (busy_)
-    {
-        busy_=false;
-        Q_EMIT turnFailed(msg);
-    }
-}
-
-
-void AnthropicBackend::abortReply()
-{
-    if (reply_)
-    {
-        QNetworkReply* r=reply_;
-        reply_=nullptr;
-        r->disconnect(this);
-        r->abort();
-        r->deleteLater();
-    }
-    idleTimer_->stop();
-}
-
-
-void AnthropicBackend::cancel()
-{
-    busy_=false;
-    retryTimer_->stop();
-    abortReply();
-}
-
-
-bool AnthropicBackend::isBusy() const
-{
-    return busy_;
+    startTurn(
+        req,
+        QJsonDocument(buildRequest(cfg_, id(), systemPrompt, history, tools))
+            .toJson(QJsonDocument::Compact) );
 }
 
 

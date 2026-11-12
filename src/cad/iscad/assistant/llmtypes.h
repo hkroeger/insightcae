@@ -100,6 +100,40 @@ struct Usage
         cacheWriteTokens+=o.cacheWriteTokens;
         return *this;
     }
+
+    Usage operator-(const Usage& o) const
+    {
+        Usage r=*this;
+        r.inputTokens-=o.inputTokens;
+        r.outputTokens-=o.outputTokens;
+        r.cacheReadTokens-=o.cacheReadTokens;
+        r.cacheWriteTokens-=o.cacheWriteTokens;
+        return r;
+    }
+
+    inline qint64 total() const
+    {
+        return inputTokens+outputTokens+cacheReadTokens+cacheWriteTokens;
+    }
+};
+
+
+/**
+ * prices in USD per million tokens
+ */
+struct ModelPricing
+{
+    bool known = false;
+    double input = 0, output = 0, cacheRead = 0, cacheWrite = 0;
+
+    inline double cost(const Usage& u) const
+    {
+        return 1e-6*(
+            input*double(u.inputTokens)
+            + output*double(u.outputTokens)
+            + cacheRead*double(u.cacheReadTokens)
+            + cacheWrite*double(u.cacheWriteTokens) );
+    }
 };
 
 

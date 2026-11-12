@@ -403,6 +403,9 @@ msgstr "Model"
 msgid "Select output file name"
 msgstr "Select output file name"
 
+msgid "Token usage and estimated cost (based on list prices)"
+msgstr ""
+
 msgid ""
 "Ask the assistant to create or change the model (Enter: send, Shift+Enter: "
 "new line)"
@@ -423,29 +426,6 @@ msgstr ""
 msgid "Stopped."
 msgstr ""
 
-msgid "Assistant settings"
-msgstr ""
-
-msgid "Effort"
-msgstr ""
-
-msgid "using ANTHROPIC_API_KEY from the environment"
-msgstr ""
-
-msgid "Anthropic API key (sk-ant-...)"
-msgstr ""
-
-msgid "API key"
-msgstr ""
-
-msgid ""
-"The key is stored unencrypted in the user settings. The environment variable "
-"ANTHROPIC_API_KEY takes precedence.\n"
-"API keys are created in the Anthropic Console (platform.claude.com); usage "
-"is billed per token. A Claude Pro/Max subscription does not include API "
-"usage."
-msgstr ""
-
 msgid "Using %1."
 msgstr ""
 
@@ -461,8 +441,108 @@ msgstr ""
 msgid "Working..."
 msgstr ""
 
-msgid "Session: %1 input, %2 cached, %3 output tokens"
+msgid "Request: %1 input, %2 cached, %3 output tokens"
 msgstr ""
 
-msgid ", approx. $%1"
+msgid " | conversation: ~$%1"
+msgstr ""
+
+msgid " | conversation: %1 tokens"
+msgstr ""
+
+msgid "Assistant settings"
+msgstr ""
+
+msgid "Anthropic (Claude)"
+msgstr ""
+
+msgid "OpenAI compatible server (Ollama, vLLM, LM Studio, ...)"
+msgstr ""
+
+msgid "Provider"
+msgstr ""
+
+msgid "Effort"
+msgstr ""
+
+msgid "Anthropic API key (sk-ant-...)"
+msgstr ""
+
+msgid "using ANTHROPIC_API_KEY from the environment"
+msgstr ""
+
+msgid "API key"
+msgstr ""
+
+msgid ""
+"API keys are created in the Anthropic Console (platform.claude.com); usage "
+"is billed per token. A Claude Pro/Max subscription does not include API "
+"usage. The environment variable ANTHROPIC_API_KEY takes precedence over the "
+"key entered here."
+msgstr ""
+
+msgid "(custom)"
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Base URL"
+msgstr ""
+
+msgid "Fetch models"
+msgstr ""
+
+#, fuzzy
+msgid "optional"
+msgstr "options"
+
+msgid "using OPENAI_API_KEY from the environment"
+msgstr ""
+
+msgid "server default"
+msgstr ""
+
+msgid "Max. output tokens"
+msgstr ""
+
+msgid "Price input"
+msgstr ""
+
+msgid "Price cached input"
+msgstr ""
+
+msgid "Price output"
+msgstr ""
+
+msgid ""
+"The model must support tool calling. Local models are much weaker at multi-"
+"step editing than large hosted models. Ollama uses a small context window by "
+"default, which silently cuts off the system prompt: set "
+"OLLAMA_CONTEXT_LENGTH (e.g. 32768) or choose a shorter language reference "
+"below."
+msgstr ""
+
+msgid "Full language and command reference (~20k tokens)"
+msgstr ""
+
+msgid "Language reference without command list (~10k tokens)"
+msgstr ""
+
+msgid "None (command_help tool only)"
+msgstr ""
+
+msgid "System prompt"
+msgstr ""
+
+msgid "Fetching model list..."
+msgstr ""
+
+msgid "No answer from the server."
+msgstr ""
+
+msgid "Error: %1"
+msgstr ""
+
+msgid "%1 models available."
 msgstr ""

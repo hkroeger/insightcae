@@ -225,10 +225,16 @@ QStringList IQISCADAssistantHost::librarySearchPaths() const
 }
 
 
-QString IQISCADAssistantHost::languageReference()
+QString IQISCADAssistantHost::languageReference(ReferenceLevel level)
 {
+    QStringList files;
+    if (level==Full || level==Basic)
+        files<<":/iscad_assistant/insightcad.md";
+    if (level==Full)
+        files<<":/iscad_assistant/iscad-reference.md";
+
     QString ref;
-    for (const char* fn: {":/iscad_assistant/insightcad.md", ":/iscad_assistant/iscad-reference.md"})
+    for (const auto& fn: files)
     {
         QFile f(fn);
         if (f.open(QIODevice::ReadOnly|QIODevice::Text))

@@ -10,13 +10,8 @@
 #include <QTimer>
 #include <QScrollBar>
 #include <QKeyEvent>
-#include <QSettings>
-#include <QDialog>
-#include <QDialogButtonBox>
-#include <QComboBox>
-#include <QLineEdit>
 
-#include "assistant/anthropicbackend.h"
+#include "iqiscadassistantsettings.h"
 #include "base/translations.h"
 
 
@@ -26,31 +21,11 @@ using namespace insight::assistant;
 namespace {
 
 
-const char* settingsModel = "assistant/model";
-const char* settingsEffort = "assistant/effort";
-const char* settingsApiKey = "assistant/anthropic_api_key";
-const char* settingsBaseUrl = "assistant/anthropic_base_url";
-
-
-/**
- * API prices in USD per million tokens: input, output, cache read
- * (cache write: 1.25 x input)
- */
-struct Price { double in, out, cacheRead; };
-
-bool priceOf(const QString& model, Price& p)
+QString tokens(qint64 n)
 {
-    static const std::map<QString, Price> prices{
-        {"claude-fable-5-1", {10., 50., 0.25}},
-        {"claude-opus-5-5", {4., 20., 0.2}},
-        {"claude-sonnet-5-5", {2., 10., 0.2}},
-        {"claude-haiku-5-5", {0.1, 0.5, 0.01}}
-    };
-    auto i=prices.find(model);
-    if (i==prices.end())
-        return false;
-    p=i->second;
-    return true;
+    if (n<1000)
+        return QString::number(n);
+    return QString::number(double(n)/1000., 'f', n<10000 ? 1 : 0)+"k";
 }
 
 
@@ -83,6 +58,11 @@ IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent
     statusLabel_=new QLabel;
     statusLabel_->setWordWrap(true);
     vbox->addWidget(statusLabel_);
+
+    costLabel_=new QLabel;
+    costLabel_->setWordWrap(true);
+    costLabel_->setToolTip(_("Token usage and estimated cost (based on list prices)"));
+    vbox->addWidget(costLabel_);
 
     input_=new QPlainTextEdit;
     input_->setPlaceholderText(
@@ -143,15 +123,19 @@ IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent
             statusLabel_, &QLabel::setText);
     connect(agent_, &ISCADAssistantAgent::usageUpdated,
             this, &IQISCADChatWidget::updateUsage);
-    connect(agent_, &ISCADAssistantAgent::requestStarted,
-            this, &IQISCADChatWidget::updateButtons);
+    connect(agent_, &ISCADAssistantAgent::requestStarted, this,
+            [this]()
+            {
+                requestUsage_=Usage();
+                requestCost_=0;
+                updateButtons();
+            });
     connect(agent_, &ISCADAssistantAgent::requestFinished, this,
             [this](const QString& reason)
             {
                 if (reason=="stopped")
                     addEntry(Entry::Info, _("Stopped."));
                 statusLabel_->clear();
-                updateUsage(agent_->sessionUsage());
                 updateButtons();
                 render();
             });
@@ -164,71 +148,18 @@ IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent
 
 void IQISCADChatWidget::configureBackend()
 {
-    QSettings s;
-    AnthropicConfig cfg;
-    cfg.apiKey=qEnvironmentVariable("ANTHROPIC_API_KEY");
-    if (cfg.apiKey.isEmpty())
-        cfg.apiKey=s.value(settingsApiKey).toString();
-    cfg.model=s.value(settingsModel, cfg.model).toString();
-    cfg.effort=s.value(settingsEffort, cfg.effort).toString();
-    QString baseUrl=s.value(settingsBaseUrl).toString();
-    if (!baseUrl.isEmpty())
-        cfg.baseUrl=QUrl(baseUrl);
-
-    agent_->setBackend(new AnthropicBackend(cfg));
+    auto s=IQISCADAssistantSettings::load();
+    agent_->setBackend(s.createBackend());
+    agent_->setSystemPrompt(s.systemPrompt());
 }
 
 
 void IQISCADChatWidget::showSettings()
 {
-    QSettings s;
-
-    QDialog dlg(this);
-    dlg.setWindowTitle(_("Assistant settings"));
-    auto* form=new QFormLayout(&dlg);
-
-    auto* model=new QComboBox;
-    model->setEditable(true);
-    model->addItems({"claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-1"});
-    model->setCurrentText(s.value(settingsModel, AnthropicConfig().model).toString());
-    form->addRow(_("Model"), model);
-
-    auto* effort=new QComboBox;
-    effort->addItems({"low", "medium", "high", "xhigh", "max"});
-    effort->setCurrentText(s.value(settingsEffort, AnthropicConfig().effort).toString());
-    form->addRow(_("Effort"), effort);
-
-    auto* key=new QLineEdit;
-    key->setEchoMode(QLineEdit::Password);
-    key->setText(s.value(settingsApiKey).toString());
-    bool envKey=!qEnvironmentVariable("ANTHROPIC_API_KEY").isEmpty();
-    key->setPlaceholderText(
-        envKey ? _("using ANTHROPIC_API_KEY from the environment")
-               : _("Anthropic API key (sk-ant-...)") );
-    form->addRow(_("API key"), key);
-
-    auto* note=new QLabel(
-        _("The key is stored unencrypted in the user settings. "
-          "The environment variable ANTHROPIC_API_KEY takes precedence.\n"
-          "API keys are created in the Anthropic Console (platform.claude.com); "
-          "usage is billed per token. A Claude Pro/Max subscription does not include API usage.") );
-    note->setWordWrap(true);
-    form->addRow(note);
-
-    auto* bb=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
-    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
-    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
-    form->addRow(bb);
-
+    IQISCADAssistantSettingsDialog dlg(IQISCADAssistantSettings::load(), this);
     if (dlg.exec()==QDialog::Accepted)
     {
-        s.setValue(settingsModel, model->currentText().trimmed());
-        s.setValue(settingsEffort, effort->currentText());
-        if (key->text().trimmed().isEmpty())
-            s.remove(settingsApiKey);
-        else
-            s.setValue(settingsApiKey, key->text().trimmed());
-
+        dlg.settings().save();
         // the conversation can be continued with the new backend
         configureBackend();
         addEntry(Entry::Info, QString(_("Using %1.")).arg(agent_->backend()->description()));
@@ -241,6 +172,10 @@ void IQISCADChatWidget::newConversation()
     agent_->clearConversation();
     entries_.clear();
     statusLabel_->clear();
+    conversationUsage_=Usage();
+    requestUsage_=Usage();
+    conversationCost_=requestCost_=0;
+    costLabel_->clear();
     render();
     updateButtons();
 }
@@ -353,29 +288,34 @@ void IQISCADChatWidget::updateButtons()
 }
 
 
-void IQISCADChatWidget::updateUsage(const Usage& u)
+void IQISCADChatWidget::updateUsage(const Usage& sessionUsage)
 {
-    if (agent_->isRunning())
-        return; // the status line shows the progress
+    // usage of the last model response
+    Usage delta=sessionUsage-lastSeenUsage_;
+    lastSeenUsage_=sessionUsage;
 
-    if (u.inputTokens+u.outputTokens+u.cacheReadTokens+u.cacheWriteTokens==0)
-        return;
+    requestUsage_+=delta;
+    conversationUsage_+=delta;
 
-    QString t=QString(_("Session: %1 input, %2 cached, %3 output tokens"))
-            .arg(u.inputTokens+u.cacheWriteTokens)
-            .arg(u.cacheReadTokens)
-            .arg(u.outputTokens);
-
-    Price p;
-    auto* ab=qobject_cast<AnthropicBackend*>(agent_->backend());
-    if (ab && priceOf(ab->config().model, p))
+    auto p=agent_->backend() ? agent_->backend()->pricing() : ModelPricing();
+    if (p.known)
     {
-        double cost = 1e-6*(
-            p.in*u.inputTokens
-            + 1.25*p.in*u.cacheWriteTokens
-            + p.cacheRead*u.cacheReadTokens
-            + p.out*u.outputTokens );
-        t+=QString(_(", approx. $%1")).arg(cost, 0, 'f', 2);
+        double c=p.cost(delta);
+        requestCost_+=c;
+        conversationCost_+=c;
     }
-    statusLabel_->setText(t);
+
+    const auto& r=requestUsage_;
+    QString t=QString(_("Request: %1 input, %2 cached, %3 output tokens"))
+            .arg(tokens(r.inputTokens+r.cacheWriteTokens), tokens(r.cacheReadTokens), tokens(r.outputTokens));
+    if (p.known)
+    {
+        t+=QString(", ~$%1").arg(requestCost_, 0, 'f', 2);
+        t+=QString(_(" | conversation: ~$%1")).arg(conversationCost_, 0, 'f', 2);
+    }
+    else
+    {
+        t+=QString(_(" | conversation: %1 tokens")).arg(tokens(conversationUsage_.total()));
+    }
+    costLabel_->setText(t);
 }

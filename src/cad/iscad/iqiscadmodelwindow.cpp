@@ -120,9 +120,7 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
         assistant_=new insight::assistant::ISCADAssistantAgent(assistantHost_, this);
         // the agent uses the host until its destruction
         assistantHost_->setParent(assistant_);
-        assistant_->setSystemPrompt(
-            insight::assistant::ISCADAssistantAgent::defaultSystemPrompt(
-                IQISCADAssistantHost::languageReference() ) );
+        // backend and system prompt are configured by the chat widget
         chat_=new IQISCADChatWidget(assistant_);
 
         auto *tabs=new QTabWidget;

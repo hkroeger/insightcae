@@ -56,10 +56,13 @@ public:
     QList<insight::assistant::CommandDoc> commandDocumentation() const override;
     QStringList librarySearchPaths() const override;
 
+    enum ReferenceLevel { Full, Basic, None };
+
     /**
-     * the ISCAD language documentation, if it was compiled into the program
+     * the ISCAD language documentation, if it was compiled into the program.
+     * Full: language and command reference, Basic: language only
      */
-    static QString languageReference();
+    static QString languageReference(ReferenceLevel level = Full);
 };
 
 #endif // IQISCADASSISTANTHOST_H

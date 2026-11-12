@@ -50,6 +50,17 @@ if (INSIGHT_BUILD_CAD)
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 600)
 
+    if (INSIGHT_BUILD_ISCAD)
+        # chat assistant of ISCAD: needs only Qt (no VTK, no network access)
+        add_executable(ISCADAssistantAgent ISCADAssistantAgent.cpp)
+        set_target_properties(ISCADAssistantAgent PROPERTIES AUTOMOC ON)
+        target_link_libraries(ISCADAssistantAgent iscadassistant Qt5::Test)
+        add_test(NAME gui_ISCADAssistantAgent COMMAND ISCADAssistantAgent)
+        set_tests_properties(gui_ISCADAssistantAgent PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+            TIMEOUT 120)
+    endif()
+
     add_executable(ParameterEditorWidget ParameterEditorWidget.cpp)
     target_link_libraries(ParameterEditorWidget
     toolkit_gui genericmodules test_pdl_header

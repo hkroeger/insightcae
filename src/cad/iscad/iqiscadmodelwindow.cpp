@@ -13,6 +13,9 @@
 #include "iqcaditemmodel.h"
 #include "iqvtkcadmodel3dviewer.h"
 #include "iqiscadmodelscriptedit.h"
+#include "iqiscadassistanthost.h"
+#include "iqiscadchatwidget.h"
+#include <QTabWidget>
 
 #include "base/translations.h"
 #include "iqcadmodel3dviewer/iqvtkcadmodel3dviewersettingsdialog.h"
@@ -99,7 +102,7 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
 
     {
         // notepad editor
-        auto *gb=new QGroupBox(_("Notepad"));
+        auto *gb=new QWidget;
         auto *vbox = new QVBoxLayout;
         notepad_=new QTextEdit;
 
@@ -111,7 +114,21 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
         ll->addWidget(clearbtn);
         vbox->addLayout(ll);
         gb->setLayout(vbox);
-        splitterVertRight->addWidget(gb);
+
+        // chat assistant, which edits the script
+        assistantHost_=new IQISCADAssistantHost(modelEdit_);
+        assistant_=new insight::assistant::ISCADAssistantAgent(assistantHost_, this);
+        // the agent uses the host until its destruction
+        assistantHost_->setParent(assistant_);
+        assistant_->setSystemPrompt(
+            insight::assistant::ISCADAssistantAgent::defaultSystemPrompt(
+                IQISCADAssistantHost::languageReference() ) );
+        chat_=new IQISCADChatWidget(assistant_);
+
+        auto *tabs=new QTabWidget;
+        tabs->addTab(gb, _("Notepad"));
+        tabs->addTab(chat_, _("Assistant"));
+        splitterVertRight->addWidget(tabs);
 
         connect(copybtn, &QPushButton::clicked,
                 this, &IQISCADModelWindow::onCopyBtnClicked);

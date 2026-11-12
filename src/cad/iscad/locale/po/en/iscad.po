@@ -240,14 +240,17 @@ msgstr ""
 msgid "Model Tree"
 msgstr "Model Tree"
 
-msgid "Notepad"
-msgstr "Notepad"
-
 msgid "<< Copy to cursor <<"
 msgstr "<< Copy to cursor <<"
 
 msgid "Clear"
 msgstr "Clear"
+
+msgid "Notepad"
+msgstr "Notepad"
+
+msgid "Assistant"
+msgstr ""
 
 msgid ""
 "The editor content is not saved.\n"
@@ -330,6 +333,9 @@ msgstr ""
 msgid "Expand all"
 msgstr ""
 
+msgid "The assistant is editing the script. Please wait or stop it."
+msgstr ""
+
 msgid "Script error"
 msgstr "Script error"
 
@@ -396,3 +402,67 @@ msgstr "Model"
 
 msgid "Select output file name"
 msgstr "Select output file name"
+
+msgid ""
+"Ask the assistant to create or change the model (Enter: send, Shift+Enter: "
+"new line)"
+msgstr ""
+
+msgid "Send"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "New chat"
+msgstr ""
+
+msgid "Settings..."
+msgstr ""
+
+msgid "Stopped."
+msgstr ""
+
+msgid "Assistant settings"
+msgstr ""
+
+msgid "Effort"
+msgstr ""
+
+msgid "using ANTHROPIC_API_KEY from the environment"
+msgstr ""
+
+msgid "Anthropic API key (sk-ant-...)"
+msgstr ""
+
+msgid "API key"
+msgstr ""
+
+msgid ""
+"The key is stored unencrypted in the user settings. The environment variable "
+"ANTHROPIC_API_KEY takes precedence.\n"
+"API keys are created in the Anthropic Console (platform.claude.com); usage "
+"is billed per token. A Claude Pro/Max subscription does not include API "
+"usage."
+msgstr ""
+
+msgid "Using %1."
+msgstr ""
+
+msgid "You:"
+msgstr ""
+
+msgid "Thinking:"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Working..."
+msgstr ""
+
+msgid "Session: %1 input, %2 cached, %3 output tokens"
+msgstr ""
+
+msgid ", approx. $%1"
+msgstr ""

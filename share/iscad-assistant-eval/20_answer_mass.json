@@ -1,0 +1,19 @@
+{
+  "id": "answer_mass",
+  "category": "inspect",
+  "description": "derived quantity from inspection",
+  "prompt": "What is the mass of `block` in kg, if it is made of steel with a density of 7850 kg/m³? Do not modify the script.",
+  "script": "block: Box(O, 120*EX, 80*EY, 30*EZ);\n",
+  "solution": "block: Box(O, 120*EX, 80*EY, 30*EZ);\n",
+  "solution_answer": "The mass is about 2.26 kg.",
+  "checks": [
+    {
+      "type": "script_unchanged"
+    },
+    {
+      "type": "answer_number",
+      "value": 2.2608,
+      "rel_tol": 0.01
+    }
+  ]
+}

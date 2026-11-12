@@ -1,0 +1,34 @@
+{
+  "id": "create_plate_holes",
+  "category": "create",
+  "description": "plate with four corner holes",
+  "prompt": "Create a plate named `plate` of 200 mm (X) x 100 mm (Y) x 10 mm (Z), centered at the origin in X and Y, with its bottom face at z=0. Add four through holes of 12 mm diameter along Z, each located 20 mm from the two adjacent edges of the plate.",
+  "script": "",
+  "solution": "plate: Box(-100*EX-50*EY, 200*EX, 100*EY, 10*EZ)\n - Cylinder(80*EX+30*EY-EZ, ax 12*EZ, 12)\n - Cylinder(-80*EX+30*EY-EZ, ax 12*EZ, 12)\n - Cylinder(80*EX-30*EY-EZ, ax 12*EZ, 12)\n - Cylinder(-80*EX-30*EY-EZ, ax 12*EZ, 12);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "plate",
+      "volume": 195476.106579,
+      "bbox_size": [
+        200,
+        100,
+        10
+      ],
+      "bbox_min": [
+        -100,
+        -50,
+        0
+      ],
+      "cog": [
+        0,
+        0,
+        5
+      ],
+      "n_faces": 10
+    }
+  ]
+}

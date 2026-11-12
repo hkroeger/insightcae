@@ -36,6 +36,7 @@
 #include <QTimer>
 #include <QItemSelectionModel>
 #include <QToolButton>
+#include <QImage>
 
 
 #include "cadtypes.h"
@@ -422,6 +423,16 @@ public:
     void toggleClip(const arma::mat& p, const arma::mat& n) override;
 
     void fitAll() override;
+
+    /**
+     * render the scene into an image, optionally from another view direction
+     * (viewDir and upDir with three components) and fitted to the scene.
+     * The camera is restored afterwards.
+     */
+    QImage renderImage(
+        const arma::mat& viewDir = arma::mat(),
+        const arma::mat& upDir = arma::mat(),
+        bool fit = false );
     void centerRotation();
 
     void view( const arma::mat& viewDir, const arma::mat& upDir ) override;

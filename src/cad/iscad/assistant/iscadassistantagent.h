@@ -28,6 +28,7 @@ class ISCADAssistantAgent
 
     QString systemPrompt_;
     QList<ToolDefinition> tools_;
+    QStringList disabledTools_;
     QList<ChatMessage> history_;
 
     int maxSteps_ = 50;
@@ -82,6 +83,13 @@ public:
     inline void setMaxSteps(int n) { maxSteps_=n; }
 
     /**
+     * tools, which are not offered to the model
+     * (e.g. view_model for models without image input)
+     */
+    void setDisabledTools(const QStringList& names);
+    inline const QList<ToolDefinition>& tools() const { return tools_; }
+
+    /**
      * the default system prompt
      * @param languageReference
      * documentation of the ISCAD language (markdown)
@@ -89,6 +97,20 @@ public:
     static QString defaultSystemPrompt(const QString& languageReference);
 
     static QList<ToolDefinition> toolDefinitions();
+
+    /**
+     * a reduced tool set for small (local) models
+     */
+    static QStringList basicToolSet();
+
+    /**
+     * names of all tools, which are not in the given set
+     */
+    static QStringList toolsNotIn(const QStringList& toolSet);
+
+    static QString formatSymbols(const ISCADAssistantHost::SymbolTable& t);
+    static QString formatFeatureProperties(
+        const QString& name, const ISCADAssistantHost::FeatureProperties& p );
 
     inline bool isRunning() const { return running_; }
     inline const QList<ChatMessage>& history() const { return history_; }
@@ -125,6 +147,11 @@ Q_SIGNALS:
 
     void toolCallStarted(const QString& name, const QString& description);
     void toolCallFinished(const QString& name, const QString& resultSummary, bool isError);
+
+    /**
+     * a tool returned an image (e.g. a view of the model)
+     */
+    void toolImageProduced(const QString& mediaType, const QByteArray& data);
 
     void errorOccurred(const QString& message);
     void statusMessage(const QString& message);

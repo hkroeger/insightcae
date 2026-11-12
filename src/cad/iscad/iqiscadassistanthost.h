@@ -5,9 +5,13 @@
 #include <QPointer>
 #include <QTimer>
 
+#include <memory>
+
 #include "assistant/iscadassistanthost.h"
 
 class IQISCADModelScriptEdit;
+class IQVTKCADModel3DViewer;
+namespace insight { namespace cad { class Model; } }
 
 
 /**
@@ -20,6 +24,7 @@ class IQISCADAssistantHost
     Q_OBJECT
 
     QPointer<IQISCADModelScriptEdit> edit_;
+    QPointer<IQVTKCADModel3DViewer> viewer_;
 
     /**
      * the first edit of an assistant turn opens a new undo step,
@@ -39,8 +44,16 @@ class IQISCADAssistantHost
     void onJobEnded(int task);
     void completeRebuild();
 
+    /**
+     * the model of the last rebuild, null (and error set), if not available
+     */
+    std::shared_ptr<insight::cad::Model> builtModel(QString& error) const;
+
 public:
-    IQISCADAssistantHost(IQISCADModelScriptEdit* edit, QObject* parent=nullptr);
+    IQISCADAssistantHost(
+        IQISCADModelScriptEdit* edit,
+        IQVTKCADModel3DViewer* viewer,
+        QObject* parent=nullptr );
 
     QString scriptText() const override;
     QString scriptFileName() const override;
@@ -55,6 +68,13 @@ public:
 
     QList<insight::assistant::CommandDoc> commandDocumentation() const override;
     QStringList librarySearchPaths() const override;
+
+    SymbolTable symbols() override;
+    FeatureProperties featureProperties(const QString& name) override;
+    Inspection captureView(
+        const QString& direction,
+        const QString& highlight,
+        QByteArray& png ) override;
 
     enum ReferenceLevel { Full, Basic, None };
 

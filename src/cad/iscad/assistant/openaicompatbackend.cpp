@@ -305,16 +305,43 @@ QJsonObject OpenAICompatBackend::buildRequest(
     {
         if (m.role==ChatMessage::User)
         {
+            // tool messages carry text only: images follow in a user message
+            QJsonArray imageParts;
             for (const auto& tr: m.toolResults)
             {
+                QString content = tr.isError ? "ERROR: "+tr.content : tr.content;
+                if (!tr.images.isEmpty())
+                    content+=QString("\n[%1 image(s) attached in the following message]").arg(tr.images.size());
                 messages.append(QJsonObject{
                     {"role", "tool"},
                     {"tool_call_id", tr.toolCallId},
-                    {"content", tr.isError ? "ERROR: "+tr.content : tr.content}
+                    {"content", content}
                 });
+                for (const auto& img: tr.images)
+                {
+                    if (imageParts.isEmpty())
+                        imageParts.append(QJsonObject{
+                            {"type", "text"},
+                            {"text", "Images returned by the tool calls:"} });
+                    imageParts.append(QJsonObject{
+                        {"type", "image_url"},
+                        {"image_url", QJsonObject{
+                             {"url", QString("data:%1;base64,%2")
+                                     .arg(img.mediaType, QString::fromLatin1(img.data.toBase64()))}
+                         }}
+                    });
+                }
             }
-            if (!m.text.isEmpty())
+            if (!imageParts.isEmpty())
+            {
+                if (!m.text.isEmpty())
+                    imageParts.append(QJsonObject{ {"type", "text"}, {"text", m.text} });
+                messages.append(QJsonObject{ {"role", "user"}, {"content", imageParts} });
+            }
+            else if (!m.text.isEmpty())
+            {
                 messages.append(QJsonObject{ {"role", "user"}, {"content", m.text} });
+            }
         }
         else
         {

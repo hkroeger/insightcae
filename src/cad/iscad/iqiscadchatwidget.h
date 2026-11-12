@@ -22,7 +22,7 @@ class IQISCADChatWidget
 
     struct Entry
     {
-        enum Kind { User, Assistant, Thinking, Tool, Error, Info };
+        enum Kind { User, Assistant, Thinking, Tool, Error, Info, Image };
         Kind kind;
         QString text;
     };
@@ -30,7 +30,9 @@ class IQISCADChatWidget
     insight::assistant::ISCADAssistantAgent* agent_;
     QList<Entry> entries_;
 
-    QTextBrowser* transcript_;
+    class Transcript;
+    Transcript* transcript_;
+    int imageCount_ = 0;
     QPlainTextEdit* input_;
     QPushButton *sendBtn_, *stopBtn_, *newBtn_, *settingsBtn_;
     QLabel *statusLabel_, *costLabel_;

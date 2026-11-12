@@ -104,9 +104,140 @@ QString oneLine(const QString& s, int n=80)
 }
 
 
+QString num(double v)
+{
+    return QString::number(v, 'g', 6);
+}
+
+
+QString vec(const ISCADAssistantHost::Vec3& v)
+{
+    return QString("[%1, %2, %3]").arg(num(v.x), num(v.y), num(v.z));
+}
+
+
 } // anonymous namespace
 
 
+
+
+ISCADAssistantHost::SymbolTable ISCADAssistantHost::symbols()
+{
+    SymbolTable t;
+    t.error="Not available in this editor.";
+    return t;
+}
+
+
+ISCADAssistantHost::FeatureProperties ISCADAssistantHost::featureProperties(const QString&)
+{
+    FeatureProperties p;
+    p.error="Not available in this editor.";
+    return p;
+}
+
+
+ISCADAssistantHost::Inspection ISCADAssistantHost::captureView(
+    const QString&, const QString&, QByteArray& )
+{
+    return {false, "Not available in this editor."};
+}
+
+
+
+
+QString ISCADAssistantAgent::formatSymbols(const ISCADAssistantHost::SymbolTable& t)
+{
+    if (!t.ok)
+        return t.error;
+
+    QString r;
+    if (!t.scalars.isEmpty())
+    {
+        r+="Scalars:\n";
+        for (const auto& s: t.scalars)
+            r+=QString("  %1 = %2\n").arg(s.first, s.second ? num(*s.second) : QString("(not evaluated)"));
+    }
+    auto vecs = [&r](const QString& title, const QList<QPair<QString, std::optional<ISCADAssistantHost::Vec3> > >& l)
+    {
+        if (l.isEmpty()) return;
+        r+=title+":\n";
+        for (const auto& v: l)
+            r+=QString("  %1 = %2\n").arg(v.first, v.second ? vec(*v.second) : QString("(not evaluated)"));
+    };
+    vecs("Points", t.points);
+    vecs("Directions", t.directions);
+    if (!t.datums.isEmpty())
+        r+="Datums: "+t.datums.join(", ")+"\n";
+    r+="Features:\n";
+    if (t.features.isEmpty())
+        r+="  (none)\n";
+    for (const auto& f: t.features)
+    {
+        r+="  "+f.name;
+        if (f.isComponent) r+=" (component)";
+        if (!f.built) r+=" (not built)";
+        r+="\n";
+    }
+    return r;
+}
+
+
+QString ISCADAssistantAgent::formatFeatureProperties(
+    const QString& name, const ISCADAssistantHost::FeatureProperties& p )
+{
+    if (!p.ok)
+        return p.error;
+
+    QString r=QString("Feature %1%2\n").arg(name, p.isComponent ? " (component)" : "");
+    r+=QString("Topology: %1 solids, %2 shells, %3 faces, %4 edges, %5 vertices\n")
+         .arg(p.nSolids).arg(p.nShells).arg(p.nFaces).arg(p.nEdges).arg(p.nVertices);
+    r+="Volume: "+(p.volume ? num(*p.volume) : QString("(not available)"))+"\n";
+    r+="Surface area: "+(p.surfaceArea ? num(*p.surfaceArea) : QString("(not available)"))+"\n";
+    if (p.bbMin && p.bbMax)
+    {
+        ISCADAssistantHost::Vec3 sz{p.bbMax->x-p.bbMin->x, p.bbMax->y-p.bbMin->y, p.bbMax->z-p.bbMin->z};
+        r+=QString("Bounding box: min %1, max %2, size %3\n").arg(vec(*p.bbMin), vec(*p.bbMax), vec(sz));
+    }
+    if (p.cog)
+        r+=QString("Center of gravity%1: %2\n").arg(p.cogIsSurface ? " of surface" : "", vec(*p.cog));
+    if (!p.subfeatures.isEmpty())
+        r+=QString("Sub-features (%1.<name>): %2\n").arg(name, p.subfeatures.join(", "));
+    QStringList l;
+    for (const auto& s: p.scalars)
+        l<<QString("%1=%2").arg(s.first, num(s.second));
+    if (!l.isEmpty())
+        r+=QString("Scalars (%1$<name>): %2\n").arg(name, l.join(", "));
+    l.clear();
+    for (const auto& s: p.points)
+        l<<QString("%1=%2").arg(s.first, vec(s.second));
+    if (!l.isEmpty())
+        r+=QString("Points (%1@<name>): %2\n").arg(name, l.join(", "));
+    l.clear();
+    for (const auto& s: p.vectors)
+        l<<QString("%1=%2").arg(s.first, vec(s.second));
+    if (!l.isEmpty())
+        r+=QString("Vectors (%1!<name>): %2\n").arg(name, l.join(", "));
+    if (!p.datums.isEmpty())
+        r+=QString("Datums (%1%<name>): %2\n").arg(name, p.datums.join(", "));
+    return r;
+}
+
+
+QStringList ISCADAssistantAgent::basicToolSet()
+{
+    return {"read_script", "edit_script", "write_script", "rebuild", "command_help", "inspect_feature"};
+}
+
+
+QStringList ISCADAssistantAgent::toolsNotIn(const QStringList& toolSet)
+{
+    QStringList r;
+    for (const auto& t: toolDefinitions())
+        if (!toolSet.contains(t.name))
+            r<<t.name;
+    return r;
+}
 
 
 ISCADAssistantAgent::ISCADAssistantAgent(ISCADAssistantHost* host, QObject* parent)
@@ -150,6 +281,16 @@ void ISCADAssistantAgent::setBackend(LLMBackend* backend)
 }
 
 
+void ISCADAssistantAgent::setDisabledTools(const QStringList& names)
+{
+    disabledTools_=names;
+    tools_.clear();
+    for (const auto& t: toolDefinitions())
+        if (!names.contains(t.name))
+            tools_.append(t);
+}
+
+
 void ISCADAssistantAgent::setSystemPrompt(const QString& systemPrompt)
 {
     systemPrompt_=systemPrompt;
@@ -169,6 +310,7 @@ How to work:
 - Prefer named parameters for dimensions (e.g. `D_hole = 8;`) over literal numbers in feature calls. Use `?=` for values, which are meant to be overridden when the model is loaded as a submodel.
 - Lengths are in the units used by the script (usually millimeters). Angles are in radians; write degrees as `30*deg`.
 - After changing the script, call rebuild. If it fails, read the error, fix the script and rebuild again until the model builds. Do not stop with a broken script, unless you cannot fix it; then explain the problem.
+- After a successful rebuild, verify the result where it matters: inspect_feature gives dimensions (bounding box), volume and the named values of a feature; view_model (if available) shows the geometry as an image. Do not claim a shape is correct without checking it.
 - If you are unsure about a command or its arguments, call command_help. The library models (list_library_models, read_library_model) are examples of good scripts.
 - rebuild does not execute postprocessing actions, which write files (exports, drawings, meshes).
 - The user can revert all of your edits of one request with a single undo (Ctrl+Z) in the editor.
@@ -239,6 +381,38 @@ QList<ToolDefinition> ISCADAssistantAgent::toolDefinitions()
             schema({
                 {"name", prop("string", "the command name, e.g. Extrusion")}
             }, {"name"})
+        },
+        {
+            "list_symbols",
+            "List the symbols of the model as parsed/built by the last rebuild: "
+            "scalars and vectors with their values, datums, and features (with their build state). "
+            "Call rebuild first, if the script was changed.",
+            schema({})
+        },
+        {
+            "inspect_feature",
+            "Properties of a built feature: topology (number of solids, faces, edges, vertices), "
+            "volume, surface area, bounding box, center of gravity, its sub-features and its named "
+            "scalars/points/vectors/datums (accessible in the script as name$x, name@p, name!v, name%d). "
+            "Call rebuild first, if the script was changed.",
+            schema({
+                {"name", prop("string", "feature symbol, optionally with sub-feature path, e.g. \"body\" or \"asm.part1\"")}
+            }, {"name"})
+        },
+        {
+            "view_model",
+            "Render the 3D view of the built model to an image and look at it. "
+            "Use it to check shapes and positions after a rebuild. "
+            "The user's own view is not changed.",
+            schema({
+                {"direction", QJsonObject{
+                     {"type", "string"},
+                     {"enum", QJsonArray{"iso", "front", "back", "top", "bottom", "left", "right", "current"}},
+                     {"description", "view direction: front looks along +Y, top along -Z, left along +X, "
+                                     "iso from (+X,-Y,+Z); current: the user's view (default: iso)"}
+                 }},
+                {"highlight", prop("string", "a feature to highlight (optional)")}
+            })
         },
         {
             "list_library_models",
@@ -427,8 +601,11 @@ void ISCADAssistantAgent::executeNextToolCall()
         QString desc=tc.name;
         if (tc.name=="edit_script")
             desc+=": "+oneLine(tc.input.value("old_string").toString(), 60);
-        else if (tc.name=="command_help" || tc.name=="read_library_model")
+        else if (tc.name=="command_help" || tc.name=="read_library_model"
+                 || tc.name=="inspect_feature")
             desc+=": "+tc.input.value("name").toString();
+        else if (tc.name=="view_model")
+            desc+=": "+tc.input.value("direction").toString("iso");
         Q_EMIT toolCallStarted(tc.name, desc);
 
         executeTool(tc, [this, id, tc](const ToolResult& r)
@@ -542,6 +719,12 @@ void ISCADAssistantAgent::executeTool(
     }
 
     const auto& in=call.input;
+
+    if (disabledTools_.contains(call.name))
+    {
+        err(QString("The tool \"%1\" is not available.").arg(call.name));
+        return;
+    }
 
     if (call.name=="read_script")
     {
@@ -713,6 +896,41 @@ void ISCADAssistantAgent::executeTool(
                 .arg(similar.isEmpty() ? QString(" Use list_commands to see all commands.")
                                        : QString(" Similar commands: ")+similar.join(", ")));
         }
+    }
+    else if (call.name=="list_symbols")
+    {
+        auto t=host_->symbols();
+        done(ToolResult{call.id, truncated(formatSymbols(t), maxReadChars), !t.ok});
+    }
+    else if (call.name=="inspect_feature")
+    {
+        QString name=in.value("name").toString().trimmed();
+        if (name.isEmpty())
+        {
+            err("name is required");
+            return;
+        }
+        auto p=host_->featureProperties(name);
+        done(ToolResult{call.id, truncated(formatFeatureProperties(name, p), maxReadChars), !p.ok});
+    }
+    else if (call.name=="view_model")
+    {
+        QString dir=in.value("direction").toString("iso").trimmed().toLower();
+        static const QStringList dirs{"iso", "front", "back", "top", "bottom", "left", "right", "current"};
+        if (!dirs.contains(dir))
+        {
+            err("direction must be one of: "+dirs.join(", "));
+            return;
+        }
+        QByteArray png;
+        auto r=host_->captureView(dir, in.value("highlight").toString().trimmed(), png);
+        if (!r.ok || png.isEmpty())
+        {
+            err(r.text.isEmpty() ? QString("No image could be created.") : r.text);
+            return;
+        }
+        Q_EMIT toolImageProduced("image/png", png);
+        done(ToolResult{call.id, r.text, false, {ToolImage{"image/png", png}}});
     }
     else if (call.name=="list_library_models")
     {

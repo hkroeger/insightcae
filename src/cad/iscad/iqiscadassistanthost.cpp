@@ -1,6 +1,5 @@
 #include "iqiscadassistanthost.h"
 
-#include <QFile>
 #include <QTextCursor>
 #include <QTextDocument>
 
@@ -8,14 +7,24 @@
 #include "cadfeature.h"
 #include "iqiscadmodelscriptedit.h"
 #include "scriptpositionmap.h"
+#include "cadmodel.h"
+#include "iqvtkcadmodel3dviewer.h"
+#include "iscadmodelinspection.h"
+
+#include <QBuffer>
+#include <QImage>
 
 
 using namespace insight::assistant;
 
 
-IQISCADAssistantHost::IQISCADAssistantHost(IQISCADModelScriptEdit* edit, QObject* parent)
+IQISCADAssistantHost::IQISCADAssistantHost(
+    IQISCADModelScriptEdit* edit,
+    IQVTKCADModel3DViewer* viewer,
+    QObject* parent )
     : QObject(parent),
       edit_(edit),
+      viewer_(viewer),
       launchFailureCheck_(new QTimer(this))
 {
     auto* sched = edit_->jobScheduler();
@@ -192,57 +201,137 @@ void IQISCADAssistantHost::cancelRebuild()
 
 QList<CommandDoc> IQISCADAssistantHost::commandDocumentation() const
 {
-    QList<CommandDoc> docs;
-    if (insight::cad::Feature::ruleDocumentationFunctions_)
-    {
-        for (const auto& rd: *insight::cad::Feature::ruleDocumentationFunctions_)
-        {
-            for (const auto& info: rd.second())
-            {
-                docs.append({
-                    QString::fromStdString(info.command_),
-                    QString::fromStdString(info.signature_),
-                    QString::fromStdString(info.documentation_)
-                });
-            }
-        }
-    }
-    return docs;
+    return ISCADModelInspection::commandDocumentation();
 }
 
 
 QStringList IQISCADAssistantHost::librarySearchPaths() const
 {
-    QStringList paths;
-    insight::cad::sharedModelLocations locs;
-    for (const auto& p: locs)
-    {
-        if (p==boost::filesystem::path("."))
-            continue;
-        paths<<QString::fromStdString(p.string());
-    }
-    return paths;
+    return ISCADModelInspection::librarySearchPaths();
 }
 
 
 QString IQISCADAssistantHost::languageReference(ReferenceLevel level)
 {
-    QStringList files;
-    if (level==Full || level==Basic)
-        files<<":/iscad_assistant/insightcad.md";
-    if (level==Full)
-        files<<":/iscad_assistant/iscad-reference.md";
+    return ISCADModelInspection::languageReference(
+        level==Full ? ISCADModelInspection::FullReference :
+        level==Basic ? ISCADModelInspection::BasicReference :
+                       ISCADModelInspection::NoReference );
+}
 
-    QString ref;
-    for (const auto& fn: files)
+
+insight::cad::ModelPtr IQISCADAssistantHost::builtModel(QString& error) const
+{
+    if (!edit_)
     {
-        QFile f(fn);
-        if (f.open(QIODevice::ReadOnly|QIODevice::Text))
-        {
-            if (!ref.isEmpty())
-                ref+="\n\n";
-            ref+=QString::fromUtf8(f.readAll());
-        }
+        error="The editor has been closed.";
+        return insight::cad::ModelPtr();
     }
-    return ref;
+    auto* sched=edit_->jobScheduler();
+    if (!sched->isIdle())
+    {
+        // the model might be modified by the rebuild thread
+        error="The model is currently being parsed or rebuilt. Try again after the rebuild has finished.";
+        return insight::cad::ModelPtr();
+    }
+    auto pr=sched->lastParseResult();
+    if (!pr || !pr->model)
+    {
+        error="No model has been built yet. Call rebuild first.";
+        return insight::cad::ModelPtr();
+    }
+    return pr->model;
+}
+
+
+ISCADAssistantHost::SymbolTable IQISCADAssistantHost::symbols()
+{
+    QString error;
+    auto m=builtModel(error);
+    if (!m)
+    {
+        SymbolTable t;
+        t.error=error;
+        return t;
+    }
+    return ISCADModelInspection::symbols(*m);
+}
+
+
+ISCADAssistantHost::FeatureProperties IQISCADAssistantHost::featureProperties(const QString& name)
+{
+    QString error;
+    auto m=builtModel(error);
+    if (!m)
+    {
+        FeatureProperties p;
+        p.error=error;
+        return p;
+    }
+    return ISCADModelInspection::featureProperties(*m, name);
+}
+
+
+ISCADAssistantHost::Inspection IQISCADAssistantHost::captureView(
+    const QString& direction,
+    const QString& highlight,
+    QByteArray& png )
+{
+    if (!viewer_)
+        return {false, "No 3D view available."};
+
+    insight::cad::FeaturePtr hf;
+    if (!highlight.isEmpty())
+    {
+        QString error;
+        auto m=builtModel(error);
+        if (m)
+            hf=ISCADModelInspection::builtFeature(*m, highlight, error);
+        if (!hf)
+            return {false, error};
+    }
+
+    arma::mat vd, up;
+    const arma::mat ex=insight::vec3(1,0,0), ey=insight::vec3(0,1,0), ez=insight::vec3(0,0,1);
+    if (direction=="front")       { vd=ey;  up=ez; }
+    else if (direction=="back")   { vd=-ey; up=ez; }
+    else if (direction=="top")    { vd=-ez; up=ey; }
+    else if (direction=="bottom") { vd=ez;  up=-ey; }
+    else if (direction=="left")   { vd=ex;  up=ez; }
+    else if (direction=="right")  { vd=-ex; up=ez; }
+    else if (direction=="iso")
+    {
+        vd=insight::vec3(-1, 1, -1)/std::sqrt(3.);
+        up=insight::vec3(-1, 1, 2)/std::sqrt(6.); // perpendicular to vd, pointing upwards
+    }
+
+    QImage img;
+    try
+    {
+        if (hf)
+            viewer_->exposeItem(hf);
+        img=viewer_->renderImage(vd, up, direction!="current");
+        if (hf)
+            viewer_->undoExposeItem();
+    }
+    catch (const std::exception& e)
+    {
+        return {false, QString("Rendering failed: %1").arg(QString::fromStdString(e.what()))};
+    }
+
+    if (img.isNull())
+        return {false, "Rendering failed."};
+
+    const int maxSize=1280;
+    if (img.width()>maxSize || img.height()>maxSize)
+        img=img.scaled(maxSize, maxSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    QBuffer buf(&png);
+    buf.open(QIODevice::WriteOnly);
+    img.save(&buf, "PNG");
+
+    QString info=QString("View: %1, %2x%3 pixels.").arg(direction).arg(img.width()).arg(img.height());
+    if (hf)
+        info+=QString(" Feature %1 is highlighted.").arg(highlight);
+    return {true, info};
 }

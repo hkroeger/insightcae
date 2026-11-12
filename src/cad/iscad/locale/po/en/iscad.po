@@ -515,6 +515,9 @@ msgstr ""
 msgid "Price output"
 msgstr ""
 
+msgid "The model accepts images (lets the assistant look at the 3D view)"
+msgstr ""
+
 msgid ""
 "The model must support tool calling. Local models are much weaker at multi-"
 "step editing than large hosted models. Ollama uses a small context window by "
@@ -533,6 +536,15 @@ msgid "None (command_help tool only)"
 msgstr ""
 
 msgid "System prompt"
+msgstr ""
+
+msgid "All tools"
+msgstr ""
+
+msgid "Basic tools (read, edit, rebuild, help, inspect) for small models"
+msgstr ""
+
+msgid "Tools"
 msgstr ""
 
 msgid "Fetching model list..."

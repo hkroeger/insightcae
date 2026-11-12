@@ -11,6 +11,7 @@ class QSpinBox;
 class QDoubleSpinBox;
 class QStackedWidget;
 class QLabel;
+class QCheckBox;
 
 
 /**
@@ -27,6 +28,11 @@ struct IQISCADAssistantSettings
     enum Reference { FullReference=0, BasicReference=1, NoReference=2 };
     Reference reference = FullReference;
 
+    /**
+     * basic: fewer tools, for small (local) models
+     */
+    bool basicToolSet = false;
+
     // ===== Anthropic
     QString anthropicModel;
     QString anthropicEffort;
@@ -40,6 +46,11 @@ struct IQISCADAssistantSettings
     int openaiMaxTokens = 0;
     double openaiPriceInput = 0, openaiPriceOutput = 0, openaiPriceCachedInput = 0;
 
+    /**
+     * the model accepts images (enables the view_model tool)
+     */
+    bool openaiVision = false;
+
     static IQISCADAssistantSettings load();
     void save() const;
 
@@ -50,6 +61,11 @@ struct IQISCADAssistantSettings
 
     insight::assistant::LLMBackend* createBackend() const;
     QString systemPrompt() const;
+
+    /**
+     * tools, which are not usable with the configured model
+     */
+    QStringList disabledTools() const;
 };
 
 
@@ -63,6 +79,7 @@ class IQISCADAssistantSettingsDialog
     QComboBox* provider_;
     QStackedWidget* pages_;
     QComboBox* reference_;
+    QComboBox* toolSet_;
 
     QComboBox *aModel_, *aEffort_;
     QLineEdit* aKey_;
@@ -73,6 +90,7 @@ class IQISCADAssistantSettingsDialog
     QLabel* oFetchStatus_;
     QSpinBox* oMaxTokens_;
     QDoubleSpinBox *oPriceIn_, *oPriceOut_, *oPriceCached_;
+    QCheckBox* oVision_;
 
     void fetchModels();
 

@@ -11,6 +11,7 @@
 #include <QStackedWidget>
 #include <QLabel>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -41,6 +42,7 @@ IQISCADAssistantSettings IQISCADAssistantSettings::load()
     s.beginGroup(group);
     r.provider = Provider(s.value("provider", int(Anthropic)).toInt());
     r.reference = Reference(s.value("reference", int(FullReference)).toInt());
+    r.basicToolSet = s.value("basic_tool_set", false).toBool();
 
     AnthropicConfig ac;
     r.anthropicModel = s.value("model", ac.model).toString(); // key of phase 1
@@ -56,6 +58,7 @@ IQISCADAssistantSettings IQISCADAssistantSettings::load()
     r.openaiPriceInput = s.value("openai_price_input", 0.).toDouble();
     r.openaiPriceOutput = s.value("openai_price_output", 0.).toDouble();
     r.openaiPriceCachedInput = s.value("openai_price_cached_input", 0.).toDouble();
+    r.openaiVision = s.value("openai_vision", false).toBool();
     return r;
 }
 
@@ -66,6 +69,7 @@ void IQISCADAssistantSettings::save() const
     s.beginGroup(group);
     s.setValue("provider", int(provider));
     s.setValue("reference", int(reference));
+    s.setValue("basic_tool_set", basicToolSet);
 
     s.setValue("model", anthropicModel);
     s.setValue("effort", anthropicEffort);
@@ -83,6 +87,18 @@ void IQISCADAssistantSettings::save() const
     s.setValue("openai_price_input", openaiPriceInput);
     s.setValue("openai_price_output", openaiPriceOutput);
     s.setValue("openai_price_cached_input", openaiPriceCachedInput);
+    s.setValue("openai_vision", openaiVision);
+}
+
+
+QStringList IQISCADAssistantSettings::disabledTools() const
+{
+    QStringList d;
+    if (basicToolSet)
+        d=ISCADAssistantAgent::toolsNotIn(ISCADAssistantAgent::basicToolSet());
+    if (provider==OpenAICompatible && !openaiVision && !d.contains("view_model"))
+        d<<"view_model";
+    return d;
 }
 
 
@@ -248,6 +264,10 @@ IQISCADAssistantSettingsDialog::IQISCADAssistantSettingsDialog(
         f->addRow(_("Price cached input"), oPriceCached_);
         f->addRow(_("Price output"), oPriceOut_);
 
+        oVision_=new QCheckBox(_("The model accepts images (lets the assistant look at the 3D view)"));
+        oVision_->setChecked(s.openaiVision);
+        f->addRow(oVision_);
+
         auto* note=new QLabel(
             _("The model must support tool calling. Local models are much weaker at multi-step "
               "editing than large hosted models. Ollama uses a small context window by default, "
@@ -276,6 +296,11 @@ IQISCADAssistantSettingsDialog::IQISCADAssistantSettingsDialog(
     reference_->addItem(_("None (command_help tool only)"));
     reference_->setCurrentIndex(int(s.reference));
     bottom->addRow(_("System prompt"), reference_);
+    toolSet_=new QComboBox;
+    toolSet_->addItem(_("All tools"));
+    toolSet_->addItem(_("Basic tools (read, edit, rebuild, help, inspect) for small models"));
+    toolSet_->setCurrentIndex(s.basicToolSet ? 1 : 0);
+    bottom->addRow(_("Tools"), toolSet_);
     vbox->addLayout(bottom);
 
     auto* bb=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
@@ -339,6 +364,7 @@ IQISCADAssistantSettings IQISCADAssistantSettingsDialog::settings() const
     IQISCADAssistantSettings s;
     s.provider=IQISCADAssistantSettings::Provider(provider_->currentIndex());
     s.reference=IQISCADAssistantSettings::Reference(reference_->currentIndex());
+    s.basicToolSet = toolSet_->currentIndex()==1;
 
     s.anthropicModel=aModel_->currentText().trimmed();
     s.anthropicEffort=aEffort_->currentText();
@@ -352,5 +378,6 @@ IQISCADAssistantSettings IQISCADAssistantSettingsDialog::settings() const
     s.openaiPriceInput=oPriceIn_->value();
     s.openaiPriceOutput=oPriceOut_->value();
     s.openaiPriceCachedInput=oPriceCached_->value();
+    s.openaiVision=oVision_->isChecked();
     return s;
 }

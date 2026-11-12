@@ -14,6 +14,7 @@ add_library(iscadassistant STATIC
     assistant/openaicompatbackend.h assistant/openaicompatbackend.cpp
     assistant/iscadassistanthost.h
     assistant/iscadassistantagent.h assistant/iscadassistantagent.cpp
+    assistant/evaluation.h assistant/evaluation.cpp
 )
 target_enable_qt(iscadassistant)
 set_target_properties(iscadassistant PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -58,6 +59,7 @@ add_executable(iscad
     iqiscadassistanthost.h iqiscadassistanthost.cpp
     iqiscadchatwidget.h iqiscadchatwidget.cpp
     iqiscadassistantsettings.h iqiscadassistantsettings.cpp
+    iscadmodelinspection.h iscadmodelinspection.cpp
 
     modelcomponentselectordlg.ui
     insertfeaturedlg.ui
@@ -86,4 +88,25 @@ target_include_directories(iscad
  )
 
 install(TARGETS iscad RUNTIME DESTINATION bin)
+
+
+# automated evaluation of the chat assistant (no GUI)
+add_executable(iscad-assistant-eval
+    iscadassistanteval.cpp
+    iscadheadlesshost.h iscadheadlesshost.cpp
+    iscadmodelinspection.h iscadmodelinspection.cpp
+    scriptpositionmap.cpp scriptpositionmap.h
+    ${ISCAD_ASSISTANT_QRC}
+)
+target_enable_qt(iscad-assistant-eval)
+target_link_libraries(iscad-assistant-eval
+  iscadassistant
+  insightcad
+  ${DXFLIB_LIBRARIES}
+  )
+linkToolkitVtk(iscad-assistant-eval Offscreen)
+target_include_directories(iscad-assistant-eval
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+ )
+install(TARGETS iscad-assistant-eval RUNTIME DESTINATION bin)
 endif()

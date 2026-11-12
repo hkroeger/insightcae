@@ -1,0 +1,24 @@
+{
+  "id": "modify_hole_count",
+  "category": "modify",
+  "description": "change a pattern",
+  "prompt": "Change the flange so that it has 8 bolt holes instead of 4.",
+  "script": "D = 160;\nt = 20;\nDbc = 120;\ndh = 14;\nn = 4;\n\nhole = Cylinder(0.5*Dbc*EX - EZ, ax (t+2)*EZ, dh);\nflange: Cylinder(O, ax t*EZ, D) - CircularPattern(hole, O, 2*M_PI/n*EZ, n);\n",
+  "solution": "D = 160;\nt = 20;\nDbc = 120;\ndh = 14;\nn = 8;\n\nhole = Cylinder(0.5*Dbc*EX - EZ, ax (t+2)*EZ, dh);\nflange: Cylinder(O, ax t*EZ, D) - CircularPattern(hole, O, 2*M_PI/n*EZ, n);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "flange",
+      "volume": 377493.773255,
+      "bbox_size": [
+        160,
+        160,
+        20
+      ],
+      "n_faces": 11
+    }
+  ]
+}

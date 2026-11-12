@@ -1,0 +1,29 @@
+{
+  "id": "create_flange",
+  "category": "create",
+  "description": "flange with bore and bolt circle",
+  "prompt": "Create a flange named `flange`: a disc of 160 mm diameter and 20 mm thickness, centered on the Z axis with its bottom face at z=0. It has a central bore of 60 mm diameter and 6 through holes of 14 mm diameter, equally spaced on a bolt circle of 120 mm diameter.",
+  "script": "",
+  "solution": "hole = Cylinder(60*EX-EZ, ax 22*EZ, 14);\nflange: Cylinder(O, ax 20*EZ, 160, 60) - CircularPattern(hole, O, 2*M_PI/6*EZ, 6);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "flange",
+      "volume": 327102.627092,
+      "bbox_size": [
+        160,
+        160,
+        20
+      ],
+      "bbox_min": [
+        -80,
+        -80,
+        0
+      ],
+      "n_faces": 10
+    }
+  ]
+}

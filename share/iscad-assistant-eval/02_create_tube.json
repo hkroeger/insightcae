@@ -1,0 +1,28 @@
+{
+  "id": "create_tube",
+  "category": "create",
+  "description": "hollow cylinder",
+  "prompt": "Create a tube named `tube` along the Z axis from z=0 to z=200, with an outer diameter of 50 mm and a wall thickness of 5 mm.",
+  "script": "",
+  "solution": "tube: Cylinder(O, ax 200*EZ, 50, 40);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "tube",
+      "volume": 141371.669412,
+      "bbox_size": [
+        50,
+        50,
+        200
+      ],
+      "bbox_min": [
+        -25,
+        -25,
+        0
+      ]
+    }
+  ]
+}

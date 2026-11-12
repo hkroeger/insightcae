@@ -31,11 +31,29 @@ struct ToolCall
 };
 
 
+/**
+ * an image, which is returned as part of a tool result
+ */
+struct ToolImage
+{
+    QString mediaType; // e.g. "image/png"
+    QByteArray data;   // raw (not base64 encoded)
+};
+
+
 struct ToolResult
 {
     QString toolCallId;
     QString content;
     bool isError = false;
+    QList<ToolImage> images;
+
+    ToolResult() = default;
+    ToolResult(
+        const QString& id, const QString& c, bool err=false,
+        const QList<ToolImage>& imgs = QList<ToolImage>() )
+        : toolCallId(id), content(c), isError(err), images(imgs)
+    {}
 };
 
 

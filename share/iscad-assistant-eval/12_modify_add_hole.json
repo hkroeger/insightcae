@@ -1,0 +1,29 @@
+{
+  "id": "modify_add_hole",
+  "category": "modify",
+  "description": "add a feature in the existing style",
+  "prompt": "Add a second through hole of the same diameter, 25 mm from the end of the plate at x=L, centered in Y.",
+  "script": "# simple plate with a center hole\nL = 100;\nW = 50;\nT = 8;\nD = 10;\n\nplate: Box(O, L*EX, W*EY, T*EZ)\n - Cylinder(0.5*L*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, D);\n",
+  "solution": "# simple plate with a center hole\nL = 100;\nW = 50;\nT = 8;\nD = 10;\n\nplate: Box(O, L*EX, W*EY, T*EZ)\n - Cylinder(0.5*L*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, D)\n - Cylinder((L-25)*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, D);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "plate",
+      "volume": 38743.362939,
+      "bbox_size": [
+        100,
+        50,
+        8
+      ],
+      "cog": [
+        49.594564,
+        25,
+        4
+      ],
+      "n_faces": 8
+    }
+  ]
+}

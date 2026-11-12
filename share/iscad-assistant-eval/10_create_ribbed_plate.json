@@ -1,0 +1,29 @@
+{
+  "id": "create_ribbed_plate",
+  "category": "create",
+  "description": "plate with a linear pattern of ribs",
+  "prompt": "Create a base plate named `base` of 150 mm (X) x 60 mm (Y) x 8 mm (Z) with a corner at the origin. On its top face, add 5 ribs, each 4 mm thick (X), 60 mm long (Y) and 15 mm high (Z). The first rib starts at x=10, the ribs are spaced 30 mm apart. `base` must be a single solid including the ribs.",
+  "script": "",
+  "solution": "base: Box(O, 150*EX, 60*EY, 8*EZ) | LinearPattern(Box(10*EX+8*EZ, 4*EX, 60*EY, 15*EZ), 30*EX, 5);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "base",
+      "volume": 90000,
+      "bbox_size": [
+        150,
+        60,
+        23
+      ],
+      "bbox_min": [
+        0,
+        0,
+        0
+      ],
+      "n_solids": 1
+    }
+  ]
+}

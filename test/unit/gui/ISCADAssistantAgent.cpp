@@ -9,15 +9,18 @@
 #include <QTcpSocket>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QTemporaryDir>
 
 #include "assistant/ssestreamparser.h"
 #include "assistant/anthropicbackend.h"
 #include "assistant/openaicompatbackend.h"
 #include "assistant/iscadassistantagent.h"
+#include "assistant/evaluation.h"
 
 using namespace insight::assistant;
 
 Q_DECLARE_METATYPE(insight::assistant::TurnResult)
+Q_DECLARE_METATYPE(insight::assistant::TaskResult)
 
 
 // ================================================================
@@ -109,6 +112,50 @@ public:
         };
     }
     QStringList librarySearchPaths() const override { return {}; }
+
+    SymbolTable symbols() override
+    {
+        SymbolTable t;
+        t.ok=true;
+        t.scalars.append({"L", 10.});
+        t.scalars.append({"X", std::optional<double>()});
+        t.features.append({"b", true, true});
+        t.features.append({"tool", false, true});
+        t.features.append({"later", false, false});
+        return t;
+    }
+    FeatureProperties featureProperties(const QString& name) override
+    {
+        FeatureProperties p;
+        if (name=="b")
+        {
+            p.ok=true;
+            p.isComponent=true;
+            p.nSolids=1; p.nFaces=6;
+            p.volume=10.;
+            p.surfaceArea=34.;
+            p.bbMin=Vec3{0,0,0};
+            p.bbMax=Vec3{1,2,5};
+            p.cog=Vec3{0.5,1,2.5};
+            p.scalars.append({"L1", 1.});
+        }
+        else if (name=="tool")
+        {
+            p.ok=true;
+            p.volume=3.;
+        }
+        else
+            p.error="Unknown feature";
+        return p;
+    }
+    QString lastDirection, lastHighlight;
+    Inspection captureView(const QString& direction, const QString& highlight, QByteArray& png) override
+    {
+        lastDirection=direction;
+        lastHighlight=highlight;
+        png=QByteArray("\x89PNG-fake", 9);
+        return {true, "View: "+direction};
+    }
 };
 
 
@@ -938,6 +985,316 @@ private Q_SLOTS:
         QCOMPARE(msgs[3].toObject().value("role").toString(), QString("tool"));
         QCOMPARE(msgs[3].toObject().value("tool_call_id").toString(), QString("c1"));
         checkHistoryConsistency(agent.history());
+    }
+
+
+    void agentInspectionTools()
+    {
+        FakeHost host;
+        host.script="b: Box(O, EX, EY, EZ);\n";
+        ISCADAssistantAgent agent(&host);
+        QList<ToolResult> res;
+        auto collect=[&](const ToolResult& r) { res<<r; };
+        QSignalSpy images(&agent, &ISCADAssistantAgent::toolImageProduced);
+
+        ToolCall tc; tc.id="1";
+        tc.name="list_symbols";
+        agent.executeTool(tc, collect);
+        QVERIFY(!res.last().isError);
+        QVERIFY(res.last().content.contains("L = 10"));
+        QVERIFY(res.last().content.contains("X = (not evaluated)"));
+        QVERIFY(res.last().content.contains("later (not built)"));
+
+        tc.name="inspect_feature";
+        tc.input={{"name","b"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(!res.last().isError);
+        QVERIFY(res.last().content.contains("Volume: 10"));
+        QVERIFY(res.last().content.contains("size [1, 2, 5]"));
+        QVERIFY(res.last().content.contains("Scalars (b$<name>): L1=1"));
+
+        tc.input={{"name","x"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(res.last().isError);
+
+        tc.name="view_model";
+        tc.input={{"highlight","b"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(!res.last().isError);
+        QCOMPARE(host.lastDirection, QString("iso"));
+        QCOMPARE(host.lastHighlight, QString("b"));
+        QCOMPARE(res.last().images.size(), 1);
+        QCOMPARE(res.last().images[0].mediaType, QString("image/png"));
+        QCOMPARE(images.size(), 1);
+
+        tc.input={{"direction","sideways"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(res.last().isError);
+
+        // disabled for models without image input
+        agent.setDisabledTools({"view_model"});
+        for (const auto& t: agent.tools())
+            QVERIFY(t.name!="view_model");
+        QCOMPARE(agent.tools().size(), ISCADAssistantAgent::toolDefinitions().size()-1);
+        tc.input={{"direction","top"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(res.last().isError);
+        QVERIFY(res.last().content.contains("not available"));
+        QCOMPARE(host.lastDirection, QString("iso"));
+    }
+
+
+    void imagesInRequests()
+    {
+        ChatMessage u; u.role=ChatMessage::User; u.text="look";
+        ChatMessage a; a.role=ChatMessage::Assistant;
+        ToolCall tc; tc.id="t1"; tc.name="view_model";
+        a.toolCalls<<tc;
+        ChatMessage r; r.role=ChatMessage::User;
+        ToolResult tr{"t1", "View: iso", false, {ToolImage{"image/png", QByteArray("PNGDATA")}}};
+        r.toolResults<<tr;
+        r.text="and now?";
+        QList<ChatMessage> h{u, a, r};
+
+        // Anthropic: image inside the tool result
+        auto areq=AnthropicBackend::buildRequest(AnthropicConfig(), "anthropic", "S", h, {});
+        auto ac=areq.value("messages").toArray()[2].toObject().value("content").toArray();
+        auto trc=ac[0].toObject().value("content").toArray();
+        QCOMPARE(trc.size(), 2);
+        QCOMPARE(trc[0].toObject().value("text").toString(), QString("View: iso"));
+        auto src=trc[1].toObject().value("source").toObject();
+        QCOMPARE(trc[1].toObject().value("type").toString(), QString("image"));
+        QCOMPARE(src.value("media_type").toString(), QString("image/png"));
+        QCOMPARE(QByteArray::fromBase64(src.value("data").toString().toLatin1()), QByteArray("PNGDATA"));
+
+        // OpenAI compatible: tool message (text) followed by a user message with the image
+        OpenAICompatConfig oc; oc.model="m";
+        auto oreq=OpenAICompatBackend::buildRequest(oc, "openai-compat", "S", h, {});
+        auto om=oreq.value("messages").toArray();
+        QCOMPARE(om.size(), 5); // system, user, assistant, tool, user(image+text)
+        QCOMPARE(om[3].toObject().value("role").toString(), QString("tool"));
+        QVERIFY(om[3].toObject().value("content").toString().contains("1 image(s) attached"));
+        auto parts=om[4].toObject().value("content").toArray();
+        QCOMPARE(om[4].toObject().value("role").toString(), QString("user"));
+        QCOMPARE(parts[1].toObject().value("type").toString(), QString("image_url"));
+        QCOMPARE(parts[1].toObject().value("image_url").toObject().value("url").toString(),
+                 QString("data:image/png;base64,")+QString::fromLatin1(QByteArray("PNGDATA").toBase64()));
+        QCOMPARE(parts.last().toObject().value("text").toString(), QString("and now?"));
+    }
+
+
+    void evalTaskLoading()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        auto write=[&](const QString& fn, const QByteArray& c)
+        {
+            QFile f(dir.filePath(fn));
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(c);
+        };
+        write("start.iscad", "b: Box(O, EX, EY, EZ);\n");
+        write("01_a.json", "{\"id\":\"a\",\"category\":\"create\",\"prompt\":\"make\",\"checks\":[{\"type\":\"builds\"}],"
+                           "\"solution\":\"x\",\"start_builds\":false}");
+        write("02_b.json", "[{\"id\":\"b\",\"prompt\":\"p\",\"script_file\":\"start.iscad\",\"checks\":[{\"type\":\"builds\"}]},"
+                           " {\"id\":\"c\",\"prompt\":\"p\",\"checks\":[{\"type\":\"builds\"}],\"max_steps\":7}]");
+        QString err;
+        auto tasks=EvalTask::loadDirectory(dir.path(), &err);
+        QVERIFY2(err.isEmpty(), qPrintable(err));
+        QCOMPARE(tasks.size(), 3);
+        QCOMPARE(tasks[0].id, QString("a"));
+        QVERIFY(!tasks[0].startBuilds);
+        QCOMPARE(tasks[0].solution, QString("x"));
+        QCOMPARE(tasks[1].script, QString("b: Box(O, EX, EY, EZ);\n"));
+        QCOMPARE(tasks[1].fileName, QString("start.iscad"));
+        QCOMPARE(tasks[2].maxSteps, 7);
+
+        write("03_dup.json", "{\"id\":\"a\",\"prompt\":\"p\",\"checks\":[{\"type\":\"builds\"}]}");
+        EvalTask::loadDirectory(dir.path(), &err);
+        QVERIFY(err.contains("duplicate"));
+
+        err.clear();
+        write("03_dup.json", "{\"id\":\"d\",\"prompt\":\"p\"}");
+        EvalTask::loadDirectory(dir.path(), &err);
+        QVERIFY(err.contains("no checks"));
+    }
+
+
+    void evalChecks()
+    {
+        FakeHost host;
+        host.script="L = 10;\nb: Box(O, EX, 2*EY, 5*EZ);\n";
+        EvalContext ctx;
+        ctx.host=&host;
+        ctx.initialScript=host.script;
+        ctx.finalBuildOk=true;
+        ctx.finalAnswer="The volume is 1,234.5 mm³, i.e. about 1.23 cm³.";
+
+        auto check=[&](const QByteArray& json)
+        {
+            auto r=evaluateChecks(QJsonArray{QJsonDocument::fromJson(json).object()}, ctx);
+            return r.first();
+        };
+
+        QVERIFY(check("{\"type\":\"builds\"}").passed);
+        QVERIFY(check("{\"type\":\"script_contains\",\"text\":\"Box(\"}").passed);
+        QVERIFY(!check("{\"type\":\"script_not_contains\",\"text\":\"Box(\"}").passed);
+        QVERIFY(check("{\"type\":\"script_matches\",\"regex\":\"^\\\\s*L\\\\s*=\\\\s*10;\"}").passed);
+        QVERIFY(check("{\"type\":\"script_unchanged\"}").passed);
+        QVERIFY(check("{\"type\":\"scalar\",\"name\":\"L\",\"value\":10.01}").passed);
+        QVERIFY(!check("{\"type\":\"scalar\",\"name\":\"L\",\"value\":11}").passed);
+        QVERIFY(check("{\"type\":\"scalar\",\"name\":\"X\",\"value\":1}").message.contains("not evaluated"));
+        QVERIFY(check("{\"type\":\"scalar\",\"name\":\"Q\",\"value\":1}").message.contains("not found"));
+
+        QVERIFY(check("{\"type\":\"feature\",\"feature\":\"b\",\"volume\":10,\"bbox_size\":[1,2,5],"
+                      "\"bbox_min\":[0,0,0],\"cog\":[0.5,1,2.5],\"n_solids\":1,\"n_faces\":6,\"area\":34}").passed);
+        auto r=check("{\"type\":\"feature\",\"feature\":\"b\",\"volume\":12,\"bbox_size\":[1,2,6]}");
+        QVERIFY(!r.passed);
+        QVERIFY(r.message.contains("volume is 10, expected 12"));
+        QVERIFY(r.message.contains("bbox_size is [1, 2, 5], expected [1, 2, 6]"));
+        QVERIFY(check("{\"type\":\"feature\",\"feature\":\"b\",\"volume\":10.04,\"rel_tol\":0.01}").passed);
+        QVERIFY(!check("{\"type\":\"feature\",\"feature\":\"b\",\"volume\":10.5,\"rel_tol\":0.01}").passed);
+        QVERIFY(!check("{\"type\":\"feature\",\"feature\":\"nothere\",\"volume\":1}").passed);
+
+        // any feature
+        r=check("{\"type\":\"feature\",\"feature\":\"*\",\"volume\":3}");
+        QVERIFY(r.passed);
+        QCOMPARE(r.message, QString("matched by tool"));
+        QVERIFY(!check("{\"type\":\"feature\",\"feature\":\"*\",\"component\":true,\"volume\":3}").passed);
+        QVERIFY(check("{\"type\":\"feature_count\",\"min\":2,\"max\":2}").passed);
+        QVERIFY(check("{\"type\":\"feature_count\",\"component\":true,\"min\":1,\"max\":1}").passed);
+
+        QVERIFY(check("{\"type\":\"answer_number\",\"value\":1234.5}").passed);
+        QVERIFY(check("{\"type\":\"answer_number\",\"value\":1.234,\"rel_tol\":0.01}").passed);
+        QVERIFY(!check("{\"type\":\"answer_number\",\"value\":5}").passed);
+        QVERIFY(check("{\"type\":\"answer_contains\",\"text\":\"VOLUME\"}").passed);
+        QVERIFY(!check("{\"type\":\"unknown_type\"}").passed);
+
+        r=check("{\"type\":\"builds\",\"description\":\"must build\"}");
+        QCOMPARE(r.description, QString("must build"));
+        ctx.finalBuildOk=false;
+        ctx.finalBuildMessage="boom";
+        QVERIFY(check("{\"type\":\"builds\"}").message.contains("boom"));
+
+        host.script+="#x\n";
+        QVERIFY(!check("{\"type\":\"script_unchanged\"}").passed);
+    }
+
+
+    void evalRunner()
+    {
+        qRegisterMetaType<TaskResult>();
+
+        EvalTask t1;
+        t1.id="edit"; t1.category="modify";
+        t1.prompt="change L";
+        t1.script="L = 10;\n";
+        t1.checks=QJsonArray{
+            QJsonObject{{"type","builds"}},
+            QJsonObject{{"type","script_contains"},{"text","L = 20;"}}
+        };
+        t1.solution="L = 20;\n";
+
+        EvalTask t2;
+        t2.id="broken"; t2.category="fix";
+        t2.prompt="fix";
+        t2.script="b: Boxx();\n";
+        t2.startBuilds=false;
+        t2.checks=QJsonArray{ QJsonObject{{"type","builds"}} };
+        t2.solution="b: Boxx();\n"; // wrong on purpose
+
+        // the scripted model edits t1 and gives up on t2
+        int backendCalls=0;
+        EvalRunner::BackendFactory bf = [&backendCalls]()
+        {
+            auto* be=new FakeBackend;
+            if (backendCalls++==0)
+            {
+                be->responses
+                    << toolTurn({{"edit_script", QJsonObject{{"old_string","L = 10;"},{"new_string","L = 20;"}}}})
+                    << textTurn("Done, L is 20.");
+            }
+            else
+            {
+                be->responses << textTurn("I cannot fix it.");
+            }
+            return be;
+        };
+        EvalRunner::HostFactory hf = [](const EvalTask& t)
+        {
+            auto* h=new FakeHost;
+            h->script=t.script;
+            return h;
+        };
+        EvalRunner::Config cfg;
+        cfg.systemPrompt="SYS";
+        cfg.disabledTools=QStringList{"view_model"};
+        cfg.timeoutSeconds=10;
+        EvalRunner runner(hf, bf, cfg);
+
+        QSignalSpy finished(&runner, &EvalRunner::taskFinished);
+        auto results=runner.run({t1, t2});
+        QCOMPARE(results.size(), 2);
+        QCOMPARE(finished.size(), 2);
+
+        const auto& r1=results[0];
+        QVERIFY(r1.passed);
+        QCOMPARE(r1.finishReason, QString("end_turn"));
+        QCOMPARE(r1.modelResponses, 2);
+        QCOMPARE(r1.toolCalls, 1);
+        QCOMPARE(r1.finalScript, QString("L = 20;\n"));
+        QCOMPARE(r1.finalAnswer, QString("Done, L is 20."));
+        QCOMPARE(r1.transcript.size(), 4);
+
+        const auto& r2=results[1];
+        QVERIFY(!r2.passed);
+        QVERIFY(r2.checks[0].message.contains("unknown command Boxx"));
+
+        auto rep=EvalRunner::report(results, QJsonObject{{"model","fake"}});
+        QCOMPARE(rep.value("summary").toObject().value("passed").toInt(), 1);
+        QCOMPARE(rep.value("results").toArray().size(), 2);
+        QVERIFY(!rep.value("summary").toObject().contains("cost_usd")); // unknown pricing
+
+        auto md=EvalRunner::markdownReport(results, QJsonObject{{"model","fake"}});
+        QVERIFY(md.contains("**Passed 1 of 2 (50 %)**"));
+        QVERIFY(md.contains("| modify | 1/1 |"));
+        QVERIFY(md.contains("| broken | 1 | **FAIL** |"));
+
+        // validation of the task definitions with the reference solutions
+        QVERIFY(runner.validateTask(t1).isEmpty());
+        auto pr=runner.validateTask(t2);
+        QCOMPARE(pr.size(), 1);
+        QVERIFY(pr[0].startsWith("solution fails check builds"));
+        t2.startBuilds=true;
+        QVERIFY(runner.validateTask(t2).first().startsWith("the initial script does not build"));
+    }
+
+
+    void evalTimeout()
+    {
+        EvalTask t;
+        t.id="slow"; t.prompt="p";
+        t.checks=QJsonArray{ QJsonObject{{"type","builds"}} };
+        EvalRunner::Config cfg;
+        cfg.timeoutSeconds=1;
+        EvalRunner runner(
+            [](const EvalTask&) { return new FakeHost; },
+            []() { auto* b=new FakeBackend; b->holdResponse=true; return b; },
+            cfg );
+        auto r=runner.runTask(t);
+        QCOMPARE(r.finishReason, QString("timeout"));
+        QVERIFY(!r.passed || r.checks.size()==1);
+    }
+
+
+    void basicToolSet()
+    {
+        auto disabled=ISCADAssistantAgent::toolsNotIn(ISCADAssistantAgent::basicToolSet());
+        QVERIFY(disabled.contains("view_model"));
+        QVERIFY(disabled.contains("list_library_models"));
+        QVERIFY(!disabled.contains("edit_script"));
+        QCOMPARE(disabled.size()+ISCADAssistantAgent::basicToolSet().size(),
+                 ISCADAssistantAgent::toolDefinitions().size());
     }
 };
 

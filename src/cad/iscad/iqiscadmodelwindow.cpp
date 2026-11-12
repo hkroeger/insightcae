@@ -116,7 +116,7 @@ IQISCADModelWindow::IQISCADModelWindow(bool bgParsing, QWidget* parent)
         gb->setLayout(vbox);
 
         // chat assistant, which edits the script
-        assistantHost_=new IQISCADAssistantHost(modelEdit_);
+        assistantHost_=new IQISCADAssistantHost(modelEdit_, viewer_);
         assistant_=new insight::assistant::ISCADAssistantAgent(assistantHost_, this);
         // the agent uses the host until its destruction
         assistantHost_->setParent(assistant_);

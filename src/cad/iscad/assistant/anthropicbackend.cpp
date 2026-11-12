@@ -344,9 +344,29 @@ QJsonObject AnthropicBackend::buildRequest(
             {
                 QJsonObject b{
                     {"type", "tool_result"},
-                    {"tool_use_id", tr.toolCallId},
-                    {"content", tr.content.isEmpty() ? QString("(empty)") : tr.content}
+                    {"tool_use_id", tr.toolCallId}
                 };
+                QString text = tr.content.isEmpty() ? QString("(empty)") : tr.content;
+                if (tr.images.isEmpty())
+                {
+                    b["content"]=text;
+                }
+                else
+                {
+                    QJsonArray c{ QJsonObject{ {"type", "text"}, {"text", text} } };
+                    for (const auto& img: tr.images)
+                    {
+                        c.append(QJsonObject{
+                            {"type", "image"},
+                            {"source", QJsonObject{
+                                 {"type", "base64"},
+                                 {"media_type", img.mediaType},
+                                 {"data", QString::fromLatin1(img.data.toBase64())}
+                             }}
+                        });
+                    }
+                    b["content"]=c;
+                }
                 if (tr.isError)
                     b["is_error"]=true;
                 content.append(b);

@@ -1,0 +1,38 @@
+{
+  "id": "refactor_parameters",
+  "category": "refactor",
+  "description": "replace literal numbers by parameters",
+  "prompt": "Replace the numbers in this model by named parameters (length, width, thickness, hole diameter, hole spacing), defined with ?= so that the model can be used as a submodel. The geometry must not change.",
+  "script": "part: Box(O, 120*EX, 45*EY, 15*EZ)\n - Cylinder(30*EX + 22.5*EY - EZ, ax 17*EZ, 9)\n - Cylinder(90*EX + 22.5*EY - EZ, ax 17*EZ, 9);\n",
+  "solution": "L ?= 120;\nW ?= 45;\nT ?= 15;\nDh ?= 9;\ns ?= 60;\n\npart: Box(O, L*EX, W*EY, T*EZ)\n - Cylinder(0.5*(L-s)*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, Dh)\n - Cylinder(0.5*(L+s)*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, Dh);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "script_matches",
+      "regex": "(?s)(\\?=.*){5}",
+      "description": "at least 5 parameters with ?="
+    },
+    {
+      "type": "script_not_matches",
+      "regex": "Box\\s*\\(\\s*O\\s*,\\s*120",
+      "description": "no literal length in Box"
+    },
+    {
+      "type": "feature",
+      "feature": "part",
+      "volume": 79091.482463,
+      "bbox_size": [
+        120,
+        45,
+        15
+      ],
+      "cog": [
+        60,
+        22.5,
+        7.5
+      ]
+    }
+  ]
+}

@@ -10,6 +10,8 @@
 #include <QTimer>
 #include <QScrollBar>
 #include <QKeyEvent>
+#include <QImage>
+#include <QMap>
 
 #include "iqiscadassistantsettings.h"
 #include "base/translations.h"
@@ -43,6 +45,30 @@ QString quoted(const QString& text)
 
 
 
+/**
+ * displays the conversation, serves the images of the view_model tool
+ */
+class IQISCADChatWidget::Transcript
+    : public QTextBrowser
+{
+public:
+    QMap<QString, QImage> images;
+
+    QVariant loadResource(int type, const QUrl& name) override
+    {
+        if (type==QTextDocument::ImageResource && name.scheme()=="assistant-image")
+        {
+            auto i=images.find(name.path());
+            if (i!=images.end())
+                return i.value();
+        }
+        return QTextBrowser::loadResource(type, name);
+    }
+};
+
+
+
+
 IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent)
     : QWidget(parent),
       agent_(agent),
@@ -51,7 +77,7 @@ IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent
     auto* vbox=new QVBoxLayout(this);
     vbox->setContentsMargins(0, 0, 0, 0);
 
-    transcript_=new QTextBrowser;
+    transcript_=new Transcript;
     transcript_->setOpenExternalLinks(true);
     vbox->addWidget(transcript_, 1);
 
@@ -117,6 +143,18 @@ IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent
                     t+=" ✓";
                 addEntry(Entry::Tool, t);
             });
+    connect(agent_, &ISCADAssistantAgent::toolImageProduced, this,
+            [this](const QString&, const QByteArray& data)
+            {
+                QImage img=QImage::fromData(data);
+                if (img.isNull())
+                    return;
+                if (img.width()>360)
+                    img=img.scaledToWidth(360, Qt::SmoothTransformation);
+                QString key=QString("img%1").arg(++imageCount_);
+                transcript_->images[key]=img;
+                addEntry(Entry::Image, key);
+            });
     connect(agent_, &ISCADAssistantAgent::errorOccurred, this,
             [this](const QString& msg) { addEntry(Entry::Error, msg); });
     connect(agent_, &ISCADAssistantAgent::statusMessage,
@@ -151,6 +189,7 @@ void IQISCADChatWidget::configureBackend()
     auto s=IQISCADAssistantSettings::load();
     agent_->setBackend(s.createBackend());
     agent_->setSystemPrompt(s.systemPrompt());
+    agent_->setDisabledTools(s.disabledTools());
 }
 
 
@@ -171,6 +210,7 @@ void IQISCADChatWidget::newConversation()
 {
     agent_->clearConversation();
     entries_.clear();
+    transcript_->images.clear();
     statusLabel_->clear();
     conversationUsage_=Usage();
     requestUsage_=Usage();
@@ -260,6 +300,9 @@ void IQISCADChatWidget::render()
             break;
         case Entry::Info:
             md+=QString("*%1*\n\n").arg(e.text);
+            break;
+        case Entry::Image:
+            md+=QString("![view](assistant-image:%1)\n\n").arg(e.text);
             break;
         }
     }

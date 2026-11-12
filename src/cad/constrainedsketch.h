@@ -13,6 +13,8 @@
 #include "base/progressdisplayer/textprogressdisplayer.h"
 #include <memory>
 
+class vtkProperty;
+
 
 class IQParameterSetModel;
 

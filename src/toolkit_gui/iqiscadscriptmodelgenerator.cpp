@@ -1,4 +1,5 @@
 #include "iqiscadscriptmodelgenerator.h"
+#include "parser.h"
 
 #include "cadfeature.h"
 #include "cadexception.h"

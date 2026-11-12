@@ -18,6 +18,7 @@
  */
 
 #include "cone.h"
+#include "parser.h"
 #include "cadparameters.h"
 #include "cadfeature.h"
 #include "datum.h"

@@ -1,5 +1,7 @@
 #include "convergenceanalysisdisplayer.h"
 
+#include "base/linearalgebra.h"
+
 #include <cmath>
 #include <iostream>
 
@@ -9,53 +11,72 @@ namespace insight
 {
 
 
-ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer ( const std::string& progvar, double threshold )
+ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer (
+    const std::string& progvar,
+    const Parameters& p )
     : progvar_ ( progvar ),
-      istart_ ( 10 ),
-      co_ ( 15 ),
-      threshold_ ( threshold ),
+      p_ ( p ),
+      cbv_ ( std::make_unique<ConvergenceByVariance>(p.fraction) ),
       converged_ ( false )
 {}
 
-void ConvergenceAnalysisDisplayer::update ( const ProgressState& pi )
+
+ConvergenceAnalysisDisplayer::~ConvergenceAnalysisDisplayer()
+{}
+
+
+const ConvergenceAnalysisDisplayer::Parameters&
+ConvergenceAnalysisDisplayer::parameters() const
 {
-    decltype ( pi.second ) ::const_iterator pv=pi.second.find ( progvar_ );
-
-    if ( pv != pi.second.end() ) {
-        trackedValues_.push_back ( pv->second );
-    }
-
-    if ( trackedValues_.size() > istart_ ) {
-        std::vector<double> ym;
-        for ( size_t i=istart_; i<trackedValues_.size(); i++ ) {
-            size_t i0=i/2;
-            double sum=0.0;
-            for ( size_t j=i0; j<i; j++ ) {
-                sum+=trackedValues_[j];
-            }
-            ym.push_back ( sum/double ( i-i0 ) );
-        }
-
-        if ( ym.size() >co_ ) {
-            double maxrely=0.0;
-            for ( size_t j=ym.size()-1; j>=ym.size()-co_; j-- ) {
-                double rely=fabs ( ym[j]-ym[j-1] ) / ( fabs ( ym[j] )+1e-10 );
-                maxrely=std::max ( rely, maxrely );
-            }
-
-            std::cout<<"max rel. change of "<<progvar_<<" = "<<maxrely;
-
-            if ( maxrely<threshold_ ) {
-                std::cout<<" >>> CONVERGED"<<std::endl;
-                converged_=true;
-            } else {
-                std::cout<<", not converged"<<std::endl;
-            }
-        }
-    }
+    return p_;
 }
 
-void ConvergenceAnalysisDisplayer::logMessage(const std::string &line)
+
+void ConvergenceAnalysisDisplayer::update ( const ProgressState& pi )
+{
+    auto pv = pi.second.find ( progvar_ );
+
+    if ( pv == pi.second.end() )
+        return;
+
+    double cov = arma::as_scalar( (*cbv_)( arma::rowvec{ pv->second } ) );
+    times_.push_back( pi.first );
+    auto window = cbv_->windowSize();
+    auto n = times_.size();
+
+    if ( n < 2 )
+        return; // no variance yet
+
+    double span = times_.back() - times_[ n - std::min<size_t>(window, n) ];
+
+    std::cout<<"CoV of "<<progvar_<<" = "<<cov
+             <<" (trailing window "<<window<<" samples, time span "<<span<<")";
+
+    bool windowOk =
+        p_.minWindowUnit == Parameters::Samples ?
+            ( double(window) >= p_.minWindow ) :
+            ( window>=2 && span >= p_.minWindow );
+
+    // current state (not latched): when several displayers are combined
+    // with AND, all variables have to be converged at the same time
+    converged_ = windowOk && ( cov<p_.threshold );
+
+    if ( !windowOk )
+    {
+        std::cout<<", not converged (window ";
+        if ( p_.minWindowUnit == Parameters::Samples )
+            std::cout<<"< "<<p_.minWindow<<" samples)";
+        else
+            std::cout<<"time span < "<<p_.minWindow<<")";
+        std::cout<<std::endl;
+    }
+    else if ( converged_ )
+        std::cout<<" >>> CONVERGED"<<std::endl;
+    else
+        std::cout<<", not converged"<<std::endl;
+}
+
+void ConvergenceAnalysisDisplayer::logMessage(const std::string &)
 {}
 
 void ConvergenceAnalysisDisplayer::setActionProgressValue(const string &, double)

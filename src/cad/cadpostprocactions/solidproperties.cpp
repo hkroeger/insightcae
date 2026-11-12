@@ -18,6 +18,7 @@
  */
 
 #include "cadfeature.h"
+#include "parser.h"
 #include "datum.h"
 #include "solidproperties.h"
 

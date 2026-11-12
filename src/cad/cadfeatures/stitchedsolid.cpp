@@ -18,6 +18,7 @@
  */
 
 #include "stitchedsolid.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "ShapeFix_Solid.hxx"

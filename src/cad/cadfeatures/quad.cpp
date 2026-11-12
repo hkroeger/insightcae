@@ -18,6 +18,7 @@
  */
 
 #include "quad.h"
+#include "parser.h"
 #include "datum.h"
 #include "cadparameters.h"
 

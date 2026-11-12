@@ -18,6 +18,7 @@
  */
 
 #include "cadtypes.h"
+#include "parser.h"
 #include "iqcaditemmodel.h"
 #include "iqiscadmodelscriptedit.h"
 #include "iqiscadsyntaxhighlighter.h"

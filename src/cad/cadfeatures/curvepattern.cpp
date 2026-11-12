@@ -19,6 +19,7 @@
  */
 
 #include "curvepattern.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "transform.h"

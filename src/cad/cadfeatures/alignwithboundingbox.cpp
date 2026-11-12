@@ -1,4 +1,5 @@
 #include "cadfeatures/transform.h"
+#include "parser.h"
 #include "alignwithboundingbox.h"
 #include "cadfeature.h"
 #include "occbndbox.h"

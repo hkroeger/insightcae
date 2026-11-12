@@ -6,7 +6,8 @@
 #include "base/boost_include.h"
 #include "base/exception.h"
 
-#include "boost/spirit/include/qi.hpp"
+#include "boost/variant.hpp"
+#include "spirit_fwd.h"
 
 
 
@@ -116,8 +117,8 @@ public:
         // }
     }
 
-    template<class T, class C=char>
-    void operator()(boost::spirit::qi::symbols<C, T>& v) const
+    template<class C, class T, class L, class F>
+    void operator()(boost::spirit::qi::symbols<C, T, L, F>& v) const
     {
         v.for_each(
             [this](const std::string& name, T& v)

@@ -18,6 +18,7 @@
  */
 
 #include "booleanunion.h"
+#include "parser.h"
 #include "occshapeutils.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>

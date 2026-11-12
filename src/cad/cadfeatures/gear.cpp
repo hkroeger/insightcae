@@ -19,6 +19,7 @@
  */
 
 #include "gear.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "circle.h"

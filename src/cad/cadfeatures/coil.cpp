@@ -18,6 +18,7 @@
  */
 
 #include <cmath>
+#include "parser.h"
 
 #include "coil.h"
 #include "cadfeature.h"

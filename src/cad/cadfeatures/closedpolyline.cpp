@@ -18,6 +18,7 @@
  */
 
 #include "closedpolyline.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "base/boost_include.h"

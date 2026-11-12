@@ -19,6 +19,7 @@
  */
 
 #include "base/exception.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "featureset.h"

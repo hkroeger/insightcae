@@ -9,6 +9,7 @@
 #include "openfoam/caseelements/evaluation/calculatetotalpressure.h"
 #include "openfoam/caseelements/numerics/fvnumerics.h"
 #include "openfoam/caseelements/basic/porouszone.h"
+#include "base/vtkrendering.h"
 
 #include "internalpressurelossbase_pdl.h"
 

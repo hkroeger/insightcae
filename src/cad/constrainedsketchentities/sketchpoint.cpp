@@ -1,4 +1,5 @@
 #include "sketchpoint.h"
+#include "constrainedsketchgrammar.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "featureset.h"
@@ -9,6 +10,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkPointSource.h>
+#include "vtkProperty.h"
 
 namespace insight {
 namespace cad {

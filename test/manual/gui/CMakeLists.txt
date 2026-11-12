@@ -1,6 +1,7 @@
 add_subdirectory(analysispreview3d)
 add_subdirectory(graphprogressdisplayer)
 add_subdirectory(views)
+add_subdirectory(convergencebyvariance)
 
 
 find_package(Qt5Test CONFIG REQUIRED)

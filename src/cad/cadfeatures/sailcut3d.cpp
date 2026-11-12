@@ -18,6 +18,7 @@
  */
 
 #include "sailcut3d.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "base/boost_include.h"
 #include "base/exception.h"

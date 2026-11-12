@@ -8,7 +8,7 @@
 #include <QMetaType>
 
 #ifndef Q_MOC_RUN
-#include "parser.h"
+#include "parser_fwd.h"
 #endif
 
 

@@ -1,5 +1,6 @@
 
 #include "base/cppextensions.h"
+#include "parser.h"
 #include "angle.h"
 #include "cadfeature.h"
 #include "datum.h"
@@ -14,6 +15,9 @@
 #include "vtkPointSetToLabelHierarchy.h"
 #include "vtkLabelPlacementMapper.h"
 #include "vtkTextProperty.h"
+#include "vtkActor2D.h"
+#include "vtkPointData.h"
+#include "vtkProperty.h"
 
 namespace insight {
 namespace cad {

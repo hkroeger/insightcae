@@ -23,10 +23,11 @@
 #include "cadtypes.h"
 #include "base/exception.h"
 #include "cadparameter.h"
-#include "mapkey_parser.h"
 #include "astbase.h"
+#include "cadfeature.h"
+#include "datum.h"
 
-#include <boost/spirit/include/qi.hpp>
+#include "parser_fwd.h"
 
 #include <vtkSmartPointer.h>
 #include <vtkDataObject.h>

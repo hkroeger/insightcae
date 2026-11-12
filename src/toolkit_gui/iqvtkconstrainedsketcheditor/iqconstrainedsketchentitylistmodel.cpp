@@ -3,6 +3,7 @@
 #include "base/linearalgebra.h"
 #include "cadfeatures/line.h"
 #include <qnamespace.h>
+#include "cadpostprocaction.h"
 
 IQConstrainedSketchEntityListModel::IQConstrainedSketchEntityListModel(
     IQVTKConstrainedSketchEditor *sk, QObject *parent )

@@ -31,25 +31,45 @@ struct SubsetGenerator
         std::string cppStaticType() const override;
         std::string cppDefaultValueExpression() const override;
 
+        /**
+         * Inline: function definitions inside the struct body (header only)
+         * Declaration: only declarations inside the struct body
+         * Definition: out-of-line definitions, qualified by the given scope
+         */
+        enum class CodeMode { Inline, Declaration, Definition };
+
         virtual void writeCppTypeDeclMemberDefinitions(
             std::ostream& os ) const;
 
         virtual void writeCppTypeDeclConstructors(
-            std::ostream& os ) const;
+            std::ostream& os,
+            CodeMode mode, const std::string& qual ) const;
 
         virtual void writeCppTypeDeclGetSetFunctions(
-            std::ostream& os ) const;
+            std::ostream& os,
+            CodeMode mode, const std::string& qual ) const;
 
         virtual void writeCppTypeDeclMakeDefaultFunction_populate(
             std::ostream& os ) const;
 
         virtual void writeCppTypeDeclMakeDefaultFunction(
-            std::ostream& os ) const;
+            std::ostream& os,
+            CodeMode mode, const std::string& qual ) const;
+
+        /**
+         * function definitions are written out of line
+         * (they are not, if the struct is a template)
+         */
+        bool isWrittenOutOfLine() const;
 
         // write the struct
         void writeCppTypeDecl(
             std::ostream& os
         ) const override;
+
+        void writeCppOutOfLineDefinitions(
+            std::ostream& os,
+            const std::string& scope ) const override;
 
 
         void cppWriteInsertStatement

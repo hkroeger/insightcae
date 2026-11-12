@@ -1,4 +1,5 @@
 #include "pointoncurveconstraint.h"
+#include "constrainedsketchgrammar.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "cadfeatures/line.h"

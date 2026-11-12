@@ -6,7 +6,8 @@
 
 #include "base/exception.h"
 #include "base/boost_include.h"
-#include "boost/spirit/include/qi.hpp"
+#include "boost/variant.hpp"
+#include "spirit_fwd.h"
 
 
 namespace insight {
@@ -85,10 +86,10 @@ public:
             );
     }
 
-    template<class PT, class C=char>
+    template<class C, class PT, class L, class F>
     void clone(
-        const boost::spirit::qi::symbols<C, PT>& v,
-        boost::spirit::qi::symbols<C, PT>& out
+        const boost::spirit::qi::symbols<C, PT, L, F>& v,
+        boost::spirit::qi::symbols<C, PT, L, F>& out
         )
     {
         out.clear();

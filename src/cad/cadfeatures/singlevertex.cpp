@@ -1,4 +1,5 @@
 #include "singlevertex.h"
+#include "parser.h"
 #include "base/translations.h"
 #include "BRepBuilderAPI_MakeVertex.hxx"
 #include "cadfeature.h"

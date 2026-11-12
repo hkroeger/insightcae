@@ -1,4 +1,5 @@
 #include "fixedpointconstraint.h"
+#include "constrainedsketchgrammar.h"
 #include "cadfeature.h"
 #include "datum.h"
 

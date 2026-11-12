@@ -1,4 +1,5 @@
 #include "iqcaditemmodel.h"
+#include "cadpostprocaction.h"
 #include "vtkCellData.h"
 #include "vtkPointData.h"
 #include "base/exception.h"

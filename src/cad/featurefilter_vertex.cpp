@@ -1,5 +1,5 @@
 
-#include "featurefilter.h"
+#include "featurefilter_grammar.h"
 #include "cadparameters/constantvector.h"
 
 #include <boost/spirit/include/phoenix.hpp>

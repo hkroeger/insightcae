@@ -18,6 +18,7 @@
  */
 
 #include "modelfeature.h"
+#include "modelfeature_rule.h"
 #include "base/exception.h"
 #include "boost/phoenix/stl/algorithm/transformation.hpp"
 #include <algorithm>
@@ -467,8 +468,8 @@ FeaturePtr ModelFeature::findModelstep(const std::string &name)
 
 
 
-const ModelFeature::ModelFeatureArgRule&
-ModelFeature::rule(
+const ModelFeatureArgRule&
+modelFeatureArgRule(
     parser::ISCADParser& ruleset )
 {
     const std::string rn="sub model name and variable overrides";
@@ -541,7 +542,7 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset)
     typename parser::ISCADParser::ModelstepRulePtr rule(
         new typename parser::ISCADParser::ModelstepRule(
             ( '('
-                > ModelFeature::rule(ruleset)
+                > modelFeatureArgRule(ruleset)
                     ( phx::val(ModelVariableTable()) )
                 > ')' )
              [ qi::_val = qi::_1 ]

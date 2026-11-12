@@ -1,4 +1,5 @@
 #include "stitchedcompound.h"
+#include "parser.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "occinclude.h"

@@ -26,6 +26,7 @@ endif()
 
 
 add_library(insightcad SHARED
+  spirit_fwd.h parser_fwd.h
   treeclonemap.h treeclonemap.cpp
   dependencysource.h dependencysource.cpp
   dependencyreplacement.h dependencyreplacement.cpp
@@ -51,6 +52,7 @@ add_library(insightcad SHARED
 
   constrainedsketch.h constrainedsketch.cpp
   constrainedsketchentity.h constrainedsketchentity.cpp
+  constrainedsketchparameterbinding.h
   constrainedsketchentities/sketchpoint.h constrainedsketchentities/sketchpoint.cpp
   constrainedsketchentities/singlesymbolconstraint.h constrainedsketchentities/singlesymbolconstraint.cpp
   constrainedsketchentities/fixedpointconstraint.h constrainedsketchentities/fixedpointconstraint.cpp
@@ -77,7 +79,7 @@ add_library(insightcad SHARED
   meshing/gmshcase.h meshing/gmshcase.cpp
   meshing/surfacegmshcase.h meshing/surfacegmshcase.cpp
   meshing/sheetextrusiongmshcase.h meshing/sheetextrusiongmshcase.cpp
-  featurefilter.cpp
+  featurefilter.h featurefilter_grammar.h featurefilter.cpp
   featureset.h featureset.cpp
   occtools.h occtools.cpp
   occconvert.h
@@ -279,6 +281,7 @@ add_library(insightcad SHARED
   cadfeatures/mirror.h
   cadfeatures/modelfeature.cpp
   cadfeatures/modelfeature.h
+  cadfeatures/modelfeature_rule.h
   cadfeatures/nacafourdigit.cpp
   cadfeatures/nacafourdigit.h
   cadfeatures/offset.cpp
@@ -421,6 +424,7 @@ add_library(insightcad SHARED
   cadpostprocactions/hydrostatics.cpp
   cadpostprocactions/hydrostatics.h
   cadpostprocactions/mesh.cpp
+  cadpostprocactions/mesh_rules.cpp
   cadpostprocactions/mesh.h
   cadpostprocactions/pointdistance.cpp
   cadpostprocactions/pointdistance.h

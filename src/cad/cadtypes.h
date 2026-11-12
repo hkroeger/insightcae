@@ -36,7 +36,16 @@
 
 #include "base/exception.h"
 #include "base/boost_include.h"
-#include "base/vtkrendering.h"
+#include "base/datasetrepresentation.h"
+#include "base/spatialtransformation.h"
+#include "base/tools.h"
+#include "vtkSmartPointer.h"
+
+// avoid including base/vtkrendering.h here: it pulls in the VTK rendering
+// headers into every CAD translation unit
+class vtkProp;
+class vtkDataObject;
+class vtkPolyData;
 
 #include "TopoDS_Shape.hxx"
 
@@ -44,10 +53,12 @@
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
 #include "boost/fusion/container.hpp"
+#include "boost/fusion/tuple.hpp"
 #include "base/linearalgebra.h"
-#include <boost/spirit/include/qi.hpp>
 #endif
 
+#include "spirit_fwd.h"
+#include "parser_fwd.h"
 #include "treeclonemap.h"
 #include "dependencysource.h"
 #include "dependencyreplacement.h"

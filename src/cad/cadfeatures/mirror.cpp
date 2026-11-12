@@ -18,6 +18,7 @@
  */
 
 #include "mirror.h"
+#include "parser.h"
 #include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>

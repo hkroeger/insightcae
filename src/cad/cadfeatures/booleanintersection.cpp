@@ -18,6 +18,7 @@
  */
 
 #include "GeomAPI_IntCS.hxx"
+#include "parser.h"
 #include "booleanintersection.h"
 #include "base/boost_include.h"
 #include "base/exception.h"

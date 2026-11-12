@@ -94,30 +94,55 @@ void SubsetGenerator::writeCppTypeDeclMemberDefinitions(
 
 
 void SubsetGenerator::writeCppTypeDeclConstructors(
-    std::ostream &os ) const
+    std::ostream &os,
+    CodeMode mode, const std::string& qual ) const
 {
-    // default constructor
-    os << cppTypeName() << "()\n";
-    if (base_types_ && base_types_->size())
+    auto writeBaseInitializers = [&](const std::string& args)
     {
-        std::vector<std::string> bt;
-        std::transform(
-            base_types_->begin(), base_types_->end(),
-            std::back_inserter(bt),
-            [](const BaseType& t)
-            { return boost::fusion::at_c<1>(t)+"()"; } );
+        if (base_types_ && base_types_->size())
+        {
+            std::vector<std::string> bt;
+            std::transform(
+                base_types_->begin(), base_types_->end(),
+                std::back_inserter(bt),
+                [&](const BaseType& t)
+                { return boost::fusion::at_c<1>(t)+"("+args+")"; } );
 
-        os<<": "<<boost::join(bt, ",\n")<<"\n";
+            os<<": "<<boost::join(bt, ",\n")<<"\n";
+        }
+    };
+
+    // default constructor
+    if (mode==CodeMode::Declaration)
+    {
+        os << cppTypeName() << "();\n";
     }
-    os<<"{ get(*makeDefault()); }\n";
+    else
+    {
+        os << qual << cppTypeName() << "()\n";
+        writeBaseInitializers("");
+        os<<"{ get(*makeDefault()); }\n";
+    }
 
     // produce virtual destructor
-    os << "virtual ~" << cppTypeName() << "()\n";
-    os<<"{}\n";
-
-    if (value.size()>0)
+    switch (mode)
     {
-        // explicit constructor
+    case CodeMode::Inline:
+        os << "virtual ~" << cppTypeName() << "()\n"
+           << "{}\n";
+        break;
+    case CodeMode::Declaration:
+        os << "virtual ~" << cppTypeName() << "();\n";
+        break;
+    case CodeMode::Definition:
+        os << qual << "~" << cppTypeName() << "()\n"
+           << "{}\n";
+        break;
+    }
+
+    if (mode!=CodeMode::Definition && value.size()>0)
+    {
+        // explicit constructor (trivial, always inline)
         os << cppTypeName() << "(";
         {
             bool first=true;
@@ -140,96 +165,114 @@ void SubsetGenerator::writeCppTypeDeclConstructors(
     }
 
     //get from other ParameterSet
-    os << cppTypeName() << "(const insight::ParameterSet& p)\n";
-    if (base_types_ && base_types_->size())
+    if (mode==CodeMode::Declaration)
     {
-        std::vector<std::string> bt;
-        std::transform(
-            base_types_->begin(), base_types_->end(),
-            std::back_inserter(bt),
-            [](const BaseType& t)
-            { return boost::fusion::at_c<1>(t)+"(p)"; } );
-
-        os<<": "<<boost::join(bt, ",\n")<<"\n";
+        os << cppTypeName() << "(const insight::ParameterSet& p);\n";
     }
-    os <<"{ get(p); }\n";
+    else
+    {
+        os << qual << cppTypeName() << "(const insight::ParameterSet& p)\n";
+        writeBaseInitializers("p");
+        os <<"{ get(p); }\n";
+    }
 }
 
 
 
-void SubsetGenerator::writeCppTypeDeclGetSetFunctions(std::ostream &os) const
+void SubsetGenerator::writeCppTypeDeclGetSetFunctions(
+    std::ostream &os,
+    CodeMode mode, const std::string& qual ) const
 {
     // ============== SET =====================
     //set static data into other ParameterSet
-    os << "virtual void set(insight::ParameterSet& p) const\n"
-       << "{\n";
-
-    // if is derived, call base class method
-    if ( base_types_ && base_types_->size() )
+    if (mode==CodeMode::Declaration)
     {
-        for (auto& bt: *base_types_)
+        os << "virtual void set(insight::ParameterSet& p) const;\n";
+    }
+    else
+    {
+        os << (mode==CodeMode::Inline ? "virtual " : "")
+           << "void " << qual << "set(insight::ParameterSet& p) const\n"
+           << "{\n";
+
+        // if is derived, call base class method
+        if ( base_types_ && base_types_->size() )
         {
-            os << boost::fusion::at_c<1>(bt)<<"::set(p);\n";
+            for (auto& bt: *base_types_)
+            {
+                os << boost::fusion::at_c<1>(bt)<<"::set(p);\n";
+            }
         }
+
+        for ( auto& member: value )
+        {
+            std::string subname=member->name;
+            os << "{\n"
+
+               <<  "auto& "<<subname<<"_dyn = "
+                     "p.get< "<<member->cppInsightType() <<" >(\""<<subname<<"\");\n"
+
+               << "const auto& "<<subname<<"_static = this->"<<subname<<";\n";
+
+            member->cppWriteSetStatement(
+                    os, subname+"_dyn", subname+"_static" );
+            os << "}\n";
+        }
+        os << "}\n";  // END set()
     }
-
-    for ( auto& member: value )
-    {
-        std::string subname=member->name;
-        os << "{\n"
-
-           <<  "auto& "<<subname<<"_dyn = "
-                 "p.get< "<<member->cppInsightType() <<" >(\""<<subname<<"\");\n"
-
-           << "const auto& "<<subname<<"_static = this->"<<subname<<";\n";
-
-        member->cppWriteSetStatement(
-                os, subname+"_dyn", subname+"_static" );
-        os << "}\n";
-    }
-    os << "}\n";  // END set()
 
 
     // ============== GET =====================
     // set static data from dynamic ParameterSet
-    os << "virtual void get(const insight::ParameterSet& p)\n"
-       << "{\n";
-
-    if ( base_types_ && base_types_->size() )
+    if (mode==CodeMode::Declaration)
     {
-        for (auto& bt: *base_types_)
+        os << "virtual void get(const insight::ParameterSet& p);\n";
+    }
+    else
+    {
+        os << (mode==CodeMode::Inline ? "virtual " : "")
+           << "void " << qual << "get(const insight::ParameterSet& p)\n"
+           << "{\n";
+
+        if ( base_types_ && base_types_->size() )
         {
-            os << boost::fusion::at_c<1>(bt) <<"::get(p);\n";
+            for (auto& bt: *base_types_)
+            {
+                os << boost::fusion::at_c<1>(bt) <<"::get(p);\n";
+            }
         }
+
+        for ( auto& member: value )
+        {
+            std::string subname=member->name;
+            os << "{\n"
+               <<  "const auto& "<<subname<<"_dyn = "
+                    "p.get< "<<member->cppInsightType()<<" >(\""<<subname<<"\");\n"
+
+               <<  "auto& "<<subname<<"_static = this->"<<subname<<";\n";
+
+            member->cppWriteGetStatement(
+                    os, subname+"_dyn", subname+"_static" );
+
+            os << "}\n";
+        }
+        os << "}\n";  // END get()
     }
 
-    for ( auto& member: value )
+
+    // set_variable initialization function (trivial, always inline)
+    if (mode!=CodeMode::Definition)
     {
-        std::string subname=member->name;
-        os << "{\n"
-           <<  "const auto& "<<subname<<"_dyn = "
-                "p.get< "<<member->cppInsightType()<<" >(\""<<subname<<"\");\n"
+        for ( auto& pe: value )
+        {
+            std::string subname=pe->name;
 
-           <<  "auto& "<<subname<<"_static = this->"<<subname<<";\n";
-
-        member->cppWriteGetStatement(
-                os, subname+"_dyn", subname+"_static" );
-
-        os << "}\n";
-    }
-    os << "}\n";  // END get()
-
-
-    // set_variable initialization function
-    for ( auto& pe: value )
-    {
-        std::string subname=pe->name;
-
-        os<< cppTypeName()<<"& set_"<<subname<<"(const "<<pe->cppTypeName() <<"& value)\n"
-          << "{\n"
-           <<" this->"<<subname<<"=value;\n"
-           <<" return *this;\n"
-          << "}\n";
+            os<< cppTypeName()<<"& set_"<<subname<<"(const "<<pe->cppTypeName() <<"& value)\n"
+              << "{\n"
+               <<" this->"<<subname<<"=value;\n"
+               <<" return *this;\n"
+              << "}\n";
+        }
     }
 }
 
@@ -266,16 +309,34 @@ void SubsetGenerator::writeCppTypeDeclMakeDefaultFunction_populate(std::ostream 
 
 
 
-void SubsetGenerator::writeCppTypeDeclMakeDefaultFunction(std::ostream &os) const
+void SubsetGenerator::writeCppTypeDeclMakeDefaultFunction(
+    std::ostream &os,
+    CodeMode mode, const std::string& qual ) const
 {
     // create a dynamic variable with default values set
-    os << "static std::unique_ptr< "<<cppInsightType()<<" > makeDefault()\n"
-       <<"{\n";
+    if (mode==CodeMode::Declaration)
+    {
+        os << "static std::unique_ptr< "<<cppInsightType()<<" > makeDefault();\n";
+    }
+    else
+    {
+        os << (mode==CodeMode::Inline ? "static " : "")
+           << "std::unique_ptr< "<<cppInsightType()<<" > "<<qual<<"makeDefault()\n"
+           <<"{\n";
 
-    writeCppTypeDeclMakeDefaultFunction_populate(os);
+        writeCppTypeDeclMakeDefaultFunction_populate(os);
 
-    os << "return std::move("<<name<<"Ptr);\n"
-       << "}\n";
+        os << "return std::move("<<name<<"Ptr);\n"
+           << "}\n";
+    }
+}
+
+
+
+
+bool SubsetGenerator::isWrittenOutOfLine() const
+{
+    return outOfLineDefinitions && !templateArg_;
 }
 
 
@@ -285,6 +346,13 @@ void SubsetGenerator::writeCppTypeDecl(
     std::ostream& os ) const
 {
     std::string subscope = extendtype(thisscope, name+"_type");
+
+    bool outOfLine = isWrittenOutOfLine();
+    CodeMode mode = outOfLine ? CodeMode::Declaration : CodeMode::Inline;
+
+    // nested types of a template struct have to be written inline as well
+    bool outOfLineDefinitionsBefore = outOfLineDefinitions;
+    outOfLineDefinitions = outOfLine;
 
     if (templateArg_)
         os<<"template<"<<templateArg_.value()<<">\n";
@@ -308,11 +376,37 @@ void SubsetGenerator::writeCppTypeDecl(
     os << "{\n";
 
     writeCppTypeDeclMemberDefinitions(os);
-    writeCppTypeDeclConstructors(os);
-    writeCppTypeDeclGetSetFunctions(os);
-    writeCppTypeDeclMakeDefaultFunction(os);
+    writeCppTypeDeclConstructors(os, mode, "");
+    writeCppTypeDeclGetSetFunctions(os, mode, "");
+    writeCppTypeDeclMakeDefaultFunction(os, mode, "");
 
     os << "};\n";
+
+    outOfLineDefinitions = outOfLineDefinitionsBefore;
+}
+
+
+
+
+void SubsetGenerator::writeCppOutOfLineDefinitions(
+    std::ostream& os,
+    const std::string& scope ) const
+{
+    if (!isWrittenOutOfLine())
+        return; // everything inline, including nested types
+
+    std::string qual = scope + cppTypeName() + "::";
+
+    // nested types first
+    for (const auto& pe: value)
+    {
+        pe->writeCppOutOfLineDefinitions(os, qual);
+    }
+
+    os << "\n// ===== " << qual << " =====\n";
+    writeCppTypeDeclConstructors(os, CodeMode::Definition, qual);
+    writeCppTypeDeclGetSetFunctions(os, CodeMode::Definition, qual);
+    writeCppTypeDeclMakeDefaultFunction(os, CodeMode::Definition, qual);
 }
 
 

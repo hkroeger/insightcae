@@ -19,7 +19,7 @@
  */
 
 
-#include "featurefilter.h"
+#include "featurefilter_grammar.h"
 
 #include <boost/phoenix/function.hpp>
 #include <boost/phoenix/function/adapt_callable.hpp>

@@ -18,6 +18,31 @@ if(CCACHE_PROGRAM)
   set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
 endif()
 
+# Limit the number of parallel compile jobs (Ninja only), so that a build
+# with the maximum number of jobs (ninja default: #cores+2) does not exhaust
+# the memory. Some translation units (boost::spirit grammars, analyses with
+# large PDL parameter sets) need 3-4 GB of compiler memory in Debug builds.
+# Link jobs and custom commands are not affected.
+if (CMAKE_GENERATOR MATCHES "Ninja" AND NOT DEFINED CMAKE_JOB_POOL_COMPILE)
+  set(INSIGHT_MAX_COMPILE_JOBS "auto" CACHE STRING
+      "Maximum number of parallel compile jobs with Ninja. auto: total memory / INSIGHT_COMPILE_JOB_MEMORY_MB, 0: no limit")
+  set(INSIGHT_COMPILE_JOB_MEMORY_MB 2500 CACHE STRING
+      "Memory (MiB), which is reserved per parallel compile job, if INSIGHT_MAX_COMPILE_JOBS=auto")
+  set(_insight_max_compile_jobs ${INSIGHT_MAX_COMPILE_JOBS})
+  if (_insight_max_compile_jobs STREQUAL "auto")
+    cmake_host_system_information(RESULT _insight_total_mem_mb QUERY TOTAL_PHYSICAL_MEMORY)
+    math(EXPR _insight_max_compile_jobs "${_insight_total_mem_mb} / ${INSIGHT_COMPILE_JOB_MEMORY_MB}")
+    if (_insight_max_compile_jobs LESS 1)
+      set(_insight_max_compile_jobs 1)
+    endif()
+  endif()
+  if (_insight_max_compile_jobs GREATER 0)
+    message(STATUS "Limiting the number of parallel compile jobs to ${_insight_max_compile_jobs} (see INSIGHT_MAX_COMPILE_JOBS)")
+    set_property(GLOBAL APPEND PROPERTY JOB_POOLS insight_compile=${_insight_max_compile_jobs})
+    set(CMAKE_JOB_POOL_COMPILE insight_compile)
+  endif()
+endif()
+
 if(WIN32)
  add_link_options(LINKER:--export-all-symbols) ## too big files with debug in WIN32
  #set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -47,6 +72,7 @@ OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit a
 OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF)
 OPTION(INSIGHT_BUILD_INSTALLDESKTOP "Install MIME types and Desktop integration (already during build)" OFF)
 OPTION(INSIGHT_BUILD_TESTS "Build all executables for testing" OFF)
+OPTION(INSIGHT_PDL_OUT_OF_LINE "Generate the member functions of PDL parameter structs out of line into a separate source file per header (reduces compile time and memory)" ON)
 OPTION(INSIGHT_DEVELOPMENT_FILES "create CMake package files to build other projects with CMake and InsightCAE as a dependency" ON)
 OPTION(INSIGHT_INSTALL_DESKTOP "Install MIME types and Desktop integration" ON)
 OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)

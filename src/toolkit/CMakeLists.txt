@@ -141,7 +141,7 @@ add_library(toolkit SHARED
     base/caseelement.cpp base/caseelement.h
     base/case.cpp base/case.h
     base/units.cpp base/units.h
-    base/vtkrendering.cpp base/vtkrendering.h
+    base/vtkrendering.cpp base/vtkrendering.h base/datasetrepresentation.h
     base/remotelocation.cpp base/remotelocation.h
     base/remoteexecution.cpp base/remoteexecution.h
     base/remoteserverlist.cpp base/remoteserverlist.h

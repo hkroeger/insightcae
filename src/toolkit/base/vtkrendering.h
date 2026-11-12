@@ -26,6 +26,7 @@
 #include "vtkActor.h"
 #include "vtkColorSeries.h"
 #include "vtkProperty.h"
+#include "base/datasetrepresentation.h"
 #include "vtkRenderer.h"
 #include "vtkCellData.h"
 #include "vtkPointData.h"
@@ -292,12 +293,6 @@ public:
 };
 
 
-enum DatasetRepresentation
-{
-  Points = VTK_POINTS,
-  Wireframe = VTK_WIREFRAME,
-  Surface = VTK_SURFACE
-};
 
 extern boost::mutex VTKlock; // only one renderer c at a time
 

@@ -18,6 +18,7 @@
  */
 
 #include "arc.h"
+#include "constrainedsketchgrammar.h"
 #include "parser_tools.h"
 #include "base/boost_include.h"
 #include "base/exception.h"

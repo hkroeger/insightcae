@@ -157,6 +157,25 @@ public:
         std::ostream& os ) const;
 
     /**
+     * Out-of-line code generation:
+     * if enabled, generated structs contain only declarations of their
+     * (non-trivial) member functions in the header, and the definitions
+     * are written separately by writeCppOutOfLineDefinitions. They are then
+     * compiled only once instead of in every translation unit, which
+     * includes the header.
+     */
+    static bool outOfLineDefinitions;
+
+    /**
+     * write the out-of-line definitions of all member functions of the
+     * generated types, if any.
+     * @param scope fully qualified scope prefix of the type declarations (e.g. "insight::MyClass::")
+     */
+    virtual void writeCppOutOfLineDefinitions (
+        std::ostream& os,
+        const std::string& scope ) const;
+
+    /**
      * write the code to create a new parameter object for the dynamic parameter set
      */
     virtual void cppWriteCreateStatement (

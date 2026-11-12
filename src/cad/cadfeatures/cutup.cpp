@@ -1,4 +1,5 @@
 #include "cutup.h"
+#include "parser.h"
 #include "cylinder.h"
 #include "datum.h"
 

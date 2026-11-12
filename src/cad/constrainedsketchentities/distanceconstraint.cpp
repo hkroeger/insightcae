@@ -1,4 +1,5 @@
 #include "distanceconstraint.h"
+#include "constrainedsketchgrammar.h"
 #include "cadfeature.h"
 #include "datum.h"
 #include "cadparameters.h"

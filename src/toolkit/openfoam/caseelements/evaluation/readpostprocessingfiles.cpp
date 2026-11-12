@@ -238,11 +238,12 @@ readSingleTabularFile(
     {
         finalColNames = lastColNames;
     }
-    else
-    {
-        for (int i = 0; i < globalMaxCols; ++i)
-            finalColNames.push_back("column" + std::to_string(i));
-    }
+    // Data rows may have more values than the header has names
+    // (e.g. a single header name for a list of values).
+    // Append the fallback names used in the row mapping above,
+    // otherwise these columns would be dropped.
+    for (int i = static_cast<int>(finalColNames.size()); i < globalMaxCols; ++i)
+        finalColNames.push_back("column" + std::to_string(i));
 
     if (columnNames)
         *columnNames = finalColNames;
@@ -292,6 +293,26 @@ arma::mat readAndCombineTabularFiles
 
 
 
+arma::mat readAndCombineTabularFiles
+(
+    const boost::filesystem::path& dataDir,
+    const std::string& fileNamePattern,
+    const std::string& filterChars,
+    std::vector<std::string>* columnNames
+)
+{
+    auto r = readAndCombineGroupedTabularFiles(
+               dataDir, fileNamePattern,
+               -1, filterChars, columnNames );
+    if (r.empty())
+        throw insight::Exception(
+            _("no data found for output file %s in time directories of %s"),
+            fileNamePattern.c_str(), dataDir.c_str() );
+    return r.begin()->second;
+}
+
+
+
 std::map<std::string,arma::mat>
 readAndCombineGroupedTabularFiles
 (
@@ -328,6 +349,27 @@ readAndCombineGroupedTabularFiles
             _("data path %s of function object %s does not exist!"),
             fp.c_str(), FOName.c_str() );
     }
+
+    return readAndCombineGroupedTabularFiles(
+        fp, fileNamePattern,
+        groupByColumn, filterChars, columnNames );
+}
+
+
+
+std::map<std::string,arma::mat>
+readAndCombineGroupedTabularFiles
+(
+    const boost::filesystem::path& fp,
+    const std::string& fileNamePattern,
+    int groupByColumn,
+    const std::string& filterChars,
+    std::vector<std::string>* columnNames
+)
+{
+    CurrentExceptionContext ex(
+        _("reading output files %s from time directories in %s (filtering out any of '%s')"),
+        fileNamePattern.c_str(), fp.c_str(), filterChars.c_str() );
 
     std::map<std::string, OverlappingIntervals> intervals;
 

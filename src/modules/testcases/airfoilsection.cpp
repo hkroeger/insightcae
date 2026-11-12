@@ -298,18 +298,20 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, ProgressDisplayer& pr
     .set_name(force_fo_name)
     ));  
 
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
-                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fpx", p().run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
-                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fvx", p().run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
-                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fpy", p().run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
-                               SolverOutputAnalyzer::pre_force+force_fo_name+"/fvy", p().run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
-                               SolverOutputAnalyzer::pre_moment+force_fo_name+"/mpz", p().run.residual));
-  installConvergenceAnalysis(std::make_shared<ConvergenceAnalysisDisplayer>(
-                               SolverOutputAnalyzer::pre_moment+force_fo_name+"/mvz", p().run.residual));
+  auto convergenceCriterion =
+      ConvergenceAnalysisDisplayer::Parameters()
+          .set_threshold(p().run.residual);
+  for (const auto& pv: {
+         SolverOutputAnalyzer::pre_force+force_fo_name+"/fpx",
+         SolverOutputAnalyzer::pre_force+force_fo_name+"/fvx",
+         SolverOutputAnalyzer::pre_force+force_fo_name+"/fpy",
+         SolverOutputAnalyzer::pre_force+force_fo_name+"/fvy",
+         SolverOutputAnalyzer::pre_moment+force_fo_name+"/mpz",
+         SolverOutputAnalyzer::pre_moment+force_fo_name+"/mvz" })
+  {
+    installConvergenceAnalysis(
+        ConvergenceAnalysisDisplayer::create(pv, convergenceCriterion) );
+  }
 
 //   cm.insert(new minMaxSurfacePressure(cm, minMaxSurfacePressure::Parameters()
 //       .set_name("minPressure")

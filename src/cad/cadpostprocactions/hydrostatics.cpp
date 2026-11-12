@@ -18,6 +18,7 @@
  */
 
 #include "hydrostatics.h"
+#include "parser.h"
 #include "cadfeatures.h"
 #include "datum.h"
 

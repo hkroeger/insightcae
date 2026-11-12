@@ -19,6 +19,7 @@
  */
 
 #include "TopAbs_State.hxx"
+#include "parser.h"
 #include "base/exception.h"
 #include "base/warningdispatcher.h"
 #include "base/linearalgebra.h"

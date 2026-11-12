@@ -492,6 +492,9 @@ public:
     /** CoV history parallel to values() (n_samples x n_cols). */
     const arma::mat& convergenceMeasure() const;
 
+    /** number of samples in the current trailing window (0 before the first sample) */
+    arma::uword windowSize() const;
+
 private:
     double       fraction_;
     arma::mat    values_;        // full input history (for values() accessor and x_old lookup)

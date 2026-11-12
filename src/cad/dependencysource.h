@@ -12,7 +12,8 @@
 #include "base/exception.h"
 
 #include "boost/variant/static_visitor.hpp"
-#include "boost/spirit/include/qi.hpp"
+#include "boost/variant.hpp"
+#include "spirit_fwd.h"
 
 #include "boost/range/adaptor/indexed.hpp"
 
@@ -133,8 +134,8 @@ public:
                 );
         }
 
-        template<class T, class C=char>
-        void operator()(const boost::spirit::qi::symbols<C, T>& v) const
+        template<class C, class T, class L, class F>
+        void operator()(const boost::spirit::qi::symbols<C, T, L, F>& v) const
         {
             v.for_each(
                 [this](const std::string& name, const T& v)

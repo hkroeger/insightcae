@@ -7,30 +7,31 @@ macro(add_toolkit_test SRC)
     add_test(NAME unit_${SRC} COMMAND testexe_${SRC} ${ARGN})
 endmacro()
 
-add_library(test_pdl_header INTERFACE)
-target_include_directories(test_pdl_header INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(test_pdl_header INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
+# test parameter set definitions, used by several tests
+# (contains the code generated from the PDL in test_pdl.h)
+add_library(test_pdl_header STATIC test_pdl.h test_pdl_header.cpp)
+target_include_directories(test_pdl_header PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(test_pdl_header PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(test_pdl_header PUBLIC toolkit_cad)
+target_add_PDL(test_pdl_header)
 
-set(test_pdl_SOURCES test_pdl.h test_pdl.cpp)
-add_executable(testexe_pdl test_pdl.cpp test_pdl.h)
+add_executable(testexe_pdl test_pdl.cpp)
 add_shared_file(testexe_pdl tests
  testLibrary.xml
 )
-#target_include_directories(testexe_pdl PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 linkToolkitVtk(testexe_pdl Offscreen)
 add_test(NAME unit_pdl COMMAND testexe_pdl)
-target_add_PDL(testexe_pdl)
-target_link_libraries(testexe_pdl toolkit_cad)
+target_link_libraries(testexe_pdl test_pdl_header toolkit_cad)
 
 add_toolkit_test(toolkit_dictparser)
 
 add_toolkit_test(toolkit_parameterset)
 add_dependencies(testexe_toolkit_parameterset testexe_pdl)
-target_link_libraries(testexe_toolkit_parameterset toolkit_cad) # for cadsketchparameter
+target_link_libraries(testexe_toolkit_parameterset test_pdl_header)
 
 add_toolkit_test(toolkit_resultset)
 add_dependencies(testexe_toolkit_resultset testexe_pdl)
-target_link_libraries(testexe_toolkit_resultset toolkit_cad) # for cadsketchparameter
+target_link_libraries(testexe_toolkit_resultset test_pdl_header)
 
 add_toolkit_test(toolkit_parametermodification)
 add_toolkit_test(toolkit_simplelatex)

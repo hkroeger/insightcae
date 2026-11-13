@@ -1,0 +1,19 @@
+{
+  "id": "answer_volume",
+  "category": "inspect",
+  "description": "report a property of the built model",
+  "prompt": "What is the volume of the part `flange` in cm³? Do not modify the script.",
+  "script": "D = 160;\nt = 20;\nDbc = 120;\ndh = 14;\nn = 4;\n\nhole = Cylinder(0.5*Dbc*EX - EZ, ax (t+2)*EZ, dh);\nflange: Cylinder(O, ax t*EZ, D) - CircularPattern(hole, O, 2*M_PI/n*EZ, n);\n",
+  "solution": "D = 160;\nt = 20;\nDbc = 120;\ndh = 14;\nn = 4;\n\nhole = Cylinder(0.5*Dbc*EX - EZ, ax (t+2)*EZ, dh);\nflange: Cylinder(O, ax t*EZ, D) - CircularPattern(hole, O, 2*M_PI/n*EZ, n);\n",
+  "solution_answer": "The volume of flange is about 389.8 cm³.",
+  "checks": [
+    {
+      "type": "script_unchanged"
+    },
+    {
+      "type": "answer_number",
+      "value": 389.808816,
+      "rel_tol": 0.01
+    }
+  ]
+}

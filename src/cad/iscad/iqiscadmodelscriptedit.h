@@ -184,6 +184,12 @@ protected:
      */
     bool inSelectionChanged_;
 
+    /**
+     * the chat assistant is working on the script:
+     * the editor is read-only and rebuild errors are not shown in dialogs
+     */
+    bool assistantActive_ = false;
+
     void setFontSize(int fontSize);
     
 protected:
@@ -397,6 +403,17 @@ public:
     void setViewer(IQCADModel3DViewer* viewer);
 
     inline bool isUnsaved() const { return unsaved_; }
+
+    inline const boost::filesystem::path& filename() const { return filename_; }
+
+    inline IQISCADScriptJobScheduler* jobScheduler() const { return scheduler_; }
+
+    /**
+     * while the chat assistant works on the script, the editor is read-only
+     * and rebuild errors are reported in the status bar instead of dialogs
+     */
+    void setAssistantActive(bool active);
+    inline bool isAssistantActive() const { return assistantActive_; }
 
     virtual QSize sizeHint() const;
 

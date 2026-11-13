@@ -1,0 +1,29 @@
+{
+  "id": "create_dome",
+  "category": "create",
+  "description": "hemisphere",
+  "prompt": "Create a hemisphere named `dome` of 100 mm diameter, centered at the origin, with its flat face on the XY plane and the dome pointing in +Z direction.",
+  "script": "",
+  "solution": "dome: Sphere(O, 100) & Box(-50*EX-50*EY, 100*EX, 100*EY, 50*EZ);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "dome",
+      "volume": 261799.387799,
+      "bbox_size": [
+        100,
+        100,
+        50
+      ],
+      "bbox_min": [
+        -50,
+        -50,
+        0
+      ],
+      "n_solids": 1
+    }
+  ]
+}

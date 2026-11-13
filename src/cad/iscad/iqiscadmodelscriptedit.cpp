@@ -1104,6 +1104,15 @@ void IQISCADModelScriptEdit::clearCache()
 
 void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
 {
+    if (assistantActive_)
+    {
+        // the assistant is editing: only copying is possible
+        QMenu * menu = createStandardContextMenu();
+        menu->exec(mapToGlobal(pt));
+        delete menu;
+        return;
+    }
+
     QMenu * menu = createStandardContextMenu();
 
     if (syn_elem_dir_)
@@ -1181,6 +1190,11 @@ void IQISCADModelScriptEdit::showEditorContextMenu(const QPoint& pt)
 
 void IQISCADModelScriptEdit::insertTextAtCursor(const QString& snippet)
 {
+    if (assistantActive_)
+    {
+        emit displayStatusMessage(_("The assistant is editing the script. Please wait or stop it."));
+        return;
+    }
     textCursor().insertText(snippet);
 }
 
@@ -1225,7 +1239,7 @@ void IQISCADModelScriptEdit::onScriptError(
       insight::dbg()<<"no error location info"<<std::endl;
     }
 
-  if (task < IQISCADScriptModelGenerator::Rebuild)
+  if (task < IQISCADScriptModelGenerator::Rebuild || assistantActive_)
     {
       emit displayStatusMessage(QString(_("Script error"))+": "+errorMsg);
     }
@@ -1238,6 +1252,14 @@ void IQISCADModelScriptEdit::onScriptError(
             errorMsg
           );
     }
+}
+
+
+
+void IQISCADModelScriptEdit::setAssistantActive(bool active)
+{
+  assistantActive_=active;
+  setReadOnly(active);
 }
 
 

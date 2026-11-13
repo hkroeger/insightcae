@@ -240,14 +240,17 @@ msgstr ""
 msgid "Model Tree"
 msgstr "Modellbaum"
 
-msgid "Notepad"
-msgstr "Notizen"
-
 msgid "<< Copy to cursor <<"
 msgstr "<< am Cursor einfügen <<"
 
 msgid "Clear"
 msgstr "Leeren"
+
+msgid "Notepad"
+msgstr "Notizen"
+
+msgid "Assistant"
+msgstr ""
 
 msgid ""
 "The editor content is not saved.\n"
@@ -330,6 +333,9 @@ msgstr ""
 msgid "Expand all"
 msgstr ""
 
+msgid "The assistant is editing the script. Please wait or stop it."
+msgstr ""
+
 msgid "Script error"
 msgstr "Skriptfehler"
 
@@ -396,3 +402,190 @@ msgstr "Modell"
 
 msgid "Select output file name"
 msgstr "Namen der Ausgabedatei auswählen"
+
+msgid "Token usage and estimated cost (based on list prices)"
+msgstr ""
+
+msgid ""
+"Ask the assistant to create or change the model (Enter: send, Shift+Enter: "
+"new line)"
+msgstr ""
+
+msgid "Send"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "New chat"
+msgstr ""
+
+#, fuzzy
+msgid "Settings..."
+msgstr "Eins&tellungen"
+
+msgid "Stopped."
+msgstr ""
+
+msgid "System prompt:"
+msgstr ""
+
+msgid "Tools:"
+msgstr ""
+
+msgid "Using %1."
+msgstr ""
+
+msgid "Warning:"
+msgstr ""
+
+msgid "You:"
+msgstr ""
+
+msgid "Thinking:"
+msgstr ""
+
+msgid "Error:"
+msgstr ""
+
+msgid "Working..."
+msgstr ""
+
+msgid "Request: %1 input, %2 cached, %3 output tokens"
+msgstr ""
+
+msgid " | conversation: ~$%1"
+msgstr ""
+
+msgid " | conversation: %1 tokens"
+msgstr ""
+
+msgid "Assistant settings"
+msgstr ""
+
+msgid "Anthropic (Claude)"
+msgstr ""
+
+msgid "OpenAI compatible server (Ollama, vLLM, LM Studio, ...)"
+msgstr ""
+
+msgid "Provider"
+msgstr ""
+
+msgid "Effort"
+msgstr ""
+
+msgid "Anthropic API key (sk-ant-...)"
+msgstr ""
+
+msgid "using ANTHROPIC_API_KEY from the environment"
+msgstr ""
+
+msgid "API key"
+msgstr ""
+
+msgid ""
+"API keys are created in the Anthropic Console (platform.claude.com); usage "
+"is billed per token. A Claude Pro/Max subscription does not include API "
+"usage. The environment variable ANTHROPIC_API_KEY takes precedence over the "
+"key entered here."
+msgstr ""
+
+msgid "(custom)"
+msgstr ""
+
+msgid "Server"
+msgstr ""
+
+msgid "Base URL"
+msgstr ""
+
+msgid "Fetch models"
+msgstr ""
+
+#, fuzzy
+msgid "optional"
+msgstr "Optionen"
+
+msgid "using OPENAI_API_KEY from the environment"
+msgstr ""
+
+msgid "server default"
+msgstr ""
+
+msgid "Max. output tokens"
+msgstr ""
+
+msgid "unknown"
+msgstr ""
+
+msgid ""
+"Context window of the model on the server (Ollama: OLLAMA_CONTEXT_LENGTH, "
+"shown by \"ollama ps\"). The assistant warns, when the conversation comes "
+"close to it. Input, which was cut off by the server, is detected without "
+"this setting as well."
+msgstr ""
+
+msgid "Context length (tokens)"
+msgstr ""
+
+msgid "Price input"
+msgstr ""
+
+msgid "Price cached input"
+msgstr ""
+
+msgid "Price output"
+msgstr ""
+
+msgid "The model accepts images (lets the assistant look at the 3D view)"
+msgstr ""
+
+msgid ""
+"The model must support tool calling. Local models are much weaker at multi-"
+"step editing than large hosted models. Ollama uses a small context window by "
+"default, which silently cuts off the system prompt: set "
+"OLLAMA_CONTEXT_LENGTH (e.g. 32768) or choose a shorter language reference "
+"below (\"On demand\" is recommended)."
+msgstr ""
+
+msgid "Full language and command reference (~20k tokens)"
+msgstr ""
+
+msgid "Language reference without command list (~11k tokens)"
+msgstr ""
+
+msgid "None (command_help tool only)"
+msgstr ""
+
+msgid ""
+"On demand: essentials and table of contents, the model reads sections (~4k "
+"tokens)"
+msgstr ""
+
+msgid "System prompt"
+msgstr ""
+
+msgid "All tools"
+msgstr ""
+
+msgid "Basic tools (read, edit, rebuild, help, inspect) for small models"
+msgstr ""
+
+msgid "Tools"
+msgstr ""
+
+msgid "Show the system prompt in the chat"
+msgstr ""
+
+msgid "Fetching model list..."
+msgstr ""
+
+msgid "No answer from the server."
+msgstr ""
+
+msgid "Error: %1"
+msgstr ""
+
+msgid "%1 models available."
+msgstr ""

@@ -9,6 +9,9 @@ namespace boost { namespace filesystem { class path; } }
 class IQCADItemModel;
 class IQVTKCADModel3DViewer;
 class IQISCADModelScriptEdit;
+class IQISCADAssistantHost;
+class IQISCADChatWidget;
+namespace insight { namespace assistant { class ISCADAssistantAgent; } }
 
 /**
  * a widget, which arranges all widgets, required for editing a model:
@@ -28,6 +31,9 @@ protected:
     QTreeView* modelTree_;
     Model3DViewer* viewer_;
     QTextEdit* notepad_;
+    IQISCADAssistantHost* assistantHost_;
+    insight::assistant::ISCADAssistantAgent* assistant_;
+    IQISCADChatWidget* chat_;
 
 public:
     IQISCADModelWindow(bool bgParsing, QWidget* parent = 0);

@@ -1,5 +1,6 @@
 #include "cadfeatures.h"
 #include "iqvtkcadmodel3dviewer.h"
+#include "vtkCamera.h"
 #include "armadillo"
 #include "base/exception.h"
 #include "base/factory.h"
@@ -966,6 +967,35 @@ void IQVTKCADModel3DViewer::fitAll()
     ren_->ResetCamera();
     scheduleRedraw();
 }
+
+QImage IQVTKCADModel3DViewer::renderImage(
+    const arma::mat& viewDir,
+    const arma::mat& upDir,
+    bool fit )
+{
+    auto* cam = ren_->GetActiveCamera();
+    auto saved = vtkSmartPointer<vtkCamera>::New();
+    saved->DeepCopy(cam);
+
+    if (viewDir.n_elem==3 && upDir.n_elem==3)
+        view(viewDir, upDir);
+    if (fit)
+        ren_->ResetCamera();
+    redrawNow(true);
+
+#if VTK_MAJOR_VERSION>=8
+    QImage img = vtkWidget_.grabFramebuffer();
+#else
+    QImage img = vtkWidget_.grab().toImage();
+#endif
+
+    cam->DeepCopy(saved);
+    ren_->ResetCameraClippingRange();
+    redrawNow(true);
+
+    return img;
+}
+
 
 void IQVTKCADModel3DViewer::centerRotation()
 {

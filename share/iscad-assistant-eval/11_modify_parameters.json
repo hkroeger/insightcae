@@ -1,0 +1,38 @@
+{
+  "id": "modify_parameters",
+  "category": "modify",
+  "description": "change parameter values",
+  "prompt": "Make the plate 150 mm long and change the hole diameter to 16 mm.",
+  "script": "# simple plate with a center hole\nL = 100;\nW = 50;\nT = 8;\nD = 10;\n\nplate: Box(O, L*EX, W*EY, T*EZ)\n - Cylinder(0.5*L*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, D);\n",
+  "solution": "# simple plate with a center hole\nL = 150;\nW = 50;\nT = 8;\nD = 16;\n\nplate: Box(O, L*EX, W*EY, T*EZ)\n - Cylinder(0.5*L*EX + 0.5*W*EY - EZ, ax (T+2)*EZ, D);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "scalar",
+      "name": "L",
+      "value": 150
+    },
+    {
+      "type": "scalar",
+      "name": "D",
+      "value": 16
+    },
+    {
+      "type": "feature",
+      "feature": "plate",
+      "volume": 58391.504561,
+      "bbox_size": [
+        150,
+        50,
+        8
+      ],
+      "cog": [
+        75,
+        25,
+        4
+      ]
+    }
+  ]
+}

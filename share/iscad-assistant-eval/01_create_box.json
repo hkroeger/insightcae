@@ -1,0 +1,29 @@
+{
+  "id": "create_box",
+  "category": "create",
+  "description": "simple box with given size and position",
+  "prompt": "Create a solid box named `block` of 120 mm (X) x 80 mm (Y) x 30 mm (Z). One corner is at the origin, the box extends in the positive directions.",
+  "script": "",
+  "solution": "block: Box(O, 120*EX, 80*EY, 30*EZ);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "block",
+      "volume": 288000,
+      "bbox_size": [
+        120,
+        80,
+        30
+      ],
+      "bbox_min": [
+        0,
+        0,
+        0
+      ],
+      "n_solids": 1
+    }
+  ]
+}

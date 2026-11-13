@@ -1,0 +1,38 @@
+{
+  "id": "modify_position",
+  "category": "modify",
+  "description": "reposition a component",
+  "prompt": "Move the column so that it stands in the center of the base plate.",
+  "script": "base: Box(O, 100*EX, 100*EY, 10*EZ);\npost = Cylinder(O, ax 50*EZ, 20);\ncolumn: post << (20*EX + 20*EY + 10*EZ);\n",
+  "solution": "base: Box(O, 100*EX, 100*EY, 10*EZ);\npost = Cylinder(O, ax 50*EZ, 20);\ncolumn: post << (50*EX + 50*EY + 10*EZ);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "column",
+      "cog": [
+        50,
+        50,
+        35
+      ],
+      "bbox_size": [
+        20,
+        20,
+        50
+      ]
+    },
+    {
+      "type": "feature",
+      "feature": "base",
+      "volume": 100000,
+      "bbox_min": [
+        0,
+        0,
+        0
+      ],
+      "description": "base unchanged"
+    }
+  ]
+}

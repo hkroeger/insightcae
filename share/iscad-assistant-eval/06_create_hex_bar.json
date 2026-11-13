@@ -1,0 +1,24 @@
+{
+  "id": "create_hex_bar",
+  "category": "create",
+  "description": "extruded regular hexagon (width across flats)",
+  "prompt": "Create a hexagonal bar named `hexbar`: a regular hexagon with a width across flats of 24 mm in the XY plane, centered at the origin, extruded 50 mm in +Z direction.",
+  "script": "",
+  "solution": "hexbar: Extrusion(RegPoly(O, EZ, 6, 12), 50*EZ);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "hexbar",
+      "volume": 24941.531629,
+      "cog": [
+        0,
+        0,
+        25
+      ],
+      "n_faces": 8
+    }
+  ]
+}

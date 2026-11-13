@@ -3,6 +3,7 @@ project(unittests_gui)
 if (INSIGHT_BUILD_CAD)
 
     find_package(Qt5Test CONFIG REQUIRED)
+    find_package(Qt5Gui CONFIG REQUIRED)
 
     add_executable(IQHierarchicalDataModel iqhierarchicaldatamodeltest.cpp)
     target_link_libraries(IQHierarchicalDataModel
@@ -49,6 +50,28 @@ if (INSIGHT_BUILD_CAD)
     set_tests_properties(gui_ISCADScriptJobScheduling PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 600)
+
+    if (INSIGHT_BUILD_ISCAD)
+        # chat assistant of ISCAD: needs only Qt (no VTK, no network access)
+        add_executable(ISCADAssistantAgent ISCADAssistantAgent.cpp)
+        set_target_properties(ISCADAssistantAgent PROPERTIES AUTOMOC ON)
+        target_link_libraries(ISCADAssistantAgent iscadassistant Qt5::Test)
+        add_test(NAME gui_ISCADAssistantAgent COMMAND ISCADAssistantAgent)
+        set_tests_properties(gui_ISCADAssistantAgent PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+            TIMEOUT 120)
+
+        # formatting of the chat transcript (Qt Gui only)
+        add_executable(ISCADChatFormat ISCADChatFormat.cpp
+            ${CMAKE_SOURCE_DIR}/src/cad/iscad/iqiscadchatformat.cpp)
+        set_target_properties(ISCADChatFormat PROPERTIES AUTOMOC ON)
+        target_include_directories(ISCADChatFormat PRIVATE ${CMAKE_SOURCE_DIR}/src/cad/iscad)
+        target_link_libraries(ISCADChatFormat Qt5::Gui Qt5::Test)
+        add_test(NAME gui_ISCADChatFormat COMMAND ISCADChatFormat)
+        set_tests_properties(gui_ISCADChatFormat PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+            TIMEOUT 60)
+    endif()
 
     add_executable(ParameterEditorWidget ParameterEditorWidget.cpp)
     target_link_libraries(ParameterEditorWidget

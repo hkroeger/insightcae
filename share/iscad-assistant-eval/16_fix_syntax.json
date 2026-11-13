@@ -1,0 +1,24 @@
+{
+  "id": "fix_syntax",
+  "category": "fix",
+  "description": "missing semicolon",
+  "prompt": "The model does not build. Please fix it without changing the intended geometry.",
+  "script": "L = 80;\nW = 40\nH = 25;\n\nbody: Box(O, L*EX, W*EY, H*EZ)\n - Cylinder(0.5*L*EX + 0.5*W*EY - EZ, ax (H+2)*EZ, 12);\n",
+  "start_builds": false,
+  "solution": "L = 80;\nW = 40;\nH = 25;\n\nbody: Box(O, L*EX, W*EY, H*EZ)\n - Cylinder(0.5*L*EX + 0.5*W*EY - EZ, ax (H+2)*EZ, 12);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "body",
+      "volume": 77172.566612,
+      "bbox_size": [
+        80,
+        40,
+        25
+      ]
+    }
+  ]
+}

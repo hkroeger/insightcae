@@ -1,0 +1,40 @@
+{
+  "id": "create_parametric_box",
+  "category": "create",
+  "description": "parameters with default values (?=)",
+  "prompt": "Create a parametric box model: parameters L (length, default 100), W (width, default 60) and H (height, default 20), which can be overridden when the model is loaded as a submodel, and a box named `box` of L x W x H (along X, Y, Z) with a corner at the origin. The box shall be an assembly component.",
+  "script": "",
+  "solution": "L ?= 100;\nW ?= 60;\nH ?= 20;\n\nbox: Box(O, L*EX, W*EY, H*EZ);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "script_matches",
+      "regex": "^\\s*L\\s*\\?=\\s*100(\\.0*)?\\s*;",
+      "description": "parameter L ?= 100"
+    },
+    {
+      "type": "script_matches",
+      "regex": "^\\s*W\\s*\\?=\\s*60(\\.0*)?\\s*;",
+      "description": "parameter W ?= 60"
+    },
+    {
+      "type": "script_matches",
+      "regex": "^\\s*H\\s*\\?=\\s*20(\\.0*)?\\s*;",
+      "description": "parameter H ?= 20"
+    },
+    {
+      "type": "feature",
+      "feature": "*",
+      "component": true,
+      "volume": 120000,
+      "bbox_size": [
+        100,
+        60,
+        20
+      ],
+      "description": "component box"
+    }
+  ]
+}

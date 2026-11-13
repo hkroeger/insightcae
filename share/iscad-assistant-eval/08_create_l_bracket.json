@@ -1,0 +1,29 @@
+{
+  "id": "create_l_bracket",
+  "category": "create",
+  "description": "L-shaped bracket from two plates",
+  "prompt": "Create an L-shaped bracket named `bracket` from 6 mm thick plate, 40 mm wide (Y): a horizontal leg of 80 mm length along +X and a vertical leg of 60 mm height along +Z. The outer corner is at the origin: the horizontal leg occupies z=0..6, the vertical leg x=0..6. The bracket must be a single solid.",
+  "script": "",
+  "solution": "bracket: Box(O, 80*EX, 40*EY, 6*EZ) | Box(O, 6*EX, 40*EY, 60*EZ);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "bracket",
+      "volume": 32160,
+      "bbox_size": [
+        80,
+        40,
+        60
+      ],
+      "bbox_min": [
+        0,
+        0,
+        0
+      ],
+      "n_solids": 1
+    }
+  ]
+}

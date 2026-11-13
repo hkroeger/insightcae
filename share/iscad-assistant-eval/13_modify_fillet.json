@@ -1,0 +1,24 @@
+{
+  "id": "modify_fillet",
+  "category": "modify",
+  "description": "fillet selected edges",
+  "prompt": "Round the four vertical edges (parallel to Z) of `block` with a radius of 8 mm. Keep the name `block` for the result.",
+  "script": "block: Box(O, 100*EX, 60*EY, 40*EZ);\n",
+  "solution": "block0 = Box(O, 100*EX, 60*EY, 40*EZ);\nblock: Fillet(block0?edges('CoG.z > 1 && CoG.z < 39'), 8);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "block",
+      "volume": 237802.477193,
+      "bbox_size": [
+        100,
+        60,
+        40
+      ],
+      "n_faces": 10
+    }
+  ]
+}

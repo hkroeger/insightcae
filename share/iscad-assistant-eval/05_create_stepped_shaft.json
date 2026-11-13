@@ -1,0 +1,29 @@
+{
+  "id": "create_stepped_shaft",
+  "category": "create",
+  "description": "stepped shaft as one solid",
+  "prompt": "Create a stepped shaft named `shaft` along the X axis, starting at x=0: 40 mm long with 30 mm diameter, followed by 60 mm with 20 mm diameter, followed by 25 mm with 12 mm diameter. The shaft must be a single solid.",
+  "script": "",
+  "solution": "shaft: Cylinder(O, ax 40*EX, 30) | Cylinder(40*EX, ax 60*EX, 20) | Cylinder(100*EX, ax 25*EX, 12);\n",
+  "checks": [
+    {
+      "type": "builds"
+    },
+    {
+      "type": "feature",
+      "feature": "shaft",
+      "volume": 49951.323192,
+      "bbox_size": [
+        125,
+        30,
+        30
+      ],
+      "bbox_min": [
+        0,
+        -15,
+        -15
+      ],
+      "n_solids": 1
+    }
+  ]
+}

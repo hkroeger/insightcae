@@ -269,23 +269,97 @@ QStringList librarySearchPaths()
 }
 
 
+namespace {
+
+QString readResource(const QString& fn)
+{
+    QFile f(fn);
+    if (f.open(QIODevice::ReadOnly|QIODevice::Text))
+        return QString::fromUtf8(f.readAll());
+    return QString();
+}
+
+const char* languageDoc = ":/iscad_assistant/insightcad.md";
+const char* commandDoc = ":/iscad_assistant/iscad-reference.md";
+
+/**
+ * sections of the language documentation, which are put in full into the on-demand reference
+ */
+const QStringList essentialSections = { "Basic Concept", "Scalars", "Vectors", "Features" };
+
+/**
+ * commands of the command reference, which are put in full into the on-demand reference
+ */
+const QStringList frequentCommands = {
+    "Box", "Cylinder", "Sphere", "Cone", "Circle", "Quad", "RegPoly",
+    "Extrusion", "Revolution", "Fillet", "Chamfer",
+    "CircularPattern", "LinearPattern", "Transform", "Rotate" };
+
+}
+
+
+std::shared_ptr<const insight::assistant::ReferenceIndex> referenceIndex()
+{
+    static std::shared_ptr<const insight::assistant::ReferenceIndex> index;
+    if (!index)
+    {
+        auto i=std::make_shared<insight::assistant::ReferenceIndex>();
+        // the operation of the editor is irrelevant for modeling
+        i->addDocument(readResource(languageDoc), {"Graphical Editor ISCAD"});
+        i->addDocument(readResource(commandDoc));
+        index=i;
+    }
+    return index;
+}
+
+
 QString languageReference(ReferenceLevel level)
 {
+    if (level==OnDemandReference)
+    {
+        auto idx=referenceIndex();
+        if (idx->isEmpty())
+            return QString();
+
+        QString ref=
+            "Only the essentials of the ISCAD language are given here. "
+            "Before you use syntax or commands, which are not explained below, read the relevant "
+            "section of the documentation with the tool read_reference (argument: a section title "
+            "from the table of contents at the end). command_help shows the signature and description "
+            "of a single command. Do not change parts of the script, which the request does not "
+            "concern, only because their syntax is unfamiliar to you: they build correctly, "
+            "look them up instead.\n\n";
+        for (const auto& t: essentialSections)
+        {
+            if (const auto* s=idx->section(t))
+                ref+=s->text+"\n\n";
+        }
+        ref+="## Frequently used commands\n\n";
+        for (const auto& t: frequentCommands)
+        {
+            if (const auto* s=idx->section(t))
+                ref+=s->text+"\n\n";
+        }
+        ref+="## Table of contents of the documentation (for read_reference)\n\n";
+        ref+=idx->tableOfContents();
+        return ref;
+    }
+
     QStringList files;
     if (level==FullReference || level==BasicReference)
-        files<<":/iscad_assistant/insightcad.md";
+        files<<languageDoc;
     if (level==FullReference)
-        files<<":/iscad_assistant/iscad-reference.md";
+        files<<commandDoc;
 
     QString ref;
     for (const auto& fn: files)
     {
-        QFile f(fn);
-        if (f.open(QIODevice::ReadOnly|QIODevice::Text))
+        QString t=readResource(fn);
+        if (!t.isEmpty())
         {
             if (!ref.isEmpty())
                 ref+="\n\n";
-            ref+=QString::fromUtf8(f.readAll());
+            ref+=t;
         }
     }
     return ref;

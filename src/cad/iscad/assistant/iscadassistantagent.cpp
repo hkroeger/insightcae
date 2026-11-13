@@ -226,7 +226,8 @@ QString ISCADAssistantAgent::formatFeatureProperties(
 
 QStringList ISCADAssistantAgent::basicToolSet()
 {
-    return {"read_script", "edit_script", "write_script", "rebuild", "command_help", "inspect_feature"};
+    return {"read_script", "edit_script", "write_script", "rebuild", "command_help", "inspect_feature",
+            "read_reference"};
 }
 
 
@@ -242,9 +243,10 @@ QStringList ISCADAssistantAgent::toolsNotIn(const QStringList& toolSet)
 
 ISCADAssistantAgent::ISCADAssistantAgent(ISCADAssistantHost* host, QObject* parent)
     : QObject(parent),
-      host_(host),
-      tools_(toolDefinitions())
-{}
+      host_(host)
+{
+    updateTools();
+}
 
 
 ISCADAssistantAgent::~ISCADAssistantAgent()
@@ -284,10 +286,28 @@ void ISCADAssistantAgent::setBackend(LLMBackend* backend)
 void ISCADAssistantAgent::setDisabledTools(const QStringList& names)
 {
     disabledTools_=names;
+    updateTools();
+}
+
+
+void ISCADAssistantAgent::setReferenceIndex(std::shared_ptr<const ReferenceIndex> index)
+{
+    referenceIndex_ = (index && !index->isEmpty()) ? index : nullptr;
+    updateTools();
+}
+
+
+void ISCADAssistantAgent::updateTools()
+{
     tools_.clear();
     for (const auto& t: toolDefinitions())
-        if (!names.contains(t.name))
-            tools_.append(t);
+    {
+        if (disabledTools_.contains(t.name))
+            continue;
+        if (t.name=="read_reference" && !referenceIndex_)
+            continue;
+        tools_.append(t);
+    }
 }
 
 
@@ -381,6 +401,15 @@ QList<ToolDefinition> ISCADAssistantAgent::toolDefinitions()
             schema({
                 {"name", prop("string", "the command name, e.g. Extrusion")}
             }, {"name"})
+        },
+        {
+            "read_reference",
+            "Read a section of the ISCAD language documentation, e.g. about the syntax of selections, "
+            "transformations or postprocessing actions. The section titles are listed in the table of contents "
+            "of the system prompt. Single feature commands are explained by command_help.",
+            schema({
+                {"section", prop("string", "section title from the table of contents, e.g. \"Edges\" or \"Transformation\"")}
+            }, {"section"})
         },
         {
             "list_symbols",
@@ -511,6 +540,8 @@ void ISCADAssistantAgent::sendUserMessage(const QString& text)
 
     ++runId_;
     running_=true;
+    maxPromptTokens_=0;
+    contextWarned_=false;
     step_=0;
     host_->beginAssistantTurn();
     Q_EMIT requestStarted();
@@ -539,9 +570,11 @@ void ISCADAssistantAgent::onTurnFinished(const TurnResult& result)
 
     sessionUsage_+=result.usage;
     Q_EMIT usageUpdated(sessionUsage_);
+    checkContextUsage(result);
 
     if (result.stopReason=="refusal")
     {
+        lastPromptTokens_=0; // the history is shortened
         // do not keep the declined response, the conversation can continue without it.
         // A pure prompt is removed as well (it would be declined again).
         if (!history_.isEmpty()
@@ -604,6 +637,8 @@ void ISCADAssistantAgent::executeNextToolCall()
         else if (tc.name=="command_help" || tc.name=="read_library_model"
                  || tc.name=="inspect_feature")
             desc+=": "+tc.input.value("name").toString();
+        else if (tc.name=="read_reference")
+            desc+=": "+tc.input.value("section").toString();
         else if (tc.name=="view_model")
             desc+=": "+tc.input.value("direction").toString("iso");
         Q_EMIT toolCallStarted(tc.name, desc);
@@ -702,6 +737,57 @@ void ISCADAssistantAgent::clearConversation()
     stop();
     history_.clear();
     lastKnownScript_.clear();
+    lastPromptTokens_=maxPromptTokens_=0;
+    truncationSeen_=false;
+}
+
+
+void ISCADAssistantAgent::checkContextUsage(const TurnResult& turn)
+{
+    const auto& u=turn.usage;
+    qint64 p=u.inputTokens+u.cacheReadTokens+u.cacheWriteTokens;
+    if (p<=0)
+        return; // not reported by the server
+
+    maxPromptTokens_=std::max(maxPromptTokens_, p);
+    int cl = backend_ ? backend_->contextLength() : 0;
+
+    const QString remedy=
+        "Start a new conversation, choose a shorter reference in the assistant settings "
+        "(\"System prompt\") or increase the context window of the server "
+        "(Ollama: environment variable OLLAMA_CONTEXT_LENGTH).";
+
+    QString w;
+    if (lastPromptTokens_>0 && p<lastPromptTokens_ && !turn.alternativeRequest)
+    {
+        // (an alternative request format, e.g. tools in the text, may be shorter)
+        // the conversation only grows: a shorter input means, that the server dropped a part
+        truncationSeen_=true;
+        w=QString("The input of the model was shorter than before (%1 instead of at least %2 tokens): "
+                  "the server has probably cut off parts of the conversation or of the instructions "
+                  "to fit its context window%3. The results may be unreliable. ")
+              .arg(p).arg(lastPromptTokens_)
+              .arg(cl>0 ? QString(" of %1 tokens").arg(cl) : QString())
+          +remedy;
+    }
+    else if (truncationSeen_)
+    {
+        w=QString("The conversation (%1 tokens) does not fit into the context window of the model: "
+                  "parts of it are cut off by the server. ").arg(p)+remedy;
+    }
+    else if (cl>0 && p>=0.9*cl)
+    {
+        w=QString("The conversation uses %1 of %2 tokens of the model's context window. "
+                  "When it is full, the server cuts off parts of the input. ").arg(p).arg(cl)
+          +remedy;
+    }
+    lastPromptTokens_=std::max(lastPromptTokens_, p);
+
+    if (!w.isEmpty() && !contextWarned_)
+    {
+        contextWarned_=true;
+        Q_EMIT contextWarning(w);
+    }
 }
 
 
@@ -720,7 +806,8 @@ void ISCADAssistantAgent::executeTool(
 
     const auto& in=call.input;
 
-    if (disabledTools_.contains(call.name))
+    if (disabledTools_.contains(call.name)
+        || (call.name=="read_reference" && !referenceIndex_) )
     {
         err(QString("The tool \"%1\" is not available.").arg(call.name));
         return;
@@ -895,6 +982,31 @@ void ISCADAssistantAgent::executeTool(
                 .arg(name)
                 .arg(similar.isEmpty() ? QString(" Use list_commands to see all commands.")
                                        : QString(" Similar commands: ")+similar.join(", ")));
+        }
+    }
+    else if (call.name=="read_reference")
+    {
+        QString name=in.value("section").toString();
+        auto r=referenceIndex_->lookup(name);
+        if (!r.sections.isEmpty())
+        {
+            QStringList texts;
+            for (const auto* s: r.sections)
+                texts<<(r.sections.size()>1 ? QString("[%1]\n").arg(s->path) : QString())+s->text;
+            ok(truncated(texts.join("\n\n"), maxReadChars));
+        }
+        else if (!r.candidates.isEmpty())
+        {
+            auto c=r.candidates;
+            if (c.size()>30)
+                c=c.mid(0, 30)<<"...";
+            err(QString("\"%1\" matches several sections. Use one of these titles or paths:\n%2")
+                .arg(name, c.join('\n')));
+        }
+        else
+        {
+            err(QString("There is no section \"%1\". Available sections:\n%2")
+                .arg(name, referenceIndex_->tableOfContents()));
         }
     }
     else if (call.name=="list_symbols")

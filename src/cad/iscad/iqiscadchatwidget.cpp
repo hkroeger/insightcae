@@ -14,6 +14,7 @@
 #include <QMap>
 
 #include "iqiscadassistantsettings.h"
+#include "iqiscadchatformat.h"
 #include "base/translations.h"
 
 
@@ -157,6 +158,8 @@ IQISCADChatWidget::IQISCADChatWidget(ISCADAssistantAgent* agent, QWidget* parent
             });
     connect(agent_, &ISCADAssistantAgent::errorOccurred, this,
             [this](const QString& msg) { addEntry(Entry::Error, msg); });
+    connect(agent_, &ISCADAssistantAgent::contextWarning, this,
+            [this](const QString& msg) { addEntry(Entry::Warning, msg); });
     connect(agent_, &ISCADAssistantAgent::statusMessage,
             statusLabel_, &QLabel::setText);
     connect(agent_, &ISCADAssistantAgent::usageUpdated,
@@ -190,6 +193,18 @@ void IQISCADChatWidget::configureBackend()
     agent_->setBackend(s.createBackend());
     agent_->setSystemPrompt(s.systemPrompt());
     agent_->setDisabledTools(s.disabledTools());
+    agent_->setReferenceIndex(s.referenceIndex());
+    showSystemPrompt_=s.showSystemPrompt;
+}
+
+
+QString IQISCADChatWidget::promptDisplayText() const
+{
+    QStringList tools;
+    for (const auto& t: agent_->tools())
+        tools<<t.name;
+    return QString("**%1**\n\n%2\n\n---\n\n%3 %4")
+        .arg(_("System prompt:"), agent_->systemPrompt(), _("Tools:"), tools.join(", "));
 }
 
 
@@ -198,10 +213,14 @@ void IQISCADChatWidget::showSettings()
     IQISCADAssistantSettingsDialog dlg(IQISCADAssistantSettings::load(), this);
     if (dlg.exec()==QDialog::Accepted)
     {
+        QString oldPrompt=promptDisplayText();
         dlg.settings().save();
         // the conversation can be continued with the new backend
         configureBackend();
         addEntry(Entry::Info, QString(_("Using %1.")).arg(agent_->backend()->description()));
+        QString newPrompt=promptDisplayText();
+        if (showSystemPrompt_ && !agent_->history().isEmpty() && newPrompt!=oldPrompt)
+            addEntry(Entry::Prompt, newPrompt);
     }
 }
 
@@ -210,6 +229,7 @@ void IQISCADChatWidget::newConversation()
 {
     agent_->clearConversation();
     entries_.clear();
+    promptFragments_.clear();
     transcript_->images.clear();
     statusLabel_->clear();
     conversationUsage_=Usage();
@@ -227,6 +247,8 @@ void IQISCADChatWidget::send()
     if (text.isEmpty() || agent_->isRunning())
         return;
     input_->clear();
+    if (showSystemPrompt_ && agent_->history().isEmpty())
+        addEntry(Entry::Prompt, promptDisplayText());
     addEntry(Entry::User, text);
     agent_->sendUserMessage(text);
 }
@@ -275,6 +297,7 @@ void IQISCADChatWidget::scheduleRender()
 void IQISCADChatWidget::render()
 {
     QString md;
+    QList<QPair<QString, QString> > prompts; // marker, prompt text
     for (const auto& e: entries_)
     {
         if (e.text.trimmed().isEmpty())
@@ -282,6 +305,17 @@ void IQISCADChatWidget::render()
 
         switch (e.kind)
         {
+        case Entry::Prompt:
+        {
+            // inserted after the markdown conversion (markdown has no colors and font sizes)
+            QString marker=QString("@@SYSTEMPROMPT%1@@").arg(prompts.size());
+            prompts.append({marker, e.text});
+            md+=marker+"\n\n";
+            break;
+        }
+        case Entry::Warning:
+            md+=QString("**%1** %2\n\n").arg(_("Warning:"), e.text.toHtmlEscaped());
+            break;
         case Entry::User:
             md+=QString("**%1**\n\n%2\n\n").arg(_("You:"), quoted(e.text));
             break;
@@ -312,6 +346,22 @@ void IQISCADChatWidget::render()
     int oldValue=sb->value();
 
     transcript_->setMarkdown(md);
+
+    for (const auto& p: prompts)
+    {
+        auto f=promptFragments_.find(p.second);
+        if (f==promptFragments_.end())
+        {
+            auto pal=transcript_->palette();
+            f=promptFragments_.insert(
+                p.second,
+                IQISCADChatFormat::subduedMarkdown(
+                    p.second, transcript_->document()->defaultFont(),
+                    IQISCADChatFormat::subduedColor(
+                        pal.color(QPalette::Text), pal.color(QPalette::Base) ) ) );
+        }
+        IQISCADChatFormat::replaceMarker(transcript_->document(), p.first, f.value());
+    }
 
     if (atEnd)
         sb->setValue(sb->maximum());

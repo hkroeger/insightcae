@@ -100,6 +100,12 @@ QString StreamingHttpBackend::errorMessageFromBody(int httpStatus, const QByteAr
 }
 
 
+bool StreamingHttpBackend::alternativeRequest(int, const QByteArray&, QByteArray&)
+{
+    return false;
+}
+
+
 bool StreamingHttpBackend::isRetryableStreamError(const QString& errorType) const
 {
     static const QStringList retryable{"overloaded_error", "api_error", "rate_limit_error"};
@@ -112,6 +118,7 @@ void StreamingHttpBackend::startTurn(const QNetworkRequest& request, const QByte
     cancel();
     busy_=true;
     attempt_=0;
+    alternativeRequestUsed_=false;
     request_=request;
     requestBody_=body;
     startRequest();
@@ -141,6 +148,7 @@ void StreamingHttpBackend::startRequest()
 void StreamingHttpBackend::complete()
 {
     auto result=acc_->result(id());
+    result.alternativeRequest=alternativeRequestUsed_;
     abortReply();
     busy_=false;
     Q_EMIT turnFinished(result);
@@ -246,6 +254,14 @@ void StreamingHttpBackend::onReplyFinished()
         msg=errorMessageFromBody(httpStatus_, errorBody_);
         retry = (httpStatus_==429 || httpStatus_==500 || httpStatus_==502
                  || httpStatus_==503 || httpStatus_==504 || httpStatus_==529);
+    }
+
+    if (httpStatus_!=0 && attempt_<maxRetries_
+        && alternativeRequest(httpStatus_, errorBody_, requestBody_))
+    {
+        alternativeRequestUsed_=true;
+        scheduleRetry(msg+" - trying an alternative request", 0);
+        return;
     }
 
     if (retry && attempt_<maxRetries_)

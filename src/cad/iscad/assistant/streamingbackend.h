@@ -82,6 +82,7 @@ class StreamingHttpBackend
     QNetworkRequest request_;
     QByteArray requestBody_;
     int attempt_ = 0;
+    bool alternativeRequestUsed_ = false;
     int httpStatus_ = 0;
     QByteArray errorBody_;
 
@@ -107,6 +108,13 @@ protected:
      * stream errors (error events), after which the request may be repeated
      */
     virtual bool isRetryableStreamError(const QString& errorType) const;
+
+    /**
+     * called after a failed HTTP request (no content received yet).
+     * A backend may replace the request body by an alternative request,
+     * which is then sent immediately (counts as retry). Returns false otherwise.
+     */
+    virtual bool alternativeRequest(int httpStatus, const QByteArray& errorBody, QByteArray& requestBody);
 
     /**
      * start a request. Exactly one of turnFinished or turnFailed is emitted afterwards

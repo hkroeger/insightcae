@@ -43,6 +43,7 @@ IQISCADAssistantSettings IQISCADAssistantSettings::load()
     r.provider = Provider(s.value("provider", int(Anthropic)).toInt());
     r.reference = Reference(s.value("reference", int(FullReference)).toInt());
     r.basicToolSet = s.value("basic_tool_set", false).toBool();
+    r.showSystemPrompt = s.value("show_system_prompt", false).toBool();
 
     AnthropicConfig ac;
     r.anthropicModel = s.value("model", ac.model).toString(); // key of phase 1
@@ -55,6 +56,7 @@ IQISCADAssistantSettings IQISCADAssistantSettings::load()
     r.openaiModel = s.value("openai_model").toString();
     r.openaiApiKey = s.value("openai_api_key").toString();
     r.openaiMaxTokens = s.value("openai_max_tokens", 0).toInt();
+    r.openaiContextLength = s.value("openai_context_length", 0).toInt();
     r.openaiPriceInput = s.value("openai_price_input", 0.).toDouble();
     r.openaiPriceOutput = s.value("openai_price_output", 0.).toDouble();
     r.openaiPriceCachedInput = s.value("openai_price_cached_input", 0.).toDouble();
@@ -70,6 +72,7 @@ void IQISCADAssistantSettings::save() const
     s.setValue("provider", int(provider));
     s.setValue("reference", int(reference));
     s.setValue("basic_tool_set", basicToolSet);
+    s.setValue("show_system_prompt", showSystemPrompt);
 
     s.setValue("model", anthropicModel);
     s.setValue("effort", anthropicEffort);
@@ -84,6 +87,7 @@ void IQISCADAssistantSettings::save() const
     s.setValue("openai_model", openaiModel);
     setOrRemove("openai_api_key", openaiApiKey);
     s.setValue("openai_max_tokens", openaiMaxTokens);
+    s.setValue("openai_context_length", openaiContextLength);
     s.setValue("openai_price_input", openaiPriceInput);
     s.setValue("openai_price_output", openaiPriceOutput);
     s.setValue("openai_price_cached_input", openaiPriceCachedInput);
@@ -120,6 +124,7 @@ LLMBackend* IQISCADAssistantSettings::createBackend() const
         c.model=openaiModel;
         c.apiKey = envKey.isEmpty() ? openaiApiKey : envKey;
         c.maxTokens=openaiMaxTokens;
+        c.contextLength=openaiContextLength;
         c.priceInput=openaiPriceInput;
         c.priceOutput=openaiPriceOutput;
         c.priceCachedInput=openaiPriceCachedInput;
@@ -145,7 +150,16 @@ QString IQISCADAssistantSettings::systemPrompt() const
         IQISCADAssistantHost::languageReference(
             reference==FullReference ? IQISCADAssistantHost::Full :
             reference==BasicReference ? IQISCADAssistantHost::Basic :
+            reference==OnDemandReference ? IQISCADAssistantHost::OnDemand :
                                         IQISCADAssistantHost::None ) );
+}
+
+
+std::shared_ptr<const ReferenceIndex> IQISCADAssistantSettings::referenceIndex() const
+{
+    if (reference==OnDemandReference)
+        return IQISCADAssistantHost::referenceIndex();
+    return nullptr;
 }
 
 
@@ -248,6 +262,17 @@ IQISCADAssistantSettingsDialog::IQISCADAssistantSettingsDialog(
         oMaxTokens_->setValue(s.openaiMaxTokens);
         f->addRow(_("Max. output tokens"), oMaxTokens_);
 
+        oContextLength_=new QSpinBox;
+        oContextLength_->setRange(0, 10000000);
+        oContextLength_->setSingleStep(1024);
+        oContextLength_->setSpecialValueText(_("unknown"));
+        oContextLength_->setValue(s.openaiContextLength);
+        oContextLength_->setToolTip(
+            _("Context window of the model on the server (Ollama: OLLAMA_CONTEXT_LENGTH, shown by \"ollama ps\"). "
+              "The assistant warns, when the conversation comes close to it. "
+              "Input, which was cut off by the server, is detected without this setting as well.") );
+        f->addRow(_("Context length (tokens)"), oContextLength_);
+
         auto price = [](double v)
         {
             auto* sb=new QDoubleSpinBox;
@@ -272,7 +297,7 @@ IQISCADAssistantSettingsDialog::IQISCADAssistantSettingsDialog(
             _("The model must support tool calling. Local models are much weaker at multi-step "
               "editing than large hosted models. Ollama uses a small context window by default, "
               "which silently cuts off the system prompt: set OLLAMA_CONTEXT_LENGTH (e.g. 32768) "
-              "or choose a shorter language reference below.") );
+              "or choose a shorter language reference below (\"On demand\" is recommended).") );
         note->setWordWrap(true);
         f->addRow(note);
 
@@ -292,8 +317,9 @@ IQISCADAssistantSettingsDialog::IQISCADAssistantSettingsDialog(
     auto* bottom=new QFormLayout;
     reference_=new QComboBox;
     reference_->addItem(_("Full language and command reference (~20k tokens)"));
-    reference_->addItem(_("Language reference without command list (~10k tokens)"));
+    reference_->addItem(_("Language reference without command list (~11k tokens)"));
     reference_->addItem(_("None (command_help tool only)"));
+    reference_->addItem(_("On demand: essentials and table of contents, the model reads sections (~4k tokens)"));
     reference_->setCurrentIndex(int(s.reference));
     bottom->addRow(_("System prompt"), reference_);
     toolSet_=new QComboBox;
@@ -301,6 +327,9 @@ IQISCADAssistantSettingsDialog::IQISCADAssistantSettingsDialog(
     toolSet_->addItem(_("Basic tools (read, edit, rebuild, help, inspect) for small models"));
     toolSet_->setCurrentIndex(s.basicToolSet ? 1 : 0);
     bottom->addRow(_("Tools"), toolSet_);
+    showPrompt_=new QCheckBox(_("Show the system prompt in the chat"));
+    showPrompt_->setChecked(s.showSystemPrompt);
+    bottom->addRow(showPrompt_);
     vbox->addLayout(bottom);
 
     auto* bb=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
@@ -365,6 +394,7 @@ IQISCADAssistantSettings IQISCADAssistantSettingsDialog::settings() const
     s.provider=IQISCADAssistantSettings::Provider(provider_->currentIndex());
     s.reference=IQISCADAssistantSettings::Reference(reference_->currentIndex());
     s.basicToolSet = toolSet_->currentIndex()==1;
+    s.showSystemPrompt = showPrompt_->isChecked();
 
     s.anthropicModel=aModel_->currentText().trimmed();
     s.anthropicEffort=aEffort_->currentText();
@@ -375,6 +405,7 @@ IQISCADAssistantSettings IQISCADAssistantSettingsDialog::settings() const
     s.openaiModel=oModel_->currentText().trimmed();
     s.openaiApiKey=oKey_->text().trimmed();
     s.openaiMaxTokens=oMaxTokens_->value();
+    s.openaiContextLength=oContextLength_->value();
     s.openaiPriceInput=oPriceIn_->value();
     s.openaiPriceOutput=oPriceOut_->value();
     s.openaiPriceCachedInput=oPriceCached_->value();

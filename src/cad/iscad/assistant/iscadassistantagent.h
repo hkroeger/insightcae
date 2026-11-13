@@ -2,12 +2,14 @@
 #define INSIGHT_ASSISTANT_ISCADASSISTANTAGENT_H
 
 #include <functional>
+#include <memory>
 
 #include <QObject>
 #include <QPointer>
 
 #include "llmbackend.h"
 #include "iscadassistanthost.h"
+#include "referencedocs.h"
 
 namespace insight {
 namespace assistant {
@@ -29,7 +31,14 @@ class ISCADAssistantAgent
     QString systemPrompt_;
     QList<ToolDefinition> tools_;
     QStringList disabledTools_;
+    std::shared_ptr<const ReferenceIndex> referenceIndex_;
     QList<ChatMessage> history_;
+
+    /**
+     * the offered tools: all minus the disabled ones,
+     * read_reference only with a reference index
+     */
+    void updateTools();
 
     int maxSteps_ = 50;
     int step_ = 0;
@@ -55,6 +64,17 @@ class ISCADAssistantAgent
     QString lastKnownScript_;
 
     Usage sessionUsage_;
+
+    /**
+     * input size of the last model response in this conversation and the maximum in the current request
+     */
+    qint64 lastPromptTokens_ = 0, maxPromptTokens_ = 0;
+    bool truncationSeen_ = false, contextWarned_ = false;
+
+    /**
+     * warn, if the input was probably cut off by the server or is close to the context limit
+     */
+    void checkContextUsage(const TurnResult& turn);
 
     void requestNextResponse();
     void onTurnFinished(const insight::assistant::TurnResult& result);
@@ -90,6 +110,13 @@ public:
     inline const QList<ToolDefinition>& tools() const { return tools_; }
 
     /**
+     * sections of the language documentation for the tool read_reference
+     * (the tool is only offered, if an index is set)
+     */
+    void setReferenceIndex(std::shared_ptr<const ReferenceIndex> index);
+    inline std::shared_ptr<const ReferenceIndex> referenceIndex() const { return referenceIndex_; }
+
+    /**
      * the default system prompt
      * @param languageReference
      * documentation of the ISCAD language (markdown)
@@ -115,6 +142,11 @@ public:
     inline bool isRunning() const { return running_; }
     inline const QList<ChatMessage>& history() const { return history_; }
     inline const Usage& sessionUsage() const { return sessionUsage_; }
+
+    /**
+     * largest input of a model response (tokens) in the current or last request
+     */
+    inline qint64 maxPromptTokens() const { return maxPromptTokens_; }
 
     /**
      * execute a single tool call.
@@ -155,6 +187,12 @@ Q_SIGNALS:
 
     void errorOccurred(const QString& message);
     void statusMessage(const QString& message);
+
+    /**
+     * the input was probably cut off by the server (context window too small)
+     * or is close to the context limit. At most once per request.
+     */
+    void contextWarning(const QString& message);
     void usageUpdated(const insight::assistant::Usage& sessionUsage);
 };
 

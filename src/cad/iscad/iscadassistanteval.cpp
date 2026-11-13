@@ -7,6 +7,7 @@
  */
 
 #include <iostream>
+#include <cstdlib>
 
 #include <QCoreApplication>
 #include <QCommandLineParser>
@@ -62,6 +63,7 @@ int main(int argc, char* argv[])
     QCommandLineOption
         oTasks("tasks", "directory with the task files (*.json)", "dir", defaultTaskDirectory()),
         oList("list", "list the tasks and exit"),
+        oPrintPrompt("print-system-prompt", "print the system prompt for the selected --reference level and exit"),
         oValidate("validate", "check the task definitions without a model: initial scripts and "
                               "reference solutions are built and the checks are applied to the solutions"),
         oFilter("filter", "run only tasks, whose id or category matches this regular expression", "regex"),
@@ -71,20 +73,42 @@ int main(int argc, char* argv[])
         oApiKey("api-key", "API key (default: ANTHROPIC_API_KEY or OPENAI_API_KEY)", "key"),
         oEffort("effort", "anthropic: low, medium, high, xhigh, max", "level", "high"),
         oMaxTokens("max-tokens", "openai: maximum output tokens per response (0: server default)", "n", "0"),
+        oContextLength("context-length", "openai: context window of the model on the server in tokens "
+                                         "(warn when it is nearly full; 0: unknown)", "n", "0"),
         oPriceIn("price-input", "openai: USD per million input tokens", "usd", "0"),
         oPriceOut("price-output", "openai: USD per million output tokens", "usd", "0"),
         oPriceCached("price-cached", "openai: USD per million cached input tokens", "usd", "0"),
-        oReference("reference", "language reference in the system prompt: full, basic or none", "level", "full"),
+        oReference("reference", "language reference in the system prompt: full, basic, ondemand "
+                                "(essentials and table of contents, sections via read_reference) or none",
+                   "level", "full"),
         oTools("tools", "tool set: full or basic (for small models)", "set", "full"),
         oRepeat("repeat", "run every task n times", "n", "1"),
         oMaxSteps("max-steps", "maximum model responses per task", "n", "40"),
         oTimeout("timeout", "maximum time per task in seconds", "s", "900"),
+        oBuildTimeout("build-timeout", "maximum time for one model build or inspection in seconds "
+                                       "(degenerate geometry can hang OpenCASCADE)", "s", "120"),
         oOut("out", "output file prefix (writes <prefix>.json and <prefix>.md)", "prefix");
 
-    p.addOptions({oTasks, oList, oValidate, oFilter, oProvider, oModel, oBaseUrl, oApiKey, oEffort, oMaxTokens,
+    p.addOptions({oTasks, oList, oPrintPrompt, oValidate, oFilter, oProvider, oModel, oBaseUrl, oApiKey, oEffort, oMaxTokens, oContextLength,
                   oPriceIn, oPriceOut, oPriceCached, oReference, oTools, oRepeat, oMaxSteps,
-                  oTimeout, oOut});
+                  oTimeout, oBuildTimeout, oOut});
     p.process(app);
+
+    const int buildTimeout=p.value(oBuildTimeout).toInt();
+
+    QString ref=p.value(oReference).toLower();
+    auto level =
+        ref=="none" ? ISCADModelInspection::NoReference :
+        ref=="basic" ? ISCADModelInspection::BasicReference :
+        ref=="ondemand" ? ISCADModelInspection::OnDemandReference :
+                       ISCADModelInspection::FullReference;
+
+    if (p.isSet(oPrintPrompt))
+    {
+        std::cout<<ISCADAssistantAgent::defaultSystemPrompt(
+                       ISCADModelInspection::languageReference(level) ).toStdString()<<std::endl;
+        return 0;
+    }
 
     // ===== tasks
     QString taskDir=p.value(oTasks);
@@ -127,7 +151,7 @@ int main(int argc, char* argv[])
         EvalRunner::Config vc;
         vc.timeoutSeconds=p.value(oTimeout).toInt();
         EvalRunner validator(
-            [](const EvalTask& t) { return new ISCADHeadlessHost(t.script, t.fileName); },
+            [buildTimeout](const EvalTask& t) { return new ISCADHeadlessHost(t.script, t.fileName, buildTimeout); },
             EvalRunner::BackendFactory(), vc );
         int nFailed=0;
         for (const auto& t: tasks)
@@ -169,6 +193,7 @@ int main(int argc, char* argv[])
         if (p.isSet(oBaseUrl)) c.baseUrl=QUrl(p.value(oBaseUrl));
         c.model=p.value(oModel);
         c.maxTokens=p.value(oMaxTokens).toInt();
+        c.contextLength=p.value(oContextLength).toInt();
         c.priceInput=p.value(oPriceIn).toDouble();
         c.priceOutput=p.value(oPriceOut).toDouble();
         c.priceCachedInput=p.value(oPriceCached).toDouble();
@@ -187,15 +212,13 @@ int main(int argc, char* argv[])
     }
 
     // ===== prompt and tools
-    QString ref=p.value(oReference).toLower();
-    auto level =
-        ref=="none" ? ISCADModelInspection::NoReference :
-        ref=="basic" ? ISCADModelInspection::BasicReference :
-                       ISCADModelInspection::FullReference;
 
     EvalRunner::Config cfg;
     cfg.systemPrompt=ISCADAssistantAgent::defaultSystemPrompt(
         ISCADModelInspection::languageReference(level) );
+    if (level==ISCADModelInspection::OnDemandReference)
+        cfg.referenceIndex=ISCADModelInspection::referenceIndex();
+    std::cout<<"System prompt: "<<cfg.systemPrompt.size()<<" characters"<<std::endl;
     if (p.value(oTools).toLower()=="basic")
         cfg.disabledTools=ISCADAssistantAgent::toolsNotIn(ISCADAssistantAgent::basicToolSet());
     if (!cfg.disabledTools.contains("view_model"))
@@ -205,7 +228,7 @@ int main(int argc, char* argv[])
     cfg.repeats=std::max(1, p.value(oRepeat).toInt());
 
     EvalRunner runner(
-        [](const EvalTask& t) { return new ISCADHeadlessHost(t.script, t.fileName); },
+        [buildTimeout](const EvalTask& t) { return new ISCADHeadlessHost(t.script, t.fileName, buildTimeout); },
         backendFactory,
         cfg );
 
@@ -237,12 +260,15 @@ int main(int argc, char* argv[])
         {"provider", provider},
         {"model", modelName},
         {"reference", ref},
+        {"system_prompt_chars", cfg.systemPrompt.size()},
         {"tools", p.value(oTools)},
         {"tasks", taskDir},
         {"repeats", cfg.repeats}
     };
     if (provider=="anthropic")
         meta["effort"]=p.value(oEffort);
+    else if (p.value(oContextLength).toInt()>0)
+        meta["context_length"]=p.value(oContextLength).toInt();
 
     QString prefix = p.isSet(oOut) ? p.value(oOut) :
         QString("iscad-assistant-eval-%1-%2")
@@ -263,6 +289,14 @@ int main(int argc, char* argv[])
 
     std::cout<<std::endl<<md.section("\n\n", 0, 1).toStdString()<<std::endl
              <<"Reports: "<<prefix.toStdString()<<".json, "<<prefix.toStdString()<<".md"<<std::endl;
+
+    if (int n=ISCADHeadlessHost::nAbandonedWorkers())
+    {
+        // abandoned workers may still run inside OpenCASCADE: skip static destruction
+        std::cout<<n<<" build/inspection worker(s) exceeded the time limit and were abandoned."<<std::endl;
+        std::cout.flush();
+        std::_Exit(0);
+    }
 
     return 0;
 }

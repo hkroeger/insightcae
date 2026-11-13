@@ -536,6 +536,8 @@ QJsonObject TaskResult::toJson() const
         {"checks", ca},
         {"finish_reason", finishReason},
         {"errors", QJsonArray::fromStringList(errors)},
+        {"warnings", QJsonArray::fromStringList(warnings)},
+        {"max_prompt_tokens", maxPromptTokens},
         {"model_responses", modelResponses},
         {"tool_calls", toolCalls},
         {"failed_tool_calls", failedToolCalls},
@@ -580,6 +582,7 @@ TaskResult EvalRunner::runTask(const EvalTask& task, int run)
     ISCADAssistantAgent agent(host.get());
     agent.setSystemPrompt(cfg_.systemPrompt);
     agent.setDisabledTools(cfg_.disabledTools);
+    agent.setReferenceIndex(cfg_.referenceIndex);
     agent.setMaxSteps(task.maxSteps>0 ? task.maxSteps : cfg_.maxSteps);
     agent.setBackend(backendFactory_());
 
@@ -599,6 +602,12 @@ TaskResult EvalRunner::runTask(const EvalTask& task, int run)
             [&res](const QString& msg) { res.errors<<msg; });
     connect(&agent, &ISCADAssistantAgent::statusMessage, this,
             [this](const QString& msg) { Q_EMIT progress("  "+msg); });
+    connect(&agent, &ISCADAssistantAgent::contextWarning, this,
+            [&res, this](const QString& msg)
+            {
+                res.warnings<<msg;
+                Q_EMIT progress("  WARNING: "+msg);
+            });
     connect(&agent, &ISCADAssistantAgent::requestFinished, &loop,
             [&res, &loop](const QString& reason) { res.finishReason=reason; loop.quit(); });
     connect(&timeout, &QTimer::timeout, &loop, [&]()
@@ -647,6 +656,7 @@ TaskResult EvalRunner::runTask(const EvalTask& task, int run)
         if (m.role==ChatMessage::Assistant)
             ++res.modelResponses;
     res.usage=agent.sessionUsage();
+    res.maxPromptTokens=agent.maxPromptTokens();
     if (agent.backend())
     {
         auto p=agent.backend()->pricing();
@@ -770,8 +780,8 @@ QString EvalRunner::markdownReport(const QList<TaskResult>& results, const QJson
     for (auto it=cat.begin(); it!=cat.end(); ++it)
         md+=QString("| %1 | %2/%3 |\n").arg(it.key()).arg(it.value().first).arg(it.value().second);
 
-    md+="\n| Task | Run | Result | Steps | Tool calls (failed) | Tokens in/cached/out | Cost | Time | Failed checks |\n"
-        "|---|---|---|---|---|---|---|---|---|\n";
+    md+="\n| Task | Run | Result | Steps | Tool calls (failed) | Tokens in/cached/out | Max. prompt | Cost | Time | Failed checks, warnings |\n"
+        "|---|---|---|---|---|---|---|---|---|---|\n";
     for (const auto& r: results)
     {
         QStringList failed;
@@ -780,12 +790,16 @@ QString EvalRunner::markdownReport(const QList<TaskResult>& results, const QJson
                 failed<<QString("%1: %2").arg(c.description, c.message);
         if (r.finishReason!="end_turn" && !r.finishReason.isEmpty())
             failed.prepend("ended: "+r.finishReason);
-        QString f=failed.join("; ").replace('|', '/').replace('\n', ' ').left(300);
-        md+=QString("| %1 | %2 | %3 | %4 | %5 (%6) | %7/%8/%9 | %10 | %11 s | %12 |\n")
+        QString f=failed.join("; ").left(300);
+        for (const auto& w: r.warnings)
+            f+=(f.isEmpty() ? "" : "; ")+QString("warning: %1").arg(w.left(150));
+        f=f.replace('|', '/').replace('\n', ' ');
+        md+=QString("| %1 | %2 | %3 | %4 | %5 (%6) | %7/%8/%9 | %10 | %11 | %12 s | %13 |\n")
                 .arg(r.taskId).arg(r.run+1)
                 .arg(r.passed ? "pass" : "**FAIL**")
                 .arg(r.modelResponses).arg(r.toolCalls).arg(r.failedToolCalls)
                 .arg(r.usage.inputTokens+r.usage.cacheWriteTokens).arg(r.usage.cacheReadTokens).arg(r.usage.outputTokens)
+                .arg(r.maxPromptTokens)
                 .arg(r.cost>=0 ? QString("$%1").arg(r.cost, 0, 'f', 3) : QString("-"))
                 .arg(r.seconds, 0, 'f', 0)
                 .arg(f);

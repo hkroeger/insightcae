@@ -171,6 +171,12 @@ struct TurnResult
     QString model;
 
     Usage usage;
+
+    /**
+     * the response was obtained with an alternative request format
+     * (e.g. tools described in the text): the input size is not comparable to other turns
+     */
+    bool alternativeRequest = false;
 };
 
 

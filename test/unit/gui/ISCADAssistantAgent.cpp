@@ -16,6 +16,7 @@
 #include "assistant/openaicompatbackend.h"
 #include "assistant/iscadassistantagent.h"
 #include "assistant/evaluation.h"
+#include "assistant/referencedocs.h"
 
 using namespace insight::assistant;
 
@@ -66,6 +67,9 @@ public:
     }
     void cancel() override { busy=false; }
     bool isBusy() const override { return busy; }
+
+    int ctxLen=0;
+    int contextLength() const override { return ctxLen; }
 };
 
 
@@ -944,6 +948,354 @@ private Q_SLOTS:
     }
 
 
+    void textToolCalls()
+    {
+        QList<ToolDefinition> tools{
+            { "read_script", "read",
+              QJsonObject{ {"type", "object"}, {"properties", QJsonObject{
+                  {"from_line", QJsonObject{ {"type", "integer"} }},
+                  {"to_line", QJsonObject{ {"type", "integer"} }} }} } },
+            { "edit_script", "edit",
+              QJsonObject{ {"type", "object"}, {"properties", QJsonObject{
+                  {"old_string", QJsonObject{ {"type", "string"} }},
+                  {"new_string", QJsonObject{ {"type", "string"} }} }} } }
+        };
+
+        // opening tool_call tag missing (as written by qwen3-coder), typed parameters
+        QString t=
+            "I will fix it.\n\n"
+            "<function=edit_script>\n<parameter=old_string>\nSphere(R, O);\n</parameter>\n"
+            "<parameter=new_string>\nSphere(O, 2*R);\n</parameter>\n</function>\n</tool_call>\n"
+            "<tool_call>\n<function=read_script>\n<parameter=from_line>\n2\n</parameter>\n"
+            "<parameter=to_line>\nx\n</parameter>\n</function>\n</tool_call>";
+        auto calls=extractTextToolCalls(t, tools);
+        QCOMPARE(calls.size(), 2);
+        QCOMPARE(t, QString("I will fix it."));
+        QCOMPARE(calls[0].name, QString("edit_script"));
+        QCOMPARE(calls[0].input.value("old_string").toString(), QString("Sphere(R, O);"));
+        QCOMPARE(calls[0].input.value("new_string").toString(), QString("Sphere(O, 2*R);"));
+        QCOMPARE(calls[1].name, QString("read_script"));
+        QVERIFY(calls[1].input.value("from_line").isDouble());
+        QCOMPARE(calls[1].input.value("from_line").toInt(), 2);
+        QCOMPARE(calls[1].input.value("to_line").toString(), QString("x")); // not convertible: kept as string
+
+        // no parameters, truncated output
+        QString t2="<function=rebuild>\n</function>\n<function=read_script>\n<parameter=from_line>\n3";
+        auto c2=extractTextToolCalls(t2, tools);
+        QCOMPARE(c2.size(), 2);
+        QCOMPARE(c2[0].name, QString("rebuild"));
+        QVERIFY(c2[0].input.isEmpty());
+        QCOMPARE(c2[1].input.value("from_line").toInt(), 3);
+        QVERIFY(t2.isEmpty());
+
+        // plain text is left alone
+        QString t3="The volume is 389.8 cm3 <b>.</b>";
+        QVERIFY(extractTextToolCalls(t3, tools).isEmpty());
+        QCOMPARE(t3, QString("The volume is 389.8 cm3 <b>.</b>"));
+    }
+
+
+    void openaiTextToolCallFallback()
+    {
+        QByteArray s=sseData({
+            "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Let me read.\\n\\n<function=read_script>\\n\"},\"finish_reason\":null}]}",
+            "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"<parameter=from_line>\\n4\\n</parameter>\\n</function>\\n</tool_call>\"},\"finish_reason\":\"stop\"}]}",
+            "[DONE]" });
+        SSEStreamParser p;
+        OpenAICompatStreamAccumulator acc(ISCADAssistantAgent::toolDefinitions());
+        for (const auto& ev: p.feed(s))
+            acc.processEvent(ev);
+        QCOMPARE(int(acc.status()), int(StreamAccumulator::Done));
+        auto r=acc.result("openai-compat");
+        QCOMPARE(r.stopReason, QString("tool_use"));
+        QCOMPARE(r.message.text, QString("Let me read."));
+        QCOMPARE(r.message.toolCalls.size(), 1);
+        QCOMPARE(r.message.toolCalls[0].name, QString("read_script"));
+        QVERIFY(r.message.toolCalls[0].inputValid);
+        QCOMPARE(r.message.toolCalls[0].input.value("from_line").toInt(), 4);
+        // replayed as a regular tool call
+        auto pc=r.message.providerContent.toObject();
+        QCOMPARE(pc.value("content").toString(), QString("Let me read."));
+        QCOMPARE(pc.value("tool_calls").toArray().size(), 1);
+
+        // mixed: the server recognized only the second call, the first one stayed in the text
+        QByteArray s2=sseData({
+            "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Fix.\\n<function=edit_script>\\n<parameter=old_string>\\na\\n</parameter>\\n<parameter=new_string>\\nb\\n</parameter>\\n</function>\\n</tool_call>\"},\"finish_reason\":null}]}",
+            "{\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_x\",\"function\":{\"name\":\"rebuild\",\"arguments\":\"{}\"}}]},\"finish_reason\":\"tool_calls\"}]}",
+            "[DONE]" });
+        SSEStreamParser p2;
+        OpenAICompatStreamAccumulator acc2(ISCADAssistantAgent::toolDefinitions());
+        for (const auto& ev: p2.feed(s2))
+            acc2.processEvent(ev);
+        auto r2=acc2.result("openai-compat");
+        QCOMPARE(r2.message.text, QString("Fix."));
+        QCOMPARE(r2.message.toolCalls.size(), 2);
+        QCOMPARE(r2.message.toolCalls[0].name, QString("edit_script"));
+        QCOMPARE(r2.message.toolCalls[0].input.value("new_string").toString(), QString("b"));
+        QCOMPARE(r2.message.toolCalls[1].name, QString("rebuild"));
+        QCOMPARE(r2.message.toolCalls[1].id, QString("call_x"));
+        QCOMPARE(r2.message.providerContent.toObject().value("tool_calls").toArray().size(), 2);
+    }
+
+
+    void openaiToolParserErrorFallback()
+    {
+        FakeHttpServer server;
+        QVERIFY(server.listen(QHostAddress::LocalHost));
+        QByteArray err="{\"error\":{\"message\":\"XML syntax error on line 3: unexpected EOF\",\"type\":\"api_error\"}}";
+        server.responses
+            << QByteArray("HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\nContent-Length: ")
+               +QByteArray::number(err.size())+"\r\n\r\n"+err
+            << sseResponse(sseData({
+                   "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"<function=rebuild>\\n</function>\\n</tool_call>\"},\"finish_reason\":\"stop\"}]}",
+                   "[DONE]" }));
+
+        OpenAICompatConfig cfg;
+        cfg.baseUrl=QUrl(QString("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+        cfg.model="qwen3-coder:30b";
+        OpenAICompatBackend be(cfg);
+
+        QSignalSpy done(&be, &LLMBackend::turnFinished);
+        QSignalSpy failed(&be, &LLMBackend::turnFailed);
+        ChatMessage u; u.role=ChatMessage::User; u.text="rebuild";
+        be.sendTurn("SYS", {u}, ISCADAssistantAgent::toolDefinitions());
+        QVERIFY(done.wait(10000));
+        QCOMPARE(failed.size(), 0);
+        auto r=done[0][0].value<TurnResult>();
+        QCOMPARE(r.message.toolCalls.size(), 1);
+        QCOMPARE(r.message.toolCalls[0].name, QString("rebuild"));
+
+        QCOMPARE(server.requests.size(), 2);
+        auto body1=QJsonDocument::fromJson(server.requests[0].mid(server.requests[0].indexOf("\r\n\r\n")+4)).object();
+        auto body2=QJsonDocument::fromJson(server.requests[1].mid(server.requests[1].indexOf("\r\n\r\n")+4)).object();
+        QVERIFY(body1.contains("tools"));
+        QVERIFY(!body2.contains("tools"));
+        QString sys=body2.value("messages").toArray()[0].toObject().value("content").toString();
+        QVERIFY(sys.startsWith("SYS"));
+        QVERIFY(sys.contains("<function=TOOL_NAME>"));
+        QVERIFY(sys.contains("- rebuild:"));
+        QVERIFY(r.alternativeRequest);
+
+        // other HTTP 500 errors: normal retries, tools stay in the request
+        FakeHttpServer server2;
+        QVERIFY(server2.listen(QHostAddress::LocalHost));
+        server2.responses
+            << QByteArray("HTTP/1.1 500 X\r\nretry-after: 1\r\nContent-Length: 0\r\n\r\n")
+            << sseResponse(sseData({
+                   "{\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}",
+                   "[DONE]" }));
+        cfg.baseUrl=QUrl(QString("http://127.0.0.1:%1/v1").arg(server2.serverPort()));
+        OpenAICompatBackend be2(cfg);
+        QSignalSpy done2(&be2, &LLMBackend::turnFinished);
+        be2.sendTurn("SYS", {u}, ISCADAssistantAgent::toolDefinitions());
+        QVERIFY(done2.wait(10000));
+        QCOMPARE(server2.requests.size(), 2);
+        auto body3=QJsonDocument::fromJson(server2.requests[1].mid(server2.requests[1].indexOf("\r\n\r\n")+4)).object();
+        QVERIFY(body3.contains("tools"));
+        QVERIFY(!done2[0][0].value<TurnResult>().alternativeRequest);
+    }
+
+
+    void referenceSections()
+    {
+        const QString doc=
+            "# Doc\n\nintro\n\n## Basic Concept\n\ntext\n\n```cpp\n# comment in code\n## not a heading\n```\n\n"
+            "### Scalars\n\ns text\n\n## Edges\n\ne\n\n#### Line\n\nl\n\n#### Arc\n\na\n";
+        auto secs=splitMarkdownSections(doc);
+        QCOMPARE(secs.size(), 5);
+        QCOMPARE(secs[0].title, QString("Basic Concept"));
+        QVERIFY(secs[0].text.contains("# comment in code"));
+        QVERIFY(secs[0].text.contains("s text")); // with subsections
+        QVERIFY(!secs[0].text.contains("Edges"));
+        QCOMPARE(secs[1].path, QString("Doc > Basic Concept > Scalars"));
+        QCOMPARE(secs[3].path, QString("Doc > Edges > Line"));
+        QCOMPARE(secs[3].text, QString("#### Line\n\nl"));
+
+        ReferenceIndex idx;
+        idx.addDocument(doc);
+        idx.addDocument("# Ref\n\n## Edges\n\nmore edges\n");
+
+        auto r=idx.lookup("edges"); // in both documents
+        QCOMPARE(r.sections.size(), 2);
+        r=idx.lookup("Doc > Edges");
+        QCOMPARE(r.sections.size(), 1);
+        QVERIFY(r.sections[0]->text.contains("#### Arc"));
+        r=idx.lookup("Edges > Line"); // path without document title
+        QCOMPARE(r.sections.size(), 1);
+        r=idx.lookup("## scal"); // partial, heading marks tolerated
+        QCOMPARE(r.sections.size(), 1);
+        QCOMPARE(r.sections[0]->title, QString("Scalars"));
+        r=idx.lookup("a"); // ambiguous
+        QVERIFY(r.sections.isEmpty());
+        QCOMPARE(r.candidates.size(), 3);
+        r=idx.lookup("xyz");
+        QVERIFY(r.sections.isEmpty() && r.candidates.isEmpty());
+
+        QString toc=idx.tableOfContents();
+        QVERIFY(toc.contains("# Doc\n- Basic Concept\n  - Scalars\n- Edges: Line, Arc\n# Ref\n- Edges\n"));
+
+        ReferenceIndex idx2;
+        idx2.addDocument(doc, {"edges"});
+        QCOMPARE(idx2.sections().size(), 2);
+        QVERIFY(idx2.lookup("Line").sections.isEmpty());
+    }
+
+
+    void readReferenceTool()
+    {
+        FakeHost host;
+        ISCADAssistantAgent agent(&host);
+        auto hasTool=[&]() { for (const auto& t: agent.tools()) if (t.name=="read_reference") return true; return false; };
+        QVERIFY(!hasTool());
+
+        QList<ToolResult> res;
+        auto collect=[&](const ToolResult& r) { res.append(r); };
+        ToolCall tc;
+        tc.id="r1";
+        tc.name="read_reference";
+        tc.input={{"section", "Scalars"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(res.last().isError);
+        QVERIFY(res.last().content.contains("not available"));
+
+        auto idx=std::make_shared<ReferenceIndex>();
+        idx->addDocument("# Doc\n\n## Scalars\n\ns text\n\n## Edges\n\ne text\n");
+        idx->addDocument("# Ref\n\n## Edges\n\nmore edges\n");
+        agent.setReferenceIndex(idx);
+        QVERIFY(hasTool());
+        agent.setDisabledTools({"view_model"}); // stays available
+        QVERIFY(hasTool());
+
+        agent.executeTool(tc, collect);
+        QVERIFY(!res.last().isError);
+        QCOMPARE(res.last().content, QString("## Scalars\n\ns text"));
+
+        tc.input={{"section", "Edges"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(!res.last().isError);
+        QVERIFY(res.last().content.contains("[Doc > Edges]\n## Edges\n\ne text"));
+        QVERIFY(res.last().content.contains("[Ref > Edges]\n## Edges\n\nmore edges"));
+
+        tc.input={{"section", "e"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(res.last().isError);
+        QVERIFY(res.last().content.contains("matches several sections"));
+
+        tc.input={{"section", "Faces"}};
+        agent.executeTool(tc, collect);
+        QVERIFY(res.last().isError);
+        QVERIFY(res.last().content.contains("There is no section"));
+        QVERIFY(res.last().content.contains("- Scalars"));
+
+        // empty index: tool not offered
+        agent.setReferenceIndex(std::make_shared<ReferenceIndex>());
+        QVERIFY(!hasTool());
+    }
+
+
+    void contextWarning()
+    {
+        auto withUsage=[](TurnResult t, qint64 in, qint64 cached)
+        {
+            t.usage.inputTokens=in;
+            t.usage.cacheReadTokens=cached;
+            return t;
+        };
+
+        // truncation detected by a shrinking input (context length unknown)
+        {
+            FakeHost host;
+            host.script="x=1;\n";
+            ISCADAssistantAgent agent(&host);
+            auto* be=new FakeBackend;
+            agent.setBackend(be);
+            be->responses
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 1000, 0)
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 200, 1000)
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 100, 800)
+                << withUsage(textTurn("done"), 100, 850);
+            QSignalSpy warn(&agent, &ISCADAssistantAgent::contextWarning);
+            QSignalSpy finished(&agent, &ISCADAssistantAgent::requestFinished);
+            agent.sendUserMessage("go");
+            QVERIFY(finished.wait(2000));
+            QCOMPARE(warn.size(), 1); // once per request
+            QVERIFY(warn[0][0].toString().contains("900 instead of at least 1200"));
+            QCOMPARE(agent.maxPromptTokens(), qint64(1200));
+
+            // next request of the conversation: warned again
+            be->responses << withUsage(textTurn("ok"), 50, 900);
+            agent.sendUserMessage("more");
+            QVERIFY(finished.wait(2000));
+            QCOMPARE(warn.size(), 2);
+            QCOMPARE(agent.maxPromptTokens(), qint64(950));
+
+            // new conversation: no warning
+            agent.clearConversation();
+            be->responses << withUsage(textTurn("ok"), 300, 0);
+            agent.sendUserMessage("new");
+            QVERIFY(finished.wait(2000));
+            QCOMPARE(warn.size(), 2);
+        }
+
+        // a shorter input with an alternative request format (tools in the text) is no truncation
+        {
+            FakeHost host;
+            host.script="x=1;\n";
+            ISCADAssistantAgent agent(&host);
+            auto* be=new FakeBackend;
+            agent.setBackend(be);
+            auto alt=withUsage(toolTurn({{"read_script", QJsonObject()}}), 900, 0);
+            alt.alternativeRequest=true;
+            be->responses
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 1000, 0)
+                << alt
+                << withUsage(textTurn("done"), 100, 1100);
+            QSignalSpy warn(&agent, &ISCADAssistantAgent::contextWarning);
+            QSignalSpy finished(&agent, &ISCADAssistantAgent::requestFinished);
+            agent.sendUserMessage("go");
+            QVERIFY(finished.wait(2000));
+            QCOMPARE(warn.size(), 0);
+        }
+
+        // close to the configured context length
+        {
+            FakeHost host;
+            host.script="x=1;\n";
+            ISCADAssistantAgent agent(&host);
+            auto* be=new FakeBackend;
+            be->ctxLen=1000;
+            agent.setBackend(be);
+            be->responses
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 500, 0)
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 50, 800)
+                << withUsage(toolTurn({{"read_script", QJsonObject()}}), 50, 900)
+                << withUsage(textTurn("done"), 10, 960)
+                ;
+            QSignalSpy warn(&agent, &ISCADAssistantAgent::contextWarning);
+            QSignalSpy finished(&agent, &ISCADAssistantAgent::requestFinished);
+            agent.sendUserMessage("go");
+            QVERIFY(finished.wait(2000));
+            QCOMPARE(warn.size(), 1);
+            QVERIFY(warn[0][0].toString().contains("950 of 1000 tokens"));
+        }
+
+        // usage not reported: nothing
+        {
+            FakeHost host;
+            ISCADAssistantAgent agent(&host);
+            auto* be=new FakeBackend;
+            be->ctxLen=10;
+            agent.setBackend(be);
+            be->responses << textTurn("a");
+            QSignalSpy warn(&agent, &ISCADAssistantAgent::contextWarning);
+            QSignalSpy finished(&agent, &ISCADAssistantAgent::requestFinished);
+            agent.sendUserMessage("go");
+            QVERIFY(finished.wait(2000));
+            QCOMPARE(warn.size(), 0);
+        }
+    }
+
+
     void openaiAgentOverHttp()
     {
         FakeHttpServer server;
@@ -1035,7 +1387,8 @@ private Q_SLOTS:
         agent.setDisabledTools({"view_model"});
         for (const auto& t: agent.tools())
             QVERIFY(t.name!="view_model");
-        QCOMPARE(agent.tools().size(), ISCADAssistantAgent::toolDefinitions().size()-1);
+        // -2: view_model and read_reference (no reference index set)
+        QCOMPARE(agent.tools().size(), ISCADAssistantAgent::toolDefinitions().size()-2);
         tc.input={{"direction","top"}};
         agent.executeTool(tc, collect);
         QVERIFY(res.last().isError);

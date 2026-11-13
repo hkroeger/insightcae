@@ -216,7 +216,14 @@ QString IQISCADAssistantHost::languageReference(ReferenceLevel level)
     return ISCADModelInspection::languageReference(
         level==Full ? ISCADModelInspection::FullReference :
         level==Basic ? ISCADModelInspection::BasicReference :
+        level==OnDemand ? ISCADModelInspection::OnDemandReference :
                        ISCADModelInspection::NoReference );
+}
+
+
+std::shared_ptr<const insight::assistant::ReferenceIndex> IQISCADAssistantHost::referenceIndex()
+{
+    return ISCADModelInspection::referenceIndex();
 }
 
 

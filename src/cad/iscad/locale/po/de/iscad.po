@@ -427,7 +427,16 @@ msgstr "Eins&tellungen"
 msgid "Stopped."
 msgstr ""
 
+msgid "System prompt:"
+msgstr ""
+
+msgid "Tools:"
+msgstr ""
+
 msgid "Using %1."
+msgstr ""
+
+msgid "Warning:"
 msgstr ""
 
 msgid "You:"
@@ -507,6 +516,19 @@ msgstr ""
 msgid "Max. output tokens"
 msgstr ""
 
+msgid "unknown"
+msgstr ""
+
+msgid ""
+"Context window of the model on the server (Ollama: OLLAMA_CONTEXT_LENGTH, "
+"shown by \"ollama ps\"). The assistant warns, when the conversation comes "
+"close to it. Input, which was cut off by the server, is detected without "
+"this setting as well."
+msgstr ""
+
+msgid "Context length (tokens)"
+msgstr ""
+
 msgid "Price input"
 msgstr ""
 
@@ -524,16 +546,21 @@ msgid ""
 "step editing than large hosted models. Ollama uses a small context window by "
 "default, which silently cuts off the system prompt: set "
 "OLLAMA_CONTEXT_LENGTH (e.g. 32768) or choose a shorter language reference "
-"below."
+"below (\"On demand\" is recommended)."
 msgstr ""
 
 msgid "Full language and command reference (~20k tokens)"
 msgstr ""
 
-msgid "Language reference without command list (~10k tokens)"
+msgid "Language reference without command list (~11k tokens)"
 msgstr ""
 
 msgid "None (command_help tool only)"
+msgstr ""
+
+msgid ""
+"On demand: essentials and table of contents, the model reads sections (~4k "
+"tokens)"
 msgstr ""
 
 msgid "System prompt"
@@ -546,6 +573,9 @@ msgid "Basic tools (read, edit, rebuild, help, inspect) for small models"
 msgstr ""
 
 msgid "Tools"
+msgstr ""
+
+msgid "Show the system prompt in the chat"
 msgstr ""
 
 msgid "Fetching model list..."

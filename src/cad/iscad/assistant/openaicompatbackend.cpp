@@ -2,6 +2,8 @@
 
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QRegularExpression>
+#include <vector>
 
 namespace insight {
 namespace assistant {
@@ -10,8 +12,144 @@ namespace assistant {
 
 
 // ================================================================
+// tool calls in the text
+// ================================================================
+
+
+namespace {
+
+
+QJsonValue typedParameterValue(QString value, const QJsonObject& propertySchema)
+{
+    // the format puts the value on lines of its own
+    if (value.startsWith('\n'))
+        value.remove(0, 1);
+    if (value.endsWith('\n'))
+        value.chop(1);
+
+    QString type=propertySchema.value("type").toString();
+    QString t=value.trimmed();
+    if (type=="integer")
+    {
+        bool ok=false;
+        qlonglong i=t.toLongLong(&ok);
+        if (ok)
+            return QJsonValue(i);
+    }
+    else if (type=="number")
+    {
+        bool ok=false;
+        double d=t.toDouble(&ok);
+        if (ok)
+            return QJsonValue(d);
+    }
+    else if (type=="boolean")
+    {
+        if (t.compare("true", Qt::CaseInsensitive)==0)
+            return QJsonValue(true);
+        if (t.compare("false", Qt::CaseInsensitive)==0)
+            return QJsonValue(false);
+    }
+    else if (type=="array" || type=="object")
+    {
+        QJsonParseError err;
+        auto doc=QJsonDocument::fromJson(t.toUtf8(), &err);
+        if (err.error==QJsonParseError::NoError)
+        {
+            if (type=="array" && doc.isArray())
+                return doc.array();
+            if (type=="object" && doc.isObject())
+                return doc.object();
+        }
+    }
+    return QJsonValue(value);
+}
+
+
+} // anonymous namespace
+
+
+QList<TextToolCall> extractTextToolCalls(QString& text, const QList<ToolDefinition>& tools)
+{
+    QList<TextToolCall> calls;
+    if (!text.contains("<function="))
+        return calls;
+
+    static const QRegularExpression
+        reFunction(
+            "<function=([^>\\s]+)>(.*?)(?:</function>|(?=<function=)|$)",
+            QRegularExpression::DotMatchesEverythingOption ),
+        reParameter(
+            "<parameter=([^>\\s]+)>(.*?)(?:</parameter>|(?=<parameter=)|$)",
+            QRegularExpression::DotMatchesEverythingOption ),
+        reToolCallTag("</?tool_call>");
+
+    QString remaining;
+    int last=0;
+    auto it=reFunction.globalMatch(text);
+    while (it.hasNext())
+    {
+        auto m=it.next();
+        remaining+=text.mid(last, m.capturedStart()-last);
+        last=m.capturedEnd();
+
+        TextToolCall tc;
+        tc.name=m.captured(1);
+        QJsonObject properties;
+        for (const auto& t: tools)
+            if (t.name==tc.name)
+                properties=t.inputSchema.value("properties").toObject();
+
+        auto pit=reParameter.globalMatch(m.captured(2));
+        while (pit.hasNext())
+        {
+            auto pm=pit.next();
+            QString pn=pm.captured(1);
+            tc.input[pn]=typedParameterValue(pm.captured(2), properties.value(pn).toObject());
+        }
+        calls.append(tc);
+    }
+    remaining+=text.mid(last);
+
+    if (!calls.isEmpty())
+    {
+        remaining.remove(reToolCallTag);
+        text=remaining.trimmed();
+    }
+    return calls;
+}
+
+
+QString textToolInstructions(const QList<ToolDefinition>& tools)
+{
+    QString s=
+        "# Tools\n\n"
+        "You can call the following tools. Write each tool call in exactly this format "
+        "(all tags are required, one parameter block per parameter):\n\n"
+        "<tool_call>\n<function=TOOL_NAME>\n<parameter=PARAMETER_NAME>\nvalue\n</parameter>\n"
+        "</function>\n</tool_call>\n\n"
+        "Available tools:\n";
+    for (const auto& t: tools)
+    {
+        s+=QString("\n- %1: %2\n  parameters (JSON schema): %3\n")
+             .arg(t.name, t.description,
+                  QString::fromUtf8(QJsonDocument(t.inputSchema).toJson(QJsonDocument::Compact)));
+    }
+    return s;
+}
+
+
+
+
+// ================================================================
 // OpenAICompatStreamAccumulator
 // ================================================================
+
+
+OpenAICompatStreamAccumulator::OpenAICompatStreamAccumulator(const QList<ToolDefinition>& tools)
+    : tools_(tools)
+{}
+
 
 
 StreamAccumulator::Status
@@ -159,15 +297,35 @@ TurnResult OpenAICompatStreamAccumulator::result(const QString& providerId) cons
     m.providerId=providerId;
     m.text=text_;
 
-    QJsonArray tcs;
+    // fallback: tool calls written into the text, which the server did not recognize
+    // (also mixed with recognized calls: the server may miss only the first one of several).
+    // The text precedes the recognized calls in the output.
+    std::vector<PartialToolCall> toolCalls;
+    int i=0;
+    for (const auto& ttc: extractTextToolCalls(m.text, tools_))
+    {
+        PartialToolCall p;
+        p.id=QString("call_text_%1").arg(i++);
+        p.name=ttc.name;
+        p.arguments=QString::fromUtf8(QJsonDocument(ttc.input).toJson(QJsonDocument::Compact));
+        toolCalls.push_back(p);
+    }
     for (const auto& e: toolCalls_)
     {
-        ToolCall tc;
-        tc.id = e.second.id.isEmpty() ? QString("call_%1").arg(e.first) : e.second.id;
-        tc.name=e.second.name;
-        tc.rawInput=e.second.arguments;
+        toolCalls.push_back(e.second);
+        if (toolCalls.back().id.isEmpty())
+            toolCalls.back().id=QString("call_%1").arg(e.first);
+    }
 
-        QString args=e.second.arguments.trimmed();
+    QJsonArray tcs;
+    for (const auto& e: toolCalls)
+    {
+        ToolCall tc;
+        tc.id=e.id;
+        tc.name=e.name;
+        tc.rawInput=e.arguments;
+
+        QString args=e.arguments.trimmed();
         if (args.isEmpty())
         {
             tc.input=QJsonObject();
@@ -192,7 +350,7 @@ TurnResult OpenAICompatStreamAccumulator::result(const QString& providerId) cons
     }
 
     QJsonObject pc{ {"role", "assistant"} };
-    pc["content"] = text_.isEmpty() && !tcs.isEmpty() ? QJsonValue() : QJsonValue(text_);
+    pc["content"] = m.text.isEmpty() && !tcs.isEmpty() ? QJsonValue() : QJsonValue(m.text);
     if (!tcs.isEmpty())
         pc["tool_calls"]=tcs;
     m.providerContent=pc;
@@ -254,7 +412,25 @@ ModelPricing OpenAICompatBackend::pricing() const
 
 std::unique_ptr<StreamAccumulator> OpenAICompatBackend::createAccumulator() const
 {
-    return std::make_unique<OpenAICompatStreamAccumulator>();
+    return std::make_unique<OpenAICompatStreamAccumulator>(tools_);
+}
+
+
+bool OpenAICompatBackend::alternativeRequest(int httpStatus, const QByteArray& errorBody, QByteArray& requestBody)
+{
+    if (httpStatus!=500 || toolsInText_ || tools_.isEmpty())
+        return false;
+
+    QString b=QString::fromUtf8(errorBody);
+    if (!( b.contains("XML syntax error", Qt::CaseInsensitive)
+           || b.contains("parsing tool call", Qt::CaseInsensitive)
+           || b.contains("parse tool call", Qt::CaseInsensitive) ))
+        return false;
+
+    toolsInText_=true;
+    requestBody=QJsonDocument(buildRequest(cfg_, id(), systemPrompt_, history_, tools_, true))
+                    .toJson(QJsonDocument::Compact);
+    return true;
 }
 
 
@@ -270,7 +446,8 @@ QJsonObject OpenAICompatBackend::buildRequest(
     const QString& providerId,
     const QString& systemPrompt,
     const QList<ChatMessage>& history,
-    const QList<ToolDefinition>& tools )
+    const QList<ToolDefinition>& tools,
+    bool toolsInText )
 {
     QJsonObject req;
     req["model"]=cfg.model;
@@ -280,7 +457,7 @@ QJsonObject OpenAICompatBackend::buildRequest(
     if (cfg.maxTokens>0)
         req["max_tokens"]=cfg.maxTokens;
 
-    if (!tools.isEmpty())
+    if (!tools.isEmpty() && !toolsInText)
     {
         QJsonArray ta;
         for (const auto& t: tools)
@@ -298,8 +475,11 @@ QJsonObject OpenAICompatBackend::buildRequest(
     }
 
     QJsonArray messages;
-    if (!systemPrompt.isEmpty())
-        messages.append(QJsonObject{ {"role", "system"}, {"content", systemPrompt} });
+    QString sp=systemPrompt;
+    if (!tools.isEmpty() && toolsInText)
+        sp+=(sp.isEmpty() ? "" : "\n\n")+textToolInstructions(tools);
+    if (!sp.isEmpty())
+        messages.append(QJsonObject{ {"role", "system"}, {"content", sp} });
 
     for (const auto& m: history)
     {
@@ -409,6 +589,11 @@ void OpenAICompatBackend::sendTurn(
     req.setRawHeader("accept", "text/event-stream");
     if (!cfg_.apiKey.isEmpty())
         req.setRawHeader("Authorization", "Bearer "+cfg_.apiKey.toUtf8());
+
+    systemPrompt_=systemPrompt;
+    history_=history;
+    tools_=tools;
+    toolsInText_=false;
 
     startTurn(
         req,

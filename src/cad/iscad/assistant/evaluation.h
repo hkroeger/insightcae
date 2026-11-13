@@ -10,6 +10,7 @@
 
 #include "llmbackend.h"
 #include "iscadassistanthost.h"
+#include "referencedocs.h"
 
 namespace insight {
 namespace assistant {
@@ -108,6 +109,16 @@ struct TaskResult
     QString finishReason;
     QStringList errors;
 
+    /**
+     * e.g. context window warnings
+     */
+    QStringList warnings;
+
+    /**
+     * largest input of a single model response in tokens
+     */
+    qint64 maxPromptTokens = 0;
+
     int modelResponses = 0, toolCalls = 0, failedToolCalls = 0;
     Usage usage;
 
@@ -151,6 +162,11 @@ public:
         int maxSteps = 40;
         int timeoutSeconds = 900;
         int repeats = 1;
+
+        /**
+         * documentation sections for the tool read_reference (null: tool not offered)
+         */
+        std::shared_ptr<const ReferenceIndex> referenceIndex;
     };
 
 private:

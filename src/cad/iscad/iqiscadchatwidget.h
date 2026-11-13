@@ -2,6 +2,8 @@
 #define IQISCADCHATWIDGET_H
 
 #include <QWidget>
+#include <QHash>
+#include <QTextDocumentFragment>
 
 #include "assistant/iscadassistantagent.h"
 
@@ -22,13 +24,28 @@ class IQISCADChatWidget
 
     struct Entry
     {
-        enum Kind { User, Assistant, Thinking, Tool, Error, Info, Image };
+        enum Kind { User, Assistant, Thinking, Tool, Error, Info, Image, Warning, Prompt };
         Kind kind;
         QString text;
     };
 
     insight::assistant::ISCADAssistantAgent* agent_;
     QList<Entry> entries_;
+
+    /**
+     * show the system prompt in the transcript (setting)
+     */
+    bool showSystemPrompt_ = false;
+
+    /**
+     * formatted system prompts by their text (formatting is expensive, render() runs often)
+     */
+    QHash<QString, QTextDocumentFragment> promptFragments_;
+
+    /**
+     * the system prompt and the tools, as shown in the transcript
+     */
+    QString promptDisplayText() const;
 
     class Transcript;
     Transcript* transcript_;

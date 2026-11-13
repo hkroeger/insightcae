@@ -1,9 +1,11 @@
 #ifndef IQISCADASSISTANTSETTINGS_H
 #define IQISCADASSISTANTSETTINGS_H
 
+#include <memory>
+
 #include <QDialog>
 
-namespace insight { namespace assistant { class LLMBackend; } }
+namespace insight { namespace assistant { class LLMBackend; class ReferenceIndex; } }
 
 class QComboBox;
 class QLineEdit;
@@ -25,13 +27,18 @@ struct IQISCADAssistantSettings
     /**
      * how much of the language documentation is put into the system prompt
      */
-    enum Reference { FullReference=0, BasicReference=1, NoReference=2 };
+    enum Reference { FullReference=0, BasicReference=1, NoReference=2, OnDemandReference=3 };
     Reference reference = FullReference;
 
     /**
      * basic: fewer tools, for small (local) models
      */
     bool basicToolSet = false;
+
+    /**
+     * show the system prompt at the beginning of a conversation in the chat
+     */
+    bool showSystemPrompt = false;
 
     // ===== Anthropic
     QString anthropicModel;
@@ -44,6 +51,11 @@ struct IQISCADAssistantSettings
     QString openaiModel;
     QString openaiApiKey;
     int openaiMaxTokens = 0;
+
+    /**
+     * context window of the model on the server (0: unknown)
+     */
+    int openaiContextLength = 0;
     double openaiPriceInput = 0, openaiPriceOutput = 0, openaiPriceCachedInput = 0;
 
     /**
@@ -63,6 +75,11 @@ struct IQISCADAssistantSettings
     QString systemPrompt() const;
 
     /**
+     * documentation sections for the tool read_reference (null, if not used)
+     */
+    std::shared_ptr<const insight::assistant::ReferenceIndex> referenceIndex() const;
+
+    /**
      * tools, which are not usable with the configured model
      */
     QStringList disabledTools() const;
@@ -80,6 +97,7 @@ class IQISCADAssistantSettingsDialog
     QStackedWidget* pages_;
     QComboBox* reference_;
     QComboBox* toolSet_;
+    QCheckBox* showPrompt_;
 
     QComboBox *aModel_, *aEffort_;
     QLineEdit* aKey_;
@@ -88,7 +106,7 @@ class IQISCADAssistantSettingsDialog
     QLineEdit *oUrl_, *oKey_;
     QComboBox* oModel_;
     QLabel* oFetchStatus_;
-    QSpinBox* oMaxTokens_;
+    QSpinBox *oMaxTokens_, *oContextLength_;
     QDoubleSpinBox *oPriceIn_, *oPriceOut_, *oPriceCached_;
     QCheckBox* oVision_;
 

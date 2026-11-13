@@ -49,6 +49,12 @@ public:
      */
     virtual ModelPricing pricing() const { return ModelPricing(); }
 
+    /**
+     * size of the context window of the model in tokens (0: unknown).
+     * Used to warn, before the server silently cuts off input.
+     */
+    virtual int contextLength() const { return 0; }
+
     virtual bool isBusy() const =0;
 
 Q_SIGNALS:

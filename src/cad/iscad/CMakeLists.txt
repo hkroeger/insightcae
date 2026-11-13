@@ -13,6 +13,7 @@ add_library(iscadassistant STATIC
     assistant/anthropicbackend.h assistant/anthropicbackend.cpp
     assistant/openaicompatbackend.h assistant/openaicompatbackend.cpp
     assistant/iscadassistanthost.h
+    assistant/referencedocs.h assistant/referencedocs.cpp
     assistant/iscadassistantagent.h assistant/iscadassistantagent.cpp
     assistant/evaluation.h assistant/evaluation.cpp
 )
@@ -57,6 +58,7 @@ add_executable(iscad
     viewdefinitiondialog.h viewdefinitiondialog.cpp
     insertdrawingdialog.h insertdrawingdialog.cpp
     iqiscadassistanthost.h iqiscadassistanthost.cpp
+    iqiscadchatformat.h iqiscadchatformat.cpp
     iqiscadchatwidget.h iqiscadchatwidget.cpp
     iqiscadassistantsettings.h iqiscadassistantsettings.cpp
     iscadmodelinspection.h iscadmodelinspection.cpp

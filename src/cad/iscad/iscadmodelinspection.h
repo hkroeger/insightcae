@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "assistant/iscadassistanthost.h"
+#include "assistant/referencedocs.h"
 
 namespace insight { namespace cad {
 class Feature;
@@ -39,14 +40,21 @@ QList<insight::assistant::CommandDoc> commandDocumentation();
 
 QStringList librarySearchPaths();
 
-enum ReferenceLevel { FullReference, BasicReference, NoReference };
+enum ReferenceLevel { FullReference, BasicReference, NoReference, OnDemandReference };
 
 /**
  * the ISCAD language documentation, if it was compiled into the program
  * (resource :/iscad_assistant/).
- * Full: language and command reference, Basic: language only
+ * Full: language and command reference, Basic: language only,
+ * OnDemand: the essentials and a table of contents (the rest via the tool read_reference)
  */
 QString languageReference(ReferenceLevel level);
+
+/**
+ * the sections of the language and command reference for the tool read_reference
+ * (empty, if the documentation was not compiled in)
+ */
+std::shared_ptr<const insight::assistant::ReferenceIndex> referenceIndex();
 
 }
 

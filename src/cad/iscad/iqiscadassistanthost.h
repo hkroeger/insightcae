@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "assistant/iscadassistanthost.h"
+#include "assistant/referencedocs.h"
 
 class IQISCADModelScriptEdit;
 class IQVTKCADModel3DViewer;
@@ -76,13 +77,19 @@ public:
         const QString& highlight,
         QByteArray& png ) override;
 
-    enum ReferenceLevel { Full, Basic, None };
+    enum ReferenceLevel { Full, Basic, None, OnDemand };
 
     /**
      * the ISCAD language documentation, if it was compiled into the program.
-     * Full: language and command reference, Basic: language only
+     * Full: language and command reference, Basic: language only,
+     * OnDemand: essentials and table of contents (sections via read_reference)
      */
     static QString languageReference(ReferenceLevel level = Full);
+
+    /**
+     * the documentation sections for the tool read_reference
+     */
+    static std::shared_ptr<const insight::assistant::ReferenceIndex> referenceIndex();
 };
 
 #endif // IQISCADASSISTANTHOST_H

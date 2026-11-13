@@ -13,12 +13,11 @@
 #include <QPushButton>
 #include <QCheckBox>
 #include <QDialogButtonBox>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QEventLoop>
 #include <QTimer>
 
 #include "assistant/anthropicbackend.h"
+#include "assistant/httpstream.h"
 #include "assistant/openaicompatbackend.h"
 #include "assistant/iscadassistantagent.h"
 #include "iqiscadassistanthost.h"
@@ -348,7 +347,8 @@ void IQISCADAssistantSettingsDialog::fetchModels()
 {
     oFetchStatus_->setText(_("Fetching model list..."));
 
-    QNetworkAccessManager nam;
+    using insight::assistant::HttpStream;
+
     QNetworkRequest req(insight::assistant::StreamingHttpBackend::endpoint(
         QUrl(oUrl_->text().trimmed()), "/models" ));
     QString key=qEnvironmentVariable("OPENAI_API_KEY");
@@ -357,34 +357,52 @@ void IQISCADAssistantSettingsDialog::fetchModels()
     if (!key.isEmpty())
         req.setRawHeader("Authorization", "Bearer "+key.toUtf8());
 
-    auto* reply=nam.get(req);
+    auto* reply=HttpStream::start("GET", req, QByteArray(), this);
+    int status=0;
+    QByteArray data;
+    HttpStream::Error error=HttpStream::NoError;
+    QString errorString;
     QEventLoop loop;
     QTimer timeout;
     timeout.setSingleShot(true);
     connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    connect(reply, &HttpStream::responseStarted, &loop,
+            [&status](int s, const QByteArray&) { status=s; });
+    connect(reply, &HttpStream::dataReceived, &loop,
+            [&data](const QByteArray& d) { data.append(d); });
+    connect(reply, &HttpStream::finished, &loop,
+            [&](HttpStream::Error e, const QString& msg)
+            {
+                error=e;
+                errorString=msg;
+                loop.quit();
+            });
     timeout.start(10000);
     loop.exec();
 
     if (!reply->isFinished())
     {
-        reply->abort();
         oFetchStatus_->setText(_("No answer from the server."));
     }
-    else if (reply->error()!=QNetworkReply::NoError)
+    else if (error!=HttpStream::NoError)
     {
-        oFetchStatus_->setText(QString(_("Error: %1")).arg(reply->errorString()));
+        oFetchStatus_->setText(QString(_("Error: %1")).arg(errorString));
+    }
+    else if (status!=200)
+    {
+        oFetchStatus_->setText(QString(_("Error: %1")).arg(
+            insight::assistant::StreamingHttpBackend::errorMessageFromBody(status, data) ));
     }
     else
     {
-        auto ids=OpenAICompatBackend::parseModelList(reply->readAll());
+        auto ids=OpenAICompatBackend::parseModelList(data);
         QString cur=oModel_->currentText();
         oModel_->clear();
         oModel_->addItems(ids);
         oModel_->setCurrentText(cur.isEmpty() && !ids.isEmpty() ? ids.first() : cur);
         oFetchStatus_->setText(QString(_("%1 models available.")).arg(ids.size()));
     }
-    reply->deleteLater();
+    delete reply; // aborts, if still running
 }
 
 

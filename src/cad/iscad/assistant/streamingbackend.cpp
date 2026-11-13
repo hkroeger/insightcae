@@ -1,7 +1,5 @@
 #include "streamingbackend.h"
 
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTimer>
@@ -44,7 +42,6 @@ StreamAccumulator::Status StreamAccumulator::finishStream()
 
 StreamingHttpBackend::StreamingHttpBackend(QObject* parent)
     : LLMBackend(parent),
-      nam_(new QNetworkAccessManager(this)),
       idleTimer_(new QTimer(this)),
       retryTimer_(new QTimer(this))
 {
@@ -131,15 +128,17 @@ void StreamingHttpBackend::startRequest()
         return;
 
     httpStatus_=0;
+    retryAfter_.clear();
     errorBody_.clear();
     sse_.reset();
     acc_=createAccumulator();
     acc_->onText = [this](const QString& t) { Q_EMIT textDelta(t); };
     acc_->onThinking = [this](const QString& t) { Q_EMIT thinkingDelta(t); };
 
-    reply_=nam_->post(request_, requestBody_);
-    connect(reply_, &QNetworkReply::readyRead, this, &StreamingHttpBackend::onReadyRead);
-    connect(reply_, &QNetworkReply::finished, this, &StreamingHttpBackend::onReplyFinished);
+    reply_=HttpStream::start("POST", request_, requestBody_, this);
+    connect(reply_, &HttpStream::responseStarted, this, &StreamingHttpBackend::onResponseStarted);
+    connect(reply_, &HttpStream::dataReceived, this, &StreamingHttpBackend::onDataReceived);
+    connect(reply_, &HttpStream::finished, this, &StreamingHttpBackend::onReplyFinished);
 
     idleTimer_->start(idleTimeoutSeconds_*1000);
 }
@@ -164,17 +163,23 @@ void StreamingHttpBackend::scheduleRetry(const QString& msg, int delaySeconds)
 }
 
 
-void StreamingHttpBackend::onReadyRead()
+void StreamingHttpBackend::onResponseStarted(int httpStatus, const QByteArray& retryAfter)
+{
+    if (!reply_ || !busy_)
+        return;
+    idleTimer_->start(idleTimeoutSeconds_*1000);
+    httpStatus_=httpStatus;
+    retryAfter_=retryAfter;
+}
+
+
+void StreamingHttpBackend::onDataReceived(const QByteArray& data)
 {
     if (!reply_ || !busy_)
         return;
 
     idleTimer_->start(idleTimeoutSeconds_*1000);
 
-    if (httpStatus_==0)
-        httpStatus_=reply_->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    QByteArray data=reply_->readAll();
     if (httpStatus_!=200)
     {
         errorBody_.append(data);
@@ -207,23 +212,14 @@ void StreamingHttpBackend::onReadyRead()
 }
 
 
-void StreamingHttpBackend::onReplyFinished()
+void StreamingHttpBackend::onReplyFinished(HttpStream::Error netError, const QString& netErrorString)
 {
-    if (!reply_ || !busy_)
-        return;
-
-    onReadyRead();
     if (!reply_ || !busy_ || retryTimer_->isActive())
         return; // finished or retry scheduled
 
     idleTimer_->stop();
 
-    if (httpStatus_==0)
-        httpStatus_=reply_->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    auto netError=reply_->error();
-    QString netErrorString=reply_->errorString();
-    QByteArray retryAfter=reply_->rawHeader("retry-after");
+    QByteArray retryAfter=retryAfter_;
 
     if (httpStatus_==200)
     {
@@ -235,7 +231,9 @@ void StreamingHttpBackend::onReplyFinished()
         else if (st==StreamAccumulator::Error)
             fail(acc_->errorMessage());
         else
-            fail(QString("The response stream ended unexpectedly (%1)").arg(netErrorString));
+            fail(netErrorString.isEmpty()
+                     ? QString("The response stream ended unexpectedly")
+                     : QString("The response stream ended unexpectedly (%1)").arg(netErrorString));
         return;
     }
 
@@ -245,9 +243,9 @@ void StreamingHttpBackend::onReplyFinished()
     {
         // no HTTP response at all
         msg=QString("Network error: %1").arg(netErrorString);
-        retry = netError!=QNetworkReply::OperationCanceledError
-                && netError!=QNetworkReply::ConnectionRefusedError
-                && netError!=QNetworkReply::HostNotFoundError;
+        retry = netError!=HttpStream::Canceled
+                && netError!=HttpStream::ConnectionRefused
+                && netError!=HttpStream::HostNotFound;
     }
     else
     {
@@ -311,7 +309,7 @@ void StreamingHttpBackend::abortReply()
 {
     if (reply_)
     {
-        QNetworkReply* r=reply_;
+        HttpStream* r=reply_;
         reply_=nullptr;
         r->disconnect(this);
         r->abort();

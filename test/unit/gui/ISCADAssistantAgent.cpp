@@ -17,6 +17,7 @@
 #include "assistant/iscadassistantagent.h"
 #include "assistant/evaluation.h"
 #include "assistant/referencedocs.h"
+#include "assistant/httpstream.h"
 
 using namespace insight::assistant;
 
@@ -759,6 +760,92 @@ private Q_SLOTS:
         QCOMPARE(failed[0][0].toString(), QString("HTTP 401, authentication_error: invalid x-api-key"));
         QCOMPARE(server.requests.size(), 1);
         QVERIFY(!be.isBusy());
+    }
+
+
+    void httpStreamTransport()
+    {
+        // chunked response, response header, request headers
+        {
+            FakeHttpServer server;
+            QVERIFY(server.listen(QHostAddress::LocalHost));
+            server.responses
+                << QByteArray("HTTP/1.1 429 Too Many\r\nRetry-After: 7\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n"
+                              "5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n");
+
+            QNetworkRequest req(QUrl(QString("http://127.0.0.1:%1/x").arg(server.serverPort())));
+            req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+            req.setRawHeader("x-test", "abc");
+            auto* h=HttpStream::start("POST", req, "{\"a\":1}");
+            QSignalSpy started(h, &HttpStream::responseStarted);
+            QSignalSpy data(h, &HttpStream::dataReceived);
+            QSignalSpy fin(h, &HttpStream::finished);
+            QVERIFY(fin.wait(5000));
+            QCOMPARE(started.size(), 1);
+            QCOMPARE(started[0][0].toInt(), 429);
+            QCOMPARE(started[0][1].toByteArray(), QByteArray("7"));
+            QByteArray all;
+            for (const auto& d: data)
+                all+=d[0].toByteArray();
+            QCOMPARE(all, QByteArray("hello world"));
+            QCOMPARE(fin[0][0].value<HttpStream::Error>(), HttpStream::NoError);
+            QVERIFY(h->isFinished());
+
+            QCOMPARE(server.requests.size(), 1);
+            const auto& r=server.requests[0];
+            QVERIFY(r.startsWith("POST /x "));
+            QVERIFY(r.toLower().contains("content-type: application/json"));
+            QVERIFY(r.toLower().contains("x-test: abc"));
+            QVERIFY(r.endsWith("{\"a\":1}"));
+            delete h;
+        }
+
+        // connection refused
+        {
+            quint16 port;
+            {
+                QTcpServer s;
+                QVERIFY(s.listen(QHostAddress::LocalHost));
+                port=s.serverPort();
+            }
+            auto* h=HttpStream::start("GET", QNetworkRequest(QUrl(QString("http://127.0.0.1:%1/").arg(port))), {});
+            QSignalSpy fin(h, &HttpStream::finished);
+            QVERIFY(fin.wait(5000));
+            QCOMPARE(fin[0][0].value<HttpStream::Error>(), HttpStream::ConnectionRefused);
+            QVERIFY(!fin[0][1].toString().isEmpty());
+            delete h;
+        }
+
+        // abort while the response is streaming
+        {
+            QTcpServer server;
+            QList<QTcpSocket*> open;
+            connect(&server, &QTcpServer::newConnection, &server, [&]()
+            {
+                auto* s=server.nextPendingConnection();
+                open<<s;
+                connect(s, &QTcpSocket::readyRead, s, [s]()
+                {
+                    s->readAll();
+                    s->write("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabc\r\n");
+                    s->flush();
+                });
+            });
+            QVERIFY(server.listen(QHostAddress::LocalHost));
+            auto* h=HttpStream::start("GET", QNetworkRequest(QUrl(QString("http://127.0.0.1:%1/").arg(server.serverPort()))), {});
+            QSignalSpy data(h, &HttpStream::dataReceived);
+            QSignalSpy fin(h, &HttpStream::finished);
+            QVERIFY(data.wait(5000));
+            h->abort();
+            QVERIFY(!fin.wait(1500));
+            delete h;
+            // deleting a running request is safe as well
+            auto* h2=HttpStream::start("GET", QNetworkRequest(QUrl(QString("http://127.0.0.1:%1/").arg(server.serverPort()))), {});
+            QSignalSpy data2(h2, &HttpStream::dataReceived);
+            QVERIFY(data2.wait(5000));
+            delete h2;
+            QTest::qWait(1500);
+        }
     }
 
 

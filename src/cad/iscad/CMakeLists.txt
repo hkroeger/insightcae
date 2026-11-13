@@ -3,12 +3,16 @@ if (INSIGHT_BUILD_ISCAD)
 project(iscad)
 
 find_package(Qt5Network CONFIG REQUIRED)
+find_package(Threads REQUIRED)
+# HTTPS via libcurl: Qt's SSL backend of the dependency build does not work with OpenSSL 3
+find_package(CURL REQUIRED)
 
 # chat assistant: language model access and agent loop (Qt only, unit tested separately)
 add_library(iscadassistant STATIC
     assistant/llmtypes.h
     assistant/llmbackend.h
     assistant/ssestreamparser.h assistant/ssestreamparser.cpp
+    assistant/httpstream.h assistant/httpstream.cpp
     assistant/streamingbackend.h assistant/streamingbackend.cpp
     assistant/anthropicbackend.h assistant/anthropicbackend.cpp
     assistant/openaicompatbackend.h assistant/openaicompatbackend.cpp
@@ -19,7 +23,7 @@ add_library(iscadassistant STATIC
 )
 target_enable_qt(iscadassistant)
 set_target_properties(iscadassistant PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(iscadassistant PUBLIC Qt5::Core Qt5::Network)
+target_link_libraries(iscadassistant PUBLIC Qt5::Core Qt5::Network PRIVATE CURL::libcurl Threads::Threads)
 target_include_directories(iscadassistant PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # the ISCAD language documentation is compiled in as reference for the assistant

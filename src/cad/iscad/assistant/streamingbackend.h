@@ -9,9 +9,8 @@
 
 #include "llmbackend.h"
 #include "ssestreamparser.h"
+#include "httpstream.h"
 
-class QNetworkAccessManager;
-class QNetworkReply;
 class QTimer;
 
 namespace insight {
@@ -74,8 +73,7 @@ class StreamingHttpBackend
 {
     Q_OBJECT
 
-    QNetworkAccessManager* nam_;
-    QPointer<QNetworkReply> reply_;
+    QPointer<HttpStream> reply_;
     QTimer* idleTimer_;
     QTimer* retryTimer_;
 
@@ -84,6 +82,7 @@ class StreamingHttpBackend
     int attempt_ = 0;
     bool alternativeRequestUsed_ = false;
     int httpStatus_ = 0;
+    QByteArray retryAfter_;
     QByteArray errorBody_;
 
     SSEStreamParser sse_;
@@ -91,8 +90,9 @@ class StreamingHttpBackend
     bool busy_ = false;
 
     void startRequest();
-    void onReadyRead();
-    void onReplyFinished();
+    void onResponseStarted(int httpStatus, const QByteArray& retryAfter);
+    void onDataReceived(const QByteArray& data);
+    void onReplyFinished(HttpStream::Error error, const QString& errorString);
     void onIdleTimeout();
     void complete();
     void scheduleRetry(const QString& msg, int delaySeconds);

@@ -94,7 +94,13 @@ size_t writeCallback(char* buffer, size_t size, size_t n, void* userdata)
 }
 
 
+// CURLOPT_XFERINFOFUNCTION exists since libcurl 7.32.0; older versions
+// (e.g. 7.29 on CentOS 7) only provide CURLOPT_PROGRESSFUNCTION.
+#if LIBCURL_VERSION_NUM >= 0x072000
 int progressCallback(void* userdata, curl_off_t, curl_off_t, curl_off_t, curl_off_t)
+#else
+int progressCallback(void* userdata, double, double, double, double)
+#endif
 {
     auto* st=static_cast<HttpStream::State*>(userdata);
     return st->aborted ? 1 : 0;
@@ -154,8 +160,13 @@ void perform(
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, st.get());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, st.get());
+#if LIBCURL_VERSION_NUM >= 0x072000
     curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, &progressCallback);
     curl_easy_setopt(curl, CURLOPT_XFERINFODATA, st.get());
+#else
+    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, &progressCallback);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, st.get());
+#endif
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
     if (method=="POST")
     {
